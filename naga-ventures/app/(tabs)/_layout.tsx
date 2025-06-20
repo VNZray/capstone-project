@@ -1,15 +1,42 @@
+// app/(tabs)/_layout.js
 import { Tabs } from 'expo-router';
-import React from 'react';
-import { Platform } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { Platform, View } from 'react-native';
 
+import LoadingScreen from '@/app/(screens)/LoadingScreen';
 import { HapticTab } from '@/components/HapticTab';
+import { ThemedText } from '@/components/ThemedText';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import TabBarBackground from '@/components/ui/TabBarBackground';
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
-
 export default function TabLayout() {
   const colorScheme = useColorScheme();
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    // Simulate an asynchronous loading process
+    setTimeout(() => {
+      setIsLoading(false);
+    }, 2000); // Adjust the time as needed
+  }, []);
+
+  // Platform check should be before any return
+  if (Platform.OS === 'web') {
+    return (
+      <View>
+        <ThemedText>Hello World</ThemedText>
+      </View>
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <View style={{ flex: 1 }}>
+        <LoadingScreen />
+      </View>
+    );
+  }
 
   return (
     <Tabs
@@ -20,24 +47,67 @@ export default function TabLayout() {
         tabBarBackground: TabBarBackground,
         tabBarStyle: Platform.select({
           ios: {
-            // Use a transparent background on iOS to show the blur effect
             position: 'absolute',
+            paddingTop: 10,
           },
-          default: {},
+          default: {
+            position: 'absolute',
+            paddingTop: 8,
+            height: 70,
+          },
         }),
-      }}>
+      }}
+    >
       <Tabs.Screen
-        name="index"
+        name="(home)"
         options={{
           title: 'Home',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="house.fill" color={color} />,
+          headerTitle: 'Naga Venture',
+          headerShown: false,
+          animation: 'shift',
+          headerTitleAlign: 'left',
+          tabBarIcon: ({ color }) => (
+            <IconSymbol size={32} name="house.fill" color={color} />
+          ),
         }}
       />
+
       <Tabs.Screen
-        name="explore"
+        name="maps/index"
         options={{
-          title: 'Explore',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="paperplane.fill" color={color} />,
+          title: 'Maps',
+          headerShown: true,
+          animation: 'shift',
+          headerTitleAlign: 'center',
+          tabBarIcon: ({ color }) => (
+            <IconSymbol size={32} name="map.fill" color={color} />
+          ),
+        }}
+      />
+
+      <Tabs.Screen
+        name="favorite/index"
+        options={{
+          title: 'Favorites',
+          headerShown: true,
+          animation: 'shift',
+          headerTitleAlign: 'center',
+          tabBarIcon: ({ color }) => (
+            <IconSymbol size={32} name="heart.fill" color={color} />
+          ),
+        }}
+      />
+
+      <Tabs.Screen
+        name="profile/[id]"
+        options={{
+          title: 'Profile',
+          headerShown: true,
+          animation: 'shift',
+          headerTitleAlign: 'center',
+          tabBarIcon: ({ color }) => (
+            <IconSymbol size={32} name="person.crop.circle" color={color} />
+          ),
         }}
       />
     </Tabs>

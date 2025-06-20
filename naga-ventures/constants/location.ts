@@ -1,0 +1,78 @@
+// constants/locations.ts
+
+import { Province } from '@/types/Location';
+
+export const provinces: Province[] = [
+  {
+    name: 'Camarines Sur',
+    cities: [
+      {
+        name: 'Naga City',
+        postal_code: 4400,
+        barangays: [
+          'Abella',
+          'Bagumbayan Norte',
+          'Bagumbayan Sur',
+          'Balatas',
+          'Calauag',
+          'Cararayan',
+          'Concepcion Grande',
+          'Concepcion Pequeña',
+          'Del Rosario',
+          'Dinaga',
+          'Igualdad',
+          'Lerma',
+          'Liboton',
+          'Mabolo',
+          'Paco',
+          'Panicuason',
+          'Sabang',
+          'San Felipe',
+          'San Francisco',
+          'San Isidro',
+          'San Jose',
+          'San Miguel',
+          'San Roque',
+          'Santa Cruz',
+          'Tabuco',
+          'Tinago',
+          'Triangulo',
+          'Dayangdang',
+        ],
+      },
+      {
+        name: 'Iriga City',
+        postal_code: 4431,
+        barangays: [
+          'Antipolo',
+          'Asdum',
+          'Aurora',
+          'Bagumbayan',
+          'Bato',
+          'La Medalla',
+          'La Purisima',
+          'Perpetual Help',
+          'San Agustin',
+          'San Andres',
+          'San Antonio',
+          'San Isidro',
+          'San Jose',
+          'San Juan',
+          'San Miguel',
+          'San Nicolas',
+          'San Pedro',
+          'San Rafael',
+          'San Ramon',
+          'San Roque',
+          'San Vicente Norte',
+          'San Vicente Sur',
+          'Santa Isabel',
+          'Santa Maria',
+          'Santiago',
+        ],
+      },
+      // Add more cities here
+    ],
+  },
+  // Add more provinces here
+];
