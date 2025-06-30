@@ -75,13 +75,13 @@ const CardView: React.FC<CardViewProps> = ({
         ]}
       >
         <ThemedText
-          darkColor={Platform.OS === 'web' ? '#000' : '#000'}
+          darkColor={Platform.OS === 'web' ? '#000' : '#fff'}
           type="cardTitle"
         >
           {data.business_name}
         </ThemedText>
         <ThemedText
-          darkColor={Platform.OS === 'web' ? '#000' : '#000'}
+          darkColor={Platform.OS === 'web' ? '#000' : '#fff'}
           type="cardSubTitle"
         >
           <MaterialCommunityIcons name="map-marker" size={14} color="#FFB007" />{' '}

@@ -13,20 +13,25 @@ import {
   StyleSheet,
   View,
   ActivityIndicator,
+  Text,
 } from 'react-native';
 import { Room } from '@/types/Business';
-import BookingFormPopup from '@/components/BookingFormPopUp';
+import BookingFormPopup from '@/components/booking/BookingFormPopUp';
 import PressableButton from '@/components/PressableButton';
 import TabSwitcher from '@/components/TabSwitcherComponent';
 import { supabase } from '@/utils/supabase';
 import Details from './details';
 import Photos from './photos';
 import Ratings from './ratings';
+import { Review } from '@/types/Reviews';
+import { useAuth } from '@/context/AuthContext';
+import ReviewModal from '@/components/ReviewModal';
 
 const { width, height } = Dimensions.get('window');
 
 const RoomProfile = () => {
-  const { id } = useLocalSearchParams();
+  const { id, fromDate, toDate } = useLocalSearchParams();
+
   const navigation = useNavigation();
   const [activeTab, setActiveTab] = useState('details');
   const colorScheme = useColorScheme();
@@ -35,8 +40,19 @@ const RoomProfile = () => {
   const [isBookingFormVisible, setBookingFormVisible] = useState(false);
   const [room, setRoom] = useState<Room | null>(null);
   const [loading, setLoading] = useState(true);
+  const { user } = useAuth();
 
   const roomId = id?.toString();
+
+  const [reviews, setReviews] = useState<Review[]>([]);
+  const [newReview, setNewReview] = useState('');
+  const [rating, setRating] = useState(5);
+  const [feedbackMessage, setFeedbackMessage] = useState('');
+  const [feedbackType, setFeedbackType] = useState<'success' | 'error' | ''>(
+    ''
+  );
+  const [modalVisible, setModalVisible] = useState(false);
+  const [averageRating, setAverageRating] = useState(0);
 
   const [fontsLoaded] = useFonts({
     'Poppins-Black': require('@/assets/fonts/Poppins/Poppins-Black.ttf'),
@@ -47,32 +63,134 @@ const RoomProfile = () => {
   });
 
   useEffect(() => {
-    const fetchRoom = async () => {
-      if (!roomId) {
-        setLoading(false);
-        return;
-      }
-
-      const { data, error } = await supabase
-        .from('Room')
-        .select('*')
-        .eq('id', roomId)
-        .single();
-
-      if (error) {
-        console.error('Error fetching room:', error);
-        setRoom(null);
-      } else {
-        setRoom(data);
-        navigation.setOptions({ headerTitle: `Room ${data.room_number}` });
-      }
-
-      setLoading(false); // ✅ This is what ends the loading state
-    };
-
     fetchRoom();
+    fetchReviews();
   }, [roomId]);
 
+  const fetchRoom = async () => {
+    if (!roomId) {
+      setLoading(false);
+      return;
+    }
+
+    const { data, error } = await supabase
+      .from('Room')
+      .select('*')
+      .eq('id', roomId)
+      .single();
+
+    if (error) {
+      console.error('Error fetching room:', error);
+      setRoom(null);
+    } else {
+      setRoom(data);
+      navigation.setOptions({ headerTitle: `Room ${data.room_number}` });
+    }
+
+    setLoading(false); // ✅ This is what ends the loading state
+  };
+
+  const fetchReviews = async () => {
+    setLoading(true);
+
+    console.log('Fetching reviews for business ID:', roomId);
+
+    const { data, error } = await supabase
+      .from('Reviews')
+      .select('*')
+      .eq('reviewable_type', 'room')
+      .eq('reviewable_id', roomId)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching reviews:', error.message);
+    } else {
+      console.log('Fetched reviews:', data);
+      setReviews(data || []);
+    }
+
+    if (data && data.length > 0) {
+      const total = data.reduce((sum, review) => sum + review.rating, 0);
+      const avg = total / data.length;
+      setAverageRating(avg);
+    } else {
+      setAverageRating(0);
+    }
+
+    setLoading(false);
+  };
+
+  // // Check if user has already reviewed this room
+  // const reviewChecker = async () => {
+  //   const { data: existingReview, error: fetchError } = await supabase
+  //     .from('Reviews')
+  //     .select('*')
+  //     .eq('reviewable_type', 'room')
+  //     .eq('reviewable_id', roomId)
+  //     .eq('user_id', user?.id)
+  //     .single();
+
+  //   if (existingReview) {
+  //     setFeedbackMessage('You have already submitted a review for this room.');
+  //     setFeedbackType('error');
+  //     clearFeedbackAfterDelay();
+  //     return;
+  //   } else {
+  //     handleAddReview();
+  //   }
+
+  //   if (fetchError && fetchError.code !== 'PGRST116') {
+  //     console.error('Error checking for existing review:', fetchError.message);
+  //     setFeedbackMessage(
+  //       'An error occurred while checking your previous review.'
+  //     );
+  //     setFeedbackType('error');
+  //     clearFeedbackAfterDelay();
+  //     return;
+  //   }
+  // };
+
+  const handleAddReview = async () => {
+    if (!user || newReview.trim() === '') {
+      setFeedbackMessage('Please enter a valid review.');
+      setFeedbackType('error');
+      clearFeedbackAfterDelay();
+      return;
+    }
+    const safeRating = Math.min(5, Math.max(1, rating));
+
+    const { error } = await supabase.from('Reviews').insert([
+      {
+        user_id: user.id,
+        reviewable_type: 'room',
+        reviewable_id: roomId,
+        rating: safeRating,
+        comment: newReview.trim(),
+      },
+    ]);
+
+    if (error) {
+      console.error('Error submitting review:', error);
+      setFeedbackMessage('Failed to submit review.');
+      setFeedbackType('error');
+    } else {
+      setFeedbackMessage('Review submitted successfully!');
+      setFeedbackType('success');
+      setNewReview('');
+      setRating(5);
+      setModalVisible(false);
+      fetchReviews();
+    }
+
+    clearFeedbackAfterDelay();
+  };
+
+  const clearFeedbackAfterDelay = () => {
+    setTimeout(() => {
+      setFeedbackMessage('');
+      setFeedbackType('');
+    }, 3000);
+  };
 
   const renderTabContent = () => {
     if (!room) return null;
@@ -82,6 +200,8 @@ const RoomProfile = () => {
         return <Details room={room} />;
       case 'photos':
         return <Photos room={room} />;
+      case 'ratings':
+        return <Ratings reviews={reviews} />;
       default:
         return null;
     }
@@ -141,14 +261,11 @@ const RoomProfile = () => {
                       size={16}
                       color="#FFB007"
                     />{' '}
-                    {/* {(room.ratings ?? 0).toFixed(1)} */}
-                    5.0
+                    {averageRating.toFixed(1)} ({reviews.length} reviews)
                   </ThemedText>
                 </View>
                 <View>
-                  <ThemedText type="default">
-                    ₱ {room.room_price}
-                  </ThemedText>
+                  <ThemedText type="default">₱ {room.room_price}</ThemedText>
                   <ThemedText type="default2">Per Night</ThemedText>
                 </View>
               </View>
@@ -171,7 +288,19 @@ const RoomProfile = () => {
             <BookingFormPopup
               visible={isBookingFormVisible}
               onClose={() => setBookingFormVisible(false)}
-              roomPrice={room.room_price}
+              room={room}
+              fromDate={fromDate ? String(fromDate) : ''}
+              toDate={toDate ? String(toDate) : ''}
+            />
+
+            <ReviewModal
+              visible={modalVisible}
+              onClose={() => setModalVisible(false)}
+              onSubmit={handleAddReview}
+              rating={rating}
+              setRating={setRating}
+              reviewText={newReview}
+              setReviewText={setNewReview}
             />
           </>
         }
@@ -192,6 +321,19 @@ const RoomProfile = () => {
             TextSize={16}
             onPress={() => setBookingFormVisible(true)}
             style={{ flex: 1 }}
+          />
+        </View>
+      )}
+
+      {user && activeTab === 'ratings' && (
+        <View style={styles.buttonContainer}>
+          <PressableButton
+            Title="Leave a Review"
+            type="primary"
+            color="#fff"
+            height={50}
+            TextSize={16}
+            onPress={() => setModalVisible(true)}
           />
         </View>
       )}

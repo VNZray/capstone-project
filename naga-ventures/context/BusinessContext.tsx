@@ -1,4 +1,4 @@
-import { Business } from '@/types/Business';
+import { Business, Room } from '@/types/Business';
 import { supabase } from '@/utils/supabase';
 import React, {
   createContext,
@@ -18,6 +18,7 @@ type FilterMode =
 
 type BusinessContextType = {
   businesses: Business[];
+  rooms: Room[];
   filteredBusinesses: Business[];
   loading: boolean;
   filterMode: FilterMode;
@@ -40,6 +41,7 @@ type ProviderProps = {
 
 export const BusinessProvider = ({ children }: ProviderProps) => {
   const [businesses, setBusinesses] = useState<Business[]>([]);
+  const [rooms, setRooms] = useState<Room[]>([]);
   const [filteredBusinesses, setFilteredBusinesses] = useState<Business[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [filterMode, setFilterMode] = useState<FilterMode>('ALL');
@@ -56,6 +58,21 @@ export const BusinessProvider = ({ children }: ProviderProps) => {
 
     setBusinesses(data || []);
     setFilteredBusinesses(data || []);
+    setLoading(false);
+  };
+
+  const fetchRooms = async () => {
+    setLoading(true);
+
+    const { data, error } = await supabase.from('Room').select('*');
+
+    if (error) {
+      console.error('Failed to fetch rooms:', error);
+      setLoading(false);
+      return;
+    }
+
+    setRooms(data || []);
     setLoading(false);
   };
 
@@ -148,6 +165,7 @@ export const BusinessProvider = ({ children }: ProviderProps) => {
     <BusinessContext.Provider
       value={{
         businesses,
+        rooms,
         filteredBusinesses,
         loading,
         filterMode,

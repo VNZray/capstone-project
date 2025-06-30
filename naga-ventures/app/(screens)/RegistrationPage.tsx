@@ -11,13 +11,18 @@ import {
   Platform,
   SafeAreaView,
   Text,
+  TextInput,
   TouchableOpacity,
   View,
+  StyleSheet,
+  Modal,
+  ScrollView,
 } from 'react-native';
-import { RadioButton, TextInput } from 'react-native-paper';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-
-const width = Dimensions.get('screen').width;
+import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { Calendar, CalendarList } from 'react-native-calendars';
+import { colors } from '@/utils/Colors';
+import { supabase } from '@/utils/supabase';
 
 const RegistrationPage = () => {
   const [firstName, setFirstName] = useState('');
@@ -25,12 +30,10 @@ const RegistrationPage = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-
   const [birthdate, setBirthdate] = useState(new Date());
   const [isDatePickerVisible, setDatePickerVisibility] = useState(false);
-
-  const [userType, setUserType] = useState<string>('');
-
+  const [ethnicity, setEthnicity] = useState<string>('');
+  const [calendarVisible, setCalendarVisible] = useState(false);
   const [fontsLoaded] = useFonts({
     'Poppins-Black': require('@/assets/fonts/Poppins/Poppins-Black.ttf'),
     'Poppins-Bold': require('@/assets/fonts/Poppins/Poppins-Bold.ttf'),
@@ -39,63 +42,164 @@ const RegistrationPage = () => {
     'Poppins-Regular': require('@/assets/fonts/Poppins/Poppins-Regular.ttf'),
     'Poppins-SemiBold': require('@/assets/fonts/Poppins/Poppins-SemiBold.ttf'),
   });
-
+  const [gender, setGender] = useState<string>('');
+  const [contactNumber, setContactNumber] = useState('');
+  const [nationality, setNationality] = useState('');
   if (!fontsLoaded) return null;
+
+  // Convert Date to 'YYYY-MM-DD'
+  const formatDate = (date: Date | null) => {
+    if (!date) return '';
+    return date.toISOString().split('T')[0];
+  };
 
   const showDatePicker = () => setDatePickerVisibility(true);
 
   const handleDateChange = (event: any, selectedDate?: Date) => {
-    if (Platform.OS === 'android') {
-      setDatePickerVisibility(false);
-      if (selectedDate) setBirthdate(selectedDate);
-    } else {
-      // iOS picker stays visible, update date on change
-      if (selectedDate) setBirthdate(selectedDate);
+    if (Platform.OS === 'android') setDatePickerVisibility(false);
+    if (selectedDate) setBirthdate(selectedDate);
+  };
+
+  const handleTouristRegistration = async () => {
+    if (!firstName || !lastName || !email || !ethnicity || !birthdate) {
+      alert('Please fill in all required fields.');
+      return;
     }
+
+    // 1. Sign up the user
+    const { data: signUpData, error: signUpError } = await supabase.auth.signUp(
+      {
+        email,
+        password,
+        options: {
+          data: {
+            display_name: `${firstName} ${lastName}`,
+          },
+        },
+      }
+    );
+
+    if (signUpError || !signUpData.user) {
+      alert('Account creation failed. Please try again.');
+      return;
+    }
+
+    const userId = signUpData.user.id;
+    console.log('User signed up:', signUpData.user);
+    console.log('User ID:', userId);
+    // 2. Insert into Tourist table
+    const { data, error } = await supabase.from('Tourist').insert([
+      {
+        tourist_id: userId,
+        first_name: firstName,
+        last_name: lastName,
+        profile_picture: null, // you can update this later with file upload logic
+        ethnicity,
+        gender,
+        nationality,
+        contact_number: contactNumber,
+        email,
+        created_at: new Date().toISOString(),
+        age: new Date().getFullYear() - birthdate.getFullYear(),
+      },
+    ]);
+
+    console.log('Inserted data:', data);
+    console.log('Insert error:', error);
+
+    if (error) {
+      console.error('Error inserting tourist:', error.message);
+      alert('Registration failed. Please try again.');
+    } else {
+      alert('Registration successful!');
+      router.replace('/(screens)/');
+    }
+
+    // 3. Insert into Profile table with role
+    const { data: profileData, error: profileError } = await supabase
+      .from('Profile')
+      .insert([
+        {
+          id: userId,
+          role: 'tourist',
+        },
+      ]);
+
+    console.log('Inserted data:', profileData);
+    console.log('Insert error:', profileError);
   };
 
   return (
     <SafeAreaProvider>
-      <SafeAreaView>
-        <View style={{ padding: '5%', gap: 16 }}>
+      <SafeAreaView style={Platform.OS === 'web' ? styles.webContainer : {}}>
+        <ScrollView style={styles.card}>
           <View style={styles.logoContainer}>
             <Image source={logo} style={styles.logo} />
-            <Text style={styles.text}>Naga Venture</Text>
+            <Text style={styles.logoText}>Naga Venture</Text>
           </View>
 
-          <View>
-            <ThemedText type="title">Sign Up</ThemedText>
-            <ThemedText type="default">
-              Navigate with Ease - Your Ultimate City Directory
+          <View style={styles.heading}>
+            <ThemedText type="title">Create Your Account</ThemedText>
+            <ThemedText type="default" style={styles.subtext}>
+              Discover and connect with the city
             </ThemedText>
           </View>
 
-          <View style={{ flexDirection: 'row', gap: 16 }}>
+          <View style={styles.row}>
             <View style={{ flex: 1 }}>
+              <Text style={styles.label}>First Name</Text>
               <TextInput
-                label="First Name"
+                placeholder="Enter your first name"
                 value={firstName}
                 onChangeText={setFirstName}
-                style={{ borderRadius: 10 }}
+                style={styles.input}
+                placeholderTextColor="#999"
               />
             </View>
             <View style={{ flex: 1 }}>
+              <Text style={styles.label}>Last Name</Text>
               <TextInput
-                label="Last Name"
+                placeholder="Enter your last name"
                 value={lastName}
                 onChangeText={setLastName}
-                style={{ borderRadius: 10 }}
+                style={styles.input}
+                placeholderTextColor="#999"
               />
             </View>
           </View>
 
-          <TouchableOpacity onPress={showDatePicker}>
-            <TextInput
-              label="Birthday"
-              value={birthdate.toDateString()}
-              editable={false}
-              style={{ borderRadius: 10 }}
-            />
+          <Text style={styles.label}>Gender</Text>
+          <View style={styles.radioGroup}>
+            {['male', 'female', 'prefer not to say'].map((option) => (
+              <TouchableOpacity
+                key={option}
+                style={[
+                  styles.radioButton,
+                  gender === option && styles.radioSelected,
+                ]}
+                onPress={() => setGender(option)}
+              >
+                <Text
+                  style={[
+                    styles.radioText,
+                    gender === option && styles.radioTextSelected,
+                  ]}
+                >
+                  {option.charAt(0).toUpperCase() + option.slice(1)}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          <Text style={styles.label}>Birthdate</Text>
+          <TouchableOpacity
+            style={styles.dateInput}
+            onPress={() => setCalendarVisible(true)}
+          >
+            <MaterialCommunityIcons name="calendar" size={20} color="#888" />
+            <Text style={styles.dateText}>
+              {birthdate ? birthdate.toDateString() : 'Select your birthdate'}
+            </Text>
           </TouchableOpacity>
 
           {isDatePickerVisible && (
@@ -108,90 +212,99 @@ const RegistrationPage = () => {
             />
           )}
 
-          <ThemedText style={{ fontFamily: 'Poppins-Regular', fontSize: 14 }}>
-            Are you a?
-          </ThemedText>
+          <Text style={styles.label}>Contact Number</Text>
+          <TextInput
+            placeholder="Enter your contact number"
+            value={contactNumber}
+            onChangeText={setContactNumber}
+            keyboardType="phone-pad"
+            style={styles.input}
+            placeholderTextColor="#999"
+          />
 
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 20 }}>
+          <Text style={styles.label}>Nationality</Text>
+          <TextInput
+            placeholder="Enter your nationality"
+            value={nationality}
+            onChangeText={setNationality}
+            style={styles.input}
+            placeholderTextColor="#999"
+          />
+
+          <Text style={styles.label}>I am a:</Text>
+          <View style={styles.radioGroup}>
             {['tourist', 'local', 'foreign', 'overseas'].map((type) => (
-              <View
+              <TouchableOpacity
                 key={type}
-                style={{ flexDirection: 'row', alignItems: 'center' }}
+                style={[
+                  styles.radioButton,
+                  ethnicity === type && styles.radioSelected,
+                ]}
+                onPress={() => setEthnicity(type)}
               >
-                <RadioButton
-                  value={type}
-                  status={userType === type ? 'checked' : 'unchecked'}
-                  onPress={() => setUserType(type)}
-                />
-                <ThemedText
-                  style={{ fontSize: 12, fontFamily: 'Poppins-Regular' }}
+                <Text
+                  style={[
+                    styles.radioText,
+                    ethnicity === type && styles.radioTextSelected,
+                  ]}
                 >
                   {type.charAt(0).toUpperCase() + type.slice(1)}
-                </ThemedText>
-              </View>
+                </Text>
+              </TouchableOpacity>
             ))}
           </View>
 
+          {/* Email */}
+          <Text style={styles.label}>Email</Text>
           <TextInput
-            label="Email"
+            placeholder="Enter your email"
             value={email}
             onChangeText={setEmail}
-            style={{ borderRadius: 10 }}
+            autoCapitalize="none"
+            keyboardType="email-address"
+            style={styles.input}
+            placeholderTextColor="#999"
           />
 
+          {/* Password */}
+          <Text style={styles.label}>Password</Text>
           <TextInput
-            label="Password"
+            placeholder="Enter your password"
             value={password}
             onChangeText={setPassword}
             secureTextEntry
-            style={{ borderRadius: 10 }}
+            style={styles.input}
+            placeholderTextColor="#999"
           />
 
+          {/* Confirm Password */}
+          <Text style={styles.label}>Confirm Password</Text>
           <TextInput
-            label="Confirm Password"
+            placeholder="Re-enter your password"
             value={confirmPassword}
             onChangeText={setConfirmPassword}
             secureTextEntry
-            style={{ borderRadius: 10 }}
+            style={styles.input}
+            placeholderTextColor="#999"
           />
 
-          <ThemedText
-            style={{
-              fontSize: 12,
-              fontFamily: 'Poppins-Regular',
-              textAlign: 'center',
-            }}
-          >
-            By signing up, you accept Naga Ventures{' '}
-            <ThemedText type="link" style={{ fontSize: 12 }}>
-              Terms of Service
-            </ThemedText>{' '}
-            and{' '}
-            <ThemedText type="link" style={{ fontSize: 12 }}>
-              Privacy Policy
-            </ThemedText>
-            .
+          <ThemedText style={styles.terms}>
+            By signing up, you agree to our{' '}
+            <ThemedText type="link">Terms</ThemedText> and{' '}
+            <ThemedText type="link">Privacy Policy</ThemedText>.
           </ThemedText>
 
           <PressableButton
             TextSize={16}
             width={'100%'}
-            height={60}
-            type="secondary"
-            IconSize={24}
-            color={'#fff'}
-            direction="column"
+            height={54}
+            type="primary"
             Title="Sign Up"
-            onPress={() => router.replace('/(screens)/')}
+            color="#fff"
+            onPress={handleTouristRegistration}
           />
 
-          <ThemedText
-            style={{
-              textAlign: 'center',
-              fontFamily: 'Poppins-Regular',
-              fontSize: 14,
-            }}
-          >
+          <ThemedText style={styles.footerText}>
             Already have an account?{' '}
             <ThemedText
               type="link"
@@ -200,7 +313,44 @@ const RegistrationPage = () => {
               Sign In
             </ThemedText>
           </ThemedText>
-        </View>
+
+          {calendarVisible && (
+            <Modal
+              visible={calendarVisible}
+              transparent
+              animationType="fade"
+              onRequestClose={() => setCalendarVisible(false)}
+            >
+              <View style={styles.calendarOverlay}>
+                <View style={styles.calendarContainer}>
+                  <Text style={styles.modalTitle}>Select Your Birthdate</Text>
+                  <View style={styles.separator} />
+                  <DateTimePicker
+                    value={birthdate}
+                    mode="date"
+                    display={Platform.OS === 'ios' ? 'spinner' : 'calendar'}
+                    onChange={(event, selectedDate) => {
+                      if (Platform.OS === 'android') setCalendarVisible(false);
+                      if (selectedDate) setBirthdate(selectedDate);
+                    }}
+                    maximumDate={new Date()}
+                    style={{ width: '100%' }}
+                  />
+                  <View style={styles.calendarButtons}>
+                    <PressableButton
+                      type="tertiary"
+                      Title="Cancel"
+                      onPress={() => setCalendarVisible(false)}
+                      style={{ flex: 1 }}
+                      color="#000"
+                      TextSize={12}
+                    />
+                  </View>
+                </View>
+              </View>
+            </Modal>
+          )}
+        </ScrollView>
       </SafeAreaView>
     </SafeAreaProvider>
   );
@@ -208,19 +358,161 @@ const RegistrationPage = () => {
 
 export default RegistrationPage;
 
-const styles = {
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    paddingHorizontal: 16,
+    paddingTop: 40,
+  },
+  card: {
+    backgroundColor: colors.background,
+    borderRadius: 16,
+    padding: 24,
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowRadius: 10,
+    elevation: 3,
+  },
   logoContainer: {
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
+    flexDirection: 'row',
+    alignItems: 'center',
     marginBottom: 20,
   },
   logo: {
-    width: 60,
-    height: 60,
+    width: 50,
+    height: 50,
   },
-  text: {
+  logoText: {
     fontSize: 18,
     marginLeft: 10,
     fontFamily: 'Poppins-Bold',
   },
-};
+  heading: {
+    marginBottom: 20,
+  },
+  subtext: {
+    fontSize: 13,
+    color: '#666',
+    marginTop: 4,
+  },
+  row: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  input: {
+    backgroundColor: '#F9F9F9',
+    borderRadius: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    fontSize: 14,
+    borderColor: '#ddd',
+    borderWidth: 1,
+    marginBottom: 10,
+  },
+  calendarOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  calendarContainer: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 16,
+    width: '90%',
+    elevation: 5,
+  },
+  calendarButtons: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    marginTop: 12,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    textAlign: 'center',
+    color: '#fff',
+    backgroundColor: '#0A1B47',
+    padding: 16,
+    borderRadius: 8,
+    marginBottom: 8,
+  },
+  separator: {
+    height: 1,
+    backgroundColor: '#DDD',
+    marginBottom: 12,
+  },
+  dateInput: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F9F9F9',
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    borderWidth: 1,
+    borderColor: '#ddd',
+    marginBottom: 10,
+    gap: 8,
+  },
+  dateText: {
+    fontSize: 14,
+    color: '#333',
+  },
+
+  radioGroup: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+    marginBottom: 10,
+  },
+  radioButton: {
+    backgroundColor: '#eee',
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    borderRadius: 20,
+  },
+  radioSelected: {
+    backgroundColor: '#0A1B47',
+  },
+  radioText: {
+    fontSize: 13,
+    color: '#333',
+    fontFamily: 'Poppins-Medium',
+  },
+  radioTextSelected: {
+    color: '#fff',
+  },
+  radioLabel: {
+    fontSize: 14,
+    fontFamily: 'Poppins-Medium',
+    marginBottom: 6,
+    marginTop: 6,
+  },
+  terms: {
+    fontSize: 12,
+    fontFamily: 'Poppins-Regular',
+    color: '#555',
+    marginVertical: 14,
+    textAlign: 'center',
+  },
+  footerText: {
+    textAlign: 'center',
+    fontSize: 14,
+    fontFamily: 'Poppins-Regular',
+    marginTop: 20,
+    marginBottom: 50,
+  },
+  label: {
+    fontSize: 13,
+    fontFamily: 'Poppins-Medium',
+    color: '#333',
+    marginBottom: 4,
+    marginTop: 10,
+  },
+  webContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 0,
+  },
+});

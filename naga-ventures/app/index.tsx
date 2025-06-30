@@ -7,6 +7,8 @@ import React from 'react';
 import { ImageBackground, Text, View } from 'react-native';
 import { PaperProvider } from 'react-native-paper';
 import 'react-native-url-polyfill/auto';
+import { colors } from '@/utils/Colors';
+
 const index = () => {
   const [fontsLoaded] = useFonts({
     'Poppins-Black': require('@/assets/fonts/Poppins/Poppins-Black.ttf'),
@@ -75,7 +77,7 @@ const index = () => {
               width={'100%'}
               height={55}
               type="secondary"
-              color={'#DEE3F2'}
+              color={colors.tertiary}
               direction="column"
               Title="Login"
               onPress={() => router.navigate('/(screens)/LoginPage')}
@@ -85,7 +87,7 @@ const index = () => {
               width={'100%'}
               height={55}
               type="tertiary"
-              color={'#000'}
+              color={colors.dark}
               direction="column"
               Title="Register"
               onPress={() =>

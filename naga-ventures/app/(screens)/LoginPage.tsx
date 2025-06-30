@@ -7,9 +7,16 @@ import { useFonts } from 'expo-font';
 import { Image } from 'expo-image';
 import { Link, router } from 'expo-router';
 import React, { useState } from 'react';
-import { Platform, SafeAreaView, Text, View } from 'react-native';
-import { TextInput } from 'react-native-paper';
+import {
+  Platform,
+  SafeAreaView,
+  Text,
+  TextInput,
+  View,
+  StyleSheet,
+} from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { colors } from '@/utils/Colors';
 
 const LoginPage = () => {
   const [email, setEmail] = useState('');
@@ -36,7 +43,7 @@ const LoginPage = () => {
     }
 
     try {
-      setLoginError(''); // clear any previous error
+      setLoginError('');
       await login(email, password);
       router.replace('/(tabs)/(home)');
     } catch (error: any) {
@@ -49,220 +56,136 @@ const LoginPage = () => {
     }
   };
 
-  if (!fontsLoaded) {
-    return null;
-  }
-
-  if (Platform.OS === 'web') {
-    return (
-      <SafeAreaProvider>
-        <SafeAreaView style={Platform.OS === 'web' ? styles.webContainer : {}}>
-          <View
-            style={{
-              display: 'flex',
-              padding: Platform.OS === 'web' ? 40 : '5%',
-              flexDirection: 'column',
-              gap: 16,
-              maxWidth: 400,
-              marginHorizontal: 'auto',
-            }}
-          >
-            <View style={styles.logoContainer}>
-              <Image source={logo} style={styles.logo} />
-              <Text
-                style={{
-                  fontSize: 18,
-                  marginLeft: 10,
-                  fontFamily: 'Poppins-Bold',
-                  color: color,
-                }}
-              >
-                Naga Venture
-              </Text>
-            </View>
-
-            <View>
-              <ThemedText type="title">Sign In</ThemedText>
-              <ThemedText type="default">
-                Navigate with Ease - Your Ultimate City Directory
-              </ThemedText>
-            </View>
-
-            <View style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-              <TextInput
-                mode="outlined"
-                style={{ borderRadius: 10 }}
-                label="Email"
-                value={email}
-                onChangeText={setEmail}
-                autoCapitalize="none"
-                keyboardType="email-address"
-                underlineStyle={{ borderRadius: 10 }}
-              />
-
-              <TextInput
-                mode="outlined"
-                style={{ borderRadius: 10 }}
-                label="Password"
-                secureTextEntry
-                value={password}
-                onChangeText={setPassword}
-                underlineStyle={{ borderRadius: 10 }}
-              />
-
-              <Link href="/(screens)/ForgotPassword">
-                <ThemedText type="link">Forgot Password?</ThemedText>
-              </Link>
-            </View>
-
-            <PressableButton
-              TextSize={16}
-              width={'100%'}
-              height={60}
-              type="primary"
-              IconSize={24}
-              color={'#DEE3F2'}
-              direction="column"
-              Title="Login"
-              onPress={handleLogin}
-            />
-
-            <View
-              style={{
-                display: 'flex',
-                flexDirection: 'row',
-                gap: 10,
-                alignItems: 'center',
-                justifyContent: 'center',
-                padding: 20,
-              }}
-            >
-              <ThemedText type="default2">
-                Don&#39;t Have an Account?
-              </ThemedText>
-
-              <Link href={'/(screens)/RegistrationPage'}>
-                <ThemedText type="link">Sign Up</ThemedText>
-              </Link>
-            </View>
-          </View>
-        </SafeAreaView>
-      </SafeAreaProvider>
-    );
-  }
+  if (!fontsLoaded) return null;
 
   return (
-    <SafeAreaProvider>
-      <SafeAreaView>
-        <View
+    <View style={styles.formWrapper}>
+      {/* Logo */}
+      <View style={styles.logoContainer}>
+        <Image source={logo} style={styles.logo} />
+        <Text
           style={{
-            display: 'flex',
-            padding: '5%',
-            flexDirection: 'column',
-            gap: 16,
+            fontSize: 18,
+            marginLeft: 10,
+            fontFamily: 'Poppins-Bold',
+            color,
           }}
         >
-          <View style={styles.logoContainer}>
-            <Image source={logo} style={styles.logo} />
-            <Text
-              style={{
-                fontSize: 18,
-                marginLeft: 10,
-                fontFamily: 'Poppins-Bold',
-                color: color,
-              }}
-            >
-              Naga Venture
-            </Text>
-          </View>
+          Naga Venture
+        </Text>
+      </View>
 
-          <View>
-            <ThemedText type="title">Sign In</ThemedText>
-            <ThemedText type="default">
-              Navigate with Ease - Your Ultimate City Directory
-            </ThemedText>
-          </View>
+      {/* Headline */}
+      <View>
+        <ThemedText type="title">Sign In</ThemedText>
+        <ThemedText type="default">
+          Navigate with Ease - Your Ultimate City Directory
+        </ThemedText>
+      </View>
 
-          <View style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-            <TextInput
-              style={{ borderRadius: 10 }}
-              label="Email"
-              value={email}
-              onChangeText={setEmail}
-              underlineStyle={{ borderRadius: 10 }}
-            />
+      {/* Form */}
+      <View style={styles.inputGroup}>
+        <TextInput
+          style={styles.input}
+          placeholder="Email"
+          placeholderTextColor="#999"
+          value={email}
+          onChangeText={setEmail}
+          autoCapitalize="none"
+          keyboardType="email-address"
+        />
+        <TextInput
+          style={styles.input}
+          placeholder="Password"
+          placeholderTextColor="#999"
+          secureTextEntry
+          value={password}
+          onChangeText={setPassword}
+        />
+        <Link href="/(screens)/ForgotPassword">
+          <ThemedText type="link">Forgot Password?</ThemedText>
+        </Link>
+      </View>
 
-            <TextInput
-              style={{ borderRadius: 10 }}
-              label="Password"
-              secureTextEntry
-              value={password}
-              onChangeText={setPassword}
-              underlineStyle={{ borderRadius: 10 }}
-            />
+      {/* Error Message */}
+      {loginError ? <Text style={styles.errorText}>{loginError}</Text> : null}
 
-            <Link href="/(screens)/ForgotPassword">
-              <ThemedText type="link">Forgot Password?</ThemedText>
-            </Link>
-          </View>
+      {/* Login Button */}
+      <PressableButton
+        TextSize={16}
+        height={60}
+        type="primary"
+        IconSize={24}
+        color={colors.tertiary}
+        direction="column"
+        Title="Login"
+        onPress={handleLogin}
+      />
 
-          <PressableButton
-            TextSize={16}
-            width={'100%'}
-            height={60}
-            type="secondary"
-            IconSize={24}
-            color={'#DEE3F2'}
-            direction="column"
-            Title="Login"
-            onPress={handleLogin}
-          ></PressableButton>
-
-          <View
-            style={{
-              display: 'flex',
-              flexDirection: 'row',
-              gap: 10,
-              alignItems: 'center',
-              justifyContent: 'center',
-              padding: 20,
-            }}
-          >
-            <ThemedText type="default2">Don&#39;t Have an Account?</ThemedText>
-
-            <Link href={'/(screens)/RegistrationPage'}>
-              <ThemedText
-                type="link"
-                onPress={() =>
-                  router.push('/(screens)/RegistrationPage')
-                }
-              >
-                Sign Up
-              </ThemedText>
-            </Link>
-          </View>
-        </View>
-      </SafeAreaView>
-    </SafeAreaProvider>
+      {/* Footer */}
+      <View style={styles.footer}>
+        <ThemedText type="default2">Don't have an account?</ThemedText>
+        <Link href={'/(screens)/RegistrationPage'}>
+          <ThemedText type="link">Sign Up</ThemedText>
+        </Link>
+      </View>
+    </View>
   );
 };
 
 export default LoginPage;
 
-const styles = {
+// ✅ Styles
+const styles = StyleSheet.create({
   webContainer: {
     flex: 1,
-    alignItems: 'center' as const,
-    justifyContent: 'center' as const,
+    alignItems: 'center',
+    justifyContent: 'center',
     minHeight: 0,
   },
+  formWrapper: {
+    padding: Platform.OS === 'web' ? 40 : 16,
+    flexDirection: 'column',
+    gap: 16,
+    marginHorizontal: 'auto',
+    backgroundColor: colors.background,
+    height: '100%',
+  },
   logoContainer: {
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
+    flexDirection: 'row',
+    alignItems: 'center',
     marginBottom: 20,
   },
   logo: {
     width: 60,
     height: 60,
   },
-};
+  inputGroup: {
+    flexDirection: 'column',
+    gap: 16,
+    marginBottom: 10,
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: '#ddd',
+    backgroundColor: '#F9F9F9',
+    borderRadius: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    fontSize: 14,
+    color: '#000',
+  },
+  errorText: {
+    color: '#ff4d4d',
+    fontSize: 14,
+    marginBottom: 8,
+    fontWeight: '500',
+  },
+  footer: {
+    flexDirection: 'row',
+    gap: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 20,
+  },
+});

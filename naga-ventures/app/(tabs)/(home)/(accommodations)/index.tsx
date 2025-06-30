@@ -13,7 +13,7 @@ import {
   StyleSheet,
   View,
 } from 'react-native';
-
+import { colors } from '@/utils/Colors';
 const width = Dimensions.get('screen').width;
 
 const AccommodationDirectory = () => {
