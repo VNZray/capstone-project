@@ -21,15 +21,6 @@ export default function TabLayout() {
     }, 2000); // Adjust the time as needed
   }, []);
 
-  // Platform check should be before any return
-  if (Platform.OS === 'web') {
-    return (
-      <View>
-        <ThemedText>Hello World</ThemedText>
-      </View>
-    );
-  }
-
   if (isLoading) {
     return (
       <View style={{ flex: 1 }}>
@@ -99,7 +90,7 @@ export default function TabLayout() {
       />
 
       <Tabs.Screen
-        name="profile/[id]"
+        name="profile/index"
         options={{
           title: 'Profile',
           headerShown: true,

@@ -147,7 +147,6 @@ const styles = StyleSheet.create({
     padding: Platform.OS === 'web' ? 40 : 16,
     flexDirection: 'column',
     gap: 16,
-    marginHorizontal: 'auto',
     backgroundColor: colors.background,
     height: '100%',
   },

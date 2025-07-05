@@ -48,7 +48,7 @@ export const BusinessProvider = ({ children }: ProviderProps) => {
 
   const fetchBusinesses = async () => {
     setLoading(true);
-    const { data, error } = await supabase.from('Business').select('*');
+    const { data, error } = await supabase.from('business').select('*');
 
     if (error) {
       console.error('Failed to fetch businesses:', error);
@@ -64,7 +64,7 @@ export const BusinessProvider = ({ children }: ProviderProps) => {
   const fetchRooms = async () => {
     setLoading(true);
 
-    const { data, error } = await supabase.from('Room').select('*');
+    const { data, error } = await supabase.from('room').select('*');
 
     if (error) {
       console.error('Failed to fetch rooms:', error);
@@ -84,7 +84,7 @@ export const BusinessProvider = ({ children }: ProviderProps) => {
     setLoading(true);
 
     const { data, error } = await supabase
-      .from('Business')
+      .from('business')
       .select('*')
       .eq('id', id)
       .single();
@@ -104,7 +104,7 @@ export const BusinessProvider = ({ children }: ProviderProps) => {
     setFilterMode('BY_OWNER');
 
     const { data, error } = await supabase
-      .from('Business')
+      .from('business')
       .select('*')
       .eq('owner_id', ownerId);
 
@@ -146,7 +146,7 @@ export const BusinessProvider = ({ children }: ProviderProps) => {
   setLoading(true);
 
   const { data, error } = await supabase
-    .from('Room')
+    .from('room')
     .select('*')
     .eq('business_id', businessId);
 

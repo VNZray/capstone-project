@@ -54,7 +54,7 @@ const Rooms = ({ business }: RoomsProps) => {
 
     if (fromDate && toDate) {
       const { data: booked } = await supabase
-        .from('Bookings')
+        .from('booking')
         .select('room_id')
         .eq('status', 'confirmed')
         .or(
@@ -81,7 +81,7 @@ const Rooms = ({ business }: RoomsProps) => {
       const roomIds = rooms.map((room) => room.id);
 
       const { data, error } = await supabase
-        .from('Reviews')
+        .from('review_and_rating')
         .select('reviewable_id, rating')
         .eq('reviewable_type', 'room')
         .in('reviewable_id', roomIds);
@@ -175,7 +175,7 @@ const Rooms = ({ business }: RoomsProps) => {
 
   const fetchMarkedBookings = async () => {
     const { data: bookings, error } = await supabase
-      .from('Bookings')
+      .from('booking')
       .select('check_in_date, check_out_date')
       .neq('booking_status', 'Checked-out');
 

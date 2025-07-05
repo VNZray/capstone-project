@@ -88,7 +88,7 @@ const AccommodationProfile = () => {
     setLoading(true);
     console.log('Fetching reviews for business ID:', business?.id);
     const { data, error } = await supabase
-      .from('Reviews')
+      .from('review_and_rating')
       .select('*')
       .eq('reviewable_type', 'accommodation')
       .eq('reviewable_id', business?.id)
@@ -149,7 +149,7 @@ const AccommodationProfile = () => {
     }
     const safeRating = Math.min(5, Math.max(1, rating));
 
-    const { error } = await supabase.from('Reviews').insert([
+    const { error } = await supabase.from('review_and_rating').insert([
       {
         user_id: user.id,
         reviewable_type: 'accommodation',

@@ -74,7 +74,7 @@ const RoomProfile = () => {
     }
 
     const { data, error } = await supabase
-      .from('Room')
+      .from('room')
       .select('*')
       .eq('id', roomId)
       .single();
@@ -96,7 +96,7 @@ const RoomProfile = () => {
     console.log('Fetching reviews for business ID:', roomId);
 
     const { data, error } = await supabase
-      .from('Reviews')
+      .from('review_and_rating')
       .select('*')
       .eq('reviewable_type', 'room')
       .eq('reviewable_id', roomId)
@@ -123,7 +123,7 @@ const RoomProfile = () => {
   // // Check if user has already reviewed this room
   // const reviewChecker = async () => {
   //   const { data: existingReview, error: fetchError } = await supabase
-  //     .from('Reviews')
+  //     .from('review_and_rating')
   //     .select('*')
   //     .eq('reviewable_type', 'room')
   //     .eq('reviewable_id', roomId)
@@ -159,7 +159,7 @@ const RoomProfile = () => {
     }
     const safeRating = Math.min(5, Math.max(1, rating));
 
-    const { error } = await supabase.from('Reviews').insert([
+    const { error } = await supabase.from('review_and_rating').insert([
       {
         user_id: user.id,
         reviewable_type: 'room',

@@ -88,7 +88,7 @@ const RegistrationPage = () => {
     console.log('User signed up:', signUpData.user);
     console.log('User ID:', userId);
     // 2. Insert into Tourist table
-    const { data, error } = await supabase.from('Tourist').insert([
+    const { data, error } = await supabase.from('tourist').insert([
       {
         tourist_id: userId,
         first_name: firstName,
@@ -117,7 +117,7 @@ const RegistrationPage = () => {
 
     // 3. Insert into Profile table with role
     const { data: profileData, error: profileError } = await supabase
-      .from('Profile')
+      .from('profile')
       .insert([
         {
           id: userId,

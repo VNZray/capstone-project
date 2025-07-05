@@ -141,19 +141,6 @@ const HomeScreen = () => {
       </SafeAreaView>
     </SafeAreaProvider>
   );
-
-  const webPlatfrom = (
-    <div style={{ flex: 1 }}>
-      <header>
-        <h1 style={{ color: color }}>Welcome to Naga Venture</h1>
-        <p style={{ color: color }}>Explore the best of Naga City</p>
-      </header>
-    </div>
-  );
-
-  if (Platform.OS === 'web') {
-    return webPlatfrom;
-  }
   return mobilePlatform;
 };
 
