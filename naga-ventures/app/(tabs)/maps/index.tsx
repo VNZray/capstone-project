@@ -10,13 +10,17 @@ import {
   View,
 } from 'react-native';
 
+import { useBusiness } from '@/context/BusinessContext';
+
 import { ThemedText } from '@/components/ThemedText';
 import { accommodations } from '@/Controller/AccommodationData';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { router } from 'expo-router';
+import { colors } from '@/utils/Colors';
 const Maps = () => {
   const colorScheme = useColorScheme();
   const color = colorScheme === 'dark' ? '#fff' : '#000';
+  const { businesses } = useBusiness();
 
   const [userLocation, setUserLocation] =
     useState<Location.LocationObjectCoords | null>(null);
@@ -65,28 +69,33 @@ const Maps = () => {
             longitudeDelta: 0.05,
           }}
         >
-          {accommodations.map((acc) => (
+          {businesses.map((business) => (
             <Marker
-              key={acc.id}
+              key={business.id}
               coordinate={{
-                latitude: acc.latitude,
-                longitude: acc.longitude,
+                latitude: business.latitude,
+                longitude: business.longitude,
               }}
               image={require('@/assets/pins/A-pin.png')}
             >
               <Callout
-                onPress={() =>
+                onPress={() => {
                   router.navigate(
-                    `/(home)/(accommodations)/profile/${acc.id}`
-                  )
-                }
+                    `/(home)/(accommodations)/profile/${business.id}`
+                  );
+                  console.log('Navigating to business:', business.id);
+                }}
               >
                 <View style={styles.calloutContainer}>
-                  <Text style={styles.calloutTitle}>{acc.name}</Text>
-                  <Text style={styles.calloutText}>{acc.location}</Text>
-                  {acc.imageUri && (
+                  <Text style={styles.calloutTitle}>
+                    {business.business_name}
+                  </Text>
+                  <Text
+                    style={styles.calloutText}
+                  >{`${business.barangay}, ${business.city}, ${business.province}`}</Text>
+                  {business.image_url && (
                     <Image
-                      source={{ uri: acc.imageUri }}
+                      source={{ uri: business.image_url }}
                       style={styles.calloutImage}
                     />
                   )}
@@ -145,7 +154,7 @@ const styles = StyleSheet.create({
   },
   viewMoreButton: {
     marginTop: 8,
-    backgroundColor: '#007bff',
+    backgroundColor: colors.primary,
     paddingVertical: 6,
     borderRadius: 6,
   },

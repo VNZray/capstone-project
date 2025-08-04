@@ -177,6 +177,7 @@ const Rooms = ({ business }: RoomsProps) => {
     const { data: bookings, error } = await supabase
       .from('booking')
       .select('check_in_date, check_out_date')
+      .eq('business_id', business.id)
       .neq('booking_status', 'Checked-out');
 
     if (error) {
@@ -308,33 +309,40 @@ const Rooms = ({ business }: RoomsProps) => {
         )}
       </View>
 
-      <View style={styles.grid}>
-        {rooms.map((room) => (
-          <Link
-            href={{
-              pathname: '/(tabs)/(home)/(accommodations)/room/[id]',
-              params: {
-                id: room.id,
-                fromDate: fromDate?.toISOString().split('T')[0] || '',
-                toDate: toDate?.toISOString().split('T')[0] || '',
-              },
-            }}
-            key={room.id}
-          >
-            <RoomCard
-              key={room.id}
-              roomNumber={room.room_number}
-              status={room.status}
-              capacity={room.capacity}
-              roomPrice={room.room_price}
-              ratings={roomRatings[room.id] || 0}
-              elevation={3}
-              background="#fff"
-              imageUri={room.room_image}
-            />
-          </Link>
-        ))}
-      </View>
+<View style={styles.grid}>
+  {rooms
+    .slice() // optional: avoid mutating original array
+    .sort((a, b) => {
+      const roomA = parseInt(a.room_number) ? a.room_number : parseInt(a.room_number);
+      const roomB = parseInt(b.room_number) ? b.room_number : parseInt(b.room_number);
+      return roomA > roomB ? 1 : roomA < roomB ? -1 : 0;
+    })
+    .map((room) => (
+      <Link
+        href={{
+          pathname: '/(tabs)/(home)/(accommodations)/room/[id]',
+          params: {
+            id: room.id,
+            fromDate: fromDate?.toISOString().split('T')[0] || '',
+            toDate: toDate?.toISOString().split('T')[0] || '',
+          },
+        }}
+        key={room.id}
+      >
+        <RoomCard
+          roomNumber={room.room_number}
+          status={room.status}
+          capacity={room.capacity}
+          roomPrice={room.room_price}
+          ratings={roomRatings[room.id] || 0}
+          elevation={3}
+          background="#fff"
+          imageUri={room.room_image}
+        />
+      </Link>
+    ))}
+</View>
+
     </View>
   );
 };

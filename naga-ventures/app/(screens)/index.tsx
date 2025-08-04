@@ -19,8 +19,8 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { colors } from '@/utils/Colors';
 
 const LoginPage = () => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState('rayven.clores@unc.edu.ph');
+  const [password, setPassword] = useState('123456');
   const { login } = useAuth();
   const [loginError, setLoginError] = useState('');
 

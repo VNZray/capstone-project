@@ -57,7 +57,7 @@ const CardView: React.FC<CardViewProps> = ({
           resizeMode="cover"
         />
         <View style={styles.favoriteIcon}>
-          <FavoriteButton id={data.id} isFav={data.isFav} table="Business" />
+          <FavoriteButton id={data.id} isFav={data.isFav} table="business" />
         </View>
       </View>
 

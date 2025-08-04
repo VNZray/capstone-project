@@ -47,7 +47,8 @@ const AccommodationProfile = () => {
   const [feedbackType, setFeedbackType] = useState<'success' | 'error' | ''>(
     ''
   );
-  const [averageAccommodationReviews, setAverageAccommodationReviews] = useState(0);
+  const [averageAccommodationReviews, setAverageAccommodationReviews] =
+    useState(0);
 
   const { businesses, rooms } = useBusiness();
   const business = businesses.find((b) => b.id.toString() === id?.toString());
@@ -62,13 +63,13 @@ const AccommodationProfile = () => {
   });
 
   useEffect(() => {
-    if (business?.business_name) {
+    if (business?.business_name && business?.id) {
       navigation.setOptions({
         headerTitle: business.business_name,
       });
+      fetchBusinessReviews();
     }
-    fetchBusinessReviews();
-  }, [navigation, business?.business_name]);
+  }, [navigation, business?.business_name, business?.id]);
 
   if (!fontsLoaded) {
     return <View style={{ flex: 1, backgroundColor: '#fff' }} />;

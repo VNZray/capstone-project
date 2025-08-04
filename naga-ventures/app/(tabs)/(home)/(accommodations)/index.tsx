@@ -44,7 +44,7 @@ const AccommodationDirectory = () => {
   );
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor }}>
+    <SafeAreaView style={{ flex: 1 }}>
       <View style={styles.SearchContainer}>
         <SearchBar
           value={search}

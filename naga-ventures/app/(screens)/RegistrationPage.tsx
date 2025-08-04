@@ -25,11 +25,11 @@ import { colors } from '@/utils/Colors';
 import { supabase } from '@/utils/supabase';
 
 const RegistrationPage = () => {
-  const [firstName, setFirstName] = useState('');
-  const [lastName, setLastName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
+  const [firstName, setFirstName] = useState('Rayven');
+  const [lastName, setLastName] = useState('Clores');
+  const [email, setEmail] = useState('rayven.clores@unc.edu.ph');
+  const [password, setPassword] = useState('123456');
+  const [confirmPassword, setConfirmPassword] = useState('123456');
   const [birthdate, setBirthdate] = useState(new Date());
   const [isDatePickerVisible, setDatePickerVisibility] = useState(false);
   const [ethnicity, setEthnicity] = useState<string>('');
@@ -43,8 +43,8 @@ const RegistrationPage = () => {
     'Poppins-SemiBold': require('@/assets/fonts/Poppins/Poppins-SemiBold.ttf'),
   });
   const [gender, setGender] = useState<string>('');
-  const [contactNumber, setContactNumber] = useState('');
-  const [nationality, setNationality] = useState('');
+  const [contactNumber, setContactNumber] = useState('09784561234');
+  const [nationality, setNationality] = useState('Filipino');
   if (!fontsLoaded) return null;
 
   // Convert Date to 'YYYY-MM-DD'
@@ -334,15 +334,14 @@ const RegistrationPage = () => {
                       if (selectedDate) setBirthdate(selectedDate);
                     }}
                     maximumDate={new Date()}
-                    style={{ width: '100%' }}
                   />
                   <View style={styles.calendarButtons}>
                     <PressableButton
-                      type="tertiary"
-                      Title="Cancel"
+                      type="primary"
+                      Title="Confirm"
                       onPress={() => setCalendarVisible(false)}
                       style={{ flex: 1 }}
-                      color="#000"
+                      color="#fff"
                       TextSize={12}
                     />
                   </View>
@@ -421,6 +420,8 @@ const styles = StyleSheet.create({
     padding: 16,
     width: '90%',
     elevation: 5,
+    display: 'flex',
+    alignItems: 'center',
   },
   calendarButtons: {
     flexDirection: 'row',
@@ -436,6 +437,7 @@ const styles = StyleSheet.create({
     padding: 16,
     borderRadius: 8,
     marginBottom: 8,
+    width: '100%'
   },
   separator: {
     height: 1,

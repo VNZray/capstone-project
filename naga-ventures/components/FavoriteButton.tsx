@@ -5,7 +5,7 @@ import { supabase } from '@/utils/supabase';
 
 type FavoriteButtonProps = {
   id: string | number; // ID of the business or room
-  table?: 'Business' | 'Room' | 'Spot' | 'Event';
+  table?: 'business' | 'room' | 'spot' | 'event';
   isFav?: boolean;
   size?: number;
   color?: string;
@@ -14,7 +14,7 @@ type FavoriteButtonProps = {
 
 const FavoriteButton = ({
   id,
-  table = 'Business',
+  table = 'business',
   isFav = false,
   size = 28,
   color = '#FF4E4E',
