@@ -1,5 +1,5 @@
 import express from 'express';
-import * as touristController from '../controller/TouristController.js'; // Add `.js` extension
+import * as touristController from '../controller/touristController.js'; // Add `.js` extension
 
 const router = express.Router();
 

@@ -1,5 +1,5 @@
 import express from 'express';
-import * as addressController from '../controller/AddressController.js'; // Add `.js` extension
+import * as addressController from '../controller/addressController.js'; // Add `.js` extension
 
 const router = express.Router();
 

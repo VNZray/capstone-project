@@ -5,8 +5,6 @@ import userRoutes from './routes/users.js';
 import businessRoutes from './routes/business.js';
 import addressRoutes from './routes/address.js';
 import touristRoutes from './routes/tourist.js'
-// const accommodationRoutes = require('./routes/accommodations');
-// const bookingRoutes = require('./routes/bookings');
 
 const app = express();
 const PORT = 3000;
@@ -17,7 +15,7 @@ app.use(express.json());
 // Routes
 app.use('/api/users', userRoutes);
 app.use('/api/business', businessRoutes);
-app.use('/tourist', touristRoutes)
+app.use('/api/tourist', touristRoutes)
 app.use('/api/address', addressRoutes);
 
 app.listen(PORT, () => {
