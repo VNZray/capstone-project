@@ -1,16 +1,13 @@
 // db.js
-import { createConnection } from 'mysql2';
+import mysql from 'mysql2/promise';
 
-const db = createConnection({
+const db = mysql.createPool({
   host: 'localhost',
   user: 'root',
-  password: '', // default XAMPP
+  password: '', // default XAMPP password
   database: 'tourism_db'
 });
 
-db.connect((err) => {
-  if (err) throw err;
-  console.log('✅ Connected to MariaDB');
-});
+console.log('✅ Connected to MariaDB (Promise Pool)');
 
 export default db;

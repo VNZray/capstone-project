@@ -12,5 +12,6 @@ router.put('/tourist/:id', userController.updateTourist);
 router.put('/owner/:id', userController.updateOwner);
 router.put('/tourism/:id', userController.updateTourism);
 router.delete('/:id', userController.deleteUser);
+router.post('/login', userController.loginUser);
 
 export default router;

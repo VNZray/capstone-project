@@ -1,0 +1,9 @@
+.text {
+    color: var(--text-color);
+    margin: 0;
+}
+
+.link {
+    color: var(--secondary-color);
+    text-decoration: none;
+}

@@ -18,7 +18,7 @@ const Profile = () => {
   if (!user) return null;
   return (
     <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-      <ThemedText type="title">Hello {user.display_name}</ThemedText>
+      <ThemedText type="title">Hello {user.first_name} {user.last_name}</ThemedText>
       <Pressable onPress={() => router.dismissTo('/LoginPage')}>
         <Text style={{ fontSize: 16, color: color }}>Log Out</Text>
       </Pressable>

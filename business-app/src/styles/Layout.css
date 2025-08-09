@@ -1,0 +1,27 @@
+.main-layout {
+  display: flex;
+  min-height: 100vh;
+  min-width: 100vw;
+  background-color: var(--background-color); /* light background */
+}
+
+.main-content {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.main-outlet {
+  flex: 1;
+  padding: 1.5rem;
+  background-color: var(--background-color);
+}
+
+.business-layout {
+  display: flex;
+  min-height: 100vh;
+  min-width: 100vw;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--background-color); /* light gray */
+}

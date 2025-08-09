@@ -3,6 +3,7 @@ import PressableButton from '@/components/PressableButton';
 import { ThemedText } from '@/components/ThemedText';
 import { useAuth } from '@/context/AuthContext';
 import { useColorScheme } from '@/hooks/useColorScheme';
+import { colors } from '@/utils/Colors';
 import { useFonts } from 'expo-font';
 import { Image } from 'expo-image';
 import { Link, router } from 'expo-router';
@@ -10,17 +11,16 @@ import React, { useState } from 'react';
 import {
   Platform,
   SafeAreaView,
+  StyleSheet,
   Text,
   TextInput,
   View,
-  StyleSheet,
 } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { colors } from '@/utils/Colors';
 
 const LoginPage = () => {
-  const [email, setEmail] = useState('rayven.clores@unc.edu.ph');
-  const [password, setPassword] = useState('123456');
+  const [email, setEmail] = useState('ray@gmail.com');
+  const [password, setPassword] = useState('12345678');
   const { login } = useAuth();
   const [loginError, setLoginError] = useState('');
 
