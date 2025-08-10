@@ -86,3 +86,16 @@
   align-items: center;
   justify-content: left;
 }
+
+.logo-container {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 1rem;
+  margin-bottom: 1rem;
+}
+
+.logo {
+  width: 40px;
+  height: 40px;
+}

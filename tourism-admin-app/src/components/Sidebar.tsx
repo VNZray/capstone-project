@@ -14,13 +14,19 @@ import {
   ChevronRight,
 } from "lucide-react";
 import "./styles/Sidebar.css";
+import Text from "./Text";
+import logo from "@/src/assets/images/light-logo.png";
 
 export default function Sidebar(): React.ReactElement {
   return (
     <aside className="sidebar">
-      <h3 className="sidebar-logo light-text">Naga Venture</h3>
-
       <nav className="sidebar-nav">
+        <div className="logo-container">
+          <img src={logo} alt="Logo" className="logo" />
+          <Text variant="card-title" color="white">
+            City Venture
+          </Text>
+        </div>
         <NavItem
           to="/dashboard"
           label="Dashboard"
