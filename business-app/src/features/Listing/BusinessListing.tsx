@@ -1,10 +1,72 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 
-const BusinessListing = () => {
+import { useAuth } from "@/src/context/AuthContext";
+import { supabase } from "@/src/utils/supabase";
+import Stepper from "@/src/components/Stepper";
+import StepBasics from "./components/StepBasics";
+import StepContact from "./components/StepContact";
+import StepLocation from "./components/StepLocation";
+import StepDescription from "./components/StepDescription";
+import StepLinks from "./components/StepLinks";
+import StepPricing from "./components/StepPricing";
+import StepPermits from "./components/StepPermits";
+import StepReview from "./components/StepReview";
+import StepSubmit from "./components/StepSubmit";
+import Button from "@/src/components/Button";
+import Text from "@/src/components/Text";
+
+const BusinessListing: React.FC = () => {
+  const [currentStep, setCurrentStep] = useState(0);
+  const { user } = useAuth();
+  const [formData, setFormData] = useState<any | null>(null);
+
+  const commonProps = {
+    
+    onNext: () => setCurrentStep((prev) => Math.min(prev + 1, 8)),
+    onPrev: () => setCurrentStep((prev) => Math.max(prev - 1, 0)),
+  };
+
+  const renderStep = () => {
+    switch (currentStep) {
+      case 0:
+        return <StepBasics {...commonProps} />;
+      case 1:
+        return <StepContact {...commonProps} />;
+      case 2:
+        return <StepLocation {...commonProps} />;
+      case 3:
+        return <StepDescription {...commonProps} />;
+      case 4:
+        return <StepLinks {...commonProps} />;
+      case 5:
+        return <StepPricing {...commonProps} />;
+      case 6:
+        return <StepPermits {...commonProps} />;
+      case 7:
+        return <StepReview {...commonProps} />;
+      case 8:
+        return <StepSubmit {...commonProps} />;
+      default:
+        return null;
+    }
+  };
+
   return (
-    <>
-      <h1 className="text">Business Listing</h1>
-    </>
+    <div
+      style={{
+        display: "flex",
+        justifyContent: "center",
+        gap: 24,
+        padding: 20,
+        alignItems: "flex-start",
+        flexWrap: "wrap",
+      }}
+    >
+      <Stepper currentStep={currentStep} />
+      <div style={{ flexBasis: "50%", minWidth: 300, padding: 20 }}>
+        {renderStep()}
+      </div>
+    </div>
   );
 };
 

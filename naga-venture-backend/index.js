@@ -6,6 +6,7 @@ import userRoutes from './routes/users.js';
 import businessRoutes from './routes/business.js';
 import addressRoutes from './routes/address.js';
 import touristRoutes from './routes/tourist.js'
+import ownerRoutes from './routes/owner.js';
 
 const app = express();
 const PORT = 3000;
@@ -16,7 +17,8 @@ app.use(express.json());
 // Routes
 app.use('/api/users', userRoutes);
 app.use('/api/business', businessRoutes);
-app.use('/api/tourist', touristRoutes)
+app.use('/api/tourist', touristRoutes);
+app.use('/api/owner', ownerRoutes);
 app.use('/api/address', addressRoutes);
 
 app.listen(PORT, () => {

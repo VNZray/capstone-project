@@ -8,6 +8,7 @@
   --white: #ffffff;
   --dark: #1a1a1a;
   --text-color: #1a1a1a;
+  --gray: #6B7280;
   --yellow: #FFB007;
   --orange: #FF5310;
   --red: #AE2438;
@@ -29,6 +30,7 @@ body {
   place-items: center;
   min-width: 320px;
   min-height: 100vh;
+  padding: 0;
 }
 
 h1 {

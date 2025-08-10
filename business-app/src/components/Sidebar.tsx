@@ -1,27 +1,70 @@
 import React from "react";
 import { NavLink } from "react-router-dom";
-import { Home, Bed, Calendar, BarChart2, User } from "lucide-react";
-import "../styles/Sidebar.css"; // Import the CSS file
+import {
+  Home,
+  Receipt,
+  CalendarCheck,
+  BedDouble,
+  Tags,
+  Store,
+  Tag,
+  Star,
+  User,
+} from "lucide-react";
+import "../styles/Sidebar.css";
 
 export default function Sidebar(): React.ReactElement {
+  const business_type = "Accommodation"; // This should be dynamically set based on the user's business type
   return (
     <aside className="sidebar">
       {/* Logo */}
-      <div className="sidebar-logo">Naga Venture</div>
+      <h3 className="sidebar-logo light-text">Naga Venture</h3>
+
       {/* Navigation */}
       <nav className="sidebar-nav">
         <NavItem to="/dashboard" label="Dashboard" icon={<Home size={18} />} />
-        <NavItem
-          to="/transactions"
-          label="Transactions"
-          icon={<Bed size={18} />}
-        />
+        {business_type === "Accommodation" ? (
+          <>
+            <NavItem
+              to="/transactions"
+              label="Transactions"
+              icon={<Receipt size={18} />}
+            />
+            <NavItem
+              to="/bookings"
+              label="Bookings"
+              icon={<CalendarCheck size={18} />}
+            />
+          </>
+        ) : null}
         <NavItem
           to="/manage-business"
           label="Manage Business"
-          icon={<Calendar size={18} />}
+          icon={<Store size={18} />}
         />
-        <NavItem to="/reports" label="Reports" icon={<BarChart2 size={18} />} />
+        {business_type === "Accommodation" ? (
+          <NavItem
+            to="/rooms"
+            label="Manage Rooms"
+            icon={<BedDouble size={18} />}
+          />
+        ) : (
+          <NavItem
+            to="/offers"
+            label="Manage Offers"
+            icon={<Tags size={18} />}
+          />
+        )}
+        <NavItem
+          to="/manage-promotion"
+          label="Manage Promotion"
+          icon={<Tag size={18} />}
+        />
+        <NavItem
+          to="/reviews"
+          label="Reviews & Ratings"
+          icon={<Star size={18} />}
+        />
         <NavItem to="/profile" label="Profile" icon={<User size={18} />} />
       </nav>
     </aside>

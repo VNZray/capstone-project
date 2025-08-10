@@ -1,16 +1,15 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
-import "../../../global.css";
-import "../../styles/BusinessList.css"; // new CSS file
-
+import "@/global.css";
+import "./styles/BusinessList.css"; // new CSS file
+import Text from "../../components/Text";
+import { supabase } from "@/src/utils/supabase";
 const MyBusiness = () => {
   const navigate = useNavigate();
 
   const businesses = [
     { id: 1, name: "Hotel Naga", description: "Luxury hotel in Naga City" },
     { id: 2, name: "Naga Café", description: "Cozy café for coffee lovers" },
-    { id: 3, name: "Naga Spa", description: "Relaxation and wellness center" },
-    { id: 4, name: "Naga Rentals", description: "Car and bike rental service" },
   ];
 
   const navigateToBusiness = (id: number) => {
@@ -18,11 +17,11 @@ const MyBusiness = () => {
   };
 
   return (
-    <div className="manage-business">
-      <h1 className="text">My Business Listings</h1>
-      <a className="business-list-link" href="/dashboard">
-        <div className="business-list">
-          {businesses.map((business) => (
+    <div className="container">
+      <Text variant="title">My Business Listings</Text>
+      <div className="business-list">
+        {businesses.map((business) => (
+          <a className="business-list-link" href="/dashboard">
             <div
               key={business.id}
               className="business-card"
@@ -31,9 +30,9 @@ const MyBusiness = () => {
               <h2 className="business-name">{business.name}</h2>
               <p className="business-desc">{business.description}</p>
             </div>
-          ))}
-        </div>
-      </a>
+          </a>
+        ))}
+      </div>
     </div>
   );
 };

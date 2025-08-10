@@ -70,6 +70,7 @@ export async function createUser(req, res) {
         role,
         email,
         phone_number,
+        password,
         tourist_id,
         owner_id,
         tourism_id
