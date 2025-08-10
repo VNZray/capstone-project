@@ -24,7 +24,6 @@ import Room from "../features/services/accommodation/Room";
 import Offer from "../features/services/shop/Offer";
 
 export default function AppRoutes() {
-  const business_type = "Accommodation";
   return (
     <AuthProvider>
       <Routes>
