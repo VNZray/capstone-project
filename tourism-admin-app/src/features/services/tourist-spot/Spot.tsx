@@ -12,13 +12,13 @@ import './Spot.css';
 
 const Spot = () => {
   const [currentPage, setCurrentPage] = useState(1);
-  const [selectedCategory, setSelectedCategory] = useState('All');
+  const [selectedType, setSelectedType] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
   const [isAddSpotModalVisible, setAddSpotModalVisible] = useState(false);
   const [spots, setSpots] = useState<TouristSpot[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [categories, setCategories] = useState<string[]>(['All']);
+  const [typeFilters, setTypeFilters] = useState<string[]>(['All']); // Types for filtering
   const [types, setTypes] = useState<Type[]>([]);
   const spotsPerPage = 10;
 
@@ -30,11 +30,13 @@ const Spot = () => {
       // Fetch categories and types
       const { categories: categoryData, types: typeData } = await apiService.getCategoriesAndTypes();
       
-      const uniqueCategories = [
+      // Use types (sub-categories) for filtering instead of main categories
+      // These are the tourist spot sub-categories like "Beach", "Mountain", etc.
+      const uniqueTypes = [
         'All',
-        ...categoryData.map((cat) => cat.category),
+        ...typeData.map((type) => type.type),
       ];
-      setCategories(uniqueCategories);
+      setTypeFilters(uniqueTypes); // We're using the typeFilters state to store types
       setTypes(typeData);
 
       // Fetch spots
@@ -56,8 +58,8 @@ const Spot = () => {
     setCurrentPage(page);
   };
 
-  const handleCategoryChange = (category: string) => {
-    setSelectedCategory(category);
+  const handleTypeChange = (type: string) => {
+    setSelectedType(type);
     setCurrentPage(1);
   };
 
@@ -69,14 +71,15 @@ const Spot = () => {
   const handleViewDetails = (spot: TouristSpot) => {
     // For now, just show an alert with spot details
     // In a real app, you'd navigate to a details page
-    alert(`Viewing details for: ${spot.name}\nDescription: ${spot.description}\nCategory: ${spot.category}\nType: ${spot.type}\nHours: ${spot.opening_hour} - ${spot.closing_hour}`);
+    alert(`Viewing details for: ${spot.name}\nDescription: ${spot.description}\nLocation: ${spot.barangay}, ${spot.municipality}, ${spot.province}\nCategory: ${spot.category}\nType: ${spot.type}\nStatus: ${spot.spot_status}\nContact: ${spot.contact_phone}\nEmail: ${spot.contact_email}`);
   };
 
   const filteredAndSearchedSpots = useMemo(() => {
     let filtered = spots;
 
-    if (selectedCategory !== 'All') {
-      filtered = filtered.filter((spot) => spot.category === selectedCategory);
+    if (selectedType !== 'All') {
+      // Filter by type (sub-category) instead of main category
+      filtered = filtered.filter((spot) => spot.type === selectedType);
     }
 
     if (searchQuery) {
@@ -85,7 +88,7 @@ const Spot = () => {
       );
     }
     return filtered;
-  }, [spots, selectedCategory, searchQuery]);
+  }, [spots, selectedType, searchQuery]);
 
   const totalPages = Math.ceil(filteredAndSearchedSpots.length / spotsPerPage);
 
@@ -99,9 +102,9 @@ const Spot = () => {
     <div className="spot-container">
       <div className="filter-and-search-container">
         <CategoryFilter
-          selectedCategory={selectedCategory}
-          onCategorySelect={handleCategoryChange}
-          categories={categories}
+          selectedCategory={selectedType}
+          onCategorySelect={handleTypeChange}
+          categories={typeFilters} // This now contains types (sub-categories)
         />
         <SearchBar
           value={searchQuery}

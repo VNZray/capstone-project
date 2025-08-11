@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { IoClose } from 'react-icons/io5';
 import Text from '../Text';
 import { apiService } from '../../utils/api';
-import type { Category, Type } from '../../types/TouristSpot';
+import type { Type, Province, Municipality, Barangay } from '../../types/TouristSpot';
 import '../styles/AddSpotForm.css';
 
 interface AddSpotFormProps {
@@ -19,14 +19,23 @@ const AddSpotForm: React.FC<AddSpotFormProps> = ({
   const [formData, setFormData] = useState({
     name: '',
     description: '',
-    opening_hour: '',
-    closing_hour: '',
-    category_id: '',
+    province_id: '',
+    municipality_id: '',
+    barangay_id: '',
+    latitude: '',
+    longitude: '',
+    contact_phone: '',
+    contact_email: '',
+    website: '',
+    entry_fee: '',
+    category_id: '3', // Always set to 3 for tourist spots
     type_id: '',
   });
   const [loading, setLoading] = useState(false);
-  const [categories, setCategories] = useState<Category[]>([]);
   const [types, setTypes] = useState<Type[]>([]);
+  const [provinces, setProvinces] = useState<Province[]>([]);
+  const [municipalities, setMunicipalities] = useState<Municipality[]>([]);
+  const [barangays, setBarangays] = useState<Barangay[]>([]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -36,20 +45,26 @@ const AddSpotForm: React.FC<AddSpotFormProps> = ({
     }));
   };
 
-  // Load categories and types when component mounts
+  // Load categories, types, and location data when component mounts
   useEffect(() => {
-    const loadCategoriesAndTypes = async () => {
+    const loadData = async () => {
       try {
-        const { categories: catData, types: typeData } = await apiService.getCategoriesAndTypes();
-        setCategories(catData);
-        setTypes(typeData);
+        const [categoriesTypes, locationData] = await Promise.all([
+          apiService.getCategoriesAndTypes(),
+          apiService.getLocationData()
+        ]);
+        
+        setTypes(categoriesTypes.types);
+        setProvinces(locationData.provinces);
+        setMunicipalities(locationData.municipalities);
+        setBarangays(locationData.barangays);
       } catch (error) {
-        console.error('Error loading categories and types:', error);
+        console.error('Error loading data:', error);
       }
     };
 
     if (isVisible) {
-      loadCategoriesAndTypes();
+      loadData();
     }
   }, [isVisible]);
 
@@ -61,21 +76,35 @@ const AddSpotForm: React.FC<AddSpotFormProps> = ({
       await apiService.createTouristSpot({
         name: formData.name,
         description: formData.description,
-        opening_hour: formData.opening_hour,
-        closing_hour: formData.closing_hour,
+        province_id: parseInt(formData.province_id),
+        municipality_id: parseInt(formData.municipality_id),
+        barangay_id: parseInt(formData.barangay_id),
+        latitude: parseFloat(formData.latitude),
+        longitude: parseFloat(formData.longitude),
+        contact_phone: formData.contact_phone,
+        contact_email: formData.contact_email,
+        website: formData.website || undefined,
+        entry_fee: formData.entry_fee ? parseFloat(formData.entry_fee) : undefined,
         category_id: parseInt(formData.category_id),
         type_id: parseInt(formData.type_id),
       });
 
       alert('Spot added successfully!');
-      setFormData({
-        name: '',
-        description: '',
-        opening_hour: '',
-        closing_hour: '',
-        category_id: '',
-        type_id: '',
-      });
+              setFormData({
+          name: '',
+          description: '',
+          province_id: '',
+          municipality_id: '',
+          barangay_id: '',
+          latitude: '',
+          longitude: '',
+          contact_phone: '',
+          contact_email: '',
+          website: '',
+          entry_fee: '',
+          category_id: '3', // Always reset to 3 for tourist spots
+          type_id: '',
+        });
       onSpotAdded();
       onClose();
     } catch (error) {
@@ -132,56 +161,167 @@ const AddSpotForm: React.FC<AddSpotFormProps> = ({
           <div className="form-row">
             <div className="form-group">
               <label>
-                <Text variant="label" color="text-color">Opening Hour *</Text>
+                <Text variant="label" color="text-color">Province *</Text>
               </label>
-              <input
-                type="time"
-                name="opening_hour"
-                value={formData.opening_hour}
+              <select
+                name="province_id"
+                value={formData.province_id}
                 onChange={handleInputChange}
                 required
+                className="form-select"
+              >
+                <option value="">Select Province</option>
+                {provinces.map((province) => (
+                  <option key={province.id} value={province.id}>
+                    {province.province}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="form-group">
+              <label>
+                <Text variant="label" color="text-color">Municipality *</Text>
+              </label>
+              <select
+                name="municipality_id"
+                value={formData.municipality_id}
+                onChange={handleInputChange}
+                required
+                className="form-select"
+                disabled={!formData.province_id}
+              >
+                <option value="">Select Municipality</option>
+                {municipalities
+                  .filter(m => !formData.province_id || m.province_id === parseInt(formData.province_id))
+                  .map((municipality) => (
+                    <option key={municipality.id} value={municipality.id}>
+                      {municipality.municipality}
+                    </option>
+                  ))}
+              </select>
+            </div>
+          </div>
+
+          <div className="form-group">
+            <label>
+              <Text variant="label" color="text-color">Barangay *</Text>
+            </label>
+            <select
+              name="barangay_id"
+              value={formData.barangay_id}
+              onChange={handleInputChange}
+              required
+              className="form-select"
+              disabled={!formData.municipality_id}
+            >
+              <option value="">Select Barangay</option>
+              {barangays
+                .filter(b => !formData.municipality_id || b.municipality_id === parseInt(formData.municipality_id))
+                .map((barangay) => (
+                  <option key={barangay.id} value={barangay.id}>
+                    {barangay.barangay}
+                  </option>
+                ))}
+            </select>
+          </div>
+
+          <div className="form-row">
+            <div className="form-group">
+              <label>
+                <Text variant="label" color="text-color">Latitude</Text>
+              </label>
+              <input
+                type="number"
+                step="any"
+                name="latitude"
+                value={formData.latitude}
+                onChange={handleInputChange}
                 className="form-input"
+                placeholder="e.g., 13.6191"
               />
             </div>
 
             <div className="form-group">
               <label>
-                <Text variant="label" color="text-color">Closing Hour *</Text>
+                <Text variant="label" color="text-color">Longitude</Text>
               </label>
               <input
-                type="time"
-                name="closing_hour"
-                value={formData.closing_hour}
+                type="number"
+                step="any"
+                name="longitude"
+                value={formData.longitude}
                 onChange={handleInputChange}
-                required
                 className="form-input"
+                placeholder="e.g., 123.1814"
+              />
+            </div>
+          </div>
+
+          <div className="form-row">
+            <div className="form-group">
+              <label>
+                <Text variant="label" color="text-color">Contact Phone</Text>
+              </label>
+              <input
+                type="tel"
+                name="contact_phone"
+                value={formData.contact_phone}
+                onChange={handleInputChange}
+                className="form-input"
+                placeholder="e.g., +63 912 345 6789"
+              />
+            </div>
+
+            <div className="form-group">
+              <label>
+                <Text variant="label" color="text-color">Contact Email</Text>
+              </label>
+              <input
+                type="email"
+                name="contact_email"
+                value={formData.contact_email}
+                onChange={handleInputChange}
+                className="form-input"
+                placeholder="e.g., info@touristspot.com"
+              />
+            </div>
+          </div>
+
+          <div className="form-row">
+            <div className="form-group">
+              <label>
+                <Text variant="label" color="text-color">Website</Text>
+              </label>
+              <input
+                type="url"
+                name="website"
+                value={formData.website}
+                onChange={handleInputChange}
+                className="form-input"
+                placeholder="e.g., https://www.touristspot.com"
+              />
+            </div>
+
+            <div className="form-group">
+              <label>
+                <Text variant="label" color="text-color">Entry Fee (₱)</Text>
+              </label>
+              <input
+                type="number"
+                step="0.01"
+                name="entry_fee"
+                value={formData.entry_fee}
+                onChange={handleInputChange}
+                className="form-input"
+                placeholder="e.g., 100.00"
               />
             </div>
           </div>
 
           <div className="form-group">
             <label>
-              <Text variant="label" color="text-color">Category *</Text>
-            </label>
-            <select
-              name="category_id"
-              value={formData.category_id}
-              onChange={handleInputChange}
-              required
-              className="form-select"
-            >
-              <option value="">Select Category</option>
-              {categories.map((category) => (
-                <option key={category.id} value={category.id}>
-                  {category.category}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="form-group">
-            <label>
-              <Text variant="label" color="text-color">Type *</Text>
+              <Text variant="label" color="text-color">Type (Sub-category) *</Text>
             </label>
             <select
               name="type_id"

@@ -10,12 +10,43 @@ export interface TouristSpot {
   id: string;
   name: string;
   description: string;
-  opening_hour: string;
-  closing_hour: string;
-  category: string;
-  type: string;
-  category_id: number;
-  type_id: number;
+  province_id: number;
+  municipality_id: number;
+  barangay_id: number;
+  latitude: number;
+  longitude: number;
+  contact_phone: string;
+  contact_email: string;
+  website: string | null;
+  entry_fee: number | null;
+  spot_status: 'pending' | 'active' | 'inactive';
+  is_featured: boolean;
+  category: string; // Name of the category
+  type: string;     // Name of the type
+  category_id: number; // Foreign key
+  type_id: number;     // Foreign key
+  created_at: string;
+  updated_at: string;
+  province: string; // Name of the province
+  municipality: string; // Name of the municipality
+  barangay: string; // Name of the barangay
+}
+
+export interface Province {
+  id: number;
+  province: string;
+}
+
+export interface Municipality {
+  id: number;
+  municipality: string;
+  province_id: number;
+}
+
+export interface Barangay {
+  id: number;
+  barangay: string;
+  municipality_id: number;
 }
 
 export interface Category {
@@ -67,8 +98,15 @@ class ApiService {
   async createTouristSpot(spotData: {
     name: string;
     description: string;
-    opening_hour: string;
-    closing_hour: string;
+    province_id: number;
+    municipality_id: number;
+    barangay_id: number;
+    latitude: number;
+    longitude: number;
+    contact_phone: string;
+    contact_email: string;
+    website?: string;
+    entry_fee?: number;
     category_id: number;
     type_id: number;
   }): Promise<TouristSpot> {
@@ -84,8 +122,17 @@ class ApiService {
     spotData: Partial<{
       name: string;
       description: string;
-      opening_hour: string;
-      closing_hour: string;
+      province_id: number;
+      municipality_id: number;
+      barangay_id: number;
+      latitude: number;
+      longitude: number;
+      contact_phone: string;
+      contact_email: string;
+      website: string;
+      entry_fee: number;
+      spot_status: 'pending' | 'active' | 'inactive';
+      is_featured: boolean;
       category_id: number;
       type_id: number;
     }>
@@ -112,6 +159,30 @@ class ApiService {
       categories: Category[];
       types: Type[];
     }>('/tourist-spots/categories-types');
+    return response.data;
+  }
+
+  // Location Data
+  async getLocationData(): Promise<{
+    provinces: Province[];
+    municipalities: Municipality[];
+    barangays: Barangay[];
+  }> {
+    const response = await this.request<{
+      provinces: Province[];
+      municipalities: Municipality[];
+      barangays: Barangay[];
+    }>('/tourist-spots/location-data');
+    return response.data;
+  }
+
+  async getMunicipalitiesByProvince(province_id: number): Promise<Municipality[]> {
+    const response = await this.request<Municipality[]>(`/tourist-spots/municipalities/${province_id}`);
+    return response.data;
+  }
+
+  async getBarangaysByMunicipality(municipality_id: number): Promise<Barangay[]> {
+    const response = await this.request<Barangay[]>(`/tourist-spots/barangays/${municipality_id}`);
     return response.data;
   }
 }
