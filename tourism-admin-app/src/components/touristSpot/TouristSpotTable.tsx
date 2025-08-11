@@ -12,8 +12,10 @@ const TouristSpotTable: React.FC<TouristSpotTableProps> = ({
   spots,
   onViewDetails,
 }) => {
-  // Show all spots since we don't have status in the new schema
-  const filteredSpots = spots;
+
+  const filteredSpots = spots.filter(
+    (spot) => spot.spot_status === 'active' || spot.spot_status === 'inactive'
+  );
 
   return (
     <div className="table-container">

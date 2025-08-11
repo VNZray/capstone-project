@@ -24,10 +24,6 @@ router.get('/:id', touristSpotController.getTouristSpotById);
 // Create new tourist spot
 router.post('/', touristSpotController.createTouristSpot);
 
-// Update tourist spot
-router.put('/:id', touristSpotController.updateTouristSpot);
-
-// Delete tourist spot
-router.delete('/:id', touristSpotController.deleteTouristSpot);
+// (Simplified) update/delete removed for now
 
 export default router;

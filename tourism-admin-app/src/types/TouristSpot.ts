@@ -5,10 +5,10 @@ export interface TouristSpot {
   province_id: number;
   municipality_id: number;
   barangay_id: number;
-  latitude: number;
-  longitude: number;
+  latitude: number | null;
+  longitude: number | null;
   contact_phone: string;
-  contact_email: string;
+  contact_email: string | null;
   website: string | null;
   entry_fee: number | null;
   spot_status: 'pending' | 'active' | 'inactive';

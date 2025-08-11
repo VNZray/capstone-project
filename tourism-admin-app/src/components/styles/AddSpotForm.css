@@ -4,7 +4,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
+  background-color: rgba(0, 0, 0, 0.25);
   display: flex;
   justify-content: center;
   align-items: center;
@@ -12,11 +12,11 @@
 }
 
 .modal-content {
-  background-color: white;
+  background-color: rgb(241, 241, 241);
   border-radius: 8px;
   padding: 24px;
   width: 90%;
-  max-width: 600px;
+  max-width: 800px;
   max-height: 90vh;
   overflow-y: auto;
 }
@@ -26,12 +26,12 @@
   justify-content: space-between;
   align-items: center;
   margin-bottom: 24px;
-  padding-bottom: 16px;
   border-bottom: 1px solid #eee;
 }
 
 .close-button {
   background: none;
+  color: #000000;
   border: none;
   cursor: pointer;
   padding: 4px;
@@ -51,8 +51,14 @@
 
 .form-row {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 16px;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 8px;
+}
+
+.form-row1 {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 8px;
 }
 
 .form-group {
@@ -61,13 +67,16 @@
   gap: 8px;
 }
 
+
 .form-input,
 .form-textarea,
 .form-select {
   padding: 12px;
-  border: 1px solid #ddd;
+  border: 1px solid #ccc;
+  background-color: #ffffff;
   border-radius: 4px;
   font-size: 14px;
+  color: #000000;
   transition: border-color 0.2s ease;
 }
 
@@ -80,7 +89,7 @@
 
 .form-textarea {
   resize: vertical;
-  min-height: 80px;
+  min-height: 40px;
 }
 
 .form-actions {
@@ -103,8 +112,8 @@
 }
 
 .cancel-button {
-  background-color: #f8f9fa;
-  border: 1px solid #ddd;
+  background-color: #f35b5b;
+  border: 1px solid #ffffff;
 }
 
 .cancel-button:hover:not(:disabled) {
