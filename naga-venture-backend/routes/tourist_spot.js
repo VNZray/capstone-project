@@ -1,12 +1,24 @@
 import express from 'express';
-import * as touristSpotController from '../controller/touristSpotController'; // Add `.js` extension
+import * as touristSpotController from '../controller/touristSpotController.js';
 
 const router = express.Router();
 
-router.get('/', touristSpotController.getAllUsers);
-router.get('/:id', touristSpotController.getTourismId);
-router.post('/', touristSpotController.createUser);
-router.put('/:id', touristSpotController.updateTourist);
-router.delete('/:id', touristSpotController.deleteUser);
+// Get all tourist spots
+router.get('/', touristSpotController.getAllTouristSpots);
+
+// Get categories and types
+router.get('/categories-types', touristSpotController.getCategoriesAndTypes);
+
+// Get tourist spot by ID
+router.get('/:id', touristSpotController.getTouristSpotById);
+
+// Create new tourist spot
+router.post('/', touristSpotController.createTouristSpot);
+
+// Update tourist spot
+router.put('/:id', touristSpotController.updateTouristSpot);
+
+// Delete tourist spot
+router.delete('/:id', touristSpotController.deleteTouristSpot);
 
 export default router;
