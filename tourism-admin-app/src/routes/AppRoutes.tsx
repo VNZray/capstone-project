@@ -31,11 +31,11 @@ export default function AppRoutes() {
         <Route element={<AuthLayout />}>
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+          <Route path="/" element={<Login />} />
         </Route>
 
         {/* Protected app routes */}
         <Route element={<MainLayout />}>
-          <Route path="/" element={<Login />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/approval" element={<Approval />} />
           <Route path="/reports" element={<Report />} />
