@@ -13,8 +13,6 @@ const Login: React.FC = () => {
   const [loginError, setLoginError] = useState("");
   const navigate = useNavigate();
   const { login } = useAuth(); // from AuthProvider
-  const [gender, setGender] = useState("male");
-  const [newsletter, setNewsletter] = useState(false);
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -25,7 +23,7 @@ const Login: React.FC = () => {
     try {
       setLoginError("");
       await login(email, password);
-      navigate("/"); // redirect after successful login
+      navigate("/dashboard"); // redirect after successful login
     } catch (error: any) {
       setLoginError(
         error?.response?.data?.message || error?.message || "Login failed."
@@ -77,16 +75,6 @@ const Login: React.FC = () => {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               label="Email"
-            />
-
-            <Input
-              type="select"
-              options={[
-                { label: "Male", value: "male" },
-                { label: "Female", value: "female" },
-              ]}
-              value={gender}
-              onChange={(e) => setGender(e.target.value)}
             />
 
             <Input

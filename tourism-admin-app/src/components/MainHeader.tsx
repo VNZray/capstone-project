@@ -4,14 +4,15 @@ import "./styles/Header.css";
 import { useNavigate, Link } from "react-router-dom";
 import Text from "./Text";
 import { useAuth } from "@/src/context/AuthContext"; // adjust path if needed
+import Button from "./Button";
 
 export default function Header(): React.JSX.Element {
   const location = useLocation();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
 
-  const switchProfile = () => {
-    // Clear user session and navigate to login
+  const handleLogout = () => {
+    logout();
     navigate("/");
   };
 
@@ -40,12 +41,14 @@ export default function Header(): React.JSX.Element {
 
       {/* User Info */}
       <div className="header-user">
-          <Link to={`/profile`}>
-            <Text variant="normal">{user?.first_name || "Guest"} {user?.last_name || ""}</Text>
-          </Link>
-        <button className="header-logout" onClick={switchProfile}>
-          Switch Profile
-        </button>
+        <Link to={`/profile`}>
+          <Text variant="normal">
+            {user?.first_name || "Guest"} {user?.last_name || ""}
+          </Text>
+        </Link>
+        <Button variant="primary" color="white" fontSize={14} iconName="FaSignOutAlt" onClick={handleLogout}>
+          Log Out
+        </Button>
       </div>
     </header>
   );
