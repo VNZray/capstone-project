@@ -95,53 +95,23 @@ class ApiService {
     return response.data;
   }
 
-  async createTouristSpot(spotData: {
-    name: string;
-    description: string;
-    province_id: number;
-    municipality_id: number;
-    barangay_id: number;
-    latitude: number;
-    longitude: number;
-    contact_phone: string;
-    contact_email: string;
-    website?: string;
-    entry_fee?: number;
-    category_id: number;
-    type_id: number;
-  }): Promise<TouristSpot> {
+  async createTouristSpot(spotData: Partial<TouristSpot>): Promise<ApiResponse<TouristSpot>> {
     const response = await this.request<TouristSpot>('/tourist-spots', {
+      method: 'POST',
+      body: JSON.stringify({
+        ...spotData,
+        spot_status: 'pending'
+      }),
+    });
+    return response;
+  }
+
+  async updateTouristSpot(id: string, spotData: Partial<TouristSpot>): Promise<ApiResponse<TouristSpot>> {
+    const response = await this.request<TouristSpot>(`/tourist-spots/${id}/edit`, {
       method: 'POST',
       body: JSON.stringify(spotData),
     });
-    return response.data;
-  }
-
-  async updateTouristSpot(
-    id: string,
-    spotData: Partial<{
-      name: string;
-      description: string;
-      province_id: number;
-      municipality_id: number;
-      barangay_id: number;
-      latitude: number;
-      longitude: number;
-      contact_phone: string;
-      contact_email: string;
-      website: string;
-      entry_fee: number;
-      spot_status: 'pending' | 'active' | 'inactive';
-      is_featured: boolean;
-      category_id: number;
-      type_id: number;
-    }>
-  ): Promise<TouristSpot> {
-    const response = await this.request<TouristSpot>(`/tourist-spots/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify(spotData),
-    });
-    return response.data;
+    return response;
   }
 
   async deleteTouristSpot(id: string): Promise<void> {

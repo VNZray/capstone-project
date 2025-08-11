@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Aug 11, 2025 at 06:47 AM
+-- Generation Time: Aug 11, 2025 at 10:04 AM
 -- Server version: 11.8.3-MariaDB
 -- PHP Version: 8.2.12
 
@@ -539,6 +539,34 @@ CREATE TABLE `tourist_spots` (
   `province_id` int(11) NOT NULL,
   `municipality_id` int(11) NOT NULL,
   `barangay_id` int(11) NOT NULL,
+  `latitude` decimal(10,8) DEFAULT NULL,
+  `longitude` decimal(11,8) DEFAULT NULL,
+  `contact_phone` varchar(20) NOT NULL,
+  `contact_email` varchar(255) DEFAULT NULL,
+  `website` varchar(255) DEFAULT NULL,
+  `entry_fee` decimal(10,2) DEFAULT NULL,
+  `spot_status` enum('pending','active','inactive') NOT NULL DEFAULT 'pending',
+  `is_featured` tinyint(1) DEFAULT 0,
+  `category_id` int(11) DEFAULT NULL,
+  `type_id` int(11) DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `tourist_spot_edits`
+--
+
+CREATE TABLE `tourist_spot_edits` (
+  `id` uuid NOT NULL DEFAULT uuid(),
+  `tourist_spot_id` uuid NOT NULL,
+  `name` varchar(255) NOT NULL,
+  `description` text NOT NULL,
+  `province_id` int(11) NOT NULL,
+  `municipality_id` int(11) NOT NULL,
+  `barangay_id` int(11) NOT NULL,
   `latitude` decimal(10,8) NOT NULL,
   `longitude` decimal(11,8) NOT NULL,
   `contact_phone` varchar(20) NOT NULL,
@@ -549,8 +577,9 @@ CREATE TABLE `tourist_spots` (
   `is_featured` tinyint(1) DEFAULT 0,
   `category_id` int(11) NOT NULL,
   `type_id` int(11) NOT NULL,
-  `created_at` timestamp NULL DEFAULT current_timestamp(),
-  `updated_at` timestamp NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+  `approval_status` enum('pending','approved','rejected') NOT NULL DEFAULT 'pending',
+  `submitted_at` timestamp NULL DEFAULT current_timestamp(),
+  `reviewed_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
 
 -- --------------------------------------------------------
@@ -780,6 +809,18 @@ ALTER TABLE `tourist_spots`
   ADD KEY `idx_barangay` (`barangay_id`);
 
 --
+-- Indexes for table `tourist_spot_edits`
+--
+ALTER TABLE `tourist_spot_edits`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `idx_tourist_spot` (`tourist_spot_id`),
+  ADD KEY `idx_category` (`category_id`),
+  ADD KEY `idx_type` (`type_id`),
+  ADD KEY `idx_province` (`province_id`),
+  ADD KEY `idx_municipality` (`municipality_id`),
+  ADD KEY `idx_barangay` (`barangay_id`);
+
+--
 -- Indexes for table `tourist_spot_schedules`
 --
 ALTER TABLE `tourist_spot_schedules`
@@ -962,6 +1003,17 @@ ALTER TABLE `tourist_spots`
   ADD CONSTRAINT `fk_tourist_spots_municipality` FOREIGN KEY (`municipality_id`) REFERENCES `municipality` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
   ADD CONSTRAINT `fk_tourist_spots_province` FOREIGN KEY (`province_id`) REFERENCES `province` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
   ADD CONSTRAINT `fk_tourist_spots_type` FOREIGN KEY (`type_id`) REFERENCES `type` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+--
+-- Constraints for table `tourist_spot_edits`
+--
+ALTER TABLE `tourist_spot_edits`
+  ADD CONSTRAINT `fk_edit_barangay` FOREIGN KEY (`barangay_id`) REFERENCES `barangay` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_edit_category` FOREIGN KEY (`category_id`) REFERENCES `category` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_edit_municipality` FOREIGN KEY (`municipality_id`) REFERENCES `municipality` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_edit_province` FOREIGN KEY (`province_id`) REFERENCES `province` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_edit_tourist_spot` FOREIGN KEY (`tourist_spot_id`) REFERENCES `tourist_spots` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_edit_type` FOREIGN KEY (`type_id`) REFERENCES `type` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 --
 -- Constraints for table `tourist_spot_schedules`
