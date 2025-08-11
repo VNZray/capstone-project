@@ -19,7 +19,7 @@ const StepContact: React.FC<Props> = ({ onNext, onPrev }) => {
             Please provide the basic information for your listing.
           </Text>
         </div>
-        <div style={{ display: "flex", gap: 600 }}>
+        <div style={{ display: "flex", gap: 400 }}>
           <Button onClick={onPrev} variant="secondary" style={{ flex: 1 }}>
             <Text variant="normal" color="white">
               Back

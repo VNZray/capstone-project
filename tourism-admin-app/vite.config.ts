@@ -13,6 +13,9 @@ export default defineConfig({
       '@': path.resolve(__dirname, './'),
     },
   },
+  server: {
+    port: 5174, // change this to your desired port
+  },
 
 }
 

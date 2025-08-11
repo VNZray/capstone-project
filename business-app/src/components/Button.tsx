@@ -24,6 +24,8 @@ type ButtonProps = {
   onClick?: () => void;
   disabled?: boolean;
   style?: React.CSSProperties;
+  padding?: string | number;
+  icon?: React.ReactNode;
 };
 
 const Button: React.FC<ButtonProps> = ({
@@ -38,7 +40,9 @@ const Button: React.FC<ButtonProps> = ({
   height,
   fontSize = 10,
   onClick,
+  padding,
   disabled = false,
+  icon,
   style,
 }) => {
   const IconComponent = iconName && (FaIcons[iconName] as React.ElementType);
@@ -53,12 +57,15 @@ const Button: React.FC<ButtonProps> = ({
         gap,
         width,
         height,
+        padding,
+
         color: disabled ? "#ccc" : color,
-        fontSize: typeof fontSize === "string" ? parseFloat(fontSize) : fontSize,
+        fontSize:
+          typeof fontSize === "string" ? parseFloat(fontSize) : fontSize,
         ...style,
       }}
     >
-      {IconComponent && <IconComponent size={iconSize} />}
+      {icon && <span className="sidebar-icon">{icon}</span>}
       {children && <span className="button-text">{children}</span>}
     </button>
   );

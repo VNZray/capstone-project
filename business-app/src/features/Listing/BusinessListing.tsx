@@ -14,6 +14,7 @@ import StepReview from "./components/StepReview";
 import StepSubmit from "./components/StepSubmit";
 import Button from "@/src/components/Button";
 import Text from "@/src/components/Text";
+import PageContainer from "@/src/components/PageContainer";
 
 const BusinessListing: React.FC = () => {
   const [currentStep, setCurrentStep] = useState(0);
@@ -21,7 +22,6 @@ const BusinessListing: React.FC = () => {
   const [formData, setFormData] = useState<any | null>(null);
 
   const commonProps = {
-    
     onNext: () => setCurrentStep((prev) => Math.min(prev + 1, 8)),
     onPrev: () => setCurrentStep((prev) => Math.max(prev - 1, 0)),
   };
@@ -52,21 +52,21 @@ const BusinessListing: React.FC = () => {
   };
 
   return (
-    <div
+    <PageContainer
       style={{
         display: "flex",
         justifyContent: "center",
+        flexDirection: "row",
         gap: 24,
         padding: 20,
         alignItems: "flex-start",
-        flexWrap: "wrap",
       }}
     >
       <Stepper currentStep={currentStep} />
-      <div style={{ flexBasis: "50%", minWidth: 300, padding: 20 }}>
+      <div style={{ flexBasis: "40%", minWidth: 300, padding: 20 }}>
         {renderStep()}
       </div>
-    </div>
+    </PageContainer>
   );
 };
 

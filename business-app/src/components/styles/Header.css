@@ -1,7 +1,6 @@
 .header {
-  background-color: #fff;
-  border-bottom: 1px solid #ddd;
-  padding: 0.75rem 1.5rem;
+  background-color: var(--primary-color);
+  padding: 1.25rem 1.25rem;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -33,7 +32,7 @@
 }
 
 .header-link {
-  color: #374151; /* medium gray */
+  color: var(--white); /* medium gray */
   text-decoration: none;
   font-weight: 500;
   cursor: pointer;
@@ -42,13 +41,13 @@
 
 .header-link:hover,
 .header-link:focus {
-  color: #2563eb; /* blue-ish on hover/focus */
+  color: var(--tab-background); /* blue-ish on hover/focus */
   outline: none;
 }
 
 .header-logout {
   padding: 0.25rem 0.75rem;
-  background-color: #ef4444; /* red */
+  background-color: var(--secondary-color);
   color: white;
   border: none;
   border-radius: 4px;
@@ -59,6 +58,7 @@
 
 .header-logout:hover,
 .header-logout:focus {
-  background-color: #dc2626; /* darker red */
-  outline: none;
+  background-color: var(--secondary-color);
 }
+
+

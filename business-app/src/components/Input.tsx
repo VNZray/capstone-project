@@ -9,7 +9,7 @@ type InputProps =
     } & React.InputHTMLAttributes<HTMLInputElement>)
   | ({
       type: "select";
-      options: { label: string; value: string }[];
+      options: { label: string; value: string | number }[];
     } & React.SelectHTMLAttributes<HTMLSelectElement>)
   | ({
       type: "checkbox" | "radio";
@@ -27,12 +27,14 @@ const Input: React.FC<InputProps & BaseProps> = (props) => {
     const { options, ...rest } = props;
     return (
       <div className="form-group">
-        <select className="custom-input" {...rest}>
+        {label && (
           <label>
             <Text variant="medium" color="dark">
               {label}
             </Text>
           </label>
+        )}
+        <select className="custom-input" {...rest}>
           {options?.map((opt) => (
             <option key={opt.value} value={opt.value}>
               {opt.label}
@@ -46,11 +48,13 @@ const Input: React.FC<InputProps & BaseProps> = (props) => {
   const { type: _type, ...restProps } = props;
   return (
     <div className="form-group">
-      <label>
-        <Text variant="medium" color="dark">
-          {label}
-        </Text>
-      </label>
+      {label && (
+        <label>
+          <Text variant="medium" color="dark">
+            {label}
+          </Text>
+        </label>
+      )}
       <input className="custom-input" type={type} {...restProps} />
     </div>
   );

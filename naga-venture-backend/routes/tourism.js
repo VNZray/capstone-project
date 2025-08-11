@@ -1,0 +1,10 @@
+import express from 'express';
+import * as tourismController from '../controller/tourismController.js'; // Add `.js` extension
+
+const router = express.Router();
+
+router.get('/', tourismController.getAllTourism);
+router.get('/:id', tourismController.getTourismById);
+router.post('/', tourismController.createTourism);
+
+export default router;

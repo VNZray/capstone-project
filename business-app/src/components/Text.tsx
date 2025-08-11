@@ -12,7 +12,9 @@ type TextVariant =
   | "bold"
   | "medium"
   | "label"
-  | "header-title";
+  | "header-title"
+  | "header-email"
+  | "header-name";
 
 type ColorVariant =
   | "primary-color"

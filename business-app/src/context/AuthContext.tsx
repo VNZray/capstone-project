@@ -9,23 +9,26 @@ import React, {
 import type { ReactNode } from "react";
 
 interface User {
-  id: string;
   email: string;
   role: string;
   first_name?: string;
   last_name?: string;
+  owner_id?: string;
 }
 
 interface LoginResponse {
   token: string;
 }
 
-interface TouristResponse {
+interface OwnerResponse {
   first_name: string;
   last_name: string;
+  id: string;
 }
 
 const API_URL = "http://192.168.1.8:3000/api";
+// const API_URL = "http://172.20.10.2:3000/api";
+// const API_URL = "http://192.168.0.156:3000/api";
 
 interface AuthContextType {
   user: User | null;
@@ -73,20 +76,22 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       }
 
       const ownerId: string = payload.owner_id;
-      if (!ownerId) throw new Error("Tourist ID not found in token");
+      if (!ownerId) throw new Error("Owner ID not found in token");
 
       // Step 3: Fetch owner details
-      const { data: ownerData } = await axios.get<TouristResponse>(
+      const { data: ownerData } = await axios.get(
         `${API_URL}/owner/${ownerId}`
       );
 
+      console.log("Owner Data:", ownerData);
+
       // Step 4: Build user object
       const loggedInUser: User = {
-        id: ownerId,
         email,
         role: payload.role,
         first_name: ownerData.first_name,
         last_name: ownerData.last_name,
+        owner_id: ownerData.id,
       };
 
       // Step 5: Save to localStorage
