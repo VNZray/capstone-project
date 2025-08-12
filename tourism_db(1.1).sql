@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Aug 11, 2025 at 10:04 AM
+-- Generation Time: Aug 11, 2025 at 09:05 PM
 -- Server version: 11.8.3-MariaDB
 -- PHP Version: 8.2.12
 
@@ -553,6 +553,18 @@ CREATE TABLE `tourist_spots` (
   `updated_at` timestamp NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
 
+--
+-- Dumping data for table `tourist_spots`
+--
+
+INSERT INTO `tourist_spots` (`id`, `name`, `description`, `province_id`, `municipality_id`, `barangay_id`, `latitude`, `longitude`, `contact_phone`, `contact_email`, `website`, `entry_fee`, `spot_status`, `is_featured`, `category_id`, `type_id`, `created_at`, `updated_at`) VALUES
+('d1784f39-768d-11f0-90d0-10ffe07a01e9', 'ticket_status', 'aa', 20, 24, 19, 1.00000000, 1.00000000, '09613636138', 'iman@gmail.com', NULL, NULL, 'active', 0, 3, 3, '2025-08-11 08:33:12', '2025-08-11 08:41:48'),
+('5e7c4d0f-768f-11f0-90d0-10ffe07a01e9', 'aaaaaa', 'aaaaaa', 20, 24, 19, 1.00000000, 1.00000000, '09613636138', 'iman@gmail.com', NULL, NULL, 'active', 0, 3, 3, '2025-08-11 08:44:18', '2025-08-11 10:17:21'),
+('90ab2bc8-76e1-11f0-ab94-10ffe07a01e9', 'ticket_statusssssssasasas', 'aaaaaaaaaa', 20, 24, 19, NULL, NULL, '09613636138', 'iman@gmail.com', NULL, NULL, 'active', 0, 3, 9, '2025-08-11 18:32:41', '2025-08-11 18:33:05'),
+('42a4ae1b-769c-11f0-bfd6-10ffe07a01e9', 'aaaaaa', 'aaaa', 20, 24, 19, 1.00000000, 1.00000000, '09613636138', 'iman@gmail.com', NULL, NULL, 'active', 0, 3, 3, '2025-08-11 10:16:35', '2025-08-11 18:17:43'),
+('6580b8c9-76a6-11f0-bfd6-10ffe07a01e9', 'wwwwww', 'wwwwwwww', 20, 24, 19, NULL, NULL, '09613636138', 'iman@gmail.com', NULL, NULL, 'active', 0, 3, 3, '2025-08-11 11:29:08', '2025-08-11 11:33:44'),
+('5a5ce050-76a8-11f0-bfd6-10ffe07a01e9', 'ticket_statussssas', 'aaaaaaa', 20, 24, 19, NULL, NULL, '09613636138', 'iman@gmail.com', NULL, NULL, 'active', 0, 3, 9, '2025-08-11 11:43:09', '2025-08-11 11:43:21');
+
 -- --------------------------------------------------------
 
 --
@@ -581,6 +593,13 @@ CREATE TABLE `tourist_spot_edits` (
   `submitted_at` timestamp NULL DEFAULT current_timestamp(),
   `reviewed_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
+
+--
+-- Dumping data for table `tourist_spot_edits`
+--
+
+INSERT INTO `tourist_spot_edits` (`id`, `tourist_spot_id`, `name`, `description`, `province_id`, `municipality_id`, `barangay_id`, `latitude`, `longitude`, `contact_phone`, `contact_email`, `website`, `entry_fee`, `spot_status`, `is_featured`, `category_id`, `type_id`, `approval_status`, `submitted_at`, `reviewed_at`) VALUES
+('428f33be-768f-11f0-90d0-10ffe07a01e9', 'd1784f39-768d-11f0-90d0-10ffe07a01e9', 'aaaaaaa', 'aaaaaaa', 20, 24, 6, 1.00000000, 1.00000000, '09613636138', 'emma@gmail.com', NULL, NULL, 'active', 0, 3, 3, 'pending', '2025-08-11 08:43:31', NULL);
 
 -- --------------------------------------------------------
 
@@ -623,7 +642,8 @@ INSERT INTO `type` (`id`, `type`, `category_id`) VALUES
 (5, 'Homestay', 1),
 (6, 'Tourist Inn', 1),
 (7, 'Concert', 4),
-(8, 'Festival', 4);
+(8, 'Festival', 4),
+(9, 'natural', 3);
 
 -- --------------------------------------------------------
 
@@ -895,7 +915,7 @@ ALTER TABLE `room_amenities`
 -- AUTO_INCREMENT for table `type`
 --
 ALTER TABLE `type`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
 
 --
 -- Constraints for dumped tables

@@ -8,6 +8,7 @@ import addressRoutes from './routes/address.js';
 import touristRoutes from './routes/tourist.js'
 import ownerRoutes from './routes/owner.js';
 import touristSpotRoutes from './routes/tourist_spot.js';
+import approvalRoutes from './routes/approval.js';
 
 const app = express();
 const PORT = 3000;
@@ -22,6 +23,7 @@ app.use('/api/tourist', touristRoutes);
 app.use('/api/owner', ownerRoutes);
 app.use('/api/address', addressRoutes);
 app.use('/api/tourist-spots', touristSpotRoutes);
+app.use('/api/approval', approvalRoutes);
 
 app.listen(PORT, () => {
   console.log(`🚀 Server running at http://localhost:${PORT}`);
@@ -30,6 +32,7 @@ app.listen(PORT, () => {
   console.log('API URL: http://localhost:3000/api/tourist');
   console.log('API URL: http://localhost:3000/api/address');
   console.log('API URL: http://localhost:3000/api/tourist-spots');
+  console.log('API URL: http://localhost:3000/api/approval');
   console.log('✅ Connected to MariaDB (Promise Pool)');
   console.log('✅ API is ready to use');
   console.log('\nCTRL + C to stop the server\n');

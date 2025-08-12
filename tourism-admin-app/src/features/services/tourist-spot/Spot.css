@@ -6,9 +6,19 @@
 .filter-and-search-container {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 16px;
-  margin-bottom: 24px;
-  flex-wrap: wrap;
+  margin-bottom: 20px;
+  flex-wrap: wrap; 
+}
+.filter {
+  flex-shrink: 0;
+}
+
+.search-and-add {
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
 .add-button {
@@ -51,8 +61,12 @@
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 .error-container {
@@ -64,7 +78,7 @@
 .content {
   background-color: #fff;
   border-radius: 8px;
-  padding: 20px;
+  padding: 10px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 

@@ -7,19 +7,26 @@ import type {
   Province,
   Municipality,
   Barangay,
+  TouristSpot,
 } from "../../types/TouristSpot";
-import "../styles/AddSpotForm.css";
+import "../styles/TouristSpotForm.css";
 
-interface AddSpotFormProps {
+interface TouristSpotFormProps {
   isVisible: boolean;
   onClose: () => void;
-  onSpotAdded: () => void;
+  onSpotAdded?: () => void;
+  onSpotUpdated?: () => void;
+  mode: 'add' | 'edit';
+  initialData?: TouristSpot;
 }
 
-const AddSpotForm: React.FC<AddSpotFormProps> = ({
+const TouristSpotForm: React.FC<TouristSpotFormProps> = ({
   isVisible,
   onClose,
   onSpotAdded,
+  onSpotUpdated,
+  mode,
+  initialData,
 }) => {
   const [formData, setFormData] = useState({
     name: "",
@@ -41,6 +48,44 @@ const AddSpotForm: React.FC<AddSpotFormProps> = ({
   const [provinces, setProvinces] = useState<Province[]>([]);
   const [municipalities, setMunicipalities] = useState<Municipality[]>([]);
   const [barangays, setBarangays] = useState<Barangay[]>([]);
+
+  // Initialize form data when editing
+  useEffect(() => {
+    if (mode === 'edit' && initialData) {
+      setFormData({
+        name: initialData.name,
+        description: initialData.description,
+        province_id: initialData.province_id.toString(),
+        municipality_id: initialData.municipality_id.toString(),
+        barangay_id: initialData.barangay_id.toString(),
+        latitude: initialData.latitude?.toString() || "",
+        longitude: initialData.longitude?.toString() || "",
+        contact_phone: initialData.contact_phone,
+        contact_email: initialData.contact_email || "",
+        website: initialData.website || "",
+        entry_fee: initialData.entry_fee?.toString() || "",
+        category_id: initialData.category_id.toString(),
+        type_id: initialData.type_id.toString(),
+      });
+    } else if (mode === 'add') {
+      // Reset form for add mode
+      setFormData({
+        name: "",
+        description: "",
+        province_id: "",
+        municipality_id: "",
+        barangay_id: "",
+        latitude: "",
+        longitude: "",
+        contact_phone: "",
+        contact_email: "",
+        website: "",
+        entry_fee: "",
+        category_id: "3",
+        type_id: "",
+      });
+    }
+  }, [mode, initialData, isVisible]);
 
   const handleInputChange = (
     e: React.ChangeEvent<
@@ -82,7 +127,7 @@ const AddSpotForm: React.FC<AddSpotFormProps> = ({
     setLoading(true);
 
     try {
-      await apiService.createTouristSpot({
+      const spotData = {
         name: formData.name,
         description: formData.description,
         province_id: parseInt(formData.province_id),
@@ -98,29 +143,25 @@ const AddSpotForm: React.FC<AddSpotFormProps> = ({
           : undefined,
         category_id: parseInt(formData.category_id),
         type_id: parseInt(formData.type_id),
-      });
+      };
 
-      alert("Spot added successfully!");
-      setFormData({
-        name: "",
-        description: "",
-        province_id: "",
-        municipality_id: "",
-        barangay_id: "",
-        latitude: "",
-        longitude: "",
-        contact_phone: "",
-        contact_email: "",
-        website: "",
-        entry_fee: "",
-        category_id: "3", // Always reset to 3 for tourist spots
-        type_id: "",
-      });
-      onSpotAdded();
+      if (mode === 'add') {
+        await apiService.createTouristSpot(spotData);
+        alert("Spot added successfully!");
+        if (onSpotAdded) onSpotAdded();
+      } else {
+        if (!initialData?.id) {
+          throw new Error("No ID provided for update");
+        }
+        await apiService.submitEditRequest(initialData.id, spotData);
+        alert("Edit request submitted successfully! It is now pending admin approval.");
+        if (onSpotUpdated) onSpotUpdated();
+      }
+
       onClose();
     } catch (error) {
       console.error("Error:", error);
-      alert("Error adding spot. Please try again.");
+      alert(`Error ${mode === 'add' ? 'adding' : 'updating'} spot. Please try again.`);
     } finally {
       setLoading(false);
     }
@@ -133,7 +174,7 @@ const AddSpotForm: React.FC<AddSpotFormProps> = ({
       <div className="modal-content">
         <div className="modal-header">
           <Text variant="title" color="text-color">
-            Add New Tourist Spot
+            {mode === 'add' ? 'Add New Tourist Spot' : 'Edit Tourist Spot'}
           </Text>
           <button className="close-button" onClick={onClose}>
             <IoClose size={24} />
@@ -282,7 +323,7 @@ const AddSpotForm: React.FC<AddSpotFormProps> = ({
               <input
                 type="number"
                 step="any"
-                name="longitude"
+                name="latitude"
                 value={formData.longitude}
                 onChange={handleInputChange}
                 className="form-input"
@@ -394,7 +435,10 @@ const AddSpotForm: React.FC<AddSpotFormProps> = ({
             </button>
             <button type="submit" className="submit-button" disabled={loading}>
               <Text variant="normal" color="white">
-                {loading ? "Adding..." : "Add Spot"}
+                {loading 
+                  ? (mode === 'add' ? "Adding..." : "Updating...") 
+                  : (mode === 'add' ? "Add Spot" : "Update Spot")
+                }
               </Text>
             </button>
           </div>
@@ -404,4 +448,4 @@ const AddSpotForm: React.FC<AddSpotFormProps> = ({
   );
 };
 
-export default AddSpotForm;
+export default TouristSpotForm;

@@ -6,7 +6,7 @@ import CategoryFilter from "../../../components/touristSpot/CategoryFilter";
 import Pagination from "../../../components/touristSpot/Pagination";
 import TouristSpotTable from "../../../components/touristSpot/TouristSpotTable";
 import TouristSpotDetails from "../../../components/touristSpot/TouristSpotDetails";
-import AddSpotForm from "../../../components/touristSpot/AddSpotForm";
+import TouristSpotForm from "../../../components/touristSpot/TouristSpotForm";
 import type { TouristSpot } from "../../../types/TouristSpot";
 import { apiService } from "../../../utils/api";
 import "./Spot.css";
@@ -16,6 +16,8 @@ const Spot = () => {
   const [selectedType, setSelectedType] = useState("All");
   const [searchQuery, setSearchQuery] = useState("");
   const [isAddSpotModalVisible, setAddSpotModalVisible] = useState(false);
+  const [isEditSpotModalVisible, setEditSpotModalVisible] = useState(false);
+  const [selectedSpotForEdit, setSelectedSpotForEdit] = useState<TouristSpot | undefined>(undefined);
   const [spots, setSpots] = useState<TouristSpot[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -27,8 +29,7 @@ const Spot = () => {
     setLoading(true);
     setError(null);
     try {
-      const { types: typeData } =
-        await apiService.getCategoriesAndTypes();
+      const { types: typeData } = await apiService.getCategoriesAndTypes();
       const uniqueTypes = ["All", ...typeData.map((type) => type.type)];
       setTypeFilters(uniqueTypes);
       const spotsData = await apiService.getTouristSpots();
@@ -60,6 +61,22 @@ const Spot = () => {
 
   const handleBack = () => setSelectedSpotId(null);
 
+  const handleEditSpot = (spot: TouristSpot) => {
+    setSelectedSpotForEdit(spot);
+    setEditSpotModalVisible(true);
+  };
+
+  const handleCloseEditModal = () => {
+    setEditSpotModalVisible(false);
+    setSelectedSpotForEdit(undefined);
+  };
+
+  const handleSpotUpdated = () => {
+    fetchSpotsAndCategories();
+    setEditSpotModalVisible(false);
+    setSelectedSpotForEdit(undefined);
+  };
+
   const filteredAndSearchedSpots = useMemo(() => {
     let filtered = spots;
     if (selectedType !== "All") {
@@ -83,40 +100,45 @@ const Spot = () => {
   }, [filteredAndSearchedSpots, currentPage, spotsPerPage]);
 
   // If a spot is selected, show the details view
- if (selectedSpotId) {
-  return (
-    <TouristSpotDetails
-      spotId={selectedSpotId}
-      onBack={handleBack}
-    />
-  );
-}
+  if (selectedSpotId) {
+    return <TouristSpotDetails spotId={selectedSpotId} onBack={handleBack} />;
+  }
 
   // Otherwise, show the main list
   return (
     <div className="spot-container">
       <div className="filter-and-search-container">
-        <CategoryFilter
-          selectedCategory={selectedType}
-          onCategorySelect={handleTypeChange}
-          categories={typeFilters}
-        />
-        <SearchBar
-          value={searchQuery}
-          onChangeText={handleSearch}
-          onSearch={() => console.log("Performing search for:", searchQuery)}
-          placeholder="Search tourist spots..."
-          containerStyle={{ flex: 1, maxWidth: 300 }}
-        />
-        <button
-          className="add-button"
-          onClick={() => setAddSpotModalVisible(true)}
-        >
-          <IoAdd size={20} color="#FFF" />
-          <Text variant="normal" color="white" className="add-button-text">
-            Add
-          </Text>
-        </button>
+        <div className="filter">
+          <CategoryFilter
+            selectedCategory={selectedType}
+            onCategorySelect={handleTypeChange}
+            categories={typeFilters}
+          />
+        </div>
+        <div className="search-and-add">
+          <div className="search">
+            <SearchBar
+              value={searchQuery}
+              onChangeText={handleSearch}
+              onSearch={() =>
+                console.log("Performing search for:", searchQuery)
+              }
+              placeholder="Search tourist spots..."
+              containerStyle={{ flex: 1, maxWidth: 300 }}
+            />
+          </div>
+          <div className="add">
+            <button
+              className="add-button"
+              onClick={() => setAddSpotModalVisible(true)}
+            >
+              <IoAdd size={20} color="#FFF" />
+              <Text variant="normal" color="white" className="add-button-text">
+                Add
+              </Text>
+            </button>
+          </div>
+        </div>
       </div>
 
       {loading ? (
@@ -137,6 +159,7 @@ const Spot = () => {
           <TouristSpotTable
             spots={paginatedSpots}
             onViewDetails={handleViewDetails}
+            onEdit={handleEditSpot}
           />
           {totalPages > 1 && (
             <Pagination
@@ -148,10 +171,19 @@ const Spot = () => {
         </div>
       )}
 
-      <AddSpotForm
+      <TouristSpotForm
         isVisible={isAddSpotModalVisible}
         onClose={() => setAddSpotModalVisible(false)}
         onSpotAdded={fetchSpotsAndCategories}
+        mode="add"
+      />
+
+      <TouristSpotForm
+        isVisible={isEditSpotModalVisible}
+        onClose={handleCloseEditModal}
+        onSpotUpdated={handleSpotUpdated}
+        initialData={selectedSpotForEdit}
+        mode="edit"
       />
     </div>
   );

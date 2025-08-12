@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import type { TouristSpot } from '../../types/TouristSpot';
 import { apiService } from '../../utils/api';
+import Text from "../Text";
 
 type Props = {
   spotId: string;
@@ -35,11 +36,12 @@ const TouristSpotDetails: React.FC<Props> = ({ spotId, onBack }) => {
   if (!spot) return <p>No details found.</p>;
 
   return (
-    <div style={{ padding: 20 }}>
+    <div style={{ padding: 20, color:'black'
+    }}>
       <button onClick={onBack} style={{ marginBottom: 20, cursor: 'pointer' }}>
         ← Back
       </button>
-      <h1>{spot.name}</h1>
+      <p>{spot.name}</p>
       <p><strong>Description:</strong> {spot.description || 'N/A'}</p>
       <p><strong>Location:</strong> {spot.barangay}, {spot.municipality}, {spot.province}</p>
       <p><strong>Category:</strong> {spot.category}</p>

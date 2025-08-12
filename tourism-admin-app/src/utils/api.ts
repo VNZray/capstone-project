@@ -107,9 +107,86 @@ class ApiService {
   }
 
   async updateTouristSpot(id: string, spotData: Partial<TouristSpot>): Promise<ApiResponse<TouristSpot>> {
-    const response = await this.request<TouristSpot>(`/tourist-spots/${id}/edit`, {
-      method: 'POST',
+    const response = await this.request<TouristSpot>(`/tourist-spots/${id}`, {
+      method: 'PUT',
       body: JSON.stringify(spotData),
+    });
+    return response;
+  }
+
+  // Submit edit request for tourist spot
+  async submitEditRequest(id: string, spotData: Partial<TouristSpot>): Promise<ApiResponse<TouristSpot>> {
+    const response = await this.request<TouristSpot>(`/tourist-spots/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(spotData),
+    });
+    return response;
+  }
+
+  // Approval system methods
+  async getApprovalStats(): Promise<{
+    pendingSpots: number;
+    pendingBusinesses: number;
+    pendingEvents: number;
+    pendingAccommodations: number;
+    pendingEdits: number;
+    approvedEdits: number;
+    rejectedEdits: number;
+  }> {
+    const response = await this.request<{
+      pendingSpots: number;
+      pendingBusinesses: number;
+      pendingEvents: number;
+      pendingAccommodations: number;
+      pendingEdits: number;
+      approvedEdits: number;
+      rejectedEdits: number;
+    }>('/approval/stats');
+    return response.data;
+  }
+
+  // Generic approval methods for all content types
+  async getPendingItemsByType(contentType: string): Promise<any[]> {
+    const response = await this.request<any[]>(`/approval/pending/${contentType}`);
+    return response.data;
+  }
+
+  async approveItemByType(contentType: string, id: string): Promise<ApiResponse<void>> {
+    const response = await this.request<void>(`/approval/approve/${contentType}/${id}`, {
+      method: 'PUT',
+    });
+    return response;
+  }
+
+  // Backward compatibility methods (existing functionality)
+  async getPendingTouristSpots(): Promise<TouristSpot[]> {
+    const response = await this.request<TouristSpot[]>('/approval/pending-spots');
+    return response.data;
+  }
+
+  async getPendingEditRequests(): Promise<any[]> {
+    const response = await this.request<any[]>('/approval/pending-edits');
+    return response.data;
+  }
+
+  async approveTouristSpot(id: string): Promise<ApiResponse<void>> {
+    const response = await this.request<void>(`/approval/approve-spot/${id}`, {
+      method: 'PUT',
+    });
+    return response;
+  }
+
+  async approveEditRequest(id: string): Promise<ApiResponse<void>> {
+    const response = await this.request<void>(`/approval/approve-edit/${id}`, {
+      method: 'PUT',
+    });
+    return response;
+  }
+
+  async rejectEditRequest(id: string, reason?: string): Promise<ApiResponse<void>> {
+    const response = await this.request<void>(`/approval/reject-edit/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify({ reason }),
     });
     return response;
   }

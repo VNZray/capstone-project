@@ -253,7 +253,315 @@ export const createTouristSpot = async (req, res) => {
   }
 };
 
-// (Simplified) update temporarily removed
+// Update existing tourist spot
+export const updateTouristSpot = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const {
+      name,
+      description,
+      province_id,
+      municipality_id,
+      barangay_id,
+      latitude,
+      longitude,
+      contact_phone,
+      contact_email,
+      website,
+      entry_fee,
+      category_id,
+      type_id,
+    } = req.body;
+
+    if (
+      !name ||
+      !description ||
+      !province_id ||
+      !municipality_id ||
+      !barangay_id ||
+      !contact_phone ||
+      !category_id ||
+      !type_id
+    ) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Name, description, province_id, municipality_id, barangay_id, contact_phone, category_id, and type_id are required",
+      });
+    }
+
+    // Check if tourist spot exists
+    const [existingSpot] = await db.execute(
+      "SELECT id FROM tourist_spots WHERE id = ?",
+      [id]
+    );
+    if (existingSpot.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "Tourist spot not found",
+      });
+    }
+
+    // Validate category_id exists
+    const [categoryCheck] = await db.execute(
+      "SELECT id FROM category WHERE id = ?",
+      [category_id]
+    );
+    if (categoryCheck.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid category_id",
+      });
+    }
+
+    // Validate type_id exists
+    const [typeCheck] = await db.execute("SELECT id FROM type WHERE id = ?", [
+      type_id,
+    ]);
+    if (typeCheck.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid type_id",
+      });
+    }
+
+    // Validate location hierarchy
+    const [provinceCheck] = await db.execute(
+      "SELECT id FROM province WHERE id = ?",
+      [province_id]
+    );
+    if (provinceCheck.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid province_id",
+      });
+    }
+
+    const [municipalityCheck] = await db.execute(
+      "SELECT id FROM municipality WHERE id = ? AND province_id = ?",
+      [municipality_id, province_id]
+    );
+    if (municipalityCheck.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid municipality_id for the selected province",
+      });
+    }
+
+    const [barangayCheck] = await db.execute(
+      "SELECT id FROM barangay WHERE id = ? AND municipality_id = ?",
+      [barangay_id, municipality_id]
+    );
+    if (barangayCheck.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid barangay_id for the selected municipality",
+      });
+    }
+
+    // Update the tourist spot
+    await db.execute(
+      `
+      UPDATE tourist_spots SET
+        name = ?, description = ?, province_id = ?, municipality_id = ?, barangay_id = ?,
+        latitude = ?, longitude = ?, contact_phone = ?, contact_email = ?, website = ?, 
+        entry_fee = ?, category_id = ?, type_id = ?, updated_at = CURRENT_TIMESTAMP
+      WHERE id = ?
+    `,
+      [
+        name,
+        description,
+        province_id,
+        municipality_id,
+        barangay_id,
+        latitude || null,
+        longitude || null,
+        contact_phone,
+        contact_email || null,
+        website || null,
+        entry_fee || null,
+        category_id,
+        type_id,
+        id,
+      ]
+    );
+
+    res.json({
+      success: true,
+      message: "Tourist spot updated successfully"
+    });
+
+  } catch (error) {
+    console.error("Error updating tourist spot:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error updating tourist spot",
+      error: error.message
+    });
+  }
+};
+
+// Submit an edit request for a tourist spot
+export const submitEditRequest = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const {
+      name,
+      description,
+      province_id,
+      municipality_id,
+      barangay_id,
+      latitude,
+      longitude,
+      contact_phone,
+      contact_email,
+      website,
+      entry_fee,
+      category_id,
+      type_id,
+    } = req.body;
+
+    if (
+      !name ||
+      !description ||
+      !province_id ||
+      !municipality_id ||
+      !barangay_id ||
+      !contact_phone ||
+      !category_id ||
+      !type_id
+    ) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Name, description, province_id, municipality_id, barangay_id, contact_phone, category_id, and type_id are required",
+      });
+    }
+
+    // Check if tourist spot exists
+    const [existingSpot] = await db.execute(
+      "SELECT id FROM tourist_spots WHERE id = ?",
+      [id]
+    );
+    if (existingSpot.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "Tourist spot not found",
+      });
+    }
+
+    // Validate category_id exists
+    const [categoryCheck] = await db.execute(
+      "SELECT id FROM category WHERE id = ?",
+      [category_id]
+    );
+    if (categoryCheck.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid category_id",
+      });
+    }
+
+    // Validate type_id exists
+    const [typeCheck] = await db.execute("SELECT id FROM type WHERE id = ?", [
+      type_id,
+    ]);
+    if (typeCheck.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid type_id",
+      });
+    }
+
+    // Validate location hierarchy
+    const [provinceCheck] = await db.execute(
+      "SELECT id FROM province WHERE id = ?",
+      [province_id]
+    );
+    if (provinceCheck.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid province_id",
+      });
+    }
+
+    const [municipalityCheck] = await db.execute(
+      "SELECT id FROM municipality WHERE id = ? AND province_id = ?",
+      [municipality_id, province_id]
+    );
+    if (municipalityCheck.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid municipality_id for the selected province",
+      });
+    }
+
+    const [barangayCheck] = await db.execute(
+      "SELECT id FROM barangay WHERE id = ? AND municipality_id = ?",
+      [barangay_id, municipality_id]
+    );
+    if (barangayCheck.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid barangay_id for the selected municipality",
+      });
+    }
+
+    // Check if there's already a pending edit request for this spot
+    const [existingEdit] = await db.execute(
+      "SELECT id FROM tourist_spot_edits WHERE tourist_spot_id = ? AND approval_status = 'pending'",
+      [id]
+    );
+
+    if (existingEdit.length > 0) {
+      return res.status(400).json({
+        success: false,
+        message: "There is already a pending edit request for this tourist spot. Please wait for the current request to be processed.",
+      });
+    }
+
+    // Insert the edit request into tourist_spot_edits table
+    await db.execute(
+      `
+      INSERT INTO tourist_spot_edits (
+        tourist_spot_id, name, description, province_id, municipality_id, barangay_id,
+        latitude, longitude, contact_phone, contact_email, website, entry_fee, 
+        spot_status, is_featured, category_id, type_id, approval_status
+      )
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active', 0, ?, ?, 'pending')
+    `,
+      [
+        id,
+        name,
+        description,
+        province_id,
+        municipality_id,
+        barangay_id,
+        latitude || null,
+        longitude || null,
+        contact_phone,
+        contact_email || null,
+        website || null,
+        entry_fee || null,
+        category_id,
+        type_id,
+      ]
+    );
+
+    res.json({
+      success: true,
+      message: "Edit request submitted successfully and is pending admin approval"
+    });
+
+  } catch (error) {
+    console.error("Error submitting edit request:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error submitting edit request",
+      error: error.message
+    });
+  }
+};
 
 // (Simplified) delete temporarily removed
 

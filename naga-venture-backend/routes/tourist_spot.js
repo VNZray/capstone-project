@@ -24,6 +24,9 @@ router.get('/:id', touristSpotController.getTouristSpotById);
 // Create new tourist spot
 router.post('/', touristSpotController.createTouristSpot);
 
+// Submit edit request for existing tourist spot
+router.put('/:id', touristSpotController.submitEditRequest);
+
 // (Simplified) update/delete removed for now
 
 export default router;

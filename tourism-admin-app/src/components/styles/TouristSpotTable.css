@@ -10,13 +10,13 @@
   grid-template-columns: 25% 30% 15% 15% 15%;
   padding: 15px;
   background-color: #f8f9fa;
-  border-bottom: 1px solid #eee;
+  border-bottom: 2px solid #e0e0e0;
 }
 
 .table-row {
   display: grid;
   grid-template-columns: 25% 30% 15% 15% 15%;
-  padding: 15px;
+  padding: 10px;
   border-bottom: 1px solid #eee;
   align-items: center;
 }
@@ -25,8 +25,13 @@
   background-color: #f8f9fa;
 }
 
+.type-cell, .status-cell, .actions-cell{
+  text-align: center;
+}
+
 .header-cell, .row-cell {
   padding: 0 10px;
+  align-items: center;
 }
 
 .status-badge {
@@ -46,6 +51,26 @@
 
 .view-details-button:hover {
   background-color: #0056b3;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  align-items: center;
+}
+
+.edit-button {
+  background-color: #28a745;
+  padding: 6px 12px;
+  border-radius: 4px;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.edit-button:hover {
+  background-color: #1e7e34;
 }
 
 @media (max-width: 768px) {
