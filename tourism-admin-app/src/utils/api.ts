@@ -123,42 +123,7 @@ class ApiService {
     return response;
   }
 
-  // Approval system methods
-  async getApprovalStats(): Promise<{
-    pendingSpots: number;
-    pendingBusinesses: number;
-    pendingEvents: number;
-    pendingAccommodations: number;
-    pendingEdits: number;
-    approvedEdits: number;
-    rejectedEdits: number;
-  }> {
-    const response = await this.request<{
-      pendingSpots: number;
-      pendingBusinesses: number;
-      pendingEvents: number;
-      pendingAccommodations: number;
-      pendingEdits: number;
-      approvedEdits: number;
-      rejectedEdits: number;
-    }>('/approval/stats');
-    return response.data;
-  }
-
-  // Generic approval methods for all content types
-  async getPendingItemsByType(contentType: string): Promise<any[]> {
-    const response = await this.request<any[]>(`/approval/pending/${contentType}`);
-    return response.data;
-  }
-
-  async approveItemByType(contentType: string, id: string): Promise<ApiResponse<void>> {
-    const response = await this.request<void>(`/approval/approve/${contentType}/${id}`, {
-      method: 'PUT',
-    });
-    return response;
-  }
-
-  // Backward compatibility methods (existing functionality)
+  // Approval system methods - tourist spots only
   async getPendingTouristSpots(): Promise<TouristSpot[]> {
     const response = await this.request<TouristSpot[]>('/approval/pending-spots');
     return response.data;
@@ -185,6 +150,14 @@ class ApiService {
 
   async rejectEditRequest(id: string, reason?: string): Promise<ApiResponse<void>> {
     const response = await this.request<void>(`/approval/reject-edit/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify({ reason }),
+    });
+    return response;
+  }
+
+  async rejectTouristSpot(id: string, reason?: string): Promise<ApiResponse<void>> {
+    const response = await this.request<void>(`/approval/reject-spot/${id}`, {
       method: 'PUT',
       body: JSON.stringify({ reason }),
     });
