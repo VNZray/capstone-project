@@ -1,6 +1,6 @@
 import db from "../db.js";
 
-// Get all tourists
+// Get all tourism
 export async function getAllTourism(req, res) {
   try {
     const [results] = await db.query("SELECT * FROM tourism");

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
-
 import { useAuth } from "@/src/context/AuthContext";
 import { supabase } from "@/src/utils/supabase";
+
 import Stepper from "@/src/components/Stepper";
 import StepBasics from "./components/StepBasics";
 import StepContact from "./components/StepContact";
@@ -12,17 +12,63 @@ import StepPricing from "./components/StepPricing";
 import StepPermits from "./components/StepPermits";
 import StepReview from "./components/StepReview";
 import StepSubmit from "./components/StepSubmit";
-import Button from "@/src/components/Button";
-import Text from "@/src/components/Text";
+import axios from "axios";
 import PageContainer from "@/src/components/PageContainer";
 
 const BusinessListing: React.FC = () => {
   const [currentStep, setCurrentStep] = useState(0);
-  const { user } = useAuth();
+  const { user, API_URL } = useAuth();
+  const [ownerId, setOwnerId] = useState<number | null>(null);
   const [formData, setFormData] = useState<any | null>(null);
 
+  useEffect(() => {
+    const fetchOwnerId = async () => {
+      if (!user) {
+        alert("Error User not authenticated.");
+        return;
+      }
+
+      const { data: ownerData } = await axios.get(
+        `${API_URL}/owner/${user.owner_id}`
+      );
+
+      setOwnerId(ownerData.id);
+
+      // Default sample data (replace with actual empty structure for live use)
+      setFormData({
+        business_name: "Sampaguita Tourist Inn",
+        business_type: "Tourist Inn",
+        category: "Accommodation",
+        phone_number: "095612315534",
+        email: "sampaguita.inn@example.com",
+        barangay_id: null,
+        municipality_id: null,
+        province_id: null,
+        description: "Business description",
+        instagram_url: "https://instagram.com/sampaguita",
+        tiktok_url: "https://tiktok.com/sampaguita",
+        facebook_url: "https://facebook.com/sampaguita",
+        longitude: "123.19816120246286",
+        latitude: "13.629396465124925",
+        min_price: "1000",
+        max_price: "5000",
+        owner_id: ownerData.id,
+        status: "Pending",
+        business_category_id: null,
+        bsuiness_type_id: null,
+      });
+    };
+
+    fetchOwnerId();
+  }, [user]);
+
+  if (!formData) return null; // Loading placeholder could go here
+
   const commonProps = {
-    onNext: () => setCurrentStep((prev) => Math.min(prev + 1, 8)),
+    API_URL: API_URL,
+    data: formData,
+    setData: setFormData,
+    onNext: () => setCurrentStep((prev) => prev + 1),
     onPrev: () => setCurrentStep((prev) => Math.max(prev - 1, 0)),
   };
 
@@ -63,7 +109,16 @@ const BusinessListing: React.FC = () => {
       }}
     >
       <Stepper currentStep={currentStep} />
-      <div style={{ flexBasis: "40%", minWidth: 300, padding: 20 }}>
+      <div
+        style={{
+          flexBasis: "40%",
+          minWidth: 300,
+          height: 765,
+          padding: 20,
+          overflowY: "auto",
+          scrollbarColor: "unset",
+        }}
+      >
         {renderStep()}
       </div>
     </PageContainer>

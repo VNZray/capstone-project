@@ -3,21 +3,48 @@ import Button from "@/src/components/Button";
 
 import React from "react";
 import type StepBasics from "./StepBasics";
+import type { Business } from "@/src/types/Business";
+import Input from "@/src/components/Input";
 
 type Props = {
+  data: Business;
+  setData: React.Dispatch<React.SetStateAction<Business>>;
+  API_URL: string;
   onNext: () => void;
   onPrev: () => void;
 };
-const StepContact: React.FC<Props> = ({ onNext, onPrev }) => {
+const StepContact: React.FC<Props> = ({
+  onNext,
+  onPrev,
+  API_URL,
+  data,
+  setData,
+}) => {
   return (
     <>
       <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-        <Text variant="card-title">Basic Information</Text>
+        <Text variant="header-title">Contact Information</Text>
 
         <div className="content">
-          <Text variant="normal">
-            Please provide the basic information for your listing.
-          </Text>
+          <Input
+            type="email"
+            label="Business Email"
+            placeholder="Enter your business email"
+            value={data.email}
+            onChange={(e) =>
+              setData((prev) => ({ ...prev, email: e.target.value }))
+            }
+          />
+
+          <Input
+            type="text"
+            label="Phone Number"
+            placeholder="Enter your phone number"
+            value={data.phone_number}
+            onChange={(e) =>
+              setData((prev) => ({ ...prev, phone_number: e.target.value }))
+            }
+          />
         </div>
         <div style={{ display: "flex", gap: 400 }}>
           <Button onClick={onPrev} variant="secondary" style={{ flex: 1 }}>

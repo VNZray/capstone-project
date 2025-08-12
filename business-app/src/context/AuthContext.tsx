@@ -26,7 +26,7 @@ interface OwnerResponse {
   id: string;
 }
 
-const API_URL = "http://192.168.1.8:3000/api";
+const API_URL = "http://192.168.1.2:3000/api";
 // const API_URL = "http://172.20.10.2:3000/api";
 // const API_URL = "http://192.168.0.156:3000/api";
 
@@ -35,6 +35,7 @@ interface AuthContextType {
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
+  API_URL: typeof API_URL;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -116,7 +117,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout }}>
+    <AuthContext.Provider value={{ user, loading, login, logout, API_URL }}>
       {children}
     </AuthContext.Provider>
   );

@@ -4,25 +4,40 @@ import Text from "./Text";
 
 type InputProps =
   | ({
-      type: "text" | "number" | "date" | "time" | "email" | "password";
+      type:
+        | "text"
+        | "number"
+        | "date"
+        | "time"
+        | "email"
+        | "password";
       options?: never;
+      style?: React.CSSProperties;
     } & React.InputHTMLAttributes<HTMLInputElement>)
   | ({
       type: "select";
       options: { label: string; value: string | number }[];
+      style?: React.CSSProperties;
     } & React.SelectHTMLAttributes<HTMLSelectElement>)
   | ({
       type: "checkbox" | "radio";
       options?: never;
-    } & React.InputHTMLAttributes<HTMLInputElement>);
+      style?: React.CSSProperties;
+    } & React.InputHTMLAttributes<HTMLInputElement>)
+  | ({
+      type: "textarea";
+      options?: never;
+      style?: React.CSSProperties;
+    } & React.TextareaHTMLAttributes<HTMLTextAreaElement>);
 
 interface BaseProps {
   label?: string;
 }
 
 const Input: React.FC<InputProps & BaseProps> = (props) => {
-  const { type, label } = props;
+  const { type, label, style } = props;
 
+  // Select
   if (type === "select") {
     const { options, ...rest } = props;
     return (
@@ -34,7 +49,7 @@ const Input: React.FC<InputProps & BaseProps> = (props) => {
             </Text>
           </label>
         )}
-        <select className="custom-input" {...rest}>
+        <select className="custom-input" style={style} {...rest}>
           {options?.map((opt) => (
             <option key={opt.value} value={opt.value}>
               {opt.label}
@@ -45,6 +60,24 @@ const Input: React.FC<InputProps & BaseProps> = (props) => {
     );
   }
 
+  // Textarea
+  if (type === "textarea") {
+    const { ...rest } = props;
+    return (
+      <div className="form-group">
+        {label && (
+          <label>
+            <Text variant="medium" color="dark">
+              {label}
+            </Text>
+          </label>
+        )}
+        <textarea className="custom-input" style={style} {...rest} />
+      </div>
+    );
+  }
+
+  // Default input
   const { type: _type, ...restProps } = props;
   return (
     <div className="form-group">
@@ -55,7 +88,7 @@ const Input: React.FC<InputProps & BaseProps> = (props) => {
           </Text>
         </label>
       )}
-      <input className="custom-input" type={type} {...restProps} />
+      <input className="custom-input" type={type} style={style} {...restProps} />
     </div>
   );
 };

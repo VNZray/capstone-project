@@ -1,14 +1,14 @@
 import db from "../db.js";
 
 // get all categories
-export const getAllCategories = async (req, res) => {
+export async function getAllCategories(req, res) {
   try {
     const [results] = await db.query("SELECT * FROM category");
     res.json(results);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
-};
+}
 
 // get all Accommodation and Shop categories
 export const getAccommodationAndShopCategories = async (req, res) => {
