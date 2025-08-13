@@ -9,6 +9,7 @@ import touristRoutes from "./routes/tourist.js";
 import tourismRoutes from "./routes/tourism.js";
 import categoryAndTypeRoutes from "./routes/category_and_type.js";
 import ownerRoutes from "./routes/owner.js";
+import externalBookingRoutes from "./routes/external_booking.js"
 
 const app = express();
 const PORT = 3000;
@@ -24,7 +25,7 @@ app.use("/api/tourism", tourismRoutes);
 app.use("/api/owner", ownerRoutes);
 app.use("/api/address", addressRoutes);
 app.use("/api/category-and-type", categoryAndTypeRoutes);
-
+app.use("/api/external-booking", externalBookingRoutes);
 
 app.listen(PORT, () => {
   console.log(`🚀 Server running at http://localhost:${PORT}`);
@@ -35,6 +36,8 @@ app.listen(PORT, () => {
   console.log("API URL: http://localhost:3000/api/owner");
   console.log("API URL: http://localhost:3000/api/address");
   console.log("API URL: http://localhost:3000/api/category-and-type");
+  console.log("API URL: http://localhost:3000/api/external-booking");
+
   console.log("✅ Connected to MariaDB (Promise Pool)");
   console.log("✅ API is ready to use");
   console.log("\nCTRL + C tp stop the server\n");

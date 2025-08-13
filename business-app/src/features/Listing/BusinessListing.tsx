@@ -14,13 +14,18 @@ import StepReview from "./components/StepReview";
 import StepSubmit from "./components/StepSubmit";
 import axios from "axios";
 import PageContainer from "@/src/components/PageContainer";
+import Container from "@/src/components/Container";
 
 const BusinessListing: React.FC = () => {
   const [currentStep, setCurrentStep] = useState(0);
   const { user, API_URL } = useAuth();
   const [ownerId, setOwnerId] = useState<number | null>(null);
   const [formData, setFormData] = useState<any | null>(null);
-
+  const [externalBookings, setExternalBookings] = useState<BookingSite[]>([]);
+  type BookingSite = {
+    name: string;
+    link: string;
+  };
   useEffect(() => {
     const fetchOwnerId = async () => {
       if (!user) {
@@ -41,9 +46,9 @@ const BusinessListing: React.FC = () => {
         category: "Accommodation",
         phone_number: "095612315534",
         email: "sampaguita.inn@example.com",
-        barangay_id: null,
-        municipality_id: null,
-        province_id: null,
+        barangay_id: "",
+        municipality_id: "",
+        province_id: "",
         description: "Business description",
         instagram_url: "https://instagram.com/sampaguita",
         tiktok_url: "https://tiktok.com/sampaguita",
@@ -54,19 +59,24 @@ const BusinessListing: React.FC = () => {
         max_price: "5000",
         owner_id: ownerData.id,
         status: "Pending",
-        business_category_id: null,
-        bsuiness_type_id: null,
+        business_category_id: "",
+        bsuiness_type_id: "",
+        hansBooking: 0,
       });
+
+      setExternalBookings([{ name: "", link: "" }]);
     };
 
     fetchOwnerId();
   }, [user]);
 
-  if (!formData) return null; // Loading placeholder could go here
+  if (!formData) return null;
 
   const commonProps = {
-    API_URL: API_URL,
+    API_URL,
     data: formData,
+    bookingSite: externalBookings,
+    setBookingSites: setExternalBookings,
     setData: setFormData,
     onNext: () => setCurrentStep((prev) => prev + 1),
     onPrev: () => setCurrentStep((prev) => Math.max(prev - 1, 0)),
@@ -103,24 +113,21 @@ const BusinessListing: React.FC = () => {
         display: "flex",
         justifyContent: "center",
         flexDirection: "row",
-        gap: 24,
-        padding: 20,
         alignItems: "flex-start",
+        gap: "20px",
       }}
     >
-      <Stepper currentStep={currentStep} />
-      <div
-        style={{
-          flexBasis: "40%",
-          minWidth: 300,
-          height: 765,
-          padding: 20,
-          overflowY: "auto",
-          scrollbarColor: "unset",
-        }}
+      <Container height="770px" elevation={3}>
+        <Stepper currentStep={currentStep} />
+      </Container>
+      <Container
+        style={{ overflowBlock: "hidden" }}
+        height="770px"
+        width="650px"
+        elevation={3}
       >
         {renderStep()}
-      </div>
+      </Container>
     </PageContainer>
   );
 };

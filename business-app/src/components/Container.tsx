@@ -10,6 +10,7 @@ interface ContainerProps {
   height?: string;
   radius?: string;
   padding?: string;
+  style?: React.CSSProperties;
 }
 
 const Container: React.FC<ContainerProps> = ({
@@ -20,6 +21,7 @@ const Container: React.FC<ContainerProps> = ({
   height,
   radius,
   padding = "16px",
+  style,
 }) => {
   return (
     <div
@@ -29,6 +31,7 @@ const Container: React.FC<ContainerProps> = ({
         width,
         height,
         borderRadius: radius,
+        ...style,
       }}
     >
       {children}

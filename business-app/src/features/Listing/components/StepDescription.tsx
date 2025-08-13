@@ -3,6 +3,7 @@ import Button from "@/src/components/Button";
 import React from "react";
 import type { Business } from "@/src/types/Business";
 import Input from "@/src/components/Input";
+import CardHeader from "@/src/components/CardHeader";
 
 type Props = {
   data: Business;
@@ -20,9 +21,9 @@ const StepDescription: React.FC<Props> = ({
   setData,
 }) => {
   return (
-    <>
+    <div className="stepperContent">
       <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-        <Text variant="header-title">Basic Information</Text>
+        <CardHeader title=" Business Description" color="white" margin="0 0 20px 0" />
 
         <div className="content">
           <Input
@@ -36,20 +37,20 @@ const StepDescription: React.FC<Props> = ({
             style={{ minHeight: "120px" }}
           />
         </div>
-        <div style={{ display: "flex", gap: 400 }}>
-          <Button onClick={onPrev} variant="secondary" style={{ flex: 1 }}>
-            <Text variant="normal" color="white">
-              Back
-            </Text>
-          </Button>
-          <Button onClick={onNext} variant="primary" style={{ flex: 1 }}>
-            <Text variant="normal" color="white">
-              Next
-            </Text>
-          </Button>
-        </div>
-      </div>{" "}
-    </>
+      </div>
+      <div style={{ display: "flex", gap: 300 }}>
+        <Button onClick={onPrev} variant="secondary" style={{ flex: 1 }}>
+          <Text variant="normal" color="white">
+            Back
+          </Text>
+        </Button>
+        <Button onClick={onNext} variant="primary" style={{ flex: 1 }}>
+          <Text variant="normal" color="white">
+            Next
+          </Text>
+        </Button>
+      </div>
+    </div>
   );
 };
 

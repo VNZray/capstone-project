@@ -7,7 +7,7 @@ interface PageContainerProps {
 
 const PageContainer: React.FC<PageContainerProps> = ({ children, style }) => {
   return (
-    <div style={{ padding: 20, ...style }} className="container">
+    <div style={{ padding: 20, flex: 1, ...style }}>
       {children}
     </div>
   );

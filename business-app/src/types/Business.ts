@@ -17,9 +17,10 @@ export type Business = {
   longitude: string;
   min_price: string;
   max_price: string;
-  owner_id: number;
+  owner_id: string;
   status: string;
   business_image: string;  
+  hasBooking: boolean;
 };
 
 export type Room = {

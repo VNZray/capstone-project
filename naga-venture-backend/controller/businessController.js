@@ -1,4 +1,5 @@
 import db from "../db.js";
+import { v4 as uuidv4 } from "uuid";
 
 // Get all businesses
 export async function getAllBusiness(req, res) {
@@ -27,10 +28,28 @@ export async function getBusinessByOwnerId(req, res) {
   }
 }
 
+export async function getBusinessId(req, res) {
+  const { id } = req.params;
+  try {
+    const [results] = await db.query("SELECT * FROM business WHERE id = ?", [
+      id,
+    ]);
+    if (results.length === 0) {
+      return res.status(404).json({ message: "Business not found" });
+    }
+    res.json(results[0]);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+}
 // Insert a new business
 export async function insertBusiness(req, res) {
   try {
+    // Generate UUID for the new business
+    const businessId = uuidv4();
+
     const fields = [
+      "id", // include the id field
       "business_name",
       "business_type_id",
       "business_category_id",
@@ -50,20 +69,34 @@ export async function insertBusiness(req, res) {
       "owner_id",
       "status",
       "business_image",
+      "hasBooking",
     ];
 
-    const values = fields.map((f) => req.body[f] ?? null); // Ensure null for missing fields
+    const values = [
+      businessId, // first value is the UUID
+      ...fields.slice(1).map((f) => req.body[f] ?? null),
+    ];
 
-    const [result] = await db.query(
-      `INSERT INTO business (
-        ${fields.join(", ")}
-      ) VALUES (${fields.map(() => "?").join(", ")})`,
+    // Insert with known UUID
+    await db.query(
+      `INSERT INTO business (${fields.join(", ")})
+       VALUES (${fields.map(() => "?").join(", ")})`,
       values
     );
 
+    // Retrieve the inserted row by UUID
+    const [inserted] = await db.query(
+      "SELECT * FROM business WHERE id = ?",
+      [businessId]
+    );
+
+    if (inserted.length === 0) {
+      return res.status(404).json({ error: "Inserted business not found" });
+    }
+
     res.status(201).json({
       message: "Business created successfully",
-      business_id: result.insertId,
+      data: inserted[0], // full row including UUID
     });
   } catch (err) {
     console.error("Error inserting business:", err);
