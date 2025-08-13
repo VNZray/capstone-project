@@ -6,7 +6,7 @@ export default function BusinessLayout() {
   return (
     <div className="business-layout">
       <Header />
-        <Outlet />
+      <Outlet />
     </div>
   );
 }

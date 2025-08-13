@@ -19,7 +19,7 @@ type StepperProps = {
 
 export default function Stepper({ currentStep }: StepperProps) {
   return (
-    <div style={{ padding: 20, maxWidth: 300, height: "100%" }}>
+    <div style={{ padding: 20, maxWidth: 300, height: "90%" }}>
       {steps.map((step, index) => {
         const isCompleted = index < currentStep;
         const isActive = index === currentStep;

@@ -34,6 +34,8 @@ interface TextProps {
   color?: ColorVariant;
   className?: string;
   children: React.ReactNode;
+    style?: React.CSSProperties;
+  
 }
 
 const Text: React.FC<TextProps> = ({
@@ -41,11 +43,12 @@ const Text: React.FC<TextProps> = ({
   color = "text-color",
   className = "",
   children,
+  style
 }) => {
   return (
     <span
       className={`text ${variant} ${className}`.trim()}
-      style={{ color: `var(--${color})` }}
+      style={{ color: `var(--${color})`, ...style } }
     >
       {children}
     </span>

@@ -18,7 +18,7 @@ const MainHeader: React.FC = ({}) => {
     navigate(`/business`);
   };
 
-    // Map paths to titles
+  // Map paths to titles
   const pageTitles: Record<string, string> = {
     "/dashboard": "Dashboard",
     "/transactions": "Transactions",
