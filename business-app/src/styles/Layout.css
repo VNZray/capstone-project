@@ -3,6 +3,8 @@
   min-height: 100vh;
   min-width: 100vw;
   background-color: var(--background-color);
+  overflow-x: hidden;
+
   /* light background */
 }
 
@@ -21,9 +23,12 @@
 .business-layout {
   display: flex;
   flex-direction: column;
-  min-height: 100vh;
-  min-width: 100vw;
+  width: 100vw;
+  height: 100vh;
   background-color: var(--background-color);
+  overflow-x: hidden;
+  /* Prevent horizontal scroll */
+
   /* light gray */
 }
 
@@ -32,5 +37,7 @@
   height: 100vh;
   /* instead of 100vw */
   background-color: var(--background-color);
+  overflow-x: hidden;
+
   /* light gray */
 }

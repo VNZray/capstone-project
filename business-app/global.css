@@ -64,3 +64,13 @@
     /* ~24px */
     font-weight: 900;
 }
+
+.header-name {
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.header-email {
+    font-size: 12px;
+    color: #555;
+}

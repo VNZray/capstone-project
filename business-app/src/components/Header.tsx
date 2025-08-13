@@ -2,7 +2,7 @@ import React from "react";
 import { useNavigate, Link } from "react-router-dom";
 import "./styles/Header.css";
 import { useAuth } from "@/src/context/AuthContext"; // adjust path if needed
-import logo from "../assets/images/logo.png";
+import logo from "../assets/images/light-logo.png";
 import Text from "./Text";
 
 export default function Header(): React.JSX.Element {
@@ -30,17 +30,23 @@ export default function Header(): React.JSX.Element {
           }}
         />
 
-        <Text variant="header-title">City Venture</Text>
+        <Text variant="header-title" color="white">
+          City Venture
+        </Text>
       </div>
 
       {/* Right: Nav Links + Logout */}
       <nav className="header-right">
-        <Link to="/" className="header-link">
+        <Link to="/business" className="header-link">
           Business
         </Link>
 
         <Link to="/business-listing" className="header-link">
-          List My Business
+          Register
+        </Link>
+
+        <Link to="/request" className="header-link">
+          Request
         </Link>
 
         <button className="header-logout" onClick={handleLogout}>

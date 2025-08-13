@@ -10,8 +10,10 @@ import {
   Tag,
   Star,
   User,
+  LogOut,
+  LayoutDashboard
 } from "lucide-react";
-import "../styles/Sidebar.css";
+import "./styles/Sidebar.css";
 
 export default function Sidebar(): React.ReactElement {
   const business_type = "Accommodation"; // This should be dynamically set based on the user's business type
@@ -22,50 +24,60 @@ export default function Sidebar(): React.ReactElement {
 
       {/* Navigation */}
       <nav className="sidebar-nav">
-        <NavItem to="/dashboard" label="Dashboard" icon={<Home size={18} />} />
-        {business_type === "Accommodation" ? (
-          <>
-            <NavItem
-              to="/transactions"
-              label="Transactions"
-              icon={<Receipt size={18} />}
-            />
-            <NavItem
-              to="/bookings"
-              label="Bookings"
-              icon={<CalendarCheck size={18} />}
-            />
-          </>
-        ) : null}
-        <NavItem
-          to="/manage-business"
-          label="Manage Business"
-          icon={<Store size={18} />}
-        />
-        {business_type === "Accommodation" ? (
+        <div>
           <NavItem
-            to="/rooms"
-            label="Manage Rooms"
-            icon={<BedDouble size={18} />}
+            to="/dashboard"
+            label="Dashboard"
+            icon={<LayoutDashboard size={18} />}
           />
-        ) : (
+          {business_type === "Accommodation" ? (
+            <>
+              <NavItem
+                to="/transactions"
+                label="Transactions"
+                icon={<Receipt size={18} />}
+              />
+              <NavItem
+                to="/bookings"
+                label="Bookings"
+                icon={<CalendarCheck size={18} />}
+              />
+            </>
+          ) : null}
           <NavItem
-            to="/offers"
-            label="Manage Offers"
-            icon={<Tags size={18} />}
+            to="/manage-business"
+            label="Manage Business"
+            icon={<Store size={18} />}
           />
-        )}
-        <NavItem
-          to="/manage-promotion"
-          label="Manage Promotion"
-          icon={<Tag size={18} />}
-        />
-        <NavItem
-          to="/reviews"
-          label="Reviews & Ratings"
-          icon={<Star size={18} />}
-        />
-        <NavItem to="/profile" label="Profile" icon={<User size={18} />} />
+          {business_type === "Accommodation" ? (
+            <NavItem
+              to="/rooms"
+              label="Manage Rooms"
+              icon={<BedDouble size={18} />}
+            />
+          ) : (
+            <NavItem
+              to="/offers"
+              label="Manage Offers"
+              icon={<Tags size={18} />}
+            />
+          )}
+          <NavItem
+            to="/manage-promotion"
+            label="Manage Promotion"
+            icon={<Tag size={18} />}
+          />
+          <NavItem
+            to="/reviews"
+            label="Reviews & Ratings"
+            icon={<Star size={18} />}
+          />
+          <NavItem to="/profile" label="Profile" icon={<User size={18} />} />
+        </div>
+
+        <div>
+          <NavItem to="/login" label="Log Out" icon={<LogOut size={18} />} />
+        </div>
       </nav>
     </aside>
   );

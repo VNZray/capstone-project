@@ -276,7 +276,7 @@ const Register = () => {
                 <Link to="/privacy-policy" target="_blank" className="link">
                   Privacy Policy
                 </Link>
-                 of Naga Venture.
+                of Naga Venture.
               </Text>
             </label>
           </div>

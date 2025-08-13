@@ -30,3 +30,9 @@
   flex-direction: column;
   justify-content: center;
 }
+
+.custom-input[type="textarea"],
+.custom-input textarea {
+  min-height: 100px;
+  resize: vertical;
+}
