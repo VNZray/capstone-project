@@ -1,6 +1,7 @@
 import Text from "@/src/components/Text";
-import Button from "@/src/components/Button";
-import React from "react";
+import { Button } from "@mui/material";
+import ArrowBackIcon from "@mui/icons-material/ArrowBack";
+import ArrowForwardIcon from "@mui/icons-material/ArrowForward";import React from "react";
 import type { Business } from "@/src/types/Business";
 import Input from "@/src/components/Input";
 import CardHeader from "@/src/components/CardHeader";
@@ -23,7 +24,11 @@ const StepDescription: React.FC<Props> = ({
   return (
     <div className="stepperContent">
       <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-        <CardHeader title=" Business Description" color="white" margin="0 0 20px 0" />
+        <CardHeader
+          title=" Business Description"
+          color="white"
+          margin="0 0 20px 0"
+        />
 
         <div className="content">
           <Input
@@ -39,15 +44,21 @@ const StepDescription: React.FC<Props> = ({
         </div>
       </div>
       <div style={{ display: "flex", gap: 300 }}>
-        <Button onClick={onPrev} variant="secondary" style={{ flex: 1 }}>
-          <Text variant="normal" color="white">
-            Back
-          </Text>
+        <Button
+          variant="outlined"
+          startIcon={<ArrowBackIcon />}
+          onClick={onPrev}
+          style={{ flex: 1 }}
+        >
+          Back
         </Button>
-        <Button onClick={onNext} variant="primary" style={{ flex: 1 }}>
-          <Text variant="normal" color="white">
-            Next
-          </Text>
+        <Button
+          variant="contained"
+          endIcon={<ArrowForwardIcon />}
+          onClick={onNext}
+          style={{ flex: 1 }}
+        >
+          Next
         </Button>
       </div>
     </div>

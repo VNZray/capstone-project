@@ -14,15 +14,17 @@ export async function getAllBusiness(req, res) {
 // Get business by owner ID
 export async function getBusinessByOwnerId(req, res) {
   const { id } = req.params;
+  console.log("Owner ID received:", id); // 🛠 debug
   try {
     const [results] = await db.query(
       "SELECT * FROM business WHERE owner_id = ?",
       [id]
     );
+    console.log("Query results:", results); // 🛠 debug
     if (results.length === 0) {
       return res.status(404).json({ message: "Business not found" });
     }
-    res.json(results[0]);
+    res.json(results);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -85,10 +87,9 @@ export async function insertBusiness(req, res) {
     );
 
     // Retrieve the inserted row by UUID
-    const [inserted] = await db.query(
-      "SELECT * FROM business WHERE id = ?",
-      [businessId]
-    );
+    const [inserted] = await db.query("SELECT * FROM business WHERE id = ?", [
+      businessId,
+    ]);
 
     if (inserted.length === 0) {
       return res.status(404).json({ error: "Inserted business not found" });

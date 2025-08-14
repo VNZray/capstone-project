@@ -1,138 +1,92 @@
-import { Business } from '@/types/Business';
-import { supabase } from '@/utils/supabase';
 import React, {
   createContext,
-  ReactNode,
   useContext,
-  useEffect,
   useState,
-} from 'react';
+  useCallback,
+  useEffect,
+} from "react";
+import type { ReactNode } from "react";
+import axios from "axios";
+import { useAuth } from "@/src/context/AuthContext";
+import type { Business } from "../types/Business";
+const API_URL = "http://192.168.1.2:3000/api";
 
-type FilterMode =
-  | 'ALL'
-  | 'ACTIVE_ONLY'
-  | 'PENDING_ONLY'
-  | 'BY_OWNER'
-  | 'TOURISM_ALL'
-  | 'TOURIST_ACTIVE';
-
-type BusinessContextType = {
-  businesses: Business[];
-  filteredBusinesses: Business[];
+interface BusinessContextType {
+  selectedBusinessId: string | null;
+  businessDetails: Business | null;
   loading: boolean;
-  filterMode: FilterMode;
-  filterByOwnerId: (ownerId: number) => void;
-  filterActiveOnly: () => void;
-  filterPendingOnly: () => void;
-  showAll: () => void;
-  fetchBusinessById: (id: number) => Promise<Business | null>; // ← Add this
-};
+  setBusinessId: (id: string) => void;
+  clearBusinessId: () => void;
+  refreshBusiness: () => Promise<void>;
+    API_URL: typeof API_URL;
+
+}
 
 const BusinessContext = createContext<BusinessContextType | undefined>(
   undefined
 );
 
-type ProviderProps = {
+interface BusinessProviderProps {
   children: ReactNode;
-};
+}
 
-export const BusinessProvider = ({ children }: ProviderProps) => {
-  const [businesses, setBusinesses] = useState<Business[]>([]);
-  const [filteredBusinesses, setFilteredBusinesses] = useState<Business[]>([]);
-  const [loading, setLoading] = useState<boolean>(false);
-  const [filterMode, setFilterMode] = useState<FilterMode>('ALL');
+export const BusinessProvider: React.FC<BusinessProviderProps> = ({
+  children,
+}) => {
+  const { API_URL, user } = useAuth();
+  const [selectedBusinessId, setSelectedBusinessId] = useState<string | null>(
+    () => localStorage.getItem("selectedBusinessId") || null
+  );
+  const [businessDetails, setBusinessDetails] = useState<Business | null>(null);
+  const [loading, setLoading] = useState(false);
 
-  const fetchBusinesses = async () => {
-    setLoading(true);
-    const { data, error } = await supabase.from('business').select('*');
-
-    if (error) {
-      console.error('Failed to fetch businesses:', error);
-      setLoading(false);
-      return;
-    }
-
-    setBusinesses(data || []);
-    setFilteredBusinesses(data || []);
-    setLoading(false);
-  };
-
-  useEffect(() => {
-    fetchBusinesses();
+  /** Set the selected business ID and store it locally */
+  const setBusinessId = useCallback((id: string) => {
+    setSelectedBusinessId(id);
+    localStorage.setItem("selectedBusinessId", id);
   }, []);
 
-  const fetchBusinessById = async (id: number): Promise<Business | null> => {
+  /** Clear selected business */
+  const clearBusinessId = useCallback(() => {
+    setSelectedBusinessId(null);
+    setBusinessDetails(null);
+    localStorage.removeItem("selectedBusinessId");
+  }, []);
+
+  /** Fetch business details from API */
+  const fetchBusiness = useCallback(async () => {
+    if (!selectedBusinessId) return;
     setLoading(true);
-
-    const { data, error } = await supabase
-      .from('business')
-      .select('*')
-      .eq('id', id)
-      .single();
-
-    setLoading(false);
-
-    if (error) {
-      console.error('Failed to fetch business by ID:', error);
-      return null;
-    }
-
-    return data;
-  };
-
-  const filterByOwnerId = async (ownerId: number) => {
-    setLoading(true);
-    setFilterMode('BY_OWNER');
-
-    const { data, error } = await supabase
-      .from('business')
-      .select('*')
-      .eq('owner_id', ownerId);
-
-    if (error) {
-      console.error('Failed to fetch businesses by owner:', error);
-      setFilteredBusinesses([]);
+    try {
+      const { data } = await axios.get<Business>(
+        `${API_URL}/business/${selectedBusinessId}`
+      );
+      setBusinessDetails(data);
+    } catch (error) {
+      console.error("Failed to fetch business:", error);
+      setBusinessDetails(null);
+    } finally {
       setLoading(false);
-      return;
     }
+  }, [API_URL, selectedBusinessId]);
 
-    setFilteredBusinesses(data || []);
-    setLoading(false);
-  };
-
-  const filterActiveOnly = () => {
-    setFilterMode('ACTIVE_ONLY');
-    const filtered = businesses.filter(
-      (b) => b.status.toLowerCase() === 'active'
-    );
-    setFilteredBusinesses(filtered);
-  };
-
-  const filterPendingOnly = () => {
-    setFilterMode('PENDING_ONLY');
-    const filtered = businesses.filter(
-      (b) => b.status.toLowerCase() === 'pending'
-    );
-    setFilteredBusinesses(filtered);
-  };
-
-  const showAll = () => {
-    setFilterMode('ALL');
-    setFilteredBusinesses(businesses);
-  };
+  /** Fetch when ID changes */
+  useEffect(() => {
+    if (selectedBusinessId) {
+      fetchBusiness();
+    }
+  }, [selectedBusinessId, fetchBusiness]);
 
   return (
     <BusinessContext.Provider
       value={{
-        businesses,
-        filteredBusinesses,
+        selectedBusinessId,
+        businessDetails,
         loading,
-        filterMode,
-        filterByOwnerId,
-        filterActiveOnly,
-        filterPendingOnly,
-        showAll,
-        fetchBusinessById,
+        setBusinessId,
+        clearBusinessId,
+        refreshBusiness: fetchBusiness,
+        API_URL
       }}
     >
       {children}
@@ -140,10 +94,10 @@ export const BusinessProvider = ({ children }: ProviderProps) => {
   );
 };
 
-export const useBusiness = () => {
+export const useBusiness = (): BusinessContextType => {
   const context = useContext(BusinessContext);
   if (!context) {
-    throw new Error('useBusiness must be used within a BusinessProvider');
+    throw new Error("useBusiness must be used within a BusinessProvider");
   }
   return context;
 };

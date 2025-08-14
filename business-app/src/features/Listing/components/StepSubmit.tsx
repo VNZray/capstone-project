@@ -3,9 +3,12 @@ import { useNavigate } from "react-router-dom";
 import axios from "axios";
 
 import Text from "@/src/components/Text";
-import Button from "@/src/components/Button";
+import { Button } from "@mui/material";
+import ArrowBackIcon from "@mui/icons-material/ArrowBack";
+import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import type { Business } from "@/src/types/Business";
 import CardHeader from "@/src/components/CardHeader";
+import { PostAdd } from "@mui/icons-material";
 
 type BookingSite = {
   name: string;
@@ -151,15 +154,19 @@ const StepSubmit: React.FC<Props> = ({
       </div>
       {/* Navigation Buttons */}
       <div style={{ display: "flex", gap: 300, marginTop: 20 }}>
-        <Button onClick={onPrev} variant="secondary" style={{ flex: 1 }}>
-          <Text variant="normal" color="white">
-            Back
-          </Text>
+        <Button
+          variant="outlined"
+          startIcon={<ArrowBackIcon />}
+          onClick={onPrev}
+          style={{ flex: 1 }}
+        >
+          Back
         </Button>
 
         <Button
           onClick={handleSubmit}
-          variant="primary"
+          variant="contained"
+          startIcon={<PostAdd />}
           style={{ flex: 1 }}
           disabled={loading}
         >

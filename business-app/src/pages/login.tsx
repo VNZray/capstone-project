@@ -61,10 +61,10 @@ const Login: React.FC = () => {
               flexDirection: "column",
             }}
           >
-            <Text variant="title" color="dark">
+            <Text variant="title" color="dark" style={{ marginBottom: 6 }}>
               Sign In
             </Text>
-            <Text variant="paragraph" color="dark">
+            <Text variant="paragraph" color="dark" style={{ marginBottom: 24 }}>
               Navigate with Ease - Your Ultimate City Directory
             </Text>
           </div>
