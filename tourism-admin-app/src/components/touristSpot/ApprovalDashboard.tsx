@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState, useEffect } from "react";
 import Text from "../Text";
 import { apiService } from "../../utils/api";
@@ -58,8 +59,9 @@ const ApprovalDashboard: React.FC = () => {
   const [pendingEdits, setPendingEdits] = useState<PendingEdit[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<TabType>("overview");
-  const [selectedItem, setSelectedItem] = useState<any>(null);
+  const [selectedItem, setSelectedItem] = useState<unknown>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [processingId, setProcessingId] = useState<string | null>(null);
 
   useEffect(() => {
     loadApprovalData();
@@ -75,26 +77,102 @@ const ApprovalDashboard: React.FC = () => {
       ]);
 
       // Transform spots data to include action_type
-      const transformedSpots = spotsData.map((spot) => ({
-        ...spot,
+      const spotsArr = (spotsData as any[]) || [];
+      const editsArr = (editsData as any[]) || [];
+
+      const transformedSpots = spotsArr.map((spot: any) => ({
+        ...(spot || {}),
         action_type: "new" as const,
       }));
 
-      const transformedEdits = editsData.map((edit) => ({
-        ...edit,
-        action_type: "edit" as const,
-        original_description: edit.description,
-        original_type: edit.type,
-        original_province: edit.province,
-        original_municipality: edit.municipality,
-        original_barangay: edit.barangay,
-        original_contact_phone: edit.contact_phone,
-        original_website: edit.website,
-        original_entry_fee: edit.entry_fee,
-      }));
+      const transformedEdits = editsArr.map((edit: any) => {
+        // Helper: pick the first defined original-like field from common variants
+        const pickOriginal = (...keys: string[]) => {
+          for (const k of keys) {
+            if (edit && typeof edit === "object" && k in edit && edit[k] != null) {
+              return edit[k];
+            }
+          }
+          return null;
+        };
 
-      setPendingSpots(transformedSpots);
-      setPendingEdits(transformedEdits);
+        return {
+          ...(edit || {}),
+          action_type: "edit" as const,
+          original_name: pickOriginal(
+            "original_name",
+            "originalName",
+            "previous_name",
+            "previousName",
+            "name_before",
+            "name_original",
+            "old_name"
+          ),
+          // prefer fields that explicitly represent the original/previous value if provided by the API
+          original_description: pickOriginal(
+            "original_description",
+            "originalDescription",
+            "previous_description",
+            "previousDescription",
+            "old_description",
+            "description_before",
+            "description_original"
+          ),
+          original_type: pickOriginal(
+            "original_type",
+            "originalType",
+            "previous_type",
+            "previousType",
+            "type_before",
+            "type_original"
+          ),
+          original_province: pickOriginal("original_province", "originalProvince", "previous_province", "province_before"),
+          original_municipality: pickOriginal(
+            "original_municipality",
+            "originalMunicipality",
+            "previous_municipality",
+            "municipality_before"
+          ),
+          original_barangay: pickOriginal("original_barangay", "originalBarangay", "previous_barangay", "barangay_before"),
+          original_contact_phone: pickOriginal("original_contact_phone", "originalContactPhone", "contact_phone_before"),
+          original_website: pickOriginal("original_website", "originalWebsite", "website_before"),
+          original_entry_fee: pickOriginal("original_entry_fee", "originalEntryFee", "entry_fee_before"),
+        };
+      });
+
+      setPendingSpots(transformedSpots as PendingItem[]);
+
+      // Build a lookup of existing spots (by id) so we can populate missing original_* fields
+      const spotById = new Map<string, object>();
+      for (const s of transformedSpots) {
+        const sRec = s as Record<string, unknown> | undefined;
+        if (sRec && sRec['id']) spotById.set(String(sRec['id']), sRec as object);
+      }
+
+      const enrichedEdits = (transformedEdits as unknown[]).map((edRaw) => {
+        const ed = edRaw as Record<string, unknown>;
+        const existing = ed.tourist_spot_id ? (spotById.get(String(ed.tourist_spot_id)) as Record<string, unknown> | undefined) : undefined;
+        // If original fields are missing, inherit from the existing spot record
+        const enriched = {
+          ...(ed as object),
+          // keep original_* props for backward compatibility
+          original_name: (ed['original_name'] ?? existing?.['name'] ?? null) as string | null,
+          original_description: (ed['original_description'] ?? existing?.['description'] ?? null) as string | null,
+          original_type: (ed['original_type'] ?? existing?.['type'] ?? null) as string | null,
+          original_province: (ed['original_province'] ?? existing?.['province'] ?? null) as string | null,
+          original_municipality: (ed['original_municipality'] ?? existing?.['municipality'] ?? null) as string | null,
+          original_barangay: (ed['original_barangay'] ?? existing?.['barangay'] ?? null) as string | null,
+          original_contact_phone: (ed['original_contact_phone'] ?? existing?.['contact_phone'] ?? null) as string | null,
+          original_website: (ed['original_website'] ?? existing?.['website'] ?? null) as string | null,
+          original_entry_fee: (ed['original_entry_fee'] ?? existing?.['entry_fee'] ?? null) as number | null,
+          // include the actual existing tourist_spot record so ViewModal can use it as the authoritative current values
+          existingSpot: existing ?? null,
+        };
+
+        return enriched as unknown as PendingEdit;
+      });
+
+      setPendingEdits(enrichedEdits as PendingEdit[]);
     } catch (error) {
       console.error("Error loading approval data:", error);
     } finally {
@@ -104,65 +182,68 @@ const ApprovalDashboard: React.FC = () => {
 
   const handleApproveSpot = async (id: string) => {
     try {
+      setProcessingId(id);
       await apiService.approveTouristSpot(id);
-      alert(`Tourist spot approved successfully!`);
-      loadApprovalData();
+      // Use a simple UX-friendly message; UI-level notifications can replace this later
+      window.alert("Tourist spot approved successfully!");
+      await loadApprovalData();
     } catch (error) {
-      console.error(`Error approving spot:`, error);
-      alert(`Error approving tourist spot. Please try again.`);
+      console.error("Error approving spot:", error);
+      window.alert("Error approving tourist spot. Please try again.");
+    } finally {
+      setProcessingId(null);
     }
   };
 
   const handleRejectSpot = async (id: string) => {
-    const reason = prompt("Please provide a reason for rejection:");
-    if (reason === null) return;
+    const reason = window.prompt("Please provide a reason for rejection:");
+    if (reason === null) return; // user cancelled
 
     try {
+      setProcessingId(id);
       await apiService.rejectTouristSpot(id, reason);
-      alert(`Tourist spot rejected successfully!`);
-      loadApprovalData();
+      window.alert("Tourist spot rejected successfully!");
+      await loadApprovalData();
     } catch (error) {
-      console.error(`Error rejecting spot:`, error);
-      alert(`Error rejecting tourist spot. Please try again.`);
+      console.error("Error rejecting spot:", error);
+      window.alert("Error rejecting tourist spot. Please try again.");
+    } finally {
+      setProcessingId(null);
     }
   };
 
   const handleApproveSpotEdit = async (id: string) => {
     try {
+      setProcessingId(id);
       await apiService.approveEditRequest(id);
-      alert("Edit request approved successfully!");
-      loadApprovalData();
+      window.alert("Edit request approved successfully!");
+      await loadApprovalData();
     } catch (error) {
       console.error("Error approving edit:", error);
-      alert("Error approving edit request. Please try again.");
+      window.alert("Error approving edit request. Please try again.");
+    } finally {
+      setProcessingId(null);
     }
   };
 
   const handleRejectEdit = async (id: string) => {
-    const reason = prompt("Please provide a reason for rejection:");
+    const reason = window.prompt("Please provide a reason for rejection:");
     if (reason === null) return; // User cancelled
 
     try {
+      setProcessingId(id);
       await apiService.rejectEditRequest(id, reason);
-      alert("Edit request rejected successfully!");
-      loadApprovalData(); // Refresh data
+      window.alert("Edit request rejected successfully!");
+      await loadApprovalData(); // Refresh data
     } catch (error) {
       console.error("Error rejecting edit:", error);
-      alert("Error rejecting edit request. Please try again.");
+      window.alert("Error rejecting edit request. Please try again.");
+    } finally {
+      setProcessingId(null);
     }
   };
 
-  const handleView = (
-    item:
-      | PendingItem
-      | PendingEdit
-      | {
-          id: string;
-          name: string;
-          action_type: "new" | "edit";
-          submitted_at: string;
-        }
-  ) => {
+  const handleView = (item: unknown) => {
     setSelectedItem(item);
     setIsModalOpen(true);
   };
@@ -361,6 +442,7 @@ const ApprovalDashboard: React.FC = () => {
               onView={handleView}
               onApprove={handleApprove}
               onReject={handleReject}
+              processingId={processingId}
             />
           </div>
         )}
@@ -373,6 +455,7 @@ const ApprovalDashboard: React.FC = () => {
               onView={handleView}
               onApprove={() => alert("Events approval not yet implemented")}
               onReject={() => alert("Events rejection not yet implemented")}
+              processingId={processingId}
             />
           </div>
         )}
@@ -385,6 +468,7 @@ const ApprovalDashboard: React.FC = () => {
               onView={handleView}
               onApprove={() => alert("Businesses approval not yet implemented")}
               onReject={() => alert("Businesses rejection not yet implemented")}
+              processingId={processingId}
             />
           </div>
         )}
@@ -401,18 +485,14 @@ const ApprovalDashboard: React.FC = () => {
               onReject={() =>
                 alert("Accommodations rejection not yet implemented")
               }
+              processingId={processingId}
             />
           </div>
         )}
       </div>
 
       {/* View Modal */}
-      <ViewModal
-        isOpen={isModalOpen}
-        onClose={closeModal}
-        item={selectedItem}
-        contentType={activeTab}
-      />
+  <ViewModal isOpen={isModalOpen} onClose={closeModal} item={selectedItem as Record<string, unknown>} />
     </div>
   );
 };

@@ -26,20 +26,32 @@ export const getPendingEditRequests = async (req, res) => {
         tse.approval_status,
         tse.submitted_at,
         tse.reviewed_at,
-        c.category,
-        t.type,
-        p.province,
-        m.municipality,
-        b.barangay,
-        ts.name as original_name,
-        ts.spot_status as original_status
+  c.category,
+  t.type,
+  p.province,
+  m.municipality,
+  b.barangay,
+  ts.name as original_name,
+  ts.description as original_description,
+  ot.type as original_type,
+  op.province as original_province,
+  om.municipality as original_municipality,
+  ob.barangay as original_barangay,
+  ts.contact_phone as original_contact_phone,
+  ts.website as original_website,
+  ts.entry_fee as original_entry_fee,
+  ts.spot_status as original_status
       FROM tourist_spot_edits tse
       JOIN category c ON tse.category_id = c.id
       JOIN type t ON tse.type_id = t.id
       JOIN province p ON tse.province_id = p.id
       JOIN municipality m ON tse.municipality_id = m.id
       JOIN barangay b ON tse.barangay_id = b.id
-      JOIN tourist_spots ts ON tse.tourist_spot_id = ts.id
+  JOIN tourist_spots ts ON tse.tourist_spot_id = ts.id
+  LEFT JOIN province op ON ts.province_id = op.id
+  LEFT JOIN municipality om ON ts.municipality_id = om.id
+  LEFT JOIN barangay ob ON ts.barangay_id = ob.id
+  LEFT JOIN type ot ON ts.type_id = ot.id
       WHERE tse.approval_status = 'pending'
       ORDER BY tse.submitted_at DESC
     `);

@@ -99,12 +99,10 @@ const Spot = () => {
     );
   }, [filteredAndSearchedSpots, currentPage, spotsPerPage]);
 
-  // If a spot is selected, show the details view
   if (selectedSpotId) {
     return <TouristSpotDetails spotId={selectedSpotId} onBack={handleBack} />;
   }
 
-  // Otherwise, show the main list
   return (
     <div className="spot-container">
       <div className="filter-and-search-container">

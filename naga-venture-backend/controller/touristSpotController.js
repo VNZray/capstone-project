@@ -7,36 +7,19 @@ export const getAllTouristSpots = async (request, response) => {
   try {
     const [data] = await db.execute(`
       SELECT 
-        ts.id,
-        ts.name,
-        ts.description,
-        ts.province_id,
-        ts.municipality_id,
-        ts.barangay_id,
-        ts.latitude,
-        ts.longitude,
-        ts.contact_phone,
-        ts.contact_email,
-        ts.website,
-        ts.entry_fee,
-        ts.spot_status,
-        ts.is_featured,
-        c.category,
-        t.type,
-        ts.category_id,
-        ts.type_id,
-        ts.created_at,
-        ts.updated_at,
-        p.province,
-        m.municipality,
-        b.barangay
+        ts.*, 
+        c.category AS category,
+        t.type AS type,
+        p.province AS province,
+        m.municipality AS municipality,
+        b.barangay AS barangay
       FROM tourist_spots ts
-      JOIN category c ON ts.category_id = c.id
-      JOIN type t ON ts.type_id = t.id
-      JOIN province p ON ts.province_id = p.id
-      JOIN municipality m ON ts.municipality_id = m.id
-      JOIN barangay b ON ts.barangay_id = b.id
-      WHERE ts.spot_status IN ('active', 'inactive')
+      LEFT JOIN category c ON ts.category_id = c.id
+      LEFT JOIN type t ON ts.type_id = t.id
+      LEFT JOIN province p ON ts.province_id = p.id
+      LEFT JOIN municipality m ON ts.municipality_id = m.id
+      LEFT JOIN barangay b ON ts.barangay_id = b.id
+      WHERE ts.spot_status IN ('active','inactive')
       ORDER BY ts.name ASC
     `);
 
@@ -56,42 +39,22 @@ export const getTouristSpotById = async (request, response) => {
   try {
     const { id } = request.params;
 
-    const [data] = await db.execute(
-      `
+    const [data] = await db.execute(`
       SELECT 
-        ts.id,
-        ts.name,
-        ts.description,
-        ts.province_id,
-        ts.municipality_id,
-        ts.barangay_id,
-        ts.latitude,
-        ts.longitude,
-        ts.contact_phone,
-        ts.contact_email,
-        ts.website,
-        ts.entry_fee,
-        ts.spot_status,
-        ts.is_featured,
-        c.category,
-        t.type,
-        ts.category_id,
-        ts.type_id,
-        ts.created_at,
-        ts.updated_at,
-        p.province,
-        m.municipality,
-        b.barangay
+        ts.*, 
+        c.category AS category,
+        t.type AS type,
+        p.province AS province,
+        m.municipality AS municipality,
+        b.barangay AS barangay
       FROM tourist_spots ts
-      JOIN category c ON ts.category_id = c.id
-      JOIN type t ON ts.type_id = t.id
-      JOIN province p ON ts.province_id = p.id
-      JOIN municipality m ON ts.municipality_id = m.id
-      JOIN barangay b ON ts.barangay_id = b.id
+      LEFT JOIN category c ON ts.category_id = c.id
+      LEFT JOIN type t ON ts.type_id = t.id
+      LEFT JOIN province p ON ts.province_id = p.id
+      LEFT JOIN municipality m ON ts.municipality_id = m.id
+      LEFT JOIN barangay b ON ts.barangay_id = b.id
       WHERE ts.id = ?
-    `,
-      [id]
-    );
+    `, [id]);
 
     if (data.length === 0) {
       return response.status(404).json({
@@ -110,7 +73,6 @@ export const getTouristSpotById = async (request, response) => {
   }
 };
 
-// Create new tourist spot
 export const createTouristSpot = async (request, response) => {
   try {
     const {
@@ -145,65 +107,61 @@ export const createTouristSpot = async (request, response) => {
           "Name, description, province_id, municipality_id, barangay_id, contact_phone, category_id, and type_id are requestuired",
       });
     }
-
-    // Validate category_id exists
-    const [categoryCheck] = await db.execute(
-      "SELECT id FROM category WHERE id = ?",
-      [category_id]
-    );
-    if (categoryCheck.length === 0) {
-      return response.status(400).json({
-        success: false,
-        message: "Invalid category_id",
-      });
-    }
-
-    // Validate type_id exists
-    const [typeCheck] = await db.execute("SELECT id FROM type WHERE id = ?", [
-      type_id,
+    const [
+      [categoryCheck],
+      [typeCheck],
+      [provinceCheck],
+      [municipalityCheck],
+      [barangayCheck],
+    ] = await Promise.all([
+      db.execute("SELECT id FROM category WHERE id = ?", [category_id]),
+      db.execute("SELECT id FROM type WHERE id = ? AND category_id = ?", [
+        type_id,
+        category_id,
+      ]),
+      db.execute("SELECT id FROM province WHERE id = ?", [province_id]),
+      db.execute(
+        "SELECT id FROM municipality WHERE id = ? AND province_id = ?",
+        [municipality_id, province_id]
+      ),
+      db.execute(
+        "SELECT id FROM barangay WHERE id = ? AND municipality_id = ?",
+        [barangay_id, municipality_id]
+      ),
     ]);
+
+    if (categoryCheck.length === 0) {
+      return response
+        .status(400)
+        .json({ success: false, message: "Invalid category_id" });
+    }
     if (typeCheck.length === 0) {
-      return response.status(400).json({
-        success: false,
-        message: "Invalid type_id",
-      });
+      return response
+        .status(400)
+        .json({ success: false, message: "Invalid type_id" });
     }
-
-    // Validate location hierarchy
-    const [provinceCheck] = await db.execute(
-      "SELECT id FROM province WHERE id = ?",
-      [province_id]
-    );
     if (provinceCheck.length === 0) {
-      return response.status(400).json({
-        success: false,
-        message: "Invalid province_id",
-      });
+      return response
+        .status(400)
+        .json({ success: false, message: "Invalid province_id" });
     }
-
-    const [municipalityCheck] = await db.execute(
-      "SELECT id FROM municipality WHERE id = ? AND province_id = ?",
-      [municipality_id, province_id]
-    );
     if (municipalityCheck.length === 0) {
-      return response.status(400).json({
-        success: false,
-        message: "Invalid municipality_id for the selected province",
-      });
+      return response
+        .status(400)
+        .json({
+          success: false,
+          message: "Invalid municipality_id for the selected province",
+        });
     }
-
-    const [barangayCheck] = await db.execute(
-      "SELECT id FROM barangay WHERE id = ? AND municipality_id = ?",
-      [barangay_id, municipality_id]
-    );
     if (barangayCheck.length === 0) {
-      return response.status(400).json({
-        success: false,
-        message: "Invalid barangay_id for the selected municipality",
-      });
+      return response
+        .status(400)
+        .json({
+          success: false,
+          message: "Invalid barangay_id for the selected municipality",
+        });
     }
 
-    // Insert into DB (let DB handle the id)
     await db.execute(
       `
       INSERT INTO tourist_spots (
@@ -219,18 +177,17 @@ export const createTouristSpot = async (request, response) => {
         province_id,
         municipality_id,
         barangay_id,
-        latitude || null,
-        longitude || null,
+        latitude ?? null,
+        longitude ?? null,
         contact_phone,
-        contact_email || null,
-        website || null,
-        entry_fee || null,
+        contact_email ?? null,
+        website ?? null,
+        entry_fee ?? null,
         category_id,
         type_id,
       ]
     );
 
-    // Just return success, no need to return the inserted row
     response.status(201).json({
       success: true,
       message: "Tourist spot created successfully",
@@ -240,304 +197,131 @@ export const createTouristSpot = async (request, response) => {
   }
 };
 
-// Update existing tourist spot
-export const updateTouristSpot = async (request, response) => {
+export const updateTouristSpot = async (req, res) => {
   try {
-    const { id } = request.params;
+    const { id } = req.params;
     const {
-      name,
-      description,
-      province_id,
-      municipality_id,
-      barangay_id,
-      latitude,
-      longitude,
-      contact_phone,
-      contact_email,
-      website,
-      entry_fee,
-      category_id,
-      type_id,
-    } = request.body;
+      name, description, province_id, municipality_id, barangay_id,
+      latitude, longitude, contact_phone, contact_email, website,
+      entry_fee, category_id, type_id,
+    } = req.body;
 
     if (
-      !name ||
-      !description ||
-      !province_id ||
-      !municipality_id ||
-      !barangay_id ||
-      !contact_phone ||
-      !category_id ||
-      !type_id
+      !name || !description || !province_id || !municipality_id ||
+      !barangay_id || !contact_phone || !category_id || !type_id
     ) {
-      return response.status(400).json({
+      return res.status(400).json({
         success: false,
-        message:
-          "Name, description, province_id, municipality_id, barangay_id, contact_phone, category_id, and type_id are requestuired",
+        message: "Missing required fields",
       });
     }
 
-    // Check if tourist spot exists
-    const [existingSpot] = await db.execute(
-      "SELECT id FROM tourist_spots WHERE id = ?",
-      [id]
-    );
-    if (existingSpot.length === 0) {
-      return response.status(404).json({
-        success: false,
-        message: "Tourist spot not found",
-      });
-    }
-
-    // Validate category_id exists
-    const [categoryCheck] = await db.execute(
-      "SELECT id FROM category WHERE id = ?",
-      [category_id]
-    );
-    if (categoryCheck.length === 0) {
-      return response.status(400).json({
-        success: false,
-        message: "Invalid category_id",
-      });
-    }
-
-    // Validate type_id exists
-    const [typeCheck] = await db.execute("SELECT id FROM type WHERE id = ?", [
-      type_id,
+    // Check existence and validity in parallel
+    const [
+      [spot], [cat], [type], [prov], [mun], [bar]
+    ] = await Promise.all([
+      db.execute("SELECT id FROM tourist_spots WHERE id = ?", [id]),
+      db.execute("SELECT id FROM category WHERE id = ?", [category_id]),
+      db.execute("SELECT id FROM type WHERE id = ? AND category_id = ?", [type_id, category_id]),
+      db.execute("SELECT id FROM province WHERE id = ?", [province_id]),
+      db.execute("SELECT id FROM municipality WHERE id = ? AND province_id = ?", [municipality_id, province_id]),
+      db.execute("SELECT id FROM barangay WHERE id = ? AND municipality_id = ?", [barangay_id, municipality_id]),
     ]);
-    if (typeCheck.length === 0) {
-      return response.status(400).json({
-        success: false,
-        message: "Invalid type_id",
-      });
-    }
 
-    // Validate location hierarchy
-    const [provinceCheck] = await db.execute(
-      "SELECT id FROM province WHERE id = ?",
-      [province_id]
-    );
-    if (provinceCheck.length === 0) {
-      return response.status(400).json({
-        success: false,
-        message: "Invalid province_id",
-      });
-    }
+    if (!spot.length) return res.status(404).json({ success: false, message: "Tourist spot not found" });
+    if (!cat.length) return res.status(400).json({ success: false, message: "Invalid category_id" });
+    if (!type.length) return res.status(400).json({ success: false, message: "Invalid type_id" });
+    if (!prov.length) return res.status(400).json({ success: false, message: "Invalid province_id" });
+    if (!mun.length) return res.status(400).json({ success: false, message: "Invalid municipality_id for the selected province" });
+    if (!bar.length) return res.status(400).json({ success: false, message: "Invalid barangay_id for the selected municipality" });
 
-    const [municipalityCheck] = await db.execute(
-      "SELECT id FROM municipality WHERE id = ? AND province_id = ?",
-      [municipality_id, province_id]
-    );
-    if (municipalityCheck.length === 0) {
-      return response.status(400).json({
-        success: false,
-        message: "Invalid municipality_id for the selected province",
-      });
-    }
-
-    const [barangayCheck] = await db.execute(
-      "SELECT id FROM barangay WHERE id = ? AND municipality_id = ?",
-      [barangay_id, municipality_id]
-    );
-    if (barangayCheck.length === 0) {
-      return response.status(400).json({
-        success: false,
-        message: "Invalid barangay_id for the selected municipality",
-      });
-    }
-
-    // Update the tourist spot
     await db.execute(
-      `
-      UPDATE tourist_spots SET
-        name = ?, description = ?, province_id = ?, municipality_id = ?, barangay_id = ?,
-        latitude = ?, longitude = ?, contact_phone = ?, contact_email = ?, website = ?, 
-        entry_fee = ?, category_id = ?, type_id = ?, updated_at = CURRENT_TIMESTAMP
-      WHERE id = ?
-    `,
+      `UPDATE tourist_spots SET
+        name=?, description=?, province_id=?, municipality_id=?, barangay_id=?,
+        latitude=?, longitude=?, contact_phone=?, contact_email=?, website=?,
+        entry_fee=?, category_id=?, type_id=?, updated_at=CURRENT_TIMESTAMP
+      WHERE id=?`,
       [
-        name,
-        description,
-        province_id,
-        municipality_id,
-        barangay_id,
-        latitude || null,
-        longitude || null,
-        contact_phone,
-        contact_email || null,
-        website || null,
-        entry_fee || null,
-        category_id,
-        type_id,
-        id,
+        name, description, province_id, municipality_id, barangay_id,
+        latitude ?? null, longitude ?? null, contact_phone, contact_email ?? null,
+        website ?? null, entry_fee ?? null, category_id, type_id, id,
       ]
     );
 
-    response.json({
-      success: true,
-      message: "Tourist spot updated successfully",
-    });
+    res.json({ success: true, message: "Tourist spot updated successfully" });
   } catch (error) {
-    return handleDbError(error, response);
+    return handleDbError(error, res);
   }
 };
 
-// Submit an edit requestuest for a tourist spot
-export const submitEditRequest = async (request, response) => {
+export const submitEditRequest = async (req, res) => {
   try {
-    const { id } = request.params;
+    const { id } = req.params;
     const {
-      name,
-      description,
-      province_id,
-      municipality_id,
-      barangay_id,
-      latitude,
-      longitude,
-      contact_phone,
-      contact_email,
-      website,
-      entry_fee,
-      category_id,
-      type_id,
-    } = request.body;
+      name, description, province_id, municipality_id, barangay_id,
+      latitude, longitude, contact_phone, contact_email, website,
+      entry_fee, category_id, type_id,
+    } = req.body;
 
     if (
-      !name ||
-      !description ||
-      !province_id ||
-      !municipality_id ||
-      !barangay_id ||
-      !contact_phone ||
-      !category_id ||
-      !type_id
+      !name || !description || !province_id || !municipality_id ||
+      !barangay_id || !contact_phone || !category_id || !type_id
     ) {
-      return response.status(400).json({
+      return res.status(400).json({
         success: false,
-        message:
-          "Name, description, province_id, municipality_id, barangay_id, contact_phone, category_id, and type_id are requestuired",
+        message: "Missing required fields",
       });
     }
 
-    // Check if tourist spot exists
-    const [existingSpot] = await db.execute(
-      "SELECT id FROM tourist_spots WHERE id = ?",
-      [id]
-    );
-    if (existingSpot.length === 0) {
-      return response.status(404).json({
-        success: false,
-        message: "Tourist spot not found",
-      });
-    }
-
-    // Validate category_id exists
-    const [categoryCheck] = await db.execute(
-      "SELECT id FROM category WHERE id = ?",
-      [category_id]
-    );
-    if (categoryCheck.length === 0) {
-      return response.status(400).json({
-        success: false,
-        message: "Invalid category_id",
-      });
-    }
-
-    // Validate type_id exists
-    const [typeCheck] = await db.execute("SELECT id FROM type WHERE id = ?", [
-      type_id,
+    // Check existence and validity in parallel
+    const [
+      [spot], [cat], [type], [prov], [mun], [bar]
+    ] = await Promise.all([
+      db.execute("SELECT id FROM tourist_spots WHERE id = ?", [id]),
+      db.execute("SELECT id FROM category WHERE id = ?", [category_id]),
+      db.execute("SELECT id FROM type WHERE id = ? AND category_id = ?", [type_id, category_id]),
+      db.execute("SELECT id FROM province WHERE id = ?", [province_id]),
+      db.execute("SELECT id FROM municipality WHERE id = ? AND province_id = ?", [municipality_id, province_id]),
+      db.execute("SELECT id FROM barangay WHERE id = ? AND municipality_id = ?", [barangay_id, municipality_id]),
     ]);
-    if (typeCheck.length === 0) {
-      return response.status(400).json({
-        success: false,
-        message: "Invalid type_id",
-      });
-    }
 
-    // Validate location hierarchy
-    const [provinceCheck] = await db.execute(
-      "SELECT id FROM province WHERE id = ?",
-      [province_id]
-    );
-    if (provinceCheck.length === 0) {
-      return response.status(400).json({
-        success: false,
-        message: "Invalid province_id",
-      });
-    }
+    if (!spot.length) return res.status(404).json({ success: false, message: "Tourist spot not found" });
+    if (!cat.length) return res.status(400).json({ success: false, message: "Invalid category_id" });
+    if (!type.length) return res.status(400).json({ success: false, message: "Invalid type_id" });
+    if (!prov.length) return res.status(400).json({ success: false, message: "Invalid province_id" });
+    if (!mun.length) return res.status(400).json({ success: false, message: "Invalid municipality_id for the selected province" });
+    if (!bar.length) return res.status(400).json({ success: false, message: "Invalid barangay_id for the selected municipality" });
 
-    const [municipalityCheck] = await db.execute(
-      "SELECT id FROM municipality WHERE id = ? AND province_id = ?",
-      [municipality_id, province_id]
-    );
-    if (municipalityCheck.length === 0) {
-      return response.status(400).json({
-        success: false,
-        message: "Invalid municipality_id for the selected province",
-      });
-    }
-
-    const [barangayCheck] = await db.execute(
-      "SELECT id FROM barangay WHERE id = ? AND municipality_id = ?",
-      [barangay_id, municipality_id]
-    );
-    if (barangayCheck.length === 0) {
-      return response.status(400).json({
-        success: false,
-        message: "Invalid barangay_id for the selected municipality",
-      });
-    }
-
-    // Check if there's already a pending edit requestuest for this spot
-    const [existingEdit] = await db.execute(
+    // Check for pending edit request
+    const [pending] = await db.execute(
       "SELECT id FROM tourist_spot_edits WHERE tourist_spot_id = ? AND approval_status = 'pending'",
       [id]
     );
-
-    if (existingEdit.length > 0) {
-      return response.status(400).json({
+    if (pending.length)
+      return res.status(400).json({
         success: false,
-        message:
-          "There is already a pending edit requestuest for this tourist spot. Please wait for the current requestuest to be processed.",
+        message: "There is already a pending edit request for this tourist spot.",
       });
-    }
 
-    // Insert the edit requestuest into tourist_spot_edits table
     await db.execute(
-      `
-      INSERT INTO tourist_spot_edits (
+      `INSERT INTO tourist_spot_edits (
         tourist_spot_id, name, description, province_id, municipality_id, barangay_id,
-        latitude, longitude, contact_phone, contact_email, website, entry_fee, 
+        latitude, longitude, contact_phone, contact_email, website, entry_fee,
         spot_status, is_featured, category_id, type_id, approval_status
-      )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active', 0, ?, ?, 'pending')
-    `,
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active', 0, ?, ?, 'pending')`,
       [
-        id,
-        name,
-        description,
-        province_id,
-        municipality_id,
-        barangay_id,
-        latitude || null,
-        longitude || null,
-        contact_phone,
-        contact_email || null,
-        website || null,
-        entry_fee || null,
-        category_id,
-        type_id,
+        id, name, description, province_id, municipality_id, barangay_id,
+        latitude ?? null, longitude ?? null, contact_phone, contact_email ?? null,
+        website ?? null, entry_fee ?? null, category_id, type_id,
       ]
     );
 
-    response.json({
+    res.json({
       success: true,
-      message:
-        "Edit requestuest submitted successfully and is pending admin approval",
+      message: "Edit request submitted successfully and is pending admin approval",
     });
   } catch (error) {
-    console.error("Error submitting edit requestuest:", error);
-    return handleDbError(error, response);
+    return handleDbError(error, res);
   }
 };
 

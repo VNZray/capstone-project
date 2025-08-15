@@ -129,8 +129,8 @@ class ApiService {
     return response.data;
   }
 
-  async getPendingEditRequests(): Promise<any[]> {
-    const response = await this.request<any[]>('/approval/pending-edits');
+  async getPendingEditRequests(): Promise<unknown[]> {
+    const response = await this.request<unknown[]>('/approval/pending-edits');
     return response.data;
   }
 
