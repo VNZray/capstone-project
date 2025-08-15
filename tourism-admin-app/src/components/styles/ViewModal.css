@@ -164,17 +164,6 @@
   font-weight: 600;
 }
 
-/* small badge for changed fields */
-.comparison-column .detail-section.changed .card-title::after {
-  content: " changed";
-  display: inline-block;
-  margin-left: 8px;
-  font-size: 0.75rem;
-  color: rgba(7,89,133,0.9);
-  background: rgba(59,130,246,0.08);
-  padding: 2px 6px;
-  border-radius: 999px;
-}
 
 /* Muted original values */
 .comparison-column:first-child .detail-section .variant-normal,

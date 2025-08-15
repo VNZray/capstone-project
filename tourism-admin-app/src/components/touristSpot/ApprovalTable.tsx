@@ -2,7 +2,6 @@ import React from "react";
 import Text from "../Text";
 import "../styles/ApprovalTable.css";
 
-// Generic item shape for table rows. The real shapes come from parent components.
 type ApprovalTableItem = Record<string, unknown> & {
   id: string;
   name: string;
@@ -14,7 +13,6 @@ type ApprovalTableItem = Record<string, unknown> & {
 interface ApprovalTableProps {
   items: unknown[];
   contentType: string;
-  // callers provide items with varying shapes; use ApprovalTableItem here
   onView: (item: ApprovalTableItem) => void;
   onApprove: (id: string) => void;
   onReject: (id: string) => void;

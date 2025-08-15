@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useEffect, useRef } from "react";
 import Text from "../Text";
 import "../styles/ViewModal.css";
@@ -5,7 +6,6 @@ import "../styles/ViewModal.css";
 interface ViewModalProps {
   isOpen: boolean;
   onClose: () => void;
-  // edit item returned from backend; may include an `existingSpot` property
   item: Record<string, any> | null;
 }
 
@@ -18,14 +18,11 @@ const ViewModal: React.FC<ViewModalProps> = ({ isOpen, onClose, item }) => {
       if (e.key === "Escape") onClose();
     };
     document.addEventListener("keydown", onKey);
-    // focus for accessibility
     setTimeout(() => modalRef.current?.focus(), 0);
     return () => document.removeEventListener("keydown", onKey);
   }, [isOpen, onClose]);
 
   if (!isOpen || !item) return null;
-
-  // Prefer the attached DB row (existingSpot) for current values.
   const existingSpot = item.existingSpot as Record<string, any> | undefined;
 
   const getCurrent = (field: string) => {

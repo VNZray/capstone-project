@@ -103,7 +103,6 @@ export const approveTouristSpot = async (req, res) => {
   try {
     const { id } = req.params;
 
-    // Check if spot exists and is pending
     const [existingSpot] = await db.execute(
       "SELECT id, spot_status FROM tourist_spots WHERE id = ?",
       [id]
@@ -133,6 +132,7 @@ export const approveTouristSpot = async (req, res) => {
       success: true,
       message: "Tourist spot approved successfully",
     });
+    
   } catch (error) {
     console.error("Error approving tourist spot:", error);
     return handleDbError(error, response);
@@ -211,6 +211,12 @@ export const rejectEditRequest = async (req, res) => {
     const { id } = req.params;
     const { reason } = req.body;
 
+    console.log(
+      `[approval] rejectEditRequest called for id=${id} reason=${String(
+        reason
+      )}`
+    );
+
     // Check if edit request exists and is pending
     const [editRequest] = await db.execute(
       "SELECT id FROM tourist_spot_edits WHERE id = ? AND approval_status = 'pending'",
@@ -224,15 +230,27 @@ export const rejectEditRequest = async (req, res) => {
       });
     }
 
-    // Mark the edit request as rejected
+    // Mark the edit request as rejected and save remarks
     await db.execute(
-      "UPDATE tourist_spot_edits SET approval_status = 'rejected', reviewed_at = CURRENT_TIMESTAMP WHERE id = ?",
+      "UPDATE tourist_spot_edits SET approval_status = 'rejected', reviewed_at = CURRENT_TIMESTAMP, remarks = ? WHERE id = ?",
+      [reason || "", id]
+    );
+
+    // Read back the saved remarks to confirm
+    const [updatedRows] = await db.execute(
+      "SELECT id, approval_status, remarks, reviewed_at FROM tourist_spot_edits WHERE id = ?",
       [id]
     );
+
+    const updated =
+      Array.isArray(updatedRows) && updatedRows.length > 0
+        ? updatedRows[0]
+        : null;
 
     res.json({
       success: true,
       message: "Edit request rejected successfully",
+      data: updated,
     });
   } catch (error) {
     console.error("Error rejecting edit request:", error);
@@ -266,14 +284,10 @@ export const rejectTouristSpot = async (req, res) => {
       });
     }
 
-    // Update status to rejected and add rejection reason
     await db.execute(
       "UPDATE tourist_spots SET spot_status = 'rejected', updated_at = CURRENT_TIMESTAMP WHERE id = ?",
       [id]
     );
-
-    // You might want to store the rejection reason in a separate table
-    // For now, we'll just update the status
 
     res.json({
       success: true,

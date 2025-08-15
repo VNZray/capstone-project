@@ -76,7 +76,7 @@ const ApprovalDashboard: React.FC = () => {
         apiService.getPendingEditRequests(),
       ]);
 
-      // Transform spots data to include action_type
+
       const spotsArr = (spotsData as any[]) || [];
       const editsArr = (editsData as any[]) || [];
 
@@ -86,7 +86,7 @@ const ApprovalDashboard: React.FC = () => {
       }));
 
       const transformedEdits = editsArr.map((edit: any) => {
-        // Helper: pick the first defined original-like field from common variants
+
         const pickOriginal = (...keys: string[]) => {
           for (const k of keys) {
             if (edit && typeof edit === "object" && k in edit && edit[k] != null) {
@@ -108,7 +108,7 @@ const ApprovalDashboard: React.FC = () => {
             "name_original",
             "old_name"
           ),
-          // prefer fields that explicitly represent the original/previous value if provided by the API
+
           original_description: pickOriginal(
             "original_description",
             "originalDescription",
@@ -142,7 +142,6 @@ const ApprovalDashboard: React.FC = () => {
 
       setPendingSpots(transformedSpots as PendingItem[]);
 
-      // Build a lookup of existing spots (by id) so we can populate missing original_* fields
       const spotById = new Map<string, object>();
       for (const s of transformedSpots) {
         const sRec = s as Record<string, unknown> | undefined;
@@ -152,10 +151,8 @@ const ApprovalDashboard: React.FC = () => {
       const enrichedEdits = (transformedEdits as unknown[]).map((edRaw) => {
         const ed = edRaw as Record<string, unknown>;
         const existing = ed.tourist_spot_id ? (spotById.get(String(ed.tourist_spot_id)) as Record<string, unknown> | undefined) : undefined;
-        // If original fields are missing, inherit from the existing spot record
         const enriched = {
           ...(ed as object),
-          // keep original_* props for backward compatibility
           original_name: (ed['original_name'] ?? existing?.['name'] ?? null) as string | null,
           original_description: (ed['original_description'] ?? existing?.['description'] ?? null) as string | null,
           original_type: (ed['original_type'] ?? existing?.['type'] ?? null) as string | null,
@@ -165,7 +162,6 @@ const ApprovalDashboard: React.FC = () => {
           original_contact_phone: (ed['original_contact_phone'] ?? existing?.['contact_phone'] ?? null) as string | null,
           original_website: (ed['original_website'] ?? existing?.['website'] ?? null) as string | null,
           original_entry_fee: (ed['original_entry_fee'] ?? existing?.['entry_fee'] ?? null) as number | null,
-          // include the actual existing tourist_spot record so ViewModal can use it as the authoritative current values
           existingSpot: existing ?? null,
         };
 
@@ -184,7 +180,6 @@ const ApprovalDashboard: React.FC = () => {
     try {
       setProcessingId(id);
       await apiService.approveTouristSpot(id);
-      // Use a simple UX-friendly message; UI-level notifications can replace this later
       window.alert("Tourist spot approved successfully!");
       await loadApprovalData();
     } catch (error) {
@@ -197,7 +192,7 @@ const ApprovalDashboard: React.FC = () => {
 
   const handleRejectSpot = async (id: string) => {
     const reason = window.prompt("Please provide a reason for rejection:");
-    if (reason === null) return; // user cancelled
+    if (reason === null) return;
 
     try {
       setProcessingId(id);
@@ -232,6 +227,7 @@ const ApprovalDashboard: React.FC = () => {
 
     try {
       setProcessingId(id);
+  console.log(`[ui] rejectEdit: id=${id} reason=${String(reason)}`);
       await apiService.rejectEditRequest(id, reason);
       window.alert("Edit request rejected successfully!");
       await loadApprovalData(); // Refresh data

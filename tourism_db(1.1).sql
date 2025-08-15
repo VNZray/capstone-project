@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Aug 11, 2025 at 09:05 PM
+-- Generation Time: Aug 15, 2025 at 05:28 PM
 -- Server version: 11.8.3-MariaDB
 -- PHP Version: 8.2.12
 
@@ -558,12 +558,9 @@ CREATE TABLE `tourist_spots` (
 --
 
 INSERT INTO `tourist_spots` (`id`, `name`, `description`, `province_id`, `municipality_id`, `barangay_id`, `latitude`, `longitude`, `contact_phone`, `contact_email`, `website`, `entry_fee`, `spot_status`, `is_featured`, `category_id`, `type_id`, `created_at`, `updated_at`) VALUES
-('d1784f39-768d-11f0-90d0-10ffe07a01e9', 'ticket_status', 'aa', 20, 24, 19, 1.00000000, 1.00000000, '09613636138', 'iman@gmail.com', NULL, NULL, 'active', 0, 3, 3, '2025-08-11 08:33:12', '2025-08-11 08:41:48'),
-('5e7c4d0f-768f-11f0-90d0-10ffe07a01e9', 'aaaaaa', 'aaaaaa', 20, 24, 19, 1.00000000, 1.00000000, '09613636138', 'iman@gmail.com', NULL, NULL, 'active', 0, 3, 3, '2025-08-11 08:44:18', '2025-08-11 10:17:21'),
-('90ab2bc8-76e1-11f0-ab94-10ffe07a01e9', 'ticket_statusssssssasasas', 'aaaaaaaaaa', 20, 24, 19, NULL, NULL, '09613636138', 'iman@gmail.com', NULL, NULL, 'active', 0, 3, 9, '2025-08-11 18:32:41', '2025-08-11 18:33:05'),
-('42a4ae1b-769c-11f0-bfd6-10ffe07a01e9', 'aaaaaa', 'aaaa', 20, 24, 19, 1.00000000, 1.00000000, '09613636138', 'iman@gmail.com', NULL, NULL, 'active', 0, 3, 3, '2025-08-11 10:16:35', '2025-08-11 18:17:43'),
-('6580b8c9-76a6-11f0-bfd6-10ffe07a01e9', 'wwwwww', 'wwwwwwww', 20, 24, 19, NULL, NULL, '09613636138', 'iman@gmail.com', NULL, NULL, 'active', 0, 3, 3, '2025-08-11 11:29:08', '2025-08-11 11:33:44'),
-('5a5ce050-76a8-11f0-bfd6-10ffe07a01e9', 'ticket_statussssas', 'aaaaaaa', 20, 24, 19, NULL, NULL, '09613636138', 'iman@gmail.com', NULL, NULL, 'active', 0, 3, 9, '2025-08-11 11:43:09', '2025-08-11 11:43:21');
+('e97ef867-79dc-11f0-9776-10ffe07a01e9', 'zzzzzzzzzzzzz', 'zzzzzzzzzzzzzzzz', 20, 24, 19, NULL, NULL, '09613636138', NULL, NULL, NULL, 'active', 0, 3, 3, '2025-08-15 13:36:56', '2025-08-15 14:29:35'),
+('1acf492e-79dd-11f0-9776-10ffe07a01e9', 'aaaaaaaaaaazz', 'abcdefghijklmnopqrstuvwxyzzzzzzz', 20, 24, 19, NULL, NULL, '09613636138', NULL, NULL, NULL, 'active', 0, 3, 9, '2025-08-15 13:38:19', '2025-08-15 14:46:36'),
+('b4337ed1-79e6-11f0-9776-10ffe07a01e9', 'c', 'd', 20, 24, 18, NULL, NULL, '09613636138', NULL, NULL, NULL, 'active', 0, 3, 9, '2025-08-15 14:47:02', '2025-08-15 15:21:32');
 
 -- --------------------------------------------------------
 
@@ -579,10 +576,10 @@ CREATE TABLE `tourist_spot_edits` (
   `province_id` int(11) NOT NULL,
   `municipality_id` int(11) NOT NULL,
   `barangay_id` int(11) NOT NULL,
-  `latitude` decimal(10,8) NOT NULL,
-  `longitude` decimal(11,8) NOT NULL,
+  `latitude` decimal(10,8) DEFAULT NULL,
+  `longitude` decimal(11,8) DEFAULT NULL,
   `contact_phone` varchar(20) NOT NULL,
-  `contact_email` varchar(255) NOT NULL,
+  `contact_email` varchar(255) DEFAULT NULL,
   `website` varchar(255) DEFAULT NULL,
   `entry_fee` decimal(10,2) DEFAULT NULL,
   `spot_status` enum('pending','active','inactive') NOT NULL DEFAULT 'pending',
@@ -590,6 +587,7 @@ CREATE TABLE `tourist_spot_edits` (
   `category_id` int(11) NOT NULL,
   `type_id` int(11) NOT NULL,
   `approval_status` enum('pending','approved','rejected') NOT NULL DEFAULT 'pending',
+  `remarks` varchar(255) NOT NULL,
   `submitted_at` timestamp NULL DEFAULT current_timestamp(),
   `reviewed_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
@@ -598,8 +596,8 @@ CREATE TABLE `tourist_spot_edits` (
 -- Dumping data for table `tourist_spot_edits`
 --
 
-INSERT INTO `tourist_spot_edits` (`id`, `tourist_spot_id`, `name`, `description`, `province_id`, `municipality_id`, `barangay_id`, `latitude`, `longitude`, `contact_phone`, `contact_email`, `website`, `entry_fee`, `spot_status`, `is_featured`, `category_id`, `type_id`, `approval_status`, `submitted_at`, `reviewed_at`) VALUES
-('428f33be-768f-11f0-90d0-10ffe07a01e9', 'd1784f39-768d-11f0-90d0-10ffe07a01e9', 'aaaaaaa', 'aaaaaaa', 20, 24, 6, 1.00000000, 1.00000000, '09613636138', 'emma@gmail.com', NULL, NULL, 'active', 0, 3, 3, 'pending', '2025-08-11 08:43:31', NULL);
+INSERT INTO `tourist_spot_edits` (`id`, `tourist_spot_id`, `name`, `description`, `province_id`, `municipality_id`, `barangay_id`, `latitude`, `longitude`, `contact_phone`, `contact_email`, `website`, `entry_fee`, `spot_status`, `is_featured`, `category_id`, `type_id`, `approval_status`, `remarks`, `submitted_at`, `reviewed_at`) VALUES
+('2042882e-79ec-11f0-9776-10ffe07a01e9', 'e97ef867-79dc-11f0-9776-10ffe07a01e9', 'zzzzzzzzzzzzzz', 'zzzzzzzzzzzzzzzzz', 20, 24, 19, NULL, NULL, '09613636138', NULL, NULL, NULL, 'active', 0, 3, 3, 'rejected', '', '2025-08-15 15:25:50', '2025-08-15 15:26:02');
 
 -- --------------------------------------------------------
 
