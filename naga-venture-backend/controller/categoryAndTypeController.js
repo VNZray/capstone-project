@@ -1,38 +1,39 @@
 import db from "../db.js";
+import { handleDbError } from "../utils/errorHandler.js";
 
 // get all categories
-export async function getAllCategories(req, res) {
+export async function getAllCategories(request, response) {
   try {
-    const [results] = await db.query("SELECT * FROM category");
-    res.json(results);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
+    const [data] = await db.query("SELECT * FROM category");
+    response.json(data);
+  } catch (error) {
+    return handleDbError(error, response);
   }
 }
 
 // get all Accommodation and Shop categories
-export const getAccommodationAndShopCategories = async (req, res) => {
+export const getAccommodationAndShopCategories = async (request, response) => {
   try {
-    const [rows] = await db.query(
+    const [data] = await db.query(
       "SELECT * FROM category WHERE category IN ('Accommodation', 'Shop')"
     );
-    res.json(rows);
+    response.json(data);
   } catch (error) {
     console.error("Error fetching Accommodation and Shop categories:", error);
-    res.status(500).json({ error: "Internal server error" });
+    return handleDbError(error, response);
   }
 };
 
 // get all Accommodation and Shop Types
-export const getTypes = async (req, res) => {
-  const { id } = req.params;
+export const getTypes = async (request, response) => {
+  const { id } = request.params;
   try {
-    const [rows] = await db.query("SELECT * FROM type WHERE category_id = ?", [
+    const [data] = await db.query("SELECT * FROM type WHERE category_id = ?", [
       id,
     ]);
-    res.json(rows);
+    response.json(data);
   } catch (error) {
     console.error("Error fetching Accommodation and Shop types:", error);
-    res.status(500).json({ error: "Internal server error" });
+    return handleDbError(error, response);
   }
 };

@@ -1,34 +1,35 @@
 import db from "../db.js";
+import { handleDbError } from "../utils/errorHandler.js";
 
 // get all provinces
-export async function getAllExternalBooking(req, res) {
+export async function getAllExternalBooking(request, response) {
   try {
-    const [results] = await db.query("SELECT * FROM external_booking");
-    res.json(results);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
+    const [data] = await db.query("SELECT * FROM external_booking");
+    response.json(data);
+  } catch (error) {
+    return handleDbError(error, response);
   }
 }
 
-export async function insertExternalBooking(req, res) {
+export async function insertExternalBooking(request, response) {
   try {
     const fields = ["name", "link", "business_id"];
 
-    const values = fields.map((f) => req.body[f] ?? null); // Ensure null for missing fields
+    const values = fields.map((f) => request.body[f] ?? null); // Ensure null for missing fields
 
-    const [result] = await db.query(
+    const [data] = await db.query(
       `INSERT INTO external_booking (
         ${fields.join(", ")}
       ) VALUES (${fields.map(() => "?").join(", ")})`,
       values
     );
 
-    res.status(201).json({
+    response.status(201).json({
       message: "External Booking created successfully",
-      id: result.insertId,
+      id: data.insertId,
     });
-  } catch (err) {
-    console.error("Error inserting business:", err);
-    res.status(500).json({ error: err.message });
+  } catch (error) {
+    console.error("Error inserting business:", error);
+    return handleDbError(error, response);
   }
 }

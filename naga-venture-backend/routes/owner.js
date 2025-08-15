@@ -1,9 +1,10 @@
-import express from 'express';
-import * as OwnerController from '../controller/OwnerController.js'; // Add `.js` extension
+import express from "express";
+import * as ownerController from "../controller/ownerController.js";
 
 const router = express.Router();
 
-router.post('/', OwnerController.insertOwner);
-router.get('/:id', OwnerController.getOwnerById);
+router.post("/", ownerController.insertOwner);
+router.get("/:id", ownerController.getOwnerById);
+router.get("/", ownerController.getAllOwners);
 
 export default router;
