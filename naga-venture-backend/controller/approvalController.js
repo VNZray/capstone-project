@@ -1,4 +1,5 @@
 import db from "../db.js";
+import { handleDbError } from "../utils/errorHandler.js";
 
 // Get all pending edit requests for tourist spots
 export const getPendingEditRequests = async (req, res) => {
@@ -50,11 +51,7 @@ export const getPendingEditRequests = async (req, res) => {
     });
   } catch (error) {
     console.error("Error fetching pending edit requests:", error);
-    res.status(500).json({
-      success: false,
-      message: "Internal server error",
-      error: error.message,
-    });
+    return handleDbError(error, response);
   }
 };
 
@@ -85,11 +82,7 @@ export const getPendingTouristSpots = async (req, res) => {
     });
   } catch (error) {
     console.error("Error fetching pending tourist spots:", error);
-    res.status(500).json({
-      success: false,
-      message: "Internal server error",
-      error: error.message,
-    });
+    return handleDbError(error, response);
   }
 };
 
@@ -111,7 +104,7 @@ export const approveTouristSpot = async (req, res) => {
       });
     }
 
-    if (existingSpot[0].spot_status !== 'pending') {
+    if (existingSpot[0].spot_status !== "pending") {
       return res.status(400).json({
         success: false,
         message: "tourist_spots is not pending approval",
@@ -130,10 +123,7 @@ export const approveTouristSpot = async (req, res) => {
     });
   } catch (error) {
     console.error("Error approving tourist spot:", error);
-    res.status(400).json({
-      success: false,
-      message: error.message,
-    });
+    return handleDbError(error, response);
   }
 };
 
@@ -199,11 +189,7 @@ export const approveEditRequest = async (req, res) => {
     });
   } catch (error) {
     console.error("Error approving edit request:", error);
-    res.status(500).json({
-      success: false,
-      message: "Error approving edit request",
-      error: error.message,
-    });
+    return handleDbError(error, response);
   }
 };
 
@@ -238,11 +224,7 @@ export const rejectEditRequest = async (req, res) => {
     });
   } catch (error) {
     console.error("Error rejecting edit request:", error);
-    res.status(500).json({
-      success: false,
-      message: "Error rejecting edit request",
-      error: error.message,
-    });
+    return handleDbError(error, response);
   }
 };
 
@@ -265,7 +247,7 @@ export const rejectTouristSpot = async (req, res) => {
       });
     }
 
-    if (existingSpot[0].spot_status !== 'pending') {
+    if (existingSpot[0].spot_status !== "pending") {
       return res.status(400).json({
         success: false,
         message: "Tourist spot is not pending approval",
@@ -287,9 +269,6 @@ export const rejectTouristSpot = async (req, res) => {
     });
   } catch (error) {
     console.error("Error rejecting tourist spot:", error);
-    res.status(400).json({
-      success: false,
-      message: error.message,
-    });
+    return handleDbError(error, response);
   }
 };

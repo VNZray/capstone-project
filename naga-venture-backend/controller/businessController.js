@@ -1,54 +1,55 @@
 import db from "../db.js";
 import { v4 as uuidv4 } from "uuid";
+import { handleDbError } from "../utils/errorHandler.js";
 
 // Get all businesses
-export async function getAllBusiness(req, res) {
+export async function getAllBusiness(request, response) {
   try {
-    const [results] = await db.query("SELECT * FROM business");
-    res.json(results);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
+    const [data] = await db.query("SELECT * FROM business");
+    response.json(data);
+  } catch (error) {
+    return handleDbError(error, response);
   }
 }
 
 // Get business by owner ID
-export async function getBusinessByOwnerId(req, res) {
-  const { id } = req.params;
+export async function getBusinessByOwnerId(request, response) {
+  const { id } = request.params;
   console.log("Owner ID received:", id); // 🛠 debug
   try {
-    const [results] = await db.query(
+    const [data] = await db.query(
       "SELECT * FROM business WHERE owner_id = ?",
       [id]
     );
-    console.log("Query results:", results); // 🛠 debug
-    if (results.length === 0) {
-      return res.status(404).json({ message: "Business not found" });
+    console.log("Query data:", data); // 🛠 debug
+    if (data.length === 0) {
+      return response.status(404).json({ message: "Business not found" });
     }
-    res.json(results);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
+    response.json(data);
+  } catch (error) {
+    handleDbError(error, response);
   }
 }
 
-export async function getBusinessId(req, res) {
-  const { id } = req.params;
+export async function getBusinessId(request, response) {
+  const { id } = request.params;
   try {
-    const [results] = await db.query("SELECT * FROM business WHERE id = ?", [
+    const [data] = await db.query("SELECT * FROM business WHERE id = ?", [
       id,
     ]);
-    if (results.length === 0) {
-      return res.status(404).json({ message: "Business not found" });
+    if (data.length === 0) {
+      return response.status(404).json({ message: "Business not found" });
     }
-    res.json(results[0]);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
+    response.json(data[0]);
+  } catch (error) {
+    handleDbError(error, response);
   }
 }
 // Insert a new business
-export async function insertBusiness(req, res) {
+export async function insertBusiness(request, response) {
   try {
     // Generate UUID for the new business
-    const businessId = uuidv4();
+    const id = uuidv4();
 
     const fields = [
       "id", // include the id field
@@ -75,8 +76,8 @@ export async function insertBusiness(req, res) {
     ];
 
     const values = [
-      businessId, // first value is the UUID
-      ...fields.slice(1).map((f) => req.body[f] ?? null),
+      id, // first value is the UUID
+      ...fields.slice(1).map((f) => request.body[f] ?? null),
     ];
 
     // Insert with known UUID
@@ -86,21 +87,20 @@ export async function insertBusiness(req, res) {
       values
     );
 
-    // Retrieve the inserted row by UUID
-    const [inserted] = await db.query("SELECT * FROM business WHERE id = ?", [
-      businessId,
+    // Retrieve the data row by UUID
+    const [data] = await db.query("SELECT * FROM business WHERE id = ?", [
+      id,
     ]);
 
-    if (inserted.length === 0) {
-      return res.status(404).json({ error: "Inserted business not found" });
+    if (data.length === 0) {
+      return response.status(404).json({ error: "Inserted business not found" });
     }
 
-    res.status(201).json({
+    response.status(201).json({
       message: "Business created successfully",
-      data: inserted[0], // full row including UUID
+      data: data[0], // full row including UUID
     });
-  } catch (err) {
-    console.error("Error inserting business:", err);
-    res.status(500).json({ error: err.message });
+  } catch (error) {
+    handleDbError(error, response);
   }
 }

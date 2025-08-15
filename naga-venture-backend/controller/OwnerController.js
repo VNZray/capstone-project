@@ -1,10 +1,11 @@
 import db from "../db.js";
+import { handleDbError } from "../utils/errorHandler.js";
 
 // Insert Owner Data
-export const insertOwner = async (req, res) => {
+export const insertOwner = async (request, response) => {
   try {
     const { first_name, last_name, email, phone_number, business_type } =
-      req.body;
+      request.body;
 
     // Insert new owner
     await db.query(
@@ -14,58 +15,56 @@ export const insertOwner = async (req, res) => {
     );
 
     // Fetch the owner row to get the UUID
-    const [rows] = await db.query(
+    const [data] = await db.query(
       `SELECT * FROM owner WHERE email = ? LIMIT 1`,
       [email]
     );
 
-    if (rows.length === 0) {
-      return res.status(500).json({
+    if (data.length === 0) {
+      return response.status(500).json({
         status: "error",
         message: "Owner creation failed - not found after insert",
       });
     }
 
-    const owner = rows[0];
+    const owner = data[0];
 
-    res.status(201).json({
+    response.status(201).json({
       status: "success",
       data: { owner },
     });
   } catch (error) {
     console.error("Error inserting owner:", error);
-    res.status(500).json({
-      status: "error",
-      message: "Internal server error",
-    });
+    return handleDbError(error, response);
   }
 };
 
 // Get owner by ID
-export async function getOwnerById(req, res) {
-  const { id } = req.params;
+export async function getOwnerById(request, response) {
+  const { id } = request.params;
   try {
-    const [results] = await db.query("SELECT * FROM owner WHERE id = ?", [id]);
-    if (results.length === 0) {
-      return res.status(404).json({ message: "Owner not found" });
+    const [data] = await db.query("SELECT * FROM owner WHERE id = ?", [id]);
+    if (data.length === 0) {
+      return response.status(404).json({ message: "Owner not found" });
     }
-    res.json(results[0]);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
+    response.json(data[0]);
+  } catch (error) {
+    return handleDbError(error, response);
   }
 }
 
 // get all owners
-export async function getAllOwners(req, res) {
+export async function getAllOwners(request, response) {
   try {
-    const [results] = await db.query("SELECT * FROM owner");
-    res.json(results);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
+    const [data] = await db.query("SELECT * FROM owner");
+    response.json(data);
+  } catch (error) {
+    return handleDbError(error, response);
   }
 }
-export async function updateOwnerById(req, res) {
-  const { id } = req.params;
+
+export async function updateOwnerById(request, response) {
+  const { id } = request.params;
   const allowedFields = [
     "first_name",
     "middle_name",
@@ -82,28 +81,31 @@ export async function updateOwnerById(req, res) {
   ];
 
   // Filter only provided fields
-  const fieldsToUpdate = Object.keys(req.body)
-    .filter(key => allowedFields.includes(key));
+  const fieldsToUpdate = Object.keys(request.body).filter((key) =>
+    allowedFields.includes(key)
+  );
 
   if (fieldsToUpdate.length === 0) {
-    return res.status(400).json({ error: "No valid fields provided for update" });
+    return response
+      .status(400)
+      .json({ error: "No valid fields provided for update" });
   }
 
-  const values = fieldsToUpdate.map(field => req.body[field]);
-  const setClause = fieldsToUpdate.map(field => `${field} = ?`).join(", ");
+  const values = fieldsToUpdate.map((field) => request.body[field]);
+  const setClause = fieldsToUpdate.map((field) => `${field} = ?`).join(", ");
 
   try {
-    const [result] = await db.query(
+    const [data] = await db.query(
       `UPDATE owner SET ${setClause} WHERE id = ?`,
       [...values, id]
     );
 
-    if (result.affectedRows === 0) {
-      return res.status(404).json({ message: "Owner not found" });
+    if (data.affectedRows === 0) {
+      return response.status(404).json({ message: "Owner not found" });
     }
 
-    res.json({ message: "Owner updated successfully" });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
+    response.json({ message: "Owner updated successfully" });
+  } catch (error) {
+    return handleDbError(error, response);
   }
 }
