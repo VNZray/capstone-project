@@ -1,9 +1,11 @@
 import Text from "@/src/components/Text";
-import Button from "@/src/components/Button";
-import React from "react";
+import { Button } from "@mui/material";
+import ArrowBackIcon from "@mui/icons-material/ArrowBack";
+import ArrowForwardIcon from "@mui/icons-material/ArrowForward";import React from "react";
 import type { Business } from "@/src/types/Business";
 import Input from "@/src/components/Input";
 import axios from "axios";
+import CardHeader from "@/src/components/CardHeader";
 
 type Props = {
   data: Business;
@@ -87,11 +89,20 @@ const StepLocation: React.FC<Props> = ({
   }, [selectedProvince, selectedMunicipality]);
 
   return (
-    <>
+    <div className="stepperContent">
       <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-        <Text variant="header-title">Address Map Coordinates</Text>
+        <CardHeader title="Business Address and Location" color="white" margin="0 0 20px 0" />
 
         <div className="content">
+          <div>
+            <CardHeader
+              bg="tab-background"
+              height="10px"
+              variant="medium"
+              color="dark"
+              title="Business Address"
+            />
+          </div>
           <Input
             type="select"
             label="Province"
@@ -100,9 +111,9 @@ const StepLocation: React.FC<Props> = ({
               const value = e.target.value;
               setData((prev) => ({
                 ...prev,
-                province_id: value,
+                province_id: value.toString(),
               }));
-              setSelectedProvince(value); // ✅ fetch municipalities for that province
+              setSelectedProvince(value.toString()); // ✅ fetch municipalities for that province
             }}
             options={[
               { value: "", label: "-- Select a province --" },
@@ -121,9 +132,9 @@ const StepLocation: React.FC<Props> = ({
               const value = e.target.value;
               setData((prev) => ({
                 ...prev,
-                municipality_id: value,
+                municipality_id: value.toString(),
               }));
-              setSelectedMunicipality(value); // ✅ fetch barangays for that municipality
+              setSelectedMunicipality(value.toString()); // ✅ fetch barangays for that municipality
             }}
             options={[
               { value: "", label: "-- Select a municipality --" },
@@ -142,7 +153,7 @@ const StepLocation: React.FC<Props> = ({
               const value = e.target.value;
               setData((prev) => ({
                 ...prev,
-                barangay_id: value,
+                barangay_id: value.toString(),
               }));
             }}
             options={[
@@ -153,6 +164,16 @@ const StepLocation: React.FC<Props> = ({
               })),
             ]}
           />
+
+          <div>
+            <CardHeader
+              bg="tab-background"
+              height="10px"
+              variant="medium"
+              color="dark"
+              title="Map Coordinates"
+            />
+          </div>
 
           <Input
             type="text"
@@ -174,20 +195,26 @@ const StepLocation: React.FC<Props> = ({
             }
           />
         </div>
-        <div style={{ display: "flex", gap: 400 }}>
-          <Button onClick={onPrev} variant="secondary" style={{ flex: 1 }}>
-            <Text variant="normal" color="white">
-              Back
-            </Text>
-          </Button>
-          <Button onClick={onNext} variant="primary" style={{ flex: 1 }}>
-            <Text variant="normal" color="white">
-              Next
-            </Text>
-          </Button>
-        </div>
-      </div>{" "}
-    </>
+      </div>
+      <div style={{ display: "flex", gap: 300 }}>
+        <Button
+          variant="outlined"
+          startIcon={<ArrowBackIcon />}
+          onClick={onPrev}
+          style={{ flex: 1 }}
+        >
+          Back
+        </Button>
+        <Button
+          variant="contained"
+          endIcon={<ArrowForwardIcon />}
+          onClick={onNext}
+          style={{ flex: 1 }}
+        >
+          Next
+        </Button>
+      </div>
+    </div>
   );
 };
 

@@ -1,10 +1,14 @@
 import Text from "@/src/components/Text";
-import React from "react";
+import { useBusiness } from "@/src/context/BusinessContext";
 
 const Dashboard = () => {
+  const { businessDetails, loading } = useBusiness();
+
+  if (loading) return <div>Loading...</div>;
+
   return (
     <>
-      <Text variant="title">Accommodation Dashboard</Text>
+      <Text variant="title">{businessDetails?.business_name}</Text>
     </>
   );
 };

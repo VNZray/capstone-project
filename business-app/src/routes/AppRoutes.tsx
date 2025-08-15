@@ -28,144 +28,147 @@ import Bookings from "../features/accommodation/bookings/Bookings";
 import BusinessListing from "../features/listing/BusinessListing";
 import ProtectedRoute from "./ProtectedRoute";
 import Request from "../features/listing/Request";
+import { BusinessProvider } from "../context/BusinessContext";
 
 export default function AppRoutes() {
   const business_type = "Accommodation";
   return (
     <AuthProvider>
-      <Routes>
-        {/* Auth routes */}
-        <Route element={<AuthLayout />}>
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-          <Route path="/" element={<Login />} />
-        </Route>
+      <BusinessProvider>
+        <Routes>
+          {/* Auth routes */}
+          <Route element={<AuthLayout />}>
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
+            <Route path="/" element={<Login />} />
+          </Route>
 
-        {/* Business routes */}
-        <Route element={<BusinessLayout />}>
-          <Route
-            path="/business"
-            element={
-              <ProtectedRoute>
-                <MyBusiness />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/request"
-            element={
-              <ProtectedRoute>
-                <Request />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/business-listing"
-            element={
-              <ProtectedRoute>
-                <BusinessListing />
-              </ProtectedRoute>
-            }
-          />
-        </Route>
+          {/* Business routes */}
+          <Route element={<BusinessLayout />}>
+            <Route
+              path="/business"
+              element={
+                <ProtectedRoute>
+                  <MyBusiness />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/request"
+              element={
+                <ProtectedRoute>
+                  <Request />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/business-listing"
+              element={
+                <ProtectedRoute>
+                  <BusinessListing />
+                </ProtectedRoute>
+              }
+            />
+          </Route>
 
-        {/* Protected app routes */}
-        <Route element={<MainLayout />}>
-          <Route
-            path="/transactions"
-            element={
-              <ProtectedRoute>
-                <Transactions />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/bookings"
-            element={
-              <ProtectedRoute>
-                <Bookings />
-              </ProtectedRoute>
-            }
-          />
+          {/* Protected app routes */}
+          <Route element={<MainLayout />}>
+            <Route
+              path="/transactions"
+              element={
+                <ProtectedRoute>
+                  <Transactions />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/bookings"
+              element={
+                <ProtectedRoute>
+                  <Bookings />
+                </ProtectedRoute>
+              }
+            />
 
-          {business_type === "Accommodation" ? (
-            <>
-              <Route
-                path="/manage-business"
-                element={
-                  <ProtectedRoute>
-                    <ManageAccommodation />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/dashboard"
-                element={
-                  <ProtectedRoute>
-                    <AccommodationDashboard />
-                  </ProtectedRoute>
-                }
-              />
-            </>
-          ) : (
-            <>
-              <Route
-                path="/manage-business"
-                element={
-                  <ProtectedRoute>
-                    <ManageShop />
-                  </ProtectedRoute>
-                }
-              />
-              <Route path="/dashboard" element={<ShopDashboard />} />
-            </>
-          )}
-          <Route
-            path="/rooms"
-            element={
-              <ProtectedRoute>
-                <Room />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/offers"
-            element={
-              <ProtectedRoute>
-                <Offer />
-              </ProtectedRoute>
-            }
-          />
+            {business_type === "Accommodation" ? (
+              <>
+                <Route
+                  path="/manage-business"
+                  element={
+                    <ProtectedRoute>
+                      <ManageAccommodation />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/dashboard"
+                  element={
+                    <ProtectedRoute>
+                      <AccommodationDashboard />
+                    </ProtectedRoute>
+                  }
+                />
+              </>
+            ) : (
+              <>
+                <Route
+                  path="/manage-business"
+                  element={
+                    <ProtectedRoute>
+                      <ManageShop />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route path="/dashboard" element={<ShopDashboard />} />
+              </>
+            )}
+            <Route
+              path="/rooms"
+              element={
+                <ProtectedRoute>
+                  <Room />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/offers"
+              element={
+                <ProtectedRoute>
+                  <Offer />
+                </ProtectedRoute>
+              }
+            />
 
-          <Route
-            path="/manage-promotion"
-            element={
-              <ProtectedRoute>
-                <ManagePromotion />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/reviews"
-            element={
-              <ProtectedRoute>
-                <Reviews />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/profile"
-            element={
-              <ProtectedRoute>
-                <Profile />
-              </ProtectedRoute>
-            }
-          />
-        </Route>
+            <Route
+              path="/manage-promotion"
+              element={
+                <ProtectedRoute>
+                  <ManagePromotion />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/reviews"
+              element={
+                <ProtectedRoute>
+                  <Reviews />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/profile"
+              element={
+                <ProtectedRoute>
+                  <Profile />
+                </ProtectedRoute>
+              }
+            />
+          </Route>
 
-        {/* 404 */}
-        <Route path="*" element={<NotFound />} />
-      </Routes>
+          {/* 404 */}
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </BusinessProvider>
     </AuthProvider>
   );
 }

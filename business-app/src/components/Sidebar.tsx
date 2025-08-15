@@ -24,7 +24,7 @@ export default function Sidebar(): React.ReactElement {
 
       {/* Navigation */}
       <nav className="sidebar-nav">
-        <div>
+        <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
           <NavItem
             to="/dashboard"
             label="Dashboard"

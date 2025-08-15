@@ -8,9 +8,16 @@ interface CardProps {
   title?: string;
   subtitle?: string;
   elevation?: 0 | 1 | 2 | 3 | 4 | 5 | 6;
+  children: React.ReactNode;
 }
 
-const Card: React.FC<CardProps> = ({ image, title, subtitle, elevation }) => {
+const Card: React.FC<CardProps> = ({
+  image,
+  title,
+  subtitle,
+  elevation,
+  children,
+}) => {
   return (
     <Container className="card-container" elevation={elevation}>
       <div className="image-container">
@@ -23,8 +30,11 @@ const Card: React.FC<CardProps> = ({ image, title, subtitle, elevation }) => {
         />
       </div>
       <div className="card-content">
-        <Text variant="card-title">{title}</Text>
+        <Text style={{ margin: 0 }} variant="card-title">
+          {title}
+        </Text>
         <Text variant="card-sub-title">{subtitle}</Text>
+        <div>{children}</div>
       </div>
     </Container>
   );

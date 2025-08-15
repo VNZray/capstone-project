@@ -4,7 +4,7 @@
   --primary-color: #0A1B47;
   --secondary-color: #0077B6;
   --text-color: #374151;
-  --background-color: #F8F8F8;
+  --background-color: #f6f6f6;
   --white: #ffffff;
   --dark: #1a1a1a;
   --text-color: #1a1a1a;
@@ -50,26 +50,4 @@ button {
   transition: border-color 0.25s;
 }
 
-button:hover {
-  border-color: #646cff;
-}
 
-button:focus,
-button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
-}
-
-@media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: #ffffff;
-  }
-
-  a:hover {
-    color: #747bff;
-  }
-
-  button {
-    background-color: #f9f9f9;
-  }
-}
