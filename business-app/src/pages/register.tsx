@@ -139,7 +139,7 @@ const Register = () => {
               flexDirection: "column",
             }}
           >
-            <Text variant="title" color="dark">
+            <Text variant="title" color="dark" style={{ marginBottom: 6 }}>
               Sign Up
             </Text>
           </div>

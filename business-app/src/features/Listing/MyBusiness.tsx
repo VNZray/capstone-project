@@ -1,74 +1,66 @@
-import React, { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import "@/global.css";
-import "./styles/BusinessList.css";
-import Text from "../../components/Text";
-import Loading from "../../components/Loading"; // import the loading component
-import { supabase } from "@/src/utils/supabase";
-import Card from "./components/Card";
-import image from "@/src/assets/images/uma-hotel-residences.jpg";
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import Loading from "@/src/components/Loading";
 import PageContainer from "@/src/components/PageContainer";
+import Text from "@/src/components/Text";
+import { useAuth } from "@/src/context/AuthContext";
+import { useBusiness } from "@/src/context/BusinessContext";
+import Card from "./components/Card";
+import placeholderImage from "@/src/assets/images/uma-hotel-residences.jpg"; // replace with real image if available
+import type { Business } from "@/src/types/Business";
+
 const MyBusiness = () => {
   const navigate = useNavigate();
+  const { user, API_URL } = useAuth();
+  const { setBusinessId } = useBusiness();
   const [loading, setLoading] = useState(true);
-  const [businesses, setBusinesses] = useState<
-    { id: number; name: string; description: string }[]
-  >([]);
+  const [businesses, setBusinesses] = useState<Business[]>([]);
 
   useEffect(() => {
-    // Simulate data fetching (replace this with actual Supabase call)
+    if (!user?.owner_id) return;
+
     const fetchBusinesses = async () => {
       try {
-        // Example: fetching from Supabase
-        /*
-        const { data, error } = await supabase.from("businesses").select("*");
-        if (error) throw error;
-        setBusinesses(data);
-        */
-        // Temporary static data:
-        setTimeout(() => {
-          setBusinesses([
-            {
-              id: 1,
-              name: "Hotel Naga",
-              description: "Luxury hotel in Naga City",
-            },
-            {
-              id: 2,
-              name: "Naga Café",
-              description: "Cozy café for coffee lovers",
-            },
-          ]);
-          setLoading(false);
-        }, 1000);
+        const res = await fetch(`${API_URL}/business/owner/${user.owner_id}`);
+        if (!res.ok) throw new Error(`Error: ${res.statusText}`);
+        const data = await res.json();
+        setBusinesses(Array.isArray(data) ? data : [data]);
+        console.error("Fetched businesses:", data);
+
       } catch (err) {
-        console.error("Error loading businesses:", err);
+        console.error("Error fetching businesses:", err);
+      } finally {
         setLoading(false);
       }
     };
 
     fetchBusinesses();
-  }, []);
+  }, [user?.owner_id, API_URL]);
 
-  const navigateToBusiness = () => {
-    navigate(`/dashboard`);
-  };
-
-  if (loading) return <Loading />; // ✅ show loading while fetching
+  if (loading) return <Loading />;
 
   return (
     <PageContainer>
       <Text variant="title">My Business</Text>
-      <div style={{ display: "flex", gap: "1rem" }}>
+      <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap" }}>
         {businesses.map((business) => (
-          <Link to={"/dashboard"}>
+          <div
+            key={business.owner_id}
+            style={{ cursor: "pointer" }}
+            onClick={() => {
+              setBusinessId(business.id);
+              navigate(`/dashboard`);
+            }}
+          >
             <Card
               elevation={1}
-              image={image}
-              title={business.name}
+              image={business.business_image || placeholderImage}
+              title={business.business_name}
               subtitle={business.description}
-            />
-          </Link>
+            >
+              <Text variant="card-sub-title">{business.email}</Text>
+            </Card>
+          </div>
         ))}
       </div>
     </PageContainer>

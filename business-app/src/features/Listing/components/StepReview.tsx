@@ -1,5 +1,7 @@
 import Text from "@/src/components/Text";
-import Button from "@/src/components/Button";
+import { Button } from "@mui/material";
+import ArrowBackIcon from "@mui/icons-material/ArrowBack";
+import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import React from "react";
 import type { Business } from "@/src/types/Business";
 import axios from "axios";
@@ -129,6 +131,16 @@ const StepReview: React.FC<Props> = ({
       fetchBusinessTypes(data.business_category_id.toString());
     }
     fetchProvince();
+
+    // Fetch municipality if province is already selected in data
+    if (data.province_id) {
+      fetchMunicipality(data.province_id.toString());
+    }
+
+    // Fetch barangay if municipality is already selected in data
+    if (data.municipality_id) {
+      fetchBarangay(data.municipality_id.toString());
+    }
   }, []);
 
   const InfoRow = ({
@@ -347,15 +359,21 @@ const StepReview: React.FC<Props> = ({
 
       {/* Footer buttons */}
       <div style={{ display: "flex", gap: 300, marginTop: 16 }}>
-        <Button onClick={onPrev} variant="secondary" style={{ flex: 1 }}>
-          <Text variant="normal" color="white">
-            Back
-          </Text>
+        <Button
+          variant="outlined"
+          startIcon={<ArrowBackIcon />}
+          onClick={onPrev}
+          style={{ flex: 1 }}
+        >
+          Back
         </Button>
-        <Button onClick={onNext} variant="primary" style={{ flex: 1 }}>
-          <Text variant="normal" color="white">
-            Next
-          </Text>
+        <Button
+          variant="contained"
+          endIcon={<ArrowForwardIcon />}
+          onClick={onNext}
+          style={{ flex: 1 }}
+        >
+          Next
         </Button>
       </div>
     </div>

@@ -1,13 +1,24 @@
 import React, { useState } from "react";
-import Button from "@/src/components/Button";
+import ArrowBackIcon from "@mui/icons-material/ArrowBack";
+import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import Input from "@/src/components/Input";
 import Text from "@/src/components/Text";
 import CardHeader from "@/src/components/CardHeader";
 import "./Steps.css";
 import type { Business } from "@/src/types/Business";
-import { useBusinessBasics } from "@/src/features/listing/hooks/useBusinessData";
+import { useBusinessBasics } from "@/src/hooks/useBusinessData";
 import { supabase } from "@/src/utils/supabase";
-
+import CloudUploadIcon from "@mui/icons-material/CloudUpload";
+import { useNavigate } from "react-router-dom";
+import {
+  Box,
+  Button,
+  Card,
+  CardContent,
+  CardMedia,
+  Typography,
+} from "@mui/material";
+import { colors } from "@/src/utils/Colors";
 type Props = {
   data: Business;
   setData: React.Dispatch<React.SetStateAction<Business>>;
@@ -26,13 +37,16 @@ const StepBasics: React.FC<Props> = ({
   const {
     businessCategories,
     businessTypes,
-    selectedCategory,
     setSelectedCategory,
     previewUrl,
     handleImageChange,
   } = useBusinessBasics(API_URL, data, setData);
 
+  const navigate = useNavigate();
   const [uploading, setUploading] = useState(false);
+  const onCancel = () => {
+    navigate("/business");
+  };
 
   // Upload immediately after selecting an image
   const handleImageSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -55,7 +69,7 @@ const StepBasics: React.FC<Props> = ({
 
       // Upload file to Supabase
       const { data: uploadData, error: uploadError } = await supabase.storage
-        .from("business-profiles")
+        .from("business-profile")
         .upload(filePath, file, { upsert: true });
 
       if (uploadError) throw uploadError;
@@ -63,7 +77,7 @@ const StepBasics: React.FC<Props> = ({
 
       // Get public URL
       const { data: publicData } = supabase.storage
-        .from("business-profiles")
+        .from("business-profile")
         .getPublicUrl(uploadData.path);
 
       if (!publicData?.publicUrl) {
@@ -106,8 +120,11 @@ const StepBasics: React.FC<Props> = ({
             value={data.business_category_id}
             onChange={(e) => {
               const value = e.target.value;
-              setData((prev) => ({ ...prev, business_category_id: value }));
-              setSelectedCategory(value);
+              setData((prev) => ({
+                ...prev,
+                business_category_id: value.toString(),
+              }));
+              setSelectedCategory(value.toString());
             }}
             options={[
               { value: "", label: "-- Select a category --" },
@@ -125,7 +142,7 @@ const StepBasics: React.FC<Props> = ({
             onChange={(e) =>
               setData((prev) => ({
                 ...prev,
-                business_type_id: e.target.value,
+                business_type_id: e.target.value.toString(),
               }))
             }
             options={[
@@ -151,37 +168,42 @@ const StepBasics: React.FC<Props> = ({
           <Text variant="medium" color="dark">
             Upload Image
           </Text>
-          <div
-            onClick={() => document.getElementById("image-upload")?.click()}
-            style={{
+          <Card
+            sx={{
               border: "2px dashed #ccc",
-              borderRadius: 12,
-              padding: 20,
-              textAlign: "center",
-              cursor: "pointer",
+              borderRadius: 2,
               backgroundColor: "#fafafa",
+              cursor: "pointer",
+              textAlign: "center",
             }}
+            onClick={() => document.getElementById("image-upload")?.click()}
           >
             {previewUrl ? (
-              <img
-                src={previewUrl}
+              <CardMedia
+                component="img"
+                image={previewUrl}
                 alt="Preview"
-                style={{
+                sx={{
                   width: 160,
                   height: 160,
-                  borderRadius: 12,
                   objectFit: "cover",
-                  marginTop: 8,
+                  borderRadius: 2,
+                  margin: "20px auto",
                 }}
               />
             ) : (
-              <p style={{ color: "#777" }}>
-                {uploading ? "Uploading..." : "Click to upload an image"}
-              </p>
+              <CardContent>
+                <CloudUploadIcon
+                  sx={{ fontSize: 40, color: "text.secondary" }}
+                />
+                <Typography variant="body2" color="textSecondary" mt={1}>
+                  {uploading ? "Uploading..." : "Click to upload an image"}
+                </Typography>
+              </CardContent>
             )}
-          </div>
+          </Card>
 
-          {/* Hidden file input */}
+          {/* Hidden File Input */}
           <input
             id="image-upload"
             type="file"
@@ -193,11 +215,24 @@ const StepBasics: React.FC<Props> = ({
       </div>
 
       <div style={{ display: "flex", gap: 300 }}>
-        <div style={{ flex: 1 }}></div>
-        <Button onClick={onNext} variant="primary" style={{ flex: 1 }}>
-          <Text variant="normal" color="white">
-            Next
-          </Text>
+        <Button
+          color="error"
+          variant="contained"
+          startIcon={<ArrowBackIcon />}
+          onClick={onCancel}
+          style={{ flex: 1 }}
+        >
+          Cancel
+        </Button>
+
+        <Button
+          color="primary"
+          variant="contained"
+          endIcon={<ArrowForwardIcon />}
+          onClick={onNext}
+          style={{ flex: 1 }}
+        >
+          Next
         </Button>
       </div>
     </div>

@@ -17,6 +17,8 @@
   flex: 1;
   padding: 1.5rem;
   background-color: var(--background-color);
+  overflow: scroll;
+  overflow-x: hidden;
 }
 
 .business-layout {

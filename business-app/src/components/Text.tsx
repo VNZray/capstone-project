@@ -31,11 +31,11 @@ type ColorVariant =
 
 interface TextProps {
   variant?: TextVariant;
-  color?: ColorVariant;
+  color?: ColorVariant | string;
   className?: string;
   children: React.ReactNode;
-    style?: React.CSSProperties;
-  
+  style?: React.CSSProperties;
+  margin?: string | number;
 }
 
 const Text: React.FC<TextProps> = ({
@@ -43,12 +43,35 @@ const Text: React.FC<TextProps> = ({
   color = "text-color",
   className = "",
   children,
-  style
+  style,
+  margin = 0,
 }) => {
+  const presetColors: ColorVariant[] = [
+    "primary-color",
+    "secondary-color",
+    "text-color",
+    "background-color",
+    "white",
+    "dark",
+    "gray",
+    "yellow",
+    "orange",
+    "red",
+    "tab-background",
+  ];
+
+  const isPreset = typeof color === "string" && presetColors.includes(color as ColorVariant);
+
   return (
     <span
       className={`text ${variant} ${className}`.trim()}
-      style={{ color: `var(--${color})`, ...style } }
+      style={{
+        color: isPreset ? `var(--${color})` : color,
+        margin,
+        display: "flex",
+        alignItems: "center",
+        ...style,
+      }}
     >
       {children}
     </span>

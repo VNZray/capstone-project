@@ -10,12 +10,36 @@ export async function getAllProvinces(req, res) {
   }
 }
 
+export const getProvinceById = async (req, res) => {
+  const { id } = req.params;
+  try {
+    const [rows] = await db.query("SELECT * FROM province WHERE id = ?", [id]);
+    res.json(rows);
+  } catch (error) {
+    console.error("Error fetching Province:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
 // get all municipalities
 export const getAllMunicipalities = async (req, res) => {
   db.query("SELECT * FROM municipality", (err, results) => {
     if (err) return res.status(500).json({ error: err.message });
     res.json(results);
   });
+};
+
+export const getMunicipalityById = async (req, res) => {
+  const { id } = req.params;
+  try {
+    const [rows] = await db.query("SELECT * FROM municipality WHERE id = ?", [
+      id,
+    ]);
+    res.json(rows);
+  } catch (error) {
+    console.error("Error fetching Municipality:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
 };
 
 // get all municipalities by province ID
@@ -40,6 +64,18 @@ export const getAllBarangays = async (req, res) => {
     res.json(results);
   });
 };
+
+export const getBarangayById = async (req, res) => {
+  const { id } = req.params;
+  try {
+    const [rows] = await db.query("SELECT * FROM barangay WHERE id = ?", [id]);
+    res.json(rows);
+  } catch (error) {
+    console.error("Error fetching Barangay:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
 // get all barangays by municipality ID
 export const getBarangaysByMunicipalityId = async (req, res) => {
   const { id } = req.params;

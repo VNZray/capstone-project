@@ -19,12 +19,12 @@
 
 .card-image {
   border-radius: 0.25rem;
-
 }
 
 .card-content {
   display: flex;
   flex-direction: column;
+  margin: 0;
 }
 
 .card-title {
@@ -50,7 +50,10 @@
 }
 
 .card-container {
+  display: flex; 
+  flex-direction: column;
   transition: transform 0.3s ease, box-shadow 0.3s ease;
+  gap: 12px;
 }
 
 .card-container:hover {

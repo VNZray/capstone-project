@@ -1,9 +1,12 @@
 import Text from "@/src/components/Text";
-import Button from "@/src/components/Button";
+import { Button } from "@mui/material";
+import ArrowBackIcon from "@mui/icons-material/ArrowBack";
+import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import React from "react";
 import type { Business } from "@/src/types/Business";
 import Input from "@/src/components/Input";
 import CardHeader from "@/src/components/CardHeader";
+import { AddBox } from "@mui/icons-material";
 
 type Props = {
   data: Business;
@@ -149,7 +152,7 @@ const StepLinks: React.FC<Props> = ({
                     value={s.name}
                     onChange={(e) => {
                       const newSites = [...bookingSite];
-                      newSites[id].name = e.target.value;
+                      newSites[id].name = String(e.target.value);
                       setBookingSites(newSites);
                     }}
                     options={[
@@ -174,25 +177,34 @@ const StepLinks: React.FC<Props> = ({
               </div>
             ))}
 
-            <Button variant="secondary" onClick={addBookingSite}>
-              <Text variant="normal" color="white">
-                + Add Another Booking Site
-              </Text>
+            <Button
+              variant="contained"
+              endIcon={<AddBox />}
+              onClick={onNext}
+              style={{ flex: 1 }}
+            >
+              Add
             </Button>
           </>
         )}
       </div>
       {/* Navigation Buttons */}
       <div style={{ display: "flex", gap: 300, marginTop: 20 }}>
-        <Button onClick={onPrev} variant="secondary" style={{ flex: 1 }}>
-          <Text variant="normal" color="white">
-            Back
-          </Text>
+        <Button
+          variant="outlined"
+          startIcon={<ArrowBackIcon />}
+          onClick={onPrev}
+          style={{ flex: 1 }}
+        >
+          Back
         </Button>
-        <Button onClick={onNext} variant="primary" style={{ flex: 1 }}>
-          <Text variant="normal" color="white">
-            Next
-          </Text>
+        <Button
+          variant="contained"
+          endIcon={<ArrowForwardIcon />}
+          onClick={onNext}
+          style={{ flex: 1 }}
+        >
+          Next
         </Button>
       </div>
     </div>
