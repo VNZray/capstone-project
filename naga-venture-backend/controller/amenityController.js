@@ -1,12 +1,12 @@
-import db from '../db.js';
+import db from "../db.js";
+import { handleDbError } from "../utils/errorHandler.js";
 
-export function getAmenities(req, res) {
-    db.query('SELECT * FROM amenities', (err, results) => {
-        if (err) {
-            console.error('Error fetching amenities:', err);
-            return res.status(500).json({ error: 'Internal server error' });
-        }
-        res.json(results);
-    });
+export async function getAmenities(request, response) {
+  try {
+    const [data] = await db.query("SELECT * FROM amenity");
+    response.json(data);
+  } catch (error) {
+    console.error("Error fetching amenities:", error);
+    return handleDbError(error, response);
+  }
 }
-

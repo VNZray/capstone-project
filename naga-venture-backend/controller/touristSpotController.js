@@ -1,9 +1,11 @@
+import { response } from "express";
 import db from "../db.js";
+import { handleDbError } from "../utils/errorHandler.js";
 
 // Get all tourist spots
-export const getAllTouristSpots = async (req, res) => {
+export const getAllTouristSpots = async (request, response) => {
   try {
-    const [rows] = await db.execute(`
+    const [data] = await db.execute(`
       SELECT 
         ts.id,
         ts.name,
@@ -38,27 +40,23 @@ export const getAllTouristSpots = async (req, res) => {
       ORDER BY ts.name ASC
     `);
 
-    res.json({
+    response.json({
       success: true,
-      data: rows,
+      data: data,
       message: "Tourist spots retrieved successfully",
     });
   } catch (error) {
     console.error("Error fetching tourist spots:", error);
-    res.status(500).json({
-      success: false,
-      message: "Internal server error",
-      error: error.message,
-    });
+    return handleDbError(error, response);
   }
 };
 
 // Get tourist spot by ID
-export const getTouristSpotById = async (req, res) => {
+export const getTouristSpotById = async (request, response) => {
   try {
-    const { id } = req.params;
+    const { id } = request.params;
 
-    const [rows] = await db.execute(
+    const [data] = await db.execute(
       `
       SELECT 
         ts.id,
@@ -95,30 +93,25 @@ export const getTouristSpotById = async (req, res) => {
       [id]
     );
 
-    if (rows.length === 0) {
-      return res.status(404).json({
+    if (data.length === 0) {
+      return response.status(404).json({
         success: false,
         message: "Tourist spot not found",
       });
     }
 
-    res.json({
+    response.json({
       success: true,
-      data: rows[0],
+      data: data[0],
       message: "Tourist spot retrieved successfully",
     });
   } catch (error) {
-    console.error("Error fetching tourist spot:", error);
-    res.status(500).json({
-      success: false,
-      message: "Internal server error",
-      error: error.message,
-    });
+    return handleDbError(error, response);
   }
 };
 
 // Create new tourist spot
-export const createTouristSpot = async (req, res) => {
+export const createTouristSpot = async (request, response) => {
   try {
     const {
       name,
@@ -134,7 +127,7 @@ export const createTouristSpot = async (req, res) => {
       entry_fee,
       category_id,
       type_id,
-    } = req.body;
+    } = request.body;
 
     if (
       !name ||
@@ -146,10 +139,10 @@ export const createTouristSpot = async (req, res) => {
       !category_id ||
       !type_id
     ) {
-      return res.status(400).json({
+      return response.status(400).json({
         success: false,
         message:
-          "Name, description, province_id, municipality_id, barangay_id, contact_phone, category_id, and type_id are required",
+          "Name, description, province_id, municipality_id, barangay_id, contact_phone, category_id, and type_id are requestuired",
       });
     }
 
@@ -159,7 +152,7 @@ export const createTouristSpot = async (req, res) => {
       [category_id]
     );
     if (categoryCheck.length === 0) {
-      return res.status(400).json({
+      return response.status(400).json({
         success: false,
         message: "Invalid category_id",
       });
@@ -170,7 +163,7 @@ export const createTouristSpot = async (req, res) => {
       type_id,
     ]);
     if (typeCheck.length === 0) {
-      return res.status(400).json({
+      return response.status(400).json({
         success: false,
         message: "Invalid type_id",
       });
@@ -182,7 +175,7 @@ export const createTouristSpot = async (req, res) => {
       [province_id]
     );
     if (provinceCheck.length === 0) {
-      return res.status(400).json({
+      return response.status(400).json({
         success: false,
         message: "Invalid province_id",
       });
@@ -193,7 +186,7 @@ export const createTouristSpot = async (req, res) => {
       [municipality_id, province_id]
     );
     if (municipalityCheck.length === 0) {
-      return res.status(400).json({
+      return response.status(400).json({
         success: false,
         message: "Invalid municipality_id for the selected province",
       });
@@ -204,7 +197,7 @@ export const createTouristSpot = async (req, res) => {
       [barangay_id, municipality_id]
     );
     if (barangayCheck.length === 0) {
-      return res.status(400).json({
+      return response.status(400).json({
         success: false,
         message: "Invalid barangay_id for the selected municipality",
       });
@@ -238,25 +231,19 @@ export const createTouristSpot = async (req, res) => {
     );
 
     // Just return success, no need to return the inserted row
-    res.status(201).json({
+    response.status(201).json({
       success: true,
-      message: "Tourist spot created successfully"
+      message: "Tourist spot created successfully",
     });
-
   } catch (error) {
-    console.error("Error creating tourist spot:", error);
-    res.status(500).json({
-      success: false,
-      message: "Error creating tourist spot",
-      error: error.message
-    });
+    return handleDbError(error, response);
   }
 };
 
 // Update existing tourist spot
-export const updateTouristSpot = async (req, res) => {
+export const updateTouristSpot = async (request, response) => {
   try {
-    const { id } = req.params;
+    const { id } = request.params;
     const {
       name,
       description,
@@ -271,7 +258,7 @@ export const updateTouristSpot = async (req, res) => {
       entry_fee,
       category_id,
       type_id,
-    } = req.body;
+    } = request.body;
 
     if (
       !name ||
@@ -283,10 +270,10 @@ export const updateTouristSpot = async (req, res) => {
       !category_id ||
       !type_id
     ) {
-      return res.status(400).json({
+      return response.status(400).json({
         success: false,
         message:
-          "Name, description, province_id, municipality_id, barangay_id, contact_phone, category_id, and type_id are required",
+          "Name, description, province_id, municipality_id, barangay_id, contact_phone, category_id, and type_id are requestuired",
       });
     }
 
@@ -296,7 +283,7 @@ export const updateTouristSpot = async (req, res) => {
       [id]
     );
     if (existingSpot.length === 0) {
-      return res.status(404).json({
+      return response.status(404).json({
         success: false,
         message: "Tourist spot not found",
       });
@@ -308,7 +295,7 @@ export const updateTouristSpot = async (req, res) => {
       [category_id]
     );
     if (categoryCheck.length === 0) {
-      return res.status(400).json({
+      return response.status(400).json({
         success: false,
         message: "Invalid category_id",
       });
@@ -319,7 +306,7 @@ export const updateTouristSpot = async (req, res) => {
       type_id,
     ]);
     if (typeCheck.length === 0) {
-      return res.status(400).json({
+      return response.status(400).json({
         success: false,
         message: "Invalid type_id",
       });
@@ -331,7 +318,7 @@ export const updateTouristSpot = async (req, res) => {
       [province_id]
     );
     if (provinceCheck.length === 0) {
-      return res.status(400).json({
+      return response.status(400).json({
         success: false,
         message: "Invalid province_id",
       });
@@ -342,7 +329,7 @@ export const updateTouristSpot = async (req, res) => {
       [municipality_id, province_id]
     );
     if (municipalityCheck.length === 0) {
-      return res.status(400).json({
+      return response.status(400).json({
         success: false,
         message: "Invalid municipality_id for the selected province",
       });
@@ -353,7 +340,7 @@ export const updateTouristSpot = async (req, res) => {
       [barangay_id, municipality_id]
     );
     if (barangayCheck.length === 0) {
-      return res.status(400).json({
+      return response.status(400).json({
         success: false,
         message: "Invalid barangay_id for the selected municipality",
       });
@@ -386,25 +373,19 @@ export const updateTouristSpot = async (req, res) => {
       ]
     );
 
-    res.json({
+    response.json({
       success: true,
-      message: "Tourist spot updated successfully"
+      message: "Tourist spot updated successfully",
     });
-
   } catch (error) {
-    console.error("Error updating tourist spot:", error);
-    res.status(500).json({
-      success: false,
-      message: "Error updating tourist spot",
-      error: error.message
-    });
+    return handleDbError(error, response);
   }
 };
 
-// Submit an edit request for a tourist spot
-export const submitEditRequest = async (req, res) => {
+// Submit an edit requestuest for a tourist spot
+export const submitEditRequest = async (request, response) => {
   try {
-    const { id } = req.params;
+    const { id } = request.params;
     const {
       name,
       description,
@@ -419,7 +400,7 @@ export const submitEditRequest = async (req, res) => {
       entry_fee,
       category_id,
       type_id,
-    } = req.body;
+    } = request.body;
 
     if (
       !name ||
@@ -431,10 +412,10 @@ export const submitEditRequest = async (req, res) => {
       !category_id ||
       !type_id
     ) {
-      return res.status(400).json({
+      return response.status(400).json({
         success: false,
         message:
-          "Name, description, province_id, municipality_id, barangay_id, contact_phone, category_id, and type_id are required",
+          "Name, description, province_id, municipality_id, barangay_id, contact_phone, category_id, and type_id are requestuired",
       });
     }
 
@@ -444,7 +425,7 @@ export const submitEditRequest = async (req, res) => {
       [id]
     );
     if (existingSpot.length === 0) {
-      return res.status(404).json({
+      return response.status(404).json({
         success: false,
         message: "Tourist spot not found",
       });
@@ -456,7 +437,7 @@ export const submitEditRequest = async (req, res) => {
       [category_id]
     );
     if (categoryCheck.length === 0) {
-      return res.status(400).json({
+      return response.status(400).json({
         success: false,
         message: "Invalid category_id",
       });
@@ -467,7 +448,7 @@ export const submitEditRequest = async (req, res) => {
       type_id,
     ]);
     if (typeCheck.length === 0) {
-      return res.status(400).json({
+      return response.status(400).json({
         success: false,
         message: "Invalid type_id",
       });
@@ -479,7 +460,7 @@ export const submitEditRequest = async (req, res) => {
       [province_id]
     );
     if (provinceCheck.length === 0) {
-      return res.status(400).json({
+      return response.status(400).json({
         success: false,
         message: "Invalid province_id",
       });
@@ -490,7 +471,7 @@ export const submitEditRequest = async (req, res) => {
       [municipality_id, province_id]
     );
     if (municipalityCheck.length === 0) {
-      return res.status(400).json({
+      return response.status(400).json({
         success: false,
         message: "Invalid municipality_id for the selected province",
       });
@@ -501,26 +482,27 @@ export const submitEditRequest = async (req, res) => {
       [barangay_id, municipality_id]
     );
     if (barangayCheck.length === 0) {
-      return res.status(400).json({
+      return response.status(400).json({
         success: false,
         message: "Invalid barangay_id for the selected municipality",
       });
     }
 
-    // Check if there's already a pending edit request for this spot
+    // Check if there's already a pending edit requestuest for this spot
     const [existingEdit] = await db.execute(
       "SELECT id FROM tourist_spot_edits WHERE tourist_spot_id = ? AND approval_status = 'pending'",
       [id]
     );
 
     if (existingEdit.length > 0) {
-      return res.status(400).json({
+      return response.status(400).json({
         success: false,
-        message: "There is already a pending edit request for this tourist spot. Please wait for the current request to be processed.",
+        message:
+          "There is already a pending edit requestuest for this tourist spot. Please wait for the current requestuest to be processed.",
       });
     }
 
-    // Insert the edit request into tourist_spot_edits table
+    // Insert the edit requestuest into tourist_spot_edits table
     await db.execute(
       `
       INSERT INTO tourist_spot_edits (
@@ -548,25 +530,21 @@ export const submitEditRequest = async (req, res) => {
       ]
     );
 
-    res.json({
+    response.json({
       success: true,
-      message: "Edit request submitted successfully and is pending admin approval"
+      message:
+        "Edit requestuest submitted successfully and is pending admin approval",
     });
-
   } catch (error) {
-    console.error("Error submitting edit request:", error);
-    res.status(500).json({
-      success: false,
-      message: "Error submitting edit request",
-      error: error.message
-    });
+    console.error("Error submitting edit requestuest:", error);
+    return handleDbError(error, response);
   }
 };
 
 // (Simplified) delete temporarily removed
 
 // Get categories and types for tourist spots
-export const getCategoriesAndTypes = async (req, res) => {
+export const getCategoriesAndTypes = async (request, response) => {
   try {
     // Get all categories (shop, accommodation, tourist spot, events)
     const [categories] = await db.execute(
@@ -577,7 +555,7 @@ export const getCategoriesAndTypes = async (req, res) => {
       "SELECT * FROM type WHERE category_id = 3 ORDER BY type ASC"
     );
 
-    res.json({
+    response.json({
       success: true,
       data: {
         categories,
@@ -586,16 +564,11 @@ export const getCategoriesAndTypes = async (req, res) => {
       message: "Categories and types retrieved successfully",
     });
   } catch (error) {
-    console.error("Error fetching categories and types:", error);
-    res.status(500).json({
-      success: false,
-      message: "Internal server error",
-      error: error.message,
-    });
+    return handleDbError(error, response);
   }
 };
 
-export const getLocationData = async (req, res) => {
+export const getLocationData = async (request, response) => {
   try {
     // Get all provinces
     const [provinces] = await db.execute(
@@ -612,7 +585,7 @@ export const getLocationData = async (req, res) => {
       "SELECT * FROM barangay ORDER BY barangay ASC"
     );
 
-    res.json({
+    response.json({
       success: true,
       data: {
         provinces,
@@ -622,61 +595,46 @@ export const getLocationData = async (req, res) => {
       message: "Location data retrieved successfully",
     });
   } catch (error) {
-    console.error("Error fetching location data:", error);
-    res.status(500).json({
-      success: false,
-      message: "Internal server error",
-      error: error.message,
-    });
+    return handleDbError(error, response);
   }
 };
 
 // Get municipalities by province
-export const getMunicipalitiesByProvince = async (req, res) => {
+export const getMunicipalitiesByProvince = async (request, response) => {
   try {
-    const { province_id } = req.params;
+    const { province_id } = request.params;
 
     const [municipalities] = await db.execute(
       "SELECT * FROM municipality WHERE province_id = ? ORDER BY municipality ASC",
       [province_id]
     );
 
-    res.json({
+    response.json({
       success: true,
       data: municipalities,
       message: "Municipalities retrieved successfully",
     });
   } catch (error) {
-    console.error("Error fetching municipalities:", error);
-    res.status(500).json({
-      success: false,
-      message: "Internal server error",
-      error: error.message,
-    });
+    return handleDbError(error, response);
   }
 };
 
 // Get barangays by municipality
-export const getBarangaysByMunicipality = async (req, res) => {
+export const getBarangaysByMunicipality = async (request, response) => {
   try {
-    const { municipality_id } = req.params;
+    const { municipality_id } = request.params;
 
     const [barangays] = await db.execute(
       "SELECT * FROM barangay WHERE municipality_id = ? ORDER BY barangay ASC",
       [municipality_id]
     );
 
-    res.json({
+    response.json({
       success: true,
       data: barangays,
       message: "Barangays retrieved successfully",
     });
   } catch (error) {
-    console.error("Error fetching barangays:", error);
-    res.status(500).json({
-      success: false,
-      message: "Internal server error",
-      error: error.message,
-    });
+    return handleDbError(error, response);
   }
 };

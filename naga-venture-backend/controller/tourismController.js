@@ -1,46 +1,74 @@
 import db from "../db.js";
+import { handleDbError } from "../utils/errorHandler.js";
+import { v4 as uuidv4 } from "uuid";
 
 // Get all tourism
-export async function getAllTourism(req, res) {
+export async function getAllTourism(request, response) {
   try {
-    const [results] = await db.query("SELECT * FROM tourism");
-    res.json(results);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
+    const [data] = await db.query("SELECT * FROM tourism");
+    response.json(data);
+  } catch (error) {
+    return handleDbError(error, response);
   }
 }
 
 // Get tourist by ID
-export async function getTourismById(req, res) {
-  const { id } = req.params;
+export async function getTourismById(request, response) {
+  const { id } = request.params;
   try {
-    const [results] = await db.query("SELECT * FROM tourism WHERE id = ?", [
-      id,
-    ]);
-    if (results.length === 0) {
-      return res.status(404).json({ message: "Tourist not found" });
+    const [data] = await db.query("SELECT * FROM tourism WHERE id = ?", [id]);
+    if (data.length === 0) {
+      return response.status(404).json({ message: "Tourist not found" });
     }
-    res.json(results[0]);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
+    response.json(data[0]);
+  } catch (error) {
+    return handleDbError(error, response);
   }
 }
 
 // Create new tourism
-export async function createTourism(req, res) {
-  const { first_name, middle_name, last_name, phone_number, email } = req.body;
-
+export async function createTourism(request, response) {
   try {
-    const sql = `
-      INSERT INTO tourism 
-      (first_name, middle_name, last_name, ethnicity, birthday, age, gender, nationality, category, phone_number, email, province_id, municipality_id, barangay_id)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `;
-    const values = [first_name, middle_name, last_name, phone_number, email];
+    const id = uuidv4(); // Generate unique ID if your tourism table uses UUID
 
-    const [result] = await db.query(sql, values);
-    res.status(201).json({ id: result.insertId, ...req.body });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
+    // List all fields in the same order as the table columns
+    const fields = [
+      "id",
+      "first_name",
+      "middle_name",
+      "last_name",
+      "ethnicity",
+      "birthday",
+      "age",
+      "gender",
+      "nationality",
+      "category",
+      "phone_number",
+      "email",
+      "province_id",
+      "municipality_id",
+      "barangay_id",
+    ];
+
+    // Pull values from request body, ensure null if not provided
+    const values = [id, ...fields.slice(1).map((f) => request.body[f] ?? null)];
+
+    // Insert query
+    await db.query(
+      `INSERT INTO tourism (${fields.join(", ")})
+       VALUES (${fields.map(() => "?").join(", ")})`,
+      values
+    );
+
+    // Fetch inserted row
+    const [data] = await db.query("SELECT * FROM tourism WHERE id = ?", [id]);
+
+    if (data.length === 0) {
+      return response.status(404).json({ error: "Inserted row not found" });
+    }
+
+    response.json(data[0]);
+  } catch (error) {
+    return handleDbError(error, response);
   }
 }
