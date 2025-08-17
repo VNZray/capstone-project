@@ -15,5 +15,9 @@ export const colors = {
   orange: "#FF5310",
   red: "#AE2438",
   tabBackground: "#DEE3F2",
-  lightBackground: "#f6f6f6", // from --background-color
+  lightBackground: "#f6f6f6",
+  offWhite: "#ececec",
+  offWhite2: "#faf9f9",
+  offWhite3: "#f4f3ee",
+
 };

@@ -1,7 +1,8 @@
 import Text from "@/src/components/Text";
-import { Button } from "@mui/material";
+import Button from "@mui/joy/Button";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
-import ArrowForwardIcon from "@mui/icons-material/ArrowForward";import React from "react";
+import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
+import React from "react";
 import type { Business } from "@/src/types/Business";
 import Input from "@/src/components/Input";
 import axios from "axios";
@@ -10,7 +11,7 @@ import CardHeader from "@/src/components/CardHeader";
 type Props = {
   data: Business;
   setData: React.Dispatch<React.SetStateAction<Business>>;
-  API_URL: string;
+  api: string;
   onNext: () => void;
   onPrev: () => void;
 };
@@ -18,7 +19,7 @@ type Props = {
 const StepLocation: React.FC<Props> = ({
   onNext,
   onPrev,
-  API_URL,
+  api,
   data,
   setData,
 }) => {
@@ -37,7 +38,7 @@ const StepLocation: React.FC<Props> = ({
 
   const fetchProvince = async () => {
     try {
-      const response = await axios.get(`${API_URL}/address/provinces`);
+      const response = await axios.get(`${api}/address/provinces`);
       if (Array.isArray(response.data)) {
         setProvince(response.data);
       }
@@ -49,7 +50,7 @@ const StepLocation: React.FC<Props> = ({
   const fetchMunicipality = async (provinceId: string) => {
     try {
       const response = await axios.get(
-        `${API_URL}/address/municipalities/${provinceId}`
+        `${api}/address/municipalities/${provinceId}`
       );
 
       if (Array.isArray(response.data)) {
@@ -63,7 +64,7 @@ const StepLocation: React.FC<Props> = ({
   const fetchBarangay = async (municipalityId: string) => {
     try {
       const response = await axios.get(
-        `${API_URL}/address/barangays/${municipalityId}`
+        `${api}/address/barangays/${municipalityId}`
       );
 
       if (Array.isArray(response.data)) {
@@ -91,7 +92,11 @@ const StepLocation: React.FC<Props> = ({
   return (
     <div className="stepperContent">
       <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-        <CardHeader title="Business Address and Location" color="white" margin="0 0 20px 0" />
+        <CardHeader
+          title="Business Address and Location"
+          color="white"
+          margin="0 0 20px 0"
+        />
 
         <div className="content">
           <div>
@@ -198,18 +203,19 @@ const StepLocation: React.FC<Props> = ({
       </div>
       <div style={{ display: "flex", gap: 300 }}>
         <Button
-          variant="outlined"
-          startIcon={<ArrowBackIcon />}
+          color="neutral"
+          startDecorator={<ArrowBackIcon />}
           onClick={onPrev}
           style={{ flex: 1 }}
+          size="lg"
         >
           Back
         </Button>
         <Button
-          variant="contained"
-          endIcon={<ArrowForwardIcon />}
+          endDecorator={<ArrowForwardIcon />}
           onClick={onNext}
           style={{ flex: 1 }}
+          size="lg"
         >
           Next
         </Button>

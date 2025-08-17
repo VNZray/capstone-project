@@ -2,7 +2,7 @@
 import mysql from 'mysql2/promise';
 
 const db = mysql.createPool({
-  host: 'localhost',
+  host: process.env,
   user: 'root',
   password: '', // default XAMPP password
   database: 'tourism_db'

@@ -12,13 +12,13 @@ import StepPricing from "./components/StepPricing";
 import StepPermits from "./components/StepPermits";
 import StepReview from "./components/StepReview";
 import StepSubmit from "./components/StepSubmit";
-import axios from "axios";
 import PageContainer from "@/src/components/PageContainer";
 import Container from "@/src/components/Container";
+import { fetchOwnerDetails } from "@/src/services/OwnerService";
 
 const BusinessListing: React.FC = () => {
   const [currentStep, setCurrentStep] = useState(0);
-  const { user, API_URL } = useAuth();
+  const { user, api } = useAuth();
   const [ownerId, setOwnerId] = useState<number | null>(null);
   const [formData, setFormData] = useState<any | null>(null);
   const [externalBookings, setExternalBookings] = useState<BookingSite[]>([]);
@@ -33,19 +33,13 @@ const BusinessListing: React.FC = () => {
         return;
       }
 
-      const { data: ownerData } = await axios.get(
-        `${API_URL}/owner/${user.owner_id}`
-      );
-
+      const ownerData = await fetchOwnerDetails(user.owner_id!);
       setOwnerId(ownerData.id);
-
-      // Default sample data (replace with actual empty structure for live use)
       setFormData({
-        business_name: "Sampaguita Tourist Inn",
-        business_type: "Tourist Inn",
+        business_name: "UMA Residences & Hotel",
         category: "Accommodation",
         phone_number: "095612315534",
-        email: "sampaguita.inn@example.com",
+        email: "uma@example.com",
         barangay_id: "",
         municipality_id: "",
         province_id: "",
@@ -61,7 +55,7 @@ const BusinessListing: React.FC = () => {
         status: "Pending",
         business_category_id: "",
         bsuiness_type_id: "",
-        hansBooking: 0,
+        hansBooking: 1,
       });
 
       setExternalBookings([{ name: "", link: "" }]);
@@ -73,7 +67,7 @@ const BusinessListing: React.FC = () => {
   if (!formData) return null;
 
   const commonProps = {
-    API_URL,
+    api,
     data: formData,
     bookingSite: externalBookings,
     setBookingSites: setExternalBookings,

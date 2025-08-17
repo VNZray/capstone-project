@@ -13,8 +13,9 @@
   --orange: #FF5310;
   --red: #AE2438;
   --tab-background: #DEE3F2;
-
-
+  --off-white: #ECECEC;
+  --off-white-2: #faf9f9;
+  --off-white-3: #f4f3ee;
   color-scheme: light dark;
   color: rgba(255, 255, 255, 0.87);
 
@@ -49,5 +50,3 @@ button {
   cursor: pointer;
   transition: border-color 0.25s;
 }
-
-

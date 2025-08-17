@@ -6,10 +6,13 @@ import React, {
   useEffect,
 } from "react";
 import type { ReactNode } from "react";
-import axios from "axios";
-import { useAuth } from "@/src/context/AuthContext";
 import type { Business } from "../types/Business";
-const API_URL = "http://192.168.1.2:3000/api";
+import {
+  getStoredBusinessId,
+  setStoredBusinessId,
+  clearStoredBusinessId,
+  fetchBusinessDetails,
+} from "@/src/services/BusinessService";
 
 interface BusinessContextType {
   selectedBusinessId: string | null;
@@ -18,8 +21,6 @@ interface BusinessContextType {
   setBusinessId: (id: string) => void;
   clearBusinessId: () => void;
   refreshBusiness: () => Promise<void>;
-    API_URL: typeof API_URL;
-
 }
 
 const BusinessContext = createContext<BusinessContextType | undefined>(
@@ -33,9 +34,8 @@ interface BusinessProviderProps {
 export const BusinessProvider: React.FC<BusinessProviderProps> = ({
   children,
 }) => {
-  const { API_URL, user } = useAuth();
   const [selectedBusinessId, setSelectedBusinessId] = useState<string | null>(
-    () => localStorage.getItem("selectedBusinessId") || null
+    () => getStoredBusinessId()
   );
   const [businessDetails, setBusinessDetails] = useState<Business | null>(null);
   const [loading, setLoading] = useState(false);
@@ -43,14 +43,14 @@ export const BusinessProvider: React.FC<BusinessProviderProps> = ({
   /** Set the selected business ID and store it locally */
   const setBusinessId = useCallback((id: string) => {
     setSelectedBusinessId(id);
-    localStorage.setItem("selectedBusinessId", id);
+    setStoredBusinessId(id);
   }, []);
 
   /** Clear selected business */
   const clearBusinessId = useCallback(() => {
     setSelectedBusinessId(null);
     setBusinessDetails(null);
-    localStorage.removeItem("selectedBusinessId");
+    clearStoredBusinessId();
   }, []);
 
   /** Fetch business details from API */
@@ -58,9 +58,7 @@ export const BusinessProvider: React.FC<BusinessProviderProps> = ({
     if (!selectedBusinessId) return;
     setLoading(true);
     try {
-      const { data } = await axios.get<Business>(
-        `${API_URL}/business/${selectedBusinessId}`
-      );
+      const data = await fetchBusinessDetails(selectedBusinessId);
       setBusinessDetails(data);
     } catch (error) {
       console.error("Failed to fetch business:", error);
@@ -68,7 +66,7 @@ export const BusinessProvider: React.FC<BusinessProviderProps> = ({
     } finally {
       setLoading(false);
     }
-  }, [API_URL, selectedBusinessId]);
+  }, [selectedBusinessId]);
 
   /** Fetch when ID changes */
   useEffect(() => {
@@ -86,7 +84,6 @@ export const BusinessProvider: React.FC<BusinessProviderProps> = ({
         setBusinessId,
         clearBusinessId,
         refreshBusiness: fetchBusiness,
-        API_URL
       }}
     >
       {children}

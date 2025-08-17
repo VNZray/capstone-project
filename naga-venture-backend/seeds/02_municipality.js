@@ -1,0 +1,45 @@
+/**
+ * @param { import("knex").Knex } knex
+ */
+export async function seed (knex) {
+  // Inserts seed entries
+  await knex("municipality").insert([
+    { id: 1, name: "Baao", province_id: 20 },
+    { id: 2, name: "Balatan", province_id: 20 },
+    { id: 3, name: "Bato", province_id: 20 },
+    { id: 4, name: "Bombon", province_id: 20 },
+    { id: 5, name: "Buhi", province_id: 20 },
+    { id: 6, name: "Bula", province_id: 20 },
+    { id: 7, name: "Cabusao", province_id: 20 },
+    { id: 8, name: "Calabanga", province_id: 20 },
+    { id: 9, name: "Camaligan", province_id: 20 },
+    { id: 10, name: "Canaman", province_id: 20 },
+    { id: 11, name: "Caramoan", province_id: 20 },
+    { id: 12, name: "Del Gallego", province_id: 20 },
+    { id: 13, name: "Gainza", province_id: 20 },
+    { id: 14, name: "Garchitorena", province_id: 20 },
+    { id: 15, name: "Goa", province_id: 20 },
+    { id: 16, name: "Iriga City", province_id: 20 },
+    { id: 17, name: "Lagonoy", province_id: 20 },
+    { id: 18, name: "Libmanan", province_id: 20 },
+    { id: 19, name: "Lupi", province_id: 20 },
+    { id: 20, name: "Magarao", province_id: 20 },
+    { id: 21, name: "Milaor", province_id: 20 },
+    { id: 22, name: "Minalabac", province_id: 20 },
+    { id: 23, name: "Nabua", province_id: 20 },
+    { id: 24, name: "Naga City", province_id: 20 },
+    { id: 25, name: "Ocampo", province_id: 20 },
+    { id: 26, name: "Pamplona", province_id: 20 },
+    { id: 27, name: "Pasacao", province_id: 20 },
+    { id: 28, name: "Pili", province_id: 20 },
+    { id: 29, name: "Presentacion", province_id: 20 },
+    { id: 30, name: "Ragay", province_id: 20 },
+    { id: 31, name: "Sagnay", province_id: 20 },
+    { id: 32, name: "San Fernando", province_id: 20 },
+    { id: 33, name: "San Jose", province_id: 20 },
+    { id: 34, name: "Sipocot", province_id: 20 },
+    { id: 35, name: "Siruma", province_id: 20 },
+    { id: 36, name: "Tigaon", province_id: 20 },
+    { id: 37, name: "Tinambac", province_id: 20 },
+  ]);
+}

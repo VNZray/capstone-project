@@ -2,6 +2,7 @@ import db from "../db.js";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { handleDbError } from "../utils/errorHandler.js";
+import { v4 as uuidv4 } from "uuid";
 
 // Get all users
 export async function getAllUsers(req, res) {
@@ -61,51 +62,52 @@ export async function getOwnerId(req, res) {
 }
 
 // Create a new user
-export async function createUser(req, res) {
-  const {
-    role,
-    email,
-    phone_number,
-    password,
-    tourist_id,
-    owner_id,
-    tourism_id,
-  } = req.body;
-
+export async function createUser(request, response) {
   try {
-    const hashedPassword = await bcrypt.hash(password, 10);
+    const id = uuidv4();
+    const fields = [
+      "id",
+      "role",
+      "email",
+      "phone_number",
+      "password",
+      "tourist_id",
+      "owner_id",
+      "tourism_id",
+    ];
 
-    const sql = `
-      INSERT INTO user (role, email, phone_number, password, tourist_id, owner_id, tourism_id)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
-    `;
+    // Hash the password
+    const hashedPassword = request.body.password
+      ? await bcrypt.hash(request.body.password, 10) // 10 salt rounds
+      : null;
 
     const values = [
-      role,
-      email,
-      phone_number,
+      id,
+      request.body.role ?? null,
+      request.body.email ?? null,
+      request.body.phone_number ?? null,
       hashedPassword,
-      tourist_id,
-      owner_id,
-      tourism_id,
+      request.body.tourist_id ?? null,
+      request.body.owner_id ?? null,
+      request.body.tourism_id ?? null,
     ];
-    const [result] = await db.query(sql, values);
+    
+    await db.query(
+      `INSERT INTO user (${fields.join(", ")})
+       VALUES (${fields.map(() => "?").join(", ")})`,
+      values
+    );
 
-    res.status(201).json({
-      message: "User created successfully",
-      user: {
-        id: result.insertId,
-        role,
-        email,
-        phone_number,
-        password,
-        tourist_id,
-        owner_id,
-        tourism_id,
-      },
-    });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
+    // retrieve inserted data
+    const [data] = await db.query("SELECT * FROM user WHERE id = ?", [id]);
+
+    if (data.length === 0) {
+      return response.status(404).json({ erroror: "Inserted row not found" });
+    }
+
+    response.json(data[0]);
+  } catch (error) {
+    return handleDbError(error, response);
   }
 }
 

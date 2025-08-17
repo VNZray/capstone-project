@@ -5,16 +5,15 @@ import "./LoginStyle.css";
 import Text from "../components/Text";
 import Container from "../components/Container";
 import { useAuth } from "@/src/context/AuthContext"; // adjust path if needed
-import Input from "../components/Input";
+import { Input, Button } from "@mui/joy";
+import { colors } from "../utils/Colors";
 
 const Login: React.FC = () => {
   const [email, setEmail] = useState("rayventzy@gmail.com");
   const [password, setPassword] = useState("123456");
   const [loginError, setLoginError] = useState("");
   const navigate = useNavigate();
-  const { login, user } = useAuth(); // from AuthProvider
-  const [gender, setGender] = useState("male");
-  const [newsletter, setNewsletter] = useState(false);
+  const { login } = useAuth(); // from AuthProvider
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -72,19 +71,21 @@ const Login: React.FC = () => {
           {/* Form Fields */}
           <div className="form-fields">
             <Input
+              variant="soft"
               type="email"
               placeholder="Enter your email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              label="Email"
+              size="lg"
             />
 
             <Input
               type="password"
+              variant="soft"
               placeholder="Enter your password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              label="Password"
+              size="lg"
             />
 
             <Link to="/TouristApp/(screens)/ForgotPassword" className="link">
@@ -95,14 +96,26 @@ const Login: React.FC = () => {
           </div>
 
           {/* Login Button */}
-          <div style={{ marginTop: 20 }}>
-            <button className="login-button" onClick={handleLogin}>
-              <Text variant="bold" color="white">
-                Sign In
-              </Text>
-            </button>
+          <div
+            style={{
+              marginTop: 20,
+              width: "100%",
+              display: "flex",
+              flexDirection: "column",
+            }}
+          >
+            <Button
+              color="primary"
+              onClick={handleLogin}
+              size="lg"
+              variant="solid"
+              style={{ flex: 1, minHeight: "50px" }}
+            >
+              Sign In
+            </Button>
+
             {loginError && (
-              <Text variant="paragraph" className="error-text">
+              <Text variant="paragraph" color={colors.error}>
                 {loginError}
               </Text>
             )}

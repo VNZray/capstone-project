@@ -5,7 +5,14 @@
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
-    "dev": "nodemon index.js"
+    "dev": "nodemon index.js",
+    "make": "knex migrate:make --knexfile knexfile.cjs --env development",
+    "latest": "knex migrate:latest --knexfile knexfile.cjs --env development",
+    "rollback": "knex migrate:rollback --knexfile knexfile.cjs --env development",
+    "createdb": "node scripts/create-db.js",
+    "cleardb": "node scripts/clear-db.js",
+    "seed": "knex seed:run --knexfile knexfile.cjs --env development",
+    "deletedb": "node scripts/delete-db.js"
   },
   "keywords": [],
   "author": "",
@@ -17,7 +24,8 @@
     "dotenv": "^17.2.1",
     "express": "^5.1.0",
     "jsonwebtoken": "^9.0.2",
-    "mysql2": "^3.14.2",
+    "knex": "^3.1.0",
+    "mysql2": "^3.14.3",
     "uuid": "^11.1.0"
   },
   "devDependencies": {

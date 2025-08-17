@@ -22,7 +22,7 @@ export type Business = {
   business_image: string;  
   hasBooking: boolean;
 };
-
+ 
 export type Room = {
   id: string;
   room_number: string;

@@ -6,12 +6,13 @@ import Text from "@/src/components/Text";
 import { useAuth } from "@/src/context/AuthContext";
 import { useBusiness } from "@/src/context/BusinessContext";
 import Card from "./components/Card";
-import placeholderImage from "@/src/assets/images/uma-hotel-residences.jpg"; // replace with real image if available
+import placeholderImage from "@/src/assets/images/uma-hotel-residences.jpg";
 import type { Business } from "@/src/types/Business";
+import { fetchBusinessesByOwner } from "@/src/services/BusinessService";
 
 const MyBusiness = () => {
   const navigate = useNavigate();
-  const { user, API_URL } = useAuth();
+  const { user } = useAuth();
   const { setBusinessId } = useBusiness();
   const [loading, setLoading] = useState(true);
   const [businesses, setBusinesses] = useState<Business[]>([]);
@@ -19,14 +20,11 @@ const MyBusiness = () => {
   useEffect(() => {
     if (!user?.owner_id) return;
 
-    const fetchBusinesses = async () => {
+    const loadBusinesses = async () => {
       try {
-        const res = await fetch(`${API_URL}/business/owner/${user.owner_id}`);
-        if (!res.ok) throw new Error(`Error: ${res.statusText}`);
-        const data = await res.json();
-        setBusinesses(Array.isArray(data) ? data : [data]);
-        console.error("Fetched businesses:", data);
-
+        const data = await fetchBusinessesByOwner(user.owner_id!);
+        setBusinesses(data);
+        console.log("Fetched businesses:", data);
       } catch (err) {
         console.error("Error fetching businesses:", err);
       } finally {
@@ -34,8 +32,8 @@ const MyBusiness = () => {
       }
     };
 
-    fetchBusinesses();
-  }, [user?.owner_id, API_URL]);
+    loadBusinesses();
+  }, [user?.owner_id]);
 
   if (loading) return <Loading />;
 
@@ -45,7 +43,7 @@ const MyBusiness = () => {
       <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap" }}>
         {businesses.map((business) => (
           <div
-            key={business.owner_id}
+            key={business.id} // ✅ use business.id instead of owner_id
             style={{ cursor: "pointer" }}
             onClick={() => {
               setBusinessId(business.id);

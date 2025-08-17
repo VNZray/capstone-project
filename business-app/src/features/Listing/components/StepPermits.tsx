@@ -1,5 +1,5 @@
 import Text from "@/src/components/Text";
-import { Button } from "@mui/material";
+import Button from "@mui/joy/Button";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";import React from "react";
 import type { Business } from "@/src/types/Business";
@@ -8,7 +8,7 @@ import CardHeader from "@/src/components/CardHeader";
 type Props = {
   data: Business;
   setData: React.Dispatch<React.SetStateAction<Business>>;
-  API_URL: string;
+  api: string;
   onNext: () => void;
   onPrev: () => void;
 };
@@ -16,7 +16,7 @@ type Props = {
 const StepPermits: React.FC<Props> = ({
   onNext,
   onPrev,
-  API_URL,
+  api,
   data,
   setData,
 }) => {
@@ -34,18 +34,19 @@ const StepPermits: React.FC<Props> = ({
 
       <div style={{ display: "flex", gap: 300 }}>
         <Button
-          variant="outlined"
-          startIcon={<ArrowBackIcon />}
+          color="neutral"
+          startDecorator={<ArrowBackIcon />}
           onClick={onPrev}
           style={{ flex: 1 }}
+          size="lg"
         >
           Back
         </Button>
         <Button
-          variant="contained"
-          endIcon={<ArrowForwardIcon />}
+          endDecorator={<ArrowForwardIcon />}
           onClick={onNext}
           style={{ flex: 1 }}
+          size="lg"
         >
           Next
         </Button>
