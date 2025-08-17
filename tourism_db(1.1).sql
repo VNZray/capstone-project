@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Aug 15, 2025 at 05:28 PM
+-- Generation Time: Aug 17, 2025 at 03:49 PM
 -- Server version: 11.8.3-MariaDB
 -- PHP Version: 8.2.12
 
@@ -558,9 +558,7 @@ CREATE TABLE `tourist_spots` (
 --
 
 INSERT INTO `tourist_spots` (`id`, `name`, `description`, `province_id`, `municipality_id`, `barangay_id`, `latitude`, `longitude`, `contact_phone`, `contact_email`, `website`, `entry_fee`, `spot_status`, `is_featured`, `category_id`, `type_id`, `created_at`, `updated_at`) VALUES
-('e97ef867-79dc-11f0-9776-10ffe07a01e9', 'zzzzzzzzzzzzz', 'zzzzzzzzzzzzzzzz', 20, 24, 19, NULL, NULL, '09613636138', NULL, NULL, NULL, 'active', 0, 3, 3, '2025-08-15 13:36:56', '2025-08-15 14:29:35'),
-('1acf492e-79dd-11f0-9776-10ffe07a01e9', 'aaaaaaaaaaazz', 'abcdefghijklmnopqrstuvwxyzzzzzzz', 20, 24, 19, NULL, NULL, '09613636138', NULL, NULL, NULL, 'active', 0, 3, 9, '2025-08-15 13:38:19', '2025-08-15 14:46:36'),
-('b4337ed1-79e6-11f0-9776-10ffe07a01e9', 'c', 'd', 20, 24, 18, NULL, NULL, '09613636138', NULL, NULL, NULL, 'active', 0, 3, 9, '2025-08-15 14:47:02', '2025-08-15 15:21:32');
+('d61468a1-7b6f-11f0-962e-10ffe07a01e9', 'LOCATION A.1', 'LOCATION A', 20, 24, 19, NULL, NULL, '09613636138', NULL, NULL, NULL, 'active', 0, 3, 3, '2025-08-17 13:41:11', '2025-08-17 13:41:48');
 
 -- --------------------------------------------------------
 
@@ -597,7 +595,7 @@ CREATE TABLE `tourist_spot_edits` (
 --
 
 INSERT INTO `tourist_spot_edits` (`id`, `tourist_spot_id`, `name`, `description`, `province_id`, `municipality_id`, `barangay_id`, `latitude`, `longitude`, `contact_phone`, `contact_email`, `website`, `entry_fee`, `spot_status`, `is_featured`, `category_id`, `type_id`, `approval_status`, `remarks`, `submitted_at`, `reviewed_at`) VALUES
-('2042882e-79ec-11f0-9776-10ffe07a01e9', 'e97ef867-79dc-11f0-9776-10ffe07a01e9', 'zzzzzzzzzzzzzz', 'zzzzzzzzzzzzzzzzz', 20, 24, 19, NULL, NULL, '09613636138', NULL, NULL, NULL, 'active', 0, 3, 3, 'rejected', '', '2025-08-15 15:25:50', '2025-08-15 15:26:02');
+('e463dd70-7b6f-11f0-962e-10ffe07a01e9', 'd61468a1-7b6f-11f0-962e-10ffe07a01e9', 'LOCATION A.1', 'LOCATION A', 20, 24, 19, NULL, NULL, '09613636138', NULL, NULL, NULL, 'active', 0, 3, 3, 'approved', '', '2025-08-17 13:41:35', '2025-08-17 13:41:48');
 
 -- --------------------------------------------------------
 

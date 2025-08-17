@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useEffect, useRef } from "react";
 import Text from "../Text";
 import "../styles/ViewModal.css";
@@ -6,7 +5,7 @@ import "../styles/ViewModal.css";
 interface ViewModalProps {
   isOpen: boolean;
   onClose: () => void;
-  item: Record<string, any> | null;
+  item: Record<string, unknown> | null;
 }
 
 const ViewModal: React.FC<ViewModalProps> = ({ isOpen, onClose, item }) => {
@@ -23,18 +22,30 @@ const ViewModal: React.FC<ViewModalProps> = ({ isOpen, onClose, item }) => {
   }, [isOpen, onClose]);
 
   if (!isOpen || !item) return null;
-  const existingSpot = item.existingSpot as Record<string, any> | undefined;
+
+  const existingSpot = (item.existingSpot as Record<string, unknown> | undefined) ?? null;
 
   const getCurrent = (field: string) => {
-    if (existingSpot && existingSpot[field] != null) return existingSpot[field];
+    const fromExisting = existingSpot && existingSpot[field];
+    if (fromExisting != null) return fromExisting;
     const origKey = `original_${field}`;
-    return item[origKey] != null ? item[origKey] : null;
+    const asRecord = item as Record<string, unknown>;
+    if (asRecord[origKey] != null) return asRecord[origKey];
+    return null;
   };
 
-  const normalize = (field: string, v: any) => {
+  const getProposed = (field: string) => {
+    const asRecord = item as Record<string, unknown>;
+    const v = asRecord[field];
+    if (v != null) return v;
+    const alt = asRecord[`new_${field}`] ?? asRecord[`${field}_id`];
+    return alt ?? null;
+  };
+
+  const normalize = (field: string, v: unknown) => {
     if (v == null) return "";
     if (field === "entry_fee") {
-      const n = Number(v);
+      const n = Number(String(v));
       return isNaN(n) ? "" : String(n);
     }
     if (field.toLowerCase().includes("phone")) return String(v).replace(/\D/g, "");
@@ -43,7 +54,7 @@ const ViewModal: React.FC<ViewModalProps> = ({ isOpen, onClose, item }) => {
 
   const hasChanged = (field: string) => {
     const cur = getCurrent(field);
-    const next = item[field];
+    const next = getProposed(field);
     if (cur == null && next == null) return false;
     if (cur == null) return true;
     return normalize(field, cur) !== normalize(field, next);
@@ -53,13 +64,15 @@ const ViewModal: React.FC<ViewModalProps> = ({ isOpen, onClose, item }) => {
     const curProv = String(getCurrent("province") ?? "").trim();
     const curMun = String(getCurrent("municipality") ?? "").trim();
     const curBar = String(getCurrent("barangay") ?? "").trim();
-    const nextProv = String(item["province"] ?? "").trim();
-    const nextMun = String(item["municipality"] ?? "").trim();
-    const nextBar = String(item["barangay"] ?? "").trim();
+    const nextProv = String(getProposed("province") ?? "").trim();
+    const nextMun = String(getProposed("municipality") ?? "").trim();
+    const nextBar = String(getProposed("barangay") ?? "").trim();
     return curProv !== nextProv || curMun !== nextMun || curBar !== nextBar;
   };
 
-  const isEdit = item.action_type === "edit";
+  const isEdit = (item.action_type as string) === "edit";
+
+  const showVal = (v: unknown) => (v == null ? "-" : String(v));
 
   return (
     <div className="modal-overlay" onClick={onClose}>
@@ -89,42 +102,42 @@ const ViewModal: React.FC<ViewModalProps> = ({ isOpen, onClose, item }) => {
 
                 <div className="detail-section">
                   <Text variant="card-title" color="text-color">Name: </Text>
-                  <Text variant="normal" color="text-color">{String(getCurrent("name") ?? "-")}</Text>
+                  <Text variant="normal" color="text-color">{showVal(getCurrent("name"))}</Text>
                 </div>
 
                 <div className="detail-section">
                   <Text variant="card-title" color="text-color">Description: </Text>
-                  <Text variant="normal" color="text-color">{String(getCurrent("description") ?? "-")}</Text>
+                  <Text variant="normal" color="text-color">{showVal(getCurrent("description"))}</Text>
                 </div>
 
                 <div className="detail-section">
                   <Text variant="card-title" color="text-color">Type: </Text>
-                  <Text variant="normal" color="text-color">{String(getCurrent("type") ?? "-")}</Text>
+                  <Text variant="normal" color="text-color">{showVal(getCurrent("type"))}</Text>
                 </div>
 
                 <div className="detail-section">
                   <Text variant="card-title" color="text-color">Location: </Text>
-                  <Text variant="normal" color="text-color">{`${String(getCurrent("province") ?? "-")}, ${String(getCurrent("municipality") ?? "-")}, ${String(getCurrent("barangay") ?? "-")}`}</Text>
+                  <Text variant="normal" color="text-color">{`${showVal(getCurrent("province"))}, ${showVal(getCurrent("municipality"))}, ${showVal(getCurrent("barangay"))}`}</Text>
                 </div>
 
                 {getCurrent("contact_phone") != null && (
                   <div className="detail-section">
-                    <Text variant="card-title" color="text-color">Contact Phone: </Text>
-                    <Text variant="normal" color="text-color">{String(getCurrent("contact_phone"))}</Text>
+                    <Text variant="card-title" color="text-color">Contact Phone</Text>
+                    <Text variant="normal" color="text-color">{showVal(getCurrent("contact_phone"))}</Text>
                   </div>
                 )}
 
                 {getCurrent("website") != null && (
                   <div className="detail-section">
-                    <Text variant="card-title" color="text-color">Website: </Text>
-                    <Text variant="normal" color="text-color">{String(getCurrent("website"))}</Text>
+                    <Text variant="card-title" color="text-color">Website</Text>
+                    <Text variant="normal" color="text-color">{showVal(getCurrent("website"))}</Text>
                   </div>
                 )}
 
                 {getCurrent("entry_fee") != null && (
                   <div className="detail-section">
-                    <Text variant="card-title" color="text-color">Entry Fee: </Text>
-                    <Text variant="normal" color="text-color">₱{String(getCurrent("entry_fee"))}</Text>
+                    <Text variant="card-title" color="text-color">Entry Fee</Text>
+                    <Text variant="normal" color="text-color">{showVal(getCurrent("entry_fee"))}</Text>
                   </div>
                 )}
               </div>
@@ -134,42 +147,42 @@ const ViewModal: React.FC<ViewModalProps> = ({ isOpen, onClose, item }) => {
 
                 <div className={`detail-section${hasChanged("name") ? " changed" : ""}`}>
                   <Text variant="card-title" color="text-color">Name: </Text>
-                  <Text variant="normal" color="text-color">{String(item.name ?? "-")}</Text>
+                  <Text variant="normal" color="text-color">{showVal(getProposed("name"))}</Text>
                 </div>
 
                 <div className={`detail-section${hasChanged("description") ? " changed" : ""}`}>
                   <Text variant="card-title" color="text-color">Description: </Text>
-                  <Text variant="normal" color="text-color">{String(item.description ?? "-")}</Text>
+                  <Text variant="normal" color="text-color">{showVal(getProposed("description"))}</Text>
                 </div>
 
                 <div className={`detail-section${hasChanged("type") ? " changed" : ""}`}>
                   <Text variant="card-title" color="text-color">Type: </Text>
-                  <Text variant="normal" color="text-color">{String(item.type ?? "-")}</Text>
+                  <Text variant="normal" color="text-color">{showVal(getProposed("type"))}</Text>
                 </div>
 
                 <div className={`detail-section${hasLocationChanged() ? " changed" : ""}`}>
                   <Text variant="card-title" color="text-color">Location: </Text>
-                  <Text variant="normal" color="text-color">{`${String(item.province ?? "-")}, ${String(item.municipality ?? "-")}, ${String(item.barangay ?? "-")}`}</Text>
+                  <Text variant="normal" color="text-color">{`${showVal(getProposed("province"))}, ${showVal(getProposed("municipality"))}, ${showVal(getProposed("barangay"))}`}</Text>
                 </div>
 
-                {item.contact_phone != null && (
+                {getProposed("contact_phone") != null && (
                   <div className={`detail-section${hasChanged("contact_phone") ? " changed" : ""}`}>
-                    <Text variant="card-title" color="text-color">Contact Phone: </Text>
-                    <Text variant="normal" color="text-color">{String(item.contact_phone)}</Text>
+                    <Text variant="card-title" color="text-color">Contact Phone</Text>
+                    <Text variant="normal" color="text-color">{showVal(getProposed("contact_phone"))}</Text>
                   </div>
                 )}
 
-                {item.website != null && (
+                {getProposed("website") != null && (
                   <div className={`detail-section${hasChanged("website") ? " changed" : ""}`}>
-                    <Text variant="card-title" color="text-color">Website: </Text>
-                    <Text variant="normal" color="text-color">{String(item.website)}</Text>
+                    <Text variant="card-title" color="text-color">Website</Text>
+                    <Text variant="normal" color="text-color">{showVal(getProposed("website"))}</Text>
                   </div>
                 )}
 
-                {item.entry_fee != null && (
+                {getProposed("entry_fee") != null && (
                   <div className={`detail-section${hasChanged("entry_fee") ? " changed" : ""}`}>
-                    <Text variant="card-title" color="text-color">Entry Fee: </Text>
-                    <Text variant="normal" color="text-color">₱{String(item.entry_fee)}</Text>
+                    <Text variant="card-title" color="text-color">Entry Fee</Text>
+                    <Text variant="normal" color="text-color">{showVal(getProposed("entry_fee"))}</Text>
                   </div>
                 )}
               </div>
@@ -178,32 +191,32 @@ const ViewModal: React.FC<ViewModalProps> = ({ isOpen, onClose, item }) => {
             <div className="details-view">
               <div className="detail-section">
                 <Text variant="card-title" color="text-color">Description</Text>
-                <Text variant="normal" color="text-color">{String(item.description ?? "")}</Text>
+                <Text variant="normal" color="text-color">{showVal(item.description)}</Text>
               </div>
               <div className="detail-section">
                 <Text variant="card-title" color="text-color">Type</Text>
-                <Text variant="normal" color="text-color">{String(item.type ?? "")}</Text>
+                <Text variant="normal" color="text-color">{showVal(item.type)}</Text>
               </div>
               <div className="detail-section">
                 <Text variant="card-title" color="text-color">Location</Text>
-                <Text variant="normal" color="text-color">{`${String(item.province ?? "")}, ${String(item.municipality ?? "")}, ${String(item.barangay ?? "")}`}</Text>
+                <Text variant="normal" color="text-color">{`${showVal(item.province)}, ${showVal(item.municipality)}, ${showVal(item.barangay)}`}</Text>
               </div>
               {item.contact_phone != null && (
                 <div className="detail-section">
                   <Text variant="card-title" color="text-color">Contact Phone</Text>
-                  <Text variant="normal" color="text-color">{String(item.contact_phone)}</Text>
+                  <Text variant="normal" color="text-color">{showVal(item.contact_phone)}</Text>
                 </div>
               )}
               {item.website != null && (
                 <div className="detail-section">
                   <Text variant="card-title" color="text-color">Website</Text>
-                  <Text variant="normal" color="text-color">{String(item.website)}</Text>
+                  <Text variant="normal" color="text-color">{showVal(item.website)}</Text>
                 </div>
               )}
               {item.entry_fee != null && (
                 <div className="detail-section">
                   <Text variant="card-title" color="text-color">Entry Fee</Text>
-                  <Text variant="normal" color="text-color">₱{String(item.entry_fee)}</Text>
+                  <Text variant="normal" color="text-color">₱{showVal(item.entry_fee)}</Text>
                 </div>
               )}
               <div className="detail-section">
