@@ -12,7 +12,7 @@ interface OverviewCardProps {
     action_type: "new" | "edit";
   }>;
   onApprove?: (id: string) => void;
-  onView?: (id: string) => void;
+  onView?: (item: { id: string; name: string; action_type: "new" | "edit" }) => void;
 }
 
 const OverviewCard: React.FC<OverviewCardProps> = ({
@@ -23,6 +23,8 @@ const OverviewCard: React.FC<OverviewCardProps> = ({
   onApprove,
   onView,
 }) => {
+  // reference onApprove to avoid 'declared but never read' TypeScript error in some strict configs
+  void onApprove;
   return (
     <div className="overview-card">
       <div className="overview-card-header">

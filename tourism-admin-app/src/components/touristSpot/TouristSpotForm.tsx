@@ -40,7 +40,7 @@ const TouristSpotForm: React.FC<TouristSpotFormProps> = ({
     contact_email: "",
     website: "",
     entry_fee: "",
-    category_id: "3", // Always set to 3 for tourist spots
+    category_id: "3",
     type_id: "",
   });
   const [loading, setLoading] = useState(false);
@@ -49,7 +49,6 @@ const TouristSpotForm: React.FC<TouristSpotFormProps> = ({
   const [municipalities, setMunicipalities] = useState<Municipality[]>([]);
   const [barangays, setBarangays] = useState<Barangay[]>([]);
 
-  // Initialize form data when editing
   useEffect(() => {
     if (mode === 'edit' && initialData) {
       setFormData({
@@ -369,7 +368,7 @@ const TouristSpotForm: React.FC<TouristSpotFormProps> = ({
                 <Text variant="label" color="white">
                   placeholder
                 </Text>
-              </label>
+              </label>  
               <input
                 type="url"
                 name="website"

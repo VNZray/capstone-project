@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import type { TouristSpot } from '../../types/TouristSpot';
 import { apiService } from '../../utils/api';
-import Text from "../Text";
 
 type Props = {
   spotId: string;
