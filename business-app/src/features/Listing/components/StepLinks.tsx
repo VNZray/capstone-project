@@ -1,5 +1,5 @@
 import Text from "@/src/components/Text";
-import { Button } from "@mui/material";
+import Button from "@mui/joy/Button";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import React from "react";
@@ -11,7 +11,7 @@ import { AddBox } from "@mui/icons-material";
 type Props = {
   data: Business;
   setData: React.Dispatch<React.SetStateAction<Business>>;
-  API_URL: string;
+  api: string;
   onNext: () => void;
   onPrev: () => void;
   bookingSite: BookingSite[];
@@ -38,7 +38,7 @@ const bookingSiteOptions = [
 const StepLinks: React.FC<Props> = ({
   onNext,
   onPrev,
-  API_URL,
+  api,
   setBookingSites,
   data,
   setData,
@@ -121,7 +121,6 @@ const StepLinks: React.FC<Props> = ({
             <label className="switch">
               <input
                 type="checkbox"
-                checked={data.hasBooking}
                 onChange={(e) =>
                   setData((prev) => ({
                     ...prev,
@@ -135,7 +134,7 @@ const StepLinks: React.FC<Props> = ({
         </div>
 
         {/* Show booking links only if switch is ON */}
-        {data.hasBooking && (
+        {!data.hasBooking && (
           <>
             {bookingSite.map((s, id) => (
               <div key={id}>
@@ -178,8 +177,7 @@ const StepLinks: React.FC<Props> = ({
             ))}
 
             <Button
-              variant="contained"
-              endIcon={<AddBox />}
+              startDecorator={<AddBox />}
               onClick={onNext}
               style={{ flex: 1 }}
             >
@@ -191,18 +189,19 @@ const StepLinks: React.FC<Props> = ({
       {/* Navigation Buttons */}
       <div style={{ display: "flex", gap: 300, marginTop: 20 }}>
         <Button
-          variant="outlined"
-          startIcon={<ArrowBackIcon />}
+          color="neutral"
+          startDecorator={<ArrowBackIcon />}
           onClick={onPrev}
           style={{ flex: 1 }}
+          size="lg"
         >
           Back
         </Button>
         <Button
-          variant="contained"
-          endIcon={<ArrowForwardIcon />}
+          endDecorator={<ArrowForwardIcon />}
           onClick={onNext}
           style={{ flex: 1 }}
+          size="lg"
         >
           Next
         </Button>

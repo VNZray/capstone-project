@@ -4,113 +4,143 @@ import Container from "../components/Container";
 import Text from "../components/Text";
 import "./RegisterStyle.css";
 import { Link, useNavigate } from "react-router-dom";
+import {
+  FormControl,
+  FormLabel,
+  FormHelperText,
+  Checkbox,
+  Input,
+} from "@mui/joy";
+import axios from "axios";
+import api from "../services/api";
+import { insertOwner } from "@/src/services/OwnerService";
 
 const Register = () => {
   const navigate = useNavigate();
   const [firstName, setFirstName] = useState("Rayven");
   const [lastName, setLastName] = useState("Clores");
-  const [email, setEmail] = useState("rayventzy@gmail.com");
-  const [phoneNumber, setPhoneNumber] = useState("09876541234");
+  const [email, setEmail] = useState("rayvenclores@gmail.com");
+  const [phoneNumber, setPhoneNumber] = useState("09876541231");
   const [password, setPassword] = useState("123456");
   const [confirmPassword, setConfirmPassword] = useState("123456");
-  const [userType, setUserType] = useState<string[]>([]);
-  const businessTypes = ["Accommodation", "Shop"];
-  const [errorMessage, setErrorMessage] = useState("");
   const [agreePolicy, setAgreePolicy] = useState(false);
+  const [businessType, setBusinessType] = useState<BusinessType>(null);
+  type BusinessType = "Accommodation" | "Shop" | "Both" | null;
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const API_URL = "http://192.168.1.8:3000/api";
-
-  const handleBusinessTypeChange = (type: string) => {
-    setUserType((prev) => {
-      let updated: string[];
-
-      if (prev.includes(type) || prev.includes("Both")) {
-        // Removing the current type
-        updated = prev.includes("Both")
-          ? [businessTypes.find((t) => t !== type)!]
-          : prev.filter((t) => t !== type);
-      } else {
-        // Adding the current type
-        updated = [...prev, type];
-      }
-
-      // If both selected → store as "Both"
-      if (updated.includes("Accommodation") && updated.includes("Shop")) {
-        return ["Both"];
-      }
-
-      return updated;
-    });
+  const newOwner = {
+    first_name: firstName,
+    last_name: lastName,
+    email: email,
+    phone_number: phoneNumber,
+    business_type: businessType || "",
+    age: "25",
+    barangay_id: 6,
+    municipality_id: 24,
+    province_id: 20,
+    owner_profile: "",
+    gender: "Male",
+    birthday: "2000-01-01",
   };
 
-  const registerBusinessOwner = async () => {
-    // Basic Validation
-    if (!email || !password || password !== confirmPassword) {
-      return setErrorMessage("Please check your credentials.");
+  const newUser = {
+    email: email,
+    phone_number: phoneNumber,
+    role: "Owner",
+    password: password,
+  };
+
+  const handleBusinessTypeChange = (type: BusinessType) => {
+    if (businessType === type) {
+      // uncheck → reset to null
+      setBusinessType(null);
+    } else if (
+      businessType &&
+      businessType !== type &&
+      businessType !== "Both"
+    ) {
+      // if other one already checked → set Both
+      setBusinessType("Both");
+    } else if (businessType === "Both") {
+      // if currently Both and clicking one → switch to the other
+      setBusinessType(type);
+    } else {
+      // normal selection
+      setBusinessType(type);
+    }
+  };
+
+  const validateForm = () => {
+    const newErrors: Record<string, string> = {};
+
+    if (!firstName.trim()) newErrors.firstName = "First name is required.";
+    if (!lastName.trim()) newErrors.lastName = "Last name is required.";
+
+    if (!email.trim()) {
+      newErrors.email = "Email is required.";
+    } else if (!email.includes("@")) {
+      newErrors.email = "Enter a valid email address.";
     }
 
-    if (!email.includes("@")) {
-      return setErrorMessage("Please enter a valid email address.");
+    if (!phoneNumber.trim()) {
+      newErrors.phoneNumber = "Phone number is required.";
+    } else if (!/^[0-9]{10,15}$/.test(phoneNumber)) {
+      newErrors.phoneNumber = "Enter a valid phone number.";
     }
 
-    if (password.length < 6) {
-      return setErrorMessage("Password must be at least 6 characters.");
+    if (!password) {
+      newErrors.password = "Password is required.";
+    } else if (password.length < 6) {
+      newErrors.password = "Password must be at least 6 characters.";
+    }
+
+    if (!confirmPassword) {
+      newErrors.confirmPassword = "Please confirm your password.";
+    } else if (confirmPassword !== password) {
+      newErrors.confirmPassword = "Passwords do not match.";
+    }
+
+    if (!businessType) {
+      newErrors.businessType = "Please select at least one business type.";
     }
 
     if (!agreePolicy) {
-      return setErrorMessage("You must agree to the terms and conditions.");
+      newErrors.agreePolicy = "You must agree to the terms and conditions.";
     }
 
-    setErrorMessage(""); // clear any existing errors
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const registerBusinessOwner = async () => {
+    if (!validateForm()) return;
 
     try {
       // Create Owner
-      const ownerRes = await fetch(`${API_URL}/owner`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          first_name: firstName.trim(),
-          last_name: lastName.trim(),
-          email: email.trim(),
-          phone_number: phoneNumber.trim(),
-          business_type: userType[0] || null,
-        }),
-      });
+      const ownerResponse = await insertOwner(newOwner);
+      const ownerId = ownerResponse.id;
 
-      if (!ownerRes.ok) {
-        const { error } = await ownerRes.json();
-        throw new Error(error || "Failed to register owner");
-      }
-
-      const ownerData = await ownerRes.json();
-      const ownerId = ownerData.data?.owner?.id;
-      alert(`Account created! ${ownerId}`);
+      alert(`Account created! Owner ID: ${ownerId}`);
 
       // Create User linked to Owner
-      const userRes = await fetch(`${API_URL}/users`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email: email.trim(),
-          phone_number: phoneNumber.trim(),
-          password: password.trim(),
-          role: "Owner",
-          owner_id: ownerId,
-        }),
+      const userResponse = await axios.post(`${api}/users`, {
+        email: email.trim(),
+        phone_number: phoneNumber.trim(),
+        password: password.trim(),
+        role: "Owner",
+        owner_id: ownerId,
       });
 
-      if (!userRes.ok) {
-        const { error } = await userRes.json();
-        throw new Error(error || "Failed to create user");
-      }
+      const userId = userResponse.data?.id;
 
-      const userData = await userRes.json();
-      const userId = userData.data?.user?.id;
       alert(`User created! User ID: ${userId}`);
 
       navigate("/login");
     } catch (err: any) {
-      setErrorMessage(err.message || "Something went wrong. Please try again.");
+      if (axios.isAxiosError(err)) {
+      } else {
+        alert("Unexpected error occurred.");
+      }
     }
   };
 
@@ -147,138 +177,122 @@ const Register = () => {
           <div className="form-fields">
             {/* Row 1 - Name */}
             <div className="form-row">
-              <div className="form-group">
-                <label>
-                  <Text variant="medium" color="dark">
-                    First Name
-                  </Text>
-                </label>
-                <input
-                  type="text"
+              <FormControl>
+                <FormLabel>First Name</FormLabel>
+                <Input
+                  size="lg"
                   value={firstName}
                   onChange={(e) => setFirstName(e.target.value)}
+                  placeholder="Placeholder"
                 />
-              </div>
+                <FormHelperText>{errors.firstName}</FormHelperText>
+              </FormControl>
 
-              <div className="form-group">
-                <label>
-                  <Text variant="medium" color="dark">
-                    Last Name
-                  </Text>
-                </label>
-                <input
+              <FormControl>
+                <FormLabel> Last Name</FormLabel>
+                <Input
+                  size="lg"
                   type="text"
                   value={lastName}
                   onChange={(e) => setLastName(e.target.value)}
                 />
-              </div>
-            </div>
+                <FormHelperText>{errors.lastName}</FormHelperText>
+              </FormControl>
 
-            {/* Row 2 - Contact Info */}
-            <div className="form-row">
-              <div className="form-group">
-                <label>
-                  <Text variant="medium" color="dark">
-                    Email
-                  </Text>
-                </label>
-                <input
+              <FormControl>
+                <FormLabel>Email</FormLabel>
+                <Input
+                  size="lg"
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   autoComplete="email"
                 />
-              </div>
+                <FormHelperText>{errors.email}</FormHelperText>
+              </FormControl>
 
-              <div className="form-group">
-                <label>
-                  <Text variant="medium" color="dark">
-                    Phone Number
-                  </Text>
-                </label>
-                <input
+              <FormControl>
+                <FormLabel>Phone Number</FormLabel>
+                <Input
+                  size="lg"
                   type="tel"
                   value={phoneNumber}
                   onChange={(e) => setPhoneNumber(e.target.value)}
                 />
-              </div>
+                <FormHelperText>{errors.phoneNumber}</FormHelperText>
+              </FormControl>
             </div>
 
             {/* Business Type */}
             <div className="form-group">
-              <label>
-                <Text variant="medium" color="dark">
-                  Business Type
-                </Text>
-              </label>
-              <div className="checkbox-group">
-                {businessTypes.map((type) => (
-                  <label key={type} className="checkbox-item color">
-                    <input
-                      type="checkbox"
-                      checked={
-                        userType.includes(type) || userType.includes("Both")
-                      }
-                      onChange={() => handleBusinessTypeChange(type)}
-                    />
-                    {type}
-                  </label>
-                ))}
-              </div>
+              <FormLabel>Business Owned</FormLabel>
+              <Checkbox
+                label="Accommodation"
+                checked={
+                  businessType === "Accommodation" || businessType === "Both"
+                }
+                onChange={() => handleBusinessTypeChange("Accommodation")}
+              />
+              <Checkbox
+                label="Shop"
+                checked={businessType === "Shop" || businessType === "Both"}
+                onChange={() => handleBusinessTypeChange("Shop")}
+              />
+              <FormHelperText>{errors.businessType}</FormHelperText>
             </div>
 
             {/* Password */}
-            <div className="form-group">
-              <label>
-                <Text variant="medium" color="dark">
-                  Password
-                </Text>
-              </label>
-              <input
+            <FormControl>
+              <FormLabel>Password</FormLabel>
+              <Input
+                size="lg"
                 type="password"
-                value={password}
+                value={phoneNumber}
                 onChange={(e) => setPassword(e.target.value)}
               />
-            </div>
+              <FormHelperText>{errors.password}</FormHelperText>
+            </FormControl>
 
-            <div className="form-group">
-              <label>
-                <Text variant="medium" color="dark">
-                  Confirm Password
-                </Text>
-              </label>
-              <input
+            <FormControl>
+              <FormLabel>Confirm Password</FormLabel>
+              <Input
+                size="lg"
                 type="password"
-                value={confirmPassword}
+                value={phoneNumber}
                 onChange={(e) => setConfirmPassword(e.target.value)}
               />
-            </div>
+              <FormHelperText>{errors.confirmPassword}</FormHelperText>
+            </FormControl>
           </div>
 
           {/* Privacy Policy Agreement */}
           <div className="form-group" style={{ marginTop: 10 }}>
-            <label className="checkbox-item">
-              <input
-                type="checkbox"
+            <label
+              style={{ display: "flex", alignItems: "flex-start", gap: 8 }}
+            >
+              <Checkbox
+                size="md"
                 checked={agreePolicy}
                 onChange={() => setAgreePolicy(!agreePolicy)}
+                sx={{ mt: "2px" }}
               />
               <Text variant="normal" color="dark">
-                I agree to the{" "}
+                I agree to the
                 <Link
                   to="/terms-and-conditions"
                   target="_blank"
                   className="link"
                 >
                   Terms and Conditions
-                </Link>{" "}
-                and{" "}
+                </Link>
+                and
                 <Link to="/privacy-policy" target="_blank" className="link">
                   Privacy Policy
                 </Link>
                 of Naga Venture.
               </Text>
             </label>
+            <FormHelperText>{errors.agreePolicy}</FormHelperText>
           </div>
 
           {/* Register Button */}

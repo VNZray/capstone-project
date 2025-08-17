@@ -7,12 +7,12 @@ import {
   Typography,
   IconButton,
   Avatar,
-  Button,
 } from "@mui/material";
 import { Bell, Repeat } from "lucide-react";
 import { useAuth } from "@/src/context/AuthContext"; // adjust path if needed
 import Text from "./Text";
 
+import { Button } from "@mui/joy";
 const pageTitles: Record<string, string> = {
   "/dashboard": "Dashboard",
   "/transactions": "Transactions",
@@ -81,16 +81,10 @@ export default function MainHeader() {
 
           {/* Switch Profile */}
           <Button
-            variant="contained"
-            startIcon={<Repeat size={18} />}
+          color="neutral"
+            variant="solid"
+            startDecorator={<Repeat size={18} />}
             onClick={navigateToBusiness}
-            sx={{
-              backgroundColor: "#0A1B47",
-              "&:hover": { backgroundColor: "#0A1B47" },
-              textTransform: "none",
-              fontSize: 14,
-              padding: "6px 12px",
-            }}
           >
             Switch Profile
           </Button>

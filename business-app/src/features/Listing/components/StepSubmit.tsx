@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import axios from "axios";
 
 import Text from "@/src/components/Text";
-import { Button } from "@mui/material";
+import Button from "@mui/joy/Button";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import type { Business } from "@/src/types/Business";
@@ -19,18 +19,13 @@ type BookingSite = {
 type Props = {
   data: Business;
   setData: React.Dispatch<React.SetStateAction<Business>>;
-  API_URL: string;
+  api: string;
   onNext: () => void;
   onPrev: () => void;
   bookingSite: BookingSite[];
 };
 
-const StepSubmit: React.FC<Props> = ({
-  onPrev,
-  API_URL,
-  data,
-  bookingSite,
-}) => {
+const StepSubmit: React.FC<Props> = ({ onPrev, api, data, bookingSite }) => {
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const navigate = useNavigate();
@@ -41,7 +36,7 @@ const StepSubmit: React.FC<Props> = ({
 
     try {
       // 1. Create business
-      const businessRes = await axios.post(`${API_URL}/business`, data);
+      const businessRes = await axios.post(`${api}/business`, data);
       const businessId = businessRes.data.data.id;
 
       // 2. Insert booking sites if any exist
@@ -51,9 +46,7 @@ const StepSubmit: React.FC<Props> = ({
           .map((site) => ({ ...site, business_id: businessId }));
 
         await Promise.all(
-          validSites.map((site) =>
-            axios.post(`${API_URL}/external-booking`, site)
-          )
+          validSites.map((site) => axios.post(`${api}/external-booking`, site))
         );
       }
 
@@ -155,20 +148,19 @@ const StepSubmit: React.FC<Props> = ({
       {/* Navigation Buttons */}
       <div style={{ display: "flex", gap: 300, marginTop: 20 }}>
         <Button
-          variant="outlined"
-          startIcon={<ArrowBackIcon />}
+          color="neutral"
+          startDecorator={<ArrowBackIcon />}
           onClick={onPrev}
           style={{ flex: 1 }}
+          size="lg"
         >
           Back
         </Button>
-
         <Button
+          startDecorator={<PostAdd />}
           onClick={handleSubmit}
-          variant="contained"
-          startIcon={<PostAdd />}
           style={{ flex: 1 }}
-          disabled={loading}
+          size="lg"
         >
           <Text variant="normal" color="white">
             {loading ? "Submitting..." : "Submit"}
