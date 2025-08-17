@@ -1,43 +1,40 @@
 import db from "../db.js";
 import { handleDbError } from "../utils/errorHandler.js";
+import { v4 as uuidv4 } from "uuid";
 
 // Insert Owner Data
-export const insertOwner = async (request, response) => {
+export async function insertOwner(request, response) {
   try {
-    const { first_name, last_name, email, phone_number, business_type } =
-      request.body;
+    const id = uuidv4();
+    const fields = [
+      "id",
+      "first_name",
+      "last_name",
+      "email",
+      "phone_number",
+      "business_type",
+    ];
 
-    // Insert new owner
+    const values = [id, ...fields.slice(1).map((f) => request.body[f] ?? null)];
+
     await db.query(
-      `INSERT INTO owner (first_name, last_name, email, phone_number, business_type) 
-       VALUES (?, ?, ?, ?, ?)`,
-      [first_name, last_name, email, phone_number, business_type]
+      `INSERT INTO owner (${fields.join(", ")})
+       VALUES (${fields.map(() => "?").join(", ")})`,
+      values
     );
 
-    // Fetch the owner row to get the UUID
-    const [data] = await db.query(
-      `SELECT * FROM owner WHERE email = ? LIMIT 1`,
-      [email]
-    );
+    // retrieve inserted data
+    const [data] = await db.query("SELECT * FROM owner WHERE id = ?", [id]);
 
     if (data.length === 0) {
-      return response.status(500).json({
-        status: "error",
-        message: "Owner creation failed - not found after insert",
-      });
+      return response.status(404).json({ erroror: "Inserted row not found" });
     }
 
-    const owner = data[0];
-
-    response.status(201).json({
-      status: "success",
-      data: { owner },
-    });
+    response.json(data[0]);
   } catch (error) {
-    console.error("Error inserting owner:", error);
     return handleDbError(error, response);
   }
-};
+}
 
 // Get owner by ID
 export async function getOwnerById(request, response) {

@@ -16,7 +16,7 @@
 .main-outlet {
   flex: 1;
   padding: 1.5rem;
-  background-color: var(--background-color);
+  background-color: var(--off-white);
   overflow: scroll;
   overflow-x: hidden;
 }

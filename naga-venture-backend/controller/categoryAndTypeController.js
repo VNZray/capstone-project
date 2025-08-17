@@ -37,3 +37,20 @@ export const getTypes = async (request, response) => {
     return handleDbError(error, response);
   }
 };
+
+// get address by id
+export async function getCategoryAndType(request, response) {
+  const { id } = request.params;
+  try {
+    const query = `
+      SELECT category.category AS category_name, type.type AS type_name
+      FROM category
+      INNER JOIN type ON category.id = type.category_id
+      WHERE type.id = ?
+    `;
+    const [data] = await db.query(query, [id]);
+    response.json(data);
+  } catch (error) {
+    return handleDbError(error, response);
+  }
+}

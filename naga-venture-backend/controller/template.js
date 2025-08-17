@@ -120,14 +120,17 @@ export async function deleteData(request, response) {
 }
 
 // join data from two tables
-export async function joinTableData(request, response) {
+export async function JoinThreeTables(request, response) {
+  const { id } = request.params;
   try {
     const query = `
-      SELECT table_1.id, table_1.field_1, table_1.field_2, table_2.other_field
-      FROM table_name table_1
-      INNER JOIN another_table table_2 ON table_1.foreign_key_id = table_2.id
+      SELECT table_1.table_1 AS table_1_name, table_2.table_2 AS table_2_name, table_3.table_3 AS table_3_name
+      FROM table_3
+      INNER JOIN table_2 ON table_3.table_2_id = table_2.id
+      INNER JOIN table_1 ON table_2.table_1_id = table_1.id
+      WHERE table_3.id = ?
     `;
-    const [data] = await db.query(query);
+    const [data] = await db.query(query, [id]);
     response.json(data);
   } catch (error) {
     return handleDbError(error, response);

@@ -1,12 +1,13 @@
 import Text from "@/src/components/Text";
-import { Button } from "@mui/material";
+import Button from "@mui/joy/Button";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import React from "react";
 import type { Business } from "@/src/types/Business";
 import axios from "axios";
 import CardHeader from "@/src/components/CardHeader";
-
+import { useAddress } from "@/src/hooks/useAddress";
+import { useCategoryAndType } from "@/src/hooks/useCategoryAndType";
 type BookingSite = {
   name: string;
   link: string;
@@ -15,7 +16,7 @@ type BookingSite = {
 type Props = {
   data: Business;
   setData: React.Dispatch<React.SetStateAction<Business>>;
-  API_URL: string;
+  api: string;
   bookingSite: BookingSite[]; // ✅ New prop
   onNext: () => void;
   onPrev: () => void;
@@ -25,123 +26,11 @@ const StepReview: React.FC<Props> = ({
   onNext,
   onPrev,
   data,
-  API_URL,
+  api,
   bookingSite,
 }) => {
-  const [businessTypes, setBusinessTypes] = React.useState<
-    { id: number; type: string }[]
-  >([]);
-  const [businessCategories, setBusinessCategories] = React.useState<
-    { id: number; category: string }[]
-  >([]);
-
-  const fetchBusinessCategory = async () => {
-    try {
-      const response = await axios.get(
-        `${API_URL}/category-and-type/business-category`
-      );
-      if (Array.isArray(response.data)) {
-        setBusinessCategories(response.data);
-      }
-    } catch (error) {
-      console.error("Error fetching business categories:", error);
-    }
-  };
-
-  const fetchBusinessTypes = async (categoryId: string) => {
-    try {
-      const response = await axios.get(
-        `${API_URL}/category-and-type/type/${categoryId}`
-      );
-      if (Array.isArray(response.data)) {
-        setBusinessTypes(response.data);
-      }
-    } catch (error) {
-      console.error("Error fetching business types:", error);
-    }
-  };
-
-  const [province, setProvince] = React.useState<
-    { id: number; province: string }[]
-  >([]);
-  const [municipality, setMunicipality] = React.useState<
-    { id: number; municipality: string }[]
-  >([]);
-  const [barangay, setBarangay] = React.useState<
-    { id: number; barangay: string }[]
-  >([]);
-
-  const fetchProvince = async () => {
-    try {
-      const response = await axios.get(`${API_URL}/address/provinces`);
-      if (Array.isArray(response.data)) {
-        setProvince(response.data);
-      }
-    } catch (error) {
-      console.error("Error fetching provinces:", error);
-    }
-  };
-
-  const fetchMunicipality = async (provinceId: string) => {
-    try {
-      const response = await axios.get(
-        `${API_URL}/address/municipalities/${provinceId}`
-      );
-      if (Array.isArray(response.data)) {
-        setMunicipality(response.data);
-      }
-    } catch (error) {
-      console.error("Error fetching municipalities:", error);
-    }
-  };
-
-  const fetchBarangay = async (municipalityId: string) => {
-    try {
-      const response = await axios.get(
-        `${API_URL}/address/barangays/${municipalityId}`
-      );
-      if (Array.isArray(response.data)) {
-        setBarangay(response.data);
-      }
-    } catch (error) {
-      console.error("Error fetching barangays:", error);
-    }
-  };
-
-  const getCategoryName = (id: string | number) =>
-    businessCategories.find((c) => c.id.toString() === id?.toString())
-      ?.category || "-";
-
-  const getTypeName = (id: string | number) =>
-    businessTypes.find((t) => t.id.toString() === id?.toString())?.type || "-";
-
-  const getProvinceName = (id: string | number) =>
-    province.find((p) => p.id.toString() === id?.toString())?.province || "-";
-
-  const getMunicipalityName = (id: string | number) =>
-    municipality.find((m) => m.id.toString() === id?.toString())
-      ?.municipality || "-";
-
-  const getBarangayName = (id: string | number) =>
-    barangay.find((b) => b.id.toString() === id?.toString())?.barangay || "-";
-
-  React.useEffect(() => {
-    fetchBusinessCategory();
-    if (data.business_category_id) {
-      fetchBusinessTypes(data.business_category_id.toString());
-    }
-    fetchProvince();
-
-    // Fetch municipality if province is already selected in data
-    if (data.province_id) {
-      fetchMunicipality(data.province_id.toString());
-    }
-
-    // Fetch barangay if municipality is already selected in data
-    if (data.municipality_id) {
-      fetchBarangay(data.municipality_id.toString());
-    }
-  }, []);
+  const { address } = useAddress(data?.barangay_id);
+  const { categoryAndType } = useCategoryAndType(data?.business_type_id);
 
   const InfoRow = ({
     label,
@@ -175,6 +64,7 @@ const StepReview: React.FC<Props> = ({
           flexDirection: "column",
           gap: 24,
           overflowY: "auto",
+          overflowX: "hidden",
           paddingRight: 8,
         }}
       >
@@ -206,12 +96,9 @@ const StepReview: React.FC<Props> = ({
           }}
         >
           <InfoRow label="Business Name" value={data.business_name} />
-          <InfoRow
-            label="Category"
-            value={getCategoryName(data.business_category_id)}
-          />
-          <InfoRow label="Type" value={getTypeName(data.business_type_id)} />
-          <InfoRow label="Profile" value={getTypeName(data.business_image)} />
+          <InfoRow label="Category" value={categoryAndType?.category_name} />
+          <InfoRow label="Type" value={categoryAndType?.type_name} />
+          <InfoRow label="Profile" value={data.business_image} />
         </section>
 
         {/* CONTACT */}
@@ -251,12 +138,9 @@ const StepReview: React.FC<Props> = ({
             paddingLeft: 12,
           }}
         >
-          <InfoRow label="Province" value={getProvinceName(data.province_id)} />
-          <InfoRow
-            label="Municipality"
-            value={getMunicipalityName(data.municipality_id)}
-          />
-          <InfoRow label="Barangay" value={getBarangayName(data.barangay_id)} />
+          <InfoRow label="Province" value={address?.province_name} />
+          <InfoRow label="Municipality" value={address?.municipality_name} />
+          <InfoRow label="Barangay" value={address?.barangay_name} />
           <InfoRow label="Latitude" value={data.latitude} />
           <InfoRow label="Longitude" value={data.longitude} />
         </section>
@@ -344,7 +228,7 @@ const StepReview: React.FC<Props> = ({
                 label="Has Booking Feature"
                 value={data.hasBooking ? "Yes" : "No"}
               />
-              {data.hasBooking &&
+              {!data.hasBooking &&
                 bookingSite.map((site, index) => (
                   <InfoRow
                     key={index}
@@ -360,18 +244,19 @@ const StepReview: React.FC<Props> = ({
       {/* Footer buttons */}
       <div style={{ display: "flex", gap: 300, marginTop: 16 }}>
         <Button
-          variant="outlined"
-          startIcon={<ArrowBackIcon />}
+          color="neutral"
+          startDecorator={<ArrowBackIcon />}
           onClick={onPrev}
           style={{ flex: 1 }}
+          size="lg"
         >
           Back
         </Button>
         <Button
-          variant="contained"
-          endIcon={<ArrowForwardIcon />}
+          endDecorator={<ArrowForwardIcon />}
           onClick={onNext}
           style={{ flex: 1 }}
+          size="lg"
         >
           Next
         </Button>

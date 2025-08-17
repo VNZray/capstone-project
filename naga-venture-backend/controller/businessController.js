@@ -45,6 +45,7 @@ export async function getBusinessId(request, response) {
     handleDbError(error, response);
   }
 }
+
 // Insert a new business
 export async function insertBusiness(request, response) {
   try {

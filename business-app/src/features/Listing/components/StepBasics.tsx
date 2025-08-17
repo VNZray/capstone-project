@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
-import Input from "@/src/components/Input";
 import Text from "@/src/components/Text";
 import CardHeader from "@/src/components/CardHeader";
 import "./Steps.css";
@@ -10,37 +9,26 @@ import { useBusinessBasics } from "@/src/hooks/useBusinessData";
 import { supabase } from "@/src/utils/supabase";
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import { useNavigate } from "react-router-dom";
-import {
-  Box,
-  Button,
-  Card,
-  CardContent,
-  CardMedia,
-  Typography,
-} from "@mui/material";
-import { colors } from "@/src/utils/Colors";
+import { Box, Card, CardContent, CardMedia, Typography } from "@mui/material";
+import Button from "@mui/joy/Button";
+import { FormControl, FormLabel, Input, Select, Option } from "@mui/joy";
+
 type Props = {
   data: Business;
   setData: React.Dispatch<React.SetStateAction<Business>>;
-  API_URL: string;
+  api: string;
   onNext: () => void;
   onPrev: () => void;
 };
 
-const StepBasics: React.FC<Props> = ({
-  onNext,
-  onPrev,
-  API_URL,
-  data,
-  setData,
-}) => {
+const StepBasics: React.FC<Props> = ({ onNext, api, data, setData }) => {
   const {
     businessCategories,
     businessTypes,
     setSelectedCategory,
     previewUrl,
     handleImageChange,
-  } = useBusinessBasics(API_URL, data, setData);
+  } = useBusinessBasics(api, data, setData);
 
   const navigate = useNavigate();
   const [uploading, setUploading] = useState(false);
@@ -104,70 +92,90 @@ const StepBasics: React.FC<Props> = ({
         />
 
         <div className="content">
-          <Input
-            type="text"
-            label="Business Name"
-            placeholder="Enter the business name"
-            value={data.business_name}
-            onChange={(e) =>
-              setData((prev) => ({ ...prev, business_name: e.target.value }))
-            }
-          />
+          <FormControl>
+            <FormLabel>Buasiness Name</FormLabel>
+            <Input
+              size="lg"
+              value={data.business_name}
+              onChange={(e) =>
+                setData((prev) => ({ ...prev, business_name: e.target.value }))
+              }
+              placeholder="Placeholder"
+            />
+          </FormControl>
 
-          <Input
-            type="select"
-            label="Business Category"
-            value={data.business_category_id}
-            onChange={(e) => {
-              const value = e.target.value;
-              setData((prev) => ({
-                ...prev,
-                business_category_id: value.toString(),
-              }));
-              setSelectedCategory(value.toString());
-            }}
-            options={[
-              { value: "", label: "-- Select a category --" },
-              ...businessCategories.map((category) => ({
-                value: category.id.toString(),
-                label: category.category,
-              })),
-            ]}
-          />
+          <FormControl>
+            <FormLabel>Category</FormLabel>
+            <Select
+              size="lg"
+              value={data.business_category_id} // state variable for category
+              onChange={(e, value) => {
+                setSelectedCategory(value as string);
+                setData((prev) => ({
+                  ...prev,
+                  business_category_id: value as string,
+                }));
+              }}
+              slotProps={{
+                button: {
+                  id: "select-category-button",
+                  "aria-labelledby":
+                    "select-category-label select-category-button",
+                },
+              }}
+            >
+              <Option value="">-- Select a category --</Option>
+              {businessCategories.map((category) => (
+                <Option key={category.id} value={category.id.toString()}>
+                  {category.category}
+                </Option>
+              ))}
+            </Select>
+          </FormControl>
 
-          <Input
-            type="select"
-            label="Business Type"
-            value={data.business_type_id}
-            onChange={(e) =>
-              setData((prev) => ({
-                ...prev,
-                business_type_id: e.target.value.toString(),
-              }))
-            }
-            options={[
-              { value: "", label: "-- Select a type --" },
-              ...businessTypes.map((type) => ({
-                value: type.id.toString(),
-                label: type.type,
-              })),
-            ]}
-          />
+          <FormControl>
+            <FormLabel>Type</FormLabel>
+            <Select
+              size="lg"
+              value={data.business_type_id}
+              onChange={(e, value) =>
+                setData((prev) => ({
+                  ...prev,
+                  business_type_id: value as string,
+                }))
+              }
+              slotProps={{
+                button: {
+                  id: "select-type-button",
+                  "aria-labelledby": "select-type-label select-type-button",
+                },
+              }}
+            >
+              <Option value="">-- Select a type --</Option>
+              {businessTypes.map((type) => (
+                <Option key={type.id} value={type.id.toString()}>
+                  {type.type}
+                </Option>
+              ))}
+            </Select>
+          </FormControl>
 
-          <Input
-            type="text"
-            label="Description"
-            placeholder="Enter the description"
-            value={data.description}
-            onChange={(e) =>
-              setData((prev) => ({ ...prev, description: e.target.value }))
-            }
-          />
+          <FormControl>
+            <FormLabel>Description</FormLabel>
+            <Input
+              size="lg"
+              type="text"
+              placeholder="Enter the description"
+              value={data.description}
+              onChange={(e) =>
+                setData((prev) => ({ ...prev, description: e.target.value }))
+              }
+            />
+          </FormControl>
 
           {/* Click area for image selection */}
-          <Text variant="medium" color="dark">
-            Upload Image
-          </Text>
+          <FormLabel>Upload Business Profile</FormLabel>
+
           <Card
             sx={{
               border: "2px dashed #ccc",
@@ -216,20 +224,19 @@ const StepBasics: React.FC<Props> = ({
 
       <div style={{ display: "flex", gap: 300 }}>
         <Button
-          color="error"
-          variant="contained"
-          startIcon={<ArrowBackIcon />}
+          size="lg"
           onClick={onCancel}
           style={{ flex: 1 }}
+          startDecorator={<ArrowBackIcon />}
+          color="neutral"
         >
-          Cancel
+          Back
         </Button>
-
         <Button
-          color="primary"
-          variant="contained"
-          endIcon={<ArrowForwardIcon />}
+          size="lg"
           onClick={onNext}
+          endDecorator={<ArrowForwardIcon />}
+          color="primary"
           style={{ flex: 1 }}
         >
           Next

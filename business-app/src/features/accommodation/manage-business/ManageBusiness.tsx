@@ -9,18 +9,13 @@ import AddIcon from "@mui/icons-material/Add";
 import EditIcon from "@mui/icons-material/Edit";
 import { useAddress } from "@/src/hooks/useAddress";
 import { colors } from "@/src/utils/Colors";
-import { Button } from "@mui/material";
+import { Button } from "@mui/joy";
 import BusinessMap from "./components/businessMap"; // <-- new import
+import { Add, AddBox, AddBusiness, EditDocument } from "@mui/icons-material";
 
 const ManageBusiness = () => {
-  const { businessDetails, API_URL } = useBusiness();
-
-  const { fullAddress } = useAddress(
-    API_URL,
-    businessDetails?.province_id,
-    businessDetails?.municipality_id,
-    businessDetails?.barangay_id
-  );
+  const { businessDetails } = useBusiness();
+  const { address, loading } = useAddress(businessDetails?.barangay_id);
 
   return (
     <PageContainer
@@ -78,8 +73,12 @@ const ManageBusiness = () => {
                 {businessDetails?.business_name || "Business Name"}
               </Text>
               <Text variant="medium" color={colors.gray}>
-                <LocationOnIcon style={{ color: colors.success }} fontSize="medium" />
-                {fullAddress}
+                <LocationOnIcon
+                  style={{ color: colors.success }}
+                  fontSize="medium"
+                />
+                {address?.barangay_name}, {address?.municipality_name},{" "}
+                {address?.province_name}
               </Text>
               <Text variant="medium" color={colors.gray}>
                 <StarIcon style={{ color: colors.yellow }} fontSize="medium" />
@@ -88,20 +87,27 @@ const ManageBusiness = () => {
             </div>
           </div>
 
-          <div style={{ display: "flex", gap: "12px", height: 50, width: "30%" }}>
+          <div
+            style={{ display: "flex", gap: "12px", height: 50, width: "26%" }}
+          >
             <Button
-              style={{ flex: 1, backgroundColor: colors.tertiary }}
-              variant="contained"
-              startIcon={<EditIcon style={{ color: colors.dark }} fontSize="large" />}
+              color="primary"
+              size="lg"
+              variant="outlined"
+              style={{ flex: 1, minHeight: "50px" }}
+              startDecorator={<EditIcon />}
             >
-              <Text>Edit Business</Text>
+              Edit Business
             </Button>
+
             <Button
-              style={{ flex: 1 }}
-              variant="contained"
-              startIcon={<AddIcon style={{ color: colors.white }} fontSize="large" />}
+              color="primary"
+              size="lg"
+              variant="solid"
+              style={{ flex: 1, minHeight: "50px" }}
+              startDecorator={<Add />}
             >
-              <Text color={colors.white}>Add Room</Text>
+              Add Room
             </Button>
           </div>
         </div>
