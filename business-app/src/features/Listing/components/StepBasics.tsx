@@ -25,7 +25,7 @@ const StepBasics: React.FC<Props> = ({ onNext, api, data, setData }) => {
   const {
     businessCategories,
     businessTypes,
-    setSelectedCategory,
+    setSelectedType,
     previewUrl,
     handleImageChange,
   } = useBusinessBasics(api, data, setData);
@@ -105,17 +105,44 @@ const StepBasics: React.FC<Props> = ({ onNext, api, data, setData }) => {
           </FormControl>
 
           <FormControl>
+            <FormLabel>Business Type</FormLabel>
+            <Select
+              size="lg"
+              value={data.business_type_id} // state variable for type
+              onChange={(e, value) => {
+                setSelectedType(value as string);
+                setData((prev) => ({
+                  ...prev,
+                  business_type_id: value as string,
+                }));
+              }}
+              slotProps={{
+                button: {
+                  id: "select-type-button",
+                  "aria-labelledby": "select-type-label select-type-button",
+                },
+              }}
+            >
+              <Option value="">-- Select business type --</Option>
+              {businessTypes.map((type) => (
+                <Option key={type.id} value={type.id.toString()}>
+                  {type.type}
+                </Option>
+              ))}
+            </Select>
+          </FormControl>
+
+          <FormControl>
             <FormLabel>Category</FormLabel>
             <Select
               size="lg"
-              value={data.business_category_id} // state variable for category
-              onChange={(e, value) => {
-                setSelectedCategory(value as string);
+              value={data.business_category_id}
+              onChange={(e, value) =>
                 setData((prev) => ({
                   ...prev,
                   business_category_id: value as string,
-                }));
-              }}
+                }))
+              }
               slotProps={{
                 button: {
                   id: "select-category-button",
@@ -128,33 +155,6 @@ const StepBasics: React.FC<Props> = ({ onNext, api, data, setData }) => {
               {businessCategories.map((category) => (
                 <Option key={category.id} value={category.id.toString()}>
                   {category.category}
-                </Option>
-              ))}
-            </Select>
-          </FormControl>
-
-          <FormControl>
-            <FormLabel>Type</FormLabel>
-            <Select
-              size="lg"
-              value={data.business_type_id}
-              onChange={(e, value) =>
-                setData((prev) => ({
-                  ...prev,
-                  business_type_id: value as string,
-                }))
-              }
-              slotProps={{
-                button: {
-                  id: "select-type-button",
-                  "aria-labelledby": "select-type-label select-type-button",
-                },
-              }}
-            >
-              <Option value="">-- Select a type --</Option>
-              {businessTypes.map((type) => (
-                <Option key={type.id} value={type.id.toString()}>
-                  {type.type}
                 </Option>
               ))}
             </Select>

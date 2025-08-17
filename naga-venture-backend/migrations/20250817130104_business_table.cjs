@@ -9,11 +9,28 @@ exports.up = function (knex) {
     table.string("phone_number", 14).notNullable();
     table.integer("business_category_id").notNullable();
     table.integer("business_type_id").notNullable();
-    table.integer("province_id").notNullable();
-    table.integer("municipality_id").notNullable();
-    table.integer("barangay_id").notNullable();
+    table
+      .integer("province_id")
+      .unsigned()
+      .references("id")
+      .inTable("province")
+      .nullable();
+    table
+      .integer("municipality_id")
+      .unsigned()
+      .references("id")
+      .inTable("municipality")
+      .nullable();
+    table
+      .integer("barangay_id")
+      .unsigned()
+      .references("id")
+      .inTable("barangay")
+      .nullable();
     table.uuid("owner_id").notNullable();
-    table.enu("status", ["Pending", "Active", "Inactive", "Maintenance"]).notNullable();
+    table
+      .enu("status", ["Pending", "Active", "Inactive", "Maintenance"])
+      .notNullable();
     table.text("business_image").nullable();
     table.timestamp("created_at").defaultTo(knex.fn.now());
     table.string("latitude", 30).notNullable();

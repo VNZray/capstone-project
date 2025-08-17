@@ -2,9 +2,9 @@ import db from "../db.js";
 import { handleDbError } from "../utils/errorHandler.js";
 
 // get all categories
-export async function getAllCategories(request, response) {
+export async function getAllTypes(request, response) {
   try {
-    const [data] = await db.query("SELECT * FROM category");
+    const [data] = await db.query("SELECT * FROM type");
     response.json(data);
   } catch (error) {
     return handleDbError(error, response);
@@ -12,10 +12,10 @@ export async function getAllCategories(request, response) {
 }
 
 // get all Accommodation and Shop categories
-export const getAccommodationAndShopCategories = async (request, response) => {
+export const getAccommodationAndShopTypes = async (request, response) => {
   try {
     const [data] = await db.query(
-      "SELECT * FROM category WHERE category IN ('Accommodation', 'Shop')"
+      "SELECT * FROM type WHERE type IN ('Accommodation', 'Shop')"
     );
     response.json(data);
   } catch (error) {
@@ -24,16 +24,16 @@ export const getAccommodationAndShopCategories = async (request, response) => {
   }
 };
 
-// get all Accommodation and Shop Types
-export const getTypes = async (request, response) => {
+// get all Accommodation and Shop Category
+export const getCategory = async (request, response) => {
   const { id } = request.params;
   try {
-    const [data] = await db.query("SELECT * FROM type WHERE category_id = ?", [
+    const [data] = await db.query("SELECT * FROM category WHERE type_id = ?", [
       id,
     ]);
     response.json(data);
   } catch (error) {
-    console.error("Error fetching Accommodation and Shop types:", error);
+    console.error("Error fetching Accommodation and Shop Category:", error);
     return handleDbError(error, response);
   }
 };
@@ -45,8 +45,8 @@ export async function getCategoryAndType(request, response) {
     const query = `
       SELECT category.category AS category_name, type.type AS type_name
       FROM category
-      INNER JOIN type ON category.id = type.category_id
-      WHERE type.id = ?
+      INNER JOIN category ON type.id = category.type_id
+      WHERE category.id = ?
     `;
     const [data] = await db.query(query, [id]);
     response.json(data);

@@ -37,7 +37,6 @@ const BusinessListing: React.FC = () => {
       setOwnerId(ownerData.id);
       setFormData({
         business_name: "UMA Residences & Hotel",
-        category: "Accommodation",
         phone_number: "095612315534",
         email: "uma@example.com",
         barangay_id: "",

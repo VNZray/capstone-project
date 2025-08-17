@@ -96,8 +96,8 @@ const StepReview: React.FC<Props> = ({
           }}
         >
           <InfoRow label="Business Name" value={data.business_name} />
-          <InfoRow label="Category" value={categoryAndType?.category_name} />
           <InfoRow label="Type" value={categoryAndType?.type_name} />
+          <InfoRow label="Category" value={categoryAndType?.category_name} />
           <InfoRow label="Profile" value={data.business_image} />
         </section>
 

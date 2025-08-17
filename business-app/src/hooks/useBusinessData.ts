@@ -10,31 +10,31 @@ type BusinessType = { id: number; type: string };
 export const useBusinessBasics = (API_URL: string, data: Business, setData: React.Dispatch<React.SetStateAction<Business>>) => {
   const [businessCategories, setBusinessCategories] = useState<BusinessCategory[]>([]);
   const [businessTypes, setBusinessTypes] = useState<BusinessType[]>([]);
-  const [selectedCategory, setSelectedCategory] = useState("");
+  const [selectedType, setSelectedType] = useState("");
   const [businessImage, setBusinessImage] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
-  // Fetch categories
-  const fetchBusinessCategory = async () => {
+  // Fetch types
+  const getBusinessTypes = async () => {
     try {
-      const response = await axios.get(`${API_URL}/category-and-type/business-category`);
-      if (Array.isArray(response.data)) {
-        setBusinessCategories(response.data);
-      }
-    } catch (error) {
-      console.error("Error fetching business categories:", error);
-    }
-  };
-
-  // Fetch types based on category
-  const fetchBusinessTypes = async (categoryId: string) => {
-    try {
-      const response = await axios.get(`${API_URL}/category-and-type/type/${categoryId}`);
+      const response = await axios.get(`${API_URL}/category-and-type/business-type`);
       if (Array.isArray(response.data)) {
         setBusinessTypes(response.data);
       }
     } catch (error) {
       console.error("Error fetching business types:", error);
+    }
+  };
+
+  // Fetch categories based on type
+  const getBusinessCategories = async (type_id: string) => {
+    try {
+      const response = await axios.get(`${API_URL}/category-and-type/category/${type_id}`);
+      if (Array.isArray(response.data)) {
+        setBusinessCategories(response.data);
+      }
+    } catch (error) {
+      console.error("Error fetching business categories:", error);
     }
   };
 
@@ -78,21 +78,21 @@ export const useBusinessBasics = (API_URL: string, data: Business, setData: Reac
 
   // Load categories on mount
   useEffect(() => {
-    fetchBusinessCategory();
+    getBusinessTypes();
   }, []);
 
   // Fetch types when category changes
   useEffect(() => {
-    if (selectedCategory) {
-      fetchBusinessTypes(selectedCategory);
+    if (selectedType) {
+      getBusinessCategories(selectedType);
     }
-  }, [selectedCategory]);
+  }, [selectedType]);
 
   return {
-    businessCategories,
     businessTypes,
-    selectedCategory,
-    setSelectedCategory,
+    businessCategories,
+    selectedType,
+    setSelectedType,
     previewUrl,
     handleImageChange,
     handleUpload,

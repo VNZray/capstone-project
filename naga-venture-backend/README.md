@@ -1,7 +1,7 @@
 
 # Setup
 
-    Go to .env file and raneme the DB_NAME to desired name
+    Go to .env file and rename the DB_NAME to desired name
 
 ## Install dependencies
 

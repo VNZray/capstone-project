@@ -3,12 +3,12 @@ import * as categoryAndTypeController from "../controller/categoryAndTypeControl
 
 const router = express.Router();
 
-router.get("/all-category", categoryAndTypeController.getAllCategories);
+router.get("/all-type", categoryAndTypeController.getAllTypes);
 router.get(
-  "/business-category",
-  categoryAndTypeController.getAccommodationAndShopCategories
+  "/business-type",
+  categoryAndTypeController.getAccommodationAndShopTypes
 );
-router.get("/type/:id", categoryAndTypeController.getTypes);
+router.get("/category/:id", categoryAndTypeController.getCategory);
 router.get("/:id", categoryAndTypeController.getCategoryAndType);
 
 export default router;
