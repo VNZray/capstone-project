@@ -1,5 +1,9 @@
 
-# Install dependencies
+# Setup
+
+    Go to .env file and raneme the DB_NAME to desired name
+
+## Install dependencies
 
     npm i
 
@@ -11,7 +15,7 @@
 
     npm run creatadb
 
-## Initialize table
+## Initialize/migrate table
 
     npm run latest
 
