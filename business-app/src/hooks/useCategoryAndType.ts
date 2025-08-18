@@ -6,7 +6,7 @@ interface CategoryAndType {
   type_name: string;
 }
 
-export function useCategoryAndType(type_id?: string) {
+export function useCategoryAndType(type_id?: number) {
   const [categoryAndType, setCategoryAndType] =
     useState<CategoryAndType | null>(null);
   const [loading, setLoading] = useState(false);

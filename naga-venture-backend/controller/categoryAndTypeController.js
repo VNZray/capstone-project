@@ -44,7 +44,7 @@ export async function getCategoryAndType(request, response) {
   try {
     const query = `
       SELECT category.category AS category_name, type.type AS type_name
-      FROM category
+      FROM type
       INNER JOIN category ON type.id = category.type_id
       WHERE category.id = ?
     `;

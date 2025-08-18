@@ -4,7 +4,6 @@ import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import React from "react";
 import type { Business } from "@/src/types/Business";
-import axios from "axios";
 import CardHeader from "@/src/components/CardHeader";
 import { useAddress } from "@/src/hooks/useAddress";
 import { useCategoryAndType } from "@/src/hooks/useCategoryAndType";
@@ -18,17 +17,9 @@ type Props = {
   setData: React.Dispatch<React.SetStateAction<Business>>;
   api: string;
   bookingSite: BookingSite[]; // ✅ New prop
-  onNext: () => void;
-  onPrev: () => void;
 };
 
-const StepReview: React.FC<Props> = ({
-  onNext,
-  onPrev,
-  data,
-  api,
-  bookingSite,
-}) => {
+const Step7: React.FC<Props> = ({ data, bookingSite }) => {
   const { address } = useAddress(data?.barangay_id);
   const { categoryAndType } = useCategoryAndType(data?.business_type_id);
 
@@ -240,29 +231,8 @@ const StepReview: React.FC<Props> = ({
           </div>
         )}
       </div>
-
-      {/* Footer buttons */}
-      <div style={{ display: "flex", gap: 300, marginTop: 16 }}>
-        <Button
-          color="neutral"
-          startDecorator={<ArrowBackIcon />}
-          onClick={onPrev}
-          style={{ flex: 1 }}
-          size="lg"
-        >
-          Back
-        </Button>
-        <Button
-          endDecorator={<ArrowForwardIcon />}
-          onClick={onNext}
-          style={{ flex: 1 }}
-          size="lg"
-        >
-          Next
-        </Button>
-      </div>
     </div>
   );
 };
 
-export default StepReview;
+export default Step7;

@@ -4,7 +4,7 @@
 exports.up = function (knex) {
   return knex.schema.createTable("province", function (table) {
     table.increments("id").primary(); // Auto-increment primary key
-    table.string("province", 100).notNullable(); // Province name
+    table.string("province", 100).notNullable(); 
   });
 };
 

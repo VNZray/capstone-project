@@ -15,19 +15,19 @@ export const AddressService = {
 
   async getMunicipalities(
     api: string,
-    provinceId: string
+    provinceId: number
   ): Promise<Municipality[]> {
     const res = await axios.get(`${api}/address/municipalities/${provinceId}`);
     return Array.isArray(res.data) ? res.data : [];
   },
 
-  async getBarangays(api: string, municipalityId: string): Promise<Barangay[]> {
+  async getBarangays(api: string, municipalityId: number): Promise<Barangay[]> {
     const res = await axios.get(`${api}/address/barangays/${municipalityId}`);
     return Array.isArray(res.data) ? res.data : [];
   },
 };
 
-export async function fetchAddressById(id: string) {
+export async function fetchAddressById(id: number) {
   const response = await axios.get(`${api}/address/${id}`);
   return response.data;
 }
