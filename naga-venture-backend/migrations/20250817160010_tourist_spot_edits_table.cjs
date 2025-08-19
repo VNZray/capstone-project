@@ -22,8 +22,13 @@ exports.up = function(knex) {
     table.timestamp('submitted_at').defaultTo(knex.fn.now());
     table.timestamp('reviewed_at').nullable();
 
-    // indexes
-    table.index('barangay_id', 'idx_barangay');
+  // indexes (match SQL dump)
+  table.index('tourist_spot_id', 'idx_tourist_spot');
+  table.index('category_id', 'idx_category');
+  table.index('type_id', 'idx_type');
+  table.index('province_id', 'idx_province');
+  table.index('municipality_id', 'idx_municipality');
+  table.index('barangay_id', 'idx_barangay');
   });
 };
 

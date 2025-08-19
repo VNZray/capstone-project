@@ -19,8 +19,12 @@ exports.up = function(knex) {
     table.timestamp('created_at').defaultTo(knex.fn.now());
     table.timestamp('updated_at').defaultTo(knex.raw('CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP'));
 
-    // indexes
-    table.index('barangay_id', 'idx_barangay');
+  // indexes (match SQL dump)
+  table.index('category_id', 'idx_category');
+  table.index('type_id', 'idx_type');
+  table.index('province_id', 'idx_province');
+  table.index('municipality_id', 'idx_municipality');
+  table.index('barangay_id', 'idx_barangay');
   });
 };
 
