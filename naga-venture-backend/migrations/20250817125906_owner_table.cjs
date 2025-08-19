@@ -21,19 +21,19 @@ exports.up = async function (knex) {
       .unsigned()
       .references("id")
       .inTable("province")
-      .notNullable();
+      .nullable();
     table
       .integer("municipality_id")
       .unsigned()
       .references("id")
       .inTable("municipality")
-      .notNullable();
+      .nullable();
     table
       .integer("barangay_id")
       .unsigned()
       .references("id")
       .inTable("barangay")
-      .notNullable();
+      .nullable();
     table.timestamp("created_at").defaultTo(knex.fn.now());
   });
 };

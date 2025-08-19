@@ -9,23 +9,29 @@ const db = knex({
     host: process.env.DB_HOST,
     user: process.env.DB_USER,
     password: process.env.DB_PASSWORD,
-    database: process.env.DB_NAME
+    database: process.env.DB_NAME,
   },
 });
 
 async function clearDatabase() {
   try {
-    // Get all table names
-    const tables = await db.raw("SHOW TABLES");
-    const tableKey = Object.keys(tables[0][0])[0];
+    // Disable foreign key checks temporarily
+    await db.raw("SET FOREIGN_KEY_CHECKS = 0");
 
-    for (let row of tables[0]) {
-      const tableName = row[tableKey];
-      await db.raw(`TRUNCATE TABLE \`${tableName}\``);
-      console.log(`Cleared: ${tableName}`);
-    }
+    // Delete tables in order of dependencies
+    await db("tourist").del();
+    await db("owner").del();
+    await db("business").del();
+    await db("barangay").del();
+    await db("municipality").del();
+    await db("province").del();
+    await db("category").del();
+    await db("type").del();
 
     console.log("✅ All tables have been cleared!");
+
+    // Re-enable foreign key checks
+    await db.raw("SET FOREIGN_KEY_CHECKS = 1");
   } catch (error) {
     console.error("❌ Error clearing database:", error);
   } finally {
@@ -34,5 +40,3 @@ async function clearDatabase() {
 }
 
 clearDatabase();
-
-

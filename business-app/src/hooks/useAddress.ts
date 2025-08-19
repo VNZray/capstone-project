@@ -4,14 +4,14 @@ import { fetchAddressById, fetchAllAddress } from "@/src/services/AddressService
 
 interface Address {
     province_name: string;
-    province_id: string;
+    province_id: number;
     municipality_name: string;
-    barangay_id: string;
-    municipality_id: string;
+    barangay_id: number;
+    municipality_id: number;
     barangay_name: string;
 }
 
-export function useAddress(barangay_id?: string) {
+export function useAddress(barangay_id?: number) {
     const [address, setAddress] = useState<Address | null>(null);
     const [allAddress, setAllAddress] = useState<Address[]>([]);
     const [loading, setLoading] = useState(false);

@@ -25,10 +25,10 @@ import BusinessLayout from "../layout/BusinessLayout";
 import Room from "../features/accommodation/room/Room";
 import Offer from "../features/shop/offers/Offer";
 import Bookings from "../features/accommodation/bookings/Bookings";
-import BusinessListing from "../features/listing/BusinessListing";
 import ProtectedRoute from "./ProtectedRoute";
 import Request from "../features/listing/Request";
 import { BusinessProvider } from "../context/BusinessContext";
+import BusinessRegistration from "../features/listing/BusinessRegistration";
 
 export default function AppRoutes() {
   const business_type = "Accommodation";
@@ -62,10 +62,10 @@ export default function AppRoutes() {
               }
             />
             <Route
-              path="/business-listing"
+              path="/business-registration"
               element={
                 <ProtectedRoute>
-                  <BusinessListing />
+                  <BusinessRegistration />
                 </ProtectedRoute>
               }
             />

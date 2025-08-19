@@ -36,6 +36,7 @@ interface TextProps {
   children: React.ReactNode;
   style?: React.CSSProperties;
   margin?: string | number;
+  justify?: string
 }
 
 const Text: React.FC<TextProps> = ({
@@ -45,6 +46,7 @@ const Text: React.FC<TextProps> = ({
   children,
   style,
   margin = 0,
+  justify,
 }) => {
   const presetColors: ColorVariant[] = [
     "primary-color",
@@ -70,6 +72,7 @@ const Text: React.FC<TextProps> = ({
         margin,
         display: "flex",
         alignItems: "center",
+        justifyContent: justify,
         ...style,
       }}
     >

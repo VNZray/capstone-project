@@ -1,24 +1,17 @@
-import Text from "@/src/components/Text";
 import React from "react";
 import type { Business } from "@/src/types/Business";
 import Input from "@/src/components/Input";
 import CardHeader from "@/src/components/CardHeader";
-import Button from "@mui/joy/Button";
-import ArrowBackIcon from "@mui/icons-material/ArrowBack";
-import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 
 type Props = {
   data: Business;
   setData: React.Dispatch<React.SetStateAction<Business>>;
   api: string;
-  onNext: () => void;
-  onPrev: () => void;
+
 };
 
-const StepPricing: React.FC<Props> = ({
-  onNext,
-  onPrev,
-  api,
+const Step5: React.FC<Props> = ({
+
   data,
   setData,
 }) => {
@@ -53,28 +46,8 @@ const StepPricing: React.FC<Props> = ({
           />
         </div>
       </div>
-
-      <div style={{ display: "flex", gap: 300 }}>
-        <Button
-          color="neutral"
-          startDecorator={<ArrowBackIcon />}
-          onClick={onPrev}
-          style={{ flex: 1 }}
-          size="lg"
-        >
-          Back
-        </Button>
-        <Button
-          endDecorator={<ArrowForwardIcon />}
-          onClick={onNext}
-          style={{ flex: 1 }}
-          size="lg"
-        >
-          Next
-        </Button>
-      </div>
     </div>
   );
 };
 
-export default StepPricing;
+export default Step5;

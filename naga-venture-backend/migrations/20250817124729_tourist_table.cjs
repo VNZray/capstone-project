@@ -30,7 +30,6 @@ exports.up = function (knex) {
       .inTable("province")
       .onDelete("CASCADE")
       .onUpdate("CASCADE")
-      .notNullable();
 
     table
       .integer("municipality_id")
@@ -40,7 +39,6 @@ exports.up = function (knex) {
       .inTable("municipality")
       .onDelete("CASCADE")
       .onUpdate("CASCADE")
-      .notNullable();
 
     table
       .integer("barangay_id")
@@ -50,7 +48,6 @@ exports.up = function (knex) {
       .inTable("barangay")
       .onDelete("CASCADE")
       .onUpdate("CASCADE")
-      .notNullable();
 
     table.timestamp("created_at").defaultTo(knex.fn.now());
   });
