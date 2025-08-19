@@ -13,6 +13,12 @@ import {
 import CheckRoundedIcon from "@mui/icons-material/CheckRounded";
 import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
 import VisibilityRoundedIcon from "@mui/icons-material/VisibilityRounded";
+import PlaceRoundedIcon from "@mui/icons-material/PlaceRounded";
+import PhoneRoundedIcon from "@mui/icons-material/PhoneRounded";
+
+// Safe extractor for string-like fields coming from loosely-typed API items
+const getStr = (v: unknown): string | undefined =>
+  typeof v === "string" && v.trim() ? v.trim() : undefined;
 
 type ApprovalTableItem = Record<string, unknown> & {
   id: string;
@@ -81,19 +87,41 @@ const ApprovalTable: React.FC<ApprovalTableProps> = ({
 
           const isProcessing =
             processingId != null && processingId === String(item.id);
+          const i = item as Record<string, unknown>;
+          const barangay =
+            getStr(i["barangay"]) ?? getStr(i["barangay_name"]) ?? getStr(i["brgy"]);
+          const municipality =
+            getStr(i["municipality"]) ??
+            getStr(i["municipality_name"]) ??
+            getStr(i["city"]) ??
+            getStr(i["city_name"]);
+          const province = getStr(i["province"]) ?? getStr(i["province_name"]);
+          const addressParts = [barangay, municipality, province].filter(
+            (p): p is string => Boolean(p)
+          );
+          const address = addressParts.length ? addressParts.join(", ") : undefined;
+          const contactNo =
+            getStr(i["contact_phone"]) ??
+            getStr(i["phone"]) ??
+            getStr(i["contact"]) ??
+            getStr(i["mobile"]);
 
           return (
-            <Grid key={key} xs={12} md={6} lg={4}>
+            <Grid key={key} xs={12} sm={6} md={4} lg={3} xl={3}>
+              <div className="card-wrapper">
               <Card
                 variant="outlined"
                 sx={{
                   height: "100%",
                   display: "flex",
                   flexDirection: "column",
-                  transition: "all 0.2s ease-in-out",
+                  transition: "all 0.18s ease-in-out",
+                  width: "100%",
+                  boxSizing: "border-box",
+                  overflow: "hidden",
                   "&:hover": {
-                    transform: "translateY(-2px)",
-                    boxShadow: "md",
+                    transform: "translateY(-3px)",
+                    boxShadow: 4,
                   },
                 }}
               >
@@ -137,38 +165,63 @@ const ApprovalTable: React.FC<ApprovalTableProps> = ({
                       {description.length > 180 ? "…" : ""}
                     </Typography>
                   )}
+
+                  {address && (
+                    <Stack direction="row" spacing={1} sx={{ mt: 1 }} alignItems="center">
+                      <PlaceRoundedIcon fontSize="small" />
+                      <Typography level="body-sm" sx={{ color: "text.tertiary" }}>
+                        {address}
+                      </Typography>
+                    </Stack>
+                  )}
+
+                  {contactNo && (
+                    <Stack direction="row" spacing={1} sx={{ mt: 0.5 }} alignItems="center">
+                      <PhoneRoundedIcon fontSize="small" />
+                      <Typography level="body-sm" sx={{ color: "text.tertiary" }}>
+                        {contactNo}
+                      </Typography>
+                    </Stack>
+                  )}
                 </CardContent>
 
                 <Box sx={{ mt: "auto", px: 2, pb: 2 }}>
-                  <Stack direction={{ xs: "column", sm: "row" }} spacing={1}>
+                  <Stack spacing={1}>
                     <Button
                       startDecorator={<VisibilityRoundedIcon />}
                       variant="soft"
                       color="primary"
                       onClick={() => onView(item)}
+                      sx={{ width: "100%" }}
                     >
                       View Details
                     </Button>
-                    <Button
-                      startDecorator={<CheckRoundedIcon />}
-                      color="success"
-                      onClick={() => onApprove(String(item.id))}
-                      loading={isProcessing}
-                    >
-                      Approve
-                    </Button>
-                    <Button
-                      startDecorator={<CloseRoundedIcon />}
-                      color="danger"
-                      variant="outlined"
-                      onClick={() => onReject(String(item.id))}
-                      disabled={isProcessing}
-                    >
-                      Reject
-                    </Button>
+
+                    <Stack direction="row" spacing={1}>
+                      <Button
+                        startDecorator={<CheckRoundedIcon />}
+                        color="success"
+                        onClick={() => onApprove(String(item.id))}
+                        loading={isProcessing}
+                        sx={{ flex: "1 1 0%", minWidth: 120 }}
+                      >
+                        Approve
+                      </Button>
+                      <Button
+                        startDecorator={<CloseRoundedIcon />}
+                        color="danger"
+                        variant="outlined"
+                        onClick={() => onReject(String(item.id))}
+                        disabled={isProcessing}
+                        sx={{ flex: "1 1 0%", minWidth: 120 }}
+                      >
+                        Reject
+                      </Button>
+                    </Stack>
                   </Stack>
                 </Box>
               </Card>
+              </div>
             </Grid>
           );
         })}
