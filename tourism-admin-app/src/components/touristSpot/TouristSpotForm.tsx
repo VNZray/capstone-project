@@ -3,7 +3,7 @@ import { IoClose } from "react-icons/io5";
 import Text from "../Text";
 import { apiService } from "../../utils/api";
 import type {
-  Type,
+  Category,
   Province,
   Municipality,
   Barangay,
@@ -44,7 +44,7 @@ const TouristSpotForm: React.FC<TouristSpotFormProps> = ({
     type_id: "",
   });
   const [loading, setLoading] = useState(false);
-  const [types, setTypes] = useState<Type[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [provinces, setProvinces] = useState<Province[]>([]);
   const [municipalities, setMunicipalities] = useState<Municipality[]>([]);
   const [barangays, setBarangays] = useState<Barangay[]>([]);
@@ -98,7 +98,6 @@ const TouristSpotForm: React.FC<TouristSpotFormProps> = ({
     }));
   };
 
-  // Load categories, types, and location data when component mounts
   useEffect(() => {
     const loadData = async () => {
       try {
@@ -107,7 +106,7 @@ const TouristSpotForm: React.FC<TouristSpotFormProps> = ({
           apiService.getLocationData(),
         ]);
 
-        setTypes(categoriesTypes.types);
+        setCategories(categoriesTypes.categories);
         setProvinces(locationData.provinces);
         setMunicipalities(locationData.municipalities);
         setBarangays(locationData.barangays);
@@ -141,7 +140,7 @@ const TouristSpotForm: React.FC<TouristSpotFormProps> = ({
           ? parseFloat(formData.entry_fee)
           : undefined,
         category_id: parseInt(formData.category_id),
-        type_id: parseInt(formData.type_id),
+        type_id: 4,
       };
 
       if (mode === 'add') {
@@ -388,16 +387,16 @@ const TouristSpotForm: React.FC<TouristSpotFormProps> = ({
                 </Text>
               </label>
               <select
-                name="type_id"
-                value={formData.type_id}
+                name="category_id"
+                value={formData.category_id}
                 onChange={handleInputChange}
                 required
                 className="form-select"
               >
-                <option value="">Select Type</option>
-                {types.map((type) => (
-                  <option key={type.id} value={type.id}>
-                    {type.type}
+                <option value="">Select Category</option>
+                {categories.map((cat) => (
+                  <option key={cat.id} value={cat.id}>
+                    {cat.category}
                   </option>
                 ))}
               </select>

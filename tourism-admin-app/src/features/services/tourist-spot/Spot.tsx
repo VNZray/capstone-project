@@ -17,7 +17,9 @@ const Spot = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [isAddSpotModalVisible, setAddSpotModalVisible] = useState(false);
   const [isEditSpotModalVisible, setEditSpotModalVisible] = useState(false);
-  const [selectedSpotForEdit, setSelectedSpotForEdit] = useState<TouristSpot | undefined>(undefined);
+  const [selectedSpotForEdit, setSelectedSpotForEdit] = useState<
+    TouristSpot | undefined
+  >(undefined);
   const [spots, setSpots] = useState<TouristSpot[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -29,8 +31,8 @@ const Spot = () => {
     setLoading(true);
     setError(null);
     try {
-      const { types: typeData } = await apiService.getCategoriesAndTypes();
-      const uniqueTypes = ["All", ...typeData.map((type) => type.type)];
+      const { categories } = await apiService.getCategoriesAndTypes();
+      const uniqueTypes = ["All", ...categories.map((c) => c.category)];
       setTypeFilters(uniqueTypes);
       const spotsData = await apiService.getTouristSpots();
       setSpots(spotsData);
@@ -80,7 +82,7 @@ const Spot = () => {
   const filteredAndSearchedSpots = useMemo(() => {
     let filtered = spots;
     if (selectedType !== "All") {
-      filtered = filtered.filter((spot) => spot.type === selectedType);
+      filtered = filtered.filter((spot) => spot.category === selectedType);
     }
     if (searchQuery) {
       filtered = filtered.filter((spot) =>

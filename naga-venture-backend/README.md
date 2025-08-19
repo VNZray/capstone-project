@@ -13,7 +13,7 @@
 
 ## Initialize database
 
-    npm run creatadb
+    npm run createdb
 
 ## Initialize/migrate table
 

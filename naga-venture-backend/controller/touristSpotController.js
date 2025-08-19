@@ -115,10 +115,11 @@ export const createTouristSpot = async (request, response) => {
       [barangayCheck],
     ] = await Promise.all([
       db.execute("SELECT id FROM category WHERE id = ?", [category_id]),
-      db.execute("SELECT id FROM type WHERE id = ? AND category_id = ?", [
-        type_id,
-        category_id,
-      ]),
+      // Verify that the provided type_id corresponds to the category via category.type_id
+      db.execute(
+        `SELECT id FROM category WHERE id = ? AND type_id = ?`,
+        [category_id, type_id]
+      ),
       db.execute("SELECT id FROM province WHERE id = ?", [province_id]),
       db.execute(
         "SELECT id FROM municipality WHERE id = ? AND province_id = ?",
@@ -222,7 +223,7 @@ export const updateTouristSpot = async (req, res) => {
     ] = await Promise.all([
       db.execute("SELECT id FROM tourist_spots WHERE id = ?", [id]),
       db.execute("SELECT id FROM category WHERE id = ?", [category_id]),
-      db.execute("SELECT id FROM type WHERE id = ? AND category_id = ?", [type_id, category_id]),
+  db.execute(`SELECT id FROM category WHERE id = ? AND type_id = ?`, [category_id, type_id]),
       db.execute("SELECT id FROM province WHERE id = ?", [province_id]),
       db.execute("SELECT id FROM municipality WHERE id = ? AND province_id = ?", [municipality_id, province_id]),
       db.execute("SELECT id FROM barangay WHERE id = ? AND municipality_id = ?", [barangay_id, municipality_id]),
@@ -279,7 +280,7 @@ export const submitEditRequest = async (req, res) => {
     ] = await Promise.all([
       db.execute("SELECT id FROM tourist_spots WHERE id = ?", [id]),
       db.execute("SELECT id FROM category WHERE id = ?", [category_id]),
-      db.execute("SELECT id FROM type WHERE id = ? AND category_id = ?", [type_id, category_id]),
+  db.execute(`SELECT id FROM category WHERE id = ? AND type_id = ?`, [category_id, type_id]),
       db.execute("SELECT id FROM province WHERE id = ?", [province_id]),
       db.execute("SELECT id FROM municipality WHERE id = ? AND province_id = ?", [municipality_id, province_id]),
       db.execute("SELECT id FROM barangay WHERE id = ? AND municipality_id = ?", [barangay_id, municipality_id]),
@@ -330,20 +331,20 @@ export const submitEditRequest = async (req, res) => {
 // Get categories and types for tourist spots
 export const getCategoriesAndTypes = async (request, response) => {
   try {
-    // Get all categories (shop, accommodation, tourist spot, events)
-    const [categories] = await db.execute(
-      "SELECT * FROM category ORDER BY category ASC"
+    const [types] = await db.execute(
+      "SELECT * FROM type ORDER BY type ASC"
     );
 
-    const [types] = await db.execute(
-      "SELECT * FROM type WHERE category_id = 3 ORDER BY type ASC"
+    // types are linked via category.type_id -> type.id (schema swapped)
+    const [categories] = await db.execute(
+      `SELECT c.* FROM category c INNER JOIN type t ON c.type_id = t.id WHERE t.id = 4 ORDER BY c.category ASC`
     );
 
     response.json({
       success: true,
       data: {
-        categories,
         types,
+        categories,
       },
       message: "Categories and types retrieved successfully",
     });
