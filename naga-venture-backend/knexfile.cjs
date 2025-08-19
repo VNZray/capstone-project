@@ -6,7 +6,7 @@ module.exports = {
       host: "localhost", // XAMPP usually runs here
       user: "root", // default user in XAMPP
       password: "", // default is empty password
-      database: "naga_venture", // replace with your MariaDB database name
+      database: "tourism_db", // replace with your MariaDB database name
     },
     migrations: {
       directory: "./migrations",

@@ -47,9 +47,6 @@ export default function Header(): React.JSX.Element {
           <Button color="inherit" component={Link} to="/business">
             Business
           </Button>
-          <Button color="inherit" component={Link} to="/business-listing">
-            Register
-          </Button>
           <Button color="inherit" component={Link} to="/request">
             Request
           </Button>

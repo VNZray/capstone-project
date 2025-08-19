@@ -1,7 +1,6 @@
 import Text from "@/src/components/Text";
 import Button from "@mui/joy/Button";
-import ArrowBackIcon from "@mui/icons-material/ArrowBack";
-import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
+
 import React from "react";
 import type { Business } from "@/src/types/Business";
 import Input from "@/src/components/Input";
@@ -12,8 +11,7 @@ type Props = {
   data: Business;
   setData: React.Dispatch<React.SetStateAction<Business>>;
   api: string;
-  onNext: () => void;
-  onPrev: () => void;
+
   bookingSite: BookingSite[];
   setBookingSites: React.Dispatch<React.SetStateAction<BookingSite[]>>;
 };
@@ -35,22 +33,15 @@ const bookingSiteOptions = [
   "Other",
 ];
 
-const StepLinks: React.FC<Props> = ({
-  onNext,
-  onPrev,
-  api,
+const Step4: React.FC<Props> = ({
   setBookingSites,
   data,
   setData,
   bookingSite,
 }) => {
-  const [useBookingFeature, setUseBookingFeature] = React.useState(true); // default ON
-  const [site, setSite] = React.useState<{ name: string; link: string }[]>([]);
-
-  const addBookingSite = () => {
+      const addBookingSite = () => {
     setBookingSites((prev) => [...prev, { name: "", link: "" }]);
   };
-
   return (
     <div className="stepperContent">
       <div
@@ -178,7 +169,7 @@ const StepLinks: React.FC<Props> = ({
 
             <Button
               startDecorator={<AddBox />}
-              onClick={onNext}
+              onClick={addBookingSite}
               style={{ flex: 1 }}
             >
               Add
@@ -186,28 +177,8 @@ const StepLinks: React.FC<Props> = ({
           </>
         )}
       </div>
-      {/* Navigation Buttons */}
-      <div style={{ display: "flex", gap: 300, marginTop: 20 }}>
-        <Button
-          color="neutral"
-          startDecorator={<ArrowBackIcon />}
-          onClick={onPrev}
-          style={{ flex: 1 }}
-          size="lg"
-        >
-          Back
-        </Button>
-        <Button
-          endDecorator={<ArrowForwardIcon />}
-          onClick={onNext}
-          style={{ flex: 1 }}
-          size="lg"
-        >
-          Next
-        </Button>
-      </div>
     </div>
   );
 };
 
-export default StepLinks;
+export default Step4;

@@ -11,6 +11,9 @@ interface ContainerProps {
   radius?: string;
   padding?: string;
   style?: React.CSSProperties;
+  gap?: string;
+  background?: string; // new prop
+  direction?: "row" | "column";
 }
 
 const Container: React.FC<ContainerProps> = ({
@@ -22,17 +25,26 @@ const Container: React.FC<ContainerProps> = ({
   radius,
   padding = "16px",
   style,
+  gap = "16px",
+  direction = "column",
+  background,
 }) => {
+  const containerStyle: React.CSSProperties = {
+    width,
+    height,
+    padding,
+    borderRadius: radius,
+    gap,
+    backgroundColor: background,
+    flexDirection: direction,
+    display: "flex",
+    ...style,
+  };
+
   return (
     <div
       className={`container elevation-${elevation} ${className}`.trim()}
-      style={{
-        padding,
-        width,
-        height,
-        borderRadius: radius,
-        ...style,
-      }}
+      style={containerStyle}
     >
       {children}
     </div>

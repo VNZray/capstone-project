@@ -9,6 +9,11 @@ import Card from "./components/Card";
 import placeholderImage from "@/src/assets/images/uma-hotel-residences.jpg";
 import type { Business } from "@/src/types/Business";
 import { fetchBusinessesByOwner } from "@/src/services/BusinessService";
+import Container from "@/src/components/Container";
+import { colors } from "@/src/utils/Colors";
+import { Button } from "@mui/joy";
+import { Add } from "@mui/icons-material";
+import Grid from "@mui/joy/Grid";
 
 const MyBusiness = () => {
   const navigate = useNavigate();
@@ -40,23 +45,61 @@ const MyBusiness = () => {
   return (
     <PageContainer>
       <Text variant="title">My Business</Text>
+
+      <Container background={colors.secondary} elevation={2} padding="20px">
+        <Grid container spacing={2} columns={12}>
+          <Grid xs={10}>
+            <Text color="white" variant="header-title">
+              Ready to expand your business?
+            </Text>
+            <Text color="white" variant="paragraph">
+              Register your business to reach more customers and manage your
+              listings efficiently.
+            </Text>
+          </Grid>
+          <Grid xs={2}>
+            <Button
+              fullWidth
+              variant="soft"
+              color="neutral"
+              size="lg"
+              style={{ height: "100%" }}
+              startDecorator={<Add />}
+              onClick={() => {
+                navigate(`/business-registration`);
+              }}
+            >
+              Register New Business
+            </Button>
+          </Grid>
+        </Grid>
+      </Container>
+
+      <Text variant="paragraph">
+        Showing you listed business {businesses.length}
+      </Text>
+
       <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap" }}>
         {businesses.map((business) => (
-          <div
-            key={business.id} // ✅ use business.id instead of owner_id
-            style={{ cursor: "pointer" }}
-            onClick={() => {
-              setBusinessId(business.id);
-              navigate(`/dashboard`);
-            }}
-          >
+          <div key={business.id}>
             <Card
               elevation={1}
               image={business.business_image || placeholderImage}
               title={business.business_name}
               subtitle={business.description}
+              rating={5}
+              status={business.status}
             >
-              <Text variant="card-sub-title">{business.email}</Text>
+              <Button
+                onClick={() => {
+                  setBusinessId(business.id);
+                  navigate(`/dashboard`);
+                }}
+                fullWidth
+                size="lg"
+              >
+                Manage Business
+              </Button>
             </Card>
           </div>
         ))}

@@ -2,13 +2,13 @@
 export type Business = {
   id: string;
   business_name: string;
-  business_type_id: string;
-  business_category_id: string;
+  business_type_id: number;
+  business_category_id: number;
   phone_number: string;
   email: string;
-  barangay_id: string;
-  municipality_id: string;
-  province_id: string;
+  barangay_id: number;
+  municipality_id: number;
+  province_id: number;
   description: string;
   instagram_url: string;
   tiktok_url: string;
@@ -34,5 +34,4 @@ export type Room = {
   business_id: number;
   status: string;
   room_image: string;
-  room_photos: string | string[];
 };

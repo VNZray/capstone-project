@@ -9,7 +9,7 @@ import { Input, Button } from "@mui/joy";
 import { colors } from "../utils/Colors";
 
 const Login: React.FC = () => {
-  const [email, setEmail] = useState("rayventzy@gmail.com");
+  const [email, setEmail] = useState("rayvenclores@gmail.com");
   const [password, setPassword] = useState("123456");
   const [loginError, setLoginError] = useState("");
   const navigate = useNavigate();

@@ -6,14 +6,14 @@ exports.up = function (knex) {
       .notNullable()
       .references("id")
       .inTable("room")
-      .onDelete("CASCADE"); // assumes you have a 'room' table
+      .onDelete("CASCADE");
     table
       .integer("amenity_id")
       .unsigned()
       .notNullable()
       .references("id")
       .inTable("amenity")
-      .onDelete("CASCADE"); // assumes you have an 'amenities' table
+      .onDelete("CASCADE");
   });
 };
 
