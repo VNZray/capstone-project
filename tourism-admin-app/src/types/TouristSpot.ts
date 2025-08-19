@@ -51,3 +51,11 @@ export interface Type {
   type: string;
   category_id: number;
 }
+
+export interface TouristSpotSchedule {
+  id?: string;
+  day_of_week: number; // 0 = Monday .. 6 = Sunday
+  open_time: string | null; // 'HH:mm' or null if closed
+  close_time: string | null; // 'HH:mm' or null if closed
+  is_closed: boolean;
+}

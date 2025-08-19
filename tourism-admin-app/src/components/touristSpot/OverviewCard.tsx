@@ -1,5 +1,5 @@
 import React from "react";
-import Text from "../Text";
+import { Card, CardContent, Typography, Stack, Chip, Button, Divider } from "@mui/joy";
 import "../styles/OverviewCard.css";
 
 interface OverviewCardProps {
@@ -26,60 +26,40 @@ const OverviewCard: React.FC<OverviewCardProps> = ({
   // reference onApprove to avoid 'declared but never read' TypeScript error in some strict configs
   void onApprove;
   return (
-    <div className="overview-card">
-      <div className="overview-card-header">
-        <span className="overview-icon">{icon}</span>
-        <Text variant="sub-title" color="text-color">
-          {title}
-        </Text>
-        <span className="overview-count">{count}</span>
-      </div>
-      {count > 0 ? (
-        <div className="overview-items">
-          {items.slice(0, 3).map((item) => (
-            <div key={item.id} className="overview-item">
-              <div className="overview-item-content">
-                <span className={`action-badge small ${item.action_type}`}>
-                  {item.action_type === "new" ? "New" : "Edit"}
-                </span>
-                <Text variant="normal" color="text-color" className="item-name">
-                  {item.name}
-                </Text>
-              </div>
-              <div className="overview-item-actions">
+    <Card variant="outlined" sx={{ height: "100%" }}>
+      <CardContent>
+        <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 1 }}>
+          <Stack direction="row" spacing={1} alignItems="center">
+            <span className="overview-icon" aria-hidden>{icon}</span>
+            <Typography level="title-md">{title}</Typography>
+          </Stack>
+          <Chip variant="solid" color="primary" size="sm">{count}</Chip>
+        </Stack>
+        <Divider />
+        {count > 0 ? (
+          <Stack spacing={1.25} sx={{ mt: 1 }}>
+            {items.slice(0, 3).map((item) => (
+              <Stack key={item.id} direction="row" alignItems="center" justifyContent="space-between">
+                <Stack direction="row" spacing={1} alignItems="center">
+                  <Chip size="sm" variant="soft" color={item.action_type === "new" ? "success" : "primary"}>
+                    {item.action_type === "new" ? "New" : "Edit"}
+                  </Chip>
+                  <Typography level="body-md">{item.name}</Typography>
+                </Stack>
                 {onView && (
-                  <button
-                    className="view-button small"
-                    onClick={() => onView(item)}
-                  >
-                    View
-                  </button>
+                  <Button size="sm" variant="soft" onClick={() => onView(item)}>View</Button>
                 )}
-                {/* {onApprove && (
-                  <button
-                    className="approve-button small"
-                    onClick={() => onApprove(item.id)}
-                  >
-                    Approve
-                  </button>
-                )} */}
-              </div>
-            </div>
-          ))}
-          {count > 3 && (
-            <Text variant="normal" color="text-color" className="more-items">
-              +{count - 3} more items
-            </Text>
-          )}
-        </div>
-      ) : (
-        <div className="overview-empty">
-          <Text variant="normal" color="text-color">
-            No pending items
-          </Text>
-        </div>
-      )}
-    </div>
+              </Stack>
+            ))}
+            {count > 3 && (
+              <Typography level="body-sm" sx={{ color: "text.tertiary" }}>+{count - 3} more items</Typography>
+            )}
+          </Stack>
+        ) : (
+          <Typography level="body-sm" sx={{ mt: 1.5, color: "text.tertiary" }}>No pending items</Typography>
+        )}
+      </CardContent>
+    </Card>
   );
 };
 

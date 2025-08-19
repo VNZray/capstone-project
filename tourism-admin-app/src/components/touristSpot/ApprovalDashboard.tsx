@@ -1,9 +1,34 @@
-import React, { useEffect, useState } from "react";
-import Text from "../Text";
+import React, { useEffect, useMemo, useState } from "react";
 import { apiService } from "../../utils/api";
 import ApprovalTable from "./ApprovalTable";
 import OverviewCard from "./OverviewCard";
 import ViewModal from "./ViewModal";
+import {
+  Box,
+  Button,
+  Chip,
+  Divider,
+  Grid,
+  IconButton,
+  Input,
+  Sheet,
+  Stack,
+  Tab,
+  TabList,
+  TabPanel,
+  Tabs,
+  Typography,
+  Card,
+  CardContent,
+} from "@mui/joy";
+import RefreshRoundedIcon from "@mui/icons-material/RefreshRounded";
+import FilterListRoundedIcon from "@mui/icons-material/FilterListRounded";
+import PlaceRoundedIcon from "@mui/icons-material/PlaceRounded";
+import EventRoundedIcon from "@mui/icons-material/EventRounded";
+import BusinessRoundedIcon from "@mui/icons-material/BusinessRounded";
+import HotelRoundedIcon from "@mui/icons-material/HotelRounded";
+import DashboardRoundedIcon from "@mui/icons-material/DashboardRounded";
+import SearchRoundedIcon from "@mui/icons-material/SearchRounded";
 import "../styles/ApprovalDashboard.css";
 
 interface PendingItem {
@@ -69,6 +94,7 @@ const ApprovalDashboard: React.FC = () => {
     unknown
   > | null>(null);
   const [processingId, setProcessingId] = useState<string | null>(null);
+  const [query, setQuery] = useState("");
 
   useEffect(() => {
     (async () => {
@@ -256,164 +282,191 @@ const ApprovalDashboard: React.FC = () => {
   const allPendingItems = [...pendingSpots, ...pendingEdits];
   const allItems: PendingItem[] = allPendingItems as PendingItem[];
 
+  const filteredItems = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return allItems;
+    return allItems.filter((i) => String(i.name ?? "").toLowerCase().includes(q));
+  }, [allItems, query]);
+
   if (loading)
     return (
-      <div className="approval-dashboard">
-        <div className="loading-container">
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 280 }}>
+        <Stack spacing={1} alignItems="center">
           <div className="loading-spinner" />
-          <Text variant="normal" color="text-color">
-            Loading approval data...
-          </Text>
-        </div>
-      </div>
+          <Typography level="body-md" sx={{ color: 'text.tertiary' }}>Loading approval data...</Typography>
+        </Stack>
+      </Box>
     );
 
   return (
-    <div className="approval-dashboard">
-      <div className="tab-navigation">
-        <button
-          className={`tab-button ${activeTab === "overview" ? "active" : ""}`}
-          onClick={() => setActiveTab("overview")}
-        >
-          <span className="tab-icon">📊</span>
-          <Text variant="normal" color="text-color">
-            OVERVIEW
-          </Text>
-        </button>
-        <button
-          className={`tab-button ${
-            activeTab === "tourist_spots" ? "active" : ""
-          }`}
-          onClick={() => setActiveTab("tourist_spots")}
-        >
-          <span className="tab-icon">📍</span>
-          <Text variant="normal" color="text-color">
-            TOURIST SPOTS ({allPendingItems.length})
-          </Text>
-        </button>
-        <button
-          className={`tab-button ${activeTab === "events" ? "active" : ""}`}
-          onClick={() => setActiveTab("events")}
-        >
-          <span className="tab-icon">📅</span>
-          <Text variant="normal" color="text-color">
-            EVENTS ({mockEvents.length})
-          </Text>
-        </button>
-        <button
-          className={`tab-button ${activeTab === "businesses" ? "active" : ""}`}
-          onClick={() => setActiveTab("businesses")}
-        >
-          <span className="tab-icon">🏢</span>
-          <Text variant="normal" color="text-color">
-            BUSINESSES ({mockBusinesses.length})
-          </Text>
-        </button>
-        <button
-          className={`tab-button ${
-            activeTab === "accommodations" ? "active" : ""
-          }`}
-          onClick={() => setActiveTab("accommodations")}
-        >
-          <span className="tab-icon">🛏️</span>
-          <Text variant="normal" color="text-color">
-            ACCOMMODATIONS ({mockAccommodations.length})
-          </Text>
-        </button>
-      </div>
+    <Box sx={{ p: { xs: 1.5, md: 3 }, maxWidth: 1400, mx: "auto" }}>
+      <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
+        <Box>
+          <Typography level="h3">Content Approvals</Typography>
+          <Typography level="body-md" sx={{ color: "text.tertiary" }}>
+            Review and manage submissions from the public and partners.
+          </Typography>
+        </Box>
+        <IconButton size="sm" variant="soft" color="neutral" onClick={refresh} aria-label="Refresh">
+          <RefreshRoundedIcon />
+        </IconButton>
+      </Stack>
 
-      <div className="tab-content">
-        {activeTab === "overview" && (
-          <div className="overview-tab">
-            <Text variant="sub-title" color="text-color" className="tab-title">
-              Overview - All Pending Items
-            </Text>
-            <div className="overview-grid">
-              <OverviewCard
-                title="Tourist Spots"
-                count={allPendingItems.length}
-                icon="📍"
-                items={allItems}
-                onApprove={handleApprove}
-                onView={handleView}
+      <Grid container spacing={2} sx={{ mb: 2 }}>
+        <Grid xs={12} md={3}>
+          <Card variant="outlined"><CardContent>
+            <Stack direction="row" spacing={1} alignItems="center" justifyContent="space-between">
+              <Stack>
+                <Typography level="body-sm" sx={{ color: "text.tertiary" }}>Total Pending</Typography>
+                <Typography level="h3">{allItems.length}</Typography>
+              </Stack>
+              <DashboardRoundedIcon color="primary" />
+            </Stack>
+          </CardContent></Card>
+        </Grid>
+        <Grid xs={12} md={3}>
+          <Card variant="outlined"><CardContent>
+            <Stack direction="row" spacing={1} alignItems="center" justifyContent="space-between">
+              <Stack>
+                <Typography level="body-sm" sx={{ color: "text.tertiary" }}>Tourist Spots</Typography>
+                <Typography level="h4">{allItems.length}</Typography>
+              </Stack>
+              <PlaceRoundedIcon color="success" />
+            </Stack>
+          </CardContent></Card>
+        </Grid>
+        <Grid xs={12} md={3}>
+          <Card variant="outlined"><CardContent>
+            <Stack direction="row" spacing={1} alignItems="center" justifyContent="space-between">
+              <Stack>
+                <Typography level="body-sm" sx={{ color: "text.tertiary" }}>Events</Typography>
+                <Typography level="h4">{mockEvents.length}</Typography>
+              </Stack>
+              <EventRoundedIcon color="warning" />
+            </Stack>
+          </CardContent></Card>
+        </Grid>
+        <Grid xs={12} md={3}>
+          <Card variant="outlined"><CardContent>
+            <Stack direction="row" spacing={1} alignItems="center" justifyContent="space-between">
+              <Stack>
+                <Typography level="body-sm" sx={{ color: "text.tertiary" }}>Businesses & Accomm.</Typography>
+                <Typography level="h4">{mockBusinesses.length + mockAccommodations.length}</Typography>
+              </Stack>
+              <BusinessRoundedIcon color="primary" />
+            </Stack>
+          </CardContent></Card>
+        </Grid>
+      </Grid>
+
+      <Sheet variant="outlined" sx={{ borderRadius: 12 }}>
+        <Tabs value={activeTab} onChange={(_, v) => { if (v) setActiveTab(v as TabType); }}>
+          <TabList variant="plain" sx={{ px: 1, pt: 1 }}>
+            <Tab value="overview" sx={{ gap: 0.75 }}>
+              <DashboardRoundedIcon fontSize="small" /> Overview
+            </Tab>
+            <Tab value="tourist_spots" sx={{ gap: 0.75 }}>
+              <PlaceRoundedIcon fontSize="small" /> Tourist Spots
+              <Chip size="sm" variant="soft" sx={{ ml: 0.5 }}>{allItems.length}</Chip>
+            </Tab>
+            <Tab value="events" sx={{ gap: 0.75 }}>
+              <EventRoundedIcon fontSize="small" /> Events
+              <Chip size="sm" variant="soft" sx={{ ml: 0.5 }}>{mockEvents.length}</Chip>
+            </Tab>
+            <Tab value="businesses" sx={{ gap: 0.75 }}>
+              <BusinessRoundedIcon fontSize="small" /> Businesses
+              <Chip size="sm" variant="soft" sx={{ ml: 0.5 }}>{mockBusinesses.length}</Chip>
+            </Tab>
+            <Tab value="accommodations" sx={{ gap: 0.75 }}>
+              <HotelRoundedIcon fontSize="small" /> Accommodations
+              <Chip size="sm" variant="soft" sx={{ ml: 0.5 }}>{mockAccommodations.length}</Chip>
+            </Tab>
+          </TabList>
+          <Divider />
+
+          <TabPanel value="overview" sx={{ p: 2 }}>
+            <Grid container spacing={2}>
+              <Grid xs={12} md={6} lg={3}>
+                <OverviewCard
+                  title="Tourist Spots"
+                  count={allItems.length}
+                  icon="📍"
+                  items={allItems}
+                  onApprove={handleApprove}
+                  onView={handleView}
+                />
+              </Grid>
+              <Grid xs={12} md={6} lg={3}>
+                <OverviewCard title="Events" count={mockEvents.length} icon="📅" items={mockEvents} />
+              </Grid>
+              <Grid xs={12} md={6} lg={3}>
+                <OverviewCard title="Businesses" count={mockBusinesses.length} icon="🏢" items={mockBusinesses} />
+              </Grid>
+              <Grid xs={12} md={6} lg={3}>
+                <OverviewCard title="Accommodations" count={mockAccommodations.length} icon="🛏️" items={mockAccommodations} />
+              </Grid>
+            </Grid>
+          </TabPanel>
+
+          <TabPanel value="tourist_spots" sx={{ p: 2 }}>
+            <Stack direction={{ xs: "column", sm: "row" }} spacing={1} alignItems={{ xs: "stretch", sm: "center" }} justifyContent="space-between" sx={{ mb: 1 }}>
+              <Input
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                startDecorator={<SearchRoundedIcon />}
+                placeholder="Search tourist spots"
               />
-              <OverviewCard
-                title="Events"
-                count={mockEvents.length}
-                icon="📅"
-                items={mockEvents}
-              />
-              <OverviewCard
-                title="Businesses"
-                count={mockBusinesses.length}
-                icon="🏢"
-                items={mockBusinesses}
-              />
-              <OverviewCard
-                title="Accommodations"
-                count={mockAccommodations.length}
-                icon="🛏️"
-                items={mockAccommodations}
-              />
-            </div>
-          </div>
-        )}
+              <Button startDecorator={<FilterListRoundedIcon />} variant="soft" color="neutral">
+                Filters
+              </Button>
+            </Stack>
+            <ApprovalTable
+              items={filteredItems}
+              contentType="tourist spots"
+              onView={handleView}
+              onApprove={handleApprove}
+              onReject={handleReject}
+              processingId={processingId}
+            />
+          </TabPanel>
 
-        {activeTab === "tourist_spots" && (
-          <ApprovalTable
-            items={allItems}
-            contentType="tourist spots"
-            onView={handleView}
-            onApprove={handleApprove}
-            onReject={handleReject}
-            processingId={processingId}
-          />
-        )}
+          <TabPanel value="events" sx={{ p: 2 }}>
+            <ApprovalTable
+              items={mockEvents}
+              contentType="events"
+              onView={handleView}
+              onApprove={() => alert("Events approval not yet implemented")}
+              onReject={() => alert("Events rejection not yet implemented")}
+              processingId={processingId}
+            />
+          </TabPanel>
 
-        {activeTab === "events" && (
-          <ApprovalTable
-            items={mockEvents}
-            contentType="events"
-            onView={handleView}
-            onApprove={() => alert("Events approval not yet implemented")}
-            onReject={() => alert("Events rejection not yet implemented")}
-            processingId={processingId}
-          />
-        )}
+          <TabPanel value="businesses" sx={{ p: 2 }}>
+            <ApprovalTable
+              items={mockBusinesses}
+              contentType="businesses"
+              onView={handleView}
+              onApprove={() => alert("Businesses approval not yet implemented")}
+              onReject={() => alert("Businesses rejection not yet implemented")}
+              processingId={processingId}
+            />
+          </TabPanel>
 
-        {activeTab === "businesses" && (
-          <ApprovalTable
-            items={mockBusinesses}
-            contentType="businesses"
-            onView={handleView}
-            onApprove={() => alert("Businesses approval not yet implemented")}
-            onReject={() => alert("Businesses rejection not yet implemented")}
-            processingId={processingId}
-          />
-        )}
+          <TabPanel value="accommodations" sx={{ p: 2 }}>
+            <ApprovalTable
+              items={mockAccommodations}
+              contentType="accommodations"
+              onView={handleView}
+              onApprove={() => alert("Accommodations approval not yet implemented")}
+              onReject={() => alert("Accommodations rejection not yet implemented")}
+              processingId={processingId}
+            />
+          </TabPanel>
+        </Tabs>
+      </Sheet>
 
-        {activeTab === "accommodations" && (
-          <ApprovalTable
-            items={mockAccommodations}
-            contentType="accommodations"
-            onView={handleView}
-            onApprove={() =>
-              alert("Accommodations approval not yet implemented")
-            }
-            onReject={() =>
-              alert("Accommodations rejection not yet implemented")
-            }
-            processingId={processingId}
-          />
-        )}
-      </div>
-
-      <ViewModal
-        isOpen={!!selectedItem}
-        onClose={closeModal}
-        item={selectedItem ?? {}}
-      />
-    </div>
+      <ViewModal isOpen={!!selectedItem} onClose={closeModal} item={selectedItem ?? {}} />
+    </Box>
   );
 };
 

@@ -21,6 +21,10 @@ router.get('/barangays/:municipality_id', touristSpotController.getBarangaysByMu
 // Get tourist spot by ID
 router.get('/:id', touristSpotController.getTouristSpotById);
 
+// Schedules endpoints
+router.get('/:id/schedules', touristSpotController.getTouristSpotSchedules);
+router.put('/:id/schedules', touristSpotController.upsertTouristSpotSchedules);
+
 // Create new tourist spot
 router.post('/', touristSpotController.createTouristSpot);
 

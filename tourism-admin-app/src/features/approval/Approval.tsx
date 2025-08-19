@@ -1,8 +1,7 @@
 import Text from "@/src/components/Text";
 import ApprovalDashboard from "../../components/touristSpot/ApprovalDashboard";
-import React from "react";
 
-const Approval = () => {
+const Approval: React.FC = () => {
   return (
     <>
       <Text variant="title">Approval</Text>

@@ -1,5 +1,17 @@
 import React, { useEffect, useRef } from "react";
-import Text from "../Text";
+import {
+  Modal,
+  ModalDialog,
+  DialogTitle,
+  DialogContent,
+  IconButton,
+  Typography,
+  Grid,
+  Stack,
+  Divider,
+  Sheet,
+} from "@mui/joy";
+import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
 import "../styles/ViewModal.css";
 
 interface ViewModalProps {
@@ -75,161 +87,82 @@ const ViewModal: React.FC<ViewModalProps> = ({ isOpen, onClose, item }) => {
   const showVal = (v: unknown) => (v == null ? "-" : String(v));
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div
-        className="modal-content"
-        onClick={(e) => e.stopPropagation()}
-        role="dialog"
-        aria-modal="true"
-        aria-label={isEdit ? `Edit Request: ${String(item.name ?? "")}` : String(item.name ?? "")}
-        ref={modalRef}
-        tabIndex={-1}
-      >
-        <div className="modal-header">
-          <Text variant="sub-title" color="text-color" className="title">
-            {isEdit ? `Edit Request: ${String(item.name ?? "")}` : String(item.name ?? "")}
-          </Text>
-          <button className="close-button" onClick={onClose} aria-label="Close">
-            ✕
-          </button>
-        </div>
-
-        <div className="modal-body">
+    <Modal open={isOpen} onClose={onClose}>
+      <ModalDialog variant="outlined" aria-label={isEdit ? `Edit Request: ${String(item.name ?? "")}` : String(item.name ?? "")}>
+        <DialogTitle>
+          <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ width: '100%' }}>
+            <Typography level="title-lg">{isEdit ? `Edit Request: ${String(item.name ?? "")}` : String(item.name ?? "")}</Typography>
+            <IconButton variant="plain" color="neutral" onClick={onClose} aria-label="Close">
+              <CloseRoundedIcon />
+            </IconButton>
+          </Stack>
+        </DialogTitle>
+        <DialogContent sx={{ maxHeight: '60vh', overflow: 'auto' }}>
           {isEdit ? (
-            <div className="comparison-grid">
-              <div className="comparison-column">
-                <Text variant="card-title" color="text-color" className="comparison-title">Current Version</Text>
-
-                <div className="detail-section">
-                  <Text variant="card-title" color="text-color">Name: </Text>
-                  <Text variant="normal" color="text-color">{showVal(getCurrent("name"))}</Text>
-                </div>
-
-                <div className="detail-section">
-                  <Text variant="card-title" color="text-color">Description: </Text>
-                  <Text variant="normal" color="text-color">{showVal(getCurrent("description"))}</Text>
-                </div>
-
-                <div className="detail-section">
-                  <Text variant="card-title" color="text-color">Type: </Text>
-                  <Text variant="normal" color="text-color">{showVal(getCurrent("type"))}</Text>
-                </div>
-
-                <div className="detail-section">
-                  <Text variant="card-title" color="text-color">Location: </Text>
-                  <Text variant="normal" color="text-color">{`${showVal(getCurrent("province"))}, ${showVal(getCurrent("municipality"))}, ${showVal(getCurrent("barangay"))}`}</Text>
-                </div>
-
-                {getCurrent("contact_phone") != null && (
-                  <div className="detail-section">
-                    <Text variant="card-title" color="text-color">Contact Phone</Text>
-                    <Text variant="normal" color="text-color">{showVal(getCurrent("contact_phone"))}</Text>
-                  </div>
-                )}
-
-                {getCurrent("website") != null && (
-                  <div className="detail-section">
-                    <Text variant="card-title" color="text-color">Website</Text>
-                    <Text variant="normal" color="text-color">{showVal(getCurrent("website"))}</Text>
-                  </div>
-                )}
-
-                {getCurrent("entry_fee") != null && (
-                  <div className="detail-section">
-                    <Text variant="card-title" color="text-color">Entry Fee</Text>
-                    <Text variant="normal" color="text-color">{showVal(getCurrent("entry_fee"))}</Text>
-                  </div>
-                )}
-              </div>
-
-              <div className="comparison-column">
-                <Text variant="card-title" color="text-color" className="comparison-title">Proposed Changes</Text>
-
-                <div className={`detail-section${hasChanged("name") ? " changed" : ""}`}>
-                  <Text variant="card-title" color="text-color">Name: </Text>
-                  <Text variant="normal" color="text-color">{showVal(getProposed("name"))}</Text>
-                </div>
-
-                <div className={`detail-section${hasChanged("description") ? " changed" : ""}`}>
-                  <Text variant="card-title" color="text-color">Description: </Text>
-                  <Text variant="normal" color="text-color">{showVal(getProposed("description"))}</Text>
-                </div>
-
-                <div className={`detail-section${hasChanged("type") ? " changed" : ""}`}>
-                  <Text variant="card-title" color="text-color">Type: </Text>
-                  <Text variant="normal" color="text-color">{showVal(getProposed("type"))}</Text>
-                </div>
-
-                <div className={`detail-section${hasLocationChanged() ? " changed" : ""}`}>
-                  <Text variant="card-title" color="text-color">Location: </Text>
-                  <Text variant="normal" color="text-color">{`${showVal(getProposed("province"))}, ${showVal(getProposed("municipality"))}, ${showVal(getProposed("barangay"))}`}</Text>
-                </div>
-
-                {getProposed("contact_phone") != null && (
-                  <div className={`detail-section${hasChanged("contact_phone") ? " changed" : ""}`}>
-                    <Text variant="card-title" color="text-color">Contact Phone</Text>
-                    <Text variant="normal" color="text-color">{showVal(getProposed("contact_phone"))}</Text>
-                  </div>
-                )}
-
-                {getProposed("website") != null && (
-                  <div className={`detail-section${hasChanged("website") ? " changed" : ""}`}>
-                    <Text variant="card-title" color="text-color">Website</Text>
-                    <Text variant="normal" color="text-color">{showVal(getProposed("website"))}</Text>
-                  </div>
-                )}
-
-                {getProposed("entry_fee") != null && (
-                  <div className={`detail-section${hasChanged("entry_fee") ? " changed" : ""}`}>
-                    <Text variant="card-title" color="text-color">Entry Fee</Text>
-                    <Text variant="normal" color="text-color">{showVal(getProposed("entry_fee"))}</Text>
-                  </div>
-                )}
-              </div>
-            </div>
+            <Grid container spacing={2}>
+              <Grid xs={12} md={6}>
+                <Sheet variant="soft" sx={{ p: 2, borderRadius: 8 }}>
+                  <Typography level="title-sm" sx={{ mb: 1 }}>Current Version</Typography>
+                  <Divider sx={{ mb: 1 }} />
+                  <Stack spacing={1}>
+                    <Typography level="body-sm"><b>Name:</b> {showVal(getCurrent("name"))}</Typography>
+                    <Typography level="body-sm"><b>Description:</b> {showVal(getCurrent("description"))}</Typography>
+                    <Typography level="body-sm"><b>Type:</b> {showVal(getCurrent("type"))}</Typography>
+                    <Typography level="body-sm"><b>Location:</b> {`${showVal(getCurrent("province"))}, ${showVal(getCurrent("municipality"))}, ${showVal(getCurrent("barangay"))}`}</Typography>
+                    {getCurrent("contact_phone") != null && (
+                      <Typography level="body-sm"><b>Contact Phone:</b> {showVal(getCurrent("contact_phone"))}</Typography>
+                    )}
+                    {getCurrent("website") != null && (
+                      <Typography level="body-sm"><b>Website:</b> {showVal(getCurrent("website"))}</Typography>
+                    )}
+                    {getCurrent("entry_fee") != null && (
+                      <Typography level="body-sm"><b>Entry Fee:</b> {showVal(getCurrent("entry_fee"))}</Typography>
+                    )}
+                  </Stack>
+                </Sheet>
+              </Grid>
+              <Grid xs={12} md={6}>
+                <Sheet variant="soft" sx={{ p: 2, borderRadius: 8 }}>
+                  <Typography level="title-sm" sx={{ mb: 1 }}>Proposed Changes</Typography>
+                  <Divider sx={{ mb: 1 }} />
+                  <Stack spacing={1}>
+                    <Typography level="body-sm" sx={{ bgcolor: hasChanged("name") ? 'warning.softBg' : undefined, p: 0.5, borderRadius: 6 }}><b>Name:</b> {showVal(getProposed("name"))}</Typography>
+                    <Typography level="body-sm" sx={{ bgcolor: hasChanged("description") ? 'warning.softBg' : undefined, p: 0.5, borderRadius: 6 }}><b>Description:</b> {showVal(getProposed("description"))}</Typography>
+                    <Typography level="body-sm" sx={{ bgcolor: hasChanged("type") ? 'warning.softBg' : undefined, p: 0.5, borderRadius: 6 }}><b>Type:</b> {showVal(getProposed("type"))}</Typography>
+                    <Typography level="body-sm" sx={{ bgcolor: hasLocationChanged() ? 'warning.softBg' : undefined, p: 0.5, borderRadius: 6 }}><b>Location:</b> {`${showVal(getProposed("province"))}, ${showVal(getProposed("municipality"))}, ${showVal(getProposed("barangay"))}`}</Typography>
+                    {getProposed("contact_phone") != null && (
+                      <Typography level="body-sm" sx={{ bgcolor: hasChanged("contact_phone") ? 'warning.softBg' : undefined, p: 0.5, borderRadius: 6 }}><b>Contact Phone:</b> {showVal(getProposed("contact_phone"))}</Typography>
+                    )}
+                    {getProposed("website") != null && (
+                      <Typography level="body-sm" sx={{ bgcolor: hasChanged("website") ? 'warning.softBg' : undefined, p: 0.5, borderRadius: 6 }}><b>Website:</b> {showVal(getProposed("website"))}</Typography>
+                    )}
+                    {getProposed("entry_fee") != null && (
+                      <Typography level="body-sm" sx={{ bgcolor: hasChanged("entry_fee") ? 'warning.softBg' : undefined, p: 0.5, borderRadius: 6 }}><b>Entry Fee:</b> {showVal(getProposed("entry_fee"))}</Typography>
+                    )}
+                  </Stack>
+                </Sheet>
+              </Grid>
+            </Grid>
           ) : (
-            <div className="details-view">
-              <div className="detail-section">
-                <Text variant="card-title" color="text-color">Description</Text>
-                <Text variant="normal" color="text-color">{showVal(item.description)}</Text>
-              </div>
-              <div className="detail-section">
-                <Text variant="card-title" color="text-color">Type</Text>
-                <Text variant="normal" color="text-color">{showVal(item.type)}</Text>
-              </div>
-              <div className="detail-section">
-                <Text variant="card-title" color="text-color">Location</Text>
-                <Text variant="normal" color="text-color">{`${showVal(item.province)}, ${showVal(item.municipality)}, ${showVal(item.barangay)}`}</Text>
-              </div>
+            <Stack spacing={1}>
+              <Typography level="body-sm"><b>Description:</b> {showVal(item.description)}</Typography>
+              <Typography level="body-sm"><b>Type:</b> {showVal(item.type)}</Typography>
+              <Typography level="body-sm"><b>Location:</b> {`${showVal(item.province)}, ${showVal(item.municipality)}, ${showVal(item.barangay)}`}</Typography>
               {item.contact_phone != null && (
-                <div className="detail-section">
-                  <Text variant="card-title" color="text-color">Contact Phone</Text>
-                  <Text variant="normal" color="text-color">{showVal(item.contact_phone)}</Text>
-                </div>
+                <Typography level="body-sm"><b>Contact Phone:</b> {showVal(item.contact_phone)}</Typography>
               )}
               {item.website != null && (
-                <div className="detail-section">
-                  <Text variant="card-title" color="text-color">Website</Text>
-                  <Text variant="normal" color="text-color">{showVal(item.website)}</Text>
-                </div>
+                <Typography level="body-sm"><b>Website:</b> {showVal(item.website)}</Typography>
               )}
               {item.entry_fee != null && (
-                <div className="detail-section">
-                  <Text variant="card-title" color="text-color">Entry Fee</Text>
-                  <Text variant="normal" color="text-color">₱{showVal(item.entry_fee)}</Text>
-                </div>
+                <Typography level="body-sm"><b>Entry Fee:</b> ₱{showVal(item.entry_fee)}</Typography>
               )}
-              <div className="detail-section">
-                <Text variant="card-title" color="text-color">Submitted</Text>
-                <Text variant="normal" color="text-color">
-                  {new Date(String(item.created_at ?? item.submitted_at ?? "")).toLocaleDateString()}
-                </Text>
-              </div>
-            </div>
+              <Typography level="body-sm"><b>Submitted:</b> {new Date(String(item.created_at ?? item.submitted_at ?? "")).toLocaleDateString()}</Typography>
+            </Stack>
           )}
-        </div>
-      </div>
-    </div>
+        </DialogContent>
+      </ModalDialog>
+    </Modal>
   );
 };
 
