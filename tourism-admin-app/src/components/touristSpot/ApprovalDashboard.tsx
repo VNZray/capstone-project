@@ -6,17 +6,11 @@ import ViewModal from "./ViewModal";
 import {
   Box,
   Button,
-  Chip,
   Divider,
   Grid,
   IconButton,
   Input,
-  Sheet,
   Stack,
-  Tab,
-  TabList,
-  TabPanel,
-  Tabs,
   Typography,
   Card,
   CardContent,
@@ -300,7 +294,7 @@ const ApprovalDashboard: React.FC = () => {
 
   return (
     <Box sx={{ p: { xs: 1.5, md: 3 }, maxWidth: 1400, mx: "auto" }}>
-      <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
+      <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 3 }}>
         <Box>
           <Typography level="h3">Content Approvals</Typography>
           <Typography level="body-md" sx={{ color: "text.tertiary" }}>
@@ -312,158 +306,203 @@ const ApprovalDashboard: React.FC = () => {
         </IconButton>
       </Stack>
 
-      <Grid container spacing={2} sx={{ mb: 2 }}>
-        <Grid xs={12} md={3}>
-          <Card variant="outlined"><CardContent>
-            <Stack direction="row" spacing={1} alignItems="center" justifyContent="space-between">
-              <Stack>
-                <Typography level="body-sm" sx={{ color: "text.tertiary" }}>Total Pending</Typography>
-                <Typography level="h3">{allItems.length}</Typography>
+      {/* Navigation Cards */}
+      <Grid container spacing={2} sx={{ mb: 3 }}>
+        <Grid xs={12} sm={6} md={2.4}>
+          <Card 
+            variant="soft" 
+            color={activeTab === "overview" ? "primary" : "neutral"}
+            sx={{ 
+              cursor: "pointer", 
+              transition: "all 0.2s ease",
+              "&:hover": { transform: "translateY(-2px)" }
+            }}
+            onClick={() => setActiveTab("overview")}
+          >
+            <CardContent>
+              <Stack direction="row" spacing={1} alignItems="center" justifyContent="space-between">
+                <Stack>
+                  <Typography level="body-sm" sx={{ color: "text.tertiary" }}>Overview</Typography>
+                  <Typography level="h4">{allItems.length}</Typography>
+                </Stack>
+                <DashboardRoundedIcon />
               </Stack>
-              <DashboardRoundedIcon color="primary" />
-            </Stack>
-          </CardContent></Card>
+            </CardContent>
+          </Card>
         </Grid>
-        <Grid xs={12} md={3}>
-          <Card variant="outlined"><CardContent>
-            <Stack direction="row" spacing={1} alignItems="center" justifyContent="space-between">
-              <Stack>
-                <Typography level="body-sm" sx={{ color: "text.tertiary" }}>Tourist Spots</Typography>
-                <Typography level="h4">{allItems.length}</Typography>
+        <Grid xs={12} sm={6} md={2.4}>
+          <Card 
+            variant="soft" 
+            color={activeTab === "tourist_spots" ? "primary" : "neutral"}
+            sx={{ 
+              cursor: "pointer", 
+              transition: "all 0.2s ease",
+              "&:hover": { transform: "translateY(-2px)" }
+            }}
+            onClick={() => setActiveTab("tourist_spots")}
+          >
+            <CardContent>
+              <Stack direction="row" spacing={1} alignItems="center" justifyContent="space-between">
+                <Stack>
+                  <Typography level="body-sm" sx={{ color: "text.tertiary" }}>Tourist Spots</Typography>
+                  <Typography level="h4">{allItems.length}</Typography>
+                </Stack>
+                <PlaceRoundedIcon />
               </Stack>
-              <PlaceRoundedIcon color="success" />
-            </Stack>
-          </CardContent></Card>
+            </CardContent>
+          </Card>
         </Grid>
-        <Grid xs={12} md={3}>
-          <Card variant="outlined"><CardContent>
-            <Stack direction="row" spacing={1} alignItems="center" justifyContent="space-between">
-              <Stack>
-                <Typography level="body-sm" sx={{ color: "text.tertiary" }}>Events</Typography>
-                <Typography level="h4">{mockEvents.length}</Typography>
+        <Grid xs={12} sm={6} md={2.4}>
+          <Card 
+            variant="soft" 
+            color={activeTab === "events" ? "primary" : "neutral"}
+            sx={{ 
+              cursor: "pointer", 
+              transition: "all 0.2s ease",
+              "&:hover": { transform: "translateY(-2px)" }
+            }}
+            onClick={() => setActiveTab("events")}
+          >
+            <CardContent>
+              <Stack direction="row" spacing={1} alignItems="center" justifyContent="space-between">
+                <Stack>
+                  <Typography level="body-sm" sx={{ color: "text.tertiary" }}>Events</Typography>
+                  <Typography level="h4">{mockEvents.length}</Typography>
+                </Stack>
+                <EventRoundedIcon />
               </Stack>
-              <EventRoundedIcon color="warning" />
-            </Stack>
-          </CardContent></Card>
+            </CardContent>
+          </Card>
         </Grid>
-        <Grid xs={12} md={3}>
-          <Card variant="outlined"><CardContent>
-            <Stack direction="row" spacing={1} alignItems="center" justifyContent="space-between">
-              <Stack>
-                <Typography level="body-sm" sx={{ color: "text.tertiary" }}>Businesses & Accomm.</Typography>
-                <Typography level="h4">{mockBusinesses.length + mockAccommodations.length}</Typography>
+        <Grid xs={12} sm={6} md={2.4}>
+          <Card 
+            variant="soft" 
+            color={activeTab === "businesses" ? "primary" : "neutral"}
+            sx={{ 
+              cursor: "pointer", 
+              transition: "all 0.2s ease",
+              "&:hover": { transform: "translateY(-2px)" }
+            }}
+            onClick={() => setActiveTab("businesses")}
+          >
+            <CardContent>
+              <Stack direction="row" spacing={1} alignItems="center" justifyContent="space-between">
+                <Stack>
+                  <Typography level="body-sm" sx={{ color: "text.tertiary" }}>Businesses</Typography>
+                  <Typography level="h4">{mockBusinesses.length}</Typography>
+                </Stack>
+                <BusinessRoundedIcon />
               </Stack>
-              <BusinessRoundedIcon color="primary" />
-            </Stack>
-          </CardContent></Card>
+            </CardContent>
+          </Card>
+        </Grid>
+        <Grid xs={12} sm={6} md={2.4}>
+          <Card 
+            variant="soft" 
+            color={activeTab === "accommodations" ? "primary" : "neutral"}
+            sx={{ 
+              cursor: "pointer", 
+              transition: "all 0.2s ease",
+              "&:hover": { transform: "translateY(-2px)" }
+            }}
+            onClick={() => setActiveTab("accommodations")}
+          >
+            <CardContent>
+              <Stack direction="row" spacing={1} alignItems="center" justifyContent="space-between">
+                <Stack>
+                  <Typography level="body-sm" sx={{ color: "text.tertiary" }}>Accommodations</Typography>
+                  <Typography level="h4">{mockAccommodations.length}</Typography>
+                </Stack>
+                <HotelRoundedIcon />
+              </Stack>
+            </CardContent>
+          </Card>
         </Grid>
       </Grid>
 
-      <Sheet variant="outlined" sx={{ borderRadius: 12 }}>
-        <Tabs value={activeTab} onChange={(_, v) => { if (v) setActiveTab(v as TabType); }}>
-          <TabList variant="plain" sx={{ px: 1, pt: 1 }}>
-            <Tab value="overview" sx={{ gap: 0.75 }}>
-              <DashboardRoundedIcon fontSize="small" /> Overview
-            </Tab>
-            <Tab value="tourist_spots" sx={{ gap: 0.75 }}>
-              <PlaceRoundedIcon fontSize="small" /> Tourist Spots
-              <Chip size="sm" variant="soft" sx={{ ml: 0.5 }}>{allItems.length}</Chip>
-            </Tab>
-            <Tab value="events" sx={{ gap: 0.75 }}>
-              <EventRoundedIcon fontSize="small" /> Events
-              <Chip size="sm" variant="soft" sx={{ ml: 0.5 }}>{mockEvents.length}</Chip>
-            </Tab>
-            <Tab value="businesses" sx={{ gap: 0.75 }}>
-              <BusinessRoundedIcon fontSize="small" /> Businesses
-              <Chip size="sm" variant="soft" sx={{ ml: 0.5 }}>{mockBusinesses.length}</Chip>
-            </Tab>
-            <Tab value="accommodations" sx={{ gap: 0.75 }}>
-              <HotelRoundedIcon fontSize="small" /> Accommodations
-              <Chip size="sm" variant="soft" sx={{ ml: 0.5 }}>{mockAccommodations.length}</Chip>
-            </Tab>
-          </TabList>
-          <Divider />
+      <Divider sx={{ mb: 3 }} />
 
-          <TabPanel value="overview" sx={{ p: 2 }}>
-            <Grid container spacing={2}>
-              <Grid xs={12} md={6} lg={3}>
-                <OverviewCard
-                  title="Tourist Spots"
-                  count={allItems.length}
-                  icon="📍"
-                  items={allItems}
-                  onApprove={handleApprove}
-                  onView={handleView}
-                />
-              </Grid>
-              <Grid xs={12} md={6} lg={3}>
-                <OverviewCard title="Events" count={mockEvents.length} icon="📅" items={mockEvents} />
-              </Grid>
-              <Grid xs={12} md={6} lg={3}>
-                <OverviewCard title="Businesses" count={mockBusinesses.length} icon="🏢" items={mockBusinesses} />
-              </Grid>
-              <Grid xs={12} md={6} lg={3}>
-                <OverviewCard title="Accommodations" count={mockAccommodations.length} icon="🛏️" items={mockAccommodations} />
-              </Grid>
-            </Grid>
-          </TabPanel>
-
-          <TabPanel value="tourist_spots" sx={{ p: 2 }}>
-            <Stack direction={{ xs: "column", sm: "row" }} spacing={1} alignItems={{ xs: "stretch", sm: "center" }} justifyContent="space-between" sx={{ mb: 1 }}>
-              <Input
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                startDecorator={<SearchRoundedIcon />}
-                placeholder="Search tourist spots"
-              />
-              <Button startDecorator={<FilterListRoundedIcon />} variant="soft" color="neutral">
-                Filters
-              </Button>
-            </Stack>
-            <ApprovalTable
-              items={filteredItems}
-              contentType="tourist spots"
-              onView={handleView}
+      {/* Content Sections */}
+      {activeTab === "overview" && (
+        <Grid container spacing={2}>
+          <Grid xs={12} md={6} lg={3}>
+            <OverviewCard
+              title="Tourist Spots"
+              count={allItems.length}
+              icon="📍"
+              items={allItems}
               onApprove={handleApprove}
-              onReject={handleReject}
-              processingId={processingId}
-            />
-          </TabPanel>
-
-          <TabPanel value="events" sx={{ p: 2 }}>
-            <ApprovalTable
-              items={mockEvents}
-              contentType="events"
               onView={handleView}
-              onApprove={() => alert("Events approval not yet implemented")}
-              onReject={() => alert("Events rejection not yet implemented")}
-              processingId={processingId}
             />
-          </TabPanel>
+          </Grid>
+          <Grid xs={12} md={6} lg={3}>
+            <OverviewCard title="Events" count={mockEvents.length} icon="📅" items={mockEvents} />
+          </Grid>
+          <Grid xs={12} md={6} lg={3}>
+            <OverviewCard title="Businesses" count={mockBusinesses.length} icon="🏢" items={mockBusinesses} />
+          </Grid>
+          <Grid xs={12} md={6} lg={3}>
+            <OverviewCard title="Accommodations" count={mockAccommodations.length} icon="🛏️" items={mockAccommodations} />
+          </Grid>
+        </Grid>
+      )}
 
-          <TabPanel value="businesses" sx={{ p: 2 }}>
-            <ApprovalTable
-              items={mockBusinesses}
-              contentType="businesses"
-              onView={handleView}
-              onApprove={() => alert("Businesses approval not yet implemented")}
-              onReject={() => alert("Businesses rejection not yet implemented")}
-              processingId={processingId}
+      {activeTab === "tourist_spots" && (
+        <>
+          <Stack direction={{ xs: "column", sm: "row" }} spacing={1} alignItems={{ xs: "stretch", sm: "center" }} justifyContent="space-between" sx={{ mb: 3 }}>
+            <Input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              startDecorator={<SearchRoundedIcon />}
+              placeholder="Search tourist spots"
             />
-          </TabPanel>
+            <Button startDecorator={<FilterListRoundedIcon />} variant="soft" color="neutral">
+              Filters
+            </Button>
+          </Stack>
+          <ApprovalTable
+            items={filteredItems}
+            contentType="tourist spots"
+            onView={handleView}
+            onApprove={handleApprove}
+            onReject={handleReject}
+            processingId={processingId}
+          />
+        </>
+      )}
 
-          <TabPanel value="accommodations" sx={{ p: 2 }}>
-            <ApprovalTable
-              items={mockAccommodations}
-              contentType="accommodations"
-              onView={handleView}
-              onApprove={() => alert("Accommodations approval not yet implemented")}
-              onReject={() => alert("Accommodations rejection not yet implemented")}
-              processingId={processingId}
-            />
-          </TabPanel>
-        </Tabs>
-      </Sheet>
+      {activeTab === "events" && (
+        <ApprovalTable
+          items={mockEvents}
+          contentType="events"
+          onView={handleView}
+          onApprove={() => alert("Events approval not yet implemented")}
+          onReject={() => alert("Events rejection not yet implemented")}
+          processingId={processingId}
+        />
+      )}
+
+      {activeTab === "businesses" && (
+        <ApprovalTable
+          items={mockBusinesses}
+          contentType="businesses"
+          onView={handleView}
+          onApprove={() => alert("Businesses approval not yet implemented")}
+          onReject={() => alert("Businesses rejection not yet implemented")}
+          processingId={processingId}
+        />
+      )}
+
+      {activeTab === "accommodations" && (
+        <ApprovalTable
+          items={mockAccommodations}
+          contentType="accommodations"
+          onView={handleView}
+          onApprove={() => alert("Accommodations approval not yet implemented")}
+          onReject={() => alert("Accommodations rejection not yet implemented")}
+          processingId={processingId}
+        />
+      )}
 
       <ViewModal isOpen={!!selectedItem} onClose={closeModal} item={selectedItem ?? {}} />
     </Box>
