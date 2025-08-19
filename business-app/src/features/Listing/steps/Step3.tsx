@@ -9,8 +9,7 @@ import Label from "@/src/components/Label";
 import Text from "@/src/components/Text";
 import { colors } from "@/src/utils/Colors";
 import { Add } from "@mui/icons-material";
-import { GoogleMap, Marker, useJsApiLoader } from "@react-google-maps/api";
-const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
+import MapInput from "@/src/components/MapInput";
 
 type Props = {
   data: Business;
@@ -28,23 +27,6 @@ const Step3: React.FC<Props> = ({ api, data, setData }) => {
   const [barangay, setBarangay] = React.useState<
     { id: number; barangay: string }[]
   >([]);
-  const [selectedProvince, setSelectedProvince] = React.useState<number>();
-  const containerStyle = {
-    width: "100%",
-    height: "450px",
-    borderRadius: "12px",
-  };
-
-  const center = {
-    lat: Number(data.latitude) || 14.5995, // fallback: Manila
-    lng: Number(data.longitude) || 120.9842,
-  };
-
-  const { isLoaded } = useJsApiLoader({
-    googleMapsApiKey: apiKey!, // keep in .env
-  });
-  const [selectedMunicipality, setSelectedMunicipality] =
-    React.useState<number>();
 
   const fetchProvince = async () => {
     try {
@@ -86,6 +68,32 @@ const Step3: React.FC<Props> = ({ api, data, setData }) => {
     } catch (error) {
       console.error("Error fetching business types:", error);
     }
+  };
+
+  const handleGetCurrentLocation = () => {
+    if (!navigator.geolocation) {
+      alert("Geolocation is not supported by your browser");
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const lat = position.coords.latitude.toString();
+        const lng = position.coords.longitude.toString();
+
+        setData((prev) => ({
+          ...prev,
+          latitude: lat,
+          longitude: lng,
+        }));
+      },
+      (error) => {
+        console.error("Error getting location:", error);
+        alert(
+          "Unable to retrieve your location. Please allow location access."
+        );
+      }
+    );
   };
 
   React.useEffect(() => {
@@ -198,46 +206,12 @@ const Step3: React.FC<Props> = ({ api, data, setData }) => {
                   ))}
                 </Select>
               </FormControl>
-
-              <FormControl>
-                <Label margin="0 0 5px 0">
-                  <Text variant="medium">Longitude *</Text>
-                </Label>
-                <Input
-                  variant="outlined"
-                  size="lg"
-                  value={data.longitude}
-                  onChange={(e) =>
-                    setData((prev) => ({
-                      ...prev,
-                      longitude: e.target.value,
-                    }))
-                  }
-                />
-              </FormControl>
-
-              <FormControl>
-                <Label margin="0 0 5px 0">
-                  <Text variant="medium">Latitude *</Text>
-                </Label>
-                <Input
-                  variant="outlined"
-                  size="lg"
-                  value={data.latitude}
-                  onChange={(e) =>
-                    setData((prev) => ({
-                      ...prev,
-                      latitude: e.target.value,
-                    }))
-                  }
-                />
-              </FormControl>
             </Container>
           </Grid>
 
           <Grid xs={8}>
             <Container padding="0 20px " gap="20px">
-              {/* <Container
+              <Container
                 background={colors.secondary}
                 elevation={2}
                 padding="20px"
@@ -248,7 +222,7 @@ const Step3: React.FC<Props> = ({ api, data, setData }) => {
                       Map Coordinates
                     </Text>
                     <Text color="white" variant="card-sub-title">
-                      Locate your current location
+                      Pin the location of your business in the map
                     </Text>
                   </Grid>
                   <Grid xs={4}>
@@ -256,56 +230,66 @@ const Step3: React.FC<Props> = ({ api, data, setData }) => {
                       fullWidth
                       variant="soft"
                       color="neutral"
-                      size="lg"
+                      size="sm"
                       startDecorator={<Add />}
                       style={{ height: "100%" }}
+                      onClick={handleGetCurrentLocation}
                     >
-                      Locate
+                      Get Curreant Location
                     </Button>
                   </Grid>
                 </Grid>
-              </Container> */}
-
+              </Container>
               <Container padding="0">
-                {isLoaded ? (
-                  <GoogleMap
-                    mapContainerStyle={containerStyle}
-                    center={center}
-                    zoom={14}
-                    onClick={(e) => {
-                      if (e.latLng) {
-                        const lat = e.latLng.lat();
-                        const lng = e.latLng.lng();
-                        setData((prev) => ({
-                          ...prev,
-                          latitude: lat.toString(),
-                          longitude: lng.toString(),
-                        }));
-                      }
-                    }}
-                  >
-                    <Marker
-                      position={{
-                        lat: Number(data.latitude) || center.lat,
-                        lng: Number(data.longitude) || center.lng,
-                      }}
-                      draggable
-                      onDragEnd={(e) => {
-                        if (e.latLng) {
-                          const lat = e.latLng.lat();
-                          const lng = e.latLng.lng();
+                <Grid container spacing={3} columns={12}>
+                  <Grid xs={6}>
+                    <FormControl>
+                      <Label margin="0 0 5px 0">
+                        <Text variant="medium">Longitude *</Text>
+                      </Label>
+                      <Input
+                        variant="outlined"
+                        size="lg"
+                        value={data.longitude}
+                        onChange={(e) =>
                           setData((prev) => ({
                             ...prev,
-                            latitude: lat.toString(),
-                            longitude: lng.toString(),
-                          }));
+                            longitude: e.target.value,
+                          }))
                         }
-                      }}
-                    />
-                  </GoogleMap>
-                ) : (
-                  <Text color="white">Loading map...</Text>
-                )}
+                      />
+                    </FormControl>
+                  </Grid>
+                  <Grid xs={6}>
+                    <FormControl>
+                      <Label margin="0 0 5px 0">
+                        <Text variant="medium">Latitude *</Text>
+                      </Label>
+                      <Input
+                        variant="outlined"
+                        size="lg"
+                        value={data.latitude}
+                        onChange={(e) =>
+                          setData((prev) => ({
+                            ...prev,
+                            latitude: e.target.value,
+                          }))
+                        }
+                      />
+                    </FormControl>
+                  </Grid>
+                </Grid>
+                <MapInput
+                  latitude={data.latitude}
+                  longitude={data.longitude}
+                  onChange={(lat, lng) =>
+                    setData((prev) => ({
+                      ...prev,
+                      latitude: lat,
+                      longitude: lng,
+                    }))
+                  }
+                />
               </Container>
             </Container>
           </Grid>
