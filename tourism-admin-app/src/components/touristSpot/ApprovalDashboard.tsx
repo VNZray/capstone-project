@@ -5,7 +5,6 @@ import OverviewCard from "./OverviewCard";
 import ViewModal from "./ViewModal";
 import {
   Box,
-  Button,
   Divider,
   Grid,
   IconButton,
@@ -16,7 +15,6 @@ import {
   CardContent,
 } from "@mui/joy";
 import RefreshRoundedIcon from "@mui/icons-material/RefreshRounded";
-import FilterListRoundedIcon from "@mui/icons-material/FilterListRounded";
 import PlaceRoundedIcon from "@mui/icons-material/PlaceRounded";
 import EventRoundedIcon from "@mui/icons-material/EventRounded";
 import BusinessRoundedIcon from "@mui/icons-material/BusinessRounded";
@@ -338,7 +336,8 @@ const ApprovalDashboard: React.FC = () => {
             sx={{ 
               cursor: "pointer", 
               transition: "all 0.2s ease",
-              "&:hover": { transform: "translateY(-2px)" }
+              "&:hover": { transform: "translateY(-2px)" },
+              backgroundColor: activeTab === "overview" ? "#93c5fd" : undefined
             }}
             onClick={() => setActiveTab("overview")}
           >
@@ -360,7 +359,8 @@ const ApprovalDashboard: React.FC = () => {
             sx={{ 
               cursor: "pointer", 
               transition: "all 0.2s ease",
-              "&:hover": { transform: "translateY(-2px)" }
+              "&:hover": { transform: "translateY(-2px)" },
+              backgroundColor: activeTab === "tourist_spots" ? "#93c5fd" : undefined
             }}
             onClick={() => setActiveTab("tourist_spots")}
           >
@@ -382,7 +382,8 @@ const ApprovalDashboard: React.FC = () => {
             sx={{ 
               cursor: "pointer", 
               transition: "all 0.2s ease",
-              "&:hover": { transform: "translateY(-2px)" }
+              "&:hover": { transform: "translateY(-2px)" },
+              backgroundColor: activeTab === "events" ? "#93c5fd" : undefined
             }}
             onClick={() => setActiveTab("events")}
           >
@@ -404,7 +405,8 @@ const ApprovalDashboard: React.FC = () => {
             sx={{ 
               cursor: "pointer", 
               transition: "all 0.2s ease",
-              "&:hover": { transform: "translateY(-2px)" }
+              "&:hover": { transform: "translateY(-2px)" },
+              backgroundColor: activeTab === "businesses" ? "#93c5fd" : undefined
             }}
             onClick={() => setActiveTab("businesses")}
           >
@@ -426,7 +428,8 @@ const ApprovalDashboard: React.FC = () => {
             sx={{ 
               cursor: "pointer", 
               transition: "all 0.2s ease",
-              "&:hover": { transform: "translateY(-2px)" }
+              "&:hover": { transform: "translateY(-2px)" },
+              backgroundColor: activeTab === "accommodations" ? "#93c5fd" : undefined
             }}
             onClick={() => setActiveTab("accommodations")}
           >
