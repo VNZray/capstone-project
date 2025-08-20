@@ -6,7 +6,7 @@ export const colors = {
   white: "#ffffff", // from --white
   error: "#ff4d4d",
   success: "#28a745",
-  warning: "#ffc107",
+  warningBackground: "#ffc107",
   dark: "#1a1a1a", // replaced with CSS var value
   black: "#111111",
   text: "#1a1a1a", // --text-color
@@ -19,5 +19,5 @@ export const colors = {
   offWhite: "#ececec",
   offWhite2: "#faf9f9",
   offWhite3: "#f4f3ee",
-
+  warningLabel: "#ed6c02",
 };

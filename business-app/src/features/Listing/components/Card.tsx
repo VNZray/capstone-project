@@ -43,7 +43,7 @@ const Card: React.FC<CardProps> = ({
   rating,
 }) => {
   return (
-    <Container style={{ maxWidth: 436, minWidth: 436 }} elevation={elevation}>
+    <Container style={{ maxWidth: "100%" }} elevation={elevation}>
       <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
         <div className="image-container">
           <img

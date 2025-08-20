@@ -13,6 +13,7 @@ import externalBookingRoutes from "./routes/external_booking.js";
 import touristSpotRoutes from "./routes/tourist_spot.js";
 import approvalRoutes from "./routes/approval.js";
 import amenityRoutes from "./routes/amenity.js";
+import permitRoutes from "./routes/permit.js";
 
 const app = express();
 const PORT = 3000;
@@ -30,6 +31,7 @@ const routes = [
   { path: "/api/amenities", handler: amenityRoutes },
   { path: "/api/tourist-spots", handler: touristSpotRoutes },
   { path: "/api/approval", handler: approvalRoutes },
+  { path: "/api/permit", handler: permitRoutes },
 ];
 
 app.use(cors());
@@ -48,7 +50,7 @@ app.listen(PORT, () => {
   // Log all registered API URLs
   console.log("📌 Available API Endpoints:");
   routes.forEach((route) => {
-    console.log(`   ${`http://localhost:${PORT}${route.path}`}`);
+    console.log(`${`http://localhost:${PORT}${route.path}`}`);
   });
 
   console.log("\nCTRL + C to stop the server\n");

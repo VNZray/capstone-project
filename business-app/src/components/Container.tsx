@@ -12,8 +12,9 @@ interface ContainerProps {
   padding?: string;
   style?: React.CSSProperties;
   gap?: string;
-  background?: string; // new prop
+  background?: string;
   direction?: "row" | "column";
+  opacity?: number; // new prop
 }
 
 const Container: React.FC<ContainerProps> = ({
@@ -28,6 +29,7 @@ const Container: React.FC<ContainerProps> = ({
   gap = "16px",
   direction = "column",
   background,
+  opacity = 1, // default full opacity
 }) => {
   const containerStyle: React.CSSProperties = {
     width,
@@ -38,6 +40,7 @@ const Container: React.FC<ContainerProps> = ({
     backgroundColor: background,
     flexDirection: direction,
     display: "flex",
+    opacity, // apply opacity here
     ...style,
   };
 
