@@ -1,33 +1,14 @@
 import React from "react";
-import {
-  Box,
-  Button,
-  Card,
-  CardContent,
-  Chip,
-  Grid,
-  Stack,
-  Typography,
-  Sheet,
-} from "@mui/joy";
-import CheckRoundedIcon from "@mui/icons-material/CheckRounded";
-import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
-import VisibilityRoundedIcon from "@mui/icons-material/VisibilityRounded";
-import PlaceRoundedIcon from "@mui/icons-material/PlaceRounded";
-import PhoneRoundedIcon from "@mui/icons-material/PhoneRounded";
+import { Box, Card, CardContent, Chip, Grid, Stack, Typography, Sheet } from "@mui/joy";
+// action icons moved into ActionButtons
+import AddressContact from "./AddressContact";
+import ActionButtons from "./ActionButtons";
 
 // Safe extractor for string-like fields coming from loosely-typed API items
 const getStr = (v: unknown): string | undefined =>
   typeof v === "string" && v.trim() ? v.trim() : undefined;
 
-type ApprovalTableItem = Record<string, unknown> & {
-  id: string;
-  name: string;
-  action_type: "new" | "edit";
-  submitted_at?: string;
-  created_at?: string;
-  description?: string;
-};
+import type { ApprovalTableItem } from "../../types/approval";
 
 interface ApprovalTableProps {
   items: unknown[];
@@ -166,59 +147,17 @@ const ApprovalTable: React.FC<ApprovalTableProps> = ({
                     </Typography>
                   )}
 
-                  {address && (
-                    <Stack direction="row" spacing={1} sx={{ mt: 1 }} alignItems="center">
-                      <PlaceRoundedIcon fontSize="small" />
-                      <Typography level="body-sm" sx={{ color: "text.tertiary" }}>
-                        {address}
-                      </Typography>
-                    </Stack>
-                  )}
-
-                  {contactNo && (
-                    <Stack direction="row" spacing={1} sx={{ mt: 0.5 }} alignItems="center">
-                      <PhoneRoundedIcon fontSize="small" />
-                      <Typography level="body-sm" sx={{ color: "text.tertiary" }}>
-                        {contactNo}
-                      </Typography>
-                    </Stack>
-                  )}
+                  <AddressContact address={address} contact={contactNo} />
                 </CardContent>
 
                 <Box sx={{ mt: "auto", px: 2, pb: 2 }}>
-                  <Stack spacing={1}>
-                    <Button
-                      startDecorator={<VisibilityRoundedIcon />}
-                      variant="soft"
-                      color="primary"
-                      onClick={() => onView(item)}
-                      sx={{ width: "100%" }}
-                    >
-                      View Details
-                    </Button>
-
-                    <Stack direction="row" spacing={1}>
-                      <Button
-                        startDecorator={<CheckRoundedIcon />}
-                        color="success"
-                        onClick={() => onApprove(String(item.id))}
-                        loading={isProcessing}
-                        sx={{ flex: "1 1 0%", minWidth: 120 }}
-                      >
-                        Approve
-                      </Button>
-                      <Button
-                        startDecorator={<CloseRoundedIcon />}
-                        color="danger"
-                        variant="outlined"
-                        onClick={() => onReject(String(item.id))}
-                        disabled={isProcessing}
-                        sx={{ flex: "1 1 0%", minWidth: 120 }}
-                      >
-                        Reject
-                      </Button>
-                    </Stack>
-                  </Stack>
+                  <ActionButtons
+                    item={item}
+                    onView={onView}
+                    onApprove={onApprove}
+                    onReject={onReject}
+                    isProcessing={isProcessing}
+                  />
                 </Box>
               </Card>
               </div>

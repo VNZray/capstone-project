@@ -1,19 +1,10 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { apiService } from "../../utils/api";
-import ApprovalTable from "./ApprovalTable";
+import ApprovalTable from "../approval/ApprovalTable";
 import OverviewCard from "./OverviewCard";
-import ViewModal from "./ViewModal";
-import {
-  Box,
-  Divider,
-  Grid,
-  IconButton,
-  Input,
-  Stack,
-  Typography,
-  Card,
-  CardContent,
-} from "@mui/joy";
+import ViewModal from "../approval/ViewModal";
+import NavCard from "../approval/NavCard";
+import { Box, Divider, Grid, IconButton, Input, Stack, Typography } from "@mui/joy";
 import RefreshRoundedIcon from "@mui/icons-material/RefreshRounded";
 import PlaceRoundedIcon from "@mui/icons-material/PlaceRounded";
 import EventRoundedIcon from "@mui/icons-material/EventRounded";
@@ -21,7 +12,8 @@ import BusinessRoundedIcon from "@mui/icons-material/BusinessRounded";
 import HotelRoundedIcon from "@mui/icons-material/HotelRounded";
 import DashboardRoundedIcon from "@mui/icons-material/DashboardRounded";
 import SearchRoundedIcon from "@mui/icons-material/SearchRounded";
-import "../styles/ApprovalDashboard.css";
+
+import "../styles/approval/ApprovalDashboard.css";
 
 interface PendingItem {
   id: string;
@@ -299,121 +291,25 @@ const ApprovalDashboard: React.FC = () => {
 
       {/* Navigation Cards */}
       <Grid container spacing={2} sx={{ mb: 3 }}>
-        <Grid xs={12} sm={6} md={2.4}>
-          <Card 
-            variant="soft" 
-            color={activeTab === "overview" ? "primary" : "neutral"}
-            sx={{ 
-              cursor: "pointer", 
-              transition: "all 0.2s ease",
-              "&:hover": { transform: "translateY(-2px)" },
-              backgroundColor: activeTab === "overview" ? "#93c5fd" : undefined
-            }}
-            onClick={() => setActiveTab("overview")}
-          >
-            <CardContent>
-              <Stack direction="row" spacing={1} alignItems="center" justifyContent="space-between">
-                <Stack>
-                  <Typography level="body-sm" sx={{ color: "text.tertiary" }}>Overview</Typography>
-                  <Typography level="h4">{allItems.length}</Typography>
-                </Stack>
-                <DashboardRoundedIcon />
-              </Stack>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid xs={12} sm={6} md={2.4}>
-          <Card 
-            variant="soft" 
-            color={activeTab === "tourist_spots" ? "primary" : "neutral"}
-            sx={{ 
-              cursor: "pointer", 
-              transition: "all 0.2s ease",
-              "&:hover": { transform: "translateY(-2px)" },
-              backgroundColor: activeTab === "tourist_spots" ? "#93c5fd" : undefined
-            }}
-            onClick={() => setActiveTab("tourist_spots")}
-          >
-            <CardContent>
-              <Stack direction="row" spacing={1} alignItems="center" justifyContent="space-between">
-                <Stack>
-                  <Typography level="body-sm" sx={{ color: "text.tertiary" }}>Tourist Spots</Typography>
-                  <Typography level="h4">{allItems.length}</Typography>
-                </Stack>
-                <PlaceRoundedIcon />
-              </Stack>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid xs={12} sm={6} md={2.4}>
-          <Card 
-            variant="soft" 
-            color={activeTab === "events" ? "primary" : "neutral"}
-            sx={{ 
-              cursor: "pointer", 
-              transition: "all 0.2s ease",
-              "&:hover": { transform: "translateY(-2px)" },
-              backgroundColor: activeTab === "events" ? "#93c5fd" : undefined
-            }}
-            onClick={() => setActiveTab("events")}
-          >
-            <CardContent>
-              <Stack direction="row" spacing={1} alignItems="center" justifyContent="space-between">
-                <Stack>
-                  <Typography level="body-sm" sx={{ color: "text.tertiary" }}>Events</Typography>
-                  <Typography level="h4">{mockEvents.length}</Typography>
-                </Stack>
-                <EventRoundedIcon />
-              </Stack>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid xs={12} sm={6} md={2.4}>
-          <Card 
-            variant="soft" 
-            color={activeTab === "businesses" ? "primary" : "neutral"}
-            sx={{ 
-              cursor: "pointer", 
-              transition: "all 0.2s ease",
-              "&:hover": { transform: "translateY(-2px)" },
-              backgroundColor: activeTab === "businesses" ? "#93c5fd" : undefined
-            }}
-            onClick={() => setActiveTab("businesses")}
-          >
-            <CardContent>
-              <Stack direction="row" spacing={1} alignItems="center" justifyContent="space-between">
-                <Stack>
-                  <Typography level="body-sm" sx={{ color: "text.tertiary" }}>Businesses</Typography>
-                  <Typography level="h4">{mockBusinesses.length}</Typography>
-                </Stack>
-                <BusinessRoundedIcon />
-              </Stack>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid xs={12} sm={6} md={2.4}>
-          <Card 
-            variant="soft" 
-            color={activeTab === "accommodations" ? "primary" : "neutral"}
-            sx={{ 
-              cursor: "pointer", 
-              transition: "all 0.2s ease",
-              "&:hover": { transform: "translateY(-2px)" },
-              backgroundColor: activeTab === "accommodations" ? "#93c5fd" : undefined
-            }}
-            onClick={() => setActiveTab("accommodations")}
-          >
-            <CardContent>
-              <Stack direction="row" spacing={1} alignItems="center" justifyContent="space-between">
-                <Stack>
-                  <Typography level="body-sm" sx={{ color: "text.tertiary" }}>Accommodations</Typography>
-                  <Typography level="h4">{mockAccommodations.length}</Typography>
-                </Stack>
-                <HotelRoundedIcon />
-              </Stack>
-            </CardContent>
-          </Card>
-        </Grid>
+        {(
+          [
+            { key: "overview", label: "Overview", count: allItems.length, icon: <DashboardRoundedIcon />, tab: "overview" as TabType },
+            { key: "tourist_spots", label: "Tourist Spots", count: allItems.length, icon: <PlaceRoundedIcon />, tab: "tourist_spots" as TabType },
+            { key: "events", label: "Events", count: mockEvents.length, icon: <EventRoundedIcon />, tab: "events" as TabType },
+            { key: "businesses", label: "Businesses", count: mockBusinesses.length, icon: <BusinessRoundedIcon />, tab: "businesses" as TabType },
+            { key: "accommodations", label: "Accommodations", count: mockAccommodations.length, icon: <HotelRoundedIcon />, tab: "accommodations" as TabType },
+          ] as const
+        ).map((n) => (
+          <Grid key={n.key} xs={12} sm={6} md={2.4}>
+            <NavCard
+              label={n.label}
+              count={n.count}
+              icon={n.icon}
+              active={activeTab === n.tab}
+              onClick={() => setActiveTab(n.tab)}
+            />
+          </Grid>
+        ))}
       </Grid>
 
       <Divider sx={{ mb: 3 }} />

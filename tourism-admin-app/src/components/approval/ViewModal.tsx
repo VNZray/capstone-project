@@ -11,7 +11,7 @@ import {
   Sheet,
 } from "@mui/joy";
 import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
-import "../styles/ViewModal.css";
+import "../styles/approval/OverviewCard.css";
 
 interface ViewModalProps {
   isOpen: boolean;
@@ -34,14 +34,15 @@ const ViewModal: React.FC<ViewModalProps> = ({ isOpen, onClose, item }) => {
 
   if (!isOpen || !item) return null;
 
-  const existingSpot = (item.existingSpot as Record<string, unknown> | undefined) ?? null;
+  const existingSpot =
+    (item.existingSpot as Record<string, unknown> | undefined) ?? null;
 
   // canonical list of attributes we want to show (order matters)
   const ATTRS: { field: string; label: string }[] = [
     { field: "name", label: "Name" },
     { field: "description", label: "Description" },
     { field: "type", label: "Type" },
-  { field: "category_id", label: "Category" },
+    { field: "category_id", label: "Category" },
     { field: "province", label: "Province" },
     { field: "municipality", label: "Municipality" },
     { field: "barangay", label: "Barangay" },
@@ -60,10 +61,13 @@ const ViewModal: React.FC<ViewModalProps> = ({ isOpen, onClose, item }) => {
     contact_email: ["contact_email", "email"],
     latitude: ["latitude", "lat"],
     longitude: ["longitude", "lng", "lon", "long"],
-    contact_phone: ["contact_phone", "phone", "mobile", "contact"]
+    contact_phone: ["contact_phone", "phone", "mobile", "contact"],
   };
 
-  const resolveField = (rec: Record<string, unknown> | null | undefined, field: string) => {
+  const resolveField = (
+    rec: Record<string, unknown> | null | undefined,
+    field: string
+  ) => {
     if (!rec) return null;
     const fallbacks = FALLBACK_KEYS[field] ?? [];
     // For category_id prefer human-readable fallbacks before the numeric id
@@ -109,8 +113,14 @@ const ViewModal: React.FC<ViewModalProps> = ({ isOpen, onClose, item }) => {
       const n = Number(String(v));
       return isNaN(n) ? "" : String(n);
     }
-    if (field.toLowerCase().includes("phone")) return String(v).replace(/\D/g, "");
-    if (field === "latitude" || field === "longitude" || field === "lat" || field === "lng") {
+    if (field.toLowerCase().includes("phone"))
+      return String(v).replace(/\D/g, "");
+    if (
+      field === "latitude" ||
+      field === "longitude" ||
+      field === "lat" ||
+      field === "lng"
+    ) {
       const n = Number(String(v));
       if (isNaN(n)) return "";
       // round to 6 decimals for comparison tolerance
@@ -118,7 +128,6 @@ const ViewModal: React.FC<ViewModalProps> = ({ isOpen, onClose, item }) => {
     }
     return String(v).trim().toLowerCase();
   };
-
 
   const isEdit = (item.action_type as string) === "edit";
 
@@ -131,7 +140,8 @@ const ViewModal: React.FC<ViewModalProps> = ({ isOpen, onClose, item }) => {
       const d = new Date(String(v));
       return isNaN(d.getTime()) ? String(v) : d.toLocaleString();
     }
-    if (field.toLowerCase().includes("phone")) return String(v).replace(/\D/g, "");
+    if (field.toLowerCase().includes("phone"))
+      return String(v).replace(/\D/g, "");
     return String(v);
   };
 
@@ -140,21 +150,41 @@ const ViewModal: React.FC<ViewModalProps> = ({ isOpen, onClose, item }) => {
       <ModalDialog
         variant="outlined"
         size="lg"
-        aria-label={isEdit ? `Edit Request: ${String(item.name ?? "")}` : String(item.name ?? "")}
+        aria-label={
+          isEdit
+            ? `Edit Request: ${String(item.name ?? "")}`
+            : String(item.name ?? "")
+        }
         sx={{ width: "95%", maxWidth: 1400 }}
       >
         <DialogTitle>
-          <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ width: '100%' }}>
-            <Typography level="title-lg">{isEdit ? `Edit Request: ${String(item.name ?? "")}` : String(item.name ?? "")}</Typography>
-            <IconButton variant="plain" color="neutral" onClick={onClose} aria-label="Close">
+          <Stack
+            direction="row"
+            alignItems="center"
+            justifyContent="space-between"
+            sx={{ width: "100%" }}
+          >
+            <Typography level="title-lg">
+              {isEdit
+                ? `Edit Request: ${String(item.name ?? "")}`
+                : String(item.name ?? "")}
+            </Typography>
+            <IconButton
+              variant="plain"
+              color="neutral"
+              onClick={onClose}
+              aria-label="Close"
+            >
               <CloseRoundedIcon />
             </IconButton>
           </Stack>
         </DialogTitle>
-        <DialogContent sx={{ maxHeight: '80vh', overflow: 'auto' }}>
+        <DialogContent sx={{ maxHeight: "80vh", overflow: "auto" }}>
           {isEdit ? (
             <Sheet variant="soft" sx={{ p: 2, borderRadius: 8 }}>
-              <Typography level="title-sm" sx={{ mb: 1 }}>Proposed vs Current</Typography>
+              <Typography level="title-sm" sx={{ mb: 1 }}>
+                Proposed vs Current
+              </Typography>
               <Divider sx={{ mb: 1 }} />
               <div className="comparison-table">
                 <div className="table-head label">Field</div>
@@ -164,12 +194,23 @@ const ViewModal: React.FC<ViewModalProps> = ({ isOpen, onClose, item }) => {
                   const cur = getCurrent(field);
                   const next = getProposed(field);
                   if (cur == null && next == null) return null; // skip empty rows
-                  const changed = normalize(field, cur) !== normalize(field, next);
+                  const changed =
+                    normalize(field, cur) !== normalize(field, next);
                   return (
                     <React.Fragment key={field}>
                       <div className="label">{label}</div>
-                      <div className={`current detail-row ${!cur ? 'muted' : ''}`}><span>{formatValue(field, cur)}</span></div>
-                      <div className={`proposed detail-row ${changed ? 'changed' : ''}`}><span>{formatValue(field, next)}</span></div>
+                      <div
+                        className={`current detail-row ${!cur ? "muted" : ""}`}
+                      >
+                        <span>{formatValue(field, cur)}</span>
+                      </div>
+                      <div
+                        className={`proposed detail-row ${
+                          changed ? "changed" : ""
+                        }`}
+                      >
+                        <span>{formatValue(field, next)}</span>
+                      </div>
                     </React.Fragment>
                   );
                 })}
@@ -177,7 +218,9 @@ const ViewModal: React.FC<ViewModalProps> = ({ isOpen, onClose, item }) => {
             </Sheet>
           ) : (
             <Sheet variant="soft" sx={{ p: 2, borderRadius: 8 }}>
-              <Typography level="title-sm" sx={{ mb: 1 }}>Details</Typography>
+              <Typography level="title-sm" sx={{ mb: 1 }}>
+                Details
+              </Typography>
               <Divider sx={{ mb: 1 }} />
               <div className="details-list">
                 {ATTRS.map(({ field, label }) => {

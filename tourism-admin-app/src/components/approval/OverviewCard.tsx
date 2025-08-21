@@ -1,6 +1,6 @@
 import React from "react";
 import { Card, CardContent, Typography, Stack, Chip, Button, Divider } from "@mui/joy";
-import "../styles/OverviewCard.css";
+import "../styles/approval/OverviewCard.css";
 
 interface OverviewCardProps {
   title: string;

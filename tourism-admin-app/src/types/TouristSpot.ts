@@ -13,15 +13,15 @@ export interface TouristSpot {
   entry_fee: number | null;
   spot_status: 'pending' | 'active' | 'inactive';
   is_featured: boolean;
-  category: string; // Name of the category
-  type: string;     // Name of the type
-  category_id: number; // Foreign key
-  type_id: number;     // Foreign key
+  category: string;
+  type: string;
+  category_id: number;
+  type_id: number;
   created_at: string;
   updated_at: string;
-  province: string; // Name of the province
-  municipality: string; // Name of the municipality
-  barangay: string; // Name of the barangay
+  province: string;
+  municipality: string;
+  barangay: string;
 }
 
 export interface Province {
