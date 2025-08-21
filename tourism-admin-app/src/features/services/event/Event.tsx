@@ -1,7 +1,6 @@
 import Text from "@/src/components/Text";
-import React from "react";
 
-const Event = () => {
+const Event: React.FC = () => {
   return (
     <>
       <Text variant="title">Event</Text>

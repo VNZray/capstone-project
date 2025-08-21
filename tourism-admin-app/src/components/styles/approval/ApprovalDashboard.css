@@ -1,0 +1,73 @@
+.approval-dashboard {
+	padding: 18px 20px;
+	max-width: 1400px;
+	margin: 0 auto;
+	box-sizing: border-box;
+}
+
+.dashboard-header {
+	text-align: left;
+	margin-bottom: 18px;
+}
+
+/* Loading spinner */
+.loading-spinner {
+	width: 40px;
+	height: 40px;
+	border: 4px solid #f3f3f3;
+	border-top: 4px solid #007bff;
+	border-radius: 50%;
+	animation: spin 1s linear infinite;
+	margin: 0 auto;
+}
+
+@keyframes spin {
+	0% { transform: rotate(0deg); }
+	100% { transform: rotate(360deg); }
+}
+
+/* Card grid tweaks to ensure cards don't overlap */
+.approval-cards-grid {
+	display: grid;
+	grid-template-columns: repeat(4, 1fr);
+	gap: 16px;
+}
+
+@media (max-width: 1200px) {
+	.approval-cards-grid { grid-template-columns: repeat(3, 1fr); }
+}
+@media (max-width: 860px) {
+	.approval-cards-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 520px) {
+	.approval-cards-grid { grid-template-columns: 1fr; }
+}
+
+/* Ensure local MUI card styles only */
+.approval-dashboard .MuiCard-root {
+	box-shadow: none;
+	border-radius: 10px;
+}
+
+.approval-dashboard .card-wrapper {
+	padding: 4px;
+	box-sizing: border-box;
+}
+
+/* small helper so buttons wrap on narrow cards */
+.action-buttons-wrap { display: flex; gap: 8px; flex-wrap: wrap; }
+
+.action-buttons-wrap .MuiButton-root {
+	align-items: center;
+}
+
+/* small helper for the inline actions box inside card footer */
+.card-actions-inline { display: flex; gap: 8px; align-items: center; }
+.card-actions-inline .MuiButton-root { flex: 0 0 auto; }
+
+/* make approve/reject exactly 50% width minus gap on xs to avoid overflow */
+@media (max-width: 599px) {
+	.approval-dashboard .MuiButton-root[role="button"] {
+		box-sizing: border-box;
+	}
+}

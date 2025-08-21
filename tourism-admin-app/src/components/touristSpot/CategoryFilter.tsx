@@ -1,6 +1,6 @@
 import React from 'react';
 import Text from '../Text';
-import '../styles/CategoryFilter.css';
+import '../styles/touristspots/CategoryFilter.css';
 
 interface CategoryFilterProps {
   categories: string[];

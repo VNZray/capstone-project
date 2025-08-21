@@ -1,6 +1,6 @@
 const API_BASE_URL = 'http://localhost:3000/api';
 
-import type { ApiResponse, TouristSpot, Province, Municipality, Barangay, Category, Type } from '../types';
+import type { ApiResponse, TouristSpot, Province, Municipality, Barangay, Category, Type, TouristSpotSchedule } from '../types';
 
 class ApiService {
   private async request<T>(
@@ -37,12 +37,14 @@ class ApiService {
     return response.data;
   }
 
-  async createTouristSpot(spotData: Partial<TouristSpot>): Promise<ApiResponse<TouristSpot>> {
+  async createTouristSpot(
+    spotData: Partial<TouristSpot> & { schedules?: TouristSpotSchedule[] }
+  ): Promise<ApiResponse<TouristSpot>> {
     const response = await this.request<TouristSpot>('/tourist-spots', {
       method: 'POST',
       body: JSON.stringify({
         ...spotData,
-        spot_status: 'pending'
+        spot_status: 'pending',
       }),
     });
     return response;
@@ -61,6 +63,23 @@ class ApiService {
     const response = await this.request<TouristSpot>(`/tourist-spots/${id}`, {
       method: 'PUT',
       body: JSON.stringify(spotData),
+    });
+    return response;
+  }
+
+  // Schedules
+  async getTouristSpotSchedules(id: string): Promise<TouristSpotSchedule[]> {
+    const response = await this.request<TouristSpotSchedule[]>(`/tourist-spots/${id}/schedules`);
+    return response.data;
+  }
+
+  async saveTouristSpotSchedules(
+    id: string,
+    schedules: TouristSpotSchedule[]
+  ): Promise<ApiResponse<{ updated: boolean }>> {
+    const response = await this.request<{ updated: boolean }>(`/tourist-spots/${id}/schedules`, {
+      method: 'PUT',
+      body: JSON.stringify({ schedules }),
     });
     return response;
   }

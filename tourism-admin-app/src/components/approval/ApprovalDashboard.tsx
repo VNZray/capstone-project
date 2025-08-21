@@ -1,10 +1,19 @@
-import React, { useEffect, useState } from "react";
-import Text from "../Text";
+import React, { useEffect, useMemo, useState } from "react";
 import { apiService } from "../../utils/api";
-import ApprovalTable from "./ApprovalTable";
+import ApprovalTable from "../approval/ApprovalTable";
 import OverviewCard from "./OverviewCard";
-import ViewModal from "./ViewModal";
-import "../styles/ApprovalDashboard.css";
+import ViewModal from "../approval/ViewModal";
+import NavCard from "../approval/NavCard";
+import { Box, Divider, Grid, IconButton, Input, Stack, Typography } from "@mui/joy";
+import RefreshRoundedIcon from "@mui/icons-material/RefreshRounded";
+import PlaceRoundedIcon from "@mui/icons-material/PlaceRounded";
+import EventRoundedIcon from "@mui/icons-material/EventRounded";
+import BusinessRoundedIcon from "@mui/icons-material/BusinessRounded";
+import HotelRoundedIcon from "@mui/icons-material/HotelRounded";
+import DashboardRoundedIcon from "@mui/icons-material/DashboardRounded";
+import SearchRoundedIcon from "@mui/icons-material/SearchRounded";
+
+import "../styles/approval/ApprovalDashboard.css";
 
 interface PendingItem {
   id: string;
@@ -50,13 +59,7 @@ const makeMock = (prefix: string) => [
     name: `${prefix} A`,
     action_type: "new" as const,
     submitted_at: "2024-01-15",
-  },
-  {
-    id: "2",
-    name: `${prefix} B`,
-    action_type: "edit" as const,
-    submitted_at: "2024-01-14",
-  },
+  }
 ];
 
 const ApprovalDashboard: React.FC = () => {
@@ -69,6 +72,7 @@ const ApprovalDashboard: React.FC = () => {
     unknown
   > | null>(null);
   const [processingId, setProcessingId] = useState<string | null>(null);
+  const [query, setQuery] = useState("");
 
   useEffect(() => {
     (async () => {
@@ -93,7 +97,6 @@ const ApprovalDashboard: React.FC = () => {
           } as PendingItem;
         });
 
-        // from the existing tourist spot record (if present) when enriching below.
         const transformedEditsBase = edits.map((e) => {
           const rec = (e as Record<string, unknown>) || {};
           return {
@@ -256,164 +259,142 @@ const ApprovalDashboard: React.FC = () => {
   const allPendingItems = [...pendingSpots, ...pendingEdits];
   const allItems: PendingItem[] = allPendingItems as PendingItem[];
 
+  const filteredItems = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return allItems;
+    return allItems.filter((i) => String(i.name ?? "").toLowerCase().includes(q));
+  }, [allItems, query]);
+
   if (loading)
     return (
-      <div className="approval-dashboard">
-        <div className="loading-container">
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 280 }}>
+        <Stack spacing={1} alignItems="center">
           <div className="loading-spinner" />
-          <Text variant="normal" color="text-color">
-            Loading approval data...
-          </Text>
-        </div>
-      </div>
+          <Typography level="body-md" sx={{ color: 'text.tertiary' }}>Loading approval data...</Typography>
+        </Stack>
+      </Box>
     );
 
   return (
-    <div className="approval-dashboard">
-      <div className="tab-navigation">
-        <button
-          className={`tab-button ${activeTab === "overview" ? "active" : ""}`}
-          onClick={() => setActiveTab("overview")}
-        >
-          <span className="tab-icon">📊</span>
-          <Text variant="normal" color="text-color">
-            OVERVIEW
-          </Text>
-        </button>
-        <button
-          className={`tab-button ${
-            activeTab === "tourist_spots" ? "active" : ""
-          }`}
-          onClick={() => setActiveTab("tourist_spots")}
-        >
-          <span className="tab-icon">📍</span>
-          <Text variant="normal" color="text-color">
-            TOURIST SPOTS ({allPendingItems.length})
-          </Text>
-        </button>
-        <button
-          className={`tab-button ${activeTab === "events" ? "active" : ""}`}
-          onClick={() => setActiveTab("events")}
-        >
-          <span className="tab-icon">📅</span>
-          <Text variant="normal" color="text-color">
-            EVENTS ({mockEvents.length})
-          </Text>
-        </button>
-        <button
-          className={`tab-button ${activeTab === "businesses" ? "active" : ""}`}
-          onClick={() => setActiveTab("businesses")}
-        >
-          <span className="tab-icon">🏢</span>
-          <Text variant="normal" color="text-color">
-            BUSINESSES ({mockBusinesses.length})
-          </Text>
-        </button>
-        <button
-          className={`tab-button ${
-            activeTab === "accommodations" ? "active" : ""
-          }`}
-          onClick={() => setActiveTab("accommodations")}
-        >
-          <span className="tab-icon">🛏️</span>
-          <Text variant="normal" color="text-color">
-            ACCOMMODATIONS ({mockAccommodations.length})
-          </Text>
-        </button>
-      </div>
+    <Box sx={{ p: { xs: 1.5, md: 3 }, maxWidth: 1400, mx: "auto" }}>
+      <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 3 }}>
+        <Box>
+          <Typography level="h3">Content Approvals</Typography>
+          <Typography level="body-md" sx={{ color: "text.tertiary" }}>
+            Review and manage submissions from the public and partners.
+          </Typography>
+        </Box>
+        <IconButton size="sm" variant="soft" color="neutral" onClick={refresh} aria-label="Refresh">
+          <RefreshRoundedIcon />
+        </IconButton>
+      </Stack>
 
-      <div className="tab-content">
-        {activeTab === "overview" && (
-          <div className="overview-tab">
-            <Text variant="sub-title" color="text-color" className="tab-title">
-              Overview - All Pending Items
-            </Text>
-            <div className="overview-grid">
-              <OverviewCard
-                title="Tourist Spots"
-                count={allPendingItems.length}
-                icon="📍"
-                items={allItems}
-                onApprove={handleApprove}
-                onView={handleView}
-              />
-              <OverviewCard
-                title="Events"
-                count={mockEvents.length}
-                icon="📅"
-                items={mockEvents}
-              />
-              <OverviewCard
-                title="Businesses"
-                count={mockBusinesses.length}
-                icon="🏢"
-                items={mockBusinesses}
-              />
-              <OverviewCard
-                title="Accommodations"
-                count={mockAccommodations.length}
-                icon="🛏️"
-                items={mockAccommodations}
-              />
-            </div>
-          </div>
-        )}
+      {/* Navigation Cards */}
+      <Grid container spacing={2} sx={{ mb: 3 }}>
+        {(
+          [
+            { key: "overview", label: "Overview", count: allItems.length, icon: <DashboardRoundedIcon />, tab: "overview" as TabType },
+            { key: "tourist_spots", label: "Tourist Spots", count: allItems.length, icon: <PlaceRoundedIcon />, tab: "tourist_spots" as TabType },
+            { key: "events", label: "Events", count: mockEvents.length, icon: <EventRoundedIcon />, tab: "events" as TabType },
+            { key: "businesses", label: "Businesses", count: mockBusinesses.length, icon: <BusinessRoundedIcon />, tab: "businesses" as TabType },
+            { key: "accommodations", label: "Accommodations", count: mockAccommodations.length, icon: <HotelRoundedIcon />, tab: "accommodations" as TabType },
+          ] as const
+        ).map((n) => (
+          <Grid key={n.key} xs={12} sm={6} md={2.4}>
+            <NavCard
+              label={n.label}
+              count={n.count}
+              icon={n.icon}
+              active={activeTab === n.tab}
+              onClick={() => setActiveTab(n.tab)}
+            />
+          </Grid>
+        ))}
+      </Grid>
 
-        {activeTab === "tourist_spots" && (
+      <Divider sx={{ mb: 3 }} />
+
+      {/* Content Sections */}
+      {activeTab === "overview" && (
+        <Grid container spacing={2}>
+          <Grid xs={12} md={6} lg={3}>
+            <OverviewCard
+              title="Tourist Spots"
+              count={allItems.length}
+              icon="📍"
+              items={allItems}
+              onApprove={handleApprove}
+              onView={handleView}
+            />
+          </Grid>
+          <Grid xs={12} md={6} lg={3}>
+            <OverviewCard title="Events" count={mockEvents.length} icon="📅" items={mockEvents} />
+          </Grid>
+          <Grid xs={12} md={6} lg={3}>
+            <OverviewCard title="Businesses" count={mockBusinesses.length} icon="🏢" items={mockBusinesses} />
+          </Grid>
+          <Grid xs={12} md={6} lg={3}>
+            <OverviewCard title="Accommodations" count={mockAccommodations.length} icon="🛏️" items={mockAccommodations} />
+          </Grid>
+        </Grid>
+      )}
+
+      {activeTab === "tourist_spots" && (
+        <>
+          <Stack direction={{ xs: "column", sm: "row" }} spacing={1} alignItems={{ xs: "stretch", sm: "center" }} justifyContent="space-between" sx={{ mb: 3 }}>
+            <Input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              startDecorator={<SearchRoundedIcon />}
+              placeholder="Search tourist spots"
+            />
+          </Stack>
           <ApprovalTable
-            items={allItems}
+            items={filteredItems}
             contentType="tourist spots"
             onView={handleView}
             onApprove={handleApprove}
             onReject={handleReject}
             processingId={processingId}
           />
-        )}
+        </>
+      )}
 
-        {activeTab === "events" && (
-          <ApprovalTable
-            items={mockEvents}
-            contentType="events"
-            onView={handleView}
-            onApprove={() => alert("Events approval not yet implemented")}
-            onReject={() => alert("Events rejection not yet implemented")}
-            processingId={processingId}
-          />
-        )}
+      {activeTab === "events" && (
+        <ApprovalTable
+          items={mockEvents}
+          contentType="events"
+          onView={handleView}
+          onApprove={() => alert("Events approval not yet implemented")}
+          onReject={() => alert("Events rejection not yet implemented")}
+          processingId={processingId}
+        />
+      )}
 
-        {activeTab === "businesses" && (
-          <ApprovalTable
-            items={mockBusinesses}
-            contentType="businesses"
-            onView={handleView}
-            onApprove={() => alert("Businesses approval not yet implemented")}
-            onReject={() => alert("Businesses rejection not yet implemented")}
-            processingId={processingId}
-          />
-        )}
+      {activeTab === "businesses" && (
+        <ApprovalTable
+          items={mockBusinesses}
+          contentType="businesses"
+          onView={handleView}
+          onApprove={() => alert("Businesses approval not yet implemented")}
+          onReject={() => alert("Businesses rejection not yet implemented")}
+          processingId={processingId}
+        />
+      )}
 
-        {activeTab === "accommodations" && (
-          <ApprovalTable
-            items={mockAccommodations}
-            contentType="accommodations"
-            onView={handleView}
-            onApprove={() =>
-              alert("Accommodations approval not yet implemented")
-            }
-            onReject={() =>
-              alert("Accommodations rejection not yet implemented")
-            }
-            processingId={processingId}
-          />
-        )}
-      </div>
+      {activeTab === "accommodations" && (
+        <ApprovalTable
+          items={mockAccommodations}
+          contentType="accommodations"
+          onView={handleView}
+          onApprove={() => alert("Accommodations approval not yet implemented")}
+          onReject={() => alert("Accommodations rejection not yet implemented")}
+          processingId={processingId}
+        />
+      )}
 
-      <ViewModal
-        isOpen={!!selectedItem}
-        onClose={closeModal}
-        item={selectedItem ?? {}}
-      />
-    </div>
+      <ViewModal isOpen={!!selectedItem} onClose={closeModal} item={selectedItem ?? {}} />
+    </Box>
   );
 };
 

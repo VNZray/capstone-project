@@ -75,8 +75,7 @@ const Register = () => {
           phone_number: phoneNumber.trim(),
           business_type: userType[0] || null,
         }),
-      });
-
+  });
       if (!ownerRes.ok) {
         const { error } = await ownerRes.json();
         throw new Error(error || "Failed to register owner");
@@ -109,8 +108,9 @@ const Register = () => {
       alert(`User created! User ID: ${userId}`);
 
       navigate("/login");
-    } catch (err: any) {
-      setErrorMessage(err.message || "Something went wrong. Please try again.");
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err ?? "Unknown error");
+      setErrorMessage(message || "Something went wrong. Please try again.");
     }
   };
 
@@ -143,6 +143,22 @@ const Register = () => {
               Sign Up
             </Text>
           </div>
+
+          {errorMessage && (
+            <div
+              role="alert"
+              className="error-message"
+              style={{
+                color: "#d32f2f",
+                background: "#fdecea",
+                padding: "8px 12px",
+                borderRadius: 8,
+                marginTop: 8,
+              }}
+            >
+              {errorMessage}
+            </div>
+          )}
 
           <div className="form-fields">
             {/* Row 1 - Name */}

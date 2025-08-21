@@ -1,7 +1,6 @@
 import Text from "@/src/components/Text";
-import React from "react";
 
-const Dashboard = () => {
+const Dashboard: React.FC = () => {
   return (
     <>
       <Text variant="title">Dashboard</Text>

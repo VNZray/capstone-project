@@ -1,7 +1,6 @@
 import Text from "@/src/components/Text";
-import React from "react";
 
-const Offer = () => {
+const Offer: React.FC = () => {
   return (
     <>
       <Text variant="title">Offer</Text>

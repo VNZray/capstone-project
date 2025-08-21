@@ -1,7 +1,6 @@
 import Text from "@/src/components/Text";
-import React from "react";
 
-const Shop = () => {
+const Shop: React.FC = () => {
   return (
     <>
       <Text variant="title">Shop</Text>
