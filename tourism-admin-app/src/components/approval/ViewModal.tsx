@@ -214,7 +214,7 @@ const ViewModal: React.FC<ViewModalProps> = ({ isOpen, onClose, item, onApprove,
                 {ATTRS.map(({ field, label }) => {
                   const cur = getCurrent(field);
                   const next = getProposed(field);
-                  if (cur == null && next == null) return null; // skip empty rows
+                  if (cur == null && next == null) return null;
                   const changed =
                     normalize(field, cur) !== normalize(field, next);
                   return (

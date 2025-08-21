@@ -35,7 +35,7 @@ const OverviewCard: React.FC<OverviewCardProps> = ({
   onApprove,
   onView,
 }) => {
-  // reference onApprove to avoid 'declared but never read' TypeScript error in some strict configs
+
   void onApprove;
 
   return (

@@ -89,7 +89,7 @@ export const createTouristSpot = async (request, response) => {
       entry_fee,
       category_id,
       type_id,
-  schedules, // optional: array of { day_of_week, open_time, close_time, is_closed }
+      schedules,
     } = request.body;
 
     if (
@@ -199,7 +199,6 @@ export const createTouristSpot = async (request, response) => {
       const values = [];
       const placeholders = [];
       schedules.forEach((s) => {
-        // Basic validation/coercion
         const day = Number(s.day_of_week);
         const isClosed = !!s.is_closed;
         const open = isClosed ? null : (s.open_time ?? null);
@@ -233,8 +232,7 @@ export const getTouristSpotSchedules = async (req, res) => {
   try {
     const { id } = req.params;
     const [rows] = await db.execute(
-      `SELECT id, day_of_week, DATE_FORMAT(open_time, '%H:%i') as open_time, DATE_FORMAT(close_time, '%H:%i') as close_time, is_closed
-       FROM tourist_spot_schedules WHERE tourist_spot_id = ? ORDER BY day_of_week ASC`,
+      `SELECT * FROM tourist_spot_schedules WHERE tourist_spot_id = ? ORDER BY day_of_week ASC`,
       [id]
     );
     res.json({ success: true, data: rows });
@@ -243,7 +241,7 @@ export const getTouristSpotSchedules = async (req, res) => {
   }
 };
 
-// Replace schedules for a tourist spot (atomic)
+// Replace schedules for a tourist spot
 export const upsertTouristSpotSchedules = async (req, res) => {
   const { id } = req.params;
   const { schedules } = req.body;
@@ -314,7 +312,7 @@ export const updateTouristSpot = async (req, res) => {
     ] = await Promise.all([
       db.execute("SELECT id FROM tourist_spots WHERE id = ?", [id]),
       db.execute("SELECT id FROM category WHERE id = ?", [category_id]),
-  db.execute(`SELECT id FROM category WHERE id = ? AND type_id = ?`, [category_id, type_id]),
+      db.execute(`SELECT id FROM category WHERE id = ? AND type_id = ?`, [category_id, type_id]),
       db.execute("SELECT id FROM province WHERE id = ?", [province_id]),
       db.execute("SELECT id FROM municipality WHERE id = ? AND province_id = ?", [municipality_id, province_id]),
       db.execute("SELECT id FROM barangay WHERE id = ? AND municipality_id = ?", [barangay_id, municipality_id]),
@@ -432,7 +430,7 @@ export const getCategoriesAndTypes = async (request, response) => {
       "SELECT * FROM type ORDER BY type ASC"
     );
 
-    // types are linked via category.type_id -> type.id (schema swapped)
+    // types are linked via category.type_id -> type.id
     const [categories] = await db.execute(
       `SELECT c.* FROM category c INNER JOIN type t ON c.type_id = t.id WHERE t.id = 4 ORDER BY c.category ASC`
     );

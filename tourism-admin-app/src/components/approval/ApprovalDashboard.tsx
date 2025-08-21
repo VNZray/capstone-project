@@ -216,7 +216,6 @@ const ApprovalDashboard: React.FC = () => {
         apiService.getPendingItems("tourist_spots"),
         apiService.getPendingEditsByEntity("tourist_spots"),
       ]);
-      // reuse effect logic by setting state directly (simple refresh)
       const spotsArr = (spotsData as unknown[] | null) || [];
       setPendingSpots(
         spotsArr.map((s) => {
