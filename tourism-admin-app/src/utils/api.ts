@@ -1,6 +1,7 @@
 const API_BASE_URL = 'http://localhost:3000/api';
 
 import type { ApiResponse, TouristSpot, Province, Municipality, Barangay, Category, Type, TouristSpotSchedule } from '../types';
+import type { EntityType } from '../types/approval';
 
 class ApiService {
   private async request<T>(
@@ -84,46 +85,6 @@ class ApiService {
     return response;
   }
 
-  // Approval system methods - tourist spots only
-  async getPendingTouristSpots(): Promise<TouristSpot[]> {
-    const response = await this.request<TouristSpot[]>('/approval/pending-spots');
-    return response.data;
-  }
-
-  async getPendingEditRequests(): Promise<unknown[]> {
-    const response = await this.request<unknown[]>('/approval/pending-edits');
-    return response.data;
-  }
-
-  async approveTouristSpot(id: string): Promise<ApiResponse<void>> {
-    const response = await this.request<void>(`/approval/approve-spot/${id}`, {
-      method: 'PUT',
-    });
-    return response;
-  }
-
-  async approveEditRequest(id: string): Promise<ApiResponse<void>> {
-    const response = await this.request<void>(`/approval/approve-edit/${id}`, {
-      method: 'PUT',
-    });
-    return response;
-  }
-
-  async rejectEditRequest(id: string, reason?: string): Promise<ApiResponse<void>> {
-    const response = await this.request<void>(`/approval/reject-edit/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify({ reason }),
-    });
-    return response;
-  }
-
-  async rejectTouristSpot(id: string, reason?: string): Promise<ApiResponse<void>> {
-    const response = await this.request<void>(`/approval/reject-spot/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify({ reason }),
-    });
-    return response;
-  }
 
   async deleteTouristSpot(id: string): Promise<void> {
     await this.request(`/tourist-spots/${id}`, {
@@ -165,6 +126,65 @@ class ApiService {
   async getBarangaysByMunicipality(municipality_id: number): Promise<Barangay[]> {
     const response = await this.request<Barangay[]>(`/tourist-spots/barangays/${municipality_id}`);
     return response.data;
+  }
+
+
+  private approvalPathsFor(entity: EntityType) {
+    switch (entity) {
+      case 'tourist_spots':
+        return {
+          pendingNew: '/approval/pending-spots',
+          pendingEdits: '/approval/pending-edits',
+          approveNew: (id: string) => `/approval/approve-spot/${id}`,
+          approveEdit: (id: string) => `/approval/approve-edit/${id}`,
+          rejectNew: (id: string) => `/approval/reject-spot/${id}`,
+          rejectEdit: (id: string) => `/approval/reject-edit/${id}`,
+        } as const;
+      case 'events':
+      case 'businesses':
+      case 'accommodations':
+      default:
+        return {
+          pendingNew: `/approval/${entity}/pending`,
+          pendingEdits: `/approval/${entity}/pending-edits`,
+          approveNew: (id: string) => `/approval/${entity}/approve/${id}`,
+          approveEdit: (id: string) => `/approval/${entity}/approve-edit/${id}`,
+          rejectNew: (id: string) => `/approval/${entity}/reject/${id}`,
+          rejectEdit: (id: string) => `/approval/${entity}/reject-edit/${id}`,
+        } as const;
+    }
+  }
+
+  async getPendingItems(entity: EntityType): Promise<unknown[]> {
+    const paths = this.approvalPathsFor(entity);
+    const response = await this.request<unknown[]>(paths.pendingNew);
+    return (response && (response as ApiResponse<unknown[]>).data) || [];
+  }
+
+  async getPendingEditsByEntity(entity: EntityType): Promise<unknown[]> {
+    const paths = this.approvalPathsFor(entity);
+    const response = await this.request<unknown[]>(paths.pendingEdits);
+    return (response && (response as ApiResponse<unknown[]>).data) || [];
+  }
+
+  async approveNewEntity(entity: EntityType, id: string): Promise<ApiResponse<void>> {
+    const paths = this.approvalPathsFor(entity);
+    return this.request<void>(paths.approveNew(id), { method: 'PUT' });
+  }
+
+  async approveEditEntity(entity: EntityType, id: string): Promise<ApiResponse<void>> {
+    const paths = this.approvalPathsFor(entity);
+    return this.request<void>(paths.approveEdit(id), { method: 'PUT' });
+  }
+
+  async rejectNewEntity(entity: EntityType, id: string, reason?: string): Promise<ApiResponse<void>> {
+    const paths = this.approvalPathsFor(entity);
+    return this.request<void>(paths.rejectNew(id), { method: 'PUT', body: JSON.stringify({ reason }) });
+  }
+
+  async rejectEditEntity(entity: EntityType, id: string, reason?: string): Promise<ApiResponse<void>> {
+    const paths = this.approvalPathsFor(entity);
+    return this.request<void>(paths.rejectEdit(id), { method: 'PUT', body: JSON.stringify({ reason }) });
   }
 }
 

@@ -1,3 +1,9 @@
+export type EntityType =
+  | "tourist_spots"
+  | "events"
+  | "businesses"
+  | "accommodations";
+
 export type ApprovalTableItem = Record<string, unknown> & {
   id: string;
   name: string;
@@ -5,4 +11,5 @@ export type ApprovalTableItem = Record<string, unknown> & {
   submitted_at?: string;
   created_at?: string;
   description?: string;
+  entityType?: EntityType;
 };

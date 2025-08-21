@@ -353,6 +353,7 @@ export const submitEditRequest = async (req, res) => {
       name, description, province_id, municipality_id, barangay_id,
       latitude, longitude, contact_phone, contact_email, website,
       entry_fee, category_id, type_id,
+      spot_status, is_featured,
     } = req.body;
 
     if (
@@ -369,9 +370,9 @@ export const submitEditRequest = async (req, res) => {
     const [
       [spot], [cat], [type], [prov], [mun], [bar]
     ] = await Promise.all([
-      db.execute("SELECT id FROM tourist_spots WHERE id = ?", [id]),
+      db.execute("SELECT id, spot_status FROM tourist_spots WHERE id = ?", [id]),
       db.execute("SELECT id FROM category WHERE id = ?", [category_id]),
-  db.execute(`SELECT id FROM category WHERE id = ? AND type_id = ?`, [category_id, type_id]),
+      db.execute(`SELECT id FROM category WHERE id = ? AND type_id = ?`, [category_id, type_id]),
       db.execute("SELECT id FROM province WHERE id = ?", [province_id]),
       db.execute("SELECT id FROM municipality WHERE id = ? AND province_id = ?", [municipality_id, province_id]),
       db.execute("SELECT id FROM barangay WHERE id = ? AND municipality_id = ?", [barangay_id, municipality_id]),
@@ -395,16 +396,21 @@ export const submitEditRequest = async (req, res) => {
         message: "There is already a pending edit request for this tourist spot.",
       });
 
+    const currentStatus = Array.isArray(spot) && spot[0] && spot[0].spot_status ? spot[0].spot_status : null;
+    const statusToSave = typeof spot_status !== 'undefined' && spot_status !== null ? spot_status : currentStatus;
+    const featuredToSave = typeof is_featured !== 'undefined' && is_featured !== null ? is_featured : 0;
+
     await db.execute(
       `INSERT INTO tourist_spot_edits (
         tourist_spot_id, name, description, province_id, municipality_id, barangay_id,
         latitude, longitude, contact_phone, contact_email, website, entry_fee,
         spot_status, is_featured, category_id, type_id, approval_status
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active', 0, ?, ?, 'pending')`,
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')`,
       [
         id, name, description, province_id, municipality_id, barangay_id,
         latitude ?? null, longitude ?? null, contact_phone, contact_email ?? null,
-        website ?? null, entry_fee ?? null, category_id, type_id,
+        website ?? null, entry_fee ?? null,
+        statusToSave, featuredToSave, category_id, type_id,
       ]
     );
 

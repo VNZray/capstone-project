@@ -16,6 +16,8 @@ import {
   Textarea,
   Autocomplete,
   Button,
+  Select,
+  Option,
   Divider,
   Switch,
 } from "@mui/joy";
@@ -39,7 +41,7 @@ interface TouristSpotFormProps {
 type Option = { id: number; label: string };
 
 type DaySchedule = {
-  dayIndex: number; // 0..6 = Mon..Sun for UI
+  dayIndex: number;
   is_closed: boolean;
   open_time: string;
   close_time: string;
@@ -67,6 +69,7 @@ const TouristSpotForm: React.FC<TouristSpotFormProps> = ({
     entry_fee: "",
     category_id: "3",
     type_id: "",
+    spot_status: "" as "" | "pending" | "active" | "inactive",
   });
   const [loading, setLoading] = useState(false);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -168,6 +171,8 @@ const TouristSpotForm: React.FC<TouristSpotFormProps> = ({
         entry_fee: initialData.entry_fee?.toString() || "",
         category_id: initialData.category_id.toString(),
         type_id: initialData.type_id.toString(),
+        spot_status:
+          (initialData.spot_status as "pending" | "active" | "inactive") || "",
       });
       // load schedules from API
       (async () => {
@@ -205,6 +210,7 @@ const TouristSpotForm: React.FC<TouristSpotFormProps> = ({
         entry_fee: "",
         category_id: "3",
         type_id: "",
+        spot_status: "" as "" | "pending" | "active" | "inactive",
       });
       setSchedules(
         Array.from({ length: 7 }, (_, idx) => ({
@@ -218,7 +224,9 @@ const TouristSpotForm: React.FC<TouristSpotFormProps> = ({
   }, [mode, initialData, isVisible, daysOfWeek]);
 
   const handleInputChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >
   ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({
@@ -290,7 +298,14 @@ const TouristSpotForm: React.FC<TouristSpotFormProps> = ({
         onSpotAdded?.();
       } else {
         if (!initialData?.id) throw new Error("No ID provided for update");
-        await apiService.submitEditRequest(initialData.id, spotData);
+        await apiService.submitEditRequest(initialData.id, {
+          ...spotData,
+          ...(formData.spot_status
+            ? {
+                spot_status: formData.spot_status as "active" | "inactive",
+              }
+            : {}),
+        });
         alert(
           "Edit request submitted successfully! It is now pending admin approval."
         );
@@ -609,6 +624,25 @@ const TouristSpotForm: React.FC<TouristSpotFormProps> = ({
                     </FormControl>
                   </Grid>
                 </Grid>
+                {mode === "edit" && (
+                  <FormControl>
+                    <FormLabel>Status</FormLabel>
+                    <Select
+                      value={formData.spot_status}
+                      onChange={(_e, value) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          spot_status: (value as string) as "pending" | "active" | "inactive",
+                        }))
+                      }
+                      slotProps={{ root: { sx: { width: '100%' } } }}
+                    >
+                      <Option value="pending">Pending</Option>
+                      <Option value="active">Active</Option>
+                      <Option value="inactive">Inactive</Option>
+                    </Select>
+                  </FormControl>
+                )}
               </Stack>
             </Grid>
           </Grid>
