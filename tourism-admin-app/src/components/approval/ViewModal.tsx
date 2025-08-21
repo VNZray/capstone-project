@@ -9,17 +9,23 @@ import {
   Stack,
   Divider,
   Sheet,
+  Box,
+  Button,
 } from "@mui/joy";
 import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
-import "../styles/approval/OverviewCard.css";
+import CheckRoundedIcon from "@mui/icons-material/CheckRounded";
+import "../styles/approval/ViewModal.css";
 
 interface ViewModalProps {
   isOpen: boolean;
   onClose: () => void;
   item: Record<string, unknown> | null;
+  onApprove?: (id: string) => void;
+  onReject?: (id: string) => void;
+  processingId?: string | null;
 }
 
-const ViewModal: React.FC<ViewModalProps> = ({ isOpen, onClose, item }) => {
+const ViewModal: React.FC<ViewModalProps> = ({ isOpen, onClose, item, onApprove, onReject, processingId }) => {
   const modalRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -130,6 +136,7 @@ const ViewModal: React.FC<ViewModalProps> = ({ isOpen, onClose, item }) => {
   };
 
   const isEdit = (item.action_type as string) === "edit";
+  const isNew = (item.action_type as string) === "new";
 
   // showVal removed in favor of formatValue
 
@@ -143,6 +150,20 @@ const ViewModal: React.FC<ViewModalProps> = ({ isOpen, onClose, item }) => {
     if (field.toLowerCase().includes("phone"))
       return String(v).replace(/\D/g, "");
     return String(v);
+  };
+
+  const id = String(item.id ?? "");
+
+  const handleApproveClick = () => {
+    if (!id) return;
+    onApprove?.(id);
+    onClose();
+  };
+
+  const handleRejectClick = () => {
+    if (!id) return;
+    onReject?.(id);
+    onClose();
   };
 
   return (
@@ -179,7 +200,7 @@ const ViewModal: React.FC<ViewModalProps> = ({ isOpen, onClose, item }) => {
             </IconButton>
           </Stack>
         </DialogTitle>
-        <DialogContent sx={{ maxHeight: "80vh", overflow: "auto" }}>
+  <DialogContent sx={{ maxHeight: "80vh", overflow: "auto" }}>
           {isEdit ? (
             <Sheet variant="soft" sx={{ p: 2, borderRadius: 8 }}>
               <Typography level="title-sm" sx={{ mb: 1 }}>
@@ -193,7 +214,7 @@ const ViewModal: React.FC<ViewModalProps> = ({ isOpen, onClose, item }) => {
                 {ATTRS.map(({ field, label }) => {
                   const cur = getCurrent(field);
                   const next = getProposed(field);
-                  if (cur == null && next == null) return null; // skip empty rows
+                  if (cur == null && next == null) return null;
                   const changed =
                     normalize(field, cur) !== normalize(field, next);
                   return (
@@ -202,14 +223,14 @@ const ViewModal: React.FC<ViewModalProps> = ({ isOpen, onClose, item }) => {
                       <div
                         className={`current detail-row ${!cur ? "muted" : ""}`}
                       >
-                        <span>{formatValue(field, cur)}</span>
+                        <span style={{ color: isNew && !cur ? '#222' : undefined }}>{formatValue(field, cur)}</span>
                       </div>
                       <div
                         className={`proposed detail-row ${
                           changed ? "changed" : ""
                         }`}
                       >
-                        <span>{formatValue(field, next)}</span>
+                        <span style={{ fontWeight: isNew && next ? 600 : undefined }}>{formatValue(field, next)}</span>
                       </div>
                     </React.Fragment>
                   );
@@ -229,7 +250,7 @@ const ViewModal: React.FC<ViewModalProps> = ({ isOpen, onClose, item }) => {
                   return (
                     <div className="detail-section" key={field}>
                       <div className="card-title">{label}</div>
-                      <div className="normal">{formatValue(field, v)}</div>
+                      <div className="normal" style={{ color: isNew ? '#222' : undefined }}>{formatValue(field, v)}</div>
                     </div>
                   );
                 })}
@@ -237,6 +258,26 @@ const ViewModal: React.FC<ViewModalProps> = ({ isOpen, onClose, item }) => {
             </Sheet>
           )}
         </DialogContent>
+        <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end', p: 2, pt: 0 }}>
+          <Button
+            variant="outlined"
+            color="danger"
+            onClick={handleRejectClick}
+            disabled={!onReject || (processingId != null && processingId === id)}
+            startDecorator={<CloseRoundedIcon />}
+          >
+            Reject
+          </Button>
+          <Button
+            variant="solid"
+            color="success"
+            onClick={handleApproveClick}
+            disabled={!onApprove || (processingId != null && processingId === id)}
+            startDecorator={<CheckRoundedIcon />}
+          >
+            Approve
+          </Button>
+        </Box>
       </ModalDialog>
     </Modal>
   );
