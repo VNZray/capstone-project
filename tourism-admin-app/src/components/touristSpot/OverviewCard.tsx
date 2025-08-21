@@ -25,6 +25,7 @@ const OverviewCard: React.FC<OverviewCardProps> = ({
 }) => {
   // reference onApprove to avoid 'declared but never read' TypeScript error in some strict configs
   void onApprove;
+
   return (
     <Card variant="outlined" sx={{ height: "100%" }}>
       <CardContent>

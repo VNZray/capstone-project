@@ -12,7 +12,7 @@ type Props = {
 
 const containerStyle = {
   width: "100%",
-  height: "450px",
+  height: "350px",
   borderRadius: "12px",
 };
 

@@ -67,37 +67,7 @@ const makeMock = (prefix: string) => [
     name: `${prefix} A`,
     action_type: "new" as const,
     submitted_at: "2024-01-15",
-  },
-  {
-    id: "2",
-    name: `${prefix} B`,
-    action_type: "edit" as const,
-    submitted_at: "2024-01-14",
-  },
-  {
-    id: "1",
-    name: `${prefix} A`,
-    action_type: "new" as const,
-    submitted_at: "2024-01-15",
-  },
-  {
-    id: "2",
-    name: `${prefix} B`,
-    action_type: "edit" as const,
-    submitted_at: "2024-01-14",
-  },
-  {
-    id: "1",
-    name: `${prefix} A`,
-    action_type: "new" as const,
-    submitted_at: "2024-01-15",
-  },
-  {
-    id: "2",
-    name: `${prefix} B`,
-    action_type: "edit" as const,
-    submitted_at: "2024-01-14",
-  },
+  }
 ];
 
 const ApprovalDashboard: React.FC = () => {

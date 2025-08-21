@@ -172,7 +172,9 @@ const TouristSpotForm: React.FC<TouristSpotFormProps> = ({
       // load schedules from API
       (async () => {
         try {
-          const scheds = await apiService.getTouristSpotSchedules(initialData.id);
+          const scheds = await apiService.getTouristSpotSchedules(
+            initialData.id
+          );
           // Map API day_of_week (0..6) to UI DaySchedule preserving order Monday..Sunday
           const ui = Array.from({ length: 7 }, (_, idx) => {
             const found = scheds.find((s) => s.day_of_week === idx);
@@ -185,7 +187,7 @@ const TouristSpotForm: React.FC<TouristSpotFormProps> = ({
           });
           setSchedules(ui);
         } catch (e) {
-          console.warn('No schedules yet or failed to load schedules', e);
+          console.warn("No schedules yet or failed to load schedules", e);
         }
       })();
     } else if (mode === "add") {
@@ -280,7 +282,10 @@ const TouristSpotForm: React.FC<TouristSpotFormProps> = ({
       }));
 
       if (mode === "add") {
-        await apiService.createTouristSpot({ ...spotData, schedules: mappedSchedules });
+        await apiService.createTouristSpot({
+          ...spotData,
+          schedules: mappedSchedules,
+        });
         alert("Spot added successfully!");
         onSpotAdded?.();
       } else {
@@ -441,6 +446,7 @@ const TouristSpotForm: React.FC<TouristSpotFormProps> = ({
                       alignItems="center"
                       key={sched.dayIndex}
                     >
+                      <Grid xs={12} sm={1}></Grid>
                       <Grid xs={12} sm={2}>
                         <FormLabel>{daysOfWeek[sched.dayIndex]}</FormLabel>
                       </Grid>
@@ -500,6 +506,7 @@ const TouristSpotForm: React.FC<TouristSpotFormProps> = ({
                           />
                         </FormControl>
                       </Grid>
+                      <Grid xs={12} sm={1}></Grid>
                     </Grid>
                   ))}
                 </Stack>
@@ -621,7 +628,7 @@ const TouristSpotForm: React.FC<TouristSpotFormProps> = ({
             >
               Cancel
             </Button>
-            {mode === 'edit' && initialData?.id && (
+            {mode === "edit" && initialData?.id && (
               <Button
                 type="button"
                 variant="outlined"
@@ -636,11 +643,14 @@ const TouristSpotForm: React.FC<TouristSpotFormProps> = ({
                       open_time: s.is_closed ? null : s.open_time,
                       close_time: s.is_closed ? null : s.close_time,
                     }));
-                    await apiService.saveTouristSpotSchedules(initialData.id, mapped);
-                    alert('Schedules saved');
+                    await apiService.saveTouristSpotSchedules(
+                      initialData.id,
+                      mapped
+                    );
+                    alert("Schedules saved");
                   } catch (e) {
                     console.error(e);
-                    alert('Failed to save schedules');
+                    alert("Failed to save schedules");
                   } finally {
                     setLoading(false);
                   }
