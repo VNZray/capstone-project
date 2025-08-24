@@ -12,7 +12,9 @@ type TextVariant =
   | "bold"
   | "medium"
   | "label"
-  | "header-title";
+  | "header-title"
+  | "header-email"
+  | "header-name";
 
 type ColorVariant =
   | "primary-color"
@@ -29,9 +31,12 @@ type ColorVariant =
 
 interface TextProps {
   variant?: TextVariant;
-  color?: ColorVariant;
+  color?: ColorVariant | string;
   className?: string;
   children: React.ReactNode;
+  style?: React.CSSProperties;
+  margin?: string | number;
+  justify?: string;
 }
 
 const Text: React.FC<TextProps> = ({
@@ -39,11 +44,38 @@ const Text: React.FC<TextProps> = ({
   color = "text-color",
   className = "",
   children,
+  style,
+  margin = 0,
+  justify,
 }) => {
+  const presetColors: ColorVariant[] = [
+    "primary-color",
+    "secondary-color",
+    "text-color",
+    "background-color",
+    "white",
+    "dark",
+    "gray",
+    "yellow",
+    "orange",
+    "red",
+    "tab-background",
+  ];
+
+  const isPreset =
+    typeof color === "string" && presetColors.includes(color as ColorVariant);
+
   return (
     <span
       className={`text ${variant} ${className}`.trim()}
-      style={{ color: `var(--${color})` }}
+      style={{
+        color: isPreset ? `var(--${color})` : color,
+        margin,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: justify,
+        ...style,
+      }}
     >
       {children}
     </span>

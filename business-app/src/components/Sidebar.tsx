@@ -14,9 +14,9 @@ import {
   ConciergeBell, // amenities icon
 } from "lucide-react";
 import "./styles/Sidebar.css";
-
+import { useBusiness } from "../context/BusinessContext";
 export default function Sidebar(): React.ReactElement {
-  const business_type = "Accommodation"; // This should be dynamically set based on the user's business type
+  const { businessDetails } = useBusiness();
   return (
     <aside className="sidebar">
       {/* Logo */}
@@ -32,7 +32,7 @@ export default function Sidebar(): React.ReactElement {
             label="Dashboard"
             icon={<LayoutDashboard size={18} />}
           />
-          {business_type === "Accommodation" ? (
+          {businessDetails?.business_type_id === 1 ? (
             <>
               <NavItem
                 to="/transactions"
@@ -51,7 +51,7 @@ export default function Sidebar(): React.ReactElement {
             label="Business Profile"
             icon={<Store size={18} />}
           />
-          {business_type === "Accommodation" ? (
+          {businessDetails?.business_type_id === 1 ? (
             <NavItem
               to="/rooms"
               label="Manage Rooms"
@@ -64,18 +64,14 @@ export default function Sidebar(): React.ReactElement {
               icon={<Tags size={18} />}
             />
           )}
-          {business_type === "Accommodation" ? (
+          {businessDetails?.business_type_id === 1 ? (
             <NavItem
               to="/amenities"
               label="Amenities"
               icon={<ConciergeBell size={18} />}
             />
           ) : (
-            <NavItem
-              to="/offers"
-              label="Manage Offers"
-              icon={<Tags size={18} />}
-            />
+            null
           )}
           <NavItem
             to="/manage-promotion"

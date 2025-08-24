@@ -33,4 +33,5 @@ export type Room = {
   business_id: string;
   status: string;
   room_image: string;
+  floor: string;
 };

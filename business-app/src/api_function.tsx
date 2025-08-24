@@ -41,9 +41,23 @@ export const getData = async (table: string) => {
   }
 };
 
-export const getDataById = async (id: string, table: string) => {
+export const getDataByIdAndStatus = async (
+  table: string,
+  id: string,
+  status: string
+) => {
   try {
-    const response = await axios.get(`${api}/${table}/${id}`);
+    const response = await axios.get(`${api}/${table}/${id}?status=${status}`);
+    return response.data;
+  } catch (error) {
+    console.error("Get all failed:", error);
+    throw error;
+  }
+};
+
+export const getDataById = async (table: string, id: string) => {
+  try {
+    const response = await axios.get(`${api}/${table}?id=${id}`);
     return response.data;
   } catch (error) {
     console.error("Get by ID failed:", error);

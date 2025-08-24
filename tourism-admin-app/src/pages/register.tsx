@@ -4,113 +4,144 @@ import Container from "../components/Container";
 import Text from "../components/Text";
 import "./RegisterStyle.css";
 import { Link, useNavigate } from "react-router-dom";
+import {
+  FormControl,
+  FormLabel,
+  FormHelperText,
+  Checkbox,
+  Input,
+} from "@mui/joy";
+import { insertTourism } from "@/src/services/TourismService";
+import axios from "axios";
+import api from "../services/api";
+
+type BusinessType = "Accommodation" | "Shop" | "Both" | null;
 
 const Register = () => {
   const navigate = useNavigate();
   const [firstName, setFirstName] = useState("Rayven");
   const [lastName, setLastName] = useState("Clores");
-  const [email, setEmail] = useState("rayventzy@gmail.com");
-  const [phoneNumber, setPhoneNumber] = useState("09876541234");
+  const [position, setPosition] = useState("Manager");
+
+  const [email, setEmail] = useState("admin@gmail.com");
+  const [phoneNumber, setPhoneNumber] = useState("09876541231");
   const [password, setPassword] = useState("123456");
   const [confirmPassword, setConfirmPassword] = useState("123456");
-  const [userType, setUserType] = useState<string[]>([]);
-  const businessTypes = ["Accommodation", "Shop"];
-  const [errorMessage, setErrorMessage] = useState("");
   const [agreePolicy, setAgreePolicy] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [loading, setLoading] = useState(false);
 
-  const API_URL = "http://192.168.1.8:3000/api";
-
-  const handleBusinessTypeChange = (type: string) => {
-    setUserType((prev) => {
-      let updated: string[];
-
-      if (prev.includes(type) || prev.includes("Both")) {
-        // Removing the current type
-        updated = prev.includes("Both")
-          ? [businessTypes.find((t) => t !== type)!]
-          : prev.filter((t) => t !== type);
-      } else {
-        // Adding the current type
-        updated = [...prev, type];
-      }
-
-      // If both selected → store as "Both"
-      if (updated.includes("Accommodation") && updated.includes("Shop")) {
-        return ["Both"];
-      }
-
-      return updated;
-    });
+  const data = {
+    first_name: firstName.trim(),
+    last_name: lastName.trim(),
+    email: email.trim(),
+    phone_number: phoneNumber.trim(),
+    position: position.trim(),
   };
 
-  const registerBusinessOwner = async () => {
-    // Basic Validation
-    if (!email || !password || password !== confirmPassword) {
-      return setErrorMessage("Please check your credentials.");
+  const newUser = {
+    email: email,
+    phone_number: phoneNumber,
+    role: "Owner",
+    password: password,
+  };
+
+  const validateForm = () => {
+    const newErrors: Record<string, string> = {};
+
+    if (!firstName.trim()) newErrors.firstName = "First name is required.";
+    if (!lastName.trim()) newErrors.lastName = "Last name is required.";
+
+    if (!email.trim()) {
+      newErrors.email = "Email is required.";
+    } else if (!email.includes("@")) {
+      newErrors.email = "Enter a valid email address.";
     }
 
-    if (!email.includes("@")) {
-      return setErrorMessage("Please enter a valid email address.");
+    if (!phoneNumber.trim()) {
+      newErrors.phoneNumber = "Phone number is required.";
+    } else if (!/^[0-9]{10,15}$/.test(phoneNumber)) {
+      newErrors.phoneNumber = "Enter a valid phone number.";
     }
 
-    if (password.length < 6) {
-      return setErrorMessage("Password must be at least 6 characters.");
+    if (!password) {
+      newErrors.password = "Password is required.";
+    } else if (password.length < 6) {
+      newErrors.password = "Password must be at least 6 characters.";
+    }
+
+    if (!confirmPassword) {
+      newErrors.confirmPassword = "Please confirm your password.";
+    } else if (confirmPassword !== password) {
+      newErrors.confirmPassword = "Passwords do not match.";
     }
 
     if (!agreePolicy) {
-      return setErrorMessage("You must agree to the terms and conditions.");
+      newErrors.agreePolicy = "You must agree to the terms and conditions.";
     }
 
-    setErrorMessage(""); // clear any existing errors
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const registerBusinessOwner = async () => {
+    if (!validateForm()) return;
 
     try {
-      // Create Owner
-      const ownerRes = await fetch(`${API_URL}/owner`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          first_name: firstName.trim(),
-          last_name: lastName.trim(),
-          email: email.trim(),
-          phone_number: phoneNumber.trim(),
-          business_type: userType[0] || null,
-        }),
-  });
-      if (!ownerRes.ok) {
-        const { error } = await ownerRes.json();
-        throw new Error(error || "Failed to register owner");
-      }
+      setLoading(true);
 
-      const ownerData = await ownerRes.json();
-      const ownerId = ownerData.data?.owner?.id;
-      alert(`Account created! ${ownerId}`);
+      // Step 1: Create Tourism record
+      const tourismResponse = await insertTourism(data);
+      const tourism_id = tourismResponse.id;
+
+      console.log("Tourism created:", tourismResponse);
 
       // Create User linked to Owner
-      const userRes = await fetch(`${API_URL}/users`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email: email.trim(),
-          phone_number: phoneNumber.trim(),
-          password: password.trim(),
-          role: "Owner",
-          owner_id: ownerId,
-        }),
+      const userResponse = await axios.post(`${api}/users`, {
+        email: email.trim(),
+        phone_number: phoneNumber.trim(),
+        password: password.trim(),
+        role: "Tourism",
+        tourism_id: tourism_id,
       });
+      const userId = userResponse.data?.id;
 
-      if (!userRes.ok) {
-        const { error } = await userRes.json();
-        throw new Error(error || "Failed to create user");
-      }
-
-      const userData = await userRes.json();
-      const userId = userData.data?.user?.id;
       alert(`User created! User ID: ${userId}`);
 
+      alert("✅ Registration successful! Please log in.");
       navigate("/login");
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : String(err ?? "Unknown error");
-      setErrorMessage(message || "Something went wrong. Please try again.");
+    } catch (err: any) {
+      console.error(err);
+      // Backend duplicate account error handling
+      if (err.response?.status === 400 || err.response?.status === 409) {
+        const errorMessage = err.response?.data?.error || "";
+        const errorCode = err.response?.data?.code || "";
+
+        console.log("Backend error:", errorCode, errorMessage);
+
+        if (errorCode === "ER_DUP_ENTRY") {
+          // check which field is duplicated
+          if (errorMessage.toLowerCase().includes("email")) {
+            setErrors((prev) => ({
+              ...prev,
+              email: "This email is already registered.",
+            }));
+          } else if (errorMessage.toLowerCase().includes("phone")) {
+            setErrors((prev) => ({
+              ...prev,
+              phoneNumber: "This phone number is already registered.",
+            }));
+          } else {
+            setErrors((prev) => ({ ...prev, email: "Duplicate entry found." }));
+          }
+        } else {
+          alert(errorMessage || "Registration error occurred.");
+        }
+      } else {
+        alert("❌ Registration failed. Please try again later.");
+      }
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -133,154 +164,96 @@ const Register = () => {
             </Text>
           </div>
 
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-            }}
-          >
-            <Text variant="title" color="dark">
-              Sign Up
-            </Text>
-          </div>
-
-          {errorMessage && (
-            <div
-              role="alert"
-              className="error-message"
-              style={{
-                color: "#d32f2f",
-                background: "#fdecea",
-                padding: "8px 12px",
-                borderRadius: 8,
-                marginTop: 8,
-              }}
-            >
-              {errorMessage}
-            </div>
-          )}
+          <Text variant="title" color="dark" style={{ marginBottom: 6 }}>
+            Sign Up
+          </Text>
 
           <div className="form-fields">
             {/* Row 1 - Name */}
             <div className="form-row">
-              <div className="form-group">
-                <label>
-                  <Text variant="medium" color="dark">
-                    First Name
-                  </Text>
-                </label>
-                <input
-                  type="text"
+              <FormControl>
+                <FormLabel>First Name</FormLabel>
+                <Input
+                  size="lg"
                   value={firstName}
                   onChange={(e) => setFirstName(e.target.value)}
                 />
-              </div>
+                <FormHelperText>{errors.firstName}</FormHelperText>
+              </FormControl>
 
-              <div className="form-group">
-                <label>
-                  <Text variant="medium" color="dark">
-                    Last Name
-                  </Text>
-                </label>
-                <input
-                  type="text"
+              <FormControl>
+                <FormLabel>Last Name</FormLabel>
+                <Input
+                  size="lg"
                   value={lastName}
                   onChange={(e) => setLastName(e.target.value)}
                 />
-              </div>
+                <FormHelperText>{errors.lastName}</FormHelperText>
+              </FormControl>
             </div>
 
-            {/* Row 2 - Contact Info */}
+            {/* Row 2 - Email + Phone */}
             <div className="form-row">
-              <div className="form-group">
-                <label>
-                  <Text variant="medium" color="dark">
-                    Email
-                  </Text>
-                </label>
-                <input
+              <FormControl>
+                <FormLabel>Email</FormLabel>
+                <Input
+                  size="lg"
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  autoComplete="email"
                 />
-              </div>
+                <FormHelperText>{errors.email}</FormHelperText>
+              </FormControl>
 
-              <div className="form-group">
-                <label>
-                  <Text variant="medium" color="dark">
-                    Phone Number
-                  </Text>
-                </label>
-                <input
+              <FormControl>
+                <FormLabel>Phone Number</FormLabel>
+                <Input
+                  size="lg"
                   type="tel"
                   value={phoneNumber}
                   onChange={(e) => setPhoneNumber(e.target.value)}
                 />
-              </div>
+                <FormHelperText>{errors.phoneNumber}</FormHelperText>
+              </FormControl>
             </div>
 
-            {/* Business Type */}
-            <div className="form-group">
-              <label>
-                <Text variant="medium" color="dark">
-                  Business Type
-                </Text>
-              </label>
-              <div className="checkbox-group">
-                {businessTypes.map((type) => (
-                  <label key={type} className="checkbox-item color">
-                    <input
-                      type="checkbox"
-                      checked={
-                        userType.includes(type) || userType.includes("Both")
-                      }
-                      onChange={() => handleBusinessTypeChange(type)}
-                    />
-                    {type}
-                  </label>
-                ))}
-              </div>
-            </div>
-
-            {/* Password */}
-            <div className="form-group">
-              <label>
-                <Text variant="medium" color="dark">
-                  Password
-                </Text>
-              </label>
-              <input
+            {/* Passwords */}
+            <FormControl>
+              <FormLabel>Password</FormLabel>
+              <Input
+                size="lg"
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
               />
-            </div>
+              <FormHelperText>{errors.password}</FormHelperText>
+            </FormControl>
 
-            <div className="form-group">
-              <label>
-                <Text variant="medium" color="dark">
-                  Confirm Password
-                </Text>
-              </label>
-              <input
+            <FormControl>
+              <FormLabel>Confirm Password</FormLabel>
+              <Input
+                size="lg"
                 type="password"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
               />
-            </div>
+              <FormHelperText>{errors.confirmPassword}</FormHelperText>
+            </FormControl>
           </div>
 
-          {/* Privacy Policy Agreement */}
+          {/* Privacy Policy */}
           <div className="form-group" style={{ marginTop: 10 }}>
-            <label className="checkbox-item">
-              <input
-                type="checkbox"
+            <label
+              style={{ display: "flex", alignItems: "flex-start", gap: 8 }}
+            >
+              <Checkbox
+                size="md"
                 checked={agreePolicy}
                 onChange={() => setAgreePolicy(!agreePolicy)}
+                sx={{ mt: "2px" }}
               />
               <Text variant="normal" color="dark">
-                I agree to the{" "}
+                I agree to the
                 <Link
                   to="/terms-and-conditions"
                   target="_blank"
@@ -291,22 +264,27 @@ const Register = () => {
                 and{" "}
                 <Link to="/privacy-policy" target="_blank" className="link">
                   Privacy Policy
-                </Link>
-                 of Naga Venture.
+                </Link>{" "}
+                of City Venture.
               </Text>
             </label>
+            <FormHelperText>{errors.agreePolicy}</FormHelperText>
           </div>
 
           {/* Register Button */}
           <div style={{ marginTop: 20 }}>
-            <button className="login-button" onClick={registerBusinessOwner}>
-              <Text variant="bold" color="white">
-                Sign Up
+            <button
+              className="login-button"
+              onClick={registerBusinessOwner}
+              disabled={loading}
+            >
+              <Text justify="center" variant="bold" color="white">
+                {loading ? "Registering..." : "Sign Up"}
               </Text>
             </button>
           </div>
 
-          {/* Sign Up Link */}
+          {/* Sign In Link */}
           <div className="signup-row">
             <Text variant="normal" color="dark">
               Already have an Account?

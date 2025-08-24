@@ -14,7 +14,7 @@ type Props = {
 };
 const Step2: React.FC<Props> = ({ api, data, setData }) => {
   return (
-    <div className="stepperContent">
+    <div className="stepperContent" style={{ overflow: "auto", overflowX: "hidden" }}>
       <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
         <CardHeader
           title="Contact Information"

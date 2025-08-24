@@ -49,7 +49,7 @@ const Step4: React.FC<Props> = ({
   };
 
   return (
-    <div className="stepperContent">
+    <div className="stepperContent" style={{ overflow: "auto", overflowX: "hidden" }}>
       <div
         style={{
           display: "flex",

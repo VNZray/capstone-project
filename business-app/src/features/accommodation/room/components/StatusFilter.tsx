@@ -1,9 +1,9 @@
 import React from "react";
 import { Button } from "@mui/joy";
 import Container from "@/src/components/Container";
-import { Bed, Key, Ban, Wrench, ListChecks } from "lucide-react"; // ✅ example icons
+import { Bed, Key, Wrench, ListChecks } from "lucide-react";
 
-type Status = "All" | "Available" | "Checked-in" | "Cancelled" | "Maintenance";
+type Status = "All" | "Available" | "Occupied" | "Maintenance";
 
 interface StatusFilterProps {
   active: Status;
@@ -13,13 +13,12 @@ interface StatusFilterProps {
 // 👇 added icon property to each status
 const statuses: {
   label: Status;
-  color: "primary" | "success" | "warning" | "danger" | "neutral";
+  color: "primary" | "success" | "warning" | "neutral";
   icon: React.ReactNode;
 }[] = [
   { label: "All", color: "primary", icon: <ListChecks size={16} /> },
   { label: "Available", color: "success", icon: <Bed size={16} /> },
-  { label: "Checked-in", color: "warning", icon: <Key size={16} /> },
-  { label: "Cancelled", color: "danger", icon: <Ban size={16} /> },
+  { label: "Occupied", color: "warning", icon: <Key size={16} /> },
   { label: "Maintenance", color: "neutral", icon: <Wrench size={16} /> },
 ];
 

@@ -2,7 +2,7 @@ exports.up = function (knex) {
   return knex.schema.createTable("user", (table) => {
     table.uuid("id").primary().defaultTo(knex.raw("(UUID())")); // default UUID
     table
-      .enu("role", ["Tourist", "Owner", "Tourism"], {
+      .enu("role", ["Tourist", "Owner", "Tourism", " Event Manager"], {
         useNative: true,
         enumName: "user_role",
       })
