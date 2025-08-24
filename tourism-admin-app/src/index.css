@@ -73,3 +73,31 @@ button:focus-visible {
     background-color: #f9f9f9;
   }
 }
+
+/* Ensure Joy UI input focus variables are applied (loaded by main.tsx) */
+:root {
+  --Input-focusedThickness: 0px;
+  --Input-focusedHighlight: transparent;
+  --Select-focusedHighlight: transparent;
+  --Textarea-focusedHighlight: transparent;
+}
+
+/* Extra override: remove any browser or component box-shadow/border used as inner focus for inputs
+   but preserve a visible outline for keyboard users via :focus-visible */
+input:focus,
+textarea:focus,
+select:focus,
+[role="combobox"] input:focus {
+  outline: none !important;
+  box-shadow: none !important;
+  border-color: inherit !important;
+}
+
+/* Keep an accessible focus indicator when using keyboard navigation */
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible,
+[role="combobox"] input:focus-visible {
+  outline: 4px auto -webkit-focus-ring-color;
+  outline-offset: 2px;
+}

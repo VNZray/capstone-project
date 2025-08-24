@@ -1,7 +1,7 @@
 import React from "react";
 import Text from "../Text";
 import type { TouristSpot } from "../../types/TouristSpot";
-import "../styles/TouristSpotTable.css";
+import "../styles/touristspots/TouristSpotTable.css";
 
 interface TouristSpotTableProps {
   spots: TouristSpot[];
