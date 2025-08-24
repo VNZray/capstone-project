@@ -5,8 +5,8 @@ exports.up = function (knex) {
     table.text("description").nullable();
     table.float("min_price").notNullable();
     table.float("max_price").notNullable();
-    table.string("email", 40).notNullable();
-    table.string("phone_number", 14).notNullable();
+    table.string("email", 40).notNullable().unique();
+    table.string("phone_number", 14).notNullable().unique();
     table.integer("business_category_id").notNullable();
     table.integer("business_type_id").notNullable();
     table

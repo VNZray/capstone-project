@@ -6,7 +6,6 @@ import { supabase } from "@/src/utils/supabase";
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import {
   FormControl,
-  FormLabel,
   Input,
   Select,
   Option,
@@ -15,13 +14,12 @@ import {
   Button,
 } from "@mui/joy";
 import Container from "@/src/components/Container";
-import { Type, UploadIcon } from "lucide-react";
+import { Sheet, SheetIcon, UploadIcon } from "lucide-react";
 import { ToggleButton, ToggleButtonGroup } from "@mui/material";
 import HotelIcon from "@mui/icons-material/Hotel";
 import StoreIcon from "@mui/icons-material/Store";
 import Text from "@/src/components/Text";
 import Label from "@/src/components/Label";
-
 type Props = {
   data: Business;
   setData: React.Dispatch<React.SetStateAction<Business>>;
@@ -36,8 +34,6 @@ const Step1: React.FC<Props> = ({ api, data, setData }) => {
     handleImageChange,
   } = useBusinessBasics(api, data, setData);
 
-  const [uploading, setUploading] = useState(false);
-
   // Upload immediately after selecting an image
   const handleImageSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     handleImageChange(e); // update preview immediately
@@ -50,11 +46,13 @@ const Step1: React.FC<Props> = ({ api, data, setData }) => {
       return;
     }
 
-    setUploading(true);
-
     try {
       const fileExt = file.name.split(".").pop();
-      const fileName = `${data.business_name.replace(/\s+/g, "_")}.${fileExt}`;
+      const timestamp = new Date().toISOString().replace(/[:.]/g, "-"); // avoid invalid chars for filenames
+      const fileName = `${data.business_name.replace(
+        /\s+/g,
+        "_"
+      )}_${timestamp}.${fileExt}`;
       const filePath = fileName;
 
       // Upload file to Supabase
@@ -80,7 +78,6 @@ const Step1: React.FC<Props> = ({ api, data, setData }) => {
       console.error("Upload failed:", err);
       alert(err?.message || "Upload failed");
     } finally {
-      setUploading(false);
     }
   };
 
@@ -109,7 +106,7 @@ const Step1: React.FC<Props> = ({ api, data, setData }) => {
                       business_name: e.target.value,
                     }))
                   }
-                  placeholder="Placeholder"
+                  placeholder="Write the name of your business"
                 />
               </FormControl>
 
@@ -207,7 +204,9 @@ const Step1: React.FC<Props> = ({ api, data, setData }) => {
           <Grid xs={6}>
             <Container padding="0 20px" gap="20px">
               <FormControl>
-                <FormLabel>Upload Business Profile</FormLabel>
+                <Label margin="0 0 5px 0">
+                  <Text variant="medium">Upload Business Profile *</Text>
+                </Label>{" "}
                 <div
                   style={{
                     display: "flex",
@@ -269,7 +268,6 @@ const Step1: React.FC<Props> = ({ api, data, setData }) => {
                     Upload Photo
                   </Button>
                 </div>
-
                 {/* Hidden file input */}
                 <input
                   id="image-upload"

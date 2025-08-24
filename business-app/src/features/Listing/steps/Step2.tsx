@@ -27,15 +27,15 @@ const Step2: React.FC<Props> = ({ api, data, setData }) => {
             <Container padding="0 20px " gap="20px">
               <FormControl>
                 <Label margin="0 0 5px 0">
-                  <EmailOutlined color="primary" />
                   <Text variant="label">Email *</Text>
                 </Label>
                 <Input
                   size="lg"
                   type="email"
+                  startDecorator={<EmailOutlined color="primary" />}
                   placeholder="Enter your business email"
-                  value={data.email}
-                  onChange={(e) =>
+                  defaultValue={data.email}
+                  onBlur={(e) =>
                     setData((prev) => ({ ...prev, email: e.target.value }))
                   }
                 />
@@ -43,15 +43,15 @@ const Step2: React.FC<Props> = ({ api, data, setData }) => {
 
               <FormControl>
                 <Label margin="0 0 5px 0">
-                  <Phone color="primary" />
                   <Text variant="label">Phone Number *</Text>
                 </Label>
                 <Input
                   size="lg"
                   type="tel"
+                  startDecorator={<Phone color="primary" />}
                   placeholder="Enter your phone number"
-                  value={data.phone_number}
-                  onChange={(e) =>
+                  defaultValue={data.phone_number}
+                  onBlur={(e) =>
                     setData((prev) => ({
                       ...prev,
                       phone_number: e.target.value,

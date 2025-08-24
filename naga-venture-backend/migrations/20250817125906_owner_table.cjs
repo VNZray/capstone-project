@@ -13,8 +13,8 @@ exports.up = async function (knex) {
     table.integer("age", 2);
     table.date("birthday");
     table.enu("gender", ["Male", "Female"]);
-    table.string("email", 40).notNullable();
-    table.string("phone_number", 13).notNullable();
+    table.string("email", 40).notNullable().unique();
+    table.string("phone_number", 13).notNullable().unique();
     table.enu("business_type", ["Shop", "Accommodation", "Both"]).notNullable();
     table
       .integer("province_id")

@@ -15,7 +15,7 @@ import { Add, AddBox, AddBusiness, EditDocument } from "@mui/icons-material";
 import { GoogleMap, Marker, useJsApiLoader } from "@react-google-maps/api";
 
 
-const ManageBusiness = () => {
+const BusinessProfile = () => {
   const { businessDetails } = useBusiness();
   const { address, loading } = useAddress(businessDetails?.barangay_id);
 
@@ -25,7 +25,6 @@ const ManageBusiness = () => {
         display: "flex",
         flexDirection: "column",
         gap: "20px",
-        padding: 0,
       }}
     >
       <Paper
@@ -142,4 +141,4 @@ const ManageBusiness = () => {
   );
 };
 
-export default ManageBusiness;
+export default BusinessProfile;

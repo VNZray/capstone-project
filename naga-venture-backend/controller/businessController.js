@@ -17,10 +17,9 @@ export async function getBusinessByOwnerId(request, response) {
   const { id } = request.params;
   console.log("Owner ID received:", id); // 🛠 debug
   try {
-    const [data] = await db.query(
-      "SELECT * FROM business WHERE owner_id = ?",
-      [id]
-    );
+    const [data] = await db.query("SELECT * FROM business WHERE owner_id = ?", [
+      id,
+    ]);
     console.log("Query data:", data); // 🛠 debug
     if (data.length === 0) {
       return response.status(404).json({ message: "Business not found" });
@@ -34,9 +33,7 @@ export async function getBusinessByOwnerId(request, response) {
 export async function getBusinessId(request, response) {
   const { id } = request.params;
   try {
-    const [data] = await db.query("SELECT * FROM business WHERE id = ?", [
-      id,
-    ]);
+    const [data] = await db.query("SELECT * FROM business WHERE id = ?", [id]);
     if (data.length === 0) {
       return response.status(404).json({ message: "Business not found" });
     }
@@ -89,17 +86,17 @@ export async function insertBusiness(request, response) {
     );
 
     // Retrieve the data row by UUID
-    const [data] = await db.query("SELECT * FROM business WHERE id = ?", [
-      id,
-    ]);
+    const [data] = await db.query("SELECT * FROM business WHERE id = ?", [id]);
 
     if (data.length === 0) {
-      return response.status(404).json({ error: "Inserted business not found" });
+      return response
+        .status(404)
+        .json({ error: "Inserted business not found" });
     }
 
     response.status(201).json({
       message: "Business created successfully",
-      data: data[0], // full row including UUID
+      ...data[0],
     });
   } catch (error) {
     handleDbError(error, response);

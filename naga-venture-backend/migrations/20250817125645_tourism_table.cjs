@@ -5,8 +5,8 @@ exports.up = function (knex) {
     table.string("middle_name", 20).nullable();
     table.string("last_name", 30).notNullable();
     table.string("position", 20).nullable();
-    table.string("email", 30).notNullable();
-    table.string("phone_number", 14).notNullable();
+    table.string("email", 30).notNullable().unique();
+    table.string("phone_number", 14).notNullable().unique();
   });
 };
 

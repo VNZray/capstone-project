@@ -28,10 +28,9 @@ export type Room = {
   room_number: string;
   room_type: string;
   capacity: string;
-  amenities: string | string[];
   room_price: string;
   description: string;
-  business_id: number;
+  business_id: string;
   status: string;
   room_image: string;
 };

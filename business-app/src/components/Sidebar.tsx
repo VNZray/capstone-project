@@ -1,7 +1,6 @@
 import React from "react";
 import { NavLink } from "react-router-dom";
 import {
-  Home,
   Receipt,
   CalendarCheck,
   BedDouble,
@@ -11,7 +10,8 @@ import {
   Star,
   User,
   LogOut,
-  LayoutDashboard
+  LayoutDashboard,
+  ConciergeBell, // amenities icon
 } from "lucide-react";
 import "./styles/Sidebar.css";
 
@@ -24,7 +24,9 @@ export default function Sidebar(): React.ReactElement {
 
       {/* Navigation */}
       <nav className="sidebar-nav">
-        <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
+        <div
+          style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}
+        >
           <NavItem
             to="/dashboard"
             label="Dashboard"
@@ -45,8 +47,8 @@ export default function Sidebar(): React.ReactElement {
             </>
           ) : null}
           <NavItem
-            to="/manage-business"
-            label="Manage Business"
+            to="/business-profile"
+            label="Business Profile"
             icon={<Store size={18} />}
           />
           {business_type === "Accommodation" ? (
@@ -54,6 +56,19 @@ export default function Sidebar(): React.ReactElement {
               to="/rooms"
               label="Manage Rooms"
               icon={<BedDouble size={18} />}
+            />
+          ) : (
+            <NavItem
+              to="/offers"
+              label="Manage Offers"
+              icon={<Tags size={18} />}
+            />
+          )}
+          {business_type === "Accommodation" ? (
+            <NavItem
+              to="/amenities"
+              label="Amenities"
+              icon={<ConciergeBell size={18} />}
             />
           ) : (
             <NavItem

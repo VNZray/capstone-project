@@ -43,7 +43,7 @@ const MyBusiness = () => {
   if (loading) return <Loading />;
 
   return (
-    <PageContainer>
+    <PageContainer style={{ padding: "20px" }}>
       <Text variant="title">My Business</Text>
 
       <Container background={colors.secondary} elevation={2} padding="20px">
@@ -79,9 +79,17 @@ const MyBusiness = () => {
         Showing you listed business {businesses.length}
       </Text>
 
-      <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap" }}>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(4, 1fr)",
+          gap: "1rem",
+          width: "100%",
+          alignItems: "stretch",
+        }}
+      >
         {businesses.map((business) => (
-          <div key={business.id}>
+          <div key={business.id} style={{ height: "100%" }}>
             <Card
               elevation={1}
               image={business.business_image || placeholderImage}

@@ -15,7 +15,12 @@ import Step4 from "./steps/Step4";
 import Step5 from "./steps/Step5";
 import Step6 from "./steps/Step6";
 import Step7 from "./steps/Step7";
+import type { Business } from "@/src/types/Business";
+import axios from "axios";
+import type { Permit } from "@/src/types/Permit";
+import { insertData } from "@/src/template";
 
+// steps definition
 const steps = [
   "Basic",
   "Contact",
@@ -26,17 +31,66 @@ const steps = [
   "Review & Submit",
 ];
 
+// ✅ Moved outside BusinessRegistration so it doesn’t get recreated on every render
+const StepContent: React.FC<{ step: number; commonProps: any }> = ({
+  step,
+  commonProps,
+}) => {
+  switch (step) {
+    case 0:
+      return <Step1 {...commonProps} />;
+    case 1:
+      return <Step2 {...commonProps} />;
+    case 2:
+      return <Step3 {...commonProps} />;
+    case 3:
+      return <Step4 {...commonProps} />;
+    case 4:
+      return <Step5 {...commonProps} />;
+    case 5:
+      return <Step6 {...commonProps} />;
+    case 6:
+      return <Step7 {...commonProps} />;
+    default:
+      return null;
+  }
+};
+
 const BusinessRegistration: React.FC = () => {
   const [activeStep, setActiveStep] = useState(0);
   const { user, api } = useAuth();
   const navigate = useNavigate();
   const [ownerId, setOwnerId] = useState<number | null>(null);
-  const [formData, setFormData] = useState<any | null>(null);
-  const [externalBookings, setExternalBookings] = useState<BookingSite[]>([]);
-  type BookingSite = {
-    name: string;
-    link: string;
-  };
+  const [externalBookings, setExternalBookings] = useState<
+    { name: string; link: string }[]
+  >([]);
+
+  const [formData, setFormData] = useState<Business>({
+    id: "",
+    business_image: "",
+    business_name: "Kim Angela Homestay",
+    phone_number: "09380417373",
+    email: "kim@gmail.com",
+    barangay_id: 0,
+    municipality_id: 0,
+    province_id: 0,
+    description: "This place is great",
+    instagram_url: "kim.com",
+    tiktok_url: "kim.com",
+    facebook_url: "kim.com",
+    longitude: "",
+    latitude: "",
+    min_price: "1000",
+    max_price: "5000",
+    owner_id: "",
+    status: "Pending",
+    business_category_id: 0,
+    business_type_id: 0,
+    hasBooking: false,
+  });
+
+  const [permitData, setPermitData] = useState<Permit[]>([]);
+
   useEffect(() => {
     const fetchOwnerId = async () => {
       if (!user) {
@@ -46,27 +100,11 @@ const BusinessRegistration: React.FC = () => {
 
       const ownerData = await fetchOwnerDetails(user.owner_id!);
       setOwnerId(ownerData.id);
-      setFormData({
-        business_name: "UMA Residences & Hotel",
-        phone_number: "095612315534",
-        email: "uma@example.com",
-        barangay_id: "",
-        municipality_id: "",
-        province_id: "",
-        description: "Business description",
-        instagram_url: "https://instagram.com/sampaguita",
-        tiktok_url: "https://tiktok.com/sampaguita",
-        facebook_url: "https://facebook.com/sampaguita",
-        longitude: "123.19816120246286",
-        latitude: "13.629396465124925",
-        min_price: "1000",
-        max_price: "5000",
+
+      setFormData((prev) => ({
+        ...prev,
         owner_id: ownerData.id,
-        status: "Pending",
-        business_category_id: "",
-        bsuiness_type_id: "",
-        hansBooking: 1,
-      });
+      }));
 
       setExternalBookings([{ name: "", link: "" }]);
     };
@@ -81,8 +119,11 @@ const BusinessRegistration: React.FC = () => {
     data: formData,
     bookingSite: externalBookings,
     setBookingSites: setExternalBookings,
+    permitData,
+    setPermitData,
     setData: setFormData,
   };
+
   const handleNext = () => {
     if (activeStep < steps.length - 1) {
       setActiveStep((prev) => prev + 1);
@@ -99,45 +140,55 @@ const BusinessRegistration: React.FC = () => {
     }
   };
 
-  // Submit function for final step
   const handleSubmit = async () => {
     try {
-      // Collect form data from all steps here (example)
-      const formData = {
-        /* basicInfo, contactInfo, location, links, pricing, permits */
-      };
+      // 1️⃣ Insert Business
+      const res = await axios.post(`${api}/business`, formData);
+      const businessId = res.data.id;
+      console.log(businessId);
 
-      // Send data to backend API (example)
-      // await api.post("/business-registration", formData);
+      // 2️⃣ Insert External Bookings (if any)
+      if (externalBookings.length > 0) {
+        await Promise.all(
+          externalBookings.map((site) => {
+            if (!site.name || !site.link) return null; // skip empty
 
-      console.log("Business registration submitted:", formData);
+            return axios.post(`${api}/external-booking`, {
+              business_id: businessId,
+              name: site.name,
+              link: site.link,
+            });
+          })
+        );
+      }
 
-      // Navigate to a success/confirmation page
-      navigate("/business/success");
+      if (permitData.length > 0) {
+        await Promise.all(
+          permitData.map((permit) =>
+            axios.post(`${api}/permit`, {
+              business_id: businessId,
+              permit_type: permit.permit_type,
+              file_url: permit.file_url,
+              file_format: permit.file_format,
+              file_size: permit.file_size,
+              status: permit.status || "Pending",
+            })
+          )
+        );
+      }
+
+      console.log("✅ Business registration submitted successfully");
+      navigate("/business");
     } catch (error) {
-      console.error("Failed to submit registration:", error);
+      console.error("❌ Failed to submit registration:", error);
+      alert("Something went wrong. Please try again.");
     }
   };
 
-  const StepContent: React.FC<{ step: number }> = ({ step }) => {
-    switch (step) {
-      case 0:
-        return <Step1 {...commonProps} />;
-      case 1:
-        return <Step2 {...commonProps} />;
-      case 2:
-        return <Step3 {...commonProps} />;
-      case 3:
-        return <Step4 {...commonProps} />;
-      case 4:
-        return <Step5 {...commonProps} />;
-      case 5:
-        return <Step6 {...commonProps} />;
-      case 6:
-        return <Step7 {...commonProps} />;
-      default:
-        return null;
-    }
+  const handleSubmitData = async () => {
+    const { business } = await insertData(formData, "business");
+    const businessId = business.data.id;
+    console.log(businessId);
   };
 
   return (
@@ -165,10 +216,7 @@ const BusinessRegistration: React.FC = () => {
       </Container>
 
       <Container elevation={2} style={{ padding: 20 }}>
-        {/* Render the page/content for the active step */}
-        <div>
-          <StepContent step={activeStep} />
-        </div>
+        <StepContent step={activeStep} commonProps={commonProps} />
 
         {/* Buttons */}
         <div
@@ -176,7 +224,7 @@ const BusinessRegistration: React.FC = () => {
             marginTop: 20,
             display: "flex",
             justifyContent: "space-between",
-            padding: "0 20px"
+            padding: "0 20px",
           }}
         >
           <Button
