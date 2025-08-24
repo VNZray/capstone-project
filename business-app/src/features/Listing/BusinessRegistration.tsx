@@ -18,7 +18,7 @@ import Step7 from "./steps/Step7";
 import type { Business } from "@/src/types/Business";
 import axios from "axios";
 import type { Permit } from "@/src/types/Permit";
-import { insertData } from "@/src/template";
+import { insertData } from "@/src/api_function";
 
 // steps definition
 const steps = [
@@ -185,11 +185,7 @@ const BusinessRegistration: React.FC = () => {
     }
   };
 
-  const handleSubmitData = async () => {
-    const { business } = await insertData(formData, "business");
-    const businessId = business.data.id;
-    console.log(businessId);
-  };
+
 
   return (
     <PageContainer style={{ padding: "20px 340px" }}>

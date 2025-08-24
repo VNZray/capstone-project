@@ -2,78 +2,105 @@ import Container from "@/src/components/Container";
 import PageContainer from "@/src/components/PageContainer";
 import Text from "@/src/components/Text";
 import { Button, Grid, Input } from "@mui/joy";
-import InfoCard from "./components/InfoCard";
-import {
-  Bed,
-  Calendar,
-  DoorOpen,
-  LogIn,
-  LogOut,
-  Search,
-  Wrench,
-} from "lucide-react";
+import InfoCard from "../../../components/InfoCard";
+import { Bed, Calendar, DoorOpen, User, Search, Wrench } from "lucide-react";
 import { colors } from "@/src/utils/Colors";
-import { Add, CancelOutlined, FilterList } from "@mui/icons-material";
+import { Add } from "@mui/icons-material";
 import StatusFilter from "./components/StatusFilter";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import AddRoomModal from "./components/AddRoomModal";
-type Status = "All" | "Available" | "Checked-in" | "Cancelled" | "Maintenance";
+import RoomCard from "./components/RoomCard";
+type Status = "All" | "Available" | "Occupied" | "Maintenance";
+import { useBusiness } from "@/src/context/BusinessContext";
+import { getDataById } from "@/src/api_function";
+import type { Room } from "@/src/types/Business";
+
+import placeholderImage from "@/public/placeholder-image.png";
 
 const Room = () => {
   const [status, setStatus] = useState<Status>("All");
   const [openModal, setOpenModal] = useState(false);
+  const [allRooms, setAllRooms] = useState<Room[]>([]);
+
+  const [roomCount, setRoomCount] = useState(0);
+  const [availableCount, setAvailableCount] = useState(0);
+  const [occupiedCount, setOccupiedCount] = useState(0);
+  const [maintenanceCount, setMaintenanceCount] = useState(0);
+
+  const { businessDetails } = useBusiness();
+
+  const [search, setSearch] = useState("");
+
+  // ✅ Filter rooms dynamically
+  const filteredRooms = allRooms.filter((room) => {
+    const matchesSearch =
+      room.room_number.toLowerCase().includes(search.toLowerCase()) ||
+      room.room_type.toLowerCase().includes(search.toLowerCase());
+
+    const matchesStatus =
+      status === "All" ? true : room.status === status;
+
+    return matchesSearch && matchesStatus;
+  });
+
+  const fetchRooms = async () => {
+    if (!businessDetails?.id) return;
+    const response = await getDataById("room", businessDetails.id);
+    setAllRooms(Array.isArray(response) ? response : []);
+  };
+
+  useEffect(() => {
+    if (businessDetails?.id) {
+      fetchRooms();
+    }
+  }, [businessDetails?.id]);
+
+  useEffect(() => {
+    setRoomCount(allRooms.length);
+    setAvailableCount(
+      allRooms.filter((room) => room.status === "Available").length
+    );
+    setOccupiedCount(
+      allRooms.filter((room) => room.status === "Occupied").length
+    );
+    setMaintenanceCount(
+      allRooms.filter((room) => room.status === "Maintenance").length
+    );
+  }, [allRooms]);
 
   return (
     <PageContainer>
       {/* Stats Cards */}
       <Container padding="0" background="transparent">
         <Grid container spacing={3}>
-          <Grid xs={2}>
+          <Grid xs={3}>
             <InfoCard
               icon={<Bed color={colors.white} size={32} />}
-              title={"20"}
+              title={roomCount.toString()}
               subtitle="Total Rooms"
               color={colors.secondary}
             />
           </Grid>
-          <Grid xs={2}>
+          <Grid xs={3}>
             <InfoCard
               icon={<DoorOpen color={colors.white} size={32} />}
-              title={"12"}
+              title={availableCount.toString()}
               subtitle="Available"
               color={colors.success}
             />
           </Grid>
-          <Grid xs={2}>
+          <Grid xs={3}>
             <InfoCard
-              icon={<LogIn color={colors.white} size={32} />}
-              title={"6"}
-              subtitle="Checked-in"
+              icon={<User color={colors.white} size={32} />}
+              title={occupiedCount.toString()}
+              subtitle="Occupied"
               color={colors.yellow}
             />
           </Grid>
-          <Grid xs={2}>
-            <InfoCard
-              icon={<LogOut color={colors.white} size={32} />}
-              title={"2"}
-              subtitle="Checked-out"
-              color={colors.warningBackground}
-            />
-          </Grid>
-          <Grid xs={2}>
-            <InfoCard
-              icon={
-                <CancelOutlined style={{ color: colors.white, fontSize: 32 }} />
-              }
-              title={"1"}
-              subtitle="Cancelled"
-              color={colors.error}
-            />
-          </Grid>
-          <Grid xs={2}>
+          <Grid xs={3}>
             <InfoCard
               icon={<Wrench color={colors.white} size={32} />}
-              title={"1"}
+              title={maintenanceCount.toString()}
               subtitle="Maintenance"
               color={colors.gray}
             />
@@ -111,7 +138,11 @@ const Room = () => {
           </Button>
 
           {/* Add Room Modal */}
-          <AddRoomModal open={openModal} onClose={() => setOpenModal(false)} />
+          <AddRoomModal
+            open={openModal}
+            onClose={() => setOpenModal(false)}
+            onRoomAdded={fetchRooms}
+          />
         </Container>
 
         {/* Search + Filter */}
@@ -126,11 +157,40 @@ const Room = () => {
             placeholder="Search Rooms"
             size="lg"
             fullWidth
+            onChange={(e) => setSearch(e.target.value)}
           />
         </Container>
 
         {/* Tabs Placeholder */}
         <StatusFilter active={status} onChange={setStatus} />
+      </Container>
+
+      <Container background="transparent" padding="0">
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(4, 1fr)",
+            gap: "1rem",
+            width: "100%",
+            alignItems: "stretch",
+          }}
+        >
+          {filteredRooms.map((room) => (
+            <RoomCard
+              onDeleted={() => fetchRooms()}
+              id={room.id}
+              key={room.id}
+              image={room.room_image || placeholderImage}
+              status={room.status}
+              floor={room.floor}
+              roomNumber={room.room_number}
+              type={room.room_type}
+              price={room.room_price}
+              guests={2}
+              amenities={[]}
+            />
+          ))}
+        </div>
       </Container>
     </PageContainer>
   );

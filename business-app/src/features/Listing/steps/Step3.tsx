@@ -114,7 +114,13 @@ const Step3: React.FC<Props> = ({ api, data, setData }) => {
 
   return (
     <div className="stepperContent">
-      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          gap: 12,
+        }}
+      >
         <CardHeader
           title="Business Address and Location"
           color="white"

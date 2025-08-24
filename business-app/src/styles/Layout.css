@@ -1,10 +1,11 @@
 .main-layout {
   display: flex;
+  max-height: 100vh;
   min-height: 100vh;
   min-width: 100vw;
   background-color: var(--background-color);
   overflow-x: hidden;
-  /* light background */
+  overflow: hidden;
 }
 
 .main-content {
@@ -19,15 +20,17 @@
   background-color: var(--off-white);
   overflow: scroll;
   overflow-x: hidden;
+
 }
 
 .business-layout {
   display: flex;
   flex-direction: column;
-  width: 100vw;
-  height: 100vh;
   background-color: var(--background-color);
-  overflow-x: hidden;
+  overflow: hidden;
+  width: 100%;
+  max-width: 100%;
+  min-width: 100%;
 }
 
 .auth-layout {
@@ -36,6 +39,4 @@
   /* instead of 100vw */
   background-color: var(--background-color);
   overflow-x: hidden;
-
-  /* light gray */
 }
