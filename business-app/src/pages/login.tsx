@@ -24,7 +24,7 @@ const Login: React.FC = () => {
     try {
       setLoginError("");
       await login(email, password);
-      navigate("/business"); // redirect after successful login
+      navigate("/business");
     } catch (error: any) {
       setLoginError(
         error?.response?.data?.message || error?.message || "Login failed."

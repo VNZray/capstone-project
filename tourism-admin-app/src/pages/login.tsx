@@ -6,13 +6,14 @@ import Text from "../components/Text";
 import Container from "../components/Container";
 import { useAuth } from "@/src/context/AuthContext"; // adjust path if needed
 import Input from "../components/Input";
+import { colors } from "../utils/Colors";
 
 const Login: React.FC = () => {
-  const [email, setEmail] = useState("rayventzy@gmail.com");
+  const [email, setEmail] = useState("admin@gmail.com");
   const [password, setPassword] = useState("123456");
   const [loginError, setLoginError] = useState("");
   const navigate = useNavigate();
-  const { login } = useAuth(); // from AuthProvider
+  const { login, logout } = useAuth(); // include logout
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -22,8 +23,15 @@ const Login: React.FC = () => {
 
     try {
       setLoginError("");
-      await login(email, password);
-      navigate("/dashboard"); // redirect after successful login
+      const user = await login(email, password); // now returns User
+
+      // Only allow Tourism users
+      if (user.role === "Tourism") {
+        navigate("/dashboard");
+      } else {
+        logout();
+        setLoginError("Access denied. Unauthorized Access!");
+      }
     } catch (error: any) {
       setLoginError(
         error?.response?.data?.message || error?.message || "Login failed."
@@ -95,12 +103,12 @@ const Login: React.FC = () => {
           {/* Login Button */}
           <div style={{ marginTop: 20 }}>
             <button className="login-button" onClick={handleLogin}>
-              <Text variant="bold" color="white">
+              <Text justify="center" variant="bold" color="white">
                 Sign In
               </Text>
             </button>
             {loginError && (
-              <Text variant="paragraph" className="error-text">
+              <Text variant="paragraph" color={colors.error}>
                 {loginError}
               </Text>
             )}
