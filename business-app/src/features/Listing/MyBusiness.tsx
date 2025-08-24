@@ -43,7 +43,7 @@ const MyBusiness = () => {
   if (loading) return <Loading />;
 
   return (
-    <PageContainer>
+    <PageContainer style={{ padding: "20px" }}>
       <Text variant="title">My Business</Text>
 
       <Container background={colors.secondary} elevation={2} padding="20px">

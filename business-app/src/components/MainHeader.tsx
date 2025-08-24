@@ -16,7 +16,7 @@ import { Button } from "@mui/joy";
 const pageTitles: Record<string, string> = {
   "/dashboard": "Dashboard",
   "/transactions": "Transactions",
-  "/manage-business": "Manage Business",
+  "/business-profile": "Business Profile",
   "/manage-promotion": "Manage Promotion",
   "/reports": "Reports",
   "/profile": "Profile",
@@ -25,6 +25,8 @@ const pageTitles: Record<string, string> = {
   "/bookings": "Bookings",
   "/rooms": "Manage Rooms",
   "/offers": "Manage Offers",
+  "/amenities": "Manage Amenities",
+
 };
 
 export default function MainHeader() {
@@ -81,7 +83,7 @@ export default function MainHeader() {
 
           {/* Switch Profile */}
           <Button
-          color="neutral"
+            color="neutral"
             variant="solid"
             startDecorator={<Repeat size={18} />}
             onClick={navigateToBusiness}

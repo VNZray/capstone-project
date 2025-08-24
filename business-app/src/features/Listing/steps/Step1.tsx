@@ -48,7 +48,11 @@ const Step1: React.FC<Props> = ({ api, data, setData }) => {
 
     try {
       const fileExt = file.name.split(".").pop();
-      const fileName = `${data.business_name.replace(/\s+/g, "_")}.${fileExt}`;
+      const timestamp = new Date().toISOString().replace(/[:.]/g, "-"); // avoid invalid chars for filenames
+      const fileName = `${data.business_name.replace(
+        /\s+/g,
+        "_"
+      )}_${timestamp}.${fileExt}`;
       const filePath = fileName;
 
       // Upload file to Supabase
@@ -198,7 +202,6 @@ const Step1: React.FC<Props> = ({ api, data, setData }) => {
             </Container>
           </Grid>
           <Grid xs={6}>
-
             <Container padding="0 20px" gap="20px">
               <FormControl>
                 <Label margin="0 0 5px 0">

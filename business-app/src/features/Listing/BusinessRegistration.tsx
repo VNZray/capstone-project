@@ -18,6 +18,7 @@ import Step7 from "./steps/Step7";
 import type { Business } from "@/src/types/Business";
 import axios from "axios";
 import type { Permit } from "@/src/types/Permit";
+import { insertData } from "@/src/template";
 
 // steps definition
 const steps = [
@@ -143,8 +144,9 @@ const BusinessRegistration: React.FC = () => {
     try {
       // 1️⃣ Insert Business
       const res = await axios.post(`${api}/business`, formData);
-      const businessId = res.data.data.id; // assuming API returns { id: "..." }
+      const businessId = res.data.id;
       console.log(businessId);
+
       // 2️⃣ Insert External Bookings (if any)
       if (externalBookings.length > 0) {
         await Promise.all(
@@ -183,6 +185,12 @@ const BusinessRegistration: React.FC = () => {
     }
   };
 
+  const handleSubmitData = async () => {
+    const { business } = await insertData(formData, "business");
+    const businessId = business.data.id;
+    console.log(businessId);
+  };
+
   return (
     <PageContainer style={{ padding: "20px 340px" }}>
       <Container elevation={2} style={{ padding: 20 }}>
@@ -208,7 +216,6 @@ const BusinessRegistration: React.FC = () => {
       </Container>
 
       <Container elevation={2} style={{ padding: 20 }}>
-        {/* ✅ Stable step content, won’t unmount/remount every keystroke */}
         <StepContent step={activeStep} commonProps={commonProps} />
 
         {/* Buttons */}

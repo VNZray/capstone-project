@@ -11,7 +11,6 @@ import AccommodationDashboard from "../features/accommodation/dashboard/Dashboar
 import ShopDashboard from "../features/shop/dashboard/Dashboard";
 
 import MyBusiness from "../features/listing/MyBusiness";
-import ManageAccommodation from "../features/accommodation/manage-business/ManageBusiness";
 import ManageShop from "../features/shop/manage-business/ManageBusiness";
 import Transactions from "../features/accommodation/transaction/Transactions";
 import Profile from "../features/profile/Profile";
@@ -29,6 +28,8 @@ import ProtectedRoute from "./ProtectedRoute";
 import Request from "../features/listing/Request";
 import { BusinessProvider } from "../context/BusinessContext";
 import BusinessRegistration from "../features/listing/BusinessRegistration";
+import BusinessProfile from "../features/accommodation/business-profile/BusinessProfile";
+import Amenity from "../features/accommodation/amenity/Amenity";
 
 export default function AppRoutes() {
   const business_type = "Accommodation";
@@ -90,13 +91,22 @@ export default function AppRoutes() {
               }
             />
 
+            <Route
+              path="/amenities"
+              element={
+                <ProtectedRoute>
+                  <Amenity />
+                </ProtectedRoute>
+              }
+            />
+
             {business_type === "Accommodation" ? (
               <>
                 <Route
-                  path="/manage-business"
+                  path="/business-profile"
                   element={
                     <ProtectedRoute>
-                      <ManageAccommodation />
+                      <BusinessProfile />
                     </ProtectedRoute>
                   }
                 />
