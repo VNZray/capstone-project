@@ -2,7 +2,7 @@ import Text from "@/src/components/Text";
 import React, { useRef } from "react";
 import type { Business } from "@/src/types/Business";
 import CardHeader from "@/src/components/CardHeader";
-import { Button, FormControl, Grid, Input, Sheet } from "@mui/joy";
+import { Button, FormControl, FormLabel, Grid, Input, Sheet } from "@mui/joy";
 import Container from "@/src/components/Container";
 import Label from "@/src/components/Label";
 import { colors } from "@/src/utils/Colors";
@@ -106,9 +106,8 @@ const StepPermits: React.FC<Props> = ({ data, permitData, setPermitData }) => {
           <Grid xs={6}>
             <Container padding="0 20px" gap="20px">
               <FormControl>
-                <Label margin="0 0 5px 0">
-                  <Text variant="label">Mayor's Permit *</Text>
-                </Label>
+                <FormLabel>Mayor's Permit</FormLabel>
+
                 <div
                   style={{
                     width: "100%",
@@ -135,14 +134,14 @@ const StepPermits: React.FC<Props> = ({ data, permitData, setPermitData }) => {
                     government
                   </Text>
                   <Button
-                    size="lg"
+                    size="md"
                     startDecorator={<Upload />}
                     onClick={() => mayorsPermitInputRef.current?.click()}
                   >
                     Choose File
                   </Button>
                   <Input
-                    size="lg"
+                    size="md"
                     readOnly
                     value={
                       permitData.find((p) => p.permit_type === "mayors_permit")
@@ -164,10 +163,9 @@ const StepPermits: React.FC<Props> = ({ data, permitData, setPermitData }) => {
           {/* Business Permit */}
           <Grid xs={6}>
             <Container padding="0 20px" gap="20px">
-              <FormControl>
-                <Label margin="0 0 5px 0">
-                  <Text variant="label">Business Permit *</Text>
-                </Label>
+              <FormControl required>
+                <FormLabel>Business Permit</FormLabel>
+
                 <div
                   style={{
                     width: "100%",
@@ -192,14 +190,14 @@ const StepPermits: React.FC<Props> = ({ data, permitData, setPermitData }) => {
                     Certificate of business registration from DTI or SEC
                   </Text>
                   <Button
-                    size="lg"
+                    size="md"
                     startDecorator={<Upload />}
                     onClick={() => businessPermitInputRef.current?.click()}
                   >
                     Choose File
                   </Button>
                   <Input
-                    size="lg"
+                    size="md"
                     readOnly
                     value={
                       permitData.find(
