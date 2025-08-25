@@ -102,3 +102,67 @@ export async function insertBusiness(request, response) {
     handleDbError(error, response);
   }
 }
+
+// update business (only update provided fields)
+export async function updateBusiness(request, response) {
+  const { id } = request.params;
+
+  try {
+    // Check if the business exists
+    const [existing] = await db.query("SELECT * FROM business WHERE id = ?", [
+      id,
+    ]);
+    if (existing.length === 0) {
+      return response.status(404).json({ message: "Business not found" });
+    }
+
+    // Only update fields provided in request.body
+    const allowedFields = [
+      "business_name",
+      "business_type_id",
+      "business_category_id",
+      "phone_number",
+      "email",
+      "barangay_id",
+      "municipality_id",
+      "province_id",
+      "description",
+      "instagram_url",
+      "tiktok_url",
+      "facebook_url",
+      "latitude",
+      "longitude",
+      "min_price",
+      "max_price",
+      "owner_id",
+      "status",
+      "business_image",
+      "hasBooking",
+    ];
+
+    // Filter fields to only those present in request.body
+    const fieldsToUpdate = allowedFields.filter((field) =>
+      Object.prototype.hasOwnProperty.call(request.body, field)
+    );
+
+    if (fieldsToUpdate.length === 0) {
+      return response.status(400).json({ message: "No valid fields provided for update" });
+    }
+
+    const values = fieldsToUpdate.map((f) => request.body[f]);
+
+    await db.query(
+      `UPDATE business SET ${fieldsToUpdate.map((f) => `${f} = ?`).join(", ")} WHERE id = ?`,
+      [...values, id]
+    );
+
+    // Retrieve the updated data
+    const [data] = await db.query("SELECT * FROM business WHERE id = ?", [id]);
+    response.json({
+      message: "Business updated successfully",
+      ...data[0],
+    });
+  } catch (error) {
+    handleDbError(error, response);
+  }
+}

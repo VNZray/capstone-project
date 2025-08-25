@@ -142,7 +142,7 @@ export default function AddRoomModal({
   return (
     <Modal open={open} onClose={onClose}>
       <ModalDialog
-        size="lg"
+        size="md"
         minWidth={600}
         maxWidth={600}
         variant="outlined"
@@ -162,7 +162,7 @@ export default function AddRoomModal({
                 <FormControl required>
                   <FormLabel>Room Number</FormLabel>
                   <Input
-                    size="lg"
+                    size="md"
                     placeholder="Enter room number"
                     value={roomData.room_number}
                     onChange={(e) =>
@@ -176,7 +176,7 @@ export default function AddRoomModal({
                 <FormControl required>
                   <FormLabel>Floor</FormLabel>
                   <Input
-                    size="lg"
+                    size="md"
                     placeholder="Enter floor"
                     value={roomData.floor}
                     onChange={(e) =>
@@ -188,10 +188,10 @@ export default function AddRoomModal({
             </Grid>
 
             {/* Room Type */}
-            <FormControl>
+            <FormControl required>
               <FormLabel>Room Type</FormLabel>
               <Select
-                size="lg"
+                size="md"
                 value={roomData.room_type}
                 onChange={(_, value) =>
                   setRoomData({ ...roomData, room_type: value || "" })
@@ -208,7 +208,7 @@ export default function AddRoomModal({
                 <FormControl>
                   <FormLabel>Capacity</FormLabel>
                   <Input
-                    size="lg"
+                    size="md"
                     type="number"
                     placeholder="e.g. 2"
                     value={roomData.capacity}
@@ -224,7 +224,7 @@ export default function AddRoomModal({
                   <FormLabel>Price per Night</FormLabel>
                   <Input
                     type="number"
-                    size="lg"
+                    size="md"
                     placeholder="e.g. 1500"
                     value={roomData.room_price}
                     onChange={(e) =>
@@ -239,7 +239,7 @@ export default function AddRoomModal({
             <FormControl>
               <FormLabel>Description</FormLabel>
               <Textarea
-                size="lg"
+                size="md"
                 minRows={3}
                 placeholder="Optional description"
                 value={roomData.description}

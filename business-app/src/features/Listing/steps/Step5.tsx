@@ -1,7 +1,7 @@
 import React from "react";
 import type { Business } from "@/src/types/Business";
 import CardHeader from "@/src/components/CardHeader";
-import { FormControl, Grid, Input } from "@mui/joy";
+import { FormControl, FormLabel, Grid, Input } from "@mui/joy";
 import Container from "@/src/components/Container";
 import Label from "@/src/components/Label";
 import Text from "@/src/components/Text";
@@ -26,12 +26,11 @@ const Step5: React.FC<Props> = ({ data, setData }) => {
         <Grid container columns={12}>
           <Grid xs={6}>
             <Container padding="0 20px " gap="20px">
-              <FormControl>
-                <Label margin="0 0 5px 0">
-                  <Text variant="label">Minimum Pricing *</Text>
-                </Label>
+              <FormControl required>
+                <FormLabel>Minimum Pricing</FormLabel>
+
                 <Input
-                  size="lg"
+                  size="md"
                   startDecorator={<PhilippinePeso />}
                   type="number"
                   placeholder="Minimum Pricing"
@@ -42,12 +41,10 @@ const Step5: React.FC<Props> = ({ data, setData }) => {
                 />
               </FormControl>
 
-              <FormControl>
-                <Label margin="0 0 5px 0">
-                  <Text variant="label">Maximum Pricing *</Text>
-                </Label>
+              <FormControl required>
+                <FormLabel>Maximum Pricing</FormLabel>
                 <Input
-                  size="lg"
+                  size="md"
                   type="number"
                   startDecorator={<PhilippinePeso />}
                   placeholder="Maximum Pricing"

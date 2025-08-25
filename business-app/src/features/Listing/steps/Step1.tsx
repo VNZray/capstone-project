@@ -12,6 +12,7 @@ import {
   Grid,
   Textarea,
   Button,
+  FormLabel,
 } from "@mui/joy";
 import Container from "@/src/components/Container";
 import { Sheet, SheetIcon, UploadIcon } from "lucide-react";
@@ -82,7 +83,10 @@ const Step1: React.FC<Props> = ({ api, data, setData }) => {
   };
 
   return (
-    <div className="stepperContent" style={{ overflow: "auto", overflowX: "hidden" }}>
+    <div
+      className="stepperContent"
+      style={{ overflow: "auto", overflowX: "hidden" }}
+    >
       <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
         <CardHeader
           title="Basic Information"
@@ -92,13 +96,11 @@ const Step1: React.FC<Props> = ({ api, data, setData }) => {
         <Grid container columns={12}>
           <Grid xs={6}>
             <Container padding="0 20px " gap="20px">
-              <FormControl>
-                <Label margin="0 0 5px 0">
-                  <Text variant="medium">Business Name *</Text>
-                </Label>
+              <FormControl required>
+                <FormLabel>Business Name</FormLabel>
                 <Input
                   variant="outlined"
-                  size="lg"
+                  size="md"
                   value={data.business_name}
                   onChange={(e) =>
                     setData((prev) => ({
@@ -110,10 +112,8 @@ const Step1: React.FC<Props> = ({ api, data, setData }) => {
                 />
               </FormControl>
 
-              <FormControl>
-                <Label margin="0 0 5px 0">
-                  <Text variant="medium">Business Type *</Text>
-                </Label>
+              <FormControl required>
+                <FormLabel>Business Type</FormLabel>
                 <ToggleButtonGroup
                   color="primary"
                   value={data.business_type_id?.toString() ?? ""}
@@ -155,13 +155,12 @@ const Step1: React.FC<Props> = ({ api, data, setData }) => {
                 </ToggleButtonGroup>
               </FormControl>
 
-              <FormControl>
-                <Label margin="0 0 5px 0">
-                  <Text variant="medium">Business Category *</Text>
-                </Label>
+              <FormControl required>
+                <FormLabel>Business Category</FormLabel>
+
                 <Select
                   variant="outlined"
-                  size="lg"
+                  size="md"
                   value={data.business_category_id?.toString() ?? ""}
                   onChange={(e, value) => {
                     if (!value) return;
@@ -182,13 +181,11 @@ const Step1: React.FC<Props> = ({ api, data, setData }) => {
               </FormControl>
 
               <FormControl>
-                <Label margin="0 0 5px 0">
-                  <Text variant="medium">Description *</Text>
-                </Label>{" "}
+                <FormLabel>Description</FormLabel>
                 <Textarea
                   maxRows={4}
                   minRows={4}
-                  size="lg"
+                  size="md"
                   variant="outlined"
                   value={data.description}
                   onChange={(e) =>
@@ -204,9 +201,8 @@ const Step1: React.FC<Props> = ({ api, data, setData }) => {
           <Grid xs={6}>
             <Container padding="0 20px" gap="20px">
               <FormControl>
-                <Label margin="0 0 5px 0">
-                  <Text variant="medium">Upload Business Profile *</Text>
-                </Label>{" "}
+                <FormLabel>Upload Image</FormLabel>
+
                 <div
                   style={{
                     display: "flex",
@@ -256,7 +252,7 @@ const Step1: React.FC<Props> = ({ api, data, setData }) => {
                   </div>
 
                   <Button
-                    size="lg"
+                    size="md"
                     variant="outlined"
                     color="primary"
                     startDecorator={<UploadIcon />}

@@ -4,7 +4,7 @@ import React from "react";
 import type { Business } from "@/src/types/Business";
 import CardHeader from "@/src/components/CardHeader";
 import { AddBox, Language, EventAvailable } from "@mui/icons-material";
-import { FormControl, Grid, Input, Select, Option } from "@mui/joy";
+import { FormControl, Grid, Input, Select, Option, FormLabel } from "@mui/joy";
 import Container from "@/src/components/Container";
 import Label from "@/src/components/Label";
 import { ToggleButton, ToggleButtonGroup } from "@mui/material";
@@ -49,7 +49,10 @@ const Step4: React.FC<Props> = ({
   };
 
   return (
-    <div className="stepperContent" style={{ overflow: "auto", overflowX: "hidden" }}>
+    <div
+      className="stepperContent"
+      style={{ overflow: "auto", overflowX: "hidden" }}
+    >
       <div
         style={{
           display: "flex",
@@ -83,12 +86,10 @@ const Step4: React.FC<Props> = ({
                 },
               ].map(({ platform, icon }) => (
                 <FormControl key={platform}>
-                  <Label margin="0 0 5px 0">
-                    <Text variant="medium">{platform}</Text>
-                  </Label>
+                  <FormLabel>{platform}</FormLabel>
                   <Input
                     variant="outlined"
-                    size="lg"
+                    size="md"
                     startDecorator={icon}
                     value={(data as any)[`${platform.toLowerCase()}_url`] || ""}
                     onChange={(e) =>
@@ -113,9 +114,7 @@ const Step4: React.FC<Props> = ({
             <Grid xs={8}>
               <Container padding="0 20px" gap="20px">
                 <FormControl>
-                  <Label margin="0 0 5px 0">
-                    <Text variant="medium">Booking Options *</Text>
-                  </Label>
+                  <FormLabel>Booking Options</FormLabel>
                   <ToggleButtonGroup
                     color="primary"
                     value={
@@ -177,16 +176,13 @@ const Step4: React.FC<Props> = ({
                 {/* External Booking Selected */}
                 {data.hasBooking === false && (
                   <Container padding="10px 0" gap="15px">
-                    <Label>
-                      <Text variant="medium">External Booking Platforms</Text>
-                    </Label>
-
+                    <FormLabel>External Booking Platforms</FormLabel>
                     {bookingSite.map((site, index) => (
                       <Grid container spacing={2} key={index}>
                         <Grid xs={4}>
                           <FormControl>
                             <Select
-                              size="lg"
+                              size="md"
                               placeholder="Select Platform"
                               value={site.name}
                               onChange={(_event, value) => {
@@ -207,7 +203,7 @@ const Step4: React.FC<Props> = ({
                         <Grid xs={8}>
                           <FormControl>
                             <Input
-                              size="lg"
+                              size="md"
                               placeholder="Paste the link here."
                               value={site.link}
                               onChange={(e) => {
@@ -222,7 +218,7 @@ const Step4: React.FC<Props> = ({
                     ))}
 
                     <Button
-                      size="lg"
+                      size="md"
                       startDecorator={<AddBox />}
                       onClick={addBookingSite}
                       variant="outlined"

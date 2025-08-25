@@ -3,7 +3,7 @@ import type { Business } from "@/src/types/Business";
 import axios from "axios";
 import CardHeader from "@/src/components/CardHeader";
 import Container from "@/src/components/Container";
-import { Button, FormControl, Grid, Input } from "@mui/joy";
+import { Button, FormControl, FormLabel, Grid, Input } from "@mui/joy";
 import { Select, Option } from "@mui/joy";
 import Label from "@/src/components/Label";
 import Text from "@/src/components/Text";
@@ -130,12 +130,10 @@ const Step3: React.FC<Props> = ({ api, data, setData }) => {
         <Grid container columns={12}>
           <Grid xs={4}>
             <Container padding="0 20px " gap="20px">
-              <FormControl>
-                <Label margin="0 0 5px 0">
-                  <Text variant="medium">Province *</Text>
-                </Label>
+              <FormControl required>
+                <FormLabel>Province</FormLabel>
                 <Select
-                  size="lg"
+                  size="md"
                   placeholder="-- Select a province --"
                   value={data.province_id?.toString() ?? ""}
                   onChange={(e, value) => {
@@ -156,12 +154,10 @@ const Step3: React.FC<Props> = ({ api, data, setData }) => {
                 </Select>
               </FormControl>
 
-              <FormControl>
-                <Label margin="0 0 5px 0">
-                  <Text variant="medium">Municipality *</Text>
-                </Label>
+              <FormControl required>
+                <FormLabel>Municipality</FormLabel>
                 <Select
-                  size="lg"
+                  size="md"
                   placeholder="-- Select municipality --"
                   value={data.municipality_id?.toString() ?? ""}
                   onChange={(e, value) => {
@@ -186,12 +182,10 @@ const Step3: React.FC<Props> = ({ api, data, setData }) => {
                 </Select>
               </FormControl>
 
-              <FormControl>
-                <Label margin="0 0 5px 0">
-                  <Text variant="medium">Barangay *</Text>
-                </Label>
+              <FormControl required>
+                <FormLabel>Barangay</FormLabel>
                 <Select
-                  size="lg"
+                  size="md"
                   placeholder="-- Select barangay --"
                   value={data.barangay_id?.toString() ?? ""}
                   onChange={(e, value) => {
@@ -249,13 +243,11 @@ const Step3: React.FC<Props> = ({ api, data, setData }) => {
               <Container padding="0">
                 <Grid container spacing={3} columns={12}>
                   <Grid xs={6}>
-                    <FormControl>
-                      <Label margin="0 0 5px 0">
-                        <Text variant="medium">Longitude *</Text>
-                      </Label>
+                    <FormControl required>
+                      <FormLabel>Longitude</FormLabel>
                       <Input
                         variant="outlined"
-                        size="lg"
+                        size="md"
                         value={data.longitude}
                         onChange={(e) =>
                           setData((prev) => ({
@@ -267,13 +259,12 @@ const Step3: React.FC<Props> = ({ api, data, setData }) => {
                     </FormControl>
                   </Grid>
                   <Grid xs={6}>
-                    <FormControl>
-                      <Label margin="0 0 5px 0">
-                        <Text variant="medium">Latitude *</Text>
-                      </Label>
+                    <FormControl required>
+                      <FormLabel>Latitude</FormLabel>
+
                       <Input
                         variant="outlined"
-                        size="lg"
+                        size="md"
                         value={data.latitude}
                         onChange={(e) =>
                           setData((prev) => ({

@@ -1,4 +1,3 @@
-import React from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
   Box,
@@ -26,7 +25,6 @@ const pageTitles: Record<string, string> = {
   "/rooms": "Manage Rooms",
   "/offers": "Manage Offers",
   "/amenities": "Manage Amenities",
-
 };
 
 export default function MainHeader() {
@@ -43,7 +41,8 @@ export default function MainHeader() {
   return (
     <AppBar
       position="static"
-      sx={{ backgroundColor: "#fff", color: "#000", boxShadow: 1 }}
+      elevation={4}
+      sx={{ backgroundColor: "#fff", color: "#000", boxShadow: 2 }}
     >
       <Toolbar sx={{ display: "flex", justifyContent: "space-between" }}>
         {/* Left - Page Title */}
@@ -68,7 +67,7 @@ export default function MainHeader() {
             }}
           >
             <Typography variant="subtitle2" sx={{ fontWeight: "bold" }}>
-              {user?.first_name}
+              {user?.first_name} {user?.last_name}
             </Typography>
             <Typography variant="caption" sx={{ color: "text.secondary" }}>
               {user?.email}
