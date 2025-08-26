@@ -70,6 +70,24 @@ const Step3: React.FC<Props> = ({ api, data, setData }) => {
     }
   };
 
+  
+
+  React.useEffect(() => {
+    fetchProvince();
+  }, []);
+
+  React.useEffect(() => {
+    if (data.province_id) {
+      fetchMunicipality(data.province_id);
+    }
+  }, [data.province_id]);
+
+  React.useEffect(() => {
+    if (data.municipality_id) {
+      fetchBarangay(data.municipality_id);
+    }
+  }, [data.municipality_id]);
+
   const handleGetCurrentLocation = () => {
     if (!navigator.geolocation) {
       alert("Geolocation is not supported by your browser");
@@ -95,22 +113,6 @@ const Step3: React.FC<Props> = ({ api, data, setData }) => {
       }
     );
   };
-
-  React.useEffect(() => {
-    fetchProvince();
-  }, []);
-
-  React.useEffect(() => {
-    if (data.province_id) {
-      fetchMunicipality(data.province_id);
-    }
-  }, [data.province_id]);
-
-  React.useEffect(() => {
-    if (data.municipality_id) {
-      fetchBarangay(data.municipality_id);
-    }
-  }, [data.municipality_id]);
 
   return (
     <div className="stepperContent">

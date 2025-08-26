@@ -1,5 +1,5 @@
 import React from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { styled } from "@mui/material/styles";
 import { useAuth } from "@/src/context/AuthContext";
 import logo from "../assets/images/light-logo.png";
@@ -15,6 +15,8 @@ import {
   MenuItem,
   Divider,
 } from "@mui/material";
+import Link from "@mui/joy/Link";
+import { colors } from "../utils/Colors";
 
 // Styled components for cleaner look
 const LogoImg = styled("img")({
@@ -64,12 +66,30 @@ export default function Header(): React.JSX.Element {
 
         {/* Right: Navigation */}
         <Box sx={{ display: "flex", gap: 2, alignItems: "center" }}>
-          <Button color="inherit" component={Link} to="/business">
+          <Link
+            underline="none"
+            variant="plain"
+            href="/business"
+            level="title-md"
+            sx={{
+              color: colors.white,
+              ":hover": { backgroundColor: colors.primary },
+            }}
+          >
             Business
-          </Button>
-          <Button color="inherit" component={Link} to="/request">
+          </Link>
+          <Link
+            underline="none"
+            variant="plain"
+            href="/request"
+            level="title-md"
+            sx={{
+              color: colors.white,
+              ":hover": { backgroundColor: colors.primary },
+            }}
+          >
             Request
-          </Button>
+          </Link>
 
           {/* Profile Icon */}
           <IconButton onClick={handleMenuOpen} sx={{ color: "white" }}>

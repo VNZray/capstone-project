@@ -24,6 +24,7 @@ interface RoomCardProps {
   guests: number;
   amenities: string[];
   onDeleted: () => void;
+  onClick: () => void;
 }
 
 const RoomCard: React.FC<RoomCardProps> = ({
@@ -37,6 +38,7 @@ const RoomCard: React.FC<RoomCardProps> = ({
   guests,
   amenities,
   onDeleted,
+  onClick,
 }) => {
   const editRoom = () => {};
 
@@ -160,7 +162,7 @@ const RoomCard: React.FC<RoomCardProps> = ({
         </Box>
       </CardContent>
       <CardActions sx={{ justifyContent: "center" }}>
-        <Button onClick={editRoom} fullWidth variant="solid">
+        <Button onClick={onClick} fullWidth variant="solid">
           View Details
         </Button>
         <IconButton

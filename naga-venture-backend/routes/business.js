@@ -8,5 +8,6 @@ router.post("/", businessController.insertBusiness);
 router.get("/:id", businessController.getBusinessId);
 router.put("/:id", businessController.updateBusiness);
 router.get("/owner/:id", businessController.getBusinessByOwnerId);
+router.delete("/:id", businessController.deleteBusiness);
 
 export default router;

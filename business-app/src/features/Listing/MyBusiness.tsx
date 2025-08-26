@@ -6,7 +6,7 @@ import Text from "@/src/components/Text";
 import { useAuth } from "@/src/context/AuthContext";
 import { useBusiness } from "@/src/context/BusinessContext";
 import Card from "./components/Card";
-import placeholderImage from "@/src/assets/images/uma-hotel-residences.jpg";
+import placeholderImage from "@/src/assets/images/placeholder-image.png";
 import type { Business } from "@/src/types/Business";
 import { fetchBusinessesByOwner } from "@/src/services/BusinessService";
 import Container from "@/src/components/Container";
@@ -76,7 +76,7 @@ const MyBusiness = () => {
       </Container>
 
       <Text variant="paragraph">
-        Showing you listed business {businesses.length}
+        Showing your listed business {businesses.length}
       </Text>
 
       <div
