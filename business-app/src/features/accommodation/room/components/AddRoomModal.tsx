@@ -15,7 +15,7 @@ import {
   Textarea,
   Grid,
 } from "@mui/joy";
-import placeholderImage from "@/public/placeholder-image.png";
+import placeholderImage from "@/src/assets/images/placeholder-image.png";
 import type { Room } from "@/src/types/Business";
 import { useBusiness } from "@/src/context/BusinessContext";
 import CardHeader from "@/src/components/CardHeader";

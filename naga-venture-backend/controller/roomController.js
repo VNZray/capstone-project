@@ -31,11 +31,11 @@ export async function getRoomById(request, response) {
   try {
     const [data] = await db.query("SELECT * FROM room WHERE id = ?", [id]);
     if (data.length === 0) {
-      return response.status(404).json({ message: "Data not found" });
+      return response.status(404).json({ message: "Room not found" });
     }
-    response.json(data);
+    response.json(data[0]);
   } catch (error) {
-    return handleDbError(error, response);
+    handleDbError(error, response);
   }
 }
 
@@ -43,7 +43,7 @@ export async function getRoomById(request, response) {
 export const getRoomByBusinessId = async (request, response) => {
   const { id } = request.query;
   try {
-    const [data] = await db.query("SELECT * FROM room WHERE business_id = ?", [
+    const [data] = await db.query("SELECT * FROM room WHERE business_id = ? ORDER BY id ASC", [
       id,
     ]);
     response.json(data);
@@ -107,8 +107,16 @@ export async function insertRoom(request, response) {
 // update data by ID
 export async function updateRoom(request, response) {
   const { id } = request.params;
+
   try {
-    const fields = [
+    // Check if the room exists
+    const [existing] = await db.query("SELECT * FROM room WHERE id = ?", [id]);
+    if (existing.length === 0) {
+      return response.status(404).json({ message: "Room not found" });
+    }
+
+    // Only update fields provided in request.body
+    const allowedFields = [
       "business_id",
       "room_number",
       "room_type",
@@ -119,24 +127,35 @@ export async function updateRoom(request, response) {
       "capacity",
       "floor",
     ];
-    const updates = fields.map((f) => request.body[f] ?? null);
 
-    const [data] = await db.query(
-      `UPDATE room 
-       SET ${fields.map((f) => `${f} = ?`).join(", ")}
-       WHERE id = ?`,
-      [...updates, id]
+    // Filter fields to only those present in request.body
+    const fieldsToUpdate = allowedFields.filter((field) =>
+      Object.prototype.hasOwnProperty.call(request.body, field)
     );
 
-    if (data.affectedRows === 0) {
-      return response.status(404).json({ message: "Data not found" });
+    if (fieldsToUpdate.length === 0) {
+      return response
+        .status(400)
+        .json({ message: "No valid fields provided for update" });
     }
 
-    const [updated] = await db.query("SELECT * FROM room WHERE id = ?", [id]);
+    const values = fieldsToUpdate.map((f) => request.body[f]);
 
-    response.json(updated);
+    await db.query(
+      `UPDATE room SET ${fieldsToUpdate
+        .map((f) => `${f} = ?`)
+        .join(", ")} WHERE id = ?`,
+      [...values, id]
+    );
+
+    // Retrieve the updated data
+    const [data] = await db.query("SELECT * FROM room WHERE id = ?", [id]);
+    response.json({
+      message: "Room updated successfully",
+      ...data[0],
+    });
   } catch (error) {
-    return handleDbError(error, response);
+    handleDbError(error, response);
   }
 }
 

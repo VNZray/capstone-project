@@ -69,7 +69,7 @@ const Card: React.FC<CardProps> = ({
                 >
                   {status}
                 </Chip>
-              )}{" "}
+              )}
             </Grid>
             <Grid xs={4}>
               <Text justify="right" variant="normal">

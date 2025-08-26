@@ -12,15 +12,15 @@ import AddRoomModal from "./components/AddRoomModal";
 import RoomCard from "./components/RoomCard";
 type Status = "All" | "Available" | "Occupied" | "Maintenance";
 import { useBusiness } from "@/src/context/BusinessContext";
-import { getDataById } from "@/src/api_function";
+import { getData } from "@/src/api_function";
 import type { Room } from "@/src/types/Business";
-
-import placeholderImage from "@/public/placeholder-image.png";
-
-const Room = () => {
+import { useRoom } from "@/src/context/RoomContext";
+import placeholderImage from "@/src/assets/images/placeholder-image.png";
+import { useNavigate } from "react-router-dom";
+const RoomPage = () => {
+  const navigate = useNavigate();
   const [status, setStatus] = useState<Status>("All");
   const [openModal, setOpenModal] = useState(false);
-  const [allRooms, setAllRooms] = useState<Room[]>([]);
 
   const [roomCount, setRoomCount] = useState(0);
   const [availableCount, setAvailableCount] = useState(0);
@@ -30,23 +30,27 @@ const Room = () => {
   const { businessDetails } = useBusiness();
 
   const [search, setSearch] = useState("");
+  const { setRoomId } = useRoom();
+  const [rooms, setRooms] = useState<Room[]>([]);
 
-  // ✅ Filter rooms dynamically
-  const filteredRooms = allRooms.filter((room) => {
+  // Filter rooms dynamically
+  const filteredRooms = rooms.filter((room) => {
     const matchesSearch =
       room.room_number.toLowerCase().includes(search.toLowerCase()) ||
       room.room_type.toLowerCase().includes(search.toLowerCase());
 
-    const matchesStatus =
-      status === "All" ? true : room.status === status;
+    const matchesStatus = status === "All" ? true : room.status === status;
 
     return matchesSearch && matchesStatus;
   });
 
   const fetchRooms = async () => {
     if (!businessDetails?.id) return;
-    const response = await getDataById("room", businessDetails.id);
-    setAllRooms(Array.isArray(response) ? response : []);
+    const response = await getData("room");
+    const filtered = Array.isArray(response)
+      ? response.filter((room) => room.business_id === businessDetails.id)
+      : [];
+    setRooms(filtered);
   };
 
   useEffect(() => {
@@ -56,17 +60,15 @@ const Room = () => {
   }, [businessDetails?.id]);
 
   useEffect(() => {
-    setRoomCount(allRooms.length);
+    setRoomCount(rooms.length);
     setAvailableCount(
-      allRooms.filter((room) => room.status === "Available").length
+      rooms.filter((room) => room.status === "Available").length
     );
-    setOccupiedCount(
-      allRooms.filter((room) => room.status === "Occupied").length
-    );
+    setOccupiedCount(rooms.filter((room) => room.status === "Occupied").length);
     setMaintenanceCount(
-      allRooms.filter((room) => room.status === "Maintenance").length
+      rooms.filter((room) => room.status === "Maintenance").length
     );
-  }, [allRooms]);
+  }, [rooms]);
 
   return (
     <PageContainer>
@@ -188,6 +190,10 @@ const Room = () => {
               price={room.room_price}
               guests={2}
               amenities={[]}
+              onClick={async () => {
+                setRoomId(room.id); // ensure stored
+                navigate("/room-profile");
+              }}
             />
           ))}
         </div>
@@ -196,4 +202,4 @@ const Room = () => {
   );
 };
 
-export default Room;
+export default RoomPage;

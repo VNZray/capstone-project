@@ -7,31 +7,37 @@ import StarIcon from "@mui/icons-material/Star";
 import EditIcon from "@mui/icons-material/Edit";
 import { useAddress } from "@/src/hooks/useAddress";
 import { colors } from "@/src/utils/Colors";
-import { Button, Grid, Sheet, Typography } from "@mui/joy";
+import { Button, Chip, Grid, Sheet, Typography } from "@mui/joy";
 import BusinessMap from "./components/businessMap"; // <-- new import
-import {
-  LucidePhone,
-  LucideGlobe,
-  LucideDollarSign,
-  PhilippinePeso,
-} from "lucide-react";
+import { LucidePhone, LucideGlobe, PhilippinePeso } from "lucide-react";
 import Container from "@/src/components/Container";
-import { MdEmail, MdFacebook, MdCamera } from "react-icons/md";
-import { Facebook, Instagram, X } from "@mui/icons-material";
+import { MdEmail, MdEventAvailable, MdFacebook } from "react-icons/md";
+import {
+  Instagram,
+  LocalActivityRounded,
+  NotificationsActive,
+  X,
+} from "@mui/icons-material";
 import EditDescriptionModal from "./components/EditDescription";
 import type { Business } from "@/src/types/Business";
 import React, { useState } from "react";
 import EditContactModal from "./components/EditContactModal";
 import EditSocialMediaModal from "./components/EditSocialMediaModal";
 import EditPricingModal from "./components/EditPricingModal";
+import EditAddressModal from "./components/EditAddressModal";
+import EditMapCoordinatesModal from "./components/EditMapCoordinatesModal";
+import EditBusinessModal from "./components/EditBusinessModal";
 
 const BusinessProfile = () => {
   const { businessDetails } = useBusiness();
-  const { address, loading } = useAddress(businessDetails?.barangay_id);
+  const { address } = useAddress(businessDetails?.barangay_id);
+  const [editBusinessOpen, setEditBusinessOpen] = useState(false);
   const [editDescOpen, setEditDescOpen] = useState(false);
   const [editContactOpen, setEditContactOpen] = useState(false);
   const [editSocialMediaOpen, setEditSocialMediaOpen] = useState(false);
   const [editPricingOpen, setEditPricingOpen] = useState(false);
+  const [editAddressOpen, setEditAddressOpen] = useState(false);
+  const [editMapCoordinatesOpen, setEditMapCoordinatesOpen] = useState(false);
 
   const [businessData, setBusinessData] = React.useState<Business>({
     id: businessDetails?.id || "",
@@ -57,8 +63,27 @@ const BusinessProfile = () => {
     hasBooking: businessDetails?.hasBooking || false,
   });
 
-  const handleSaveDescription = (data: string) => {
-    setBusinessData({ ...businessData, description: data });
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "Approved":
+        return "success";
+      case "Active":
+        return "success";
+      case "Pending":
+        return "neutral";
+      case "Rejected":
+        return "danger";
+      default:
+        return "neutral"; // fallback
+    }
+  };
+
+  const handleSaveBusiness = (business_name: string) => {
+    setBusinessData({ ...businessData, business_name: business_name });
+  };
+
+  const handleSaveDescription = (description: string) => {
+    setBusinessData({ ...businessData, description: description });
   };
 
   const handleSaveContact = (email: string, phone_number: string) => {
@@ -90,6 +115,27 @@ const BusinessProfile = () => {
     });
   };
 
+  const handleSaveAddress = (
+    province_id: number,
+    municipality_id: number,
+    barangay_id: number
+  ) => {
+    setBusinessData({
+      ...businessData,
+      province_id: province_id,
+      municipality_id: municipality_id,
+      barangay_id: barangay_id,
+    });
+  };
+
+  const handleSaveMapCoordinates = (latitude: string, longitude: string) => {
+    setBusinessData({
+      ...businessData,
+      latitude: latitude,
+      longitude: longitude,
+    });
+  };
+
   return (
     <PageContainer
       style={{
@@ -105,7 +151,8 @@ const BusinessProfile = () => {
           padding: "20px",
           display: "flex",
           alignItems: "center",
-          borderRadius: "20px",
+          borderRadius: "16px",
+
           flexDirection: "column",
           gap: "20px",
         }}
@@ -116,7 +163,8 @@ const BusinessProfile = () => {
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
-            borderRadius: "20px",
+            borderRadius: "16px",
+
             width: "100%",
           }}
         >
@@ -129,11 +177,11 @@ const BusinessProfile = () => {
             }}
           >
             <img
-              width={120}
-              height={120}
+              width={130}
+              height={130}
               className="card-image"
               src={businessDetails?.business_image || ""}
-              style={{ borderRadius: "10px" }}
+              style={{ borderRadius: "16px" }}
             />
             <div
               style={{
@@ -170,6 +218,16 @@ const BusinessProfile = () => {
               >
                 Review
               </Typography>
+              {businessDetails?.status && (
+                <Chip
+                  size="lg"
+                  color={getStatusColor(businessDetails.status)}
+                  variant="soft"
+                  sx={{ mt: 1 }}
+                >
+                  {businessDetails.status}
+                </Chip>
+              )}
             </div>
           </div>
 
@@ -182,6 +240,7 @@ const BusinessProfile = () => {
               variant="outlined"
               style={{ flex: 1, minHeight: "50px" }}
               startDecorator={<EditIcon />}
+              onClick={() => setEditBusinessOpen(true)}
             >
               Edit Business
             </Button>
@@ -194,7 +253,7 @@ const BusinessProfile = () => {
         elevation={3}
         style={{
           padding: "20px",
-          borderRadius: "20px",
+          borderRadius: "16px",
           display: "flex",
           flexDirection: "column",
           gap: "20px",
@@ -222,7 +281,7 @@ const BusinessProfile = () => {
                 About your business
               </Typography>
 
-              <Typography fontFamily={"poppins"} level="body-sm">
+              <Typography fontFamily={"poppins"} level="body-md">
                 Share your story and attract more customers with a compelling
                 description
               </Typography>
@@ -267,7 +326,7 @@ const BusinessProfile = () => {
                 borderRadius: "12px",
                 display: "flex",
                 flexDirection: "column",
-                gap: "10px",
+                gap: "20px",
               }}
               variant="soft"
               color="neutral"
@@ -322,7 +381,7 @@ const BusinessProfile = () => {
                     >
                       Contact number
                     </Typography>
-                    <Typography fontFamily={"poppins"} level="body-sm">
+                    <Typography fontFamily={"poppins"} level="body-md">
                       {businessDetails?.phone_number || "Not provided"}
                     </Typography>
                   </div>
@@ -352,7 +411,7 @@ const BusinessProfile = () => {
                     >
                       Email
                     </Typography>
-                    <Typography fontFamily={"poppins"} level="body-sm">
+                    <Typography fontFamily={"poppins"} level="body-md">
                       {businessDetails?.email || "Not provided"}
                     </Typography>
                   </div>
@@ -366,7 +425,235 @@ const BusinessProfile = () => {
                 borderRadius: "12px",
                 display: "flex",
                 flexDirection: "column",
-                gap: "10px",
+                gap: "20px",
+              }}
+              variant="soft"
+              color="neutral"
+            >
+              <Typography
+                fontFamily={"poppins"}
+                level="title-lg"
+                fontWeight={600}
+                sx={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                }}
+              >
+                Address
+                <Button
+                  color="primary"
+                  style={{ height: "100%" }}
+                  variant="outlined"
+                  size="md"
+                  startDecorator={<EditIcon />}
+                  onClick={() => setEditAddressOpen(true)}
+                >
+                  Edit
+                </Button>
+              </Typography>
+
+              <Container direction="row" align="center">
+                <Sheet
+                  sx={{
+                    borderRadius: "8px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    width: 50,
+                    height: 50,
+                  }}
+                  color="neutral"
+                  variant="soft"
+                >
+                  <LocationOnIcon color="primary" fontSize="large" />
+                </Sheet>
+                <div>
+                  <Typography
+                    fontFamily={"poppins"}
+                    level="title-md"
+                    fontWeight={600}
+                  >
+                    Province
+                  </Typography>
+                  <Typography fontFamily={"poppins"} level="body-md">
+                    {address?.province_name}
+                  </Typography>
+                </div>
+              </Container>
+
+              <Container direction="row" align="center">
+                <Sheet
+                  sx={{
+                    borderRadius: "8px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    width: 50,
+                    height: 50,
+                  }}
+                  color="neutral"
+                  variant="soft"
+                >
+                  <LocationOnIcon color="primary" fontSize="large" />
+                </Sheet>
+                <div>
+                  <Typography
+                    fontFamily={"poppins"}
+                    level="title-md"
+                    fontWeight={600}
+                  >
+                    Municipality
+                  </Typography>
+                  <Typography fontFamily={"poppins"} level="body-md">
+                    {address?.municipality_name}
+                  </Typography>
+                </div>
+              </Container>
+
+              <Container direction="row" align="center">
+                <Sheet
+                  sx={{
+                    borderRadius: "8px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    width: 50,
+                    height: 50,
+                  }}
+                  color="neutral"
+                  variant="soft"
+                >
+                  <LocationOnIcon color="primary" fontSize="large" />
+                </Sheet>
+                <div>
+                  <Typography
+                    fontFamily={"poppins"}
+                    level="title-md"
+                    fontWeight={600}
+                  >
+                    Barangay
+                  </Typography>
+                  <Typography fontFamily={"poppins"} level="body-md">
+                    {address?.barangay_name}
+                  </Typography>
+                </div>
+              </Container>
+            </Sheet>
+
+            <Sheet
+              sx={{
+                p: 2,
+                borderRadius: "12px",
+                display: "flex",
+                flexDirection: "column",
+                gap: "20px",
+              }}
+              variant="soft"
+              color="neutral"
+            >
+              <Typography
+                fontFamily={"poppins"}
+                level="title-lg"
+                fontWeight={600}
+                sx={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                }}
+              >
+                Map Coordinates
+                <Button
+                  color="primary"
+                  style={{ height: "100%" }}
+                  variant="outlined"
+                  size="md"
+                  startDecorator={<EditIcon />}
+                  onClick={() => setEditMapCoordinatesOpen(true)}
+                >
+                  Edit
+                </Button>
+              </Typography>
+
+              <Container direction="row" align="center">
+                <Sheet
+                  sx={{
+                    borderRadius: "8px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    width: 50,
+                    height: 50,
+                  }}
+                  color="neutral"
+                  variant="soft"
+                >
+                  <LocationOnIcon color="primary" fontSize="large" />
+                </Sheet>
+                <div>
+                  <Typography
+                    fontFamily={"poppins"}
+                    level="title-md"
+                    fontWeight={600}
+                  >
+                    Latitude
+                  </Typography>
+                  <Typography fontFamily={"poppins"} level="body-md">
+                    {businessDetails?.latitude}
+                  </Typography>
+                </div>
+              </Container>
+
+              <Container direction="row" align="center">
+                <Sheet
+                  sx={{
+                    borderRadius: "8px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    width: 50,
+                    height: 50,
+                  }}
+                  color="neutral"
+                  variant="soft"
+                >
+                  <LocationOnIcon color="primary" fontSize="large" />
+                </Sheet>
+                <div>
+                  <Typography
+                    fontFamily={"poppins"}
+                    level="title-md"
+                    fontWeight={600}
+                  >
+                    Longitude
+                  </Typography>
+                  <Typography fontFamily={"poppins"} level="body-md">
+                    {businessDetails?.longitude}
+                  </Typography>
+                </div>
+              </Container>
+
+              {/* Map Component */}
+              <BusinessMap
+                latitude={businessDetails?.latitude}
+                longitude={businessDetails?.longitude}
+                name={businessDetails?.business_name}
+              />
+            </Sheet>
+          </Grid>
+
+          {/* Social Media */}
+          <Grid
+            xs={6}
+            sx={{ display: "flex", flexDirection: "column", gap: "20px" }}
+          >
+            <Sheet
+              sx={{
+                p: 2,
+                borderRadius: "12px",
+                display: "flex",
+                flexDirection: "column",
+                gap: "20px",
               }}
               variant="soft"
               color="neutral"
@@ -417,7 +704,7 @@ const BusinessProfile = () => {
                   >
                     Price Range
                   </Typography>
-                  <Typography fontFamily={"poppins"} level="body-sm">
+                  <Typography fontFamily={"poppins"} level="body-md">
                     ₱{businessDetails?.min_price?.toLocaleString()}
                     {" - "}₱{businessDetails?.max_price?.toLocaleString()}
                   </Typography>
@@ -432,133 +719,6 @@ const BusinessProfile = () => {
                 display: "flex",
                 flexDirection: "column",
                 gap: "20px",
-              }}
-              variant="soft"
-              color="neutral"
-            >
-              <Typography
-                fontFamily={"poppins"}
-                level="title-lg"
-                fontWeight={600}
-                sx={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                }}
-              >
-                Address
-                <Button
-                  color="primary"
-                  style={{ height: "100%" }}
-                  variant="outlined"
-                  size="md"
-                  startDecorator={<EditIcon />}
-                >
-                  Edit
-                </Button>
-              </Typography>
-
-              <Container direction="row" align="center">
-                <Sheet
-                  sx={{
-                    borderRadius: "8px",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    width: 50,
-                    height: 50,
-                  }}
-                  color="neutral"
-                  variant="soft"
-                >
-                  <LocationOnIcon color="primary" fontSize="large" />
-                </Sheet>
-                <div>
-                  <Typography
-                    fontFamily={"poppins"}
-                    level="title-md"
-                    fontWeight={600}
-                  >
-                    Province
-                  </Typography>
-                  <Typography fontFamily={"poppins"} level="body-sm">
-                    {address?.province_name}
-                  </Typography>
-                </div>
-              </Container>
-
-              <Container direction="row" align="center">
-                <Sheet
-                  sx={{
-                    borderRadius: "8px",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    width: 50,
-                    height: 50,
-                  }}
-                  color="neutral"
-                  variant="soft"
-                >
-                  <LocationOnIcon color="primary" fontSize="large" />
-                </Sheet>
-                <div>
-                  <Typography
-                    fontFamily={"poppins"}
-                    level="title-md"
-                    fontWeight={600}
-                  >
-                    Municipality
-                  </Typography>
-                  <Typography fontFamily={"poppins"} level="body-sm">
-                    {address?.municipality_name}
-                  </Typography>
-                </div>
-              </Container>
-
-              <Container direction="row" align="center">
-                <Sheet
-                  sx={{
-                    borderRadius: "8px",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    width: 50,
-                    height: 50,
-                  }}
-                  color="neutral"
-                  variant="soft"
-                >
-                  <LocationOnIcon color="primary" fontSize="large" />
-                </Sheet>
-                <div>
-                  <Typography
-                    fontFamily={"poppins"}
-                    level="title-md"
-                    fontWeight={600}
-                  >
-                    Barangay
-                  </Typography>
-                  <Typography fontFamily={"poppins"} level="body-sm">
-                    {address?.barangay_name}
-                  </Typography>
-                </div>
-              </Container>
-            </Sheet>
-          </Grid>
-
-          {/* Social Media */}
-          <Grid
-            xs={6}
-            sx={{ display: "flex", flexDirection: "column", gap: "20px" }}
-          >
-            <Sheet
-              sx={{
-                p: 2,
-                borderRadius: "12px",
-                display: "flex",
-                flexDirection: "column",
-                gap: "10px",
               }}
               variant="soft"
               color="neutral"
@@ -614,7 +774,7 @@ const BusinessProfile = () => {
                     >
                       Facebook
                     </Typography>
-                    <Typography fontFamily={"poppins"} level="body-sm">
+                    <Typography fontFamily={"poppins"} level="body-md">
                       {businessDetails?.facebook_url || "Not provided"}
                     </Typography>
                   </div>
@@ -644,7 +804,7 @@ const BusinessProfile = () => {
                     >
                       Instagram
                     </Typography>
-                    <Typography fontFamily={"poppins"} level="body-sm">
+                    <Typography fontFamily={"poppins"} level="body-md">
                       {businessDetails?.instagram_url || "Not provided"}
                     </Typography>
                   </div>
@@ -673,7 +833,7 @@ const BusinessProfile = () => {
                     >
                       Twitter
                     </Typography>
-                    <Typography fontFamily={"poppins"} level="body-sm">
+                    <Typography fontFamily={"poppins"} level="body-md">
                       {businessDetails?.tiktok_url || "Not provided"}
                     </Typography>
                   </div>
@@ -681,14 +841,161 @@ const BusinessProfile = () => {
               </Container>
             </Sheet>
 
-            {!businessDetails?.hasBooking && (
+            {businessDetails?.business_type_id === 1 &&
+              (businessDetails?.hasBooking ? (
+                <Sheet
+                  sx={{
+                    p: 2,
+                    borderRadius: "12px",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "20px",
+                  }}
+                  variant="soft"
+                  color="neutral"
+                >
+                  <Typography
+                    fontFamily={"poppins"}
+                    level="title-lg"
+                    fontWeight={600}
+                    sx={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                    }}
+                  >
+                    Booking Features
+                    <Button
+                      color="primary"
+                      style={{ height: "100%" }}
+                      variant="outlined"
+                      size="md"
+                      startDecorator={<EditIcon />}
+                    >
+                      Edit
+                    </Button>
+                  </Typography>
+
+                  <Container direction="row" align="center">
+                    <Sheet
+                      sx={{
+                        borderRadius: "8px",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        width: 50,
+                        height: 50,
+                      }}
+                      color="neutral"
+                      variant="soft"
+                    >
+                      <LucideGlobe color={colors.secondary} size={28} />
+                    </Sheet>
+                    <div>
+                      <Typography
+                        fontFamily={"poppins"}
+                        level="title-md"
+                        fontWeight={600}
+                      >
+                        Booking System
+                      </Typography>
+                      <Typography fontFamily={"poppins"} level="body-md">
+                        On
+                      </Typography>
+                    </div>
+                  </Container>
+                </Sheet>
+              ) : (
+                <Sheet
+                  sx={{
+                    p: 2,
+                    borderRadius: "12px",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "20px",
+                  }}
+                  variant="soft"
+                  color="neutral"
+                >
+                  <Typography
+                    fontFamily={"poppins"}
+                    level="title-lg"
+                    fontWeight={600}
+                    sx={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                    }}
+                  >
+                    Booking Features
+                  </Typography>
+                  <Container direction="row" align="center">
+                    <Sheet
+                      sx={{
+                        borderRadius: "8px",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        width: 50,
+                        height: 50,
+                      }}
+                      color="neutral"
+                      variant="soft"
+                    >
+                      <LucideGlobe color={colors.secondary} size={28} />
+                    </Sheet>
+                    <div>
+                      <Typography
+                        fontFamily={"poppins"}
+                        level="title-md"
+                        fontWeight={600}
+                      >
+                        Booking System
+                      </Typography>
+                      <Typography fontFamily={"poppins"} level="body-md">
+                        Off
+                      </Typography>
+                    </div>
+                  </Container>
+                  <Container direction="row" align="center">
+                    <Sheet
+                      sx={{
+                        borderRadius: "8px",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        width: 50,
+                        height: 50,
+                      }}
+                      color="neutral"
+                      variant="soft"
+                    >
+                      <LucideGlobe color={colors.secondary} size={28} />
+                    </Sheet>
+                    <div>
+                      <Typography
+                        fontFamily={"poppins"}
+                        level="title-md"
+                        fontWeight={600}
+                      >
+                        External Booking
+                      </Typography>
+                      <Typography fontFamily={"poppins"} level="body-md">
+                        Not provided
+                      </Typography>
+                    </div>
+                  </Container>
+                </Sheet>
+              ))}
+
+            {businessDetails?.business_type_id === 2 && (
               <Sheet
                 sx={{
                   p: 2,
                   borderRadius: "12px",
                   display: "flex",
                   flexDirection: "column",
-                  gap: "10px",
+                  gap: "20px",
                 }}
                 variant="soft"
                 color="neutral"
@@ -703,7 +1010,7 @@ const BusinessProfile = () => {
                     alignItems: "center",
                   }}
                 >
-                  Websites
+                  Website
                   <Button
                     color="primary"
                     style={{ height: "100%" }}
@@ -738,112 +1045,13 @@ const BusinessProfile = () => {
                     >
                       Website
                     </Typography>
-                    <Typography fontFamily={"poppins"} level="body-sm">
-                      {businessDetails?.hasBooking || "Not provided"}
+                    <Typography fontFamily={"poppins"} level="body-md">
+                      {businessDetails?.facebook_url || "Not provided"}
                     </Typography>
                   </div>
                 </Container>
               </Sheet>
             )}
-
-            <Sheet
-              sx={{
-                p: 2,
-                borderRadius: "12px",
-                display: "flex",
-                flexDirection: "column",
-                gap: "20px",
-              }}
-              variant="soft"
-              color="neutral"
-            >
-              <Typography
-                fontFamily={"poppins"}
-                level="title-lg"
-                fontWeight={600}
-                sx={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                }}
-              >
-                Map Coordinates
-                <Button
-                  color="primary"
-                  style={{ height: "100%" }}
-                  variant="outlined"
-                  size="md"
-                  startDecorator={<EditIcon />}
-                >
-                  Edit
-                </Button>
-              </Typography>
-
-              <Container direction="row" align="center">
-                <Sheet
-                  sx={{
-                    borderRadius: "8px",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    width: 50,
-                    height: 50,
-                  }}
-                  color="neutral"
-                  variant="soft"
-                >
-                  <LocationOnIcon color="primary" fontSize="large" />
-                </Sheet>
-                <div>
-                  <Typography
-                    fontFamily={"poppins"}
-                    level="title-md"
-                    fontWeight={600}
-                  >
-                    Latitude
-                  </Typography>
-                  <Typography fontFamily={"poppins"} level="body-sm">
-                    {businessDetails?.latitude}
-                  </Typography>
-                </div>
-              </Container>
-
-              <Container direction="row" align="center">
-                <Sheet
-                  sx={{
-                    borderRadius: "8px",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    width: 50,
-                    height: 50,
-                  }}
-                  color="neutral"
-                  variant="soft"
-                >
-                  <LocationOnIcon color="primary" fontSize="large" />
-                </Sheet>
-                <div>
-                  <Typography
-                    fontFamily={"poppins"}
-                    level="title-md"
-                    fontWeight={600}
-                  >
-                    Longitude
-                  </Typography>
-                  <Typography fontFamily={"poppins"} level="body-sm">
-                    {businessDetails?.longitude}
-                  </Typography>
-                </div>
-              </Container>
-
-              {/* Map Component */}
-              <BusinessMap
-                latitude={businessDetails?.latitude}
-                longitude={businessDetails?.longitude}
-                name={businessDetails?.business_name}
-              />
-            </Sheet>
           </Grid>
         </Grid>
       </Paper>
@@ -885,6 +1093,37 @@ const BusinessProfile = () => {
         businessId={businessDetails?.id}
         onClose={() => setEditPricingOpen(false)}
         onSave={handleSavePricing}
+        onUpdate={() => window.location.reload()}
+      />
+
+      <EditAddressModal
+        open={editAddressOpen}
+        initialProvince={businessDetails?.province_id}
+        initialMunicipality={businessDetails?.municipality_id}
+        initialBarangay={businessDetails?.barangay_id}
+        businessId={businessDetails?.id}
+        onClose={() => setEditAddressOpen(false)}
+        onSave={handleSaveAddress}
+        onUpdate={() => window.location.reload()}
+      />
+
+      <EditMapCoordinatesModal
+        open={editMapCoordinatesOpen}
+        initialLatitude={businessDetails?.latitude || ""}
+        initialLongitude={businessDetails?.longitude || ""}
+        businessId={businessDetails?.id}
+        onClose={() => setEditMapCoordinatesOpen(false)}
+        onSave={handleSaveMapCoordinates}
+        onUpdate={() => window.location.reload()}
+      />
+
+      <EditBusinessModal
+        open={editBusinessOpen}
+        initialBusinessName={businessDetails?.business_name || ""}
+        initialBusinessImage={businessDetails?.business_image || ""}
+        businessId={businessDetails?.id}
+        onClose={() => setEditBusinessOpen(false)}
+        onSave={handleSaveBusiness}
         onUpdate={() => window.location.reload()}
       />
     </PageContainer>

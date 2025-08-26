@@ -25,6 +25,7 @@ const pageTitles: Record<string, string> = {
   "/rooms": "Manage Rooms",
   "/offers": "Manage Offers",
   "/amenities": "Manage Amenities",
+  "/room-profile": "Manage Room",
 };
 
 export default function MainHeader() {

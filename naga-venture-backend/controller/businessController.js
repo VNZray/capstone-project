@@ -166,3 +166,19 @@ export async function updateBusiness(request, response) {
     handleDbError(error, response);
   }
 }
+
+// delete data by ID
+export async function deleteBusiness(request, response) {
+  const { id } = request.params;
+  try {
+    const [data] = await db.query("DELETE FROM business WHERE id = ?", [id]);
+
+    if (data.affectedRows === 0) {
+      return response.status(404).json({ message: "Data not found" });
+    }
+
+    response.json({ message: "Row deleted successfully" });
+  } catch (error) {
+    return handleDbError(error, response);
+  }
+}
