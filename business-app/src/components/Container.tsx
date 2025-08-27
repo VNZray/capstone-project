@@ -5,6 +5,8 @@ import "./styles/container.css";
 interface ContainerProps {
   children: React.ReactNode;
   elevation?: 0 | 1 | 2 | 3 | 4 | 5 | 6;
+  align?: string;
+  justify?: string;
   className?: string;
   width?: string;
   height?: string;
@@ -12,8 +14,9 @@ interface ContainerProps {
   padding?: string;
   style?: React.CSSProperties;
   gap?: string;
-  background?: string; // new prop
+  background?: string;
   direction?: "row" | "column";
+  opacity?: number; // new prop
 }
 
 const Container: React.FC<ContainerProps> = ({
@@ -28,6 +31,9 @@ const Container: React.FC<ContainerProps> = ({
   gap = "16px",
   direction = "column",
   background,
+  opacity = 1, // default full opacity
+  align,
+  justify,
 }) => {
   const containerStyle: React.CSSProperties = {
     width,
@@ -38,6 +44,9 @@ const Container: React.FC<ContainerProps> = ({
     backgroundColor: background,
     flexDirection: direction,
     display: "flex",
+    alignItems: align,
+    justifyContent: justify,
+    opacity, // apply opacity here
     ...style,
   };
 

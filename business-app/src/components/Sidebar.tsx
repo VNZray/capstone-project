@@ -1,7 +1,6 @@
 import React from "react";
 import { NavLink } from "react-router-dom";
 import {
-  Home,
   Receipt,
   CalendarCheck,
   BedDouble,
@@ -11,12 +10,13 @@ import {
   Star,
   User,
   LogOut,
-  LayoutDashboard
+  LayoutDashboard,
+  ConciergeBell, // amenities icon
 } from "lucide-react";
 import "./styles/Sidebar.css";
-
+import { useBusiness } from "../context/BusinessContext";
 export default function Sidebar(): React.ReactElement {
-  const business_type = "Accommodation"; // This should be dynamically set based on the user's business type
+  const { businessDetails } = useBusiness();
   return (
     <aside className="sidebar">
       {/* Logo */}
@@ -24,13 +24,15 @@ export default function Sidebar(): React.ReactElement {
 
       {/* Navigation */}
       <nav className="sidebar-nav">
-        <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
+        <div
+          style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}
+        >
           <NavItem
             to="/dashboard"
             label="Dashboard"
             icon={<LayoutDashboard size={18} />}
           />
-          {business_type === "Accommodation" ? (
+          {businessDetails?.business_type_id === 1 ? (
             <>
               <NavItem
                 to="/transactions"
@@ -45,11 +47,11 @@ export default function Sidebar(): React.ReactElement {
             </>
           ) : null}
           <NavItem
-            to="/manage-business"
-            label="Manage Business"
+            to="/business-profile"
+            label="Business Profile"
             icon={<Store size={18} />}
           />
-          {business_type === "Accommodation" ? (
+          {businessDetails?.business_type_id === 1 ? (
             <NavItem
               to="/rooms"
               label="Manage Rooms"
@@ -61,6 +63,15 @@ export default function Sidebar(): React.ReactElement {
               label="Manage Offers"
               icon={<Tags size={18} />}
             />
+          )}
+          {businessDetails?.business_type_id === 1 ? (
+            <NavItem
+              to="/amenities"
+              label="Amenities"
+              icon={<ConciergeBell size={18} />}
+            />
+          ) : (
+            null
           )}
           <NavItem
             to="/manage-promotion"

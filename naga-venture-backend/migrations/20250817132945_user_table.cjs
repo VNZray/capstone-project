@@ -2,14 +2,14 @@ exports.up = function (knex) {
   return knex.schema.createTable("user", (table) => {
     table.uuid("id").primary().defaultTo(knex.raw("(UUID())")); // default UUID
     table
-      .enu("role", ["Tourist", "Owner", "Tourism"], {
+      .enu("role", ["Tourist", "Owner", "Tourism", " Event Manager"], {
         useNative: true,
         enumName: "user_role",
       })
       .notNullable();
 
-    table.string("email", 40).notNullable();
-    table.string("phone_number", 13).notNullable();
+    table.string("email", 40).notNullable().unique();
+    table.string("phone_number", 13).notNullable().unique();
     table.text("password").notNullable();
 
     table

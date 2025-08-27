@@ -37,17 +37,9 @@ export async function createTourism(request, response) {
       "first_name",
       "middle_name",
       "last_name",
-      "ethnicity",
-      "birthday",
-      "age",
-      "gender",
-      "nationality",
-      "category",
+      "position",
       "phone_number",
       "email",
-      "province_id",
-      "municipality_id",
-      "barangay_id",
     ];
 
     // Pull values from request body, ensure null if not provided

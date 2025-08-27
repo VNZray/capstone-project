@@ -1,11 +1,14 @@
 import Text from "@/src/components/Text";
 import Button from "@mui/joy/Button";
-
 import React from "react";
 import type { Business } from "@/src/types/Business";
-import Input from "@/src/components/Input";
 import CardHeader from "@/src/components/CardHeader";
-import { AddBox } from "@mui/icons-material";
+import { AddBox, Language, EventAvailable } from "@mui/icons-material";
+import { FormControl, Grid, Input, Select, Option, FormLabel } from "@mui/joy";
+import Container from "@/src/components/Container";
+import Label from "@/src/components/Label";
+import { ToggleButton, ToggleButtonGroup } from "@mui/material";
+import { Facebook, Instagram, X } from "@mui/icons-material";
 
 type Props = {
   data: Business;
@@ -33,17 +36,23 @@ const bookingSiteOptions = [
   "Other",
 ];
 
+const bookingFeatures = ["External Booking", "Integrated Booking"];
+
 const Step4: React.FC<Props> = ({
   setBookingSites,
   data,
   setData,
   bookingSite,
 }) => {
-      const addBookingSite = () => {
+  const addBookingSite = () => {
     setBookingSites((prev) => [...prev, { name: "", link: "" }]);
   };
+
   return (
-    <div className="stepperContent">
+    <div
+      className="stepperContent"
+      style={{ overflow: "auto", overflowX: "hidden" }}
+    >
       <div
         style={{
           display: "flex",
@@ -53,129 +62,185 @@ const Step4: React.FC<Props> = ({
         }}
       >
         <CardHeader
-          title="Social Media Links"
+          title="Social Media & Booking"
           color="white"
           margin="0 0 20px 0"
         />
 
-        <div className="content">
-          <div>
-            <CardHeader
-              bg="tab-background"
-              height="10px"
-              variant="medium"
-              color="dark"
-              title="Social Media Links"
-            />
-          </div>
-          <Input
-            type="text"
-            label="Facebook"
-            placeholder="Enter Facebook page URL"
-            value={data.facebook_url}
-            onChange={(e) =>
-              setData((prev) => ({ ...prev, facebook_url: e.target.value }))
-            }
-          />
-
-          <Input
-            type="text"
-            label="Instagram"
-            placeholder="Enter Instagram profile URL"
-            value={data.instagram_url}
-            onChange={(e) =>
-              setData((prev) => ({ ...prev, instagram_url: e.target.value }))
-            }
-          />
-
-          <Input
-            type="text"
-            label="Tiktok"
-            placeholder="Enter TikTok profile URL"
-            value={data.tiktok_url}
-            onChange={(e) =>
-              setData((prev) => ({ ...prev, tiktok_url: e.target.value }))
-            }
-          />
-        </div>
-
-        {/* Booking Feature Switch */}
-        <div style={{ marginTop: 20 }}>
-          <label
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-            }}
-          >
-            <Text variant="card-title">Use booking feature?</Text>
-            <label className="switch">
-              <input
-                type="checkbox"
-                onChange={(e) =>
-                  setData((prev) => ({
-                    ...prev,
-                    hasBooking: e.target.checked, // ✅ true if checked
-                  }))
-                }
-              />
-              <span className="slider round"></span>
-            </label>
-          </label>
-        </div>
-
-        {/* Show booking links only if switch is ON */}
-        {!data.hasBooking && (
-          <>
-            {bookingSite.map((s, id) => (
-              <div key={id}>
-                <div
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: "1fr 2fr",
-                    gap: 12,
-                  }}
-                >
+        <Grid container columns={12}>
+          {/* Social Media Links */}
+          <Grid xs={4}>
+            <Container padding="0 20px " gap="20px">
+              {[
+                {
+                  platform: "Facebook",
+                  icon: <Facebook sx={{ color: "#1877f2" }} />,
+                },
+                {
+                  platform: "Instagram",
+                  icon: <Instagram sx={{ color: "#E1306C" }} />,
+                },
+                {
+                  platform: "TikTok",
+                  icon: <X sx={{ color: "#000" }} />,
+                },
+              ].map(({ platform, icon }) => (
+                <FormControl key={platform}>
+                  <FormLabel>{platform}</FormLabel>
                   <Input
-                    type="select"
-                    label="Booking Sites"
-                    value={s.name}
-                    onChange={(e) => {
-                      const newSites = [...bookingSite];
-                      newSites[id].name = String(e.target.value);
-                      setBookingSites(newSites);
-                    }}
-                    options={[
-                      { value: "", label: "-- Select --" },
-                      ...bookingSiteOptions.map((siteName) => ({
-                        value: siteName,
-                        label: siteName,
-                      })),
-                    ]}
-                  />
-                  <Input
-                    type="text"
-                    label="Link"
-                    value={s.link}
-                    onChange={(e) => {
-                      const newSites = [...bookingSite];
-                      newSites[id].link = e.target.value;
-                      setBookingSites(newSites);
+                    variant="outlined"
+                    size="md"
+                    startDecorator={icon}
+                    value={(data as any)[`${platform.toLowerCase()}_url`] || ""}
+                    onChange={(e) =>
+                      setData((prev) => ({
+                        ...prev,
+                        [`${platform.toLowerCase()}_url`]: e.target.value,
+                      }))
+                    }
+                    placeholder={`https://${platform.toLowerCase()}.com/yourpage`}
+                    sx={{
+                      borderRadius: "12px",
+                      "& input": { pl: 1 }, // space after icon
                     }}
                   />
-                </div>
-              </div>
-            ))}
+                </FormControl>
+              ))}
+            </Container>
+          </Grid>
 
-            <Button
-              startDecorator={<AddBox />}
-              onClick={addBookingSite}
-              style={{ flex: 1 }}
-            >
-              Add
-            </Button>
-          </>
-        )}
+          {/* Booking Options (show only if business_type_id === 1) */}
+          {data.business_type_id === 1 && (
+            <Grid xs={8}>
+              <Container padding="0 20px" gap="20px">
+                <FormControl>
+                  <FormLabel>Booking Options</FormLabel>
+                  <ToggleButtonGroup
+                    color="primary"
+                    value={
+                      data.hasBooking === true
+                        ? "Integrated Booking"
+                        : data.hasBooking === false
+                        ? "External Booking"
+                        : ""
+                    }
+                    exclusive
+                    onChange={(e, value) => {
+                      if (!value) return;
+                      if (value === "External Booking") {
+                        setData((prev) => ({ ...prev, hasBooking: false }));
+                      } else if (value === "Integrated Booking") {
+                        setData((prev) => ({ ...prev, hasBooking: true }));
+                      }
+                    }}
+                    sx={{ display: "flex", gap: 2, mt: 1 }}
+                  >
+                    <ToggleButton
+                      value="External Booking"
+                      sx={{
+                        flex: 1,
+                        borderRadius: "12px",
+                        px: 3,
+                        py: 2,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        gap: 1,
+                        textTransform: "none",
+                      }}
+                    >
+                      <Language fontSize="small" />
+                      External Booking
+                    </ToggleButton>
+
+                    <ToggleButton
+                      value="Integrated Booking"
+                      sx={{
+                        flex: 1,
+                        borderRadius: "12px",
+                        px: 3,
+                        py: 2,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        gap: 1,
+                        textTransform: "none",
+                      }}
+                    >
+                      <EventAvailable fontSize="small" />
+                      Integrated Booking
+                    </ToggleButton>
+                  </ToggleButtonGroup>
+                </FormControl>
+
+                {/* External Booking Selected */}
+                {data.hasBooking === false && (
+                  <Container padding="10px 0" gap="15px">
+                    <FormLabel>External Booking Platforms</FormLabel>
+                    {bookingSite.map((site, index) => (
+                      <Grid container spacing={2} key={index}>
+                        <Grid xs={4}>
+                          <FormControl>
+                            <Select
+                              size="md"
+                              placeholder="Select Platform"
+                              value={site.name}
+                              onChange={(_event, value) => {
+                                const newSites = [...bookingSite];
+                                newSites[index].name = value ?? "";
+                                setBookingSites(newSites);
+                              }}
+                            >
+                              <Option value="">Choose Platform</Option>
+                              {bookingSiteOptions.map((opt) => (
+                                <Option key={opt} value={opt}>
+                                  {opt}
+                                </Option>
+                              ))}
+                            </Select>
+                          </FormControl>
+                        </Grid>
+                        <Grid xs={8}>
+                          <FormControl>
+                            <Input
+                              size="md"
+                              placeholder="Paste the link here."
+                              value={site.link}
+                              onChange={(e) => {
+                                const newSites = [...bookingSite];
+                                newSites[index].link = e.target.value;
+                                setBookingSites(newSites);
+                              }}
+                            />
+                          </FormControl>
+                        </Grid>
+                      </Grid>
+                    ))}
+
+                    <Button
+                      size="md"
+                      startDecorator={<AddBox />}
+                      onClick={addBookingSite}
+                      variant="outlined"
+                      sx={{ mt: 1 }}
+                    >
+                      Add Another Platform
+                    </Button>
+                  </Container>
+                )}
+
+                {/* Integrated Booking Selected */}
+                {data.hasBooking === true && (
+                  <Container padding="10px 0" gap="15px">
+                    <Text variant="medium" color="dark">
+                      ✅ Integrated booking will be handled within the system.
+                    </Text>
+                  </Container>
+                )}
+              </Container>
+            </Grid>
+          )}
+        </Grid>
       </div>
     </div>
   );

@@ -6,7 +6,7 @@ import Text from "@/src/components/Text";
 import { useAuth } from "@/src/context/AuthContext";
 import { useBusiness } from "@/src/context/BusinessContext";
 import Card from "./components/Card";
-import placeholderImage from "@/src/assets/images/uma-hotel-residences.jpg";
+import placeholderImage from "@/src/assets/images/placeholder-image.png";
 import type { Business } from "@/src/types/Business";
 import { fetchBusinessesByOwner } from "@/src/services/BusinessService";
 import Container from "@/src/components/Container";
@@ -43,7 +43,7 @@ const MyBusiness = () => {
   if (loading) return <Loading />;
 
   return (
-    <PageContainer>
+    <PageContainer style={{ padding: "20px" }}>
       <Text variant="title">My Business</Text>
 
       <Container background={colors.secondary} elevation={2} padding="20px">
@@ -76,12 +76,20 @@ const MyBusiness = () => {
       </Container>
 
       <Text variant="paragraph">
-        Showing you listed business {businesses.length}
+        Showing your listed business {businesses.length}
       </Text>
 
-      <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap" }}>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(4, 1fr)",
+          gap: "1rem",
+          width: "100%",
+          alignItems: "stretch",
+        }}
+      >
         {businesses.map((business) => (
-          <div key={business.id}>
+          <div key={business.id} style={{ height: "100%" }}>
             <Card
               elevation={1}
               image={business.business_image || placeholderImage}

@@ -6,22 +6,21 @@ import { supabase } from "@/src/utils/supabase";
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import {
   FormControl,
-  FormLabel,
   Input,
   Select,
   Option,
   Grid,
   Textarea,
   Button,
+  FormLabel,
 } from "@mui/joy";
 import Container from "@/src/components/Container";
-import { Type, UploadIcon } from "lucide-react";
+import { Sheet, SheetIcon, UploadIcon } from "lucide-react";
 import { ToggleButton, ToggleButtonGroup } from "@mui/material";
 import HotelIcon from "@mui/icons-material/Hotel";
 import StoreIcon from "@mui/icons-material/Store";
 import Text from "@/src/components/Text";
 import Label from "@/src/components/Label";
-
 type Props = {
   data: Business;
   setData: React.Dispatch<React.SetStateAction<Business>>;
@@ -36,8 +35,6 @@ const Step1: React.FC<Props> = ({ api, data, setData }) => {
     handleImageChange,
   } = useBusinessBasics(api, data, setData);
 
-  const [uploading, setUploading] = useState(false);
-
   // Upload immediately after selecting an image
   const handleImageSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     handleImageChange(e); // update preview immediately
@@ -50,11 +47,13 @@ const Step1: React.FC<Props> = ({ api, data, setData }) => {
       return;
     }
 
-    setUploading(true);
-
     try {
       const fileExt = file.name.split(".").pop();
-      const fileName = `${data.business_name.replace(/\s+/g, "_")}.${fileExt}`;
+      const timestamp = new Date().toISOString().replace(/[:.]/g, "-"); // avoid invalid chars for filenames
+      const fileName = `${data.business_name.replace(
+        /\s+/g,
+        "_"
+      )}_${timestamp}.${fileExt}`;
       const filePath = fileName;
 
       // Upload file to Supabase
@@ -80,12 +79,14 @@ const Step1: React.FC<Props> = ({ api, data, setData }) => {
       console.error("Upload failed:", err);
       alert(err?.message || "Upload failed");
     } finally {
-      setUploading(false);
     }
   };
 
   return (
-    <div className="stepperContent">
+    <div
+      className="stepperContent"
+      style={{ overflow: "auto", overflowX: "hidden" }}
+    >
       <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
         <CardHeader
           title="Basic Information"
@@ -95,13 +96,11 @@ const Step1: React.FC<Props> = ({ api, data, setData }) => {
         <Grid container columns={12}>
           <Grid xs={6}>
             <Container padding="0 20px " gap="20px">
-              <FormControl>
-                <Label margin="0 0 5px 0">
-                  <Text variant="medium">Business Name *</Text>
-                </Label>
+              <FormControl required>
+                <FormLabel>Business Name</FormLabel>
                 <Input
                   variant="outlined"
-                  size="lg"
+                  size="md"
                   value={data.business_name}
                   onChange={(e) =>
                     setData((prev) => ({
@@ -109,14 +108,12 @@ const Step1: React.FC<Props> = ({ api, data, setData }) => {
                       business_name: e.target.value,
                     }))
                   }
-                  placeholder="Placeholder"
+                  placeholder="Write the name of your business"
                 />
               </FormControl>
 
-              <FormControl>
-                <Label margin="0 0 5px 0">
-                  <Text variant="medium">Business Type *</Text>
-                </Label>
+              <FormControl required>
+                <FormLabel>Business Type</FormLabel>
                 <ToggleButtonGroup
                   color="primary"
                   value={data.business_type_id?.toString() ?? ""}
@@ -158,13 +155,12 @@ const Step1: React.FC<Props> = ({ api, data, setData }) => {
                 </ToggleButtonGroup>
               </FormControl>
 
-              <FormControl>
-                <Label margin="0 0 5px 0">
-                  <Text variant="medium">Business Category *</Text>
-                </Label>
+              <FormControl required>
+                <FormLabel>Business Category</FormLabel>
+
                 <Select
                   variant="outlined"
-                  size="lg"
+                  size="md"
                   value={data.business_category_id?.toString() ?? ""}
                   onChange={(e, value) => {
                     if (!value) return;
@@ -185,13 +181,11 @@ const Step1: React.FC<Props> = ({ api, data, setData }) => {
               </FormControl>
 
               <FormControl>
-                <Label margin="0 0 5px 0">
-                  <Text variant="medium">Description *</Text>
-                </Label>{" "}
+                <FormLabel>Description</FormLabel>
                 <Textarea
                   maxRows={4}
                   minRows={4}
-                  size="lg"
+                  size="md"
                   variant="outlined"
                   value={data.description}
                   onChange={(e) =>
@@ -207,7 +201,8 @@ const Step1: React.FC<Props> = ({ api, data, setData }) => {
           <Grid xs={6}>
             <Container padding="0 20px" gap="20px">
               <FormControl>
-                <FormLabel>Upload Business Profile</FormLabel>
+                <FormLabel>Upload Image</FormLabel>
+
                 <div
                   style={{
                     display: "flex",
@@ -257,7 +252,7 @@ const Step1: React.FC<Props> = ({ api, data, setData }) => {
                   </div>
 
                   <Button
-                    size="lg"
+                    size="md"
                     variant="outlined"
                     color="primary"
                     startDecorator={<UploadIcon />}
@@ -269,7 +264,6 @@ const Step1: React.FC<Props> = ({ api, data, setData }) => {
                     Upload Photo
                   </Button>
                 </div>
-
                 {/* Hidden file input */}
                 <input
                   id="image-upload"

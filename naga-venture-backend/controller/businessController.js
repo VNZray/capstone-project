@@ -17,10 +17,9 @@ export async function getBusinessByOwnerId(request, response) {
   const { id } = request.params;
   console.log("Owner ID received:", id); // 🛠 debug
   try {
-    const [data] = await db.query(
-      "SELECT * FROM business WHERE owner_id = ?",
-      [id]
-    );
+    const [data] = await db.query("SELECT * FROM business WHERE owner_id = ?", [
+      id,
+    ]);
     console.log("Query data:", data); // 🛠 debug
     if (data.length === 0) {
       return response.status(404).json({ message: "Business not found" });
@@ -34,9 +33,7 @@ export async function getBusinessByOwnerId(request, response) {
 export async function getBusinessId(request, response) {
   const { id } = request.params;
   try {
-    const [data] = await db.query("SELECT * FROM business WHERE id = ?", [
-      id,
-    ]);
+    const [data] = await db.query("SELECT * FROM business WHERE id = ?", [id]);
     if (data.length === 0) {
       return response.status(404).json({ message: "Business not found" });
     }
@@ -89,19 +86,99 @@ export async function insertBusiness(request, response) {
     );
 
     // Retrieve the data row by UUID
-    const [data] = await db.query("SELECT * FROM business WHERE id = ?", [
-      id,
-    ]);
+    const [data] = await db.query("SELECT * FROM business WHERE id = ?", [id]);
 
     if (data.length === 0) {
-      return response.status(404).json({ error: "Inserted business not found" });
+      return response
+        .status(404)
+        .json({ error: "Inserted business not found" });
     }
 
     response.status(201).json({
       message: "Business created successfully",
-      data: data[0], // full row including UUID
+      ...data[0],
     });
   } catch (error) {
     handleDbError(error, response);
+  }
+}
+
+// update business (only update provided fields)
+export async function updateBusiness(request, response) {
+  const { id } = request.params;
+
+  try {
+    // Check if the business exists
+    const [existing] = await db.query("SELECT * FROM business WHERE id = ?", [
+      id,
+    ]);
+    if (existing.length === 0) {
+      return response.status(404).json({ message: "Business not found" });
+    }
+
+    // Only update fields provided in request.body
+    const allowedFields = [
+      "business_name",
+      "business_type_id",
+      "business_category_id",
+      "phone_number",
+      "email",
+      "barangay_id",
+      "municipality_id",
+      "province_id",
+      "description",
+      "instagram_url",
+      "tiktok_url",
+      "facebook_url",
+      "latitude",
+      "longitude",
+      "min_price",
+      "max_price",
+      "owner_id",
+      "status",
+      "business_image",
+      "hasBooking",
+    ];
+
+    // Filter fields to only those present in request.body
+    const fieldsToUpdate = allowedFields.filter((field) =>
+      Object.prototype.hasOwnProperty.call(request.body, field)
+    );
+
+    if (fieldsToUpdate.length === 0) {
+      return response.status(400).json({ message: "No valid fields provided for update" });
+    }
+
+    const values = fieldsToUpdate.map((f) => request.body[f]);
+
+    await db.query(
+      `UPDATE business SET ${fieldsToUpdate.map((f) => `${f} = ?`).join(", ")} WHERE id = ?`,
+      [...values, id]
+    );
+
+    // Retrieve the updated data
+    const [data] = await db.query("SELECT * FROM business WHERE id = ?", [id]);
+    response.json({
+      message: "Business updated successfully",
+      ...data[0],
+    });
+  } catch (error) {
+    handleDbError(error, response);
+  }
+}
+
+// delete data by ID
+export async function deleteBusiness(request, response) {
+  const { id } = request.params;
+  try {
+    const [data] = await db.query("DELETE FROM business WHERE id = ?", [id]);
+
+    if (data.affectedRows === 0) {
+      return response.status(404).json({ message: "Data not found" });
+    }
+
+    response.json({ message: "Row deleted successfully" });
+  } catch (error) {
+    return handleDbError(error, response);
   }
 }

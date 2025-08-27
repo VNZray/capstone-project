@@ -11,7 +11,7 @@ const PageContainer: React.FC<PageContainerProps> = ({ children, style }) => {
       style={{
         display: "flex",
         flexDirection: "column",
-        padding: 20,
+        padding: 0,
         flex: 1,
         ...style,
         gap: 20,

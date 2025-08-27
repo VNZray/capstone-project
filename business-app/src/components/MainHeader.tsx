@@ -1,4 +1,3 @@
-import React from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
   Box,
@@ -16,7 +15,7 @@ import { Button } from "@mui/joy";
 const pageTitles: Record<string, string> = {
   "/dashboard": "Dashboard",
   "/transactions": "Transactions",
-  "/manage-business": "Manage Business",
+  "/business-profile": "Business Profile",
   "/manage-promotion": "Manage Promotion",
   "/reports": "Reports",
   "/profile": "Profile",
@@ -25,6 +24,8 @@ const pageTitles: Record<string, string> = {
   "/bookings": "Bookings",
   "/rooms": "Manage Rooms",
   "/offers": "Manage Offers",
+  "/amenities": "Manage Amenities",
+  "/room-profile": "Manage Room",
 };
 
 export default function MainHeader() {
@@ -41,7 +42,8 @@ export default function MainHeader() {
   return (
     <AppBar
       position="static"
-      sx={{ backgroundColor: "#fff", color: "#000", boxShadow: 1 }}
+      elevation={4}
+      sx={{ backgroundColor: "#fff", color: "#000", boxShadow: 2 }}
     >
       <Toolbar sx={{ display: "flex", justifyContent: "space-between" }}>
         {/* Left - Page Title */}
@@ -66,7 +68,7 @@ export default function MainHeader() {
             }}
           >
             <Typography variant="subtitle2" sx={{ fontWeight: "bold" }}>
-              {user?.first_name}
+              {user?.first_name} {user?.last_name}
             </Typography>
             <Typography variant="caption" sx={{ color: "text.secondary" }}>
               {user?.email}
@@ -81,7 +83,7 @@ export default function MainHeader() {
 
           {/* Switch Profile */}
           <Button
-          color="neutral"
+            color="neutral"
             variant="solid"
             startDecorator={<Repeat size={18} />}
             onClick={navigateToBusiness}

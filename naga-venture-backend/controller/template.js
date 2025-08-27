@@ -1,6 +1,6 @@
 import db from "../db.js";
 import { v4 as uuidv4 } from "uuid";
-import { handleDbError } from "../utils/errororHandler.js";
+import { handleDbError } from "../utils/errorHandler.js";
 // ------------------------------------------------------------
 // Copy this template
 // rename the file

@@ -1,12 +1,30 @@
 import Text from "@/src/components/Text";
-import Button from "@mui/joy/Button";
-import ArrowBackIcon from "@mui/icons-material/ArrowBack";
-import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import React from "react";
 import type { Business } from "@/src/types/Business";
 import CardHeader from "@/src/components/CardHeader";
 import { useAddress } from "@/src/hooks/useAddress";
 import { useCategoryAndType } from "@/src/hooks/useCategoryAndType";
+import { Card, CardContent, Divider, Chip, Grid, Typography } from "@mui/joy";
+import Container from "@/src/components/Container";
+import type { Permit } from "@/src/types/Permit";
+import { InfoOutline } from "@mui/icons-material";
+import { Avatar } from "@mui/joy";
+import {
+  BusinessOutlined,
+  PlaceOutlined,
+  EmailOutlined,
+  PhoneOutlined,
+} from "@mui/icons-material";
+
+import {
+  InfoOutlined,
+  PersonOutline,
+  DescriptionOutlined,
+  LinkOutlined,
+  MonetizationOnOutlined,
+  PublicOutlined,
+  ArticleOutlined,
+} from "@mui/icons-material";
 type BookingSite = {
   name: string;
   link: string;
@@ -16,10 +34,11 @@ type Props = {
   data: Business;
   setData: React.Dispatch<React.SetStateAction<Business>>;
   api: string;
-  bookingSite: BookingSite[]; // ✅ New prop
+  bookingSite: BookingSite[];
+  permitData: Permit[];
 };
 
-const Step7: React.FC<Props> = ({ data, bookingSite }) => {
+const Step7: React.FC<Props> = ({ data, bookingSite, permitData }) => {
   const { address } = useAddress(data?.barangay_id);
   const { categoryAndType } = useCategoryAndType(data?.business_type_id);
 
@@ -30,21 +49,43 @@ const Step7: React.FC<Props> = ({ data, bookingSite }) => {
     label: string;
     value?: string | number;
   }) => (
-    <div
-      style={{
-        display: "flex",
-        justifyContent: "space-between",
-        padding: "6px 0",
-        borderBottom: "1px solid #eee",
-      }}
-    >
+    <div style={{ display: "flex", justifyContent: "space-between" }}>
       <Text variant="medium" color="dark">
-        {label}
+        {label}:
       </Text>
       <Text variant="normal" color="dark">
         {value || "-"}
       </Text>
     </div>
+  );
+
+  const Section = ({
+    title,
+    children,
+    icon,
+  }: {
+    title: string;
+    children: React.ReactNode;
+    icon: React.ReactNode;
+  }) => (
+    <Card variant="outlined" sx={{ borderRadius: "sm" }}>
+      <CardContent>
+        <Typography
+          level="title-md"
+          sx={{
+            mb: 1,
+            fontWeight: "600",
+            display: "flex",
+            alignItems: "center",
+            gap: 1,
+          }}
+        >
+          {icon} {title}
+        </Typography>
+        <Divider sx={{ mb: 2 }} />
+        {children}
+      </CardContent>
+    </Card>
   );
 
   return (
@@ -59,177 +100,193 @@ const Step7: React.FC<Props> = ({ data, bookingSite }) => {
           paddingRight: 8,
         }}
       >
-        <CardHeader
-          title="Review Your Information"
-          color="white"
-          margin="0 0 20px 0"
-        />
+        <Card variant="soft" sx={{ borderRadius: "lg" }}>
+          <CardContent>
+            <CardHeader
+              title="Review Your Information"
+              color="white"
+              margin="0 0 8px 0"
+            />
+            <Text variant="normal" color="dark">
+              Please review your details carefully before submitting your
+              business registration.
+            </Text>
+          </CardContent>
+        </Card>
 
-        <Text variant="normal" color="dark">
-          Please check that all details are correct before proceeding.
-        </Text>
+        {/* BUSINESS SUMMARY CARD */}
+        <Card
+          variant="outlined"
+          sx={{ borderRadius: "lg", bgcolor: "neutral.softBg" }}
+        >
+          <CardContent
+            sx={{
+              display: "flex",
+              flexDirection: "row",
+              alignItems: "center",
+              gap: 2,
+            }}
+          >
+            {/* IMAGE */}
+            <Avatar
+              src={data.business_image || ""}
+              alt={data.business_name}
+              variant="solid"
+              size="lg"
+              sx={{ bgcolor: "primary.500", fontSize: "1.5rem" }}
+            >
+              <BusinessOutlined />
+            </Avatar>
+
+            {/* INFO */}
+            <div>
+              {/* Business Name */}
+              <Typography level="title-lg" fontWeight="lg">
+                {data.business_name || "Unnamed Business"}
+              </Typography>
+
+              <div style={{ display: "flex", gap: 16 }}>
+                {/* Location */}
+                <Typography
+                  level="body-sm"
+                  startDecorator={<PlaceOutlined fontSize="small" />}
+                >
+                  {address?.barangay_name}, {address?.municipality_name},{" "}
+                  {address?.province_name}
+                </Typography>
+
+                {/* Email + Phone */}
+                <Typography
+                  level="body-sm"
+                  startDecorator={<EmailOutlined fontSize="small" />}
+                >
+                  {data.email}
+                </Typography>
+                <Typography
+                  level="body-sm"
+                  startDecorator={<PhoneOutlined fontSize="small" />}
+                >
+                  {data.phone_number}
+                </Typography>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* BASIC INFO */}
-        <CardHeader
-          bg="tab-background"
-          height="10px"
-          variant="medium"
-          color="dark"
+        <Section
           title="Basic Information"
-        />
-
-        <section
-          style={{
-            background: "#fafafa",
-            borderRadius: 8,
-            paddingRight: 12,
-            paddingLeft: 12,
-          }}
+          icon={<PersonOutline color="primary" />}
         >
           <InfoRow label="Business Name" value={data.business_name} />
           <InfoRow label="Type" value={categoryAndType?.type_name} />
           <InfoRow label="Category" value={categoryAndType?.category_name} />
-          <InfoRow label="Profile" value={data.business_image} />
-        </section>
+        </Section>
 
         {/* CONTACT */}
-        <CardHeader
-          bg="tab-background"
-          height="10px"
-          variant="medium"
-          color="dark"
+        <Section
           title="Contact Information"
-        />
-
-        <section
-          style={{
-            background: "#fafafa",
-            borderRadius: 8,
-            paddingRight: 12,
-            paddingLeft: 12,
-          }}
+          icon={<PhoneOutlined color="primary" />}
         >
           <InfoRow label="Phone" value={data.phone_number} />
           <InfoRow label="Email" value={data.email} />
-        </section>
+        </Section>
 
         {/* LOCATION */}
-        <CardHeader
-          bg="tab-background"
-          height="10px"
-          variant="medium"
-          color="dark"
-          title="Location"
-        />
-        <section
-          style={{
-            background: "#fafafa",
-            borderRadius: 8,
-            paddingRight: 12,
-            paddingLeft: 12,
-          }}
-        >
+        <Section title="Location" icon={<PlaceOutlined color="primary" />}>
           <InfoRow label="Province" value={address?.province_name} />
           <InfoRow label="Municipality" value={address?.municipality_name} />
           <InfoRow label="Barangay" value={address?.barangay_name} />
           <InfoRow label="Latitude" value={data.latitude} />
           <InfoRow label="Longitude" value={data.longitude} />
-        </section>
+        </Section>
 
         {/* DESCRIPTION */}
-        <CardHeader
-          bg="tab-background"
-          height="10px"
-          variant="medium"
-          color="dark"
+        <Section
           title="Business Description"
-        />
-        <section
-          style={{
-            background: "#fafafa",
-            borderRadius: 8,
-            paddingRight: 12,
-            paddingLeft: 12,
-          }}
+          icon={<DescriptionOutlined color="primary" />}
         >
-          <InfoRow label="Description" value={data.description} />
-        </section>
+          <Text variant="normal" color="dark">
+            {data.description || "-"}
+          </Text>
+        </Section>
 
         {/* LINKS */}
-        <CardHeader
-          bg="tab-background"
-          height="10px"
-          variant="medium"
-          color="dark"
-          title="Links"
-        />
-        <section
-          style={{
-            background: "#fafafa",
-            borderRadius: 8,
-            paddingRight: 12,
-            paddingLeft: 12,
-          }}
+        <Section
+          title="Social Media Links"
+          icon={<LinkOutlined color="primary" />}
         >
           <InfoRow label="Facebook" value={data.facebook_url} />
           <InfoRow label="Instagram" value={data.instagram_url} />
           <InfoRow label="TikTok" value={data.tiktok_url} />
-        </section>
+        </Section>
 
         {/* PRICING */}
-        <CardHeader
-          bg="tab-background"
-          height="10px"
-          variant="medium"
-          color="dark"
+        <Section
           title="Pricing"
-        />
-        <section
-          style={{
-            background: "#fafafa",
-            borderRadius: 8,
-            paddingRight: 12,
-            paddingLeft: 12,
-          }}
+          icon={<MonetizationOnOutlined color="primary" />}
         >
-          <InfoRow label="Min Price" value={data.min_price} />
-          <InfoRow label="Max Price" value={data.max_price} />
-        </section>
+          <div className="flex gap-4">
+            <Chip color="success" size="lg" variant="soft">
+              Min: ₱{data.min_price}
+            </Chip>
+            <Chip color="warning" size="lg" variant="soft">
+              Max: ₱{data.max_price}
+            </Chip>
+          </div>
+        </Section>
 
         {/* EXTERNAL BOOKINGS */}
-
         {bookingSite && bookingSite.length > 0 && (
-          <div>
-            <CardHeader
-              bg="tab-background"
-              height="10px"
-              variant="medium"
-              color="dark"
-              title="External Booking Sites"
+          <Section
+            title="External Booking Sites"
+            icon={<PublicOutlined color="primary" />}
+          >
+            <InfoRow
+              label="Has Booking Feature"
+              value={data.hasBooking ? "Yes" : "No"}
             />
-            <section
-              style={{
-                background: "#fafafa",
-                borderRadius: 8,
-                paddingRight: 12,
-                paddingLeft: 12,
-              }}
-            >
-              <InfoRow
-                label="Has Booking Feature"
-                value={data.hasBooking ? "Yes" : "No"}
-              />
-              {!data.hasBooking &&
-                bookingSite.map((site, index) => (
-                  <InfoRow
-                    key={index}
-                    label={site.name || `Booking Site ${index + 1}`}
-                    value={site.link || "-"}
-                  />
-                ))}
-            </section>
-          </div>
+            {!data.hasBooking &&
+              bookingSite.map((site, index) => (
+                <InfoRow
+                  key={index}
+                  label={site.name || `Booking Site ${index + 1}`}
+                  value={site.link || "-"}
+                />
+              ))}
+          </Section>
         )}
+
+        {/* PERMITS */}
+        <Section
+          title="Business Permits"
+          icon={<ArticleOutlined color="primary" />}
+        >
+          {permitData && permitData.length > 0 ? (
+            permitData.map((permit, index) => (
+              <div
+                key={index}
+                className="flex justify-between py-2 border-b border-gray-100"
+              >
+                <Text variant="medium" color="dark">
+                  {permit.permit_type.replace("_", " ")}
+                </Text>
+                <a
+                  href={permit.file_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-600 underline"
+                >
+                  View File
+                </a>
+              </div>
+            ))
+          ) : (
+            <Text variant="normal" color="dark">
+              No permits uploaded yet.
+            </Text>
+          )}
+        </Section>
       </div>
     </div>
   );
