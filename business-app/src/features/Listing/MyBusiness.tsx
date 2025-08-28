@@ -94,7 +94,9 @@ const MyBusiness = () => {
               elevation={1}
               image={business.business_image || placeholderImage}
               title={business.business_name}
-              subtitle={business.description}
+              subtitle={
+                business.business_type_id === 1 ? "Accommodation" : "Shop"
+              }
               rating={5}
               status={business.status}
             >

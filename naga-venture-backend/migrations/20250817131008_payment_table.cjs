@@ -10,7 +10,7 @@ exports.up = function (knex) {
       .notNullable();
     table.float("amount").notNullable();
     table.enu("status", ["Paid", "Pending Balance"]).defaultTo(null);
-
+    table.enu("payment_for", ["Reservation", "Pending Balance"]).nullable();
     // Foreign keys
     table
       .uuid("tourist_id")

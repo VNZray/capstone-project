@@ -6,6 +6,9 @@ import Text from "@/src/components/Text";
 type BusinessMapProps = {
   latitude?: number | string;
   longitude?: number | string;
+  radius?: number | string;
+  height?: string | number;
+  width?: string | number;
   name?: string;
 };
 
@@ -15,7 +18,14 @@ const containerStyle = {
   borderRadius: "12px",
 };
 
-const BusinessMap: React.FC<BusinessMapProps> = ({ latitude, longitude, name }) => {
+const BusinessMap: React.FC<BusinessMapProps> = ({
+  latitude,
+  longitude,
+  radius,
+  name,
+  height = "300px",
+  width = "100%",
+}) => {
   const { isLoaded } = useJsApiLoader({
     googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY as string, // ✅ keep in .env
   });
@@ -29,7 +39,7 @@ const BusinessMap: React.FC<BusinessMapProps> = ({ latitude, longitude, name }) 
 
   return (
     <GoogleMap
-      mapContainerStyle={containerStyle}
+      mapContainerStyle={{ ...containerStyle, borderRadius: radius, height: height, width: width }}
       center={center}
       zoom={15}
     >

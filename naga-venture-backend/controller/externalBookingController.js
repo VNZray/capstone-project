@@ -11,6 +11,20 @@ export async function getAllExternalBooking(request, response) {
   }
 }
 
+// get data by foreign ID
+export const getAllExternalBookingByBusinessId = async (request, response) => {
+  const { id } = request.params;
+  try {
+    const [data] = await db.query(
+      "SELECT * FROM external_booking WHERE business_id = ?",
+      [id]
+    );
+    response.json(data);
+  } catch (error) {
+    return handleDbError(error, response);
+  }
+};
+
 export async function insertExternalBooking(request, response) {
   try {
     const fields = ["name", "link", "business_id"];

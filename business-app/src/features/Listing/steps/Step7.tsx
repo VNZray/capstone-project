@@ -218,7 +218,7 @@ const Step7: React.FC<Props> = ({ data, bookingSite, permitData }) => {
         >
           <InfoRow label="Facebook" value={data.facebook_url} />
           <InfoRow label="Instagram" value={data.instagram_url} />
-          <InfoRow label="TikTok" value={data.tiktok_url} />
+          <InfoRow label="X" value={data.x_url} />
         </Section>
 
         {/* PRICING */}
@@ -235,27 +235,6 @@ const Step7: React.FC<Props> = ({ data, bookingSite, permitData }) => {
             </Chip>
           </div>
         </Section>
-
-        {/* EXTERNAL BOOKINGS */}
-        {bookingSite && bookingSite.length > 0 && (
-          <Section
-            title="External Booking Sites"
-            icon={<PublicOutlined color="primary" />}
-          >
-            <InfoRow
-              label="Has Booking Feature"
-              value={data.hasBooking ? "Yes" : "No"}
-            />
-            {!data.hasBooking &&
-              bookingSite.map((site, index) => (
-                <InfoRow
-                  key={index}
-                  label={site.name || `Booking Site ${index + 1}`}
-                  value={site.link || "-"}
-                />
-              ))}
-          </Section>
-        )}
 
         {/* PERMITS */}
         <Section
