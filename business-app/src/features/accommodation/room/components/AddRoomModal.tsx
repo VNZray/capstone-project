@@ -75,6 +75,7 @@ export default function AddRoomModal({
     setPreviewUrl(preview);
 
     try {
+      // Create a unique file name
       const fileExt = file.name.split(".").pop();
       const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
       const safeRoomNumber = roomData.room_number

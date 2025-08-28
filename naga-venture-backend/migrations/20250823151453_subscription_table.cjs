@@ -1,6 +1,6 @@
 exports.up = function(knex) {
   return knex.schema.createTable("Subscription", function(table) {
-    table.uuid("subscription_id").primary().defaultTo(knex.raw("gen_random_uuid()"));
+    table.uuid("id").primary().defaultTo(knex.raw("(UUID())"));
     table.uuid("business_id").notNullable()
       .references("id").inTable("Business").onDelete("CASCADE");
 
