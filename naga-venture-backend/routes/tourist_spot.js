@@ -25,6 +25,13 @@ router.get('/:id', touristSpotController.getTouristSpotById);
 router.get('/:id/schedules', touristSpotController.getTouristSpotSchedules);
 router.put('/:id/schedules', touristSpotController.upsertTouristSpotSchedules);
 
+// Image management endpoints
+router.get('/:tourist_spot_id/images', touristSpotController.getTouristSpotImages);
+router.post('/:tourist_spot_id/images', touristSpotController.addTouristSpotImage);
+router.put('/:tourist_spot_id/images/:image_id', touristSpotController.updateTouristSpotImage);
+router.delete('/:tourist_spot_id/images/:image_id', touristSpotController.deleteTouristSpotImage);
+router.put('/:tourist_spot_id/images/:image_id/set-primary', touristSpotController.setPrimaryTouristSpotImage);
+
 // Create new tourist spot
 router.post('/', touristSpotController.createTouristSpot);
 
