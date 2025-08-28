@@ -25,7 +25,7 @@ const steps = [
   "Basic",
   "Contact",
   "Location",
-  "Links & Booking",
+  "Social Media",
   "Pricing",
   "Permits",
   "Review & Submit",
@@ -76,7 +76,9 @@ const BusinessRegistration: React.FC = () => {
     province_id: 0,
     description: "This place is great",
     instagram_url: "kim.com",
-    tiktok_url: "kim.com",
+    x_url: "kim.com",
+    address: "123 Street, City",
+    website_url: "kim.com",
     facebook_url: "kim.com",
     longitude: "",
     latitude: "",
@@ -184,8 +186,6 @@ const BusinessRegistration: React.FC = () => {
       alert("Something went wrong. Please try again.");
     }
   };
-
-
 
   return (
     <PageContainer style={{ padding: "20px 340px" }}>

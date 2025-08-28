@@ -27,7 +27,14 @@ exports.up = function (knex) {
       .references("id")
       .inTable("barangay")
       .nullable();
-    table.uuid("owner_id").notNullable();
+    table.text("address").notNullable();
+
+    table
+      .uuid("owner_id")
+      .notNullable()
+      .unsigned()
+      .references("id")
+      .inTable("user");
     table
       .enu("status", ["Pending", "Active", "Inactive", "Maintenance"])
       .notNullable();
@@ -35,7 +42,8 @@ exports.up = function (knex) {
     table.timestamp("created_at").defaultTo(knex.fn.now());
     table.string("latitude", 30).notNullable();
     table.string("longitude", 30).notNullable();
-    table.text("tiktok_url").nullable();
+    table.text("x_url").nullable();
+    table.text("website_url").nullable();
     table.text("facebook_url").nullable();
     table.text("instagram_url").nullable();
     table.boolean("hasBooking").notNullable().defaultTo(true);

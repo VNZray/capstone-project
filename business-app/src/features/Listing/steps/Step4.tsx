@@ -1,52 +1,21 @@
-import Text from "@/src/components/Text";
-import Button from "@mui/joy/Button";
 import React from "react";
 import type { Business } from "@/src/types/Business";
 import CardHeader from "@/src/components/CardHeader";
-import { AddBox, Language, EventAvailable } from "@mui/icons-material";
 import { FormControl, Grid, Input, Select, Option, FormLabel } from "@mui/joy";
 import Container from "@/src/components/Container";
-import Label from "@/src/components/Label";
-import { ToggleButton, ToggleButtonGroup } from "@mui/material";
 import { Facebook, Instagram, X } from "@mui/icons-material";
 
 type Props = {
   data: Business;
   setData: React.Dispatch<React.SetStateAction<Business>>;
   api: string;
-
-  bookingSite: BookingSite[];
-  setBookingSites: React.Dispatch<React.SetStateAction<BookingSite[]>>;
 };
-
-type BookingSite = {
-  name: string;
-  link: string;
-};
-
-const bookingSiteOptions = [
-  "Agoda",
-  "Trivago",
-  "Booking.com",
-  "Airbnb",
-  "Hotels.com",
-  "Expedia",
-  "TripAdvisor",
-  "Kayak",
-  "Other",
-];
-
-const bookingFeatures = ["External Booking", "Integrated Booking"];
 
 const Step4: React.FC<Props> = ({
-  setBookingSites,
   data,
   setData,
-  bookingSite,
 }) => {
-  const addBookingSite = () => {
-    setBookingSites((prev) => [...prev, { name: "", link: "" }]);
-  };
+
 
   return (
     <div
@@ -62,7 +31,7 @@ const Step4: React.FC<Props> = ({
         }}
       >
         <CardHeader
-          title="Social Media & Booking"
+          title="Social Media"
           color="white"
           margin="0 0 20px 0"
         />
@@ -81,7 +50,7 @@ const Step4: React.FC<Props> = ({
                   icon: <Instagram sx={{ color: "#E1306C" }} />,
                 },
                 {
-                  platform: "TikTok",
+                  platform: "X",
                   icon: <X sx={{ color: "#000" }} />,
                 },
               ].map(({ platform, icon }) => (
@@ -108,138 +77,6 @@ const Step4: React.FC<Props> = ({
               ))}
             </Container>
           </Grid>
-
-          {/* Booking Options (show only if business_type_id === 1) */}
-          {data.business_type_id === 1 && (
-            <Grid xs={8}>
-              <Container padding="0 20px" gap="20px">
-                <FormControl>
-                  <FormLabel>Booking Options</FormLabel>
-                  <ToggleButtonGroup
-                    color="primary"
-                    value={
-                      data.hasBooking === true
-                        ? "Integrated Booking"
-                        : data.hasBooking === false
-                        ? "External Booking"
-                        : ""
-                    }
-                    exclusive
-                    onChange={(e, value) => {
-                      if (!value) return;
-                      if (value === "External Booking") {
-                        setData((prev) => ({ ...prev, hasBooking: false }));
-                      } else if (value === "Integrated Booking") {
-                        setData((prev) => ({ ...prev, hasBooking: true }));
-                      }
-                    }}
-                    sx={{ display: "flex", gap: 2, mt: 1 }}
-                  >
-                    <ToggleButton
-                      value="External Booking"
-                      sx={{
-                        flex: 1,
-                        borderRadius: "12px",
-                        px: 3,
-                        py: 2,
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        gap: 1,
-                        textTransform: "none",
-                      }}
-                    >
-                      <Language fontSize="small" />
-                      External Booking
-                    </ToggleButton>
-
-                    <ToggleButton
-                      value="Integrated Booking"
-                      sx={{
-                        flex: 1,
-                        borderRadius: "12px",
-                        px: 3,
-                        py: 2,
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        gap: 1,
-                        textTransform: "none",
-                      }}
-                    >
-                      <EventAvailable fontSize="small" />
-                      Integrated Booking
-                    </ToggleButton>
-                  </ToggleButtonGroup>
-                </FormControl>
-
-                {/* External Booking Selected */}
-                {data.hasBooking === false && (
-                  <Container padding="10px 0" gap="15px">
-                    <FormLabel>External Booking Platforms</FormLabel>
-                    {bookingSite.map((site, index) => (
-                      <Grid container spacing={2} key={index}>
-                        <Grid xs={4}>
-                          <FormControl>
-                            <Select
-                              size="md"
-                              placeholder="Select Platform"
-                              value={site.name}
-                              onChange={(_event, value) => {
-                                const newSites = [...bookingSite];
-                                newSites[index].name = value ?? "";
-                                setBookingSites(newSites);
-                              }}
-                            >
-                              <Option value="">Choose Platform</Option>
-                              {bookingSiteOptions.map((opt) => (
-                                <Option key={opt} value={opt}>
-                                  {opt}
-                                </Option>
-                              ))}
-                            </Select>
-                          </FormControl>
-                        </Grid>
-                        <Grid xs={8}>
-                          <FormControl>
-                            <Input
-                              size="md"
-                              placeholder="Paste the link here."
-                              value={site.link}
-                              onChange={(e) => {
-                                const newSites = [...bookingSite];
-                                newSites[index].link = e.target.value;
-                                setBookingSites(newSites);
-                              }}
-                            />
-                          </FormControl>
-                        </Grid>
-                      </Grid>
-                    ))}
-
-                    <Button
-                      size="md"
-                      startDecorator={<AddBox />}
-                      onClick={addBookingSite}
-                      variant="outlined"
-                      sx={{ mt: 1 }}
-                    >
-                      Add Another Platform
-                    </Button>
-                  </Container>
-                )}
-
-                {/* Integrated Booking Selected */}
-                {data.hasBooking === true && (
-                  <Container padding="10px 0" gap="15px">
-                    <Text variant="medium" color="dark">
-                      ✅ Integrated booking will be handled within the system.
-                    </Text>
-                  </Container>
-                )}
-              </Container>
-            </Grid>
-          )}
         </Grid>
       </div>
     </div>
