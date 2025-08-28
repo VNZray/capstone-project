@@ -16,7 +16,9 @@ interface User {
   last_name?: string;
 }
 
-const API_URL = 'http://192.168.1.8:3000/api';
+// const API_URL = 'http://192.168.1.8:3000/api';
+const API_URL = "http://192.168.1.2:3000/api";
+
 
 interface AuthContextType {
   user: User | null;
