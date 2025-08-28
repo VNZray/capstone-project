@@ -10,6 +10,8 @@ import TouristSpotForm from "../../../components/touristSpot/TouristSpotForm";
 import type { TouristSpot } from "../../../types/TouristSpot";
 import { apiService } from "../../../utils/api";
 import "./Spot.css";
+import Container from "@/src/components/Container";
+import { colors } from "@/src/utils/Colors";
 
 const Spot = () => {
   const [currentPage, setCurrentPage] = useState(1);
@@ -106,7 +108,7 @@ const Spot = () => {
   }
 
   return (
-    <div className="spot-container">
+    <Container background={colors.background} elevation={2} className="spot-container">
       <div className="filter-and-search-container">
         <div className="filter">
           <CategoryFilter
@@ -185,7 +187,7 @@ const Spot = () => {
         initialData={selectedSpotForEdit}
         mode="edit"
       />
-    </div>
+    </Container>
   );
 };
 

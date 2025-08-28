@@ -1,9 +1,11 @@
 .main-layout {
   display: flex;
+  max-height: 100vh;
   min-height: 100vh;
   min-width: 100vw;
   background-color: var(--background-color);
-  /* light background */
+  overflow-x: hidden;
+  overflow: hidden;
 }
 
 .main-content {
@@ -15,16 +17,20 @@
 .main-outlet {
   flex: 1;
   padding: 1.5rem;
-  background-color: var(--background-color);
+  background-color: var(--off-white);
+  overflow: scroll;
+  overflow-x: hidden;
+
 }
 
 .business-layout {
   display: flex;
   flex-direction: column;
-  min-height: 100vh;
-  min-width: 100vw;
   background-color: var(--background-color);
-  /* light gray */
+  overflow: hidden;
+  width: 100%;
+  max-width: 100%;
+  min-width: 100%;
 }
 
 .auth-layout {
@@ -32,5 +38,5 @@
   height: 100vh;
   /* instead of 100vw */
   background-color: var(--background-color);
-  /* light gray */
+  overflow-x: hidden;
 }
