@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { apiService } from '../../utils/api';
 import type { TouristSpot, TouristSpotSchedule } from '../../types/TouristSpot';
+import MapInput from './MapInput';
 import {
   Alert,
   Button,
@@ -79,117 +80,190 @@ const TouristSpotDetails: React.FC<Props> = ({ spotId, onBack }) => {
     }
   }, [spot]);
 
-  const coordDisplay = useMemo(() => {
-    if (!spot) return 'N/A';
-    const lat = spot.latitude != null ? Number(spot.latitude).toFixed(6) : null;
-    const lng = spot.longitude != null ? Number(spot.longitude).toFixed(6) : null;
-    return lat && lng ? `${lat}, ${lng}` : 'N/A';
-  }, [spot]);
-
   if (loading) return <Typography level="body-md">Loading details...</Typography>;
   if (error) return <Alert color="danger" variant="soft">{error}</Alert>;
   if (!spot) return <Alert color="warning">No details found.</Alert>;
 
   return (
-    <Sheet variant="outlined" sx={{ p: 2, borderRadius: 8 }}>
-      <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
-        <Stack direction="row" spacing={1} alignItems="center">
-          <Typography level="h4">{spot.name}</Typography>
-          <Chip size="sm" color={spot.spot_status === 'active' ? 'success' : spot.spot_status === 'pending' ? 'warning' : 'neutral'}>
-            {spot.spot_status}
-          </Chip>
-          {spot.is_featured ? (
-            <Chip size="sm" color="primary" variant="soft">Featured</Chip>
-          ) : null}
-        </Stack>
+    <Sheet variant="outlined" sx={{ p: 1.5, borderRadius: 8 }}>
+      {/* Header with Back Button */}
+      <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 3 }}>
+        <Typography level="h3">Tourist Spot Details</Typography>
         <Button variant="plain" onClick={onBack}>← Back</Button>
       </Stack>
 
-      <Typography level="title-md" sx={{ mb: 1 }}>Overview</Typography>
-      <Grid container spacing={2} sx={{ mb: 2 }}>
-        <Grid xs={12}>
-          <Typography level="body-sm" sx={{ color: 'text.tertiary' }}>Description</Typography>
-          <Typography level="body-md">{spot.description || 'N/A'}</Typography>
-        </Grid>
-      </Grid>
 
-      <Divider sx={{ my: 2 }} />
+      <Grid container spacing={2} sx={{ maxWidth: '100%', overflow: 'hidden' }}>
+        {/* Left Column */}
+        <Grid xs={12} lg={9}>
+          <Stack spacing={2}>
+            <Sheet 
+              variant="outlined" 
+              sx={{ 
+                height: 180, 
+                borderRadius: 8, 
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'center',
+                backgroundColor: 'background.level1',
+                minHeight: 180,
+                maxWidth: '100%'
+              }}
+            >
+              <Typography level="body-sm" sx={{ color: 'text.tertiary' }}>
+                Image Coming Soon
+              </Typography>
+            </Sheet>
 
-  <Typography level="title-md" sx={{ mb: 1 }}>Details</Typography>
-      <Grid container spacing={2} sx={{ mb: 2 }}>
-        <Grid xs={12} md={6}>
-          <Stack spacing={0.5}>
-            <Typography level="body-sm" sx={{ color: 'text.tertiary', mt: 1 }}>Category / Type</Typography>
-    <Typography level="body-md">{spot.category} / {spot.type}</Typography>
+            {/* Name and Status */}
+            <Stack spacing={1}>
+              <Stack direction="row" spacing={1} alignItems="center" sx={{ flexWrap: 'wrap' }}>
+                <Typography level="h4">{spot.name}</Typography>
+                <Chip size="sm" color={spot.spot_status === 'active' ? 'success' : spot.spot_status === 'pending' ? 'warning' : 'neutral'}>
+                  {spot.spot_status}
+                </Chip>
+              </Stack>
+            </Stack>
 
-            <Typography level="body-sm" sx={{ color: 'text.tertiary', mt: 1 }}>Location</Typography>
-            <Typography level="body-md">{spot.barangay}, {spot.municipality}, {spot.province}</Typography>
+            {/* Description */}
+            <Stack spacing={0.5}>
+              <Typography level="title-sm" sx={{ color: 'text.tertiary' }}>Description</Typography>
+              <Typography level="body-md">{spot.description || 'No description available'}</Typography>
+            </Stack>
 
-            <Typography level="body-sm" sx={{ color: 'text.tertiary', mt: 1 }}>Coordinates</Typography>
-    <Typography level="body-md">{coordDisplay}</Typography>
+            {/* Category/Type */}
+            <Stack spacing={0.5}>
+              <Typography level="title-sm" sx={{ color: 'text.tertiary' }}>Category / Type</Typography>
+              <Typography level="body-md">{spot.category} / {spot.type}</Typography>
+            </Stack>
 
-            <Typography level="body-sm" sx={{ color: 'text.tertiary', mt: 1 }}>Created / Updated</Typography>
-    <Typography level="body-md">{createdDisplay} • {updatedDisplay}</Typography>
+            {/* Entry Fee */}
+            <Stack spacing={0.5}>
+              <Typography level="title-sm" sx={{ color: 'text.tertiary' }}>Entry Fee</Typography>
+              <Typography level="body-md" sx={{ fontWeight: 'bold' }}>{feeDisplay}</Typography>
+            </Stack>
+
+            {/* Schedule */}
+            <Stack spacing={1}>
+              <Typography level="title-sm" sx={{ color: 'text.tertiary' }}>Operating Hours</Typography>
+              {schedules && schedules.length > 0 ? (
+                <Table size="sm" variant="outlined" sx={{ '& table': { tableLayout: 'fixed' } }}>
+                  <thead>
+                    <tr>
+                      <th style={{ width: '30%' }}>Day</th>
+                      <th style={{ width: '40%' }}>Hours</th>
+                      <th style={{ width: '30%' }}>Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {schedules.map((s, idx) => (
+                      <tr key={`${s.id ?? idx}`}>
+                        <td>{dayNames[s.day_of_week] ?? s.day_of_week}</td>
+                        <td>
+                          {s.is_closed ? 'Closed' : `${s.open_time ?? '—'} - ${s.close_time ?? '—'}`}
+                        </td>
+                        <td>
+                          <Chip size="sm" color={s.is_closed ? 'neutral' : 'success'} variant="soft">
+                            {s.is_closed ? 'Closed' : 'Open'}
+                          </Chip>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </Table>
+              ) : (
+                <Typography level="body-sm" sx={{ color: 'text.tertiary' }}>
+                  {schedules ? 'No operating hours set' : 'Loading schedule...'}
+                </Typography>
+              )}
+            </Stack>
           </Stack>
         </Grid>
-        <Grid xs={12} md={6}>
-          <Stack spacing={0.5}>
-            <Typography level="body-sm" sx={{ color: 'text.tertiary' }}>Contact Phone</Typography>
-            <Typography level="body-md">{spot.contact_phone || 'N/A'}</Typography>
 
-            <Typography level="body-sm" sx={{ color: 'text.tertiary', mt: 1 }}>Contact Email</Typography>
-            <Typography level="body-md">{spot.contact_email || 'N/A'}</Typography>
+        {/* Right Column*/}
+        <Grid xs={12} lg={3}>
+          <Stack spacing={2}>
+            {/* Map */}
+            <Stack spacing={1}>
+              <Typography level="title-sm" sx={{ color: 'text.tertiary' }}>Location on Map</Typography>
+              <Sheet 
+                variant="outlined" 
+                sx={{ 
+                  borderRadius: 8, 
+                  overflow: 'hidden',
+                  maxWidth: '100%',
+                  '& > div': { // Target MapInput container
+                    '& > div': { // Target Google Map container
+                      height: '200px !important', // Override default height
+                      borderRadius: '8px'
+                    }
+                  }
+                }}
+              >
+                <MapInput
+                  latitude={spot.latitude ?? undefined}
+                  longitude={spot.longitude ?? undefined}
+                  onChange={() => {}} // Read-only for details view
+                />
+              </Sheet>
+            </Stack>
 
-            <Typography level="body-sm" sx={{ color: 'text.tertiary', mt: 1 }}>Website</Typography>
-            {spot.website ? (
-              <Link href={spot.website} target="_blank" rel="noopener noreferrer">
-                {spot.website}
-              </Link>
-            ) : (
-              <Typography level="body-md">N/A</Typography>
-            )}
+            {/* Address */}
+            <Stack spacing={0.5}>
+              <Typography level="title-sm" sx={{ color: 'text.tertiary' }}>Address</Typography>
+              <Typography level="body-md">
+                {spot.barangay}, {spot.municipality}, {spot.province}
+              </Typography>
+            </Stack>
 
-            <Typography level="body-sm" sx={{ color: 'text.tertiary', mt: 1 }}>Entry Fee</Typography>
-            <Typography level="body-md">{feeDisplay}</Typography>
+            {/* Contact Information */}
+            <Stack spacing={1}>
+              <Typography level="title-sm" sx={{ color: 'text.tertiary' }}>Contact Information</Typography>
+              
+              <Stack spacing={0.5}>
+                <Typography level="body-sm" sx={{ color: 'text.tertiary' }}>Phone</Typography>
+                <Typography level="body-md">{spot.contact_phone || 'Not provided'}</Typography>
+              </Stack>
+
+              <Stack spacing={0.5}>
+                <Typography level="body-sm" sx={{ color: 'text.tertiary' }}>Email</Typography>
+                <Typography level="body-md">{spot.contact_email || 'Not provided'}</Typography>
+              </Stack>
+
+              <Stack spacing={0.5}>
+                <Typography level="body-sm" sx={{ color: 'text.tertiary' }}>Website</Typography>
+                {spot.website ? (
+                  <Link 
+                    href={spot.website} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    sx={{ 
+                      wordBreak: 'break-all',
+                      fontSize: 'sm'
+                    }}
+                  >
+                    {spot.website.length > 30 ? `${spot.website.substring(0, 30)}...` : spot.website}
+                  </Link>
+                ) : (
+                  <Typography level="body-md">Not provided</Typography>
+                )}
+              </Stack>
+            </Stack>
+
+            {/* Admin Info */}
+            <Divider sx={{ my: 1 }} />
+            <Stack spacing={0.5}>
+              <Typography level="title-sm" sx={{ color: 'text.tertiary' }}>Admin Information</Typography>
+              <Typography level="body-sm" sx={{ color: 'text.tertiary' }}>
+                Created: {createdDisplay}
+              </Typography>
+              <Typography level="body-sm" sx={{ color: 'text.tertiary' }}>
+                Updated: {updatedDisplay}
+              </Typography>
+            </Stack>
           </Stack>
         </Grid>
       </Grid>
-
-      <Divider sx={{ my: 2 }} />
-
-      <Typography level="title-md" sx={{ mb: 1 }}>Schedules</Typography>
-      {schedules && schedules.length > 0 ? (
-        <Table size="sm" variant="outlined" sx={{ mb: 2 }}>
-          <thead>
-            <tr>
-              <th style={{ width: 120 }}>Day</th>
-              <th>Open</th>
-              <th>Close</th>
-              <th>Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            {schedules.map((s, idx) => (
-              <tr key={`${s.id ?? idx}`}>
-                <td>{dayNames[s.day_of_week] ?? s.day_of_week}</td>
-                <td>{s.open_time ?? '—'}</td>
-                <td>{s.close_time ?? '—'}</td>
-                <td>
-                  {s.is_closed ? (
-                    <Chip size="sm" color="neutral" variant="soft">Closed</Chip>
-                  ) : (
-                    <Chip size="sm" color="success" variant="soft">Open</Chip>
-                  )}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </Table>
-      ) : (
-        <Typography level="body-sm" sx={{ color: 'text.tertiary', mb: 1 }}>
-          {schedules ? 'No schedules provided.' : 'Loading schedules...'}
-        </Typography>
-      )}
     </Sheet>
   );
 };

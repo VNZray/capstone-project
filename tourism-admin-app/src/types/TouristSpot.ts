@@ -54,8 +54,8 @@ export interface Type {
 
 export interface TouristSpotSchedule {
   id?: string;
-  day_of_week: number; // 0 = Monday .. 6 = Sunday
-  open_time: string | null; // 'HH:mm' or null if closed
-  close_time: string | null; // 'HH:mm' or null if closed
+  day_of_week: number;
+  open_time: string | null;
+  close_time: string | null;
   is_closed: boolean;
 }
