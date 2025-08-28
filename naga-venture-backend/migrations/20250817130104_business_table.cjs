@@ -1,6 +1,6 @@
 exports.up = function (knex) {
   return knex.schema.createTable("business", function (table) {
-    table.uuid("id").primary().defaultTo(knex.raw("(uuid())"));
+    table.uuid("id").primary().defaultTo(knex.raw("(UUID())")); // MariaDB's UUID()
     table.string("business_name", 50).notNullable();
     table.text("description").nullable();
     table.float("min_price").notNullable();
@@ -32,9 +32,8 @@ exports.up = function (knex) {
     table
       .uuid("owner_id")
       .notNullable()
-      .unsigned()
       .references("id")
-      .inTable("user");
+      .inTable("owner");
     table
       .enu("status", ["Pending", "Active", "Inactive", "Maintenance"])
       .notNullable();

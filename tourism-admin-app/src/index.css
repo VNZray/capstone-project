@@ -4,7 +4,7 @@
   --primary-color: #0A1B47;
   --secondary-color: #0077B6;
   --text-color: #374151;
-  --background-color: #F8F8F8;
+  --background-color: #f6f6f6;
   --white: #ffffff;
   --dark: #1a1a1a;
   --text-color: #1a1a1a;
@@ -13,9 +13,9 @@
   --orange: #FF5310;
   --red: #AE2438;
   --tab-background: #DEE3F2;
-
-
-  color-scheme: light dark;
+  --off-white: #ECECEC;
+  --off-white-2: #faf9f9;
+  --off-white-3: #f4f3ee;
   color: rgba(255, 255, 255, 0.87);
 
   font-synthesis: none;
@@ -26,11 +26,10 @@
 
 body {
   margin: 0;
-  display: flex;
-  place-items: center;
-  min-width: 320px;
-  min-height: 100vh;
+  width: 100%;
+  height: 100%;
   padding: 0;
+  background-color: var(--background-color);
 }
 
 h1 {
@@ -48,56 +47,4 @@ button {
   background-color: #1a1a1a;
   cursor: pointer;
   transition: border-color 0.25s;
-}
-
-button:hover {
-  border-color: #646cff;
-}
-
-button:focus,
-button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
-}
-
-@media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: #ffffff;
-  }
-
-  a:hover {
-    color: #747bff;
-  }
-
-  button {
-    background-color: #f9f9f9;
-  }
-}
-
-/* Ensure Joy UI input focus variables are applied (loaded by main.tsx) */
-:root {
-  --Input-focusedThickness: 0px;
-  --Input-focusedHighlight: transparent;
-  --Select-focusedHighlight: transparent;
-  --Textarea-focusedHighlight: transparent;
-}
-
-/* Extra override: remove any browser or component box-shadow/border used as inner focus for inputs
-   but preserve a visible outline for keyboard users via :focus-visible */
-input:focus,
-textarea:focus,
-select:focus,
-[role="combobox"] input:focus {
-  outline: none !important;
-  box-shadow: none !important;
-  border-color: inherit !important;
-}
-
-/* Keep an accessible focus indicator when using keyboard navigation */
-input:focus-visible,
-textarea:focus-visible,
-select:focus-visible,
-[role="combobox"] input:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
-  outline-offset: 2px;
 }

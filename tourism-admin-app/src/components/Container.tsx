@@ -5,11 +5,18 @@ import "./styles/container.css";
 interface ContainerProps {
   children: React.ReactNode;
   elevation?: 0 | 1 | 2 | 3 | 4 | 5 | 6;
+  align?: string;
+  justify?: string;
   className?: string;
   width?: string;
   height?: string;
   radius?: string;
   padding?: string;
+  style?: React.CSSProperties;
+  gap?: string;
+  background?: string;
+  direction?: "row" | "column";
+  opacity?: number; // new prop
 }
 
 const Container: React.FC<ContainerProps> = ({
@@ -20,16 +27,33 @@ const Container: React.FC<ContainerProps> = ({
   height,
   radius,
   padding = "16px",
+  style,
+  gap = "16px",
+  direction = "column",
+  background,
+  opacity = 1, // default full opacity
+  align,
+  justify,
 }) => {
+  const containerStyle: React.CSSProperties = {
+    width,
+    height,
+    padding,
+    borderRadius: radius,
+    gap,
+    backgroundColor: background,
+    flexDirection: direction,
+    display: "flex",
+    alignItems: align,
+    justifyContent: justify,
+    opacity, // apply opacity here
+    ...style,
+  };
+
   return (
     <div
       className={`container elevation-${elevation} ${className}`.trim()}
-      style={{
-        padding,
-        width,
-        height,
-        borderRadius: radius,
-      }}
+      style={containerStyle}
     >
       {children}
     </div>
