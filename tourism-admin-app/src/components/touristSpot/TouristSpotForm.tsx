@@ -85,7 +85,7 @@ const TouristSpotForm: React.FC<TouristSpotFormProps> = ({
     }))
   );
 
-  const [currentStep, setCurrentStep] = useState(0); // Stepper state: 0=Basic, 1=Location, 2=Schedule, 3=Images, 4=Review
+  const [currentStep, setCurrentStep] = useState(0);
 
   const provinceOptions = useMemo<Option[]>(
     () => provinces.map((p) => ({ id: p.id, label: p.province })),
@@ -163,13 +163,12 @@ const TouristSpotForm: React.FC<TouristSpotFormProps> = ({
         spot_status:
           (initialData.spot_status as "pending" | "active" | "inactive") || "",
       });
-      // load schedules from API
+
       (async () => {
         try {
           const scheds = await apiService.getTouristSpotSchedules(
             initialData.id
           );
-          // Map API day_of_week (0..6) to UI DaySchedule preserving order Monday..Sunday
           const ui = Array.from({ length: 7 }, (_, idx) => {
             const found = scheds.find((s) => s.day_of_week === idx);
             return {
@@ -209,7 +208,7 @@ const TouristSpotForm: React.FC<TouristSpotFormProps> = ({
           close_time: "00:00",
         }))
       );
-      setCurrentStep(0); // Reset to first step for new forms
+      setCurrentStep(0);
     }
   }, [mode, initialData, isVisible, daysOfWeek]);
 

@@ -103,8 +103,17 @@ const Spot = () => {
     );
   }, [filteredAndSearchedSpots, currentPage, spotsPerPage]);
 
+  const handleEditFromDetails = () => {
+    // Find the spot data for the selected spot ID
+    const spotToEdit = spots.find(spot => spot.id === selectedSpotId);
+    if (spotToEdit) {
+      handleEditSpot(spotToEdit);
+      setSelectedSpotId(null); // Close details view
+    }
+  };
+
   if (selectedSpotId) {
-    return <TouristSpotDetails spotId={selectedSpotId} onBack={handleBack} />;
+    return <TouristSpotDetails spotId={selectedSpotId} onBack={handleBack} onEdit={handleEditFromDetails} />;
   }
 
   return (
