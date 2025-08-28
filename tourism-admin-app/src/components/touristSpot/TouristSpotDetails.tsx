@@ -147,7 +147,7 @@ const TouristSpotDetails: React.FC<Props> = ({ spotId, onBack }) => {
             <Stack spacing={1}>
               <Typography level="title-sm" sx={{ color: 'text.tertiary' }}>Operating Hours</Typography>
               {schedules && schedules.length > 0 ? (
-                <Table size="sm" variant="outlined" sx={{ '& table': { tableLayout: 'fixed' } }}>
+                <Table size="sm" variant="outlined" sx={{ '& table': { tableLayout: 'fixed' }, '& td, & th': { textAlign: 'center' } }}>
                   <thead>
                     <tr>
                       <th style={{ width: '30%' }}>Day</th>
@@ -192,9 +192,9 @@ const TouristSpotDetails: React.FC<Props> = ({ spotId, onBack }) => {
                   borderRadius: 8, 
                   overflow: 'hidden',
                   maxWidth: '100%',
-                  '& > div': { // Target MapInput container
-                    '& > div': { // Target Google Map container
-                      height: '200px !important', // Override default height
+                  '& > div': { 
+                    '& > div': {
+                      height: '300px !important',
                       borderRadius: '8px'
                     }
                   }
