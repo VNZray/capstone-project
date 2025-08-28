@@ -87,29 +87,45 @@ export const uploadTouristSpotImage = async (
   touristSpotId: string,
   file: File,
   isPrimary: boolean = false,
-  altText?: string
+  altText?: string,
+  categoryName?: string,
+  touristSpotName?: string
 ) => {
   try {
+    // 1. Get tourist spot details if category and name not provided
+    let category = categoryName;
+    let spotName = touristSpotName;
+    
+    if (!category || !spotName) {
+      const touristSpot = await getDataById('tourist-spots', touristSpotId);
+      category = category || touristSpot.category || 'uncategorized';
+      spotName = spotName || touristSpot.name || `spot-${touristSpotId}`;
+    }
+    
+    // 2. Create file path with better folder structure: category/tourist-spot-name/filename
     const fileExt = file.name.split('.').pop();
     const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
-    const fileName = `${touristSpotId}_${timestamp}.${fileExt}`;
-    const filePath = fileName;
+    const fileName = `${timestamp}.${fileExt}`;
+    
+    // Clean category and spot name for folder (remove spaces, special chars, lowercase)
+    const categoryFolder = (category || 'uncategorized').toLowerCase().replace(/[^a-z0-9]/g, '-');
+    const spotNameFolder = (spotName || `spot-${touristSpotId}`).toLowerCase().replace(/[^a-z0-9]/g, '-');
+    const filePath = `${categoryFolder}/${spotNameFolder}/${fileName}`;
 
     const { data: uploadData, error: uploadError } = await supabase.storage
-      .from("tourist-spot-images")
+      .from("touristspots-images")
       .upload(filePath, file, { upsert: true });
 
     if (uploadError) throw uploadError;
     if (!uploadData?.path) throw new Error("Upload failed: no file path");
     const { data: publicData } = supabase.storage
-      .from("tourist-spot-images")
+      .from("touristspots-images")
       .getPublicUrl(uploadData.path);
 
     if (!publicData?.publicUrl) {
       throw new Error("Failed to get public URL");
     }
 
-    // 3. Add image record to database
     const imageData = {
       file_url: publicData.publicUrl,
       file_format: fileExt || 'jpg',
@@ -131,30 +147,38 @@ export const uploadTouristSpotImage = async (
 export const getTouristSpotImages = async (touristSpotId: string) => {
   try {
     const response = await axios.get(`${api}/tourist-spots/${touristSpotId}/images`);
-    return response.data;
+    return response.data.data || [];
   } catch (error) {
     console.error("Get tourist spot images failed:", error);
     throw error;
   }
 };
 
-// Delete tourist spot image (both from database and Supabase storage)
 export const deleteTouristSpotImage = async (touristSpotId: string, imageId: string, fileUrl: string) => {
   try {
-    // 1. Delete from database
+    // Delete from database
     await axios.delete(`${api}/tourist-spots/${touristSpotId}/images/${imageId}`);
 
-    // 2. Extract file path from URL and delete from Supabase
+    // Extract file path from URL and delete from Supabase
     const urlParts = fileUrl.split('/');
-    const fileName = urlParts[urlParts.length - 1];
+    const bucketIndex = urlParts.findIndex(part => part === 'touristspots-images');
+    
+    let filePath;
+    if (bucketIndex !== -1 && bucketIndex + 3 < urlParts.length) {
+      const category = urlParts[bucketIndex + 1];
+      const spotId = urlParts[bucketIndex + 2]; 
+      const fileName = urlParts[bucketIndex + 3];
+      filePath = `${category}/${spotId}/${fileName}`;
+    } else {
+      filePath = urlParts[urlParts.length - 1];
+    }
     
     const { error } = await supabase.storage
-      .from("tourist-spot-images")
-      .remove([fileName]);
+      .from("touristspots-images")
+      .remove([filePath]);
 
     if (error) {
       console.warn("Failed to delete file from Supabase storage:", error);
-      // Don't throw here since database deletion succeeded
     }
 
     return { success: true };

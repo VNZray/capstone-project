@@ -15,16 +15,34 @@ import {
   Typography,
 } from '@mui/joy';
 
+interface TouristSpotImage {
+  id: string;
+  tourist_spot_id: string;
+  file_url: string;
+  file_format: string;
+  file_size?: number;
+  filename?: string;
+  file_name?: string;
+  url?: string;
+  supabase_url?: string;
+  alt_text?: string;
+  is_primary: boolean;
+  uploaded_at: string;
+  updated_at?: string;
+}
+
 type Props = {
   spotId: string;
   onBack: () => void;
+  onEdit?: () => void;
 };
 
 const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
-const TouristSpotDetails: React.FC<Props> = ({ spotId, onBack }) => {
+const TouristSpotDetails: React.FC<Props> = ({ spotId, onBack, onEdit }) => {
   const [spot, setSpot] = useState<TouristSpot | null>(null);
   const [schedules, setSchedules] = useState<TouristSpotSchedule[] | null>(null);
+  const [images, setImages] = useState<TouristSpotImage[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -35,12 +53,23 @@ const TouristSpotDetails: React.FC<Props> = ({ spotId, onBack }) => {
         setError(null);
         const data = await apiService.getTouristSpotById(spotId);
         setSpot(data);
+        
+        // Load schedules
         try {
           const sched = await apiService.getTouristSpotSchedules(spotId);
           setSchedules(sched);
         } catch (e) {
           console.warn('Failed to load schedules', e);
           setSchedules([]);
+        }
+
+        // Load images
+        try {
+          const imageData = await apiService.getTouristSpotImages(spotId);
+          setImages(imageData || []);
+        } catch (e) {
+          console.warn('Failed to load images', e);
+          setImages([]);
         }
       } catch (err) {
         console.error(err);
@@ -89,7 +118,14 @@ const TouristSpotDetails: React.FC<Props> = ({ spotId, onBack }) => {
       {/* Header with Back Button */}
       <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 3 }}>
         <Typography level="h3">Tourist Spot Details</Typography>
-        <Button variant="plain" onClick={onBack}>← Back</Button>
+        <Stack direction="row" spacing={1}>
+          {onEdit && (
+            <Button variant="outlined" color="primary" onClick={onEdit}>
+              Edit
+            </Button>
+          )}
+          <Button variant="plain" onClick={onBack}>← Back</Button>
+        </Stack>
       </Stack>
 
 
@@ -97,23 +133,90 @@ const TouristSpotDetails: React.FC<Props> = ({ spotId, onBack }) => {
         {/* Left Column */}
         <Grid xs={12} lg={9}>
           <Stack spacing={2}>
-            <Sheet 
-              variant="outlined" 
-              sx={{ 
-                height: 180, 
-                borderRadius: 8, 
-                display: 'flex', 
-                alignItems: 'center', 
-                justifyContent: 'center',
-                backgroundColor: 'background.level1',
-                minHeight: 180,
-                maxWidth: '100%'
-              }}
-            >
-              <Typography level="body-sm" sx={{ color: 'text.tertiary' }}>
-                Image Coming Soon
-              </Typography>
-            </Sheet>
+            {/* Images Section */}
+            <Stack spacing={1}>
+              <Typography level="title-sm" sx={{ color: 'text.tertiary' }}>Images</Typography>
+              {images.length > 0 ? (
+                <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap', gap: 1 }}>
+                  {images.slice(0, 4).map((image, index) => (
+                    <Sheet
+                      key={image.id || index}
+                      variant="outlined"
+                      sx={{
+                        width: index === 0 ? 300 : 140,
+                        height: index === 0 ? 200 : 140,
+                        borderRadius: 8,
+                        overflow: 'hidden',
+                        position: 'relative',
+                        '& img': {
+                          width: '100%',
+                          height: '100%',
+                          objectFit: 'cover',
+                        }
+                      }}
+                    >
+                      <img 
+                        src={image.file_url || image.supabase_url || image.url} 
+                        alt={image.alt_text || `Tourist spot image ${index + 1}`}
+                      />
+                      {image.is_primary && (
+                        <Typography
+                          level="body-xs"
+                          sx={{
+                            position: 'absolute',
+                            top: 4,
+                            left: 4,
+                            backgroundColor: 'primary.solidBg',
+                            color: 'primary.solidColor',
+                            px: 1,
+                            py: 0.5,
+                            borderRadius: 4,
+                          }}
+                        >
+                          Primary
+                        </Typography>
+                      )}
+                    </Sheet>
+                  ))}
+                  {images.length > 4 && (
+                    <Sheet
+                      variant="outlined"
+                      sx={{
+                        width: 140,
+                        height: 140,
+                        borderRadius: 8,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        backgroundColor: 'background.level1',
+                      }}
+                    >
+                      <Typography level="body-sm" sx={{ color: 'text.tertiary' }}>
+                        +{images.length - 4} more
+                      </Typography>
+                    </Sheet>
+                  )}
+                </Stack>
+              ) : (
+                <Sheet
+                  variant="outlined"
+                  sx={{
+                    height: 180,
+                    borderRadius: 8,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    backgroundColor: 'background.level1',
+                    minHeight: 180,
+                    maxWidth: '100%'
+                  }}
+                >
+                  <Typography level="body-sm" sx={{ color: 'text.tertiary' }}>
+                    No images available
+                  </Typography>
+                </Sheet>
+              )}
+            </Stack>
 
             {/* Name and Status */}
             <Stack spacing={1}>

@@ -1,25 +1,20 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { IoClose } from "react-icons/io5";
 import { apiService } from "../../utils/api";
-import MapInput from "./MapInput";
+import StepTabs from "./StepTabs";
+import BasicInfoStep from "./steps/BasicInfoStep";
+import LocationStep from "./steps/LocationStep";
+import ScheduleStep from "./steps/ScheduleStep";
+import ImagesStep from "./steps/ImagesStep";
+import ReviewStep from "./steps/ReviewStep";
 import {
   Modal,
   ModalDialog,
   DialogTitle,
   IconButton,
   Typography,
-  Grid,
   Stack,
-  FormControl,
-  FormLabel,
-  Input,
-  Textarea,
-  Autocomplete,
   Button,
-  Select,
-  Option,
-  Divider,
-  Switch,
 } from "@mui/joy";
 import type {
   Category,
@@ -28,6 +23,7 @@ import type {
   Barangay,
   TouristSpot,
 } from "../../types/TouristSpot";
+import type { Option, TouristSpotFormData, DaySchedule } from "./types";
 
 interface TouristSpotFormProps {
   isVisible: boolean;
@@ -38,15 +34,6 @@ interface TouristSpotFormProps {
   initialData?: TouristSpot;
 }
 
-type Option = { id: number; label: string };
-
-type DaySchedule = {
-  dayIndex: number;
-  is_closed: boolean;
-  open_time: string;
-  close_time: string;
-};
-
 const TouristSpotForm: React.FC<TouristSpotFormProps> = ({
   isVisible,
   onClose,
@@ -55,7 +42,7 @@ const TouristSpotForm: React.FC<TouristSpotFormProps> = ({
   mode,
   initialData,
 }) => {
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<TouristSpotFormData>({
     name: "",
     description: "",
     province_id: "",
@@ -68,7 +55,7 @@ const TouristSpotForm: React.FC<TouristSpotFormProps> = ({
     website: "",
     entry_fee: "",
     category_id: "3",
-    type_id: "",
+    type_id: "4", // Default to Tourist Spot type
     spot_status: "" as "" | "pending" | "active" | "inactive",
   });
   const [loading, setLoading] = useState(false);
@@ -97,6 +84,8 @@ const TouristSpotForm: React.FC<TouristSpotFormProps> = ({
       close_time: "00:00",
     }))
   );
+
+  const [currentStep, setCurrentStep] = useState(0); // Stepper state: 0=Basic, 1=Location, 2=Schedule, 3=Images, 4=Review
 
   const provinceOptions = useMemo<Option[]>(
     () => provinces.map((p) => ({ id: p.id, label: p.province })),
@@ -186,8 +175,8 @@ const TouristSpotForm: React.FC<TouristSpotFormProps> = ({
             return {
               dayIndex: idx,
               is_closed: found?.is_closed ?? false,
-              open_time: found?.open_time ?? null,
-              close_time: found?.close_time ?? null,
+              open_time: found?.open_time ?? "00:00",
+              close_time: found?.close_time ?? "00:00",
             } as DaySchedule;
           });
           setSchedules(ui);
@@ -220,6 +209,7 @@ const TouristSpotForm: React.FC<TouristSpotFormProps> = ({
           close_time: "00:00",
         }))
       );
+      setCurrentStep(0); // Reset to first step for new forms
     }
   }, [mode, initialData, isVisible, daysOfWeek]);
 
@@ -265,7 +255,7 @@ const TouristSpotForm: React.FC<TouristSpotFormProps> = ({
         barangay_id: parseInt(formData.barangay_id),
         contact_phone: formData.contact_phone,
         category_id: parseInt(formData.category_id),
-        type_id: 4,
+        type_id: parseInt(formData.type_id) || 4,
         ...(formData.latitude
           ? { latitude: parseFloat(formData.latitude) }
           : {}),
@@ -324,14 +314,114 @@ const TouristSpotForm: React.FC<TouristSpotFormProps> = ({
     }
   };
 
+  // Render content based on current step
+  const renderStepContent = () => {
+    switch (currentStep) {
+      case 0: // Basic Info
+        return (
+          <BasicInfoStep
+            formData={formData}
+            categoryOptions={categoryOptions}
+            selectedCategory={selectedCategory}
+            onInputChange={handleInputChange}
+            onFormDataChange={handleFormDataChange}
+          />
+        );
+
+      case 1: // Location  
+        return (
+          <LocationStep
+            formData={formData}
+            provinceOptions={provinceOptions}
+            municipalityOptions={municipalityOptions}
+            barangayOptions={barangayOptions}
+            selectedProvince={selectedProvince}
+            selectedMunicipality={selectedMunicipality}
+            selectedBarangay={selectedBarangay}
+            onFormDataChange={handleFormDataChange}
+          />
+        );
+
+      case 2: // Schedule
+        return (
+          <ScheduleStep
+            schedules={schedules}
+            daysOfWeek={daysOfWeek}
+            onScheduleChange={setSchedules}
+          />
+        );
+
+      case 3: // Images
+        return (
+          <ImagesStep
+            mode={mode}
+            touristSpotId={initialData?.id?.toString()}
+          />
+        );
+
+      case 4: // Review
+        return (
+          <ReviewStep
+            mode={mode}
+            formData={formData}
+            selectedCategory={selectedCategory}
+            selectedProvince={selectedProvince}
+            selectedMunicipality={selectedMunicipality}
+            selectedBarangay={selectedBarangay}
+            schedules={schedules}
+            daysOfWeek={daysOfWeek}
+            onFormDataChange={handleFormDataChange}
+          />
+        );
+
+      default:
+        return null;
+    }
+  };
+
+  const nextStep = () => {
+    if (currentStep < 4) setCurrentStep(currentStep + 1);
+  };
+
+  const prevStep = () => {
+    if (currentStep > 0) setCurrentStep(currentStep - 1);
+  };
+
+  const canProceedToNext = () => {
+    switch (currentStep) {
+      case 0: // Basic Info
+        return formData.name && formData.description && formData.category_id;
+      case 1: // Location
+        return formData.province_id && formData.municipality_id && formData.barangay_id;
+      case 2: // Schedule
+        return true; // Schedule is optional
+      case 3: // Images
+        return true; // Images are optional
+      default:
+        return true;
+    }
+  };
+
+  const canAccessStep = (step: number) => {
+    if (step === 0) return true;
+    if (step === 1) return !!(formData.name && formData.description && formData.category_id);
+    if (step <= 2) return !!(formData.province_id && formData.municipality_id && formData.barangay_id);
+    return true; // Images and Review are always accessible if previous steps are valid
+  };
+
+  // Wrapper functions to match expected prop types
+  const handleFormDataChange = (updater: (prev: TouristSpotFormData) => TouristSpotFormData) => {
+    setFormData(updater);
+  };
+
   return (
     <Modal open={isVisible} onClose={onClose}>
       <ModalDialog
         size="lg"
         sx={{
-          width: "90%",
-          maxWidth: 1400,
-          maxHeight: "100vh",
+          width: "95%",
+          maxWidth: 1200,
+          maxHeight: "95vh",
           overflow: "auto",
         }}
       >
@@ -339,7 +429,7 @@ const TouristSpotForm: React.FC<TouristSpotFormProps> = ({
           direction="row"
           alignItems="center"
           justifyContent="space-between"
-          sx={{ mb: 1 }}
+          sx={{ mb: 2 }}
         >
           <DialogTitle>
             <Typography level="h4">
@@ -351,363 +441,57 @@ const TouristSpotForm: React.FC<TouristSpotFormProps> = ({
           </IconButton>
         </Stack>
 
-        <form onSubmit={handleSubmit}>
-          <Grid container spacing={2}>
-            {/* Left column (65%): main fields + schedule */}
-            <Grid xs={12} md={8}>
-              <Stack spacing={2}>
-                <FormControl required>
-                  <FormLabel>Name</FormLabel>
-                  <Input
-                    name="name"
-                    value={formData.name}
-                    onChange={handleInputChange}
-                    required
-                  />
-                </FormControl>
+        {/* Step Tabs */}
+        <StepTabs
+          currentStep={currentStep}
+          onStepChange={setCurrentStep}
+          canAccessStep={canAccessStep}
+        />
 
-                <FormControl required>
-                  <FormLabel>Description</FormLabel>
-                  <Textarea
-                    minRows={2}
-                    name="description"
-                    value={formData.description}
-                    onChange={handleInputChange}
-                  />
-                </FormControl>
+        {/* Step Content */}
+        <Stack sx={{ minHeight: 400, mb: 3 }}>
+          {renderStepContent()}
+        </Stack>
 
-                <Grid container spacing={2}>
-                  <Grid xs={12} md={7}>
-                    <FormControl required>
-                      <FormLabel>Category</FormLabel>
-                      <Autocomplete<Option>
-                        options={categoryOptions}
-                        value={selectedCategory}
-                        isOptionEqualToValue={(a, b) => a?.id === b?.id}
-                        getOptionLabel={(opt) => opt?.label ?? ""}
-                        onChange={(_e, val) =>
-                          setFormData((prev) => ({
-                            ...prev,
-                            category_id: val?.id.toString() || "",
-                          }))
-                        }
-                        placeholder="Select Category"
-                      />
-                    </FormControl>
-                  </Grid>
-                  <Grid xs={12} md={5}>
-                    <FormControl>
-                      <FormLabel>Entry Fee (₱)</FormLabel>
-                      <Input
-                        type="number"
-                        name="entry_fee"
-                        value={formData.entry_fee}
-                        onChange={handleInputChange}
-                        placeholder="(if applicable)"
-                        slotProps={{ input: { step: "0.01" } }}
-                      />
-                    </FormControl>
-                  </Grid>
-                </Grid>
-
-                <Divider>
-                  <Typography level="title-sm">Contact Information</Typography>
-                </Divider>
-
-                <Grid container spacing={2}>
-                  <Grid xs={12} md={4}>
-                    <FormControl>
-                      <Input
-                        type="tel"
-                        name="contact_phone"
-                        value={formData.contact_phone}
-                        onChange={handleInputChange}
-                        placeholder="Mobile Number"
-                      />
-                    </FormControl>
-                  </Grid>
-                  <Grid xs={12} md={4}>
-                    <FormControl>
-                      <Input
-                        type="email"
-                        name="contact_email"
-                        value={formData.contact_email}
-                        onChange={handleInputChange}
-                        placeholder="Email"
-                      />
-                    </FormControl>
-                  </Grid>
-                  <Grid xs={12} md={4}>
-                    <FormControl>
-                      <Input
-                        type="url"
-                        name="website"
-                        value={formData.website}
-                        onChange={handleInputChange}
-                        placeholder="Links"
-                      />
-                    </FormControl>
-                  </Grid>
-                </Grid>
-
-                <Divider>
-                  <Typography level="title-sm">Schedule</Typography>
-                </Divider>
-                <Stack spacing={1}>
-                  {schedules.map((sched) => (
-                    <Grid
-                      container
-                      spacing={1}
-                      alignItems="center"
-                      key={sched.dayIndex}
-                    >
-                      <Grid xs={12} sm={1}></Grid>
-                      <Grid xs={12} sm={2}>
-                        <FormLabel>{daysOfWeek[sched.dayIndex]}</FormLabel>
-                      </Grid>
-                      <Grid xs={6} sm={3}>
-                        <FormControl>
-                          <Input
-                            type="time"
-                            value={sched.open_time}
-                            disabled={sched.is_closed}
-                            onChange={(e) => {
-                              const v = e.target.value;
-                              setSchedules((prev) =>
-                                prev.map((s) =>
-                                  s.dayIndex === sched.dayIndex
-                                    ? { ...s, open_time: v }
-                                    : s
-                                )
-                              );
-                            }}
-                          />
-                        </FormControl>
-                      </Grid>
-                      <Grid xs={6} sm={3}>
-                        <FormControl>
-                          <Input
-                            type="time"
-                            value={sched.close_time}
-                            disabled={sched.is_closed}
-                            onChange={(e) => {
-                              const v = e.target.value;
-                              setSchedules((prev) =>
-                                prev.map((s) =>
-                                  s.dayIndex === sched.dayIndex
-                                    ? { ...s, close_time: v }
-                                    : s
-                                )
-                              );
-                            }}
-                          />
-                        </FormControl>
-                      </Grid>
-                      <Grid xs={12} sm={1}>
-                        <FormControl orientation="horizontal">
-                          <FormLabel>Closed</FormLabel>
-                          <Switch
-                            checked={sched.is_closed}
-                            onChange={(e) => {
-                              const checked = e.target.checked;
-                              setSchedules((prev) =>
-                                prev.map((s) =>
-                                  s.dayIndex === sched.dayIndex
-                                    ? { ...s, is_closed: checked }
-                                    : s
-                                )
-                              );
-                            }}
-                          />
-                        </FormControl>
-                      </Grid>
-                      <Grid xs={12} sm={1}></Grid>
-                    </Grid>
-                  ))}
-                </Stack>
-              </Stack>
-            </Grid>
-
-            {/* Right column (35%): map + lat/long + address */}
-            <Grid xs={12} md={4}>
-              <Stack spacing={2}>
-                <Typography level="title-sm">Address</Typography>
-                <FormControl required>
-                  <Autocomplete<Option>
-                    options={provinceOptions}
-                    value={selectedProvince}
-                    isOptionEqualToValue={(a, b) => a?.id === b?.id}
-                    getOptionLabel={(opt) => opt?.label ?? ""}
-                    onChange={(_e, val) =>
-                      setFormData((prev) => ({
-                        ...prev,
-                        province_id: val?.id.toString() || "",
-                        municipality_id: "",
-                        barangay_id: "",
-                      }))
-                    }
-                    placeholder="Select Province"
-                  />
-                </FormControl>
-
-                <FormControl required>
-                  <Autocomplete<Option>
-                    options={municipalityOptions}
-                    value={selectedMunicipality}
-                    isOptionEqualToValue={(a, b) => a?.id === b?.id}
-                    getOptionLabel={(opt) => opt?.label ?? ""}
-                    onChange={(_e, val) =>
-                      setFormData((prev) => ({
-                        ...prev,
-                        municipality_id: val?.id.toString() || "",
-                        barangay_id: "",
-                      }))
-                    }
-                    placeholder="Select Municipality"
-                    disabled={!formData.province_id}
-                  />
-                </FormControl>
-
-                <FormControl required>
-                  <Autocomplete<Option>
-                    options={barangayOptions}
-                    value={selectedBarangay}
-                    isOptionEqualToValue={(a, b) => a?.id === b?.id}
-                    getOptionLabel={(opt) => opt?.label ?? ""}
-                    onChange={(_e, val) =>
-                      setFormData((prev) => ({
-                        ...prev,
-                        barangay_id: val?.id.toString() || "",
-                      }))
-                    }
-                    placeholder="Select Barangay"
-                    disabled={!formData.municipality_id}
-                  />
-                </FormControl>
-
-                <Typography level="title-md">Location</Typography>
-                <MapInput
-                  latitude={formData.latitude}
-                  longitude={formData.longitude}
-                  onChange={(lat, lng) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      latitude: lat,
-                      longitude: lng,
-                    }))
-                  }
-                />
-
-                <Grid container spacing={2}>
-                  <Grid xs={6}>
-                    <FormControl>
-                      <Input
-                        type="number"
-                        name="latitude"
-                        value={formData.latitude}
-                        onChange={handleInputChange}
-                        placeholder="e.g., 13.6191"
-                        slotProps={{ input: { step: "any" } }}
-                      />
-                    </FormControl>
-                  </Grid>
-                  <Grid xs={6}>
-                    <FormControl>
-                      <Input
-                        type="number"
-                        name="longitude"
-                        value={formData.longitude}
-                        onChange={handleInputChange}
-                        placeholder="e.g., 123.1814"
-                        slotProps={{ input: { step: "any" } }}
-                      />
-                    </FormControl>
-                  </Grid>
-                </Grid>
-                {mode === "edit" && (
-                  <FormControl>
-                    <FormLabel>Status</FormLabel>
-                    <Select
-                      value={formData.spot_status}
-                      onChange={(_e, value) =>
-                        setFormData((prev) => ({
-                          ...prev,
-                          spot_status: (value as string) as "pending" | "active" | "inactive",
-                        }))
-                      }
-                      slotProps={{ root: { sx: { width: '100%' } } }}
-                    >
-                      <Option value="active">Active</Option>
-                      <Option value="inactive">Inactive</Option>
-                    </Select>
-                  </FormControl>
-                )}
-              </Stack>
-            </Grid>
-          </Grid>
-
-          <Stack
-            direction={{ xs: "column", sm: "row" }}
-            gap={1.5}
-            justifyContent="flex-end"
-            sx={{ mt: 3 }}
+        {/* Navigation buttons */}
+        <Stack
+          direction="row"
+          justifyContent="space-between"
+          alignItems="center"
+          sx={{ pt: 2, borderTop: "1px solid", borderColor: "divider" }}
+        >
+          <Button
+            variant="outlined"
+            onClick={prevStep}
+            disabled={currentStep === 0}
           >
+            Previous
+          </Button>
+
+          <Typography level="body-sm" sx={{ color: "text.tertiary" }}>
+            Step {currentStep + 1} of 5
+          </Typography>
+
+          {currentStep === 4 ? (
             <Button
-              type="button"
-              variant="soft"
-              color="neutral"
-              onClick={onClose}
-              disabled={loading}
-            >
-              Cancel
-            </Button>
-            {mode === "edit" && initialData?.id && (
-              <Button
-                type="button"
-                variant="outlined"
-                color="primary"
-                disabled={loading}
-                onClick={async () => {
-                  try {
-                    setLoading(true);
-                    const mapped = schedules.map((s) => ({
-                      day_of_week: s.dayIndex,
-                      is_closed: s.is_closed,
-                      open_time: s.is_closed ? null : s.open_time,
-                      close_time: s.is_closed ? null : s.close_time,
-                    }));
-                    await apiService.saveTouristSpotSchedules(
-                      initialData.id,
-                      mapped
-                    );
-                    alert("Schedules saved");
-                  } catch (e) {
-                    console.error(e);
-                    alert("Failed to save schedules");
-                  } finally {
-                    setLoading(false);
-                  }
-                }}
-              >
-                Save Schedules
-              </Button>
-            )}
-            <Button
-              type="submit"
+              onClick={handleSubmit}
               variant="solid"
               color="primary"
               disabled={loading}
             >
-              {loading
-                ? mode === "add"
-                  ? "Adding..."
-                  : "Updating..."
-                : mode === "add"
-                ? "Add Spot"
-                : "Update Spot"}
+              {loading ? "Saving..." : mode === "add" ? "Create Tourist Spot" : "Update Tourist Spot"}
             </Button>
-          </Stack>
-        </form>
+          ) : (
+            <Button
+              variant="solid"
+              color="primary"
+              onClick={nextStep}
+              disabled={!canProceedToNext()}
+            >
+              Next
+            </Button>
+          )}
+        </Stack>
       </ModalDialog>
     </Modal>
   );
