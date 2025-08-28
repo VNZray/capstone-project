@@ -9,24 +9,28 @@ import {
   FormLabel,
   Option,
   Select,
+  Input,
 } from "@mui/joy";
 import { updateData } from "@/src/api_function";
 import CardHeader from "@/src/components/CardHeader";
 import { useAddress } from "@/src/hooks/useAddress";
 import { api } from "@/src/services/BusinessService";
 import axios from "axios";
+import { Streetview } from "@mui/icons-material";
 
 interface EditDescriptionModalProps {
   open: boolean;
   initialProvince?: number;
   initialMunicipality?: number;
   initialBarangay?: number;
+  initialAddress?: string;
   businessId?: string;
   onClose: () => void;
   onSave: (
     province_id: number,
     municipality_id: number,
-    barangay_id: number
+    barangay_id: number,
+    address: string
   ) => void;
   onUpdate?: () => void;
 }
@@ -36,16 +40,17 @@ const EditAddressModal: React.FC<EditDescriptionModalProps> = ({
   initialProvince = 0,
   initialMunicipality = 0,
   initialBarangay = 0,
+  initialAddress = "",
   businessId,
   onClose,
   onSave,
   onUpdate,
 }) => {
-  const { address } = useAddress(initialBarangay);
   const [province_id, setProvinceId] = React.useState(initialProvince);
   const [municipality_id, setMunicipalityId] =
     React.useState(initialMunicipality);
   const [barangay_id, setBarangayId] = React.useState(initialBarangay);
+  const [address, setAddress] = React.useState(initialAddress);
 
   const [province, setProvince] = React.useState<
     { id: number; province: string }[]
@@ -117,22 +122,29 @@ const EditAddressModal: React.FC<EditDescriptionModalProps> = ({
     setProvinceId(initialProvince);
     setMunicipalityId(initialMunicipality);
     setBarangayId(initialBarangay);
-  }, [initialProvince, initialMunicipality, initialBarangay, open]);
+    setAddress(initialAddress);
+  }, [
+    initialProvince,
+    initialMunicipality,
+    initialBarangay,
+    initialAddress,
+    open,
+  ]);
 
   const handleSave = async () => {
     if (businessId) {
       try {
         await updateData(
           businessId,
-          { province_id, municipality_id, barangay_id },
+          { province_id, municipality_id, barangay_id, address },
           "business"
         );
-        onSave(province_id, municipality_id, barangay_id);
+        onSave(province_id, municipality_id, barangay_id, address);
       } catch (err) {
         console.error("Failed to update business contact", err);
       }
     } else {
-      onSave(province_id, municipality_id, barangay_id);
+      onSave(province_id, municipality_id, barangay_id, address);
     }
     if (onUpdate) onUpdate();
     onClose();
@@ -141,7 +153,7 @@ const EditAddressModal: React.FC<EditDescriptionModalProps> = ({
   return (
     <Modal open={open} onClose={onClose}>
       <ModalDialog size="lg" variant="outlined" maxWidth={600} minWidth={600}>
-        <CardHeader title="Edit Address" color="white" />
+        <CardHeader title="Edit Location" color="white" />
         <DialogContent>
           <FormControl>
             <FormLabel>Province</FormLabel>
@@ -194,6 +206,16 @@ const EditAddressModal: React.FC<EditDescriptionModalProps> = ({
                 </Option>
               ))}
             </Select>
+          </FormControl>
+
+          <FormControl>
+            <FormLabel>Address</FormLabel>
+            <Input
+              type="text"
+              size="md"
+              value={address}
+              onChange={(e) => setAddress(e.target.value)}
+            />
           </FormControl>
         </DialogContent>
         <DialogActions>

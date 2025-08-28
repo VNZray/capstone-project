@@ -9,9 +9,11 @@ export type Business = {
   barangay_id: number;
   municipality_id: number;
   province_id: number;
+  address: string;
   description: string;
   instagram_url: string;
-  tiktok_url: string;
+  x_url: string;
+  website_url: string;
   facebook_url: string;
   latitude: string;
   longitude: string;

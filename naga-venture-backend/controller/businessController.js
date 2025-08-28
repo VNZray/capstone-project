@@ -59,9 +59,11 @@ export async function insertBusiness(request, response) {
       "barangay_id",
       "municipality_id",
       "province_id",
+      "address",
       "description",
       "instagram_url",
-      "tiktok_url",
+      "x_url",
+      "website_url",
       "facebook_url",
       "latitude",
       "longitude",
@@ -126,9 +128,11 @@ export async function updateBusiness(request, response) {
       "barangay_id",
       "municipality_id",
       "province_id",
+      "address",
       "description",
       "instagram_url",
-      "tiktok_url",
+      "x_url",
+      "website_url",
       "facebook_url",
       "latitude",
       "longitude",
@@ -146,13 +150,17 @@ export async function updateBusiness(request, response) {
     );
 
     if (fieldsToUpdate.length === 0) {
-      return response.status(400).json({ message: "No valid fields provided for update" });
+      return response
+        .status(400)
+        .json({ message: "No valid fields provided for update" });
     }
 
     const values = fieldsToUpdate.map((f) => request.body[f]);
 
     await db.query(
-      `UPDATE business SET ${fieldsToUpdate.map((f) => `${f} = ?`).join(", ")} WHERE id = ?`,
+      `UPDATE business SET ${fieldsToUpdate
+        .map((f) => `${f} = ?`)
+        .join(", ")} WHERE id = ?`,
       [...values, id]
     );
 
