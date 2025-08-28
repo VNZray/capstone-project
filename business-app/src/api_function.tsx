@@ -1,6 +1,6 @@
 import axios from "axios";
 import api from "@/src/services/api";
-
+import { supabase } from "@/src/utils/supabase";
 export const insertData = async (data: any, table: string) => {
   try {
     const response = await axios.post(`${api}/${table}`, data);
@@ -63,4 +63,18 @@ export const getDataById = async (table: string, id: string) => {
     console.error("Get by ID failed:", error);
     throw error;
   }
+};
+
+// supabase image upload template
+export const imageUpload = async (table: string, id: string, file: File) => {
+  const { data, error } = await supabase.storage
+    .from(table)
+    .upload(`${id}/${file.name}`, file);
+
+  if (error) {
+    console.error("Image upload failed:", error);
+    throw error;
+  }
+
+  return data;
 };

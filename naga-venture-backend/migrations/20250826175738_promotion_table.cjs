@@ -1,6 +1,6 @@
 exports.up = function (knex) {
   return knex.schema.createTable("promotion", (table) => {
-    table.uuid("id").primary().defaultTo(knex.raw("gen_random_uuid()"));
+    table.uuid("id").primary().defaultTo(knex.raw("(UUID())"));
 
     table
       .uuid("business_id")
