@@ -44,8 +44,9 @@ routes.forEach((route) => {
   app.use(route.path, route.handler);
 });
 
-app.listen(PORT, () => {
+app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Server running at http://localhost:${PORT}`);
+  console.log(`🌐 Also accessible at http://192.168.111.111:${PORT}`);
   console.log("✅ Connected to MariaDB (Promise Pool)");
   console.log("✅ API is ready to use\n");
 
