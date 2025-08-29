@@ -58,7 +58,7 @@ const TouristSpotForm: React.FC<TouristSpotFormProps> = ({
     contact_email: "",
     website: "",
     entry_fee: "",
-    category_id: "3",
+    category_id: "",
     type_id: "4", // Default to Tourist Spot type
     spot_status: "" as "" | "pending" | "active" | "inactive",
   });
@@ -208,8 +208,8 @@ const TouristSpotForm: React.FC<TouristSpotFormProps> = ({
         contact_email: "",
         website: "",
         entry_fee: "",
-        category_id: "3",
-        type_id: "",
+        category_id: "",
+        type_id: "4",
         spot_status: "" as "" | "pending" | "active" | "inactive",
       });
       setSchedules(
@@ -354,7 +354,7 @@ const TouristSpotForm: React.FC<TouristSpotFormProps> = ({
         } else if (coreFieldsChanged) {
           alert("Changes submitted for approval!");
         } else if (schedulesChanged) {
-          alert("Schedule updated successfully!");
+          alert("Updated successfully!");
         }
         
         onSpotUpdated?.();

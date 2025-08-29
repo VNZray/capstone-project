@@ -8,7 +8,7 @@ exports.up = function(knex) {
     table.integer('barangay_id').notNullable();
     table.decimal('latitude', 10, 8).nullable();
     table.decimal('longitude', 11, 8).nullable();
-    table.string('contact_phone', 20).notNullable();
+    table.string('contact_phone', 20).nullable();
     table.string('contact_email', 255).nullable();
     table.string('website', 255).nullable();
     table.decimal('entry_fee', 10, 2).nullable();

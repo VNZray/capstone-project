@@ -40,7 +40,7 @@ const TouristSpotTable: React.FC<TouristSpotTableProps> = ({
           color="text-color"
           className="header-cell type-cell"
         >
-          Destination Type
+          Category
         </Text>
         <Text
           variant="bold"
@@ -79,9 +79,9 @@ const TouristSpotTable: React.FC<TouristSpotTableProps> = ({
           <Text
             variant="normal"
             color="text-color"
-            className="row-cell type-cell"
+            className="row-cell category-cell"
           >
-            {spot.type}
+            {spot.category}
           </Text>
           <Text
             variant="normal"

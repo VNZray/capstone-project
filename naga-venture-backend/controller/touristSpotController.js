@@ -124,14 +124,13 @@ export const createTouristSpot = async (request, response) => {
       !province_id ||
       !municipality_id ||
       !barangay_id ||
-      !contact_phone ||
       !category_id ||
       !type_id
     ) {
       return response.status(400).json({
         success: false,
         message:
-          "Name, description, province_id, municipality_id, barangay_id, contact_phone, category_id, and type_id are requestuired",
+          "Name, description, province_id, municipality_id, barangay_id, category_id, and type_id are required",
       });
     }
     const [
@@ -211,7 +210,7 @@ export const createTouristSpot = async (request, response) => {
         barangay_id,
         latitude ?? null,
         longitude ?? null,
-        contact_phone,
+        contact_phone ?? null,
         contact_email ?? null,
         website ?? null,
         entry_fee ?? null,
