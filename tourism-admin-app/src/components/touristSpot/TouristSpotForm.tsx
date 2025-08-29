@@ -7,6 +7,8 @@ import LocationStep from "./steps/LocationStep";
 import ScheduleStep from "./steps/ScheduleStep";
 import ImagesStep from "./steps/ImagesStep";
 import ReviewStep from "./steps/ReviewStep";
+import type { PendingImage } from "../../types/TouristSpot";
+import { uploadPendingImages } from "../../utils/touristSpot";
 import {
   Modal,
   ModalDialog,
@@ -22,8 +24,10 @@ import type {
   Municipality,
   Barangay,
   TouristSpot,
+  TouristSpotFormData,
+  FormOption,
+  DaySchedule,
 } from "../../types/TouristSpot";
-import type { Option, TouristSpotFormData, DaySchedule } from "./types";
 
 interface TouristSpotFormProps {
   isVisible: boolean;
@@ -80,18 +84,26 @@ const TouristSpotForm: React.FC<TouristSpotFormProps> = ({
     Array.from({ length: 7 }, (_, idx) => ({
       dayIndex: idx,
       is_closed: false,
-      open_time: "00:00",
-      close_time: "00:00",
+      open_time: "08:00",
+      close_time: "17:00",
     }))
   );
+  const [pendingImages, setPendingImages] = useState<PendingImage[]>([]);
 
   const [currentStep, setCurrentStep] = useState(0);
 
-  const provinceOptions = useMemo<Option[]>(
+
+  const handleClose = () => {
+    setPendingImages([]);
+    setCurrentStep(0);
+    onClose();
+  };
+
+  const provinceOptions = useMemo<FormOption[]>(
     () => provinces.map((p) => ({ id: p.id, label: p.province })),
     [provinces]
   );
-  const municipalityOptions = useMemo<Option[]>(
+  const municipalityOptions = useMemo<FormOption[]>(
     () =>
       municipalities
         .filter(
@@ -102,7 +114,7 @@ const TouristSpotForm: React.FC<TouristSpotFormProps> = ({
         .map((m) => ({ id: m.id, label: m.municipality })),
     [municipalities, formData.province_id]
   );
-  const barangayOptions = useMemo<Option[]>(
+  const barangayOptions = useMemo<FormOption[]>(
     () =>
       barangays
         .filter(
@@ -113,31 +125,31 @@ const TouristSpotForm: React.FC<TouristSpotFormProps> = ({
         .map((b) => ({ id: b.id, label: b.barangay })),
     [barangays, formData.municipality_id]
   );
-  const categoryOptions = useMemo<Option[]>(
+  const categoryOptions = useMemo<FormOption[]>(
     () => categories.map((c) => ({ id: c.id, label: c.category })),
     [categories]
   );
 
-  const selectedProvince = useMemo<Option | null>(
+  const selectedProvince = useMemo<FormOption | null>(
     () =>
       provinceOptions.find((o) => o.id === Number(formData.province_id)) ??
       null,
     [provinceOptions, formData.province_id]
   );
-  const selectedMunicipality = useMemo<Option | null>(
+  const selectedMunicipality = useMemo<FormOption | null>(
     () =>
       municipalityOptions.find(
         (o) => o.id === Number(formData.municipality_id)
       ) ?? null,
     [municipalityOptions, formData.municipality_id]
   );
-  const selectedBarangay = useMemo<Option | null>(
+  const selectedBarangay = useMemo<FormOption | null>(
     () =>
       barangayOptions.find((o) => o.id === Number(formData.barangay_id)) ??
       null,
     [barangayOptions, formData.barangay_id]
   );
-  const selectedCategory = useMemo<Option | null>(
+  const selectedCategory = useMemo<FormOption | null>(
     () =>
       categoryOptions.find((o) => o.id === Number(formData.category_id)) ??
       null,
@@ -174,8 +186,8 @@ const TouristSpotForm: React.FC<TouristSpotFormProps> = ({
             return {
               dayIndex: idx,
               is_closed: found?.is_closed ?? false,
-              open_time: found?.open_time ?? "00:00",
-              close_time: found?.close_time ?? "00:00",
+              open_time: found?.open_time ?? "08:00",
+              close_time: found?.close_time ?? "17:00",
             } as DaySchedule;
           });
           setSchedules(ui);
@@ -204,8 +216,8 @@ const TouristSpotForm: React.FC<TouristSpotFormProps> = ({
         Array.from({ length: 7 }, (_, idx) => ({
           dayIndex: idx,
           is_closed: true,
-          open_time: "00:00",
-          close_time: "00:00",
+          open_time: "08:00",
+          close_time: "17:00",
         }))
       );
       setCurrentStep(0);
@@ -279,11 +291,23 @@ const TouristSpotForm: React.FC<TouristSpotFormProps> = ({
       }));
 
       if (mode === "add") {
-        await apiService.createTouristSpot({
+        const response = await apiService.createTouristSpot({
           ...spotData,
           schedules: mappedSchedules,
         });
-        alert("Spot added successfully!");
+        
+        // Upload pending images if any
+        if (pendingImages.length > 0 && response?.data?.id) {
+          try {
+            await uploadPendingImages(response.data.id.toString(), pendingImages);
+            alert("Spot added successfully with images!");
+          } catch (imageError) {
+            console.error("Error uploading images:", imageError);
+            alert("Spot added successfully, but some images failed to upload. You can add them by editing the spot.");
+          }
+        } else {
+          alert("Spot added successfully!");
+        }
         onSpotAdded?.();
       } else {
         if (!initialData?.id) throw new Error("No ID provided for update");
@@ -300,7 +324,7 @@ const TouristSpotForm: React.FC<TouristSpotFormProps> = ({
         );
         onSpotUpdated?.();
       }
-      onClose();
+      handleClose();
     } catch (error) {
       console.error("Error:", error);
       alert(
@@ -355,6 +379,7 @@ const TouristSpotForm: React.FC<TouristSpotFormProps> = ({
           <ImagesStep
             mode={mode}
             touristSpotId={initialData?.id?.toString()}
+            onPendingImagesChange={setPendingImages}
           />
         );
 
@@ -414,7 +439,7 @@ const TouristSpotForm: React.FC<TouristSpotFormProps> = ({
   };
 
   return (
-    <Modal open={isVisible} onClose={onClose}>
+    <Modal open={isVisible} onClose={handleClose}>
       <ModalDialog
         size="lg"
         sx={{
@@ -435,7 +460,7 @@ const TouristSpotForm: React.FC<TouristSpotFormProps> = ({
               {mode === "add" ? "Add New Tourist Spot" : "Edit Tourist Spot"}
             </Typography>
           </DialogTitle>
-          <IconButton size="sm" variant="soft" onClick={onClose}>
+          <IconButton size="sm" variant="soft" onClick={handleClose}>
             <IoClose />
           </IconButton>
         </Stack>

@@ -18,6 +18,7 @@ import {
   deleteTouristSpotImage, 
   setPrimaryTouristSpotImage 
 } from "../../api_function";
+import type { PendingImage } from "../../types/TouristSpot";
 
 interface TouristSpotImage {
   id: string;
@@ -33,15 +34,20 @@ interface TouristSpotImage {
 interface TouristSpotImageManagerProps {
   touristSpotId?: string;
   onImagesChange?: (images: TouristSpotImage[]) => void;
+  onPendingImagesChange?: (images: PendingImage[]) => void;
   disabled?: boolean;
+  mode?: "add" | "edit";
 }
 
 const TouristSpotImageManager: React.FC<TouristSpotImageManagerProps> = ({
   touristSpotId,
   onImagesChange,
+  onPendingImagesChange,
   disabled = false,
+  mode = "edit",
 }) => {
   const [images, setImages] = useState<TouristSpotImage[]>([]);
+  const [pendingImages, setPendingImages] = useState<PendingImage[]>([]);
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
 
@@ -68,17 +74,41 @@ const TouristSpotImageManager: React.FC<TouristSpotImageManagerProps> = ({
   }, [touristSpotId, onImagesChange]);
 
   useEffect(() => {
-    if (touristSpotId) {
+    if (touristSpotId && mode === "edit") {
       loadImages();
     } else {
       setImages([]);
     }
-  }, [touristSpotId, loadImages]);
+  }, [touristSpotId, loadImages, mode]);
+
+  // Notify parent about pending images changes
+  useEffect(() => {
+    onPendingImagesChange?.(pendingImages);
+  }, [pendingImages, onPendingImagesChange]);
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file || !touristSpotId) return;
+    if (!file) return;
 
+    // For add mode, store images temporarily
+    if (mode === "add" || !touristSpotId) {
+      const fileReader = new FileReader();
+      fileReader.onload = () => {
+        const newPendingImage: PendingImage = {
+          id: Date.now().toString(),
+          file,
+          preview: fileReader.result as string,
+          is_primary: pendingImages.length === 0, // First image becomes primary
+          alt_text: file.name,
+        };
+        setPendingImages(prev => [...prev, newPendingImage]);
+      };
+      fileReader.readAsDataURL(file);
+      e.target.value = ""; // Reset file input
+      return;
+    }
+
+    // For edit mode, upload directly
     try {
       setUploading(true);
       const isPrimary = images.length === 0; // First image becomes primary
@@ -108,6 +138,11 @@ const TouristSpotImageManager: React.FC<TouristSpotImageManagerProps> = ({
     }
   };
 
+  const handleDeletePendingImage = (imageId: string) => {
+    if (!window.confirm("Are you sure you want to remove this image?")) return;
+    setPendingImages(prev => prev.filter(img => img.id !== imageId));
+  };
+
   const handleSetPrimary = async (imageId: string) => {
     if (!touristSpotId) return;
 
@@ -120,20 +155,22 @@ const TouristSpotImageManager: React.FC<TouristSpotImageManagerProps> = ({
     }
   };
 
-  if (!touristSpotId) {
-    return (
-      <Card variant="soft" sx={{ p: 3, textAlign: "center" }}>
-        <Typography level="body-md" color="neutral">
-          Save the tourist spot first to manage images
-        </Typography>
-      </Card>
+  const handleSetPendingPrimary = (imageId: string) => {
+    setPendingImages(prev => 
+      prev.map(img => ({
+        ...img,
+        is_primary: img.id === imageId
+      }))
     );
-  }
+  };
+
+  // Show images based on mode
+  const displayImages = mode === "add" ? pendingImages : images;
 
   return (
     <Box>
       <Typography level="title-sm" sx={{ mb: 2 }}>
-        Tourist Spot Images
+        Tourist Spot Images {mode === "add" && pendingImages.length > 0 && `(${pendingImages.length} pending)`}
       </Typography>
       
       {/* Upload Button */}
@@ -164,7 +201,7 @@ const TouristSpotImageManager: React.FC<TouristSpotImageManagerProps> = ({
       {/* Images Grid */}
       {!loading && (
         <Grid container spacing={2}>
-          {images.length === 0 ? (
+          {displayImages.length === 0 ? (
             <Grid xs={12}>
               <Card variant="soft" sx={{ p: 3, textAlign: "center" }}>
                 <Typography level="body-md" color="neutral">
@@ -173,60 +210,85 @@ const TouristSpotImageManager: React.FC<TouristSpotImageManagerProps> = ({
               </Card>
             </Grid>
           ) : (
-            images.map((image) => (
-              <Grid xs={6} sm={4} md={3} key={image.id}>
-                <Card sx={{ maxWidth: 200 }}>
-                  <CardOverflow>
-                    <AspectRatio ratio="1">
-                      <img
-                        src={image.file_url}
-                        alt={image.alt_text || "Tourist spot image"}
-                        style={{ objectFit: "cover" }}
-                      />
-                    </AspectRatio>
-                  </CardOverflow>
-                  
-                  <Box sx={{ p: 1 }}>
-                    {/* Primary indicator */}
-                    {isPrimary(image) && (
-                      <Chip
-                        size="sm"
-                        color="primary"
-                        variant="soft"
-                        startDecorator={<Star size={12} />}
-                        sx={{ mb: 1 }}
-                      >
-                        Primary
-                      </Chip>
-                    )}
+            displayImages.map((image) => {
+              const isPrimaryImage = mode === "add" 
+                ? (image as PendingImage).is_primary 
+                : isPrimary(image as TouristSpotImage);
+              const imageUrl = mode === "add" 
+                ? (image as PendingImage).preview 
+                : (image as TouristSpotImage).file_url;
+              const altText = mode === "add" 
+                ? (image as PendingImage).alt_text 
+                : (image as TouristSpotImage).alt_text || "Tourist spot image";
+
+              return (
+                <Grid xs={6} sm={4} md={3} key={image.id}>
+                  <Card sx={{ maxWidth: 200 }}>
+                    <CardOverflow>
+                      <AspectRatio ratio="1">
+                        <img
+                          src={imageUrl}
+                          alt={altText}
+                          style={{ objectFit: "cover" }}
+                        />
+                      </AspectRatio>
+                    </CardOverflow>
                     
-                    {/* Action buttons */}
-                    <Box sx={{ display: "flex", gap: 1, justifyContent: "space-between" }}>
-                      <Button
-                        size="sm"
-                        variant="soft"
-                        color={isPrimary(image) ? "neutral" : "primary"}
-                        startDecorator={isPrimary(image) ? <StarOff size={14} /> : <Star size={14} />}
-                        onClick={() => isPrimary(image) ? null : handleSetPrimary(image.id)}
-                        disabled={isPrimary(image) || disabled}
-                      >
-                        {isPrimary(image) ? "Primary" : "Set Primary"}
-                      </Button>
+                    <Box sx={{ p: 1 }}>
+                      {/* Primary indicator */}
+                      {isPrimaryImage && (
+                        <Chip
+                          size="sm"
+                          color="primary"
+                          variant="soft"
+                          startDecorator={<Star size={12} />}
+                          sx={{ mb: 1 }}
+                        >
+                          Primary
+                        </Chip>
+                      )}
                       
-                      <IconButton
-                        size="sm"
-                        variant="soft"
-                        color="danger"
-                        onClick={() => handleDeleteImage(image.id, image.file_url)}
-                        disabled={disabled}
-                      >
-                        <Trash2 size={14} />
-                      </IconButton>
+                      {/* Action buttons */}
+                      <Box sx={{ display: "flex", gap: 1, justifyContent: "space-between" }}>
+                        <Button
+                          size="sm"
+                          variant="soft"
+                          color={isPrimaryImage ? "neutral" : "primary"}
+                          startDecorator={isPrimaryImage ? <StarOff size={14} /> : <Star size={14} />}
+                          onClick={() => {
+                            if (isPrimaryImage) return;
+                            if (mode === "add") {
+                              handleSetPendingPrimary(image.id);
+                            } else {
+                              handleSetPrimary(image.id);
+                            }
+                          }}
+                          disabled={isPrimaryImage || disabled}
+                        >
+                          {isPrimaryImage ? "Primary" : "Set Primary"}
+                        </Button>
+                        
+                        <IconButton
+                          size="sm"
+                          variant="soft"
+                          color="danger"
+                          onClick={() => {
+                            if (mode === "add") {
+                              handleDeletePendingImage(image.id);
+                            } else {
+                              handleDeleteImage(image.id, (image as TouristSpotImage).file_url);
+                            }
+                          }}
+                          disabled={disabled}
+                        >
+                          <Trash2 size={14} />
+                        </IconButton>
+                      </Box>
                     </Box>
-                  </Box>
-                </Card>
-              </Grid>
-            ))
+                  </Card>
+                </Grid>
+              );
+            })
           )}
         </Grid>
       )}
