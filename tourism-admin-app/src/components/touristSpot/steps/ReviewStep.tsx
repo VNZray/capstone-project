@@ -36,13 +36,29 @@ const ReviewStep: React.FC<ReviewStepProps> = ({
   onFormDataChange,
 }) => {
   return (
-    <Stack spacing={3}>
+    <Stack spacing={2}>
       <Typography level="h4">Review & Submit</Typography>
-      
-      <Grid container spacing={3}>
+            {mode === "edit" && (
+        <FormControl>
+          <FormLabel>Status</FormLabel>
+          <Select
+            value={formData.spot_status}
+            onChange={(_e, value) =>
+              onFormDataChange((prev) => ({
+                ...prev,
+                spot_status: (value as string) as "pending" | "active" | "inactive",
+              }))
+            }
+          >
+            <SelectOption value="active">Active</SelectOption>
+            <SelectOption value="inactive">Inactive</SelectOption>
+          </Select>
+        </FormControl>
+      )}
+      <Grid container spacing={2}>
         {/* Left Column */}
         <Grid xs={12} md={6}>
-          <Stack spacing={3}>
+          <Stack spacing={2}>
             <Card variant="outlined">
               <CardContent>
                 <Stack spacing={2}>
@@ -83,7 +99,7 @@ const ReviewStep: React.FC<ReviewStepProps> = ({
 
         {/* Right Column */}
         <Grid xs={12} md={6}>
-          <Stack spacing={3}>
+          <Stack spacing={2}>
             <Card variant="outlined">
               <CardContent>
                 <Stack spacing={2}>
@@ -131,24 +147,6 @@ const ReviewStep: React.FC<ReviewStepProps> = ({
           </Stack>
         </Grid>
       </Grid>
-
-      {mode === "edit" && (
-        <FormControl>
-          <FormLabel>Status</FormLabel>
-          <Select
-            value={formData.spot_status}
-            onChange={(_e, value) =>
-              onFormDataChange((prev) => ({
-                ...prev,
-                spot_status: (value as string) as "pending" | "active" | "inactive",
-              }))
-            }
-          >
-            <SelectOption value="active">Active</SelectOption>
-            <SelectOption value="inactive">Inactive</SelectOption>
-          </Select>
-        </FormControl>
-      )}
     </Stack>
   );
 };

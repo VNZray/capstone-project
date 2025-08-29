@@ -35,6 +35,7 @@ interface TouristSpotImageManagerProps {
   touristSpotId?: string;
   onImagesChange?: (images: TouristSpotImage[]) => void;
   onPendingImagesChange?: (images: PendingImage[]) => void;
+  pendingImages?: PendingImage[];
   disabled?: boolean;
   mode?: "add" | "edit";
 }
@@ -43,11 +44,11 @@ const TouristSpotImageManager: React.FC<TouristSpotImageManagerProps> = ({
   touristSpotId,
   onImagesChange,
   onPendingImagesChange,
+  pendingImages = [],
   disabled = false,
   mode = "edit",
 }) => {
   const [images, setImages] = useState<TouristSpotImage[]>([]);
-  const [pendingImages, setPendingImages] = useState<PendingImage[]>([]);
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
 
@@ -81,11 +82,6 @@ const TouristSpotImageManager: React.FC<TouristSpotImageManagerProps> = ({
     }
   }, [touristSpotId, loadImages, mode]);
 
-  // Notify parent about pending images changes
-  useEffect(() => {
-    onPendingImagesChange?.(pendingImages);
-  }, [pendingImages, onPendingImagesChange]);
-
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -101,7 +97,7 @@ const TouristSpotImageManager: React.FC<TouristSpotImageManagerProps> = ({
           is_primary: pendingImages.length === 0, // First image becomes primary
           alt_text: file.name,
         };
-        setPendingImages(prev => [...prev, newPendingImage]);
+        onPendingImagesChange?.([...pendingImages, newPendingImage]);
       };
       fileReader.readAsDataURL(file);
       e.target.value = ""; // Reset file input
@@ -140,7 +136,7 @@ const TouristSpotImageManager: React.FC<TouristSpotImageManagerProps> = ({
 
   const handleDeletePendingImage = (imageId: string) => {
     if (!window.confirm("Are you sure you want to remove this image?")) return;
-    setPendingImages(prev => prev.filter(img => img.id !== imageId));
+    onPendingImagesChange?.(pendingImages.filter(img => img.id !== imageId));
   };
 
   const handleSetPrimary = async (imageId: string) => {
@@ -156,8 +152,8 @@ const TouristSpotImageManager: React.FC<TouristSpotImageManagerProps> = ({
   };
 
   const handleSetPendingPrimary = (imageId: string) => {
-    setPendingImages(prev => 
-      prev.map(img => ({
+    onPendingImagesChange?.(
+      pendingImages.map(img => ({
         ...img,
         is_primary: img.id === imageId
       }))

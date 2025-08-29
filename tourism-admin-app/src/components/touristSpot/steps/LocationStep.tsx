@@ -8,16 +8,16 @@ import {
   Grid,
 } from "@mui/joy";
 import MapInput from "../MapInput";
-import type { Option, TouristSpotFormData } from "../types";
+import type { FormOption, TouristSpotFormData } from "../../../types/TouristSpot";
 
 interface LocationStepProps {
   formData: TouristSpotFormData;
-  provinceOptions: Option[];
-  municipalityOptions: Option[];
-  barangayOptions: Option[];
-  selectedProvince: Option | null;
-  selectedMunicipality: Option | null;
-  selectedBarangay: Option | null;
+  provinceOptions: FormOption[];
+  municipalityOptions: FormOption[];
+  barangayOptions: FormOption[];
+  selectedProvince: FormOption | null;
+  selectedMunicipality: FormOption | null;
+  selectedBarangay: FormOption | null;
   onFormDataChange: (updater: (prev: TouristSpotFormData) => TouristSpotFormData) => void;
 }
 
@@ -32,14 +32,14 @@ const LocationStep: React.FC<LocationStepProps> = ({
   onFormDataChange,
 }) => {
   return (
-    <Stack spacing={3}>
+    <Stack spacing={1}>
       <Typography level="h4">Location</Typography>
       
       <Grid container spacing={2}>
         <Grid xs={12} md={4}>
           <FormControl required>
             <FormLabel>Province</FormLabel>
-            <Autocomplete<Option>
+            <Autocomplete<FormOption>
               options={provinceOptions}
               value={selectedProvince}
               isOptionEqualToValue={(a, b) => a?.id === b?.id}
@@ -60,7 +60,7 @@ const LocationStep: React.FC<LocationStepProps> = ({
         <Grid xs={12} md={4}>
           <FormControl required>
             <FormLabel>Municipality</FormLabel>
-            <Autocomplete<Option>
+            <Autocomplete<FormOption>
               options={municipalityOptions}
               value={selectedMunicipality}
               isOptionEqualToValue={(a, b) => a?.id === b?.id}
@@ -81,7 +81,7 @@ const LocationStep: React.FC<LocationStepProps> = ({
         <Grid xs={12} md={4}>
           <FormControl required>
             <FormLabel>Barangay</FormLabel>
-            <Autocomplete<Option>
+            <Autocomplete<FormOption>
               options={barangayOptions}
               value={selectedBarangay}
               isOptionEqualToValue={(a, b) => a?.id === b?.id}

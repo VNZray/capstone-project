@@ -9,12 +9,12 @@ import {
   Autocomplete,
   Grid,
 } from "@mui/joy";
-import type { Option, TouristSpotFormData } from "../types";
+import type { FormOption, TouristSpotFormData } from "../../../types/TouristSpot";
 
 interface BasicInfoStepProps {
   formData: TouristSpotFormData;
-  categoryOptions: Option[];
-  selectedCategory: Option | null;
+  categoryOptions: FormOption[];
+  selectedCategory: FormOption | null;
   onInputChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
   onFormDataChange: (updater: (prev: TouristSpotFormData) => TouristSpotFormData) => void;
 }
@@ -27,10 +27,10 @@ const BasicInfoStep: React.FC<BasicInfoStepProps> = ({
   onFormDataChange,
 }) => {
   return (
-    <Stack spacing={3}>
+    <Stack spacing={1}>
       <Typography level="h4">Basic Information</Typography>
-      
-      <Grid container spacing={2}>
+
+      <Grid container spacing={1}>
         <Grid xs={12}>
           <FormControl required>
             <FormLabel>Name</FormLabel>
@@ -58,7 +58,7 @@ const BasicInfoStep: React.FC<BasicInfoStepProps> = ({
         <Grid xs={12}>
           <FormControl required>
             <FormLabel>Category</FormLabel>
-            <Autocomplete<Option>
+            <Autocomplete<FormOption>
               options={categoryOptions}
               value={selectedCategory}
               isOptionEqualToValue={(a, b) => a?.id === b?.id}

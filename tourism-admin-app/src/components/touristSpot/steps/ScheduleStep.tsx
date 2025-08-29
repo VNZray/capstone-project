@@ -9,7 +9,7 @@ import {
   Box,
   Card,
 } from "@mui/joy";
-import type { DaySchedule } from "../types";
+import type { DaySchedule } from "../../../types/TouristSpot";
 
 interface ScheduleStepProps {
   schedules: DaySchedule[];
@@ -23,14 +23,14 @@ const ScheduleStep: React.FC<ScheduleStepProps> = ({
   onScheduleChange,
 }) => {
   return (
-    <Stack spacing={3}>
+    <Stack spacing={1}>
       <Typography level="h4">Operating Schedule</Typography>
       <Typography level="body-sm" sx={{ color: 'text.secondary' }}>
         Set the operating hours for each day of the week
       </Typography>
       
-      <Card variant="outlined" sx={{ p: 2 }}>
-        <Stack spacing={2}>
+      <Card variant="outlined" sx={{ p: .5 }}>
+        <Stack spacing={1}>
           {schedules.map((sched) => (
             <Box
               key={sched.dayIndex}

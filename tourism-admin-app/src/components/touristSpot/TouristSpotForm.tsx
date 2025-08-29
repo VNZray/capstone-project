@@ -299,7 +299,12 @@ const TouristSpotForm: React.FC<TouristSpotFormProps> = ({
         // Upload pending images if any
         if (pendingImages.length > 0 && response?.data?.id) {
           try {
-            await uploadPendingImages(response.data.id.toString(), pendingImages);
+            await uploadPendingImages(
+              response.data.id.toString(), 
+              pendingImages,
+              selectedCategory?.label,
+              formData.name
+            );
             alert("Spot added successfully with images!");
           } catch (imageError) {
             console.error("Error uploading images:", imageError);
@@ -311,17 +316,47 @@ const TouristSpotForm: React.FC<TouristSpotFormProps> = ({
         onSpotAdded?.();
       } else {
         if (!initialData?.id) throw new Error("No ID provided for update");
-        await apiService.submitEditRequest(initialData.id, {
-          ...spotData,
-          ...(formData.spot_status
-            ? {
-                spot_status: formData.spot_status as "active" | "inactive",
-              }
-            : {}),
-        });
-        alert(
-          "Edit request submitted successfully! It is now pending admin approval."
-        );
+        
+        // Check what has changed to determine if approval is needed
+        const coreFieldsChanged = await hasSignificantChanges(spotData, initialData);
+        
+        // Check if schedules have changed
+        const currentSchedules = await apiService.getTouristSpotSchedules(initialData.id);
+        const schedulesChanged = hasScheduleChanges(mappedSchedules, currentSchedules);
+        
+        // If nothing has changed, inform the user
+        if (!coreFieldsChanged && !schedulesChanged) {
+          alert("No changes detected. Nothing to update.");
+          handleClose();
+          return;
+        }
+        
+        if (coreFieldsChanged) {
+          // Submit approval request for core business information changes
+          await apiService.submitEditRequest(initialData.id, {
+            ...spotData,
+            ...(formData.spot_status
+              ? {
+                  spot_status: formData.spot_status as "active" | "inactive",
+                }
+              : {}),
+          });
+        }
+        
+        if (schedulesChanged) {
+          // Update schedules directly (no approval needed)
+          await apiService.saveTouristSpotSchedules(initialData.id, mappedSchedules);
+        }
+        
+        // Show appropriate success message
+        if (coreFieldsChanged && schedulesChanged) {
+          alert("Core information changes submitted for approval! Schedule updates have been applied immediately.");
+        } else if (coreFieldsChanged) {
+          alert("Changes submitted for approval!");
+        } else if (schedulesChanged) {
+          alert("Schedule updated successfully!");
+        }
+        
         onSpotUpdated?.();
       }
       handleClose();
@@ -337,7 +372,64 @@ const TouristSpotForm: React.FC<TouristSpotFormProps> = ({
     }
   };
 
-  // Render content based on current step
+  // Helper function to check if schedules have changed
+  const hasScheduleChanges = (newSchedules: { day_of_week: number; is_closed: boolean; open_time: string | null; close_time: string | null; }[], currentSchedules: { day_of_week: number; is_closed: boolean; open_time: string | null; close_time: string | null; }[]): boolean => {
+    if (newSchedules.length !== currentSchedules.length) return true;
+    
+    return newSchedules.some((newSched) => {
+      const currentSched = currentSchedules.find(s => s.day_of_week === newSched.day_of_week);
+      if (!currentSched) return true;
+      
+      return (
+        newSched.is_closed !== currentSched.is_closed ||
+        newSched.open_time !== currentSched.open_time ||
+        newSched.close_time !== currentSched.close_time
+      );
+    });
+  };
+
+  // Helper function to check if significant business information has changed
+  const hasSignificantChanges = async (newData: Partial<TouristSpot>, originalData: TouristSpot): Promise<boolean> => {
+    try {
+      // Fetch current data from database to ensure we're comparing against latest state
+      const currentData = await apiService.getTouristSpotById(originalData.id);
+      
+      const significantFields = [
+        'name', 'description', 'province_id', 'municipality_id', 'barangay_id',
+        'contact_phone', 'contact_email', 'website', 'entry_fee', 'category_id', 'type_id',
+        'latitude', 'longitude'
+      ];
+      
+      return significantFields.some(field => {
+        const newValue = newData[field as keyof TouristSpot];
+        const currentValue = currentData[field as keyof TouristSpot];
+        
+        if (field === 'contact_email' || field === 'website') {
+          // Handle empty strings vs null
+          const normalizedNew = newValue || null;
+          const normalizedCurrent = currentValue || null;
+          return normalizedNew !== normalizedCurrent;
+        }
+        
+        if (field === 'latitude' || field === 'longitude' || field === 'entry_fee') {
+          // Handle number fields - convert to same type for comparison
+          const normalizedNew = newValue ? Number(newValue) : null;
+          const normalizedCurrent = currentValue ? Number(currentValue) : null;
+          return normalizedNew !== normalizedCurrent;
+        }
+        
+        if (typeof newValue === 'string' && typeof currentValue === 'string') {
+          return newValue.trim() !== currentValue.trim();
+        }
+        
+        return newValue !== currentValue;
+      });
+    } catch (error) {
+      console.error('Error fetching current data for comparison:', error);
+      return true;
+    }
+  };
+
   const renderStepContent = () => {
     switch (currentStep) {
       case 0: // Basic Info
@@ -379,6 +471,7 @@ const TouristSpotForm: React.FC<TouristSpotFormProps> = ({
           <ImagesStep
             mode={mode}
             touristSpotId={initialData?.id?.toString()}
+            pendingImages={pendingImages}
             onPendingImagesChange={setPendingImages}
           />
         );
@@ -433,9 +526,15 @@ const TouristSpotForm: React.FC<TouristSpotFormProps> = ({
     return true; // Images and Review are always accessible if previous steps are valid
   };
 
-  // Wrapper functions to match expected prop types
   const handleFormDataChange = (updater: (prev: TouristSpotFormData) => TouristSpotFormData) => {
     setFormData(updater);
+  };
+
+  const getSubmitButtonText = (): string => {
+    if (loading) return "Checking changes...";
+    if (mode === "add") return "Create Tourist Spot";
+    
+    return "Update Tourist Spot";
   };
 
   return (
@@ -453,7 +552,7 @@ const TouristSpotForm: React.FC<TouristSpotFormProps> = ({
           direction="row"
           alignItems="center"
           justifyContent="space-between"
-          sx={{ mb: 2 }}
+          sx={{ mb: 1.5 }}
         >
           <DialogTitle>
             <Typography level="h4">
@@ -473,7 +572,7 @@ const TouristSpotForm: React.FC<TouristSpotFormProps> = ({
         />
 
         {/* Step Content */}
-        <Stack sx={{ minHeight: 400, mb: 3 }}>
+        <Stack sx={{ minHeight: 400, mb: 2 }}>
           {renderStepContent()}
         </Stack>
 
@@ -503,7 +602,7 @@ const TouristSpotForm: React.FC<TouristSpotFormProps> = ({
               color="primary"
               disabled={loading}
             >
-              {loading ? "Saving..." : mode === "add" ? "Create Tourist Spot" : "Update Tourist Spot"}
+              {getSubmitButtonText()}
             </Button>
           ) : (
             <Button

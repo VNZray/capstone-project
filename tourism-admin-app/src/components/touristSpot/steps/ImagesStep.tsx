@@ -9,20 +9,23 @@ import type { PendingImage } from "../../../types/TouristSpot";
 interface ImagesStepProps {
   mode: "add" | "edit";
   touristSpotId?: string;
+  pendingImages?: PendingImage[];
   onPendingImagesChange?: (images: PendingImage[]) => void;
 }
 
 const ImagesStep: React.FC<ImagesStepProps> = ({
   mode,
   touristSpotId,
+  pendingImages,
   onPendingImagesChange,
 }) => {
   return (
-    <Stack spacing={3}>
+    <Stack spacing={1}>
       <Typography level="h4">Images</Typography>
       <TouristSpotImageManager 
         touristSpotId={touristSpotId}
         mode={mode}
+        pendingImages={pendingImages}
         onPendingImagesChange={onPendingImagesChange}
       />
     </Stack>

@@ -34,7 +34,7 @@ const StepTabs: React.FC<StepTabsProps> = ({
   canAccessStep,
 }) => {
   return (
-    <Box sx={{ mb: 3 }}>
+    <Box sx={{ mb: 2 }}>
       <Tabs
         value={currentStep}
         onChange={(_, value) => onStepChange(value as number)}
@@ -66,18 +66,24 @@ const StepTabs: React.FC<StepTabsProps> = ({
                   flex: 1,
                   flexDirection: 'column',
                   gap: 0.5,
-                  py: 2,
+                  py: 1.5,
                   px: 1,
-                  minHeight: 50,
+                  minHeight: 45,
                   opacity: isAccessible ? 1 : 0.5,
                   cursor: isAccessible ? 'pointer' : 'not-allowed',
+                  backgroundColor: isActive ? '#0A1B47 !important' : 'transparent',
+                  color: isActive ? 'white !important' : 'inherit',
                   '&:hover': {
-                    backgroundColor: isAccessible ? 'background.level1' : 'transparent',
+                    backgroundColor: isActive ? '#0A1B47 !important' : 
+                                    isAccessible ? 'background.level1' : 'transparent',
                   },
-                  ...(isActive && {
-                    backgroundColor: 'primary.100',
-                    color: 'primary.700',
-                  }),
+                  '&.Mui-selected': {
+                    backgroundColor: '#0A1B47 !important',
+                    color: 'white !important',
+                    '&:hover': {
+                      backgroundColor: '#0A1B47 !important',
+                    },
+                  },
                   ...(isCompleted && !isActive && {
                     backgroundColor: 'success.50',
                     color: 'success.700',
@@ -87,9 +93,9 @@ const StepTabs: React.FC<StepTabsProps> = ({
                 <Icon 
                   size={20} 
                   color={
-                    isActive ? 'var(--joy-palette-primary-500)' :
+                    isActive ? 'white' :
                     isCompleted ? 'var(--joy-palette-success-500)' :
-                    'var(--joy-palette-text-tertiary)'
+                    'var(--joy-palette-text-primary)'
                   }
                 />
                 <Typography 
@@ -97,9 +103,9 @@ const StepTabs: React.FC<StepTabsProps> = ({
                   fontWeight={isActive ? 'md' : 'sm'}
                   sx={{ 
                     textAlign: 'center',
-                    color: isActive ? 'primary.700' : 
+                    color: isActive ? 'white !important' : 
                            isCompleted ? 'success.700' : 
-                           'text.secondary'
+                           'text.primary'
                   }}
                 >
                   {step.label}

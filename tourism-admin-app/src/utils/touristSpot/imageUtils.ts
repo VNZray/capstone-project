@@ -5,11 +5,15 @@ import type { PendingImage } from "../../types/TouristSpot";
  * Uploads multiple pending images after a tourist spot is created
  * @param touristSpotId - The ID of the created tourist spot
  * @param pendingImages - Array of pending images to upload
+ * @param categoryName - Optional category name for folder structure
+ * @param touristSpotName - Optional tourist spot name for folder structure
  * @returns Promise that resolves when all images are uploaded
  */
 export const uploadPendingImages = async (
   touristSpotId: string, 
-  pendingImages: PendingImage[]
+  pendingImages: PendingImage[],
+  categoryName?: string,
+  touristSpotName?: string
 ): Promise<void> => {
   if (!pendingImages.length) return;
 
@@ -19,7 +23,9 @@ export const uploadPendingImages = async (
         touristSpotId, 
         pendingImage.file, 
         pendingImage.is_primary, 
-        pendingImage.alt_text
+        pendingImage.alt_text,
+        categoryName,
+        touristSpotName
       );
     } catch (error) {
       console.error(`Failed to upload image ${pendingImage.alt_text}:`, error);
