@@ -637,7 +637,6 @@ const TouristSpotForm: React.FC<TouristSpotFormProps> = ({
                       }
                       slotProps={{ root: { sx: { width: '100%' } } }}
                     >
-                      <Option value="pending">Pending</Option>
                       <Option value="active">Active</Option>
                       <Option value="inactive">Inactive</Option>
                     </Select>
