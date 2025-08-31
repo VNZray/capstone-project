@@ -15,6 +15,7 @@ import approvalRoutes from "./routes/approval.js";
 import amenityRoutes from "./routes/amenity.js";
 import permitRoutes from "./routes/permit.js";
 import roomRoutes from "./routes/room.js";
+import roomAmenityRoutes from "./routes/room_amenities.js";
 
 const app = express();
 const PORT = 3000;
@@ -30,6 +31,7 @@ const routes = [
   { path: "/api/category-and-type", handler: categoryAndTypeRoutes },
   { path: "/api/external-booking", handler: externalBookingRoutes },
   { path: "/api/amenities", handler: amenityRoutes },
+  { path: "/api/room-amenities", handler: roomAmenityRoutes },
   { path: "/api/tourist-spots", handler: touristSpotRoutes },
   { path: "/api/approval", handler: approvalRoutes },
   { path: "/api/permit", handler: permitRoutes },

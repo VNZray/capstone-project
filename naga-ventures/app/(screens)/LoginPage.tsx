@@ -11,6 +11,7 @@ import React, { useState } from 'react';
 import {
   Platform,
   SafeAreaView,
+  StatusBar,
   StyleSheet,
   Text,
   TextInput,
@@ -49,7 +50,9 @@ const LoginPage = () => {
     } catch (error: any) {
       console.error('Login error:', error);
       setLoginError(
-        error?.message || error?.error_description || 'Incorrect email or password.'
+        error?.message ||
+          error?.error_description ||
+          'Incorrect email or password.'
       );
     }
   };
@@ -59,11 +62,19 @@ const LoginPage = () => {
   return (
     <SafeAreaProvider>
       <SafeAreaView style={Platform.OS === 'web' ? styles.webContainer : {}}>
+        <StatusBar />
         <View style={styles.formWrapper}>
           {/* Logo */}
           <View style={styles.logoContainer}>
             <Image source={logo} style={styles.logo} />
-            <Text style={{ fontSize: 18, marginLeft: 10, fontFamily: 'Poppins-Bold', color }}>
+            <Text
+              style={{
+                fontSize: 18,
+                marginLeft: 10,
+                fontFamily: 'Poppins-Bold',
+                color,
+              }}
+            >
               Naga Venture
             </Text>
           </View>

@@ -1,28 +1,27 @@
 import logo from '@/assets/images/logo.png';
 import PressableButton from '@/components/PressableButton';
 import { ThemedText } from '@/components/ThemedText';
+import { colors } from '@/utils/Colors';
+import { supabase } from '@/utils/supabase';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useFonts } from 'expo-font';
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
 import { useState } from 'react';
 import {
-  Dimensions,
+  Modal,
   Platform,
   SafeAreaView,
+  ScrollView,
+  StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
-  View,
-  StyleSheet,
-  Modal,
-  ScrollView,
+  View
 } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { Calendar, CalendarList } from 'react-native-calendars';
-import { colors } from '@/utils/Colors';
-import { supabase } from '@/utils/supabase';
 
 const RegistrationPage = () => {
   const [firstName, setFirstName] = useState('Rayven');
@@ -132,6 +131,8 @@ const RegistrationPage = () => {
   return (
     <SafeAreaProvider>
       <SafeAreaView style={Platform.OS === 'web' ? styles.webContainer : {}}>
+        <StatusBar />
+
         <ScrollView style={styles.card}>
           <View style={styles.logoContainer}>
             <Image source={logo} style={styles.logo} />
@@ -437,7 +438,7 @@ const styles = StyleSheet.create({
     padding: 16,
     borderRadius: 8,
     marginBottom: 8,
-    width: '100%'
+    width: '100%',
   },
   separator: {
     height: 1,

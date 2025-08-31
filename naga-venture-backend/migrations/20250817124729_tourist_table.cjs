@@ -14,7 +14,7 @@ exports.up = function (knex) {
       .notNullable();
     table.date("birthday").notNullable();
     table.integer("age").notNullable();
-    table.enu("gender", ["Male", "Female"]).notNullable();
+    table.enu("gender", ["Male", "Female", "Prefer not to say"]).notNullable();
     table.string("nationality", 20).notNullable();
     table.enu("category", ["Domestic", "Overseas"]).notNullable();
 
