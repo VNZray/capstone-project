@@ -12,6 +12,38 @@ export async function getAllBusiness(request, response) {
   }
 }
 
+// Joined list with type/category & location names + basic filters
+export async function getJoinedBusinesses(request, response) {
+  try {
+    const { status, type_id, category_id, q } = request.query;
+    const filters = [];
+    const params = [];
+    if (status) { filters.push("b.status = ?"); params.push(status); }
+    if (type_id) { filters.push("b.business_type_id = ?"); params.push(type_id); }
+    if (category_id) { filters.push("b.business_category_id = ?"); params.push(category_id); }
+    if (q) { filters.push("LOWER(b.business_name) LIKE ?"); params.push(`%${String(q).toLowerCase()}%`); }
+    const where = filters.length ? `WHERE ${filters.join(' AND ')}` : '';
+    const sql = `
+      SELECT 
+        b.*, 
+        c.category AS category_name, 
+        t.type AS type_name,
+        p.province, m.municipality, br.barangay
+      FROM business b
+      LEFT JOIN category c ON b.business_category_id = c.id
+      LEFT JOIN type t ON b.business_type_id = t.id
+      LEFT JOIN province p ON b.province_id = p.id
+      LEFT JOIN municipality m ON b.municipality_id = m.id
+      LEFT JOIN barangay br ON b.barangay_id = br.id
+      ${where}
+      ORDER BY b.created_at DESC`;
+    const [rows] = await db.query(sql, params);
+    response.json({ success: true, data: rows });
+  } catch (error) {
+    return handleDbError(error, response);
+  }
+}
+
 // Get business by owner ID
 export async function getBusinessByOwnerId(request, response) {
   const { id } = request.params;

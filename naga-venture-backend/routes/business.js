@@ -4,10 +4,11 @@ import * as businessController from "../controller/businessController.js"; // Ad
 const router = express.Router();
 
 router.get("/", businessController.getAllBusiness);
+router.get("/joined/list", businessController.getJoinedBusinesses);
 router.post("/", businessController.insertBusiness);
+router.get("/owner/:id", businessController.getBusinessByOwnerId);
 router.get("/:id", businessController.getBusinessId);
 router.put("/:id", businessController.updateBusiness);
-router.get("/owner/:id", businessController.getBusinessByOwnerId);
 router.delete("/:id", businessController.deleteBusiness);
 
 export default router;
