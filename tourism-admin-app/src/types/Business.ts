@@ -18,6 +18,9 @@ export interface Business {
   business_image: string | null;
   latitude: string; // stored as string in DB migration
   longitude: string; // stored as string in DB migration
+  // Pricing (required in migration)
+  min_price: number;
+  max_price: number;
   x_url: string | null;
   website_url: string | null;
   facebook_url: string | null;

@@ -26,6 +26,8 @@ interface FormState {
   latitude: string;
   longitude: string;
   business_image: string;
+  min_price: string; // keep as string for input then parse
+  max_price: string;
 }
 
 const emptyForm: FormState = {
@@ -43,6 +45,8 @@ const emptyForm: FormState = {
   latitude: '',
   longitude: '',
   business_image: '',
+  min_price: '',
+  max_price: '',
 };
 
 export const BusinessForm: React.FC<BusinessFormProps> = ({ open, mode, initial, onClose, onSaved }) => {
@@ -104,6 +108,8 @@ export const BusinessForm: React.FC<BusinessFormProps> = ({ open, mode, initial,
         latitude: initial.latitude || '',
         longitude: initial.longitude || '',
         business_image: initial.business_image || '',
+  min_price: initial.min_price != null ? String(initial.min_price) : '',
+  max_price: initial.max_price != null ? String(initial.max_price) : '',
       }));
     } else if (mode === 'create' && open) {
       setForm(emptyForm);
@@ -170,6 +176,15 @@ export const BusinessForm: React.FC<BusinessFormProps> = ({ open, mode, initial,
     if (!form.address.trim()) next.address = 'Required';
     if (!form.latitude.trim()) next.latitude = 'Required';
     if (!form.longitude.trim()) next.longitude = 'Required';
+    if (!form.min_price.trim()) next.min_price = 'Required';
+    if (!form.max_price.trim()) next.max_price = 'Required';
+    const minVal = parseFloat(form.min_price);
+    const maxVal = parseFloat(form.max_price);
+    if (form.min_price && isNaN(minVal)) next.min_price = 'Invalid';
+    if (form.max_price && isNaN(maxVal)) next.max_price = 'Invalid';
+    if (!next.min_price && !next.max_price && !isNaN(minVal) && !isNaN(maxVal) && minVal > maxVal) {
+      next.max_price = 'Must be ≥ Min';
+    }
     setErrors(next);
     return Object.keys(next).length === 0;
   };
@@ -193,6 +208,9 @@ export const BusinessForm: React.FC<BusinessFormProps> = ({ open, mode, initial,
         latitude: form.latitude.trim(),
         longitude: form.longitude.trim(),
         business_image: form.business_image || null,
+  min_price: parseFloat(form.min_price),
+  max_price: parseFloat(form.max_price),
+  hasBooking: false, // Shops default: no booking capability
       };
       if (mode === 'create') {
         await BusinessService.create(payload);
@@ -345,6 +363,19 @@ export const BusinessForm: React.FC<BusinessFormProps> = ({ open, mode, initial,
                 <FormLabel>Longitude *</FormLabel>
                 <Input value={form.longitude} onChange={(e) => setField('longitude', e.target.value)} />
                 {errors.longitude && <Typography level="body-xs" color="danger">{errors.longitude}</Typography>}
+              </FormControl>
+            </Stack>
+
+            <Stack direction={{ xs: 'column', sm: 'row' }} gap={2}>
+              <FormControl error={!!errors.min_price} sx={{ flex: 1 }}>
+                <FormLabel>Min Price *</FormLabel>
+                <Input type='number' value={form.min_price} onChange={(e) => setField('min_price', e.target.value)} />
+                {errors.min_price && <Typography level="body-xs" color="danger">{errors.min_price}</Typography>}
+              </FormControl>
+              <FormControl error={!!errors.max_price} sx={{ flex: 1 }}>
+                <FormLabel>Max Price *</FormLabel>
+                <Input type='number' value={form.max_price} onChange={(e) => setField('max_price', e.target.value)} />
+                {errors.max_price && <Typography level="body-xs" color="danger">{errors.max_price}</Typography>}
               </FormControl>
             </Stack>
 

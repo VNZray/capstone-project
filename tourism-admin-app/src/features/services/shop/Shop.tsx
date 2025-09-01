@@ -5,6 +5,7 @@ import { BusinessService } from '@/src/services/BusinessService';
 import type { BusinessListItem, BusinessFilters, BusinessStatus } from '@/src/types/Business';
 import BusinessTable from '@/src/components/shops/BusinessTable';
 import BusinessForm from '@/src/components/shops/BusinessForm';
+import BusinessDetailsModal from '@/src/components/shops/BusinessDetailsModal';
 
 const PAGE_SIZE = 10;
 
@@ -20,6 +21,8 @@ const Shop: React.FC = () => {
   const [createOpen, setCreateOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [editing, setEditing] = useState<BusinessListItem | null>(null);
+  const [viewing, setViewing] = useState<BusinessListItem | null>(null);
+  const [viewOpen, setViewOpen] = useState(false);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -60,8 +63,9 @@ const Shop: React.FC = () => {
   const handleRefresh = () => fetchData();
 
   const handleView = (id: string) => {
-    // TODO: open details drawer/modal
-    console.log('view', id);
+    const biz = businesses.find(b => b.id === id) || null;
+    setViewing(biz);
+    setViewOpen(true);
   };
 
   const handleEdit = (id: string) => {
@@ -140,6 +144,11 @@ const Shop: React.FC = () => {
         initial={editing || undefined}
         onClose={() => { setEditOpen(false); setEditing(null); }}
         onSaved={() => { setEditOpen(false); setEditing(null); fetchData(); }}
+      />
+      <BusinessDetailsModal
+        open={viewOpen}
+        business={viewing}
+        onClose={() => { setViewOpen(false); setViewing(null); }}
       />
     </Stack>
   );
