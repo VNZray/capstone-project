@@ -4,6 +4,7 @@ import "dotenv/config";
 
 import userRoutes from "./routes/users.js";
 import businessRoutes from "./routes/business.js";
+import businessHoursRoutes from "./routes/business_hours.js";
 import addressRoutes from "./routes/address.js";
 import touristRoutes from "./routes/tourist.js";
 import tourismRoutes from "./routes/tourism.js";
@@ -15,6 +16,7 @@ import approvalRoutes from "./routes/approval.js";
 import amenityRoutes from "./routes/amenity.js";
 import permitRoutes from "./routes/permit.js";
 import roomRoutes from "./routes/room.js";
+import roomAmenityRoutes from "./routes/room_amenities.js";
 
 const app = express();
 const PORT = 3000;
@@ -23,6 +25,7 @@ const PORT = 3000;
 const routes = [
   { path: "/api/users", handler: userRoutes },
   { path: "/api/business", handler: businessRoutes },
+  { path: "/api/business-hours", handler: businessHoursRoutes },
   { path: "/api/tourist", handler: touristRoutes },
   { path: "/api/tourism", handler: tourismRoutes },
   { path: "/api/owner", handler: ownerRoutes },
@@ -30,6 +33,7 @@ const routes = [
   { path: "/api/category-and-type", handler: categoryAndTypeRoutes },
   { path: "/api/external-booking", handler: externalBookingRoutes },
   { path: "/api/amenities", handler: amenityRoutes },
+  { path: "/api/room-amenities", handler: roomAmenityRoutes },
   { path: "/api/tourist-spots", handler: touristSpotRoutes },
   { path: "/api/approval", handler: approvalRoutes },
   { path: "/api/permit", handler: permitRoutes },

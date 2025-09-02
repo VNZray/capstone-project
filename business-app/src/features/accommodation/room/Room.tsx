@@ -1,7 +1,17 @@
 import Container from "@/src/components/Container";
 import PageContainer from "@/src/components/PageContainer";
 import Text from "@/src/components/Text";
-import { Button, Grid, Input } from "@mui/joy";
+import {
+  Button,
+  Grid,
+  Input,
+  Modal,
+  ModalDialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Typography,
+} from "@mui/joy";
 import InfoCard from "../../../components/InfoCard";
 import { Bed, Calendar, DoorOpen, User, Search, Wrench } from "lucide-react";
 import { colors } from "@/src/utils/Colors";
@@ -17,10 +27,17 @@ import type { Room } from "@/src/types/Business";
 import { useRoom } from "@/src/context/RoomContext";
 import placeholderImage from "@/src/assets/images/placeholder-image.png";
 import { useNavigate } from "react-router-dom";
+import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
+import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
+import { DateCalendar } from "@mui/x-date-pickers/DateCalendar";
+import CardHeader from "@/src/components/CardHeader";
+import { PieChart } from '@mui/x-charts/PieChart';
+
 const RoomPage = () => {
   const navigate = useNavigate();
   const [status, setStatus] = useState<Status>("All");
   const [openModal, setOpenModal] = useState(false);
+  const [calendarOpen, setCalendarOpen] = useState(false);
 
   const [roomCount, setRoomCount] = useState(0);
   const [availableCount, setAvailableCount] = useState(0);
@@ -125,6 +142,7 @@ const RoomPage = () => {
               size="lg"
               color="primary"
               variant="soft"
+              onClick={() => setCalendarOpen(true)}
             >
               Calendar
             </Button>
@@ -145,6 +163,37 @@ const RoomPage = () => {
             onClose={() => setOpenModal(false)}
             onRoomAdded={fetchRooms}
           />
+          {/* Calendar Popup Modal */}
+          <Modal open={calendarOpen} onClose={() => setCalendarOpen(false)}>
+            <ModalDialog
+              sx={{ display: "flex", flexDirection: "column", gap: 0 }}
+              size="lg"
+              variant="outlined"
+            >
+              <CardHeader title="Calendar" color="white" />
+              <DialogTitle></DialogTitle>
+              <LocalizationProvider dateAdapter={AdapterDayjs}>
+                <DateCalendar sx={{ width: "100%" }} />
+              </LocalizationProvider>
+              <DialogActions>
+                <Button
+                  fullWidth
+                  color="neutral"
+                  variant="plain"
+                  onClick={() => setCalendarOpen(false)}
+                >
+                  Close
+                </Button>
+                <Button
+                  fullWidth
+                  color="primary"
+                  onClick={() => setCalendarOpen(false)}
+                >
+                  Confirm
+                </Button>
+              </DialogActions>
+            </ModalDialog>
+          </Modal>
         </Container>
 
         {/* Search + Filter */}
@@ -179,6 +228,8 @@ const RoomPage = () => {
         >
           {filteredRooms.map((room) => (
             <RoomCard
+              roomType={room.room_type}
+              capacity={room.capacity}
               onDeleted={() => fetchRooms()}
               id={room.id}
               key={room.id}
@@ -190,6 +241,9 @@ const RoomPage = () => {
               price={room.room_price}
               guests={2}
               amenities={[]}
+              onUpdate={() => {
+                fetchRooms();
+              }}
               onClick={async () => {
                 setRoomId(room.id); // ensure stored
                 navigate("/room-profile");
