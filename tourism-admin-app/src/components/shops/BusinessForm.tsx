@@ -1,9 +1,11 @@
 import * as React from 'react';
-import { DialogTitle, DialogContent, Modal, ModalDialog, Stack, FormControl, FormLabel, Input, Textarea, Select, Option, Button, Typography, Box, Divider, Sheet } from '@mui/joy';
-import { LocationOn, Language, Facebook, Instagram, Twitter } from '@mui/icons-material';
+import { DialogTitle, DialogContent, Modal, ModalDialog, Stack, FormControl, FormLabel, Input, Textarea, Select, Option, Button, Typography, Box, Divider, Sheet, IconButton } from '@mui/joy';
+import { useToast } from '@/src/context/useToast';
+import { LocationOn, Language, Facebook, Instagram, Twitter, Upload, DeleteForever } from '@mui/icons-material';
 import MapPicker from '@/src/components/shops/MapPicker';
 import type { Business, BusinessStatus, CategoryOption, TypeOption } from '@/src/types/Business';
 import { BusinessService } from '@/src/services/BusinessService';
+import { supabase } from '@/src/utils/supabase';
 
 interface BusinessFormProps {
   open: boolean;
@@ -60,6 +62,7 @@ const emptyForm: FormState = {
 };
 
 export const BusinessForm: React.FC<BusinessFormProps> = ({ open, mode, initial, onClose, onSaved }) => {
+  const { showToast } = useToast();
   const [form, setForm] = React.useState<FormState>(emptyForm);
   const [types, setTypes] = React.useState<TypeOption[]>([]);
   const [categories, setCategories] = React.useState<CategoryOption[]>([]);
@@ -267,8 +270,10 @@ export const BusinessForm: React.FC<BusinessFormProps> = ({ open, mode, initial,
       };
       if (mode === 'create') {
         await BusinessService.create(payload);
+        showToast({ message: 'Shop created successfully', severity: 'success' });
       } else if (mode === 'edit' && initial?.id) {
         await BusinessService.update(initial.id, payload);
+        showToast({ message: 'Shop updated successfully', severity: 'success' });
       }
       onSaved();
     } catch (e) {
@@ -277,6 +282,40 @@ export const BusinessForm: React.FC<BusinessFormProps> = ({ open, mode, initial,
     } finally {
       setSubmitting(false);
     }
+  };
+
+  // Single image upload to Supabase storage bucket "business-profile" (same as business-app convention)
+  const handleImageFile = async (file: File) => {
+    if (!file) return;
+    const ext = file.name.split('.').pop()?.toLowerCase();
+    if (!ext || !['jpg','jpeg','png','webp'].includes(ext)) {
+      showToast({ message: 'Unsupported file type', severity: 'danger' });
+      return;
+    }
+    if (file.size > 2 * 1024 * 1024) { // 2MB limit
+      showToast({ message: 'File too large (max 2MB)', severity: 'danger' });
+      return;
+    }
+    try {
+      const path = `business/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+  const { error } = await supabase.storage.from('business-profile').upload(path, file, { cacheControl: '3600', upsert: true });
+      if (error) throw error;
+  const { data } = supabase.storage.from('business-profile').getPublicUrl(path);
+      if (data?.publicUrl) {
+        setField('business_image', data.publicUrl);
+        showToast({ message: 'Image uploaded', severity: 'success' });
+      }
+    } catch (err: unknown) {
+      console.error('Upload failed', err);
+      const message = typeof err === 'object' && err && 'message' in err && typeof (err as { message: string }).message === 'string' && (err as { message: string }).message.includes('Bucket')
+        ? 'Image storage bucket missing (business-profile)'
+        : 'Upload failed';
+      showToast({ message, severity: 'danger' });
+    }
+  };
+
+  const handleRemoveImage = () => {
+    setField('business_image', '');
   };
 
   const handleNext = () => {
@@ -830,31 +869,41 @@ export const BusinessForm: React.FC<BusinessFormProps> = ({ open, mode, initial,
                   <Typography level="title-md" sx={{ mb: 2, fontWeight: 700, color: 'text.primary' }}>
                     Images
                   </Typography>
-                  <Typography level="body-sm" sx={{ color: 'text.tertiary', mb: 3 }}>
-                    Upload gallery images later. For now you can add an image URL.
+                  <Typography level="body-sm" sx={{ color: 'text.tertiary', mb: 2 }}>
+                    Upload a single image (JPG/PNG/WebP, max 2MB). You can replace or remove it.
                   </Typography>
-                  <FormControl>
-                    <FormLabel sx={{ fontWeight: 600, mb: 0.5 }}>Image URL</FormLabel>
-                    <Input 
-                      value={form.business_image} 
-                      onChange={(e) => setField('business_image', e.target.value)} 
-                      placeholder="https://..."
-                      sx={{ 
-                        '--Input-radius': '8px',
-                        '--Input-minHeight': '44px',
-                        fontSize: '0.95rem'
-                      }}
-                    />
-                  </FormControl>
-                  {form.business_image && (
-                    <Box sx={{ mt: 2, borderRadius: 8, overflow: 'hidden', border: '1px solid', borderColor: 'divider' }}>
-                      <img 
-                        src={form.business_image} 
-                        alt="Preview" 
-                        style={{ width: '100%', height: 'auto', maxHeight: '200px', objectFit: 'cover' }}
-                        onError={(e) => {
-                          e.currentTarget.style.display = 'none';
+                  <Stack direction={{ xs: 'column', sm: 'row' }} gap={2} alignItems="center">
+                    <Button
+                      component="label"
+                      variant="outlined"
+                      size="sm"
+                      startDecorator={<Upload />}
+                    >
+                      {form.business_image ? 'Replace Image' : 'Upload Image'}
+                      <input
+                        type="file"
+                        accept="image/*"
+                        hidden
+                        onChange={(e) => {
+                          const f = e.target.files?.[0];
+                          if (f) void handleImageFile(f);
+                          e.target.value = '';
                         }}
+                      />
+                    </Button>
+                    {form.business_image && (
+                      <IconButton size="sm" color="danger" variant="soft" onClick={handleRemoveImage}>
+                        <DeleteForever />
+                      </IconButton>
+                    )}
+                  </Stack>
+                  {form.business_image && (
+                    <Box sx={{ mt: 2, position: 'relative', borderRadius: 8, overflow: 'hidden', border: '1px solid', borderColor: 'divider' }}>
+                      <img
+                        src={form.business_image}
+                        alt="Business"
+                        style={{ width: '100%', height: 'auto', maxHeight: 240, objectFit: 'cover', display: 'block' }}
+                        onError={(e) => { e.currentTarget.style.display = 'none'; }}
                       />
                     </Box>
                   )}

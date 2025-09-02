@@ -81,14 +81,9 @@ export const BusinessService = {
     return data;
   },
 
-  // Placeholder for soft delete (will become status change or deleted_at when backend supports)
-  async remove(id: string, hard = false): Promise<void> {
-    if (hard) {
-      await axios.delete(`${api}/business/${id}`);
-    } else {
-      // Soft delete fallback: set status Inactive
-      await axios.put(`${api}/business/${id}`, { status: 'Inactive' });
-    }
+  // Hard delete (permanent)
+  async remove(id: string): Promise<void> {
+    await axios.delete(`${api}/business/${id}`);
   },
 
   // Types (Shop + Accommodation)

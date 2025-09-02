@@ -1,6 +1,7 @@
 import * as React from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Sheet, Typography, Stack, Input, Select, Option, Button } from '@mui/joy';
+import { useToast } from '@/src/context/useToast';
 import { BusinessService } from '@/src/services/BusinessService';
 import type { BusinessListItem, BusinessFilters, BusinessStatus } from '@/src/types/Business';
 import BusinessTable from '@/src/components/shops/BusinessTable';
@@ -23,6 +24,7 @@ const Shop: React.FC = () => {
   const [editing, setEditing] = useState<BusinessListItem | null>(null);
   const [viewing, setViewing] = useState<BusinessListItem | null>(null);
   const [viewOpen, setViewOpen] = useState(false);
+  const { showToast } = useToast();
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -75,9 +77,10 @@ const Shop: React.FC = () => {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Mark this shop as Inactive?')) return;
+    if (!confirm('Permanently delete this shop? This action cannot be undone.')) return;
     try {
-      await BusinessService.remove(id, false); // soft
+      await BusinessService.remove(id); // hard delete
+  showToast({ message: 'Shop deleted', severity: 'success' });
       fetchData();
     } catch (e) {
       const msg = e instanceof Error ? e.message : 'Delete failed';

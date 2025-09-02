@@ -10,7 +10,7 @@ export interface BusinessTableProps {
   loading?: boolean;
   onView?: (id: string) => void;
   onEdit?: (id: string) => void;
-  onDelete?: (id: string) => void; // soft delete for now
+  onDelete?: (id: string) => void; // hard delete
 }
 
 const statusColor: Record<string, 'success' | 'danger' | 'neutral' | 'warning'> = {
