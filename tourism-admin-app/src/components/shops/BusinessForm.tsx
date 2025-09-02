@@ -344,7 +344,8 @@ export const BusinessForm: React.FC<BusinessFormProps> = ({ open, mode, initial,
                   bgcolor: 'primary.500',
                   borderRadius: 1,
                   width: `${((step - 1) / 5) * 100}%`,
-                  transition: 'width 0.3s ease'
+                  transition: 'width 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                  willChange: 'width'
                 }} />
               </Box>
               
@@ -374,10 +375,14 @@ export const BusinessForm: React.FC<BusinessFormProps> = ({ open, mode, initial,
                         cursor: 'pointer',
                         fontSize: '0.875rem',
                         fontWeight: 600,
-                        transition: 'all 0.2s ease',
+                        transition: 'all 0.15s cubic-bezier(0.4, 0, 0.2, 1)',
+                        willChange: 'transform, box-shadow',
                         '&:hover': {
                           transform: 'scale(1.05)',
                           boxShadow: 'sm'
+                        },
+                        '&:active': {
+                          transform: 'scale(0.98)'
                         }
                       }}
                     >
@@ -389,7 +394,9 @@ export const BusinessForm: React.FC<BusinessFormProps> = ({ open, mode, initial,
                         mt: 1, 
                         color: active ? 'primary.500' : completed ? 'success.500' : 'text.tertiary',
                         fontWeight: active ? 600 : 400,
-                        fontSize: '0.75rem'
+                        fontSize: '0.75rem',
+                        transition: 'color 0.15s ease',
+                        willChange: 'color'
                       }}
                     >
                       {label}
@@ -400,18 +407,31 @@ export const BusinessForm: React.FC<BusinessFormProps> = ({ open, mode, initial,
             </Stack>
           </Box>
           
-          <Box sx={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-            <Box sx={{ flex: 1, overflowY: 'auto', px: 3, py: 3 }}>
+          <Box sx={{ 
+            flex: 1, 
+            overflow: 'hidden', 
+            display: 'flex', 
+            flexDirection: 'column',
+            position: 'relative'
+          }}>
+            <Box sx={{ 
+              flex: 1, 
+              overflowY: 'auto', 
+              px: 3, 
+              py: 3,
+              transform: 'translateZ(0)', // Enable hardware acceleration
+              backfaceVisibility: 'hidden' // Improve rendering performance
+            }}>
 
             {/* Step contents */}
             {step === 1 && (
-              <Stack gap={3}>
+              <Stack gap={2}>
                 <Box>
-                  <Typography level="title-md" sx={{ mb: 2, fontWeight: 700, color: 'text.primary' }}>
+                  <Typography level="title-md" sx={{ mb: 1.5, fontWeight: 700, color: 'text.primary' }}>
                     Basic Information
                   </Typography>
                   
-                  <Stack gap={2}>
+                  <Stack gap={1.5}>
                     <FormControl error={!!errors.business_name}>
                       <FormLabel sx={{ fontWeight: 600, mb: 0.5 }}>Business Name *</FormLabel>
                       <Input 
@@ -420,7 +440,7 @@ export const BusinessForm: React.FC<BusinessFormProps> = ({ open, mode, initial,
                         placeholder="Enter your shop name"
                         sx={{ 
                           '--Input-radius': '8px',
-                          '--Input-minHeight': '44px',
+                          '--Input-minHeight': '40px',
                           fontSize: '0.95rem'
                         }}
                       />
@@ -430,7 +450,7 @@ export const BusinessForm: React.FC<BusinessFormProps> = ({ open, mode, initial,
                     <FormControl>
                       <FormLabel sx={{ fontWeight: 600, mb: 0.5 }}>Description</FormLabel>
                       <Textarea 
-                        minRows={3} 
+                        minRows={2} 
                         value={form.description} 
                         onChange={(e) => setField('description', e.target.value)} 
                         placeholder="Brief description of your shop..."
@@ -444,50 +464,48 @@ export const BusinessForm: React.FC<BusinessFormProps> = ({ open, mode, initial,
                 </Box>
 
                 <Box>
-                  <Typography level="title-md" sx={{ mb: 2, fontWeight: 700, color: 'text.primary' }}>
-                    Contact Details
+                  <Typography level="title-md" sx={{ mb: 1.5, fontWeight: 700, color: 'text.primary' }}>
+                    Contact & Classification
                   </Typography>
                   
-                  <Stack direction={{ xs: 'column', sm: 'row' }} gap={2}>
-                    <FormControl error={!!errors.email} sx={{ flex: 1 }}>
-                      <FormLabel sx={{ fontWeight: 600, mb: 0.5 }}>Email Address *</FormLabel>
-                      <Input 
-                        type="email"
-                        value={form.email} 
-                        onChange={(e) => setField('email', e.target.value)}
-                        placeholder="shop@example.com"
-                        sx={{ 
-                          '--Input-radius': '8px',
-                          '--Input-minHeight': '44px',
-                          fontSize: '0.95rem'
-                        }}
-                      />
-                      {errors.email && <Typography level="body-xs" color="danger" sx={{ mt: 0.5 }}>{errors.email}</Typography>}
-                    </FormControl>
-                    <FormControl error={!!errors.phone_number} sx={{ flex: 1 }}>
-                      <FormLabel sx={{ fontWeight: 600, mb: 0.5 }}>Phone Number *</FormLabel>
-                      <Input 
-                        value={form.phone_number} 
-                        onChange={(e) => setField('phone_number', e.target.value)}
-                        placeholder="+63 900 000 0000"
-                        sx={{ 
-                          '--Input-radius': '8px',
-                          '--Input-minHeight': '44px',
-                          fontSize: '0.95rem'
-                        }}
-                      />
-                      {errors.phone_number && <Typography level="body-xs" color="danger" sx={{ mt: 0.5 }}>{errors.phone_number}</Typography>}
-                    </FormControl>
-                  </Stack>
-                </Box>
+                  <Stack gap={1.5}>
+                    <Stack direction={{ xs: 'column', sm: 'row' }} gap={1.5}>
+                      <FormControl error={!!errors.email} sx={{ flex: 1 }}>
+                        <FormLabel sx={{ fontWeight: 600, mb: 0.5 }}>Email Address *</FormLabel>
+                        <Input 
+                          type="email"
+                          value={form.email} 
+                          onChange={(e) => setField('email', e.target.value)}
+                          placeholder="shop@example.com"
+                          sx={{ 
+                            '--Input-radius': '8px',
+                            '--Input-minHeight': '40px',
+                            fontSize: '0.95rem'
+                          }}
+                        />
+                        <Box sx={{ minHeight: '20px', mt: 0.5 }}>
+                          {errors.email && <Typography level="body-xs" color="danger">{errors.email}</Typography>}
+                        </Box>
+                      </FormControl>
+                      <FormControl error={!!errors.phone_number} sx={{ flex: 1 }}>
+                        <FormLabel sx={{ fontWeight: 600, mb: 0.5 }}>Phone Number *</FormLabel>
+                        <Input 
+                          value={form.phone_number} 
+                          onChange={(e) => setField('phone_number', e.target.value)}
+                          placeholder="+63 900 000 0000"
+                          sx={{ 
+                            '--Input-radius': '8px',
+                            '--Input-minHeight': '40px',
+                            fontSize: '0.95rem'
+                          }}
+                        />
+                        <Box sx={{ minHeight: '20px', mt: 0.5 }}>
+                          {errors.phone_number && <Typography level="body-xs" color="danger">{errors.phone_number}</Typography>}
+                        </Box>
+                      </FormControl>
+                    </Stack>
 
-                <Box>
-                  <Typography level="title-md" sx={{ mb: 2, fontWeight: 700, color: 'text.primary' }}>
-                    Classification & Pricing
-                  </Typography>
-                  
-                  <Stack gap={2}>
-                    <Stack direction={{ xs: 'column', sm: 'row' }} gap={2}>
+                    <Stack direction={{ xs: 'column', sm: 'row' }} gap={1.5}>
                       <FormControl error={!!errors.business_type_id} sx={{ flex: 1 }}>
                         <FormLabel sx={{ fontWeight: 600, mb: 0.5 }}>Business Type *</FormLabel>
                         {mode === 'create' ? (
@@ -496,7 +514,7 @@ export const BusinessForm: React.FC<BusinessFormProps> = ({ open, mode, initial,
                             disabled
                             sx={{ 
                               '--Select-radius': '8px',
-                              '--Select-minHeight': '44px',
+                              '--Select-minHeight': '40px',
                               fontSize: '0.95rem'
                             }}
                           >
@@ -511,7 +529,7 @@ export const BusinessForm: React.FC<BusinessFormProps> = ({ open, mode, initial,
                             onChange={(_, v) => setField('business_type_id', (v as number) ?? '')}
                             sx={{ 
                               '--Select-radius': '8px',
-                              '--Select-minHeight': '44px',
+                              '--Select-minHeight': '40px',
                               fontSize: '0.95rem'
                             }}
                           >
@@ -520,7 +538,9 @@ export const BusinessForm: React.FC<BusinessFormProps> = ({ open, mode, initial,
                             ))}
                           </Select>
                         )}
-                        {errors.business_type_id && <Typography level="body-xs" color="danger" sx={{ mt: 0.5 }}>{errors.business_type_id}</Typography>}
+                        <Box sx={{ minHeight: '20px', mt: 0.5 }}>
+                          {errors.business_type_id && <Typography level="body-xs" color="danger">{errors.business_type_id}</Typography>}
+                        </Box>
                       </FormControl>
                       <FormControl error={!!errors.business_category_id} sx={{ flex: 1 }}>
                         <FormLabel sx={{ fontWeight: 600, mb: 0.5 }}>Category *</FormLabel>
@@ -531,7 +551,7 @@ export const BusinessForm: React.FC<BusinessFormProps> = ({ open, mode, initial,
                           disabled={!form.business_type_id}
                           sx={{ 
                             '--Select-radius': '8px',
-                            '--Select-minHeight': '44px',
+                            '--Select-minHeight': '40px',
                             fontSize: '0.95rem'
                           }}
                         >
@@ -539,11 +559,13 @@ export const BusinessForm: React.FC<BusinessFormProps> = ({ open, mode, initial,
                             <Option key={c.id} value={c.id}>{c.category}</Option>
                           ))}
                         </Select>
-                        {errors.business_category_id && <Typography level="body-xs" color="danger" sx={{ mt: 0.5 }}>{errors.business_category_id}</Typography>}
+                        <Box sx={{ minHeight: '20px', mt: 0.5 }}>
+                          {errors.business_category_id && <Typography level="body-xs" color="danger">{errors.business_category_id}</Typography>}
+                        </Box>
                       </FormControl>
                     </Stack>
 
-                    <Stack direction={{ xs: 'column', sm: 'row' }} gap={2} alignItems="end">
+                    <Stack direction={{ xs: 'column', sm: 'row' }} gap={1.5} alignItems="end">
                       <FormControl error={!!errors.min_price} sx={{ flex: 1 }}>
                         <FormLabel sx={{ fontWeight: 600, mb: 0.5 }}>Min Price (₱) *</FormLabel>
                         <Input 
@@ -553,11 +575,13 @@ export const BusinessForm: React.FC<BusinessFormProps> = ({ open, mode, initial,
                           placeholder="0.00"
                           sx={{ 
                             '--Input-radius': '8px',
-                            '--Input-minHeight': '44px',
+                            '--Input-minHeight': '40px',
                             fontSize: '0.95rem'
                           }}
                         />
-                        {errors.min_price && <Typography level="body-xs" color="danger" sx={{ mt: 0.5 }}>{errors.min_price}</Typography>}
+                        <Box sx={{ minHeight: '20px', mt: 0.5 }}>
+                          {errors.min_price && <Typography level="body-xs" color="danger">{errors.min_price}</Typography>}
+                        </Box>
                       </FormControl>
                       <FormControl error={!!errors.max_price} sx={{ flex: 1 }}>
                         <FormLabel sx={{ fontWeight: 600, mb: 0.5 }}>Max Price (₱) *</FormLabel>
@@ -568,20 +592,22 @@ export const BusinessForm: React.FC<BusinessFormProps> = ({ open, mode, initial,
                           placeholder="0.00"
                           sx={{ 
                             '--Input-radius': '8px',
-                            '--Input-minHeight': '44px',
+                            '--Input-minHeight': '40px',
                             fontSize: '0.95rem'
                           }}
                         />
-                        {errors.max_price && <Typography level="body-xs" color="danger" sx={{ mt: 0.5 }}>{errors.max_price}</Typography>}
+                        <Box sx={{ minHeight: '20px', mt: 0.5 }}>
+                          {errors.max_price && <Typography level="body-xs" color="danger">{errors.max_price}</Typography>}
+                        </Box>
                       </FormControl>
-                      <FormControl error={!!errors.status} sx={{ minWidth: 140 }}>
+                      <FormControl error={!!errors.status} sx={{ minWidth: 120 }}>
                         <FormLabel sx={{ fontWeight: 600, mb: 0.5 }}>Status *</FormLabel>
                         <Select 
                           value={form.status} 
                           onChange={(_, v) => v && setField('status', v as BusinessStatus)}
                           sx={{ 
                             '--Select-radius': '8px',
-                            '--Select-minHeight': '44px',
+                            '--Select-minHeight': '40px',
                             fontSize: '0.95rem'
                           }}
                         >
@@ -589,6 +615,9 @@ export const BusinessForm: React.FC<BusinessFormProps> = ({ open, mode, initial,
                             <Option key={s} value={s}>{s}</Option>
                           ))}
                         </Select>
+                        <Box sx={{ minHeight: '20px', mt: 0.5 }}>
+                          {/* Status field typically doesn't have errors, but keeping consistent spacing */}
+                        </Box>
                       </FormControl>
                     </Stack>
                   </Stack>
@@ -597,14 +626,14 @@ export const BusinessForm: React.FC<BusinessFormProps> = ({ open, mode, initial,
             )}
 
             {step === 2 && (
-              <Stack gap={3}>
+              <Stack gap={2}>
                 <Box>
-                  <Typography level="title-md" sx={{ mb: 2, fontWeight: 700, color: 'text.primary' }}>
+                  <Typography level="title-md" sx={{ mb: 1.5, fontWeight: 700, color: 'text.primary' }}>
                     Location Information
                   </Typography>
                   
-                  <Stack gap={2}>
-                    <Stack direction={{ xs: 'column', sm: 'row' }} gap={2}>
+                  <Stack gap={1.5}>
+                    <Stack direction={{ xs: 'column', sm: 'row' }} gap={1.5}>
                       <FormControl error={!!errors.province_id} sx={{ flex: 1 }}>
                         <FormLabel sx={{ fontWeight: 600, mb: 0.5 }}>Province *</FormLabel>
                         <Select 
@@ -613,7 +642,7 @@ export const BusinessForm: React.FC<BusinessFormProps> = ({ open, mode, initial,
                           onChange={(_, v) => setField('province_id', (v as number) ?? '')}
                           sx={{ 
                             '--Select-radius': '8px',
-                            '--Select-minHeight': '44px',
+                            '--Select-minHeight': '40px',
                             fontSize: '0.95rem'
                           }}
                         >
@@ -632,7 +661,7 @@ export const BusinessForm: React.FC<BusinessFormProps> = ({ open, mode, initial,
                           disabled={!form.province_id}
                           sx={{ 
                             '--Select-radius': '8px',
-                            '--Select-minHeight': '44px',
+                            '--Select-minHeight': '40px',
                             fontSize: '0.95rem'
                           }}
                         >
@@ -651,7 +680,7 @@ export const BusinessForm: React.FC<BusinessFormProps> = ({ open, mode, initial,
                           disabled={!form.municipality_id}
                           sx={{ 
                             '--Select-radius': '8px',
-                            '--Select-minHeight': '44px',
+                            '--Select-minHeight': '40px',
                             fontSize: '0.95rem'
                           }}
                         >
@@ -663,55 +692,57 @@ export const BusinessForm: React.FC<BusinessFormProps> = ({ open, mode, initial,
                       </FormControl>
                     </Stack>
 
-                    <FormControl error={!!errors.address}>
-                      <FormLabel sx={{ fontWeight: 600, mb: 0.5 }}>Street Address *</FormLabel>
-                      <Input 
-                        value={form.address} 
-                        onChange={(e) => setField('address', e.target.value)} 
-                        placeholder="e.g., Hilda St, Poblacion"
-                        startDecorator={<LocationOn sx={{ color: 'text.tertiary' }} />}
-                        sx={{ 
-                          '--Input-radius': '8px',
-                          '--Input-minHeight': '44px',
-                          fontSize: '0.95rem'
-                        }}
-                      />
-                      {errors.address && <Typography level="body-xs" color="danger" sx={{ mt: 0.5 }}>{errors.address}</Typography>}
-                    </FormControl>
+                    <Stack direction={{ xs: 'column', md: 'row' }} gap={1.5}>
+                      <FormControl error={!!errors.address} sx={{ flex: 2 }}>
+                        <FormLabel sx={{ fontWeight: 600, mb: 0.5 }}>Street Address *</FormLabel>
+                        <Input 
+                          value={form.address} 
+                          onChange={(e) => setField('address', e.target.value)} 
+                          placeholder="e.g., Hilda St, Poblacion"
+                          startDecorator={<LocationOn sx={{ color: 'text.tertiary' }} />}
+                          sx={{ 
+                            '--Input-radius': '8px',
+                            '--Input-minHeight': '40px',
+                            fontSize: '0.95rem'
+                          }}
+                        />
+                        {errors.address && <Typography level="body-xs" color="danger" sx={{ mt: 0.5 }}>{errors.address}</Typography>}
+                      </FormControl>
 
-                    <Stack direction={{ xs: 'column', sm: 'row' }} gap={2}>
-                      <FormControl error={!!errors.latitude} sx={{ flex: 1 }}>
-                        <FormLabel sx={{ fontWeight: 600, mb: 0.5 }}>Latitude *</FormLabel>
-                        <Input 
-                          value={form.latitude} 
-                          onChange={(e) => setField('latitude', e.target.value)} 
-                          placeholder="13.6218"
-                          sx={{ 
-                            '--Input-radius': '8px',
-                            '--Input-minHeight': '44px',
-                            fontSize: '0.95rem'
-                          }}
-                        />
-                        {errors.latitude && <Typography level="body-xs" color="danger" sx={{ mt: 0.5 }}>{errors.latitude}</Typography>}
-                      </FormControl>
-                      <FormControl error={!!errors.longitude} sx={{ flex: 1 }}>
-                        <FormLabel sx={{ fontWeight: 600, mb: 0.5 }}>Longitude *</FormLabel>
-                        <Input 
-                          value={form.longitude} 
-                          onChange={(e) => setField('longitude', e.target.value)} 
-                          placeholder="123.1948"
-                          sx={{ 
-                            '--Input-radius': '8px',
-                            '--Input-minHeight': '44px',
-                            fontSize: '0.95rem'
-                          }}
-                        />
-                        {errors.longitude && <Typography level="body-xs" color="danger" sx={{ mt: 0.5 }}>{errors.longitude}</Typography>}
-                      </FormControl>
+                      <Stack direction="row" gap={1.5} sx={{ flex: 1 }}>
+                        <FormControl error={!!errors.latitude} sx={{ flex: 1 }}>
+                          <FormLabel sx={{ fontWeight: 600, mb: 0.5 }}>Latitude *</FormLabel>
+                          <Input 
+                            value={form.latitude} 
+                            onChange={(e) => setField('latitude', e.target.value)} 
+                            placeholder="13.6218"
+                            sx={{ 
+                              '--Input-radius': '8px',
+                              '--Input-minHeight': '40px',
+                              fontSize: '0.95rem'
+                            }}
+                          />
+                          {errors.latitude && <Typography level="body-xs" color="danger" sx={{ mt: 0.5 }}>{errors.latitude}</Typography>}
+                        </FormControl>
+                        <FormControl error={!!errors.longitude} sx={{ flex: 1 }}>
+                          <FormLabel sx={{ fontWeight: 600, mb: 0.5 }}>Longitude *</FormLabel>
+                          <Input 
+                            value={form.longitude} 
+                            onChange={(e) => setField('longitude', e.target.value)} 
+                            placeholder="123.1948"
+                            sx={{ 
+                              '--Input-radius': '8px',
+                              '--Input-minHeight': '40px',
+                              fontSize: '0.95rem'
+                            }}
+                          />
+                          {errors.longitude && <Typography level="body-xs" color="danger" sx={{ mt: 0.5 }}>{errors.longitude}</Typography>}
+                        </FormControl>
+                      </Stack>
                     </Stack>
 
                     {form.latitude && form.longitude && (
-                      <Box sx={{ borderRadius: 8, overflow: 'hidden', aspectRatio: '16 / 9', border: '1px solid', borderColor: 'divider' }}>
+                      <Box sx={{ borderRadius: 8, overflow: 'hidden', aspectRatio: '16 / 8', border: '1px solid', borderColor: 'divider' }}>
                         <iframe
                           title="map-preview"
                           width="100%"
