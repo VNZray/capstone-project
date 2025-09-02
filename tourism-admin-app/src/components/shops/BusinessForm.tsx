@@ -1,6 +1,7 @@
 import * as React from 'react';
 import { DialogTitle, DialogContent, Modal, ModalDialog, Stack, FormControl, FormLabel, Input, Textarea, Select, Option, Button, Typography, Box, Divider, Sheet } from '@mui/joy';
 import { LocationOn, Language, Facebook, Instagram, Twitter } from '@mui/icons-material';
+import MapPicker from '@/src/components/shops/MapPicker';
 import type { Business, BusinessStatus, CategoryOption, TypeOption } from '@/src/types/Business';
 import { BusinessService } from '@/src/services/BusinessService';
 
@@ -188,8 +189,8 @@ export const BusinessForm: React.FC<BusinessFormProps> = ({ open, mode, initial,
     if (!form.municipality_id) next.municipality_id = 'Select municipality';
     if (!form.barangay_id) next.barangay_id = 'Select barangay';
     if (!form.address.trim()) next.address = 'Required';
-    if (!form.latitude.trim()) next.latitude = 'Required';
-    if (!form.longitude.trim()) next.longitude = 'Required';
+  if (!form.latitude.trim()) next.latitude = 'Pin location';
+  if (!form.longitude.trim()) next.longitude = 'Pin location';
     if (!form.min_price.trim()) next.min_price = 'Required';
     if (!form.max_price.trim()) next.max_price = 'Required';
     const minVal = parseFloat(form.min_price);
@@ -226,8 +227,8 @@ export const BusinessForm: React.FC<BusinessFormProps> = ({ open, mode, initial,
       if (!form.municipality_id) next.municipality_id = 'Select municipality';
       if (!form.barangay_id) next.barangay_id = 'Select barangay';
       if (!form.address.trim()) next.address = 'Required';
-      if (!form.latitude.trim()) next.latitude = 'Required';
-      if (!form.longitude.trim()) next.longitude = 'Required';
+      if (!form.latitude.trim()) next.latitude = 'Pin location';
+      if (!form.longitude.trim()) next.longitude = 'Pin location';
     }
     setErrors(next);
     return Object.keys(next).length === 0;
@@ -237,6 +238,10 @@ export const BusinessForm: React.FC<BusinessFormProps> = ({ open, mode, initial,
     if (!validate()) return;
     setSubmitting(true);
     try {
+  const provinceName = provinceOptions.find(p => p.id === form.province_id)?.province;
+  const municipalityName = municipalityOptions.find(m => m.id === form.municipality_id)?.municipality;
+  const barangayName = barangayOptions.find(b => b.id === form.barangay_id)?.barangay;
+  const fullAddress = [form.address.trim(), barangayName, municipalityName, provinceName].filter(Boolean).join(', ');
       const payload: Partial<Business> = {
         business_name: form.business_name.trim(),
         email: form.email.trim(),
@@ -246,7 +251,7 @@ export const BusinessForm: React.FC<BusinessFormProps> = ({ open, mode, initial,
         province_id: form.province_id as number,
         municipality_id: form.municipality_id as number,
         barangay_id: form.barangay_id as number,
-        address: form.address.trim(),
+  address: fullAddress,
         description: form.description.trim() || null,
         status: form.status,
         latitude: form.latitude.trim(),
@@ -305,7 +310,7 @@ export const BusinessForm: React.FC<BusinessFormProps> = ({ open, mode, initial,
           borderColor: 'divider',
           bgcolor: 'background.surface'
         }}>
-          <Typography level="h4" sx={{ fontWeight: 700, color: 'text.primary' }}>
+          <Typography level="h4" component="span" sx={{ fontWeight: 700, color: 'text.primary' }}>
             {mode === 'create' ? 'Add New Shop' : 'Edit Shop'}
           </Typography>
           <Typography level="body-sm" sx={{ color: 'text.tertiary', fontWeight: 500 }}>
@@ -692,67 +697,29 @@ export const BusinessForm: React.FC<BusinessFormProps> = ({ open, mode, initial,
                       </FormControl>
                     </Stack>
 
-                    <Stack direction={{ xs: 'column', md: 'row' }} gap={1.5}>
-                      <FormControl error={!!errors.address} sx={{ flex: 2 }}>
-                        <FormLabel sx={{ fontWeight: 600, mb: 0.5 }}>Street Address *</FormLabel>
-                        <Input 
-                          value={form.address} 
-                          onChange={(e) => setField('address', e.target.value)} 
-                          placeholder="e.g., Hilda St, Poblacion"
-                          startDecorator={<LocationOn sx={{ color: 'text.tertiary' }} />}
-                          sx={{ 
-                            '--Input-radius': '8px',
-                            '--Input-minHeight': '40px',
-                            fontSize: '0.95rem'
-                          }}
-                        />
-                        {errors.address && <Typography level="body-xs" color="danger" sx={{ mt: 0.5 }}>{errors.address}</Typography>}
-                      </FormControl>
+                    <FormControl error={!!errors.address}>
+                      <FormLabel sx={{ fontWeight: 600, mb: 0.5 }}>Street Address *</FormLabel>
+                      <Input
+                        value={form.address}
+                        onChange={(e) => setField('address', e.target.value)}
+                        placeholder="House / Building / Street"
+                        startDecorator={<LocationOn sx={{ color: 'text.tertiary' }} />}
+                        sx={{
+                          '--Input-radius': '8px',
+                          '--Input-minHeight': '40px',
+                          fontSize: '0.95rem'
+                        }}
+                      />
+                      {errors.address && <Typography level="body-xs" color="danger" sx={{ mt: 0.5 }}>{errors.address}</Typography>}
+                    </FormControl>
 
-                      <Stack direction="row" gap={1.5} sx={{ flex: 1 }}>
-                        <FormControl error={!!errors.latitude} sx={{ flex: 1 }}>
-                          <FormLabel sx={{ fontWeight: 600, mb: 0.5 }}>Latitude *</FormLabel>
-                          <Input 
-                            value={form.latitude} 
-                            onChange={(e) => setField('latitude', e.target.value)} 
-                            placeholder="13.6218"
-                            sx={{ 
-                              '--Input-radius': '8px',
-                              '--Input-minHeight': '40px',
-                              fontSize: '0.95rem'
-                            }}
-                          />
-                          {errors.latitude && <Typography level="body-xs" color="danger" sx={{ mt: 0.5 }}>{errors.latitude}</Typography>}
-                        </FormControl>
-                        <FormControl error={!!errors.longitude} sx={{ flex: 1 }}>
-                          <FormLabel sx={{ fontWeight: 600, mb: 0.5 }}>Longitude *</FormLabel>
-                          <Input 
-                            value={form.longitude} 
-                            onChange={(e) => setField('longitude', e.target.value)} 
-                            placeholder="123.1948"
-                            sx={{ 
-                              '--Input-radius': '8px',
-                              '--Input-minHeight': '40px',
-                              fontSize: '0.95rem'
-                            }}
-                          />
-                          {errors.longitude && <Typography level="body-xs" color="danger" sx={{ mt: 0.5 }}>{errors.longitude}</Typography>}
-                        </FormControl>
-                      </Stack>
-                    </Stack>
-
-                    {form.latitude && form.longitude && (
-                      <Box sx={{ borderRadius: 8, overflow: 'hidden', aspectRatio: '16 / 8', border: '1px solid', borderColor: 'divider' }}>
-                        <iframe
-                          title="map-preview"
-                          width="100%"
-                          height="100%"
-                          style={{ border: 0 }}
-                          loading="lazy"
-                          src={`https://www.google.com/maps?q=${encodeURIComponent(form.latitude)},${encodeURIComponent(form.longitude)}&z=16&output=embed`}
-                        />
-                      </Box>
-                    )}
+                    <MapPicker
+                      latitude={form.latitude}
+                      longitude={form.longitude}
+                      onChange={(lat, lng) => { setField('latitude', lat); setField('longitude', lng); }}
+                      errorLat={errors.latitude}
+                      errorLng={errors.longitude}
+                    />
                   </Stack>
                 </Box>
               </Stack>
