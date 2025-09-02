@@ -1,15 +1,18 @@
 import logo from '@/assets/images/logo.png';
 import PressableButton from '@/components/PressableButton';
 import { ThemedText } from '@/components/ThemedText';
+import { insertData } from '@/Controller/Query';
+import api from '@/services/api';
 import { colors } from '@/utils/Colors';
-import { supabase } from '@/utils/supabase';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import { Picker } from '@react-native-picker/picker';
+import axios from 'axios';
 import { useFonts } from 'expo-font';
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Modal,
   Platform,
@@ -19,7 +22,7 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  View
+  View,
 } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
@@ -30,9 +33,30 @@ const RegistrationPage = () => {
   const [password, setPassword] = useState('123456');
   const [confirmPassword, setConfirmPassword] = useState('123456');
   const [birthdate, setBirthdate] = useState(new Date());
-  const [isDatePickerVisible, setDatePickerVisibility] = useState(false);
   const [ethnicity, setEthnicity] = useState<string>('');
+  const [category, setCategory] = useState<string>('');
+  const [gender, setGender] = useState<string>('');
+  const [phoneNumber, setPhoneNumber] = useState('09784561234');
+  const [nationality, setNationality] = useState('Filipino');
+  const [provinceId, setProvinceId] = useState<number | null>(null);
+  const [municipalityId, setMunicipalityId] = useState<number | null>(null);
+  const [barangayId, setBarangayId] = useState<number | null>(null);
+
+  const [province, setProvince] = useState<{ id: number; province: string }[]>(
+    []
+  );
+  const [municipality, setMunicipality] = useState<
+    { id: number; municipality: string }[]
+  >([]);
+  const [barangay, setBarangay] = useState<{ id: number; barangay: string }[]>(
+    []
+  );
+
   const [calendarVisible, setCalendarVisible] = useState(false);
+  const [provinceVisible, setProvinceVisible] = useState(false);
+  const [municipalityVisible, setMunicipalityVisible] = useState(false);
+  const [barangayVisible, setBarangayVisible] = useState(false);
+
   const [fontsLoaded] = useFonts({
     'Poppins-Black': require('@/assets/fonts/Poppins/Poppins-Black.ttf'),
     'Poppins-Bold': require('@/assets/fonts/Poppins/Poppins-Bold.ttf'),
@@ -41,10 +65,45 @@ const RegistrationPage = () => {
     'Poppins-Regular': require('@/assets/fonts/Poppins/Poppins-Regular.ttf'),
     'Poppins-SemiBold': require('@/assets/fonts/Poppins/Poppins-SemiBold.ttf'),
   });
-  const [gender, setGender] = useState<string>('');
-  const [contactNumber, setContactNumber] = useState('09784561234');
-  const [nationality, setNationality] = useState('Filipino');
-  if (!fontsLoaded) return null;
+
+  const fetchProvince = async () => {
+    try {
+      const response = await axios.get(`${api}/address/provinces`);
+      if (Array.isArray(response.data)) {
+        setProvince(response.data);
+      }
+    } catch (error) {
+      console.error('Error fetching business categories:', error);
+    }
+  };
+
+  const fetchMunicipality = async (provinceId: number) => {
+    try {
+      const response = await axios.get(
+        `${api}/address/municipalities/${provinceId}`
+      );
+
+      if (Array.isArray(response.data)) {
+        setMunicipality(response.data);
+      }
+    } catch (error) {
+      console.error('Error fetching business types:', error);
+    }
+  };
+
+  const fetchBarangay = async (municipalityId: number) => {
+    try {
+      const response = await axios.get(
+        `${api}/address/barangays/${municipalityId}`
+      );
+
+      if (Array.isArray(response.data)) {
+        setBarangay(response.data);
+      }
+    } catch (error) {
+      console.error('Error fetching business types:', error);
+    }
+  };
 
   // Convert Date to 'YYYY-MM-DD'
   const formatDate = (date: Date | null) => {
@@ -52,81 +111,138 @@ const RegistrationPage = () => {
     return date.toISOString().split('T')[0];
   };
 
-  const showDatePicker = () => setDatePickerVisibility(true);
-
-  const handleDateChange = (event: any, selectedDate?: Date) => {
-    if (Platform.OS === 'android') setDatePickerVisibility(false);
-    if (selectedDate) setBirthdate(selectedDate);
+  const newTourist = {
+    first_name: firstName,
+    last_name: lastName,
+    ethnicity: ethnicity,
+    gender: gender,
+    nationality: nationality,
+    phone_number: phoneNumber,
+    category: category,
+    email: email,
+    birthday: formatDate(birthdate),
+    created_at: new Date().toISOString(),
+    province_id: provinceId,
+    municipality_id: municipalityId,
+    barangay_id: barangayId,
+    age: new Date().getFullYear() - birthdate.getFullYear(),
   };
 
   const handleTouristRegistration = async () => {
-    if (!firstName || !lastName || !email || !ethnicity || !birthdate) {
-      alert('Please fill in all required fields.');
-      return;
-    }
+    try {
+      // Create Owner
+      const response = await insertData(newTourist, 'tourist');
+      const tourist_id = response.id;
 
-    // 1. Sign up the user
-    const { data: signUpData, error: signUpError } = await supabase.auth.signUp(
-      {
-        email,
-        password,
-        options: {
-          data: {
-            display_name: `${firstName} ${lastName}`,
-          },
-        },
+      alert(`Account created! Owner ID: ${tourist_id}`);
+
+      // Create User linked to Owner
+      const userResponse = await axios.post(`${api}/users`, {
+        email: email.trim(),
+        phone_number: phoneNumber.trim(),
+        password: password.trim(),
+        role: 'Tourist',
+        tourist_id: tourist_id,
+      });
+
+      const userId = userResponse.data?.id;
+      router.replace('/login');
+
+      alert(`User created! User ID: ${userId}`);
+    } catch (err: any) {
+      if (axios.isAxiosError(err)) {
+      } else {
+        alert('Unexpected error occurred.');
       }
-    );
-
-    if (signUpError || !signUpData.user) {
-      alert('Account creation failed. Please try again.');
-      return;
     }
-
-    const userId = signUpData.user.id;
-    console.log('User signed up:', signUpData.user);
-    console.log('User ID:', userId);
-    // 2. Insert into Tourist table
-    const { data, error } = await supabase.from('tourist').insert([
-      {
-        tourist_id: userId,
-        first_name: firstName,
-        last_name: lastName,
-        profile_picture: null, // you can update this later with file upload logic
-        ethnicity,
-        gender,
-        nationality,
-        contact_number: contactNumber,
-        email,
-        created_at: new Date().toISOString(),
-        age: new Date().getFullYear() - birthdate.getFullYear(),
-      },
-    ]);
-
-    console.log('Inserted data:', data);
-    console.log('Insert error:', error);
-
-    if (error) {
-      console.error('Error inserting tourist:', error.message);
-      alert('Registration failed. Please try again.');
-    } else {
-      alert('Registration successful!');
-      router.replace('/(screens)/');
-    }
-
-    // 3. Insert into Profile table with role
-    const { data: profileData, error: profileError } = await supabase
-      .from('profile')
-      .insert([
-        {
-          id: userId,
-          role: 'tourist',
-        },
-      ]);
-
-    console.log('Inserted data:', profileData);
-    console.log('Insert error:', profileError);
   };
+
+  useEffect(() => {
+    fetchProvince();
+  }, []);
+
+  useEffect(() => {
+    if (provinceId) {
+      fetchMunicipality(provinceId);
+    }
+  }, [provinceId]);
+
+  useEffect(() => {
+    if (municipalityId) {
+      fetchBarangay(municipalityId);
+    }
+  }, [municipalityId]);
+
+  if (!fontsLoaded) return null;
+
+  // const handleTouristRegistration = async () => {
+  //   if (!firstName || !lastName || !email || !ethnicity || !birthdate) {
+  //     alert('Please fill in all required fields.');
+  //     return;
+  //   }
+
+  //   // 1. Sign up the user
+  //   const { data: signUpData, error: signUpError } = await supabase.auth.signUp(
+  //     {
+  //       email,
+  //       password,
+  //       options: {
+  //         data: {
+  //           display_name: `${firstName} ${lastName}`,
+  //         },
+  //       },
+  //     }
+  //   );
+
+  //   if (signUpError || !signUpData.user) {
+  //     alert('Account creation failed. Please try again.');
+  //     return;
+  //   }
+
+  //   const userId = signUpData.user.id;
+  //   console.log('User signed up:', signUpData.user);
+  //   console.log('User ID:', userId);
+  //   // 2. Insert into Tourist table
+  //   const { data, error } = await supabase.from('tourist').insert([
+  //     {
+  //       tourist_id: userId,
+  //       first_name: firstName,
+  //       last_name: lastName,
+  //       profile_picture: null, // you can update this later with file upload logic
+  //       ethnicity,
+  //       gender,
+  //       nationality,
+  //       contact_number: phoneNumber,
+  //       email,
+  //       created_at: new Date().toISOString(),
+  //       age: new Date().getFullYear() - birthdate.getFullYear(),
+  //     },
+  //   ]);
+
+  //   console.log('Inserted data:', data);
+  //   console.log('Insert error:', error);
+
+  //   if (error) {
+  //     console.error('Error inserting tourist:', error.message);
+  //     alert('Registration failed. Please try again.');
+  //   } else {
+  //     alert('Registration successful!');
+  //     router.replace('/(screens)/');
+  //   }
+
+  //   // 3. Insert into Profile table with role
+  //   const { data: profileData, error: profileError } = await supabase
+  //     .from('profile')
+  //     .insert([
+  //       {
+  //         id: userId,
+  //         role: 'tourist',
+  //       },
+  //     ]);
+
+  //   console.log('Inserted data:', profileData);
+  //   console.log('Insert error:', profileError);
+  // };
 
   return (
     <SafeAreaProvider>
@@ -171,7 +287,7 @@ const RegistrationPage = () => {
 
           <Text style={styles.label}>Gender</Text>
           <View style={styles.radioGroup}>
-            {['male', 'female', 'prefer not to say'].map((option) => (
+            {['Male', 'Female', 'Prefer not to say'].map((option) => (
               <TouchableOpacity
                 key={option}
                 style={[
@@ -195,7 +311,7 @@ const RegistrationPage = () => {
           <Text style={styles.label}>Birthdate</Text>
           <TouchableOpacity
             style={styles.dateInput}
-            onPress={() => setCalendarVisible(true)}
+            onPress={() => setCalendarVisible(true)} // always use calendarVisible
           >
             <MaterialCommunityIcons name="calendar" size={20} color="#888" />
             <Text style={styles.dateText}>
@@ -203,21 +319,11 @@ const RegistrationPage = () => {
             </Text>
           </TouchableOpacity>
 
-          {isDatePickerVisible && (
-            <DateTimePicker
-              value={birthdate}
-              mode="date"
-              display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-              onChange={handleDateChange}
-              maximumDate={new Date()}
-            />
-          )}
-
           <Text style={styles.label}>Contact Number</Text>
           <TextInput
             placeholder="Enter your contact number"
-            value={contactNumber}
-            onChangeText={setContactNumber}
+            value={phoneNumber}
+            onChangeText={setPhoneNumber}
             keyboardType="phone-pad"
             style={styles.input}
             placeholderTextColor="#999"
@@ -232,9 +338,51 @@ const RegistrationPage = () => {
             placeholderTextColor="#999"
           />
 
+          {/* Province Picker */}
+          <Text style={styles.label}>Province</Text>
+          <TouchableOpacity
+            style={styles.dateInput}
+            onPress={() => setProvinceVisible(true)} // always use provinceVisible
+          >
+            <Text>
+              {provinceId !== null
+                ? province.find((prov) => prov.id === provinceId)?.province ||
+                  'Select your province'
+                : 'Select your province'}
+            </Text>
+          </TouchableOpacity>
+
+          {/* Municipality Picker */}
+          <Text style={styles.label}>Municipality</Text>
+          <TouchableOpacity
+            style={styles.dateInput}
+            onPress={() => setMunicipalityVisible(true)} // always use municipalityVisible
+          >
+            <Text>
+              {municipalityId !== null
+                ? municipality.find((mun) => mun.id === municipalityId)
+                    ?.municipality || 'Select your municipality'
+                : 'Select your municipality'}
+            </Text>
+          </TouchableOpacity>
+
+          {/* Barangay Picker */}
+          <Text style={styles.label}>Barangay</Text>
+          <TouchableOpacity
+            style={styles.dateInput}
+            onPress={() => setBarangayVisible(true)} // always use barangayVisible
+          >
+            <Text>
+              {barangayId !== null
+                ? barangay.find((brgy) => brgy.id === barangayId)?.barangay ||
+                  'Select your barangay'
+                : 'Select your barangay'}
+            </Text>
+          </TouchableOpacity>
+
           <Text style={styles.label}>I am a:</Text>
           <View style={styles.radioGroup}>
-            {['tourist', 'local', 'foreign', 'overseas'].map((type) => (
+            {['Bicolano', 'Non-Bicolano', 'Foreign', 'Local'].map((type) => (
               <TouchableOpacity
                 key={type}
                 style={[
@@ -247,6 +395,29 @@ const RegistrationPage = () => {
                   style={[
                     styles.radioText,
                     ethnicity === type && styles.radioTextSelected,
+                  ]}
+                >
+                  {type.charAt(0).toUpperCase() + type.slice(1)}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          <Text style={styles.label}>Category:</Text>
+          <View style={styles.radioGroup}>
+            {['Domestic', 'Overseas'].map((type) => (
+              <TouchableOpacity
+                key={type}
+                style={[
+                  styles.radioButton,
+                  category === type && styles.radioSelected,
+                ]}
+                onPress={() => setCategory(type)}
+              >
+                <Text
+                  style={[
+                    styles.radioText,
+                    category === type && styles.radioTextSelected,
                   ]}
                 >
                   {type.charAt(0).toUpperCase() + type.slice(1)}
@@ -350,6 +521,128 @@ const RegistrationPage = () => {
               </View>
             </Modal>
           )}
+
+          {provinceVisible && (
+            <Modal
+              visible={provinceVisible}
+              transparent
+              animationType="fade"
+              onRequestClose={() => setProvinceVisible(false)}
+            >
+              <View style={styles.calendarOverlay}>
+                <View style={styles.pickerContainer}>
+                  <Text style={styles.modalTitle}>Select Province</Text>
+                  <View style={styles.separator} />
+                  <Picker
+                    selectedValue={provinceId}
+                    onValueChange={(value) => setProvinceId(value)}
+                    style={styles.picker}
+                  >
+                    <Picker.Item label="Select Province" value={null} />
+                    {province.map((prov, index) => (
+                      <Picker.Item
+                        key={index}
+                        label={prov.province}
+                        value={prov.id}
+                      />
+                    ))}
+                  </Picker>
+                  <View style={styles.calendarButtons}>
+                    <PressableButton
+                      type="primary"
+                      Title="Confirm"
+                      onPress={() => setProvinceVisible(false)}
+                      style={{ flex: 1 }}
+                      color="#fff"
+                      TextSize={12}
+                    />
+                  </View>
+                </View>
+              </View>
+            </Modal>
+          )}
+
+          {municipalityVisible && (
+            <Modal
+              visible={municipalityVisible}
+              transparent
+              animationType="fade"
+              onRequestClose={() => setMunicipalityVisible(false)}
+            >
+              <View style={styles.calendarOverlay}>
+                <View style={styles.pickerContainer}>
+                  <Text style={styles.modalTitle}>Select Municipality</Text>
+                  <View style={styles.separator} />
+                  <Picker
+                    selectedValue={municipalityId}
+                    onValueChange={(value) => setMunicipalityId(value)}
+                    style={styles.picker}
+                    enabled={!!provinceId}
+                  >
+                    <Picker.Item label="Select Municipality" value={null} />
+                    {municipality.map((mun, index) => (
+                      <Picker.Item
+                        key={index}
+                        label={mun.municipality}
+                        value={mun.id}
+                      />
+                    ))}
+                  </Picker>
+                  <View style={styles.calendarButtons}>
+                    <PressableButton
+                      type="primary"
+                      Title="Confirm"
+                      onPress={() => setMunicipalityVisible(false)}
+                      style={{ flex: 1 }}
+                      color="#fff"
+                      TextSize={12}
+                    />
+                  </View>
+                </View>
+              </View>
+            </Modal>
+          )}
+
+          {barangayVisible && (
+            <Modal
+              visible={barangayVisible}
+              transparent
+              animationType="fade"
+              onRequestClose={() => setBarangayVisible(false)}
+            >
+              <View style={styles.calendarOverlay}>
+                <View style={styles.pickerContainer}>
+                  <Text style={styles.modalTitle}>Select Barangay</Text>
+                  <View style={styles.separator} />
+                  <Picker
+                    selectedValue={barangayId}
+                    onValueChange={(value) => setBarangayId(value)}
+                    style={styles.picker}
+                    enabled={!!municipalityId}
+                  >
+                    <Picker.Item label="Select Barangay" value={null} />
+                    {barangay.map((brgy, index) => (
+                      <Picker.Item
+                        key={index}
+                        label={brgy.barangay}
+                        value={brgy.id}
+                      />
+                    ))}
+                  </Picker>
+                  <View style={styles.calendarButtons}>
+                    <PressableButton
+                      type="primary"
+                      Title="Confirm"
+                      onPress={() => setBarangayVisible(false)}
+                      style={{ flex: 1 }}
+                      color="#fff"
+                      TextSize={12}
+                    />
+                  </View>
+                </View>
+              </View>
+            </Modal>
+          )}
         </ScrollView>
       </SafeAreaView>
     </SafeAreaProvider>
@@ -359,6 +652,18 @@ const RegistrationPage = () => {
 export default RegistrationPage;
 
 const styles = StyleSheet.create({
+  pickerContainer: {
+    backgroundColor: '#F9F9F9',
+    padding: 16,
+    borderRadius: 10,
+    borderWidth: 1,
+    marginBottom: 10,
+    width: '90%',
+    elevation: 5,
+    display: 'flex',
+  },
+  picker: { backgroundColor: '#eee', marginBottom: 15 },
+
   container: {
     flex: 1,
     paddingHorizontal: 16,
@@ -402,8 +707,8 @@ const styles = StyleSheet.create({
   input: {
     backgroundColor: '#F9F9F9',
     borderRadius: 10,
-    paddingHorizontal: 16,
-    paddingVertical: 16,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
     fontSize: 14,
     borderColor: '#ddd',
     borderWidth: 1,

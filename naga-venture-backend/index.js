@@ -4,6 +4,7 @@ import "dotenv/config";
 
 import userRoutes from "./routes/users.js";
 import businessRoutes from "./routes/business.js";
+import businessHoursRoutes from "./routes/business_hours.js";
 import addressRoutes from "./routes/address.js";
 import touristRoutes from "./routes/tourist.js";
 import tourismRoutes from "./routes/tourism.js";
@@ -24,6 +25,7 @@ const PORT = 3000;
 const routes = [
   { path: "/api/users", handler: userRoutes },
   { path: "/api/business", handler: businessRoutes },
+  { path: "/api/business-hours", handler: businessHoursRoutes },
   { path: "/api/tourist", handler: touristRoutes },
   { path: "/api/tourism", handler: tourismRoutes },
   { path: "/api/owner", handler: ownerRoutes },
