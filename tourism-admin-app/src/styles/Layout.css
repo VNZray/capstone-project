@@ -18,8 +18,11 @@
   flex: 1;
   padding: 1.5rem;
   background-color: var(--off-white);
-  overflow: scroll;
+  /* Only show vertical scrollbar when needed */
+  overflow-y: auto;
   overflow-x: hidden;
+  scrollbar-gutter: stable; /* prevent layout shift when scrollbar appears */
+  -webkit-overflow-scrolling: touch;
 
 }
 

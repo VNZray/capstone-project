@@ -16,8 +16,12 @@ import {
 import "./styles/Sidebar.css";
 import Text from "./Text";
 import logo from "@/src/assets/images/light-logo.png";
+import { useAuth } from "@/src/context/AuthContext";
+import { LogOut } from 'lucide-react';
 
 export default function Sidebar(): React.ReactElement {
+  const { logout } = useAuth();
+  const handleLogout = () => logout();
   return (
     <aside className="sidebar">
       <nav className="sidebar-nav">
@@ -65,6 +69,12 @@ export default function Sidebar(): React.ReactElement {
         <NavItem to="/reports" label="Reports" icon={<BarChart size={18} />} />
         <NavItem to="/profile" label="Profile" icon={<User size={18} />} />
       </nav>
+      <div className="sidebar-logout-container">
+        <button className="sidebar-logout-btn" onClick={handleLogout}>
+          <LogOut size={16} />
+          <span>Logout</span>
+        </button>
+      </div>
     </aside>
   );
 }

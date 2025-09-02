@@ -73,6 +73,13 @@ export const BusinessForm: React.FC<BusinessFormProps> = ({ open, mode, initial,
   const [submitting, setSubmitting] = React.useState(false);
   const [step, setStep] = React.useState<number>(1);
 
+  // Always start at step 1 whenever the dialog is opened for create or edit (no step persistence across openings)
+  React.useEffect(() => {
+    if (open) {
+      setStep(1);
+    }
+  }, [open, mode, initial?.id]);
+
   // Load types & provinces on open and auto-select Shop type for create mode
   React.useEffect(() => {
     if (!open) return;
@@ -180,7 +187,8 @@ export const BusinessForm: React.FC<BusinessFormProps> = ({ open, mode, initial,
     setErrors((prev) => ({ ...prev, [key]: '' }));
   };
 
-  const validate = (): boolean => {
+  // Full-form validation (all steps)
+  const validate = React.useCallback((): boolean => {
     const next: Record<string, string> = {};
     if (!form.business_name.trim()) next.business_name = 'Required';
     if (!form.email.trim()) next.email = 'Required';
@@ -192,22 +200,21 @@ export const BusinessForm: React.FC<BusinessFormProps> = ({ open, mode, initial,
     if (!form.municipality_id) next.municipality_id = 'Select municipality';
     if (!form.barangay_id) next.barangay_id = 'Select barangay';
     if (!form.address.trim()) next.address = 'Required';
-  if (!form.latitude.trim()) next.latitude = 'Pin location';
-  if (!form.longitude.trim()) next.longitude = 'Pin location';
+    if (!form.latitude.trim()) next.latitude = 'Required';
+    if (!form.longitude.trim()) next.longitude = 'Required';
     if (!form.min_price.trim()) next.min_price = 'Required';
     if (!form.max_price.trim()) next.max_price = 'Required';
     const minVal = parseFloat(form.min_price);
     const maxVal = parseFloat(form.max_price);
     if (form.min_price && isNaN(minVal)) next.min_price = 'Invalid';
     if (form.max_price && isNaN(maxVal)) next.max_price = 'Invalid';
-    if (!next.min_price && !next.max_price && !isNaN(minVal) && !isNaN(maxVal) && minVal > maxVal) {
-      next.max_price = 'Must be ≥ Min';
-    }
+    if (!next.min_price && !next.max_price && !isNaN(minVal) && !isNaN(maxVal) && minVal > maxVal) next.max_price = 'Must be ≥ Min';
     setErrors(next);
     return Object.keys(next).length === 0;
-  };
+  }, [form]);
 
-  const validateStep = (s: number): boolean => {
+  // Step-specific validation for navigation
+  const validateStep = React.useCallback((s: number): boolean => {
     const next: Record<string, string> = {};
     if (s === 1) {
       if (!form.business_name.trim()) next.business_name = 'Required';
@@ -222,9 +229,7 @@ export const BusinessForm: React.FC<BusinessFormProps> = ({ open, mode, initial,
       const maxVal = parseFloat(form.max_price);
       if (form.min_price && isNaN(minVal)) next.min_price = 'Invalid';
       if (form.max_price && isNaN(maxVal)) next.max_price = 'Invalid';
-      if (!next.min_price && !next.max_price && !isNaN(minVal) && !isNaN(maxVal) && minVal > maxVal) {
-        next.max_price = 'Must be ≥ Min';
-      }
+      if (!next.min_price && !next.max_price && !isNaN(minVal) && !isNaN(maxVal) && minVal > maxVal) next.max_price = 'Must be ≥ Min';
     } else if (s === 2) {
       if (!form.province_id) next.province_id = 'Select province';
       if (!form.municipality_id) next.municipality_id = 'Select municipality';
@@ -235,9 +240,10 @@ export const BusinessForm: React.FC<BusinessFormProps> = ({ open, mode, initial,
     }
     setErrors(next);
     return Object.keys(next).length === 0;
-  };
+  }, [form]);
 
-  const handleSubmit = async () => {
+
+  const handleSubmit = React.useCallback(async () => {
     if (!validate()) return;
     setSubmitting(true);
     try {
@@ -282,7 +288,7 @@ export const BusinessForm: React.FC<BusinessFormProps> = ({ open, mode, initial,
     } finally {
       setSubmitting(false);
     }
-  };
+  }, [validate, form, mode, initial, provinceOptions, municipalityOptions, barangayOptions, onSaved, showToast]);
 
   // Single image upload to Supabase storage bucket "business-profile" (same as business-app convention)
   const handleImageFile = async (file: File) => {
@@ -325,6 +331,21 @@ export const BusinessForm: React.FC<BusinessFormProps> = ({ open, mode, initial,
 
   const handleBack = () => setStep((s) => Math.max(1, s - 1));
 
+  // Keyboard shortcut: Ctrl/Cmd+S to save immediately (validate all) in edit mode
+  React.useEffect(() => {
+    if (!open) return;
+    const handler = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
+        e.preventDefault();
+        if (mode === 'edit' && !submitting) {
+          handleSubmit();
+        }
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [open, mode, submitting, handleSubmit]);
+
   return (
     <Modal open={open} onClose={onClose}>
       <ModalDialog sx={{ 
@@ -344,17 +365,32 @@ export const BusinessForm: React.FC<BusinessFormProps> = ({ open, mode, initial,
           display: 'flex', 
           alignItems: 'center', 
           justifyContent: 'space-between',
+          gap: 2,
           pb: 2,
           borderBottom: '1px solid',
           borderColor: 'divider',
           bgcolor: 'background.surface'
         }}>
-          <Typography level="h4" component="span" sx={{ fontWeight: 700, color: 'text.primary' }}>
-            {mode === 'create' ? 'Add New Shop' : 'Edit Shop'}
-          </Typography>
-          <Typography level="body-sm" sx={{ color: 'text.tertiary', fontWeight: 500 }}>
-            Step {step} of 6
-          </Typography>
+          <Stack direction="row" gap={2} alignItems="center" sx={{ minWidth: 0 }}>
+            <Typography level="h4" component="span" sx={{ fontWeight: 700, color: 'text.primary', whiteSpace: 'nowrap' }}>
+              {mode === 'create' ? 'Add New Shop' : 'Edit Shop'}
+            </Typography>
+            <Typography level="body-sm" sx={{ color: 'text.tertiary', fontWeight: 500 }}>
+              Step {step} of 6
+            </Typography>
+          </Stack>
+          {mode === 'edit' && (
+            <Button 
+              size="sm" 
+              variant="solid" 
+              color="primary" 
+              onClick={handleSubmit}
+              loading={submitting}
+              sx={{ fontWeight: 600 }}
+            >
+              Save
+            </Button>
+          )}
         </DialogTitle>
         <DialogContent sx={{ 
           display: 'flex', 
@@ -987,6 +1023,17 @@ export const BusinessForm: React.FC<BusinessFormProps> = ({ open, mode, initial,
                       sx={{ fontWeight: 600, minWidth: 120 }}
                     >
                       {mode === 'create' ? 'Create Shop' : 'Save Changes'}
+                    </Button>
+                  )}
+                  {mode === 'edit' && step < 6 && (
+                    <Button 
+                      variant="solid"
+                      color="primary"
+                      loading={submitting}
+                      onClick={handleSubmit}
+                      sx={{ fontWeight: 600 }}
+                    >
+                      Save
                     </Button>
                   )}
                 </Stack>

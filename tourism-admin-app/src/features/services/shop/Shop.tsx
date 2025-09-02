@@ -1,12 +1,19 @@
 import * as React from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Sheet, Typography, Stack, Input, Select, Option, Button } from '@mui/joy';
+import { Sheet, Typography, Stack, Input, Select, Option, Button, IconButton, Chip, Box, Tooltip } from '@mui/joy';
+import TableViewIcon from '@mui/icons-material/TableView';
+import GridViewIcon from '@mui/icons-material/GridView';
+import RefreshIcon from '@mui/icons-material/Refresh';
+import AddIcon from '@mui/icons-material/Add';
+import SearchIcon from '@mui/icons-material/Search';
+import FilterAltIcon from '@mui/icons-material/FilterAlt';
 import { useToast } from '@/src/context/useToast';
 import { BusinessService } from '@/src/services/BusinessService';
 import type { BusinessListItem, BusinessFilters, BusinessStatus } from '@/src/types/Business';
 import BusinessTable from '@/src/components/shops/BusinessTable';
 import BusinessForm from '@/src/components/shops/BusinessForm';
 import BusinessDetailsModal from '@/src/components/shops/BusinessDetailsModal';
+import BusinessCards from '@/src/components/shops/BusinessCards';
 
 const PAGE_SIZE = 10;
 
@@ -25,6 +32,20 @@ const Shop: React.FC = () => {
   const [viewing, setViewing] = useState<BusinessListItem | null>(null);
   const [viewOpen, setViewOpen] = useState(false);
   const { showToast } = useToast();
+  const VIEW_MODE_KEY = 'shops_view_mode';
+  const [viewMode, setViewMode] = useState<'table' | 'cards'>(() => {
+    try {
+      const saved = typeof window !== 'undefined' ? localStorage.getItem(VIEW_MODE_KEY) : null;
+      return saved === 'cards' ? 'cards' : 'table';
+    } catch {
+      return 'table';
+    }
+  });
+
+  // Persist view mode changes
+  useEffect(() => {
+    try { localStorage.setItem(VIEW_MODE_KEY, viewMode); } catch { /* ignore */ }
+  }, [viewMode]);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -89,30 +110,61 @@ const Shop: React.FC = () => {
   };
 
   return (
-    <Stack gap={2} sx={{ p: 2 }}>
-      <Typography level="h3" fontWeight={600}>Shops</Typography>
+    <Stack gap={3} sx={{ p: { xs: 2, md: 3 } }}>
+      {/* Header */}
+      <Stack direction="row" justifyContent="space-between" alignItems="center" flexWrap="wrap" gap={2}>
+        <Stack gap={0.5}>
+          <Typography level="h3" fontWeight={700}>Shops</Typography>
+          <Typography level="body-sm" sx={{ color: 'text.tertiary' }}>Manage and review registered shops</Typography>
+        </Stack>
+        <Stack direction="row" gap={1}>
+          <Tooltip title={viewMode === 'table' ? 'Card view' : 'Table view'}>
+            <IconButton size="sm" variant="outlined" onClick={() => setViewMode(v => v === 'table' ? 'cards' : 'table')}>
+              {viewMode === 'table' ? <GridViewIcon fontSize="small" /> : <TableViewIcon fontSize="small" />}
+            </IconButton>
+          </Tooltip>
+          <Button size="sm" startDecorator={<AddIcon />} onClick={() => setCreateOpen(true)} sx={{ fontWeight: 600 }}>Add Shop</Button>
+        </Stack>
+      </Stack>
 
-      <Sheet variant="plain" sx={{ p: 2, borderRadius: 8, display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'center' }}>
+      {/* Quick stats */}
+      <Stack direction="row" gap={1.5} flexWrap="wrap">
+        {statusOptions.filter(s => s !== 'All').map(s => {
+          const count = businesses.filter(b => b.status === s).length;
+          return (
+            <Chip key={s} size="sm" variant="soft" color={s === 'Active' ? 'success' : s === 'Pending' ? 'warning' : s === 'Maintenance' ? 'danger' : 'neutral'}>
+              {s}: {count}
+            </Chip>
+          );
+        })}
+        <Chip size="sm" variant="outlined">Total: {businesses.length}</Chip>
+      </Stack>
+
+      {/* Toolbar */}
+      <Sheet variant="outlined" sx={{ p: 2, borderRadius: 12, display: 'flex', gap: 1.5, flexWrap: 'wrap', alignItems: 'center', bgcolor: 'background.surface' }}>
         <Input
           placeholder="Search shops..."
           value={filters.q || ''}
           onChange={handleSearchChange}
-          sx={{ width: 260 }}
+          startDecorator={<SearchIcon sx={{ color: 'text.tertiary' }} />}
+          sx={{ width: { xs: '100%', sm: 260 } }}
           size="sm"
         />
         <Select
           size="sm"
           placeholder="Status"
-            value={(filters.status as string) || 'All'}
+          value={(filters.status as string) || 'All'}
           onChange={handleStatusChange}
-          sx={{ width: 180 }}
+          startDecorator={<FilterAltIcon />}
+          sx={{ width: { xs: '100%', sm: 180 } }}
         >
           {statusOptions.map((s) => (
             <Option key={s} value={s}>{s}</Option>
           ))}
         </Select>
-        <Button size="sm" variant="soft" onClick={handleRefresh}>Refresh</Button>
-  <Button size="sm" variant="solid" color="primary" onClick={() => setCreateOpen(true)}>Add Shop</Button>
+        <IconButton size="sm" variant="outlined" onClick={handleRefresh}><RefreshIcon fontSize="small" /></IconButton>
+        <Box sx={{ flexGrow: 1 }} />
+        <Typography level="body-xs" sx={{ color: 'text.tertiary' }}>Showing {(businesses.length)} result(s)</Typography>
       </Sheet>
 
       {error && (
@@ -121,18 +173,28 @@ const Shop: React.FC = () => {
         </Sheet>
       )}
 
-      <BusinessTable
-        rows={businesses}
-        loading={loading}
-        onView={handleView}
-        onEdit={handleEdit}
-        onDelete={handleDelete}
-      />
+      {viewMode === 'table' ? (
+        <BusinessTable
+          rows={businesses}
+          loading={loading}
+          onView={handleView}
+          onEdit={handleEdit}
+          onDelete={handleDelete}
+        />
+      ) : (
+        <BusinessCards
+          items={businesses}
+          loading={loading}
+          onView={handleView}
+          onEdit={handleEdit}
+          onDelete={handleDelete}
+        />
+      )}
 
       <Stack direction="row" justifyContent="flex-end" alignItems="center" gap={1} sx={{ mt: 1 }}>
-        <Button size="sm" variant="plain" disabled={page === 1} onClick={() => setPage((p) => Math.max(1, p - 1))}>Prev</Button>
-        <Typography level="body-sm">Page {page} / {totalPages}</Typography>
-        <Button size="sm" variant="plain" disabled={page === totalPages} onClick={() => setPage((p) => Math.min(totalPages, p + 1))}>Next</Button>
+        <Button size="sm" variant="outlined" disabled={page === 1} onClick={() => setPage((p) => Math.max(1, p - 1))}>Prev</Button>
+        <Typography level="body-sm" sx={{ px: 1 }}>Page {page} / {totalPages}</Typography>
+        <Button size="sm" variant="outlined" disabled={page === totalPages} onClick={() => setPage((p) => Math.min(totalPages, p + 1))}>Next</Button>
       </Stack>
 
       <BusinessForm
