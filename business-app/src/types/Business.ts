@@ -21,10 +21,10 @@ export type Business = {
   max_price: string;
   owner_id: string;
   status: string;
-  business_image: string;  
+  business_image: string;
   hasBooking: boolean;
 };
- 
+
 export type Room = {
   id: string;
   room_number: string;
@@ -36,4 +36,13 @@ export type Room = {
   status: string;
   room_image: string;
   floor: string;
+};
+
+export type BusinessHours = {
+  id?: number;
+  business_id: string;
+  day_of_week: string;
+  open_time: string;
+  close_time: string;
+  is_open: boolean;
 };

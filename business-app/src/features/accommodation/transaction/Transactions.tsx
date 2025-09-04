@@ -64,6 +64,16 @@ const columns: readonly Column[] = [
   { id: "status", label: "Status", minWidth: 120 },
 ];
 
+// format date
+const formatDate = (dateString: string) => {
+  const options: Intl.DateTimeFormatOptions = {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  };
+  return new Date(dateString).toLocaleDateString("en-US", options);
+};
+
 // Dummy transaction data
 const transactionData = [
   {
@@ -303,7 +313,7 @@ const Transactions = () => {
                         <TableCell>{row.payment_type}</TableCell>
                         <TableCell>{row.payment_method}</TableCell>
                         <TableCell>{row.payment_for}</TableCell>
-                        <TableCell>{row.transaction_date}</TableCell>
+                        <TableCell>{formatDate(row.transaction_date)}</TableCell>
                         <TableCell align="right">
                           ₱{row.amount.toLocaleString()}
                         </TableCell>

@@ -3,7 +3,6 @@ export type Tourist = {
   first_name: string;
   middle_name?: string;
   last_name: string;
-  profile_picture?: string;
   ethnicity?: string;
   age?: number;
   gender?: string;
@@ -11,7 +10,10 @@ export type Tourist = {
   category?: string;
   contact_number?: string;
   email?: string;
-  created_at?: string; // ISO timestamp
+  province_id?: number;
+  municipality_id?: number;
+  barangay_id?: number;
+  created_at?: string;
 };
 
 export type Owner = {

@@ -17,7 +17,7 @@ interface User {
 }
 
 // const API_URL = 'http://192.168.1.8:3000/api';
-const API_URL = "http://192.168.1.2:3000/api";
+const API_URL = "http://192.168.1.11:3000/api";
 
 
 interface AuthContextType {

@@ -11,7 +11,6 @@ import {
   User,
   LogOut,
   LayoutDashboard,
-  ConciergeBell, // amenities icon
 } from "lucide-react";
 import "./styles/Sidebar.css";
 import { useBusiness } from "../context/BusinessContext";
@@ -63,15 +62,6 @@ export default function Sidebar(): React.ReactElement {
               label="Manage Offers"
               icon={<Tags size={18} />}
             />
-          )}
-          {businessDetails?.business_type_id === 1 ? (
-            <NavItem
-              to="/amenities"
-              label="Amenities"
-              icon={<ConciergeBell size={18} />}
-            />
-          ) : (
-            null
           )}
           <NavItem
             to="/manage-promotion"

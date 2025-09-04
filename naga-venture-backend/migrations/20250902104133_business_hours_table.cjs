@@ -1,0 +1,26 @@
+exports.up = function (knex) {
+  return knex.schema.createTable("business_hours", function (table) {
+    table.increments("id").primary();
+    table
+      .uuid("business_id")
+      .notNullable()
+      .references("id")
+      .inTable("business")
+      .onDelete("CASCADE");
+    table.text("day_of_week").notNullable();
+    table.time("open_time").nullable();
+    table.time("close_time").nullable();
+    table.boolean("is_open").defaultTo(true);
+    table.timestamp("created_at").defaultTo(knex.fn.now());
+    table
+      .timestamp("updated_at")
+      .defaultTo(knex.raw("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"));
+
+    // indexes
+    table.index("business_id", "idx_business");
+  });
+};
+
+exports.down = function (knex) {
+  return knex.schema.dropTableIfExists("business_hours");
+};
