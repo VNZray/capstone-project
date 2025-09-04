@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import CardHeader from "@/src/components/CardHeader";
-import type { Business } from "@/src/types/Business";
+import type { Business, BusinessHours } from "@/src/types/Business";
 import { useBusinessBasics } from "@/src/hooks/useBusinessData";
 import { supabase } from "@/src/utils/supabase";
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
@@ -13,27 +13,38 @@ import {
   Textarea,
   Button,
   FormLabel,
+  Typography,
 } from "@mui/joy";
 import Container from "@/src/components/Container";
-import { Sheet, SheetIcon, UploadIcon } from "lucide-react";
-import { ToggleButton, ToggleButtonGroup } from "@mui/material";
+import { UploadIcon } from "lucide-react";
+import { Switch, ToggleButton, ToggleButtonGroup } from "@mui/material";
 import HotelIcon from "@mui/icons-material/Hotel";
 import StoreIcon from "@mui/icons-material/Store";
+import AccessTimeIcon from "@mui/icons-material/AccessTime";
 import Text from "@/src/components/Text";
-import Label from "@/src/components/Label";
 type Props = {
   data: Business;
   setData: React.Dispatch<React.SetStateAction<Business>>;
   api: string;
+  businessHours: BusinessHours[];
+  setBusinessHours: React.Dispatch<React.SetStateAction<BusinessHours[]>>;
 };
 
-const Step1: React.FC<Props> = ({ api, data, setData }) => {
+const Step1: React.FC<Props> = ({
+  api,
+  data,
+  setData,
+  businessHours,
+  setBusinessHours,
+}) => {
   const {
     businessCategories,
     businessTypes,
     setSelectedType,
     handleImageChange,
   } = useBusinessBasics(api, data, setData);
+
+  const [checked, setChecked] = React.useState(false);
 
   // Upload immediately after selecting an image
   const handleImageSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -195,6 +206,69 @@ const Step1: React.FC<Props> = ({ api, data, setData }) => {
                     }))
                   }
                 />
+              </FormControl>
+
+              <FormControl>
+                <FormLabel>Business Hours</FormLabel>
+
+                {businessHours.map((hour, index) => (
+                  <Container
+                    key={hour.id}
+                    padding="12px 0"
+                    align="center"
+                    direction="row"
+                    style={{ gap: "12px" }}
+                  >
+                    <Typography level="body-sm" style={{ width: "80px" }}>
+                      {hour.day_of_week}
+                    </Typography>
+
+                    <Input
+                      size="md"
+                      type="time"
+                      value={hour.open_time}
+                      readOnly={!hour.is_open}
+                      onChange={(e) => {
+                        const newTime = e.target.value;
+                        setBusinessHours((prev) =>
+                          prev.map((h, i) =>
+                            i === index ? { ...h, open_time: newTime } : h
+                          )
+                        );
+                      }}
+                    />
+
+                    <Input
+                      size="md"
+                      type="time"
+                      value={hour.close_time}
+                      readOnly={!hour.is_open}
+                      onChange={(e) => {
+                        const newTime = e.target.value;
+                        setBusinessHours((prev) =>
+                          prev.map((h, i) =>
+                            i === index ? { ...h, close_time: newTime } : h
+                          )
+                        );
+                      }}
+                    />
+
+                    <Typography level="body-sm">
+                      {hour.is_open ? "Open" : "Closed"}
+                    </Typography>
+                    <Switch
+                      checked={hour.is_open}
+                      onChange={(e) => {
+                        const checked = e.target.checked;
+                        setBusinessHours((prev) =>
+                          prev.map((h, i) =>
+                            i === index ? { ...h, is_open: checked } : h
+                          )
+                        );
+                      }}
+                    />
+                  </Container>
+                ))}
               </FormControl>
             </Container>
           </Grid>

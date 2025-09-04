@@ -70,7 +70,7 @@ const Step4: React.FC<Props> = ({
                     placeholder={`https://${platform.toLowerCase()}.com/yourpage`}
                     sx={{
                       borderRadius: "12px",
-                      "& input": { pl: 1 }, // space after icon
+                      "& input": { pl: 1 },
                     }}
                   />
                 </FormControl>

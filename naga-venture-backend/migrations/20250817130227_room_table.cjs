@@ -13,6 +13,7 @@ exports.up = function (knex) {
     table.text("description").nullable();
     table.float("room_price").notNullable();
     table.string("room_image", 255).nullable();
+    table.integer("floor").notNullable();
     table
       .enum("status", ["Available", "Occupied", "Maintenance", "Reserved"])
       .notNullable();

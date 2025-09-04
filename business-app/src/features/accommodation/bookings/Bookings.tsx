@@ -183,6 +183,16 @@ const Bookings = () => {
   const [selectedMonth, setSelectedMonth] = useState<number | "all">("all");
   const [selectedYear, setSelectedYear] = useState<number | "all">("all");
 
+  // format date
+  const formatDate = (dateString: string) => {
+    const options: Intl.DateTimeFormatOptions = {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    };
+    return new Date(dateString).toLocaleDateString("en-US", options);
+  };
+
   // Extract available years from bookingData
   const years = Array.from(
     new Set(bookingData.map((row) => new Date(row.check_in_date).getFullYear()))
@@ -449,8 +459,8 @@ const Bookings = () => {
                         <TableCell>Guest #{row.id}</TableCell>
                         <TableCell align="center">{row.pax}</TableCell>
                         <TableCell>{row.trip_purpose}</TableCell>
-                        <TableCell>{row.check_in_date}</TableCell>
-                        <TableCell>{row.check_out_date}</TableCell>
+                        <TableCell>{formatDate(row.check_in_date)}</TableCell>
+                        <TableCell>{formatDate(row.check_out_date)}</TableCell>
                         <TableCell align="right">
                           ₱{row.total_price.toLocaleString()}
                         </TableCell>
