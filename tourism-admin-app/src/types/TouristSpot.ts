@@ -13,15 +13,15 @@ export interface TouristSpot {
   entry_fee: number | null;
   spot_status: 'pending' | 'active' | 'inactive';
   is_featured: boolean;
-  category: string;
+  categories: Category[];
   type: string;
-  category_id: number;
   type_id: number;
   created_at: string;
   updated_at: string;
   province: string;
   municipality: string;
   barangay: string;
+  images?: TouristSpotImage[];
 }
 
 export interface Province {
@@ -73,7 +73,7 @@ export interface TouristSpotFormData {
   contact_email: string;
   website: string;
   entry_fee: string;
-  category_id: string;
+  category_ids: number[];
   type_id: string;
   spot_status: "" | "pending" | "active" | "inactive";
 }
@@ -91,6 +91,18 @@ export interface DaySchedule {
 }
 
 // Image-related types
+export interface TouristSpotImage {
+  id: string;
+  tourist_spot_id: string;
+  file_url: string;
+  file_format: string;
+  file_size: number | null;
+  is_primary: boolean;
+  alt_text: string | null;
+  uploaded_at: string;
+  updated_at?: string;
+}
+
 export interface PendingImage {
   id: string;
   file: File;

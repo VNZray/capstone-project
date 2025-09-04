@@ -55,7 +55,7 @@ const TouristSpotForm: React.FC<TouristSpotFormProps> = ({
     contact_email: "",
     website: "",
     entry_fee: "",
-    category_id: "",
+    category_ids: [],
     type_id: "4",
     spot_status: "" as "" | "pending" | "active" | "inactive",
   });
@@ -158,11 +158,10 @@ const TouristSpotForm: React.FC<TouristSpotFormProps> = ({
     [barangayOptions, formData.barangay_id]
   );
   
-  const selectedCategory = useMemo<FormOption | null>(
-    () =>
-      categoryOptions.find((o) => o.id === Number(formData.category_id)) ??
-      null,
-    [categoryOptions, formData.category_id]
+  const selectedCategories = useMemo<FormOption[]>(
+    () => 
+      categoryOptions.filter((o) => formData.category_ids.includes(o.id)),
+    [categoryOptions, formData.category_ids]
   );
 
   useEffect(() => {
@@ -179,7 +178,7 @@ const TouristSpotForm: React.FC<TouristSpotFormProps> = ({
         contact_email: initialData.contact_email || "",
         website: initialData.website || "",
         entry_fee: initialData.entry_fee?.toString() || "",
-        category_id: initialData.category_id.toString(),
+        category_ids: initialData.categories ? initialData.categories.map(c => c.id) : [],
         type_id: initialData.type_id.toString(),
         spot_status:
           (initialData.spot_status as "pending" | "active" | "inactive") || "",
@@ -217,7 +216,7 @@ const TouristSpotForm: React.FC<TouristSpotFormProps> = ({
         contact_email: "",
         website: "",
         entry_fee: "",
-        category_id: "",
+        category_ids: [],
         type_id: "4",
         spot_status: "" as "" | "pending" | "active" | "inactive",
       });
@@ -267,14 +266,14 @@ const TouristSpotForm: React.FC<TouristSpotFormProps> = ({
     e.preventDefault();
     setLoading(true);
     try {
-      const spotData: Partial<TouristSpot> = {
+      const spotData: Record<string, unknown> = {
         name: formData.name,
         description: formData.description,
         province_id: parseInt(formData.province_id),
         municipality_id: parseInt(formData.municipality_id),
         barangay_id: parseInt(formData.barangay_id),
         contact_phone: formData.contact_phone,
-        category_id: parseInt(formData.category_id),
+        category_ids: formData.category_ids,
         type_id: parseInt(formData.type_id) || 4,
         ...(formData.latitude
           ? { latitude: parseFloat(formData.latitude) }
@@ -311,7 +310,7 @@ const TouristSpotForm: React.FC<TouristSpotFormProps> = ({
             await uploadPendingImages(
               response.data.id.toString(), 
               pendingImages,
-              selectedCategory?.label,
+              selectedCategories.map(c => c.label).join(', ') || 'uncategorized',
               formData.name
             );
             alert("Spot added successfully with images!");
@@ -329,26 +328,34 @@ const TouristSpotForm: React.FC<TouristSpotFormProps> = ({
         // Check what has changed to determine if approval is needed
         const coreFieldsChanged = await hasSignificantChanges(spotData, initialData);
         
+        // Check if only categories have changed
+        const currentCategories = initialData.categories?.map(c => c.id).sort() || [];
+        const newCategories = (formData.category_ids || []).sort();
+        const categoriesChanged = JSON.stringify(currentCategories) !== JSON.stringify(newCategories);
+        
         // Check if schedules have changed
         const currentSchedules = await apiService.getTouristSpotSchedules(initialData.id);
         const schedulesChanged = hasScheduleChanges(mappedSchedules, currentSchedules);
         
         // If nothing has changed, inform the user
-        if (!coreFieldsChanged && !schedulesChanged) {
+        if (!coreFieldsChanged && !categoriesChanged && !schedulesChanged) {
           alert("No changes detected. Nothing to update.");
           handleClose();
           return;
         }
         
-        if (coreFieldsChanged) {
-          await apiService.submitEditRequest(initialData.id, {
+        if (coreFieldsChanged || (categoriesChanged && !coreFieldsChanged)) {
+          const submitData = {
             ...spotData,
             ...(formData.spot_status
               ? {
                   spot_status: formData.spot_status as "active" | "inactive",
                 }
               : {}),
-          });
+            ...(categoriesChanged && !coreFieldsChanged ? { categories_only: true } : {})
+          };
+          
+          await apiService.submitEditRequest(initialData.id, submitData);
         }
         
         if (schedulesChanged) {
@@ -356,10 +363,18 @@ const TouristSpotForm: React.FC<TouristSpotFormProps> = ({
         }
         
         // Show appropriate success message
-        if (coreFieldsChanged && schedulesChanged) {
-          alert("Core information changes submitted for approval! Schedule updates have been applied immediately.");
-        } else if (coreFieldsChanged) {
-          alert("Changes submitted for approval!");
+        if ((coreFieldsChanged || categoriesChanged) && schedulesChanged) {
+          if (categoriesChanged && !coreFieldsChanged) {
+            alert("Categories updated successfully! Schedule updates have been applied immediately.");
+          } else {
+            alert("Core information changes submitted for approval! Schedule updates have been applied immediately.");
+          }
+        } else if (coreFieldsChanged || categoriesChanged) {
+          if (categoriesChanged && !coreFieldsChanged) {
+            alert("Categories updated successfully!");
+          } else {
+            alert("Changes submitted for approval!");
+          }
         } else if (schedulesChanged) {
           alert("Updated successfully!");
         }
@@ -401,7 +416,7 @@ const TouristSpotForm: React.FC<TouristSpotFormProps> = ({
       
       const significantFields = [
         'name', 'description', 'province_id', 'municipality_id', 'barangay_id',
-        'contact_phone', 'contact_email', 'website', 'entry_fee', 'category_id', 'type_id',
+        'contact_phone', 'contact_email', 'website', 'entry_fee', 'type_id',
         'latitude', 'longitude'
       ];
       
@@ -439,7 +454,7 @@ const TouristSpotForm: React.FC<TouristSpotFormProps> = ({
           <BasicInfoStep
             formData={formData}
             categoryOptions={categoryOptions}
-            selectedCategory={selectedCategory}
+            selectedCategories={selectedCategories}
             onInputChange={handleInputChange}
             onFormDataChange={handleFormDataChange}
           />
@@ -491,7 +506,7 @@ const TouristSpotForm: React.FC<TouristSpotFormProps> = ({
           <ReviewStep
             mode={mode}
             formData={formData}
-            selectedCategory={selectedCategory}
+            selectedCategories={selectedCategories}
             selectedProvince={selectedProvince}
             selectedMunicipality={selectedMunicipality}
             selectedBarangay={selectedBarangay}
@@ -517,7 +532,7 @@ const TouristSpotForm: React.FC<TouristSpotFormProps> = ({
   const canProceedToNext = () => {
     switch (currentStep) {
       case 0: // Basic Info
-        return formData.name && formData.description && formData.category_id;
+        return formData.name && formData.description && formData.category_ids.length > 0;
       case 1: // Location
         return formData.province_id && formData.municipality_id && formData.barangay_id;
       case 2: // Socials
@@ -533,7 +548,7 @@ const TouristSpotForm: React.FC<TouristSpotFormProps> = ({
 
   const canAccessStep = (step: number) => {
     if (step === 0) return true;
-    if (step === 1) return !!(formData.name && formData.description && formData.category_id);
+    if (step === 1) return !!(formData.name && formData.description && formData.category_ids.length > 0);
     if (step === 2) return !!(formData.province_id && formData.municipality_id && formData.barangay_id);
     return true
   };

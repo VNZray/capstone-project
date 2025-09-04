@@ -213,3 +213,29 @@ export const updateTouristSpotImage = async (
     throw error;
   }
 };
+
+// ===== TOURIST SPOT CATEGORY FUNCTIONS =====
+
+// Get categories for a tourist spot
+export const getTouristSpotCategories = async (touristSpotId: string) => {
+  try {
+    const response = await axios.get(`${api}/tourist-spots/${touristSpotId}/categories`);
+    return response.data.data || [];
+  } catch (error) {
+    console.error("Get tourist spot categories failed:", error);
+    throw error;
+  }
+};
+
+// Update categories for a tourist spot
+export const updateTouristSpotCategories = async (touristSpotId: string, categoryIds: number[]) => {
+  try {
+    const response = await axios.put(`${api}/tourist-spots/${touristSpotId}/categories`, {
+      category_ids: categoryIds
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Update tourist spot categories failed:", error);
+    throw error;
+  }
+};

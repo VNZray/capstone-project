@@ -8,13 +8,15 @@ import {
   Textarea,
   Autocomplete,
   Grid,
+  Chip,
+  Box,
 } from "@mui/joy";
 import type { FormOption, TouristSpotFormData } from "../../../types/TouristSpot";
 
 interface BasicInfoStepProps {
   formData: TouristSpotFormData;
   categoryOptions: FormOption[];
-  selectedCategory: FormOption | null;
+  selectedCategories: FormOption[];
   onInputChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
   onFormDataChange: (updater: (prev: TouristSpotFormData) => TouristSpotFormData) => void;
 }
@@ -22,7 +24,7 @@ interface BasicInfoStepProps {
 const BasicInfoStep: React.FC<BasicInfoStepProps> = ({
   formData,
   categoryOptions,
-  selectedCategory,
+  selectedCategories,
   onInputChange,
   onFormDataChange,
 }) => {
@@ -57,21 +59,36 @@ const BasicInfoStep: React.FC<BasicInfoStepProps> = ({
 
         <Grid xs={12}>
           <FormControl required>
-            <FormLabel>Category</FormLabel>
-            <Autocomplete<FormOption>
+            <FormLabel>Categories</FormLabel>
+            <Autocomplete<FormOption, true>
+              multiple
               options={categoryOptions}
-              value={selectedCategory}
+              value={selectedCategories}
               isOptionEqualToValue={(a, b) => a?.id === b?.id}
               getOptionLabel={(opt) => opt?.label ?? ""}
-              onChange={(_e, val) =>
+              onChange={(_e, values) =>
                 onFormDataChange((prev) => ({
                   ...prev,
-                  category_id: val?.id.toString() || "",
+                  category_ids: values ? values.map((v: FormOption) => v.id) : [],
                   type_id: "4", // Always set to Tourist Spot type
                 }))
               }
+              renderTags={(tags, getTagProps) => (
+                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                  {tags.map((option, index) => (
+                    <Chip
+                      variant="soft"
+                      color="primary"
+                      size="sm"
+                      {...getTagProps({ index })}
+                    >
+                      {option.label}
+                    </Chip>
+                  ))}
+                </Box>
+              )}
               slotProps={{ listbox: { sx: { zIndex: 2200 } } }}
-              placeholder="Select Category"
+              placeholder="Select Categories"
             />
           </FormControl>
         </Grid>

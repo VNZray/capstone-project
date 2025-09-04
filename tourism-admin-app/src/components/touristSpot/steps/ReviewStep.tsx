@@ -15,7 +15,7 @@ import type { FormOption, TouristSpotFormData, DaySchedule } from "../../../type
 interface ReviewStepProps {
   mode: "add" | "edit";
   formData: TouristSpotFormData;
-  selectedCategory: FormOption | null;
+  selectedCategories: FormOption[];
   selectedProvince: FormOption | null;
   selectedMunicipality: FormOption | null;
   selectedBarangay: FormOption | null;
@@ -27,7 +27,7 @@ interface ReviewStepProps {
 const ReviewStep: React.FC<ReviewStepProps> = ({
   mode,
   formData,
-  selectedCategory,
+  selectedCategories,
   selectedProvince,
   selectedMunicipality,
   selectedBarangay,
@@ -68,7 +68,7 @@ const ReviewStep: React.FC<ReviewStepProps> = ({
                   <Typography level="body-sm"><strong>Name:</strong> {formData.name}</Typography>
                   <Typography level="body-sm"><strong>Description:</strong> {formData.description}</Typography>
                   <Typography level="body-sm">
-                    <strong>Category:</strong> {selectedCategory?.label}
+                    <strong>Categories:</strong> {selectedCategories.map(c => c.label).join(', ') || 'None selected'}
                   </Typography>
                   {formData.entry_fee && (
                     <Typography level="body-sm"><strong>Entry Fee:</strong> ₱{formData.entry_fee}</Typography>
