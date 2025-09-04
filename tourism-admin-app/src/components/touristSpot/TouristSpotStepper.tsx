@@ -46,7 +46,7 @@ export default function TouristSpotStepper({
 
   const canAccessStep = (step: number, formData: TouristSpotFormData) => {
     if (step === 0) return true;
-    if (step === 1) return !!(formData.name && formData.description && formData.category_id);
+    if (step === 1) return !!(formData.name && formData.description && formData.category_ids && formData.category_ids.length > 0);
     if (step === 2) return !!(formData.province_id && formData.municipality_id && formData.barangay_id);
     return true; // Images and Review are always accessible if previous steps are valid
   };
@@ -84,10 +84,10 @@ export default function TouristSpotStepper({
             width: 32,
             height: 32,
             borderRadius: "50%",
-            backgroundColor: isCompleted 
-              ? "primary.solidBg" 
-              : isActive 
-              ? "primary.solidBg" 
+            backgroundColor: isCompleted
+              ? "primary.solidBg"
+              : isActive
+              ? "primary.solidBg"
               : "neutral.outlinedBorder",
             color: isCompleted || isActive ? "primary.solidColor" : "text.tertiary",
             display: "flex",
@@ -97,7 +97,7 @@ export default function TouristSpotStepper({
             fontWeight: "bold",
             mb: 1,
             border: isActive ? "2px solid" : "none",
-            borderColor: "primary.solidBg"
+            borderColor: isActive ? "primary.solidBg" : "neutral.outlinedBorder"
           }}
         >
           {isCompleted ? <Check size={16} /> : step + 1}

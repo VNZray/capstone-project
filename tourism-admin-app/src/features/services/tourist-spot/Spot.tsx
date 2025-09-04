@@ -86,7 +86,11 @@ const Spot = () => {
   const filteredAndSearchedSpots = useMemo(() => {
     let filtered = spots;
     if (selectedType !== "All") {
-      filtered = filtered.filter((spot) => spot.category === selectedType);
+      filtered = filtered.filter((spot) =>
+        Array.isArray(spot.categories)
+          ? spot.categories.some((cat) => cat.category === selectedType)
+          : false
+      );
     }
     if (searchQuery) {
       filtered = filtered.filter((spot) =>

@@ -100,6 +100,11 @@ const TouristSpotForm: React.FC<TouristSpotFormProps> = ({
     setPendingImages([]);
     setCurrentStep(0);
     onClose();
+    if (mode === "add") {
+      onSpotAdded?.();
+    } else {
+      onSpotUpdated?.();
+    }
   };
 
   const provinceOptions = useMemo<FormOption[]>(
@@ -307,11 +312,14 @@ const TouristSpotForm: React.FC<TouristSpotFormProps> = ({
         // Upload pending images if any
         if (pendingImages.length > 0 && response?.data?.id) {
           try {
+            // Clean folder name once and use for all uploads
+            const spotFolderName = formData.name.toLowerCase().replace(/[^a-z0-9]/g, '-');
             await uploadPendingImages(
-              response.data.id.toString(), 
+              response.data.id.toString(),
               pendingImages,
-              selectedCategories.map(c => c.label).join(', ') || 'uncategorized',
-              formData.name
+              undefined,
+              formData.name,
+              spotFolderName
             );
             alert("Spot added successfully with images!");
           } catch (imageError) {
@@ -325,7 +333,6 @@ const TouristSpotForm: React.FC<TouristSpotFormProps> = ({
       } else {
         if (!initialData?.id) throw new Error("No ID provided for update");
         
-        // Check what has changed to determine if approval is needed
         const coreFieldsChanged = await hasSignificantChanges(spotData, initialData);
         
         // Check if only categories have changed
@@ -337,11 +344,35 @@ const TouristSpotForm: React.FC<TouristSpotFormProps> = ({
         const currentSchedules = await apiService.getTouristSpotSchedules(initialData.id);
         const schedulesChanged = hasScheduleChanges(mappedSchedules, currentSchedules);
         
-        // If nothing has changed, inform the user
+        // If nothing has changed, inform the user, but check for new images
         if (!coreFieldsChanged && !categoriesChanged && !schedulesChanged) {
-          alert("No changes detected. Nothing to update.");
-          handleClose();
-          return;
+          if (pendingImages.length > 0) {
+            console.log("Uploading new images in edit mode:", pendingImages);
+            try {
+              // Always use original folder name from initialData.name ONLY
+              if (!initialData?.name) throw new Error("No original spot name found for folder!");
+              const spotFolderName = initialData.name.toLowerCase().replace(/[^a-z0-9]/g, '-');
+              await uploadPendingImages(
+                initialData.id,
+                pendingImages,
+                undefined,
+                initialData.name,
+                spotFolderName
+              );
+              alert("Images uploaded successfully!");
+              setPendingImages([]);
+              onSpotUpdated?.();
+            } catch (imageError) {
+              console.error("Error uploading images:", imageError);
+              alert("Some images failed to upload. You can try again by editing the spot.");
+            }
+            handleClose();
+            return;
+          } else {
+            alert("No changes detected. Nothing to update.");
+            handleClose();
+            return;
+          }
         }
         
         if (coreFieldsChanged || (categoriesChanged && !coreFieldsChanged)) {
@@ -498,6 +529,7 @@ const TouristSpotForm: React.FC<TouristSpotFormProps> = ({
             touristSpotId={initialData?.id?.toString()}
             pendingImages={pendingImages}
             onPendingImagesChange={setPendingImages}
+            initialSpotName={mode === "edit" ? initialData?.name : formData.name}
           />
         );
 
@@ -535,14 +567,8 @@ const TouristSpotForm: React.FC<TouristSpotFormProps> = ({
         return formData.name && formData.description && formData.category_ids.length > 0;
       case 1: // Location
         return formData.province_id && formData.municipality_id && formData.barangay_id;
-      case 2: // Socials
-        return formData.contact_phone || formData.contact_email || formData.website;
-      case 3: // Schedule
-        return true; // Schedule is optional
-      case 4: // Images
-        return pendingImages.length > 0; // Require at least one image
       default:
-        return true;
+        return true; // Allow next for all other steps
     }
   };
 

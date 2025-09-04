@@ -63,9 +63,11 @@ const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({ spot, onEdit }) => 
           <Typography level="title-sm" sx={{ color: "text.tertiary" }}>
             Type / Category
           </Typography>
-          <Typography level="body-md">
-            {spot.type} / {spot.category}
-          </Typography>
+            <Typography level="body-md">
+              {spot.type} / {Array.isArray(spot.categories)
+                ? spot.categories.map((cat) => cat.category || String(cat)).join(", ")
+                : ""}
+            </Typography>
         </Stack>
 
         {/* Entry Fee */}

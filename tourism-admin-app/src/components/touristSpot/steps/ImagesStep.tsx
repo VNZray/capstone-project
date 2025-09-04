@@ -11,6 +11,7 @@ interface ImagesStepProps {
   touristSpotId?: string;
   pendingImages?: PendingImage[];
   onPendingImagesChange?: (images: PendingImage[]) => void;
+  initialSpotName?: string;
 }
 
 const ImagesStep: React.FC<ImagesStepProps> = ({
@@ -18,6 +19,7 @@ const ImagesStep: React.FC<ImagesStepProps> = ({
   touristSpotId,
   pendingImages,
   onPendingImagesChange,
+  initialSpotName,
 }) => {
   return (
     <Stack spacing={1}>
@@ -27,6 +29,7 @@ const ImagesStep: React.FC<ImagesStepProps> = ({
         mode={mode}
         pendingImages={pendingImages}
         onPendingImagesChange={onPendingImagesChange}
+        initialSpotName={initialSpotName}
       />
     </Stack>
   );

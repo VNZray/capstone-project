@@ -38,6 +38,7 @@ interface TouristSpotImageManagerProps {
   pendingImages?: PendingImage[];
   disabled?: boolean;
   mode?: "add" | "edit";
+  initialSpotName?: string;
 }
 
 const TouristSpotImageManager: React.FC<TouristSpotImageManagerProps> = ({
@@ -47,6 +48,7 @@ const TouristSpotImageManager: React.FC<TouristSpotImageManagerProps> = ({
   pendingImages = [],
   disabled = false,
   mode = "edit",
+  initialSpotName,
 }) => {
   const [images, setImages] = useState<TouristSpotImage[]>([]);
   const [loading, setLoading] = useState(false);
@@ -54,7 +56,6 @@ const TouristSpotImageManager: React.FC<TouristSpotImageManagerProps> = ({
 
   // Helper function to safely check if image is primary
   const isPrimary = (image: TouristSpotImage) => {
-    // Handle both boolean and number (0/1) from database
     return image.is_primary === true || image.is_primary === 1;
   };
 
@@ -107,15 +108,17 @@ const TouristSpotImageManager: React.FC<TouristSpotImageManagerProps> = ({
     // For edit mode, upload directly
     try {
       setUploading(true);
-      const isPrimary = images.length === 0; // First image becomes primary
-      await uploadTouristSpotImage(touristSpotId, file, isPrimary, file.name);
-      await loadImages(); // Refresh the list
+      const isPrimary = images.length === 0;
+      // Always use original spot name for folder
+      if (!initialSpotName) throw new Error("No original spot name found for folder!");
+      const spotFolderName = initialSpotName.toLowerCase().replace(/[^a-z0-9]/g, '-');
+      await uploadTouristSpotImage(touristSpotId, file, isPrimary, file.name, undefined, initialSpotName, spotFolderName);
+      await loadImages();
     } catch (error) {
       console.error("Upload failed:", error);
       alert("Failed to upload image. Please try again.");
     } finally {
       setUploading(false);
-      // Reset file input
       e.target.value = "";
     }
   };
@@ -127,7 +130,7 @@ const TouristSpotImageManager: React.FC<TouristSpotImageManagerProps> = ({
 
     try {
       await deleteTouristSpotImage(touristSpotId, imageId, fileUrl);
-      await loadImages(); // Refresh the list
+      await loadImages();
     } catch (error) {
       console.error("Delete failed:", error);
       alert("Failed to delete image. Please try again.");
@@ -144,7 +147,7 @@ const TouristSpotImageManager: React.FC<TouristSpotImageManagerProps> = ({
 
     try {
       await setPrimaryTouristSpotImage(touristSpotId, imageId);
-      await loadImages(); // Refresh the list
+      await loadImages();
     } catch (error) {
       console.error("Set primary failed:", error);
       alert("Failed to set primary image. Please try again.");

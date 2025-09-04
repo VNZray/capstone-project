@@ -51,7 +51,7 @@ const StepTabs: React.FC<StepTabsProps> = ({
 
   const canAccessStep = (step: number, formData: TouristSpotFormData) => {
     if (step === 0) return true;
-    if (step === 1) return !!(formData.name && formData.description && formData.category_id);
+    if (step === 1) return !!(formData.name && formData.description && formData.category_ids);
     if (step === 2) return !!(formData.province_id && formData.municipality_id && formData.barangay_id);
     return true; // Images and Review are always accessible if previous steps are valid
   };
@@ -62,7 +62,7 @@ const StepTabs: React.FC<StepTabsProps> = ({
     label: string;
     icon: React.ElementType;
     onClick: () => void;
-    formData: TouristSpotFormData; // Added formData prop
+    formData: TouristSpotFormData;
   }> = ({ step, currentStep, label, icon: Icon, onClick, formData }) => {
     const isCompleted = step < currentStep;
     const isActive = step === currentStep;
@@ -160,7 +160,7 @@ const StepTabs: React.FC<StepTabsProps> = ({
               label={step.label}
               icon={step.icon}
               onClick={() => onStepChange(index)}
-              formData={formData} // Pass formData to StepIndicator
+              formData={formData}
             />
           ))}
         </Stack>

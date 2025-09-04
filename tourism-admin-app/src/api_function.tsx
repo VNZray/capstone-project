@@ -89,28 +89,26 @@ export const uploadTouristSpotImage = async (
   isPrimary: boolean = false,
   altText?: string,
   categoryName?: string,
-  touristSpotName?: string
+  touristSpotName?: string,
+  spotFolderName?: string // always use this for folder
 ) => {
   try {
     // 1. Get tourist spot details if category and name not provided
-    let category = categoryName;
-    let spotName = touristSpotName;
-    
-    if (!category || !spotName) {
-      const touristSpot = await getDataById('tourist-spots', touristSpotId);
-      category = category || touristSpot.category || 'uncategorized';
-      spotName = spotName || touristSpot.name || `spot-${touristSpotId}`;
+    // Always use spotFolderName if provided
+    let folderName = spotFolderName;
+    if (!folderName) {
+      // Fallback: clean touristSpotName or DB value
+      let spotName = touristSpotName;
+      if (!spotName) {
+        const touristSpot = await getDataById('tourist-spots', touristSpotId);
+        spotName = touristSpot.name || `spot-${touristSpotId}`;
+      }
+      folderName = spotName.toLowerCase().replace(/[^a-z0-9]/g, '-');
     }
-    
-    // 2. Create file path with better folder structure: category/tourist-spot-name/filename
     const fileExt = file.name.split('.').pop();
     const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
     const fileName = `${timestamp}.${fileExt}`;
-    
-    // Clean category and spot name for folder (remove spaces, special chars, lowercase)
-    const categoryFolder = (category || 'uncategorized').toLowerCase().replace(/[^a-z0-9]/g, '-');
-    const spotNameFolder = (spotName || `spot-${touristSpotId}`).toLowerCase().replace(/[^a-z0-9]/g, '-');
-    const filePath = `${categoryFolder}/${spotNameFolder}/${fileName}`;
+    const filePath = `${folderName}/imgs/${fileName}`;
 
     const { data: uploadData, error: uploadError } = await supabase.storage
       .from("touristspots-images")
