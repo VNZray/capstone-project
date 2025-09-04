@@ -52,6 +52,7 @@ const LocationStep: React.FC<LocationStepProps> = ({
                   barangay_id: "",
                 }))
               }
+              slotProps={{ listbox: { sx: { zIndex: 2200 } } }}
               placeholder="Select Province"
             />
           </FormControl>
@@ -72,6 +73,7 @@ const LocationStep: React.FC<LocationStepProps> = ({
                   barangay_id: "",
                 }))
               }
+              slotProps={{ listbox: { sx: { zIndex: 2200 } } }}
               placeholder="Select Municipality"
               disabled={!formData.province_id}
             />
@@ -92,6 +94,7 @@ const LocationStep: React.FC<LocationStepProps> = ({
                   barangay_id: val?.id.toString() || "",
                 }))
               }
+              slotProps={{ listbox: { sx: { zIndex: 2200 } } }}
               placeholder="Select Barangay"
               disabled={!formData.municipality_id}
             />

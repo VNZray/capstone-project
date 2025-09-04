@@ -70,6 +70,7 @@ const BasicInfoStep: React.FC<BasicInfoStepProps> = ({
                   type_id: "4", // Always set to Tourist Spot type
                 }))
               }
+              slotProps={{ listbox: { sx: { zIndex: 2200 } } }}
               placeholder="Select Category"
             />
           </FormControl>
