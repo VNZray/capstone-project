@@ -6,6 +6,8 @@ import type {
   BusinessFilters,
   TypeOption,
   CategoryOption,
+  BusinessHour,
+  BusinessHourInput,
 } from '@/src/types/Business';
 
 // Shape returned by backend (raw business row)
@@ -112,6 +114,30 @@ export const BusinessService = {
     const { data } = await axios.get<{ id: number; barangay: string; municipality_id: number }[]>(`${api}/address/barangays/${municipalityId}`);
     return data;
   },
+
+  // Business Hours
+  async getHours(businessId?: string): Promise<BusinessHour[]> {
+    // Backend currently returns all hours without filter; we can filter client-side if id passed
+    const { data } = await axios.get<BusinessHour[]>(`${api}/business-hours`);
+    return businessId ? data.filter(h => h.business_id === businessId) : data;
+  },
+  async upsertHour(record: BusinessHour): Promise<void> {
+    if (record.id) {
+      await axios.put(`${api}/business-hours/${record.id}`, {
+        open_time: record.open_time,
+        close_time: record.close_time,
+        is_open: record.is_open,
+      });
+    } else {
+      await axios.post(`${api}/business-hours`, record);
+    }
+  },
+  async bulkSetHours(business_id: string, hours: BusinessHourInput[]): Promise<void> {
+    // naive sequential for MVP; could batch via backend enhancement
+    for (const h of hours) {
+      await axios.post(`${api}/business-hours`, { business_id, ...h });
+    }
+  }
 };
 
 export default BusinessService;

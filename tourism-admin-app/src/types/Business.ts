@@ -59,3 +59,16 @@ export interface CategoryOption {
 }
 
 export interface LocationOption { id: number; name: string; }
+
+// Business operating hours (per day)
+export interface BusinessHour {
+  id?: number;               // present after creation
+  business_id: string;       // FK to business.id
+  day_of_week: string;       // e.g. 'Monday'
+  open_time: string | null;  // 'HH:MM:SS' or null if closed / not set
+  close_time: string | null; // 'HH:MM:SS'
+  is_open: boolean;          // false means closed for that day
+}
+
+// Input shape when creating/updating (business_id supplied separately during create flow)
+export type BusinessHourInput = Omit<BusinessHour, 'business_id'>;

@@ -3,7 +3,8 @@ import { DialogTitle, DialogContent, Modal, ModalDialog, Stack, FormControl, For
 import { useToast } from '@/src/context/useToast';
 import { LocationOn, Language, Facebook, Instagram, Twitter, Upload, DeleteForever } from '@mui/icons-material';
 import MapPicker from '@/src/components/shops/MapPicker';
-import type { Business, BusinessStatus, CategoryOption, TypeOption } from '@/src/types/Business';
+import BusinessHoursEditor from './BusinessHoursEditor';
+import type { Business, BusinessStatus, CategoryOption, TypeOption, BusinessHourInput } from '@/src/types/Business';
 import { BusinessService } from '@/src/services/BusinessService';
 import { supabase } from '@/src/utils/supabase';
 
@@ -72,6 +73,17 @@ export const BusinessForm: React.FC<BusinessFormProps> = ({ open, mode, initial,
   const [errors, setErrors] = React.useState<Record<string, string>>({});
   const [submitting, setSubmitting] = React.useState(false);
   const [step, setStep] = React.useState<number>(1);
+  // Controlled business hours state (persist while navigating steps)
+  const [hours, setHours] = React.useState<BusinessHourInput[]>([
+    { day_of_week: 'Monday', open_time: '09:00:00', close_time: '18:00:00', is_open: true },
+    { day_of_week: 'Tuesday', open_time: '09:00:00', close_time: '18:00:00', is_open: true },
+    { day_of_week: 'Wednesday', open_time: '09:00:00', close_time: '18:00:00', is_open: true },
+    { day_of_week: 'Thursday', open_time: '09:00:00', close_time: '18:00:00', is_open: true },
+    { day_of_week: 'Friday', open_time: '09:00:00', close_time: '18:00:00', is_open: true },
+    { day_of_week: 'Saturday', open_time: '09:00:00', close_time: '18:00:00', is_open: true },
+    { day_of_week: 'Sunday', open_time: '09:00:00', close_time: '18:00:00', is_open: true },
+  ]);
+  const hoursValidRef = React.useRef(true);
 
   // Always start at step 1 whenever the dialog is opened for create or edit (no step persistence across openings)
   React.useEffect(() => {
@@ -110,7 +122,7 @@ export const BusinessForm: React.FC<BusinessFormProps> = ({ open, mode, initial,
     })();
   }, [open, mode]);
 
-  // Populate form in edit mode
+  // Populate form & hours in edit mode / reset in create mode
   React.useEffect(() => {
     if (mode === 'edit' && initial) {
       setForm((prev) => ({
@@ -136,9 +148,37 @@ export const BusinessForm: React.FC<BusinessFormProps> = ({ open, mode, initial,
   instagram_url: initial.instagram_url || '',
   x_url: initial.x_url || '',
       }));
+      // Load existing hours if available via service
+      if (initial.id) {
+        (async () => {
+          try {
+            const existing = await BusinessService.getHours(initial.id);
+            if (existing.length) {
+              setHours(existing.map(h => ({
+                day_of_week: h.day_of_week,
+                open_time: h.open_time,
+                close_time: h.close_time,
+                is_open: h.is_open,
+                id: h.id,
+              })));
+            }
+          } catch (e) {
+            console.error('Failed to load hours', e);
+          }
+        })();
+      }
     } else if (mode === 'create' && open) {
       setForm(emptyForm);
       setErrors({});
+      setHours([
+        { day_of_week: 'Monday', open_time: '09:00:00', close_time: '18:00:00', is_open: true },
+        { day_of_week: 'Tuesday', open_time: '09:00:00', close_time: '18:00:00', is_open: true },
+        { day_of_week: 'Wednesday', open_time: '09:00:00', close_time: '18:00:00', is_open: true },
+        { day_of_week: 'Thursday', open_time: '09:00:00', close_time: '18:00:00', is_open: true },
+        { day_of_week: 'Friday', open_time: '09:00:00', close_time: '18:00:00', is_open: true },
+        { day_of_week: 'Saturday', open_time: '09:00:00', close_time: '18:00:00', is_open: true },
+        { day_of_week: 'Sunday', open_time: '09:00:00', close_time: '18:00:00', is_open: true },
+      ]);
     }
   }, [mode, initial, open]);
 
@@ -275,10 +315,36 @@ export const BusinessForm: React.FC<BusinessFormProps> = ({ open, mode, initial,
   x_url: form.x_url || null,
       };
       if (mode === 'create') {
-        await BusinessService.create(payload);
+        const created = await BusinessService.create(payload);
+        const newId: string | undefined = (created && (created as Partial<Business>).id) ? (created as Partial<Business>).id : undefined;
+    if (newId && hours.length) {
+          try {
+      await BusinessService.bulkSetHours(newId, hours.map(h => ({
+              day_of_week: h.day_of_week,
+              open_time: h.is_open ? h.open_time : null,
+              close_time: h.is_open ? h.close_time : null,
+              is_open: h.is_open,
+            })));
+          } catch (err) {
+            console.error('Failed saving hours for new business', err);
+          }
+        }
         showToast({ message: 'Shop created successfully', severity: 'success' });
       } else if (mode === 'edit' && initial?.id) {
         await BusinessService.update(initial.id, payload);
+        // If hours edited (hoursRef holds latest draft), persist them sequentially
+        if (hours.length) {
+          for (const h of hours) {
+            await BusinessService.upsertHour({
+              business_id: initial.id,
+              day_of_week: h.day_of_week,
+              open_time: h.is_open ? h.open_time : null,
+              close_time: h.is_open ? h.close_time : null,
+              is_open: h.is_open,
+              id: h.id,
+            });
+          }
+        }
         showToast({ message: 'Shop updated successfully', severity: 'success' });
       }
       onSaved();
@@ -288,7 +354,7 @@ export const BusinessForm: React.FC<BusinessFormProps> = ({ open, mode, initial,
     } finally {
       setSubmitting(false);
     }
-  }, [validate, form, mode, initial, provinceOptions, municipalityOptions, barangayOptions, onSaved, showToast]);
+  }, [validate, form, mode, initial, provinceOptions, municipalityOptions, barangayOptions, onSaved, showToast, hours]);
 
   // Single image upload to Supabase storage bucket "business-profile" (same as business-app convention)
   const handleImageFile = async (file: File) => {
@@ -379,18 +445,7 @@ export const BusinessForm: React.FC<BusinessFormProps> = ({ open, mode, initial,
               Step {step} of 6
             </Typography>
           </Stack>
-          {mode === 'edit' && (
-            <Button 
-              size="sm" 
-              variant="solid" 
-              color="primary" 
-              onClick={handleSubmit}
-              loading={submitting}
-              sx={{ fontWeight: 600 }}
-            >
-              Save
-            </Button>
-          )}
+          {/* Header Save button intentionally removed to enforce single primary save action (footer + shortcut) */}
         </DialogTitle>
         <DialogContent sx={{ 
           display: 'flex', 
@@ -879,22 +934,12 @@ export const BusinessForm: React.FC<BusinessFormProps> = ({ open, mode, initial,
                   <Typography level="title-md" sx={{ mb: 2, fontWeight: 700, color: 'text.primary' }}>
                     Business Hours
                   </Typography>
-                  <Typography level="body-sm" sx={{ color: 'text.tertiary', mb: 3 }}>
-                    Operating hours configuration will be implemented in future updates.
-                  </Typography>
-                  <FormControl>
-                    <FormLabel sx={{ fontWeight: 600, mb: 0.5 }}>Notes</FormLabel>
-                    <Input 
-                      value={''} 
-                      placeholder="e.g. Mon-Fri 9:00-18:00" 
-                      disabled
-                      sx={{ 
-                        '--Input-radius': '8px',
-                        '--Input-minHeight': '44px',
-                        fontSize: '0.95rem'
-                      }}
-                    />
-                  </FormControl>
+                  {/* Hours Editor */}
+                  <BusinessHoursEditor
+                    rows={hours}
+                    onChange={setHours}
+                    onValidationChange={(valid: boolean) => { hoursValidRef.current = valid; }}
+                  />
                 </Box>
               </Stack>
             )}
