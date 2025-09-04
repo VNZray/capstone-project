@@ -27,7 +27,7 @@ export interface TouristSpotImage {
 }
 
 class ApiService {
-  // Tourist Spots
+  // ===== TOURIST SPOT MANAGEMENT =====
   async getTouristSpots(): Promise<TouristSpot[]> {
     const response: AxiosResponse<ApiResponse<TouristSpot[]>> = await api.get('/tourist-spots');
     return response.data.data;
@@ -53,13 +53,11 @@ class ApiService {
     return response.data;
   }
 
-  // Submit edit request for tourist spot
   async submitEditRequest(id: string, spotData: Partial<TouristSpot>): Promise<ApiResponse<TouristSpot>> {
     const response: AxiosResponse<ApiResponse<TouristSpot>> = await api.put(`/tourist-spots/${id}`, spotData);
     return response.data;
   }
 
-  // Schedules
   async getTouristSpotSchedules(id: string): Promise<TouristSpotSchedule[]> {
     const response: AxiosResponse<ApiResponse<TouristSpotSchedule[]>> = await api.get(`/tourist-spots/${id}/schedules`);
     return response.data.data;
@@ -85,72 +83,7 @@ class ApiService {
     return response.data.data;
   }
 
-  // Add a new image to a tourist spot
-  async addTouristSpotImage(
-    touristSpotId: string,
-    imageData: {
-      file_url: string;
-      file_format: string;
-      file_size?: number;
-      is_primary?: boolean;
-      alt_text?: string;
-    }
-  ): Promise<TouristSpotImage> {
-    const response: AxiosResponse<ApiResponse<TouristSpotImage>> = await api.post(
-      `/tourist-spots/${touristSpotId}/images`,
-      imageData
-    );
-    return response.data.data;
-  }
-
-  // Update an existing image (mainly for setting primary, alt text)
-  async updateTouristSpotImage(
-    touristSpotId: string,
-    imageId: string,
-    updateData: {
-      is_primary?: boolean;
-      alt_text?: string;
-    }
-  ): Promise<TouristSpotImage> {
-    const response: AxiosResponse<ApiResponse<TouristSpotImage>> = await api.put(
-      `/tourist-spots/${touristSpotId}/images/${imageId}`,
-      updateData
-    );
-    return response.data.data;
-  }
-
-  // Delete an image
-  async deleteTouristSpotImage(touristSpotId: string, imageId: string): Promise<void> {
-    await api.delete(`/tourist-spots/${touristSpotId}/images/${imageId}`);
-  }
-
-  // Set primary image for a tourist spot
-  async setPrimaryTouristSpotImage(touristSpotId: string, imageId: string): Promise<void> {
-    await api.put(`/tourist-spots/${touristSpotId}/images/${imageId}/set-primary`);
-  }
-
-  // Utility function to upload image and then add to tourist spot
-  async uploadAndAddTouristSpotImage(
-    touristSpotId: string,
-    imageData: {
-      file_url: string;
-      file_format: string;
-      file_size?: number;
-      is_primary?: boolean;
-      alt_text?: string;
-    }
-  ): Promise<TouristSpotImage> {
-    // This will be called after Supabase upload is complete
-    return await this.addTouristSpotImage(touristSpotId, imageData);
-  }
-
   // Get primary image for a tourist spot
-  async getTouristSpotPrimaryImage(touristSpotId: string): Promise<TouristSpotImage | null> {
-    const images = await this.getTouristSpotImages(touristSpotId);
-    return images.find(img => img.is_primary) || null;
-  }
-
-  // Categories and Types
   async getCategoriesAndTypes(): Promise<{
     categories: Category[];
     types: Type[];

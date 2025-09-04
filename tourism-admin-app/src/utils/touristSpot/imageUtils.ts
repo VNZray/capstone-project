@@ -9,6 +9,7 @@ import type { PendingImage } from "../../types/TouristSpot";
  * @param touristSpotName - Optional tourist spot name for folder structure
  * @returns Promise that resolves when all images are uploaded
  */
+
 export const uploadPendingImages = async (
   touristSpotId: string, 
   pendingImages: PendingImage[],
@@ -41,6 +42,7 @@ export const uploadPendingImages = async (
  * @param file - The image file to create preview for
  * @returns Promise that resolves with the preview URL
  */
+
 export const createImagePreview = (file: File): Promise<string> => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -55,6 +57,7 @@ export const createImagePreview = (file: File): Promise<string> => {
  * @param file - The file to validate
  * @returns boolean indicating if file is a valid image
  */
+
 export const isValidImageFile = (file: File): boolean => {
   const validTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
   const maxSize = 10 * 1024 * 1024; // 10MB
