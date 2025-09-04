@@ -20,7 +20,7 @@ export async function seed(knex) {
       contact_phone: "+63 54 473 2175",
       contact_email: "cathedral@nagacity.gov.ph",
       website: "https://nagacathedral.org",
-      entry_fee: 0.00,
+      entry_fee: null,
       spot_status: "active",
       is_featured: true,
       category_id: 9, // Churches
@@ -38,64 +38,10 @@ export async function seed(knex) {
       contact_phone: "+63 54 473 2845",
       contact_email: "shrine@penafrancia.org",
       website: "https://penafrancia.org",
-      entry_fee: 0.00,
+      entry_fee: null,
       spot_status: "active",
       is_featured: true,
       category_id: 9, // Churches
-      type_id: 4
-    },
-    {
-      id: knex.raw('UUID()'),
-      name: "Mayon Volcano Natural Park",
-      description: "Home to the world-famous perfect cone-shaped Mayon Volcano, this natural park offers breathtaking views, hiking trails, and opportunities to observe the majestic volcano up close. The park features diverse flora and fauna native to the Bicol region.",
-      province_id: 5, // Albay
-      municipality_id: 16, // Iriga City (using available municipality)
-      barangay_id: 5, // Using available barangay
-      latitude: 13.2569,
-      longitude: 123.6856,
-      contact_phone: "+63 52 820 2461",
-      contact_email: "info@mayonpark.gov.ph",
-      website: "https://mayonvolcano.ph",
-      entry_fee: 50.00,
-      spot_status: "active",
-      is_featured: true,
-      category_id: 6, // Nature
-      type_id: 4
-    },
-    {
-      id: knex.raw('UUID()'),
-      name: "Caramoan National Park",
-      description: "A stunning collection of limestone cliffs, pristine beaches, and crystal-clear waters. This national park gained international fame as a filming location for the reality TV show Survivor. Perfect for island hopping, snorkeling, and beach activities.",
-      province_id: 20,
-      municipality_id: 11, // Caramoan
-      barangay_id: 10, // Using available barangay
-      latitude: 13.7667,
-      longitude: 123.8667,
-      contact_phone: "+63 54 881 1234",
-      contact_email: "tourism@caramoan.gov.ph",
-      website: "https://caramoanislands.com",
-      entry_fee: 100.00,
-      spot_status: "active",
-      is_featured: true,
-      category_id: 6, // Nature
-      type_id: 4
-    },
-    {
-      id: knex.raw('UUID()'),
-      name: "Bicol Heritage Park",
-      description: "A cultural and historical park showcasing the rich heritage of the Bicol region. Features traditional Bicolano architecture, artifacts, and exhibits about local history, culture, and traditions. Educational programs and cultural shows are regularly held here.",
-      province_id: 20,
-      municipality_id: 24,
-      barangay_id: 8, // Concepcion Grande
-      latitude: 13.6195,
-      longitude: 123.1975,
-      contact_phone: "+63 54 473 8900",
-      contact_email: "heritage@bicolpark.ph",
-      website: "https://bicolheritagepark.ph",
-      entry_fee: 25.00,
-      spot_status: "active",
-      is_featured: false,
-      category_id: 7, // Historical
       type_id: 4
     },
     {
@@ -110,7 +56,7 @@ export async function seed(knex) {
       contact_phone: "+63 54 473 2200",
       contact_email: "tourism@nagacity.gov.ph",
       website: null,
-      entry_fee: 0.00,
+      entry_fee: null,
       spot_status: "active",
       is_featured: false,
       category_id: 8, // Urban Attractions
@@ -190,24 +136,6 @@ export async function seed(knex) {
     },
     {
       id: knex.raw('UUID()'),
-      name: "Camsur Watersports Complex",
-      description: "A world-class watersports facility featuring cable wakeboarding, water skiing, and other aquatic activities. The complex has hosted international wakeboarding competitions and offers training programs for beginners to advanced riders.",
-      province_id: 20,
-      municipality_id: 28, // Pili
-      barangay_id: 21, // Using available barangay
-      latitude: 13.5467,
-      longitude: 123.2890,
-      contact_phone: "+63 54 477 5555",
-      contact_email: "info@cwc.ph",
-      website: "https://camsurwatersports.com",
-      entry_fee: 200.00,
-      spot_status: "active",
-      is_featured: true,
-      category_id: 8, // Urban Attractions
-      type_id: 4
-    },
-    {
-      id: knex.raw('UUID()'),
       name: "Villa Caceres Heritage Monument",
       description: "A historical monument commemorating the Spanish colonial period in the region. The site features preserved colonial architecture, historical markers, and exhibits about the founding of Nueva Caceres (old name of Naga City).",
       province_id: 20,
@@ -236,47 +164,11 @@ export async function seed(knex) {
       contact_phone: "+63 54 473 2900",
       contact_email: "basilica@penafrancia.org",
       website: "https://penafranciabasilica.org",
-      entry_fee: 0.00,
+      entry_fee: null,
       spot_status: "active",
       is_featured: true,
       category_id: 9, // Churches
       type_id: 4
     },
-    {
-      id: knex.raw('UUID()'),
-      name: "Buhi Lake",
-      description: "The largest lake in the Bicol region, known for its scenic beauty and as the habitat of the rare Buhi fish (sinarapan). The lake offers boat rides, fishing activities, and stunning views of the surrounding mountains and countryside.",
-      province_id: 20,
-      municipality_id: 5, // Buhi
-      barangay_id: 12, // Using available barangay
-      latitude: 13.4333,
-      longitude: 123.5167,
-      contact_phone: "+63 54 475 3210",
-      contact_email: "tourism@buhi.gov.ph",
-      website: null,
-      entry_fee: 40.00,
-      spot_status: "active",
-      is_featured: false,
-      category_id: 6, // Nature
-      type_id: 4
-    },
-    {
-      id: knex.raw('UUID()'),
-      name: "Tinago Falls Iriga",
-      description: "A spectacular waterfall hidden in the dense forests near Iriga City. The name 'Tinago' means hidden, and true to its name, this falls requires a trek through lush vegetation. The crystal-clear waters and natural pools make it perfect for swimming.",
-      province_id: 20,
-      municipality_id: 16, // Iriga City
-      barangay_id: 16, // Using available barangay
-      latitude: 13.4234,
-      longitude: 123.4567,
-      contact_phone: "+63 52 299 8888",
-      contact_email: "tourism@iriga.gov.ph",
-      website: null,
-      entry_fee: 25.00,
-      spot_status: "pending",
-      is_featured: false,
-      category_id: 6, // Nature
-      type_id: 4
-    }
   ]);
 }
