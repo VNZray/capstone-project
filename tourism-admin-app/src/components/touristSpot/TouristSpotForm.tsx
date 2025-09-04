@@ -1,7 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { IoClose } from "react-icons/io5";
 import { apiService } from "../../utils/api";
-import StepTabs from "./StepTabs";
+import TouristSpotStepper from "./TouristSpotStepper";
 import BasicInfoStep from "./steps/BasicInfoStep";
 import LocationStep from "./steps/LocationStep";
 import ScheduleStep from "./steps/ScheduleStep";
@@ -12,11 +11,6 @@ import { uploadPendingImages } from "../../utils/touristSpot";
 import {
   Modal,
   ModalDialog,
-  DialogTitle,
-  IconButton,
-  Typography,
-  Stack,
-  Button,
 } from "@mui/joy";
 import type {
   Category,
@@ -59,7 +53,7 @@ const TouristSpotForm: React.FC<TouristSpotFormProps> = ({
     website: "",
     entry_fee: "",
     category_id: "",
-    type_id: "4", // Default to Tourist Spot type
+    type_id: "4",
     spot_status: "" as "" | "pending" | "active" | "inactive",
   });
   const [loading, setLoading] = useState(false);
@@ -405,14 +399,12 @@ const TouristSpotForm: React.FC<TouristSpotFormProps> = ({
         const currentValue = currentData[field as keyof TouristSpot];
         
         if (field === 'contact_email' || field === 'website') {
-          // Handle empty strings vs null
           const normalizedNew = newValue || null;
           const normalizedCurrent = currentValue || null;
           return normalizedNew !== normalizedCurrent;
         }
         
         if (field === 'latitude' || field === 'longitude' || field === 'entry_fee') {
-          // Handle number fields - convert to same type for comparison
           const normalizedNew = newValue ? Number(newValue) : null;
           const normalizedCurrent = currentValue ? Number(currentValue) : null;
           return normalizedNew !== normalizedCurrent;
@@ -421,7 +413,6 @@ const TouristSpotForm: React.FC<TouristSpotFormProps> = ({
         if (typeof newValue === 'string' && typeof currentValue === 'string') {
           return newValue.trim() !== currentValue.trim();
         }
-        
         return newValue !== currentValue;
       });
     } catch (error) {
@@ -457,7 +448,16 @@ const TouristSpotForm: React.FC<TouristSpotFormProps> = ({
           />
         );
 
-      case 2: // Schedule
+      case 2: // Socials (new step)
+        return (
+          <div style={{ padding: '2rem', textAlign: 'center' }}>
+            <h3>Social Media & Contact</h3>
+            <p>This step will contain social media links and additional contact information.</p>
+            <p style={{ color: '#666', fontSize: '0.9em' }}>Coming soon...</p>
+          </div>
+        );
+
+      case 3: // Schedule
         return (
           <ScheduleStep
             schedules={schedules}
@@ -466,7 +466,7 @@ const TouristSpotForm: React.FC<TouristSpotFormProps> = ({
           />
         );
 
-      case 3: // Images
+      case 4: // Images
         return (
           <ImagesStep
             mode={mode}
@@ -476,7 +476,7 @@ const TouristSpotForm: React.FC<TouristSpotFormProps> = ({
           />
         );
 
-      case 4: // Review
+      case 5: // Review
         return (
           <ReviewStep
             mode={mode}
@@ -497,7 +497,7 @@ const TouristSpotForm: React.FC<TouristSpotFormProps> = ({
   };
 
   const nextStep = () => {
-    if (currentStep < 4) setCurrentStep(currentStep + 1);
+    if (currentStep < 5) setCurrentStep(currentStep + 1);
   };
 
   const prevStep = () => {
@@ -510,10 +510,12 @@ const TouristSpotForm: React.FC<TouristSpotFormProps> = ({
         return formData.name && formData.description && formData.category_id;
       case 1: // Location
         return formData.province_id && formData.municipality_id && formData.barangay_id;
-      case 2: // Schedule
+      case 2: // Socials
+        return formData.contact_phone || formData.contact_email || formData.website;
+      case 3: // Schedule
         return true; // Schedule is optional
-      case 3: // Images
-        return true; // Images are optional
+      case 4: // Images
+        return pendingImages.length > 0; // Require at least one image
       default:
         return true;
     }
@@ -522,99 +524,59 @@ const TouristSpotForm: React.FC<TouristSpotFormProps> = ({
   const canAccessStep = (step: number) => {
     if (step === 0) return true;
     if (step === 1) return !!(formData.name && formData.description && formData.category_id);
-    if (step <= 2) return !!(formData.province_id && formData.municipality_id && formData.barangay_id);
-    return true; // Images and Review are always accessible if previous steps are valid
+    if (step === 2) return !!(formData.province_id && formData.municipality_id && formData.barangay_id);
+    return true
+  };
+
+  const handleNext = () => {
+    if (currentStep === 5) {
+      // Create a synthetic event for handleSubmit
+      const syntheticEvent = {
+        preventDefault: () => {},
+      } as React.FormEvent;
+      handleSubmit(syntheticEvent);
+    } else if (canProceedToNext()) {
+      nextStep();
+    } else {
+      alert("Please complete the required fields before proceeding.");
+    }
   };
 
   const handleFormDataChange = (updater: (prev: TouristSpotFormData) => TouristSpotFormData) => {
     setFormData(updater);
   };
 
-  const getSubmitButtonText = (): string => {
-    if (loading) return "Checking changes...";
-    if (mode === "add") return "Create Tourist Spot";
-    
-    return "Update Tourist Spot";
-  };
-
   return (
     <Modal open={isVisible} onClose={handleClose}>
       <ModalDialog
-        size="lg"
+        size="md"
         sx={{
-          width: "95%",
-          maxWidth: 1200,
-          maxHeight: "95vh",
+          width: "90%",
+          maxWidth: 1100,
+          maxHeight: "90vh",
+          margin: "0 auto",
           overflow: "auto",
+          p: 0,
         }}
       >
-        <Stack
-          direction="row"
-          alignItems="center"
-          justifyContent="space-between"
-          sx={{ mb: 1.5 }}
-        >
-          <DialogTitle>
-            <Typography level="h4">
-              {mode === "add" ? "Add New Tourist Spot" : "Edit Tourist Spot"}
-            </Typography>
-          </DialogTitle>
-          <IconButton size="sm" variant="soft" onClick={handleClose}>
-            <IoClose />
-          </IconButton>
-        </Stack>
-
-        {/* Step Tabs */}
-        <StepTabs
+        <TouristSpotStepper
           currentStep={currentStep}
-          onStepChange={setCurrentStep}
-          canAccessStep={canAccessStep}
-        />
-
-        {/* Step Content */}
-        <Stack sx={{ minHeight: 400, mb: 2 }}>
-          {renderStepContent()}
-        </Stack>
-
-        {/* Navigation buttons */}
-        <Stack
-          direction="row"
-          justifyContent="space-between"
-          alignItems="center"
-          sx={{ pt: 2, borderTop: "1px solid", borderColor: "divider" }}
+          onStepChange={(step) => {
+            if (canAccessStep(step)) {
+              setCurrentStep(step);
+            } else {
+              alert("Please complete the required fields before accessing this step.");
+            }
+          }}
+          onNext={handleNext}
+          onBack={prevStep}
+          onCancel={handleClose}
+          mode={mode}
+          loading={loading}
+          formData={formData} // Pass formData
         >
-          <Button
-            variant="outlined"
-            onClick={prevStep}
-            disabled={currentStep === 0}
-          >
-            Previous
-          </Button>
-
-          <Typography level="body-sm" sx={{ color: "text.tertiary" }}>
-            Step {currentStep + 1} of 5
-          </Typography>
-
-          {currentStep === 4 ? (
-            <Button
-              onClick={handleSubmit}
-              variant="solid"
-              color="primary"
-              disabled={loading}
-            >
-              {getSubmitButtonText()}
-            </Button>
-          ) : (
-            <Button
-              variant="solid"
-              color="primary"
-              onClick={nextStep}
-              disabled={!canProceedToNext()}
-            >
-              Next
-            </Button>
-          )}
-        </Stack>
+          {renderStepContent()}
+        </TouristSpotStepper>
       </ModalDialog>
     </Modal>
   );
