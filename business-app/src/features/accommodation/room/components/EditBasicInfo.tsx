@@ -30,7 +30,7 @@ interface EditDescriptionModalProps {
     room_type: string,
     floor: string,
     capacity: string,
-    price: string
+    room_price: string
   ) => void;
   onUpdate?: () => void;
 }
@@ -51,7 +51,7 @@ const EditBasicInfo: React.FC<EditDescriptionModalProps> = ({
   const [room_type, setRoomType] = React.useState(initialRoomType);
   const [floor, setFloor] = React.useState(initialFloor);
   const [capacity, setCapacity] = React.useState(initialCapacity);
-  const [price, setPrice] = React.useState(initialPrice);
+  const [room_price, setPrice] = React.useState(initialPrice);
 
   React.useEffect(() => {
     setRoomNumber(initialRoomNumber);
@@ -73,15 +73,15 @@ const EditBasicInfo: React.FC<EditDescriptionModalProps> = ({
       try {
         await updateData(
           roomId,
-          { room_number, room_type, floor, capacity, price },
+          { room_number, room_type, floor, capacity, room_price },
           "room"
         );
-        onSave(room_number, room_type, floor, capacity, price);
+        onSave(room_number, room_type, floor, capacity, room_price);
       } catch (err) {
         console.error("Failed to update business contact", err);
       }
     } else {
-      onSave(room_number, room_type, floor, capacity, price);
+      onSave(room_number, room_type, floor, capacity, room_price);
     }
 
     if (onUpdate) onUpdate();
@@ -137,7 +137,7 @@ const EditBasicInfo: React.FC<EditDescriptionModalProps> = ({
             <Input
               type="number"
               size="md"
-              value={price}
+              value={room_price}
               onChange={(e) => setPrice(e.target.value)}
             />
           </FormControl>
