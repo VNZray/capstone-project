@@ -6,6 +6,7 @@ import LocationStep from "./steps/LocationStep";
 import ScheduleStep from "./steps/ScheduleStep";
 import ImagesStep from "./steps/ImagesStep";
 import ReviewStep from "./steps/ReviewStep";
+import SocialsStep from "./steps/SocialsStep";
 import type { PendingImage } from "../../types/TouristSpot";
 import { uploadPendingImages } from "../../utils/touristSpot";
 import {
@@ -30,6 +31,7 @@ interface TouristSpotFormProps {
   onSpotUpdated?: () => void;
   mode: "add" | "edit";
   initialData?: TouristSpot;
+  initialStep?: number;
 }
 
 const TouristSpotForm: React.FC<TouristSpotFormProps> = ({
@@ -39,6 +41,7 @@ const TouristSpotForm: React.FC<TouristSpotFormProps> = ({
   onSpotUpdated,
   mode,
   initialData,
+  initialStep = 0,
 }) => {
   const [formData, setFormData] = useState<TouristSpotFormData>({
     name: "",
@@ -84,7 +87,13 @@ const TouristSpotForm: React.FC<TouristSpotFormProps> = ({
   );
   const [pendingImages, setPendingImages] = useState<PendingImage[]>([]);
 
-  const [currentStep, setCurrentStep] = useState(0);
+  const [currentStep, setCurrentStep] = useState(initialStep);
+
+  React.useEffect(() => {
+    if (isVisible) {
+      setCurrentStep(initialStep);
+    }
+  }, [isVisible, initialStep]);
 
 
   const handleClose = () => {
@@ -97,6 +106,7 @@ const TouristSpotForm: React.FC<TouristSpotFormProps> = ({
     () => provinces.map((p) => ({ id: p.id, label: p.province })),
     [provinces]
   );
+
   const municipalityOptions = useMemo<FormOption[]>(
     () =>
       municipalities
@@ -108,6 +118,7 @@ const TouristSpotForm: React.FC<TouristSpotFormProps> = ({
         .map((m) => ({ id: m.id, label: m.municipality })),
     [municipalities, formData.province_id]
   );
+
   const barangayOptions = useMemo<FormOption[]>(
     () =>
       barangays
@@ -119,6 +130,7 @@ const TouristSpotForm: React.FC<TouristSpotFormProps> = ({
         .map((b) => ({ id: b.id, label: b.barangay })),
     [barangays, formData.municipality_id]
   );
+
   const categoryOptions = useMemo<FormOption[]>(
     () => categories.map((c) => ({ id: c.id, label: c.category })),
     [categories]
@@ -130,6 +142,7 @@ const TouristSpotForm: React.FC<TouristSpotFormProps> = ({
       null,
     [provinceOptions, formData.province_id]
   );
+
   const selectedMunicipality = useMemo<FormOption | null>(
     () =>
       municipalityOptions.find(
@@ -137,12 +150,14 @@ const TouristSpotForm: React.FC<TouristSpotFormProps> = ({
       ) ?? null,
     [municipalityOptions, formData.municipality_id]
   );
+
   const selectedBarangay = useMemo<FormOption | null>(
     () =>
       barangayOptions.find((o) => o.id === Number(formData.barangay_id)) ??
       null,
     [barangayOptions, formData.barangay_id]
   );
+  
   const selectedCategory = useMemo<FormOption | null>(
     () =>
       categoryOptions.find((o) => o.id === Number(formData.category_id)) ??
@@ -326,7 +341,6 @@ const TouristSpotForm: React.FC<TouristSpotFormProps> = ({
         }
         
         if (coreFieldsChanged) {
-          // Submit approval request for core business information changes
           await apiService.submitEditRequest(initialData.id, {
             ...spotData,
             ...(formData.spot_status
@@ -338,7 +352,6 @@ const TouristSpotForm: React.FC<TouristSpotFormProps> = ({
         }
         
         if (schedulesChanged) {
-          // Update schedules directly (no approval needed)
           await apiService.saveTouristSpotSchedules(initialData.id, mappedSchedules);
         }
         
@@ -382,10 +395,8 @@ const TouristSpotForm: React.FC<TouristSpotFormProps> = ({
     });
   };
 
-  // Helper function to check if significant business information has changed
   const hasSignificantChanges = async (newData: Partial<TouristSpot>, originalData: TouristSpot): Promise<boolean> => {
     try {
-      // Fetch current data from database to ensure we're comparing against latest state
       const currentData = await apiService.getTouristSpotById(originalData.id);
       
       const significantFields = [
@@ -434,7 +445,7 @@ const TouristSpotForm: React.FC<TouristSpotFormProps> = ({
           />
         );
 
-      case 1: // Location  
+      case 1: // Location
         return (
           <LocationStep
             formData={formData}
@@ -448,13 +459,12 @@ const TouristSpotForm: React.FC<TouristSpotFormProps> = ({
           />
         );
 
-      case 2: // Socials (new step)
+      case 2: // Socials
         return (
-          <div style={{ padding: '2rem', textAlign: 'center' }}>
-            <h3>Social Media & Contact</h3>
-            <p>This step will contain social media links and additional contact information.</p>
-            <p style={{ color: '#666', fontSize: '0.9em' }}>Coming soon...</p>
-          </div>
+          <SocialsStep
+            formData={formData}
+            onInputChange={handleInputChange}
+          />
         );
 
       case 3: // Schedule
@@ -547,10 +557,11 @@ const TouristSpotForm: React.FC<TouristSpotFormProps> = ({
   };
 
   return (
-    <Modal open={isVisible} onClose={handleClose}>
+    <Modal open={isVisible} onClose={handleClose} sx={{ zIndex: 2000 }}>
       <ModalDialog
         size="md"
         sx={{
+          zIndex: 2100,
           width: "90%",
           maxWidth: 1100,
           maxHeight: "90vh",
@@ -573,7 +584,7 @@ const TouristSpotForm: React.FC<TouristSpotFormProps> = ({
           onCancel={handleClose}
           mode={mode}
           loading={loading}
-          formData={formData} // Pass formData
+          formData={formData}
         >
           {renderStepContent()}
         </TouristSpotStepper>

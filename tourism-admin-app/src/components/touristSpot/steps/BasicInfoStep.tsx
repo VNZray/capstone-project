@@ -75,7 +75,7 @@ const BasicInfoStep: React.FC<BasicInfoStepProps> = ({
           </FormControl>
         </Grid>
 
-        <Grid xs={6}>
+        <Grid xs={12}>
           <FormControl>
             <FormLabel>Entry Fee (₱)</FormLabel>
             <Input
@@ -85,45 +85,6 @@ const BasicInfoStep: React.FC<BasicInfoStepProps> = ({
               onChange={onInputChange}
               placeholder="0"
               slotProps={{ input: { step: "0.01" } }}
-            />
-          </FormControl>
-        </Grid>
-        
-        <Grid xs={6}>
-          <FormControl>
-            <FormLabel>Contact Phone</FormLabel>
-            <Input
-              type="tel"
-              name="contact_phone"
-              value={formData.contact_phone}
-              onChange={onInputChange}
-              placeholder="Mobile Number"
-            />
-          </FormControl>
-        </Grid>
-
-        <Grid xs={6}>
-          <FormControl>
-            <FormLabel>Contact Email</FormLabel>
-            <Input
-              type="email"
-              name="contact_email"
-              value={formData.contact_email}
-              onChange={onInputChange}
-              placeholder="Email"
-            />
-          </FormControl>
-        </Grid>
-        
-        <Grid xs={6}>
-          <FormControl>
-            <FormLabel>Website</FormLabel>
-            <Input
-              type="url"
-              name="website"
-              value={formData.website}
-              onChange={onInputChange}
-              placeholder="Website URL"
             />
           </FormControl>
         </Grid>
