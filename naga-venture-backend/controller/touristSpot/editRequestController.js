@@ -15,7 +15,7 @@ export const submitEditRequest = async (req, res) => {
 
     if (
       !name || !description || !province_id || !municipality_id ||
-      !barangay_id || !contact_phone || !type_id ||
+      !barangay_id || !type_id ||
       !Array.isArray(category_ids) || category_ids.length === 0
     ) {
       return res.status(400).json({
