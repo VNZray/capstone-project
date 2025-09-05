@@ -1,6 +1,5 @@
 import express from 'express';
-import * as touristSpotController from '../controller/touristSpotController.js';
-import * as touristSpotCategoryController from '../controller/touristSpotCategoryController.js';
+import * as touristSpotController from '../controller/touristSpot/index.js';
 
 const router = express.Router();
 
@@ -23,8 +22,8 @@ router.get('/barangays/:municipality_id', touristSpotController.getBarangaysByMu
 router.get('/:id', touristSpotController.getTouristSpotById);
 
 // Categories management for tourist spots
-router.get('/:id/categories', touristSpotCategoryController.getTouristSpotCategories);
-router.put('/:id/categories', touristSpotCategoryController.updateTouristSpotCategories);
+router.get('/:id/categories', touristSpotController.getTouristSpotCategories);
+router.put('/:id/categories', touristSpotController.updateTouristSpotCategories);
 
 // Schedules endpoints
 router.get('/:id/schedules', touristSpotController.getTouristSpotSchedules);

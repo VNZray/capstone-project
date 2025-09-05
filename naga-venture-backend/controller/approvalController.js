@@ -6,25 +6,7 @@ export const getPendingEditRequests = async (req, res) => {
   try {
     const [rows] = await db.execute(`
       SELECT 
-        tse.id,
-        tse.tourist_spot_id,
-        tse.name,
-        tse.description,
-        tse.province_id,
-        tse.municipality_id,
-        tse.barangay_id,
-        tse.latitude,
-        tse.longitude,
-        tse.contact_phone,
-        tse.contact_email,
-        tse.website,
-        tse.entry_fee,
-        tse.spot_status,
-        tse.is_featured,
-        tse.type_id,
-        tse.approval_status,
-        tse.submitted_at,
-        tse.reviewed_at,
+        tse.*,
         t.type,
         p.province,
         m.municipality,
@@ -53,9 +35,8 @@ export const getPendingEditRequests = async (req, res) => {
       ORDER BY tse.submitted_at DESC
     `);
 
-    // Get current categories for each tourist spot (since categories are now managed directly)
+    // Get current categories for each tourist spot
     for (let row of rows) {
-      // Get current categories
       const [currentCategories] = await db.execute(
         `SELECT c.id, c.category, c.type_id 
          FROM tourist_spot_categories tsc
@@ -78,10 +59,10 @@ export const getPendingEditRequests = async (req, res) => {
   }
 };
 
-// Get all pending tourist spots (new submissions)
+// Get all pending tourist spots
 export const getPendingTouristSpots = async (req, res) => {
   try {
-    // Explicitly fetch only pending tourist spots with required joins
+    // Only pending tourist spots with required joins
     const [rows] = await db.execute(`
       SELECT 
         ts.id, ts.name, ts.description, ts.province_id, ts.municipality_id, ts.barangay_id,
@@ -121,7 +102,7 @@ export const getPendingTouristSpots = async (req, res) => {
   }
 };
 
-// Approve a tourist spot (change status from pending to active)
+// Change status from pending to active
 export const approveTouristSpot = async (req, res) => {
   try {
     const { id } = req.params;
