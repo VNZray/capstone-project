@@ -7,7 +7,7 @@ import {
   IconButton,
   Avatar,
 } from "@mui/material";
-import { Bell, Repeat } from "lucide-react";
+import { Bell, Repeat, ArrowLeft } from "lucide-react";
 import { useAuth } from "@/src/context/AuthContext"; // adjust path if needed
 import Text from "./Text";
 
@@ -45,8 +45,18 @@ export default function MainHeader() {
       sx={{ backgroundColor: "#fff", color: "#000", boxShadow: 2 }}
     >
       <Toolbar sx={{ display: "flex", justifyContent: "space-between" }}>
-        {/* Left - Page Title */}
-        <Text variant="header-title">{title}</Text>
+        {/* Left - Back Button & Page Title */}
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+          <IconButton
+            onClick={() => navigate(-1)}
+            color="inherit"
+            sx={{ mr: 1 }}
+            aria-label="Go Back"
+          >
+            <ArrowLeft size={22} />
+          </IconButton>
+          <Text variant="header-title">{title}</Text>
+        </Box>
 
         {/* Right - Actions */}
         <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>

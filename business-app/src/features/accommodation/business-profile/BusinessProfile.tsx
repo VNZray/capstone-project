@@ -27,6 +27,8 @@ import { getData, updateData } from "@/src/api_function";
 import type { ExternalBooking } from "@/src/types/ExternalBooking";
 import { bookingLogos } from "@/src/types/BookingLogos";
 import EditBusinessHoursModal from "./components/EditBusinessHoursModal";
+import type { Amenity } from "@/src/types/Amenity";
+import EditAmenitiesModal from "./components/EditAmenitiesModal";
 
 const BusinessProfile = () => {
   const { businessDetails } = useBusiness();
@@ -39,10 +41,11 @@ const BusinessProfile = () => {
   const [editAddressOpen, setEditAddressOpen] = useState(false);
   const [editMapCoordinatesOpen, setEditMapCoordinatesOpen] = useState(false);
   const [editBusinessHoursOpen, setEditBusinessHoursOpen] = useState(false);
-
+  const [editAmenitiesOpen, setEditAmenitiesOpen] = useState(false);
   const [externalBooking, setExternalBooking] = useState<ExternalBooking[]>([]);
 
   const [businessHours, setBusinessHours] = useState<BusinessHours[]>([]);
+  const [amenities, setAmenities] = React.useState<Amenity[]>([]);
 
   const getBusinessHours = async () => {
     if (!businessDetails?.id) return;
@@ -52,6 +55,30 @@ const BusinessProfile = () => {
       : [];
     setBusinessHours(filtered);
   };
+
+  const fetchBusinessAmenities = async () => {
+    if (!businessDetails?.id) return;
+
+    const businessAmenityResponse = await getData("business-amenities");
+    const amenityResponse = await getData("amenities");
+
+    const filtered = Array.isArray(businessAmenityResponse)
+      ? businessAmenityResponse
+          .filter((ba) => ba.business_id === businessDetails.id)
+          .map((ba) => {
+            const match: Amenity | undefined = (
+              amenityResponse as Amenity[]
+            ).find((a: Amenity) => a.id === ba.amenity_id);
+            return { ...ba, name: match?.name || "Unknown" };
+          })
+      : [];
+
+    setAmenities(filtered);
+  };
+
+  React.useEffect(() => {
+    fetchBusinessAmenities();
+  }, [businessDetails?.id]);
 
   const formatTime = (time: string) => {
     const [hour, minute] = time.split(":");
@@ -181,6 +208,7 @@ const BusinessProfile = () => {
 
   const activateBooking = async (businessId: string, hasBooking: boolean) => {
     await updateData(businessId, { hasBooking }, "business");
+    window.location.reload();
   };
 
   return (
@@ -399,14 +427,26 @@ const BusinessProfile = () => {
                   startDecorator={<EditIcon />}
                   size="sm"
                   variant="outlined"
+                  onClick={() => setEditAmenitiesOpen(true)}
                 >
                   Edit
                 </Button>
               </Container>
 
-              <Typography fontFamily={"poppins"} level="body-md">
-                {`(Not yet implemented)`}
-              </Typography>
+              <Paper variant="outlined" sx={{ p: 2, flex: 1 }}>
+                <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+                  {amenities.map((amenity) => (
+                    <Chip
+                      key={amenity.id}
+                      size="lg"
+                      variant="soft"
+                      color="primary"
+                    >
+                      {amenity.name}
+                    </Chip>
+                  ))}
+                </div>
+              </Paper>
             </Container>
 
             {businessDetails?.business_type_id === 1 && (
@@ -842,6 +882,14 @@ const BusinessProfile = () => {
         initialBusinessImage={businessDetails?.business_image || ""}
         businessId={businessDetails?.id}
         onClose={() => setEditBusinessOpen(false)}
+        onSave={handleSaveBusiness}
+        onUpdate={() => window.location.reload()}
+      />
+
+      <EditAmenitiesModal
+        open={editAmenitiesOpen}
+        businessId={businessDetails?.id}
+        onClose={() => setEditAmenitiesOpen(false)}
         onSave={handleSaveBusiness}
         onUpdate={() => window.location.reload()}
       />
