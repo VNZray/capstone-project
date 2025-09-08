@@ -9,7 +9,7 @@ const ReviewsComponent = () => {
     <Paper
       elevation={0}
       style={{
-        padding: "20px",
+        padding: "0 20px",
         borderRadius: "20px",
         display: "flex",
         flexDirection: "column",

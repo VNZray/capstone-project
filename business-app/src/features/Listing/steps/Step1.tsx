@@ -1,6 +1,6 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import CardHeader from "@/src/components/CardHeader";
-import type { Business } from "@/src/types/Business";
+import type { Business, BusinessHours } from "@/src/types/Business";
 import { useBusinessBasics } from "@/src/hooks/useBusinessData";
 import { supabase } from "@/src/utils/supabase";
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
@@ -13,27 +13,79 @@ import {
   Textarea,
   Button,
   FormLabel,
+  Typography,
+  Autocomplete,
 } from "@mui/joy";
 import Container from "@/src/components/Container";
-import { Sheet, SheetIcon, UploadIcon } from "lucide-react";
-import { ToggleButton, ToggleButtonGroup } from "@mui/material";
+import { UploadIcon } from "lucide-react";
+import { Switch, ToggleButton, ToggleButtonGroup } from "@mui/material";
+import { Chip } from "@mui/joy";
 import HotelIcon from "@mui/icons-material/Hotel";
 import StoreIcon from "@mui/icons-material/Store";
+import AccessTimeIcon from "@mui/icons-material/AccessTime";
 import Text from "@/src/components/Text";
-import Label from "@/src/components/Label";
+import type { Amenity, BusinessAmenity } from "@/src/types/Amenity";
+import { getData, insertData } from "@/src/api_function";
 type Props = {
   data: Business;
   setData: React.Dispatch<React.SetStateAction<Business>>;
   api: string;
+  businessHours: BusinessHours[];
+  businessAmenities: BusinessAmenity[];
+  setBusinessHours: React.Dispatch<React.SetStateAction<BusinessHours[]>>;
+  setBusinessAmenities: React.Dispatch<React.SetStateAction<BusinessAmenity[]>>;
 };
 
-const Step1: React.FC<Props> = ({ api, data, setData }) => {
+const Step1: React.FC<Props> = ({
+  api,
+  data,
+  setData,
+  businessHours,
+  setBusinessHours,
+  businessAmenities,
+  setBusinessAmenities,
+}) => {
   const {
     businessCategories,
     businessTypes,
     setSelectedType,
     handleImageChange,
   } = useBusinessBasics(api, data, setData);
+
+  const [amenities, setAmenities] = useState<Amenity[]>([]);
+  const [selectedAmenities, setSelectedAmenities] = React.useState<Amenity[]>(
+    []
+  );
+  // get amenities
+  const fetchAmenities = async () => {
+    const response = await getData("amenities");
+    if (response) {
+      setAmenities(response);
+    }
+  };
+
+  const addAmenity = (name: string) => {
+    insertData({ name }, "amenities");
+  };
+
+  useEffect(() => {
+    fetchAmenities();
+  }, []);
+
+  // Sync selectedAmenities to parent businessAmenities
+  useEffect(() => {
+    // Only update if selectedAmenities is not empty
+    if (selectedAmenities.length > 0) {
+      setBusinessAmenities(
+        selectedAmenities.map((amenity) => ({
+          business_id: data.id ?? 0, // use the current business id or 0 as fallback
+          amenity_id: amenity.id,
+        }))
+      );
+    } else {
+      setBusinessAmenities([]);
+    }
+  }, [selectedAmenities, setBusinessAmenities]);
 
   // Upload immediately after selecting an image
   const handleImageSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -196,6 +248,69 @@ const Step1: React.FC<Props> = ({ api, data, setData }) => {
                   }
                 />
               </FormControl>
+
+              <FormControl>
+                <FormLabel>Business Hours</FormLabel>
+
+                {businessHours.map((hour, index) => (
+                  <Container
+                    key={hour.id}
+                    padding="12px 0"
+                    align="center"
+                    direction="row"
+                    style={{ gap: "12px" }}
+                  >
+                    <Typography level="body-sm" style={{ width: "80px" }}>
+                      {hour.day_of_week}
+                    </Typography>
+
+                    <Input
+                      size="md"
+                      type="time"
+                      value={hour.open_time}
+                      readOnly={!hour.is_open}
+                      onChange={(e) => {
+                        const newTime = e.target.value;
+                        setBusinessHours((prev) =>
+                          prev.map((h, i) =>
+                            i === index ? { ...h, open_time: newTime } : h
+                          )
+                        );
+                      }}
+                    />
+
+                    <Input
+                      size="md"
+                      type="time"
+                      value={hour.close_time}
+                      readOnly={!hour.is_open}
+                      onChange={(e) => {
+                        const newTime = e.target.value;
+                        setBusinessHours((prev) =>
+                          prev.map((h, i) =>
+                            i === index ? { ...h, close_time: newTime } : h
+                          )
+                        );
+                      }}
+                    />
+
+                    <Typography level="body-sm">
+                      {hour.is_open ? "Open" : "Closed"}
+                    </Typography>
+                    <Switch
+                      checked={hour.is_open}
+                      onChange={(e) => {
+                        const checked = e.target.checked;
+                        setBusinessHours((prev) =>
+                          prev.map((h, i) =>
+                            i === index ? { ...h, is_open: checked } : h
+                          )
+                        );
+                      }}
+                    />
+                  </Container>
+                ))}
+              </FormControl>
             </Container>
           </Grid>
           <Grid xs={6}>
@@ -271,6 +386,96 @@ const Step1: React.FC<Props> = ({ api, data, setData }) => {
                   accept="image/*"
                   onChange={handleImageSelect}
                   style={{ display: "none" }}
+                />
+              </FormControl>
+
+              <FormControl id="multiple-limit-tags">
+                <FormLabel>Amenities</FormLabel>
+                <Autocomplete
+                  size="lg"
+                  multiple
+                  freeSolo
+                  placeholder="Amenities"
+                  limitTags={6}
+                  options={amenities}
+                  value={selectedAmenities}
+                  getOptionLabel={(option) =>
+                    typeof option === "string" ? option : option.name
+                  }
+                  renderTags={(value, getTagProps) =>
+                    value.map((option, index) => (
+                      <span key={option.id} style={{ margin: 2 }}>
+                        <Chip
+                          {...getTagProps({ index })}
+                          color="primary"
+                          variant="outlined"
+                          size="lg"
+                        >
+                          {option.name}
+                        </Chip>
+                      </span>
+                    ))
+                  }
+                  filterOptions={(options, state) => {
+                    const inputValue = state.inputValue.trim().toLowerCase();
+                    const filtered = options.filter(
+                      (option) =>
+                        typeof option !== "string" &&
+                        option.name.toLowerCase().includes(inputValue)
+                    );
+
+                    // If user typed something not in list → add “Add …”
+                    if (
+                      inputValue !== "" &&
+                      !options.some(
+                        (opt) =>
+                          typeof opt !== "string" &&
+                          opt.name.toLowerCase() === inputValue
+                      )
+                    ) {
+                      return [
+                        ...filtered,
+                        { id: -1, name: `Add "${state.inputValue}"` },
+                      ];
+                    }
+
+                    return filtered;
+                  }}
+                  onChange={async (_, newValue) => {
+                    const last = newValue[newValue.length - 1];
+
+                    // User chose "Add ..."
+                    if (last && typeof last !== "string" && last.id === -1) {
+                      const newAmenityName = last.name
+                        .replace(/^Add\s+"|"$/g, "")
+                        .trim();
+                      await addAmenity(newAmenityName);
+                      await fetchAmenities();
+
+                      // Find inserted amenity (assumes fetchAmenities updates amenities)
+                      const inserted = amenities.find(
+                        (a) =>
+                          a.name.toLowerCase() === newAmenityName.toLowerCase()
+                      );
+                      if (inserted) {
+                        setSelectedAmenities([
+                          ...newValue
+                            .slice(0, -1)
+                            .filter(
+                              (item): item is Amenity =>
+                                typeof item !== "string"
+                            ),
+                          inserted,
+                        ]);
+                      }
+                    } else {
+                      setSelectedAmenities(
+                        newValue.filter(
+                          (item): item is Amenity => typeof item !== "string"
+                        )
+                      );
+                    }
+                  }}
                 />
               </FormControl>
             </Container>

@@ -17,10 +17,8 @@ interface User {
   last_name?: string;
 }
 
-const API_HOST =
-  Platform.OS === 'android' ? '10.0.2.2' : 'localhost';
-const API_URL = `http://${API_HOST}:3000/api`;
-
+// const API_URL = 'http://192.168.1.8:3000/api';
+const API_URL = "http://192.168.1.11:3000/api";
 
 interface AuthContextType {
   user: User | null;

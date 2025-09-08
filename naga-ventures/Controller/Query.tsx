@@ -1,5 +1,5 @@
+import api from "@/services/api";
 import axios from "axios";
-import api from "@/src/services/api";
 
 export const insertData = async (data: any, table: string) => {
   try {
