@@ -5,9 +5,8 @@ import {
   Typography,
   Sheet,
   Chip,
-  Divider,
 } from "@mui/joy";
-import { Edit, Flag, Clock } from "lucide-react";
+import { Edit, Flag} from "lucide-react";
 import type { Report } from "../../../types/Report";
 
 interface BasicReportSectionProps {

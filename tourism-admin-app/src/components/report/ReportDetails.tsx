@@ -79,9 +79,7 @@ const ReportDetails: React.FC<ReportDetailsProps> = ({
         alignItems="center"
       >
         <Typography level="h2">Report Details</Typography>
-        <Button variant="plain" onClick={onBack}>
-          ← Back
-        </Button>
+        <Button variant="plain" onClick={onBack}> ← Back </Button>
       </Stack>
 
       {/* Two-column responsive layout */}
@@ -93,24 +91,16 @@ const ReportDetails: React.FC<ReportDetailsProps> = ({
               report={report} 
               onEdit={handleSectionEdit} 
             />
-            <AttachmentsSection 
-              report={report} 
-            />
-            <StatusHistorySection 
-              report={report} 
-            />
+            <AttachmentsSection report={report} />
+            <StatusHistorySection report={report}/>
           </Stack>
         </Grid>
 
         {/* Right Column - Reporter and Target Info */}
         <Grid xs={12} lg={4}>
           <Stack spacing={2}>
-            <ReporterInfoSection 
-              report={report} 
-            />
-            <TargetInfoSection 
-              report={report} 
-            />
+            <ReporterInfoSection report={report}/>
+            <TargetInfoSection report={report}/>
           </Stack>
         </Grid>
       </Grid>

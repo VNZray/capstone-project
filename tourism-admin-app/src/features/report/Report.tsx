@@ -226,9 +226,9 @@ const ReportManagement: React.FC = () => {
               </Grid>
             </Grid>
 
-            {/* Filters, Search, and Refresh in one row */}
-            <Grid container spacing={2} alignItems="flex-end">
-              <Grid xs={12} sm={6} md={3}>
+            {/* Filters, Search, and Refresh aligned with cards/table */}
+              <Grid container spacing={2} justifyContent="space-between"  alignItems="center" sx={{ width: '99%'}}>
+              <Grid xs={12} sm={6} md={4}>
                 <ReportFilters
                   selectedStatus={selectedStatus}
                   selectedTargetType={selectedTargetType}
@@ -237,14 +237,16 @@ const ReportManagement: React.FC = () => {
                   onRefresh={fetchReports}
                 />
               </Grid>
-              <Grid xs={12} sm={6} md={6}>
-                <SearchBar
-                  value={searchQuery}
-                  onChangeText={handleSearch}
-                  onSearch={() => console.log("Searching for:", searchQuery)}
-                  placeholder="Search reports by title, description, or reporter email..."
-                  containerStyle={{ width: '100%' }}
-                />
+              <Grid xs={12} sm={6} md={8} sx={{ display: 'flex', justifyContent: { xs: 'flex-start', md: 'flex-end' } }}>
+                <Box sx={{ width: { xs: '100%', sm: '80%', md: '60%' }, minWidth: 240 }}>
+                  <SearchBar
+                    value={searchQuery}
+                    onChangeText={handleSearch}
+                    onSearch={() => console.log("Searching for:", searchQuery)}
+                    placeholder="Search reports by title, description, or reporter email..."
+                    containerStyle={{ width: '100%' }}
+                  />
+                </Box>
               </Grid>
             </Grid>
 
