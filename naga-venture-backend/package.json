@@ -12,7 +12,8 @@
     "createdb": "node scripts/create-db.js",
     "cleardb": "node scripts/clear-db.js",
     "seed": "knex seed:run --knexfile knexfile.cjs --env development",
-    "deletedb": "node scripts/delete-db.js"
+    "deletedb": "node scripts/delete-db.js",
+    "resetdb": "npm run deletedb && npm run createdb && npm run latest && npm run seed"
   },
   "keywords": [],
   "author": "",
