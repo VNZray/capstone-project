@@ -39,6 +39,25 @@ const ReporterInfoSection: React.FC<ReporterInfoSectionProps> = ({ report }) => 
           </Typography>
         </Stack>
 
+
+        <Stack spacing={1}>
+          <Typography level="title-sm">
+            Name
+          </Typography>
+          <Typography level="body-md">
+            {((report.reporter_first_name || report.reporter_last_name) ? `${report.reporter_first_name || ''} ${report.reporter_last_name || ''}`.trim() : 'Not provided')}
+          </Typography>
+        </Stack>
+
+        <Stack spacing={1}>
+          <Typography level="title-sm">
+            Contact Number
+          </Typography>
+          <Typography level="body-md">
+            {report.reporter_contact || 'Not provided'}
+          </Typography>
+        </Stack>
+
         <Divider />
 
         <Stack spacing={1}>

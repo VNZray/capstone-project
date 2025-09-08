@@ -1,6 +1,9 @@
 export interface Report {
   id: string;
   reporter_id: string;
+  reporter_first_name?: string;
+  reporter_last_name?: string;
+  reporter_contact?: string;
   target_type: 'business' | 'event' | 'tourist_spot' | 'accommodation';
   target_id: string;
   title: string;

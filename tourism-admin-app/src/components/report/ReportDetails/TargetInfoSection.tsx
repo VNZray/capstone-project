@@ -51,7 +51,7 @@ const TargetInfoSection: React.FC<TargetInfoSectionProps> = ({ report }) => {
             Target Name
           </Typography>
           <Typography level="body-md">
-            {report.target_info?.name || 'Loading...'}
+            {report.target_info?.name || `${report.target_type.replace('_', ' ')} ${report.target_id}`}
           </Typography>
         </Stack>
 

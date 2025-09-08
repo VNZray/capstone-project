@@ -33,13 +33,23 @@ const ReportDetails: React.FC<ReportDetailsProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [showUpdateModal, setShowUpdateModal] = useState(false);
 
+
   useEffect(() => {
     const fetchReportDetails = async () => {
       try {
         setLoading(true);
         setError(null);
         const data = await apiService.getReportById(reportId);
-        setReport(data);
+        if (!data.target_info) {
+          try {
+            const targetInfo = await apiService.getTargetInfo(data.target_type, data.target_id);
+            setReport({ ...data, target_info: targetInfo });
+          } catch {
+            setReport(data);
+          }
+        } else {
+          setReport(data);
+        }
       } catch (err) {
         console.error(err);
         setError("Failed to load report details.");
