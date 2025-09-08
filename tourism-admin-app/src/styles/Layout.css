@@ -36,7 +36,6 @@
 .auth-layout {
   width: 100vw;
   height: 100vh;
-  /* instead of 100vw */
   background-color: var(--background-color);
   overflow-x: hidden;
 }

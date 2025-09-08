@@ -16,6 +16,7 @@ import approvalRoutes from "./routes/approval.js";
 import amenityRoutes from "./routes/amenity.js";
 import permitRoutes from "./routes/permit.js";
 import roomRoutes from "./routes/room.js";
+import reportRoutes from "./routes/report.js";
 import roomAmenityRoutes from "./routes/room_amenities.js";
 import businessAmenityRoutes from "./routes/business_amenities.js";
 
@@ -41,6 +42,7 @@ const routes = [
   { path: "/api/approval", handler: approvalRoutes },
   { path: "/api/permit", handler: permitRoutes },
   { path: "/api/room", handler: roomRoutes },
+  { path: "/api/reports", handler: reportRoutes },
 ];
 
 app.use(cors());
@@ -51,8 +53,9 @@ routes.forEach((route) => {
   app.use(route.path, route.handler);
 });
 
-app.listen(PORT, () => {
+app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Server running at http://localhost:${PORT}`);
+  console.log(`🌐 Also accessible at http://192.168.111.111:${PORT}`);
   console.log("✅ Connected to MariaDB (Promise Pool)");
   console.log("✅ API is ready to use\n");
 
