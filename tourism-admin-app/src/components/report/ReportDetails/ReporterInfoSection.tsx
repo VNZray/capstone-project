@@ -5,12 +5,22 @@ import {
   Sheet,
   Divider,
 } from "@mui/joy";
-import { User, Mail, Hash } from "lucide-react";
+import { User, Mail, Hash, Clock } from "lucide-react";
 import type { Report } from "../../../types/Report";
 
 interface ReporterInfoSectionProps {
   report: Report;
 }
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  };
 
 const ReporterInfoSection: React.FC<ReporterInfoSectionProps> = ({ report }) => {
   return (
@@ -40,6 +50,25 @@ const ReporterInfoSection: React.FC<ReporterInfoSectionProps> = ({ report }) => 
           </Typography>
         </Stack>
       </Stack>
+
+        <Divider sx={{ my: 2 }} />
+
+        {/* Timestamps */}
+        <Stack spacing={1}>
+          <Typography level="title-sm" startDecorator={<Clock size={16} />}>
+            Timeline
+          </Typography>
+          <Stack spacing={0.5}>
+            <Typography level="body-sm">
+              <strong>Created:</strong> {formatDate(report.created_at)}
+            </Typography>
+            {report.updated_at && (
+              <Typography level="body-sm">
+                <strong>Last Updated:</strong> {formatDate(report.updated_at)}
+              </Typography>
+            )}
+          </Stack>
+        </Stack>
     </Sheet>
   );
 };

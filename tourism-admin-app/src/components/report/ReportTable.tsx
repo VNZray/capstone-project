@@ -85,20 +85,6 @@ const ReportTable: React.FC<ReportTableProps> = ({
     });
   };
 
-  const getPriorityBadge = (report: Report) => {
-    const daysSinceCreated = Math.floor(
-      (new Date().getTime() - new Date(report.created_at).getTime()) / (1000 * 60 * 60 * 24)
-    );
-    
-    if (report.status === 'submitted' && daysSinceCreated > 7) {
-      return <Chip color="danger" variant="soft" size="sm">High Priority</Chip>;
-    }
-    if (report.status === 'under_review' && daysSinceCreated > 3) {
-      return <Chip color="warning" variant="soft" size="sm">Medium Priority</Chip>;
-    }
-    return null;
-  };
-
   if (loading) {
     return (
       <Sheet variant="outlined" sx={{ p: 4, textAlign: 'center', borderRadius: 8 }}>
@@ -119,12 +105,12 @@ const ReportTable: React.FC<ReportTableProps> = ({
         }}
       >
         <Grid container spacing={2} alignItems="center">
-          <Grid xs={12} sm={2.5}>
+          <Grid xs={12} sm={3}>
             <Typography level="title-md" sx={{ fontWeight: 700, color: '#fff' }}>
               Report Title
             </Typography>
           </Grid>
-          <Grid xs={12} sm={1.5}>
+          <Grid xs={12} sm={2}>
             <Typography level="title-md" sx={{ fontWeight: 700, color: '#fff' }}>
               Reporter
             </Typography>
@@ -141,15 +127,10 @@ const ReportTable: React.FC<ReportTableProps> = ({
           </Grid>
           <Grid xs={12} sm={1.5}>
             <Typography level="title-md" sx={{ fontWeight: 700, color: '#fff' }}>
-              Priority
-            </Typography>
-          </Grid>
-          <Grid xs={12} sm={1.5}>
-            <Typography level="title-md" sx={{ fontWeight: 700, color: '#fff' }}>
               Created
             </Typography>
           </Grid>
-          <Grid xs={12} sm={1.5}>
+          <Grid xs={12} sm={2}>
             <Typography level="title-md" sx={{ fontWeight: 700, color: '#fff' }}>
               Actions
             </Typography>
@@ -172,7 +153,7 @@ const ReportTable: React.FC<ReportTableProps> = ({
           }}
         >
           <Grid container spacing={2} alignItems="center">
-            <Grid xs={12} sm={2.5}>
+            <Grid xs={12} sm={3}>
               <Stack spacing={0.5}>
                 <Typography level="body-md" sx={{ fontWeight: 600 }}>
                   {report.title}
@@ -184,8 +165,8 @@ const ReportTable: React.FC<ReportTableProps> = ({
                 </Typography>
               </Stack>
             </Grid>
-            
-            <Grid xs={12} sm={1.5}>
+
+            <Grid xs={12} sm={2}>
               <Typography level="body-md">
                 {report.reporter_email || 'Unknown'}
               </Typography>
@@ -217,16 +198,12 @@ const ReportTable: React.FC<ReportTableProps> = ({
             </Grid>
             
             <Grid xs={12} sm={1.5}>
-              {getPriorityBadge(report)}
-            </Grid>
-            
-            <Grid xs={12} sm={1.5}>
               <Typography level="body-sm">
                 {formatDate(report.created_at)}
               </Typography>
             </Grid>
             
-            <Grid xs={12} sm={1.5}>
+            <Grid xs={12} sm={2}>
               <Stack direction="row" spacing={1}>
                 <Button
                   size="sm"

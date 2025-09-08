@@ -96,19 +96,19 @@ const ReportDetails: React.FC<ReportDetailsProps> = ({
             <AttachmentsSection 
               report={report} 
             />
+            <StatusHistorySection 
+              report={report} 
+            />
           </Stack>
         </Grid>
 
-        {/* Right Column - Reporter, Target and Status Info */}
+        {/* Right Column - Reporter and Target Info */}
         <Grid xs={12} lg={4}>
           <Stack spacing={2}>
             <ReporterInfoSection 
               report={report} 
             />
             <TargetInfoSection 
-              report={report} 
-            />
-            <StatusHistorySection 
               report={report} 
             />
           </Stack>

@@ -27,16 +27,6 @@ const BasicReportSection: React.FC<BasicReportSectionProps> = ({ report, onEdit 
     }
   };
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
-  };
-
   return (
     <Sheet variant="outlined" sx={{ p: 2, borderRadius: 8 }}>
       <Stack
@@ -76,33 +66,12 @@ const BasicReportSection: React.FC<BasicReportSectionProps> = ({ report, onEdit 
           </Chip>
         </Stack>
 
-        <Divider />
-
         {/* Description */}
         <Stack spacing={1}>
           <Typography level="title-sm">Description</Typography>
           <Typography level="body-md" sx={{ lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>
             {report.description}
           </Typography>
-        </Stack>
-
-        <Divider />
-
-        {/* Timestamps */}
-        <Stack spacing={1}>
-          <Typography level="title-sm" startDecorator={<Clock size={16} />}>
-            Timeline
-          </Typography>
-          <Stack spacing={0.5}>
-            <Typography level="body-sm">
-              <strong>Created:</strong> {formatDate(report.created_at)}
-            </Typography>
-            {report.updated_at && (
-              <Typography level="body-sm">
-                <strong>Last Updated:</strong> {formatDate(report.updated_at)}
-              </Typography>
-            )}
-          </Stack>
         </Stack>
       </Stack>
     </Sheet>
