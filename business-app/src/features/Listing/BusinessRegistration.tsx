@@ -15,10 +15,11 @@ import Step4 from "./steps/Step4";
 import Step5 from "./steps/Step5";
 import Step6 from "./steps/Step6";
 import Step7 from "./steps/Step7";
-import type { Business } from "@/src/types/Business";
+import type { Business, BusinessHours } from "@/src/types/Business";
 import axios from "axios";
 import type { Permit } from "@/src/types/Permit";
 import { insertData } from "@/src/api_function";
+import type { Amenity, BusinessAmenity } from "@/src/types/Amenity";
 
 // steps definition
 const steps = [
@@ -92,6 +93,61 @@ const BusinessRegistration: React.FC = () => {
   });
 
   const [permitData, setPermitData] = useState<Permit[]>([]);
+  const [businessAmenities, setBusinessAmenities] = useState<BusinessAmenity[]>(
+    []
+  );
+
+  const [businessHours, setBusinessHours] = useState<BusinessHours[]>([
+    {
+      day_of_week: "Monday",
+      business_id: "",
+      open_time: "08:00",
+      close_time: "22:00",
+      is_open: false,
+    },
+    {
+      day_of_week: "Tuesday",
+      business_id: "",
+      open_time: "08:00",
+      close_time: "22:00",
+      is_open: false,
+    },
+    {
+      day_of_week: "Wednesday",
+      business_id: "",
+      open_time: "08:00",
+      close_time: "22:00",
+      is_open: false,
+    },
+    {
+      day_of_week: "Thursday",
+      business_id: "",
+      open_time: "08:00",
+      close_time: "22:00",
+      is_open: false,
+    },
+    {
+      day_of_week: "Friday",
+      business_id: "",
+      open_time: "08:00",
+      close_time: "22:00",
+      is_open: false,
+    },
+    {
+      day_of_week: "Saturday",
+      business_id: "",
+      open_time: "08:00",
+      close_time: "22:00",
+      is_open: false,
+    },
+    {
+      day_of_week: "Sunday",
+      business_id: "",
+      open_time: "08:00",
+      close_time: "22:00",
+      is_open: false,
+    },
+  ]);
 
   useEffect(() => {
     const fetchOwnerId = async () => {
@@ -122,7 +178,11 @@ const BusinessRegistration: React.FC = () => {
     bookingSite: externalBookings,
     setBookingSites: setExternalBookings,
     permitData,
+    businessHours,
+    businessAmenities,
     setPermitData,
+    setBusinessHours,
+    setBusinessAmenities,
     setData: setFormData,
   };
 
@@ -161,6 +221,31 @@ const BusinessRegistration: React.FC = () => {
               link: site.link,
             });
           })
+        );
+      }
+
+      if (businessHours.length > 0) {
+        await Promise.all(
+          businessHours.map((hours) =>
+            axios.post(`${api}/business-hours`, {
+              business_id: businessId,
+              day_of_week: hours.day_of_week,
+              open_time: hours.open_time,
+              close_time: hours.close_time,
+              is_open: hours.is_open,
+            })
+          )
+        );
+      }
+
+      if (businessAmenities.length > 0) {
+        await Promise.all(
+          businessAmenities.map((amenity) =>
+            axios.post(`${api}/business-amenities`, {
+              business_id: businessId,
+              amenity_id: amenity.amenity_id,
+            })
+          )
         );
       }
 

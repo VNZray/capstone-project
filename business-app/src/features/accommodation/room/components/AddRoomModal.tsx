@@ -14,15 +14,18 @@ import {
   Stack,
   Textarea,
   Grid,
+  Autocomplete,
 } from "@mui/joy";
 import placeholderImage from "@/src/assets/images/placeholder-image.png";
 import type { Room } from "@/src/types/Business";
 import { useBusiness } from "@/src/context/BusinessContext";
 import CardHeader from "@/src/components/CardHeader";
-import { insertData } from "@/src/api_function";
+import { getData, insertData } from "@/src/api_function";
 import { data } from "react-router-dom";
 import { supabase } from "@/src/utils/supabase";
 import { UploadIcon } from "lucide-react";
+import type { Amenity } from "@/src/types/Amenity";
+import { useEffect } from "react";
 interface AddRoomModalProps {
   open: boolean;
   onClose: () => void;
@@ -37,20 +40,26 @@ export default function AddRoomModal({
   const { businessDetails } = useBusiness();
   const [roomImage, setRoomImage] = React.useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = React.useState<string | null>(null);
+  const [amenities, setAmenities] = React.useState<Amenity[]>([]);
+  const [selectedAmenities, setSelectedAmenities] = React.useState<Amenity[]>(
+    []
+  );
 
-  // Handle file input change
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      setRoomImage(file);
-      const preview = URL.createObjectURL(file);
-      setPreviewUrl(preview);
-      setRoomData((prev) => ({
-        ...prev,
-        room_image: preview,
-      }));
+  // get amenities
+  const fetchAmenities = async () => {
+    const response = await getData("amenities");
+    if (response) {
+      setAmenities(response);
     }
   };
+
+  const addAmenity = (name: string) => {
+    insertData({ name }, "amenities");
+  };
+
+  useEffect(() => {
+    fetchAmenities();
+  }, []);
 
   const [roomData, setRoomData] = React.useState<Room>({
     id: "",
@@ -121,6 +130,15 @@ export default function AddRoomModal({
       return;
     }
 
+    const addAmenityPromises = selectedAmenities.map((amenity) => {
+      return insertData(
+        { room_id: response.id, amenity_id: amenity.id },
+        "room-amenities"
+      );
+    });
+
+    await Promise.all(addAmenityPromises);
+
     // Reset form
     setRoomData({
       id: "",
@@ -159,7 +177,7 @@ export default function AddRoomModal({
         >
           <Stack spacing={2}>
             <Grid container spacing={2}>
-              <Grid sx={{ paddingLeft: "0" }} xs={6}>
+              <Grid sx={{ paddingLeft: "0" }} xs={4}>
                 <FormControl required>
                   <FormLabel>Room Number</FormLabel>
                   <Input
@@ -173,40 +191,26 @@ export default function AddRoomModal({
                 </FormControl>
               </Grid>
 
-              <Grid sx={{ paddingRight: "0" }} xs={6}>
+              <Grid xs={4}>
                 <FormControl required>
                   <FormLabel>Floor</FormLabel>
                   <Input
                     size="md"
+                    type="number"
                     placeholder="Enter floor"
                     value={roomData.floor}
                     onChange={(e) =>
-                      setRoomData({ ...roomData, floor: e.target.value })
+                      setRoomData({
+                        ...roomData,
+                        floor: e.target.value,
+                      })
                     }
                   />
                 </FormControl>
               </Grid>
-            </Grid>
 
-            {/* Room Type */}
-            <FormControl required>
-              <FormLabel>Room Type</FormLabel>
-              <Select
-                size="md"
-                value={roomData.room_type}
-                onChange={(_, value) =>
-                  setRoomData({ ...roomData, room_type: value || "" })
-                }
-              >
-                <Option value="Single">Single</Option>
-                <Option value="Double">Double</Option>
-                <Option value="Suite">Suite</Option>
-              </Select>
-            </FormControl>
-
-            <Grid container spacing={2}>
-              <Grid xs={6}>
-                <FormControl>
+              <Grid sx={{ paddingRight: "0" }} xs={4}>
+                <FormControl required>
                   <FormLabel>Capacity</FormLabel>
                   <Input
                     size="md"
@@ -219,8 +223,122 @@ export default function AddRoomModal({
                   />
                 </FormControl>
               </Grid>
+            </Grid>
 
-              <Grid xs={6}>
+            <Grid container spacing={2}>
+              <Grid sx={{ paddingLeft: "0" }} xs={6}>
+                <FormControl required>
+                  <FormLabel>Room Type</FormLabel>
+                  <Select
+                    size="md"
+                    value={roomData.room_type}
+                    onChange={(_, value) =>
+                      setRoomData({ ...roomData, room_type: value || "" })
+                    }
+                  >
+                    <Option value="Single">Single</Option>
+                    <Option value="Double">Double</Option>
+                    <Option value="Suite">Suite</Option>
+                  </Select>
+                </FormControl>
+              </Grid>
+
+              <Grid sx={{ paddingRight: "0" }} xs={6}>
+                <FormControl required>
+                  <FormLabel>Room Size</FormLabel>
+                  <Input
+                    size="md"
+                    type="number"
+                    placeholder="e.g. 2"
+                    value={roomData.capacity}
+                    onChange={(e) =>
+                      setRoomData({ ...roomData, capacity: e.target.value })
+                    }
+                  />
+                </FormControl>
+              </Grid>
+            </Grid>
+
+            <Grid container spacing={2}>
+              <Grid sx={{ paddingLeft: "0" }} xs={6}>
+                <FormControl id="multiple-limit-tags">
+                  <FormLabel>Amenities</FormLabel>
+                  <Autocomplete
+                    multiple
+                    freeSolo
+                    placeholder="Amenities"
+                    limitTags={1}
+                    options={amenities}
+                    value={selectedAmenities}
+                    getOptionLabel={(option) =>
+                      typeof option === "string" ? option : option.name
+                    }
+                    filterOptions={(options, state) => {
+                      const inputValue = state.inputValue.trim().toLowerCase();
+                      const filtered = options.filter(
+                        (option) =>
+                          typeof option !== "string" &&
+                          option.name.toLowerCase().includes(inputValue)
+                      );
+
+                      // If user typed something not in list → add “Add …”
+                      if (
+                        inputValue !== "" &&
+                        !options.some(
+                          (opt) =>
+                            typeof opt !== "string" &&
+                            opt.name.toLowerCase() === inputValue
+                        )
+                      ) {
+                        return [
+                          ...filtered,
+                          { id: -1, name: `Add "${state.inputValue}"` },
+                        ];
+                      }
+
+                      return filtered;
+                    }}
+                    onChange={async (_, newValue) => {
+                      const last = newValue[newValue.length - 1];
+
+                      // User chose "Add ..."
+                      if (last && typeof last !== "string" && last.id === -1) {
+                        const newAmenityName = last.name
+                          .replace(/^Add\s+"|"$/g, "")
+                          .trim();
+                        await addAmenity(newAmenityName);
+                        await fetchAmenities();
+
+                        // Find inserted amenity (assumes fetchAmenities updates amenities)
+                        const inserted = amenities.find(
+                          (a) =>
+                            a.name.toLowerCase() ===
+                            newAmenityName.toLowerCase()
+                        );
+                        if (inserted) {
+                          setSelectedAmenities([
+                            ...newValue
+                              .slice(0, -1)
+                              .filter(
+                                (item): item is Amenity =>
+                                  typeof item !== "string"
+                              ),
+                            inserted,
+                          ]);
+                        }
+                      } else {
+                        setSelectedAmenities(
+                          newValue.filter(
+                            (item): item is Amenity => typeof item !== "string"
+                          )
+                        );
+                      }
+                    }}
+                  />
+                </FormControl>
+              </Grid>
+
+              <Grid sx={{ paddingRight: "0" }} xs={6}>
                 <FormControl required>
                   <FormLabel>Price per Night</FormLabel>
                   <Input
@@ -268,16 +386,16 @@ export default function AddRoomModal({
                   borderRadius: "8px",
                 }}
               >
-                  <img
-                    src={previewUrl || placeholderImage}
-                    alt="Room Preview"
-                    style={{
-                      width: "100%",
-                      height: "100%",
-                      borderRadius: "8px",
-                      boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
-                    }}
-                  />
+                <img
+                  src={previewUrl || placeholderImage}
+                  alt="Room Preview"
+                  style={{
+                    width: "100%",
+                    height: "100%",
+                    borderRadius: "8px",
+                    boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
+                  }}
+                />
               </div>
 
               <Button

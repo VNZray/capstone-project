@@ -11,17 +11,23 @@ import {
   User,
   LogOut,
   LayoutDashboard,
-  ConciergeBell, // amenities icon
 } from "lucide-react";
+import logo from "../assets/images/light-logo.png";
+
 import "./styles/Sidebar.css";
 import { useBusiness } from "../context/BusinessContext";
+import { Typography } from "@mui/joy";
+import { colors } from "../utils/Colors";
+import Container from "./Container";
 export default function Sidebar(): React.ReactElement {
   const { businessDetails } = useBusiness();
   return (
     <aside className="sidebar">
-      {/* Logo */}
-      <h3 className="sidebar-logo light-text">Naga Venture</h3>
-
+      <Container background="transparent" direction="row" align="center">
+        <Typography startDecorator={<img src={logo} alt="Logo" style={{ width: "40px", height: "40px" }} />} level="title-lg" color={colors.white}>
+          City Venture
+        </Typography>
+      </Container>
       {/* Navigation */}
       <nav className="sidebar-nav">
         <div
@@ -63,15 +69,6 @@ export default function Sidebar(): React.ReactElement {
               label="Manage Offers"
               icon={<Tags size={18} />}
             />
-          )}
-          {businessDetails?.business_type_id === 1 ? (
-            <NavItem
-              to="/amenities"
-              label="Amenities"
-              icon={<ConciergeBell size={18} />}
-            />
-          ) : (
-            null
           )}
           <NavItem
             to="/manage-promotion"

@@ -7,35 +7,14 @@ import StarIcon from "@mui/icons-material/Star";
 import EditIcon from "@mui/icons-material/Edit";
 import { useAddress } from "@/src/hooks/useAddress";
 import { colors } from "@/src/utils/Colors";
-import { Button, Chip, Divider, Grid, Sheet, Typography } from "@mui/joy";
+import { Button, Chip, Grid, Typography } from "@mui/joy";
 import BusinessMap from "./components/businessMap"; // <-- new import
-import {
-  LucidePhone,
-  LucideGlobe,
-  PhilippinePeso,
-  PhoneIcon,
-  Globe,
-} from "lucide-react";
+import { LucidePhone, PhilippinePeso, Globe, TimerIcon } from "lucide-react";
 import Container from "@/src/components/Container";
-import {
-  MdEmail,
-  MdEventAvailable,
-  MdFacebook,
-  MdLocationOn,
-} from "react-icons/md";
-import {
-  HomeWork,
-  Instagram,
-  LocalActivityRounded,
-  LocationCity,
-  NotificationsActive,
-  Place,
-  Public,
-  Web,
-  X,
-} from "@mui/icons-material";
+import { MdEmail, MdFacebook } from "react-icons/md";
+import { HomeWork, LocationCity, Place, Public, X } from "@mui/icons-material";
 import EditDescriptionModal from "./components/EditDescription";
-import type { Business } from "@/src/types/Business";
+import type { Business, BusinessHours } from "@/src/types/Business";
 import React, { useEffect, useState } from "react";
 import EditContactModal from "./components/EditContactModal";
 import EditSocialMediaModal from "./components/EditSocialMediaModal";
@@ -47,6 +26,9 @@ import { FaInstagram } from "react-icons/fa";
 import { getData, updateData } from "@/src/api_function";
 import type { ExternalBooking } from "@/src/types/ExternalBooking";
 import { bookingLogos } from "@/src/types/BookingLogos";
+import EditBusinessHoursModal from "./components/EditBusinessHoursModal";
+import type { Amenity } from "@/src/types/Amenity";
+import EditAmenitiesModal from "./components/EditAmenitiesModal";
 
 const BusinessProfile = () => {
   const { businessDetails } = useBusiness();
@@ -58,8 +40,52 @@ const BusinessProfile = () => {
   const [editPricingOpen, setEditPricingOpen] = useState(false);
   const [editAddressOpen, setEditAddressOpen] = useState(false);
   const [editMapCoordinatesOpen, setEditMapCoordinatesOpen] = useState(false);
-
+  const [editBusinessHoursOpen, setEditBusinessHoursOpen] = useState(false);
+  const [editAmenitiesOpen, setEditAmenitiesOpen] = useState(false);
   const [externalBooking, setExternalBooking] = useState<ExternalBooking[]>([]);
+
+  const [businessHours, setBusinessHours] = useState<BusinessHours[]>([]);
+  const [amenities, setAmenities] = React.useState<Amenity[]>([]);
+
+  const getBusinessHours = async () => {
+    if (!businessDetails?.id) return;
+    const response = await getData("business-hours");
+    const filtered = Array.isArray(response)
+      ? response.filter((hours) => hours.business_id === businessDetails.id)
+      : [];
+    setBusinessHours(filtered);
+  };
+
+  const fetchBusinessAmenities = async () => {
+    if (!businessDetails?.id) return;
+
+    const businessAmenityResponse = await getData("business-amenities");
+    const amenityResponse = await getData("amenities");
+
+    const filtered = Array.isArray(businessAmenityResponse)
+      ? businessAmenityResponse
+          .filter((ba) => ba.business_id === businessDetails.id)
+          .map((ba) => {
+            const match: Amenity | undefined = (
+              amenityResponse as Amenity[]
+            ).find((a: Amenity) => a.id === ba.amenity_id);
+            return { ...ba, name: match?.name || "Unknown" };
+          })
+      : [];
+
+    setAmenities(filtered);
+  };
+
+  React.useEffect(() => {
+    fetchBusinessAmenities();
+  }, [businessDetails?.id]);
+
+  const formatTime = (time: string) => {
+    const [hour, minute] = time.split(":");
+    const ampm = parseInt(hour) >= 12 ? "PM" : "AM";
+    const formattedHour = (((parseInt(hour) + 11) % 12) + 1).toString();
+    return `${formattedHour}:${minute} ${ampm}`;
+  };
 
   const fetchExternalBookings = async () => {
     if (!businessDetails?.id) return;
@@ -73,6 +99,7 @@ const BusinessProfile = () => {
   useEffect(() => {
     if (businessDetails?.id) {
       fetchExternalBookings();
+      getBusinessHours();
     }
   }, [businessDetails?.id]);
 
@@ -111,6 +138,10 @@ const BusinessProfile = () => {
       case "Pending":
         return "neutral";
       case "Rejected":
+        return "danger";
+      case "1":
+        return "success";
+      case "0":
         return "danger";
       default:
         return "neutral"; // fallback
@@ -177,6 +208,7 @@ const BusinessProfile = () => {
 
   const activateBooking = async (businessId: string, hasBooking: boolean) => {
     await updateData(businessId, { hasBooking }, "business");
+    window.location.reload();
   };
 
   return (
@@ -254,8 +286,8 @@ const BusinessProfile = () => {
                     fontFamily={"poppins"}
                     level="body-md"
                   >
-                    {businessDetails?.address}, {address?.barangay_name}, {address?.municipality_name},{" "}
-                    {address?.province_name}
+                    {businessDetails?.address}, {address?.barangay_name},{" "}
+                    {address?.municipality_name}, {address?.province_name}
                   </Typography>
                   <Typography
                     startDecorator={
@@ -395,14 +427,26 @@ const BusinessProfile = () => {
                   startDecorator={<EditIcon />}
                   size="sm"
                   variant="outlined"
+                  onClick={() => setEditAmenitiesOpen(true)}
                 >
                   Edit
                 </Button>
               </Container>
 
-              <Typography fontFamily={"poppins"} level="body-md">
-                {`(Not yet implemented)`}
-              </Typography>
+              <Paper variant="outlined" sx={{ p: 2, flex: 1 }}>
+                <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+                  {amenities.map((amenity) => (
+                    <Chip
+                      key={amenity.id}
+                      size="lg"
+                      variant="soft"
+                      color="primary"
+                    >
+                      {amenity.name}
+                    </Chip>
+                  ))}
+                </div>
+              </Paper>
             </Container>
 
             {businessDetails?.business_type_id === 1 && (
@@ -465,7 +509,7 @@ const BusinessProfile = () => {
                         marginTop: "12px",
                       }}
                     >
-                      {externalBooking.map((booking) => (
+                      {externalBooking.map((booking: ExternalBooking) => (
                         <Container
                           elevation={2}
                           key={booking.id}
@@ -502,6 +546,52 @@ const BusinessProfile = () => {
                 )}
               </Container>
             )}
+
+            <Container gap="10px" padding="0">
+              <Container
+                gap="10px"
+                padding="0"
+                direction="row"
+                align="center"
+                justify="space-between"
+              >
+                <Typography
+                  fontFamily={"poppins"}
+                  level="title-lg"
+                  fontWeight={700}
+                >
+                  Business Hours
+                </Typography>
+
+                <Button
+                  startDecorator={<EditIcon />}
+                  onClick={() => setEditBusinessHoursOpen(true)}
+                  size="sm"
+                  variant="outlined"
+                >
+                  Edit
+                </Button>
+              </Container>
+              {businessHours.map((hours: BusinessHours) => (
+                <Typography
+                  key={hours.id}
+                  startDecorator={<TimerIcon />}
+                  fontFamily={"poppins"}
+                  level="body-md"
+                >
+                  {hours.day_of_week}: {formatTime(hours.open_time)} -{" "}
+                  {formatTime(hours.close_time)}
+                  <Chip
+                    size="md"
+                    variant="soft"
+                    style={{ marginLeft: "8px" }}
+                    color={getStatusColor(hours.is_open ? "1" : "0")}
+                  >
+                    {hours.is_open ? "Open" : "Closed"}
+                  </Chip>
+                </Typography>
+              ))}
+            </Container>
           </Container>
         </Grid>
 
@@ -689,18 +779,14 @@ const BusinessProfile = () => {
                 {address?.province_name || "No address available"}
               </Typography>
               <Typography
-                startDecorator={
-                  <LocationCity fontSize="small" />
-                }
+                startDecorator={<LocationCity fontSize="small" />}
                 fontFamily={"poppins"}
                 level="body-md"
               >
                 {address?.municipality_name || "No municipality available"}
               </Typography>
               <Typography
-                startDecorator={
-                  <HomeWork fontSize="small" />
-                }
+                startDecorator={<HomeWork fontSize="small" />}
                 fontFamily={"poppins"}
                 level="body-md"
               >
@@ -708,9 +794,7 @@ const BusinessProfile = () => {
               </Typography>
 
               <Typography
-                startDecorator={
-                  <Place fontSize="small" />
-                }
+                startDecorator={<Place fontSize="small" />}
                 fontFamily={"poppins"}
                 level="body-md"
               >
@@ -720,6 +804,14 @@ const BusinessProfile = () => {
           </Container>
         </Grid>
       </Grid>
+
+      <EditBusinessHoursModal
+        open={editBusinessHoursOpen}
+        businessId={businessDetails?.id?.toString()}
+        initialBusinessHours={businessHours as BusinessHours[]}
+        onClose={() => setEditBusinessHoursOpen(false)}
+        onUpdate={(updated: BusinessHours[]) => setBusinessHours(updated)}
+      />
 
       <EditDescriptionModal
         open={editDescOpen}
@@ -790,6 +882,14 @@ const BusinessProfile = () => {
         initialBusinessImage={businessDetails?.business_image || ""}
         businessId={businessDetails?.id}
         onClose={() => setEditBusinessOpen(false)}
+        onSave={handleSaveBusiness}
+        onUpdate={() => window.location.reload()}
+      />
+
+      <EditAmenitiesModal
+        open={editAmenitiesOpen}
+        businessId={businessDetails?.id}
+        onClose={() => setEditAmenitiesOpen(false)}
         onSave={handleSaveBusiness}
         onUpdate={() => window.location.reload()}
       />

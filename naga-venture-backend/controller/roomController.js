@@ -5,7 +5,7 @@ import { handleDbError } from "../utils/errorHandler.js";
 // fetch all data
 export async function getAllRoom(request, response) {
   try {
-    const [data] = await db.query("SELECT * FROM room");
+    const [data] = await db.query("SELECT * FROM room ORDER BY room_number ASC");
     response.json(data);
   } catch (error) {
     handleDbError(error, response);
@@ -98,7 +98,7 @@ export async function insertRoom(request, response) {
       return response.status(404).json({ error: "Inserted row not found" });
     }
 
-    response.json(data);
+    response.json(data[0]);
   } catch (error) {
     return handleDbError(error, response);
   }

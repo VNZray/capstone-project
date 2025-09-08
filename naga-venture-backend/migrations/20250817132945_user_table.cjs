@@ -11,7 +11,7 @@ exports.up = function (knex) {
     table.string("email", 40).notNullable().unique();
     table.string("phone_number", 13).notNullable().unique();
     table.text("password").notNullable();
-
+    table.text("user_profile").nullable();
     table
       .uuid("tourist_id")
       .nullable()

@@ -29,7 +29,6 @@ import Request from "../features/listing/Request";
 import { BusinessProvider } from "../context/BusinessContext";
 import BusinessRegistration from "../features/listing/BusinessRegistration";
 import BusinessProfile from "../features/accommodation/business-profile/BusinessProfile";
-import Amenity from "../features/accommodation/amenity/Amenity";
 import { RoomProvider } from "../context/RoomContext";
 import RoomProfile from "../features/accommodation/room/RoomProfile";
 
@@ -90,15 +89,6 @@ export default function AppRoutes() {
                 element={
                   <ProtectedRoute>
                     <Bookings />
-                  </ProtectedRoute>
-                }
-              />
-
-              <Route
-                path="/amenities"
-                element={
-                  <ProtectedRoute>
-                    <Amenity />
                   </ProtectedRoute>
                 }
               />

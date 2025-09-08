@@ -190,3 +190,51 @@ export async function deleteBusiness(request, response) {
     return handleDbError(error, response);
   }
 }
+
+export async function insertBusinessHours(request, response) {
+  try {
+    const { business_id, day_of_week, open_time, close_time, is_open } =
+      request.body;
+
+    await db.query(
+      `INSERT INTO business_hours (business_id, day_of_week, open_time, close_time, is_open)
+       VALUES (?, ?, ?, ?, ?)`,
+      [business_id, day_of_week, open_time, close_time, is_open]
+    );
+
+    return response
+      .status(201)
+      .json({ message: "Business hours inserted successfully" });
+  } catch (error) {
+    return handleDbError(error, response);
+  }
+}
+
+export async function getBusinessHours(request, response) {
+  try {
+    const [data] = await db.query(
+      "SELECT * FROM business_hours ORDER BY id ASC"
+    );
+    response.json(data);
+  } catch (error) {
+    console.error("Error fetching business hours:", error);
+    return handleDbError(error, response);
+  }
+}
+
+export async function updateBusinessHours(request, response) {
+  try {
+    const { id } = request.params;
+    const { open_time, close_time, is_open } = request.body;
+
+    await db.query(
+      `UPDATE business_hours SET open_time = ?, close_time = ?, is_open = ? WHERE id = ?`,
+      [open_time, close_time, is_open, id]
+    );
+
+    response.json({ message: "Business hours updated successfully" });
+  } catch (error) {
+    console.error("Error updating business hours:", error);
+    return handleDbError(error, response);
+  }
+}
