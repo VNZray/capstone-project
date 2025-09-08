@@ -11,21 +11,21 @@ export async function seed(knex) {
   const existingUsers = await knex("user").select("id", "role").limit(5);
   
   if (existingUsers.length === 0) {
-    // Create sample tourism and tourist users first
+    // Insert sample tourism and tourist profiles
     await knex("tourism").insert([
       {
-        id: "tourism-001",
-        first_name: "Juan",
-        last_name: "Santos",
-        position: "Tourism Officer",
-        email: "tourism@nagacity.gov.ph",
-        phone_number: "+639171234567"
+        id: "658a023d-aa5c-4b8a-a40e-461723a920fd",
+        first_name: "Emmanuel",
+        last_name: "Collao",
+        position: "Manager",
+        email: "admin@gmail.com",
+        phone_number: "09876541231"
       }
     ]);
 
     await knex("tourist").insert([
       {
-        id: "tourist-001",
+        id: "b312f8f6-8c97-11f0-931c-10ffe07a01e9",
         first_name: "John",
         middle_name: "M",
         last_name: "Doe",
@@ -42,7 +42,7 @@ export async function seed(knex) {
         barangay_id: 1
       },
       {
-        id: "tourist-002",
+        id: "b212fef0-8c97-11f0-931c-10ffe07a01e9",
         first_name: "Jane",
         middle_name: "A",
         last_name: "Smith",
@@ -62,28 +62,28 @@ export async function seed(knex) {
 
     await knex("user").insert([
       {
-        id: "user-tourism-001",
+        id: "8c962890-477d-46f9-8735-30b4b678b357",
         role: "Tourism",
-        email: "tourism@nagacity.gov.ph",
-        phone_number: "+639171234567",
-        password: "$2b$10$dummyhashedpassword123",
-        tourism_id: "tourism-001"
+        email: "admin@gmail.com",
+        phone_number: "09876541231",
+        password: "$2b$10$Ap.IWuUvSqWa0ygjPtEjn.HLHqtH0iBhaIu.Vgc6SyEBE25PPYrSC",
+        tourism_id: "658a023d-aa5c-4b8a-a40e-461723a920fd"
       },
       {
-        id: "user-tourist-001",
+        id: "b312fe93-8c97-11f0-931c-10ffe07a01e9",
         role: "Tourist",
         email: "john.doe@email.com",
         phone_number: "+639171234568",
-        password: "$2b$10$dummyhashedpassword124",
-        tourist_id: "tourist-001"
+        password: "$2b$10$Ap.IWuUvSqWa0ygjPtEjn.HLHqtH0iBhaIu.Vgc6SyEBE25PPYrSC",
+        tourist_id: "b312f8f6-8c97-11f0-931c-10ffe07a01e9"
       },
       {
-        id: "user-tourist-002",
+        id: "b212fef0-8c97-11f0-931c-10ffe07a01e9",
         role: "Tourist",
         email: "jane.smith@email.com",
         phone_number: "+639171234569",
-        password: "$2b$10$dummyhashedpassword125",
-        tourist_id: "tourist-002"
+        password: "$2b$10$Ap.IWuUvSqWa0ygjPtEjn.HLHqtH0iBhaIu.Vgc6SyEBE25PPYrSC",
+        tourist_id: "b212fef0-8c97-11f0-931c-10ffe07a01e9"
       }
     ]);
   }
@@ -101,19 +101,10 @@ export async function seed(knex) {
   // Sample report data
   const reports = [
     {
-      id: "550e8400-e29b-41d4-a716-446655440001",
-      reporter_id: touristUsers[0].id,
-      target_type: "business",
-      target_id: "business-id-1",
-      title: "Poor Service Quality",
-      description: "The staff was unprofessional and the room was not clean upon arrival. Very disappointing experience.",
-      status: "submitted"
-    },
-    {
       id: "550e8400-e29b-41d4-a716-446655440002",
       reporter_id: touristUsers[0].id,
       target_type: "tourist_spot",
-      target_id: "spot-id-1",
+      target_id: "550e8400-e29b-41d4-a716-446655440001",
       title: "Facility Maintenance Issues",
       description: "The restroom facilities are in poor condition and the walking trails are not well maintained.",
       status: "under_review"
@@ -121,8 +112,8 @@ export async function seed(knex) {
     {
       id: "550e8400-e29b-41d4-a716-446655440003",
       reporter_id: touristUsers.length > 1 ? touristUsers[1].id : touristUsers[0].id,
-      target_type: "event",
-      target_id: "event-id-1",
+      target_type: "tourist_spot",
+      target_id: "550e8400-e29b-41d4-a716-446655440002",
       title: "Event Cancelled Without Notice",
       description: "The festival was cancelled last minute without proper notification to tourists who already paid for tickets.",
       status: "in_progress"
@@ -130,8 +121,8 @@ export async function seed(knex) {
     {
       id: "550e8400-e29b-41d4-a716-446655440004",
       reporter_id: touristUsers[0].id,
-      target_type: "accommodation",
-      target_id: "accommodation-id-1",
+      target_type: "tourist_spot",
+      target_id: "550e8400-e29b-41d4-a716-446655440003",
       title: "Overcharging Issue",
       description: "I was charged more than the advertised price without explanation. This seems like a scam.",
       status: "resolved"
@@ -143,16 +134,6 @@ export async function seed(knex) {
 
   // Insert status history for each report
   const statusHistories = [
-    // For report 1 (submitted)
-    {
-      id: "650e8400-e29b-41d4-a716-446655440001",
-      report_id: "550e8400-e29b-41d4-a716-446655440001",
-      status: "submitted",
-      remarks: "Report submitted by user",
-      updated_by: null,
-      updated_at: new Date()
-    },
-    
     // For report 2 (under_review)
     {
       id: "650e8400-e29b-41d4-a716-446655440002",
@@ -225,30 +206,6 @@ export async function seed(knex) {
   ];
 
   await knex("report_status_history").insert(statusHistories);
-
-  // Insert some sample attachments
-  const attachments = [
-    {
-      id: "750e8400-e29b-41d4-a716-446655440001",
-      report_id: "550e8400-e29b-41d4-a716-446655440001",
-      file_url: "https://example-supabase-bucket.com/reports/evidence1.jpg",
-      file_name: "dirty_room_evidence.jpg",
-      file_type: "image/jpeg",
-      file_size: 245760,
-      uploaded_at: new Date()
-    },
-    {
-      id: "750e8400-e29b-41d4-a716-446655440002",
-      report_id: "550e8400-e29b-41d4-a716-446655440004",
-      file_url: "https://example-supabase-bucket.com/reports/receipt.jpg",
-      file_name: "overcharge_receipt.jpg",
-      file_type: "image/jpeg",
-      file_size: 189440,
-      uploaded_at: new Date()
-    }
-  ];
-
-  await knex("report_attachment").insert(attachments);
 
   console.log("Report system seed data inserted successfully!");
 }

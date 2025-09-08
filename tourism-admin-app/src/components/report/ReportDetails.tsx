@@ -82,9 +82,8 @@ const ReportDetails: React.FC<ReportDetailsProps> = ({
         <Button variant="plain" onClick={onBack}> ← Back </Button>
       </Stack>
 
-      {/* Two-column responsive layout */}
       <Grid container spacing={1}>
-        {/* Left Column - Main Information */}
+        {/* Left Column*/}
         <Grid xs={12} lg={8}>
           <Stack spacing={2}>
             <BasicReportSection 
@@ -96,7 +95,7 @@ const ReportDetails: React.FC<ReportDetailsProps> = ({
           </Stack>
         </Grid>
 
-        {/* Right Column - Reporter and Target Info */}
+        {/* Right Column */}
         <Grid xs={12} lg={4}>
           <Stack spacing={2}>
             <ReporterInfoSection report={report}/>
@@ -105,7 +104,6 @@ const ReportDetails: React.FC<ReportDetailsProps> = ({
         </Grid>
       </Grid>
 
-      {/* Update Status Modal */}
       <UpdateStatusModal
         report={report}
         open={showUpdateModal}
