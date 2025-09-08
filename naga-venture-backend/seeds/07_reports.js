@@ -7,14 +7,89 @@ export async function seed(knex) {
   await knex("report_status_history").del();
   await knex("report").del();
 
-  // Get some existing user IDs for testing
-  const users = await knex("user").select("id", "role").limit(5);
+  // Create sample users if they don't exist
+  const existingUsers = await knex("user").select("id", "role").limit(5);
   
-  if (users.length === 0) {
-    console.log("No users found. Please seed users first.");
-    return;
+  if (existingUsers.length === 0) {
+    // Create sample tourism and tourist users first
+    await knex("tourism").insert([
+      {
+        id: "tourism-001",
+        first_name: "Juan",
+        last_name: "Santos",
+        position: "Tourism Officer",
+        email: "tourism@nagacity.gov.ph",
+        phone_number: "+639171234567"
+      }
+    ]);
+
+    await knex("tourist").insert([
+      {
+        id: "tourist-001",
+        first_name: "John",
+        middle_name: "M",
+        last_name: "Doe",
+        ethnicity: "Foreigner",
+        birthday: "1990-05-15",
+        age: 33,
+        gender: "Male",
+        nationality: "American",
+        category: "Overseas",
+        phone_number: "+639171234568",
+        email: "john.doe@email.com",
+        province_id: 20,
+        municipality_id: 24,
+        barangay_id: 1
+      },
+      {
+        id: "tourist-002",
+        first_name: "Jane",
+        middle_name: "A",
+        last_name: "Smith",
+        ethnicity: "Foreigner",
+        birthday: "1988-08-22",
+        age: 35,
+        gender: "Female",
+        nationality: "Canadian",
+        category: "Overseas",
+        phone_number: "+639171234569",
+        email: "jane.smith@email.com",
+        province_id: 20,
+        municipality_id: 24,
+        barangay_id: 1
+      }
+    ]);
+
+    await knex("user").insert([
+      {
+        id: "user-tourism-001",
+        role: "Tourism",
+        email: "tourism@nagacity.gov.ph",
+        phone_number: "+639171234567",
+        password: "$2b$10$dummyhashedpassword123",
+        tourism_id: "tourism-001"
+      },
+      {
+        id: "user-tourist-001",
+        role: "Tourist",
+        email: "john.doe@email.com",
+        phone_number: "+639171234568",
+        password: "$2b$10$dummyhashedpassword124",
+        tourist_id: "tourist-001"
+      },
+      {
+        id: "user-tourist-002",
+        role: "Tourist",
+        email: "jane.smith@email.com",
+        phone_number: "+639171234569",
+        password: "$2b$10$dummyhashedpassword125",
+        tourist_id: "tourist-002"
+      }
+    ]);
   }
 
+  // Get users for reports
+  const users = await knex("user").select("id", "role").limit(5);
   const touristUsers = users.filter(u => u.role === "Tourist");
   const tourismUsers = users.filter(u => u.role === "Tourism");
   

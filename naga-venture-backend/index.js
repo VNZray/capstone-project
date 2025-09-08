@@ -37,7 +37,6 @@ const routes = [
   { path: "/api/amenities", handler: amenityRoutes },
   { path: "/api/room-amenities", handler: roomAmenityRoutes },
   { path: "/api/business-amenities", handler: businessAmenityRoutes },
-
   { path: "/api/tourist-spots", handler: touristSpotRoutes },
   { path: "/api/approval", handler: approvalRoutes },
   { path: "/api/permit", handler: permitRoutes },

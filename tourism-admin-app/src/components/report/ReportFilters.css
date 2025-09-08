@@ -1,0 +1,29 @@
+.report-filters-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  padding: 16px;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.03);
+  margin-bottom: 16px;
+  gap: 16px;
+}
+
+.report-filters-group {
+  display: flex;
+  gap: 16px;
+  align-items: flex-end;
+}
+
+@media (max-width: 768px) {
+  .report-filters-container {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .report-filters-group {
+    flex-direction: column;
+    gap: 12px;
+  }
+}
