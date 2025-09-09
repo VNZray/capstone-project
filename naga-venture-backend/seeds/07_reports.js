@@ -7,14 +7,89 @@ export async function seed(knex) {
   await knex("report_status_history").del();
   await knex("report").del();
 
-  // Get some existing user IDs for testing
-  const users = await knex("user").select("id", "role").limit(5);
+  // Create sample users if they don't exist
+  const existingUsers = await knex("user").select("id", "role").limit(5);
   
-  if (users.length === 0) {
-    console.log("No users found. Please seed users first.");
-    return;
+  if (existingUsers.length === 0) {
+    // Insert sample tourism and tourist profiles
+    await knex("tourism").insert([
+      {
+        id: "658a023d-aa5c-4b8a-a40e-461723a920fd",
+        first_name: "Emmanuel",
+        last_name: "Collao",
+        position: "Manager",
+        email: "admin@gmail.com",
+        phone_number: "09876541231"
+      }
+    ]);
+
+    await knex("tourist").insert([
+      {
+        id: "b312f8f6-8c97-11f0-931c-10ffe07a01e9",
+        first_name: "John",
+        middle_name: "M",
+        last_name: "Doe",
+        ethnicity: "Foreigner",
+        birthday: "1990-05-15",
+        age: 33,
+        gender: "Male",
+        nationality: "American",
+        category: "Overseas",
+        phone_number: "+639171234568",
+        email: "john.doe@email.com",
+        province_id: 20,
+        municipality_id: 24,
+        barangay_id: 1
+      },
+      {
+        id: "b212fef0-8c97-11f0-931c-10ffe07a01e9",
+        first_name: "Jane",
+        middle_name: "A",
+        last_name: "Smith",
+        ethnicity: "Foreigner",
+        birthday: "1988-08-22",
+        age: 35,
+        gender: "Female",
+        nationality: "Canadian",
+        category: "Overseas",
+        phone_number: "+639171234569",
+        email: "jane.smith@email.com",
+        province_id: 20,
+        municipality_id: 24,
+        barangay_id: 1
+      }
+    ]);
+
+    await knex("user").insert([
+      {
+        id: "8c962890-477d-46f9-8735-30b4b678b357",
+        role: "Tourism",
+        email: "admin@gmail.com",
+        phone_number: "09876541231",
+        password: "$2b$10$Ap.IWuUvSqWa0ygjPtEjn.HLHqtH0iBhaIu.Vgc6SyEBE25PPYrSC",
+        tourism_id: "658a023d-aa5c-4b8a-a40e-461723a920fd"
+      },
+      {
+        id: "b312fe93-8c97-11f0-931c-10ffe07a01e9",
+        role: "Tourist",
+        email: "john.doe@email.com",
+        phone_number: "+639171234568",
+        password: "$2b$10$Ap.IWuUvSqWa0ygjPtEjn.HLHqtH0iBhaIu.Vgc6SyEBE25PPYrSC",
+        tourist_id: "b312f8f6-8c97-11f0-931c-10ffe07a01e9"
+      },
+      {
+        id: "b212fef0-8c97-11f0-931c-10ffe07a01e9",
+        role: "Tourist",
+        email: "jane.smith@email.com",
+        phone_number: "+639171234569",
+        password: "$2b$10$Ap.IWuUvSqWa0ygjPtEjn.HLHqtH0iBhaIu.Vgc6SyEBE25PPYrSC",
+        tourist_id: "b212fef0-8c97-11f0-931c-10ffe07a01e9"
+      }
+    ]);
   }
 
+  // Get users for reports
+  const users = await knex("user").select("id", "role").limit(5);
   const touristUsers = users.filter(u => u.role === "Tourist");
   const tourismUsers = users.filter(u => u.role === "Tourism");
   
@@ -26,19 +101,10 @@ export async function seed(knex) {
   // Sample report data
   const reports = [
     {
-      id: "550e8400-e29b-41d4-a716-446655440001",
-      reporter_id: touristUsers[0].id,
-      target_type: "business",
-      target_id: "business-id-1",
-      title: "Poor Service Quality",
-      description: "The staff was unprofessional and the room was not clean upon arrival. Very disappointing experience.",
-      status: "submitted"
-    },
-    {
       id: "550e8400-e29b-41d4-a716-446655440002",
       reporter_id: touristUsers[0].id,
       target_type: "tourist_spot",
-      target_id: "spot-id-1",
+      target_id: "550e8400-e29b-41d4-a716-446655440001",
       title: "Facility Maintenance Issues",
       description: "The restroom facilities are in poor condition and the walking trails are not well maintained.",
       status: "under_review"
@@ -46,8 +112,8 @@ export async function seed(knex) {
     {
       id: "550e8400-e29b-41d4-a716-446655440003",
       reporter_id: touristUsers.length > 1 ? touristUsers[1].id : touristUsers[0].id,
-      target_type: "event",
-      target_id: "event-id-1",
+      target_type: "tourist_spot",
+      target_id: "550e8400-e29b-41d4-a716-446655440002",
       title: "Event Cancelled Without Notice",
       description: "The festival was cancelled last minute without proper notification to tourists who already paid for tickets.",
       status: "in_progress"
@@ -55,8 +121,8 @@ export async function seed(knex) {
     {
       id: "550e8400-e29b-41d4-a716-446655440004",
       reporter_id: touristUsers[0].id,
-      target_type: "accommodation",
-      target_id: "accommodation-id-1",
+      target_type: "tourist_spot",
+      target_id: "550e8400-e29b-41d4-a716-446655440003",
       title: "Overcharging Issue",
       description: "I was charged more than the advertised price without explanation. This seems like a scam.",
       status: "resolved"
@@ -68,16 +134,6 @@ export async function seed(knex) {
 
   // Insert status history for each report
   const statusHistories = [
-    // For report 1 (submitted)
-    {
-      id: "650e8400-e29b-41d4-a716-446655440001",
-      report_id: "550e8400-e29b-41d4-a716-446655440001",
-      status: "submitted",
-      remarks: "Report submitted by user",
-      updated_by: null,
-      updated_at: new Date()
-    },
-    
     // For report 2 (under_review)
     {
       id: "650e8400-e29b-41d4-a716-446655440002",
@@ -150,30 +206,6 @@ export async function seed(knex) {
   ];
 
   await knex("report_status_history").insert(statusHistories);
-
-  // Insert some sample attachments
-  const attachments = [
-    {
-      id: "750e8400-e29b-41d4-a716-446655440001",
-      report_id: "550e8400-e29b-41d4-a716-446655440001",
-      file_url: "https://example-supabase-bucket.com/reports/evidence1.jpg",
-      file_name: "dirty_room_evidence.jpg",
-      file_type: "image/jpeg",
-      file_size: 245760,
-      uploaded_at: new Date()
-    },
-    {
-      id: "750e8400-e29b-41d4-a716-446655440002",
-      report_id: "550e8400-e29b-41d4-a716-446655440004",
-      file_url: "https://example-supabase-bucket.com/reports/receipt.jpg",
-      file_name: "overcharge_receipt.jpg",
-      file_type: "image/jpeg",
-      file_size: 189440,
-      uploaded_at: new Date()
-    }
-  ];
-
-  await knex("report_attachment").insert(attachments);
 
   console.log("Report system seed data inserted successfully!");
 }

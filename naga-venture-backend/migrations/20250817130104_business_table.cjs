@@ -1,7 +1,7 @@
-const {
-  createBusinessProcedures,
-  dropBusinessProcedures,
-} = require("../procedures/businessProcedures");
+// const {
+//   createBusinessProcedures,
+//   dropBusinessProcedures,
+// } = require("../procedures/businessProcedures");
 
 exports.up = async function (knex) {
   // Create business table
@@ -46,3 +46,4 @@ exports.down = async function (knex) {
   await knex.schema.dropTableIfExists("business");
   await dropBusinessProcedures(knex);
 };
+
