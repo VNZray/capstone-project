@@ -2,239 +2,200 @@ import db from "../db.js";
 import { v4 as uuidv4 } from "uuid";
 import { handleDbError } from "../utils/errorHandler.js";
 
+// ==================== BUSINESS ====================
+
 // Get all businesses
-export async function getAllBusiness(request, response) {
+export async function getAllBusiness(req, res) {
   try {
-    const [data] = await db.query("SELECT * FROM business");
-    response.json(data);
+    const [data] = await db.query("CALL GetAllBusiness()");
+    res.json(data[0]);
   } catch (error) {
-    return handleDbError(error, response);
+    return handleDbError(error, res);
   }
 }
 
 // Get business by owner ID
-export async function getBusinessByOwnerId(request, response) {
-  const { id } = request.params;
-  console.log("Owner ID received:", id); // 🛠 debug
+export async function getBusinessByOwnerId(req, res) {
+  const { id } = req.params;
   try {
-    const [data] = await db.query("SELECT * FROM business WHERE owner_id = ?", [
-      id,
-    ]);
-    console.log("Query data:", data); // 🛠 debug
-    if (data.length === 0) {
-      return response.status(404).json({ message: "Business not found" });
+    const [data] = await db.query("CALL GetBusinessByOwnerId(?)", [id]);
+    if (!data[0] || data[0].length === 0) {
+      return res.status(404).json({ message: "Business not found" });
     }
-    response.json(data);
+    res.json(data[0]);
   } catch (error) {
-    handleDbError(error, response);
+    return handleDbError(error, res);
   }
 }
 
-export async function getBusinessId(request, response) {
-  const { id } = request.params;
+// Get business by ID
+export async function getBusinessId(req, res) {
+  const { id } = req.params;
   try {
-    const [data] = await db.query("SELECT * FROM business WHERE id = ?", [id]);
-    if (data.length === 0) {
-      return response.status(404).json({ message: "Business not found" });
+    const [data] = await db.query("CALL GetBusinessById(?)", [id]);
+    if (!data[0] || data[0].length === 0) {
+      return res.status(404).json({ message: "Business not found" });
     }
-    response.json(data[0]);
+    res.json(data[0][0]);
   } catch (error) {
-    handleDbError(error, response);
+    return handleDbError(error, res);
   }
 }
 
 // Insert a new business
-export async function insertBusiness(request, response) {
+export async function insertBusiness(req, res) {
   try {
-    // Generate UUID for the new business
     const id = uuidv4();
 
-    const fields = [
-      "id", // include the id field
-      "business_name",
-      "business_type_id",
-      "business_category_id",
-      "phone_number",
-      "email",
-      "barangay_id",
-      "municipality_id",
-      "province_id",
-      "address",
-      "description",
-      "instagram_url",
-      "x_url",
-      "website_url",
-      "facebook_url",
-      "latitude",
-      "longitude",
-      "min_price",
-      "max_price",
-      "owner_id",
-      "status",
-      "business_image",
-      "hasBooking",
-    ];
-
-    const values = [
-      id, // first value is the UUID
-      ...fields.slice(1).map((f) => request.body[f] ?? null),
-    ];
-
-    // Insert with known UUID
-    await db.query(
-      `INSERT INTO business (${fields.join(", ")})
-       VALUES (${fields.map(() => "?").join(", ")})`,
-      values
-    );
-
-    // Retrieve the data row by UUID
-    const [data] = await db.query("SELECT * FROM business WHERE id = ?", [id]);
-
-    if (data.length === 0) {
-      return response
-        .status(404)
-        .json({ error: "Inserted business not found" });
-    }
-
-    response.status(201).json({
-      message: "Business created successfully",
-      ...data[0],
-    });
-  } catch (error) {
-    handleDbError(error, response);
-  }
-}
-
-// update business (only update provided fields)
-export async function updateBusiness(request, response) {
-  const { id } = request.params;
-
-  try {
-    // Check if the business exists
-    const [existing] = await db.query("SELECT * FROM business WHERE id = ?", [
+    const params = [
       id,
-    ]);
-    if (existing.length === 0) {
-      return response.status(404).json({ message: "Business not found" });
-    }
-
-    // Only update fields provided in request.body
-    const allowedFields = [
-      "business_name",
-      "business_type_id",
-      "business_category_id",
-      "phone_number",
-      "email",
-      "barangay_id",
-      "municipality_id",
-      "province_id",
-      "address",
-      "description",
-      "instagram_url",
-      "x_url",
-      "website_url",
-      "facebook_url",
-      "latitude",
-      "longitude",
-      "min_price",
-      "max_price",
-      "owner_id",
-      "status",
-      "business_image",
-      "hasBooking",
+      req.body.business_name ?? null,
+      req.body.business_type_id ?? null,
+      req.body.business_category_id ?? null,
+      req.body.phone_number ?? null,
+      req.body.email ?? null,
+      req.body.barangay_id ?? null,
+      req.body.municipality_id ?? null,
+      req.body.province_id ?? null,
+      req.body.address ?? null,
+      req.body.description ?? null,
+      req.body.instagram_url ?? null,
+      req.body.x_url ?? null,
+      req.body.website_url ?? null,
+      req.body.facebook_url ?? null,
+      req.body.latitude ?? null,
+      req.body.longitude ?? null,
+      req.body.min_price ?? null,
+      req.body.max_price ?? null,
+      req.body.owner_id ?? null,
+      req.body.status ?? null,
+      req.body.business_image ?? null,
+      req.body.hasBooking ?? null,
     ];
 
-    // Filter fields to only those present in request.body
-    const fieldsToUpdate = allowedFields.filter((field) =>
-      Object.prototype.hasOwnProperty.call(request.body, field)
+    const [result] = await db.query(
+      "CALL InsertBusiness(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+      params
     );
 
-    if (fieldsToUpdate.length === 0) {
-      return response
-        .status(400)
-        .json({ message: "No valid fields provided for update" });
-    }
-
-    const values = fieldsToUpdate.map((f) => request.body[f]);
-
-    await db.query(
-      `UPDATE business SET ${fieldsToUpdate
-        .map((f) => `${f} = ?`)
-        .join(", ")} WHERE id = ?`,
-      [...values, id]
-    );
-
-    // Retrieve the updated data
-    const [data] = await db.query("SELECT * FROM business WHERE id = ?", [id]);
-    response.json({
-      message: "Business updated successfully",
-      ...data[0],
+    res.status(201).json({
+      message: "Business created successfully",
+      ...result[0][0], // first row of the SELECT inside procedure
     });
   } catch (error) {
-    handleDbError(error, response);
+    return handleDbError(error, res);
   }
 }
 
-// delete data by ID
-export async function deleteBusiness(request, response) {
-  const { id } = request.params;
+// Update business
+export async function updateBusiness(req, res) {
+  const { id } = req.params;
   try {
-    const [data] = await db.query("DELETE FROM business WHERE id = ?", [id]);
+    const params = [
+      id,
+      req.body.business_name ?? null,
+      req.body.business_type_id ?? null,
+      req.body.business_category_id ?? null,
+      req.body.phone_number ?? null,
+      req.body.email ?? null,
+      req.body.barangay_id ?? null,
+      req.body.municipality_id ?? null,
+      req.body.province_id ?? null,
+      req.body.address ?? null,
+      req.body.description ?? null,
+      req.body.instagram_url ?? null,
+      req.body.x_url ?? null,
+      req.body.website_url ?? null,
+      req.body.facebook_url ?? null,
+      req.body.latitude ?? null,
+      req.body.longitude ?? null,
+      req.body.min_price ?? null,
+      req.body.max_price ?? null,
+      req.body.owner_id ?? null,
+      req.body.status ?? null,
+      req.body.business_image ?? null,
+      req.body.hasBooking ?? null,
+    ];
 
-    if (data.affectedRows === 0) {
-      return response.status(404).json({ message: "Data not found" });
+    const [result] = await db.query(
+      "CALL UpdateBusiness(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+      params
+    );
+
+    if (!result[0] || result[0].length === 0) {
+      return res.status(404).json({ message: "Business not found" });
     }
 
-    response.json({ message: "Row deleted successfully" });
+    res.json({
+      message: "Business updated successfully",
+      ...result[0][0],
+    });
   } catch (error) {
-    return handleDbError(error, response);
+    return handleDbError(error, res);
   }
 }
 
-export async function insertBusinessHours(request, response) {
+// Delete business
+export async function deleteBusiness(req, res) {
+  const { id } = req.params;
+  try {
+    const [data] = await db.query("CALL DeleteBusiness(?)", [id]);
+    if (data.affectedRows === 0) {
+      return res.status(404).json({ message: "Business not found" });
+    }
+    res.json({ message: "Business deleted successfully" });
+  } catch (error) {
+    return handleDbError(error, res);
+  }
+}
+
+// ==================== BUSINESS HOURS ====================
+
+// Insert business hours
+export async function insertBusinessHours(req, res) {
   try {
     const { business_id, day_of_week, open_time, close_time, is_open } =
-      request.body;
+      req.body;
 
-    await db.query(
-      `INSERT INTO business_hours (business_id, day_of_week, open_time, close_time, is_open)
-       VALUES (?, ?, ?, ?, ?)`,
-      [business_id, day_of_week, open_time, close_time, is_open]
-    );
+    await db.query("CALL InsertBusinessHours(?,?,?,?,?)", [
+      business_id,
+      day_of_week,
+      open_time,
+      close_time,
+      is_open,
+    ]);
 
-    return response
-      .status(201)
-      .json({ message: "Business hours inserted successfully" });
+    res.status(201).json({ message: "Business hours inserted successfully" });
   } catch (error) {
-    return handleDbError(error, response);
+    return handleDbError(error, res);
   }
 }
 
-export async function getBusinessHours(request, response) {
+// Get business hours
+export async function getBusinessHours(req, res) {
   try {
-    const [data] = await db.query(
-      "SELECT * FROM business_hours ORDER BY id ASC"
-    );
-    response.json(data);
+    const [data] = await db.query("CALL GetBusinessHours()");
+    res.json(data[0]);
   } catch (error) {
-    console.error("Error fetching business hours:", error);
-    return handleDbError(error, response);
+    return handleDbError(error, res);
   }
 }
 
-export async function updateBusinessHours(request, response) {
+// Update business hours
+export async function updateBusinessHours(req, res) {
   try {
-    const { id } = request.params;
-    const { open_time, close_time, is_open } = request.body;
+    const { id } = req.params;
+    const { open_time, close_time, is_open } = req.body;
 
-    await db.query(
-      `UPDATE business_hours SET open_time = ?, close_time = ?, is_open = ? WHERE id = ?`,
-      [open_time, close_time, is_open, id]
-    );
+    await db.query("CALL UpdateBusinessHours(?,?,?,?)", [
+      id,
+      open_time,
+      close_time,
+      is_open,
+    ]);
 
-    response.json({ message: "Business hours updated successfully" });
+    res.json({ message: "Business hours updated successfully" });
   } catch (error) {
-    console.error("Error updating business hours:", error);
-    return handleDbError(error, response);
+    return handleDbError(error, res);
   }
 }
