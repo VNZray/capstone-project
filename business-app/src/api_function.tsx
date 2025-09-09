@@ -61,3 +61,12 @@ export const getDataById = async (table: string, id: string) => {
   }
 };
 
+export const getDataByForeignId = async (table: string, id: string) => {
+  try {
+    const response = await axios.get(`${api}/${table}/${id}`);
+    return response.data;
+  } catch (error) {
+    console.error("Get by ID failed:", error);
+    throw error;
+  }
+};

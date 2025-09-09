@@ -1,9 +1,10 @@
 // migrations/20250817100000_owner.js
 
-/**
- * @param { import("knex").Knex } knex
- * @returns { Promise<void> }
- */
+const {
+  createOwnerProcedures,
+  dropOwnerProcedures,
+} = require("../procedures/ownerProcedures");
+
 exports.up = async function (knex) {
   await knex.schema.createTable("owner", (table) => {
     table.uuid("id").primary().defaultTo(knex.raw("(UUID())")); // MariaDB's UUID()
@@ -17,27 +18,18 @@ exports.up = async function (knex) {
     table.string("phone_number", 13).notNullable().unique();
     table.enu("business_type", ["Shop", "Accommodation", "Both"]).notNullable();
     table
-      .integer("province_id")
+      .integer("address_id")
       .unsigned()
       .references("id")
-      .inTable("province")
-      .nullable();
-    table
-      .integer("municipality_id")
-      .unsigned()
-      .references("id")
-      .inTable("municipality")
-      .nullable();
-    table
-      .integer("barangay_id")
-      .unsigned()
-      .references("id")
-      .inTable("barangay")
+      .inTable("address")
       .nullable();
     table.timestamp("created_at").defaultTo(knex.fn.now());
   });
+
+  await createOwnerProcedures(knex);
 };
 
 exports.down = async function (knex) {
   await knex.schema.dropTableIfExists("owner");
+  await dropOwnerProcedures(knex);
 };
