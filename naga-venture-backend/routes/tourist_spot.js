@@ -1,5 +1,5 @@
 import express from 'express';
-import * as touristSpotController from '../controller/touristSpotController.js';
+import * as touristSpotController from '../controller/touristSpot/index.js';
 
 const router = express.Router();
 
@@ -21,9 +21,20 @@ router.get('/barangays/:municipality_id', touristSpotController.getBarangaysByMu
 // Get tourist spot by ID
 router.get('/:id', touristSpotController.getTouristSpotById);
 
+// Categories management for tourist spots
+router.get('/:id/categories', touristSpotController.getTouristSpotCategories);
+router.put('/:id/categories', touristSpotController.updateTouristSpotCategories);
+
 // Schedules endpoints
 router.get('/:id/schedules', touristSpotController.getTouristSpotSchedules);
 router.put('/:id/schedules', touristSpotController.upsertTouristSpotSchedules);
+
+// Image management endpoints
+router.get('/:tourist_spot_id/images', touristSpotController.getTouristSpotImages);
+router.post('/:tourist_spot_id/images', touristSpotController.addTouristSpotImage);
+router.put('/:tourist_spot_id/images/:image_id', touristSpotController.updateTouristSpotImage);
+router.delete('/:tourist_spot_id/images/:image_id', touristSpotController.deleteTouristSpotImage);
+router.put('/:tourist_spot_id/images/:image_id/set-primary', touristSpotController.setPrimaryTouristSpotImage);
 
 // Create new tourist spot
 router.post('/', touristSpotController.createTouristSpot);
@@ -31,6 +42,7 @@ router.post('/', touristSpotController.createTouristSpot);
 // Submit edit request for existing tourist spot
 router.put('/:id', touristSpotController.submitEditRequest);
 
-// (Simplified) update/delete removed for now
+// Update tourist spot directly (admin only)
+router.patch('/:id', touristSpotController.updateTouristSpot);
 
 export default router;
