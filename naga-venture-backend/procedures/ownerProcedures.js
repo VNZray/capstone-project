@@ -60,16 +60,16 @@ async function createOwnerProcedures(knex) {
     )
     BEGIN
       UPDATE owner
-      SET first_name = p_first_name,
-          middle_name = p_middle_name,
-          last_name = p_last_name,
-          age = p_age,
-          birthday = p_birthday,
-          gender = p_gender,
-          email = p_email,
-          phone_number = p_phone_number,
-          business_type = p_business_type,
-          address_id = p_address_id
+      SET first_name = IFNULL(p_first_name, first_name),
+          middle_name = IFNULL(p_middle_name, middle_name),
+          last_name = IFNULL(p_last_name, last_name),
+          age = IFNULL(p_age, age),
+          birthday = IFNULL(p_birthday, birthday),
+          gender = IFNULL(p_gender, gender),
+          email = IFNULL(p_email, email),
+          phone_number = IFNULL(p_phone_number, phone_number),
+          business_type = IFNULL(p_business_type, business_type),
+          address_id = IFNULL(p_address_id, address_id)
       WHERE id = p_id;
 
       SELECT * FROM owner WHERE id = p_id;

@@ -1,6 +1,10 @@
-// migrations/xxxx_create_room_table.js
-exports.up = function (knex) {
-  return knex.schema.createTable("room", function (table) {
+const {
+  createRoomProcedures,
+  dropRoomProcedures,
+} = require("../procedures/roomProcedures");
+
+exports.up = async function (knex) {
+  await knex.schema.createTable("room", function (table) {
     table.uuid("id").primary().defaultTo(knex.raw("(UUID())"));
     table
       .uuid("business_id")
@@ -19,8 +23,11 @@ exports.up = function (knex) {
       .notNullable();
     table.integer("capacity").unsigned().notNullable();
   });
+
+  await createRoomProcedures(knex);
 };
 
-exports.down = function (knex) {
-  return knex.schema.dropTableIfExists("room");
+exports.down = async function (knex) {
+  await knex.schema.dropTableIfExists("room");
+  await dropRoomProcedures(knex);
 };

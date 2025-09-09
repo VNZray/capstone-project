@@ -1,6 +1,8 @@
-/**
- * @param { import("knex").Knex } knex
- */
+const {
+  createAddressProcedures,
+  dropAddressProcedures,
+} = require("../procedures/addressProcedures");
+
 exports.up = async function (knex) {
   // Province
   await knex.schema.createTable("province", function (table) {
@@ -43,7 +45,7 @@ exports.up = async function (knex) {
     table
       .integer("province_id")
       .unsigned()
-      .notNullable()
+      .nullable()
       .references("id")
       .inTable("province")
       .onDelete("CASCADE")
@@ -52,7 +54,7 @@ exports.up = async function (knex) {
     table
       .integer("municipality_id")
       .unsigned()
-      .notNullable()
+      .nullable()
       .references("id")
       .inTable("municipality")
       .onDelete("CASCADE")
@@ -61,12 +63,14 @@ exports.up = async function (knex) {
     table
       .integer("barangay_id")
       .unsigned()
-      .notNullable()
+      .nullable()
       .references("id")
       .inTable("barangay")
       .onDelete("CASCADE")
       .onUpdate("CASCADE");
   });
+
+  await createAddressProcedures(knex);
 };
 
 /**
@@ -77,4 +81,5 @@ exports.down = async function (knex) {
   await knex.schema.dropTableIfExists("barangay");
   await knex.schema.dropTableIfExists("municipality");
   await knex.schema.dropTableIfExists("province");
+  await dropAddressProcedures(knex);
 };

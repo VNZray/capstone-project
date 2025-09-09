@@ -1,5 +1,10 @@
-exports.up = function (knex) {
-  return knex.schema.createTable("user", (table) => {
+const {
+  createUserProcedures,
+  dropUserProcedures,
+} = require("../procedures/userProcedures");
+
+exports.up = async function (knex) {
+  await knex.schema.createTable("user", (table) => {
     table.uuid("id").primary().defaultTo(knex.raw("(UUID())")); // default UUID
     table
       .enu("role", ["Tourist", "Owner", "Tourism", " Event Manager"], {
@@ -33,8 +38,10 @@ exports.up = function (knex) {
       .inTable("tourism")
       .onDelete("CASCADE");
   });
+  await createUserProcedures(knex);
 };
 
-exports.down = function (knex) {
-  return knex.schema.dropTable("user");
+exports.down = async function (knex) {
+  await knex.schema.dropTable("user");
+  await dropUserProcedures(knex);
 };
