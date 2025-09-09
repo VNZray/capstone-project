@@ -5,19 +5,8 @@ import { handleDbError } from "../utils/errorHandler.js";
 // Get all reports
 export async function getAllReports(request, response) {
   try {
-    const [data] = await db.query(`
-      SELECT 
-        r.*,
-        u.email as reporter_email,
-        t.first_name as reporter_first_name,
-        t.last_name as reporter_last_name,
-        t.phone_number as reporter_contact
-      FROM report r
-      JOIN user u ON r.reporter_id = u.id
-      LEFT JOIN tourist t ON u.tourist_id = t.id
-      ORDER BY r.created_at DESC
-    `);
-    response.json(data);
+    const [data] = await db.query("CALL GetAllReports()");
+    response.json(data[0]);
   } catch (error) {
     return handleDbError(error, response);
   }
@@ -27,48 +16,21 @@ export async function getAllReports(request, response) {
 export async function getReportById(request, response) {
   const { id } = request.params;
   try {
-    // Get report details
-    const [reportData] = await db.query(`
-      SELECT 
-        r.*,
-        u.email as reporter_email,
-        t.first_name as reporter_first_name,
-        t.last_name as reporter_last_name,
-        t.phone_number as reporter_contact
-      FROM report r
-      JOIN user u ON r.reporter_id = u.id
-      LEFT JOIN tourist t ON u.tourist_id = t.id
-      WHERE r.id = ?
-    `, [id]);
-    
-    if (reportData.length === 0) {
+    const [data] = await db.query("CALL GetReportById(?)", [id]);
+
+    const reportRows = data[0];
+    if (!reportRows || reportRows.length === 0) {
       return response.status(404).json({ message: "Report not found" });
     }
-    
-    // Get status history
-    const [statusHistory] = await db.query(`
-      SELECT 
-        rsh.*,
-        u.email as updated_by_email
-      FROM report_status_history rsh
-      LEFT JOIN user u ON rsh.updated_by = u.id
-      WHERE rsh.report_id = ?
-      ORDER BY rsh.updated_at ASC
-    `, [id]);
-    
-    // Get attachments
-    const [attachments] = await db.query(`
-      SELECT * FROM report_attachment
-      WHERE report_id = ?
-      ORDER BY uploaded_at ASC
-    `, [id]);
-    
+
+    const statusHistoryRows = data[1] ?? [];
+    const attachmentRows = data[2] ?? [];
+
     const report = {
-      ...reportData[0],
-      status_history: statusHistory,
-      attachments: attachments
+      ...reportRows[0],
+      status_history: statusHistoryRows,
+      attachments: attachmentRows,
     };
-    
     response.json(report);
   } catch (error) {
     handleDbError(error, response);
@@ -79,13 +41,8 @@ export async function getReportById(request, response) {
 export async function getReportsByReporterId(request, response) {
   const { reporterId } = request.params;
   try {
-    const [data] = await db.query(`
-      SELECT * FROM report 
-      WHERE reporter_id = ?
-      ORDER BY created_at DESC
-    `, [reporterId]);
-    
-    response.json(data);
+    const [data] = await db.query("CALL GetReportsByReporterId(?)", [reporterId]);
+    response.json(data[0]);
   } catch (error) {
     handleDbError(error, response);
   }
@@ -95,45 +52,31 @@ export async function getReportsByReporterId(request, response) {
 export async function createReport(request, response) {
   try {
     const reportId = uuidv4();
-    const {
-      reporter_id,
-      target_type,
-      target_id,
-      title,
-      description
-    } = request.body;
+    const { reporter_id, target_type, target_id, title, description } = request.body;
 
-    // Validate required fields
     if (!reporter_id || !target_type || !target_id || !title || !description) {
-      return response.status(400).json({ 
-        message: "All fields are required: reporter_id, target_type, target_id, title, description" 
+      return response.status(400).json({
+        message: "All fields are required: reporter_id, target_type, target_id, title, description",
       });
     }
 
-    // Validate target_type
     const validTargetTypes = ["business", "event", "tourist_spot", "accommodation"];
     if (!validTargetTypes.includes(target_type)) {
-      return response.status(400).json({ 
-        message: "Invalid target_type. Must be one of: " + validTargetTypes.join(", ")
+      return response.status(400).json({
+        message: "Invalid target_type. Must be one of: " + validTargetTypes.join(", "),
       });
     }
 
-    // Insert the report
-    await db.query(`
-      INSERT INTO report (id, reporter_id, target_type, target_id, title, description, status)
-      VALUES (?, ?, ?, ?, ?, ?, 'submitted')
-    `, [reportId, reporter_id, target_type, target_id, title, description]);
+    const params = [reportId, reporter_id, target_type, target_id, title, description];
+    const placeholders = params.map(() => "?").join(",");
+    const [result] = await db.query(`CALL InsertReport(${placeholders})`, params);
 
-    // Create initial status history entry
-    const statusHistoryId = uuidv4();
-    await db.query(`
-      INSERT INTO report_status_history (id, report_id, status, remarks, updated_by)
-      VALUES (?, ?, 'submitted', 'Report submitted by user', NULL)
-    `, [statusHistoryId, reportId]);
+    const createdRow = result[0] ? result[0][0] : null;
 
     response.status(201).json({
       message: "Report created successfully",
-      report_id: reportId
+      report_id: reportId,
+      report: createdRow,
     });
   } catch (error) {
     handleDbError(error, response);
@@ -144,35 +87,20 @@ export async function createReport(request, response) {
 export async function updateReportStatus(request, response) {
   const { id } = request.params;
   const { status, remarks, updated_by } = request.body;
-
   try {
-    // Validate status
     const validStatuses = ["submitted", "under_review", "in_progress", "resolved", "rejected"];
     if (!validStatuses.includes(status)) {
-      return response.status(400).json({ 
-        message: "Invalid status. Must be one of: " + validStatuses.join(", ")
+      return response.status(400).json({
+        message: "Invalid status. Must be one of: " + validStatuses.join(", "),
       });
     }
 
-    // Update report status
-    const [result] = await db.query(`
-      UPDATE report 
-      SET status = ?, updated_at = CURRENT_TIMESTAMP
-      WHERE id = ?
-    `, [status, id]);
-
-    if (result.affectedRows === 0) {
+    const [result] = await db.query("CALL UpdateReportStatus(?,?,?,?)", [id, status, remarks || null, updated_by || null]);
+    const updatedRow = result[0] ? result[0][0] : null;
+    if (!updatedRow) {
       return response.status(404).json({ message: "Report not found" });
     }
-
-    // Add status history entry
-    const statusHistoryId = uuidv4();
-    await db.query(`
-      INSERT INTO report_status_history (id, report_id, status, remarks, updated_by)
-      VALUES (?, ?, ?, ?, ?)
-    `, [statusHistoryId, id, status, remarks || null, updated_by || null]);
-
-    response.json({ message: "Report status updated successfully" });
+    response.json({ message: "Report status updated successfully", report: updatedRow });
   } catch (error) {
     handleDbError(error, response);
   }
@@ -182,14 +110,11 @@ export async function updateReportStatus(request, response) {
 export async function deleteReport(request, response) {
   const { id } = request.params;
   try {
-    const [result] = await db.query(`
-      DELETE FROM report WHERE id = ?
-    `, [id]);
-
-    if (result.affectedRows === 0) {
+    const [data] = await db.query("CALL DeleteReport(?)", [id]);
+    const affected = data[0] && data[0][0] ? data[0][0].affected_rows : 0;
+    if (affected === 0) {
       return response.status(404).json({ message: "Report not found" });
     }
-
     response.json({ message: "Report deleted successfully" });
   } catch (error) {
     handleDbError(error, response);
@@ -200,17 +125,8 @@ export async function deleteReport(request, response) {
 export async function getReportsByTarget(request, response) {
   const { targetType, targetId } = request.params;
   try {
-    const [data] = await db.query(`
-      SELECT 
-        r.*,
-        u.email as reporter_email
-      FROM report r
-      JOIN user u ON r.reporter_id = u.id
-      WHERE r.target_type = ? AND r.target_id = ?
-      ORDER BY r.created_at DESC
-    `, [targetType, targetId]);
-    
-    response.json(data);
+    const [data] = await db.query("CALL GetReportsByTarget(?,?)", [targetType, targetId]);
+    response.json(data[0]);
   } catch (error) {
     handleDbError(error, response);
   }
@@ -220,17 +136,8 @@ export async function getReportsByTarget(request, response) {
 export async function getReportsByStatus(request, response) {
   const { status } = request.params;
   try {
-    const [data] = await db.query(`
-      SELECT 
-        r.*,
-        u.email as reporter_email
-      FROM report r
-      JOIN user u ON r.reporter_id = u.id
-      WHERE r.status = ?
-      ORDER BY r.created_at DESC
-    `, [status]);
-    
-    response.json(data);
+    const [data] = await db.query("CALL GetReportsByStatus(?)", [status]);
+    response.json(data[0]);
   } catch (error) {
     handleDbError(error, response);
   }
