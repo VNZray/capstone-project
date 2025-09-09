@@ -1,7 +1,7 @@
-const {
-  createBusinessProcedures,
-  dropBusinessProcedures,
-} = require("../procedures/businessProcedures");
+// const {
+//   createBusinessProcedures,
+//   dropBusinessProcedures,
+// } = require("../procedures/businessProcedures");
 
 exports.up = async function (knex) {
   // Create business table
@@ -52,18 +52,15 @@ exports.up = async function (knex) {
     table.text("instagram_url").nullable();
     table.boolean("hasBooking").notNullable().defaultTo(true);
   });
+
+  // Create stored procedures would go here if needed
+  // await createBusinessProcedures(knex);
 };
 
 exports.down = async function (knex) {
+  // Drop stored procedures would go here if needed
+  // await dropBusinessProcedures(knex);
+  
   // Drop table
   await knex.schema.dropTableIfExists("business");
-};
-
-// Stored Procedures
-exports.up = async function (knex) {
-  await createBusinessProcedures(knex);
-};
-
-exports.down = async function (knex) {
-  await dropBusinessProcedures(knex);
 };
