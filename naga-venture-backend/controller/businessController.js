@@ -50,31 +50,32 @@ export async function insertBusiness(req, res) {
     const params = [
       id,
       req.body.business_name ?? null,
-      req.body.business_type_id ?? null,
-      req.body.business_category_id ?? null,
-      req.body.phone_number ?? null,
-      req.body.email ?? null,
-      req.body.barangay_id ?? null,
-      req.body.municipality_id ?? null,
-      req.body.province_id ?? null,
-      req.body.address ?? null,
       req.body.description ?? null,
-      req.body.instagram_url ?? null,
-      req.body.x_url ?? null,
-      req.body.website_url ?? null,
-      req.body.facebook_url ?? null,
-      req.body.latitude ?? null,
-      req.body.longitude ?? null,
       req.body.min_price ?? null,
       req.body.max_price ?? null,
+      req.body.email ?? null,
+      req.body.phone_number ?? null,
+      req.body.business_category_id ?? null,
+      req.body.business_type_id ?? null,
+      req.body.address_id ?? null,
+      req.body.address ?? null,
       req.body.owner_id ?? null,
       req.body.status ?? null,
       req.body.business_image ?? null,
+      req.body.latitude ?? null,
+      req.body.longitude ?? null,
+      req.body.x_url ?? null,
+      req.body.website_url ?? null,
+      req.body.facebook_url ?? null,
+      req.body.instagram_url ?? null,
       req.body.hasBooking ?? null,
     ];
 
+    // Dynamically build placeholders: "?,?,?,..."
+    const placeholders = params.map(() => "?").join(",");
+
     const [result] = await db.query(
-      "CALL InsertBusiness(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+      `CALL InsertBusiness(${placeholders})`,
       params
     );
 
@@ -98,9 +99,7 @@ export async function updateBusiness(req, res) {
       req.body.business_category_id ?? null,
       req.body.phone_number ?? null,
       req.body.email ?? null,
-      req.body.barangay_id ?? null,
-      req.body.municipality_id ?? null,
-      req.body.province_id ?? null,
+      req.body.address_id ?? null,
       req.body.address ?? null,
       req.body.description ?? null,
       req.body.instagram_url ?? null,
@@ -117,8 +116,11 @@ export async function updateBusiness(req, res) {
       req.body.hasBooking ?? null,
     ];
 
+    // Dynamically build placeholders: "?,?,?,..."
+    const placeholders = params.map(() => "?").join(",");
+
     const [result] = await db.query(
-      "CALL UpdateBusiness(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+      `CALL UpdateBusiness(${placeholders})`,
       params
     );
 
@@ -174,7 +176,7 @@ export async function insertBusinessHours(req, res) {
 // Get business hours
 export async function getBusinessHours(req, res) {
   try {
-    const [data] = await db.query("CALL GetBusinessHours()");
+    const [data] = await db.query("CALL GetAllBusinessHours()");
     res.json(data[0]);
   } catch (error) {
     return handleDbError(error, res);

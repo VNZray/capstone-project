@@ -9,39 +9,24 @@ exports.up = async function (knex) {
     table.uuid("id").primary().defaultTo(knex.raw("(UUID())")); // MariaDB UUID()
     table.string("business_name", 50).notNullable();
     table.text("description").nullable();
-    table.float("min_price").notNullable();
-    table.float("max_price").notNullable();
+    table.float("min_price").nullable();
+    table.float("max_price").nullable();
     table.string("email", 40).notNullable().unique();
     table.string("phone_number", 14).notNullable().unique();
-    table.integer("business_category_id").notNullable();
     table.integer("business_type_id").notNullable();
+    table.integer("business_category_id").notNullable();
     table
-      .integer("province_id")
+      .integer("address_id")
       .unsigned()
       .references("id")
-      .inTable("province")
-      .nullable();
-    table
-      .integer("municipality_id")
-      .unsigned()
-      .references("id")
-      .inTable("municipality")
-      .nullable();
-    table
-      .integer("barangay_id")
-      .unsigned()
-      .references("id")
-      .inTable("barangay")
+      .inTable("address")
       .nullable();
     table.text("address").notNullable();
-    table
-      .uuid("owner_id")
-      .notNullable()
-      .references("id")
-      .inTable("owner");
+    table.uuid("owner_id").notNullable().references("id").inTable("owner");
     table
       .enu("status", ["Pending", "Active", "Inactive", "Maintenance"])
-      .notNullable();
+      .notNullable()
+      .defaultTo("Pending");
     table.text("business_image").nullable();
     table.timestamp("created_at").defaultTo(knex.fn.now());
     table.string("latitude", 30).notNullable();
@@ -50,17 +35,15 @@ exports.up = async function (knex) {
     table.text("website_url").nullable();
     table.text("facebook_url").nullable();
     table.text("instagram_url").nullable();
-    table.boolean("hasBooking").notNullable().defaultTo(true);
+    table.boolean("hasBooking").nullable().defaultTo(false);
   });
 
-  // Create stored procedures would go here if needed
-  // await createBusinessProcedures(knex);
+  await createBusinessProcedures(knex);
 };
 
 exports.down = async function (knex) {
-  // Drop stored procedures would go here if needed
-  // await dropBusinessProcedures(knex);
-  
   // Drop table
   await knex.schema.dropTableIfExists("business");
+  await dropBusinessProcedures(knex);
 };
+
