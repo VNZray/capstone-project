@@ -1,6 +1,12 @@
-exports.up = function (knex) {
-  return knex.schema.createTable("business", function (table) {
-    table.uuid("id").primary().defaultTo(knex.raw("(UUID())")); // MariaDB's UUID()
+const {
+  createBusinessProcedures,
+  dropBusinessProcedures,
+} = require("../procedures/businessProcedures");
+
+exports.up = async function (knex) {
+  // Create business table
+  await knex.schema.createTable("business", function (table) {
+    table.uuid("id").primary().defaultTo(knex.raw("(UUID())")); // MariaDB UUID()
     table.string("business_name", 50).notNullable();
     table.text("description").nullable();
     table.float("min_price").notNullable();
@@ -28,7 +34,6 @@ exports.up = function (knex) {
       .inTable("barangay")
       .nullable();
     table.text("address").notNullable();
-
     table
       .uuid("owner_id")
       .notNullable()
@@ -49,6 +54,16 @@ exports.up = function (knex) {
   });
 };
 
-exports.down = function (knex) {
-  return knex.schema.dropTableIfExists("business");
+exports.down = async function (knex) {
+  // Drop table
+  await knex.schema.dropTableIfExists("business");
+};
+
+// Stored Procedures
+exports.up = async function (knex) {
+  await createBusinessProcedures(knex);
+};
+
+exports.down = async function (knex) {
+  await dropBusinessProcedures(knex);
 };

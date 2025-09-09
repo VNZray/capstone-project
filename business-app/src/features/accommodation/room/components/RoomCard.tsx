@@ -124,7 +124,7 @@ const RoomCard: React.FC<RoomCardProps> = ({
         )}
         {room_status === "Occupied" && (
           <Chip
-            color="danger"
+            color="warning"
             variant="solid"
             size="md"
             sx={{ position: "absolute", top: 12, left: 12 }}
@@ -134,7 +134,7 @@ const RoomCard: React.FC<RoomCardProps> = ({
         )}
         {room_status === "Maintenance" && (
           <Chip
-            color="warning"
+            color="danger"
             variant="solid"
             size="md"
             sx={{ position: "absolute", top: 12, left: 12 }}
