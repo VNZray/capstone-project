@@ -805,6 +805,8 @@ const BusinessProfile = () => {
         </Grid>
       </Grid>
 
+      
+
       <EditBusinessHoursModal
         open={editBusinessHoursOpen}
         businessId={businessDetails?.id?.toString()}

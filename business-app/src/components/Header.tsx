@@ -19,13 +19,6 @@ import Link from "@mui/joy/Link";
 import { colors } from "../utils/Colors";
 import { Typography } from "@mui/joy";
 
-// Styled components for cleaner look
-const LogoImg = styled("img")({
-  height: 40,
-  cursor: "pointer",
-  marginRight: 12,
-});
-
 export default function Header(): React.JSX.Element {
   const navigate = useNavigate();
   const { logout } = useAuth();
@@ -49,7 +42,7 @@ export default function Header(): React.JSX.Element {
     <AppBar position="static" sx={{ backgroundColor: "#0A1B47", padding: 1 }}>
       <Toolbar sx={{ display: "flex", justifyContent: "space-between", padding: 0 }}>
         {/* Left: Logo + Title */}
-        <Typography startDecorator={<img src={logo} alt="Logo" style={{ width: "40px", height: "40px" }} />} level="title-lg" color={colors.white}>
+        <Typography startDecorator={<img src={logo} alt="Logo" style={{ width: "40px", height: "40px", color: colors.white }} />} level="title-lg">
           City Venture
         </Typography>
 

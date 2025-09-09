@@ -18,6 +18,7 @@ exports.up = function (knex) {
       table.uuid("touriat_id").notNullable();
       table.timestamp("created_at").defaultTo(knex.fn.now()).notNullable();
     })
+    
     .createTable("reply", (table) => {
       table.uuid("id").primary().defaultTo(knex.raw("(UUID())"));
       table
