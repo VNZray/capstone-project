@@ -12,8 +12,8 @@ async function testLogApprovalRecord() {
 
     const params = [
       'new', // approval_type
-      'tourist_spot', // entity_type
-      '00000000-0000-0000-0000-000000000001', // entity_id (dummy)
+  'tourist_spot', // subject_type
+  '00000000-0000-0000-0000-000000000001', // subject_id (dummy)
       'approved', // decision
       null, // decided_by
       'Test log from script' // remarks

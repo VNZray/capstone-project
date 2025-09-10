@@ -2,8 +2,8 @@
 async function createGetApprovalRecordsProcedure(knex) {
   await knex.raw(`
     CREATE PROCEDURE GetApprovalRecords(
-      IN p_entity_type VARCHAR(32),
-      IN p_entity_id CHAR(36),
+      IN p_subject_type VARCHAR(32),
+      IN p_subject_id CHAR(36),
       IN p_decision VARCHAR(16),
       IN p_limit INT
     )
@@ -13,8 +13,8 @@ async function createGetApprovalRecordsProcedure(knex) {
         SET v_limit = p_limit;
       END IF;
       SELECT * FROM approval_records
-      WHERE (p_entity_type IS NULL OR entity_type = p_entity_type)
-        AND (p_entity_id IS NULL OR entity_id = p_entity_id)
+      WHERE (p_subject_type IS NULL OR subject_type = p_subject_type)
+        AND (p_subject_id IS NULL OR subject_id = p_subject_id)
         AND (p_decision IS NULL OR decision = p_decision)
       ORDER BY decided_at DESC
       LIMIT v_limit;

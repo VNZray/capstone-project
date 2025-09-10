@@ -3,10 +3,10 @@ import { handleDbError } from '../utils/errorHandler.js';
 
 export const getApprovalRecords = async (req, res) => {
   try {
-    const { entity_type, entity_id, decision, limit } = req.query;
+    const { subject_type, subject_id, decision, limit } = req.query;
     const params = [
-      entity_type || null,
-      entity_id || null,
+      subject_type || null,
+      subject_id || null,
       decision || null,
       limit ? parseInt(limit, 10) : 100
     ];
