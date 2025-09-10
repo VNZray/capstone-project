@@ -3,23 +3,11 @@ exports.up = function (knex) {
     table.uuid("id").primary().defaultTo(knex.raw("(UUID())")); // MariaDB's UUID()
     
     // Reporter information
-    table
-      .uuid("reporter_id")
-      .notNullable()
-      .references("id")
-      .inTable("user")
-      .onDelete("CASCADE");
-    
+    table.uuid("reporter_id").references("id").inTable("user").onDelete("CASCADE");
     // Target entity (polymorphic association)
-    table
-      .enu("target_type", ["business", "event", "tourist_spot", "accommodation"], {
-        useNative: true,
-        enumName: "report_target_type",
-      })
-      .notNullable();
-    
-    table.string("target_id").notNullable(); // Cannot be FK due to polymorphic nature
-    
+    table.enu("target_type", ["business", "event", "tourist_spot", "accommodation"],
+        {useNative: true,enumName: "report_target_type",}).notNullable();
+    table.string("target_id").notNullable(); // Cannot be FK due to polymorphic nature    
     // Report details
     table.string("title", 100).notNullable();
     table.text("description").notNullable();
@@ -33,7 +21,6 @@ exports.up = function (knex) {
       .notNullable()
       .defaultTo("submitted");
     
-    // Timestamps
     table.timestamps(true, true); // created_at, updated_at
   });
 };

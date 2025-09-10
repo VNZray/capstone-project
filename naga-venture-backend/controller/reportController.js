@@ -8,9 +8,13 @@ export async function getAllReports(request, response) {
     const [data] = await db.query(`
       SELECT 
         r.*,
-        u.email as reporter_email
+        u.email as reporter_email,
+        t.first_name as reporter_first_name,
+        t.last_name as reporter_last_name,
+        t.phone_number as reporter_contact
       FROM report r
       JOIN user u ON r.reporter_id = u.id
+      LEFT JOIN tourist t ON u.tourist_id = t.id
       ORDER BY r.created_at DESC
     `);
     response.json(data);
@@ -27,9 +31,13 @@ export async function getReportById(request, response) {
     const [reportData] = await db.query(`
       SELECT 
         r.*,
-        u.email as reporter_email
+        u.email as reporter_email,
+        t.first_name as reporter_first_name,
+        t.last_name as reporter_last_name,
+        t.phone_number as reporter_contact
       FROM report r
       JOIN user u ON r.reporter_id = u.id
+      LEFT JOIN tourist t ON u.tourist_id = t.id
       WHERE r.id = ?
     `, [id]);
     
