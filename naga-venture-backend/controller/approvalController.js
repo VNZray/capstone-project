@@ -49,7 +49,17 @@ export const approveTouristSpot = async (req, res) => {
     const { id } = req.params;
     const [data] = await db.query("CALL ApproveTouristSpot(?)", [id]);
     const prior = data[0]?.[0];
-    const affected = data[1]?.[0]?.affected_rows ?? 0;
+    let affected = 0;
+    if (data[1]?.[0]?.affected_rows !== undefined) {
+      affected = data[1][0].affected_rows;
+    } else if (Array.isArray(data)) {
+      for (const set of data) {
+        if (set && set[0] && set[0].affected_rows !== undefined) {
+          affected = set[0].affected_rows;
+          break;
+        }
+      }
+    }
     if (!prior) return res.status(404).json({ success: false, message: "tourist_spots not found" });
     if (affected === 0) return res.status(400).json({ success: false, message: "tourist_spots is not pending approval" });
     res.json({ success: true, message: "Tourist spot approved successfully" });

@@ -1,11 +1,12 @@
 // ======================= APPROVAL RECORD LOGGING PROCEDURE =======================
 async function createApprovalRecordProcedures(knex) {
+  await knex.raw('DROP PROCEDURE IF EXISTS LogApprovalRecord;');
   await knex.raw(`
     CREATE PROCEDURE LogApprovalRecord(
-      IN p_approval_type ENUM('edit','new'),
-      IN p_entity_type ENUM('tourist_spot','business','accommodation','event'),
+      IN p_approval_type VARCHAR(16),
+      IN p_entity_type VARCHAR(32),
       IN p_entity_id CHAR(36),
-      IN p_decision ENUM('approved','rejected'),
+      IN p_decision VARCHAR(16),
       IN p_decided_by CHAR(36),
       IN p_remarks TEXT
     )
@@ -482,6 +483,15 @@ export { createTouristSpotAdditionalHelpers, dropTouristSpotAdditionalHelpers };
 
 // ======================= APPROVAL PROCEDURES =======================
 async function createTouristSpotApprovalProcedures(knex) {
+  // Always drop before create to ensure correct signature
+  const approvalProcs = [
+    'GetPendingEditRequests', 'GetPendingTouristSpots', 'ApproveTouristSpot',
+    'ApproveTouristSpotEdit', 'RejectTouristSpotEdit', 'RejectTouristSpot'
+  ];
+  for (const n of approvalProcs) {
+    await knex.raw(`DROP PROCEDURE IF EXISTS ${n};`);
+  }
+
   // Pending edit requests (2 result sets: rows, current categories)
   await knex.raw(`
     CREATE PROCEDURE GetPendingEditRequests()
