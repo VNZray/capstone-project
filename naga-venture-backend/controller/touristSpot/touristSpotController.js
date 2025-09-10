@@ -4,52 +4,30 @@ import { handleDbError } from "../../utils/errorHandler.js";
 // Get all tourist spots
 export const getAllTouristSpots = async (request, response) => {
   try {
-    const [data] = await db.execute(`
-      SELECT 
-        ts.*, 
-        t.type AS type,
-        p.province AS province,
-        m.municipality AS municipality,
-        b.barangay AS barangay
-      FROM tourist_spots ts
-      LEFT JOIN type t ON ts.type_id = t.id
-      LEFT JOIN province p ON ts.province_id = p.id
-      LEFT JOIN municipality m ON ts.municipality_id = m.id
-      LEFT JOIN barangay b ON ts.barangay_id = b.id
-      WHERE ts.spot_status IN ('active','inactive')
-      ORDER BY ts.name ASC
-    `);
+    const [data] = await db.query("CALL GetAllTouristSpots()");
+    const spots = data[0] || [];
+    const categories = data[1] || [];
+    const images = data[2] || [];
 
-    // Get categories and images for each tourist spot
-    for (let spot of data) {
-      // Get categories
-      const [categories] = await db.execute(
-        `SELECT c.id, c.category, c.type_id 
-         FROM tourist_spot_categories tsc
-         JOIN category c ON tsc.category_id = c.id
-         WHERE tsc.tourist_spot_id = ? 
-         ORDER BY c.category ASC`,
-        [spot.id]
-      );
-      spot.categories = categories;
-
-      // Get images
-      const [images] = await db.execute(
-        `SELECT 
-          id, file_url, file_format, file_size, is_primary, alt_text, uploaded_at
-        FROM tourist_spot_images 
-        WHERE tourist_spot_id = ? 
-        ORDER BY is_primary DESC, uploaded_at ASC`,
-        [spot.id]
-      );
-      spot.images = images;
+    // Index categories and images by spot id
+    const catMap = new Map();
+    for (const c of categories) {
+      if (!catMap.has(c.tourist_spot_id)) catMap.set(c.tourist_spot_id, []);
+      catMap.get(c.tourist_spot_id).push({ id: c.id, category: c.category, type_id: c.type_id });
+    }
+    const imgMap = new Map();
+    for (const i of images) {
+      if (!imgMap.has(i.tourist_spot_id)) imgMap.set(i.tourist_spot_id, []);
+      imgMap.get(i.tourist_spot_id).push(i);
     }
 
-    response.json({
-      success: true,
-      data: data,
-      message: "Tourist spots retrieved successfully",
-    });
+    const merged = spots.map(s => ({
+      ...s,
+      categories: catMap.get(s.id) || [],
+      images: imgMap.get(s.id) || [],
+    }));
+
+    response.json({ success: true, data: merged, message: "Tourist spots retrieved successfully" });
   } catch (error) {
     console.error("Error fetching tourist spots:", error);
     return handleDbError(error, response);
@@ -60,58 +38,18 @@ export const getAllTouristSpots = async (request, response) => {
 export const getTouristSpotById = async (request, response) => {
   try {
     const { id } = request.params;
+    const [data] = await db.query("CALL GetTouristSpotById(?)", [id]);
 
-    const [data] = await db.execute(`
-      SELECT 
-        ts.*, 
-        t.type AS type,
-        p.province AS province,
-        m.municipality AS municipality,
-        b.barangay AS barangay
-      FROM tourist_spots ts
-      LEFT JOIN type t ON ts.type_id = t.id
-      LEFT JOIN province p ON ts.province_id = p.id
-      LEFT JOIN municipality m ON ts.municipality_id = m.id
-      LEFT JOIN barangay b ON ts.barangay_id = b.id
-      WHERE ts.id = ?
-    `, [id]);
-
-    if (data.length === 0) {
-      return response.status(404).json({
-        success: false,
-        message: "Tourist spot not found",
-      });
+    const rows = data[0] || [];
+    if (!rows.length) {
+      return response.status(404).json({ success: false, message: "Tourist spot not found" });
     }
 
-    const touristSpot = data[0];
+    const categories = data[1] || [];
+    const images = data[2] || [];
+    const touristSpot = { ...rows[0], categories, images };
 
-    // Get categories for this tourist spot
-    const [categories] = await db.execute(
-      `SELECT c.id, c.category, c.type_id 
-       FROM tourist_spot_categories tsc
-       JOIN category c ON tsc.category_id = c.id
-       WHERE tsc.tourist_spot_id = ? 
-       ORDER BY c.category ASC`,
-      [id]
-    );
-    touristSpot.categories = categories;
-
-    // Get images for this tourist spot
-    const [images] = await db.execute(
-      `SELECT 
-        id, file_url, file_format, file_size, is_primary, alt_text, uploaded_at
-      FROM tourist_spot_images 
-      WHERE tourist_spot_id = ? 
-      ORDER BY is_primary DESC, uploaded_at ASC`,
-      [id]
-    );
-    touristSpot.images = images;
-
-    response.json({
-      success: true,
-      data: touristSpot,
-      message: "Tourist spot retrieved successfully",
-    });
+    response.json({ success: true, data: touristSpot, message: "Tourist spot retrieved successfully" });
   } catch (error) {
     return handleDbError(error, response);
   }
@@ -208,24 +146,14 @@ export const createTouristSpot = async (request, response) => {
         });
     }
 
-    // Start transaction
+    // Start transaction for composing categories and schedules around procedure-created record
     conn = await db.getConnection();
     await conn.beginTransaction();
 
-    // Generate a UUID here so we can reference it for schedules and categories
-    const [[{ id: spotId }]] = await conn.execute("SELECT UUID() AS id");
-
-    await conn.execute(
-      `
-      INSERT INTO tourist_spots (
-        id, name, description, province_id, municipality_id, barangay_id,
-        latitude, longitude, contact_phone, contact_email, website, entry_fee, 
-        type_id, spot_status
-      )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')
-    `,
+    // Create main tourist spot via procedure to comply with no inline SQL
+    const [insertRes] = await conn.query(
+      "CALL InsertTouristSpot(?,?,?,?,?,?,?,?,?,?,?,?)",
       [
-        spotId,
         name,
         description,
         province_id,
@@ -240,6 +168,10 @@ export const createTouristSpot = async (request, response) => {
         type_id,
       ]
     );
+    const spotId = insertRes[0] && insertRes[0][0] ? insertRes[0][0].id : null;
+    if (!spotId) {
+      throw new Error("Failed to create tourist spot");
+    }
 
     // Insert categories
     const categoryValues = [];
@@ -249,11 +181,11 @@ export const createTouristSpot = async (request, response) => {
       categoryValues.push(spotId, categoryId);
     });
 
-    await conn.execute(
-      `INSERT INTO tourist_spot_categories (id, tourist_spot_id, category_id) 
-       VALUES ${categoryPlaceholders.join(",")}`,
-      categoryValues
-    );
+    // Insert categories via procedure per category
+    for (let i = 0; i < category_ids.length; i++) {
+      // eslint-disable-next-line no-await-in-loop
+      await conn.query("CALL InsertTouristSpotCategory(?, ?)", [spotId, category_ids[i]]);
+    }
 
     // Optionally insert schedules if provided
     if (Array.isArray(schedules) && schedules.length) {
@@ -270,11 +202,17 @@ export const createTouristSpot = async (request, response) => {
         }
       });
       if (placeholders.length) {
-        await conn.execute(
-          `INSERT INTO tourist_spot_schedules (tourist_spot_id, day_of_week, open_time, close_time, is_closed)
-           VALUES ${placeholders.join(",")}`,
-          values
-        );
+        for (let idx = 0; idx < schedules.length; idx++) {
+          const s = schedules[idx];
+          const day = Number(s.day_of_week);
+          const isClosed = !!s.is_closed;
+          const open = isClosed ? null : (s.open_time ?? null);
+          const close = isClosed ? null : (s.close_time ?? null);
+          if (!Number.isNaN(day) && day >= 0 && day <= 6) {
+            // eslint-disable-next-line no-await-in-loop
+            await conn.query("CALL InsertTouristSpotSchedule(?,?,?,?,?)", [spotId, day, open, close, isClosed ? 1 : 0]);
+          }
+        }
       }
     }
 

@@ -5,10 +5,8 @@ import { handleDbError } from "../../utils/errorHandler.js";
 export const getTouristSpotSchedules = async (req, res) => {
   try {
     const { id } = req.params;
-    const [rows] = await db.execute(
-      `SELECT * FROM tourist_spot_schedules WHERE tourist_spot_id = ? ORDER BY day_of_week ASC`,
-      [id]
-    );
+  const [data] = await db.query("CALL GetTouristSpotSchedules(?)", [id]);
+  const rows = data[0] || [];
     res.json({ success: true, data: rows });
   } catch (error) {
     return handleDbError(error, res);
@@ -24,10 +22,10 @@ export const upsertTouristSpotSchedules = async (req, res) => {
   }
   let conn;
   try {
-    conn = await db.getConnection();
-    await conn.beginTransaction();
+  conn = await db.getConnection();
+  await conn.beginTransaction();
 
-    await conn.execute("DELETE FROM tourist_spot_schedules WHERE tourist_spot_id = ?", [id]);
+  await conn.query("CALL DeleteSchedulesByTouristSpot(?)", [id]);
 
     if (schedules.length) {
       const values = [];
@@ -43,11 +41,17 @@ export const upsertTouristSpotSchedules = async (req, res) => {
         }
       });
       if (placeholders.length) {
-        await conn.execute(
-          `INSERT INTO tourist_spot_schedules (id, tourist_spot_id, day_of_week, open_time, close_time, is_closed)
-           VALUES ${placeholders.join(",")}`,
-          values
-        );
+        for (let i = 0; i < schedules.length; i++) {
+          const s = schedules[i];
+          const day = Number(s.day_of_week);
+          const isClosed = !!s.is_closed;
+          const open = isClosed ? null : (s.open_time ?? null);
+          const close = isClosed ? null : (s.close_time ?? null);
+          if (!Number.isNaN(day) && day >= 0 && day <= 6) {
+            // eslint-disable-next-line no-await-in-loop
+            await conn.query("CALL InsertTouristSpotSchedule(?,?,?,?,?)", [id, day, open, close, isClosed ? 1 : 0]);
+          }
+        }
       }
     }
 

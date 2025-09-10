@@ -19,15 +19,8 @@ export const getTouristSpotImages = async (request, response) => {
       });
     }
 
-    const [images] = await db.execute(
-      `SELECT 
-        id, tourist_spot_id, file_url, file_format, file_size, 
-        is_primary, alt_text, uploaded_at, updated_at
-      FROM tourist_spot_images 
-      WHERE tourist_spot_id = ? 
-      ORDER BY is_primary DESC, uploaded_at ASC`,
-      [tourist_spot_id]
-    );
+  const [data] = await db.query("CALL GetTouristSpotImages(?)", [tourist_spot_id]);
+  const images = data[0] || [];
 
     response.json({
       success: true,
@@ -65,37 +58,15 @@ export const addTouristSpotImage = async (request, response) => {
       });
     }
 
-    // If this is set as primary, unset other primary images for this spot
-    if (is_primary) {
-      await db.execute(
-        "UPDATE tourist_spot_images SET is_primary = false WHERE tourist_spot_id = ?",
-        [tourist_spot_id]
-      );
-    }
-
-    // Generate UUID for the image
-    const [[{ id: imageId }]] = await db.execute("SELECT UUID() AS id");
-
-    await db.execute(
-      `INSERT INTO tourist_spot_images 
-      (id, tourist_spot_id, file_url, file_format, file_size, is_primary, alt_text)
-      VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      [
-        imageId,
-        tourist_spot_id,
-        file_url,
-        file_format,
-        file_size || null,
-        is_primary || false,
-        alt_text || null,
-      ]
-    );
-
-    // Retrieve the created image
-    const [newImage] = await db.execute(
-      "SELECT * FROM tourist_spot_images WHERE id = ?",
-      [imageId]
-    );
+    const [insertRes] = await db.query("CALL AddTouristSpotImage(?,?,?,?,?,?)", [
+      tourist_spot_id,
+      file_url,
+      file_format,
+      file_size || null,
+      is_primary || false,
+      alt_text || null,
+    ]);
+    const newImage = insertRes[0] || [];
 
     response.status(201).json({
       success: true,
@@ -126,47 +97,17 @@ export const updateTouristSpotImage = async (request, response) => {
       });
     }
 
-    // If this is set as primary, unset other primary images for this spot
-    if (is_primary) {
-      await db.execute(
-        "UPDATE tourist_spot_images SET is_primary = false WHERE tourist_spot_id = ?",
-        [tourist_spot_id]
-      );
+    if (is_primary === undefined && alt_text === undefined) {
+      return response.status(400).json({ success: false, message: "No valid fields provided for update" });
     }
 
-    // Update the image
-    const updateFields = [];
-    const updateValues = [];
-
-    if (is_primary !== undefined) {
-      updateFields.push("is_primary = ?");
-      updateValues.push(is_primary);
-    }
-
-    if (alt_text !== undefined) {
-      updateFields.push("alt_text = ?");
-      updateValues.push(alt_text);
-    }
-
-    if (updateFields.length === 0) {
-      return response.status(400).json({
-        success: false,
-        message: "No valid fields provided for update",
-      });
-    }
-
-    updateValues.push(image_id);
-
-    await db.execute(
-      `UPDATE tourist_spot_images SET ${updateFields.join(", ")} WHERE id = ?`,
-      updateValues
-    );
-
-    // Retrieve the updated image
-    const [updatedImage] = await db.execute(
-      "SELECT * FROM tourist_spot_images WHERE id = ?",
-      [image_id]
-    );
+    const [updateRes] = await db.query("CALL UpdateTouristSpotImage(?,?,?,?)", [
+      tourist_spot_id,
+      image_id,
+      is_primary ?? null,
+      alt_text ?? null,
+    ]);
+    const updatedImage = updateRes[0] || [];
 
     response.json({
       success: true,
@@ -196,7 +137,11 @@ export const deleteTouristSpotImage = async (request, response) => {
       });
     }
 
-    await db.execute("DELETE FROM tourist_spot_images WHERE id = ?", [image_id]);
+    const [delRes] = await db.query("CALL DeleteTouristSpotImage(?,?)", [tourist_spot_id, image_id]);
+    const affected = delRes[0] && delRes[0][0] ? delRes[0][0].affected_rows : 0;
+    if (!affected) {
+      return response.status(404).json({ success: false, message: "Tourist spot image not found" });
+    }
 
     response.json({
       success: true,
@@ -225,17 +170,8 @@ export const setPrimaryTouristSpotImage = async (request, response) => {
       });
     }
 
-    // First, unset all primary images for this spot
-    await db.execute(
-      "UPDATE tourist_spot_images SET is_primary = false WHERE tourist_spot_id = ?",
-      [tourist_spot_id]
-    );
-
-    // Then set the specified image as primary
-    await db.execute(
-      "UPDATE tourist_spot_images SET is_primary = true WHERE id = ?",
-      [image_id]
-    );
+  const [resSet] = await db.query("CALL SetPrimaryTouristSpotImage(?,?)", [tourist_spot_id, image_id]);
+  const affected = resSet[0] && resSet[0][0] ? resSet[0][0].affected_rows : undefined; // optional check
 
     response.json({
       success: true,
