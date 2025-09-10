@@ -1,54 +1,52 @@
-# React + TypeScript + Vite
+# Business App
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A modern business management platform built with React, MUI/Joy UI, and TypeScript.
 
-Currently, two official plugins are available:
+## Project Structure
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+This project is organized into the following main folders:
 
-## Expanding the ESLint configuration
+### `src/components`
+Reusable UI components such as headers, cards, buttons, and form elements used throughout the app.
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+### `src/context`
+React Context providers for global state management (e.g., authentication, theme, notifications).
 
-```js
-export default tseslint.config({
-  extends: [
-    // Remove ...tseslint.configs.recommended and replace with this
-    ...tseslint.configs.recommendedTypeChecked,
-    // Alternatively, use this for stricter rules
-    ...tseslint.configs.strictTypeChecked,
-    // Optionally, add this for stylistic rules
-    ...tseslint.configs.stylisticTypeChecked,
-  ],
-  languageOptions: {
-    // other options...
-    parserOptions: {
-      project: ['./tsconfig.node.json', './tsconfig.app.json'],
-      tsconfigRootDir: import.meta.dirname,
-    },
-  },
-})
-```
+### `src/features`
+Business logic and UI for core features (e.g., listing, reviews, bookings, profile management). Each feature is modular and self-contained.
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+### `src/hooks`
+Custom React hooks for data fetching, form handling, and other reusable logic (e.g., `useAddress`, `useAuth`).
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+### `src/layout`
+Layout components that define the overall page structure (e.g., navigation bars, sidebars, containers).
 
-export default tseslint.config({
-  plugins: {
-    // Add the react-x and react-dom plugins
-    'react-x': reactX,
-    'react-dom': reactDom,
-  },
-  rules: {
-    // other rules...
-    // Enable its recommended typescript rules
-    ...reactX.configs['recommended-typescript'].rules,
-    ...reactDom.configs.recommended.rules,
-  },
-})
-```
+### `src/lib`
+Third-party libraries, API clients, and utility wrappers.
+
+### `src/pages`
+Top-level pages mapped to routes.
+
+### `src/routes`
+Route definitions and navigation logic for the app.
+
+### `src/services`
+API service modules for interacting with backend endpoints (e.g., `AddressService`, `BusinessService`).
+
+### `src/types`
+TypeScript type definitions and interfaces for data models used across the app.
+
+### `src/utils`
+Utility functions for formatting, validation, and other helper logic.
+
+---
+
+## Getting Started
+
+1. **Install dependencies:**  
+   `npm install`
+
+2. **Run the app:**  
+   `npm start dev`
+
+---

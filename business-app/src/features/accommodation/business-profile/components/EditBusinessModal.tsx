@@ -11,11 +11,11 @@ import {
   FormLabel,
   FormControl,
 } from "@mui/joy";
-import { updateData } from "@/src/api_function";
+import { updateData } from "@/src/services/Service";
 import CardHeader from "@/src/components/CardHeader";
 import placeholderImage from "@/src/assets/images/placeholder-image.png";
 import { UploadIcon } from "lucide-react";
-import { supabase } from "@/src/utils/supabase";
+import { supabase } from "@/src/lib/supabase";
 interface EditBusinessModalProps {
   open: boolean;
   initialBusinessName?: string;

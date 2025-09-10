@@ -2,26 +2,24 @@ import api from "@/src/services/api";
 
 // src/services/AddressService.ts
 import axios from "axios";
+import { getData, getDataById } from "./Service";
 
 export type Province = { id: number; province: string };
 export type Municipality = { id: number; municipality: string };
 export type Barangay = { id: number; barangay: string };
 
 export const AddressService = {
-  async getProvinces(api: string): Promise<Province[]> {
+  async getProvinces(): Promise<Province[]> {
     const res = await axios.get(`${api}/address/provinces`);
     return Array.isArray(res.data) ? res.data : [];
   },
 
-  async getMunicipalities(
-    api: string,
-    provinceId: number
-  ): Promise<Municipality[]> {
+  async getMunicipalities(provinceId: number): Promise<Municipality[]> {
     const res = await axios.get(`${api}/address/municipalities/${provinceId}`);
     return Array.isArray(res.data) ? res.data : [];
   },
 
-  async getBarangays(api: string, municipalityId: number): Promise<Barangay[]> {
+  async getBarangays(municipalityId: number): Promise<Barangay[]> {
     const res = await axios.get(`${api}/address/barangays/${municipalityId}`);
     return Array.isArray(res.data) ? res.data : [];
   },
@@ -39,17 +37,17 @@ export const AddressService = {
   },
 
   async getProvinceById(provinceId: number) {
-    const res = await axios.get(`${api}/address/province/${provinceId}`);
-    return res.data;
+    const response = await getDataById("address/province", provinceId);
+    return response;
+  },
+
+  async fetchAddressById(id: number) {
+    const response = await getDataById("address", id);
+    return response;
+  },
+
+  async fetchAllAddress() {
+    const response = await getData("address");
+    return response;
   },
 };
-
-export async function fetchAddressById(id: number) {
-  const response = await axios.get(`${api}/address/${id}`);
-  return response.data;
-}
-
-export async function fetchAllAddress() {
-  const response = await axios.get(`${api}/address`);
-  return response.data;
-}

@@ -9,6 +9,5 @@ router.get(
   categoryAndTypeController.getAccommodationAndShopTypes
 );
 router.get("/category/:id", categoryAndTypeController.getCategory);
-router.get("/:id", categoryAndTypeController.getCategoryAndType);
 
 export default router;

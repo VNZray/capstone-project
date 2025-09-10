@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from "react";
 import CardHeader from "@/src/components/CardHeader";
 import type { Business, BusinessHours } from "@/src/types/Business";
-import { useBusinessBasics } from "@/src/hooks/useBusinessData";
-import { supabase } from "@/src/utils/supabase";
+import { useBusinessBasics } from "@/src/hooks/useBusiness";
+import { supabase } from "@/src/lib/supabase";
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import {
   FormControl,
@@ -25,7 +25,7 @@ import StoreIcon from "@mui/icons-material/Store";
 import AccessTimeIcon from "@mui/icons-material/AccessTime";
 import Text from "@/src/components/Text";
 import type { Amenity, BusinessAmenity } from "@/src/types/Amenity";
-import { getData, insertData } from "@/src/api_function";
+import { getData, insertData } from "@/src/services/Service";
 type Props = {
   data: Business;
   setData: React.Dispatch<React.SetStateAction<Business>>;

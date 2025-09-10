@@ -17,7 +17,7 @@ import Step5 from "./steps/Step5";
 import type { Business, BusinessHours } from "@/src/types/Business";
 import axios from "axios";
 import type { Permit } from "@/src/types/Permit";
-import { insertData } from "@/src/api_function";
+import { insertData } from "@/src/services/Service";
 import type { Amenity, BusinessAmenity } from "@/src/types/Amenity";
 import type { Address } from "@/src/types/Address";
 

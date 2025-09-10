@@ -1,8 +1,10 @@
-/**
- * @param { import("knex").Knex } knex
- */
-exports.up = function (knex) {
-  return knex.schema.createTable("tourist", function (table) {
+const {
+  createProcedures,
+  dropProcedures,
+} = require("../procedures/touristProcedures");
+
+exports.up = async function (knex) {
+  await knex.schema.createTable("tourist", function (table) {
     table.uuid("id").primary().defaultTo(knex.raw("(UUID())"));
 
     table.string("first_name", 30).notNullable();
@@ -10,7 +12,7 @@ exports.up = function (knex) {
     table.string("last_name", 30).notNullable();
 
     table
-      .enu("ethnicity", ["Bicolano", "Non-Bicolano", "Foreigner", "Local"])
+      .enu("ethnicity", ["Bicolano", "Non-Bicolano", "Foreigner"])
       .notNullable();
     table.date("birthday").notNullable();
     table.integer("age").notNullable();
@@ -23,39 +25,24 @@ exports.up = function (knex) {
 
     // ✅ Foreign keys
     table
-      .integer("province_id")
+      .integer("address_id")
       .unsigned()
       .notNullable()
       .references("id")
-      .inTable("province")
+      .inTable("address")
       .onDelete("CASCADE")
-      .onUpdate("CASCADE")
-
-    table
-      .integer("municipality_id")
-      .unsigned()
-      .notNullable()
-      .references("id")
-      .inTable("municipality")
-      .onDelete("CASCADE")
-      .onUpdate("CASCADE")
-
-    table
-      .integer("barangay_id")
-      .unsigned()
-      .notNullable()
-      .references("id")
-      .inTable("barangay")
-      .onDelete("CASCADE")
-      .onUpdate("CASCADE")
+      .onUpdate("CASCADE");
 
     table.timestamp("created_at").defaultTo(knex.fn.now());
   });
+
+  await createProcedures(knex);
 };
 
 /**
  * @param { import("knex").Knex } knex
  */
-exports.down = function (knex) {
-  return knex.schema.dropTable("tourist");
+exports.down = async function (knex) {
+  await knex.schema.dropTable("tourist");
+  await dropProcedures(knex);
 };

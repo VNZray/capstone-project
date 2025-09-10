@@ -1,0 +1,49 @@
+version: '3.8'
+services:
+  backend:
+    build: ./naga-venture-backend
+    container_name: backend
+    ports:
+      - "3000:3000"
+    environment:
+      DB_HOST: db
+      DB_USER: user
+      DB_PASSWORD: userpass
+      DB_NAME: mydb
+    depends_on:
+      - db
+
+  db:
+    image: mariadb:10.6
+    container_name: city-venture-db
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: mydb
+      MYSQL_USER: user
+      MYSQL_PASSWORD: userpass
+    ports:
+      - "3307:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+
+  business-app:
+    build: ./business-app
+    container_name: business
+    ports:
+      - "5173:5173"
+
+  tourism-admin-app:
+    build: ./tourism-admin-app
+    container_name: admin
+    ports:
+      - "5174:5174"
+
+  naga-ventures:
+    build: ./naga-ventures
+    container_name: naga-ventures
+    ports:
+      - "19006:19006"
+
+volumes:
+  db_data:

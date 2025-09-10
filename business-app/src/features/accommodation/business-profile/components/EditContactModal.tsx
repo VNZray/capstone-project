@@ -9,7 +9,7 @@ import {
   FormControl,
   FormLabel,
 } from "@mui/joy";
-import { updateData } from "@/src/api_function";
+import { updateData } from "@/src/services/Service";
 import CardHeader from "@/src/components/CardHeader";
 import { Email, PhoneOutlined } from "@mui/icons-material";
 

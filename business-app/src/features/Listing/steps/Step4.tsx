@@ -9,7 +9,7 @@ import { colors } from "@/src/utils/Colors";
 import { Building2, Upload } from "lucide-react";
 import { DocumentScannerOutlined, FileCopy } from "@mui/icons-material";
 import type { Permit } from "@/src/types/Permit";
-import { supabase } from "@/src/utils/supabase"; // ✅ Import your supabase client
+import { supabase } from "@/src/lib/supabase"; // ✅ Import your supabase client
 
 type Props = {
   data: Business;

@@ -5,7 +5,7 @@ import Container from "@/src/components/Container";
 import { Bed, Users, ListChecks, PhilippinePeso } from "lucide-react";
 import HeightIcon from "@mui/icons-material/Height";
 import type { Amenity } from "@/src/types/Amenity";
-import { getData } from "@/src/api_function";
+import { getData } from "@/src/services/Service";
 import React, { useState } from "react";
 import EditIcon from "@mui/icons-material/Edit";
 import EditBasicInfo from "./EditBasicInfo";

@@ -10,7 +10,7 @@ import {
   FormLabel,
   Grid,
 } from "@mui/joy";
-import { updateData } from "@/src/api_function";
+import { updateData } from "@/src/services/Service";
 import CardHeader from "@/src/components/CardHeader";
 import { Add, Email, PhoneOutlined } from "@mui/icons-material";
 import Container from "@/src/components/Container";

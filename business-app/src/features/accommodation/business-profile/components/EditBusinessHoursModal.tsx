@@ -12,7 +12,7 @@ import {
   FormControl,
   FormLabel,
 } from "@mui/joy";
-import { updateData } from "@/src/api_function";
+import { updateData } from "@/src/services/Service";
 import CardHeader from "@/src/components/CardHeader";
 import Container from "@/src/components/Container";
 import type { BusinessHours } from "@/src/types/Business";

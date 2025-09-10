@@ -11,12 +11,10 @@ import {
   Select,
   Input,
 } from "@mui/joy";
-import { updateData } from "@/src/api_function";
+import { updateData } from "@/src/services/Service";
 import CardHeader from "@/src/components/CardHeader";
-import { useAddress } from "@/src/hooks/useAddress";
 import { api } from "@/src/services/BusinessService";
 import axios from "axios";
-import { Streetview } from "@mui/icons-material";
 
 interface EditDescriptionModalProps {
   open: boolean;

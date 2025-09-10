@@ -14,7 +14,7 @@ import {
 import axios from "axios";
 import api from "../services/api";
 import { insertOwner } from "@/src/services/OwnerService";
-import { insertData } from "../api_function";
+import { insertData } from "../services/Service";
 
 const Register = () => {
   const navigate = useNavigate();

@@ -28,7 +28,7 @@ import {
   getDataByForeignId,
   getDataById,
   updateData,
-} from "@/src/api_function";
+} from "@/src/services/Service";
 import type { ExternalBooking } from "@/src/types/ExternalBooking";
 import { bookingLogos } from "@/src/types/BookingLogos";
 import EditBusinessHoursModal from "./components/EditBusinessHoursModal";
