@@ -267,6 +267,22 @@ const TouristSpotForm: React.FC<TouristSpotFormProps> = ({
     if (isVisible) loadData();
   }, [isVisible]);
 
+  useEffect(() => {
+    if (
+      mode === "add" &&
+      provinceOptions.length > 0 &&
+      municipalityOptions.length > 0 &&
+      !formData.province_id &&
+      !formData.municipality_id
+    ) {
+      setFormData((prev) => ({
+        ...prev,
+        province_id: "20",
+        municipality_id: "24",
+      }));
+    }
+  }, [mode, provinceOptions, municipalityOptions, formData.province_id, formData.municipality_id]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
