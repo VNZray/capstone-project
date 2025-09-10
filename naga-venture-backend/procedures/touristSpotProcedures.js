@@ -1,3 +1,29 @@
+// ======================= APPROVAL RECORD LOGGING PROCEDURE =======================
+async function createApprovalRecordProcedures(knex) {
+  await knex.raw(`
+    CREATE PROCEDURE LogApprovalRecord(
+      IN p_approval_type ENUM('edit','new'),
+      IN p_entity_type ENUM('tourist_spot','business','accommodation','event'),
+      IN p_entity_id CHAR(36),
+      IN p_decision ENUM('approved','rejected'),
+      IN p_decided_by CHAR(36),
+      IN p_remarks TEXT
+    )
+    BEGIN
+      INSERT INTO approval_records (
+        id, approval_type, entity_type, entity_id, decision, decided_by, decided_at, remarks
+      ) VALUES (
+        UUID(), p_approval_type, p_entity_type, p_entity_id, p_decision, p_decided_by, CURRENT_TIMESTAMP, p_remarks
+      );
+    END;
+  `);
+}
+
+async function dropApprovalRecordProcedures(knex) {
+  await knex.raw('DROP PROCEDURE IF EXISTS LogApprovalRecord;');
+}
+
+export { createApprovalRecordProcedures, dropApprovalRecordProcedures };
 async function createTouristSpotProcedures(knex) {
   // ================= READ PROCEDURES =================
 
@@ -538,10 +564,14 @@ async function createTouristSpotApprovalProcedures(knex) {
   await knex.raw(`
     CREATE PROCEDURE ApproveTouristSpot(IN p_id CHAR(36))
     BEGIN
-      SELECT spot_status AS current_status FROM tourist_spots WHERE id = p_id;
+      DECLARE v_status VARCHAR(32);
+      SELECT spot_status AS current_status INTO v_status FROM tourist_spots WHERE id = p_id;
       UPDATE tourist_spots 
       SET spot_status = 'active', updated_at = CURRENT_TIMESTAMP 
       WHERE id = p_id AND spot_status = 'pending';
+      IF ROW_COUNT() > 0 THEN
+        CALL LogApprovalRecord('new', 'tourist_spot', p_id, 'approved', NULL, NULL);
+      END IF;
       SELECT ROW_COUNT() AS affected_rows;
     END;
   `);
@@ -551,6 +581,8 @@ async function createTouristSpotApprovalProcedures(knex) {
     CREATE PROCEDURE ApproveTouristSpotEdit(IN p_edit_id CHAR(36))
     BEGIN
       DECLARE v_exists INT DEFAULT 0;
+      DECLARE v_spot_id CHAR(36);
+      SELECT tourist_spot_id INTO v_spot_id FROM tourist_spot_edits WHERE id = p_edit_id;
       SELECT COUNT(*) INTO v_exists FROM tourist_spot_edits WHERE id = p_edit_id AND approval_status = 'pending';
       IF v_exists = 0 THEN
         SELECT 'not_found' AS status;
@@ -578,6 +610,8 @@ async function createTouristSpotApprovalProcedures(knex) {
         SET approval_status = 'approved', reviewed_at = CURRENT_TIMESTAMP
         WHERE id = p_edit_id;
 
+        CALL LogApprovalRecord('edit', 'tourist_spot', p_edit_id, 'approved', NULL, NULL);
+
         COMMIT;
         SELECT 'approved' AS status;
       END IF;
@@ -588,9 +622,12 @@ async function createTouristSpotApprovalProcedures(knex) {
   await knex.raw(`
     CREATE PROCEDURE RejectTouristSpotEdit(IN p_edit_id CHAR(36), IN p_reason VARCHAR(255))
     BEGIN
+      DECLARE v_spot_id CHAR(36);
+      SELECT tourist_spot_id INTO v_spot_id FROM tourist_spot_edits WHERE id = p_edit_id;
       UPDATE tourist_spot_edits
       SET approval_status = 'rejected', reviewed_at = CURRENT_TIMESTAMP, remarks = IFNULL(p_reason, '')
       WHERE id = p_edit_id AND approval_status = 'pending';
+      CALL LogApprovalRecord('edit', 'tourist_spot', p_edit_id, 'rejected', NULL, p_reason);
       SELECT id, approval_status, remarks, reviewed_at FROM tourist_spot_edits WHERE id = p_edit_id;
     END;
   `);
@@ -600,6 +637,9 @@ async function createTouristSpotApprovalProcedures(knex) {
     CREATE PROCEDURE RejectTouristSpot(IN p_id CHAR(36))
     BEGIN
       UPDATE tourist_spots SET spot_status = 'rejected', updated_at = CURRENT_TIMESTAMP WHERE id = p_id AND spot_status = 'pending';
+      IF ROW_COUNT() > 0 THEN
+        CALL LogApprovalRecord('new', 'tourist_spot', p_id, 'rejected', NULL, NULL);
+      END IF;
       SELECT ROW_COUNT() AS affected_rows;
     END;
   `);

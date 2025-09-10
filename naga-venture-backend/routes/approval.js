@@ -1,5 +1,7 @@
+
 import express from 'express';
 import * as approvalController from '../controller/approvalController.js';
+import { getApprovalRecords } from '../controller/approvalRecordController.js';
 
 const router = express.Router();
 
@@ -12,5 +14,9 @@ router.put('/reject-spot/:id', approvalController.rejectTouristSpot);
 router.get('/pending-edits', approvalController.getPendingEditRequests);
 router.put('/approve-edit/:id', approvalController.approveEditRequest);
 router.put('/reject-edit/:id', approvalController.rejectEditRequest);
+
+
+// Approval records log endpoint
+router.get('/records', getApprovalRecords);
 
 export default router;
