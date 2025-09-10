@@ -2,7 +2,7 @@
 const API_BASE_URL = 'http://localhost:3000/api';
 
 import axios, { type AxiosResponse } from 'axios';
-import type { ApiResponse, TouristSpot, Province, Municipality, Barangay, Category, Type, TouristSpotSchedule } from '../types';
+import type { ApiResponse, TouristSpot, Province, Municipality, Barangay, Category, Type, TouristSpotSchedule, Report, ReportUpdateRequest } from '../types';
 import type { EntityType } from '../types/approval';
 
 // Create axios instance with default config
@@ -180,6 +180,62 @@ class ApiService {
     const paths = this.approvalPathsFor(entity);
     const response: AxiosResponse<ApiResponse<void>> = await api.put(paths.rejectEdit(id), { reason });
     return response.data;
+  }
+
+  // ===== REPORT MANAGEMENT =====
+  async getReports(): Promise<Report[]> {
+    const response: AxiosResponse<ApiResponse<Report[]>> = await api.get('/reports');
+    return response.data.data || response.data;
+  }
+
+  async getReportById(id: string): Promise<Report> {
+    const response: AxiosResponse<ApiResponse<Report>> = await api.get(`/reports/${id}`);
+    return response.data.data || response.data;
+  }
+
+  async getReportsByStatus(status: string): Promise<Report[]> {
+    const response: AxiosResponse<ApiResponse<Report[]>> = await api.get(`/reports/status/${status}`);
+    return response.data.data || response.data;
+  }
+
+  async getReportsByTarget(targetType: string, targetId: string): Promise<Report[]> {
+    const response: AxiosResponse<ApiResponse<Report[]>> = await api.get(`/reports/target/${targetType}/${targetId}`);
+    return response.data.data || response.data;
+  }
+
+  async updateReportStatus(id: string, updateData: ReportUpdateRequest): Promise<ApiResponse<void>> {
+    const response: AxiosResponse<ApiResponse<void>> = await api.put(`/reports/${id}/status`, updateData);
+    return response.data;
+  }
+
+  async deleteReport(id: string): Promise<ApiResponse<void>> {
+    const response: AxiosResponse<ApiResponse<void>> = await api.delete(`/reports/${id}`);
+    return response.data;
+  }
+
+  // Helper method to get target info for reports
+  async getTargetInfo(targetType: string, targetId: string): Promise<{ name: string; type: string }> {
+    try {
+      switch (targetType) {
+        case 'business':
+          // Add business API call when available
+          return { name: `Business ${targetId}`, type: 'Business' };
+        case 'tourist_spot': {
+          const spot = await this.getTouristSpotById(targetId);
+          return { name: spot.name, type: 'Tourist Spot' };
+        }
+        case 'event':
+          // Add event API call when available
+          return { name: `Event ${targetId}`, type: 'Event' };
+        case 'accommodation':
+          // Add accommodation API call when available
+          return { name: `Accommodation ${targetId}`, type: 'Accommodation' };
+        default:
+          return { name: `Unknown ${targetId}`, type: 'Unknown' };
+      }
+    } catch {
+      return { name: `${targetType} ${targetId}`, type: targetType };
+    }
   }
 }
 
