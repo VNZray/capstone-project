@@ -22,7 +22,7 @@ const MapInput: React.FC<Props> = ({ latitude, longitude, onChange }) => {
   });
 
   const center = {
-    lat: Number(latitude) || 14.5995, // fallback: Manila
+    lat: Number(latitude) || 14.5995,
     lng: Number(longitude) || 120.9842,
   };
 

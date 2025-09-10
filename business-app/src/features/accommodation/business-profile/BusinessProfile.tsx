@@ -23,14 +23,21 @@ import EditAddressModal from "./components/EditAddressModal";
 import EditMapCoordinatesModal from "./components/EditMapCoordinatesModal";
 import EditBusinessModal from "./components/EditBusinessModal";
 import { FaInstagram } from "react-icons/fa";
-import { getData, updateData } from "@/src/api_function";
+import {
+  getData,
+  getDataByForeignId,
+  getDataById,
+  updateData,
+} from "@/src/api_function";
 import type { ExternalBooking } from "@/src/types/ExternalBooking";
 import { bookingLogos } from "@/src/types/BookingLogos";
 import EditBusinessHoursModal from "./components/EditBusinessHoursModal";
+import type { Amenity } from "@/src/types/Amenity";
+import EditAmenitiesModal from "./components/EditAmenitiesModal";
+import type { Address } from "@/src/types/Address";
 
 const BusinessProfile = () => {
   const { businessDetails } = useBusiness();
-  const { address } = useAddress(businessDetails?.barangay_id);
   const [editBusinessOpen, setEditBusinessOpen] = useState(false);
   const [editDescOpen, setEditDescOpen] = useState(false);
   const [editContactOpen, setEditContactOpen] = useState(false);
@@ -39,10 +46,28 @@ const BusinessProfile = () => {
   const [editAddressOpen, setEditAddressOpen] = useState(false);
   const [editMapCoordinatesOpen, setEditMapCoordinatesOpen] = useState(false);
   const [editBusinessHoursOpen, setEditBusinessHoursOpen] = useState(false);
-
+  const [editAmenitiesOpen, setEditAmenitiesOpen] = useState(false);
   const [externalBooking, setExternalBooking] = useState<ExternalBooking[]>([]);
 
   const [businessHours, setBusinessHours] = useState<BusinessHours[]>([]);
+  const [amenities, setAmenities] = React.useState<Amenity[]>([]);
+
+  const [address, setAddress] = useState<Address | null>(null);
+
+  useEffect(() => {
+    const fetchAddress = async () => {
+      if (!businessDetails?.address_id) {
+        setAddress(null);
+        return;
+      }
+      const businessAddress = await getDataByForeignId(
+        "address",
+        businessDetails.address_id
+      );
+      setAddress(businessAddress);
+    };
+    fetchAddress();
+  }, [businessDetails?.address_id]);
 
   const getBusinessHours = async () => {
     if (!businessDetails?.id) return;
@@ -52,6 +77,30 @@ const BusinessProfile = () => {
       : [];
     setBusinessHours(filtered);
   };
+
+  const fetchBusinessAmenities = async () => {
+    if (!businessDetails?.id) return;
+
+    const businessAmenityResponse = await getData("business-amenities");
+    const amenityResponse = await getData("amenities");
+
+    const filtered = Array.isArray(businessAmenityResponse)
+      ? businessAmenityResponse
+          .filter((ba) => ba.business_id === businessDetails.id)
+          .map((ba) => {
+            const match: Amenity | undefined = (
+              amenityResponse as Amenity[]
+            ).find((a: Amenity) => a.id === ba.amenity_id);
+            return { ...ba, name: match?.name || "Unknown" };
+          })
+      : [];
+
+    setAmenities(filtered);
+  };
+
+  React.useEffect(() => {
+    fetchBusinessAmenities();
+  }, [businessDetails?.id]);
 
   const formatTime = (time: string) => {
     const [hour, minute] = time.split(":");
@@ -81,10 +130,8 @@ const BusinessProfile = () => {
     business_image: businessDetails?.business_image || "",
     business_name: businessDetails?.business_name || "",
     phone_number: businessDetails?.phone_number || "",
-    email: businessDetails?.email || "",
-    barangay_id: businessDetails?.barangay_id || 0,
-    municipality_id: businessDetails?.municipality_id || 0,
-    province_id: businessDetails?.province_id || 0,
+    email: businessDetails?.email,
+    address_id: businessDetails?.address_id,
     address: businessDetails?.address || "",
     description: businessDetails?.description || "",
     instagram_url: businessDetails?.instagram_url || "",
@@ -97,9 +144,15 @@ const BusinessProfile = () => {
     max_price: businessDetails?.max_price || "",
     owner_id: businessDetails?.owner_id || "",
     status: businessDetails?.status || "Pending",
-    business_category_id: businessDetails?.business_category_id || 0,
-    business_type_id: businessDetails?.business_type_id || 0,
+    business_category_id: businessDetails?.business_category_id,
+    business_type_id: businessDetails?.business_type_id,
     hasBooking: businessDetails?.hasBooking || false,
+  });
+
+  const [addressData, setAddressData] = React.useState({
+    barangay_id: address?.barangay_id,
+    municipality_id: address?.municipality_id,
+    province_id: address?.province_id,
   });
 
   const getStatusColor = (status: string) => {
@@ -161,13 +214,19 @@ const BusinessProfile = () => {
   const handleSaveAddress = (
     province_id: number,
     municipality_id: number,
-    barangay_id: number
+    barangay_id: number,
+    address: string
   ) => {
-    setBusinessData({
-      ...businessData,
+    setAddressData({
+      ...addressData,
       province_id: province_id,
       municipality_id: municipality_id,
       barangay_id: barangay_id,
+    });
+
+    setBusinessData({
+      ...businessData,
+      address: address,
     });
   };
 
@@ -181,6 +240,7 @@ const BusinessProfile = () => {
 
   const activateBooking = async (businessId: string, hasBooking: boolean) => {
     await updateData(businessId, { hasBooking }, "business");
+    window.location.reload();
   };
 
   return (
@@ -399,14 +459,26 @@ const BusinessProfile = () => {
                   startDecorator={<EditIcon />}
                   size="sm"
                   variant="outlined"
+                  onClick={() => setEditAmenitiesOpen(true)}
                 >
                   Edit
                 </Button>
               </Container>
 
-              <Typography fontFamily={"poppins"} level="body-md">
-                {`(Not yet implemented)`}
-              </Typography>
+              <Paper variant="outlined" sx={{ p: 2, flex: 1 }}>
+                <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+                  {amenities.map((amenity) => (
+                    <Chip
+                      key={amenity.id}
+                      size="lg"
+                      variant="soft"
+                      color="primary"
+                    >
+                      {amenity.name}
+                    </Chip>
+                  ))}
+                </div>
+              </Paper>
             </Container>
 
             {businessDetails?.business_type_id === 1 && (
@@ -539,8 +611,8 @@ const BusinessProfile = () => {
                   fontFamily={"poppins"}
                   level="body-md"
                 >
-                  {hours.day_of_week}: {formatTime(hours.open_time)} -{" "}
-                  {formatTime(hours.close_time)}
+                  {hours.day_of_week}: {formatTime(hours.open_time ?? "")} -{" "}
+                  {formatTime(hours.close_time ?? "")}
                   <Chip
                     size="md"
                     variant="soft"
@@ -816,9 +888,10 @@ const BusinessProfile = () => {
 
       <EditAddressModal
         open={editAddressOpen}
-        initialProvince={businessDetails?.province_id}
-        initialMunicipality={businessDetails?.municipality_id}
-        initialBarangay={businessDetails?.barangay_id}
+        addressId={businessDetails?.address_id}
+        initialProvince={address?.province_id}
+        initialMunicipality={address?.municipality_id}
+        initialBarangay={address?.barangay_id}
         initialAddress={businessDetails?.address}
         businessId={businessDetails?.id}
         onClose={() => setEditAddressOpen(false)}
@@ -842,6 +915,14 @@ const BusinessProfile = () => {
         initialBusinessImage={businessDetails?.business_image || ""}
         businessId={businessDetails?.id}
         onClose={() => setEditBusinessOpen(false)}
+        onSave={handleSaveBusiness}
+        onUpdate={() => window.location.reload()}
+      />
+
+      <EditAmenitiesModal
+        open={editAmenitiesOpen}
+        businessId={businessDetails?.id}
+        onClose={() => setEditAmenitiesOpen(false)}
         onSave={handleSaveBusiness}
         onUpdate={() => window.location.reload()}
       />

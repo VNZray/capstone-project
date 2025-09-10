@@ -25,6 +25,23 @@ export const AddressService = {
     const res = await axios.get(`${api}/address/barangays/${municipalityId}`);
     return Array.isArray(res.data) ? res.data : [];
   },
+
+  async getBarangayById(barangayId: number) {
+    const res = await axios.get(`${api}/address/barangay/${barangayId}`);
+    return res.data;
+  },
+
+  async getMunicipalityById(municipalityId: number) {
+    const res = await axios.get(
+      `${api}/address/municipality/${municipalityId}`
+    );
+    return res.data;
+  },
+
+  async getProvinceById(provinceId: number) {
+    const res = await axios.get(`${api}/address/province/${provinceId}`);
+    return res.data;
+  },
 };
 
 export async function fetchAddressById(id: number) {

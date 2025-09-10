@@ -25,6 +25,7 @@ interface EditDescriptionModalProps {
   initialBarangay?: number;
   initialAddress?: string;
   businessId?: string;
+  addressId?: number;
   onClose: () => void;
   onSave: (
     province_id: number,
@@ -42,6 +43,7 @@ const EditAddressModal: React.FC<EditDescriptionModalProps> = ({
   initialBarangay = 0,
   initialAddress = "",
   businessId,
+  addressId,
   onClose,
   onSave,
   onUpdate,
@@ -132,13 +134,15 @@ const EditAddressModal: React.FC<EditDescriptionModalProps> = ({
   ]);
 
   const handleSave = async () => {
-    if (businessId) {
+    if (businessId && addressId) {
       try {
         await updateData(
-          businessId,
-          { province_id, municipality_id, barangay_id, address },
-          "business"
+          addressId,
+          { province_id, municipality_id, barangay_id },
+          "address"
         );
+
+        await updateData(businessId, { address }, "business");
         onSave(province_id, municipality_id, barangay_id, address);
       } catch (err) {
         console.error("Failed to update business contact", err);

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import Text from "@/src/components/Text";
 import InfoCard from "@/src/components/InfoCard";
 import PageContainer from "@/src/components/PageContainer";
@@ -13,7 +13,19 @@ import {
   Search,
   Eye,
 } from "lucide-react";
-import { Grid, Input, Button, Menu, MenuItem, MenuList } from "@mui/joy";
+import {
+  Grid,
+  Input,
+  Button,
+  Menu,
+  MenuItem,
+  MenuList,
+  Card,
+  CardContent,
+  CircularProgress,
+  SvgIcon,
+  Typography,
+} from "@mui/joy";
 import Container from "@/src/components/Container";
 import Tabs from "./components/Tabs";
 import { Select, Option } from "@mui/joy";
@@ -47,9 +59,9 @@ interface Column {
 const getStatusColor = (status: string) => {
   switch (status) {
     case "Pending":
-      return "success";
+      return "nuetral";
     case "Reserved":
-      return "primary";
+      return "success";
     case "Checked-in":
       return "warning";
     case "Checked-out":
@@ -182,6 +194,31 @@ const Bookings = () => {
   >("all");
   const [selectedMonth, setSelectedMonth] = useState<number | "all">("all");
   const [selectedYear, setSelectedYear] = useState<number | "all">("all");
+  const [bookingCount, setBookingCount] = useState(0);
+  const [pendingCount, setPendingCount] = useState(0);
+  const [reservedCount, setReservedCount] = useState(0);
+  const [checkedInCount, setCheckedInCount] = useState(0);
+  const [checkedOutCount, setCheckedOutCount] = useState(0);
+  const [cancelledCount, setCancelledCount] = useState(0);
+
+  useEffect(() => {
+    setBookingCount(bookingData.length);
+    setPendingCount(
+      bookingData.filter((b) => b.booking_status === "Pending").length
+    );
+    setReservedCount(
+      bookingData.filter((b) => b.booking_status === "Reserved").length
+    );
+    setCheckedInCount(
+      bookingData.filter((b) => b.booking_status === "Checked-in").length
+    );
+    setCheckedOutCount(
+      bookingData.filter((b) => b.booking_status === "Checked-out").length
+    );
+    setCancelledCount(
+      bookingData.filter((b) => b.booking_status === "Cancelled").length
+    );
+  }, [bookingData]);
 
   // format date
   const formatDate = (dateString: string) => {
@@ -268,6 +305,11 @@ const Bookings = () => {
     });
   };
 
+  // Prevent division by zero
+  const calcPercentage = (count: number) => {
+    return bookingData.length > 0 ? (count / bookingData.length) * 100 : 0;
+  };
+
   const filteredData = filterByDateAndSearch(
     activeTab === "All"
       ? bookingData
@@ -277,67 +319,207 @@ const Bookings = () => {
   return (
     <PageContainer>
       {/* Summary cards */}
-      <Container padding="0" background="transparent">
-        <Grid container spacing={3}>
-          <Grid xs={2}>
-            <InfoCard
-              icon={<Bed color={colors.white} size={32} />}
-              title={bookingData.length.toString()}
-              subtitle="Total Bookings"
-              color={colors.secondary}
-            />
-          </Grid>
-          <Grid xs={2}>
-            <InfoCard
-              icon={<DoorOpen color={colors.white} size={32} />}
-              title={bookingData
-                .filter((b) => b.booking_status === "Pending")
-                .length.toString()}
-              subtitle="Pending"
-              color={colors.success}
-            />
-          </Grid>
-          <Grid xs={2}>
-            <InfoCard
-              icon={<User color={colors.white} size={32} />}
-              title={bookingData
-                .filter((b) => b.booking_status === "Reserved")
-                .length.toString()}
-              subtitle="Reserved"
-              color={colors.yellow}
-            />
-          </Grid>
-          <Grid xs={2}>
-            <InfoCard
-              icon={<LogIn color={colors.white} size={32} />}
-              title={bookingData
-                .filter((b) => b.booking_status === "Checked-in")
-                .length.toString()}
-              subtitle="Checked-in"
-              color={colors.orange}
-            />
-          </Grid>
-          <Grid xs={2}>
-            <InfoCard
-              icon={<LogOut color={colors.white} size={32} />}
-              title={bookingData
-                .filter((b) => b.booking_status === "Checked-out")
-                .length.toString()}
-              subtitle="Checked-out"
-              color={colors.primary}
-            />
-          </Grid>
-          <Grid xs={2}>
-            <InfoCard
-              icon={<XCircle color={colors.white} size={32} />}
-              title={bookingData
-                .filter((b) => b.booking_status === "Cancelled")
-                .length.toString()}
-              subtitle="Cancelled"
-              color={colors.error}
-            />
-          </Grid>
-        </Grid>
+      <Container direction="row" padding="0" background="transparent">
+        {/* Total Bookings */}
+        <Card
+          sx={{ flex: 1, backgroundColor: colors.primary }}
+          variant="solid"
+          invertedColors
+        >
+          <CardContent orientation="horizontal">
+            <CircularProgress
+              size="lg"
+              determinate
+              value={calcPercentage(bookingCount)}
+            >
+              <SvgIcon>
+                {/* Calendar Icon */}
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  strokeWidth={1.5}
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M6.75 3v2.25M17.25 3v2.25M3.75 9h16.5m-15 3.75h6.75M3.75 5.25h16.5v15H3.75v-15z"
+                  />
+                </svg>
+              </SvgIcon>
+            </CircularProgress>
+            <CardContent>
+              <Typography level="body-md">Total Bookings</Typography>
+              <Typography level="h2">{bookingCount}</Typography>
+            </CardContent>
+          </CardContent>
+        </Card>
+
+        {/* Pending */}
+        <Card sx={{ flex: 1 }} variant="solid" color="neutral" invertedColors>
+          <CardContent orientation="horizontal">
+            <CircularProgress
+              size="lg"
+              determinate
+              value={calcPercentage(pendingCount)}
+            >
+              <SvgIcon>
+                {/* Clock Icon */}
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  strokeWidth={1.5}
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M12 6v6h4.5M12 3.75A8.25 8.25 0 1112 20.25 8.25 8.25 0 0112 3.75z"
+                  />
+                </svg>
+              </SvgIcon>
+            </CircularProgress>
+            <CardContent>
+              <Typography level="body-md">Pending</Typography>
+              <Typography level="h2">{pendingCount}</Typography>
+            </CardContent>
+          </CardContent>
+        </Card>
+
+        {/* Reserved */}
+        <Card sx={{ flex: 1 }} variant="solid" color="success" invertedColors>
+          <CardContent orientation="horizontal">
+            <CircularProgress
+              size="lg"
+              determinate
+              value={calcPercentage(reservedCount)}
+            >
+              <SvgIcon>
+                {/* Bookmark Icon */}
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  strokeWidth={1.5}
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M5.25 5.25v13.5L12 15l6.75 3.75V5.25a2.25 2.25 0 00-2.25-2.25H7.5a2.25 2.25 0 00-2.25 2.25z"
+                  />
+                </svg>
+              </SvgIcon>
+            </CircularProgress>
+            <CardContent>
+              <Typography level="body-md">Reserved</Typography>
+              <Typography level="h2">{reservedCount}</Typography>
+            </CardContent>
+          </CardContent>
+        </Card>
+
+        {/* Checked-in */}
+        <Card sx={{ flex: 1 }} variant="solid" color="warning" invertedColors>
+          <CardContent orientation="horizontal">
+            <CircularProgress
+              size="lg"
+              determinate
+              value={calcPercentage(checkedInCount)}
+            >
+              <SvgIcon>
+                {/* Door Open Icon */}
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  strokeWidth={1.5}
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M9.75 3.75h8.25v16.5H9.75m0-16.5L4.5 6v12l5.25 2.25m0-16.5V21"
+                  />
+                </svg>
+              </SvgIcon>
+            </CircularProgress>
+            <CardContent>
+              <Typography level="body-md">Checked-in</Typography>
+              <Typography level="h2">{checkedInCount}</Typography>
+            </CardContent>
+          </CardContent>
+        </Card>
+
+        {/* Checked-out */}
+        <Card
+          sx={{ flex: 1 }}
+          color="primary"
+          variant="solid"
+          invertedColors
+        >
+          <CardContent orientation="horizontal">
+            <CircularProgress
+              size="lg"
+              determinate
+              value={calcPercentage(checkedOutCount)}
+            >
+              <SvgIcon>
+                {/* Door Closed Icon */}
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  strokeWidth={1.5}
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M9.75 3.75h8.25v16.5H9.75V3.75zM9.75 3.75L4.5 6v12l5.25 2.25"
+                  />
+                </svg>
+              </SvgIcon>
+            </CircularProgress>
+            <CardContent>
+              <Typography level="body-md">Checked-out</Typography>
+              <Typography level="h2">{checkedOutCount}</Typography>
+            </CardContent>
+          </CardContent>
+        </Card>
+
+        {/* Cancelled */}
+        <Card sx={{ flex: 1 }} variant="solid" color="danger" invertedColors>
+          <CardContent orientation="horizontal">
+            <CircularProgress
+              size="lg"
+              determinate
+              value={calcPercentage(cancelledCount)}
+            >
+              <SvgIcon>
+                {/* X Circle Icon */}
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  strokeWidth={1.5}
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M12 21.75A9.75 9.75 0 1112 2.25a9.75 9.75 0 010 19.5zm-3-12.75l6 6m0-6l-6 6"
+                  />
+                </svg>
+              </SvgIcon>
+            </CircularProgress>
+            <CardContent>
+              <Typography level="body-md">Cancelled</Typography>
+              <Typography level="h2">{cancelledCount}</Typography>
+            </CardContent>
+          </CardContent>
+        </Card>
       </Container>
 
       {/* Reservations */}

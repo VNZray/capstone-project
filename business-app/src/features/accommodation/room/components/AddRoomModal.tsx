@@ -45,7 +45,7 @@ export default function AddRoomModal({
     []
   );
 
-  // get amenities sort ascending
+  // get amenities
   const fetchAmenities = async () => {
     const response = await getData("amenities");
     if (response) {
@@ -60,20 +60,6 @@ export default function AddRoomModal({
   useEffect(() => {
     fetchAmenities();
   }, []);
-
-  // Handle file input change
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      setRoomImage(file);
-      const preview = URL.createObjectURL(file);
-      setPreviewUrl(preview);
-      setRoomData((prev) => ({
-        ...prev,
-        room_image: preview,
-      }));
-    }
-  };
 
   const [roomData, setRoomData] = React.useState<Room>({
     id: "",
@@ -333,13 +319,18 @@ export default function AddRoomModal({
                           setSelectedAmenities([
                             ...newValue
                               .slice(0, -1)
-                              .filter((item): item is Amenity => typeof item !== "string"),
+                              .filter(
+                                (item): item is Amenity =>
+                                  typeof item !== "string"
+                              ),
                             inserted,
                           ]);
                         }
                       } else {
                         setSelectedAmenities(
-                          newValue.filter((item): item is Amenity => typeof item !== "string")
+                          newValue.filter(
+                            (item): item is Amenity => typeof item !== "string"
+                          )
                         );
                       }
                     }}

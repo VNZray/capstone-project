@@ -2,107 +2,132 @@ import db from "../db.js";
 import { handleDbError } from "../utils/errorHandler.js";
 import { v4 as uuidv4 } from "uuid";
 
-// Insert Owner Data
-export async function insertOwner(request, response) {
+// Insert Owner (calls InsertOwner SP)
+export async function insertOwner(req, res) {
   try {
     const id = uuidv4();
-    const fields = [
-      "id",
-      "first_name",
-      "last_name",
-      "email",
-      "phone_number",
-      "business_type",
-    ];
 
-    const values = [id, ...fields.slice(1).map((f) => request.body[f] ?? null)];
+    const {
+      first_name,
+      middle_name = null,
+      last_name,
+      age = null,
+      birthday = null,
+      gender = null,
+      email,
+      phone_number,
+      business_type,
+      address_id = null,
+    } = req.body;
 
-    await db.query(
-      `INSERT INTO owner (${fields.join(", ")})
-       VALUES (${fields.map(() => "?").join(", ")})`,
-      values
-    );
+    const [rows] = await db.query("CALL InsertOwner(?,?,?,?,?,?,?,?,?,?,?)", [
+      id,
+      first_name,
+      middle_name,
+      last_name,
+      age,
+      birthday,
+      gender,
+      email,
+      phone_number,
+      business_type,
+      address_id,
+    ]);
 
-    // retrieve inserted data
-    const [data] = await db.query("SELECT * FROM owner WHERE id = ?", [id]);
-
-    if (data.length === 0) {
-      return response.status(404).json({ erroror: "Inserted row not found" });
-    }
-
-    response.json(data[0]);
+    return res.status(201).json(rows[0][0]);
   } catch (error) {
-    return handleDbError(error, response);
+    return handleDbError(error, res);
   }
 }
 
-// Get owner by ID
-export async function getOwnerById(request, response) {
-  const { id } = request.params;
+// Get owner by ID (calls GetOwnerById SP)
+export async function getOwnerById(req, res) {
+  const { id } = req.params;
   try {
-    const [data] = await db.query("SELECT * FROM owner WHERE id = ?", [id]);
-    if (data.length === 0) {
-      return response.status(404).json({ message: "Owner not found" });
+    const [rows] = await db.query("CALL GetOwnerById(?)", [id]);
+
+    if (!rows[0] || rows[0].length === 0) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Owner not found" });
     }
-    response.json(data[0]);
+
+    return res.json(rows[0][0]);
   } catch (error) {
-    return handleDbError(error, response);
+    return handleDbError(error, res);
   }
 }
 
-// get all owners
-export async function getAllOwners(request, response) {
+// Get all owners (calls GetAllOwners SP)
+export async function getAllOwners(req, res) {
   try {
-    const [data] = await db.query("SELECT * FROM owner");
-    response.json(data);
+    const [rows] = await db.query("CALL GetAllOwners()");
+
+    return res.json(rows[0]);
   } catch (error) {
-    return handleDbError(error, response);
+    return handleDbError(error, res);
   }
 }
 
-export async function updateOwnerById(request, response) {
-  const { id } = request.params;
-  const allowedFields = [
-    "first_name",
-    "middle_name",
-    "last_name",
-    "age",
-    "birthday",
-    "gender",
-    "email",
-    "phone_number",
-    "business_type",
-    "province_id",
-    "municipality_id",
-    "barangay_id",
-  ];
+// Update owner (calls UpdateOwner SP)
+export async function updateOwnerById(req, res) {
+  const { id } = req.params;
 
-  // Filter only provided fields
-  const fieldsToUpdate = Object.keys(request.body).filter((key) =>
-    allowedFields.includes(key)
-  );
-
-  if (fieldsToUpdate.length === 0) {
-    return response
-      .status(400)
-      .json({ error: "No valid fields provided for update" });
-  }
-
-  const values = fieldsToUpdate.map((field) => request.body[field]);
-  const setClause = fieldsToUpdate.map((field) => `${field} = ?`).join(", ");
+  const {
+    first_name,
+    middle_name = null,
+    last_name,
+    age = null,
+    birthday = null,
+    gender = null,
+    email,
+    phone_number,
+    business_type,
+    address_id = null,
+  } = req.body;
 
   try {
-    const [data] = await db.query(
-      `UPDATE owner SET ${setClause} WHERE id = ?`,
-      [...values, id]
-    );
+    const [rows] = await db.query("CALL UpdateOwner(?,?,?,?,?,?,?,?,?,?,?)", [
+      id,
+      first_name,
+      middle_name,
+      last_name,
+      age,
+      birthday,
+      gender,
+      email,
+      phone_number,
+      business_type,
+      address_id,
+    ]);
 
-    if (data.affectedRows === 0) {
-      return response.status(404).json({ message: "Owner not found" });
+    if (!rows[0] || rows[0].length === 0) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Owner not found" });
     }
 
-    response.json({ message: "Owner updated successfully" });
+    return res.json(rows[0][0]);
   } catch (error) {
-    return handleDbError(error, response);
+    return handleDbError(error, res);
+  }
+}
+
+// Delete owner (calls DeleteOwner SP)
+export async function deleteOwnerById(req, res) {
+  const { id } = req.params;
+  try {
+    const [result] = await db.query("CALL DeleteOwner(?)", [id]);
+
+    // CALL result may not return affectedRows directly, so confirm delete
+    if (result.affectedRows === 0) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Owner not found" });
+    }
+
+    return res.json({ success: true, message: "Owner deleted successfully" });
+  } catch (error) {
+    return handleDbError(error, res);
   }
 }

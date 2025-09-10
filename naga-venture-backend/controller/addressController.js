@@ -4,10 +4,8 @@ import { handleDbError } from "../utils/errorHandler.js";
 // get all provinces
 export async function getAllProvinces(request, response) {
   try {
-    const [data] = await db.query(
-      "SELECT * FROM province ORDER BY province ASC"
-    );
-    response.json(data);
+    const [data] = await db.query("CALL GetAllProvinces()");
+    response.json(data[0]);
   } catch (error) {
     return handleDbError(error, response);
   }
@@ -16,8 +14,8 @@ export async function getAllProvinces(request, response) {
 export const getProvinceById = async (request, response) => {
   const { id } = request.params;
   try {
-    const [data] = await db.query("SELECT * FROM province WHERE id = ?", [id]);
-    response.json(data[0]);
+    const [data] = await db.query("CALL GetProvinceById(?)", [id]);
+    response.json(data[0][0]);
   } catch (error) {
     console.error("Error fetching Province:", error);
     response.status(500).json({ error: "Internal server error" });
@@ -27,10 +25,8 @@ export const getProvinceById = async (request, response) => {
 // get all municipalities
 export async function getAllMunicipalities(request, response) {
   try {
-    const [data] = await db.query(
-      "SELECT * FROM municipality ORDER BY municipality ASC"
-    );
-    response.json(data);
+    const [data] = await db.query("CALL GetAllMunicipalities()");
+    response.json(data[0]);
   } catch (error) {
     return handleDbError(error, response);
   }
@@ -39,10 +35,8 @@ export async function getAllMunicipalities(request, response) {
 export const getMunicipalityById = async (request, response) => {
   const { id } = request.params;
   try {
-    const [data] = await db.query("SELECT * FROM municipality WHERE id = ?", [
-      id,
-    ]);
-    response.json(data[0]);
+    const [data] = await db.query("CALL GetMunicipalityById(?)", [id]);
+    response.json(data[0][0]);
   } catch (error) {
     console.error("Error fetching Municipality:", error);
     return handleDbError(error, response);
@@ -53,11 +47,8 @@ export const getMunicipalityById = async (request, response) => {
 export const getMunicipalitiesByProvinceId = async (request, response) => {
   const { id } = request.params;
   try {
-    const [data] = await db.query(
-      "SELECT * FROM municipality WHERE province_id = ?",
-      [id]
-    );
-    response.json(data);
+    const [data] = await db.query("CALL GetMunicipalitiesByProvinceId(?)", [id]);
+    response.json(data[0]);
   } catch (error) {
     console.error("Error fetching Municipalities:", error);
     return handleDbError(error, response);
@@ -67,10 +58,8 @@ export const getMunicipalitiesByProvinceId = async (request, response) => {
 // get all barangays
 export async function getAllBarangays(request, response) {
   try {
-    const [data] = await db.query(
-      "SELECT * FROM barangay ORDER BY barangay ASC"
-    );
-    response.json(data);
+    const [data] = await db.query("CALL GetAllBarangays()");
+    response.json(data[0]);
   } catch (error) {
     return handleDbError(error, response);
   }
@@ -79,8 +68,8 @@ export async function getAllBarangays(request, response) {
 export const getBarangayById = async (request, response) => {
   const { id } = request.params;
   try {
-    const [data] = await db.query("SELECT * FROM barangay WHERE id = ?", [id]);
-    response.json(data[0]);
+    const [data] = await db.query("CALL GetBarangayById(?)", [id]);
+    response.json(data[0][0]);
   } catch (error) {
     console.error("Error fetching Barangay:", error);
     return handleDbError(error, response);
@@ -91,91 +80,66 @@ export const getBarangayById = async (request, response) => {
 export const getBarangaysByMunicipalityId = async (request, response) => {
   const { id } = request.params;
   try {
-    const [data] = await db.query(
-      "SELECT * FROM barangay WHERE municipality_id = ? ORDER BY barangay ASC",
-      [id]
-    );
-    response.json(data);
+    const [data] = await db.query("CALL GetBarangaysByMunicipalityId(?)", [id]);
+    response.json(data[0]);
   } catch (error) {
     console.error("Error fetching Barangays:", error);
     return handleDbError(error, response);
   }
 };
 
-// get address by id
-export async function getAddressById(request, response) {
-  const { id } = request.params;
+// get all addresses
+export async function getAllAddresses(request, response) {
   try {
-    const query = `
-      SELECT province.province AS province_name, municipality.municipality AS municipality_name, barangay.barangay AS barangay_name
-      FROM barangay
-      INNER JOIN municipality ON barangay.municipality_id = municipality.id
-      INNER JOIN province ON municipality.province_id = province.id
-      WHERE barangay.id = ?
-    `;
-    const [data] = await db.query(query, [id]);
-    response.json(data);
+    const [data] = await db.query("CALL GetAllAddresses()");
+    response.json(data[0]);
   } catch (error) {
     return handleDbError(error, response);
   }
 }
 
-// get all address
-export async function getAllAddresses(request, response) {
+//insert into address table
+export async function insertAddress(request, response) {
   try {
-    const query = `
-      SELECT 
-        p.id AS province_id, p.province AS province_name,
-        m.id AS municipality_id, m.municipality AS municipality_name,
-        b.id AS barangay_id, b.barangay AS barangay_name
-      FROM province p
-      LEFT JOIN municipality m ON m.province_id = p.id
-      LEFT JOIN barangay b ON b.municipality_id = m.id
-      ORDER BY p.province, m.municipality, b.barangay
-    `;
+    const { province_id, municipality_id, barangay_id } = request.body;
+    const [result] = await db.query(
+      "CALL InsertAddress(?, ?, ?)",
+      [province_id, municipality_id, barangay_id]
+    );
+    response
+      .status(201)
+      .json({ id: result[0][0].id, province_id, municipality_id, barangay_id });
+  } catch (error) {
+    return handleDbError(error, response);
+  }
+}
 
-    const [rows] = await db.query(query);
+// update data by ID
+export async function updateAddress(request, response) {
+  const { id } = request.params;
+  try {
+    const province_id = request.body.province_id ?? null;
+    const municipality_id = request.body.municipality_id ?? null;
+    const barangay_id = request.body.barangay_id ?? null;
+    const [result] = await db.query(
+      "CALL UpdateAddress(?, ?, ?, ?)",
+      [id, province_id, municipality_id, barangay_id]
+    );
+    if (!result[0] || result[0].length === 0) {
+      return response.status(404).json({ message: "Data not found" });
+    }
+    response.json(result[0][0]);
+  } catch (error) {
+    return handleDbError(error, response);
+  }
+}
 
-    // Transform rows into nested structure
-    const provinces = [];
-
-    rows.forEach((row) => {
-      // Find or create province
-      let province = provinces.find((p) => p.province_id === row.province_id);
-      if (!province) {
-        province = {
-          province_id: row.province_id,
-          province_name: row.province_name,
-          municipalities: [],
-        };
-        provinces.push(province);
-      }
-
-      // If municipality exists in row
-      if (row.municipality_id) {
-        let municipality = province.municipalities.find(
-          (m) => m.municipality_id === row.municipality_id
-        );
-        if (!municipality) {
-          municipality = {
-            municipality_id: row.municipality_id,
-            municipality_name: row.municipality_name,
-            barangays: [],
-          };
-          province.municipalities.push(municipality);
-        }
-
-        // If barangay exists in row
-        if (row.barangay_id) {
-          municipality.barangays.push({
-            barangay_id: row.barangay_id,
-            barangay_name: row.barangay_name,
-          });
-        }
-      }
-    });
-
-    response.json(provinces);
+// join tables get province, municipality, barangay by addresses id
+export async function getAddressDetailsById(request, response) {
+  const { id } = request.params;
+  try {
+    const [data] = await db.query("CALL GetAddressDetailsById(?)", [id]);
+    response.json(data[0][0]);
   } catch (error) {
     return handleDbError(error, response);
   }

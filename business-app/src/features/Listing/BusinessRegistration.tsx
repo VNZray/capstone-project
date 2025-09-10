@@ -13,23 +13,16 @@ import Step2 from "./steps/Step2";
 import Step3 from "./steps/Step3";
 import Step4 from "./steps/Step4";
 import Step5 from "./steps/Step5";
-import Step6 from "./steps/Step6";
-import Step7 from "./steps/Step7";
+
 import type { Business, BusinessHours } from "@/src/types/Business";
 import axios from "axios";
 import type { Permit } from "@/src/types/Permit";
 import { insertData } from "@/src/api_function";
+import type { Amenity, BusinessAmenity } from "@/src/types/Amenity";
+import type { Address } from "@/src/types/Address";
 
 // steps definition
-const steps = [
-  "Basic",
-  "Contact",
-  "Location",
-  "Social Media",
-  "Pricing",
-  "Permits",
-  "Review & Submit",
-];
+const steps = ["Basic", "Contact", "Location", "Permits", "Review & Submit"];
 
 // ✅ Moved outside BusinessRegistration so it doesn’t get recreated on every render
 const StepContent: React.FC<{ step: number; commonProps: any }> = ({
@@ -47,10 +40,6 @@ const StepContent: React.FC<{ step: number; commonProps: any }> = ({
       return <Step4 {...commonProps} />;
     case 4:
       return <Step5 {...commonProps} />;
-    case 5:
-      return <Step6 {...commonProps} />;
-    case 6:
-      return <Step7 {...commonProps} />;
     default:
       return null;
   }
@@ -71,75 +60,77 @@ const BusinessRegistration: React.FC = () => {
     business_name: "Kim Angela Homestay",
     phone_number: "09380417373",
     email: "kim@gmail.com",
-    barangay_id: 0,
-    municipality_id: 0,
-    province_id: 0,
     description: "This place is great",
-    instagram_url: "kim.com",
-    x_url: "kim.com",
     address: "123 Street, City",
-    website_url: "kim.com",
-    facebook_url: "kim.com",
     longitude: "",
     latitude: "",
-    min_price: "1000",
-    max_price: "5000",
     owner_id: "",
-    status: "Pending",
     business_category_id: 0,
     business_type_id: 0,
+    address_id: 0,
+    status: "Pending",
     hasBooking: false,
   });
 
+  const [addressData, setAddressData] = useState<Address>({
+    barangay_id: 3,
+    municipality_id: 24,
+    province_id: 20,
+  });
+
   const [permitData, setPermitData] = useState<Permit[]>([]);
+  const [businessAmenities, setBusinessAmenities] = useState<BusinessAmenity[]>(
+    []
+  );
+
   const [businessHours, setBusinessHours] = useState<BusinessHours[]>([
     {
       day_of_week: "Monday",
       business_id: "",
-      open_time: "",
-      close_time: "",
+      open_time: "08:00",
+      close_time: "22:00",
       is_open: false,
     },
     {
       day_of_week: "Tuesday",
       business_id: "",
-      open_time: "",
-      close_time: "",
+      open_time: "08:00",
+      close_time: "22:00",
       is_open: false,
     },
     {
       day_of_week: "Wednesday",
       business_id: "",
-      open_time: "",
-      close_time: "",
+      open_time: "08:00",
+      close_time: "22:00",
       is_open: false,
     },
     {
       day_of_week: "Thursday",
       business_id: "",
-      open_time: "",
-      close_time: "",
+      open_time: "08:00",
+      close_time: "22:00",
       is_open: false,
     },
     {
       day_of_week: "Friday",
       business_id: "",
-      open_time: "",
-      close_time: "",
+      open_time: "08:00",
+      close_time: "22:00",
       is_open: false,
     },
     {
       day_of_week: "Saturday",
       business_id: "",
-      open_time: "",
-      close_time: "",
+      open_time: "08:00",
+      close_time: "22:00",
       is_open: false,
     },
     {
       day_of_week: "Sunday",
       business_id: "",
-      open_time: "",
-      close_time: "",
+      open_time: "08:00",
+      close_time: "22:00",
       is_open: false,
     },
   ]);
@@ -170,12 +161,16 @@ const BusinessRegistration: React.FC = () => {
   const commonProps = {
     api,
     data: formData,
+    addressData,
+    setAddressData,
     bookingSite: externalBookings,
     setBookingSites: setExternalBookings,
     permitData,
     businessHours,
+    businessAmenities,
     setPermitData,
     setBusinessHours,
+    setBusinessAmenities,
     setData: setFormData,
   };
 
@@ -197,8 +192,16 @@ const BusinessRegistration: React.FC = () => {
 
   const handleSubmit = async () => {
     try {
+
+      // insert address first
+      const addressRes = await insertData(addressData, "address");
+      const addressId = addressRes.id;
       // 1️⃣ Insert Business
-      const res = await axios.post(`${api}/business`, formData);
+      const res = await axios.post(`${api}/business`, {
+        ...formData,
+        address_id: addressId,
+      });
+      
       const businessId = res.data.id;
       console.log(businessId);
 
@@ -226,6 +229,17 @@ const BusinessRegistration: React.FC = () => {
               open_time: hours.open_time,
               close_time: hours.close_time,
               is_open: hours.is_open,
+            })
+          )
+        );
+      }
+
+      if (businessAmenities.length > 0) {
+        await Promise.all(
+          businessAmenities.map((amenity) =>
+            axios.post(`${api}/business-amenities`, {
+              business_id: businessId,
+              amenity_id: amenity.amenity_id,
             })
           )
         );

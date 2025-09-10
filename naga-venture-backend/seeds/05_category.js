@@ -12,5 +12,9 @@ export async function seed(knex) {
     { id: 3, category: "Restaurant", type_id: 2 },
     { id: 4, category: "Museum", type_id: 4 },
     { id: 5, category: "Coffee Shop", type_id: 2 },
+    { id: 6, category: "Nature", type_id: 4 },
+    { id: 7, category: "Historical", type_id: 4 },
+    { id: 8, category: "Urban Attractions", type_id: 4 },
+    { id: 9, category: "Churches", type_id: 4 },
   ]);
 }

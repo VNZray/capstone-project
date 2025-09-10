@@ -176,38 +176,86 @@ const ViewModal: React.FC<ViewModalProps> = ({ isOpen, onClose, item, onApprove,
             ? `Edit Request: ${String(item.name ?? "")}`
             : String(item.name ?? "")
         }
-        sx={{ width: "95%", maxWidth: 1400 }}
+        sx={{ 
+          width: "95%", 
+          maxWidth: 1400,
+          borderRadius: 'lg',
+          boxShadow: 'lg',
+        }}
       >
         <DialogTitle>
           <Stack
             direction="row"
             alignItems="center"
             justifyContent="space-between"
-            sx={{ width: "100%" }}
+            sx={{ 
+              width: "100%",
+              pb: 1,
+              borderBottom: '1px solid',
+              borderColor: 'divider'
+            }}
           >
-            <Typography level="title-lg">
-              {isEdit
-                ? `Edit Request: ${String(item.name ?? "")}`
-                : String(item.name ?? "")}
-            </Typography>
+            <Stack spacing={0.5}>
+              <Typography level="title-lg" sx={{ fontWeight: 600, color: '#0A1B47' }}>
+                {isEdit
+                  ? `Edit Request: ${String(item.name ?? "")}`
+                  : String(item.name ?? "")}
+              </Typography>
+              <Typography level="body-sm" sx={{ color: 'text.tertiary' }}>
+                {isEdit ? "Review proposed changes" : "Tourist spot details"}
+              </Typography>
+            </Stack>
             <IconButton
-              variant="plain"
+              variant="soft"
               color="neutral"
               onClick={onClose}
               aria-label="Close"
+              size="sm"
+              sx={{ 
+                borderRadius: 'sm',
+                '&:hover': { 
+                  backgroundColor: 'danger.50',
+                  color: 'danger.500'
+                }
+              }}
             >
               <CloseRoundedIcon />
             </IconButton>
           </Stack>
         </DialogTitle>
-  <DialogContent sx={{ maxHeight: "80vh", overflow: "auto" }}>
+  <DialogContent sx={{ maxHeight: "80vh", overflow: "auto", p: 3 }}>
           {isEdit ? (
-            <Sheet variant="soft" sx={{ p: 2, borderRadius: 8 }}>
-              <Typography level="title-sm" sx={{ mb: 1 }}>
-                Proposed vs Current
-              </Typography>
-              <Divider sx={{ mb: 1 }} />
-              <div className="comparison-table">
+            <Sheet 
+              variant="soft" 
+              sx={{ 
+                p: 3, 
+                borderRadius: 'lg',
+                backgroundColor: 'background.level1',
+                border: '1px solid',
+                borderColor: 'divider'
+              }}
+            >
+              <Stack spacing={2}>
+                <Stack direction="row" alignItems="center" spacing={1}>
+                  <Typography level="title-md" sx={{ fontWeight: 600, color: '#0A1B47' }}>
+                    Proposed Changes
+                  </Typography>
+                  <Typography 
+                    level="body-xs" 
+                    sx={{ 
+                      backgroundColor: 'warning.100',
+                      color: 'warning.700',
+                      px: 1.5,
+                      py: 0.5,
+                      borderRadius: 'sm',
+                      fontWeight: 500
+                    }}
+                  >
+                    Pending Review
+                  </Typography>
+                </Stack>
+                <Divider />
+                <div className="comparison-table">
                 <div className="table-head label">Field</div>
                 <div className="table-head current">Current</div>
                 <div className="table-head proposed">Proposed</div>
@@ -236,35 +284,85 @@ const ViewModal: React.FC<ViewModalProps> = ({ isOpen, onClose, item, onApprove,
                   );
                 })}
               </div>
+              </Stack>
             </Sheet>
           ) : (
-            <Sheet variant="soft" sx={{ p: 2, borderRadius: 8 }}>
-              <Typography level="title-sm" sx={{ mb: 1 }}>
-                Details
-              </Typography>
-              <Divider sx={{ mb: 1 }} />
-              <div className="details-list">
+            <Sheet 
+              variant="soft" 
+              sx={{ 
+                p: 3, 
+                borderRadius: 'lg',
+                backgroundColor: 'background.level1',
+                border: '1px solid',
+                borderColor: 'divider'
+              }}
+            >
+              <Stack spacing={2}>
+                <Stack direction="row" alignItems="center" spacing={1}>
+                  <Typography level="title-md" sx={{ fontWeight: 600, color: '#0A1B47' }}>
+                    Tourist Spot Details
+                  </Typography>
+                  <Typography 
+                    level="body-xs" 
+                    sx={{ 
+                      backgroundColor: 'primary.100',
+                      color: 'primary.700',
+                      px: 1.5,
+                      py: 0.5,
+                      borderRadius: 'sm',
+                      fontWeight: 500
+                    }}
+                  >
+                    New Submission
+                  </Typography>
+                </Stack>
+                <Divider />
+                <div className="comparison-table two-column">
+                <div className="table-head label">Field</div>
+                <div className="table-head current">Value</div>
                 {ATTRS.map(({ field, label }) => {
                   const v = getProposed(field) ?? getCurrent(field);
                   if (v == null) return null;
                   return (
-                    <div className="detail-section" key={field}>
-                      <div className="card-title">{label}</div>
-                      <div className="normal" style={{ color: isNew ? '#222' : undefined }}>{formatValue(field, v)}</div>
-                    </div>
+                    <React.Fragment key={field}>
+                      <div className="label">{label}</div>
+                      <div className="current detail-row">
+                        <span style={{ color: isNew ? '#222' : undefined }}>{formatValue(field, v)}</span>
+                      </div>
+                    </React.Fragment>
                   );
                 })}
-              </div>
+                </div>
+              </Stack>
             </Sheet>
           )}
         </DialogContent>
-        <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end', p: 2, pt: 0 }}>
+        <Box sx={{ 
+          display: 'flex', 
+          gap: 2, 
+          justifyContent: 'flex-end', 
+          p: 3, 
+          pt: 2,
+          borderTop: '1px solid',
+          borderColor: 'divider',
+          backgroundColor: 'background.surface'
+        }}>
           <Button
             variant="outlined"
             color="danger"
             onClick={handleRejectClick}
             disabled={!onReject || (processingId != null && processingId === id)}
             startDecorator={<CloseRoundedIcon />}
+            size="lg"
+            sx={{
+              minWidth: 120,
+              fontWeight: 500,
+              borderRadius: 'md',
+              '&:hover': {
+                backgroundColor: 'danger.50',
+                borderColor: 'danger.300'
+              }
+            }}
           >
             Reject
           </Button>
@@ -274,6 +372,16 @@ const ViewModal: React.FC<ViewModalProps> = ({ isOpen, onClose, item, onApprove,
             onClick={handleApproveClick}
             disabled={!onApprove || (processingId != null && processingId === id)}
             startDecorator={<CheckRoundedIcon />}
+            size="lg"
+            sx={{
+              minWidth: 120,
+              fontWeight: 500,
+              borderRadius: 'md',
+              backgroundColor: '#0A1B47',
+              '&:hover': {
+                backgroundColor: '#0f2356'
+              }
+            }}
           >
             Approve
           </Button>

@@ -32,7 +32,7 @@ export default function Header(): React.JSX.Element {
   };
 
   // Get title based on path (fallback to "Business Dashboard")
-  const title = pageTitles[location.pathname] || "Business Dashboard";
+  const title = pageTitles[location.pathname] || "";
 
   return (
     <header className="header">

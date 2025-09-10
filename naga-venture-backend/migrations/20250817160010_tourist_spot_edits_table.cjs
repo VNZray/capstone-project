@@ -15,7 +15,6 @@ exports.up = function(knex) {
     table.decimal('entry_fee', 10, 2).nullable();
     table.enu('spot_status', ['pending', 'active', 'inactive']).notNullable().defaultTo('pending');
     table.boolean('is_featured').defaultTo(0);
-    table.integer('category_id').notNullable();
     table.integer('type_id').notNullable();
     table.enu('approval_status', ['pending', 'approved', 'rejected']).notNullable().defaultTo('pending');
     table.string('remarks', 255).notNullable().defaultTo('');
@@ -24,7 +23,6 @@ exports.up = function(knex) {
 
   // indexes (match SQL dump)
   table.index('tourist_spot_id', 'idx_tourist_spot');
-  table.index('category_id', 'idx_category');
   table.index('type_id', 'idx_type');
   table.index('province_id', 'idx_province');
   table.index('municipality_id', 'idx_municipality');

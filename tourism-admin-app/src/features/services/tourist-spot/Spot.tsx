@@ -73,18 +73,24 @@ const Spot = () => {
   const handleCloseEditModal = () => {
     setEditSpotModalVisible(false);
     setSelectedSpotForEdit(undefined);
+    setSelectedEditStep(0);
   };
 
   const handleSpotUpdated = () => {
     fetchSpotsAndCategories();
     setEditSpotModalVisible(false);
     setSelectedSpotForEdit(undefined);
+    setSelectedEditStep(0);
   };
 
   const filteredAndSearchedSpots = useMemo(() => {
     let filtered = spots;
     if (selectedType !== "All") {
-      filtered = filtered.filter((spot) => spot.category === selectedType);
+      filtered = filtered.filter((spot) =>
+        Array.isArray(spot.categories)
+          ? spot.categories.some((cat) => cat.category === selectedType)
+          : false
+      );
     }
     if (searchQuery) {
       filtered = filtered.filter((spot) =>
@@ -103,74 +109,91 @@ const Spot = () => {
     );
   }, [filteredAndSearchedSpots, currentPage, spotsPerPage]);
 
-  if (selectedSpotId) {
-    return <TouristSpotDetails spotId={selectedSpotId} onBack={handleBack} />;
-  }
+  const [selectedEditStep, setSelectedEditStep] = useState<number>(0);
+
+  const handleEditFromDetails = async (step: number = 0) => {
+    // Try to find the spot in the currently loaded list
+    let spotToEdit = spots.find((spot) => spot.id === selectedSpotId);
+
+    // If not found (e.g. different page/filter), fetch it from the API
+    if (!spotToEdit && selectedSpotId) {
+      try {
+        spotToEdit = await apiService.getTouristSpotById(selectedSpotId);
+      } catch (e) {
+        console.error("Failed to load spot for editing:", e);
+      }
+    }
+
+    if (spotToEdit) {
+      setSelectedSpotForEdit(spotToEdit);
+      setSelectedEditStep(step);
+      setEditSpotModalVisible(true);
+    } else {
+      // Fallback: still open the modal in edit mode but without initial data
+      setSelectedSpotForEdit(undefined);
+      setSelectedEditStep(step);
+      setEditSpotModalVisible(true);
+    }
+  };
 
   return (
-    <Container background={colors.background} elevation={2} className="spot-container">
-      <div className="filter-and-search-container">
-        <div className="filter">
-          <CategoryFilter
-            selectedCategory={selectedType}
-            onCategorySelect={handleTypeChange}
-            categories={typeFilters}
-          />
-        </div>
-        <div className="search-and-add">
-          <div className="search">
-            <SearchBar
-              value={searchQuery}
-              onChangeText={handleSearch}
-              onSearch={() =>
-                console.log("Performing search for:", searchQuery)
-              }
-              placeholder="Search tourist spots..."
-              containerStyle={{ flex: 1, maxWidth: 300 }}
-            />
-          </div>
-          <div className="add">
-            <button
-              className="add-button"
-              onClick={() => setAddSpotModalVisible(true)}
-            >
-              <IoAdd size={20} color="#FFF" />
-              <Text variant="normal" color="white" className="add-button-text">
-                Add
-              </Text>
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {loading ? (
-        <div className="loading-container">
-          <div className="loading-spinner"></div>
-          <Text variant="normal" color="text-color">
-            Loading tourist spots...
-          </Text>
-        </div>
-      ) : error ? (
-        <div className="error-container">
-          <Text variant="normal" color="red">
-            Error: {error}
-          </Text>
-        </div>
+    <>
+      {selectedSpotId ? (
+        <TouristSpotDetails
+          spotId={selectedSpotId}
+          onBack={handleBack}
+          onEdit={handleEditFromDetails}
+        />
       ) : (
-        <div className="content">
-          <TouristSpotTable
-            spots={paginatedSpots}
-            onViewDetails={handleViewDetails}
-            onEdit={handleEditSpot}
-          />
-          {totalPages > 1 && (
-            <Pagination
-              currentPage={currentPage}
-              totalPages={totalPages}
-              onPageChange={handlePageChange}
-            />
+        <Container background={colors.background} elevation={2} className="spot-container">
+          <div className="filter-and-search-container">
+            <div className="filter">
+              <CategoryFilter
+                selectedCategory={selectedType}
+                onCategorySelect={handleTypeChange}
+                categories={typeFilters}
+              />
+            </div>
+            <div className="search-and-add">
+              <div className="search">
+                <SearchBar
+                  value={searchQuery}
+                  onChangeText={handleSearch}
+                  onSearch={() => console.log("Performing search for:", searchQuery)}
+                  placeholder="Search tourist spots..."
+                  containerStyle={{ flex: 1, maxWidth: 300 }}
+                />
+              </div>
+              <div className="add">
+                <button
+                  className="add-button"
+                  onClick={() => setAddSpotModalVisible(true)}
+                >
+                  <IoAdd size={20} color="#FFF" />
+                  <Text variant="normal" color="white" className="add-button-text">Add</Text>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {loading ? (
+            <div className="loading-container">
+              <div className="loading-spinner"></div>
+              <Text variant="normal" color="text-color">Loading tourist spots...</Text>
+            </div>
+          ) : error ? (
+            <div className="error-container">
+              <Text variant="normal" color="red">Error: {error}</Text>
+            </div>
+          ) : (
+            <div className="content">
+              <TouristSpotTable spots={paginatedSpots} onViewDetails={handleViewDetails} onEdit={handleEditSpot} />
+              {totalPages > 1 && (
+                <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={handlePageChange} />
+              )}
+            </div>
           )}
-        </div>
+        </Container>
       )}
 
       <TouristSpotForm
@@ -185,9 +208,10 @@ const Spot = () => {
         onClose={handleCloseEditModal}
         onSpotUpdated={handleSpotUpdated}
         initialData={selectedSpotForEdit}
+        initialStep={selectedEditStep}
         mode="edit"
       />
-    </Container>
+    </>
   );
 };
 

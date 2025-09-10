@@ -17,13 +17,7 @@ import {
 } from "@mui/material";
 import Link from "@mui/joy/Link";
 import { colors } from "../utils/Colors";
-
-// Styled components for cleaner look
-const LogoImg = styled("img")({
-  height: 40,
-  cursor: "pointer",
-  marginRight: 12,
-});
+import { Typography } from "@mui/joy";
 
 export default function Header(): React.JSX.Element {
   const navigate = useNavigate();
@@ -45,24 +39,12 @@ export default function Header(): React.JSX.Element {
   };
 
   return (
-    <AppBar position="static" sx={{ backgroundColor: "#0A1B47", paddingX: 2 }}>
-      <Toolbar sx={{ display: "flex", justifyContent: "space-between" }}>
+    <AppBar position="static" sx={{ backgroundColor: "#0A1B47", padding: 1 }}>
+      <Toolbar sx={{ display: "flex", justifyContent: "space-between", padding: 0 }}>
         {/* Left: Logo + Title */}
-        <Box sx={{ display: "flex", alignItems: "center" }}>
-          <LogoImg
-            src={logo}
-            alt="Logo"
-            onClick={() => navigate("/")}
-            role="button"
-            tabIndex={0}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" || e.key === " ") navigate("/");
-            }}
-          />
-          <Text variant="header-title" color="white">
-            City Venture
-          </Text>
-        </Box>
+        <Typography startDecorator={<img src={logo} alt="Logo" style={{ width: "40px", height: "40px", color: colors.white }} />} level="title-lg">
+          City Venture
+        </Typography>
 
         {/* Right: Navigation */}
         <Box sx={{ display: "flex", gap: 2, alignItems: "center" }}>

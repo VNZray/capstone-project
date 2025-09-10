@@ -14,34 +14,32 @@ import { colors } from "@/src/utils/Colors";
 import { Button } from "@mui/joy";
 import { Add } from "@mui/icons-material";
 import Grid from "@mui/joy/Grid";
+import { getData, getDataByForeignId } from "@/src/api_function";
 
 const MyBusiness = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { setBusinessId } = useBusiness();
-  const [loading, setLoading] = useState(true);
   const [businesses, setBusinesses] = useState<Business[]>([]);
 
   useEffect(() => {
+    console.log("Owner ID:", user?.owner_id);
+    
     if (!user?.owner_id) return;
 
     const loadBusinesses = async () => {
       try {
-        const data = await fetchBusinessesByOwner(user.owner_id!);
+        const data = await getDataByForeignId("business/owner", user.owner_id!);
         setBusinesses(data);
         console.log("Fetched businesses:", data);
       } catch (err) {
         console.error("Error fetching businesses:", err);
       } finally {
-        setLoading(false);
       }
     };
 
     loadBusinesses();
   }, [user?.owner_id]);
-
-  if (loading) return <Loading />;
-
   return (
     <PageContainer style={{ padding: "20px" }}>
       <Text variant="title">My Business</Text>

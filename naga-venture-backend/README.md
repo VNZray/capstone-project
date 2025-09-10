@@ -11,7 +11,7 @@
 
     npm run dev
 
-## Initialize database
+## Initialize database/create database
 
     npm run createdb
 

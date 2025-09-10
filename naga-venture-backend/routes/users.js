@@ -4,9 +4,10 @@ import * as userController from '../controller/userController.js'; // Add `.js` 
 const router = express.Router();
 
 router.get('/', userController.getAllUsers);
-router.get('/tourism/:id', userController.getTourismId);
-router.get('/tourist/:id', userController.getTouristId);
-router.get('/owner/:id', userController.getOwnerId);
+router.get('/:id', userController.getUserById);
+router.get('/tourism/:id', userController.getUserByTourismId);
+router.get('/tourist/:id', userController.getUserByTouristId);
+router.get('/owner/:id', userController.getUserByOwnerId);
 router.post('/', userController.createUser);
 router.put('/tourist/:id', userController.updateTourist);
 router.put('/owner/:id', userController.updateOwner);

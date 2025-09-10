@@ -10,23 +10,31 @@ import Text from "@/src/components/Text";
 import { colors } from "@/src/utils/Colors";
 import { Add } from "@mui/icons-material";
 import MapInput from "@/src/components/MapInput";
+import type {
+  Address,
+  Barangay,
+  Municipality,
+  Province,
+} from "@/src/types/Address";
 
 type Props = {
   data: Business;
+  addressData: Address;
   setData: React.Dispatch<React.SetStateAction<Business>>;
+  setAddressData: React.Dispatch<React.SetStateAction<Address>>;
   api: string;
 };
 
-const Step3: React.FC<Props> = ({ api, data, setData }) => {
-  const [province, setProvince] = React.useState<
-    { id: number; province: string }[]
-  >([]);
-  const [municipality, setMunicipality] = React.useState<
-    { id: number; municipality: string }[]
-  >([]);
-  const [barangay, setBarangay] = React.useState<
-    { id: number; barangay: string }[]
-  >([]);
+const Step3: React.FC<Props> = ({
+  api,
+  data,
+  setData,
+  addressData,
+  setAddressData,
+}) => {
+  const [province, setProvince] = React.useState<Province[]>([]);
+  const [municipality, setMunicipality] = React.useState<Municipality[]>([]);
+  const [barangay, setBarangay] = React.useState<Barangay[]>([]);
 
   const fetchProvince = async () => {
     try {
@@ -70,23 +78,21 @@ const Step3: React.FC<Props> = ({ api, data, setData }) => {
     }
   };
 
-  
-
   React.useEffect(() => {
     fetchProvince();
   }, []);
 
   React.useEffect(() => {
-    if (data.province_id) {
-      fetchMunicipality(data.province_id);
+    if (addressData.province_id) {
+      fetchMunicipality(addressData.province_id);
     }
-  }, [data.province_id]);
+  }, [addressData.province_id]);
 
   React.useEffect(() => {
-    if (data.municipality_id) {
-      fetchBarangay(data.municipality_id);
+    if (addressData.municipality_id) {
+      fetchBarangay(addressData.municipality_id);
     }
-  }, [data.municipality_id]);
+  }, [addressData.municipality_id]);
 
   const handleGetCurrentLocation = () => {
     if (!navigator.geolocation) {
@@ -137,11 +143,11 @@ const Step3: React.FC<Props> = ({ api, data, setData }) => {
                 <Select
                   size="md"
                   placeholder="-- Select a province --"
-                  value={data.province_id?.toString() ?? ""}
+                  value={addressData.province_id?.toString() ?? ""}
                   onChange={(e, value) => {
                     if (!value) return;
                     const province_id = Number(value);
-                    setData((prev) => ({
+                    setAddressData((prev) => ({
                       ...prev,
                       province_id: province_id,
                     }));
@@ -161,16 +167,16 @@ const Step3: React.FC<Props> = ({ api, data, setData }) => {
                 <Select
                   size="md"
                   placeholder="-- Select municipality --"
-                  value={data.municipality_id?.toString() ?? ""}
+                  value={addressData.municipality_id?.toString() ?? ""}
                   onChange={(e, value) => {
                     if (!value) return;
                     const municipality_id = Number(value);
-                    setData((prev) => ({
+                    setAddressData((prev) => ({
                       ...prev,
                       municipality_id: municipality_id,
                     }));
                   }}
-                  disabled={!data.province_id}
+                  disabled={!addressData.province_id}
                 >
                   <Option value="">-- Select municipality --</Option>
                   {municipality.map((municipality) => (
@@ -189,16 +195,16 @@ const Step3: React.FC<Props> = ({ api, data, setData }) => {
                 <Select
                   size="md"
                   placeholder="-- Select barangay --"
-                  value={data.barangay_id?.toString() ?? ""}
+                  value={addressData.barangay_id?.toString() ?? ""}
                   onChange={(e, value) => {
                     if (!value) return;
                     const barangay_id = Number(value);
-                    setData((prev) => ({
+                    setAddressData((prev) => ({
                       ...prev,
                       barangay_id: barangay_id,
                     }));
                   }}
-                  disabled={!data.municipality_id}
+                  disabled={!addressData.municipality_id}
                 >
                   <Option value="">-- Select barangay --</Option>
                   {barangay.map((barangay) => (

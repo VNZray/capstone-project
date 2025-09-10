@@ -30,7 +30,7 @@ export async function getRoomAmenities(request, response) {
 
 // fetch data by ID
 export async function getDataById(request, response) {
-  const { id } = request.paroom_amenitiesms;
+  const { id } = request.params;
   try {
     const [data] = await db.query("SELECT * FROM room_amenities WHERE id = ?", [
       id,
@@ -67,7 +67,7 @@ export async function insertData(request, response) {
 
 // update data by ID
 export async function updateData(request, response) {
-  const { id } = request.paroom_amenitiesms;
+  const { id } = request.params;
   try {
     const fields = ["amenity_id", "room_id"];
     const updates = fields.map((f) => request.body[f] ?? null);
@@ -83,11 +83,11 @@ export async function updateData(request, response) {
       return response.status(404).json({ message: "Data not found" });
     }
 
-    const [updated] = await db.query("SELECT * FROM table_name WHERE id = ?", [
+    const [updated] = await db.query("SELECT * FROM room_amenities WHERE id = ?", [
       id,
     ]);
 
-    response.json(data);
+    response.json(updated);
   } catch (error) {
     return handleDbError(error, response);
   }
@@ -95,9 +95,9 @@ export async function updateData(request, response) {
 
 // delete data by ID
 export async function deleteData(request, response) {
-  const { id } = request.paroom_amenitiesms;
+  const { id } = request.params;
   try {
-    const [data] = await db.query("DELETE FROM table_name WHERE id = ?", [id]);
+    const [data] = await db.query("DELETE FROM room_amenities WHERE id = ?", [id]);
 
     if (data.affectedRows === 0) {
       return response.status(404).json({ message: "Data not found" });

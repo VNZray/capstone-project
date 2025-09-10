@@ -8,7 +8,6 @@ import {
   FlatList,
   Image,
   Platform,
-  ScrollView,
   StyleSheet,
   View,
 } from 'react-native';
@@ -111,35 +110,6 @@ const AccommodationProfile = () => {
     }
     setLoading(false);
   };
-
-  // // Check if user has already reviewed this accommodation
-  // const reviewChecker = async () => {
-  //   const { data: existingReview, error: fetchError } = await supabase
-  //     .from('Reviews')
-  //     .select('*')
-  //     .eq('reviewable_type', 'accommodation')
-  //     .eq('reviewable_id', business?.id)
-  //     .eq('user_id', user?.id)
-  //     .single();
-
-  //   if (existingReview) {
-  //     setFeedbackMessage('You have already submitted a review for this accommodation.');
-  //     setFeedbackType('error');
-  //     clearFeedbackAfterDelay();
-  //     return;
-  //   } else {
-  //     handleAddReview()
-  //   }
-
-  //   if (fetchError && fetchError.code !== 'PGRST116') {
-  //     console.error('Error checking for existing review:', fetchError.message);
-  //     setFeedbackMessage('An error occurred while checking your previous review.');
-  //     setFeedbackType('error');
-  //     clearFeedbackAfterDelay();
-  //     return;
-  //   }
-
-  // }
 
   const handleAddReview = async () => {
     if (!user || newReview.trim() === '') {

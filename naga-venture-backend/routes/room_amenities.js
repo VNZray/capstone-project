@@ -5,7 +5,7 @@ const router = express.Router();
 
 router.get("/", roomAmenityController.getAllData);
 router.post("/", roomAmenityController.insertData);
-router.get("/details", roomAmenityController.getRoomAmenities);
+router.put("/", roomAmenityController.updateData);
+router.delete("/:id", roomAmenityController.deleteData);
 
 export default router;
-

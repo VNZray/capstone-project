@@ -10,11 +10,15 @@ import React, { useState } from "react";
 import EditIcon from "@mui/icons-material/Edit";
 import EditBasicInfo from "./EditBasicInfo";
 import { Refresh } from "@mui/icons-material";
+import EditAmenitiesModal from "./EditAmenitiesModal";
+import EditDescriptionModal from "./EditDescription";
 
 const DetailsComponent = () => {
   const { roomDetails } = useRoom();
   const [amenities, setAmenities] = React.useState<Amenity[]>([]);
   const [editBasicInfoModalOpen, setEditBasicInfoModalOpen] = useState(false);
+  const [editAmenitiesModalOpen, setEditAmenitiesModalOpen] = useState(false);
+  const [editDescriptionModalOpen, setEditDescriptionModalOpen] = useState(false);
 
   const fetchRoomAmenities = async () => {
     if (!roomDetails?.id) return;
@@ -196,6 +200,7 @@ const DetailsComponent = () => {
               size="sm"
               variant="outlined"
               startDecorator={<EditIcon />}
+              onClick={() => setEditAmenitiesModalOpen(true)}
             >
               Edit
             </Button>
@@ -235,6 +240,7 @@ const DetailsComponent = () => {
               size="sm"
               variant="outlined"
               startDecorator={<EditIcon />}
+              onClick={() => setEditDescriptionModalOpen(true)}
             >
               Edit
             </Button>
@@ -263,6 +269,25 @@ const DetailsComponent = () => {
         initialPrice={roomDetails?.room_price}
         roomId={roomDetails?.id}
         onClose={() => setEditBasicInfoModalOpen(false)}
+        onSave={() => {
+          window.location.reload();
+        }}
+      />
+
+      <EditAmenitiesModal
+        open={editAmenitiesModalOpen}
+        roomId={roomDetails?.id}
+        onClose={() => setEditAmenitiesModalOpen(false)}
+        onSave={() => {
+          window.location.reload();
+        }}
+      />
+
+      <EditDescriptionModal
+        open={editDescriptionModalOpen}
+        initialDescription={roomDetails?.description}
+        roomId={roomDetails?.id}
+        onClose={() => setEditDescriptionModalOpen(false)}
         onSave={() => {
           window.location.reload();
         }}

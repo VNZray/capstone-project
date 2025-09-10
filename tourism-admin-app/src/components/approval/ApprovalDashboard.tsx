@@ -21,7 +21,6 @@ import HotelRoundedIcon from "@mui/icons-material/HotelRounded";
 import DashboardRoundedIcon from "@mui/icons-material/DashboardRounded";
 import SearchRoundedIcon from "@mui/icons-material/SearchRounded";
 
-import "../styles/approval/ApprovalDashboard.css";
 import type { EntityType } from "../../types/approval";
 
 interface PendingItem {
