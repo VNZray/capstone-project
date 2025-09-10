@@ -33,7 +33,7 @@ const Step7: React.FC<Props> = ({
   permitData,
   addressData,
 }) => {
-  const { address } = useAddress(addressData?.barangay_id);
+  const { address } = useAddress(addressData?.barangay_id, addressData?.municipality_id, addressData?.province_id);
   const { categoryAndType } = useCategoryAndType(data?.business_type_id);
 
   const InfoRow = ({
@@ -145,8 +145,8 @@ const Step7: React.FC<Props> = ({
                   level="body-sm"
                   startDecorator={<PlaceOutlined fontSize="small" />}
                 >
-                  {addressData?.province_id}, {addressData?.municipality_id},{" "}
-                  {addressData?.barangay_id || "-"}
+                  {address?.province_name}, {address?.municipality_name},{" "}
+                  {address?.barangay_name || "-"}
                 </Typography>
 
                 {/* Email + Phone */}

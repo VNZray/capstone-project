@@ -5,21 +5,8 @@ import { handleDbError } from "../utils/errorHandler.js";
 // fetch all data
 export async function getAllRoom(request, response) {
   try {
-    const [data] = await db.query("SELECT * FROM room ORDER BY room_number ASC");
-    response.json(data);
-  } catch (error) {
-    handleDbError(error, response);
-  }
-}
-
-// fetch all data
-export async function getAllRoomByStatus(request, response) {
-  const { status } = request.query;
-  try {
-    const [data] = await db.query("SELECT * FROM room WHERE status = ?", [
-      status,
-    ]);
-    response.json(data);
+    const [data] = await db.query("CALL GetAllRooms()");
+    response.json(data[0]);
   } catch (error) {
     handleDbError(error, response);
   }
@@ -29,11 +16,11 @@ export async function getAllRoomByStatus(request, response) {
 export async function getRoomById(request, response) {
   const { id } = request.params;
   try {
-    const [data] = await db.query("SELECT * FROM room WHERE id = ?", [id]);
-    if (data.length === 0) {
+    const [data] = await db.query("CALL GetRoomById(?)", [id]);
+    if (!data[0] || data[0].length === 0) {
       return response.status(404).json({ message: "Room not found" });
     }
-    response.json(data[0]);
+    response.json(data[0][0]);
   } catch (error) {
     handleDbError(error, response);
   }
@@ -43,25 +30,8 @@ export async function getRoomById(request, response) {
 export const getRoomByBusinessId = async (request, response) => {
   const { id } = request.query;
   try {
-    const [data] = await db.query("SELECT * FROM room WHERE business_id = ? ORDER BY id ASC", [
-      id,
-    ]);
-    response.json(data);
-  } catch (error) {
-    return handleDbError(error, response);
-  }
-};
-
-// get data by foreign ID
-export const getRoomByBusinessIdandStatus = async (request, response) => {
-  const { id } = request.params;
-  const { status } = request.query;
-  try {
-    const [data] = await db.query(
-      "SELECT * FROM room WHERE business_id = ? AND status = ?",
-      [id, status]
-    );
-    response.json(data);
+    const [data] = await db.query("CALL GetRoomByBusinessId(?)", [id]);
+    response.json(data[0]);
   } catch (error) {
     return handleDbError(error, response);
   }
@@ -71,34 +41,26 @@ export const getRoomByBusinessIdandStatus = async (request, response) => {
 export async function insertRoom(request, response) {
   try {
     const id = uuidv4();
-    const fields = [
-      "id",
-      "business_id",
-      "room_number",
-      "room_type",
-      "description",
-      "room_price",
-      "room_image",
-      "status",
-      "capacity",
-      "floor",
+    const params = [
+      id,
+      request.body.business_id ?? null,
+      request.body.room_number ?? null,
+      request.body.room_type ?? null,
+      request.body.description ?? null,
+      request.body.room_price ?? null,
+      request.body.room_image ?? null,
+      request.body.status ?? null,
+      request.body.capacity ?? null,
+      request.body.floor ?? null,
     ];
-
-    const values = [id, ...fields.slice(1).map((f) => request.body[f] ?? null)];
-
-    await db.query(
-      `INSERT INTO room (${fields.join(", ")})
-       VALUES (${fields.map(() => "?").join(", ")})`,
-      values
+    const [data] = await db.query(
+      "CALL InsertRoom(?,?,?,?,?,?,?,?,?,?)",
+      params
     );
-
-    const [data] = await db.query("SELECT * FROM room WHERE id = ?", [id]);
-
-    if (data.length === 0) {
+    if (!data[0] || data[0].length === 0) {
       return response.status(404).json({ error: "Inserted row not found" });
     }
-
-    response.json(data[0]);
+    response.json(data[0][0]);
   } catch (error) {
     return handleDbError(error, response);
   }
@@ -107,88 +69,52 @@ export async function insertRoom(request, response) {
 // update data by ID
 export async function updateRoom(request, response) {
   const { id } = request.params;
-
   try {
     // Check if the room exists
-    const [existing] = await db.query("SELECT * FROM room WHERE id = ?", [id]);
-    if (existing.length === 0) {
+    const [existing] = await db.query("CALL GetRoomById(?)", [id]);
+    if (!existing[0] || existing[0].length === 0) {
       return response.status(404).json({ message: "Room not found" });
     }
-
-    // Only update fields provided in request.body
-    const allowedFields = [
-      "business_id",
-      "room_number",
-      "room_type",
-      "description",
-      "room_price",
-      "room_image",
-      "status",
-      "capacity",
-      "floor",
+    const params = [
+      id,
+      request.body.business_id ?? null,
+      request.body.room_number ?? null,
+      request.body.room_type ?? null,
+      request.body.description ?? null,
+      request.body.room_price ?? null,
+      request.body.room_image ?? null,
+      request.body.status ?? null,
+      request.body.capacity ?? null,
+      request.body.floor ?? null,
     ];
-
-    // Filter fields to only those present in request.body
-    const fieldsToUpdate = allowedFields.filter((field) =>
-      Object.prototype.hasOwnProperty.call(request.body, field)
+    const [data] = await db.query(
+      "CALL UpdateRoom(?,?,?,?,?,?,?,?,?,?)",
+      params
     );
-
-    if (fieldsToUpdate.length === 0) {
+    if (!data[0] || data[0].length === 0) {
       return response
-        .status(400)
-        .json({ message: "No valid fields provided for update" });
+        .status(404)
+        .json({ message: "Room not found after update" });
     }
-
-    const values = fieldsToUpdate.map((f) => request.body[f]);
-
-    await db.query(
-      `UPDATE room SET ${fieldsToUpdate
-        .map((f) => `${f} = ?`)
-        .join(", ")} WHERE id = ?`,
-      [...values, id]
-    );
-
-    // Retrieve the updated data
-    const [data] = await db.query("SELECT * FROM room WHERE id = ?", [id]);
     response.json({
       message: "Room updated successfully",
-      ...data[0],
+      ...data[0][0],
     });
   } catch (error) {
     handleDbError(error, response);
   }
 }
 
-// delete data by ID
-export async function deleteRoom(request, response) {
-  const { id } = request.params;
+// Delete room
+export async function deleteRoom(req, res) {
+  const { id } = req.params;
   try {
-    const [data] = await db.query("DELETE FROM room WHERE id = ?", [id]);
-
+    const [data] = await db.query("CALL DeleteRoom(?)", [id]);
     if (data.affectedRows === 0) {
-      return response.status(404).json({ message: "Data not found" });
+      return res.status(404).json({ message: "Room not found" });
     }
-
-    response.json({ message: "Row deleted successfully" });
+    res.json({ message: "Room deleted successfully" });
   } catch (error) {
-    return handleDbError(error, response);
-  }
-}
-
-// join data from two tables
-export async function JoinThreeTables(request, response) {
-  const { id } = request.params;
-  try {
-    const query = `
-      SELECT table_1.table_1 AS table_1_name, table_2.table_2 AS table_2_name, table_3.table_3 AS table_3_name
-      FROM table_3
-      INNER JOIN table_2 ON table_3.table_2_id = table_2.id
-      INNER JOIN table_1 ON table_2.table_1_id = table_1.id
-      WHERE table_3.id = ?
-    `;
-    const [data] = await db.query(query, [id]);
-    response.json(data);
-  } catch (error) {
-    return handleDbError(error, response);
+    return handleDbError(error, res);
   }
 }

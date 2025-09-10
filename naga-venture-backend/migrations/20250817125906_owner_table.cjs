@@ -1,5 +1,3 @@
-// migrations/20250817100000_owner.js
-
 const {
   createOwnerProcedures,
   dropOwnerProcedures,

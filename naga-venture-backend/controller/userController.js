@@ -7,55 +7,64 @@ import { v4 as uuidv4 } from "uuid";
 // Get all users
 export async function getAllUsers(req, res) {
   try {
-    const [results] = await db.query("SELECT * FROM user");
-    res.json(results);
+    const [results] = await db.query("CALL GetAllUsers()");
+    res.json(results[0]);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+}
+
+// Get a single user by id
+export async function getUserById(req, res) {
+  const { id } = req.params;
+  try {
+    // If you want to fetch by tourism_id, you need a procedure for that. Otherwise, use GetUserById
+    const [results] = await db.query("CALL GetUserById(?)", [id]);
+    if (results[0].length === 0)
+      return res.status(404).json({ message: "User not found" });
+    res.json(results[0][0]);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 }
 
 // Get a single user by tourism_id
-export async function getTourismId(req, res) {
+export async function getUserByTourismId(req, res) {
   const { id } = req.params;
   try {
-    const [results] = await db.query(
-      "SELECT * FROM user WHERE tourism_id = ?",
-      [id]
-    );
-    if (results.length === 0)
+    // If you want to fetch by tourism_id, you need a procedure for that. Otherwise, use GetUserById
+    const [results] = await db.query("CALL GetUserByTourismId(?)", [id]);
+    if (results[0].length === 0)
       return res.status(404).json({ message: "User not found" });
-    res.json(results[0]);
+    res.json(results[0][0]);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 }
 
 // Get a single user by tourist_id
-export async function getTouristId(req, res) {
+export async function getUserByTouristId(req, res) {
   const { id } = req.params;
   try {
-    const [results] = await db.query(
-      "SELECT * FROM user WHERE tourist_id = ?",
-      [id]
-    );
-    if (results.length === 0)
+    // If you want to fetch by tourist_id, you need a procedure for that. Otherwise, use GetUserById
+    const [results] = await db.query("CALL GetUserByTouristId(?)", [id]);
+    if (results[0].length === 0)
       return res.status(404).json({ message: "User not found" });
-    res.json(results[0]);
+    res.json(results[0][0]);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 }
 
 // Get a single user by owner_id
-export async function getOwnerId(req, res) {
+export async function getUserByOwnerId(req, res) {
   const { id } = req.params;
   try {
-    const [results] = await db.query("SELECT * FROM user WHERE owner_id = ?", [
-      id,
-    ]);
-    if (results.length === 0)
+    // If you want to fetch by owner_id, you need a procedure for that. Otherwise, use GetUserById
+    const [results] = await db.query("CALL GetUserByOwnerId(?)", [id]);
+    if (results[0].length === 0)
       return res.status(404).json({ message: "User not found" });
-    res.json(results[0]);
+    res.json(results[0][0]);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -65,21 +74,13 @@ export async function getOwnerId(req, res) {
 export async function createUser(request, response) {
   try {
     const id = uuidv4();
-    const fields = [
-      "id",
-      "role",
-      "email",
-      "phone_number",
-      "password",
-      "tourist_id",
-      "owner_id",
-      "tourism_id",
-    ];
-
     // Hash the password
     const hashedPassword = request.body.password
-      ? await bcrypt.hash(request.body.password, 10) // 10 salt rounds
+      ? await bcrypt.hash(request.body.password, 10)
       : null;
+
+    // user_profile is not handled in the original controller, so set to null
+    const user_profile = null;
 
     const values = [
       id,
@@ -87,25 +88,23 @@ export async function createUser(request, response) {
       request.body.email ?? null,
       request.body.phone_number ?? null,
       hashedPassword,
+      user_profile,
       request.body.tourist_id ?? null,
       request.body.owner_id ?? null,
       request.body.tourism_id ?? null,
     ];
-    
-    await db.query(
-      `INSERT INTO user (${fields.join(", ")})
-       VALUES (${fields.map(() => "?").join(", ")})`,
+
+    const [result] = await db.query(
+      "CALL InsertUser(?, ?, ?, ?, ?, ?, ?, ?, ?)",
       values
     );
 
-    // retrieve inserted data
-    const [data] = await db.query("SELECT * FROM user WHERE id = ?", [id]);
-
-    if (data.length === 0) {
-      return response.status(404).json({ erroror: "Inserted row not found" });
+    // result[0] contains the inserted user
+    if (!result[0] || result[0].length === 0) {
+      return response.status(404).json({ error: "Inserted row not found" });
     }
 
-    response.json(data[0]);
+    response.json(result[0][0]);
   } catch (error) {
     return handleDbError(error, response);
   }
@@ -113,11 +112,36 @@ export async function createUser(request, response) {
 
 // Update tourist user
 export async function updateTourist(req, res) {
+  // This should use UpdateUser procedure. You need to fetch all required fields from req.body
   const { id } = req.params;
-  const { name } = req.body;
+  const {
+    role,
+    email,
+    phone_number,
+    password,
+    user_profile,
+    tourist_id,
+    owner_id,
+    tourism_id,
+  } = req.body;
   try {
-    await db.query("UPDATE user SET name = ? WHERE tourist_id = ?", [name, id]);
-    res.json({ message: "User updated successfully" });
+    const hashedPassword = password ? await bcrypt.hash(password, 10) : null;
+    const values = [
+      id,
+      role ?? null,
+      email ?? null,
+      phone_number ?? null,
+      hashedPassword,
+      user_profile ?? null,
+      tourist_id ?? null,
+      owner_id ?? null,
+      tourism_id ?? null,
+    ];
+    const [result] = await db.query(
+      "CALL UpdateUser(?, ?, ?, ?, ?, ?, ?, ?, ?)",
+      values
+    );
+    res.json({ message: "User updated successfully", user: result[0][0] });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -125,11 +149,36 @@ export async function updateTourist(req, res) {
 
 // Update owner user
 export async function updateOwner(req, res) {
+  // This should use UpdateUser procedure. You need to fetch all required fields from req.body
   const { id } = req.params;
-  const { name } = req.body;
+  const {
+    role,
+    email,
+    phone_number,
+    password,
+    user_profile,
+    tourist_id,
+    owner_id,
+    tourism_id,
+  } = req.body;
   try {
-    await db.query("UPDATE user SET name = ? WHERE owner_id = ?", [name, id]);
-    res.json({ message: "User updated successfully" });
+    const hashedPassword = password ? await bcrypt.hash(password, 10) : null;
+    const values = [
+      id,
+      role ?? null,
+      email ?? null,
+      phone_number ?? null,
+      hashedPassword,
+      user_profile ?? null,
+      tourist_id ?? null,
+      owner_id ?? null,
+      tourism_id ?? null,
+    ];
+    const [result] = await db.query(
+      "CALL UpdateUser(?, ?, ?, ?, ?, ?, ?, ?, ?)",
+      values
+    );
+    res.json({ message: "User updated successfully", user: result[0][0] });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -137,11 +186,36 @@ export async function updateOwner(req, res) {
 
 // Update tourism user
 export async function updateTourism(req, res) {
+  // This should use UpdateUser procedure. You need to fetch all required fields from req.body
   const { id } = req.params;
-  const { name } = req.body;
+  const {
+    role,
+    email,
+    phone_number,
+    password,
+    user_profile,
+    tourist_id,
+    owner_id,
+    tourism_id,
+  } = req.body;
   try {
-    await db.query("UPDATE user SET name = ? WHERE tourism_id = ?", [name, id]);
-    res.json({ message: "User updated successfully" });
+    const hashedPassword = password ? await bcrypt.hash(password, 10) : null;
+    const values = [
+      id,
+      role ?? null,
+      email ?? null,
+      phone_number ?? null,
+      hashedPassword,
+      user_profile ?? null,
+      tourist_id ?? null,
+      owner_id ?? null,
+      tourism_id ?? null,
+    ];
+    const [result] = await db.query(
+      "CALL UpdateUser(?, ?, ?, ?, ?, ?, ?, ?, ?)",
+      values
+    );
+    res.json({ message: "User updated successfully", user: result[0][0] });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -151,7 +225,7 @@ export async function updateTourism(req, res) {
 export async function deleteUser(req, res) {
   const { id } = req.params;
   try {
-    await db.query("DELETE FROM user WHERE id = ?", [id]);
+    await db.query("CALL DeleteUser(?)", [id]);
     res.json({ message: "User deleted successfully" });
   } catch (err) {
     res.status(500).json({ error: err.message });
