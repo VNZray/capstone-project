@@ -4,9 +4,7 @@ exports.up = function(knex) {
     table.uuid('tourist_spot_id').notNullable().references('id').inTable('tourist_spots').onDelete('CASCADE');
     table.string('name', 255).notNullable();
     table.text('description').notNullable();
-    table.integer('province_id').notNullable();
-    table.integer('municipality_id').notNullable();
-    table.integer('barangay_id').notNullable();
+    table.integer('address_id').unsigned().notNullable().references('id').inTable('address').onDelete('CASCADE').onUpdate('CASCADE');
     table.decimal('latitude', 10, 8).nullable();
     table.decimal('longitude', 11, 8).nullable();
     table.string('contact_phone', 20).notNullable();
@@ -21,12 +19,10 @@ exports.up = function(knex) {
     table.timestamp('submitted_at').defaultTo(knex.fn.now());
     table.timestamp('reviewed_at').nullable();
 
-  // indexes (match SQL dump)
-  table.index('tourist_spot_id', 'idx_tourist_spot');
-  table.index('type_id', 'idx_type');
-  table.index('province_id', 'idx_province');
-  table.index('municipality_id', 'idx_municipality');
-  table.index('barangay_id', 'idx_barangay');
+    // indexes
+    table.index('tourist_spot_id', 'idx_tourist_spot');
+    table.index('type_id', 'idx_type');
+    table.index('address_id', 'idx_address');
   });
 };
 

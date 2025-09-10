@@ -58,6 +58,7 @@ export const getTouristSpotById = async (request, response) => {
 export const createTouristSpot = async (request, response) => {
   let conn;
   try {
+
     const {
       name,
       description,
@@ -91,6 +92,7 @@ export const createTouristSpot = async (request, response) => {
           "Name, description, province_id, municipality_id, barangay_id, type_id, and category_ids are required",
       });
     }
+
 
     // Validate categories and their relation to type
     const placeholders = category_ids.map(() => '?').join(',');
@@ -146,19 +148,25 @@ export const createTouristSpot = async (request, response) => {
         });
     }
 
+    // Insert into address table and get address_id
+    const [addressResult] = await db.query(
+      "INSERT INTO address (province_id, municipality_id, barangay_id) VALUES (?, ?, ?)",
+      [province_id, municipality_id, barangay_id]
+    );
+    const address_id = addressResult.insertId;
+
     // Start transaction for composing categories and schedules around procedure-created record
     conn = await db.getConnection();
     await conn.beginTransaction();
 
+
     // Create main tourist spot via procedure to comply with no inline SQL
     const [insertRes] = await conn.query(
-      "CALL InsertTouristSpot(?,?,?,?,?,?,?,?,?,?,?,?)",
+      "CALL InsertTouristSpot(?,?,?,?,?,?,?,?,?,?)",
       [
         name,
         description,
-        province_id,
-        municipality_id,
-        barangay_id,
+        address_id,
         latitude ?? null,
         longitude ?? null,
         contact_phone ?? null,

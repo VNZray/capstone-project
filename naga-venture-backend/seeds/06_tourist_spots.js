@@ -3,19 +3,33 @@
  * @returns { Promise<void> }
  */
 export async function seed(knex) {
+
   // Deletes ALL existing entries
   await knex("tourist_spot_categories").del();
   await knex("tourist_spots").del();
+  await knex("address").del();
 
-  // Insert tourist spots first
+  // Insert addresses and get their IDs
+  const addressInputs = [
+    { province_id: 20, municipality_id: 24, barangay_id: 1 },
+    { province_id: 20, municipality_id: 24, barangay_id: 19 },
+    { province_id: 20, municipality_id: 24, barangay_id: 11 },
+    { province_id: 20, municipality_id: 24, barangay_id: 14 },
+    { province_id: 20, municipality_id: 24, barangay_id: 15 },
+  ];
+  const addressIds = [];
+  for (const addr of addressInputs) {
+    const [id] = await knex("address").insert(addr).returning("id");
+    addressIds.push(typeof id === 'object' && id.id ? id.id : id);
+  }
+
+  // Insert tourist spots with address_id
   const spots = [
     {
       id: '550e8400-e29b-41d4-a716-446655440001',
       name: "Naga Metropolitan Cathedral",
       description: "The Naga Metropolitan Cathedral, also known as Cathedral of St. John the Evangelist, is a beautiful historical church located in the heart of Naga City. Built in the 18th century, it serves as the seat of the Archdiocese of Caceres and is a significant religious landmark in the Bicol region.",
-      province_id: 20,
-      municipality_id: 24,
-      barangay_id: 1,
+      address_id: addressIds[0],
       latitude: 13.6218,
       longitude: 123.1948,
       contact_phone: "+63 54 473 2175",
@@ -30,9 +44,7 @@ export async function seed(knex) {
       id: '550e8400-e29b-41d4-a716-446655440002',
       name: "Our Lady of Peñafrancia Shrine",
       description: "A sacred pilgrimage site dedicated to Our Lady of Peñafrancia, the patroness of the Bicol Region. The shrine attracts thousands of devotees annually, especially during the Peñafrancia Festival in September. The beautiful basilica houses the miraculous image of the Virgin Mary.",
-      province_id: 20,
-      municipality_id: 24,
-      barangay_id: 19,
+      address_id: addressIds[1],
       latitude: 13.6156,
       longitude: 123.1820,
       contact_phone: "+63 54 473 2845",
@@ -47,9 +59,7 @@ export async function seed(knex) {
       id: '550e8400-e29b-41d4-a716-446655440003',
       name: "Plaza Rizal Naga",
       description: "The central plaza of Naga City, dedicated to the national hero Dr. Jose Rizal. A popular gathering place for locals and tourists, featuring a monument of Rizal, beautiful landscaping, and surrounded by important government buildings and commercial establishments.",
-      province_id: 20,
-      municipality_id: 24,
-      barangay_id: 11,
+      address_id: addressIds[2],
       latitude: 13.6190,
       longitude: 123.1950,
       contact_phone: "+63 54 473 1234",
@@ -64,9 +74,7 @@ export async function seed(knex) {
       id: '550e8400-e29b-41d4-a716-446655440004',
       name: "Naga City Museum",
       description: "A cultural heritage museum showcasing the rich history and culture of Naga City and the Bicol region. Features artifacts, historical documents, artworks, and interactive exhibits that tell the story of the city from pre-colonial times to the present.",
-      province_id: 20,
-      municipality_id: 24,
-      barangay_id: 14,
+      address_id: addressIds[3],
       latitude: 13.6210,
       longitude: 123.1955,
       contact_phone: "+63 54 473 5678",
@@ -81,9 +89,7 @@ export async function seed(knex) {
       id: '550e8400-e29b-41d4-a716-446655440005',
       name: "Mount Isarog National Park",
       description: "A biodiversity hotspot and protected area featuring the dormant Mount Isarog volcano. The park offers hiking trails, waterfalls, hot springs, and diverse wildlife. Popular for eco-tourism, bird watching, and adventure activities.",
-      province_id: 20,
-      municipality_id: 28,
-      barangay_id: 15,
+      address_id: addressIds[4],
       latitude: 13.6583,
       longitude: 123.3667,
       contact_phone: "+63 54 477 9876",

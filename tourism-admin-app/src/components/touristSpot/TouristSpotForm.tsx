@@ -171,12 +171,33 @@ const TouristSpotForm: React.FC<TouristSpotFormProps> = ({
 
   useEffect(() => {
     if (mode === "edit" && initialData) {
+      // Try to get IDs from initialData, fallback to lookup by name if only names are present
+      let province_id = initialData.province_id;
+      let municipality_id = initialData.municipality_id;
+      let barangay_id = initialData.barangay_id;
+
+      // If IDs are missing, try to look up by name from loaded options
+      if ((!province_id || !municipality_id || !barangay_id) && provinces.length && municipalities.length && barangays.length) {
+        if (!province_id && initialData.province) {
+          const found = provinces.find(p => p.province === initialData.province);
+          province_id = found ? found.id : 0;
+        }
+        if (!municipality_id && initialData.municipality) {
+          const found = municipalities.find(m => m.municipality === initialData.municipality);
+          municipality_id = found ? found.id : 0;
+        }
+        if (!barangay_id && initialData.barangay) {
+          const found = barangays.find(b => b.barangay === initialData.barangay);
+          barangay_id = found ? found.id : 0;
+        }
+      }
+
       setFormData({
         name: initialData.name,
         description: initialData.description,
-        province_id: initialData.province_id.toString(),
-        municipality_id: initialData.municipality_id.toString(),
-        barangay_id: initialData.barangay_id.toString(),
+        province_id: province_id !== undefined ? province_id.toString() : "",
+        municipality_id: municipality_id !== undefined ? municipality_id.toString() : "",
+        barangay_id: barangay_id !== undefined ? barangay_id.toString() : "",
         latitude: initialData.latitude?.toString() || "",
         longitude: initialData.longitude?.toString() || "",
         contact_phone: initialData.contact_phone,
@@ -235,7 +256,7 @@ const TouristSpotForm: React.FC<TouristSpotFormProps> = ({
       );
       setCurrentStep(0);
     }
-  }, [mode, initialData, isVisible, daysOfWeek]);
+  }, [mode, initialData, isVisible, daysOfWeek, provinces, municipalities, barangays]);
 
   const handleInputChange = (
     e: React.ChangeEvent<

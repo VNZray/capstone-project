@@ -4,6 +4,7 @@ import { handleDbError } from "../../utils/errorHandler.js";
 export const submitEditRequest = async (req, res) => {
   let conn;
   try {
+
     const { id } = req.params;
     const {
       name, description, province_id, municipality_id, barangay_id,
@@ -83,16 +84,22 @@ export const submitEditRequest = async (req, res) => {
         message: "There is already a pending edit request for this tourist spot.",
       });
 
+
+    // Insert into address table and get address_id
+    const [addressResult] = await db.query(
+      "INSERT INTO address (province_id, municipality_id, barangay_id) VALUES (?, ?, ?)",
+      [province_id, municipality_id, barangay_id]
+    );
+    const address_id = addressResult.insertId;
+
     // Use provided status or default to pending for edit request record
     const statusToSave = typeof spot_status !== 'undefined' && spot_status !== null ? spot_status : 'pending';
     const featuredToSave = typeof is_featured !== 'undefined' && is_featured !== null ? is_featured : 0;
-  const [submitRes] = await db.query("CALL SubmitTouristSpotEditRequest(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)", [
+    const [submitRes] = await db.query("CALL SubmitTouristSpotEditRequest(?,?,?,?,?,?,?,?,?,?,?,?,?)", [
       id,
       name,
       description,
-      province_id,
-      municipality_id,
-      barangay_id,
+      address_id,
       latitude ?? null,
       longitude ?? null,
       contact_phone,

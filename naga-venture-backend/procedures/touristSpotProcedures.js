@@ -29,6 +29,7 @@ async function createTouristSpotProcedures(knex) {
   // ================= READ PROCEDURES =================
 
   // Get all tourist spots with lookups + categories + images (3 result sets)
+
   await knex.raw(`
     CREATE PROCEDURE GetAllTouristSpots()
     BEGIN
@@ -40,9 +41,10 @@ async function createTouristSpotProcedures(knex) {
         b.barangay AS barangay
       FROM tourist_spots ts
       LEFT JOIN type t ON ts.type_id = t.id
-      LEFT JOIN province p ON ts.province_id = p.id
-      LEFT JOIN municipality m ON ts.municipality_id = m.id
-      LEFT JOIN barangay b ON ts.barangay_id = b.id
+      LEFT JOIN address a ON ts.address_id = a.id
+      LEFT JOIN province p ON a.province_id = p.id
+      LEFT JOIN municipality m ON a.municipality_id = m.id
+      LEFT JOIN barangay b ON a.barangay_id = b.id
       WHERE ts.spot_status IN ('active','inactive')
       ORDER BY ts.name ASC;
 
@@ -66,6 +68,7 @@ async function createTouristSpotProcedures(knex) {
   `);
 
   // Get a single tourist spot + categories + images
+
   await knex.raw(`
     CREATE PROCEDURE GetTouristSpotById(IN p_id CHAR(36))
     BEGIN
@@ -77,9 +80,10 @@ async function createTouristSpotProcedures(knex) {
         b.barangay AS barangay
       FROM tourist_spots ts
       LEFT JOIN type t ON ts.type_id = t.id
-      LEFT JOIN province p ON ts.province_id = p.id
-      LEFT JOIN municipality m ON ts.municipality_id = m.id
-      LEFT JOIN barangay b ON ts.barangay_id = b.id
+      LEFT JOIN address a ON ts.address_id = a.id
+      LEFT JOIN province p ON a.province_id = p.id
+      LEFT JOIN municipality m ON a.municipality_id = m.id
+      LEFT JOIN barangay b ON a.barangay_id = b.id
       WHERE ts.id = p_id;
 
       SELECT c.id, c.category, c.type_id 
@@ -271,27 +275,25 @@ async function createTouristSpotProcedures(knex) {
   // Create & Update tourist spot (main record)
   await knex.raw(`
     CREATE PROCEDURE InsertTouristSpot(
-      IN p_name VARCHAR(255),
-      IN p_description TEXT,
-      IN p_province_id INT,
-      IN p_municipality_id INT,
-      IN p_barangay_id INT,
-      IN p_latitude DECIMAL(10,8),
-      IN p_longitude DECIMAL(11,8),
-      IN p_contact_phone VARCHAR(20),
-      IN p_contact_email VARCHAR(255),
-      IN p_website VARCHAR(255),
-      IN p_entry_fee DECIMAL(10,2),
-      IN p_type_id INT
+  IN p_name VARCHAR(255),
+  IN p_description TEXT,
+  IN p_address_id INT,
+  IN p_latitude DECIMAL(10,8),
+  IN p_longitude DECIMAL(11,8),
+  IN p_contact_phone VARCHAR(20),
+  IN p_contact_email VARCHAR(255),
+  IN p_website VARCHAR(255),
+  IN p_entry_fee DECIMAL(10,2),
+  IN p_type_id INT
     )
     BEGIN
       SET @newId = UUID();
       INSERT INTO tourist_spots (
-        id, name, description, province_id, municipality_id, barangay_id,
+        id, name, description, address_id,
         latitude, longitude, contact_phone, contact_email, website, entry_fee,
         type_id, spot_status
       ) VALUES (
-        @newId, p_name, p_description, p_province_id, p_municipality_id, p_barangay_id,
+        @newId, p_name, p_description, p_address_id,
         p_latitude, p_longitude, p_contact_phone, p_contact_email, p_website, p_entry_fee,
         p_type_id, 'pending'
       );
@@ -301,27 +303,23 @@ async function createTouristSpotProcedures(knex) {
 
   await knex.raw(`
     CREATE PROCEDURE UpdateTouristSpot(
-      IN p_id CHAR(36),
-      IN p_name VARCHAR(255),
-      IN p_description TEXT,
-      IN p_province_id INT,
-      IN p_municipality_id INT,
-      IN p_barangay_id INT,
-      IN p_latitude DECIMAL(10,8),
-      IN p_longitude DECIMAL(11,8),
-      IN p_contact_phone VARCHAR(20),
-      IN p_contact_email VARCHAR(255),
-      IN p_website VARCHAR(255),
-      IN p_entry_fee DECIMAL(10,2),
-      IN p_type_id INT
+  IN p_id CHAR(36),
+  IN p_name VARCHAR(255),
+  IN p_description TEXT,
+  IN p_address_id INT,
+  IN p_latitude DECIMAL(10,8),
+  IN p_longitude DECIMAL(11,8),
+  IN p_contact_phone VARCHAR(20),
+  IN p_contact_email VARCHAR(255),
+  IN p_website VARCHAR(255),
+  IN p_entry_fee DECIMAL(10,2),
+  IN p_type_id INT
     )
     BEGIN
       UPDATE tourist_spots SET
         name = p_name,
         description = p_description,
-        province_id = p_province_id,
-        municipality_id = p_municipality_id,
-        barangay_id = p_barangay_id,
+        address_id = p_address_id,
         latitude = p_latitude,
         longitude = p_longitude,
         contact_phone = p_contact_phone,
@@ -422,30 +420,28 @@ async function createTouristSpotEditProcedures(knex) {
 
   await knex.raw(`
     CREATE PROCEDURE SubmitTouristSpotEditRequest(
-      IN p_tourist_spot_id CHAR(36),
-      IN p_name VARCHAR(255),
-      IN p_description TEXT,
-      IN p_province_id INT,
-      IN p_municipality_id INT,
-      IN p_barangay_id INT,
-      IN p_latitude DECIMAL(10,8),
-      IN p_longitude DECIMAL(11,8),
-      IN p_contact_phone VARCHAR(20),
-      IN p_contact_email VARCHAR(255),
-      IN p_website VARCHAR(255),
-      IN p_entry_fee DECIMAL(10,2),
-      IN p_spot_status ENUM('pending','active','inactive'),
-      IN p_is_featured BOOLEAN,
-      IN p_type_id INT
+  IN p_tourist_spot_id CHAR(36),
+  IN p_name VARCHAR(255),
+  IN p_description TEXT,
+  IN p_address_id INT,
+  IN p_latitude DECIMAL(10,8),
+  IN p_longitude DECIMAL(11,8),
+  IN p_contact_phone VARCHAR(20),
+  IN p_contact_email VARCHAR(255),
+  IN p_website VARCHAR(255),
+  IN p_entry_fee DECIMAL(10,2),
+  IN p_spot_status ENUM('pending','active','inactive'),
+  IN p_is_featured BOOLEAN,
+  IN p_type_id INT
     )
     BEGIN
       SET @editId = UUID();
       INSERT INTO tourist_spot_edits (
-        id, tourist_spot_id, name, description, province_id, municipality_id, barangay_id,
+        id, tourist_spot_id, name, description, address_id,
         latitude, longitude, contact_phone, contact_email, website, entry_fee,
         spot_status, is_featured, type_id, approval_status
       ) VALUES (
-        @editId, p_tourist_spot_id, p_name, p_description, p_province_id, p_municipality_id, p_barangay_id,
+        @editId, p_tourist_spot_id, p_name, p_description, p_address_id,
         p_latitude, p_longitude, p_contact_phone, p_contact_email, p_website, p_entry_fee,
         p_spot_status, p_is_featured, p_type_id, 'pending'
       );
@@ -514,13 +510,15 @@ async function createTouristSpotApprovalProcedures(knex) {
         ts.spot_status AS original_status
       FROM tourist_spot_edits tse
       JOIN type t ON tse.type_id = t.id
-      JOIN province p ON tse.province_id = p.id
-      JOIN municipality m ON tse.municipality_id = m.id
-      JOIN barangay b ON tse.barangay_id = b.id
+      JOIN address a ON tse.address_id = a.id
+      JOIN province p ON a.province_id = p.id
+      JOIN municipality m ON a.municipality_id = m.id
+      JOIN barangay b ON a.barangay_id = b.id
       JOIN tourist_spots ts ON tse.tourist_spot_id = ts.id
-      LEFT JOIN province op ON ts.province_id = op.id
-      LEFT JOIN municipality om ON ts.municipality_id = om.id
-      LEFT JOIN barangay ob ON ts.barangay_id = ob.id
+      LEFT JOIN address oa ON ts.address_id = oa.id
+      LEFT JOIN province op ON oa.province_id = op.id
+      LEFT JOIN municipality om ON oa.municipality_id = om.id
+      LEFT JOIN barangay ob ON oa.barangay_id = ob.id
       LEFT JOIN type ot ON ts.type_id = ot.id
       WHERE tse.approval_status = 'pending'
       ORDER BY tse.submitted_at DESC;
@@ -544,15 +542,16 @@ async function createTouristSpotApprovalProcedures(knex) {
     CREATE PROCEDURE GetPendingTouristSpots()
     BEGIN
       SELECT 
-        ts.id, ts.name, ts.description, ts.province_id, ts.municipality_id, ts.barangay_id,
+        ts.id, ts.name, ts.description, ts.address_id,
         ts.latitude, ts.longitude, ts.contact_phone, ts.contact_email, ts.website, ts.entry_fee,
         ts.spot_status, ts.is_featured, t.type, ts.type_id,
         ts.created_at, ts.updated_at, p.province, m.municipality, b.barangay
       FROM tourist_spots ts
       JOIN type t ON ts.type_id = t.id
-      JOIN province p ON ts.province_id = p.id
-      JOIN municipality m ON ts.municipality_id = m.id
-      JOIN barangay b ON ts.barangay_id = b.id
+      JOIN address a ON ts.address_id = a.id
+      JOIN province p ON a.province_id = p.id
+      JOIN municipality m ON a.municipality_id = m.id
+      JOIN barangay b ON a.barangay_id = b.id
       WHERE ts.spot_status = 'pending'
       ORDER BY ts.created_at DESC;
 
@@ -602,9 +601,7 @@ async function createTouristSpotApprovalProcedures(knex) {
           JOIN tourist_spot_edits tse ON tse.id = p_edit_id AND ts.id = tse.tourist_spot_id
         SET ts.name = tse.name,
             ts.description = tse.description,
-            ts.province_id = tse.province_id,
-            ts.municipality_id = tse.municipality_id,
-            ts.barangay_id = tse.barangay_id,
+            ts.address_id = tse.address_id,
             ts.latitude = tse.latitude,
             ts.longitude = tse.longitude,
             ts.contact_phone = tse.contact_phone,
