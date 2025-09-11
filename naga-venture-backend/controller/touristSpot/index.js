@@ -3,7 +3,6 @@ export {
   getAllTouristSpots,
   getTouristSpotById,
   createTouristSpot,
-  updateTouristSpot
 } from './touristSpotController.js';
 
 // Schedule management

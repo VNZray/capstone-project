@@ -42,7 +42,4 @@ router.post('/', touristSpotController.createTouristSpot);
 // Submit edit request for existing tourist spot
 router.put('/:id', touristSpotController.submitEditRequest);
 
-// Update tourist spot directly (admin only)
-router.patch('/:id', touristSpotController.updateTouristSpot);
-
 export default router;
