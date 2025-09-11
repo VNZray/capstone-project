@@ -249,7 +249,7 @@ const Step1: React.FC<Props> = ({
                 />
               </FormControl>
 
-              <FormControl>
+              <div>
                 <FormLabel>Business Hours</FormLabel>
 
                 {businessHours.map((hour, index) => (
@@ -310,7 +310,7 @@ const Step1: React.FC<Props> = ({
                     />
                   </Container>
                 ))}
-              </FormControl>
+              </div>
             </Container>
           </Grid>
           <Grid xs={6}>

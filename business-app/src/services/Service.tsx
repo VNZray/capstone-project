@@ -53,7 +53,7 @@ export const getJoinedData = async (directory: string, table: string) => {
 
 export const getDataById = async (table: string, id: string | number) => {
   try {
-    const response = await axios.get(`${api}/${table}?id=${id}`);
+    const response = await axios.get(`${api}/${table}/${id}`);
     return response.data;
   } catch (error) {
     console.error("Get by ID failed:", error);

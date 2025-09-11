@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import Loading from "@/src/components/Loading";
 import PageContainer from "@/src/components/PageContainer";
 import Text from "@/src/components/Text";
 import { useAuth } from "@/src/context/AuthContext";

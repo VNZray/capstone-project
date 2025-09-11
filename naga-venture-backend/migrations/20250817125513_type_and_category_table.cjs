@@ -1,3 +1,8 @@
+const {
+  createTypesAndCategoryProcedures,
+  dropTypesAndCategoryProcedures,
+} = require("../procedures/typesAndCategoryProcedures");
+
 exports.up = async function (knex) {
   await knex.schema.createTable("type", (table) => {
     table.increments("id").primary(); 
@@ -17,9 +22,12 @@ exports.up = async function (knex) {
       .onDelete("CASCADE")
       .onUpdate("CASCADE");
   });
+
+  await createTypesAndCategoryProcedures(knex);
 };
 
 exports.down = async function (knex) {
   await knex.schema.dropTableIfExists("category");
   await knex.schema.dropTableIfExists("type");
+  await dropTypesAndCategoryProcedures(knex);
 };
