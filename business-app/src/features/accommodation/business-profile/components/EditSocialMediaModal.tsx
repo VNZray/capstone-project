@@ -9,7 +9,7 @@ import {
   FormControl,
   FormLabel,
 } from "@mui/joy";
-import { updateData } from "@/src/api_function";
+import { updateData } from "@/src/services/Service";
 import CardHeader from "@/src/components/CardHeader";
 import { Facebook, Instagram } from "@mui/icons-material";
 import { Globe, X } from "lucide-react";

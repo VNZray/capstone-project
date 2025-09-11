@@ -34,7 +34,7 @@ const Step7: React.FC<Props> = ({
   addressData,
 }) => {
   const { address } = useAddress(addressData?.barangay_id, addressData?.municipality_id, addressData?.province_id);
-  const { categoryAndType } = useCategoryAndType(data?.business_type_id);
+  const { category, type } = useCategoryAndType(data?.business_type_id, data?.business_category_id);
 
   const InfoRow = ({
     label,
@@ -146,7 +146,7 @@ const Step7: React.FC<Props> = ({
                   startDecorator={<PlaceOutlined fontSize="small" />}
                 >
                   {address?.province_name}, {address?.municipality_name},{" "}
-                  {address?.barangay_name || "-"}
+                  {address?.barangay_name}
                 </Typography>
 
                 {/* Email + Phone */}
@@ -173,8 +173,8 @@ const Step7: React.FC<Props> = ({
           icon={<PersonOutline color="primary" />}
         >
           <InfoRow label="Business Name" value={data.business_name} />
-          <InfoRow label="Type" value={categoryAndType?.type_name} />
-          <InfoRow label="Category" value={categoryAndType?.category_name} />
+          <InfoRow label="Type" value={category?.category} />
+          <InfoRow label="Category" value={type?.type} />
         </Section>
 
         {/* CONTACT */}

@@ -18,7 +18,7 @@ import AddRoomModal from "./components/AddRoomModal";
 import RoomCard from "./components/RoomCard";
 type Status = "All" | "Available" | "Occupied" | "Maintenance";
 import { useBusiness } from "@/src/context/BusinessContext";
-import { getData } from "@/src/api_function";
+import { getData } from "@/src/services/Service";
 import type { Room } from "@/src/types/Business";
 import { useRoom } from "@/src/context/RoomContext";
 import placeholderImage from "@/src/assets/images/placeholder-image.png";

@@ -4,6 +4,7 @@
 export async function seed(knex) {
   // Inserts seed entries
   await knex("barangay").insert([
+    // Naga City
     { id: 1, barangay: "Abella", municipality_id: 24 },
     { id: 2, barangay: "Bagumbayan Norte", municipality_id: 24 },
     { id: 3, barangay: "Bagumbayan Sur", municipality_id: 24 },
@@ -32,5 +33,12 @@ export async function seed(knex) {
     { id: 26, barangay: "Tinago", municipality_id: 24 },
     { id: 27, barangay: "Triangulo", municipality_id: 24 },
     { id: 28, barangay: "Paniman", municipality_id: 11 },
+
+    // Caramoan
+    { id: 29, barangay: "Paniman", municipality_id: 20 },
+    { id: 30, barangay: "Ili", municipality_id: 20 },
+    { id: 31, barangay: "Terogo", municipality_id: 20 },
+    { id: 32, barangay: "Ilawod", municipality_id: 20 },
+    { id: 33, barangay: "Lubas", municipality_id: 20 },
   ]);
 }

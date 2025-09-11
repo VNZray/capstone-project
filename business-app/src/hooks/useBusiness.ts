@@ -1,7 +1,7 @@
 // src/hooks/useBusinessBasics.ts
 import { useEffect, useState } from "react";
 import axios from "axios";
-import { supabase } from "@/src/utils/supabase";
+import { supabase } from "@/src/lib/supabase";
 import type { Business } from "@/src/types/Business";
 
 type BusinessCategory = { id: number; category: string };

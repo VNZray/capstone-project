@@ -42,7 +42,7 @@ export default function Header(): React.JSX.Element {
     <AppBar position="static" sx={{ backgroundColor: "#0A1B47", padding: 1 }}>
       <Toolbar sx={{ display: "flex", justifyContent: "space-between", padding: 0 }}>
         {/* Left: Logo + Title */}
-        <Typography startDecorator={<img src={logo} alt="Logo" style={{ width: "40px", height: "40px", color: colors.white }} />} level="title-lg">
+        <Typography textColor={colors.white} startDecorator={<img src={logo} alt="Logo" style={{ width: "40px", height: "40px" }} />} level="title-lg">
           City Venture
         </Typography>
 

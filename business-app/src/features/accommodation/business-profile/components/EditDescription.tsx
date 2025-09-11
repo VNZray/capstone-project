@@ -8,7 +8,7 @@ import {
   Button,
   Textarea,
 } from "@mui/joy";
-import { updateData } from "@/src/api_function";
+import { updateData } from "@/src/services/Service";
 import CardHeader from "@/src/components/CardHeader";
 
 interface EditDescriptionModalProps {

@@ -51,21 +51,12 @@ export const RoomProvider: React.FC<RoomProviderProps> = ({ children }) => {
   }, []);
 
   /** Fetch room details from API */
-const fetchRoom = useCallback(async () => {
-  if (!selectedRoomId) return;
-  setLoading(true);
-  try {
+  const fetchRoom = useCallback(async () => {
+    if (!selectedRoomId) return;
+    setLoading(true);
     const data = await fetchRoomDetails(selectedRoomId);
-    console.log("Fetched Room Details:", data);
     setRoomDetails(data);
-  } catch (error) {
-    console.error("Failed to fetch room:", error);
-    setRoomDetails(null);
-  } finally {
-    setLoading(false);
-  }
-}, [selectedRoomId]);
-
+  }, [selectedRoomId]);
 
   /** Fetch when ID changes */
   useEffect(() => {

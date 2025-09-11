@@ -24,7 +24,7 @@ export default function Sidebar(): React.ReactElement {
   return (
     <aside className="sidebar">
       <Container background="transparent" direction="row" align="center">
-        <Typography startDecorator={<img src={logo} alt="Logo" style={{ width: "40px", height: "40px",  color: colors.white }} />} level="title-lg">
+        <Typography textColor={colors.white} startDecorator={<img src={logo} alt="Logo" style={{ width: "40px", height: "40px" }} />} level="title-lg">
           City Venture
         </Typography>
       </Container>

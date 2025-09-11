@@ -14,7 +14,7 @@ import {
   deleteData,
   getData,
   insertData,
-} from "@/src/api_function";
+} from "@/src/services/Service";
 import CardHeader from "@/src/components/CardHeader";
 import type { Amenity } from "@/src/types/Amenity";
 interface EditBusinessModalProps {
