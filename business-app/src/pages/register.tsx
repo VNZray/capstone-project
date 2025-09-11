@@ -14,6 +14,7 @@ import {
 import axios from "axios";
 import api from "../services/api";
 import { insertOwner } from "@/src/services/OwnerService";
+import { insertData } from "../services/Service";
 
 const Register = () => {
   const navigate = useNavigate();
@@ -35,20 +36,19 @@ const Register = () => {
     phone_number: phoneNumber,
     business_type: businessType || "",
     age: "25",
-    barangay_id: 6,
-    municipality_id: 24,
-    province_id: 20,
     owner_profile: "",
     gender: "Male",
     birthday: "2000-01-01",
+    address_id: null,
   };
 
-  const newUser = {
-    email: email,
-    phone_number: phoneNumber,
-    role: "Owner",
-    password: password,
+  const newAddress = {
+    barangay: 6,
+    municipality: 24,
+    province: 20,
   };
+
+
 
   const handleBusinessTypeChange = (type: BusinessType) => {
     if (businessType === type) {
@@ -116,6 +116,10 @@ const Register = () => {
     if (!validateForm()) return;
 
     try {
+
+      // insert address first
+      const addressRes = await insertData(newAddress, "address");
+      const addressId = addressRes.id;
       // Create Owner
       const ownerResponse = await insertOwner(newOwner);
       const ownerId = ownerResponse.id;
@@ -129,6 +133,7 @@ const Register = () => {
         password: password.trim(),
         role: "Owner",
         owner_id: ownerId,
+        address_id: addressId,
       });
 
       const userId = userResponse.data?.id;

@@ -18,7 +18,7 @@ import AddRoomModal from "./components/AddRoomModal";
 import RoomCard from "./components/RoomCard";
 type Status = "All" | "Available" | "Occupied" | "Maintenance";
 import { useBusiness } from "@/src/context/BusinessContext";
-import { getData } from "@/src/api_function";
+import { getData } from "@/src/services/Service";
 import type { Room } from "@/src/types/Business";
 import { useRoom } from "@/src/context/RoomContext";
 import placeholderImage from "@/src/assets/images/placeholder-image.png";
@@ -52,8 +52,8 @@ const RoomPage = () => {
   // Filter rooms dynamically
   const filteredRooms = rooms.filter((room) => {
     const matchesSearch =
-      room.room_number.toLowerCase().includes(search.toLowerCase()) ||
-      room.room_type.toLowerCase().includes(search.toLowerCase());
+      room.room_number?.toLowerCase().includes(search.toLowerCase()) ||
+      room.room_type?.toLowerCase().includes(search.toLowerCase());
 
     const matchesStatus = status === "All" ? true : room.status === status;
 
@@ -309,17 +309,17 @@ const calcPercentage = (count: number) => {
         >
           {filteredRooms.map((room) => (
             <RoomCard
-              roomType={room.room_type}
+              roomType={room.room_type!}
               capacity={room.capacity}
               onDeleted={() => fetchRooms()}
               id={room.id}
               key={room.id}
               image={room.room_image || placeholderImage}
-              status={room.status}
-              floor={room.floor}
-              roomNumber={room.room_number}
-              type={room.room_type}
-              price={room.room_price}
+              status={room.status!}
+              floor={room.floor!}
+              roomNumber={room.room_number!}
+              type={room.room_type!}
+              price={room.room_price!}
               guests={2}
               amenities={[]}
               onUpdate={() => {

@@ -93,26 +93,26 @@ async function createBusinessProcedures(knex) {
     )
     BEGIN
       UPDATE business SET
-        business_name = p_business_name,
-        description = p_description,
-        min_price = p_min_price,
-        max_price = p_max_price,
-        email = p_email,
-        phone_number = p_phone_number,
-        business_category_id = p_business_category_id,
-        business_type_id = p_business_type_id,
-        address_id = p_address_id,
-        address = p_address,
-        owner_id = p_owner_id,
-        status = p_status,
-        business_image = p_business_image,
-        latitude = p_latitude,
-        longitude = p_longitude,
-        x_url = p_x_url,
-        website_url = p_website_url,
-        facebook_url = p_facebook_url,
-        instagram_url = p_instagram_url,
-        hasBooking = p_hasBooking
+        business_name = IFNULL(p_business_name, business_name),
+        description = IFNULL(p_description, description),
+        min_price = IFNULL(p_min_price, min_price),
+        max_price = IFNULL(p_max_price, max_price),
+        email = IFNULL(p_email, email),
+        phone_number = IFNULL(p_phone_number, phone_number),
+        business_category_id = IFNULL(p_business_category_id, business_category_id),
+        business_type_id = IFNULL(p_business_type_id, business_type_id),
+        address_id = IFNULL(p_address_id, address_id),
+        address = IFNULL(p_address, address),
+        owner_id = IFNULL(p_owner_id, owner_id),
+        status = IFNULL(p_status, status),
+        business_image = IFNULL(p_business_image, business_image),
+        latitude = IFNULL(p_latitude, latitude),
+        longitude = IFNULL(p_longitude, longitude),
+        x_url = IFNULL(p_x_url, x_url),
+        website_url = IFNULL(p_website_url, website_url),
+        facebook_url = IFNULL(p_facebook_url, facebook_url),
+        instagram_url = IFNULL(p_instagram_url, instagram_url),
+        hasBooking = IFNULL(p_hasBooking, hasBooking)
       WHERE id = p_id;
 
       SELECT * FROM business WHERE id = p_id;

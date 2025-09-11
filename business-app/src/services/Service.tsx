@@ -11,7 +11,7 @@ export const insertData = async (data: any, table: string) => {
   }
 };
 
-export const updateData = async (id: string, data: any, table: string) => {
+export const updateData = async (id: string | number, data: any, table: string) => {
   try {
     const response = await axios.put(`${api}/${table}/${id}`, data);
     return response.data;
@@ -21,7 +21,7 @@ export const updateData = async (id: string, data: any, table: string) => {
   }
 };
 
-export const deleteData = async (id: string, table: string) => {
+export const deleteData = async (id: string | number, table: string) => {
   try {
     const response = await axios.delete(`${api}/${table}/${id}`);
     return response.data;
@@ -51,9 +51,9 @@ export const getJoinedData = async (directory: string, table: string) => {
   }
 };
 
-export const getDataById = async (table: string, id: string) => {
+export const getDataById = async (table: string, id: string | number) => {
   try {
-    const response = await axios.get(`${api}/${table}?id=${id}`);
+    const response = await axios.get(`${api}/${table}/${id}`);
     return response.data;
   } catch (error) {
     console.error("Get by ID failed:", error);
@@ -61,7 +61,7 @@ export const getDataById = async (table: string, id: string) => {
   }
 };
 
-export const getDataByForeignId = async (table: string, id: string) => {
+export const getDataByForeignId = async (table: string, id: string | number) => {
   try {
     const response = await axios.get(`${api}/${table}/${id}`);
     return response.data;

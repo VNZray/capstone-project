@@ -40,3 +40,18 @@ export async function UploadPermit(request, response) {
     return handleDbError(error, response);
   }
 }
+
+export async function getPermitByBusinessId(request, response) {
+  const { business_id } = request.params;
+  try {
+    const [data] = await db.query("SELECT * FROM permit WHERE business_id = ?", [business_id]); 
+    if (!data || data.length === 0) {
+      return response.status(404).json({ message: "No permits found for this business" });
+    }
+    response.json(data);
+  } catch (error) {
+    return handleDbError(error, response);
+  }
+}
+
+

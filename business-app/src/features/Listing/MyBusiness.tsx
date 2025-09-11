@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import Loading from "@/src/components/Loading";
 import PageContainer from "@/src/components/PageContainer";
 import Text from "@/src/components/Text";
 import { useAuth } from "@/src/context/AuthContext";
@@ -14,24 +13,23 @@ import { colors } from "@/src/utils/Colors";
 import { Button } from "@mui/joy";
 import { Add } from "@mui/icons-material";
 import Grid from "@mui/joy/Grid";
-import { getData, getDataByForeignId } from "@/src/api_function";
 
 const MyBusiness = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { setBusinessId } = useBusiness();
   const [businesses, setBusinesses] = useState<Business[]>([]);
+  const ownerId = user?.owner_id;
 
   useEffect(() => {
-    console.log("Owner ID:", user?.owner_id);
-    
-    if (!user?.owner_id) return;
+    console.log("Owner ID:", ownerId);
+
+    if (!ownerId) return;
 
     const loadBusinesses = async () => {
       try {
-        const data = await getDataByForeignId("business/owner", user.owner_id!);
+        const data = await fetchBusinessesByOwner(ownerId!);
         setBusinesses(data);
-        console.log("Fetched businesses:", data);
       } catch (err) {
         console.error("Error fetching businesses:", err);
       } finally {
@@ -39,7 +37,7 @@ const MyBusiness = () => {
     };
 
     loadBusinesses();
-  }, [user?.owner_id]);
+  }, [ownerId]);
   return (
     <PageContainer style={{ padding: "20px" }}>
       <Text variant="title">My Business</Text>

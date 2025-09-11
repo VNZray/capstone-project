@@ -15,7 +15,7 @@ import CheckCircleIcon from "@mui/icons-material/CheckCircle"; // Available
 import EventSeatIcon from "@mui/icons-material/EventSeat"; // Reserved
 import { Grid, Dropdown, Menu, MenuButton, MenuItem } from "@mui/joy";
 import { colors } from "@/src/utils/Colors";
-import { deleteData, updateData } from "@/src/api_function";
+import { deleteData, updateData } from "@/src/services/Service";
 import { PeopleAltTwoTone } from "@mui/icons-material";
 
 interface RoomCardProps {

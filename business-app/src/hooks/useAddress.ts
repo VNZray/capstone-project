@@ -1,6 +1,5 @@
-// src/hooks/useAddress.ts
 import { useEffect, useState } from "react";
-import { fetchAddressById, fetchAllAddress } from "@/src/services/AddressService";
+import { AddressService } from "@/src/services/AddressService";
 
 interface Address {
     province_name: string;
@@ -11,47 +10,52 @@ interface Address {
     barangay_name: string;
 }
 
-export function useAddress(barangay_id?: number) {
+export function useAddress(
+    barangay_id?: number,
+    municipality_id?: number,
+    province_id?: number
+) {
     const [address, setAddress] = useState<Address | null>(null);
-    const [allAddress, setAllAddress] = useState<Address[]>([]);
     const [loading, setLoading] = useState(false);
 
     useEffect(() => {
+        // Only fetch if all IDs are provided
+        if (
+            barangay_id === undefined ||
+            municipality_id === undefined ||
+            province_id === undefined
+        ) {
+            setAddress(null);
+            return;
+        }
+
         const load = async () => {
             setLoading(true);
             try {
-                if (barangay_id) {
-                    const data = await fetchAddressById(barangay_id);
-                    setAddress(data[0]);
-                } else {
-                    const data = await fetchAllAddress();
-                    // flatten provinces → municipalities → barangays
-                    const flat: Address[] = [];
-                    data.forEach((p: any) => {
-                        p.municipalities?.forEach((m: any) => {
-                            m.barangays?.forEach((b: any) => {
-                                flat.push({
-                                    province_id: p.province_id,
-                                    province_name: p.province_name,
-                                    municipality_id: m.municipality_id,
-                                    municipality_name: m.municipality_name,
-                                    barangay_id: b.barangay_id,
-                                    barangay_name: b.barangay_name,
-                                });
-                            });
-                        });
-                    });
-                    setAllAddress(flat);
-                }
-            } catch (err) {
-                console.error("Failed to fetch address data", err);
+                const barangayResponse = await AddressService.getBarangayById(barangay_id);
+                const municipalityResponse = await AddressService.getMunicipalityById(municipality_id);
+                const provinceResponse = await AddressService.getProvinceById(province_id);
+
+                setAddress({
+                    province_name: provinceResponse.province,
+                    province_id: provinceResponse.id,
+                    municipality_name: municipalityResponse.municipality,
+                    municipality_id: municipalityResponse.id,
+                    barangay_name: barangayResponse.barangay,
+                    barangay_id: barangayResponse.id,
+                });
+
+
+            } catch (error) {
+                console.error("Failed to load address data", error);
+                setAddress(null);
             } finally {
                 setLoading(false);
             }
         };
 
         load();
-    }, [barangay_id]);
+    }, [barangay_id, municipality_id, province_id]);
 
-    return { address, allAddress, loading };
+    return { address, loading };
 }

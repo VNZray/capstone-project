@@ -1,0 +1,16 @@
+services:
+  backend:
+    build:
+      context: ./naga-venture-backend
+      dockerfile: Dockerfile
+    container_name: city-venture-backend
+    ports:
+      - "3000:3000"
+    env_file:
+      - ./naga-venture-backend/.env
+    volumes:
+      - ./naga-venture-backend:/usr/src/app
+      - /usr/src/app/node_modules
+    depends_on:
+      - db
+

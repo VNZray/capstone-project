@@ -14,7 +14,6 @@
     "seed": "knex seed:run --knexfile knexfile.cjs --env development",
     "deletedb": "node scripts/delete-db.js",
     "resetdb": "node scripts/delete-db.js && node scripts/create-db.js && knex migrate:latest --knexfile knexfile.cjs --env development && knex seed:run --knexfile knexfile.cjs --env development"
-
   },
   "keywords": [],
   "author": "",
