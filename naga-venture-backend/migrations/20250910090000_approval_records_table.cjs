@@ -1,6 +1,3 @@
-/**
- * Migration to create the approval_records table for logging all approval/rejection events.
- */
 exports.up = async function(knex) {
   await knex.schema.createTable('approval_records', (table) => {
     table.uuid('id').primary().defaultTo(knex.raw('(UUID())'));

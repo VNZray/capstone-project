@@ -29,7 +29,8 @@ export {
 export {
   getLocationData,
   getMunicipalitiesByProvince,
-  getBarangaysByMunicipality
+  getBarangaysByMunicipality,
+  updateTouristSpotAddress
 } from './locationController.js';
 
 // Edit requests
