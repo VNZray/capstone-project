@@ -1,8 +1,8 @@
 exports.up = function(knex) {
-  return knex.schema.createTable("Subscription", function(table) {
+  return knex.schema.createTable("subscription", function(table) {
     table.uuid("id").primary().defaultTo(knex.raw("(UUID())"));
     table.uuid("business_id").notNullable()
-      .references("id").inTable("Business").onDelete("CASCADE");
+      .references("id").inTable("business").onDelete("CASCADE");
 
     table.string("plan_name", 50).notNullable();
 
@@ -22,5 +22,5 @@ exports.up = function(knex) {
 };
 
 exports.down = function(knex) {
-  return knex.schema.dropTableIfExists("Subscription");
+  return knex.schema.dropTableIfExists("subscription");
 };

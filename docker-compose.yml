@@ -1,4 +1,3 @@
-version: '3.8'
 services:
   backend:
     build: ./naga-venture-backend
@@ -6,12 +5,24 @@ services:
     ports:
       - "3000:3000"
     environment:
+      NODE_ENV: development
       DB_HOST: db
       DB_USER: user
       DB_PASSWORD: userpass
-      DB_NAME: mydb
+      DB_NAME: tourism_db
+      JWT_SECRET: mySecretKey123
     depends_on:
       - db
+    develop:
+      watch:
+        - action: sync
+          path: ./backend
+          target: /naga-venture-backend/
+          ignore:
+            - node_modules/
+        - action: rebuild
+          path: package.json
+    command: npm run dev
 
   db:
     image: mariadb:10.6
@@ -19,7 +30,7 @@ services:
     restart: always
     environment:
       MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: mydb
+      MYSQL_DATABASE: tourism_db
       MYSQL_USER: user
       MYSQL_PASSWORD: userpass
     ports:
@@ -27,23 +38,35 @@ services:
     volumes:
       - db_data:/var/lib/mysql
 
-  business-app:
-    build: ./business-app
-    container_name: business
-    ports:
-      - "5173:5173"
+  # business-app:
+  #   build: ./business-app
+  #   container_name: business
+  #   environment:
+  #     VITE_SUPABASE_URL: https://ieodjlfkxmhbtgppddhw.supabase.co
+  #     VITE_SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imllb2RqbGZreG1oYnRncHBkZGh3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDQzNTQxNTgsImV4cCI6MjA1OTkzMDE1OH0.Pa0FhIKYtaabxssKYav5I5NL_DCH1hDJ8bgJ6Xd6pi4
+  #     NEXT_PUBLIC_GOOGLE_MAPS_API_KEY: AIZaSyCvrFJIDAgujket50Rr8CXQ-gR-_6dpLjs
+  #   ports:
+  #     - "5173:5173"
 
-  tourism-admin-app:
-    build: ./tourism-admin-app
-    container_name: admin
-    ports:
-      - "5174:5174"
+  # tourism-admin-app:
+  #   build: ./tourism-admin-app
+  #   container_name: admin
+  #   environment:
+  #     VITE_SUPABASE_URL: https://ieodjlfkxmhbtgppddhw.supabase.co
+  #     VITE_SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imllb2RqbGZreG1oYnRncHBkZGh3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDQzNTQxNTgsImV4cCI6MjA1OTkzMDE1OH0.Pa0FhIKYtaabxssKYav5I5NL_DCH1hDJ8bgJ6Xd6pi4
+  #     NEXT_PUBLIC_GOOGLE_MAPS_API_KEY: AIZaSyCvrFJIDAgujket50Rr8CXQ-gR-_6dpLjs
+  #   ports:
+  #     - "5174:5174"
 
-  naga-ventures:
-    build: ./naga-ventures
-    container_name: naga-ventures
-    ports:
-      - "19006:19006"
+  # naga-ventures:
+  #   build: ./naga-ventures
+  #   container_name: naga-ventures
+  #   environment:
+  #     VITE_SUPABASE_URL: https://ieodjlfkxmhbtgppddhw.supabase.co
+  #     VITE_SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imllb2RqbGZreG1oYnRncHBkZGh3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDQzNTQxNTgsImV4cCI6MjA1OTkzMDE1OH0.Pa0FhIKYtaabxssKYav5I5NL_DCH1hDJ8bgJ6Xd6pi4
+  #     NEXT_PUBLIC_GOOGLE_MAPS_API_KEY: AIZaSyCvrFJIDAgujket50Rr8CXQ-gR-_6dpLjs
+  #   ports:
+  #     - "19006:19006"
 
 volumes:
   db_data:

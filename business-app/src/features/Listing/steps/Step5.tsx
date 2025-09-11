@@ -146,7 +146,7 @@ const Step7: React.FC<Props> = ({
                   startDecorator={<PlaceOutlined fontSize="small" />}
                 >
                   {address?.province_name}, {address?.municipality_name},{" "}
-                  {address?.barangay_name || "-"}
+                  {address?.barangay_name}
                 </Typography>
 
                 {/* Email + Phone */}

@@ -1,28 +1,29 @@
 # syntax=docker/dockerfile:1
-
 ARG NODE_VERSION=22.16.0
-FROM node:${NODE_VERSION}-alpine
+FROM node:${NODE_VERSION}
 
-# Set environment
-ENV NODE_ENV=production
-
-# Create app directory
+ENV NODE_ENV=development
 WORKDIR /usr/src/app
+
+# Install MariaDB client so mysqladmin is available
+RUN apt-get update && apt-get install -y mariadb-client && rm -rf /var/lib/apt/lists/*
 
 # Copy dependency manifests first
 COPY package*.json ./
 
-# Install dependencies (production only)
-RUN npm ci --omit=dev
+RUN npm install
+
+RUN npm install -g nodemon
+
 
 # Copy app source code
 COPY . .
 
-# Expose Vite/React dev server port
-EXPOSE 5173
+# Copy entrypoint script
+COPY docker-entrypoint.sh .
+RUN chmod +x docker-entrypoint.sh
 
-# Use node user for security
-USER node
+EXPOSE 3000
 
-# Start the app (adjust if using Vite/Expo/Next.js)
-CMD ["npx", "expo", "start"]
+# Use entrypoint instead of CMD
+ENTRYPOINT ["./docker-entrypoint.sh"]
