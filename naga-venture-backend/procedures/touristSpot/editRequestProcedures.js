@@ -1,22 +1,6 @@
 // Edit request-related procedures
 export async function createTouristSpotEditProcedures(knex) {
   await knex.raw(`
-    CREATE PROCEDURE ValidateCategoriesExistCSV(IN p_category_ids_csv TEXT)
-    BEGIN
-      SELECT COUNT(*) AS matched_count
-      FROM category
-      WHERE FIND_IN_SET(id, p_category_ids_csv);
-    END;
-  `);
-  await knex.raw(`
-    CREATE PROCEDURE HasPendingEditRequest(IN p_tourist_spot_id CHAR(36))
-    BEGIN
-      SELECT COUNT(*) AS pending_count
-      FROM tourist_spot_edits
-      WHERE tourist_spot_id = p_tourist_spot_id AND approval_status = 'pending';
-    END;
-  `);
-  await knex.raw(`
     CREATE PROCEDURE SubmitTouristSpotEditRequest(
   IN p_tourist_spot_id CHAR(36),
   IN p_name VARCHAR(255),

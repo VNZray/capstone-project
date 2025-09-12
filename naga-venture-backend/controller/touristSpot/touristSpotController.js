@@ -93,61 +93,6 @@ export const createTouristSpot = async (request, response) => {
       });
     }
 
-
-    // Validate categories and their relation to type
-    const placeholders = category_ids.map(() => '?').join(',');
-    const [
-      [categoryCheck],
-      [typeCheck],
-      [provinceCheck],
-      [municipalityCheck],
-      [barangayCheck],
-    ] = await Promise.all([
-      db.execute(`SELECT id FROM category WHERE id IN (${placeholders}) AND type_id = ?`, [...category_ids, type_id]),
-      db.execute("SELECT id FROM type WHERE id = ?", [type_id]),
-      db.execute("SELECT id FROM province WHERE id = ?", [province_id]),
-      db.execute(
-        "SELECT id FROM municipality WHERE id = ? AND province_id = ?",
-        [municipality_id, province_id]
-      ),
-      db.execute(
-        "SELECT id FROM barangay WHERE id = ? AND municipality_id = ?",
-        [barangay_id, municipality_id]
-      ),
-    ]);
-
-    if (categoryCheck.length !== category_ids.length) {
-      return response
-        .status(400)
-        .json({ success: false, message: "One or more invalid category_ids or categories don't match the type" });
-    }
-    if (typeCheck.length === 0) {
-      return response
-        .status(400)
-        .json({ success: false, message: "Invalid type_id" });
-    }
-    if (provinceCheck.length === 0) {
-      return response
-        .status(400)
-        .json({ success: false, message: "Invalid province_id" });
-    }
-    if (municipalityCheck.length === 0) {
-      return response
-        .status(400)
-        .json({
-          success: false,
-          message: "Invalid municipality_id for the selected province",
-        });
-    }
-    if (barangayCheck.length === 0) {
-      return response
-        .status(400)
-        .json({
-          success: false,
-          message: "Invalid barangay_id for the selected municipality",
-        });
-    }
-
     // Insert into address table and get address_id
     const [addressResult] = await db.query(
       "INSERT INTO address (province_id, municipality_id, barangay_id) VALUES (?, ?, ?)",

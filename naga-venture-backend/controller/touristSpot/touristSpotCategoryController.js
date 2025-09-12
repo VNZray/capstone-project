@@ -32,22 +32,6 @@ export const updateTouristSpotCategories = async (request, response) => {
         message: "category_ids must be an array",
       });
     }
-
-    // Validate that all category IDs exist
-    if (category_ids.length > 0) {
-      const placeholders = category_ids.map(() => '?').join(',');
-      const [categoryCheck] = await db.execute(
-        `SELECT id FROM category WHERE id IN (${placeholders})`,
-        category_ids
-      );
-
-      if (categoryCheck.length !== category_ids.length) {
-        return response.status(400).json({
-          success: false,
-          message: "One or more invalid category IDs provided",
-        });
-      }
-    }
     
     // Start transaction
     conn = await db.getConnection();

@@ -6,19 +6,6 @@ export const getTouristSpotImages = async (request, response) => {
   try {
     const { tourist_spot_id } = request.params;
 
-    // Verify tourist spot exists
-    const [spotCheck] = await db.execute(
-      "SELECT id FROM tourist_spots WHERE id = ?",
-      [tourist_spot_id]
-    );
-
-    if (spotCheck.length === 0) {
-      return response.status(404).json({
-        success: false,
-        message: "Tourist spot not found",
-      });
-    }
-
   const [data] = await db.query("CALL GetTouristSpotImages(?)", [tourist_spot_id]);
   const images = data[0] || [];
 
@@ -44,12 +31,6 @@ export const addTouristSpotImage = async (request, response) => {
         message: "file_url and file_format are required",
       });
     }
-
-    // Verify tourist spot exists
-    const [spotCheck] = await db.execute(
-      "SELECT id FROM tourist_spots WHERE id = ?",
-      [tourist_spot_id]
-    );
 
     if (spotCheck.length === 0) {
       return response.status(404).json({
@@ -84,19 +65,6 @@ export const updateTouristSpotImage = async (request, response) => {
     const { tourist_spot_id, image_id } = request.params;
     const { is_primary, alt_text } = request.body;
 
-    // Verify image exists and belongs to the tourist spot
-    const [imageCheck] = await db.execute(
-      "SELECT id FROM tourist_spot_images WHERE id = ? AND tourist_spot_id = ?",
-      [image_id, tourist_spot_id]
-    );
-
-    if (imageCheck.length === 0) {
-      return response.status(404).json({
-        success: false,
-        message: "Tourist spot image not found",
-      });
-    }
-
     if (is_primary === undefined && alt_text === undefined) {
       return response.status(400).json({ success: false, message: "No valid fields provided for update" });
     }
@@ -124,19 +92,6 @@ export const deleteTouristSpotImage = async (request, response) => {
   try {
     const { tourist_spot_id, image_id } = request.params;
 
-    // Verify image exists and belongs to the tourist spot
-    const [imageCheck] = await db.execute(
-      "SELECT id FROM tourist_spot_images WHERE id = ? AND tourist_spot_id = ?",
-      [image_id, tourist_spot_id]
-    );
-
-    if (imageCheck.length === 0) {
-      return response.status(404).json({
-        success: false,
-        message: "Tourist spot image not found",
-      });
-    }
-
     const [delRes] = await db.query("CALL DeleteTouristSpotImage(?,?)", [tourist_spot_id, image_id]);
     const affected = delRes[0] && delRes[0][0] ? delRes[0][0].affected_rows : 0;
     if (!affected) {
@@ -156,19 +111,6 @@ export const deleteTouristSpotImage = async (request, response) => {
 export const setPrimaryTouristSpotImage = async (request, response) => {
   try {
     const { tourist_spot_id, image_id } = request.params;
-
-    // Verify image exists and belongs to the tourist spot
-    const [imageCheck] = await db.execute(
-      "SELECT id FROM tourist_spot_images WHERE id = ? AND tourist_spot_id = ?",
-      [image_id, tourist_spot_id]
-    );
-
-    if (imageCheck.length === 0) {
-      return response.status(404).json({
-        success: false,
-        message: "Tourist spot image not found",
-      });
-    }
 
   const [resSet] = await db.query("CALL SetPrimaryTouristSpotImage(?,?)", [tourist_spot_id, image_id]);
   const affected = resSet[0] && resSet[0][0] ? resSet[0][0].affected_rows : undefined; // optional check
