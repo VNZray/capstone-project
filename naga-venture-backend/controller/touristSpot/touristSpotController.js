@@ -176,7 +176,9 @@ export const createTouristSpot = async (request, response) => {
         type_id,
       ]
     );
+
     const spotId = insertRes[0] && insertRes[0][0] ? insertRes[0][0].id : null;
+
     if (!spotId) {
       throw new Error("Failed to create tourist spot");
     }
@@ -189,13 +191,10 @@ export const createTouristSpot = async (request, response) => {
       categoryValues.push(spotId, categoryId);
     });
 
-    // Insert categories via procedure per category
     for (let i = 0; i < category_ids.length; i++) {
-      // eslint-disable-next-line no-await-in-loop
       await conn.query("CALL InsertTouristSpotCategory(?, ?)", [spotId, category_ids[i]]);
     }
 
-    // Optionally insert schedules if provided
     if (Array.isArray(schedules) && schedules.length) {
       const values = [];
       const placeholders = [];
@@ -217,7 +216,6 @@ export const createTouristSpot = async (request, response) => {
           const open = isClosed ? null : (s.open_time ?? null);
           const close = isClosed ? null : (s.close_time ?? null);
           if (!Number.isNaN(day) && day >= 0 && day <= 6) {
-            // eslint-disable-next-line no-await-in-loop
             await conn.query("CALL InsertTouristSpotSchedule(?,?,?,?,?)", [spotId, day, open, close, isClosed ? 1 : 0]);
           }
         }

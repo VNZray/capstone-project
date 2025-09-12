@@ -18,7 +18,6 @@ export const getLocationData = async (request, response) => {
   }
 };
 
-// Get municipalities by province
 export const getMunicipalitiesByProvince = async (request, response) => {
   try {
     const { province_id } = request.params;
@@ -35,7 +34,6 @@ export const getMunicipalitiesByProvince = async (request, response) => {
   }
 };
 
-// Get barangays by municipality
 export const getBarangaysByMunicipality = async (request, response) => {
   try {
     const { municipality_id } = request.params;
@@ -52,7 +50,7 @@ export const getBarangaysByMunicipality = async (request, response) => {
   }
 };
 
-// Update address (province/municipality/barangay) for a tourist spot; submits approval only if changed
+
 export const updateTouristSpotAddress = async (request, response) => {
   try {
     const { id } = request.params; // tourist spot id
@@ -84,7 +82,6 @@ export const updateTouristSpotAddress = async (request, response) => {
       newAddressId = addressInsert.insertId;
     }
 
-    // Submit approval request (uses current other fields; we only care about name/description/address for approval)
     await db.query('CALL SubmitTouristSpotEditRequest(?,?,?,?,?,?,?,?,?,?,?,?,?)', [
       id,
       finalName,
