@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState, useRef } from "react";
 import { apiService } from "../../utils/api";
 import TouristSpotStepper from "./TouristSpotStepper";
 import BasicInfoStep from "./steps/BasicInfoStep";
@@ -58,6 +58,7 @@ const TouristSpotForm: React.FC<TouristSpotFormProps> = ({
     category_ids: [],
     type_id: "4",
     spot_status: "" as "" | "pending" | "active" | "inactive",
+    is_featured: false,
   });
   const [loading, setLoading] = useState(false);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -88,6 +89,8 @@ const TouristSpotForm: React.FC<TouristSpotFormProps> = ({
   const [pendingImages, setPendingImages] = useState<PendingImage[]>([]);
 
   const [currentStep, setCurrentStep] = useState(initialStep);
+  // Holds the resolved original address IDs so we can accurately detect address changes
+  const initialAddressRef = useRef<{ province_id: number; municipality_id: number; barangay_id: number } | null>(null);
 
   React.useEffect(() => {
     if (isVisible) {
@@ -99,6 +102,32 @@ const TouristSpotForm: React.FC<TouristSpotFormProps> = ({
   const handleClose = () => {
     setPendingImages([]);
     setCurrentStep(0);
+    setFormInitialized(false);
+    setFormData({
+      name: "",
+      description: "",
+      province_id: "",
+      municipality_id: "",
+      barangay_id: "",
+      latitude: "",
+      longitude: "",
+      contact_phone: "",
+      contact_email: "",
+      website: "",
+      entry_fee: "",
+      category_ids: [],
+      type_id: "4",
+      spot_status: "" as "" | "pending" | "active" | "inactive",
+      is_featured: false,
+    });
+    setSchedules(
+      Array.from({ length: 7 }, (_, idx) => ({
+        dayIndex: idx,
+        is_closed: true,
+        open_time: "08:00",
+        close_time: "17:00",
+      }))
+    );
     onClose();
     if (mode === "add") {
       onSpotAdded?.();
@@ -169,15 +198,18 @@ const TouristSpotForm: React.FC<TouristSpotFormProps> = ({
     [categoryOptions, formData.category_ids]
   );
 
+  const [formInitialized, setFormInitialized] = useState(false);
   useEffect(() => {
     if (mode === "edit" && initialData) {
-      // Try to get IDs from initialData, fallback to lookup by name if only names are present
+      // Only set form data after location options are loaded, and only once
+      if (formInitialized) return;
+      if (!(provinces.length && municipalities.length && barangays.length)) return;
       let province_id = initialData.province_id;
       let municipality_id = initialData.municipality_id;
       let barangay_id = initialData.barangay_id;
 
       // If IDs are missing, try to look up by name from loaded options
-      if ((!province_id || !municipality_id || !barangay_id) && provinces.length && municipalities.length && barangays.length) {
+      if ((!province_id || !municipality_id || !barangay_id)) {
         if (!province_id && initialData.province) {
           const found = provinces.find(p => p.province === initialData.province);
           province_id = found ? found.id : 0;
@@ -195,9 +227,9 @@ const TouristSpotForm: React.FC<TouristSpotFormProps> = ({
       setFormData({
         name: initialData.name,
         description: initialData.description,
-        province_id: province_id !== undefined ? province_id.toString() : "",
-        municipality_id: municipality_id !== undefined ? municipality_id.toString() : "",
-        barangay_id: barangay_id !== undefined ? barangay_id.toString() : "",
+        province_id: province_id !== undefined && province_id !== null ? province_id.toString() : "0",
+        municipality_id: municipality_id !== undefined && municipality_id !== null ? municipality_id.toString() : "0",
+        barangay_id: barangay_id !== undefined && barangay_id !== null ? barangay_id.toString() : "0",
         latitude: initialData.latitude?.toString() || "",
         longitude: initialData.longitude?.toString() || "",
         contact_phone: initialData.contact_phone,
@@ -208,7 +240,15 @@ const TouristSpotForm: React.FC<TouristSpotFormProps> = ({
         type_id: initialData.type_id.toString(),
         spot_status:
           (initialData.spot_status as "pending" | "active" | "inactive") || "",
+        is_featured: Boolean(initialData.is_featured),
       });
+      // Store the resolved baseline address IDs for later comparison
+      initialAddressRef.current = {
+        province_id: Number(province_id) || 0,
+        municipality_id: Number(municipality_id) || 0,
+        barangay_id: Number(barangay_id) || 0,
+      };
+      setFormInitialized(true);
 
       (async () => {
         try {
@@ -245,6 +285,7 @@ const TouristSpotForm: React.FC<TouristSpotFormProps> = ({
         category_ids: [],
         type_id: "4",
         spot_status: "" as "" | "pending" | "active" | "inactive",
+        is_featured: false,
       });
       setSchedules(
         Array.from({ length: 7 }, (_, idx) => ({
@@ -255,8 +296,9 @@ const TouristSpotForm: React.FC<TouristSpotFormProps> = ({
         }))
       );
       setCurrentStep(0);
+      setFormInitialized(false);
     }
-  }, [mode, initialData, isVisible, daysOfWeek, provinces, municipalities, barangays]);
+  }, [mode, initialData, isVisible, daysOfWeek, provinces, municipalities, barangays, formInitialized]);
 
   const handleInputChange = (
     e: React.ChangeEvent<
@@ -358,35 +400,56 @@ const TouristSpotForm: React.FC<TouristSpotFormProps> = ({
               formData.name,
               spotFolderName
             );
-            alert("Spot added successfully with images!");
+            alert("Spot was submitted successfully for approval");
           } catch (imageError) {
             console.error("Error uploading images:", imageError);
-            alert("Spot added successfully, but some images failed to upload. You can add them by editing the spot.");
+            alert("Spot was submitted successfully, but some images failed to upload. You can add them by editing the spot upon approval.");
           }
         } else {
-          alert("Spot added successfully!");
+          alert("Spot was submitted successfully for approval");
         }
         onSpotAdded?.();
       } else {
         if (!initialData?.id) throw new Error("No ID provided for update");
-        
-        const coreFieldsChanged = await hasSignificantChanges(spotData, initialData);
-        
-        // Check if only categories have changed
+
+        // Normalize helper
+        const normalize = (v: string | number | boolean | undefined | null) => (v ?? '').toString().trim().replace(/\s+/g, ' ');
+        // Use baseline address IDs (resolved once) to avoid false positives when initialData lacked numeric IDs
+        const baselineAddress = initialAddressRef.current;
+        const addressChanged = baselineAddress ? (
+          Number(baselineAddress.province_id) !== Number(formData.province_id) ||
+          Number(baselineAddress.municipality_id) !== Number(formData.municipality_id) ||
+          Number(baselineAddress.barangay_id) !== Number(formData.barangay_id)
+        ) : false;
+        const approvalChanged = {
+          name: normalize(initialData.name) !== normalize(formData.name),
+          description: normalize(initialData.description) !== normalize(formData.description),
+          address: addressChanged,
+          type_id: Number(initialData.type_id) !== Number(formData.type_id)
+        };
+        const directChanged = {
+          latitude: Number(initialData.latitude) !== Number(formData.latitude),
+          longitude: Number(initialData.longitude) !== Number(formData.longitude),
+          contact_phone: normalize(initialData.contact_phone) !== normalize(formData.contact_phone),
+          contact_email: normalize(initialData.contact_email) !== normalize(formData.contact_email),
+          website: normalize(initialData.website) !== normalize(formData.website),
+          entry_fee: Number(initialData.entry_fee) !== Number(formData.entry_fee),
+          spot_status: initialData.spot_status !== formData.spot_status
+        };
+        const anyApproval = Object.values(approvalChanged).some(Boolean);
+        const anyDirect = Object.values(directChanged).some(Boolean);
+
         const currentCategories = initialData.categories?.map(c => c.id).sort() || [];
         const newCategories = (formData.category_ids || []).sort();
         const categoriesChanged = JSON.stringify(currentCategories) !== JSON.stringify(newCategories);
-        
-        // Check if schedules have changed
-        const currentSchedules = await apiService.getTouristSpotSchedules(initialData.id);
-        const schedulesChanged = hasScheduleChanges(mappedSchedules, currentSchedules);
-        
-        // If nothing has changed, inform the user, but check for new images
-        if (!coreFieldsChanged && !categoriesChanged && !schedulesChanged) {
+
+
+  const currentSchedules = await apiService.getTouristSpotSchedules(initialData.id);
+  const schedulesChanged = hasScheduleChanges(mappedSchedules, currentSchedules);
+
+        if (!anyApproval && !anyDirect && !categoriesChanged && !schedulesChanged) {
           if (pendingImages.length > 0) {
-            console.log("Uploading new images in edit mode:", pendingImages);
             try {
-              // Always use original folder name from initialData.name ONLY
               if (!initialData?.name) throw new Error("No original spot name found for folder!");
               const spotFolderName = initialData.name.toLowerCase().replace(/[^a-z0-9]/g, '-');
               await uploadPendingImages(
@@ -411,41 +474,59 @@ const TouristSpotForm: React.FC<TouristSpotFormProps> = ({
             return;
           }
         }
-        
-        if (coreFieldsChanged || (categoriesChanged && !coreFieldsChanged)) {
-          const submitData = {
+
+        // If only direct fields changed
+        if (anyDirect && !anyApproval && !categoriesChanged && !schedulesChanged) {
+          const resp: any = await apiService.submitEditRequest(initialData.id, {
             ...spotData,
-            ...(formData.spot_status
-              ? {
-                  spot_status: formData.spot_status as "active" | "inactive",
-                }
-              : {}),
-            ...(categoriesChanged && !coreFieldsChanged ? { categories_only: true } : {})
-          };
-          
-          await apiService.submitEditRequest(initialData.id, submitData);
+            ...(formData.spot_status ? { spot_status: formData.spot_status as "active" | "inactive" } : {})
+          });
+          alert(resp?.data?.message || "Fields updated successfully!");
+          onSpotUpdated?.();
+          handleClose();
+          return;
         }
+        if (anyApproval) {
+          const resp: any = await apiService.submitEditRequest(initialData.id, {
+            ...spotData,
+            ...(formData.spot_status ? { spot_status: formData.spot_status as "active" | "inactive" } : {})
+          });
+          alert(resp?.data?.message || "Core information changes submitted for approval!");
+          onSpotUpdated?.();
+          handleClose();
+          return;
+        }
+        if (categoriesChanged && !anyApproval && !anyDirect && !schedulesChanged) {
+          const resp: any = await apiService.submitEditRequest(initialData.id, {
+            ...spotData
+          });
+          alert(resp?.data?.message || "Categories updated successfully!");
+          onSpotUpdated?.();
+          handleClose();
+          return;
+        }
+        if (schedulesChanged && !anyApproval && !anyDirect && !categoriesChanged) {
+          await apiService.saveTouristSpotSchedules(initialData.id, mappedSchedules);
+          alert("Schedule updated successfully!");
+          onSpotUpdated?.();
+          handleClose();
+          return;
+        }
+      
+        const submitData = {
+          ...spotData,
+          ...(formData.spot_status
+            ? {
+                spot_status: formData.spot_status as "active" | "inactive",
+              }
+            : {}),
+        };
         
+        await apiService.submitEditRequest(initialData.id, submitData);
         if (schedulesChanged) {
           await apiService.saveTouristSpotSchedules(initialData.id, mappedSchedules);
         }
         
-        // Show appropriate success message
-        if ((coreFieldsChanged || categoriesChanged) && schedulesChanged) {
-          if (categoriesChanged && !coreFieldsChanged) {
-            alert("Categories updated successfully! Schedule updates have been applied immediately.");
-          } else {
-            alert("Core information changes submitted for approval! Schedule updates have been applied immediately.");
-          }
-        } else if (coreFieldsChanged || categoriesChanged) {
-          if (categoriesChanged && !coreFieldsChanged) {
-            alert("Categories updated successfully!");
-          } else {
-            alert("Changes submitted for approval!");
-          }
-        } else if (schedulesChanged) {
-          alert("Updated successfully!");
-        }
         
         onSpotUpdated?.();
       }
@@ -463,56 +544,28 @@ const TouristSpotForm: React.FC<TouristSpotFormProps> = ({
   };
 
   // Helper function to check if schedules have changed
-  const hasScheduleChanges = (newSchedules: { day_of_week: number; is_closed: boolean; open_time: string | null; close_time: string | null; }[], currentSchedules: { day_of_week: number; is_closed: boolean; open_time: string | null; close_time: string | null; }[]): boolean => {
+  const hasScheduleChanges = (
+    newSchedules: { day_of_week: number; is_closed: boolean | number; open_time: string | null; close_time: string | null; }[],
+    currentSchedules: { day_of_week: number; is_closed: boolean | number; open_time: string | null; close_time: string | null; }[]
+  ): boolean => {
     if (newSchedules.length !== currentSchedules.length) return true;
-    
     return newSchedules.some((newSched) => {
       const currentSched = currentSchedules.find(s => s.day_of_week === newSched.day_of_week);
       if (!currentSched) return true;
-      
+      // Compare is_closed as boolean
+      const newClosed = !!newSched.is_closed;
+      const currClosed = !!currentSched.is_closed;
+      // Compare open/close times as strings or null
+      const newOpen = newSched.open_time ?? null;
+      const currOpen = currentSched.open_time ?? null;
+      const newClose = newSched.close_time ?? null;
+      const currClose = currentSched.close_time ?? null;
       return (
-        newSched.is_closed !== currentSched.is_closed ||
-        newSched.open_time !== currentSched.open_time ||
-        newSched.close_time !== currentSched.close_time
+        newClosed !== currClosed ||
+        newOpen !== currOpen ||
+        newClose !== currClose
       );
     });
-  };
-
-  const hasSignificantChanges = async (newData: Partial<TouristSpot>, originalData: TouristSpot): Promise<boolean> => {
-    try {
-      const currentData = await apiService.getTouristSpotById(originalData.id);
-      
-      const significantFields = [
-        'name', 'description', 'province_id', 'municipality_id', 'barangay_id',
-        'contact_phone', 'contact_email', 'website', 'entry_fee', 'type_id',
-        'latitude', 'longitude'
-      ];
-      
-      return significantFields.some(field => {
-        const newValue = newData[field as keyof TouristSpot];
-        const currentValue = currentData[field as keyof TouristSpot];
-        
-        if (field === 'contact_email' || field === 'website') {
-          const normalizedNew = newValue || null;
-          const normalizedCurrent = currentValue || null;
-          return normalizedNew !== normalizedCurrent;
-        }
-        
-        if (field === 'latitude' || field === 'longitude' || field === 'entry_fee') {
-          const normalizedNew = newValue ? Number(newValue) : null;
-          const normalizedCurrent = currentValue ? Number(currentValue) : null;
-          return normalizedNew !== normalizedCurrent;
-        }
-        
-        if (typeof newValue === 'string' && typeof currentValue === 'string') {
-          return newValue.trim() !== currentValue.trim();
-        }
-        return newValue !== currentValue;
-      });
-    } catch (error) {
-      console.error('Error fetching current data for comparison:', error);
-      return true;
-    }
   };
 
   const renderStepContent = () => {

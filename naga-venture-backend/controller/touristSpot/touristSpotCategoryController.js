@@ -59,7 +59,6 @@ export const updateTouristSpotCategories = async (request, response) => {
     // Insert new categories
     if (category_ids.length > 0) {
       for (let i = 0; i < category_ids.length; i++) {
-        // eslint-disable-next-line no-await-in-loop
         await conn.query("CALL InsertTouristSpotCategory(?, ?)", [id, category_ids[i]]);
       }
     }

@@ -9,6 +9,9 @@ export async function seed(knex) {
   await knex("tourist_spots").del();
   await knex("address").del();
 
+  // Also clear schedules
+  await knex("tourist_spot_schedules").del();
+
   // Insert addresses and get their IDs
   const addressInputs = [
     { province_id: 20, municipality_id: 24, barangay_id: 1 },
@@ -103,6 +106,22 @@ export async function seed(knex) {
   ];
 
   await knex("tourist_spots").insert(spots);
+
+  // Use 0=Sunday, 1=Monday, ..., 6=Saturday
+  const scheduleRows = [];
+  for (const spot of spots) {
+    for (let day = 0; day <= 6; day++) {
+      scheduleRows.push({
+        id: knex.raw('UUID()'),
+        tourist_spot_id: spot.id,
+        day_of_week: day,
+        open_time: null,
+        close_time: null,
+        is_closed: true
+      });
+    }
+  }
+  await knex("tourist_spot_schedules").insert(scheduleRows);
 
   // Now insert the categories for each tourist spot
   const touristSpotCategories = [

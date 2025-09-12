@@ -25,6 +25,14 @@ export async function createCategoriesProcedures(knex) {
     END;
   `);
   await knex.raw(`
+    CREATE PROCEDURE GetTouristSpotCategoryIds(IN p_id CHAR(36))
+    BEGIN
+      SELECT category_id
+      FROM tourist_spot_categories
+      WHERE tourist_spot_id = p_id;
+    END;
+  `);
+  await knex.raw(`
     CREATE PROCEDURE DeleteCategoriesByTouristSpot(IN p_id CHAR(36))
     BEGIN
       DELETE FROM tourist_spot_categories WHERE tourist_spot_id = p_id;
@@ -37,6 +45,30 @@ export async function createCategoriesProcedures(knex) {
       VALUES (UUID(), p_id, p_category_id);
     END;
   `);
+    await knex.raw(`
+      CREATE PROCEDURE UpdateTouristSpotDirectFields(
+          IN spot_id CHAR(36),
+          IN latitude DECIMAL(10,8),
+          IN longitude DECIMAL(11,8),
+          IN contact_phone VARCHAR(32),
+          IN contact_email VARCHAR(128),
+          IN website VARCHAR(255),
+          IN entry_fee DECIMAL(10,2),
+          IN spot_status VARCHAR(32)
+      )
+      BEGIN
+          UPDATE tourist_spots
+          SET
+              latitude = IFNULL(latitude, latitude),
+              longitude = IFNULL(longitude, longitude),
+              contact_phone = IFNULL(NULLIF(contact_phone, ''), contact_phone),
+              contact_email = IFNULL(NULLIF(contact_email, ''), contact_email),
+              website = IFNULL(NULLIF(website, ''), website),
+              entry_fee = IFNULL(entry_fee, entry_fee),
+              spot_status = IFNULL(NULLIF(spot_status, ''), spot_status)
+          WHERE id = spot_id;
+      END;
+    `);
 }
 
 export async function dropCategoriesProcedures(knex) {

@@ -1,4 +1,3 @@
-// migrations/20250912000100_tourist_spot_procedures.cjs
 // Migration for all tourist spot and approval procedures
 const {createCategoriesProcedures,dropCategoriesProcedures} = require('../procedures/touristSpot/categoriesProcedures');
 const {createTouristSpotEditProcedures,dropTouristSpotEditProcedures} = require('../procedures/touristSpot/editRequestProcedures');

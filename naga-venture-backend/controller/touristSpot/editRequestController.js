@@ -1,251 +1,110 @@
 import db from "../../db.js";
 import { handleDbError } from "../../utils/errorHandler.js";
 
-export const submitEditRequest = async (req, res) => {
-  let conn;
-  try {
 
+export const submitEditRequest = async (req, res) => {
+  try {
     const { id } = req.params;
     const {
       name, description, province_id, municipality_id, barangay_id,
       latitude, longitude, contact_phone, contact_email, website,
-      entry_fee, category_ids, type_id,
-      spot_status, is_featured,
-      categories_only = false // Flag to indicate if only categories changed
+      entry_fee, type_id, spot_status, is_featured
     } = req.body;
 
-    if (
-      !name || !description || !province_id || !municipality_id ||
-      !barangay_id || !type_id ||
-      !Array.isArray(category_ids) || category_ids.length === 0
-    ) {
-      return res.status(400).json({
-        success: false,
-        message: "Missing required fields",
-      });
+    if (!id || !name || !description || !province_id || !municipality_id || !barangay_id || !type_id) {
+      return res.status(400).json({ success: false, message: "Missing required fields" });
     }
 
-    // Validation via procedures (replaces inline SELECTs)
-    const csv = category_ids.join(',');
-    const [[spotCountRes]] = await db.query("CALL CheckTouristSpotExists(?)", [id]);
-    if (!spotCountRes[0] || spotCountRes[0].cnt === 0) {
-      return res.status(404).json({ success: false, message: "Tourist spot not found" });
-    }
-    const [[catForTypeRes]] = await db.query("CALL ValidateCategoriesForType(?,?)", [type_id, csv]);
-    if ((catForTypeRes[0]?.matched_count ?? 0) !== category_ids.length) {
-      return res.status(400).json({ success: false, message: "One or more invalid category_ids or categories don't match the type" });
-    }
-    const [[typeCountRes]] = await db.query("CALL CheckTypeExists(?)", [type_id]);
-    if ((typeCountRes[0]?.cnt ?? 0) === 0) {
-      return res.status(400).json({ success: false, message: "Invalid type_id" });
-    }
-    const [[provCountRes]] = await db.query("CALL CheckProvinceExists(?)", [province_id]);
-    if ((provCountRes[0]?.cnt ?? 0) === 0) {
-      return res.status(400).json({ success: false, message: "Invalid province_id" });
-    }
-    const [[munValidRes]] = await db.query("CALL ValidateMunicipalityInProvince(?,?)", [municipality_id, province_id]);
-    if ((munValidRes[0]?.cnt ?? 0) === 0) {
-      return res.status(400).json({ success: false, message: "Invalid municipality_id for the selected province" });
-    }
-    const [[barValidRes]] = await db.query("CALL ValidateBarangayInMunicipality(?,?)", [barangay_id, municipality_id]);
-    if ((barValidRes[0]?.cnt ?? 0) === 0) {
-      return res.status(400).json({ success: false, message: "Invalid barangay_id for the selected municipality" });
-    }
-
-    // Fetch current spot core + address ids for comparison
-    const [spotRows] = await db.query(
-      `SELECT ts.id, ts.name AS current_name, ts.description AS current_description, ts.address_id, 
-              a.province_id AS current_province_id, a.municipality_id AS current_municipality_id, a.barangay_id AS current_barangay_id,
-              ts.latitude AS current_latitude, ts.longitude AS current_longitude, ts.contact_phone AS current_contact_phone,
-              ts.contact_email AS current_contact_email, ts.website AS current_website, ts.entry_fee AS current_entry_fee,
-              ts.spot_status AS current_status, ts.is_featured AS current_is_featured, ts.type_id AS current_type_id
-       FROM tourist_spots ts
-       JOIN address a ON ts.address_id = a.id
-       WHERE ts.id = ?`,
-      [id]
-    );
+    const spotResults = await db.query(`CALL GetTouristSpotById(?)`, [id]);
+    const spotRows = (spotResults && spotResults[0]) ? spotResults[0] : [];
     if (!spotRows.length) {
       return res.status(404).json({ success: false, message: "Tourist spot not found" });
     }
-  const current = spotRows[0];
+    const current = spotRows[0];
 
-  // Normalize helper (trim + collapse internal whitespace)
-  const normalizeText = (val) => (val ?? '').toString().trim().replace(/\s+/g, ' ');
-  const normCurrentName = normalizeText(current.current_name);
-  const normIncomingName = normalizeText(name);
-  const normCurrentDescription = normalizeText(current.current_description);
-  const normIncomingDescription = normalizeText(description);
+    // Normalize text fields
+    const normalize = v => (v ?? '').toString().trim().replace(/\s+/g, ' ');
+    const changed = {
+      name: normalize(current.name) !== normalize(name),
+      description: normalize(current.description) !== normalize(description),
+      address: (
+        current.province_id !== Number(province_id) ||
+        current.municipality_id !== Number(municipality_id) ||
+        current.barangay_id !== Number(barangay_id)
+      ),
+      latitude: Number(current.latitude) !== Number(latitude),
+      longitude: Number(current.longitude) !== Number(longitude),
+      contact_phone: normalize(current.contact_phone) !== normalize(contact_phone),
+      contact_email: normalize(current.contact_email) !== normalize(contact_email),
+      website: normalize(current.website) !== normalize(website),
+      entry_fee: Number(current.entry_fee) !== Number(entry_fee),
+      spot_status: current.spot_status !== spot_status,
+      type_id: Number(current.type_id) !== Number(type_id)
+    };
 
-    // Determine which fields have changed
-  const nameChanged = normCurrentName !== normIncomingName;
-  const descriptionChanged = normCurrentDescription !== normIncomingDescription;
-    const addressChanged = (
-      current.current_province_id !== Number(province_id) ||
-      current.current_municipality_id !== Number(municipality_id) ||
-      current.current_barangay_id !== Number(barangay_id)
-    );
+  const approvalFields = [changed.name, changed.description, changed.address, changed.type_id];
+    const directFields = [changed.latitude, changed.longitude, changed.contact_phone, changed.contact_email, changed.website, changed.entry_fee, changed.spot_status];
 
-    // Categories change detection (set comparison)
-    const [existingCatRows] = await db.query(
-      'SELECT category_id FROM tourist_spot_categories WHERE tourist_spot_id = ?',
-      [id]
-    );
-    const existingCatSet = new Set(existingCatRows.map(r => Number(r.category_id)));
-    const submittedCatSet = new Set(category_ids.map(c => Number(c)));
-    let categoriesChanged = existingCatSet.size !== submittedCatSet.size;
-    if (!categoriesChanged) {
-      for (const v of submittedCatSet) {
-        if (!existingCatSet.has(v)) { categoriesChanged = true; break; }
-      }
-    }
-
-    // If explicitly categories_only flag and categories actually changed, update them and exit
-    if (categories_only) {
-      if (!categoriesChanged) {
-        return res.json({ success: true, message: "No category changes detected" });
-      }
-      conn = await db.getConnection();
-      await conn.beginTransaction();
-      await conn.query("CALL DeleteCategoriesByTouristSpot(?)", [id]);
-      for (let i = 0; i < category_ids.length; i++) { // eslint-disable-line no-plusplus
-        // eslint-disable-next-line no-await-in-loop
-        await conn.query("CALL InsertTouristSpotCategory(?, ?)", [id, category_ids[i]]);
-      }
-      await conn.query("CALL UpdateTouristSpotTimestamp(?)", [id]);
-      await conn.commit();
-      return res.json({ success: true, message: "Categories updated successfully" });
-    }
-
-    // Determine if approval is needed (only if name/description/address changed)
-    let needsApproval = nameChanged || descriptionChanged || addressChanged;
-
-    // Safety: if none of the approval fields changed after normalization, explicitly prevent approval path
-    if (!nameChanged && !descriptionChanged && !addressChanged) {
-      needsApproval = false;
-    }
-
-    if (process.env.NODE_ENV !== 'production' && process.env.LOG_TOURIST_SPOT_DIFFS === '1') {
-      // Lightweight diff logging (no PII beyond provided fields)
-      // eslint-disable-next-line no-console
-      console.debug('[TouristSpotEditDiff]', {
-        id,
-        nameChanged,
-        descriptionChanged,
-        addressChanged,
-        categoriesChanged,
-        needsApproval,
-      });
-    }
-
-    // If no approval needed, update allowed fields instantly (including categories if changed)
-    if (!needsApproval) {
-      conn = await db.getConnection();
-      await conn.beginTransaction();
-
-      // Update categories if they changed
+    let categoriesChanged = false;
+    if (Array.isArray(req.body.category_ids)) {
+      const [currentCategoriesRows] = await db.query('CALL GetTouristSpotCategoryIds(?)', [id]);
+      const currentCategoryIds = (currentCategoriesRows[0] || []).map(row => row.category_id).sort();
+      const newCategoryIds = req.body.category_ids.map(Number).sort();
+      categoriesChanged = JSON.stringify(currentCategoryIds) !== JSON.stringify(newCategoryIds);
       if (categoriesChanged) {
-        await conn.query("CALL DeleteCategoriesByTouristSpot(?)", [id]);
-        for (let i = 0; i < category_ids.length; i++) { // eslint-disable-line no-plusplus
-          // eslint-disable-next-line no-await-in-loop
-          await conn.query("CALL InsertTouristSpotCategory(?, ?)", [id, category_ids[i]]);
+        // Delete all current categories
+        await db.query('CALL DeleteCategoriesByTouristSpot(?)', [id]);
+        // Insert each new category
+        for (const catId of newCategoryIds) {
+          await db.query('CALL InsertTouristSpotCategory(?, ?)', [id, catId]);
         }
       }
-
-      // Directly update mutable fields that don't require approval
-      await conn.query(
-        `UPDATE tourist_spots SET 
-            latitude = ?,
-            longitude = ?,
-            contact_phone = ?,
-            contact_email = ?,
-            website = ?,
-            entry_fee = ?,
-            spot_status = ?,
-            is_featured = ?,
-            type_id = ?,
-            updated_at = CURRENT_TIMESTAMP
-          WHERE id = ?`,
-        [
-          latitude ?? current.current_latitude,
-          longitude ?? current.current_longitude,
-            contact_phone ?? current.current_contact_phone,
-            contact_email ?? current.current_contact_email,
-            website ?? current.current_website,
-            entry_fee ?? current.current_entry_fee,
-            (typeof spot_status !== 'undefined' && spot_status !== null) ? spot_status : current.current_status,
-            (typeof is_featured !== 'undefined' && is_featured !== null) ? is_featured : current.current_is_featured,
-            type_id ?? current.current_type_id,
-            id
-        ]
-      );
-
-      await conn.commit();
-      return res.json({ success: true, message: categoriesChanged ? "Updated (categories applied immediately)" : "No approval needed; fields updated" });
     }
 
-    // Approval path: ensure no pending edit request
-    const [[pendingRes]] = await db.query("CALL HasPendingEditRequest(?)", [id]);
-    const hasPending = (pendingRes[0]?.pending_count ?? 0) > 0;
-    if (hasPending) {
-      return res.status(400).json({
-        success: false,
-        message: "There is already a pending edit request for this tourist spot.",
-      });
+    if (!Object.values(changed).some(Boolean) && categoriesChanged) {
+      return res.json({ success: true, message: "Categories updated successfully!" });
     }
 
-    if (categoriesChanged) {
-      conn = await db.getConnection();
-      await conn.beginTransaction();
-      await conn.query("CALL DeleteCategoriesByTouristSpot(?)", [id]);
-      for (let i = 0; i < category_ids.length; i++) { // eslint-disable-line no-plusplus
-        await conn.query("CALL InsertTouristSpotCategory(?, ?)", [id, category_ids[i]]);
-      }
-      await conn.commit();
-      conn.release();
-      conn = null;
+    if (directFields.some(Boolean) && !approvalFields.some(Boolean)) {
+      await db.query('CALL UpdateTouristSpotDirectFields(?, ?, ?, ?, ?, ?, ?, ?)', [
+        id,
+        latitude ?? current.latitude,
+        longitude ?? current.longitude,
+        contact_phone ?? current.contact_phone,
+        contact_email ?? current.contact_email,
+        website ?? current.website,
+        entry_fee ?? current.entry_fee,
+        spot_status ?? current.spot_status
+      ]);
+      return res.json({ success: true, message: "Fields updated successfully!" });
     }
 
-    // Reuse existing address unless changed
+    // If any approval-required field changed
     let address_id_to_use = current.address_id;
-    if (addressChanged) {
+    if (changed.address) {
       const [addressResult] = await db.query(
         "INSERT INTO address (province_id, municipality_id, barangay_id) VALUES (?, ?, ?)",
         [province_id, municipality_id, barangay_id]
       );
       address_id_to_use = addressResult.insertId;
     }
-
-    const statusToSave = typeof spot_status !== 'undefined' && spot_status !== null ? spot_status : current.current_status;
-    const featuredToSave = typeof is_featured !== 'undefined' && is_featured !== null ? is_featured : current.current_is_featured;
-
     await db.query("CALL SubmitTouristSpotEditRequest(?,?,?,?,?,?,?,?,?,?,?,?,?)", [
       id,
       name,
       description,
       address_id_to_use,
-      latitude ?? current.current_latitude,
-      longitude ?? current.current_longitude,
-      contact_phone ?? current.current_contact_phone,
-      contact_email ?? current.current_contact_email,
-      website ?? current.current_website,
-      entry_fee ?? current.current_entry_fee,
-      statusToSave,
-      featuredToSave,
-      type_id ?? current.current_type_id,
+      latitude ?? current.latitude,
+      longitude ?? current.longitude,
+      contact_phone ?? current.contact_phone,
+      contact_email ?? current.contact_email,
+      website ?? current.website,
+      entry_fee ?? current.entry_fee,
+      spot_status ?? current.spot_status,
+      Number(current.is_featured) ? 1 : 0,
+      type_id ?? current.type_id,
     ]);
-
-    return res.json({
-      success: true,
-      message: "Edit request submitted successfully and is pending admin approval",
-    });
+    return res.json({ success: true, message: "Core information changes submitted for approval!" });
   } catch (error) {
-    if (conn) {
-      await conn.rollback();
-    }
     return handleDbError(error, res);
-  } finally {
-    if (conn) {
-      conn.release();
-    }
   }
 };

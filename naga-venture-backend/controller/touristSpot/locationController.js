@@ -53,7 +53,7 @@ export const getBarangaysByMunicipality = async (request, response) => {
 
 export const updateTouristSpotAddress = async (request, response) => {
   try {
-    const { id } = request.params; // tourist spot id
+    const { id } = request.params;
     const { province_id, municipality_id, barangay_id, name, description } = request.body;
     if (!province_id || !municipality_id || !barangay_id) {
       return response.status(400).json({ success: false, message: 'province_id, municipality_id, barangay_id required' });
