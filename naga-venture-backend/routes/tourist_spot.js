@@ -21,9 +21,6 @@ router.get('/barangays/:municipality_id', touristSpotController.getBarangaysByMu
 // Get tourist spot by ID
 router.get('/:id', touristSpotController.getTouristSpotById);
 
-// Update address (separate endpoint to isolate approval-triggering fields)
-router.put('/:id/address', touristSpotController.updateTouristSpotAddress);
-
 // Categories management for tourist spots
 router.get('/:id/categories', touristSpotController.getTouristSpotCategories);
 router.put('/:id/categories', touristSpotController.updateTouristSpotCategories);

@@ -83,10 +83,11 @@ export const submitEditRequest = async (req, res) => {
     let address_id_to_use = current.address_id;
     if (changed.address) {
       const [addressResult] = await db.query(
-        "INSERT INTO address (province_id, municipality_id, barangay_id) VALUES (?, ?, ?)",
+        "CALL InsertAddress(?, ?, ?)",
         [province_id, municipality_id, barangay_id]
       );
-      address_id_to_use = addressResult.insertId;
+      // InsertAddress returns a result set with the inserted id as 'id'
+      address_id_to_use = addressResult && addressResult[0] && addressResult[0][0] ? addressResult[0][0].id : null;
     }
     await db.query("CALL SubmitTouristSpotEditRequest(?,?,?,?,?,?,?,?,?,?,?,?,?)", [
       id,
