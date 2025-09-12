@@ -21,8 +21,7 @@ export const upsertTouristSpotSchedules = async (req, res) => {
       return res.status(400).json({ success: false, message: "schedules must be an array" });
     }
 
-    // Remove all existing schedules for this spot
-    await db.query("DELETE FROM tourist_spot_schedules WHERE tourist_spot_id = ?", [id]);
+  await db.query("CALL DeleteSchedulesByTouristSpot(?)", [id]);
 
     // Insert new schedules
     for (const sched of schedules) {

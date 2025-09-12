@@ -86,7 +86,6 @@ export const submitEditRequest = async (req, res) => {
         "CALL InsertAddress(?, ?, ?)",
         [province_id, municipality_id, barangay_id]
       );
-      // InsertAddress returns a result set with the inserted id as 'id'
       address_id_to_use = addressResult && addressResult[0] && addressResult[0][0] ? addressResult[0][0].id : null;
     }
     await db.query("CALL SubmitTouristSpotEditRequest(?,?,?,?,?,?,?,?,?,?,?,?,?)", [

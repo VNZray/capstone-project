@@ -58,7 +58,6 @@ export const getTouristSpotById = async (request, response) => {
 export const createTouristSpot = async (request, response) => {
   let conn;
   try {
-
     const {
       name,
       description,
@@ -93,19 +92,17 @@ export const createTouristSpot = async (request, response) => {
       });
     }
 
-    // Insert into address table and get address_id
+    // Use InsertAddress procedure
     const [addressResult] = await db.query(
-      "INSERT INTO address (province_id, municipality_id, barangay_id) VALUES (?, ?, ?)",
+      "CALL InsertAddress(?, ?, ?)",
       [province_id, municipality_id, barangay_id]
     );
-    const address_id = addressResult.insertId;
+    const address_id = addressResult[0] && addressResult[0][0] ? addressResult[0][0].id : null;
 
-    // Start transaction for composing categories and schedules around procedure-created record
     conn = await db.getConnection();
     await conn.beginTransaction();
 
-
-    // Create main tourist spot via procedure to comply with no inline SQL
+    // Use InsertTouristSpot procedure
     const [insertRes] = await conn.query(
       "CALL InsertTouristSpot(?,?,?,?,?,?,?,?,?,?)",
       [
@@ -121,54 +118,31 @@ export const createTouristSpot = async (request, response) => {
         type_id,
       ]
     );
-
     const spotId = insertRes[0] && insertRes[0][0] ? insertRes[0][0].id : null;
-
     if (!spotId) {
       throw new Error("Failed to create tourist spot");
     }
 
-    // Insert categories
-    const categoryValues = [];
-    const categoryPlaceholders = [];
-    category_ids.forEach(categoryId => {
-      categoryPlaceholders.push("(UUID(), ?, ?)");
-      categoryValues.push(spotId, categoryId);
-    });
-
+    // Insert categories using procedure
     for (let i = 0; i < category_ids.length; i++) {
       await conn.query("CALL InsertTouristSpotCategory(?, ?)", [spotId, category_ids[i]]);
     }
 
+    // Insert schedules using procedure
     if (Array.isArray(schedules) && schedules.length) {
-      const values = [];
-      const placeholders = [];
-      schedules.forEach((s) => {
+      for (let idx = 0; idx < schedules.length; idx++) {
+        const s = schedules[idx];
         const day = Number(s.day_of_week);
         const isClosed = !!s.is_closed;
         const open = isClosed ? null : (s.open_time ?? null);
         const close = isClosed ? null : (s.close_time ?? null);
         if (!Number.isNaN(day) && day >= 0 && day <= 6) {
-          placeholders.push("(?, ?, ?, ?, ?)");
-          values.push(spotId, day, open, close, isClosed ? 1 : 0);
-        }
-      });
-      if (placeholders.length) {
-        for (let idx = 0; idx < schedules.length; idx++) {
-          const s = schedules[idx];
-          const day = Number(s.day_of_week);
-          const isClosed = !!s.is_closed;
-          const open = isClosed ? null : (s.open_time ?? null);
-          const close = isClosed ? null : (s.close_time ?? null);
-          if (!Number.isNaN(day) && day >= 0 && day <= 6) {
-            await conn.query("CALL InsertTouristSpotSchedule(?,?,?,?,?)", [spotId, day, open, close, isClosed ? 1 : 0]);
-          }
+          await conn.query("CALL InsertTouristSpotSchedule(?,?,?,?,?)", [spotId, day, open, close, isClosed ? 1 : 0]);
         }
       }
     }
 
     await conn.commit();
-
     response.status(201).json({
       success: true,
       message: "Tourist spot created successfully",
