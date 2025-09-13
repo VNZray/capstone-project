@@ -25,7 +25,7 @@ const index = () => {
     'https://i0.wp.com/nagayon.com/wp-content/uploads/2024/08/oragon-monument-by-colline.jpg';
 
   return (
-    <PaperProvider>
+    <View style={{ flex: 1 }}>
       <ImageBackground
         source={{ uri: imageBackground }}
         resizeMode="cover"
@@ -97,7 +97,7 @@ const index = () => {
           </View>
         </LinearGradient>
       </ImageBackground>
-    </PaperProvider>
+    </View>
   );
 };
 

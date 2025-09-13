@@ -1,0 +1,48 @@
+.category-filter-container {
+  display: flex;
+  align-items: center;
+}
+
+.categories-scroll {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  padding-bottom: 5px;
+}
+
+.categories-scroll::-webkit-scrollbar {
+  height: 4px;
+}
+
+.categories-scroll::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 2px;
+}
+
+.categories-scroll::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 2px;
+}
+
+.category-button {
+  background-color: #e0e0e0;
+  padding: 8px 15px;
+  border-radius: 20px;
+  border: none;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+  font-size: 14px;
+}
+
+.category-button:hover {
+  background-color: #d0d0d0;
+}
+
+.category-button.active {
+  background-color: #007bff;
+}
+
+.category-button.active:hover {
+  background-color: #0056b3;
+}
