@@ -6,20 +6,12 @@ export const getTouristSpotCategories = async (request, response) => {
   try {
     const { id } = request.params;
 
-    const [data] = await db.execute(`
-      SELECT 
-        c.id,
-        c.category,
-        c.type_id
-      FROM tourist_spot_categories tsc
-      JOIN category c ON tsc.category_id = c.id
-      WHERE tsc.tourist_spot_id = ?
-      ORDER BY c.category ASC
-    `, [id]);
+  const [data] = await db.query("CALL GetTouristSpotCategories(?)", [id]);
+  const rows = data[0] || [];
 
     response.json({
       success: true,
-      data: data,
+  data: rows,
       message: "Tourist spot categories retrieved successfully",
     });
   } catch (error) {
@@ -40,48 +32,19 @@ export const updateTouristSpotCategories = async (request, response) => {
         message: "category_ids must be an array",
       });
     }
-
-    // Validate that all category IDs exist
-    if (category_ids.length > 0) {
-      const placeholders = category_ids.map(() => '?').join(',');
-      const [categoryCheck] = await db.execute(
-        `SELECT id FROM category WHERE id IN (${placeholders})`,
-        category_ids
-      );
-
-      if (categoryCheck.length !== category_ids.length) {
-        return response.status(400).json({
-          success: false,
-          message: "One or more invalid category IDs provided",
-        });
-      }
-    }
     
     // Start transaction
     conn = await db.getConnection();
     await conn.beginTransaction();
 
     // Delete existing categories for this tourist spot
-    await conn.execute(
-      "DELETE FROM tourist_spot_categories WHERE tourist_spot_id = ?",
-      [id]
-    );
+    await conn.query("CALL DeleteCategoriesByTouristSpot(?)", [id]);
 
     // Insert new categories
     if (category_ids.length > 0) {
-      const values = [];
-      const placeholders = [];
-      
-      category_ids.forEach(categoryId => {
-        placeholders.push("(UUID(), ?, ?)");
-        values.push(id, categoryId);
-      });
-
-      await conn.execute(
-        `INSERT INTO tourist_spot_categories (id, tourist_spot_id, category_id) 
-         VALUES ${placeholders.join(",")}`,
-        values
-      );
+      for (let i = 0; i < category_ids.length; i++) {
+        await conn.query("CALL InsertTouristSpotCategory(?, ?)", [id, category_ids[i]]);
+      }
     }
 
     await conn.commit();
