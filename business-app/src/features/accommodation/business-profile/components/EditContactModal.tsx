@@ -11,7 +11,7 @@ import {
 } from "@mui/joy";
 import { updateData } from "@/src/services/Service";
 import CardHeader from "@/src/components/CardHeader";
-import { Email, PhoneOutlined } from "@mui/icons-material";
+import { Email, PhoneOutlined, Save } from "@mui/icons-material";
 
 interface EditDescriptionModalProps {
   open: boolean;
@@ -86,8 +86,8 @@ const EditContactModal: React.FC<EditDescriptionModalProps> = ({
           <Button fullWidth variant="plain" color="neutral" onClick={onClose}>
             Cancel
           </Button>
-          <Button fullWidth color="primary" onClick={handleSave}>
-            Save
+          <Button fullWidth color="primary" startDecorator={<Save />} onClick={handleSave}>
+            Save Changes
           </Button>
         </DialogActions>
       </ModalDialog>

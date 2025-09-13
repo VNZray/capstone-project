@@ -14,8 +14,9 @@ import {
 import { updateData } from "@/src/services/Service";
 import CardHeader from "@/src/components/CardHeader";
 import placeholderImage from "@/src/assets/images/placeholder-image.png";
-import { UploadIcon } from "lucide-react";
+import {  UploadIcon } from "lucide-react";
 import { supabase } from "@/src/lib/supabase";
+import { Save } from "@mui/icons-material";
 interface EditBusinessModalProps {
   open: boolean;
   initialBusinessName?: string;
@@ -155,8 +156,8 @@ const EditBusinessModal: React.FC<EditBusinessModalProps> = ({
           <Button fullWidth variant="plain" color="neutral" onClick={onClose}>
             Cancel
           </Button>
-          <Button fullWidth color="primary" onClick={handleSave}>
-            Save
+          <Button fullWidth color="primary" startDecorator={<Save />} onClick={handleSave}>
+            Save Changes
           </Button>
         </DialogActions>
       </ModalDialog>

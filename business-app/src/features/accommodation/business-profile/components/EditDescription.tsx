@@ -10,6 +10,7 @@ import {
 } from "@mui/joy";
 import { updateData } from "@/src/services/Service";
 import CardHeader from "@/src/components/CardHeader";
+import Save from "@mui/icons-material/Save";
 
 interface EditDescriptionModalProps {
   open: boolean;
@@ -68,8 +69,8 @@ const EditDescriptionModal: React.FC<EditDescriptionModalProps> = ({
           <Button fullWidth variant="plain" color="neutral" onClick={onClose}>
             Cancel
           </Button>
-          <Button fullWidth color="primary" onClick={handleSave}>
-            Save
+          <Button fullWidth color="primary" startDecorator={<Save />} onClick={handleSave}>
+            Save Changes
           </Button>
         </DialogActions>
       </ModalDialog>

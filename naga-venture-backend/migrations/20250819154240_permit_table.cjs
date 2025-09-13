@@ -1,6 +1,11 @@
 // migrations/20250818120000_create_permit_table.js
-exports.up = function (knex) {
-  return knex.schema.createTable("permit", (table) => {
+const {
+  createPermitProcedures,
+  dropPermitProcedures,
+} = require("../procedures/permitProcedures");
+
+exports.up = async function (knex) {
+  await knex.schema.createTable("permit", (table) => {
     table.uuid("id").primary().defaultTo(knex.raw("(UUID())"));
     table
       .uuid("business_id")
@@ -16,8 +21,10 @@ exports.up = function (knex) {
     table.timestamp("submitted_at").defaultTo(knex.fn.now());
     table.timestamp("approved_at");
   });
+  await createPermitProcedures(knex);
 };
 
-exports.down = function (knex) {
-  return knex.schema.dropTableIfExists("permit");
+exports.down = async function (knex) {
+  await knex.schema.dropTableIfExists("permit");
+  await dropPermitProcedures(knex);
 };

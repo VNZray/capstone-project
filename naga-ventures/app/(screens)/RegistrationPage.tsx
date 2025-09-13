@@ -3,7 +3,6 @@ import PressableButton from '@/components/PressableButton';
 import { ThemedText } from '@/components/ThemedText';
 import { insertData } from '@/Controller/Query';
 import api from '@/services/api';
-import { Barangay, Municipality, Province } from '@/types/Address';
 import { colors } from '@/utils/Colors';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
@@ -42,11 +41,16 @@ const RegistrationPage = () => {
   const [provinceId, setProvinceId] = useState<number | null>(null);
   const [municipalityId, setMunicipalityId] = useState<number | null>(null);
   const [barangayId, setBarangayId] = useState<number | null>(null);
-  const [addressId, setAddressId] = useState<number | null>(null);
 
-  const [province, setProvince] = useState<Province[]>([]);
-  const [municipality, setMunicipality] = useState<Municipality[]>([]);
-  const [barangay, setBarangay] = useState<Barangay[]>([]);
+  const [province, setProvince] = useState<{ id: number; province: string }[]>(
+    []
+  );
+  const [municipality, setMunicipality] = useState<
+    { id: number; municipality: string }[]
+  >([]);
+  const [barangay, setBarangay] = useState<{ id: number; barangay: string }[]>(
+    []
+  );
 
   const [calendarVisible, setCalendarVisible] = useState(false);
   const [provinceVisible, setProvinceVisible] = useState(false);
@@ -67,7 +71,6 @@ const RegistrationPage = () => {
       const response = await axios.get(`${api}/address/provinces`);
       if (Array.isArray(response.data)) {
         setProvince(response.data);
-        console.log(response.data);
       }
     } catch (error) {
       console.error('Error fetching business categories:', error);
@@ -82,7 +85,6 @@ const RegistrationPage = () => {
 
       if (Array.isArray(response.data)) {
         setMunicipality(response.data);
-        console.log(response.data);
       }
     } catch (error) {
       console.error('Error fetching business types:', error);
@@ -97,7 +99,6 @@ const RegistrationPage = () => {
 
       if (Array.isArray(response.data)) {
         setBarangay(response.data);
-        console.log(response.data);
       }
     } catch (error) {
       console.error('Error fetching business types:', error);
@@ -121,22 +122,14 @@ const RegistrationPage = () => {
     email: email,
     birthday: formatDate(birthdate),
     created_at: new Date().toISOString(),
-    address_id: addressId,
-    age: new Date().getFullYear() - birthdate.getFullYear(),
-  };
-
-  const newAddress = {
     province_id: provinceId,
     municipality_id: municipalityId,
     barangay_id: barangayId,
+    age: new Date().getFullYear() - birthdate.getFullYear(),
   };
 
   const handleTouristRegistration = async () => {
     try {
-      // insert address first
-      const addressResponse = await insertData(newAddress, 'address');
-      const address_id = addressResponse.id;
-      setAddressId(address_id);
       // Create Owner
       const response = await insertData(newTourist, 'tourist');
       const tourist_id = response.id;
@@ -181,6 +174,75 @@ const RegistrationPage = () => {
   }, [municipalityId]);
 
   if (!fontsLoaded) return null;
+
+  // const handleTouristRegistration = async () => {
+  //   if (!firstName || !lastName || !email || !ethnicity || !birthdate) {
+  //     alert('Please fill in all required fields.');
+  //     return;
+  //   }
+
+  //   // 1. Sign up the user
+  //   const { data: signUpData, error: signUpError } = await supabase.auth.signUp(
+  //     {
+  //       email,
+  //       password,
+  //       options: {
+  //         data: {
+  //           display_name: `${firstName} ${lastName}`,
+  //         },
+  //       },
+  //     }
+  //   );
+
+  //   if (signUpError || !signUpData.user) {
+  //     alert('Account creation failed. Please try again.');
+  //     return;
+  //   }
+
+  //   const userId = signUpData.user.id;
+  //   console.log('User signed up:', signUpData.user);
+  //   console.log('User ID:', userId);
+  //   // 2. Insert into Tourist table
+  //   const { data, error } = await supabase.from('tourist').insert([
+  //     {
+  //       tourist_id: userId,
+  //       first_name: firstName,
+  //       last_name: lastName,
+  //       profile_picture: null, // you can update this later with file upload logic
+  //       ethnicity,
+  //       gender,
+  //       nationality,
+  //       contact_number: phoneNumber,
+  //       email,
+  //       created_at: new Date().toISOString(),
+  //       age: new Date().getFullYear() - birthdate.getFullYear(),
+  //     },
+  //   ]);
+
+  //   console.log('Inserted data:', data);
+  //   console.log('Insert error:', error);
+
+  //   if (error) {
+  //     console.error('Error inserting tourist:', error.message);
+  //     alert('Registration failed. Please try again.');
+  //   } else {
+  //     alert('Registration successful!');
+  //     router.replace('/(screens)/');
+  //   }
+
+  //   // 3. Insert into Profile table with role
+  //   const { data: profileData, error: profileError } = await supabase
+  //     .from('profile')
+  //     .insert([
+  //       {
+  //         id: userId,
+  //         role: 'tourist',
+  //       },
+  //     ]);
+
+  //   console.log('Inserted data:', profileData);
+  //   console.log('Insert error:', profileError);
+  // };
 
   return (
     <SafeAreaProvider>

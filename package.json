@@ -1,0 +1,18 @@
+{
+  "name": "capstone-project",
+  "private": true,
+  "workspaces": [
+    "business-app",
+    "naga-ventures",
+    "tourism-admin-app",
+    "naga-venture-backend"
+  ],
+  "scripts": {
+    "start": "concurrently \"npm run dev -w business-app\" \"npx expo start -w naga-ventures\" \"npm run dev -w tourism-admin-app\" \"npm run dev -w naga-venture-backend\""
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2",
+    "metro-minify-terser": "^0.83.1",
+    "metro-runtime": "^0.83.1"
+  }
+}

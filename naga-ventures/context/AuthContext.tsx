@@ -7,6 +7,7 @@ import React, {
   useEffect,
   useState,
 } from 'react';
+import { Platform } from 'react-native';
 
 interface User {
   id: string;
@@ -16,7 +17,8 @@ interface User {
   last_name?: string;
 }
 
-import api from '@/services/api';
+// const API_URL = 'http://192.168.1.8:3000/api';
+const API_URL = "http://192.168.1.11:3000/api";
 
 interface AuthContextType {
   user: User | null;
@@ -52,7 +54,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const login = async (email: string, password: string) => {
     try {
       // Step 1: Login request
-      const res = await axios.post(`${api}/users/login`, { email, password });
+      const res = await axios.post(`${API_URL}/users/login`, { email, password });
       const { token } = res.data;
 
       // Step 2: Decode token
@@ -62,7 +64,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       console.log('Decoded payload:', payload);
 
       // Step 3: Fetch tourist details
-      const touristRes = await axios.get(`${api}/tourist/${touristId}`);
+      const touristRes = await axios.get(`${API_URL}/tourist/${touristId}`);
       const { first_name, last_name } = touristRes.data;
 
       // Step 4: Build loggedInUser object
