@@ -1,0 +1,157 @@
+.overview-card {
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e0e0e0;
+  overflow: hidden;
+}
+
+.overview-card-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 20px;
+  background: #f8f9fa;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.overview-icon {
+  font-size: 1.5rem;
+}
+
+.overview-count {
+  background: #007bff;
+  color: white;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  margin-left: auto;
+}
+
+.overview-items {
+  padding: 20px;
+}
+
+.overview-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.overview-item:last-child {
+  border-bottom: none;
+}
+
+.overview-item-content {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.item-name {
+  font-weight: 500;
+}
+
+.action-badge.small {
+  padding: 2px 8px;
+  font-size: 0.7rem;
+}
+
+.overview-item-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.view-button.small, .approve-button.small {
+  padding: 4px 8px;
+  font-size: 0.75rem;
+}
+
+.overview-empty {
+  padding: 40px 20px;
+  text-align: center;
+  color: #666;
+}
+
+.more-items {
+  text-align: center;
+  color: #666;
+  font-style: italic;
+  margin-top: 12px;
+}
+
+/* Action Badges */
+.action-badge {
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  display: inline-block;
+}
+
+.action-badge.new {
+  background-color: #28a745;
+  color: white;
+}
+
+.action-badge.edit {
+  background-color: #007bff;
+  color: white;
+}
+
+/* Buttons */
+.view-button {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  background-color: #007bff;
+  color: white;
+}
+
+.view-button:hover {
+  background-color: #0056b3;
+}
+
+.approve-button {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  background-color: #28a745;
+  color: white;
+}
+
+.approve-button:hover {
+  background-color: #1e7e34;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .overview-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  
+  .overview-item-content {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  
+  .overview-item-actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+}

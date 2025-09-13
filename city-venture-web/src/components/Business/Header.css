@@ -1,0 +1,64 @@
+.header {
+  background-color: var(--primary-color);
+  padding: 1.25rem 1.25rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.header-user {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* Left section with logo */
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 0.50rem;
+}
+
+.header-logo {
+  height: 40px;
+  cursor: pointer;
+}
+
+/* Right section with navigation links and logout */
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.header-link {
+  color: var(--white); /* medium gray */
+  text-decoration: none;
+  font-weight: 500;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.header-link:hover,
+.header-link:focus {
+  color: var(--tab-background); /* blue-ish on hover/focus */
+  outline: none;
+}
+
+.header-logout {
+  padding: 0.25rem 0.75rem;
+  background-color: var(--secondary-color);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.2s ease;
+  font-weight: 600;
+}
+
+.header-logout:hover,
+.header-logout:focus {
+  background-color: var(--secondary-color);
+}
+
+

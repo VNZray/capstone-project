@@ -21,7 +21,7 @@ const Profile = () => {
     <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
       {user ? (
         <>
-          <ThemedText type="title">Hello {user.display_name}</ThemedText>
+          <ThemedText type="title">Hello {user.first_name}</ThemedText>
           <Pressable onPress={handleLogout} style={{ marginTop: 20 }}>
             <Text style={{ fontSize: 16, color: color }}>Log Out</Text>
           </Pressable>
