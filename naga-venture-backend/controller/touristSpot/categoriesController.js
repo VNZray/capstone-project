@@ -4,20 +4,13 @@ import { handleDbError } from "../../utils/errorHandler.js";
 // Get categories and types for tourist spots
 export const getCategoriesAndTypes = async (request, response) => {
   try {
-    const [types] = await db.execute(
-      "SELECT * FROM type ORDER BY type ASC"
-    );
-
-    const [categories] = await db.execute(
-      `SELECT c.* FROM category c INNER JOIN type t ON c.type_id = t.id WHERE t.id = 4 ORDER BY c.category ASC`
-    );
+  const [data] = await db.query("CALL GetTouristSpotCategoriesAndTypes()");
+  const types = data[0] || [];
+  const categories = data[1] || [];
 
     response.json({
       success: true,
-      data: {
-        types,
-        categories,
-      },
+  data: { types, categories },
       message: "Categories and types retrieved successfully",
     });
   } catch (error) {
