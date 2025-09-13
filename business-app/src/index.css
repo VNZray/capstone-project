@@ -4,7 +4,7 @@
   --primary-color: #0A1B47;
   --secondary-color: #0077B6;
   --text-color: #374151;
-  --background-color: #f6f6f6;
+  --background-color: #f7f9fc;
   --white: #ffffff;
   --dark: #1a1a1a;
   --text-color: #1a1a1a;
@@ -13,9 +13,9 @@
   --orange: #FF5310;
   --red: #AE2438;
   --tab-background: #DEE3F2;
-  --off-white: #ECECEC;
-  --off-white-2: #faf9f9;
-  --off-white-3: #f4f3ee;
+  --off-white: #f7f9fc;
+  --off-white-2: #f7f9fc;
+  --off-white-3: #f7f9fc;
   color: rgba(255, 255, 255, 0.87);
 
   font-synthesis: none;

@@ -13,6 +13,7 @@ import {
 import { deleteData, getData, insertData } from "@/src/services/Service";
 import CardHeader from "@/src/components/CardHeader";
 import type { Amenity } from "@/src/types/Amenity";
+import Save from "@mui/icons-material/Save";
 interface EditBusinessModalProps {
   open: boolean;
   businessId?: string;
@@ -208,8 +209,8 @@ const EditAmenitiesModal: React.FC<EditBusinessModalProps> = ({
           <Button fullWidth variant="plain" color="neutral" onClick={onClose}>
             Cancel
           </Button>
-          <Button fullWidth color="primary" onClick={handleSave}>
-            Save
+          <Button fullWidth color="primary" startDecorator={<Save />} onClick={handleSave}>
+            Save Changes
           </Button>
         </DialogActions>
       </ModalDialog>

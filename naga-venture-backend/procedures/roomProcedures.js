@@ -1,4 +1,5 @@
 async function createRoomProcedures(knex) {
+  
   // Get all rooms
   await knex.raw(`
     CREATE PROCEDURE GetAllRooms()
