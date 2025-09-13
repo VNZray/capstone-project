@@ -1,0 +1,3 @@
+# Run project all at once
+
+    npm start

@@ -12,7 +12,7 @@ import {
 } from "@mui/joy";
 import { updateData } from "@/src/services/Service";
 import CardHeader from "@/src/components/CardHeader";
-import { Add, Email, PhoneOutlined } from "@mui/icons-material";
+import { Add, Email, PhoneOutlined, Save } from "@mui/icons-material";
 import Container from "@/src/components/Container";
 import { colors } from "@/src/utils/Colors";
 import Text from "@/src/components/Text";
@@ -160,8 +160,8 @@ const EditMapCoordinatesModal: React.FC<EditDescriptionModalProps> = ({
           <Button fullWidth variant="plain" color="neutral" onClick={onClose}>
             Cancel
           </Button>
-          <Button fullWidth color="primary" onClick={handleSave}>
-            Save
+          <Button fullWidth color="primary" startDecorator={<Save />} onClick={handleSave}>
+            Save Changes
           </Button>
         </DialogActions>
       </ModalDialog>
