@@ -98,7 +98,11 @@ const Step7: React.FC<Props> = ({
           <CardContent>
             <CardHeader
               title="Review Your Information"
-              color="white"
+              color="dark"
+              bg="white"
+              variant="title"
+              padding="12px"
+              radius="8px"
               margin="0 0 8px 0"
             />
             <Text variant="normal" color="dark">

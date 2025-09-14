@@ -49,4 +49,31 @@ Utility functions for formatting, validation, and other helper logic.
 2. **Run the app:**  
    `npm start dev`
 
+
+## Hans Login Updates
 ---
+
+## Authentication
+
+- Unified login page is available at `/login` with role selection for:
+  - Tourist
+  - Business Owner
+  - Admin (Tourism)
+
+- Business-specific login remains available at `/business/login`.
+
+### How it works
+
+1. All roles authenticate via `POST /api/users/login` (backend).
+2. The app decodes the JWT to find the associated entity id (`tourist_id`, `owner_id`, or `tourism_id`).
+3. It fetches profile details from the corresponding endpoint:
+   - Tourist: `GET /api/tourist/:id`
+   - Owner: `GET /api/owner/:id`
+   - Tourism (Admin): `GET /api/tourism/:id`
+4. The token and user profile are persisted in `localStorage`.
+
+### Redirects after login
+
+- Tourist → `/`
+- Business Owner → `/business`
+- Admin (Tourism) → `/tourism/dashboard`

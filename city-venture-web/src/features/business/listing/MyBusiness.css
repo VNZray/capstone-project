@@ -1,0 +1,12 @@
+.myb-page{height:100dvh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0 12px;gap:0;overflow:hidden;box-sizing:border-box;overscroll-behavior:none}
+.myb-profile{display:none}
+.myb-card{position:relative;width:600px;max-width:92vw;height:85vh;max-height:85vh;background:#fff;border-radius:14px;box-shadow:0 16px 64px rgba(0,0,0,0.22);padding:24px;overflow:hidden}
+.myb-brand{display:flex;align-items:center;gap:8px}
+.myb-brand-logo{height:36px;cursor:pointer}
+.myb-topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:36px}
+.myb-profile-actions{display:flex;align-items:center;gap:12px}
+.myb-card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.myb-list{display:flex;flex-direction:column;gap:16px}
+@media (max-width:900px){
+	.myb-card{width:92vw;height:90vh;max-height:90vh;padding:20px}
+}

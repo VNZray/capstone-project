@@ -62,7 +62,7 @@ const StepPermits: React.FC<Props> = ({ data, permitData, setPermitData }) => {
     )}.${ext}`;
 
     // upload to supabase
-    const { data: uploadData, error } = await supabase.storage
+    const { error } = await supabase.storage
       .from("permits")
       .upload(filePath, file, { upsert: true });
 
@@ -97,8 +97,12 @@ const StepPermits: React.FC<Props> = ({ data, permitData, setPermitData }) => {
       <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
         <CardHeader
           title="Business Permits"
-          color="white"
-          margin="0 0 20px 0"
+          color="dark"
+          bg="white"
+          variant="title"
+          padding="12px"
+          radius="8px"
+          margin="0 0 12px 0"
         />
 
         <Grid container columns={12}>

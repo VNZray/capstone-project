@@ -3,16 +3,14 @@ import React from "react";
 import type { Business } from "@/src/types/Business";
 import CardHeader from "@/src/components/CardHeader";
 import Container from "@/src/components/Container";
-import Text from "@/src/components/Text";
 import { EmailOutlined, Phone } from "@mui/icons-material";
-import Label from "@/src/components/Label";
 
 type Props = {
   data: Business;
   setData: React.Dispatch<React.SetStateAction<Business>>;
   api: string;
 };
-const Step2: React.FC<Props> = ({ api, data, setData }) => {
+const Step2: React.FC<Props> = ({ data, setData }) => {
   return (
     <div
       className="stepperContent"
@@ -21,8 +19,12 @@ const Step2: React.FC<Props> = ({ api, data, setData }) => {
       <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
         <CardHeader
           title="Contact Information"
-          color="white"
-          margin="0 0 20px 0"
+          color="dark"
+          bg="white"
+          variant="title"
+          padding="12px"
+          radius="8px"
+          margin="0 0 12px 0"
         />
 
         <Grid container columns={12}>

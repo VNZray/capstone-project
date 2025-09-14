@@ -13,6 +13,7 @@ import BusinessPortalLogin from "../features/auth/BusinessPortalLogin";
 import BusinessPortalRegister from "../features/auth/BusinessPortalRegister";
 import AdminLogin from "../features/auth/AdminLogin";
 import AdminRegister from "../features/auth/AdminRegister";
+import UnifiedLogin from "@/src/features/auth/UnifiedLogin";
 import BusinessLayout from "../layout/BusinessLayout";
 import MyBusiness from "../features/business/listing/MyBusiness";
 import { AuthProvider } from "../context/AuthContext";
@@ -68,6 +69,7 @@ export default function AppRoutes() {
           <Route path={`${user}`} element={<LandingPage />} />
           <Route path={`${user}about`} element={<About />} />
         </Route>
+        <Route path={`/login`} element={<UnifiedLogin />} />
         <Route path={`${business}/login`} element={<BusinessPortalLogin />} />
         <Route
           path={`${business}/signup`}

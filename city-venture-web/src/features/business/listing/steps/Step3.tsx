@@ -5,7 +5,6 @@ import CardHeader from "@/src/components/CardHeader";
 import Container from "@/src/components/Container";
 import { Button, FormControl, FormLabel, Grid, Input } from "@mui/joy";
 import { Select, Option } from "@mui/joy";
-import Label from "@/src/components/Label";
 import Text from "@/src/components/Text";
 import { colors } from "@/src/utils/Colors";
 import { Add } from "@mui/icons-material";
@@ -80,18 +79,21 @@ const Step3: React.FC<Props> = ({
 
   React.useEffect(() => {
     fetchProvince();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   React.useEffect(() => {
     if (addressData.province_id) {
       fetchMunicipality(addressData.province_id);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [addressData.province_id]);
 
   React.useEffect(() => {
     if (addressData.municipality_id) {
       fetchBarangay(addressData.municipality_id);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [addressData.municipality_id]);
 
   const handleGetCurrentLocation = () => {
@@ -131,8 +133,12 @@ const Step3: React.FC<Props> = ({
       >
         <CardHeader
           title="Business Address and Location"
-          color="white"
-          margin="0 0 20px 0"
+          color="dark"
+          bg="white"
+          variant="title"
+          padding="12px"
+          radius="8px"
+          margin="0 0 12px 0"
         />
 
         <Grid container columns={12}>
@@ -144,7 +150,7 @@ const Step3: React.FC<Props> = ({
                   size="md"
                   placeholder="-- Select a province --"
                   value={addressData.province_id?.toString() ?? ""}
-                  onChange={(e, value) => {
+                  onChange={(_e, value) => {
                     if (!value) return;
                     const province_id = Number(value);
                     setAddressData((prev) => ({
@@ -168,7 +174,7 @@ const Step3: React.FC<Props> = ({
                   size="md"
                   placeholder="-- Select municipality --"
                   value={addressData.municipality_id?.toString() ?? ""}
-                  onChange={(e, value) => {
+                  onChange={(_e, value) => {
                     if (!value) return;
                     const municipality_id = Number(value);
                     setAddressData((prev) => ({
@@ -196,7 +202,7 @@ const Step3: React.FC<Props> = ({
                   size="md"
                   placeholder="-- Select barangay --"
                   value={addressData.barangay_id?.toString() ?? ""}
-                  onChange={(e, value) => {
+                  onChange={(_e, value) => {
                     if (!value) return;
                     const barangay_id = Number(value);
                     setAddressData((prev) => ({
@@ -219,17 +225,13 @@ const Step3: React.FC<Props> = ({
 
           <Grid xs={8}>
             <Container padding="0 20px " gap="20px">
-              <Container
-                background={colors.secondary}
-                elevation={2}
-                padding="20px"
-              >
+              <Container background={colors.offWhite2} elevation={1} padding="16px" radius="8px">
                 <Grid container spacing={2} columns={12}>
                   <Grid xs={8}>
-                    <Text color="white" variant="card-title">
+                    <Text color="dark" variant="card-title">
                       Map Coordinates
                     </Text>
-                    <Text color="white" variant="card-sub-title">
+                    <Text color="gray" variant="card-sub-title">
                       Pin the location of your business in the map
                     </Text>
                   </Grid>
@@ -243,7 +245,7 @@ const Step3: React.FC<Props> = ({
                       style={{ height: "100%" }}
                       onClick={handleGetCurrentLocation}
                     >
-                      Get Curreant Location
+                      Get Current Location
                     </Button>
                   </Grid>
                 </Grid>

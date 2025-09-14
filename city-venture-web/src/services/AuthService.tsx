@@ -18,7 +18,18 @@ interface User {
   last_name?: string;
   owner_id?: string;
   tourism_id?: string;
+  tourist_id?: string;
 }
+
+type TokenPayload = {
+  id: string;
+  role: string;
+  owner_id?: string | null;
+  tourism_id?: string | null;
+  tourist_id?: string | null;
+  exp?: number;
+  iat?: number;
+};
 
 /** LOGIN */
 export const loginUser = async (
@@ -34,14 +45,14 @@ export const loginUser = async (
   const { token } = data;
 
   // Step 2: Decode token safely
-  let payload: any;
+  let payload: TokenPayload;
   try {
     payload = JSON.parse(atob(token.split(".")[1]));
   } catch {
     throw new Error("Invalid authentication token");
   }
 
-  const ownerId: string = payload.owner_id;
+  const ownerId = payload.owner_id;
   if (!ownerId) throw new Error("Owner ID not found in token");
 
   // Step 3: Fetch owner details
@@ -78,14 +89,14 @@ export const loginAdmin = async (
   const { token } = data;
 
   // Step 2: Decode token safely
-  let payload: any;
+  let payload: TokenPayload;
   try {
     payload = JSON.parse(atob(token.split(".")[1]));
   } catch {
     throw new Error("Invalid authentication token");
   }
 
-  const adminId: string = payload.tourism_id;
+  const adminId = payload.tourism_id;
   if (!adminId) throw new Error("Admin ID not found in token");
 
   // Step 3: Fetch tourism details
@@ -107,6 +118,50 @@ export const loginAdmin = async (
   localStorage.setItem("user", JSON.stringify(loggedInAdmin));
 
   return loggedInAdmin;
+};
+
+export const loginTourist = async (
+  email: string,
+  password: string
+): Promise<User> => {
+  // Step 1: Login request
+  const { data } = await axios.post<LoginResponse>(`${api}/users/login`, {
+    email,
+    password,
+  });
+
+  const { token } = data;
+
+  // Step 2: Decode token safely
+  let payload: TokenPayload;
+  try {
+    payload = JSON.parse(atob(token.split(".")[1]));
+  } catch {
+    throw new Error("Invalid authentication token");
+  }
+
+  const touristId = payload.tourist_id;
+  if (!touristId) throw new Error("Tourist ID not found in token");
+
+  // Step 3: Fetch tourist details
+  const { data: touristData } = await axios.get<UserDetails>(
+    `${api}/tourist/${touristId}`
+  );
+
+  // Step 4: Build user object
+  const loggedInTourist: User = {
+    email,
+    role: payload.role,
+    first_name: touristData.first_name,
+    last_name: touristData.last_name,
+    tourist_id: touristData.id,
+  };
+
+  // Save to localStorage
+  localStorage.setItem("token", token);
+  localStorage.setItem("user", JSON.stringify(loggedInTourist));
+
+  return loggedInTourist;
 };
 
 /** LOGOUT */

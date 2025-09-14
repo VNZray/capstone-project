@@ -238,6 +238,9 @@ export default function LandingPage() {
                 >
                   Register Now
                 </Button>
+                <Button size="lg" variant="outlined" color="neutral" onClick={() => navigate('/login')} sx={{ borderRadius: 12 }}>
+                  Login (Tourist / Admin)
+                </Button>
                 <Button size="lg" variant="outlined" color="neutral" onClick={() => navigate('/business/login')} sx={{ borderRadius: 12 }}>
                   Business Login
                 </Button>
@@ -422,6 +425,9 @@ export default function LandingPage() {
                   }}
                 >
                   Join Now
+                </Button>
+                <Button size="lg" variant="outlined" color="neutral" onClick={() => navigate('/login')} sx={{ borderRadius: 12 }}>
+                  Login (Tourist / Admin)
                 </Button>
                 <Button size="lg" variant="outlined" color="neutral" onClick={() => navigate('/business/login')} sx={{ borderRadius: 12 }}>
                   Business Login
@@ -660,6 +666,9 @@ export default function LandingPage() {
                   >
                     Start Your Application
                   </Button>
+                  <Button size="lg" variant="outlined" color="neutral" onClick={() => navigate('/login')} sx={{ borderRadius: 12 }}>
+                    Login (Tourist / Admin)
+                  </Button>
                   <Button size="lg" variant="outlined" color="neutral" onClick={() => navigate('/business/login')} sx={{ borderRadius: 12 }}>
                     Business Login
                   </Button>
@@ -723,6 +732,7 @@ export default function LandingPage() {
               <Typography level="title-sm" fontWeight={700} sx={{ color: '#fff', marginBottom: 2 }}>Partner With Us</Typography>
               <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'grid', gap: 10 }}>
                 <li><a href="/business/signup" style={footerLinkStyle}>Business Registration</a></li>
+                <li><a href="/login" style={footerLinkStyle}>Tourist/Admin Login</a></li>
                 <li><a href="/business/login" style={footerLinkStyle}>Partner Portal Login</a></li>
                 <li><a href="#" style={footerLinkStyle}>Business Resources</a></li>
                 <li><a href="#" style={footerLinkStyle}>Pricing/Plans</a></li>
