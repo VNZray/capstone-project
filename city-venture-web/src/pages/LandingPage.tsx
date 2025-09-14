@@ -44,6 +44,8 @@ import {
   FaLock,
   FaShieldAlt,
   FaThumbsUp,
+  FaCheckCircle,
+  FaMobileAlt,
 } from "react-icons/fa";
 
 export default function LandingPage() {
@@ -108,7 +110,7 @@ export default function LandingPage() {
               textColor={colors.primary}
               sx={{ lineHeight: 1.1 }}
             >
-              Begin your journey in the heart of Bicol
+              Begin your journey in the <span className="gradient-bicol">Heart of Bicol</span>
             </Typography>
             <div className="hero-quote">— Where Faith Meets Adventure</div>
             <Typography
@@ -189,89 +191,258 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* Value Proposition Section (Right after hero) */}
+      <section id="value-proposition" className="value-prop-section" style={{ scrollMarginTop: 80 }}>
+        <div className="value-prop-inner">
+          <h2 className="vp-title-gradient">How City Venture Works For You</h2>
+          <div className="vp-grid">
+            {/* For Tourists */}
+            <div className="vp-card vp-tourists">
+              <div className="vp-card-header">For Tourists</div>
+              <h3 className="vp-card-title">Discover Naga with our mobile app</h3>
+              <p className="vp-card-text">Find attractions, events, places to stay, and local favorites. Plan your trip with beautiful maps and curated lists.</p>
+              <div className="store-buttons" aria-label="Download our app">
+                <button type="button" className="store-btn app-store" title="Download on the App Store" aria-label="Download on the App Store">
+                  <span className="store-badge"></span>
+                  <span className="store-text"><strong>App Store</strong><small>Coming soon</small></span>
+                </button>
+                <button type="button" className="store-btn play-store" title="Get it on Google Play" aria-label="Get it on Google Play">
+                  <span className="store-badge">▶</span>
+                  <span className="store-text"><strong>Google Play</strong><small>Coming soon</small></span>
+                </button>
+              </div>
+            </div>
+
+            {/* For Businesses */}
+            <div className="vp-card vp-businesses">
+              <div className="vp-card-header">For Businesses</div>
+              <h3 className="vp-card-title">Showcase your business to visitors</h3>
+              <p className="vp-card-text">List your hotel, shop, or service and get discovered by tourists searching and exploring Naga City.</p>
+              <div className="vp-actions">
+                <Button
+                  size="lg"
+                  onClick={() => navigate('/business/signup')}
+                  sx={{
+                    borderRadius: 12,
+                    px: 3,
+                    color: '#ffffff',
+                    background: 'linear-gradient(135deg, #FF6B6B 0%, #FF914D 50%, #28C76F 100%)',
+                    boxShadow: '0 10px 26px rgba(0,0,0,0.12)',
+                    textTransform: 'none',
+                    fontWeight: 700,
+                    '&:hover': { filter: 'brightness(1.02)' }
+                  }}
+                >
+                  Register Now
+                </Button>
+                <Button size="lg" variant="outlined" color="neutral" onClick={() => navigate('/business/login')} sx={{ borderRadius: 12 }}>
+                  Business Login
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Why Choosing Us */}
       {/* About Section */}
-      <section
-        id="about"
-        style={{ scrollMarginTop: 80, padding: "24px 20px", backgroundColor: "#fff" }}
-      >
-        <Container padding="0" gap="0" style={{ flex: 1 }}>
+      <section id="about" className="about-section" style={{ scrollMarginTop: 80 }}>
+        <div className="about-inner">
+          <span className="about-badge">About</span>
           <Typography
-            textAlign="center"
             level="h2"
-            fontSize="clamp(1.5rem, 3vw, 2rem)"
             fontWeight={800}
-            style={{ padding: "20px" }}
+            fontSize="clamp(1.5rem, 3vw, 2rem)"
+            textColor={colors.primary}
+            sx={{ lineHeight: 1.15, textAlign: 'center' }}
           >
-            About City Venture
+            City Venture — a Tourism <span className="gradient-bicol">Digital Platform</span>
           </Typography>
-          <Typography level="body-md" color="neutral" style={{ maxWidth: 900, margin: "0 auto", textAlign: "center" }}>
-            We help local businesses get discovered by travelers through modern listing tools, maps, and promotions.
+          <Typography
+            level="body-md"
+            color="neutral"
+            sx={{ maxWidth: 820, textAlign: 'center', margin: '8px auto 0', opacity: 0.9 }}
+          >
+            City Venture is a tourism platform dedicated to showcasing Naga’s latest attractions, local shops, and places to stay. We connect travelers with curated experiences, and help businesses get discovered through clean listings, search, and maps.
           </Typography>
-        </Container>
+
+          <ul className="about-features" aria-label="Highlights">
+            <li>
+              <span className="about-icon" aria-hidden><FaMapMarkerAlt /></span>
+              <div>
+                <div className="feat-title">Attractions & Culture</div>
+                <div className="feat-text">Discover places, events, and experiences around the city.</div>
+              </div>
+            </li>
+            <li>
+              <span className="about-icon" aria-hidden><FaStore /></span>
+              <div>
+                <div className="feat-title">Local Shops</div>
+                <div className="feat-text">Find trusted merchants, cafés, and specialty stores.</div>
+              </div>
+            </li>
+            <li>
+              <span className="about-icon" aria-hidden><FaBed /></span>
+              <div>
+                <div className="feat-title">Hotel and Accommodations</div>
+                <div className="feat-text">Browse accommodations with photos, details, and amenities.</div>
+              </div>
+            </li>
+          </ul>
+        </div>
       </section>
 
       <section
         id="why-choose-us"
-        style={{ padding: "20px 20px", backgroundColor: "#ffffff", minHeight: 500, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+        style={{ padding: "28px 20px", backgroundColor: "#ffffff" }}
       >
-        <Container padding="0" gap="0" style={{ flex: 1 }} >
-          <Typography
-            textAlign="center"
-            level="h2"
-            fontSize="clamp(1.5rem, 3vw, 2rem)"
-            fontWeight={800}
-            style={{ padding: "20px" }}
-          >
-            Why Choosing Us?
-          </Typography>
-
+        <Container padding="0" gap="20px" style={{ flex: 1 }}>
+          {/* Tourist Features Section */}
           <div
+            id="tourist-features"
             style={{
               display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+              gridTemplateColumns: "1fr 1fr",
               gap: 20,
               alignItems: "center",
-              padding: "20px",
+              marginBottom: 16,
             }}
           >
-            {[
-              {
-                title: "Wider Visibility",
-                desc: "Be seen by locals and travelers across the city.",
-              },
-              {
-                title: "Affordable & Flexible",
-                desc: "Get started free, upgrade as you grow.",
-              },
-              {
-                title: "Easy Management",
-                desc: "List, update, and track results in minutes.",
-              },
-            ].map((i, idx) => (
-              <Container
-                key={idx}
-                direction="column"
-                gap="10px"
-                padding="20px"
-                elevation={2}
-              >
-                <Typography level="title-md">{i.title}</Typography>
-                <Typography level="body-sm" color="neutral">
-                  {i.desc}
+            {/* Mobile app showcase (placeholder) */}
+            <div
+              style={{
+                background: "#fff",
+                border: "1px solid #E8EBF0",
+                borderRadius: 18,
+                boxShadow: "0 14px 28px rgba(0,0,0,0.06)",
+                overflow: "hidden",
+              }}
+            >
+              <div style={{ padding: 14, borderBottom: "1px solid #F0F3F8" }}>
+                <Typography level="title-sm" style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <FaMobileAlt /> Mobile App Preview
                 </Typography>
-                <a
-                  href="#features"
-                  style={{
-                    color: "#FF914D",
-                    textDecoration: "none",
-                    fontSize: 12,
+              </div>
+              <div style={{ height: 360, display: "grid", placeItems: "center", background: "#F7FAFC" }}>
+                <img src={placeholderImage} alt="Mobile app placeholder" style={{ maxWidth: "90%", maxHeight: "90%", objectFit: "contain", borderRadius: 12 }} />
+              </div>
+            </div>
+
+            <div style={{ display: "flex", flexDirection: "column", gap: 10, justifySelf: "center", maxWidth: 550 }}>
+              <Typography level="body-xs" style={{ color: "#FF914D", letterSpacing: 1 }}>FOR TOURISTS</Typography>
+              <Typography level="h2" fontWeight={800} fontSize="clamp(1.25rem, 2.5vw, 1.75rem)">
+                Discover Naga with our mobile app
+              </Typography>
+              <Typography level="body-sm" color="neutral">
+                Explore attractions, events, and local favorites. Plan with an interactive map and curated lists.
+              </Typography>
+              <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "grid", gap: 8 }}>
+                {[
+                  { text: "Interactive Map" },
+                  { text: "All-in-one access to information in the app" },
+                  { text: "User-friendly, intuitive interface designed for all citizens" },
+                ].map((f, i) => (
+                  <li key={i} style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                    <span style={{ color: "#28C76F", display: "grid", placeItems: "center" }}><FaCheckCircle /></span>
+                    <Typography level="body-sm" color="neutral">{f.text}</Typography>
+                  </li>
+                ))}
+              </ul>
+              <div className="store-buttons" style={{ marginTop: 8 }}>
+                <button type="button" className="store-btn app-store" title="Download on the App Store" aria-label="Download on the App Store">
+                  <span className="store-badge"></span>
+                  <span className="store-text"><strong>App Store</strong><small>Coming soon</small></span>
+                </button>
+                <button type="button" className="store-btn play-store" title="Get it on Google Play" aria-label="Get it on Google Play">
+                  <span className="store-badge">▶</span>
+                  <span className="store-text"><strong>Google Play</strong><small>Coming soon</small></span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Business Owner Benefits Section */}
+          <div
+            id="business-benefits"
+            style={{
+              display: "grid",
+              gridTemplateColumns: "1fr 1fr",
+              gap: 20,
+              alignItems: "center",
+            }}
+          >
+            <div style={{ display: "flex", flexDirection: "column", gap: 10, justifySelf: "center", maxWidth: 550 }}>
+              <Typography 
+                level="body-xs" 
+                sx={{ 
+                  letterSpacing: 1,
+                  background: 'linear-gradient(90deg, #FF6B6B 0%, #FF914D 45%, #28C76F 100%)',
+                  WebkitBackgroundClip: 'text',
+                  backgroundClip: 'text',
+                  color: 'transparent',
+                  fontWeight: 700
+                }}
+              >
+                FOR BUSINESS OWNERS
+              </Typography>
+              <Typography level="h2" fontWeight={800} fontSize="clamp(1.25rem, 2.5vw, 1.75rem)">
+                Benefits of registering your business
+              </Typography>
+              <Typography level="body-sm" color="neutral">
+                Get discovered by visitors and manage your presence with built-in tools.
+              </Typography>
+              <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "grid", gap: 8 }}>
+                {[
+                  { text: "Get listed on City Venture and be discoverable in our mobile app" },
+                  { text: "Access to Booking/Reservation System" },
+                  { text: "Content Management Tools for listings and updates" },
+                ].map((f, i) => (
+                  <li key={i} style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                    <span style={{ color: "#28C76F", display: "grid", placeItems: "center" }}><FaCheckCircle /></span>
+                    <Typography level="body-sm" color="neutral">{f.text}</Typography>
+                  </li>
+                ))}
+              </ul>
+              <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 6 }}>
+                <Button
+                  size="lg"
+                  onClick={() => navigate('/business/signup')}
+                  sx={{
+                    borderRadius: 12,
+                    px: 3,
+                    color: '#ffffff',
+                    background: 'linear-gradient(135deg, #FF6B6B 0%, #FF914D 50%, #28C76F 100%)',
+                    boxShadow: '0 10px 26px rgba(0,0,0,0.12)',
+                    textTransform: 'none',
+                    fontWeight: 700,
+                    '&:hover': { filter: 'brightness(1.02)' }
                   }}
                 >
-                  More info →
-                </a>
-              </Container>
-            ))}
+                  Join Now
+                </Button>
+                <Button size="lg" variant="outlined" color="neutral" onClick={() => navigate('/business/login')} sx={{ borderRadius: 12 }}>
+                  Business Login
+                </Button>
+              </div>
+            </div>
+
+            {/* Dashboard preview (placeholder) */}
+            <div
+              style={{
+                background: "#fff",
+                border: "1px solid #E8EBF0",
+                borderRadius: 18,
+                boxShadow: "0 14px 28px rgba(0,0,0,0.06)",
+                overflow: "hidden",
+              }}
+            >
+              <div style={{ padding: 14, borderBottom: "1px solid #F0F3F8" }}>
+                <Typography level="title-sm">Dashboard Preview</Typography>
+              </div>
+              <div style={{ height: 360, display: "grid", placeItems: "center", background: "#F7FAFC" }}>
+                <img src={placeholderImage} alt="Dashboard placeholder" style={{ maxWidth: "90%", maxHeight: "90%", objectFit: "contain", borderRadius: 12 }} />
+              </div>
+            </div>
           </div>
         </Container>
       </section>
