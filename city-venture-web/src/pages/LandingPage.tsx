@@ -12,9 +12,30 @@ import {
   FaInstagram,
   FaTwitter,
   FaStar,
+  FaHeart,
 } from "react-icons/fa";
 import { colors } from "../utils/Colors";
-import heroImage from "@/src/assets/images/uma-hotel-residences.jpg";
+// import heroImage from "@/src/assets/images/uma-hotel-residences.jpg";
+import "./landing.css";
+// Use curated local assets for the hero grid mosaic
+
+// Decide how each tile spans within the 3-column mosaic grid
+function tileClassFor(index: number): string {
+  // Pattern inspired by the provided reference image
+  // c3=wider full row; c2=two columns; r2/3=taller rows
+  const pattern = [
+    "span-c2 span-r2", // 0: wide and tall
+    "span-r3",         // 1: tall
+    "span-c2 span-r2", // 2: wide and tall
+    "",                // 3: default 1x1
+    "span-c3 span-r2", // 4: full row wide and tall
+    "span-r2",         // 5: tall
+    "",                // 6: default
+    "",                // 7: default
+    "span-c2 span-r2", // 8: wide and tall (bottom)
+  ];
+  return pattern[index % pattern.length];
+}
 import {
   FaUserPlus,
   FaListAlt,
@@ -35,6 +56,35 @@ export default function LandingPage() {
   ).href;
   const placeholderImage = testimonialImage;
 
+  // Curated 5-image mosaic for perfect compact hero
+  const gridItems = [
+    {
+      src: new URL("../assets/gridimages/grid1.jpg", import.meta.url).href,
+      title: "Naga Metropolitan Cathedral",
+      subtitle: "Shrine of Our Lady of Peñafrancia",
+    },
+    {
+      src: new URL("../assets/gridimages/grid2.jpg", import.meta.url).href,
+      title: "Kinalas",
+      subtitle: "Authentic Bicolano noodle soup",
+    },
+    {
+      src: new URL("../assets/gridimages/grid3.jpg", import.meta.url).href,
+      title: "Plaza Rizal & Heritage Village",
+      subtitle: "Heart of historic Naga",
+    },
+    {
+      src: new URL("../assets/gridimages/grid5.jpg", import.meta.url).href,
+      title: "Peñafrancia Festival",
+      subtitle: "Centuries of devotion",
+    },
+    {
+      src: new URL("../assets/gridimages/grid6.jpg", import.meta.url).href,
+      title: "Mt. Isarog Nature Reserve",
+      subtitle: "Hike and relax",
+    },
+  ];
+
   return (
     <PageContainer
       style={{
@@ -45,82 +95,122 @@ export default function LandingPage() {
         overflowX: "hidden",
       }}
     >
-      {/* Hero Section (center-aligned like reference) */}
-      <section
-        id="hero"
-        style={{
-          position: "relative",
-          overflow: "hidden",
-          background: `linear-gradient(0deg, rgba(0,0,0,0.7), rgba(0,0,0,0.4)), url(${heroImage}) center/cover no-repeat`,
-        }}
-      >
-        <Container
-          direction="column"
-          justify="center"
-          align="center"
-          padding="64px"
-          height="min(90vh, 820px)"
-          gap="18px"
-          background="transparent"
-        >
-          <Typography
-            level="h1"
-            textColor={colors.white}
-            fontSize="clamp(2rem, 4vw, 3rem)"
-            fontWeight={800}
-            textAlign="center"
-          >
-            Showcase Your Business. Reach More Tourists.
-          </Typography>
-          <Typography
-            level="body-lg"
-            textColor={colors.white}
-            fontSize="clamp(1rem, 1.5vw, 1.25rem)"
-            style={{ maxWidth: 900, opacity: 0.95 }}
-            textAlign="center"
-          >
-            List accommodations, shops, events, and tourist spots in minutes.
-            Join City Venture and connect with travelers today.
-          </Typography>
-
-          <Container
-            direction="row"
-            gap="12px"
-            padding="0"
-            background="transparent"
-            width="20rem"
-          >
-            <Button
-              fullWidth
-              size="lg"
-              sx={{
-                borderRadius: 12,
-              }}
-              onClick={() => navigate("/business/login")}
+      {/* Hero Section: Two-column main section */}
+      <section id="hero" className="main-hero" style={{ scrollMarginTop: 80 }}>
+        <div className="hero-inner">
+          {/* Left column: Welcome and actions */}
+          <div className="hero-left">
+            <span className="hero-eyebrow"><FaHeart className="heart" aria-hidden="true" /> Explore Naga City</span>
+            <Typography
+              level="h1"
+              fontSize="clamp(2rem, 4vw, 3rem)"
+              fontWeight={800}
+              textColor={colors.primary}
+              sx={{ lineHeight: 1.1 }}
             >
-              Get Started
-            </Button>
-
-            <Button
-              fullWidth
-              size="lg"
-              variant="soft"
-              color="neutral"
-              onClick={() => {
-                const el = document.getElementById("why-choose-us");
-                el?.scrollIntoView({ behavior: "smooth", block: "start" });
-              }}
-              sx={{
-                borderRadius: 12,
-              }}
+              Begin your journey in the heart of Bicol
+            </Typography>
+            <div className="hero-quote">— Where Faith Meets Adventure</div>
+            <Typography
+              level="body-lg"
+              fontSize="clamp(1rem, 1.5vw, 1.15rem)"
+              textColor={colors.text}
+              sx={{ maxWidth: 620, opacity: 0.9 }}
             >
-              Explore
-            </Button>
-          </Container>
-        </Container>
+              Iconic attractions, vibrant culture, and hidden gems — curated in one place. From the devotion of Peñafrancia to the flavors of kinalas and the trails of Mt. Isarog, experience the city’s spirit up close.
+            </Typography>
+
+            <div className="hero-actions">
+              <Button
+                size="lg"
+                onClick={() => navigate("/business/login")}
+                sx={{
+                  borderRadius: 12,
+                  px: 3,
+                  color: '#ffffff',
+                  background: 'linear-gradient(135deg, #0077B6 0%, #0A1B47 100%)',
+                  boxShadow: '0 8px 24px rgba(10,27,71,0.25)',
+                  border: 'none',
+                  textTransform: 'none',
+                  fontWeight: 600,
+                  transition: 'transform 160ms ease, box-shadow 160ms ease, filter 160ms ease',
+                  '&:hover': {
+                    background: 'linear-gradient(135deg, #0B82C4 0%, #0A1B47 100%)',
+                    transform: 'translateY(-1px)',
+                    boxShadow: '0 10px 28px rgba(10,27,71,0.3)'
+                  },
+                  '&:active': {
+                    transform: 'translateY(0)',
+                    boxShadow: '0 6px 18px rgba(10,27,71,0.24)'
+                  },
+                  '&:focusVisible': {
+                    outline: 'none',
+                    boxShadow: '0 0 0 3px rgba(0,119,182,0.35), 0 8px 24px rgba(10,27,71,0.25)'
+                  }
+                }}
+              >
+                Get Started
+              </Button>
+              <Button
+                size="lg"
+                variant="outlined"
+                color="neutral"
+                onClick={() => {
+                  const el = document.getElementById("features");
+                  el?.scrollIntoView({ behavior: "smooth", block: "start" });
+                }}
+                sx={{ borderRadius: 12 }}
+              >
+                Learn More
+              </Button>
+            </div>
+          </div>
+
+          {/* Right column: Dynamic attractions grid */}
+          <div className="hero-right">
+            <div className="attractions-grid">
+              {gridItems.map((item, i) => (
+                <button
+                  key={`${item.title}-${i}`}
+                  type="button"
+                  className={`tile ${tileClassFor(i)}`}
+                  title={item.title}
+                  aria-label={`${item.title} — ${item.subtitle}`}
+                >
+                  <img src={item.src} alt={item.title} />
+                  <div className="tile-label" aria-hidden>
+                    <div className="tile-title">{item.title}</div>
+                    <div className="tile-sub">{item.subtitle}</div>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
       </section>
 
       {/* Why Choosing Us */}
+      {/* About Section */}
+      <section
+        id="about"
+        style={{ scrollMarginTop: 80, padding: "24px 20px", backgroundColor: "#fff" }}
+      >
+        <Container padding="0" gap="0" style={{ flex: 1 }}>
+          <Typography
+            textAlign="center"
+            level="h2"
+            fontSize="clamp(1.5rem, 3vw, 2rem)"
+            fontWeight={800}
+            style={{ padding: "20px" }}
+          >
+            About City Venture
+          </Typography>
+          <Typography level="body-md" color="neutral" style={{ maxWidth: 900, margin: "0 auto", textAlign: "center" }}>
+            We help local businesses get discovered by travelers through modern listing tools, maps, and promotions.
+          </Typography>
+        </Container>
+      </section>
+
       <section
         id="why-choose-us"
         style={{ padding: "20px 20px", backgroundColor: "#ffffff", minHeight: 500, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
@@ -189,7 +279,7 @@ export default function LandingPage() {
       {/* Featured Services (card row like reference) */}
       <section
         id="features"
-        style={{ padding: "24px 16px", backgroundColor: colors.offWhite2 }}
+        style={{ scrollMarginTop: 80, padding: "24px 16px", backgroundColor: colors.offWhite2 }}
       >
         <Container
           background="transparent"

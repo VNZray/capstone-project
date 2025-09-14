@@ -1,0 +1,119 @@
+.navbar {
+  position: sticky;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  background: rgba(255,255,255,var(--nav-bg, 0.02)); /* controlled via CSS var */
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  transition: background 220ms ease, box-shadow 220ms ease, border-color 220ms ease;
+}
+
+.nav-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px; /* thicker but minimal */
+  max-width: 1200px;
+  margin: 0 auto;
+  gap: 12px;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 4px; /* tighter spacing */
+}
+
+.brand img {
+  height: 36px; /* slightly larger for presence */
+}
+
+.nav-links {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-left: auto; /* push links to the right, closer to actions */
+}
+
+.nav-link {
+  color: #0D1B2A; /* dark, minimal text */
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 500; /* softer */
+  opacity: 0.95;
+  padding: 2px 4px; /* reduced padding for better alignment */
+  border-radius: 6px;
+  position: relative;
+  line-height: 1.4; /* consistent line height */
+  transition: opacity 0.12s ease, transform 0.12s ease;
+}
+
+/* underline animation */
+.nav-link::after {
+  content: '';
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: -2px;
+  height: 2px;
+  background: transparent;
+  transform-origin: left;
+  transform: scaleX(0);
+  transition: transform 0.18s cubic-bezier(.2,.8,.2,1), background 0.18s;
+  border-radius: 2px;
+}
+
+.nav-link:hover::after {
+  transform: scaleX(1);
+  background: currentColor; /* match font color */
+}
+
+.nav-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border-left: 1px solid rgba(13,27,42,0.15); /* subtle separator */
+  padding-left: 16px;
+}
+
+.menu-btn {
+  display: none;
+  background: transparent;
+  border: none;
+}
+
+.mobile-menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: rgba(255,255,255,0.95);
+  border-radius: 0;
+  box-shadow: none;
+  margin: 0;
+}
+
+.mobile-menu-inner {
+  display: grid;
+  gap: 8px;
+  padding: 12px 16px 16px 16px;
+}
+
+@media (max-width: 900px) {
+  .nav-links,
+  .nav-actions {
+    display: none;
+  }
+  .menu-btn {
+    display: grid;
+    place-items: center;
+  }
+}
+
+/* Elevated when scrolled */
+.navbar.scrolled {
+  box-shadow: 0 8px 24px rgba(0,0,0,0.05);
+  border-bottom: 1px solid rgba(13,27,42,0.06);
+}
