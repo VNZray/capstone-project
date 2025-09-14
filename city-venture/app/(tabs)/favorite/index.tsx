@@ -101,7 +101,7 @@ const Favorite = () => {
 
   const onTabPress = (index: number) => {
     setTabIndex(index);
-    scrollRef.current?.scrollTo({ x: SCREEN_WIDTH * index, animated: true });
+    scrollRef.current?.scrollTo({ x: SCREEN_WIDTH * index, animated: false });
   };
 
   // Pull-to-refresh
@@ -162,19 +162,26 @@ const Favorite = () => {
 
       {/* Tabs */}
       <View style={{ paddingHorizontal: 20, marginTop: 14 }}>
-        <View style={styles.tabRow}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.tabRow}
+        >
           {TABS.map((t, i) => (
             <Button
+              startIcon={t.icon}
               key={t.key}
               onPress={() => onTabPress(i)}
               label={t.label}
               size='medium'
-              textSize={12}
+              textSize={11}
+              iconSize={14}
+              padding={11}
               variant={tabIndex === i ? 'solid' : 'soft'}
               color={tabIndex === i ? 'primary' : 'secondary'}
             />
           ))}
-        </View>
+        </ScrollView>
       </View>
 
       {/* Pages */}
@@ -233,7 +240,7 @@ const HeartButton = ({ onPress }: { onPress: () => void }) => {
   return (
     <Pressable onPress={handlePress} accessibilityRole="button" accessibilityLabel="Remove from favorites">
       <Animated.View style={{ transform: [{ scale }] }}>
-        <FontAwesome5 name="heart" size={18} color="#D23B3B" solid />
+        <FontAwesome5 name="heart" size={32} color={colors.primary} solid />
       </Animated.View>
     </Pressable>
   );
@@ -268,7 +275,7 @@ const EmptyState = () => (
 // Styles
 const styles = StyleSheet.create({
   screen: { flex: 1 },
-  tabRow: { flexDirection: 'row', alignItems: 'center', gap: 8, overflow: "scroll", width: "100%" },
+  tabRow: { flexDirection: 'row', alignItems: 'center', gap: 8},
   tabBtn: {
     flex: 1,
     backgroundColor: '#EEF4FF',

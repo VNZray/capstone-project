@@ -51,34 +51,84 @@ const HomeScreen = () => {
   // Sample highlight data
   const spots = useMemo(
     () => [
-      { id: 's1', name: 'Basilica Minore', tag: 'A Spiritual Journey in Naga', img: 'https://i0.wp.com/nagayon.com/wp-content/uploads/2024/05/Cathedral-Exterior_1-scaled.jpg?resize=768%2C576&ssl=1' },
-      { id: 's2', name: 'Peñafrancia Shrine', tag: 'Historic devotion site', img: 'https://i0.wp.com/nagayon.com/wp-content/uploads/2024/05/Porta-mariae-e1717984426731.jpg?resize=768%2C506&ssl=1' },
-      { id: 's3', name: 'JMR Coliseum', tag: 'Events and sports hub', img: 'https://i0.wp.com/nagayon.com/wp-content/uploads/2024/09/jmr-coliseum-scaled.jpg?resize=768%2C576&ssl=1' },
+      {
+        id: 's1',
+        name: 'Basilica Minore',
+        tag: 'A Spiritual Journey in Naga',
+        img: 'https://i0.wp.com/nagayon.com/wp-content/uploads/2024/05/Cathedral-Exterior_1-scaled.jpg?resize=768%2C576&ssl=1',
+      },
+      {
+        id: 's2',
+        name: 'Peñafrancia Shrine',
+        tag: 'Historic devotion site',
+        img: 'https://i0.wp.com/nagayon.com/wp-content/uploads/2024/05/Porta-mariae-e1717984426731.jpg?resize=768%2C506&ssl=1',
+      },
+      {
+        id: 's3',
+        name: 'JMR Coliseum',
+        tag: 'Events and sports hub',
+        img: 'https://i0.wp.com/nagayon.com/wp-content/uploads/2024/09/jmr-coliseum-scaled.jpg?resize=768%2C576&ssl=1',
+      },
     ],
     []
   );
 
   const partners = useMemo(
     () => [
-      { id: 'p1', name: 'UMA Residence', tag: 'Accommodation', img: require('@/assets/images/android-icon-foreground.png') },
-      { id: 'p2', name: 'Local Cafe', tag: 'Shop', img: require('@/assets/images/partial-react-logo.png') },
-      { id: 'p3', name: 'Travel Co', tag: 'Partner', img: require('@/assets/images/react-logo.png') },
+      {
+        id: 'p1',
+        name: 'UMA Residence',
+        tag: 'Accommodation',
+        img: require('@/assets/images/android-icon-foreground.png'),
+      },
+      {
+        id: 'p2',
+        name: 'Local Cafe',
+        tag: 'Shop',
+        img: require('@/assets/images/partial-react-logo.png'),
+      },
+      {
+        id: 'p3',
+        name: 'Travel Co',
+        tag: 'Partner',
+        img: require('@/assets/images/react-logo.png'),
+      },
     ],
     []
   );
 
   const events = useMemo(
     () => [
-      { id: 'e1', name: 'Peñafrancia Festival', date: 'Sep 12-20', img: require('@/assets/images/react-logo.png'), desc: 'Cultural parade and celebration' },
-      { id: 'e2', name: 'City Music Night', date: 'Oct 05', img: require('@/assets/images/react-logo.png'), desc: 'Live performances in the plaza' },
+      {
+        id: 'e1',
+        name: 'Peñafrancia Festival',
+        date: 'Sep 12-20',
+        img: require('@/assets/images/react-logo.png'),
+        desc: 'Cultural parade and celebration',
+      },
+      {
+        id: 'e2',
+        name: 'City Music Night',
+        date: 'Oct 05',
+        img: require('@/assets/images/react-logo.png'),
+        desc: 'Live performances in the plaza',
+      },
     ],
     []
   );
 
   const news = useMemo(
     () => [
-      { id: 'n1', title: 'Naga City Festival Set to Welcome Thousands of Visitors', img: require('@/assets/images/android-icon-background.png') },
-      { id: 'n2', title: 'New Walking Tours Launched in Downtown', img: require('@/assets/images/android-icon-monochrome.png') },
+      {
+        id: 'n1',
+        title: 'Naga City Festival Set to Welcome Thousands of Visitors',
+        img: require('@/assets/images/android-icon-background.png'),
+      },
+      {
+        id: 'n2',
+        title: 'New Walking Tours Launched in Downtown',
+        img: require('@/assets/images/android-icon-monochrome.png'),
+      },
     ],
     []
   );
@@ -98,13 +148,21 @@ const HomeScreen = () => {
                 onProgressChange={progress}
                 renderItem={({ item }) => (
                   <View style={styles.carouselItem}>
-                    <Image source={{ uri: item.uri }} style={styles.image} resizeMode="cover" />
+                    <Image
+                      source={{ uri: item.uri }}
+                      style={styles.image}
+                      resizeMode="cover"
+                    />
                     <LinearGradient
-                      colors={["rgba(0,0,0,0.0)", "rgba(0,0,0,0.6)"]}
+                      colors={['rgba(0,0,0,0.0)', 'rgba(0,0,0,0.6)']}
                       style={styles.overlay}
                     />
                     <View style={styles.overlayContent}>
-                      <ThemedText type="title-small" weight="bold" style={{ color: '#fff' }}>
+                      <ThemedText
+                        type="title-small"
+                        weight="bold"
+                        style={{ color: '#fff' }}
+                      >
                         Discover Naga’s Hidden Gems
                       </ThemedText>
                       <Button
@@ -114,7 +172,9 @@ const HomeScreen = () => {
                         startIcon="compass"
                         elevation={2}
                         radius={14}
-                        onPress={() => router.push('/(tabs)/(home)/(spot)' as any)}
+                        onPress={() =>
+                          router.push('/(tabs)/(home)/(spot)' as any)
+                        }
                       />
                     </View>
                   </View>
@@ -124,7 +184,7 @@ const HomeScreen = () => {
           </View>
 
           {/* Quick Navigation (light gray) */}
-          <View style={{ backgroundColor: altBg, padding: 16}}>
+          <View style={{ backgroundColor: altBg, padding: 16 }}>
             <Container
               elevation={2}
               padding={16}
@@ -172,27 +232,50 @@ const HomeScreen = () => {
           </View>
 
           {/* Highlighted Tourist Spots (white) */}
-          <SectionHeader title="Highlighted Tourist Spots" subtitle="Don’t miss these popular places" bg={bg} />
+          <SectionHeader
+            title="Highlighted Tourist Spots"
+            subtitle="Don’t miss these popular places"
+            bg={bg}
+          />
           <FlatList
             horizontal
             showsHorizontalScrollIndicator={false}
             data={spots}
             keyExtractor={(i) => i.id}
-            contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 10, gap: 12 }}
+            contentContainerStyle={{
+              paddingHorizontal: 16,
+              paddingBottom: 10,
+              gap: 12,
+            }}
             renderItem={({ item }) => (
-              <View style={[styles.spotCard, { backgroundColor: card }, shadow(2)]}>
+              <View
+                style={[styles.spotCard, { backgroundColor: card }, shadow(2)]}
+              >
                 <Image source={{ uri: item.img }} style={styles.spotImg} />
                 <View style={{ padding: 10 }}>
-                  <ThemedText type="body-medium" weight="semi-bold">{item.name}</ThemedText>
-                  <ThemedText type="label-small" style={{ color: textMuted }}>{item.tag}</ThemedText>
+                  <ThemedText type="body-medium" weight="semi-bold">
+                    {item.name}
+                  </ThemedText>
+                  <ThemedText type="label-small" style={{ color: textMuted }}>
+                    {item.tag}
+                  </ThemedText>
                 </View>
-                <FontAwesome5 name="map-marker-alt" size={16} color={colors.secondary} style={{ position: 'absolute', right: 10, top: 10 }} />
+                <FontAwesome5
+                  name="map-marker-alt"
+                  size={16}
+                  color={colors.secondary}
+                  style={{ position: 'absolute', right: 10, top: 10 }}
+                />
               </View>
             )}
           />
 
           {/* Partners (light gray) */}
-          <SectionHeader title="Partnered Businesses" subtitle="Trusted Partners of City Venture" bg={altBg} />
+          <SectionHeader
+            title="Partnered Businesses"
+            subtitle="Trusted Partners of City Venture"
+            bg={altBg}
+          />
           <View style={{ backgroundColor: altBg, paddingBottom: 10 }}>
             <FlatList
               horizontal
@@ -201,11 +284,21 @@ const HomeScreen = () => {
               keyExtractor={(i) => i.id}
               contentContainerStyle={{ paddingHorizontal: 16, gap: 12 }}
               renderItem={({ item }) => (
-                <View style={[styles.partnerCard, { backgroundColor: card }, shadow(1)]}>
+                <View
+                  style={[
+                    styles.partnerCard,
+                    { backgroundColor: card },
+                    shadow(1),
+                  ]}
+                >
                   <Image source={item.img} style={styles.partnerImg} />
                   <View style={{ marginTop: 6 }}>
-                    <ThemedText type="label-medium" weight="semi-bold">{item.name}</ThemedText>
-                    <ThemedText type="label-small" style={{ color: textMuted }}>{item.tag}</ThemedText>
+                    <ThemedText type="label-medium" weight="semi-bold">
+                      {item.name}
+                    </ThemedText>
+                    <ThemedText type="label-small" style={{ color: textMuted }}>
+                      {item.tag}
+                    </ThemedText>
                   </View>
                 </View>
               )}
@@ -213,14 +306,27 @@ const HomeScreen = () => {
           </View>
 
           {/* Upcoming Events (white) */}
-          <SectionHeader title="Upcoming Events" subtitle="Mark your calendars" bg={bg} actionLabel="See All" onAction={() => router.push('/(tabs)/(home)/(event)' as any)} />
+          <SectionHeader
+            title="Upcoming Events"
+            subtitle="Mark your calendars"
+            bg={bg}
+            actionLabel="See All"
+            onAction={() => router.push('/(tabs)/(home)/(event)' as any)}
+          />
           <View style={{ backgroundColor: bg }}>
             {events.map((e) => (
-              <View key={e.id} style={[styles.eventCard, { backgroundColor: card }, shadow(1)]}>
+              <View
+                key={e.id}
+                style={[styles.eventCard, { backgroundColor: card }, shadow(1)]}
+              >
                 <Image source={e.img} style={styles.eventImg} />
                 <View style={{ flex: 1, marginLeft: 10 }}>
-                  <ThemedText type="body-medium" weight="semi-bold">{e.name}</ThemedText>
-                  <ThemedText type="label-small" style={{ color: textMuted }}>{e.date} • {e.desc}</ThemedText>
+                  <ThemedText type="body-medium" weight="semi-bold">
+                    {e.name}
+                  </ThemedText>
+                  <ThemedText type="label-small" style={{ color: textMuted }}>
+                    {e.date} • {e.desc}
+                  </ThemedText>
                 </View>
                 <FontAwesome5 name="chevron-right" size={12} color="#9AA4B2" />
               </View>
@@ -228,13 +334,38 @@ const HomeScreen = () => {
           </View>
 
           {/* News & Articles (light gray) */}
-          <SectionHeader title="News & Articles" subtitle="What’s new in Naga" bg={altBg} />
-          <View style={{ backgroundColor: altBg, paddingHorizontal: 16, paddingBottom: 16, gap: 10 }}>
+          <SectionHeader
+            title="News & Articles"
+            subtitle="What’s new in Naga"
+            bg={altBg}
+          />
+          <View
+            style={{
+              backgroundColor: altBg,
+              paddingHorizontal: 16,
+              paddingBottom: 16,
+              gap: 10,
+            }}
+          >
             {news.map((n) => (
-              <View key={n.id} style={[styles.newsCard, { backgroundColor: card }, shadow(1)]}>
+              <View
+                key={n.id}
+                style={[styles.newsCard, { backgroundColor: card }, shadow(1)]}
+              >
                 <Image source={n.img} style={styles.newsThumb} />
-                <ThemedText type="body-small" weight="semi-bold" style={{ flex: 1 }} numberOfLines={2}>{n.title}</ThemedText>
-                <FontAwesome5 name="arrow-right" size={12} color={colors.secondary} />
+                <ThemedText
+                  type="body-small"
+                  weight="semi-bold"
+                  style={{ flex: 1 }}
+                  numberOfLines={2}
+                >
+                  {n.title}
+                </ThemedText>
+                <FontAwesome5
+                  name="arrow-right"
+                  size={12}
+                  color={colors.secondary}
+                />
               </View>
             ))}
           </View>
@@ -243,16 +374,35 @@ const HomeScreen = () => {
           <View style={{ backgroundColor: bg, padding: 16 }}>
             <Container elevation={2} padding={16} backgroundColor={card}>
               <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                <Image source={require('@/assets/logo/logo.png')} style={{ width: 48, height: 48, borderRadius: 12, marginRight: 12 }} />
+                <Image
+                  source={require('@/assets/logo/logo.png')}
+                  style={{
+                    width: 48,
+                    height: 48,
+                    borderRadius: 12,
+                    marginRight: 12,
+                  }}
+                />
                 <View style={{ flex: 1 }}>
-                  <ThemedText type="sub-title-small" weight="bold">About City Venture</ThemedText>
+                  <ThemedText type="sub-title-small" weight="bold">
+                    About City Venture
+                  </ThemedText>
                   <ThemedText type="label-small" style={{ color: textMuted }}>
-                    City Venture is your trusted companion for exploring Naga City—connecting you with accommodations, shops, events, and tourist spots.
+                    City Venture is your trusted companion for exploring Naga
+                    City—connecting you with accommodations, shops, events, and
+                    tourist spots.
                   </ThemedText>
                 </View>
               </View>
               <View style={{ marginTop: 12 }}>
-                <Button label="Learn More" variant="soft" color="primary" startIcon="info-circle" radius={12} onPress={() => router.push('/' as any)} />
+                <Button
+                  label="Learn More"
+                  variant="soft"
+                  color="primary"
+                  startIcon="info-circle"
+                  radius={12}
+                  onPress={() => router.push('/' as any)}
+                />
               </View>
             </Container>
           </View>
@@ -260,7 +410,12 @@ const HomeScreen = () => {
           {/* Footer (light gray) */}
           <View style={{ backgroundColor: altBg, padding: 16 }}>
             <Container elevation={1} padding={16} backgroundColor={altBg}>
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+              <View
+                style={{
+                  flexDirection: 'row',
+                  justifyContent: 'space-between',
+                }}
+              >
                 <FooterLink label="Contact" />
                 <FooterLink label="Terms" />
                 <FooterLink label="Privacy" />
@@ -282,17 +437,61 @@ const HomeScreen = () => {
 export default HomeScreen;
 
 // --- Helpers ---
-const NavButton = ({ label, icon, onPress }: { label: string; icon: any; onPress: () => void }) => (
-  <Button label={label} color="transparent" topIcon={icon} iconSize={24} textSize={10} onPress={onPress} />
+const NavButton = ({
+  label,
+  icon,
+  onPress,
+}: {
+  label: string;
+  icon: any;
+  onPress: () => void;
+}) => (
+  <Button
+    label={label}
+    color="transparent"
+    topIcon={icon}
+    iconSize={24}
+    textSize={10}
+    onPress={onPress}
+  />
 );
 
-const SectionHeader = ({ title, subtitle, bg, actionLabel, onAction }: { title: string; subtitle?: string; bg: string; actionLabel?: string; onAction?: () => void }) => (
-  <View style={{ backgroundColor: bg, paddingHorizontal: 16, paddingTop: 18, paddingBottom: 6 }}>
-    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+const SectionHeader = ({
+  title,
+  subtitle,
+  bg,
+  actionLabel,
+  onAction,
+}: {
+  title: string;
+  subtitle?: string;
+  bg: string;
+  actionLabel?: string;
+  onAction?: () => void;
+}) => (
+  <View
+    style={{
+      backgroundColor: bg,
+      paddingHorizontal: 16,
+      paddingTop: 18,
+      paddingBottom: 6,
+    }}
+  >
+    <View
+      style={{
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+      }}
+    >
       <View>
-        <ThemedText type="sub-title-medium" weight="bold">{title}</ThemedText>
+        <ThemedText type="sub-title-medium" weight="bold">
+          {title}
+        </ThemedText>
         {subtitle ? (
-          <ThemedText type="label-small" style={{ color: '#6A768E' }}>{subtitle}</ThemedText>
+          <ThemedText type="label-small" style={{ color: '#6A768E' }}>
+            {subtitle}
+          </ThemedText>
         ) : null}
       </View>
       {onAction ? (
@@ -306,7 +505,9 @@ const SectionHeader = ({ title, subtitle, bg, actionLabel, onAction }: { title: 
 
 const FooterLink = ({ label }: { label: string }) => (
   <Pressable>
-    <ThemedText type="label-small" style={{ color: '#6A768E' }}>{label}</ThemedText>
+    <ThemedText type="label-small" style={{ color: '#6A768E' }}>
+      {label}
+    </ThemedText>
   </Pressable>
 );
 
@@ -314,24 +515,81 @@ const styles = StyleSheet.create({
   carouselItem: { flex: 1, overflow: 'hidden', padding: 0 },
   image: { width: '100%', height: '100%', borderRadius: 0 },
   overlay: { position: 'absolute', left: 0, right: 0, bottom: 0, height: 120 },
-  overlayContent: { position: 'absolute', left: 16, right: 16, bottom: 16, gap: 8 },
+  overlayContent: {
+    position: 'absolute',
+    left: 16,
+    right: 16,
+    bottom: 16,
+    gap: 8,
+  },
   spotCard: { width: 220, borderRadius: 16, overflow: 'hidden' },
   spotImg: { width: '100%', height: 120 },
-  partnerCard: { width: 140, borderRadius: 16, alignItems: 'center', padding: 10 },
-  partnerImg: { width: 80, height: 80, borderRadius: 12, backgroundColor: '#EAEFF7' },
-  eventCard: { flexDirection: 'row', alignItems: 'center', marginHorizontal: 16, marginBottom: 10, borderRadius: 14, padding: 10 },
-  eventImg: { width: 72, height: 72, borderRadius: 12, backgroundColor: '#EAEFF7' },
-  newsCard: { flexDirection: 'row', alignItems: 'center', gap: 10, borderRadius: 14, padding: 10 },
-  newsThumb: { width: 54, height: 54, borderRadius: 10, backgroundColor: '#EAEFF7' },
+  partnerCard: {
+    width: 140,
+    borderRadius: 16,
+    alignItems: 'center',
+    padding: 10,
+  },
+  partnerImg: {
+    width: "100%",
+    height: 100,
+    borderRadius: 12,
+    backgroundColor: '#EAEFF7',
+  },
+  eventCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginHorizontal: 16,
+    marginBottom: 10,
+    borderRadius: 14,
+    padding: 10,
+  },
+  eventImg: {
+    width: 72,
+    height: 72,
+    borderRadius: 12,
+    backgroundColor: '#EAEFF7',
+  },
+  newsCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    borderRadius: 14,
+    padding: 10,
+  },
+  newsThumb: {
+    width: 54,
+    height: 54,
+    borderRadius: 10,
+    backgroundColor: '#EAEFF7',
+  },
 });
 
 function shadow(level: 1 | 2 | 3) {
   switch (level) {
     case 1:
-      return { shadowColor: '#1e1e1e', shadowOpacity: 0.08, shadowRadius: 2, shadowOffset: { width: 0, height: 1 }, elevation: 1 } as const;
+      return {
+        shadowColor: '#1e1e1e',
+        shadowOpacity: 0.08,
+        shadowRadius: 2,
+        shadowOffset: { width: 0, height: 1 },
+        elevation: 1,
+      } as const;
     case 2:
-      return { shadowColor: '#1e1e1e', shadowOpacity: 0.12, shadowRadius: 3, shadowOffset: { width: 0, height: 2 }, elevation: 2 } as const;
+      return {
+        shadowColor: '#1e1e1e',
+        shadowOpacity: 0.12,
+        shadowRadius: 3,
+        shadowOffset: { width: 0, height: 2 },
+        elevation: 2,
+      } as const;
     default:
-      return { shadowColor: '#1e1e1e', shadowOpacity: 0.16, shadowRadius: 4, shadowOffset: { width: 0, height: 3 }, elevation: 3 } as const;
+      return {
+        shadowColor: '#1e1e1e',
+        shadowOpacity: 0.16,
+        shadowRadius: 4,
+        shadowOffset: { width: 0, height: 3 },
+        elevation: 3,
+      } as const;
   }
 }

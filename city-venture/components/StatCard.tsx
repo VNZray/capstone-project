@@ -30,7 +30,7 @@ const StatCard = ({ icon, label, value, card, scheme }: StatProps) => {
           { backgroundColor: scheme === 'dark' ? '#263054' : '#E8F0FF' },
         ]}
       >
-        <FontAwesome5 name={icon} size={14} color={colors.secondary} />
+        <FontAwesome5 name={icon} size={16} color={colors.secondary} />
       </View>
       <View>
         <ThemedText type="sub-title-small" weight="bold">
