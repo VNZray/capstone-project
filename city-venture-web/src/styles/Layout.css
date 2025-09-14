@@ -29,6 +29,11 @@
   min-width: 100%;
 }
 
+.landing-page-layout {
+  padding: 0;
+  margin: 0;
+}
+
 .auth-layout {
   width: 100vw;
   height: 100vh;
