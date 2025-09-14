@@ -1,11 +1,10 @@
-import PressableButton from '@/components/PressableButton';
+import Button from '@/components/Button';
 import { ThemedText } from '@/components/themed-text';
-import { colors, text } from '@/constants/color';
 import { navigateToLogin, navigateToRegister } from '@/routes/mainRoutes';
 import { useFonts } from 'expo-font';
 import { LinearGradient } from 'expo-linear-gradient';
 import React from 'react';
-import { ImageBackground, Text, View } from 'react-native';
+import { ImageBackground, View } from 'react-native';
 import 'react-native-url-polyfill/auto';
 
 const Main = () => {
@@ -38,59 +37,45 @@ const Main = () => {
           ]}
           start={{ x: 0.5, y: 0 }}
           end={{ x: 0.5, y: 1 }}
-          style={{ flex: 1, justifyContent: 'center', padding: '5%' }}
+          style={{ flex: 1, justifyContent: 'space-between', padding: '5%' }}
         >
-          <ThemedText
-            type="title"
-            style={{
-              fontSize: 38,
-              textAlign: 'left',
-              marginTop: 250,
-              color: '#fff',
-            }}
-          >
-            Begin Your Journey in the Heart of Naga
-          </ThemedText>
-          <Text
-            style={{
-              fontSize: 18,
-              fontFamily: 'Poppins-Regular',
-              textAlign: 'left',
-              color: 'white',
-              marginTop: 20,
-            }}
-          >
-            - Where Faith Meets Adventure.
-          </Text>
+          <View style={{ marginTop: 350 }}>
+            <ThemedText
+              style={{ color: 'white' }}
+              type="title-large"
+              weight="extra-bold"
+            >
+              Begin Your Journey in the Heart of Naga
+            </ThemedText>
+            <ThemedText type="body-large" pt={20} style={{ color: 'white' }}>
+              - Where Faith Meets Adventure.
+            </ThemedText>
+          </View>
           <View
             style={{
               flexDirection: 'column',
               gap: 16,
-              marginTop: 80,
+              marginBottom: 100,
               width: '100%',
               alignItems: 'center',
             }}
           >
-            <PressableButton
-              textSize={16}
-              width={'100%'}
-              height={55}
-              type="secondary"
-              color={colors.tertiary}
-              direction="column"
-              title="Login"
+            <Button
+              fullWidth
+              size="large"
+              label="Sign In"
+              color="secondary"
+              variant="solid"
               onPress={() => navigateToLogin()}
-            ></PressableButton>
-            <PressableButton
-              textSize={16}
-              width={'100%'}
-              height={55}
-              type="tertiary"
-              color={text.dark}
-              direction="column"
-              title="Register"
+            />
+
+            <Button
+              fullWidth
+              size="large"
+              label="Sign Up"
+              color="neutral"
               onPress={() => navigateToRegister()}
-            ></PressableButton>
+            />
           </View>
         </LinearGradient>
       </ImageBackground>

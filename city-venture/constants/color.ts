@@ -27,15 +27,18 @@ export const Colors = {
 
 
 export const colors = {
-  light: Colors.light,
-  dark: Colors.dark,
+  light: Colors.light.background,
+  dark: Colors.dark.background,
   primary: '#0A1B47',
   secondary: '#0077B6',
   tertiary: '#DEE3F2',
   background: '#fff',
-  error: '#ff4d4d',
-  success: '#28a745',
+  error: '#dc3545',
+  success: '#198754',
   warning: '#ffc107',
+  info: '#0dcaf0',
+  link: '#1e90ff',
+  placeholder: '#888',
 };
 
 export const text = {
@@ -44,6 +47,6 @@ export const text = {
     link: '#1e90ff',
     placeholder: '#888',
     warning: '#ffcc00',
-    error: '#ff4d4d',
+    error: '#e57373',
     success: '#28a745',
 };
