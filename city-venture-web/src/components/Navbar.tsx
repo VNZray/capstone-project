@@ -101,7 +101,7 @@ const Navbar: React.FC<NavbarProps> = ({ servicesId = "features", aboutId = "abo
               }
             }}
           >
-            Register
+            Sign Up
           </Button>
         </div>
 
@@ -146,7 +146,7 @@ const Navbar: React.FC<NavbarProps> = ({ servicesId = "features", aboutId = "abo
                 onClick={() => { setOpen(false); navigate("/business/signup"); }}
                 sx={{ backgroundColor: colors.primary, color: '#ffffff', fontWeight: 600, textTransform: 'none', borderRadius: 8, padding: '8px 16px', boxShadow: '0 2px 8px rgba(10,27,71,0.2)', '&:hover': { backgroundColor: '#0a1a3d', transform: 'translateY(-1px)', boxShadow: '0 4px 16px rgba(10,27,71,0.3)' } }}
               >
-                Register
+                Sign Up
               </Button>
             </div>
           </div>
