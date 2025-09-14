@@ -3,7 +3,6 @@ export {
   getAllTouristSpots,
   getTouristSpotById,
   createTouristSpot,
-  updateTouristSpot
 } from './touristSpotController.js';
 
 // Schedule management
@@ -30,7 +29,7 @@ export {
 export {
   getLocationData,
   getMunicipalitiesByProvince,
-  getBarangaysByMunicipality
+  getBarangaysByMunicipality,
 } from './locationController.js';
 
 // Edit requests
