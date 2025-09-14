@@ -26,9 +26,10 @@ exports.up = function (knex) {
       })
       .notNullable();
 
-    table.decimal("discount_value", 10, 2).notNullable();
-    table.timestamp("start_date").notNullable();
-    table.timestamp("end_date").notNullable();
+  table.decimal("discount_value", 10, 2).notNullable();
+  // Start date defaults to now; end date is provided by app and allowed to be NULL until set
+  table.timestamp("start_date").notNullable().defaultTo(knex.fn.now());
+  table.timestamp("end_date").nullable().defaultTo(null);
     table.boolean("is_active").defaultTo(true);
     table.timestamp("created_at").defaultTo(knex.fn.now());
     table.timestamp("updated_at").defaultTo(knex.fn.now());
@@ -43,7 +44,6 @@ exports.up = function (knex) {
 };
 
 exports.down = function (knex) {
-  return knex.schema
-    .dropTableIfExists("promotion")
-    .raw("DROP TYPE IF EXISTS promotion_discount_type");
+  // On MySQL/MariaDB, ENUM is per-column; there is no named TYPE to drop
+  return knex.schema.dropTableIfExists("promotion");
 };
