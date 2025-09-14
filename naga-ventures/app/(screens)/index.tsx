@@ -49,7 +49,9 @@ const LoginPage = () => {
     } catch (error: any) {
       console.error('Login error:', error);
       setLoginError(
-        error?.message || error?.error_description || 'Incorrect email or password.'
+        error?.message ||
+          error?.error_description ||
+          'Incorrect email or password.'
       );
     }
   };
@@ -57,76 +59,77 @@ const LoginPage = () => {
   if (!fontsLoaded) return null;
 
   return (
-    <SafeAreaProvider>
-      <SafeAreaView style={Platform.OS === 'web' ? styles.webContainer : {}}>
-        <View style={styles.formWrapper}>
-          {/* Logo */}
-          <View style={styles.logoContainer}>
-            <Image source={logo} style={styles.logo} />
-            <Text style={{ fontSize: 18, marginLeft: 10, fontFamily: 'Poppins-Bold', color }}>
-              Naga Venture
-            </Text>
-          </View>
+    <View style={styles.formWrapper}>
+      {/* Logo */}
+      <View style={styles.logoContainer}>
+        <Image source={logo} style={styles.logo} />
+        <Text
+          style={{
+            fontSize: 18,
+            marginLeft: 10,
+            fontFamily: 'Poppins-Bold',
+            color,
+          }}
+        >
+          Naga Venture
+        </Text>
+      </View>
 
-          {/* Headline */}
-          <View>
-            <ThemedText type="title">Sign In</ThemedText>
-            <ThemedText type="default">
-              Navigate with Ease - Your Ultimate City Directory
-            </ThemedText>
-          </View>
+      {/* Headline */}
+      <View>
+        <ThemedText type="title">Sign In</ThemedText>
+        <ThemedText type="default">
+          Navigate with Ease - Your Ultimate City Directory
+        </ThemedText>
+      </View>
 
-          {/* Form */}
-          <View style={styles.inputGroup}>
-            <TextInput
-              style={styles.input}
-              placeholder="Email"
-              placeholderTextColor="#999"
-              value={email}
-              onChangeText={setEmail}
-              autoCapitalize="none"
-              keyboardType="email-address"
-            />
-            <TextInput
-              style={styles.input}
-              placeholder="Password"
-              placeholderTextColor="#999"
-              secureTextEntry
-              value={password}
-              onChangeText={setPassword}
-            />
-            <Link href="/(screens)/ForgotPassword">
-              <ThemedText type="link">Forgot Password?</ThemedText>
-            </Link>
-          </View>
+      {/* Form */}
+      <View style={styles.inputGroup}>
+        <TextInput
+          style={styles.input}
+          placeholder="Email"
+          placeholderTextColor="#999"
+          value={email}
+          onChangeText={setEmail}
+          autoCapitalize="none"
+          keyboardType="email-address"
+        />
+        <TextInput
+          style={styles.input}
+          placeholder="Password"
+          placeholderTextColor="#999"
+          secureTextEntry
+          value={password}
+          onChangeText={setPassword}
+        />
+        <Link href="/(screens)/ForgotPassword">
+          <ThemedText type="link">Forgot Password?</ThemedText>
+        </Link>
+      </View>
 
-          {/* Error Message */}
-          {loginError ? (
-            <Text style={styles.errorText}>{loginError}</Text>
-          ) : null}
+      {/* Error Message */}
+      {loginError ? <Text style={styles.errorText}>{loginError}</Text> : null}
 
-          {/* Login Button */}
-          <PressableButton
-            TextSize={16}
-            height={60}
-            type="primary"
-            IconSize={24}
-            color={colors.tertiary}
-            direction="column"
-            Title="Login"
-            onPress={handleLogin}
-          />
+      {/* Login Button */}
+      <PressableButton
+        TextSize={16}
+        height={60}
+        type="primary"
+        IconSize={24}
+        color={colors.tertiary}
+        direction="column"
+        Title="Login"
+        onPress={handleLogin}
+      />
 
-          {/* Footer */}
-          <View style={styles.footer}>
-            <ThemedText type="default2">Don't have an account?</ThemedText>
-            <Link href={'/(screens)/RegistrationPage'}>
-              <ThemedText type="link">Sign Up</ThemedText>
-            </Link>
-          </View>
-        </View>
-      </SafeAreaView>
-    </SafeAreaProvider>
+      {/* Footer */}
+      <View style={styles.footer}>
+        <ThemedText type="default2">Don't have an account?</ThemedText>
+        <Link href={'/(screens)/RegistrationPage'}>
+          <ThemedText type="link">Sign Up</ThemedText>
+        </Link>
+      </View>
+    </View>
   );
 };
 

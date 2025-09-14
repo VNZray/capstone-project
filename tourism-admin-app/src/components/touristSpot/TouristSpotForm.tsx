@@ -1,3 +1,5 @@
+import React, { useEffect, useMemo, useState } from "react";
+import { apiService } from "@/src/utils/api";
 import React, { useEffect, useMemo, useState, useRef } from "react";
 import { apiService } from "../../utils/api";
 import TouristSpotStepper from "./TouristSpotStepper";
@@ -7,8 +9,8 @@ import ScheduleStep from "./steps/ScheduleStep";
 import ImagesStep from "./steps/ImagesStep";
 import ReviewStep from "./steps/ReviewStep";
 import SocialsStep from "./steps/SocialsStep";
-import type { PendingImage } from "../../types/TouristSpot";
-import { uploadPendingImages } from "../../utils/touristSpot";
+import type { PendingImage } from "@/src/types/TouristSpot";
+import { uploadPendingImages } from "@/src/utils/touristSpot";
 import {
   Modal,
   ModalDialog,
@@ -22,7 +24,7 @@ import type {
   TouristSpotFormData,
   FormOption,
   DaySchedule,
-} from "../../types/TouristSpot";
+} from "@/src/types/TouristSpot";
 
 interface TouristSpotFormProps {
   isVisible: boolean;
