@@ -1,12 +1,9 @@
 import React from "react";
 import type { Business } from "@/src/types/Business";
 import axios from "axios";
-import CardHeader from "@/src/components/CardHeader";
-import Container from "@/src/components/Container";
-import { Button, FormControl, FormLabel, Grid, Input } from "@mui/joy";
+import { Button, FormControl, FormLabel } from "@mui/joy";
 import { Select, Option } from "@mui/joy";
 import Text from "@/src/components/Text";
-import { colors } from "@/src/utils/Colors";
 import { Add } from "@mui/icons-material";
 import MapInput from "@/src/components/MapInput";
 import type {
@@ -123,186 +120,265 @@ const Step3: React.FC<Props> = ({
   };
 
   return (
-    <div className="stepperContent">
+    <>
+      <style>
+        {`
+          .br-section {
+            box-shadow: none !important;
+            background: transparent !important;
+            border: none !important;
+            border-radius: 0 !important;
+          }
+          .stepperContent {
+            background: transparent;
+          }
+          /* Force reliable 2-column layout for Step 3 */
+          .twoCol {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 20px;
+            align-items: start;
+          }
+          @media (min-width: 640px) {
+            .twoCol { grid-template-columns: 1fr 1fr; }
+          }
+          .twoCol .col { padding: 0 8px; }
+        `}
+      </style>
       <div
+        className="stepperContent"
         style={{
-          display: "flex",
-          flexDirection: "column",
-          gap: 12,
+          overflow: "auto",
+          overflowX: "hidden",
+          padding: '16px 16px 24px',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          width: '100%',
+          boxSizing: 'border-box'
         }}
       >
-        <CardHeader
-          title="Business Address and Location"
-          color="dark"
-          bg="white"
-          variant="title"
-          padding="12px"
-          radius="8px"
-          margin="0 0 12px 0"
-        />
+        <div style={{
+          display: "flex",
+          flexDirection: "column",
+          gap: 20,
+          width: '100%',
+          maxWidth: '1000px',
+          margin: '0 auto'
+        }}>
+          <div style={{
+            paddingBottom: 8,
+            textAlign: 'center',
+            borderBottom: '1px solid #e5e7eb',
+            marginBottom: 16,
+            paddingTop: 4
+          }}>
+            <Text variant="label" color="gray" style={{
+              fontSize: 20,
+              fontWeight: 700,
+              lineHeight: 1.3,
+              display: 'block',
+              marginBottom: 8,
+              color: '#111827'
+            }}>
+              Business Address and Location
+            </Text>
+            <Text color="gray" style={{
+              fontSize: 15,
+              fontWeight: 400,
+              opacity: 0.75,
+              display: 'block',
+              maxWidth: '500px',
+              margin: '0 auto',
+              color: '#6b7280'
+            }}>
+              Where is your business located?
+            </Text>
+          </div>
 
-        <Grid container columns={12}>
-          <Grid xs={4}>
-            <Container padding="0 20px " gap="20px">
-              <FormControl required>
-                <FormLabel>Province</FormLabel>
-                <Select
+          <div className="twoCol">
+            <div className="col">
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                <FormControl required>
+                  <FormLabel sx={{ mb: 0.75, fontSize: '0.875rem', fontWeight: 600, color: '#374151' }}>Province</FormLabel>
+                  <Select
+                    size="md"
+                    placeholder="-- Select a province --"
+                    value={addressData.province_id?.toString() ?? ""}
+                    onChange={(_e, value) => {
+                      if (!value) return;
+                      const province_id = Number(value);
+                      setAddressData((prev) => ({
+                        ...prev,
+                        province_id: province_id,
+                      }));
+                    }}
+                    sx={{
+                      '--Select-focusedThickness': '2px',
+                      '--Select-focusedHighlight': 'var(--joy-palette-primary-500)',
+                      backgroundColor: '#fafafa',
+                      border: '1px solid #e0e0e0',
+                      borderRadius: '8px',
+                      boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+                      transition: 'all 0.2s ease-in-out',
+                      '&:hover': {
+                        backgroundColor: '#ffffff',
+                        borderColor: '#d0d0d0',
+                        boxShadow: '0 2px 6px rgba(0, 0, 0, 0.15)',
+                      },
+                      '&:focus-within': {
+                        backgroundColor: '#ffffff',
+                        borderColor: 'var(--joy-palette-primary-500)',
+                        boxShadow: '0 0 0 3px rgba(25, 118, 210, 0.1)',
+                      }
+                    }}
+                  >
+                    <Option value="">-- Select province --</Option>
+                    {province.map((province) => (
+                      <Option key={province.id} value={province.id.toString()}>
+                        {province.province}
+                      </Option>
+                    ))}
+                  </Select>
+                </FormControl>
+
+                <FormControl required>
+                  <FormLabel sx={{ mb: 0.75, fontSize: '0.875rem', fontWeight: 600, color: '#374151' }}>Municipality</FormLabel>
+                  <Select
+                    size="md"
+                    placeholder="-- Select municipality --"
+                    value={addressData.municipality_id?.toString() ?? ""}
+                    onChange={(_e, value) => {
+                      if (!value) return;
+                      const municipality_id = Number(value);
+                      setAddressData((prev) => ({
+                        ...prev,
+                        municipality_id: municipality_id,
+                      }));
+                    }}
+                    disabled={!addressData.province_id}
+                    sx={{
+                      '--Select-focusedThickness': '2px',
+                      '--Select-focusedHighlight': 'var(--joy-palette-primary-500)',
+                      backgroundColor: '#fafafa',
+                      border: '1px solid #e0e0e0',
+                      borderRadius: '8px',
+                      boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+                      transition: 'all 0.2s ease-in-out',
+                      '&:hover': {
+                        backgroundColor: '#ffffff',
+                        borderColor: '#d0d0d0',
+                        boxShadow: '0 2px 6px rgba(0, 0, 0, 0.15)',
+                      },
+                      '&:focus-within': {
+                        backgroundColor: '#ffffff',
+                        borderColor: 'var(--joy-palette-primary-500)',
+                        boxShadow: '0 0 0 3px rgba(25, 118, 210, 0.1)',
+                      }
+                    }}
+                  >
+                    <Option value="">-- Select municipality --</Option>
+                    {municipality.map((municipality) => (
+                      <Option
+                        key={municipality.id}
+                        value={municipality.id.toString()}
+                      >
+                        {municipality.municipality}
+                      </Option>
+                    ))}
+                  </Select>
+                </FormControl>
+
+                <FormControl required>
+                  <FormLabel sx={{ mb: 0.75, fontSize: '0.875rem', fontWeight: 600, color: '#374151' }}>Barangay</FormLabel>
+                  <Select
+                    size="md"
+                    placeholder="-- Select barangay --"
+                    value={addressData.barangay_id?.toString() ?? ""}
+                    onChange={(_e, value) => {
+                      if (!value) return;
+                      const barangay_id = Number(value);
+                      setAddressData((prev) => ({
+                        ...prev,
+                        barangay_id: barangay_id,
+                      }));
+                    }}
+                    disabled={!addressData.municipality_id}
+                    sx={{
+                      '--Select-focusedThickness': '2px',
+                      '--Select-focusedHighlight': 'var(--joy-palette-primary-500)',
+                      backgroundColor: '#fafafa',
+                      border: '1px solid #e0e0e0',
+                      borderRadius: '8px',
+                      boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+                      transition: 'all 0.2s ease-in-out',
+                      '&:hover': {
+                        backgroundColor: '#ffffff',
+                        borderColor: '#d0d0d0',
+                        boxShadow: '0 2px 6px rgba(0, 0, 0, 0.15)',
+                      },
+                      '&:focus-within': {
+                        backgroundColor: '#ffffff',
+                        borderColor: 'var(--joy-palette-primary-500)',
+                        boxShadow: '0 0 0 3px rgba(25, 118, 210, 0.1)',
+                      }
+                    }}
+                  >
+                    <Option value="">-- Select barangay --</Option>
+                    {barangay.map((barangay) => (
+                      <Option key={barangay.id} value={barangay.id.toString()}>
+                        {barangay.barangay}
+                      </Option>
+                    ))}
+                  </Select>
+                </FormControl>
+              </div>
+            </div>
+
+            <div className="col">
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                <Button
+                  variant="soft"
+                  color="primary"
                   size="md"
-                  placeholder="-- Select a province --"
-                  value={addressData.province_id?.toString() ?? ""}
-                  onChange={(_e, value) => {
-                    if (!value) return;
-                    const province_id = Number(value);
-                    setAddressData((prev) => ({
-                      ...prev,
-                      province_id: province_id,
-                    }));
+                  startDecorator={<Add />}
+                  onClick={handleGetCurrentLocation}
+                  sx={{
+                    borderRadius: '8px',
+                    fontWeight: 500,
+                    mt: 1
                   }}
                 >
-                  <Option value="">-- Select province --</Option>
-                  {province.map((province) => (
-                    <Option key={province.id} value={province.id.toString()}>
-                      {province.province}
-                    </Option>
-                  ))}
-                </Select>
-              </FormControl>
+                  Get Current Location
+                </Button>
 
-              <FormControl required>
-                <FormLabel>Municipality</FormLabel>
-                <Select
-                  size="md"
-                  placeholder="-- Select municipality --"
-                  value={addressData.municipality_id?.toString() ?? ""}
-                  onChange={(_e, value) => {
-                    if (!value) return;
-                    const municipality_id = Number(value);
-                    setAddressData((prev) => ({
-                      ...prev,
-                      municipality_id: municipality_id,
-                    }));
-                  }}
-                  disabled={!addressData.province_id}
-                >
-                  <Option value="">-- Select municipality --</Option>
-                  {municipality.map((municipality) => (
-                    <Option
-                      key={municipality.id}
-                      value={municipality.id.toString()}
-                    >
-                      {municipality.municipality}
-                    </Option>
-                  ))}
-                </Select>
-              </FormControl>
-
-              <FormControl required>
-                <FormLabel>Barangay</FormLabel>
-                <Select
-                  size="md"
-                  placeholder="-- Select barangay --"
-                  value={addressData.barangay_id?.toString() ?? ""}
-                  onChange={(_e, value) => {
-                    if (!value) return;
-                    const barangay_id = Number(value);
-                    setAddressData((prev) => ({
-                      ...prev,
-                      barangay_id: barangay_id,
-                    }));
-                  }}
-                  disabled={!addressData.municipality_id}
-                >
-                  <Option value="">-- Select barangay --</Option>
-                  {barangay.map((barangay) => (
-                    <Option key={barangay.id} value={barangay.id.toString()}>
-                      {barangay.barangay}
-                    </Option>
-                  ))}
-                </Select>
-              </FormControl>
-            </Container>
-          </Grid>
-
-          <Grid xs={8}>
-            <Container padding="0 20px " gap="20px">
-              <Container background={colors.offWhite2} elevation={1} padding="16px" radius="8px">
-                <Grid container spacing={2} columns={12}>
-                  <Grid xs={8}>
-                    <Text color="dark" variant="card-title">
-                      Map Coordinates
-                    </Text>
-                    <Text color="gray" variant="card-sub-title">
-                      Pin the location of your business in the map
-                    </Text>
-                  </Grid>
-                  <Grid xs={4}>
-                    <Button
-                      fullWidth
-                      variant="soft"
-                      color="neutral"
-                      size="sm"
-                      startDecorator={<Add />}
-                      style={{ height: "100%" }}
-                      onClick={handleGetCurrentLocation}
-                    >
-                      Get Current Location
-                    </Button>
-                  </Grid>
-                </Grid>
-              </Container>
-              <Container padding="0">
-                <Grid container spacing={3} columns={12}>
-                  <Grid xs={6}>
-                    <FormControl required>
-                      <FormLabel>Longitude</FormLabel>
-                      <Input
-                        variant="outlined"
-                        size="md"
-                        value={data.longitude}
-                        onChange={(e) =>
-                          setData((prev) => ({
-                            ...prev,
-                            longitude: e.target.value,
-                          }))
-                        }
-                      />
-                    </FormControl>
-                  </Grid>
-                  <Grid xs={6}>
-                    <FormControl required>
-                      <FormLabel>Latitude</FormLabel>
-
-                      <Input
-                        variant="outlined"
-                        size="md"
-                        value={data.latitude}
-                        onChange={(e) =>
-                          setData((prev) => ({
-                            ...prev,
-                            latitude: e.target.value,
-                          }))
-                        }
-                      />
-                    </FormControl>
-                  </Grid>
-                </Grid>
-                <MapInput
-                  latitude={data.latitude}
-                  longitude={data.longitude}
-                  onChange={(lat, lng) =>
-                    setData((prev) => ({
-                      ...prev,
-                      latitude: lat,
-                      longitude: lng,
-                    }))
-                  }
-                />
-              </Container>
-            </Container>
-          </Grid>
-        </Grid>
+                {/* Map Section - Right Side */}
+                <div style={{ marginTop: '16px' }}>
+                  <MapInput
+                    latitude={data.latitude}
+                    longitude={data.longitude}
+                    height={"clamp(260px, 34vh, 360px)"}
+                    onChange={(lat, lng) =>
+                      setData((prev) => ({
+                        ...prev,
+                        latitude: lat,
+                        longitude: lng,
+                      }))
+                    }
+                  />
+                  {/* Coordinate readout (subtle) */}
+                  <div style={{ marginTop: 8, display: 'flex', gap: 12, color: '#6b7280', fontSize: 12 }}>
+                    <span>Lat: <span style={{ color: '#111827', fontWeight: 600 }}>{data.latitude || '-'}</span></span>
+                    <span>Lng: <span style={{ color: '#111827', fontWeight: 600 }}>{data.longitude || '-'}</span></span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
-    </div>
+    </>
   );
 };
 

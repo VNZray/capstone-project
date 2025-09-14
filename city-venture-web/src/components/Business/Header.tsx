@@ -24,7 +24,7 @@ export default function Header(): React.JSX.Element {
 
   const handleLogout = () => {
     logout();
-    navigate("/business/login");
+    navigate("/");
   };
 
   const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {

@@ -101,19 +101,19 @@ const MyBusiness = () => {
 
         {/* Sub header: title + CTA (below icons) */}
         <div className="myb-card-header">
-          <Typography level="h4" sx={{ fontWeight: 800, color: colors.primary }}>My Businesses</Typography>
+          <Typography level="h5" sx={{ fontWeight: 800, color: colors.primary }}>My Businesses</Typography>
           <Button
             variant="solid"
-            size="lg"
+            size="md"
             startDecorator={<Add />}
             onClick={() => navigate('/business/register')}
             sx={{
               background: `linear-gradient(135deg, ${colors.primary} 0%, #0a1a3d 100%)`,
-              borderRadius: 12,
-              px: 3,
-              py: 1.5,
+              borderRadius: 10,
+              px: 2,
+              py: 1,
               fontWeight: 600,
-              fontSize: '1rem',
+              fontSize: '.95rem',
               boxShadow: '0 4px 16px rgba(0,0,0,0.15)',
               transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
               border: `2px solid ${colors.primary}`,
@@ -149,6 +149,7 @@ const MyBusiness = () => {
                 subtitle={business.business_type_id === 1 ? 'Accommodation' : 'Shop'}
                 rating={5}
                 status={business.status}
+                compact
               >
                 <Button
                   onClick={() => {
@@ -156,7 +157,7 @@ const MyBusiness = () => {
                     navigate(`/business/dashboard`);
                   }}
                   fullWidth
-                  size="md"
+                  size="sm"
                 >
                   Manage Business
                 </Button>

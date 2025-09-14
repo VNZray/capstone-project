@@ -1,9 +1,8 @@
 import React from "react";
-import CardHeader from "@/src/components/CardHeader";
 import { FormControl, FormLabel, Button } from "@mui/joy";
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import { UploadIcon } from "lucide-react";
-import Container from "@/src/components/Container";
+import Text from "@/src/components/Text";
 import type { Business } from "@/src/types/Business";
 import { supabase } from "@/src/lib/supabase";
 
@@ -52,83 +51,154 @@ const Step4ImageUpload: React.FC<Props> = ({ data, setData }) => {
   };
 
   return (
-    <div className="br-form-wrapper" style={{ overflow: "auto", overflowX: "hidden" }}>
-      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-        <CardHeader
-          title="Photos"
-          color="dark"
-          bg="white"
-          variant="title"
-          padding="12px"
-          radius="8px"
-          margin="0 0 12px 0"
-        />
+    <>
+      <style>
+        {`
+          .br-section {
+            box-shadow: none !important;
+            background: transparent !important;
+            border: none !important;
+            border-radius: 0 !important;
+          }
+          .stepperContent {
+            background: transparent;
+          }
+          .twoCol { display: grid; grid-template-columns: 1fr; gap: 16px; align-items: start; }
+          @media (min-width: 640px) { .twoCol { grid-template-columns: 1fr 1fr; } }
+          .twoCol .col { padding: 0 8px; }
+        `}
+      </style>
+      <div
+        className="stepperContent"
+        style={{
+          overflow: "visible",
+          padding: '16px 16px 24px',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          width: '100%',
+          boxSizing: 'border-box'
+        }}
+      >
+        <div style={{
+          display: "flex",
+          flexDirection: "column",
+          gap: 24,
+          width: '100%',
+          maxWidth: '1000px',
+          margin: '0 auto'
+        }}>
+          <div style={{
+            paddingBottom: 12,
+            textAlign: 'center',
+            borderBottom: '1px solid #e5e7eb',
+            marginBottom: 20,
+            paddingTop: 4
+          }}>
+            <Text variant="label" color="gray" style={{
+              fontSize: 20,
+              fontWeight: 700,
+              lineHeight: 1.3,
+              display: 'block',
+              marginBottom: 8,
+              color: '#111827'
+            }}>
+              Photos
+            </Text>
+            <Text color="gray" style={{
+              fontSize: 15,
+              fontWeight: 400,
+              opacity: 0.75,
+              display: 'block',
+              maxWidth: '500px',
+              margin: '0 auto',
+              color: '#6b7280'
+            }}>
+              Upload a photo of your business
+            </Text>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'center' }}>
+            <div style={{ width: '100%', maxWidth: '520px', padding: '0 8px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <FormControl>
+              <FormLabel sx={{ mb: 0.75, fontSize: '0.875rem', fontWeight: 600, color: '#374151' }}>Upload Image</FormLabel>
 
-        <Container padding="0 20px" gap="20px">
-          <FormControl>
-            <FormLabel>Upload Image</FormLabel>
-
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                justifyContent: "right",
-                gap: "12px",
-              }}
-            >
               <div
                 style={{
-                  width: "100%",
-                  height: "280px",
-                  border: "1.5px dashed #e5e7eb",
-                  borderRadius: "10px",
                   display: "flex",
+                  flexDirection: "column",
                   alignItems: "center",
                   justifyContent: "center",
-                  backgroundColor: "#fafafa",
-                  cursor: "pointer",
-                  overflow: "hidden",
+                  gap: "16px",
                 }}
-                onClick={() => document.getElementById("image-upload")?.click()}
               >
-                {data.business_image ? (
-                  <img
-                    src={data.business_image}
-                    alt="Business"
-                    style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                  />
-                ) : (
-                  <div style={{ textAlign: "center", color: "#94a3b8" }}>
-                    <CloudUploadIcon style={{ fontSize: 40, color: "#cbd5e1" }} />
-                    <p style={{ fontSize: "14px", marginTop: "8px" }}>Click to upload</p>
-                  </div>
-                )}
-              </div>
+                <div
+                  style={{
+                    width: "100%",
+                    maxWidth: "520px",
+                    height: "clamp(240px, 34vh, 320px)",
+                    border: "2px dashed #d1d5db",
+                    borderRadius: "12px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    backgroundColor: "#fafafa",
+                    cursor: "pointer",
+                    overflow: "hidden",
+                    transition: 'all 0.2s ease-in-out',
+                  }}
+                  onClick={() => document.getElementById("image-upload")?.click()}
+                >
+                  {data.business_image ? (
+                    <img
+                      src={data.business_image}
+                      alt="Business"
+                      style={{
+                        width: "100%",
+                        height: "100%",
+                        objectFit: "cover",
+                        borderRadius: "10px"
+                      }}
+                    />
+                  ) : (
+                    <div style={{ textAlign: "center", color: "#6b7280" }}>
+                      <CloudUploadIcon style={{ fontSize: 48, color: "#cbd5e1", marginBottom: '8px' }} />
+                      <p style={{ fontSize: "16px", margin: "8px 0", fontWeight: 500 }}>Click to upload</p>
+                      <p style={{ fontSize: "14px", margin: 0, opacity: 0.7 }}>PNG, JPG, JPEG up to 10MB</p>
+                    </div>
+                  )}
+                </div>
 
-              <Button
-                size="md"
-                variant="soft"
-                color="neutral"
-                startDecorator={<UploadIcon />}
-                style={{ width: "100%" }}
-                onClick={() => document.getElementById("image-upload")?.click()}
-              >
-                Upload Photo
-              </Button>
+                <Button
+                  size="md"
+                  variant="soft"
+                  color="primary"
+                  startDecorator={<UploadIcon />}
+                  style={{
+                    width: "100%",
+                    maxWidth: "520px",
+                    borderRadius: '8px',
+                    fontWeight: 500
+                  }}
+                  onClick={() => document.getElementById("image-upload")?.click()}
+                >
+                  {data.business_image ? 'Change Photo' : 'Upload Photo'}
+                </Button>
+              </div>
+              {/* Hidden file input */}
+              <input
+                id="image-upload"
+                type="file"
+                accept="image/*"
+                onChange={handleImageSelect}
+                style={{ display: "none" }}
+              />
+            </FormControl>
             </div>
-            {/* Hidden file input */}
-            <input
-              id="image-upload"
-              type="file"
-              accept="image/*"
-              onChange={handleImageSelect}
-              style={{ display: "none" }}
-            />
-          </FormControl>
-        </Container>
+          </div>
+        </div>
       </div>
-    </div>
+    </>
   );
 };
 

@@ -354,7 +354,7 @@ const BusinessRegistration: React.FC = () => {
           marginLeft: 'auto',
         }}
       >
-    <PageContainer style={{ width: "100%", margin: "0 auto", padding: 0 }}>
+  <PageContainer style={{ width: "100%", margin: "0 auto", padding: 0, display: 'flex', flexDirection: 'column', flex: '1 1 auto', minHeight: 0 }}>
       {/* Header */}
       <div style={{ padding: '8px 12px', marginBottom: 8 }}>
         <Stack direction="row" alignItems="center" justifyContent="space-between" gap={1.25}>
@@ -402,42 +402,71 @@ const BusinessRegistration: React.FC = () => {
       {/* Stepper overview removed for a cleaner, minimal header */}
 
       <Container
-        elevation={1}
+        elevation={0}
         className="br-section"
         style={{
-          padding: 16,
-          borderRadius: 12,
-          border: "1px solid rgba(0,0,0,0.06)",
+          padding: 0,
+          borderRadius: 0,
+          border: "none",
+          backgroundColor: 'transparent',
+          boxShadow: 'none',
+          display: 'flex',
+          flexDirection: 'column',
+          flex: '1 1 auto',
+          minHeight: 0,
         }}
       >
         {/* Scoped form wrapper to apply compact, consistent spacing */}
-        <div className="br-form-wrapper">
+        <div className="br-form-wrapper" style={{ padding: '20px 24px 0px 24px', flex: '1 1 auto', minHeight: 0, overflowY: 'auto' }}>
           <StepContent step={activeStep} commonProps={commonProps} />
         </div>
 
-        {/* Buttons */}
-        <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mt: 2 }}>
-          <Button
-            size="md"
-            variant="soft"
-            color="neutral"
-            onClick={handleBack}
-            aria-label="Back"
-          >
-            Back
-          </Button>
-          <Button
-            size="md"
-            variant="solid"
-            color="primary"
-            onClick={handleNext}
-            loading={submitting && activeStep === steps.length - 1}
-            disabled={submitting}
-            aria-label={activeStep === steps.length - 1 ? "Submit registration" : "Next step"}
-          >
-            {activeStep === steps.length - 1 ? "Submit" : "Next"}
-          </Button>
-        </Stack>
+        {/* Buttons aligned with form content */}
+        <div style={{ 
+          padding: '24px 24px 20px 24px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          width: '100%'
+        }}>
+          <div style={{ 
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            width: '100%',
+            maxWidth: '800px',
+            margin: '0 auto'
+          }}>
+            <Button
+              size="md"
+              variant="soft"
+              color="neutral"
+              onClick={handleBack}
+              aria-label="Back"
+              sx={{ 
+                minWidth: '100px',
+                fontWeight: 500
+              }}
+            >
+              Back
+            </Button>
+            <Button
+              size="md"
+              variant="solid"
+              color="primary"
+              onClick={handleNext}
+              loading={submitting && activeStep === steps.length - 1}
+              disabled={submitting}
+              aria-label={activeStep === steps.length - 1 ? "Submit registration" : "Next step"}
+              sx={{ 
+                minWidth: '100px',
+                fontWeight: 500
+              }}
+            >
+              {activeStep === steps.length - 1 ? "Submit" : "Next"}
+            </Button>
+          </div>
+        </div>
       </Container>
     </PageContainer>
       </div>

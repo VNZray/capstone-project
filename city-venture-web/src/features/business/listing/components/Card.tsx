@@ -14,6 +14,7 @@ interface CardProps {
   subtitle?: string;
   elevation?: 0 | 1 | 2 | 3 | 4 | 5 | 6;
   children: React.ReactNode;
+  compact?: boolean;
 }
 
 const getStatusColor = (status: string) => {
@@ -39,12 +40,13 @@ const Card: React.FC<CardProps> = ({
   children,
   status,
   rating,
+  compact = false,
 }) => {
   return (
     <Container 
       style={{ 
         maxWidth: "100%",
-        borderRadius: 16,
+        borderRadius: compact ? 10 : 16,
         overflow: 'hidden',
         boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
         transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
@@ -53,14 +55,14 @@ const Card: React.FC<CardProps> = ({
       elevation={elevation}
       className="business-card"
     >
-      <div style={{ display: "flex", flexDirection: "row", gap: 20, padding: 16 }}>
+      <div style={{ display: "flex", flexDirection: "row", gap: compact ? 12 : 20, padding: compact ? 12 : 16 }}>
         <div 
           className="image-container card-image-wrapper" 
           style={{ 
-            width: 200, 
-            height: 150, 
+            width: compact ? 140 : 200, 
+            height: compact ? 100 : 150, 
             flexShrink: 0,
-            borderRadius: 12,
+            borderRadius: compact ? 8 : 12,
             overflow: 'hidden',
             boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
             transition: 'transform 0.3s ease',
@@ -74,17 +76,17 @@ const Card: React.FC<CardProps> = ({
             className="card-image"
           />
         </div>
-        <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "space-between", minHeight: 150 }}>
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "space-between", minHeight: compact ? 100 : 150 }}>
           <Container elevation={0} padding="0">
             <Grid container spacing={2} columns={12}>
               <Grid xs={8}>
                 <Text 
                   variant="card-title" 
                   style={{ 
-                    fontSize: '1.3rem', 
+                    fontSize: compact ? '1.05rem' : '1.3rem', 
                     fontWeight: 700, 
                     color: '#1f2937',
-                    marginBottom: 8,
+                    marginBottom: compact ? 4 : 8,
                     lineHeight: 1.3
                   }}
                 >
@@ -93,9 +95,9 @@ const Card: React.FC<CardProps> = ({
                 <Text 
                   variant="card-sub-title" 
                   style={{ 
-                    fontSize: '0.95rem', 
+                    fontSize: compact ? '0.85rem' : '0.95rem', 
                     color: '#6b7280',
-                    marginBottom: 12,
+                    marginBottom: compact ? 8 : 12,
                     fontWeight: 500
                   }}
                 >
@@ -104,16 +106,16 @@ const Card: React.FC<CardProps> = ({
                 {/* Status Chip */}
                 {status && (
                   <Chip
-                    size="sm"
+                    size={compact ? 'sm' : 'md'}
                     color={getStatusColor(status)}
                     variant="soft"
                     sx={{ 
-                      mt: 1,
+                      mt: compact ? 0.5 : 1,
                       fontWeight: 600,
                       borderRadius: 20,
-                      px: 2,
-                      py: 0.5,
-                      fontSize: '0.75rem'
+                      px: compact ? 1.25 : 2,
+                      py: compact ? 0.25 : 0.5,
+                      fontSize: compact ? '0.7rem' : '0.75rem'
                     }}
                   >
                     {status}
@@ -125,20 +127,20 @@ const Card: React.FC<CardProps> = ({
                   display: 'flex', 
                   flexDirection: 'column', 
                   alignItems: 'flex-end',
-                  gap: 4
+                  gap: compact ? 2 : 4
                 }}>
                   <div style={{ 
                     display: 'flex', 
                     alignItems: 'center', 
-                    gap: 4,
+                    gap: compact ? 3 : 4,
                     backgroundColor: 'rgba(251, 191, 36, 0.1)',
-                    padding: '6px 10px',
+                    padding: compact ? '4px 8px' : '6px 10px',
                     borderRadius: 20,
                     border: '1px solid rgba(251, 191, 36, 0.2)'
                   }}>
-                    <Star style={{ color: '#f59e0b', fontSize: '1rem' }} />
+                    <Star style={{ color: '#f59e0b', fontSize: compact ? '0.9rem' : '1rem' }} />
                     <span style={{ 
-                      fontSize: '0.9rem', 
+                      fontSize: compact ? '0.8rem' : '0.9rem', 
                       fontWeight: 600, 
                       color: '#92400e' 
                     }}>
@@ -146,7 +148,7 @@ const Card: React.FC<CardProps> = ({
                     </span>
                   </div>
                   <span style={{ 
-                    fontSize: '0.75rem', 
+                    fontSize: compact ? '0.7rem' : '0.75rem', 
                     color: '#9ca3af',
                     fontWeight: 500
                   }}>
@@ -157,7 +159,7 @@ const Card: React.FC<CardProps> = ({
             </Grid>
           </Container>
 
-          <Container elevation={0} padding="0" style={{ marginTop: 16 }}>
+          <Container elevation={0} padding="0" style={{ marginTop: compact ? 10 : 16 }}>
             <div style={{ width: "100%" }}>{children}</div>
           </Container>
         </div>
