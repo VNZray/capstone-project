@@ -1,31 +1,63 @@
 import React, { useEffect, useState } from "react";
 import PageContainer from "@/src/components/PageContainer";
 import Container from "@/src/components/Container";
-import { Stepper, Step, StepIndicator, Button } from "@mui/joy";
-import { Check } from "@mui/icons-material";
+import { Button, LinearProgress, IconButton, Box, Stack } from "@mui/joy";
+import { ArrowBackRounded } from "@mui/icons-material";
 import Text from "@/src/components/Text";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/src/context/AuthContext";
 import { fetchOwnerDetails } from "@/src/services/OwnerService";
 import { colors } from "@/src/utils/Colors";
+import heroImg from "@/src/assets/gridimages/grid5.jpg";
+import { useMediaQuery } from "@mui/material";
 import Step1 from "./steps/Step1";
 import Step2 from "./steps/Step2";
 import Step3 from "./steps/Step3";
+import Step3BusinessHours from "./steps/Step3BusinessHours";
 import Step4 from "./steps/Step4";
+import Step4ImageUpload from "./steps/Step4ImageUpload";
 import Step5 from "./steps/Step5";
 
 import type { Business, BusinessHours } from "@/src/types/Business";
 import axios from "axios";
 import type { Permit } from "@/src/types/Permit";
 import { insertData } from "@/src/services/Service";
-import type { Amenity, BusinessAmenity } from "@/src/types/Amenity";
+import type { BusinessAmenity } from "@/src/types/Amenity";
 import type { Address } from "@/src/types/Address";
 
 // steps definition
-const steps = ["Basic", "Contact", "Location", "Permits", "Review & Submit"];
+const steps = [
+  "Basic",
+  "Contact",
+  "Location",
+  "Business Hours",
+  "Photos",
+  "Permits",
+  "Review & Submit",
+];
 
 // ✅ Moved outside BusinessRegistration so it doesn’t get recreated on every render
-const StepContent: React.FC<{ step: number; commonProps: any }> = ({
+interface CommonProps {
+  api: string;
+  data: Business;
+  addressData: Address;
+  setAddressData: React.Dispatch<React.SetStateAction<Address>>;
+  bookingSite: { name: string; link: string }[];
+  setBookingSites: React.Dispatch<
+    React.SetStateAction<{ name: string; link: string }[]>
+  >;
+  permitData: Permit[];
+  businessHours: BusinessHours[];
+  businessAmenities: BusinessAmenity[];
+  setPermitData: React.Dispatch<React.SetStateAction<Permit[]>>;
+  setBusinessHours: React.Dispatch<React.SetStateAction<BusinessHours[]>>;
+  setBusinessAmenities: React.Dispatch<
+    React.SetStateAction<BusinessAmenity[]>
+  >;
+  setData: React.Dispatch<React.SetStateAction<Business>>;
+}
+
+const StepContent: React.FC<{ step: number; commonProps: CommonProps }> = ({
   step,
   commonProps,
 }) => {
@@ -37,8 +69,18 @@ const StepContent: React.FC<{ step: number; commonProps: any }> = ({
     case 2:
       return <Step3 {...commonProps} />;
     case 3:
-      return <Step4 {...commonProps} />;
+      return (
+        <Step3BusinessHours
+          data={commonProps.data}
+          businessHours={commonProps.businessHours}
+          setBusinessHours={commonProps.setBusinessHours}
+        />
+      );
     case 4:
+      return <Step4ImageUpload data={commonProps.data} setData={commonProps.setData} />;
+    case 5:
+      return <Step4 {...commonProps} />;
+    case 6:
       return <Step5 {...commonProps} />;
     default:
       return null;
@@ -49,7 +91,8 @@ const BusinessRegistration: React.FC = () => {
   const [activeStep, setActiveStep] = useState(0);
   const { user, api } = useAuth();
   const navigate = useNavigate();
-  const [ownerId, setOwnerId] = useState<number | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+  const isSmall = useMediaQuery('(max-width: 1024px)');
   const [externalBookings, setExternalBookings] = useState<
     { name: string; link: string }[]
   >([]);
@@ -143,7 +186,6 @@ const BusinessRegistration: React.FC = () => {
       }
 
       const ownerData = await fetchOwnerDetails(user.owner_id!);
-      setOwnerId(ownerData.id);
 
       setFormData((prev) => ({
         ...prev,
@@ -175,6 +217,7 @@ const BusinessRegistration: React.FC = () => {
   };
 
   const handleNext = () => {
+    if (submitting) return; // avoid double submit
     if (activeStep < steps.length - 1) {
       setActiveStep((prev) => prev + 1);
     } else {
@@ -192,6 +235,7 @@ const BusinessRegistration: React.FC = () => {
 
   const handleSubmit = async () => {
     try {
+      setSubmitting(true);
 
       // insert address first
       const addressRes = await insertData(addressData, "address");
@@ -265,66 +309,168 @@ const BusinessRegistration: React.FC = () => {
     } catch (error) {
       console.error("❌ Failed to submit registration:", error);
       alert("Something went wrong. Please try again.");
+    } finally {
+      setSubmitting(false);
     }
   };
 
   return (
-    <PageContainer style={{ padding: "20px 340px" }}>
-      <Container elevation={2} style={{ padding: 20 }}>
-        <Stepper size="lg" orientation="horizontal">
-          {steps.map((label, index) => (
-            <Step key={label} orientation="vertical">
-              <StepIndicator
-                variant={activeStep >= index ? "solid" : "soft"}
-                color={activeStep >= index ? "primary" : "neutral"}
-              >
-                {activeStep > index ? <Check /> : index + 1}
-              </StepIndicator>
-              <Text
-                color={activeStep >= index ? colors.secondary : colors.black}
-                variant="label"
-                style={{ marginTop: 8 }}
-              >
-                {label}
-              </Text>
-            </Step>
-          ))}
-        </Stepper>
-      </Container>
-
-      <Container elevation={2} style={{ padding: 20 }}>
-        <StepContent step={activeStep} commonProps={commonProps} />
-
-        {/* Buttons */}
+    <div style={{ display: 'flex', minHeight: '100vh', width: '100%' }}>
+      {/* Left: Hero image panel (hidden on small screens) */}
+      {!isSmall && (
         <div
           style={{
-            marginTop: 20,
-            display: "flex",
-            justifyContent: "space-between",
-            padding: "0 20px",
+            flex: 7, // ~35% width when paired with right's flex: 13
+            position: 'relative',
+            backgroundImage: `url(${heroImg})`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            filter: 'saturate(0.95)',
           }}
         >
-          <Button
-            size="lg"
-            variant="outlined"
-            color="neutral"
-            onClick={handleBack}
-            style={{ width: 200 }}
-          >
-            Back
-          </Button>
-          <Button
-            size="lg"
-            variant="solid"
-            color="primary"
-            onClick={handleNext}
-            style={{ width: 200 }}
-          >
-            {activeStep === steps.length - 1 ? "Submit" : "Next"}
-          </Button>
+          {/* Subtle overlay */}
+          <div
+            style={{
+              position: 'absolute',
+              inset: 0,
+              background:
+                'linear-gradient(180deg, rgba(0,0,0,0.25) 0%, rgba(0,0,0,0.35) 100%)',
+            }}
+          />
+        </div>
+      )}
+
+      {/* Right: Stepper form panel */}
+      <div
+        style={{
+          flex: isSmall ? 1 : 13, // ~65% for the form on large screens
+          display: 'flex',
+          flexDirection: 'column',
+          padding: isSmall ? '16px' : '24px 32px',
+          backgroundColor: '#fff',
+          width: '100%',
+          minWidth: isSmall ? 'auto' : 560,
+          maxWidth: isSmall ? '100%' : 1200,
+          marginLeft: 'auto',
+        }}
+      >
+  <PageContainer style={{ width: "100%", margin: "0 auto", padding: 0, display: 'flex', flexDirection: 'column', flex: '1 1 auto', minHeight: 0 }}>
+      {/* Header */}
+      <div style={{ padding: '8px 12px', marginBottom: 8 }}>
+        <Stack direction="row" alignItems="center" justifyContent="space-between" gap={1.25}>
+          <Stack direction="row" alignItems="center" gap={0.75}>
+            <IconButton
+              size="sm"
+              variant="plain"
+              color="neutral"
+              aria-label="Go back"
+              onClick={handleBack}
+            >
+              <ArrowBackRounded fontSize="small" />
+            </IconButton>
+          </Stack>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, flex: 1, marginLeft: 12 }}>
+            <div>
+              <Text
+                variant="title"
+                style={{ display: "block", fontSize: 18, fontWeight: 600, lineHeight: 1.2 }}
+              >
+                Register your business
+              </Text>
+              <Text variant="label" color={colors.gray} style={{ fontSize: 12 }}>
+                A simple, step-by-step flow to get you listed.
+              </Text>
+            </div>
+          </div>
+
+          <Stack alignItems="flex-end" gap={0.5}>
+            <Text variant="label" color={colors.gray} style={{ fontSize: 12 }}>
+              Step {activeStep + 1} of {steps.length}
+            </Text>
+            <Box sx={{ width: 160, '--LinearProgress-thickness': '4px' }}>
+              <LinearProgress
+                determinate
+                value={Math.round(((activeStep + 1) / steps.length) * 100)}
+                variant="soft"
+                color="primary"
+              />
+            </Box>
+          </Stack>
+        </Stack>
+      </div>
+
+      {/* Stepper overview removed for a cleaner, minimal header */}
+
+      <Container
+        elevation={0}
+        className="br-section"
+        style={{
+          padding: 0,
+          borderRadius: 0,
+          border: "none",
+          backgroundColor: 'transparent',
+          boxShadow: 'none',
+          display: 'flex',
+          flexDirection: 'column',
+          flex: '1 1 auto',
+          minHeight: 0,
+        }}
+      >
+        {/* Scoped form wrapper to apply compact, consistent spacing */}
+        <div className="br-form-wrapper" style={{ padding: '20px 24px 0px 24px', flex: '1 1 auto', minHeight: 0, overflowY: 'auto' }}>
+          <StepContent step={activeStep} commonProps={commonProps} />
+        </div>
+
+        {/* Buttons aligned with form content */}
+        <div style={{ 
+          padding: '24px 24px 20px 24px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          width: '100%'
+        }}>
+          <div style={{ 
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            width: '100%',
+            maxWidth: '800px',
+            margin: '0 auto'
+          }}>
+            <Button
+              size="md"
+              variant="soft"
+              color="neutral"
+              onClick={handleBack}
+              aria-label="Back"
+              sx={{ 
+                minWidth: '100px',
+                fontWeight: 500
+              }}
+            >
+              Back
+            </Button>
+            <Button
+              size="md"
+              variant="solid"
+              color="primary"
+              onClick={handleNext}
+              loading={submitting && activeStep === steps.length - 1}
+              disabled={submitting}
+              aria-label={activeStep === steps.length - 1 ? "Submit registration" : "Next step"}
+              sx={{ 
+                minWidth: '100px',
+                fontWeight: 500
+              }}
+            >
+              {activeStep === steps.length - 1 ? "Submit" : "Next"}
+            </Button>
+          </div>
         </div>
       </Container>
     </PageContainer>
+      </div>
+    </div>
   );
 };
 

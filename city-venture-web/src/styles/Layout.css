@@ -23,10 +23,11 @@
 .business-layout {
   display: flex;
   flex-direction: column;
+  width: 100vw;
+  height: 100dvh;
+  max-width: 100vw;
+  min-width: 100vw;
   overflow: hidden;
-  width: 100%;
-  max-width: 100%;
-  min-width: 100%;
 }
 
 .landing-page-layout {

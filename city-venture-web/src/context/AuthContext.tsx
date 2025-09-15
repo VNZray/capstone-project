@@ -1,8 +1,9 @@
-import React, { createContext, useContext, useEffect, useState, useCallback } from "react";
+import { createContext, useContext, useEffect, useState, useCallback } from "react";
 import type { ReactNode } from "react";
 import {
   loginUser,
   loginAdmin,
+  loginTourist,
   logoutUser,
   getStoredUser,
   api,
@@ -22,6 +23,7 @@ interface AuthContextType {
   loading: boolean;
   loginOwner: (email: string, password: string) => Promise<void>;
   loginTourism: (email: string, password: string) => Promise<void>;
+  loginTourist: (email: string, password: string) => Promise<void>;
   logout: () => void;
   api: string;
 }
@@ -55,6 +57,12 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     setUser(loggedInAdmin);
   }, []);
 
+  /** LOGIN TOURIST */
+  const loginTouristFn = useCallback(async (email: string, password: string) => {
+    const loggedInTourist = await loginTourist(email, password);
+    setUser(loggedInTourist);
+  }, []);
+
   /** LOGOUT */
   const logout = useCallback(() => {
     logoutUser();
@@ -62,12 +70,13 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, loading, loginOwner, loginTourism, logout, api }}>
+    <AuthContext.Provider value={{ user, loading, loginOwner, loginTourism, loginTourist: loginTouristFn, logout, api }}>
       {children}
     </AuthContext.Provider>
   );
 };
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const useAuth = (): AuthContextType => {
   const context = useContext(AuthContext);
   if (!context) throw new Error("useAuth must be used within an AuthProvider");
