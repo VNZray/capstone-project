@@ -6,6 +6,8 @@
 
 .card-image {
   border-radius: 0.25rem;
+  transition: transform 0.3s ease;
+  object-fit: cover;
 }
 
 .card-content {
@@ -43,7 +45,16 @@
   gap: 12px;
 }
 
-.card-container:hover {
-  transform: translateY(-4px);
-  box-shadow: 2px 2px 20px rgba(0, 0, 0, 0.20);
+.business-card:hover {
+  transform: translateY(-8px) scale(1.02) !important;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.15) !important;
+  border-color: rgba(0,0,0,0.12) !important;
+}
+
+.card-image-wrapper:hover {
+  transform: scale(1.05);
+}
+
+.card-image-wrapper:hover .card-image {
+  transform: scale(1.05);
 }

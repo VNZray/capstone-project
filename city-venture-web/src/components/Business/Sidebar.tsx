@@ -1,5 +1,5 @@
 import React from "react";
-import { NavLink } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
 import {
   Receipt,
   CalendarCheck,
@@ -16,12 +16,15 @@ import logo from "@/src/assets/images/light-logo.png";
 
 import "./Sidebar.css";
 import { useBusiness } from "../../context/BusinessContext";
+import { useAuth } from "@/src/context/AuthContext";
 import { Typography } from "@mui/joy";
 import { colors } from "../../utils/Colors";
 import Container from "../Container";
 
 export default function Sidebar(): React.ReactElement {
   const { businessDetails } = useBusiness();
+  const { logout } = useAuth();
+  const navigate = useNavigate();
   const route = "/business"
   return (
     <aside className="sidebar">
@@ -86,7 +89,11 @@ export default function Sidebar(): React.ReactElement {
         </div>
 
         <div>
-          <NavItem to={`${route}/login`} label="Log Out" icon={<LogOut size={18} />} />
+          <NavItem 
+            label="Log Out" 
+            icon={<LogOut size={18} />} 
+            onClick={() => { logout(); navigate('/'); }}
+          />
         </div>
       </nav>
     </aside>
@@ -94,19 +101,28 @@ export default function Sidebar(): React.ReactElement {
 }
 
 interface NavItemProps {
-  to: string;
+  to?: string;
   label: string;
   icon?: React.ReactNode;
+  onClick?: () => void;
 }
 
-function NavItem({ to, label, icon }: NavItemProps): React.ReactElement {
+function NavItem({ to, label, icon, onClick }: NavItemProps): React.ReactElement {
+  if (to) {
+    return (
+      <NavLink
+        to={to}
+        className={({ isActive }) => `sidebar-link ${isActive ? "active" : ""}`}
+      >
+        {icon && <span className="sidebar-icon">{icon}</span>}
+        <span>{label}</span>
+      </NavLink>
+    );
+  }
   return (
-    <NavLink
-      to={to}
-      className={({ isActive }) => `sidebar-link ${isActive ? "active" : ""}`}
-    >
+    <button type="button" className="sidebar-link" onClick={onClick} style={{ background: 'transparent', border: 'none', textAlign: 'left', padding: 0, cursor: 'pointer' }}>
       {icon && <span className="sidebar-icon">{icon}</span>}
       <span>{label}</span>
-    </NavLink>
+    </button>
   );
 }

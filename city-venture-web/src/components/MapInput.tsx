@@ -8,15 +8,10 @@ type Props = {
   latitude: string | number | undefined;
   longitude: string | number | undefined;
   onChange: (lat: string, lng: string) => void;
+  height?: number | string; // optional, allows override of default responsive height
 };
 
-const containerStyle = {
-  width: "100%",
-  height: "450px",
-  borderRadius: "12px",
-};
-
-const MapInput: React.FC<Props> = ({ latitude, longitude, onChange }) => {
+const MapInput: React.FC<Props> = ({ latitude, longitude, onChange, height }) => {
   const { isLoaded } = useJsApiLoader({
     googleMapsApiKey: apiKey!,
   });
@@ -26,8 +21,16 @@ const MapInput: React.FC<Props> = ({ latitude, longitude, onChange }) => {
     lng: Number(longitude) || 120.9842,
   };
 
+  // Compute responsive height: prefer provided height, otherwise clamp to viewport
+  const mapHeight = height ?? 'clamp(240px, 38vh, 380px)';
+  const containerStyle = {
+    width: '100%',
+    height: mapHeight as string,
+    borderRadius: '12px',
+  } as const;
+
   return (
-    <div style={{ width: "100%" }}>
+    <div style={{ width: "100%", borderRadius: 12, overflow: 'hidden' }}>
       {isLoaded ? (
         <GoogleMap
           mapContainerStyle={containerStyle}

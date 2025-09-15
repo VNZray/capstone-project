@@ -1,7 +1,6 @@
 import Text from "@/src/components/Text";
 import React from "react";
 import type { Business } from "@/src/types/Business";
-import CardHeader from "@/src/components/CardHeader";
 import { useAddress } from "@/src/hooks/useAddress";
 import { useCategoryAndType } from "@/src/hooks/useCategoryAndType";
 import { Card, CardContent, Divider, Typography } from "@mui/joy";
@@ -63,11 +62,11 @@ const Step7: React.FC<Props> = ({
     icon: React.ReactNode;
   }) => (
     <Card variant="outlined" sx={{ borderRadius: "sm" }}>
-      <CardContent>
+      <CardContent sx={{ py: 1, px: 1.25 }}>
         <Typography
           level="title-md"
           sx={{
-            mb: 1,
+            mb: 0.75,
             fontWeight: "600",
             display: "flex",
             alignItems: "center",
@@ -76,167 +75,210 @@ const Step7: React.FC<Props> = ({
         >
           {icon} {title}
         </Typography>
-        <Divider sx={{ mb: 2 }} />
+        <Divider sx={{ mb: 1.25 }} />
         {children}
       </CardContent>
     </Card>
   );
 
   return (
-    <div className="stepperContent">
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          gap: 24,
-          overflowY: "auto",
-          overflowX: "hidden",
-          paddingRight: 8,
-        }}
-      >
-        <Card variant="soft" sx={{ borderRadius: "lg" }}>
-          <CardContent>
-            <CardHeader
-              title="Review Your Information"
-              color="white"
-              margin="0 0 8px 0"
-            />
-            <Text variant="normal" color="dark">
-              Please review your details carefully before submitting your
-              business registration.
+    <>
+      <style>
+        {`
+          .br-section {
+            box-shadow: none !important;
+            background: transparent !important;
+            border: none !important;
+            border-radius: 0 !important;
+          }
+          .stepperContent {
+            background: transparent;
+          }
+        `}
+      </style>
+      <div className="stepperContent" style={{ padding: '16px 16px 16px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-start', width: '100%', boxSizing: 'border-box' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16, width: '100%', maxWidth: '1000px', margin: '0 auto' }}>
+          <div style={{
+            paddingBottom: 8,
+            textAlign: 'center',
+            borderBottom: '1px solid #e5e7eb',
+            marginBottom: 12,
+            paddingTop: 4
+          }}>
+            <Text variant="label" color="gray" style={{
+              fontSize: 20,
+              fontWeight: 700,
+              lineHeight: 1.3,
+              display: 'block',
+              marginBottom: 6,
+              color: '#111827'
+            }}>
+              Review & Submit
             </Text>
-          </CardContent>
-        </Card>
+            <Text color="gray" style={{
+              fontSize: 15,
+              fontWeight: 400,
+              opacity: 0.75,
+              display: 'block',
+              maxWidth: '500px',
+              margin: '0 auto',
+              color: '#6b7280'
+            }}>
+              Review your information before submitting
+            </Text>
+          </div>
+          <div style={{ paddingRight: 6 }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 12, padding: '0 8px' }}>
 
-        {/* BUSINESS SUMMARY CARD */}
-        <Card
-          variant="outlined"
-          sx={{ borderRadius: "lg", bgcolor: "neutral.softBg" }}
-        >
-          <CardContent
-            sx={{
-              display: "flex",
-              flexDirection: "row",
-              alignItems: "center",
-              gap: 2,
-            }}
-          >
-            {/* IMAGE */}
-            <Avatar
-              src={data.business_image || ""}
-              alt={data.business_name}
-              variant="solid"
-              size="lg"
-              sx={{ bgcolor: "primary.500", fontSize: "1.5rem" }}
+            {/* BUSINESS SUMMARY CARD */}
+            <Card
+              variant="outlined"
+              sx={{
+                borderRadius: "12px",
+                bgcolor: "neutral.softBg",
+                border: '1px solid #e5e7eb'
+              }}
             >
-              <BusinessOutlined />
-            </Avatar>
-
-            {/* INFO */}
-            <div>
-              {/* Business Name */}
-              <Typography level="title-lg" fontWeight="lg">
-                {data.business_name || "Unnamed Business"}
-              </Typography>
-
-              <div style={{ display: "flex", gap: 16 }}>
-                {/* Location */}
-                <Typography
-                  level="body-sm"
-                  startDecorator={<PlaceOutlined fontSize="small" />}
-                >
-                  {address?.province_name}, {address?.municipality_name},{" "}
-                  {address?.barangay_name}
-                </Typography>
-
-                {/* Email + Phone */}
-                <Typography
-                  level="body-sm"
-                  startDecorator={<EmailOutlined fontSize="small" />}
-                >
-                  {data.email}
-                </Typography>
-                <Typography
-                  level="body-sm"
-                  startDecorator={<PhoneOutlined fontSize="small" />}
-                >
-                  {data.phone_number}
-                </Typography>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* BASIC INFO */}
-        <Section
-          title="Basic Information"
-          icon={<PersonOutline color="primary" />}
-        >
-          <InfoRow label="Business Name" value={data.business_name} />
-          <InfoRow label="Type" value={category?.category} />
-          <InfoRow label="Category" value={type?.type} />
-        </Section>
-
-        {/* CONTACT */}
-        <Section
-          title="Contact Information"
-          icon={<PhoneOutlined color="primary" />}
-        >
-          <InfoRow label="Phone" value={data.phone_number} />
-          <InfoRow label="Email" value={data.email} />
-        </Section>
-
-        {/* LOCATION */}
-        <Section title="Location" icon={<PlaceOutlined color="primary" />}>
-          <InfoRow label="Province" value={address?.province_name} />
-          <InfoRow label="Municipality" value={address?.municipality_name} />
-          <InfoRow label="Barangay" value={address?.barangay_name} />
-          <InfoRow label="Latitude" value={data.latitude} />
-          <InfoRow label="Longitude" value={data.longitude} />
-        </Section>
-
-        {/* DESCRIPTION */}
-        <Section
-          title="Business Description"
-          icon={<DescriptionOutlined color="primary" />}
-        >
-          <Text variant="normal" color="dark">
-            {data.description || "-"}
-          </Text>
-        </Section>
-
-        {/* PERMITS */}
-        <Section
-          title="Business Permits"
-          icon={<ArticleOutlined color="primary" />}
-        >
-          {permitData && permitData.length > 0 ? (
-            permitData.map((permit, index) => (
-              <div
-                key={index}
-                className="flex justify-between py-2 border-b border-gray-100"
+              <CardContent
+                sx={{
+                  display: "flex",
+                  flexDirection: "row",
+                  alignItems: "center",
+                  gap: 1.25,
+                  p: 1.25,
+                }}
               >
-                <Text variant="medium" color="dark">
-                  {permit.permit_type.replace("_", " ")}
-                </Text>
-                <a
-                  href={permit.file_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-blue-600 underline"
+                {/* IMAGE */}
+                <Avatar
+                  src={data.business_image || ""}
+                  alt={data.business_name}
+                  variant="solid"
+                  size="lg"
+                  sx={{ bgcolor: "primary.500", fontSize: "1.5rem" }}
                 >
-                  View File
-                </a>
-              </div>
-            ))
-          ) : (
-            <Text variant="normal" color="dark">
-              No permits uploaded yet.
-            </Text>
-          )}
-        </Section>
+                  <BusinessOutlined />
+                </Avatar>
+
+                {/* INFO */}
+                <div>
+                  {/* Business Name */}
+                  <Typography level="title-lg" fontWeight="lg">
+                    {data.business_name || "Unnamed Business"}
+                  </Typography>
+
+                  <div style={{ display: "flex", gap: 12, flexWrap: 'wrap' }}>
+                    {/* Location */}
+                    <Typography
+                      level="body-sm"
+                      startDecorator={<PlaceOutlined fontSize="small" />}
+                      sx={{ color: '#6b7280' }}
+                    >
+                      {address?.province_name}, {address?.municipality_name},{" "}
+                      {address?.barangay_name}
+                    </Typography>
+
+                    {/* Email + Phone */}
+                    <Typography
+                      level="body-sm"
+                      startDecorator={<EmailOutlined fontSize="small" />}
+                      sx={{ color: '#6b7280' }}
+                    >
+                      {data.email}
+                    </Typography>
+                    <Typography
+                      level="body-sm"
+                      startDecorator={<PhoneOutlined fontSize="small" />}
+                      sx={{ color: '#6b7280' }}
+                    >
+                      {data.phone_number}
+                    </Typography>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* BASIC INFO */}
+            <Section
+              title="Basic Information"
+              icon={<PersonOutline color="primary" />}
+            >
+              <InfoRow label="Business Name" value={data.business_name} />
+              <InfoRow label="Type" value={category?.category} />
+              <InfoRow label="Category" value={type?.type} />
+            </Section>
+
+            {/* CONTACT */}
+            <Section
+              title="Contact Information"
+              icon={<PhoneOutlined color="primary" />}
+            >
+              <InfoRow label="Phone" value={data.phone_number} />
+              <InfoRow label="Email" value={data.email} />
+            </Section>
+
+            {/* LOCATION */}
+            <Section title="Location" icon={<PlaceOutlined color="primary" />}>
+              <InfoRow label="Province" value={address?.province_name} />
+              <InfoRow label="Municipality" value={address?.municipality_name} />
+              <InfoRow label="Barangay" value={address?.barangay_name} />
+              <InfoRow label="Latitude" value={data.latitude} />
+              <InfoRow label="Longitude" value={data.longitude} />
+            </Section>
+
+            {/* DESCRIPTION */}
+            <Section
+              title="Business Description"
+              icon={<DescriptionOutlined color="primary" />}
+            >
+              <Text variant="normal" color="dark">
+                {data.description || "-"}
+              </Text>
+            </Section>
+
+            {/* PERMITS */}
+            <Section
+              title="Business Permits"
+              icon={<ArticleOutlined color="primary" />}
+            >
+              {permitData && permitData.length > 0 ? (
+                permitData.map((permit, index) => (
+                  <div
+                    key={index}
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      padding: '6px 0',
+                      borderBottom: '1px solid #f3f4f6'
+                    }}
+                  >
+                    <Text variant="medium" color="dark">
+                      {permit.permit_type.replace("_", " ")}
+                    </Text>
+                    <a
+                      href={permit.file_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{
+                        color: '#1976d2',
+                        textDecoration: 'underline',
+                        fontWeight: 500
+                      }}
+                    >
+                      View File
+                    </a>
+                  </div>
+                ))
+              ) : (
+                <Text variant="normal" color="dark">
+                  No permits uploaded yet.
+                </Text>
+              )}
+            </Section>
+          </div>
+          </div>
+        </div>
       </div>
-    </div>
+    </>
   );
 };
 
