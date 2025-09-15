@@ -44,7 +44,7 @@ const Navbar: React.FC<NavbarProps> = ({ servicesId = "features", aboutId = "abo
     if (!id) return;
     const el = document.getElementById(id);
     if (el) {
-      el.scrollIntoView({ behavior: "smooth", block: "start" });
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
       setOpen(false);
     }
   };
@@ -60,7 +60,7 @@ const Navbar: React.FC<NavbarProps> = ({ servicesId = "features", aboutId = "abo
         {/* Brand */}
         <div className="brand" role="button" onClick={() => { setOpen(false); navigate("/"); }}>
           <img src={logo} alt="City Venture" />
-          <Typography level="title-lg" textColor={colors.primary} sx={{ fontSize: 22, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', opacity: 0.9 }}>City Venture</Typography>
+          <Typography level="title-lg" textColor={colors.primary} sx={{ fontSize: 16, fontWeight: 700, letterSpacing: 1,opacity: 0.9 }}>City Venture</Typography>
         </div>
 
         {/* Links (desktop) */}

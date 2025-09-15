@@ -88,15 +88,16 @@ export default function LandingPage() {
   ];
 
   return (
-    <PageContainer
-      style={{
-        width: "100%",
-        padding: 0,
-        margin: 0,
-        display: "block",
-        overflowX: "hidden",
-      }}
-    >
+    <div className="landing-zoom" id="top">
+      <PageContainer
+        style={{
+          width: "100%",
+          padding: 0,
+          margin: 0,
+          display: "block",
+          overflowX: "hidden",
+        }}
+      >
       {/* Hero Section: Two-column main section */}
       <section id="hero" className="main-hero" style={{ scrollMarginTop: 80 }}>
         <div className="hero-inner">
@@ -239,10 +240,7 @@ export default function LandingPage() {
                   Register Now
                 </Button>
                 <Button size="lg" variant="outlined" color="neutral" onClick={() => navigate('/login')} sx={{ borderRadius: 12 }}>
-                  Login (Tourist / Admin)
-                </Button>
-                <Button size="lg" variant="outlined" color="neutral" onClick={() => navigate('/business/login')} sx={{ borderRadius: 12 }}>
-                  Business Login
+                  Login
                 </Button>
               </div>
             </div>
@@ -784,7 +782,8 @@ export default function LandingPage() {
           </div>
         </div>
       </footer>
-    </PageContainer>
+      </PageContainer>
+    </div>
   );
 }
 

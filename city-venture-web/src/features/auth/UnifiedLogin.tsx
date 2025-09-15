@@ -17,6 +17,11 @@ import {
 } from "@mui/joy";
 import Visibility from "@mui/icons-material/Visibility";
 import VisibilityOff from "@mui/icons-material/VisibilityOff";
+import EmailRounded from "@mui/icons-material/EmailRounded";
+import LockRounded from "@mui/icons-material/LockRounded";
+import GoogleIcon from "@mui/icons-material/Google";
+import Divider from "@mui/joy/Divider";
+import Checkbox from "@mui/joy/Checkbox";
 import "./LoginUnified.css";
 
 type Role = "tourist" | "owner" | "admin";
@@ -37,6 +42,7 @@ export default function UnifiedLogin() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string>("");
   const [loading, setLoading] = useState(false);
+  const [remember, setRemember] = useState(true);
 
   const submitLabel = useMemo(() => `Sign in as ${roleToLabel[role]}`, [role]);
 
@@ -85,21 +91,41 @@ export default function UnifiedLogin() {
       </div>
 
       <div className="ul-form-col">
-        <Card className="ul-card" variant="outlined">
-          <div className="ul-card-header">
-            <Typography level="h3" fontWeight={800}>
-              Welcome back
-            </Typography>
-            <Typography level="body-md" sx={{ color: "#6B7280" }}>
-              Sign in to continue your journey
-            </Typography>
+        <Card className="ul-card" variant="outlined" sx={{ borderRadius: 18, p: 3, boxShadow: "sm" }}>
+          <div className="ul-card-header" style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <img src={logo} alt="City Venture" width={36} height={36} style={{ borderRadius: 8 }} />
+            <div>
+              <Typography level="h4" fontWeight={800}>
+                Nice to see you again
+              </Typography>
+              <Typography level="body-sm" sx={{ color: "#6B7280" }}>
+                Sign in to continue your journey
+              </Typography>
+            </div>
           </div>
 
-          <Tabs value={role} onChange={(_, v) => setRole(v as Role)}>
-            <TabList className="ul-tablist">
-              <Tab value="tourist">Tourist</Tab>
-              <Tab value="owner">Business Owner</Tab>
-              <Tab value="admin">Admin</Tab>
+          <Tabs value={role} onChange={(_, v) => setRole(v as Role)} sx={{ mt: 2 }}>
+            <TabList className="ul-tablist" sx={{
+              bgcolor: "background.level1",
+              borderRadius: 12,
+              p: 0.5,
+              gap: 0.5,
+            }}>
+              <Tab value="tourist" sx={{ borderRadius: 10, flex: 1 }}>
+                <Typography level="body-sm">
+                  Tourist
+                </Typography>
+              </Tab>
+              <Tab value="owner" sx={{ borderRadius: 10, flex: 1 }}>
+                <Typography level="body-sm">
+                  Business Owner
+                </Typography>
+              </Tab>
+              <Tab value="admin" sx={{ borderRadius: 10, flex: 1 }}>
+                <Typography level="body-sm">
+                  Admin
+                </Typography>
+              </Tab>
             </TabList>
           </Tabs>
 
@@ -118,6 +144,8 @@ export default function UnifiedLogin() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 size="lg"
+                startDecorator={<EmailRounded fontSize="small" />}
+                disabled={loading}
               />
             </FormControl>
 
@@ -129,6 +157,7 @@ export default function UnifiedLogin() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 size="lg"
+                startDecorator={<LockRounded fontSize="small" />}
                 endDecorator={
                   <IconButton
                     variant="plain"
@@ -139,24 +168,46 @@ export default function UnifiedLogin() {
                     {showPassword ? <VisibilityOff /> : <Visibility />}
                   </IconButton>
                 }
+                disabled={loading}
               />
             </FormControl>
 
-            <div className="ul-actions">
-              <Button
-                type="submit"
-                loading={loading}
-                size="lg"
-                fullWidth
-              >
+            <div className="ul-actions" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <Checkbox
+                label="Remember me"
+                checked={remember}
+                onChange={(e) => setRemember((e.target as HTMLInputElement).checked)}
+              />
+              <Link to={role === "admin" ? "/tourism/forgot" : role === "owner" ? "/business/forgot" : "/forgot"} className="ul-link">
+                Forgot password?
+              </Link>
+            </div>
+
+            <div className="ul-actions" style={{ marginTop: 10 }}>
+              <Button type="submit" loading={loading} size="lg" fullWidth>
                 {submitLabel}
               </Button>
             </div>
           </form>
 
+          <Divider sx={{ my: 2 }}>or</Divider>
+
+          <Button
+            variant="outlined"
+            color="neutral"
+            size="lg"
+            startDecorator={<GoogleIcon />}
+            fullWidth
+            disabled={loading}
+            onClick={() => alert("Google sign-in not wired yet")}
+            sx={{ mb: 1 }}
+          >
+            Continue with Google
+          </Button>
+
           <div className="ul-footer">
             {role === "owner" && (
-              <Typography level="body-sm">
+              <Typography textAlign="center" level="body-sm">
                 New to City Venture?{" "}
                 <Link to="/business/signup" className="ul-link">
                   Create a business account
@@ -164,10 +215,18 @@ export default function UnifiedLogin() {
               </Typography>
             )}
             {role === "admin" && (
-              <Typography level="body-sm">
+              <Typography textAlign="center" level="body-sm">
                 No admin account yet?{" "}
                 <Link to="/tourism/signup" className="ul-link">
                   Request access
+                </Link>
+              </Typography>
+            )}
+            {role === "tourist" && (
+              <Typography textAlign="center" level="body-sm">
+                Don’t have an account?{" "}
+                <Link to="/signup" className="ul-link">
+                  Sign up now
                 </Link>
               </Typography>
             )}

@@ -17,6 +17,7 @@
     radial-gradient(720px 720px at 95% 28%, var(--blobWarm) 0%, transparent 64%),
     linear-gradient(180deg, #ffffff 0%, #faf9f9 100%);
   padding: 64px 20px 32px 20px;
+  min-height: 700px;
 }
 
 .hero-inner {
@@ -429,5 +430,24 @@
   #business-benefits > div {
     justify-self: center !important;
     max-width: 100% !important;
+  }
+}
+
+/* Scoped zoom for LandingPage only */
+.landing-zoom {
+  /* Preferred scaling in Chromium/Edge */
+  zoom: 1.1;
+}
+
+/* Fallback for browsers that ignore zoom (e.g., Firefox) */
+@supports not (zoom: 1) {
+  .landing-zoom {
+    transform: scale(1.1);
+    transform-origin: top center;
+  }
+
+  /* When using transform scaling, prevent horizontal scrollbars */
+  .landing-zoom > * {
+    width: 100%;
   }
 }
