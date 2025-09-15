@@ -132,7 +132,7 @@ const Register = () => {
       const addressRes = await insertData(newAddress, "address");
       const addressId = addressRes.id;
       // Create Owner
-      const ownerResponse = await insertOwner(newOwner);
+      const ownerResponse = await insertOwner({...newOwner, address_id: addressId});
       const ownerId = ownerResponse.id;
 
       alert(`Account created! Owner ID: ${ownerId}`);
@@ -144,7 +144,6 @@ const Register = () => {
         password: password.trim(),
         role: "Owner",
         owner_id: ownerId,
-        address_id: addressId,
       });
 
       const userId = userResponse.data?.id;
