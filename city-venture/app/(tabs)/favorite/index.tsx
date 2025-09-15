@@ -1,7 +1,7 @@
 import Button from '@/components/Button';
 import SearchBar from '@/components/SearchBar';
 import { ThemedText } from '@/components/themed-text';
-import { colors } from '@/constants/color';
+import { background, card, colors } from '@/constants/color';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { router, useNavigation } from 'expo-router';
@@ -26,10 +26,25 @@ type FavItem = {
 };
 
 const TABS = [
-  { key: 'accommodation', label: 'Accommodation', icon: 'hotel' as const, emoji: '🏨' },
-  { key: 'spots', label: 'Tourist Spots', icon: 'map-marker-alt' as const, emoji: '📍' },
+  {
+    key: 'accommodation',
+    label: 'Accommodation',
+    icon: 'hotel' as const,
+    emoji: '🏨',
+  },
+  {
+    key: 'spots',
+    label: 'Tourist Spots',
+    icon: 'map-marker-alt' as const,
+    emoji: '📍',
+  },
   { key: 'shops', label: 'Shops', icon: 'shopping-bag' as const, emoji: '🛍️' },
-  { key: 'events', label: 'Events', icon: 'calendar-alt' as const, emoji: '🎉' },
+  {
+    key: 'events',
+    label: 'Events',
+    icon: 'calendar-alt' as const,
+    emoji: '🎉',
+  },
 ] as const;
 
 type TabKey = (typeof TABS)[number]['key'];
@@ -39,8 +54,8 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const Favorite = () => {
   const navigation = useNavigation();
   const scheme = useColorScheme();
-  const bg = scheme === 'dark' ? '#0F1222' : '#F6F7FA';
-  const card = scheme === 'dark' ? '#161A2E' : '#FFFFFF';
+  const bg = scheme === 'dark' ? background.dark : background.light;
+  const cardBg = scheme === 'dark' ? card.dark : card.light;
   const textMuted = scheme === 'dark' ? '#A9B2D0' : '#6A768E';
 
   // Header right: small settings button
@@ -48,8 +63,15 @@ const Favorite = () => {
     navigation.setOptions({
       headerTitle: 'My Favorites',
       headerRight: () => (
-        <Pressable onPress={() => router.push('/(tabs)/(profile)/(settings)')} style={{ paddingHorizontal: 12 }}>
-          <FontAwesome5 name="cog" size={18} color={scheme === 'dark' ? '#fff' : '#1F2A44'} />
+        <Pressable
+          onPress={() => router.push('/(tabs)/(profile)/(settings)')}
+          style={{ paddingHorizontal: 12 }}
+        >
+          <FontAwesome5
+            name="cog"
+            size={18}
+            color={scheme === 'dark' ? '#fff' : '#1F2A44'}
+          />
         </Pressable>
       ),
     });
@@ -118,12 +140,19 @@ const Favorite = () => {
     const q = query.trim().toLowerCase();
     const arr = favByTab[key] ?? [];
     if (!q) return arr;
-    return arr.filter((i) => i.title.toLowerCase().includes(q) || i.subtitle.toLowerCase().includes(q));
+    return arr.filter(
+      (i) =>
+        i.title.toLowerCase().includes(q) ||
+        i.subtitle.toLowerCase().includes(q)
+    );
   };
 
   // Remove from favorites with small animation
   const removeFav = (key: TabKey, id: string) => {
-    setFavByTab((prev) => ({ ...prev, [key]: (prev[key] || []).filter((i) => i.id !== id) }));
+    setFavByTab((prev) => ({
+      ...prev,
+      [key]: (prev[key] || []).filter((i) => i.id !== id),
+    }));
   };
 
   // Animated indicator for tabs
@@ -134,13 +163,17 @@ const Favorite = () => {
   });
 
   const renderCard = (item: FavItem, key: TabKey) => (
-    <View style={[styles.card, { backgroundColor: card }, shadow(2)]}>
+    <View style={[styles.card, { backgroundColor: cardBg }, shadow(2)]}>
       <Image source={item.image} style={styles.thumb} />
       <View style={{ flex: 1, marginHorizontal: 12 }}>
         <ThemedText type="body-medium" weight="semi-bold" numberOfLines={1}>
           {item.title}
         </ThemedText>
-        <ThemedText type="label-small" style={{ color: textMuted }} numberOfLines={2}>
+        <ThemedText
+          type="label-small"
+          style={{ color: textMuted }}
+          numberOfLines={2}
+        >
           {item.subtitle}
         </ThemedText>
       </View>
@@ -149,10 +182,11 @@ const Favorite = () => {
   );
 
   return (
-    <View style={[styles.screen, { backgroundColor: bg }]}> 
+    <View style={[styles.screen, { backgroundColor: bg }]}>
       {/* Search */}
       <View style={{ paddingHorizontal: 20, paddingTop: 10 }}>
         <SearchBar
+          shape="square"
           value={query}
           onChangeText={setQuery}
           onSearch={() => {}}
@@ -173,7 +207,7 @@ const Favorite = () => {
               key={t.key}
               onPress={() => onTabPress(i)}
               label={t.label}
-              size='medium'
+              size="medium"
               textSize={11}
               iconSize={14}
               padding={11}
@@ -190,13 +224,20 @@ const Favorite = () => {
         horizontal
         pagingEnabled
         showsHorizontalScrollIndicator={false}
-        onScroll={Animated.event([{ nativeEvent: { contentOffset: { x: scrollX } } }], {
-          listener: (e: { nativeEvent: { contentOffset: { x: number } } }) => {
-            const idx = Math.round(e.nativeEvent.contentOffset.x / SCREEN_WIDTH);
-            if (idx !== tabIndex) setTabIndex(idx);
-          },
-          useNativeDriver: false,
-        })}
+        onScroll={Animated.event(
+          [{ nativeEvent: { contentOffset: { x: scrollX } } }],
+          {
+            listener: (e: {
+              nativeEvent: { contentOffset: { x: number } };
+            }) => {
+              const idx = Math.round(
+                e.nativeEvent.contentOffset.x / SCREEN_WIDTH
+              );
+              if (idx !== tabIndex) setTabIndex(idx);
+            },
+            useNativeDriver: false,
+          }
+        )}
         scrollEventThrottle={16}
         style={{ marginTop: 10 }}
       >
@@ -205,7 +246,10 @@ const Favorite = () => {
           const data = filteredFor(key);
           const isEmpty = data.length === 0;
           return (
-            <View key={t.key} style={{ width: SCREEN_WIDTH, paddingHorizontal: 20 }}>
+            <View
+              key={t.key}
+              style={{ width: SCREEN_WIDTH, paddingHorizontal: 20 }}
+            >
               {isEmpty ? (
                 <EmptyState />
               ) : (
@@ -214,7 +258,12 @@ const Favorite = () => {
                   keyExtractor={(it) => it.id}
                   renderItem={({ item }) => renderCard(item, key)}
                   contentContainerStyle={{ paddingVertical: 14, gap: 12 }}
-                  refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+                  refreshControl={
+                    <RefreshControl
+                      refreshing={refreshing}
+                      onRefresh={onRefresh}
+                    />
+                  }
                   showsVerticalScrollIndicator={false}
                 />
               )}
@@ -233,12 +282,24 @@ const HeartButton = ({ onPress }: { onPress: () => void }) => {
   const scale = useRef(new Animated.Value(1)).current;
   const handlePress = () => {
     Animated.sequence([
-      Animated.timing(scale, { toValue: 1.2, duration: 120, useNativeDriver: true }),
-      Animated.timing(scale, { toValue: 1, duration: 120, useNativeDriver: true }),
+      Animated.timing(scale, {
+        toValue: 1.2,
+        duration: 120,
+        useNativeDriver: true,
+      }),
+      Animated.timing(scale, {
+        toValue: 1,
+        duration: 120,
+        useNativeDriver: true,
+      }),
     ]).start(() => onPress());
   };
   return (
-    <Pressable onPress={handlePress} accessibilityRole="button" accessibilityLabel="Remove from favorites">
+    <Pressable
+      onPress={handlePress}
+      accessibilityRole="button"
+      accessibilityLabel="Remove from favorites"
+    >
       <Animated.View style={{ transform: [{ scale }] }}>
         <FontAwesome5 name="heart" size={32} color={colors.primary} solid />
       </Animated.View>
@@ -248,12 +309,26 @@ const HeartButton = ({ onPress }: { onPress: () => void }) => {
 
 // Empty state component
 const EmptyState = () => (
-  <View style={{ alignItems: 'center', justifyContent: 'center', paddingVertical: 80, gap: 10 }}>
+  <View
+    style={{
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingVertical: 80,
+      gap: 10,
+    }}
+  >
     <View style={[styles.illustration, shadow(3)]}>
       <FontAwesome5 name="map" size={36} color={colors.secondary} />
-      <FontAwesome5 name="search-location" size={18} color="#7C89B6" style={{ position: 'absolute', right: 16, bottom: 14 }} />
+      <FontAwesome5
+        name="search-location"
+        size={18}
+        color="#7C89B6"
+        style={{ position: 'absolute', right: 16, bottom: 14 }}
+      />
     </View>
-    <ThemedText type="sub-title-medium" weight="bold" align="center">No favorites yet</ThemedText>
+    <ThemedText type="sub-title-medium" weight="bold" align="center">
+      No favorites yet
+    </ThemedText>
     <ThemedText type="label-medium" align="center" style={{ color: '#6A768E' }}>
       Start exploring and add places you love!
     </ThemedText>
@@ -275,7 +350,7 @@ const EmptyState = () => (
 // Styles
 const styles = StyleSheet.create({
   screen: { flex: 1 },
-  tabRow: { flexDirection: 'row', alignItems: 'center', gap: 8},
+  tabRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   tabBtn: {
     flex: 1,
     backgroundColor: '#EEF4FF',
@@ -284,7 +359,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  indicatorTrack: { height: 3, backgroundColor: '#E1E8F5', marginTop: 8, borderRadius: 2 },
+  indicatorTrack: {
+    height: 3,
+    backgroundColor: '#E1E8F5',
+    marginTop: 8,
+    borderRadius: 2,
+  },
   indicator: { height: 3, backgroundColor: colors.secondary, borderRadius: 2 },
   card: {
     flexDirection: 'row',
@@ -292,7 +372,12 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     padding: 12,
   },
-  thumb: { width: 64, height: 64, borderRadius: 14, backgroundColor: '#EAEFF7' },
+  thumb: {
+    width: 64,
+    height: 64,
+    borderRadius: 14,
+    backgroundColor: '#EAEFF7',
+  },
   illustration: {
     width: 140,
     height: 90,
@@ -306,10 +391,28 @@ const styles = StyleSheet.create({
 function shadow(level: 1 | 2 | 3) {
   switch (level) {
     case 1:
-      return { shadowColor: '#1e1e1e', shadowOpacity: 0.08, shadowRadius: 2, shadowOffset: { width: 0, height: 1 }, elevation: 1 } as const;
+      return {
+        shadowColor: '#1e1e1e',
+        shadowOpacity: 0.08,
+        shadowRadius: 2,
+        shadowOffset: { width: 0, height: 1 },
+        elevation: 1,
+      } as const;
     case 2:
-      return { shadowColor: '#1e1e1e', shadowOpacity: 0.12, shadowRadius: 3, shadowOffset: { width: 0, height: 2 }, elevation: 2 } as const;
+      return {
+        shadowColor: '#1e1e1e',
+        shadowOpacity: 0.12,
+        shadowRadius: 3,
+        shadowOffset: { width: 0, height: 2 },
+        elevation: 2,
+      } as const;
     default:
-      return { shadowColor: '#1e1e1e', shadowOpacity: 0.16, shadowRadius: 4, shadowOffset: { width: 0, height: 3 }, elevation: 3 } as const;
+      return {
+        shadowColor: '#1e1e1e',
+        shadowOpacity: 0.16,
+        shadowRadius: 4,
+        shadowOffset: { width: 0, height: 3 },
+        elevation: 3,
+      } as const;
   }
 }

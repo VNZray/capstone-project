@@ -101,7 +101,7 @@ const MyBusiness = () => {
 
         {/* Sub header: title + CTA (below icons) */}
         <div className="myb-card-header">
-          <Typography level="h5" sx={{ fontWeight: 800, color: colors.primary }}>My Businesses</Typography>
+          <Typography level="h4" sx={{ fontWeight: 800, color: colors.primary }}>My Businesses</Typography>
           <Button
             variant="solid"
             size="md"

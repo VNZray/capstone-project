@@ -1,32 +1,33 @@
-import { AccommodationProvider } from "@/context/AccommodationContext";
-import { Stack } from "expo-router";
-import { View } from "react-native";
-const accommodation = () => {};
+import { AccommodationProvider } from '@/context/AccommodationContext';
+import { Stack } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
+import { View } from 'react-native';
 
 const AccommodationLayout = () => {
   return (
     <AccommodationProvider>
+      <StatusBar style="light" />
       <Stack
         screenOptions={{
-          headerBackTitle: "Back",
+          headerBackTitle: 'Back',
         }}
       >
         <Stack.Screen
-          name="profile/[id]"
+          name="profile/profile"
           options={{
             headerTransparent: true,
             headerShown: true,
-            animation: "slide_from_right",
-            headerTitleAlign: "center",
+            animation: 'slide_from_right',
+            headerTitleAlign: 'center',
             headerTitleStyle: {
-              color: "#fff",
+              color: '#fff',
             },
-            headerTintColor: "#fff",
+            headerTintColor: '#fff',
             headerBackground: () => (
               <View
                 style={{
                   flex: 1,
-                  backgroundColor: "rgba(0, 0, 0, 0.4)", // translucent black
+                  backgroundColor: 'rgba(0, 0, 0, 0.4)', // translucent black
                 }}
               />
             ),
@@ -37,17 +38,17 @@ const AccommodationLayout = () => {
           options={{
             headerTransparent: true,
             headerShown: true,
-            animation: "slide_from_right",
-            headerTitleAlign: "center",
+            animation: 'slide_from_right',
+            headerTitleAlign: 'center',
             headerTitleStyle: {
-              color: "#fff",
+              color: '#fff',
             },
-            headerTintColor: "#fff",
+            headerTintColor: '#fff',
             headerBackground: () => (
               <View
                 style={{
                   flex: 1,
-                  backgroundColor: "rgba(0, 0, 0, 0.4)", // translucent black
+                  backgroundColor: 'rgba(0, 0, 0, 0.4)', // translucent black
                 }}
               />
             ),
@@ -57,10 +58,10 @@ const AccommodationLayout = () => {
           name="index"
           options={{
             headerShown: true,
-            animation: "slide_from_right",
-            headerTitleAlign: "center",
-            headerTitle: "Accommodation",
-            headerBackTitle: "Back",
+            animation: 'slide_from_right',
+            headerTitleAlign: 'center',
+            headerTitle: 'Accommodation',
+            headerBackTitle: 'Back',
           }}
         />
       </Stack>
