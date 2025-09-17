@@ -1,5 +1,5 @@
 import { Routes, Route } from "react-router-dom";
-import { AuthProvider } from "@/src/context/AuthContext"; // adjust path
+import { AuthProvider } from "@/src/context/AuthContext";
 
 // Pages
 import Login from "../pages/login";
@@ -29,23 +29,23 @@ export default function AppRoutes() {
       <Routes>
         {/* Auth routes */}
         <Route element={<AuthLayout />}>
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-          <Route path="/" element={<Login />} />
+          <Route path="/tourism/login" element={<Login />} />
+          <Route path="/tourism/register" element={<Register />} />
+          <Route path="/tourism" element={<Login />} />
         </Route>
 
         {/* Protected app routes */}
         <Route element={<MainLayout />}>
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/approval" element={<Approval />} />
-          <Route path="/reports" element={<Report />} />
-          <Route path="/services/accommodation" element={<Accommodation />} />
-          <Route path="/services/shop" element={<Shop />} />
-          <Route path="/services/event" element={<Event />} />
-          <Route path="/services/tourist-spot" element={<Spot />} />
-          <Route path="/room/:id" element={<Room />} />
-          <Route path="/offer/:id" element={<Offer />} />
-          <Route path="/profile" element={<Profile />} />
+          <Route path="/tourism/dashboard" element={<Dashboard />} />
+          <Route path="/tourism/approval" element={<Approval />} />
+          <Route path="/tourism/reports" element={<Report />} />
+          <Route path="/tourism/services/accommodation" element={<Accommodation />} />
+          <Route path="/tourism/services/shop" element={<Shop />} />
+          <Route path="/tourism/services/event" element={<Event />} />
+          <Route path="/tourism/services/tourist-spot" element={<Spot />} />
+          <Route path="/tourism/room/:id" element={<Room />} />
+          <Route path="/tourism/offer/:id" element={<Offer />} />
+          <Route path="/tourism/profile" element={<Profile />} />
         </Route>
 
         {/* 404 */}
