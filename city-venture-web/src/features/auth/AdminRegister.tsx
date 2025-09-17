@@ -20,9 +20,7 @@ import LockRounded from "@mui/icons-material/LockRounded";
 import Visibility from "@mui/icons-material/Visibility";
 import VisibilityOff from "@mui/icons-material/VisibilityOff";
 import "./LoginUnified.css";
-import { insertTourism } from "@/src/services/TourismService";
 import axios from "axios";
-import api from "@/src/services/api";
 import type { Tourism } from "@/src/types/Tourism";
 import type { User } from "@/src/types/User";
 import { insertData } from "@/src/services/Service";
@@ -43,7 +41,7 @@ const Register = () => {
   const [agreePolicy, setAgreePolicy] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
-  const { login, user } = useAuth(); // from AuthProvider
+  const { login, user } = useAuth();
 
   const newUser: User = {
     email: email,

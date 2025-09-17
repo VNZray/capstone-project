@@ -65,8 +65,7 @@ const StepPermits: React.FC<Props> = ({ data, permitData, setPermitData }) => {
     setPermitData((prev) => [
       ...prev.filter((p) => p.permit_type !== permitType),
       {
-        id: "",
-        business_id: data.id,
+        business_id: data.id ?? "",
         permit_type: permitType,
         file_url: publicUrlData.publicUrl,
         file_format: ext!,

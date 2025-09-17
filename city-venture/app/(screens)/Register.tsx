@@ -5,10 +5,13 @@ import PageContainer from '@/components/PageContainer';
 import PressableButton from '@/components/PressableButton';
 import { ThemedText } from '@/components/themed-text';
 import { colors } from '@/constants/color';
+import { useAuth } from '@/context/AuthContext';
 import { useColorScheme } from '@/hooks/use-color-scheme.web';
 import { insertData } from '@/query/mainQuery';
-import { navigateToLogin } from '@/routes/mainRoutes';
+import { navigateToHome, navigateToLogin } from '@/routes/mainRoutes';
 import api from '@/services/api';
+import { Tourist } from '@/types/Tourist';
+import { User } from '@/types/User';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Picker } from '@react-native-picker/picker';
@@ -41,9 +44,10 @@ const RegistrationPage = () => {
   const [gender, setGender] = useState<string>('');
   const [phoneNumber, setPhoneNumber] = useState('09784561234');
   const [nationality, setNationality] = useState('Filipino');
-  const [provinceId, setProvinceId] = useState<number | null>(null);
-  const [municipalityId, setMunicipalityId] = useState<number | null>(null);
-  const [barangayId, setBarangayId] = useState<number | null>(null);
+  const [provinceId, setProvinceId] = useState<number | null>(20);
+  const [municipalityId, setMunicipalityId] = useState<number | null>(24);
+  const [barangayId, setBarangayId] = useState<number | null>(6);
+  const { login, user } = useAuth(); // from AuthProvider
 
   const [province, setProvince] = useState<{ id: number; province: string }[]>(
     []
@@ -113,58 +117,93 @@ const RegistrationPage = () => {
     if (!date) return '';
     return date.toISOString().split('T')[0];
   };
+  const newUser: User = {
+    email: email,
+    phone_number: phoneNumber,
+    password: password,
+    user_role_id: 2,
+    is_active: false,
+    is_verified: false,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+    otp: null,
+  };
 
-  const newTourist = {
+  const newTourist: Tourist = {
     first_name: firstName,
     last_name: lastName,
     ethnicity: ethnicity,
     gender: gender,
     nationality: nationality,
-    phone_number: phoneNumber,
     category: category,
-    email: email,
-    birthday: formatDate(birthdate),
-    created_at: new Date().toISOString(),
+    birthdate: formatDate(birthdate),
     address_id: barangayId,
-    age: new Date().getFullYear() - birthdate.getFullYear(),
+    age: (new Date().getFullYear() - birthdate.getFullYear()).toString(),
   };
 
+  // Default fallback IDs kept to reduce friction; prefer user's selections when available
   const newAddress = {
-    barangay: 6,
-    municipality: 24,
-    province: 20,
+    province_id: provinceId ?? 20,
+    municipality_id: municipalityId ?? 24,
+    barangay_id: barangayId ?? 6,
   };
 
   const handleTouristRegistration = async () => {
     try {
+      console.log('[Register] Inserting user', newUser);
+      console.log('[Register] Inserting address', newAddress);
+      console.log('[Register] Inserting tourist (pre)', newTourist);
+
+      // 1) Create base user
+      const userRes = await insertData(newUser, 'users');
+      const userId = userRes.id;
+      console.debug('[Register] Created user', { userId });
+
+      // 2) Create address (use selected location or fallbacks)
       const addressRes = await insertData(newAddress, 'address');
       const addressId = addressRes.id;
+      console.debug('[Register] Created address', { addressId });
 
-      // Create Owner
-      const response = await insertData(
-        { ...newTourist, address_id: addressId },
-        'tourist'
-      );
+      // 3) Create tourist profile
+      const touristPayload: any = {
+        ...newTourist,
+        email, // include email if backend expects unique email in tourist
+        address_id: addressId,
+        user_id: userId,
+      };
+      console.log('[Register] Inserting tourist (final)', touristPayload);
+      const response = await insertData(touristPayload, 'tourist');
       const tourist_id = response.id;
+      console.debug('[Register] Created tourist', { tourist_id });
 
-      alert(`Account created! Owner ID: ${tourist_id}`);
-
-      // Create User linked to Owner
-      const userResponse = await axios.post(`${api}/users`, {
-        email: email.trim(),
-        phone_number: phoneNumber.trim(),
-        password: password.trim(),
-        role: 'Tourist',
-        tourist_id: tourist_id,
-      });
-
-      const userId = userResponse.data?.id;
-      navigateToLogin();
-
-      alert(`User created! User ID: ${userId}`);
+      // 4) Auto-login and navigate home
+      console.debug('[Register] Auto-login start', { email });
+      await login(email, password);
+      console.debug('[Register] Auto-login success');
+      navigateToHome();
     } catch (err: any) {
       if (axios.isAxiosError(err)) {
+        const status = err.response?.status;
+        const data = err.response?.data;
+        console.error('[Register] Registration failed', { status, data });
+
+        if (status === 409) {
+          // Duplicate entry (email/user already exists) → try to login instead
+          try {
+            console.warn('[Register] Duplicate detected, attempting login');
+            await login(email, password);
+            navigateToHome();
+            return;
+          } catch (e) {
+            console.error('[Register] Auto-login after duplicate failed', e);
+            alert('Account already exists. Please sign in.');
+            navigateToLogin();
+            return;
+          }
+        }
+        alert(data?.error || 'Registration failed. Please try again.');
       } else {
+        console.error('[Register] Unexpected error', err);
         alert('Unexpected error occurred.');
       }
     }
@@ -187,75 +226,6 @@ const RegistrationPage = () => {
   }, [municipalityId]);
 
   if (!fontsLoaded) return null;
-
-  // const handleTouristRegistration = async () => {
-  //   if (!firstName || !lastName || !email || !ethnicity || !birthdate) {
-  //     alert('Please fill in all required fields.');
-  //     return;
-  //   }
-
-  //   // medium. Sign up the user
-  //   const { data: signUpData, error: signUpError } = await supabase.auth.signUp(
-  //     {
-  //       email,
-  //       password,
-  //       options: {
-  //         data: {
-  //           display_name: `${firstName} ${lastName}`,
-  //         },
-  //       },
-  //     }
-  //   );
-
-  //   if (signUpError || !signUpData.user) {
-  //     alert('Account creation failed. Please try again.');
-  //     return;
-  //   }
-
-  //   const userId = signUpData.user.id;
-  //   console.log('User signed up:', signUpData.user);
-  //   console.log('User ID:', userId);
-  //   // 2. Insert into Tourist table
-  //   const { data, error } = await supabase.from('tourist').insert([
-  //     {
-  //       tourist_id: userId,
-  //       first_name: firstName,
-  //       last_name: lastName,
-  //       profile_picture: null, // you can update this later with file upload logic
-  //       ethnicity,
-  //       gender,
-  //       nationality,
-  //       contact_number: phoneNumber,
-  //       email,
-  //       created_at: new Date().toISOString(),
-  //       age: new Date().getFullYear() - birthdate.getFullYear(),
-  //     },
-  //   ]);
-
-  //   console.log('Inserted data:', data);
-  //   console.log('Insert error:', error);
-
-  //   if (error) {
-  //     console.error('Error inserting tourist:', error.message);
-  //     alert('Registration failed. Please try again.');
-  //   } else {
-  //     alert('Registration successful!');
-  //     router.replace('/(screens)/');
-  //   }
-
-  //   // 3. Insert into Profile table with role
-  //   const { data: profileData, error: profileError } = await supabase
-  //     .from('profile')
-  //     .insert([
-  //       {
-  //         id: userId,
-  //         role: 'tourist',
-  //       },
-  //     ]);
-
-  //   console.log('Inserted data:', profileData);
-  //   console.log('Insert error:', profileError);
-  // };
 
   return (
     <SafeAreaProvider>
@@ -573,7 +543,7 @@ const RegistrationPage = () => {
           <Button
             fullWidth
             size="large"
-            label="Sign In"
+            label="Sign Up"
             color="primary"
             variant="solid"
             onPress={handleTouristRegistration}

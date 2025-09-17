@@ -41,13 +41,11 @@ export async function createTourist(request, response) {
       request.body.gender ?? null,
       request.body.nationality ?? null,
       request.body.category ?? null,
-      request.body.email ?? null,
       request.body.address_id ?? null,
       request.body.user_id ?? null,
-      request.body.phone_number ?? null,
     ];
     const [data] = await db.query(
-      "CALL InsertTourist(?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+      "CALL InsertTourist(?,?,?,?,?,?,?,?,?,?,?,?)",
       params
     );
     if (!data[0] || data[0].length === 0) {
@@ -90,13 +88,11 @@ export async function updateTourist(request, response) {
       request.body.gender ?? null,
       request.body.nationality ?? null,
       request.body.category ?? null,
-      request.body.email ?? null,
       request.body.address_id ?? null,
       request.body.user_id ?? null,
-      request.body.phone_number ?? null,
     ];
     const [data] = await db.query(
-      "CALL UpdateTourist(?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+      "CALL UpdateTourist(?,?,?,?,?,?,?,?,?,?,?,?)",
       params
     );
     if (!data[0] || data[0].length === 0) {
