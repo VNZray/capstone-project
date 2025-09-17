@@ -1,5 +1,5 @@
 // app/(tabs)/_layout.js
-import { Tabs } from 'expo-router';
+import { Tabs, router } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { Platform, View } from 'react-native';
 
@@ -61,6 +61,13 @@ export default function TabLayout() {
             tabBarIcon: ({ color }) => (
               <IconSymbol size={32} name="house.fill" color={color} />
             ),
+          }}
+          listeners={{
+            tabPress: (e) => {
+              // Always go to the Home root when tapping Home tab
+              e.preventDefault();
+              router.navigate('/(tabs)/(home)');
+            },
           }}
         />
 

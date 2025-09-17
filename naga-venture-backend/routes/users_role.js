@@ -3,13 +3,6 @@ import * as userController from "../controller/userController.js"; // Add `.js` 
 
 const router = express.Router();
 
-// User CRUD
-router.get("/", userController.getAllUsers);
-router.get("/:id", userController.getUserById);
-router.post("/", userController.insertUser);
-router.put("/:id", userController.updateUser);
-router.delete("/:id", userController.deleteUser);
-
 // User role management
 router.get("/", userController.getAllUserRoles);
 router.get("/:user_role_id", userController.getUsersByRoleId);

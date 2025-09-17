@@ -13,7 +13,7 @@ const Login: React.FC = () => {
   const [password, setPassword] = useState("123456");
   const [loginError, setLoginError] = useState("");
   const navigate = useNavigate();
-  const { loginOwner } = useAuth(); // from AuthProvider
+  const { login, user } = useAuth(); // from AuthProvider
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -23,8 +23,12 @@ const Login: React.FC = () => {
 
     try {
       setLoginError("");
-      await loginOwner(email, password);
-      navigate("/business");
+
+      await login(email, password);
+
+      if (user?.role_name === "Owner") {
+        navigate("/business/dashboard");
+      }
     } catch (error: any) {
       setLoginError(
         error?.response?.data?.message || error?.message || "Login failed."

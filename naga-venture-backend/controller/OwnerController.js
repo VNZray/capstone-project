@@ -12,26 +12,24 @@ export async function insertOwner(req, res) {
       middle_name = null,
       last_name,
       age = null,
-      birthday = null,
+      birthdate = null,
       gender = null,
-      email,
-      phone_number,
       business_type,
       address_id = null,
+      user_id = null,
     } = req.body;
 
-    const [rows] = await db.query("CALL InsertOwner(?,?,?,?,?,?,?,?,?,?,?)", [
+    const [rows] = await db.query("CALL InsertOwner(?,?,?,?,?,?,?,?,?,?)", [
       id,
       first_name,
       middle_name,
       last_name,
       age,
-      birthday,
+      birthdate,
       gender,
-      email,
-      phone_number,
       business_type,
       address_id,
+      user_id,
     ]);
 
     return res.status(201).json(rows[0][0]);
@@ -78,27 +76,25 @@ export async function updateOwnerById(req, res) {
     middle_name = null,
     last_name,
     age = null,
-    birthday = null,
+    birthdate = null,
     gender = null,
-    email,
-    phone_number,
     business_type,
     address_id = null,
+    user_id = null,
   } = req.body;
 
   try {
-    const [rows] = await db.query("CALL UpdateOwner(?,?,?,?,?,?,?,?,?,?,?)", [
+    const [rows] = await db.query("CALL UpdateOwner(?,?,?,?,?,?,?,?,?,?)", [
       id,
       first_name,
       middle_name,
       last_name,
       age,
-      birthday,
+      birthdate,
       gender,
-      email,
-      phone_number,
       business_type,
       address_id,
+      user_id,
     ]);
 
     if (!rows[0] || rows[0].length === 0) {
@@ -117,17 +113,32 @@ export async function updateOwnerById(req, res) {
 export async function deleteOwnerById(req, res) {
   const { id } = req.params;
   try {
-    const [result] = await db.query("CALL DeleteOwner(?)", [id]);
+    await db.query("CALL DeleteOwner(?)", [id]);
+    // Confirm deletion by attempting to fetch the owner
+    const [check] = await db.query("CALL GetOwnerById(?)", [id]);
+    if (check[0] && check[0].length > 0) {
+      return res.status(404).json({ success: false, message: "Owner not deleted" });
+    }
+    return res.json({ success: true, message: "Owner deleted successfully" });
+  } catch (error) {
+    return handleDbError(error, res);
+  }
+}
 
-    // CALL result may not return affectedRows directly, so confirm delete
-    if (result.affectedRows === 0) {
-      return res
+// get owner by user ID (calls GetOwnerByUserId SP)
+export async function getOwnerByUserId(request, response) {
+  const { user_id } = request.params;
+  try {
+    const [rows] = await db.query("CALL GetOwnerByUserId(?)", [user_id]);
+
+    if (!rows[0] || rows[0].length === 0) {
+      return response
         .status(404)
         .json({ success: false, message: "Owner not found" });
     }
 
-    return res.json({ success: true, message: "Owner deleted successfully" });
+    return response.json(rows[0][0]);
   } catch (error) {
-    return handleDbError(error, res);
+    return handleDbError(error, response);
   }
 }

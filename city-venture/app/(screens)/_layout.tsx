@@ -23,6 +23,8 @@ const Screens = () => {
             headerTintColor: color,
             headerShown: true,
             title: 'Login',
+            // Prevent iOS back-swipe and back button after successful login
+            gestureEnabled: false,
           }}
         />
         <Stack.Screen

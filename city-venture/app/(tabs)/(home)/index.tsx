@@ -1,29 +1,30 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import Container from '@/components/Container';
-import PageContainer from '@/components/PageContainer';
 import Button from '@/components/Button';
+import Container from '@/components/Container';
 import { ThemedText } from '@/components/themed-text';
+import { colors } from '@/constants/color';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { FeaturedLocation } from '@/query/HomeData';
-import { colors } from '@/constants/color';
+import { FontAwesome5 } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import React, { useEffect, useMemo, useRef } from 'react';
 import {
   Dimensions,
+  FlatList,
   Image,
   Pressable,
   ScrollView,
   StyleSheet,
   View,
-  FlatList,
 } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
-import { FontAwesome5 } from '@expo/vector-icons';
 import { useSharedValue } from 'react-native-reanimated';
 import Carousel from 'react-native-reanimated-carousel';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 
 import { useAuth } from '@/context/AuthContext';
+import { navigateToAccommodationHome } from '@/routes/accommodationRoutes';
+import { navigateToShopHome } from '@/routes/shopRoutes';
 
 const width = Dimensions.get('screen').width;
 
@@ -42,7 +43,7 @@ const HomeScreen = () => {
   useEffect(() => {
     if (!user && !didRedirect.current) {
       didRedirect.current = true;
-      router.replace('./(screens)/Login');
+      router.replace('/(screens)/Login');
     }
   }, [user]);
 
@@ -172,9 +173,7 @@ const HomeScreen = () => {
                         startIcon="compass"
                         elevation={2}
                         radius={14}
-                        onPress={() =>
-                          router.push('/(tabs)/(home)/(spot)' as any)
-                        }
+                        onPress={() => router.push('/(tabs)/(home)/(spot)' as any)}
                       />
                     </View>
                   </View>
@@ -195,38 +194,38 @@ const HomeScreen = () => {
             >
               <Button
                 label="Place to stay"
-                color="transparent"
+                color="white"
                 topIcon="hotel"
                 iconSize={24}
                 textSize={10}
-                onPress={() => router.push('./(tabs)/(home)/(accommodations)/')}
+                onPress={() => navigateToAccommodationHome()}
               />
 
               <Button
                 label="Shops"
-                color="transparent"
+                color="white"
                 topIcon="shopping-bag"
                 iconSize={24}
                 textSize={10}
-                onPress={() => router.push('./(tabs)/(home)/(shops)/')}
+                onPress={() => navigateToShopHome()}
               />
 
               <Button
                 label="Tourist Spots"
-                color="transparent"
+                color="white"
                 topIcon="map-marker"
                 iconSize={24}
                 textSize={10}
-                onPress={() => router.push('./(tabs)/(home)/(touristSpots)')}
+                onPress={() => router.push('/(tabs)/(home)/(spot)')}
               />
 
               <Button
                 label="Events"
-                color="transparent"
+                color="white"
                 topIcon="calendar"
                 iconSize={24}
                 textSize={10}
-                onPress={() => router.push('./(tabs)/(home)/(events)/')}
+                onPress={() => router.push('/(tabs)/(home)/(event)')}
               />
             </Container>
           </View>
@@ -435,26 +434,6 @@ const HomeScreen = () => {
 };
 
 export default HomeScreen;
-
-// --- Helpers ---
-const NavButton = ({
-  label,
-  icon,
-  onPress,
-}: {
-  label: string;
-  icon: any;
-  onPress: () => void;
-}) => (
-  <Button
-    label={label}
-    color="transparent"
-    topIcon={icon}
-    iconSize={24}
-    textSize={10}
-    onPress={onPress}
-  />
-);
 
 const SectionHeader = ({
   title,

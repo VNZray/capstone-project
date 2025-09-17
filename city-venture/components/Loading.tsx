@@ -1,8 +1,9 @@
 import logo from '@/assets/logo/logo.png';
+import { background } from '@/constants/color';
 import { useFonts } from 'expo-font';
 import { router } from 'expo-router';
 import React, { useEffect, useRef } from 'react';
-import { Animated, Image, StyleSheet, Text, View } from 'react-native';
+import { Animated, Image, StyleSheet, useColorScheme, View } from 'react-native';
 
 const LoadingScreen = () => {
   const [fontsLoaded] = useFonts({
@@ -10,6 +11,8 @@ const LoadingScreen = () => {
     'Poppins-SemiBold': require('@/assets/fonts/Poppins/Poppins-SemiBold.ttf'),
   });
 
+  const scheme = useColorScheme();
+  const backgroundColor = scheme === 'dark' ? background.dark : background.light;
   const scaleAnim = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
@@ -30,7 +33,7 @@ const LoadingScreen = () => {
       ).start();
 
       const timer = setTimeout(() => {
-        router.replace('/TouristApp');
+        router.replace('/');
       }, 2500);
 
       return () => clearTimeout(timer);
@@ -42,12 +45,11 @@ const LoadingScreen = () => {
   }
 
   return (
-    <View style={styles.container}>
+    <View style={{ ...styles.container, backgroundColor }}>
       <Animated.View
         style={[styles.logoContainer, { transform: [{ scale: scaleAnim }] }]}
       >
         <Image source={logo} style={styles.logo} />
-        <Text style={styles.text}>Naga Venture</Text>
       </Animated.View>
     </View>
   );
@@ -56,7 +58,6 @@ const LoadingScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
     justifyContent: 'center',
     alignItems: 'center',
   },

@@ -1,4 +1,5 @@
-import { colors } from '@/constants/color';
+import { card, colors } from '@/constants/color';
+import { useColorScheme } from '@/hooks/use-color-scheme';
 import { FontAwesome5 } from '@expo/vector-icons';
 import React from 'react';
 import {
@@ -25,10 +26,12 @@ type Color =
   | 'error'
   | 'warning'
   | 'neutral'
-  | 'transparent';
+  | 'transparent'
+  | 'white';
 
 type ButtonProps = {
   label?: string;
+  children?: React.ReactNode;
   fullWidth?: boolean;
   width?: number | string;
   height?: number | string;
@@ -39,7 +42,7 @@ type ButtonProps = {
   padding?: number;
   margin?: number;
   radius?: number;
-  elevation?: 1 | 2 | 3 | 4 | 5 | 6;
+  elevation?: 0 | 1 | 2 | 3 | 4 | 5 | 6;
   variant?: Variant;
   size?: Size;
   color?: Color;
@@ -48,17 +51,16 @@ type ButtonProps = {
   endIcon?: keyof typeof FontAwesome5.glyphMap;
   topIcon?: keyof typeof FontAwesome5.glyphMap;
   bottomIcon?: keyof typeof FontAwesome5.glyphMap;
-  iconSize?: number; // 👈 new
-  textSize?: number; // 👈 new
+  iconSize?: number;
+  textSize?: number;
   style?: StyleProp<ViewStyle>;
   textStyle?: StyleProp<TextStyle>;
-  key?: string | number;
   onPress?: () => void;
 };
 
 const Button = ({
-  key,
   label,
+  children,
   fullWidth,
   width,
   height = 'auto',
@@ -69,7 +71,7 @@ const Button = ({
   padding,
   margin,
   radius = 8,
-  elevation = 1,
+  elevation = 0,
   variant = 'solid',
   size = 'medium',
   color = 'primary',
@@ -79,22 +81,26 @@ const Button = ({
   topIcon,
   bottomIcon,
   iconSize,
-  textSize, // 👈 grab prop
+  textSize,
   style,
   textStyle,
   onPress,
 }: ButtonProps) => {
+  const schemeRaw = useColorScheme();
+  const scheme: 'light' | 'dark' | null =
+    schemeRaw === 'light' || schemeRaw === 'dark' ? schemeRaw : null;
+
   const sizeStyle = getSizeStyle(size, icon);
-  const colorStyle = getColorStyle(color, variant);
+  const colorStyle = getColorStyle(color, variant, scheme);
 
   // Colors & sizes
   const iconColor = colorStyle?.text?.color ?? '#000';
-  const computedIconSize = iconSize ?? sizeStyle.text.fontSize + 4; // override if passed
-  const computedTextSize = textSize ?? sizeStyle.text.fontSize; // override if passed
+  const computedIconSize = iconSize ?? sizeStyle.text.fontSize + 4;
+  const computedTextSize = textSize ?? sizeStyle.text.fontSize;
 
   return (
     <Pressable
-      key={key}
+      accessibilityRole="button"
       onPress={onPress}
       android_ripple={{
         color: addOpacity(colorStyle?.backgroundColor ?? '#000', 0.15),
@@ -115,10 +121,7 @@ const Button = ({
         },
         colorStyle,
         getPlatformElevation(elevation),
-        // 👇 pressed state for iOS and Android fallback
-        pressed && {
-          opacity: 0.85,
-        },
+        pressed && { opacity: 0.85 },
         style,
       ]}
     >
@@ -132,14 +135,10 @@ const Button = ({
       >
         {/* Top Icon */}
         {topIcon && (
-          <FontAwesome5
-            name={topIcon}
-            size={computedIconSize}
-            color={iconColor}
-          />
+          <FontAwesome5 name={topIcon} size={computedIconSize} color={iconColor} />
         )}
 
-        {/* Middle Row: startIcon - label - endIcon */}
+        {/* Middle Row: startIcon - label/children - endIcon */}
         <View
           style={{
             flexDirection: direction,
@@ -149,40 +148,46 @@ const Button = ({
           }}
         >
           {startIcon && (
-            <FontAwesome5
-              name={startIcon}
-              size={computedIconSize}
-              color={iconColor}
-            />
+            <FontAwesome5 name={startIcon} size={computedIconSize} color={iconColor} />
           )}
-          {!icon && label && (
-            <Text
-              style={[
-                styles.text,
-                { fontSize: computedTextSize }, // 👈 override font size
-                colorStyle.text,
-                textStyle,
-              ]}
-            >
-              {label}
-            </Text>
-          )}
+          {!icon &&
+            (children != null
+              ? React.Children.map(children, (child) =>
+                  typeof child === 'string' || typeof child === 'number' ? (
+                    <Text
+                      style={[
+                        styles.text,
+                        { fontSize: computedTextSize },
+                        colorStyle.text,
+                        textStyle,
+                      ]}
+                    >
+                      {child}
+                    </Text>
+                  ) : (
+                    child as React.ReactNode
+                  )
+                )
+              : label && (
+                  <Text
+                    style={[
+                      styles.text,
+                      { fontSize: computedTextSize },
+                      colorStyle.text,
+                      textStyle,
+                    ]}
+                  >
+                    {label}
+                  </Text>
+                ))}
           {endIcon && (
-            <FontAwesome5
-              name={endIcon}
-              size={computedIconSize}
-              color={iconColor}
-            />
+            <FontAwesome5 name={endIcon} size={computedIconSize} color={iconColor} />
           )}
         </View>
 
         {/* Bottom Icon */}
         {bottomIcon && (
-          <FontAwesome5
-            name={bottomIcon}
-            size={computedIconSize}
-            color={iconColor}
-          />
+          <FontAwesome5 name={bottomIcon} size={computedIconSize} color={iconColor} />
         )}
       </View>
     </Pressable>
@@ -195,7 +200,7 @@ export default Button;
 const styles = StyleSheet.create({
   base: {
     borderWidth: 0,
-    overflow: 'hidden',
+    // removed overflow: 'hidden' so shadows show on iOS
   },
   text: {
     fontWeight: '600',
@@ -238,7 +243,11 @@ function getSizeStyle(size: Size, icon: boolean): any {
   }
 }
 
-function getColorStyle(color: Color, variant: Variant): any {
+function getColorStyle(
+  color: Color,
+  variant: Variant,
+  scheme: 'light' | 'dark' | null
+): any {
   const palette = {
     primary: colors.primary,
     secondary: colors.secondary,
@@ -248,6 +257,7 @@ function getColorStyle(color: Color, variant: Variant): any {
     warning: colors.warning,
     neutral: colors.tertiary,
     transparent: 'transparent',
+    white: scheme === 'dark' ? card.dark : card.light,
   };
 
   const bg = palette[color];
@@ -258,22 +268,26 @@ function getColorStyle(color: Color, variant: Variant): any {
         borderWidth: 0,
         text: {
           color:
-            color === 'neutral' || color === 'transparent' ? '#000' : '#fff',
+            color === 'white' ? (scheme === 'dark' ? '#fff' : '#000') : '#fff',
         },
       };
     case 'soft':
       return {
         backgroundColor:
-          color === 'transparent' ? 'transparent' : addOpacity(bg, 0.15),
+          color === 'transparent' ? '#f5f5f5' : addOpacity(bg, 0.15), // not fully transparent
         borderWidth: 0,
-        text: { color: color === 'transparent' ? '#000' : bg },
+        text: {
+          color: color === 'white' ? (scheme === 'dark' ? '#fff' : '#000') : bg,
+        },
       };
     case 'outlined':
       return {
-        backgroundColor: 'transparent',
-        borderWidth: color === 'transparent' ? 0 : 1,
-        borderColor: color === 'transparent' ? 'transparent' : bg,
-        text: { color: color === 'transparent' ? '#000' : bg },
+        backgroundColor: scheme === 'dark' ? '#1c1c1e' : '#fff', // ensure background for shadow
+        borderWidth: 1,
+        borderColor: bg,
+        text: {
+          color: color === 'white' ? (scheme === 'dark' ? '#fff' : '#000') : bg,
+        },
       };
     default:
       return {};
@@ -288,42 +302,42 @@ function getPlatformElevation(level: number): ViewStyle {
   switch (level) {
     case 1:
       return {
-        shadowColor: '#1e1e1e',
+        shadowColor: '#000',
         shadowOpacity: 0.1,
         shadowRadius: 2,
         shadowOffset: { width: 0, height: 1 },
       };
     case 2:
       return {
-        shadowColor: '#1e1e1e',
+        shadowColor: '#000',
         shadowOpacity: 0.15,
         shadowRadius: 3,
         shadowOffset: { width: 0, height: 2 },
       };
     case 3:
       return {
-        shadowColor: '#1e1e1e',
+        shadowColor: '#000',
         shadowOpacity: 0.2,
         shadowRadius: 4,
         shadowOffset: { width: 0, height: 3 },
       };
     case 4:
       return {
-        shadowColor: '#1e1e1e',
+        shadowColor: '#000',
         shadowOpacity: 0.25,
         shadowRadius: 5,
         shadowOffset: { width: 0, height: 4 },
       };
     case 5:
       return {
-        shadowColor: '#1e1e1e',
+        shadowColor: '#000',
         shadowOpacity: 0.3,
         shadowRadius: 6,
         shadowOffset: { width: 0, height: 5 },
       };
     case 6:
       return {
-        shadowColor: '#1e1e1e',
+        shadowColor: '#000',
         shadowOpacity: 0.35,
         shadowRadius: 7,
         shadowOffset: { width: 0, height: 6 },

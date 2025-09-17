@@ -1,12 +1,27 @@
-import { View, Text } from 'react-native'
-import React from 'react'
+import { ShopProvider } from "@/context/ShopContext";
+import { Stack } from "expo-router";
 
 const ShopLayout = () => {
   return (
-    <View>
-      <Text>ShopLayout</Text>
-    </View>
-  )
-}
+    <ShopProvider>
+      <Stack
+        screenOptions={{
+          headerBackTitle: "Back",
+        }}
+      >
+        <Stack.Screen
+          name="index"
+          options={{
+            headerShown: true,
+            animation: "slide_from_right",
+            headerTitleAlign: "center",
+            headerTitle: "Shop",
+            headerBackTitle: "Back",
+          }}
+        />
+      </Stack>
+    </ShopProvider>
+  );
+};
 
-export default ShopLayout
+export default ShopLayout;

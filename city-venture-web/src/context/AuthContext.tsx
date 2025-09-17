@@ -2,30 +2,15 @@ import { createContext, useContext, useEffect, useState, useCallback } from "rea
 import type { ReactNode } from "react";
 import {
   loginUser,
-  loginAdmin,
-  loginTourist,
   logoutUser,
   getStoredUser,
-  api,
 } from "@/src/services/AuthService";
-
-interface User {
-  email: string;
-  role: string;
-  first_name?: string;
-  last_name?: string;
-  owner_id?: string;
-  tourism_id?: string;
-}
-
+import type { UserDetails } from "../types/User";
 interface AuthContextType {
-  user: User | null;
+  user: UserDetails | null;
   loading: boolean;
-  loginOwner: (email: string, password: string) => Promise<void>;
-  loginTourism: (email: string, password: string) => Promise<void>;
-  loginTourist: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<void>;
   logout: () => void;
-  api: string;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -35,7 +20,7 @@ interface AuthProviderProps {
 }
 
 export const AuthProvider = ({ children }: AuthProviderProps) => {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<UserDetails | null>(null);
   const [loading, setLoading] = useState(true);
 
   /** Load user from localStorage */
@@ -46,21 +31,9 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   }, []);
 
   /** LOGIN */
-  const loginOwner = useCallback(async (email: string, password: string) => {
+  const login = useCallback(async (email: string, password: string) => {
     const loggedInUser = await loginUser(email, password);
     setUser(loggedInUser);
-  }, []);
-
-    /** LOGIN */
-  const loginTourism = useCallback(async (email: string, password: string) => {
-    const loggedInAdmin = await loginAdmin(email, password);
-    setUser(loggedInAdmin);
-  }, []);
-
-  /** LOGIN TOURIST */
-  const loginTouristFn = useCallback(async (email: string, password: string) => {
-    const loggedInTourist = await loginTourist(email, password);
-    setUser(loggedInTourist);
   }, []);
 
   /** LOGOUT */
@@ -70,7 +43,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, loading, loginOwner, loginTourism, loginTourist: loginTouristFn, logout, api }}>
+    <AuthContext.Provider value={{ user, loading,  login, logout }}>
       {children}
     </AuthContext.Provider>
   );

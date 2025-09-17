@@ -3,6 +3,8 @@ import cors from "cors";
 import "dotenv/config";
 
 import userRoutes from "./routes/users.js";
+import userRoleRoutes from "./routes/users_role.js";
+
 import businessRoutes from "./routes/business.js";
 import businessHoursRoutes from "./routes/business_hours.js";
 import addressRoutes from "./routes/address.js";
@@ -25,6 +27,7 @@ const PORT = 3000;
 
 // Define all routes in one place
 const routes = [
+  { path: "/api/user-roles", handler: userRoleRoutes },
   { path: "/api/users", handler: userRoutes },
   { path: "/api/business", handler: businessRoutes },
   { path: "/api/business-hours", handler: businessHoursRoutes },
@@ -52,7 +55,7 @@ routes.forEach((route) => {
   app.use(route.path, route.handler);
 });
 
-app.listen(PORT, '0.0.0.0', () => {
+app.listen(PORT, "0.0.0.0", () => {
   console.log(`🚀 Server running at http://localhost:${PORT}`);
   console.log(`🌐 Also accessible at http://192.168.111.111:${PORT}`);
   console.log("✅ Connected to MariaDB (Promise Pool)");

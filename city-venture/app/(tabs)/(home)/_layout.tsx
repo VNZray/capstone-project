@@ -9,8 +9,9 @@ const HomeLayout = () => {
         headerTitle: "Naga Venture",
       }}
     >
+      <Stack.Screen name="index" options={{ headerShown: false }} />
       <Stack.Screen
-        name="(accommodations)"
+        name="(accommodation)"
         options={{
           headerShown: false,
           animation: "slide_from_right",
@@ -20,7 +21,7 @@ const HomeLayout = () => {
         }}
       />
       <Stack.Screen
-        name="(events)"
+        name="(event)"
         options={{
           headerShown: false,
           animation: "slide_from_right",
@@ -30,7 +31,7 @@ const HomeLayout = () => {
         }}
       />
       <Stack.Screen
-        name="(shops)"
+        name="(shop)"
         options={{
           headerShown: false,
           animation: "slide_from_right",
@@ -40,7 +41,7 @@ const HomeLayout = () => {
         }}
       />
       <Stack.Screen
-        name="(touristSpots)"
+        name="(spot)"
         options={{
           headerShown: false,
           animation: "slide_from_right",
