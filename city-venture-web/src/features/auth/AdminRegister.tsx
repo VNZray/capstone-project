@@ -36,6 +36,10 @@ const Register = () => {
   const [phoneNumber, setPhoneNumber] = useState("09876541231");
   const [password, setPassword] = useState("123456");
   const [confirmPassword, setConfirmPassword] = useState("123456");
+  const [age, setAge] = useState("25");
+  const [gender, setGender] = useState("Male");
+  const [birthdate, setBirthdate] = useState("2000-01-01");
+
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [agreePolicy, setAgreePolicy] = useState(false);
@@ -58,9 +62,9 @@ const Register = () => {
   const newTourism: Tourism = {
     first_name: firstName,
     last_name: lastName,
-    age: "25",
-    gender: "Male",
-    birthdate: "2000-01-01",
+    age: age,
+    gender: gender,
+    birthdate: birthdate,
     position: position,
     address_id: null,
   };
@@ -142,7 +146,6 @@ const Register = () => {
       if (user?.role_name === "Admin") {
         navigate("/tourism/dashboard");
       }
-
     } catch (err: any) {
       if (axios.isAxiosError(err)) {
       } else {

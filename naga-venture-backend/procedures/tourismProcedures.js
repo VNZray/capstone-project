@@ -23,7 +23,7 @@ async function createTourismProcedures(knex) {
       IN p_middle_name VARCHAR(20),
       IN p_last_name VARCHAR(30),
       IN p_position VARCHAR(20),
-      IN p_user_id INT
+      IN p_user_id CHAR(36)
     )
     BEGIN
       INSERT INTO tourism (
@@ -43,7 +43,7 @@ async function createTourismProcedures(knex) {
       IN p_middle_name VARCHAR(20),
       IN p_last_name VARCHAR(30),
       IN p_position VARCHAR(20),
-      IN p_user_id INT
+      IN p_user_id CHAR(36)
     )
     BEGIN
       UPDATE tourism
