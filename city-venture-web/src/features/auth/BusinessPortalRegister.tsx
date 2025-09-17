@@ -21,9 +21,10 @@ import Visibility from "@mui/icons-material/Visibility";
 import VisibilityOff from "@mui/icons-material/VisibilityOff";
 import "./LoginUnified.css";
 import axios from "axios";
-import api from "../../services/api";
-import { insertOwner } from "@/src/services/OwnerService";
 import { insertData } from "../../services/Service";
+import type { User } from "@/src/types/User";
+import type { Owner } from "@/src/types/Owner";
+import { loginUser } from "@/src/services/AuthService";
 
 const Register = () => {
   const navigate = useNavigate();
@@ -41,23 +42,32 @@ const Register = () => {
   type BusinessType = "Accommodation" | "Shop" | "Both" | null;
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const newOwner = {
-    first_name: firstName,
-    last_name: lastName,
+  const newUser: User = {
     email: email,
     phone_number: phoneNumber,
+    password: password,
+    user_role_id: 3,
+    is_active: false,
+    is_verified: false,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+    otp: null,
+  };
+
+  const newOwner: Owner = {
+    first_name: firstName,
+    last_name: lastName,
     business_type: businessType || "",
     age: "25",
-    owner_profile: "",
     gender: "Male",
-    birthday: "2000-01-01",
+    birthdate: "2000-01-01",
     address_id: null,
   };
 
   const newAddress = {
-    barangay: 6,
-    municipality: 24,
-    province: 20,
+    province_id: 20,
+    municipality_id: 24,
+    barangay_id: 6,
   };
 
   const handleBusinessTypeChange = (type: BusinessType) => {
@@ -128,31 +138,57 @@ const Register = () => {
     try {
       setLoading(true);
 
-      // insert address first
+      // insert user first
+      const userRes = await insertData(newUser, "users");
+      const userId = userRes.id;
+
+      console.log("Address ", newAddress);
+      console.log("Address ", newAddress);
+      console.log("Address ", newAddress);
+      console.log("Address ", newAddress);
+      console.log("Address ", newAddress);
+
+      // insert address
       const addressRes = await insertData(newAddress, "address");
       const addressId = addressRes.id;
+
+      console.log("Created address ID:", addressId);
+      console.log("Address:", addressRes);
       // Create Owner
-      const ownerResponse = await insertOwner({...newOwner, address_id: addressId});
+      const ownerResponse = await insertData(
+        {
+          ...newOwner,
+          address_id: addressId,
+          user_id: userId,
+        },
+        "owner"
+      );
+
       const ownerId = ownerResponse.id;
 
-      alert(`Account created! Owner ID: ${ownerId}`);
+      // Optional: show a brief success message
+      console.debug("[Register] Created user and owner", { userId, ownerId });
 
-      // Create User linked to Owner
-      const userResponse = await axios.post(`${api}/users`, {
-        email: email.trim(),
-        phone_number: phoneNumber.trim(),
-        password: password.trim(),
-        role: "Owner",
-        owner_id: ownerId,
-      });
+      // Auto-login the newly registered user
+      console.debug("[Register] Auto-login start", { email });
+      await loginUser(email, password);
+      console.debug("[Register] Auto-login success");
 
-      const userId = userResponse.data?.id;
-
-      alert(`User created! User ID: ${userId}`);
-
-      navigate("/business/login");
+      // Navigate to business home/dashboard after login
+      navigate("/business");
     } catch (err: any) {
       if (axios.isAxiosError(err)) {
+        console.error("[Register] Registration or auto-login failed", {
+          message: err?.message,
+          status: err?.response?.status,
+          data: err?.response?.data,
+        });
+        alert(
+          err.response?.data?.message ||
+            "Registration or auto-login failed. Please try signing in."
+        );
+        // Fallback: send them to login page if auto-login failed
+        navigate("/login");
       } else {
         alert("Unexpected error occurred.");
       }
@@ -187,10 +223,23 @@ const Register = () => {
 
       {/* Right column */}
       <div className="ul-form-col">
-        <Card className="ul-card" variant="outlined" sx={{ borderRadius: 18, p: 3, boxShadow: "sm", maxWidth: 640 }}>
+        <Card
+          className="ul-card"
+          variant="outlined"
+          sx={{ borderRadius: 18, p: 3, boxShadow: "sm", maxWidth: 640 }}
+        >
           {/* Header */}
-          <div className="ul-card-header" style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <img src={logo} alt="City Venture" width={36} height={36} style={{ borderRadius: 8 }} />
+          <div
+            className="ul-card-header"
+            style={{ display: "flex", alignItems: "center", gap: 10 }}
+          >
+            <img
+              src={logo}
+              alt="City Venture"
+              width={36}
+              height={36}
+              style={{ borderRadius: 8 }}
+            />
             <div>
               <Typography level="h4" fontWeight={800}>
                 Create your business account
@@ -202,7 +251,14 @@ const Register = () => {
           </div>
 
           {/* Form grid */}
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 12, marginTop: 12 }}>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+              gap: 12,
+              marginTop: 12,
+            }}
+          >
             <FormControl required>
               <FormLabel>First Name</FormLabel>
               <Input
@@ -260,10 +316,20 @@ const Register = () => {
           {/* Business Type */}
           <div style={{ marginTop: 12 }}>
             <FormLabel>Business Owned</FormLabel>
-            <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap", marginTop: 6 }}>
+            <div
+              style={{
+                display: "flex",
+                gap: 12,
+                alignItems: "center",
+                flexWrap: "wrap",
+                marginTop: 6,
+              }}
+            >
               <Checkbox
                 label="Accommodation"
-                checked={businessType === "Accommodation" || businessType === "Both"}
+                checked={
+                  businessType === "Accommodation" || businessType === "Both"
+                }
                 onChange={() => handleBusinessTypeChange("Accommodation")}
               />
               <Checkbox
@@ -276,7 +342,14 @@ const Register = () => {
           </div>
 
           {/* Passwords */}
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(1, minmax(0, 1fr))", gap: 12, marginTop: 12 }}>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(1, minmax(0, 1fr))",
+              gap: 12,
+              marginTop: 12,
+            }}
+          >
             <FormControl required>
               <FormLabel>Password</FormLabel>
               <Input
@@ -290,7 +363,9 @@ const Register = () => {
                     variant="plain"
                     color="neutral"
                     onClick={() => setShowPassword((s) => !s)}
-                    aria-label={showPassword ? "Hide password" : "Show password"}
+                    aria-label={
+                      showPassword ? "Hide password" : "Show password"
+                    }
                   >
                     {showPassword ? <VisibilityOff /> : <Visibility />}
                   </IconButton>
@@ -313,7 +388,9 @@ const Register = () => {
                     variant="plain"
                     color="neutral"
                     onClick={() => setShowConfirmPassword((s) => !s)}
-                    aria-label={showConfirmPassword ? "Hide password" : "Show password"}
+                    aria-label={
+                      showConfirmPassword ? "Hide password" : "Show password"
+                    }
                   >
                     {showConfirmPassword ? <VisibilityOff /> : <Visibility />}
                   </IconButton>
@@ -326,7 +403,9 @@ const Register = () => {
 
           {/* Privacy Policy Agreement */}
           <div style={{ marginTop: 12 }}>
-            <label style={{ display: "flex", alignItems: "flex-start", gap: 8 }}>
+            <label
+              style={{ display: "flex", alignItems: "flex-start", gap: 8 }}
+            >
               <Checkbox
                 size="md"
                 checked={agreePolicy}
@@ -334,11 +413,15 @@ const Register = () => {
                 sx={{ mt: "2px" }}
               />
               <Typography level="body-sm" sx={{ color: "text.primary" }}>
-                I agree to the {" "}
-                <Link to="/terms-and-conditions" target="_blank" className="ul-link">
+                I agree to the{" "}
+                <Link
+                  to="/terms-and-conditions"
+                  target="_blank"
+                  className="ul-link"
+                >
                   Terms and Conditions
                 </Link>{" "}
-                and {" "}
+                and{" "}
                 <Link to="/privacy-policy" target="_blank" className="ul-link">
                   Privacy Policy
                 </Link>{" "}
@@ -350,7 +433,12 @@ const Register = () => {
 
           {/* Submit */}
           <div style={{ marginTop: 12 }}>
-            <Button size="lg" fullWidth loading={loading} onClick={registerBusinessOwner}>
+            <Button
+              size="lg"
+              fullWidth
+              loading={loading}
+              onClick={registerBusinessOwner}
+            >
               Sign Up
             </Button>
           </div>
@@ -360,8 +448,10 @@ const Register = () => {
           {/* Footer */}
           <div className="ul-footer">
             <Typography textAlign="center" level="body-sm">
-              Already have an account? {" "}
-              <Link to="/login" className="ul-link">Sign in</Link>
+              Already have an account?{" "}
+              <Link to="/login" className="ul-link">
+                Sign in
+              </Link>
             </Typography>
           </div>
         </Card>

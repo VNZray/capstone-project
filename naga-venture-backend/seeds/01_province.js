@@ -3,14 +3,6 @@
  */
 export async function seed(knex) {
   // Deletes ALL existing entries
-  await knex("tourist").del();
-  await knex("owner").del();
-  await knex("business").del();
-  await knex("barangay").del();
-  await knex("municipality").del();
-  await knex("province").del();
-  await knex("category").del();
-  await knex("type").del();
 
   // Inserts seed entries
   await knex("province").insert([

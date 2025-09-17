@@ -23,7 +23,10 @@ import "./LoginUnified.css";
 import { insertTourism } from "@/src/services/TourismService";
 import axios from "axios";
 import api from "@/src/services/api";
-
+import type { Tourism } from "@/src/types/Tourism";
+import type { User } from "@/src/types/User";
+import { insertData } from "@/src/services/Service";
+import { useAuth } from "@/src/context/AuthContext";
 
 const Register = () => {
   const navigate = useNavigate();
@@ -40,13 +43,34 @@ const Register = () => {
   const [agreePolicy, setAgreePolicy] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
+  const { login, user } = useAuth(); // from AuthProvider
 
-  const data = {
-    first_name: firstName.trim(),
-    last_name: lastName.trim(),
-    email: email.trim(),
-    phone_number: phoneNumber.trim(),
-    position: position.trim(),
+  const newUser: User = {
+    email: email,
+    phone_number: phoneNumber,
+    password: password,
+    user_role_id: 1,
+    is_active: false,
+    is_verified: false,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+    otp: null,
+  };
+
+  const newTourism: Tourism = {
+    first_name: firstName,
+    last_name: lastName,
+    age: "25",
+    gender: "Male",
+    birthdate: "2000-01-01",
+    position: position,
+    address_id: null,
+  };
+
+  const newAddress = {
+    barangay: 6,
+    municipality: 24,
+    province: 20,
   };
 
   const validateForm = () => {
@@ -87,61 +111,44 @@ const Register = () => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const registerBusinessOwner = async () => {
+  const registerAdmin = async () => {
     if (!validateForm()) return;
 
     try {
       setLoading(true);
 
-      // Step 1: Create Tourism record
-      const tourismResponse = await insertTourism(data);
-      const tourism_id = tourismResponse.id;
+      // insert user first
+      const userRes = await insertData(newUser, "users");
+      const userId = userRes.id;
 
-      console.log("Tourism created:", tourismResponse);
+      // insert address
+      const addressRes = await insertData(newAddress, "address");
+      const addressId = addressRes.id;
+      // Create Tourism
+      const tourismResponse = await insertData(
+        {
+          ...newTourism,
+          address_id: addressId,
+          user_id: userId,
+        },
+        "tourism"
+      );
 
-      // Create User linked to Owner
-      const userResponse = await axios.post(`${api}/users`, {
-        email: email.trim(),
-        phone_number: phoneNumber.trim(),
-        password: password.trim(),
-        role: "Tourism",
-        tourism_id: tourism_id,
-      });
-      const userId = userResponse.data?.id;
+      const tourismId = tourismResponse.id;
 
+      alert(`Account created! Tourism ID: ${tourismId}`);
       alert(`User created! User ID: ${userId}`);
 
-      alert("✅ Registration successful! Please log in.");
-      navigate("/login");
+      await login(email, password);
+
+      if (user?.role_name === "Admin") {
+        navigate("/tourism/dashboard");
+      }
+
     } catch (err: any) {
-      console.error(err);
-      // Backend duplicate account error handling
-      if (err.response?.status === 400 || err.response?.status === 409) {
-        const errorMessage = err.response?.data?.error || "";
-        const errorCode = err.response?.data?.code || "";
-
-        console.log("Backend error:", errorCode, errorMessage);
-
-        if (errorCode === "ER_DUP_ENTRY") {
-          // check which field is duplicated
-          if (errorMessage.toLowerCase().includes("email")) {
-            setErrors((prev) => ({
-              ...prev,
-              email: "This email is already registered.",
-            }));
-          } else if (errorMessage.toLowerCase().includes("phone")) {
-            setErrors((prev) => ({
-              ...prev,
-              phoneNumber: "This phone number is already registered.",
-            }));
-          } else {
-            setErrors((prev) => ({ ...prev, email: "Duplicate entry found." }));
-          }
-        } else {
-          alert(errorMessage || "Registration error occurred.");
-        }
+      if (axios.isAxiosError(err)) {
       } else {
-        alert("❌ Registration failed. Please try again later.");
+        alert("Unexpected error occurred.");
       }
     } finally {
       setLoading(false);
@@ -174,22 +181,46 @@ const Register = () => {
 
       {/* Right form column */}
       <div className="ul-form-col">
-        <Card className="ul-card" variant="outlined" sx={{ borderRadius: 18, p: 3, boxShadow: "sm", maxWidth: 600 }}>
+        <Card
+          className="ul-card"
+          variant="outlined"
+          sx={{ borderRadius: 18, p: 3, boxShadow: "sm", maxWidth: 600 }}
+        >
           {/* Header */}
-          <div className="ul-card-header" style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <img src={logo} alt="City Venture" width={36} height={36} style={{ borderRadius: 8 }} />
+          <div
+            className="ul-card-header"
+            style={{ display: "flex", alignItems: "center", gap: 10 }}
+          >
+            <img
+              src={logo}
+              alt="City Venture"
+              width={36}
+              height={36}
+              style={{ borderRadius: 8 }}
+            />
             <div>
               <Typography level="h4" fontWeight={800}>
                 Create your admin account
               </Typography>
-              <Typography textAlign="center" level="body-sm" sx={{ color: "#6B7280" }}>
+              <Typography
+                textAlign="center"
+                level="body-sm"
+                sx={{ color: "#6B7280" }}
+              >
                 Tourism admin registration
               </Typography>
             </div>
           </div>
 
           {/* Form fields grid */}
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 12, marginTop: 12 }}>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+              gap: 12,
+              marginTop: 12,
+            }}
+          >
             <FormControl required>
               <FormLabel>First Name</FormLabel>
               <Input
@@ -244,7 +275,14 @@ const Register = () => {
           </div>
 
           {/* Passwords */}
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(1, minmax(0, 1fr))", gap: 12, marginTop: 12 }}>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(1, minmax(0, 1fr))",
+              gap: 12,
+              marginTop: 12,
+            }}
+          >
             <FormControl required>
               <FormLabel>Password</FormLabel>
               <Input
@@ -258,7 +296,9 @@ const Register = () => {
                     variant="plain"
                     color="neutral"
                     onClick={() => setShowPassword((s) => !s)}
-                    aria-label={showPassword ? "Hide password" : "Show password"}
+                    aria-label={
+                      showPassword ? "Hide password" : "Show password"
+                    }
                   >
                     {showPassword ? <VisibilityOff /> : <Visibility />}
                   </IconButton>
@@ -281,7 +321,9 @@ const Register = () => {
                     variant="plain"
                     color="neutral"
                     onClick={() => setShowConfirmPassword((s) => !s)}
-                    aria-label={showConfirmPassword ? "Hide password" : "Show password"}
+                    aria-label={
+                      showConfirmPassword ? "Hide password" : "Show password"
+                    }
                   >
                     {showConfirmPassword ? <VisibilityOff /> : <Visibility />}
                   </IconButton>
@@ -294,7 +336,9 @@ const Register = () => {
 
           {/* Terms & Privacy */}
           <div style={{ marginTop: 12 }}>
-            <label style={{ display: "flex", alignItems: "flex-start", gap: 8 }}>
+            <label
+              style={{ display: "flex", alignItems: "flex-start", gap: 8 }}
+            >
               <Checkbox
                 size="md"
                 checked={agreePolicy}
@@ -302,11 +346,15 @@ const Register = () => {
                 sx={{ mt: "2px" }}
               />
               <Typography level="body-sm" sx={{ color: "text.primary" }}>
-                I agree to the {" "}
-                <Link to="/terms-and-conditions" target="_blank" className="ul-link">
+                I agree to the{" "}
+                <Link
+                  to="/terms-and-conditions"
+                  target="_blank"
+                  className="ul-link"
+                >
                   Terms and Conditions
                 </Link>{" "}
-                and {" "}
+                and{" "}
                 <Link to="/privacy-policy" target="_blank" className="ul-link">
                   Privacy Policy
                 </Link>{" "}
@@ -318,7 +366,12 @@ const Register = () => {
 
           {/* Submit */}
           <div style={{ marginTop: 12 }}>
-            <Button size="lg" fullWidth loading={loading} onClick={registerBusinessOwner}>
+            <Button
+              size="lg"
+              fullWidth
+              loading={loading}
+              onClick={registerAdmin}
+            >
               Sign Up
             </Button>
           </div>
@@ -328,8 +381,10 @@ const Register = () => {
           {/* Footer */}
           <div className="ul-footer">
             <Typography textAlign="center" level="body-sm">
-              Already have an account? {" "}
-              <Link to="/login" className="ul-link">Sign in</Link>
+              Already have an account?{" "}
+              <Link to="/login" className="ul-link">
+                Sign in
+              </Link>
             </Typography>
           </div>
         </Card>

@@ -14,26 +14,30 @@ exports.up = async function (knex) {
     table
       .enu("ethnicity", ["Bicolano", "Non-Bicolano", "Foreigner"])
       .notNullable();
-    table.date("birthday").notNullable();
+    table.date("birthdate").notNullable();
     table.integer("age").notNullable();
     table.enu("gender", ["Male", "Female", "Prefer not to say"]).notNullable();
     table.string("nationality", 20).notNullable();
     table.enu("category", ["Domestic", "Overseas"]).notNullable();
 
-    table.string("phone_number", 13).notNullable();
-    table.string("email", 40).notNullable();
-
-    // ✅ Foreign keys
+    // Foreign keys
     table
       .integer("address_id")
       .unsigned()
-      .notNullable()
+      .nullable()
       .references("id")
       .inTable("address")
       .onDelete("CASCADE")
       .onUpdate("CASCADE");
 
-    table.timestamp("created_at").defaultTo(knex.fn.now());
+    table
+      .uuid("user_id")
+      .notNullable()
+      .references("id")
+      .inTable("user")
+      .onDelete("CASCADE")
+      .onUpdate("CASCADE");
+
   });
 
   await createProcedures(knex);

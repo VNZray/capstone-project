@@ -93,7 +93,7 @@ const AccommodationProfile = () => {
               resizeMode="cover"
             />
 
-            <Container padding={16} gap={0} backgroundColor={bg}>
+            <Container padding={16} backgroundColor={bg}>
               <Container padding={0} backgroundColor='transparent' direction='row' justify='space-between' style={{ marginBottom: 16 }}>
                 <View>
                   <ThemedText type="card-title-small" weight="bold">

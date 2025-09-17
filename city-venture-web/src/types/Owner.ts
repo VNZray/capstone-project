@@ -1,13 +1,12 @@
 export type Owner = {
-  id: string | "";
+  id?: string | "";
   first_name: string;
+  middle_name?: string | "";
   last_name: string;
-  email: string;
-  phone_number: string;
   business_type: string;
   age: string | "";
-  owner_profile: string | "";
   gender: string | "";
-  birthday: string | "";
+  birthdate: string | "";
   address_id: number | null;
+  user_id?: string | "";
 };
