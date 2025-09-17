@@ -57,6 +57,7 @@ export default function LandingPage() {
     import.meta.url
   ).href;
   const placeholderImage = testimonialImage;
+  const mobilePreview = new URL("../assets/images/placeholder-image.png", import.meta.url).href;
 
   // Curated 5-image mosaic for perfect compact hero
   const gridItems = [
@@ -248,7 +249,6 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Why Choosing Us */}
       {/* About Section */}
       <section id="about" className="about-section" style={{ scrollMarginTop: 80 }}>
         <div className="about-inner">
@@ -328,7 +328,7 @@ export default function LandingPage() {
                 </Typography>
               </div>
               <div style={{ height: 360, display: "grid", placeItems: "center", background: "#F7FAFC" }}>
-                <img src={placeholderImage} alt="Mobile app placeholder" style={{ maxWidth: "90%", maxHeight: "90%", objectFit: "contain", borderRadius: 12 }} />
+                <img src={mobilePreview || placeholderImage} alt="Mobile app placeholder" style={{ maxWidth: "90%", maxHeight: "90%", objectFit: "contain", borderRadius: 12 }} />
               </div>
             </div>
 

@@ -1,5 +1,6 @@
+import { background } from '@/constants/color';
 import React, { ReactNode } from 'react';
-import { StyleSheet, View, ViewStyle } from 'react-native';
+import { StyleSheet, useColorScheme, View, ViewStyle } from 'react-native';
 
 type PageContainerProps = {
   children: ReactNode;
@@ -30,11 +31,14 @@ const PageContainer = ({
   height = '100%',
   padding = 20,
 }: PageContainerProps) => {
+    const colorScheme = useColorScheme();
+    const bg = colorScheme === 'dark' ? background.dark : background.light;
   return (
     <View
       style={[
         styles.container,
         {
+          backgroundColor: bg,
           flexDirection: direction,
           alignItems: align,
           justifyContent: justify,

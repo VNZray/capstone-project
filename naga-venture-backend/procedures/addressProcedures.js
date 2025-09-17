@@ -81,7 +81,7 @@ async function createAddressProcedures(knex) {
     BEGIN
       INSERT INTO address (province_id, municipality_id, barangay_id)
       VALUES (p_province_id, p_municipality_id, p_barangay_id);
-      SELECT LAST_INSERT_ID() AS id;
+      SELECT * FROM address WHERE id = LAST_INSERT_ID();
     END;
   `);
 
