@@ -11,12 +11,9 @@ async function createReportProcedures(knex) {
       SELECT 
         r.*, 
         u.email AS reporter_email,
-        t.first_name AS reporter_first_name,
-        t.last_name AS reporter_last_name,
-        t.phone_number AS reporter_contact
+        u.phone_number AS reporter_contact
       FROM report r
       JOIN user u ON r.reporter_id = u.id
-      LEFT JOIN tourist t ON u.tourist_id = t.id
       ORDER BY r.created_at DESC;
     END;
   `);
@@ -29,12 +26,9 @@ async function createReportProcedures(knex) {
       SELECT 
         r.*, 
         u.email AS reporter_email,
-        t.first_name AS reporter_first_name,
-        t.last_name AS reporter_last_name,
-        t.phone_number AS reporter_contact
+        u.phone_number AS reporter_contact
       FROM report r
       JOIN user u ON r.reporter_id = u.id
-      LEFT JOIN tourist t ON u.tourist_id = t.id
       WHERE r.id = p_id;
 
       -- Status history

@@ -1,5 +1,3 @@
-import React, { useEffect, useMemo, useState } from "react";
-import { apiService } from "@/src/utils/api";
 import React, { useEffect, useMemo, useState, useRef } from "react";
 import { apiService } from "../../utils/api";
 import TouristSpotStepper from "./TouristSpotStepper";
@@ -91,7 +89,6 @@ const TouristSpotForm: React.FC<TouristSpotFormProps> = ({
   const [pendingImages, setPendingImages] = useState<PendingImage[]>([]);
 
   const [currentStep, setCurrentStep] = useState(initialStep);
-  // Holds the resolved original address IDs so we can accurately detect address changes
   const initialAddressRef = useRef<{ province_id: number; municipality_id: number; barangay_id: number } | null>(null);
 
   React.useEffect(() => {
