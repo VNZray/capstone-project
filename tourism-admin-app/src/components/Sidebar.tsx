@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { NavLink } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard,
   CheckCircle,
@@ -12,12 +12,22 @@ import {
   User,
   ChevronDown,
   ChevronRight,
+  LogOut,
 } from "lucide-react";
 import "./styles/Sidebar.css";
 import Text from "./Text";
 import logo from "@/src/assets/images/light-logo.png";
+import { useAuth } from "@/src/context/AuthContext";
 
 export default function Sidebar(): React.ReactElement {
+  const navigate = useNavigate();
+  const { logout } = useAuth();
+
+  const handleLogout = () => {
+    logout();
+    navigate("/");
+  };
+
   return (
     <aside className="sidebar">
       <nav className="sidebar-nav">
@@ -64,6 +74,14 @@ export default function Sidebar(): React.ReactElement {
 
         <NavItem to="/reports" label="Reports" icon={<BarChart size={18} />} />
         <NavItem to="/profile" label="Profile" icon={<User size={18} />} />
+
+        {/* Logout */}
+        <button className="sidebar-link" onClick={handleLogout} aria-label="Logout">
+          <span className="sidebar-icon">
+            <LogOut size={18} />
+          </span>
+          <span>Logout</span>
+        </button>
       </nav>
     </aside>
   );

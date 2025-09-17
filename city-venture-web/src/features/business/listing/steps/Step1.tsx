@@ -1,28 +1,19 @@
 import React, { useEffect, useState } from "react";
-import CardHeader from "@/src/components/CardHeader";
-import type { Business, BusinessHours } from "@/src/types/Business";
+import type { Business } from "@/src/types/Business";
 import { useBusinessBasics } from "@/src/hooks/useBusiness";
-import { supabase } from "@/src/lib/supabase";
-import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import {
   FormControl,
   Input,
   Select,
   Option,
-  Grid,
   Textarea,
-  Button,
   FormLabel,
-  Typography,
   Autocomplete,
 } from "@mui/joy";
-import Container from "@/src/components/Container";
-import { UploadIcon } from "lucide-react";
-import { Switch, ToggleButton, ToggleButtonGroup } from "@mui/material";
+import { ToggleButton, ToggleButtonGroup } from "@mui/material";
 import { Chip } from "@mui/joy";
 import HotelIcon from "@mui/icons-material/Hotel";
 import StoreIcon from "@mui/icons-material/Store";
-import AccessTimeIcon from "@mui/icons-material/AccessTime";
 import Text from "@/src/components/Text";
 import type { Amenity, BusinessAmenity } from "@/src/types/Amenity";
 import { getData, insertData } from "@/src/services/Service";
@@ -30,9 +21,7 @@ type Props = {
   data: Business;
   setData: React.Dispatch<React.SetStateAction<Business>>;
   api: string;
-  businessHours: BusinessHours[];
   businessAmenities: BusinessAmenity[];
-  setBusinessHours: React.Dispatch<React.SetStateAction<BusinessHours[]>>;
   setBusinessAmenities: React.Dispatch<React.SetStateAction<BusinessAmenity[]>>;
 };
 
@@ -40,17 +29,10 @@ const Step1: React.FC<Props> = ({
   api,
   data,
   setData,
-  businessHours,
-  setBusinessHours,
-  businessAmenities,
   setBusinessAmenities,
 }) => {
-  const {
-    businessCategories,
-    businessTypes,
-    setSelectedType,
-    handleImageChange,
-  } = useBusinessBasics(api, data, setData);
+  const { businessCategories, businessTypes, setSelectedType } =
+    useBusinessBasics(api, data, setData);
 
   const [amenities, setAmenities] = useState<Amenity[]>([]);
   const [selectedAmenities, setSelectedAmenities] = React.useState<Amenity[]>(
@@ -85,71 +67,91 @@ const Step1: React.FC<Props> = ({
     } else {
       setBusinessAmenities([]);
     }
-  }, [selectedAmenities, setBusinessAmenities]);
+  }, [selectedAmenities, setBusinessAmenities, data.id]);
 
-  // Upload immediately after selecting an image
-  const handleImageSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    handleImageChange(e); // update preview immediately
-
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    if (!data.business_name) {
-      alert("Please enter a business name before uploading.");
-      return;
-    }
-
-    try {
-      const fileExt = file.name.split(".").pop();
-      const timestamp = new Date().toISOString().replace(/[:.]/g, "-"); // avoid invalid chars for filenames
-      const fileName = `${data.business_name.replace(
-        /\s+/g,
-        "_"
-      )}_${timestamp}.${fileExt}`;
-      const filePath = fileName;
-
-      // Upload file to Supabase
-      const { data: uploadData, error: uploadError } = await supabase.storage
-        .from("business-profile")
-        .upload(filePath, file, { upsert: true });
-
-      if (uploadError) throw uploadError;
-      if (!uploadData?.path) throw new Error("Upload failed: no file path");
-
-      // Get public URL
-      const { data: publicData } = supabase.storage
-        .from("business-profile")
-        .getPublicUrl(uploadData.path);
-
-      if (!publicData?.publicUrl) {
-        throw new Error("Failed to get public URL");
-      }
-
-      // Save URL to business data
-      setData((prev) => ({ ...prev, business_image: publicData.publicUrl }));
-    } catch (err: any) {
-      console.error("Upload failed:", err);
-      alert(err?.message || "Upload failed");
-    } finally {
-    }
-  };
 
   return (
-    <div
-      className="stepperContent"
-      style={{ overflow: "auto", overflowX: "hidden" }}
-    >
-      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-        <CardHeader
-          title="Basic Information"
-          color="white"
-          margin="0 0 20px 0"
-        />
-        <Grid container columns={12}>
-          <Grid xs={6}>
-            <Container padding="0 20px " gap="20px">
+    <>
+      <style>
+        {`
+          .br-section {
+            box-shadow: none !important;
+            background: transparent !important;
+            border: none !important;
+            border-radius: 0 !important;
+          }
+          .stepperContent {
+            background: transparent;
+          }
+          /* Responsive two-column layout for Step 1 */
+          .twoCol {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 16px;
+            align-items: start;
+          }
+          @media (min-width: 640px) {
+            .twoCol { grid-template-columns: 1fr 1fr; }
+          }
+          .twoCol .col { padding: 0 8px; }
+        `}
+      </style>
+      <div 
+        className="stepperContent" 
+        style={{ 
+          overflow: "auto", 
+          overflowX: "hidden", 
+          padding: '16px 16px 24px',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          width: '100%',
+          boxSizing: 'border-box'
+        }}
+      >
+        <div style={{ 
+          display: "flex", 
+          flexDirection: "column", 
+          gap: 24,
+          width: '100%',
+          maxWidth: '1000px',
+          margin: '0 auto'
+        }}>
+        <div style={{ 
+          paddingBottom: 12, 
+          textAlign: 'center',
+          borderBottom: '1px solid #e5e7eb',
+          marginBottom: 20,
+          paddingTop: 4
+        }}>
+          <Text variant="label" color="gray" style={{ 
+            fontSize: 20, 
+            fontWeight: 700, 
+            lineHeight: 1.3,
+            display: 'block',
+            marginBottom: 8,
+            color: '#111827'
+          }}>
+            Basic information
+          </Text>
+          <Text color="gray" style={{ 
+            fontSize: 15, 
+            fontWeight: 400, 
+            opacity: 0.75, 
+            display: 'block',
+            maxWidth: '500px',
+            margin: '0 auto',
+            color: '#6b7280'
+          }}>
+            Tell us about your business to get started
+          </Text>
+        </div>
+        <div className="twoCol">
+          <div className="col">
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
               <FormControl required>
-                <FormLabel>Business Name</FormLabel>
+                <FormLabel sx={{ mb: 0.75, fontSize: '0.875rem', fontWeight: 600, color: '#374151' }}>Business Name</FormLabel>
                 <Input
                   variant="outlined"
                   size="md"
@@ -161,16 +163,35 @@ const Step1: React.FC<Props> = ({
                     }))
                   }
                   placeholder="Write the name of your business"
+                  sx={{ 
+                    '--Input-focusedThickness': '2px',
+                    '--Input-focusedHighlight': 'var(--joy-palette-primary-500)',
+                    backgroundColor: '#fafafa',
+                    border: '1px solid #e0e0e0',
+                    borderRadius: '8px',
+                    boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+                    transition: 'all 0.2s ease-in-out',
+                    '&:hover': {
+                      backgroundColor: '#ffffff',
+                      borderColor: '#d0d0d0',
+                      boxShadow: '0 2px 6px rgba(0, 0, 0, 0.15)',
+                    },
+                    '&:focus-within': {
+                      backgroundColor: '#ffffff',
+                      borderColor: 'var(--joy-palette-primary-500)',
+                      boxShadow: '0 0 0 3px rgba(25, 118, 210, 0.1)',
+                    }
+                  }}
                 />
               </FormControl>
 
               <FormControl required>
-                <FormLabel>Business Type</FormLabel>
+                <FormLabel sx={{ mb: 0.75, fontSize: '0.875rem', fontWeight: 600, color: '#374151' }}>Business Type</FormLabel>
                 <ToggleButtonGroup
                   color="primary"
                   value={data.business_type_id?.toString() ?? ""}
                   exclusive
-                  onChange={(e, newValue) => {
+                  onChange={(_e, newValue) => {
                     if (!newValue) return;
                     const type_id = Number(newValue);
                     setSelectedType(type_id);
@@ -179,7 +200,7 @@ const Step1: React.FC<Props> = ({
                       business_type_id: type_id,
                     }));
                   }}
-                  sx={{ display: "flex", gap: 2, mt: 1 }}
+                  sx={{ display: "flex", gap: 1, mt: 0.5, flexWrap: 'wrap' }}
                 >
                   {businessTypes.map((type) => (
                     <ToggleButton
@@ -187,40 +208,80 @@ const Step1: React.FC<Props> = ({
                       value={type.id.toString()}
                       sx={{
                         flex: 1,
-                        borderRadius: "12px",
-                        px: 3,
-                        py: 2,
+                        minWidth: '120px',
+                        borderRadius: "10px",
+                        px: 2,
+                        py: 1.25,
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",
-                        gap: 1,
+                        gap: 0.75,
                         textTransform: "none",
+                        border: '1px solid',
+                        borderColor: '#e5e7eb',
+                        backgroundColor: '#fafafa',
+                        color: '#374151',
+                        transition: 'all 0.2s ease-in-out',
+                        '&:hover': {
+                          backgroundColor: '#f5f7ff',
+                          borderColor: '#d0d7ff',
+                        },
+                        '&.Mui-selected': {
+                          backgroundColor: '#eaf2ff',
+                          borderColor: '#2563eb',
+                          color: '#1d4ed8',
+                          boxShadow: '0 2px 8px rgba(37, 99, 235, 0.25)',
+                        },
+                        '&.Mui-selected:hover': {
+                          backgroundColor: '#e0ecff',
+                          borderColor: '#1e40af',
+                        },
+                        '&.Mui-focusVisible': {
+                          outline: '2px solid #93c5fd',
+                          outlineOffset: 2,
+                        },
                       }}
                     >
-                      {type.type.toLowerCase() === "accommodation" && (
-                        <HotelIcon />
-                      )}
-                      {type.type.toLowerCase() === "shop" && <StoreIcon />}
-                      <Text>{type.type}</Text>
+                      {type.type.toLowerCase() === "accommodation" && <HotelIcon fontSize="small" />}
+                      {type.type.toLowerCase() === "shop" && <StoreIcon fontSize="small" />}
+                      <Text style={{ fontSize: '0.875rem', fontWeight: 500 }}>{type.type}</Text>
                     </ToggleButton>
                   ))}
                 </ToggleButtonGroup>
               </FormControl>
 
               <FormControl required>
-                <FormLabel>Business Category</FormLabel>
-
+                <FormLabel sx={{ mb: 0.75, fontSize: '0.875rem', fontWeight: 600, color: '#374151' }}>Business Category</FormLabel>
                 <Select
                   variant="outlined"
                   size="md"
                   value={data.business_category_id?.toString() ?? ""}
-                  onChange={(e, value) => {
+                  onChange={(_e, value) => {
                     if (!value) return;
                     const category_id = Number(value);
                     setData((prev) => ({
                       ...prev,
                       business_category_id: category_id,
                     }));
+                  }}
+                  sx={{ 
+                    '--Select-focusedThickness': '2px',
+                    '--Select-focusedHighlight': 'var(--joy-palette-primary-500)',
+                    backgroundColor: '#fafafa',
+                    border: '1px solid #e0e0e0',
+                    borderRadius: '8px',
+                    boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+                    transition: 'all 0.2s ease-in-out',
+                    '&:hover': {
+                      backgroundColor: '#ffffff',
+                      borderColor: '#d0d0d0',
+                      boxShadow: '0 2px 6px rgba(0, 0, 0, 0.15)',
+                    },
+                    '&:focus-within': {
+                      backgroundColor: '#ffffff',
+                      borderColor: 'var(--joy-palette-primary-500)',
+                      boxShadow: '0 0 0 3px rgba(25, 118, 210, 0.1)',
+                    }
                   }}
                 >
                   <Option value="">-- Select a category --</Option>
@@ -232,184 +293,36 @@ const Step1: React.FC<Props> = ({
                 </Select>
               </FormControl>
 
-              <FormControl>
-                <FormLabel>Description</FormLabel>
-                <Textarea
-                  maxRows={4}
-                  minRows={4}
-                  size="md"
-                  variant="outlined"
-                  value={data.description}
-                  onChange={(e) =>
-                    setData((prev) => ({
-                      ...prev,
-                      description: e.target.value,
-                    }))
-                  }
-                />
-              </FormControl>
+              
+            </div>
+          </div>
 
-              <div>
-                <FormLabel>Business Hours</FormLabel>
-
-                {businessHours.map((hour, index) => (
-                  <Container
-                    key={hour.id}
-                    padding="12px 0"
-                    align="center"
-                    direction="row"
-                    style={{ gap: "12px" }}
-                  >
-                    <Typography level="body-sm" style={{ width: "80px" }}>
-                      {hour.day_of_week}
-                    </Typography>
-
-                    <Input
-                      size="md"
-                      type="time"
-                      value={hour.open_time}
-                      readOnly={!hour.is_open}
-                      onChange={(e) => {
-                        const newTime = e.target.value;
-                        setBusinessHours((prev) =>
-                          prev.map((h, i) =>
-                            i === index ? { ...h, open_time: newTime } : h
-                          )
-                        );
-                      }}
-                    />
-
-                    <Input
-                      size="md"
-                      type="time"
-                      value={hour.close_time}
-                      readOnly={!hour.is_open}
-                      onChange={(e) => {
-                        const newTime = e.target.value;
-                        setBusinessHours((prev) =>
-                          prev.map((h, i) =>
-                            i === index ? { ...h, close_time: newTime } : h
-                          )
-                        );
-                      }}
-                    />
-
-                    <Typography level="body-sm">
-                      {hour.is_open ? "Open" : "Closed"}
-                    </Typography>
-                    <Switch
-                      checked={hour.is_open}
-                      onChange={(e) => {
-                        const checked = e.target.checked;
-                        setBusinessHours((prev) =>
-                          prev.map((h, i) =>
-                            i === index ? { ...h, is_open: checked } : h
-                          )
-                        );
-                      }}
-                    />
-                  </Container>
-                ))}
-              </div>
-            </Container>
-          </Grid>
-          <Grid xs={6}>
-            <Container padding="0 20px" gap="20px">
-              <FormControl>
-                <FormLabel>Upload Image</FormLabel>
-
-                <div
-                  style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: "center",
-                    justifyContent: "right",
-                    gap: "12px",
-                  }}
-                >
-                  <div
-                    style={{
-                      width: "100%",
-                      height: "400px",
-                      border: "2px dashed #ccc",
-                      borderRadius: "12px",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      backgroundColor: "#f9f9f9",
-                      cursor: "pointer",
-                      overflow: "hidden",
-                    }}
-                    onClick={() =>
-                      document.getElementById("image-upload")?.click()
-                    }
-                  >
-                    {data.business_image ? (
-                      <img
-                        src={data.business_image}
-                        alt="Business"
-                        style={{
-                          width: "100%",
-                          height: "100%",
-                          objectFit: "cover",
-                        }}
-                      />
-                    ) : (
-                      <div style={{ textAlign: "center", color: "#888" }}>
-                        <CloudUploadIcon
-                          style={{ fontSize: 40, color: "#aaa" }}
-                        />
-                        <p style={{ fontSize: "14px", marginTop: "8px" }}>
-                          Click to upload
-                        </p>
-                      </div>
-                    )}
-                  </div>
-
-                  <Button
-                    size="md"
-                    variant="outlined"
-                    color="primary"
-                    startDecorator={<UploadIcon />}
-                    style={{ width: "100%" }}
-                    onClick={() =>
-                      document.getElementById("image-upload")?.click()
-                    }
-                  >
-                    Upload Photo
-                  </Button>
-                </div>
-                {/* Hidden file input */}
-                <input
-                  id="image-upload"
-                  type="file"
-                  accept="image/*"
-                  onChange={handleImageSelect}
-                  style={{ display: "none" }}
-                />
-              </FormControl>
-
+          <div className="col">
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
               <FormControl id="multiple-limit-tags">
-                <FormLabel>Amenities</FormLabel>
+                <FormLabel sx={{ mb: 0.75, fontSize: '0.875rem', fontWeight: 600, color: '#374151' }}>Amenities</FormLabel>
                 <Autocomplete
-                  size="lg"
+                  size="md"
                   multiple
                   freeSolo
-                  placeholder="Amenities"
+                  placeholder="Select or add amenities..."
                   limitTags={6}
                   options={amenities}
                   value={selectedAmenities}
-                  getOptionLabel={(option) =>
-                    typeof option === "string" ? option : option.name
-                  }
+                  getOptionLabel={(option) => (typeof option === "string" ? option : option.name)}
                   renderTags={(value, getTagProps) =>
                     value.map((option, index) => (
                       <span key={option.id} style={{ margin: 2 }}>
-                        <Chip
-                          {...getTagProps({ index })}
-                          color="primary"
-                          variant="outlined"
-                          size="lg"
+                        <Chip 
+                          {...getTagProps({ index })} 
+                          color="primary" 
+                          variant="soft" 
+                          size="md"
+                          sx={{
+                            borderRadius: '6px',
+                            fontSize: '0.8rem',
+                            fontWeight: 500,
+                          }}
                         >
                           {option.name}
                         </Chip>
@@ -419,70 +332,99 @@ const Step1: React.FC<Props> = ({
                   filterOptions={(options, state) => {
                     const inputValue = state.inputValue.trim().toLowerCase();
                     const filtered = options.filter(
-                      (option) =>
-                        typeof option !== "string" &&
-                        option.name.toLowerCase().includes(inputValue)
+                      (option) => typeof option !== "string" && option.name.toLowerCase().includes(inputValue)
                     );
-
-                    // If user typed something not in list → add “Add …”
                     if (
                       inputValue !== "" &&
-                      !options.some(
-                        (opt) =>
-                          typeof opt !== "string" &&
-                          opt.name.toLowerCase() === inputValue
-                      )
+                      !options.some((opt) => typeof opt !== "string" && opt.name.toLowerCase() === inputValue)
                     ) {
-                      return [
-                        ...filtered,
-                        { id: -1, name: `Add "${state.inputValue}"` },
-                      ];
+                      return [...filtered, { id: -1, name: `Add "${state.inputValue}"` } as Amenity];
                     }
-
                     return filtered;
                   }}
                   onChange={async (_, newValue) => {
                     const last = newValue[newValue.length - 1];
-
-                    // User chose "Add ..."
-                    if (last && typeof last !== "string" && last.id === -1) {
-                      const newAmenityName = last.name
-                        .replace(/^Add\s+"|"$/g, "")
-                        .trim();
+                    if (last && typeof last !== "string" && (last as Amenity).id === -1) {
+                      const newAmenityName = (last as Amenity).name.replace(/^Add\s+"|"$/g, "").trim();
                       await addAmenity(newAmenityName);
                       await fetchAmenities();
-
-                      // Find inserted amenity (assumes fetchAmenities updates amenities)
-                      const inserted = amenities.find(
-                        (a) =>
-                          a.name.toLowerCase() === newAmenityName.toLowerCase()
-                      );
+                      const inserted = amenities.find((a) => a.name.toLowerCase() === newAmenityName.toLowerCase());
                       if (inserted) {
                         setSelectedAmenities([
                           ...newValue
                             .slice(0, -1)
-                            .filter(
-                              (item): item is Amenity =>
-                                typeof item !== "string"
-                            ),
+                            .filter((item): item is Amenity => typeof item !== "string"),
                           inserted,
                         ]);
                       }
                     } else {
-                      setSelectedAmenities(
-                        newValue.filter(
-                          (item): item is Amenity => typeof item !== "string"
-                        )
-                      );
+                      setSelectedAmenities(newValue.filter((item): item is Amenity => typeof item !== "string"));
+                    }
+                  }}
+                  sx={{ 
+                    '--Input-focusedThickness': '2px',
+                    '--Input-focusedHighlight': 'var(--joy-palette-primary-500)',
+                    backgroundColor: '#fafafa',
+                    border: '1px solid #e0e0e0',
+                    borderRadius: '8px',
+                    boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+                    transition: 'all 0.2s ease-in-out',
+                    '&:hover': {
+                      backgroundColor: '#ffffff',
+                      borderColor: '#d0d0d0',
+                      boxShadow: '0 2px 6px rgba(0, 0, 0, 0.15)',
+                    },
+                    '&:focus-within': {
+                      backgroundColor: '#ffffff',
+                      borderColor: 'var(--joy-palette-primary-500)',
+                      boxShadow: '0 0 0 3px rgba(25, 118, 210, 0.1)',
                     }
                   }}
                 />
               </FormControl>
-            </Container>
-          </Grid>
-        </Grid>
+
+              <FormControl>
+                <FormLabel sx={{ mb: 0.75, fontSize: '0.875rem', fontWeight: 600, color: '#374151' }}>Description</FormLabel>
+                <Textarea
+                  maxRows={4}
+                  minRows={3}
+                  size="md"
+                  variant="outlined"
+                  value={data.description}
+                  onChange={(e) =>
+                    setData((prev) => ({
+                      ...prev,
+                      description: e.target.value,
+                    }))
+                  }
+                  placeholder="Describe your business..."
+                  sx={{ 
+                    '--Textarea-focusedThickness': '2px',
+                    '--Textarea-focusedHighlight': 'var(--joy-palette-primary-500)',
+                    backgroundColor: '#fafafa',
+                    border: '1px solid #e0e0e0',
+                    borderRadius: '8px',
+                    boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+                    transition: 'all 0.2s ease-in-out',
+                    '&:hover': {
+                      backgroundColor: '#ffffff',
+                      borderColor: '#d0d0d0',
+                      boxShadow: '0 2px 6px rgba(0, 0, 0, 0.15)',
+                    },
+                    '&:focus-within': {
+                      backgroundColor: '#ffffff',
+                      borderColor: 'var(--joy-palette-primary-500)',
+                      boxShadow: '0 0 0 3px rgba(25, 118, 210, 0.1)',
+                    }
+                  }}
+                />
+              </FormControl>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
+    </>
   );
 };
 

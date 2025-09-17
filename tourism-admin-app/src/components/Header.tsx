@@ -11,7 +11,7 @@ export default function Header(): React.JSX.Element {
 
   const handleLogout = () => {
     logout();
-    navigate("/login");
+    navigate("/");
   };
 
   return (

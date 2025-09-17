@@ -3,14 +3,13 @@ import { Tabs } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { Platform, View } from 'react-native';
 
-import Loading from '@/components/Loading';
 import { HapticTab } from '@/components/haptic-tab';
-import { ThemedText } from '@/components/themed-text';
+import Loading from '@/components/Loading';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import TabBarBackground from '@/components/ui/TabBarBackground';
-import { colors } from '@/constants/color';
-import { useColorScheme } from '@/hooks/use-color-scheme';
+import { Colors } from '@/constants/color';
 import { AccommodationProvider } from '@/context/AccommodationContext';
+import { useColorScheme } from '@/hooks/use-color-scheme';
 export default function TabLayout() {
   const colorScheme = useColorScheme();
   const [isLoading, setIsLoading] = useState(true);
@@ -34,7 +33,7 @@ export default function TabLayout() {
     <AccommodationProvider>
       <Tabs
         screenOptions={{
-          tabBarActiveTintColor: colors[colorScheme ?? 'light'].tint,
+          tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
           headerShown: false,
           tabBarButton: HapticTab,
           tabBarBackground: TabBarBackground,
@@ -92,12 +91,13 @@ export default function TabLayout() {
         />
 
         <Tabs.Screen
-          name="profile/index"
+          name="(profile)"
           options={{
             title: 'Profile',
-            headerShown: true,
+            headerTitle: 'User Profile',
+            headerShown: false,
             animation: 'shift',
-            headerTitleAlign: 'center',
+            headerTitleAlign: 'left',
             tabBarIcon: ({ color }) => (
               <IconSymbol size={32} name="person.crop.circle" color={color} />
             ),
