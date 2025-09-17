@@ -130,8 +130,8 @@ const BusinessProfile = () => {
     business_image: businessDetails?.business_image || "",
     business_name: businessDetails?.business_name || "",
     phone_number: businessDetails?.phone_number || "",
-    email: businessDetails?.email,
-    address_id: businessDetails?.address_id,
+    email: businessDetails?.email || "",
+    address_id: businessDetails?.address_id || 0,
     address: businessDetails?.address || "",
     description: businessDetails?.description || "",
     instagram_url: businessDetails?.instagram_url || "",
@@ -144,8 +144,8 @@ const BusinessProfile = () => {
     max_price: businessDetails?.max_price || "",
     owner_id: businessDetails?.owner_id || "",
     status: businessDetails?.status || "Pending",
-    business_category_id: businessDetails?.business_category_id,
-    business_type_id: businessDetails?.business_type_id,
+    business_category_id: businessDetails?.business_category_id || 0,
+    business_type_id: businessDetails?.business_type_id || 0,
     hasBooking: businessDetails?.hasBooking || false,
   });
 
@@ -508,7 +508,7 @@ const BusinessProfile = () => {
                     </Button>
                   ) : (
                     <Button
-                      onClick={() => activateBooking(businessDetails.id, true)}
+                      onClick={() => activateBooking(businessDetails.id!, true)}
                       color="success"
                       size="sm"
                       variant="solid"
@@ -848,7 +848,7 @@ const BusinessProfile = () => {
       <EditDescriptionModal
         open={editDescOpen}
         initialDescription={businessDetails?.description || ""}
-        businessId={businessDetails?.id}
+        businessId={businessDetails?.id!}
         onClose={() => setEditDescOpen(false)}
         onSave={handleSaveDescription}
         onUpdate={() => window.location.reload()}
@@ -858,7 +858,7 @@ const BusinessProfile = () => {
         open={editContactOpen}
         initialEmail={businessDetails?.email || ""}
         initialPhoneNumber={businessDetails?.phone_number || ""}
-        businessId={businessDetails?.id}
+        businessId={businessDetails?.id!}
         onClose={() => setEditContactOpen(false)}
         onSave={handleSaveContact}
         onUpdate={() => window.location.reload()}
@@ -870,7 +870,7 @@ const BusinessProfile = () => {
         initialIgLink={businessDetails?.instagram_url || ""}
         initialXLink={businessDetails?.x_url || ""}
         initialWebsiteLink={businessDetails?.website_url || ""}
-        businessId={businessDetails?.id}
+        businessId={businessDetails?.id!}
         onClose={() => setEditSocialMediaOpen(false)}
         onSave={handleSaveSocialMedia}
         onUpdate={() => window.location.reload()}
@@ -880,7 +880,7 @@ const BusinessProfile = () => {
         open={editPricingOpen}
         initialMinimumPrice={businessDetails?.min_price || ""}
         initialMaximumPrice={businessDetails?.max_price || ""}
-        businessId={businessDetails?.id}
+        businessId={businessDetails?.id!}
         onClose={() => setEditPricingOpen(false)}
         onSave={handleSavePricing}
         onUpdate={() => window.location.reload()}
@@ -893,7 +893,7 @@ const BusinessProfile = () => {
         initialMunicipality={address?.municipality_id}
         initialBarangay={address?.barangay_id}
         initialAddress={businessDetails?.address}
-        businessId={businessDetails?.id}
+        businessId={businessDetails?.id!}
         onClose={() => setEditAddressOpen(false)}
         onSave={handleSaveAddress}
         onUpdate={() => window.location.reload()}
@@ -903,7 +903,7 @@ const BusinessProfile = () => {
         open={editMapCoordinatesOpen}
         initialLatitude={businessDetails?.latitude || ""}
         initialLongitude={businessDetails?.longitude || ""}
-        businessId={businessDetails?.id}
+        businessId={businessDetails?.id!}
         onClose={() => setEditMapCoordinatesOpen(false)}
         onSave={handleSaveMapCoordinates}
         onUpdate={() => window.location.reload()}
@@ -913,7 +913,7 @@ const BusinessProfile = () => {
         open={editBusinessOpen}
         initialBusinessName={businessDetails?.business_name || ""}
         initialBusinessImage={businessDetails?.business_image || ""}
-        businessId={businessDetails?.id}
+        businessId={businessDetails?.id!}
         onClose={() => setEditBusinessOpen(false)}
         onSave={handleSaveBusiness}
         onUpdate={() => window.location.reload()}
@@ -921,7 +921,7 @@ const BusinessProfile = () => {
 
       <EditAmenitiesModal
         open={editAmenitiesOpen}
-        businessId={businessDetails?.id}
+        businessId={businessDetails?.id!}
         onClose={() => setEditAmenitiesOpen(false)}
         onSave={handleSaveBusiness}
         onUpdate={() => window.location.reload()}

@@ -15,8 +15,8 @@ async function createProcedures(knex) {
 		END;
 	`);
 
-  // Insert tourist
-  await knex.raw(`
+	// Insert tourist (matches migration columns)
+	await knex.raw(`
 		CREATE PROCEDURE InsertTourist(
 			IN p_id CHAR(36),
 			IN p_first_name VARCHAR(30),
@@ -28,23 +28,21 @@ async function createProcedures(knex) {
 			IN p_gender ENUM('Male','Female','Prefer not to say'),
 			IN p_nationality VARCHAR(20),
 			IN p_category ENUM('Domestic','Overseas'),
-			IN p_email VARCHAR(40),
 			IN p_address_id INT,
-			IN p_user_id INT,
-			IN p_phone_number VARCHAR(13)
+			IN p_user_id CHAR(36)
 		)
 		BEGIN
 			INSERT INTO tourist (
-				id, first_name, middle_name, last_name, ethnicity, birthdate, age, gender, nationality, category, email, address_id, user_id, phone_number
+				id, first_name, middle_name, last_name, ethnicity, birthdate, age, gender, nationality, category, address_id, user_id
 			) VALUES (
-				p_id, p_first_name, p_middle_name, p_last_name, p_ethnicity, p_birthdate, p_age, p_gender, p_nationality, p_category, p_email, p_address_id, p_user_id, p_phone_number
+				p_id, p_first_name, p_middle_name, p_last_name, p_ethnicity, p_birthdate, p_age, p_gender, p_nationality, p_category, p_address_id, p_user_id
 			);
 			SELECT * FROM tourist WHERE id = p_id;
 		END;
 	`);
 
-  // Update tourist (all fields optional)
-  await knex.raw(`
+	// Update tourist (all fields optional; matches migration columns)
+	await knex.raw(`
 		CREATE PROCEDURE UpdateTourist(
 			IN p_id CHAR(36),
 			IN p_first_name VARCHAR(30),
@@ -56,10 +54,8 @@ async function createProcedures(knex) {
 			IN p_gender ENUM('Male','Female','Prefer not to say'),
 			IN p_nationality VARCHAR(20),
 			IN p_category ENUM('Domestic','Overseas'),
-			IN p_email VARCHAR(40),
 			IN p_address_id INT,
-			IN p_user_id INT,
-			IN p_phone_number VARCHAR(13)
+			IN p_user_id CHAR(36)
 		)
 		BEGIN
 			UPDATE tourist SET
@@ -72,10 +68,8 @@ async function createProcedures(knex) {
 				gender = IFNULL(p_gender, gender),
 				nationality = IFNULL(p_nationality, nationality),
 				category = IFNULL(p_category, category),
-				email = IFNULL(p_email, email),
 				address_id = IFNULL(p_address_id, address_id),
-				user_id = IFNULL(p_user_id, user_id),
-				phone_number = IFNULL(p_phone_number, phone_number)
+				user_id = IFNULL(p_user_id, user_id)
 			WHERE id = p_id;
 			SELECT * FROM tourist WHERE id = p_id;
 		END;

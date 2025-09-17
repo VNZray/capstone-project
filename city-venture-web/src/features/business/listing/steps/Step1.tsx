@@ -60,8 +60,8 @@ const Step1: React.FC<Props> = ({
     if (selectedAmenities.length > 0) {
       setBusinessAmenities(
         selectedAmenities.map((amenity) => ({
-          business_id: data.id ?? 0, // use the current business id or 0 as fallback
-          amenity_id: amenity.id,
+          business_id: data.id ?? undefined, // ensure string or undefined, not null
+          amenity_id: amenity.id ?? undefined,
         }))
       );
     } else {

@@ -71,6 +71,7 @@ const AccommodationDirectory = () => {
 
   const handleAccommodationSelect = (id: string) => {
     setAccommodationId(id);
+    alert('Accommodation selected. Navigating to profile... ' + id);
     navigateToAccommodationProfile();
   };
 
@@ -81,7 +82,7 @@ const AccommodationDirectory = () => {
       const matchesSearch =
         term.length === 0 ||
         business.business_name.toLowerCase().includes(term) ||
-        business.address.toLowerCase().includes(term);
+        business.address!.toLowerCase().includes(term);
 
       const categoryKey =
         business.business_category_id != null
@@ -123,7 +124,11 @@ const AccommodationDirectory = () => {
       {/**Tab Filter */}
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingTop: 0, paddingBottom: 100, paddingHorizontal: 16 }}
+        contentContainerStyle={{
+          paddingTop: 0,
+          paddingBottom: 100,
+          paddingHorizontal: 16,
+        }}
       >
         <View style={styles.cardWrapper}>
           {loading ? (
@@ -154,7 +159,7 @@ const AccommodationDirectory = () => {
                 ratings={4.5}
                 view={cardView}
                 favorite={false}
-                onClick={() => handleAccommodationSelect(business.id)}
+                onClick={() => handleAccommodationSelect(business.id!)}
               />
             ))
           ) : (

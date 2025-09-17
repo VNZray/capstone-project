@@ -19,13 +19,14 @@ import Rooms from './rooms';
 const { width, height } = Dimensions.get('window');
 
 const AccommodationProfile = () => {
-  const { id } = useLocalSearchParams();
   const navigation = useNavigation();
   const [activeTab, setActiveTab] = useState<string>('details');
   const colorScheme = useColorScheme();
   const isDarkMode = colorScheme === 'dark';
   const activeBackground = '#0A1B47';
   const { user } = useAuth();
+  const { accommodationDetails } = useAccommodation();
+
   const [loading, setLoading] = useState(true);
   const [newReview, setNewReview] = useState('');
   const [rating, setRating] = useState(5);
@@ -35,8 +36,6 @@ const AccommodationProfile = () => {
     ''
   );
   const bg = colorScheme === 'dark' ? background.dark : background.light;
-
-  const { accommodationDetails } = useAccommodation();
 
   useEffect(() => {
     if (accommodationDetails?.business_name && accommodationDetails?.id) {
@@ -94,7 +93,13 @@ const AccommodationProfile = () => {
             />
 
             <Container padding={16} backgroundColor={bg}>
-              <Container padding={0} backgroundColor='transparent' direction='row' justify='space-between' style={{ marginBottom: 16 }}>
+              <Container
+                padding={0}
+                backgroundColor="transparent"
+                direction="row"
+                justify="space-between"
+                style={{ marginBottom: 16 }}
+              >
                 <View>
                   <ThemedText type="card-title-small" weight="bold">
                     {accommodationDetails?.business_name}

@@ -142,12 +142,6 @@ const Register = () => {
       const userRes = await insertData(newUser, "users");
       const userId = userRes.id;
 
-      console.log("Address ", newAddress);
-      console.log("Address ", newAddress);
-      console.log("Address ", newAddress);
-      console.log("Address ", newAddress);
-      console.log("Address ", newAddress);
-
       // insert address
       const addressRes = await insertData(newAddress, "address");
       const addressId = addressRes.id;
@@ -175,7 +169,7 @@ const Register = () => {
       console.debug("[Register] Auto-login success");
 
       // Navigate to business home/dashboard after login
-      navigate("/business");
+      navigate("/business/");
     } catch (err: any) {
       if (axios.isAxiosError(err)) {
         console.error("[Register] Registration or auto-login failed", {

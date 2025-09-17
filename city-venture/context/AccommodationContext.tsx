@@ -1,11 +1,12 @@
 import {
   clearStoredBusinessId,
   fetchAllBusinessDetails,
+  fetchBusinessData,
   fetchBusinessDetails,
   getStoredBusinessId,
   setStoredBusinessId,
 } from '@/services/AccommodationService';
-import type { Business } from '@/types/Business';
+import type { Business, BusinessDetails } from '@/types/Business';
 import type { ReactNode } from 'react';
 import React, {
   createContext,
@@ -17,7 +18,7 @@ import React, {
 
 interface AccommodationContextType {
   selectedAccommodationId: string | null;
-  accommodationDetails: Business | null;
+  accommodationDetails: BusinessDetails | null;
   allAccommodationDetails: Business[] | [];
   loading: boolean;
   setAccommodationId: (id: string) => void;
@@ -48,7 +49,7 @@ export const AccommodationProvider: React.FC<AccommodationProviderProps> = ({
     fetchStoredId();
   }, []);
   const [accommodationDetails, setAccommodationDetails] =
-    useState<Business | null>(null);
+    useState<BusinessDetails | null>(null);
 
   const [allAccommodationDetails, setAllAccommodationDetails] = useState<
     Business[] | []
@@ -58,6 +59,7 @@ export const AccommodationProvider: React.FC<AccommodationProviderProps> = ({
 
   /** Set the selected accommodation ID and store it locally */
   const setAccommodationId = useCallback((id: string) => {
+    console.debug('[AccommodationContext] setAccommodationId ->', id);
     setSelectedAccommodationId(id);
     setStoredBusinessId(id);
   }, []);
@@ -73,8 +75,14 @@ export const AccommodationProvider: React.FC<AccommodationProviderProps> = ({
   const fetchAccommodation = useCallback(async () => {
     if (!selectedAccommodationId) return;
     setLoading(true);
+
     try {
-      const data = await fetchBusinessDetails(selectedAccommodationId);
+      console.debug('[AccommodationContext] Fetching business data for id=', selectedAccommodationId);
+      const data = await fetchBusinessData(selectedAccommodationId);
+      console.debug('[AccommodationContext] Fetched business data ->', {
+        id: data?.id,
+        name: data?.business_name,
+      });
       setAccommodationDetails(data);
     } catch (error) {
       console.error('Failed to fetch accommodation:', error);
@@ -87,10 +95,18 @@ export const AccommodationProvider: React.FC<AccommodationProviderProps> = ({
   const fetchAllAccommodations = async () => {
     setLoading(true);
     try {
+      console.debug('[AccommodationContext] Fetching all businesses...');
       const data = await fetchAllBusinessDetails();
+      console.debug('[AccommodationContext] Total businesses ->', data?.length ?? 0);
       setAllAccommodationDetails(data);
+      if (data.length === 0) {
+        setAccommodationDetails(null);
+        setSelectedAccommodationId(null);
+        clearStoredBusinessId();
+        return;
+      }
     } catch (error) {
-      console.error('Failed to fetch accommodation:', error);
+      console.error('Failed to fetch business listed:', error);
       setAllAccommodationDetails([]);
     } finally {
       setLoading(false);
