@@ -1,30 +1,16 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import axios from 'axios';
-import React, {
-  createContext,
-  ReactNode,
-  useContext,
-  useEffect,
-  useState,
-} from 'react';
-import { Platform } from 'react-native';
-
-interface User {
-  id: string;
-  email: string;
-  role: string;
-  first_name?: string;
-  last_name?: string;
-}
-
-// const API_URL = 'http://192.168.1.8:3000/api';
-const API_URL = "http://192.168.1.11:3000/api";
-
+import { createContext, useContext, useEffect, useState, useCallback } from "react";
+import type { ReactNode } from "react";
+import {
+  loginUser,
+  logoutUser,
+  getStoredUser,
+} from "@/services/AuthService";
+import type { UserDetails } from "../types/User";
 interface AuthContextType {
-  user: User | null;
+  user: UserDetails | null;
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
-  logout: () => Promise<void>;
+  logout: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -34,74 +20,41 @@ interface AuthProviderProps {
 }
 
 export const AuthProvider = ({ children }: AuthProviderProps) => {
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState<boolean>(true);
+  const [user, setUser] = useState<UserDetails | null>(null);
+  const [loading, setLoading] = useState(true);
 
+  /** Load user from localStorage */
   useEffect(() => {
     const loadUser = async () => {
-      const token = await AsyncStorage.getItem('token');
-      const userData = await AsyncStorage.getItem('user');
-
-      if (token && userData) {
-        setUser(JSON.parse(userData));
-      }
+      const storedUser = await getStoredUser();
+      if (storedUser) setUser(storedUser);
       setLoading(false);
     };
-
     loadUser();
   }, []);
 
-  const login = async (email: string, password: string) => {
-    try {
-      // Step 1: Login request
-      const res = await axios.post(`${API_URL}/users/login`, { email, password });
-      const { token } = res.data;
+  /** LOGIN */
+  const login = useCallback(async (email: string, password: string) => {
+    const loggedInUser = await loginUser(email, password);
+    setUser(loggedInUser);
+  }, []);
 
-      // Step 2: Decode token
-      const payload = JSON.parse(atob(token.split('.')[1]));
-      const touristId = payload.tourist_id;
-
-      console.log('Decoded payload:', payload);
-
-      // Step 3: Fetch tourist details
-      const touristRes = await axios.get(`${API_URL}/tourist/${touristId}`);
-      const { first_name, last_name } = touristRes.data;
-
-      // Step 4: Build loggedInUser object
-      const loggedInUser: User = {
-        id: touristId,
-        email,
-        role: payload.role,
-        first_name,
-        last_name,
-      };
-
-      // Step 5: Save to AsyncStorage
-      await AsyncStorage.setItem('token', token);
-      await AsyncStorage.setItem('user', JSON.stringify(loggedInUser));
-
-      setUser(loggedInUser);
-    } catch (error: any) {
-      console.error('Login error:', error.response?.data || error.message);
-      throw error;
-    }
-  };
-
-  const logout = async () => {
-    await AsyncStorage.removeItem('token');
-    await AsyncStorage.removeItem('user');
+  /** LOGOUT */
+  const logout = useCallback(() => {
+    logoutUser();
     setUser(null);
-  };
+  }, []);
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout }}>
+    <AuthContext.Provider value={{ user, loading,  login, logout }}>
       {children}
     </AuthContext.Provider>
   );
 };
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const useAuth = (): AuthContextType => {
   const context = useContext(AuthContext);
-  if (!context) throw new Error('useAuth must be used within an AuthProvider');
+  if (!context) throw new Error("useAuth must be used within an AuthProvider");
   return context;
 };

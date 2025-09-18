@@ -34,9 +34,17 @@ interface BusinessProviderProps {
 export const BusinessProvider: React.FC<BusinessProviderProps> = ({
   children,
 }) => {
-  const [selectedBusinessId, setSelectedBusinessId] = useState<string | null>(
-    () => getStoredBusinessId()
-  );
+  const [selectedBusinessId, setSelectedBusinessId] = useState<string | null>(null);
+
+  // Load stored business ID on mount
+  useEffect(() => {
+    const loadStoredBusinessId = async () => {
+      const id = await getStoredBusinessId();
+      setSelectedBusinessId(id);
+    };
+    loadStoredBusinessId();
+  }, []);
+
   const [businessDetails, setBusinessDetails] = useState<Business | null>(null);
   const [loading, setLoading] = useState(false);
 

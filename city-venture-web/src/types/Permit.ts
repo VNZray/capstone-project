@@ -1,5 +1,5 @@
 export interface Permit {
-  id: string;
+  id?: string | "";
   business_id: string;
   permit_type: string;
   file_url: string;

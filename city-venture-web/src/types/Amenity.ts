@@ -10,7 +10,7 @@ export type RoomAmenity = {
 };
 
 export type BusinessAmenity = {
-  id?: number;
-  amenity_id: number;
-  business_id: string;
+  id?: number | null;
+  amenity_id?: number | null;
+  business_id?: string | "";
 };

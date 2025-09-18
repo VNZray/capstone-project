@@ -13,7 +13,7 @@ const Login: React.FC = () => {
   const [password, setPassword] = useState("123456");
   const [loginError, setLoginError] = useState("");
   const navigate = useNavigate();
-  const { loginTourism, user } = useAuth(); // from AuthProvider
+  const { login, user } = useAuth(); // from AuthProvider
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -24,9 +24,9 @@ const Login: React.FC = () => {
     try {
       setLoginError("");
 
-      await loginTourism(email, password);
+      await login(email, password);
 
-      if (user?.role === "Tourism") {
+      if (user?.role_name === "Admin") {
         navigate("/tourism/dashboard");
       }
     } catch (error: any) {

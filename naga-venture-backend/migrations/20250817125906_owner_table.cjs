@@ -10,10 +10,8 @@ exports.up = async function (knex) {
     table.string("middle_name", 20);
     table.string("last_name", 30).notNullable();
     table.integer("age", 2);
-    table.date("birthday");
+    table.date("birthdate");
     table.enu("gender", ["Male", "Female"]);
-    table.string("email", 40).notNullable().unique();
-    table.string("phone_number", 13).notNullable().unique();
     table.enu("business_type", ["Shop", "Accommodation", "Both"]).notNullable();
     table
       .integer("address_id")
@@ -21,7 +19,14 @@ exports.up = async function (knex) {
       .references("id")
       .inTable("address")
       .nullable();
-    table.timestamp("created_at").defaultTo(knex.fn.now());
+
+    table
+      .uuid("user_id")
+      .notNullable()
+      .references("id")
+      .inTable("user")
+      .onDelete("CASCADE")
+      .onUpdate("CASCADE");
   });
 
   await createOwnerProcedures(knex);

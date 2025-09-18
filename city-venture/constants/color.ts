@@ -9,7 +9,7 @@ const tintColorDark = '#fff';
 export const Colors = {
   light: {
     text: '#11181C',
-    background: '#fff',
+    background: '#F5F7FB',
     tint: tintColorLight,
     icon: '#687076',
     tabIconDefault: '#687076',
@@ -17,7 +17,7 @@ export const Colors = {
   },
   dark: {
     text: '#ECEDEE',
-    background: '#151718',
+    background: '#0F1222',
     tint: tintColorDark,
     icon: '#9BA1A6',
     tabIconDefault: '#9BA1A6',
@@ -25,25 +25,37 @@ export const Colors = {
   },
 };
 
+export const background = {
+  light: '#F5F7FB',
+  dark: '#0F1222',
+};
+
+export const card = {
+  light: '#FFFFFF',
+  dark: '#161A2E',
+}
 
 export const colors = {
-  light: Colors.light,
-  dark: Colors.dark,
+  light: Colors.light.background,
+  dark: Colors.dark.background,
   primary: '#0A1B47',
   secondary: '#0077B6',
   tertiary: '#DEE3F2',
   background: '#fff',
-  error: '#ff4d4d',
-  success: '#28a745',
+  error: '#dc3545',
+  success: '#198754',
   warning: '#ffc107',
+  info: '#0dcaf0',
+  link: '#1e90ff',
+  placeholder: '#888',
 };
 
 export const text = {
-    light: '#fff',
-    dark: '#111',
-    link: '#1e90ff',
-    placeholder: '#888',
-    warning: '#ffcc00',
-    error: '#ff4d4d',
-    success: '#28a745',
+  light: '#fff',
+  dark: '#111',
+  link: '#1e90ff',
+  placeholder: '#888',
+  warning: '#ffcc00',
+  error: '#e57373',
+  success: '#28a745',
 };

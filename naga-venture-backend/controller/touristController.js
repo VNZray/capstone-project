@@ -36,20 +36,22 @@ export async function createTourist(request, response) {
       request.body.middle_name ?? null,
       request.body.last_name ?? null,
       request.body.ethnicity ?? null,
-      request.body.birthday ?? null,
+      request.body.birthdate ?? null,
       request.body.age ?? null,
       request.body.gender ?? null,
       request.body.nationality ?? null,
       request.body.category ?? null,
-      request.body.phone_number ?? null,
-      request.body.email ?? null,
       request.body.address_id ?? null,
+      request.body.user_id ?? null,
     ];
-    const [data] = await db.query("CALL InsertTourist(?,?,?,?,?,?,?,?,?,?,?,?,?)", params);
+    const [data] = await db.query(
+      "CALL InsertTourist(?,?,?,?,?,?,?,?,?,?,?,?)",
+      params
+    );
     if (!data[0] || data[0].length === 0) {
       return response.status(404).json({ error: "Inserted row not found" });
     }
-    response.json(data[0][0]);
+    response.status(201).json(data[0][0]);
   } catch (error) {
     return handleDbError(error, response);
   }
@@ -81,20 +83,40 @@ export async function updateTourist(request, response) {
       request.body.middle_name ?? null,
       request.body.last_name ?? null,
       request.body.ethnicity ?? null,
-      request.body.birthday ?? null,
+      request.body.birthdate ?? null,
       request.body.age ?? null,
       request.body.gender ?? null,
       request.body.nationality ?? null,
       request.body.category ?? null,
-      request.body.phone_number ?? null,
-      request.body.email ?? null,
       request.body.address_id ?? null,
+      request.body.user_id ?? null,
     ];
-    const [data] = await db.query("CALL UpdateTourist(?,?,?,?,?,?,?,?,?,?,?,?,?)", params);
+    const [data] = await db.query(
+      "CALL UpdateTourist(?,?,?,?,?,?,?,?,?,?,?,?)",
+      params
+    );
     if (!data[0] || data[0].length === 0) {
       return response.status(404).json({ message: "Tourist not found" });
     }
     response.json(data[0][0]);
+  } catch (error) {
+    return handleDbError(error, response);
+  }
+}
+
+// get tourist by user ID (calls GetTouristByUserId SP)
+export async function getTouristByUserId(request, response) {
+  const { user_id } = request.params;
+  try {
+    const [rows] = await db.query("CALL GetTouristByUserId(?)", [user_id]);
+
+    if (!rows[0] || rows[0].length === 0) {
+      return response
+        .status(404)
+        .json({ success: false, message: "Tourist not found" });
+    }
+
+    return response.json(rows[0][0]);
   } catch (error) {
     return handleDbError(error, response);
   }
