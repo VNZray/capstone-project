@@ -214,6 +214,7 @@ export const loginUser = async (
       userData.id,
     email,
     password,
+    age: (touristData as any).age || ownerData.age || null,
     phone_number: userData.phone_number,
     role_name: (userRole as any)?.role_name,
     first_name:

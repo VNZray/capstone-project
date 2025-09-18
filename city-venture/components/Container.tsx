@@ -54,7 +54,7 @@ const Container = ({
   variant = 'solid',
   justify,
   align,
-  radius,
+  radius = 8,
   paddingHorizontal,
   paddingVertical,
   paddingTop,

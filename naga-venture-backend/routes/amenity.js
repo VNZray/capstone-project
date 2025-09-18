@@ -3,6 +3,7 @@ import * as amenityController from "../controller/amenityController.js"; // Add 
 
 const router = express.Router();
 
+router.get("/:id", amenityController.getAmenityById);
 router.get("/", amenityController.getAmenities);
 router.post("/", amenityController.insertData);
 

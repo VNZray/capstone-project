@@ -11,6 +11,7 @@ import { useColorScheme } from '@/hooks/use-color-scheme';
 import { navigateToAccommodationProfile } from '@/routes/accommodationRoutes';
 import type { Business } from '@/types/Business';
 import { Tab } from '@/types/Tab';
+import { FontAwesome5 } from '@expo/vector-icons';
 import { useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 
@@ -24,7 +25,11 @@ const AccommodationDirectory = () => {
   // Use the first accommodation's ids (if present) to resolve category/type meta
 
   const [search, setSearch] = useState('');
-  const [activeTab, setActiveTab] = useState<string>('hotel');
+  const [activeTab, setActiveTab] = useState<string>('all');
+  const handleResetFilters = () => {
+    setSearch('');
+    setActiveTab('all');
+  };
 
   const TABS: Tab[] = [
     { key: 'all', label: 'All', icon: 'th-large' },
@@ -71,7 +76,6 @@ const AccommodationDirectory = () => {
 
   const handleAccommodationSelect = (id: string) => {
     setAccommodationId(id);
-    alert('Accommodation selected. Navigating to profile... ' + id);
     navigateToAccommodationProfile();
   };
 
@@ -89,7 +93,9 @@ const AccommodationDirectory = () => {
           ? CATEGORY_ID_TO_KEY[business.business_category_id]
           : undefined;
       const matchesTab = activeTab === 'all' || categoryKey === activeTab;
-      return matchesSearch && matchesTab;
+      const status = business.status.toLowerCase() === 'pending';
+
+      return matchesSearch && matchesTab && status;
     }
   );
 
@@ -118,7 +124,11 @@ const AccommodationDirectory = () => {
             onPress={() => setCardView(cardView === 'card' ? 'list' : 'card')}
           />
         </View>
-        <ScrollableTab tabs={TABS} onTabChange={handleTabChange} />
+        <ScrollableTab
+          tabs={TABS}
+          onTabChange={handleTabChange}
+          activeKey={activeTab}
+        />
       </Container>
 
       {/**Tab Filter */}
@@ -163,9 +173,48 @@ const AccommodationDirectory = () => {
               />
             ))
           ) : (
-            <ThemedText style={{ textAlign: 'center', marginTop: 20 }}>
-              No accommodations found
-            </ThemedText>
+            <PageContainer
+              padding={16}
+              align="center"
+              justify="center"
+              height={450}
+            >
+              <View style={styles.illustrationInner}>
+                <FontAwesome5 name="map-pin" size={36} color="#FFB007" />
+              </View>
+              <ThemedText
+                type="title-medium"
+                weight="bold"
+                align="center"
+                mt={8}
+              >
+                No accommodations found
+              </ThemedText>
+              <ThemedText
+                type="body-small"
+                align="center"
+                mt={6}
+                style={{ color: '#6A768E' }}
+              >
+                Try adjusting your search or clearing filters to see more
+                places.
+              </ThemedText>
+
+              <View style={styles.notFoundActions}>
+                <Button
+                  label="Clear Filters"
+                  startIcon="redo"
+                  variant="soft"
+                  color="secondary"
+                  size="large"
+                  fullWidth
+                  radius={14}
+                  elevation={1}
+                  textSize={16}
+                  onPress={handleResetFilters}
+                />
+              </View>
+            </PageContainer>
           )}
         </View>
       </ScrollView>
@@ -184,6 +233,50 @@ const styles = StyleSheet.create({
     gap: 16,
     overflow: 'visible',
   },
+  notFoundWrapper: {
+    width: '100%',
+    alignItems: 'center',
+    marginTop: 12,
+  },
+  notFoundCard: {
+    width: '100%',
+    borderRadius: 16,
+    padding: 16,
+    ...shadow(2),
+  },
+  illustrationInner: {
+    width: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 6,
+  },
+  notFoundActions: {
+    width: '100%',
+    marginTop: 12,
+  },
 });
+
+// soft shadow helper (inline, compact)
+function shadow(level: 1 | 2 | 3) {
+  switch (level) {
+    case 1:
+      return {
+        shadowColor: '#1e1e1e',
+        shadowOpacity: 0.1,
+        shadowRadius: 2,
+        shadowOffset: { width: 0, height: 1 },
+        elevation: 1,
+      } as const;
+    case 2:
+    default:
+      return {
+        shadowColor: '#1e1e1e',
+        shadowOpacity: 0.15,
+        shadowRadius: 3,
+        shadowOffset: { width: 0, height: 2 },
+        elevation: 2,
+      } as const;
+  }
+}
 
 export default AccommodationDirectory;
