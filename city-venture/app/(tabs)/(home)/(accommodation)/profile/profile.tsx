@@ -1,5 +1,5 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { useLocalSearchParams, useNavigation } from 'expo-router';
+import { useNavigation } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Dimensions, FlatList, Image, StyleSheet, View } from 'react-native';
 
@@ -98,10 +98,9 @@ const AccommodationProfile = () => {
                 backgroundColor="transparent"
                 direction="row"
                 justify="space-between"
-                style={{ marginBottom: 16 }}
               >
                 <View>
-                  <ThemedText type="card-title-small" weight="bold">
+                  <ThemedText type="card-title-medium" weight="bold">
                     {accommodationDetails?.business_name}
                   </ThemedText>
                   <ThemedText type="body-small">
@@ -112,6 +111,10 @@ const AccommodationProfile = () => {
                     />
                     {accommodationDetails?.address}
                   </ThemedText>
+
+                  <ThemedText type="body-medium" style={{ marginTop: 4 }}>
+                    {accommodationDetails?.category}
+                  </ThemedText>
                 </View>
                 <View>
                   <ThemedText type="body-small">
@@ -119,7 +122,7 @@ const AccommodationProfile = () => {
                       name="star"
                       size={20}
                       color="#FFB007"
-                    />{' '}
+                    />
                     {averageAccommodationReviews.toFixed(1) || '0.0'}
                   </ThemedText>
                 </View>

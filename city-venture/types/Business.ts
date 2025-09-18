@@ -76,6 +76,52 @@ export type Room = {
   floor?: string;
 };
 
+export type Rooms = Room[];
+
+
+export type ExternalBooking = {
+  id?: number;
+  business_id?: string;
+  platform_name?: string;
+  booking_url?: string;
+};
+
+export type Amenity = {
+  id?: number;
+  name?: string;
+};
+
+export type BusinessAmenity = {
+  id?: number;          // join row id
+  business_id?: string;
+  amenity_id?: number;
+};
+
+export type BusinessAmenityWithName = {
+  id?: number;          // optional join id
+  business_id: string;
+  amenity_id: number;
+  name: string;
+};
+
+export type BusinessAmenities = BusinessAmenityWithName[];
+
+export type RoomAmenity = {
+  id?: number;          // join row id
+  room_id?: string;
+  amenity_id?: number;
+};
+
+export type RoomAmenityWithName = {
+  id?: number;          // optional join id
+  room_id: string;
+  amenity_id: number;
+  name: string;
+};
+
+
+export type RoomAmenities = RoomAmenityWithName[];
+
 export type BusinessHours = {
   id?: number;
   business_id?: string;
@@ -85,9 +131,4 @@ export type BusinessHours = {
   is_open?: boolean;
 };
 
-export type ExternalBooking = {
-  id?: string;
-  business_id?: string;
-  platform_name?: string;
-  booking_url?: string;
-};
+export type BusinessSchedule = BusinessHours[];
