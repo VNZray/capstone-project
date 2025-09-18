@@ -7,7 +7,7 @@ import {
   Chip,
 } from "@mui/joy";
 import { Edit, Flag} from "lucide-react";
-import type { Report } from "../../../types/Report";
+import type { Report } from "../../../../types/Report";
 
 interface BasicReportSectionProps {
   report: Report;

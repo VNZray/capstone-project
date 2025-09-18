@@ -15,7 +15,7 @@ export const uploadPendingImages = async (
   pendingImages: PendingImage[],
   categoryName?: string,
   touristSpotName?: string,
-  spotFolderName?: string // always use this for folder
+  spotFolderName?: string
 ): Promise<void> => {
   if (!pendingImages.length) return;
 
@@ -28,7 +28,7 @@ export const uploadPendingImages = async (
         pendingImage.alt_text,
         categoryName,
         touristSpotName,
-        spotFolderName // always use this for folder
+        spotFolderName
       );
     } catch (error) {
       console.error(`Failed to upload image ${pendingImage.alt_text}:`, error);

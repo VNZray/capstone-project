@@ -76,6 +76,7 @@ export interface TouristSpotFormData {
   category_ids: number[];
   type_id: string;
   spot_status: "" | "pending" | "active" | "inactive";
+  is_featured: boolean;
 }
 
 export interface FormOption {

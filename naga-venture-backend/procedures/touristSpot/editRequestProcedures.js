@@ -34,7 +34,7 @@ export async function createTouristSpotEditProcedures(knex) {
 
 export async function dropTouristSpotEditProcedures(knex) {
   const names = [
-    'ValidateCategoriesExistCSV', 'HasPendingEditRequest', 'SubmitTouristSpotEditRequest'
+    'SubmitTouristSpotEditRequest'
   ];
   for (const n of names) {
     await knex.raw(`DROP PROCEDURE IF EXISTS ${n};`);

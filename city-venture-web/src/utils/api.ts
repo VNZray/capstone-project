@@ -27,6 +27,7 @@ export interface TouristSpotImage {
 }
 
 class ApiService {
+
   // ===== TOURIST SPOT MANAGEMENT =====
   async getTouristSpots(): Promise<TouristSpot[]> {
     const response: AxiosResponse<ApiResponse<TouristSpot[]>> = await api.get('/tourist-spots');
@@ -95,7 +96,6 @@ class ApiService {
     return response.data.data;
   }
 
-  // Location Data
   async getLocationData(): Promise<{
     provinces: Province[];
     municipalities: Municipality[];
@@ -131,9 +131,9 @@ class ApiService {
           rejectNew: (id: string) => `/approval/reject-spot/${id}`,
           rejectEdit: (id: string) => `/approval/reject-edit/${id}`,
         } as const;
-      case 'events': //Events approval paths
-      case 'businesses': //business approval paths
-      case 'accommodations': //accommodation approval paths
+      case 'events':
+      case 'businesses':
+      case 'accommodations':
       default:
         return {
           pendingNew: `/approval/${entity}/pending`,

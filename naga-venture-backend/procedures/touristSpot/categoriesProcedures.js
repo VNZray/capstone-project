@@ -1,17 +1,6 @@
 // Categories-related procedures
 export async function createCategoriesProcedures(knex) {
   await knex.raw(`
-    CREATE PROCEDURE GetTouristSpotCategoriesAndTypes()
-    BEGIN
-      SELECT * FROM type ORDER BY type ASC;
-      SELECT c.* 
-      FROM category c 
-      INNER JOIN type t ON c.type_id = t.id 
-      WHERE t.id = 4 
-      ORDER BY c.category ASC;
-    END;
-  `);
-  await knex.raw(`
     CREATE PROCEDURE GetTouristSpotCategories(IN p_id CHAR(36))
     BEGIN
       SELECT 
@@ -24,6 +13,18 @@ export async function createCategoriesProcedures(knex) {
       ORDER BY c.category ASC;
     END;
   `);
+  await knex.raw(`
+    CREATE PROCEDURE GetTouristSpotCategoriesAndTypes()
+    BEGIN
+      SELECT * FROM type ORDER BY type ASC;
+      SELECT c.* 
+      FROM category c 
+      INNER JOIN type t ON c.type_id = t.id 
+      WHERE t.id = 4 
+      ORDER BY c.category ASC;
+    END;
+  `);
+
   await knex.raw(`
     CREATE PROCEDURE GetTouristSpotCategoryIds(IN p_id CHAR(36))
     BEGIN
