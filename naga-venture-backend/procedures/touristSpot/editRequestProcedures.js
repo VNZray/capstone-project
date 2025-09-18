@@ -1,20 +1,24 @@
 // Edit request-related procedures
+// Procedures for handling edit requests for tourist spots.
+
 export async function createTouristSpotEditProcedures(knex) {
+  // Submits an edit request for a tourist spot.
+  // Returns: The ID of the newly created edit request
   await knex.raw(`
     CREATE PROCEDURE SubmitTouristSpotEditRequest(
-  IN p_tourist_spot_id CHAR(36),
-  IN p_name VARCHAR(255),
-  IN p_description TEXT,
-  IN p_address_id INT,
-  IN p_latitude DECIMAL(10,8),
-  IN p_longitude DECIMAL(11,8),
-  IN p_contact_phone VARCHAR(20),
-  IN p_contact_email VARCHAR(255),
-  IN p_website VARCHAR(255),
-  IN p_entry_fee DECIMAL(10,2),
-  IN p_spot_status ENUM('pending','active','inactive'),
-  IN p_is_featured BOOLEAN,
-  IN p_type_id INT
+      IN p_tourist_spot_id CHAR(36),
+      IN p_name VARCHAR(255),
+      IN p_description TEXT,
+      IN p_address_id INT,
+      IN p_latitude DECIMAL(10,8),
+      IN p_longitude DECIMAL(11,8),
+      IN p_contact_phone VARCHAR(20),
+      IN p_contact_email VARCHAR(255),
+      IN p_website VARCHAR(255),
+      IN p_entry_fee DECIMAL(10,2),
+      IN p_spot_status ENUM('pending','active','inactive'),
+      IN p_is_featured BOOLEAN,
+      IN p_type_id INT
     )
     BEGIN
       SET @editId = UUID();

@@ -1,5 +1,9 @@
 // Categories-related procedures
+// Procedures for managing tourist spot categories.
+
 export async function createCategoriesProcedures(knex) {
+  
+  // Retrieves all categories for a given tourist spot ID.
   await knex.raw(`
     CREATE PROCEDURE GetTouristSpotCategories(IN p_id CHAR(36))
     BEGIN
@@ -13,6 +17,8 @@ export async function createCategoriesProcedures(knex) {
       ORDER BY c.category ASC;
     END;
   `);
+
+  // Retrieves all types and categories (filtered by type_id = 4) for tourist spots.
   await knex.raw(`
     CREATE PROCEDURE GetTouristSpotCategoriesAndTypes()
     BEGIN
@@ -25,6 +31,7 @@ export async function createCategoriesProcedures(knex) {
     END;
   `);
 
+  // Retrieves only the category IDs for a given tourist spot ID.
   await knex.raw(`
     CREATE PROCEDURE GetTouristSpotCategoryIds(IN p_id CHAR(36))
     BEGIN
@@ -33,12 +40,16 @@ export async function createCategoriesProcedures(knex) {
       WHERE tourist_spot_id = p_id;
     END;
   `);
+
+  // Deletes all categories associated with a given tourist spot ID.
   await knex.raw(`
     CREATE PROCEDURE DeleteCategoriesByTouristSpot(IN p_id CHAR(36))
     BEGIN
       DELETE FROM tourist_spot_categories WHERE tourist_spot_id = p_id;
     END;
   `);
+
+  // Inserts a new category for a given tourist spot ID and category ID.
   await knex.raw(`
     CREATE PROCEDURE InsertTouristSpotCategory(IN p_id CHAR(36), IN p_category_id INT)
     BEGIN
@@ -46,7 +57,9 @@ export async function createCategoriesProcedures(knex) {
       VALUES (UUID(), p_id, p_category_id);
     END;
   `);
-    await knex.raw(`
+
+  // Updates direct fields of a tourist spot
+  await knex.raw(`
       CREATE PROCEDURE UpdateTouristSpotDirectFields(
           IN spot_id CHAR(36),
           IN latitude DECIMAL(10,8),
@@ -63,7 +76,7 @@ export async function createCategoriesProcedures(knex) {
               latitude = IFNULL(latitude, latitude),
               longitude = IFNULL(longitude, longitude),
               contact_phone = IFNULL(NULLIF(contact_phone, ''), contact_phone),
-              contact_email = IFNULL(NULLIF(contact_email, ''), contact_email),
+              contact_email = IFNULL(NULLIF(contact_email, ''), contact_email)
               website = IFNULL(NULLIF(website, ''), website),
               entry_fee = IFNULL(entry_fee, entry_fee),
               spot_status = IFNULL(NULLIF(spot_status, ''), spot_status)
