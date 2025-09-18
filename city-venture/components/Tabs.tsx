@@ -30,7 +30,7 @@ const Tabs = ({ tabs, onTabChange, initialIndex = 0 }: Props) => {
     <View style={styles.container}>
       {tabs.map((t, i) => (
         <Button
-          elevation={3}
+          elevation={2}
           style={{ flex: 1 }}
           startIcon={t.icon}
           key={t.key}

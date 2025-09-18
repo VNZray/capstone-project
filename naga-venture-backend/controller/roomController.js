@@ -28,9 +28,16 @@ export async function getRoomById(request, response) {
 
 // get data by foreign ID
 export const getRoomByBusinessId = async (request, response) => {
-  const { id } = request.query;
+  // ID comes from route param: GET /api/room/:id
+  const id = request.params.id ?? request.query.id;
+  if (!id) {
+    return response.status(400).json({ message: "business_id (id) is required" });
+  }
   try {
     const [data] = await db.query("CALL GetRoomByBusinessId(?)", [id]);
+    if (!data[0] || data[0].length === 0) {
+      return response.status(404).json({ message: "No rooms found for this business" });
+    }
     response.json(data[0]);
   } catch (error) {
     return handleDbError(error, response);

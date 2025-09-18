@@ -31,6 +31,7 @@ export type UserDetails = {
   password: string | "";
   phone_number?: string | "";
   gender?: string | "";
+  age?: number | null;
   birthdate?: string | "";
   nationality?: string | "";
   ethnicity?: string | "";

@@ -41,7 +41,6 @@ export const colors = {
   primary: '#0A1B47',
   secondary: '#0077B6',
   tertiary: '#DEE3F2',
-  background: '#fff',
   error: '#dc3545',
   success: '#198754',
   warning: '#ffc107',

@@ -4,7 +4,7 @@ import { StyleSheet, Text } from 'react-native'
 
 const Ratings = () => {
   return (
-    <PageContainer>
+    <PageContainer style={{ paddingTop: 0 }}>
       <Text>Ratings</Text>
     </PageContainer>
   )

@@ -1,5 +1,5 @@
 import Button from '@/components/Button';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Dimensions, ScrollView, StyleSheet } from 'react-native';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -14,9 +14,10 @@ type Props = {
   tabs: Tab[];
   onTabChange?: (tab: Tab, index: number) => void; // ✅ callback
   initialIndex?: number; // ✅ optional initial tab
+  activeKey?: string; // ✅ controlled active tab (optional)
 };
 
-const ScrollableTab = ({ tabs, onTabChange, initialIndex = 0 }: Props) => {
+const ScrollableTab = ({ tabs, onTabChange, initialIndex = 0, activeKey }: Props) => {
   const [tabIndex, setTabIndex] = useState(initialIndex);
   const scrollRef = useRef<ScrollView>(null);
 
@@ -25,6 +26,15 @@ const ScrollableTab = ({ tabs, onTabChange, initialIndex = 0 }: Props) => {
     scrollRef.current?.scrollTo({ x: SCREEN_WIDTH * index, animated: false });
     if (onTabChange) onTabChange(tabs[index], index); // ✅ notify parent
   };
+
+  // Sync internal tabIndex with external activeKey when provided
+  useEffect(() => {
+    if (!activeKey) return;
+    const idx = tabs.findIndex((t) => t.key === activeKey);
+    if (idx !== -1 && idx !== tabIndex) {
+      setTabIndex(idx);
+    }
+  }, [activeKey, tabs, tabIndex]);
 
   return (
     <ScrollView

@@ -6,7 +6,6 @@ import { ArrowBackRounded } from "@mui/icons-material";
 import Text from "@/src/components/Text";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/src/context/AuthContext";
-import { fetchOwnerByUserId } from "@/src/services/OwnerService";
 import { colors } from "@/src/utils/Colors";
 import heroImg from "@/src/assets/gridimages/grid5.jpg";
 import { useMediaQuery } from "@mui/material";
@@ -36,7 +35,6 @@ const steps = [
   "Review & Submit",
 ];
 
-// ✅ Moved outside BusinessRegistration so it doesn’t get recreated on every render
 interface CommonProps {
   api: string;
   data: Business;
