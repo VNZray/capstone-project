@@ -202,7 +202,7 @@ const Details = () => {
                 label={t}
                 key={t}
                 variant="solid"
-                size="md"
+                size="medium"
               />
             ));
           })()}
@@ -231,7 +231,7 @@ const Details = () => {
                 label={a.name}
                 key={a.id != null ? String(a.id) : `${a.name}-${idx}`}
                 variant="soft"
-                size="md"
+                size="medium"
               />
             ))
           ) : (
@@ -435,7 +435,7 @@ const Details = () => {
               );
             }
             return present.map((s, idx) => (
-              <Chip key={`${s.icon}-${idx}`} size='lg' startIconName={s.icon as any} />
+              <Chip key={`${s.icon}-${idx}`} size='large' startIconName={s.icon as any} />
             ));
           })()}
         </View>

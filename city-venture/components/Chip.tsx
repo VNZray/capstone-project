@@ -2,14 +2,14 @@ import { useColorScheme } from '@/hooks/use-color-scheme';
 import { FontAwesome5 } from '@expo/vector-icons';
 import React, { useMemo } from 'react';
 import {
-    Platform,
-    Pressable,
-    StyleProp,
-    StyleSheet,
-    Text,
-    TextStyle,
-    View,
-    ViewStyle,
+  Platform,
+  Pressable,
+  StyleProp,
+  StyleSheet,
+  Text,
+  TextStyle,
+  View,
+  ViewStyle,
 } from 'react-native';
 
 export type ChipVariant = 'solid' | 'outlined' | 'soft';
@@ -22,7 +22,7 @@ export type ChipColor =
   | 'warning'
   | 'info'
   | 'link';
-export type ChipSize = 'sm' | 'md' | 'lg';
+export type ChipSize = 'small' | 'medium' | 'large';
 
 type IconName = React.ComponentProps<typeof FontAwesome5>['name'];
 
@@ -67,16 +67,16 @@ const THEME_COLORS: Record<ChipColor, string> = {
 
 const sizes: Record<ChipSize, { padH: number; padV: number; radius: number; font: number; gap: number; icon: number }>
   = {
-    sm: { padH: 10, padV: 6, radius: 16, font: 12, gap: 6, icon: 14 },
-    md: { padH: 14, padV: 8, radius: 18, font: 14, gap: 8, icon: 16 },
-    lg: { padH: 18, padV: 10, radius: 22, font: 16, gap: 10, icon: 18 },
+    small: { padH: 10, padV: 6, radius: 16, font: 12, gap: 6, icon: 14 },
+    medium: { padH: 14, padV: 8, radius: 18, font: 14, gap: 8, icon: 16 },
+    large: { padH: 18, padV: 10, radius: 22, font: 16, gap: 10, icon: 18 },
   };
 
 // Diameter for icon-only circular chips
 const iconOnlyDiameter: Record<ChipSize, number> = {
-  sm: 28,
-  md: 34,
-  lg: 40,
+  small: 28,
+  medium: 34,
+  large: 40,
 };
 
 function hexToRgb(hex: string) {
@@ -126,7 +126,7 @@ export default function Chip({
   label,
   variant = 'solid',
   color = 'primary',
-  size = 'md',
+  size = 'medium',
   elevation = 0 as any, // allow 0 to mean none
   disabled,
   startIconName,

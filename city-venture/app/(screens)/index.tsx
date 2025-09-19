@@ -83,6 +83,8 @@ const LoginPage = () => {
             autoCapitalize="none"
             keyboardType="email-address"
           />
+
+
           <TextInput
             style={
               colorScheme === 'light' ? styles.darkInput : styles.lightInput
