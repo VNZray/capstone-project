@@ -233,9 +233,7 @@ const RegistrationPage = () => {
             </ThemedText>
           </View>
 
-          <View style={{ display: 'flex', flexDirection: 'row', gap: 12 }}>
             <FormTextInput
-              style={{ flex: 1 }}
               label="First Name"
               placeholder="Enter your first name"
               value={firstName}
@@ -243,8 +241,8 @@ const RegistrationPage = () => {
               variant="outlined"
               autoCapitalize="words"
             />
+
             <FormTextInput
-              style={{ flex: 1 }}
               label="Middle Name"
               placeholder="Enter your middle name"
               value={middleName}
@@ -252,7 +250,6 @@ const RegistrationPage = () => {
               variant="outlined"
               autoCapitalize="words"
             />
-          </View>
 
           <FormTextInput
             label="Last Name"

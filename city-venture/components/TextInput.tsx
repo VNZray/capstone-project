@@ -59,15 +59,47 @@ export interface FormTextInputRef {
   getValue: () => string;
 }
 
-function getElevation(level: FormTextInputProps['elevation']): ViewStyle | undefined {
+function getElevation(
+  level: FormTextInputProps['elevation']
+): ViewStyle | undefined {
   if (!level) return undefined;
   const iosShadow: Record<number, ViewStyle> = {
-    1: { shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 4, shadowOffset: { width: 0, height: 2 } },
-    2: { shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 6, shadowOffset: { width: 0, height: 3 } },
-    3: { shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 8, shadowOffset: { width: 0, height: 4 } },
-    4: { shadowColor: '#000', shadowOpacity: 0.12, shadowRadius: 12, shadowOffset: { width: 0, height: 6 } },
-    5: { shadowColor: '#000', shadowOpacity: 0.14, shadowRadius: 16, shadowOffset: { width: 0, height: 8 } },
-    6: { shadowColor: '#000', shadowOpacity: 0.16, shadowRadius: 20, shadowOffset: { width: 0, height: 10 } },
+    1: {
+      shadowColor: '#000',
+      shadowOpacity: 0.06,
+      shadowRadius: 4,
+      shadowOffset: { width: 0, height: 2 },
+    },
+    2: {
+      shadowColor: '#000',
+      shadowOpacity: 0.08,
+      shadowRadius: 6,
+      shadowOffset: { width: 0, height: 3 },
+    },
+    3: {
+      shadowColor: '#000',
+      shadowOpacity: 0.1,
+      shadowRadius: 8,
+      shadowOffset: { width: 0, height: 4 },
+    },
+    4: {
+      shadowColor: '#000',
+      shadowOpacity: 0.12,
+      shadowRadius: 12,
+      shadowOffset: { width: 0, height: 6 },
+    },
+    5: {
+      shadowColor: '#000',
+      shadowOpacity: 0.14,
+      shadowRadius: 16,
+      shadowOffset: { width: 0, height: 8 },
+    },
+    6: {
+      shadowColor: '#000',
+      shadowOpacity: 0.16,
+      shadowRadius: 20,
+      shadowOffset: { width: 0, height: 10 },
+    },
   };
   const android: Record<number, ViewStyle> = {
     1: { elevation: 1 },
@@ -183,14 +215,17 @@ const FormTextInput = React.forwardRef<FormTextInputRef, FormTextInputProps>(
 
     const inputRef = React.useRef<RNTextInput>(null);
 
-  const elevationStyle = useMemo(() => getElevation(elevation as 1 | 2 | 3 | 4 | 5 | 6 | undefined), [elevation]);
+    const elevationStyle = useMemo(
+      () => getElevation(elevation as 1 | 2 | 3 | 4 | 5 | 6 | undefined),
+      [elevation]
+    );
 
     // grid columns style (consumer should wrap in a flex row of width 100%)
     const colStyle: ViewStyle = useMemo(() => {
       const pct = columns === 3 ? 100 : columns === 2 ? 66.6666 : 33.3333; // treat columns as span out of 3? default 1 => 33%
       // But requirement: default 1 column meaning full width? The description ambiguous.
       // We'll interpret: default single column (full width). If user passes columns=2 -> 50%, 3 -> 33.33%. Provide more intuitive mapping.
-      if (columns === 1) return { flexBasis: '100%', width: '100%' };
+      if (columns === 1) return { flex: 1 };
       if (columns === 2) return { flexBasis: '48%', width: '48%' };
       return { flexBasis: '31%', width: '31%' };
     }, [columns]);
@@ -278,7 +313,11 @@ const FormTextInput = React.forwardRef<FormTextInputRef, FormTextInputProps>(
                 pressed && { opacity: 0.6 },
               ]}
             >
-              <FontAwesome5 name="times-circle" size={16} color={subTextColor} />
+              <FontAwesome5
+                name="times-circle"
+                size={16}
+                color={subTextColor}
+              />
             </Pressable>
           )}
           {rightIcon && (
