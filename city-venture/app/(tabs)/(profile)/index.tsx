@@ -157,9 +157,9 @@ const Profile = () => {
         {/* Personal Info */}
         <Section title="Personal Info" cardBg={card}>
           <InfoRow icon="envelope" label="Email" value={user.email} />
-          <InfoRow icon="phone" label="Phone" value="—" />
-          <InfoRow icon="flag" label="Nationality" value="—" />
-          <InfoRow icon="user" label="Age / Gender" value="—" last />
+          <InfoRow icon="phone" label="Phone" value={user.phone_number!} />
+          <InfoRow icon="flag" label="Nationality" value={user.nationality!} />
+          <InfoRow icon="user" label="Age / Gender" value={`${user.age} / ${user.gender}`} last />
         </Section>
 
         {/* Activity */}

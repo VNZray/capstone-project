@@ -12,7 +12,9 @@ async function createRoomProcedures(knex) {
   await knex.raw(`
     CREATE PROCEDURE GetRoomByBusinessId(IN p_businessId CHAR(36))
     BEGIN
-      SELECT * FROM room WHERE business_id = p_businessId;
+      SELECT * FROM room WHERE business_id = p_businessId
+      ORDER BY room_number ASC
+      ;
     END;
   `);
 

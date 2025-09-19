@@ -17,7 +17,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 const LoginPage = () => {
   const [email, setEmail] = useState('rayven.clores@unc.edu.ph');
   const [password, setPassword] = useState('123456');
-  const { login } = useAuth();
+  const { login, user } = useAuth();
   const [loginError, setLoginError] = useState('');
 
   const colorScheme = useColorScheme();
@@ -38,9 +38,10 @@ const LoginPage = () => {
     }
 
     try {
-      setLoginError('');
       await login(email, password);
-      navigateToHome();
+      if (user?.user_role_id === 2 || user?.user_role_id === 3) {
+        navigateToHome();
+      }
     } catch (error: any) {
       console.error('Login error:', error);
       setLoginError(

@@ -6,7 +6,6 @@ import { ArrowBackRounded } from "@mui/icons-material";
 import Text from "@/src/components/Text";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/src/context/AuthContext";
-import { fetchOwnerDetails } from "@/src/services/OwnerService";
 import { colors } from "@/src/utils/Colors";
 import heroImg from "@/src/assets/gridimages/grid5.jpg";
 import { useMediaQuery } from "@mui/material";
@@ -24,7 +23,7 @@ import type { Permit } from "@/src/types/Permit";
 import { insertData } from "@/src/services/Service";
 import type { BusinessAmenity } from "@/src/types/Amenity";
 import type { Address } from "@/src/types/Address";
-
+import api from "@/src/services/api";
 // steps definition
 const steps = [
   "Basic",
@@ -36,7 +35,6 @@ const steps = [
   "Review & Submit",
 ];
 
-// ✅ Moved outside BusinessRegistration so it doesn’t get recreated on every render
 interface CommonProps {
   api: string;
   data: Business;
@@ -51,9 +49,7 @@ interface CommonProps {
   businessAmenities: BusinessAmenity[];
   setPermitData: React.Dispatch<React.SetStateAction<Permit[]>>;
   setBusinessHours: React.Dispatch<React.SetStateAction<BusinessHours[]>>;
-  setBusinessAmenities: React.Dispatch<
-    React.SetStateAction<BusinessAmenity[]>
-  >;
+  setBusinessAmenities: React.Dispatch<React.SetStateAction<BusinessAmenity[]>>;
   setData: React.Dispatch<React.SetStateAction<Business>>;
 }
 
@@ -77,7 +73,12 @@ const StepContent: React.FC<{ step: number; commonProps: CommonProps }> = ({
         />
       );
     case 4:
-      return <Step4ImageUpload data={commonProps.data} setData={commonProps.setData} />;
+      return (
+        <Step4ImageUpload
+          data={commonProps.data}
+          setData={commonProps.setData}
+        />
+      );
     case 5:
       return <Step4 {...commonProps} />;
     case 6:
@@ -89,17 +90,18 @@ const StepContent: React.FC<{ step: number; commonProps: CommonProps }> = ({
 
 const BusinessRegistration: React.FC = () => {
   const [activeStep, setActiveStep] = useState(0);
-  const { user, api } = useAuth();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const [submitting, setSubmitting] = useState(false);
-  const isSmall = useMediaQuery('(max-width: 1024px)');
+  const isSmall = useMediaQuery("(max-width: 1024px)");
   const [externalBookings, setExternalBookings] = useState<
     { name: string; link: string }[]
   >([]);
 
   const [formData, setFormData] = useState<Business>({
     id: "",
-    business_image: "",
+    business_image:
+      "https://scontent.fmnl4-1.fna.fbcdn.net/v/t39.30808-6/492004164_982786234058521_5232398346581829362_n.jpg?_nc_cat=103&ccb=1-7&_nc_sid=a5f93a&_nc_ohc=SZtRSAdx6OgQ7kNvwEFxRGH&_nc_oc=AdnjqqHjPiKk9R3OSZZ4nG2C4V-ehriEcBU2wHUJxjVCNVHWEwrbSTBP7Xvy_weJx71oOddlH-C0TemlBeeACrze&_nc_zt=23&_nc_ht=scontent.fmnl4-1.fna&_nc_gid=Iku9Gps8cjJ0TroYRqAxJQ&oh=00_AfbijzeTxMocSPPq9oKIyvAYLD8sBX2OvDibttmC-NdhDw&oe=68D0A678",
     business_name: "Kim Angela Homestay",
     phone_number: "09380417373",
     email: "kim@gmail.com",
@@ -107,7 +109,7 @@ const BusinessRegistration: React.FC = () => {
     address: "123 Street, City",
     longitude: "",
     latitude: "",
-    owner_id: "",
+    owner_id: user?.id ?? "",
     business_category_id: 0,
     business_type_id: 0,
     address_id: 0,
@@ -179,23 +181,7 @@ const BusinessRegistration: React.FC = () => {
   ]);
 
   useEffect(() => {
-    const fetchOwnerId = async () => {
-      if (!user) {
-        alert("Error User not authenticated.");
-        return;
-      }
-
-      const ownerData = await fetchOwnerDetails(user.owner_id!);
-
-      setFormData((prev) => ({
-        ...prev,
-        owner_id: ownerData.id,
-      }));
-
-      setExternalBookings([{ name: "", link: "" }]);
-    };
-
-    fetchOwnerId();
+    setExternalBookings([{ name: "", link: "" }]);
   }, [user]);
 
   if (!formData) return null;
@@ -237,6 +223,13 @@ const BusinessRegistration: React.FC = () => {
     try {
       setSubmitting(true);
 
+      if (!formData.owner_id) {
+        alert(
+          "Owner profile is required before registering a business. Please complete your owner profile first."
+        );
+        throw new Error("Missing owner_id");
+      }
+
       // insert address first
       const addressRes = await insertData(addressData, "address");
       const addressId = addressRes.id;
@@ -245,7 +238,7 @@ const BusinessRegistration: React.FC = () => {
         ...formData,
         address_id: addressId,
       });
-      
+
       const businessId = res.data.id;
       console.log(businessId);
 
@@ -315,26 +308,26 @@ const BusinessRegistration: React.FC = () => {
   };
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', width: '100%' }}>
+    <div style={{ display: "flex", minHeight: "100vh", width: "100%" }}>
       {/* Left: Hero image panel (hidden on small screens) */}
       {!isSmall && (
         <div
           style={{
             flex: 7, // ~35% width when paired with right's flex: 13
-            position: 'relative',
+            position: "relative",
             backgroundImage: `url(${heroImg})`,
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-            filter: 'saturate(0.95)',
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+            filter: "saturate(0.95)",
           }}
         >
           {/* Subtle overlay */}
           <div
             style={{
-              position: 'absolute',
+              position: "absolute",
               inset: 0,
               background:
-                'linear-gradient(180deg, rgba(0,0,0,0.25) 0%, rgba(0,0,0,0.35) 100%)',
+                "linear-gradient(180deg, rgba(0,0,0,0.25) 0%, rgba(0,0,0,0.35) 100%)",
             }}
           />
         </div>
@@ -344,131 +337,183 @@ const BusinessRegistration: React.FC = () => {
       <div
         style={{
           flex: isSmall ? 1 : 13, // ~65% for the form on large screens
-          display: 'flex',
-          flexDirection: 'column',
-          padding: isSmall ? '16px' : '24px 32px',
-          backgroundColor: '#fff',
-          width: '100%',
-          minWidth: isSmall ? 'auto' : 560,
-          maxWidth: isSmall ? '100%' : 1200,
-          marginLeft: 'auto',
+          display: "flex",
+          flexDirection: "column",
+          padding: isSmall ? "16px" : "24px 32px",
+          backgroundColor: "#fff",
+          width: "100%",
+          minWidth: isSmall ? "auto" : 560,
+          maxWidth: isSmall ? "100%" : 1200,
+          marginLeft: "auto",
         }}
       >
-  <PageContainer style={{ width: "100%", margin: "0 auto", padding: 0, display: 'flex', flexDirection: 'column', flex: '1 1 auto', minHeight: 0 }}>
-      {/* Header */}
-      <div style={{ padding: '8px 12px', marginBottom: 8 }}>
-        <Stack direction="row" alignItems="center" justifyContent="space-between" gap={1.25}>
-          <Stack direction="row" alignItems="center" gap={0.75}>
-            <IconButton
-              size="sm"
-              variant="plain"
-              color="neutral"
-              aria-label="Go back"
-              onClick={handleBack}
+        <PageContainer
+          style={{
+            width: "100%",
+            margin: "0 auto",
+            padding: 0,
+            display: "flex",
+            flexDirection: "column",
+            flex: "1 1 auto",
+            minHeight: 0,
+          }}
+        >
+          {/* Header */}
+          <div style={{ padding: "8px 12px", marginBottom: 8 }}>
+            <Stack
+              direction="row"
+              alignItems="center"
+              justifyContent="space-between"
+              gap={1.25}
             >
-              <ArrowBackRounded fontSize="small" />
-            </IconButton>
-          </Stack>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, flex: 1, marginLeft: 12 }}>
-            <div>
-              <Text
-                variant="title"
-                style={{ display: "block", fontSize: 18, fontWeight: 600, lineHeight: 1.2 }}
+              <Stack direction="row" alignItems="center" gap={0.75}>
+                <IconButton
+                  size="sm"
+                  variant="plain"
+                  color="neutral"
+                  aria-label="Go back"
+                  onClick={handleBack}
+                >
+                  <ArrowBackRounded fontSize="small" />
+                </IconButton>
+              </Stack>
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 12,
+                  flex: 1,
+                  marginLeft: 12,
+                }}
               >
-                Register your business
-              </Text>
-              <Text variant="label" color={colors.gray} style={{ fontSize: 12 }}>
-                A simple, step-by-step flow to get you listed.
-              </Text>
+                <div>
+                  <Text
+                    variant="title"
+                    style={{
+                      display: "block",
+                      fontSize: 18,
+                      fontWeight: 600,
+                      lineHeight: 1.2,
+                    }}
+                  >
+                    Register your business
+                  </Text>
+                  <Text
+                    variant="label"
+                    color={colors.gray}
+                    style={{ fontSize: 12 }}
+                  >
+                    A simple, step-by-step flow to get you listed.
+                  </Text>
+                </div>
+              </div>
+
+              <Stack alignItems="flex-end" gap={0.5}>
+                <Text
+                  variant="label"
+                  color={colors.gray}
+                  style={{ fontSize: 12 }}
+                >
+                  Step {activeStep + 1} of {steps.length}
+                </Text>
+                <Box sx={{ width: 160, "--LinearProgress-thickness": "4px" }}>
+                  <LinearProgress
+                    determinate
+                    value={Math.round(((activeStep + 1) / steps.length) * 100)}
+                    variant="soft"
+                    color="primary"
+                  />
+                </Box>
+              </Stack>
+            </Stack>
+          </div>
+
+          {/* Stepper overview removed for a cleaner, minimal header */}
+
+          <Container
+            elevation={0}
+            className="br-section"
+            style={{
+              padding: 0,
+              borderRadius: 0,
+              border: "none",
+              backgroundColor: "transparent",
+              boxShadow: "none",
+              display: "flex",
+              flexDirection: "column",
+              flex: "1 1 auto",
+              minHeight: 0,
+            }}
+          >
+            {/* Scoped form wrapper to apply compact, consistent spacing */}
+            <div
+              className="br-form-wrapper"
+              style={{
+                padding: "20px 24px 0px 24px",
+                flex: "1 1 auto",
+                minHeight: 0,
+                overflowY: "auto",
+              }}
+            >
+              <StepContent step={activeStep} commonProps={commonProps} />
             </div>
-          </div>
 
-          <Stack alignItems="flex-end" gap={0.5}>
-            <Text variant="label" color={colors.gray} style={{ fontSize: 12 }}>
-              Step {activeStep + 1} of {steps.length}
-            </Text>
-            <Box sx={{ width: 160, '--LinearProgress-thickness': '4px' }}>
-              <LinearProgress
-                determinate
-                value={Math.round(((activeStep + 1) / steps.length) * 100)}
-                variant="soft"
-                color="primary"
-              />
-            </Box>
-          </Stack>
-        </Stack>
-      </div>
-
-      {/* Stepper overview removed for a cleaner, minimal header */}
-
-      <Container
-        elevation={0}
-        className="br-section"
-        style={{
-          padding: 0,
-          borderRadius: 0,
-          border: "none",
-          backgroundColor: 'transparent',
-          boxShadow: 'none',
-          display: 'flex',
-          flexDirection: 'column',
-          flex: '1 1 auto',
-          minHeight: 0,
-        }}
-      >
-        {/* Scoped form wrapper to apply compact, consistent spacing */}
-        <div className="br-form-wrapper" style={{ padding: '20px 24px 0px 24px', flex: '1 1 auto', minHeight: 0, overflowY: 'auto' }}>
-          <StepContent step={activeStep} commonProps={commonProps} />
-        </div>
-
-        {/* Buttons aligned with form content */}
-        <div style={{ 
-          padding: '24px 24px 20px 24px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          width: '100%'
-        }}>
-          <div style={{ 
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            width: '100%',
-            maxWidth: '800px',
-            margin: '0 auto'
-          }}>
-            <Button
-              size="md"
-              variant="soft"
-              color="neutral"
-              onClick={handleBack}
-              aria-label="Back"
-              sx={{ 
-                minWidth: '100px',
-                fontWeight: 500
+            {/* Buttons aligned with form content */}
+            <div
+              style={{
+                padding: "24px 24px 20px 24px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                width: "100%",
               }}
             >
-              Back
-            </Button>
-            <Button
-              size="md"
-              variant="solid"
-              color="primary"
-              onClick={handleNext}
-              loading={submitting && activeStep === steps.length - 1}
-              disabled={submitting}
-              aria-label={activeStep === steps.length - 1 ? "Submit registration" : "Next step"}
-              sx={{ 
-                minWidth: '100px',
-                fontWeight: 500
-              }}
-            >
-              {activeStep === steps.length - 1 ? "Submit" : "Next"}
-            </Button>
-          </div>
-        </div>
-      </Container>
-    </PageContainer>
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  width: "100%",
+                  maxWidth: "800px",
+                  margin: "0 auto",
+                }}
+              >
+                <Button
+                  size="md"
+                  variant="soft"
+                  color="neutral"
+                  onClick={handleBack}
+                  aria-label="Back"
+                  sx={{
+                    minWidth: "100px",
+                    fontWeight: 500,
+                  }}
+                >
+                  Back
+                </Button>
+                <Button
+                  size="md"
+                  variant="solid"
+                  color="primary"
+                  onClick={handleNext}
+                  loading={submitting && activeStep === steps.length - 1}
+                  disabled={submitting}
+                  aria-label={
+                    activeStep === steps.length - 1
+                      ? "Submit registration"
+                      : "Next step"
+                  }
+                  sx={{
+                    minWidth: "100px",
+                    fontWeight: 500,
+                  }}
+                >
+                  {activeStep === steps.length - 1 ? "Submit" : "Next"}
+                </Button>
+              </div>
+            </div>
+          </Container>
+        </PageContainer>
       </div>
     </div>
   );

@@ -327,7 +327,7 @@ const calcPercentage = (count: number) => {
               }}
               onClick={async () => {
                 setRoomId(room.id); // ensure stored
-                navigate("/room-profile");
+                navigate("/business/room-profile");
               }}
             />
           ))}
