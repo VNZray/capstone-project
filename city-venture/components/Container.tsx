@@ -35,16 +35,18 @@ type ContainerProps = {
   paddingBottom?: number;
   paddingLeft?: number;
   paddingRight?: number;
+  display?: 'flex' | 'none';
 };
 
 const Container = ({
+  display,
   children,
   style,
   elevation = 1,
   width = '100%',
   height,
   direction = 'column',
-  padding = 20,
+  padding = 16,
   margin = 0,
   gap = 20,
   flex,
@@ -92,6 +94,7 @@ const Container = ({
           paddingBottom,
           paddingLeft,
           paddingRight,
+          display,
         } as ViewStyle,
         variantStyle,
         getPlatformElevation(elevation),

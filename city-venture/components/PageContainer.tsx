@@ -29,7 +29,7 @@ const PageContainer = ({
   gap = 20,
   width = '100%',
   height = '100%',
-  padding = 20,
+  padding = 16,
 }: PageContainerProps) => {
     const colorScheme = useColorScheme();
     const bg = colorScheme === 'dark' ? background.dark : background.light;
