@@ -56,7 +56,6 @@ export const fetchBusinessesByStatus = async (
 export const fetchBusinessType = async (
   business_type_id: number
 ): Promise<BusinessType> => {
-  // Correct endpoint: /api/category-and-type/type/:id
   const res = await axios.get<BusinessType>(
     `${api}/category-and-type/type/${business_type_id}`
   );
@@ -66,7 +65,6 @@ export const fetchBusinessType = async (
 export const fetchBusinessCategory = async (
   business_category_id: number
 ): Promise<BusinessCategory> => {
-  // Correct endpoint: /api/category-and-type/category-by-id/:id
   const res = await axios.get<BusinessCategory>(
     `${api}/category-and-type/category-by-id/${business_category_id}`
   );

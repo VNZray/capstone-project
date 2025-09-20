@@ -9,6 +9,6 @@ export const navigateToAccommodationProfile = () => {
     router.navigate('/(tabs)/(home)/(accommodation)/profile/profile');
 };
 
-export const navigateToAccommodationRoomProfile = () => {
-    router.navigate('/(tabs)/(home)/(accommodation)/room/room');
+export const navigateToRoomProfile = () => {
+    router.navigate('/(tabs)/(home)/(accommodation)/room/profile');
 };

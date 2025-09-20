@@ -8,7 +8,6 @@ import { colors } from '@/constants/color';
 import { useAuth } from '@/context/AuthContext';
 import { navigateToHome } from '@/routes/mainRoutes';
 import Entypo from '@expo/vector-icons/Entypo';
-import { useFonts } from 'expo-font';
 import { Link } from 'expo-router';
 import React, { useState } from 'react';
 import {
@@ -27,15 +26,6 @@ const LoginPage = () => {
   const [showPassword, setShowPassword] = useState(false);
   const { login, user } = useAuth();
   const [loginError, setLoginError] = useState('');
-
-  const [fontsLoaded] = useFonts({
-    'Poppins-Black': require('@/assets/fonts/Poppins/Poppins-Black.ttf'),
-    'Poppins-Bold': require('@/assets/fonts/Poppins/Poppins-Bold.ttf'),
-    'Poppins-Light': require('@/assets/fonts/Poppins/Poppins-Light.ttf'),
-    'Poppins-Medium': require('@/assets/fonts/Poppins/Poppins-Medium.ttf'),
-    'Poppins-Regular': require('@/assets/fonts/Poppins/Poppins-Regular.ttf'),
-    'Poppins-SemiBold': require('@/assets/fonts/Poppins/Poppins-SemiBold.ttf'),
-  });
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -57,8 +47,6 @@ const LoginPage = () => {
       );
     }
   };
-
-  if (!fontsLoaded) return null;
 
   return (
     <SafeAreaProvider>

@@ -36,7 +36,7 @@ const AccommodationLayout = () => {
             }}
           />
           <Stack.Screen
-            name="room/[id]"
+            name="room/profile"
             options={{
               headerTransparent: true,
               headerShown: true,

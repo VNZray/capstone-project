@@ -6,8 +6,9 @@ import Button from '@/components/Button';
 import Container from '@/components/Container';
 import DateInput from '@/components/DateInput';
 import Dropdown, { DropdownItem } from '@/components/Dropdown';
-import RoomCard from '@/components/RoomCard';
+import RoomCard from '@/components/accommodation/RoomCard';
 import { useRoom } from '@/context/RoomContext';
+import { navigateToRoomProfile } from '@/routes/accommodationRoutes';
 const provinces: DropdownItem[] = [
   { id: 1, label: '1' },
   { id: 2, label: '2' },
@@ -15,7 +16,7 @@ const provinces: DropdownItem[] = [
 ];
 
 const Rooms = () => {
-  const { rooms, loading } = useRoom();
+  const { rooms, loading, setRoomId } = useRoom();
   const [cardView, setCardView] = useState('card');
   const [provinceId, setProvinceId] = React.useState<number | null>(null);
   const [range, setRange] = useState<{ start: Date | null; end: Date | null }>({
@@ -110,6 +111,12 @@ const Rooms = () => {
               size="large"
               onClick={() => {
                 console.log('Room clicked', room.id);
+                if (room.id) {
+                  setRoomId(room.id);
+                  navigateToRoomProfile();
+                } else {
+                  console.warn('Room ID is undefined');
+                }
               }}
             />
           ))}

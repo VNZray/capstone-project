@@ -8,7 +8,6 @@ import { fetchBusinessAmenities } from '@/services/AmenityService';
 import { fetchBusinessHoursByBusinessId } from '@/services/BusinessHoursService';
 import type { BusinessSchedule } from '@/types/Business';
 import { FontAwesome5 } from '@expo/vector-icons';
-import { useFonts } from 'expo-font';
 import { Link } from 'expo-router';
 import { useEffect, useState } from 'react';
 import {
@@ -65,15 +64,6 @@ const Details = () => {
     if (/^https?:\/\//i.test(trimmed)) return trimmed;
     return `https://${trimmed}`;
   };
-
-  const [fontsLoaded] = useFonts({
-    'Poppins-Black': require('@/assets/fonts/Poppins/Poppins-Black.ttf'),
-    'Poppins-Regular': require('@/assets/fonts/Poppins/Poppins-Regular.ttf'),
-    'Poppins-SemiBold': require('@/assets/fonts/Poppins/Poppins-SemiBold.ttf'),
-    'Poppins-Bold': require('@/assets/fonts/Poppins/Poppins-Bold.ttf'),
-  });
-
-  if (!fontsLoaded) return null;
 
   if (!accommodationDetails) {
     return (

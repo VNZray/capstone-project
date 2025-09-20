@@ -134,7 +134,7 @@ export function ThemedText({
 
   // If start/end icon → horizontal layout
   return (
-    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+    <View style={{ flexDirection: 'row', alignItems: 'center', }}>
       {startIcon ? <View style={{ marginRight: 6 }}>{startIcon}</View> : null}
       {textElement}
       {endIcon ? <View style={{ marginLeft: 6 }}>{endIcon}</View> : null}

@@ -14,7 +14,6 @@ import api from '@/services/api';
 import { Tourist } from '@/types/Tourist';
 import { User } from '@/types/User';
 import axios from 'axios';
-import { useFonts } from 'expo-font';
 import { StatusBar } from 'expo-status-bar';
 import React, { useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
@@ -50,16 +49,6 @@ const RegistrationPage = () => {
     []
   );
 
-  // Legacy picker modal visibility states removed (now using Dropdown component)
-
-  const [fontsLoaded] = useFonts({
-    'Poppins-Black': require('@/assets/fonts/Poppins/Poppins-Black.ttf'),
-    'Poppins-Bold': require('@/assets/fonts/Poppins/Poppins-Bold.ttf'),
-    'Poppins-Light': require('@/assets/fonts/Poppins/Poppins-Light.ttf'),
-    'Poppins-Medium': require('@/assets/fonts/Poppins/Poppins-Medium.ttf'),
-    'Poppins-Regular': require('@/assets/fonts/Poppins/Poppins-Regular.ttf'),
-    'Poppins-SemiBold': require('@/assets/fonts/Poppins/Poppins-SemiBold.ttf'),
-  });
 
   const fetchProvince = async () => {
     try {
@@ -156,7 +145,7 @@ const RegistrationPage = () => {
       // 3) Create tourist profile
       const touristPayload: any = {
         ...newTourist,
-        email, // include email if backend expects unique email in tourist
+        email, 
         address_id: addressId,
         user_id: userId,
       };
@@ -213,8 +202,6 @@ const RegistrationPage = () => {
       fetchBarangay(municipalityId);
     }
   }, [municipalityId]);
-
-  if (!fontsLoaded) return null;
 
   return (
     <SafeAreaProvider>

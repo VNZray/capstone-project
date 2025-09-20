@@ -30,6 +30,7 @@ exports.up = function (knex) {
       .references("id")
       .inTable("business")
       .onDelete("CASCADE");
+      
     table
       .uuid("room_id")
       .notNullable()

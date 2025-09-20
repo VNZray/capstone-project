@@ -100,8 +100,7 @@ const BusinessRegistration: React.FC = () => {
 
   const [formData, setFormData] = useState<Business>({
     id: "",
-    business_image:
-      "https://scontent.fmnl4-1.fna.fbcdn.net/v/t39.30808-6/492004164_982786234058521_5232398346581829362_n.jpg?_nc_cat=103&ccb=1-7&_nc_sid=a5f93a&_nc_ohc=SZtRSAdx6OgQ7kNvwEFxRGH&_nc_oc=AdnjqqHjPiKk9R3OSZZ4nG2C4V-ehriEcBU2wHUJxjVCNVHWEwrbSTBP7Xvy_weJx71oOddlH-C0TemlBeeACrze&_nc_zt=23&_nc_ht=scontent.fmnl4-1.fna&_nc_gid=Iku9Gps8cjJ0TroYRqAxJQ&oh=00_AfbijzeTxMocSPPq9oKIyvAYLD8sBX2OvDibttmC-NdhDw&oe=68D0A678",
+    business_image: "",
     business_name: "Kim Angela Homestay",
     phone_number: "09380417373",
     email: "kim@gmail.com",

@@ -1,4 +1,4 @@
-import AccommodationCard from '@/components/AccommodationCard';
+import AccommodationCard from '@/components/accommodation/AccommodationCard';
 import Button from '@/components/Button';
 import Container from '@/components/Container';
 import PageContainer from '@/components/PageContainer';
@@ -22,7 +22,6 @@ const AccommodationDirectory = () => {
   const { loading, allAccommodationDetails, setAccommodationId } =
     useAccommodation();
   const [cardView, setCardView] = useState('card');
-  // Use the first accommodation's ids (if present) to resolve category/type meta
 
   const [search, setSearch] = useState('');
   const [activeTab, setActiveTab] = useState<string>('all');

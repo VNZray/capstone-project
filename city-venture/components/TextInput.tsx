@@ -220,11 +220,8 @@ const FormTextInput = React.forwardRef<FormTextInputRef, FormTextInputProps>(
       [elevation]
     );
 
-    // grid columns style (consumer should wrap in a flex row of width 100%)
     const colStyle: ViewStyle = useMemo(() => {
       const pct = columns === 3 ? 100 : columns === 2 ? 66.6666 : 33.3333; // treat columns as span out of 3? default 1 => 33%
-      // But requirement: default 1 column meaning full width? The description ambiguous.
-      // We'll interpret: default single column (full width). If user passes columns=2 -> 50%, 3 -> 33.33%. Provide more intuitive mapping.
       if (columns === 1) return { flex: 1 };
       if (columns === 2) return { flexBasis: '48%', width: '48%' };
       return { flexBasis: '31%', width: '31%' };
