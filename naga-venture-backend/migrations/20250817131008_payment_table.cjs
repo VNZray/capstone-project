@@ -5,7 +5,7 @@ exports.up = function (knex) {
     table.enu("payer_type", ["Tourist", "Owner"]).notNullable();
     table
       .enu("payment_type", ["Full Payment", "Partial Payment"])
-      .notNullable();
+      .nullable();
     table
       .enu("payment_method", ["Gcash", "Paymaya", "Credit Card"])
       .notNullable();

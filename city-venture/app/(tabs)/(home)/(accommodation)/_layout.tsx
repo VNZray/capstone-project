@@ -1,14 +1,15 @@
 import { AccommodationProvider } from '@/context/AccommodationContext';
 import { RoomProvider } from '@/context/RoomContext';
+import { useColorScheme } from '@/hooks/use-color-scheme';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { View } from 'react-native';
-
 const AccommodationLayout = () => {
+  const scheme = useColorScheme();
   return (
     <AccommodationProvider>
       <RoomProvider>
-        <StatusBar style="light" />
+        <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
         <Stack
           screenOptions={{
             headerBackTitle: 'Back',
@@ -26,10 +27,10 @@ const AccommodationLayout = () => {
               },
               headerTintColor: '#fff',
               headerBackground: () => (
-                <View
+                <View 
                   style={{
                     flex: 1,
-                    backgroundColor: 'rgba(0, 0, 0, 0.4)', // translucent black
+                    backgroundColor: 'rgba(0, 0, 0, 0.4)',
                   }}
                 />
               ),

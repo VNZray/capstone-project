@@ -111,15 +111,58 @@ function getElevation(level: 1 | 2 | 3 | 4 | 5 | 6): ViewStyle {
     5: { shadowColor: '#000', shadowOpacity: 0.14, shadowRadius: 10, shadowOffset: { width: 0, height: 5 } },
     6: { shadowColor: '#000', shadowOpacity: 0.16, shadowRadius: 12, shadowOffset: { width: 0, height: 6 } },
   };
+  
+  // Enhanced Android elevation with better shadow effects
   const androidElevation: Record<number, ViewStyle> = {
-    1: { elevation: 1 },
-    2: { elevation: 2 },
-    3: { elevation: 3 },
-    4: { elevation: 4 },
-    5: { elevation: 5 },
-    6: { elevation: 6 },
+    1: { 
+      elevation: 1,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.08,
+      shadowRadius: 1,
+    },
+    2: { 
+      elevation: 2,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.10,
+      shadowRadius: 2,
+    },
+    3: { 
+      elevation: 3,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.12,
+      shadowRadius: 3,
+    },
+    4: { 
+      elevation: 4,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.14,
+      shadowRadius: 4,
+    },
+    5: { 
+      elevation: 5,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 3 },
+      shadowOpacity: 0.16,
+      shadowRadius: 5,
+    },
+    6: { 
+      elevation: 6,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 3 },
+      shadowOpacity: 0.18,
+      shadowRadius: 6,
+    },
   };
-  return Platform.select<ViewStyle>({ ios: iosShadow[level], android: androidElevation[level], default: androidElevation[level] })!;
+  
+  return Platform.select<ViewStyle>({ 
+    ios: iosShadow[level], 
+    android: androidElevation[level], 
+    default: androidElevation[level] 
+  })!;
 }
 
 export default function Chip({
@@ -241,6 +284,13 @@ export default function Chip({
     backgroundColor: tokens.bg,
     paddingHorizontal: sz.padH,
     paddingVertical: sz.padV,
+    // Android-specific improvements
+    ...Platform.select({
+      android: {
+        overflow: 'hidden', // Ensure proper clipping for ripple effect
+        elevation: elevation && elevation > 0 ? 0 : undefined, // Let parent handle elevation
+      },
+    }),
   };
 
   const elevated = elevation && elevation > 0 ? getElevation(elevation as 1 | 2 | 3 | 4 | 5 | 6) : undefined;
@@ -260,6 +310,16 @@ export default function Chip({
         { margin: margin as any },
         style,
       ]}
+      // Android-specific ripple effect
+      android_ripple={
+        onPress && !disabled
+          ? {
+              color: rgba(tokens.fg, 0.15),
+              borderless: false,
+              radius: isIconOnly ? diameter / 2 : undefined,
+            }
+          : undefined
+      }
     >
       {({ pressed }) => (
         <View
@@ -275,7 +335,7 @@ export default function Chip({
               justifyContent: 'center',
             },
             // pressed overlay for visual feedback
-            pressed && !disabled &&
+            pressed && !disabled && Platform.OS !== 'android' && // Skip for Android since ripple handles feedback
               (variant === 'solid'
                 ? { backgroundColor: shade(tokens.bg, -0.08) }
                 : variant === 'outlined'
@@ -292,7 +352,14 @@ export default function Chip({
 }
 
 const styles = StyleSheet.create({
-  shadowWrapper: {},
+  shadowWrapper: {
+    ...Platform.select({
+      android: {
+        // Better handling of elevation shadows on Android
+        backgroundColor: 'transparent',
+      },
+    }),
+  },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -305,8 +372,21 @@ const styles = StyleSheet.create({
   },
   content: {
     minHeight: 0,
+    ...Platform.select({
+      android: {
+        // Ensure proper text alignment on Android
+        alignItems: 'center',
+      },
+    }),
   },
   text: {
     fontWeight: '700',
+    ...Platform.select({
+      android: {
+        // Better text rendering on Android
+        textAlignVertical: 'center',
+        includeFontPadding: false,
+      },
+    }),
   },
 });

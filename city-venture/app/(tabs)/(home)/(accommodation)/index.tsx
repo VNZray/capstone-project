@@ -101,10 +101,9 @@ const AccommodationDirectory = () => {
   return (
     <PageContainer padding={0} style={{ backgroundColor: bg }}>
       <Container
-        style={{ overflow: 'visible' }}
-        backgroundColor="transparent"
         gap={16}
         paddingBottom={0}
+        backgroundColor='transparent'
       >
         <View style={styles.SearchContainer}>
           <SearchBar
@@ -223,7 +222,6 @@ const AccommodationDirectory = () => {
 
 const styles = StyleSheet.create({
   SearchContainer: {
-    backgroundColor: 'transparent',
     display: 'flex',
     flexDirection: 'row',
     gap: 8,

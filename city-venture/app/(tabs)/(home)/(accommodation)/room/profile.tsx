@@ -1,5 +1,5 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { useNavigation } from 'expo-router';
+import { useNavigation, useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import { Dimensions, FlatList, Image, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -22,6 +22,7 @@ const { width, height } = Dimensions.get('window');
 
 const AccommodationProfile = () => {
   const navigation = useNavigation();
+  const router = useRouter();
   const insets = useSafeAreaInsets();
   const [activeTab, setActiveTab] = useState<string>('details');
   const colorScheme = useColorScheme();
@@ -93,7 +94,18 @@ const AccommodationProfile = () => {
       // trigger review flow (placeholder)
       console.log('Open write review modal');
     } else {
-      console.log('Navigate to booking flow');
+      // Navigate to booking flow with user ID and room ID
+      if (user && roomDetails) {
+        router.push({
+          pathname: '/(tabs)/(home)/(accommodation)/room/booking',
+          params: {
+            userId: user.id,
+            roomId: roomDetails.id
+          }
+        });
+      } else {
+        console.log('User or room details not available');
+      }
     }
   };
 
@@ -181,7 +193,7 @@ const AccommodationProfile = () => {
           <Button
             icon
             variant={isFavorite ? 'soft' : 'soft'}
-            color={isFavorite ? 'error' : 'primary'}
+            color={isFavorite ? 'error' : 'secondary'}
             startIcon={isFavorite ? 'heart' : 'heart'}
             onPress={() => setIsFavorite((f) => !f)}
             elevation={isFavorite ? 3 : 2}

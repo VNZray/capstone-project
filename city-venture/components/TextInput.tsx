@@ -1,16 +1,17 @@
 import { card, colors } from '@/constants/color';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { FontAwesome5 } from '@expo/vector-icons';
-import React, { useImperativeHandle, useMemo, useState } from 'react';
+import React, { useCallback, useImperativeHandle, useMemo, useState } from 'react';
 import {
-    Pressable,
-    TextInput as RNTextInput,
-    StyleProp,
-    StyleSheet,
-    Text,
-    TextStyle,
-    View,
-    ViewStyle,
+  Platform,
+  Pressable,
+  TextInput as RNTextInput,
+  StyleProp,
+  StyleSheet,
+  Text,
+  TextStyle,
+  View,
+  ViewStyle,
 } from 'react-native';
 import { ThemedText } from './themed-text';
 
@@ -46,10 +47,16 @@ export interface FormTextInputProps {
   autoFocus?: boolean;
   returnKeyType?: any;
   editable?: boolean;
-  // grid columns support: span 1..3 across a 3-col layout (default 1)
-  columns?: 1 | 2 | 3;
+  columns?: 1 | 2 | 3 | 4;
   // show character counter when maxLength provided
   showCounter?: boolean;
+  // validation props
+  required?: boolean;
+  minLength?: number;
+  pattern?: RegExp;
+  validateOnBlur?: boolean;
+  validateOnChange?: boolean;
+  customValidator?: (value: string) => string | null; // returns error message or null
 }
 
 export interface FormTextInputRef {
@@ -57,6 +64,8 @@ export interface FormTextInputRef {
   blur: () => void;
   clear: () => void;
   getValue: () => string;
+  validate: () => boolean;
+  getError: () => string | null;
 }
 
 function getElevation(
@@ -101,15 +110,58 @@ function getElevation(
       shadowOffset: { width: 0, height: 10 },
     },
   };
+  
+  // Enhanced Android elevation
   const android: Record<number, ViewStyle> = {
-    1: { elevation: 1 },
-    2: { elevation: 2 },
-    3: { elevation: 3 },
-    4: { elevation: 4 },
-    5: { elevation: 5 },
-    6: { elevation: 6 },
+    1: { 
+      elevation: 1,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.08,
+      shadowRadius: 2,
+    },
+    2: { 
+      elevation: 2,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.10,
+      shadowRadius: 3,
+    },
+    3: { 
+      elevation: 3,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.12,
+      shadowRadius: 4,
+    },
+    4: { 
+      elevation: 4,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.14,
+      shadowRadius: 5,
+    },
+    5: { 
+      elevation: 5,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 3 },
+      shadowOpacity: 0.16,
+      shadowRadius: 6,
+    },
+    6: { 
+      elevation: 6,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 3 },
+      shadowOpacity: 0.18,
+      shadowRadius: 7,
+    },
   };
-  return android[level];
+  
+  return Platform.select({
+    ios: iosShadow[level],
+    android: android[level],
+    default: android[level],
+  });
 }
 
 const FormTextInput = React.forwardRef<FormTextInputRef, FormTextInputProps>(
@@ -148,6 +200,12 @@ const FormTextInput = React.forwardRef<FormTextInputRef, FormTextInputProps>(
       editable = true,
       columns = 1,
       showCounter,
+      required = false,
+      minLength,
+      pattern,
+      validateOnBlur = true,
+      validateOnChange = false,
+      customValidator,
     },
     ref
   ) => {
@@ -162,6 +220,7 @@ const FormTextInput = React.forwardRef<FormTextInputRef, FormTextInputProps>(
 
     const controlled = value !== undefined;
     const [internal, setInternal] = useState(defaultValue);
+    const [validationError, setValidationError] = useState<string | null>(null);
     const currentValue = controlled ? value! : internal;
 
     const sizeCfg = useMemo(() => {
@@ -195,12 +254,59 @@ const FormTextInput = React.forwardRef<FormTextInputRef, FormTextInputProps>(
     const handleChange = (t: string) => {
       if (!controlled) setInternal(t);
       onChangeText?.(t);
+      
+      // Validate on change if enabled
+      if (validateOnChange) {
+        validate(t);
+      }
+    };
+
+    const handleBlur = () => {
+      onBlur?.();
+      
+      // Validate on blur if enabled
+      if (validateOnBlur) {
+        validate();
+      }
     };
 
     const clear = () => {
       if (!controlled) setInternal('');
       onChangeText?.('');
     };
+
+    // Validation function
+    const validate = useCallback((valueToValidate?: string): boolean => {
+      const val = valueToValidate ?? currentValue;
+      let error: string | null = null;
+
+      // Required validation
+      if (required && (!val || val.trim() === '')) {
+        error = `${label || 'This field'} is required`;
+      }
+      // Min length validation
+      else if (minLength && val.length < minLength) {
+        error = `${label || 'This field'} must be at least ${minLength} characters`;
+      }
+      // Pattern validation
+      else if (pattern && !pattern.test(val)) {
+        error = `${label || 'This field'} format is invalid`;
+      }
+      // Custom validation
+      else if (customValidator) {
+        const customError = customValidator(val);
+        if (customError) {
+          error = customError;
+        }
+      }
+
+      setValidationError(error);
+      return error === null;
+    }, [currentValue, required, minLength, pattern, customValidator, label]);
+
+    const getError = useCallback(() => {
+      return validationError;
+    }, [validationError]);
 
     useImperativeHandle(
       ref,
@@ -209,8 +315,10 @@ const FormTextInput = React.forwardRef<FormTextInputRef, FormTextInputProps>(
         blur: () => inputRef.current?.blur(),
         clear,
         getValue: () => currentValue,
+        validate,
+        getError,
       }),
-      [currentValue]
+      [currentValue, validate, getError]
     );
 
     const inputRef = React.useRef<RNTextInput>(null);
@@ -223,8 +331,9 @@ const FormTextInput = React.forwardRef<FormTextInputRef, FormTextInputProps>(
     const colStyle: ViewStyle = useMemo(() => {
       const pct = columns === 3 ? 100 : columns === 2 ? 66.6666 : 33.3333; // treat columns as span out of 3? default 1 => 33%
       if (columns === 1) return { flex: 1 };
-      if (columns === 2) return { flexBasis: '48%', width: '48%' };
-      return { flexBasis: '31%', width: '31%' };
+      if (columns === 2) return { width: '48%' };
+      if (columns === 3) return { width: '31%' };
+      return { width: '18%' };
     }, [columns]);
 
     const showClear = clearable && !!currentValue && !disabled && editable;
@@ -239,6 +348,8 @@ const FormTextInput = React.forwardRef<FormTextInputRef, FormTextInputProps>(
             style={{ color: subTextColor }}
           >
             {label}
+            {required && <Text style={{ color: errorColor }}> *</Text>}
+            {!required && (' (Optional)')}
           </ThemedText>
         )}
         <View
@@ -254,7 +365,7 @@ const FormTextInput = React.forwardRef<FormTextInputRef, FormTextInputProps>(
             },
             variantStyles,
             elevationStyle,
-            !!errorText && { borderColor: errorColor },
+            (!!errorText || !!validationError) && { borderColor: errorColor },
             disabled && { opacity: 0.6 },
             containerStyle,
           ]}
@@ -285,7 +396,7 @@ const FormTextInput = React.forwardRef<FormTextInputRef, FormTextInputProps>(
             value={currentValue}
             editable={!disabled && editable}
             onChangeText={handleChange}
-            onBlur={onBlur}
+            onBlur={handleBlur}
             onFocus={onFocus}
             secureTextEntry={secureTextEntry}
             keyboardType={keyboardType}
@@ -332,7 +443,7 @@ const FormTextInput = React.forwardRef<FormTextInputRef, FormTextInputProps>(
             </Pressable>
           )}
         </View>
-        {!!helperText && !errorText && (
+        {!!helperText && !errorText && !validationError && (
           <ThemedText
             type="label-extra-small"
             mt={4}
@@ -341,13 +452,13 @@ const FormTextInput = React.forwardRef<FormTextInputRef, FormTextInputProps>(
             {helperText}
           </ThemedText>
         )}
-        {!!errorText && (
+        {(!!errorText || !!validationError) && (
           <ThemedText
             type="label-extra-small"
             mt={4}
             style={{ color: errorColor }}
           >
-            {errorText}
+            {errorText || validationError}
           </ThemedText>
         )}
       </View>
@@ -360,13 +471,34 @@ export default FormTextInput;
 const styles = StyleSheet.create({
   inputOuter: {
     borderWidth: 1,
+    ...Platform.select({
+      android: {
+        // Better border rendering on Android
+        borderStyle: 'solid',
+        overflow: 'hidden',
+      },
+    }),
   },
   input: {
     fontWeight: '500',
+    ...Platform.select({
+      android: {
+        // Better text input behavior on Android
+        textAlignVertical: 'top',
+        includeFontPadding: false,
+        paddingVertical: 0, // Remove default padding that can cause alignment issues
+      },
+    }),
   },
   counter: {
     fontSize: 11,
     marginRight: 6,
     alignSelf: 'center',
+    ...Platform.select({
+      android: {
+        textAlignVertical: 'center',
+        includeFontPadding: false,
+      },
+    }),
   },
 });

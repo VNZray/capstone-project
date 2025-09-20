@@ -1,6 +1,6 @@
 import { background } from '@/constants/color';
 import React, { ReactNode } from 'react';
-import { StyleSheet, useColorScheme, View, ViewStyle } from 'react-native';
+import { StyleSheet, useColorScheme, View, ViewStyle, Platform } from 'react-native';
 
 type PageContainerProps = {
   children: ReactNode;
@@ -74,5 +74,12 @@ const styles = StyleSheet.create({
     height: '100%',
     width: '100%',
     gap: 20,
+    ...Platform.select({
+      android: {
+        // Android-specific improvements for better scrolling and performance
+        flex: 1,
+        backgroundColor: 'transparent', // Let background color be handled by parent
+      },
+    }),
   },
 });

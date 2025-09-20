@@ -16,7 +16,8 @@ import {
   Modal,
   Platform,
   Pressable,
-  View
+  View,
+  StyleSheet
 } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
 
@@ -122,7 +123,7 @@ const Details = () => {
 
   return (
     <PageContainer style={{ paddingTop: 0 }}>
-      <Container elevation={2}>
+      <Container elevation={2} style={androidStyles.container}>
         <ThemedText type="card-title-small" weight="medium">
           About
         </ThemedText>
@@ -147,17 +148,20 @@ const Details = () => {
       </Container>
 
       {/* Tags */}
-      <View>
+      <View style={androidStyles.sectionContainer}>
         <ThemedText type="card-title-small" weight="medium">
           Tags
         </ThemedText>
         <View
-          style={{
-            flexDirection: 'row',
-            flexWrap: 'wrap',
-            gap: 8,
-            paddingTop: 8,
-          }}
+          style={[
+            {
+              flexDirection: 'row',
+              flexWrap: 'wrap',
+              gap: 8,
+              paddingTop: 8,
+            },
+            androidStyles.tagContainer,
+          ]}
         >
           {(() => {
             const tags: string[] = [];
@@ -199,17 +203,20 @@ const Details = () => {
         </View>
       </View>
 
-      <View>
+      <View style={androidStyles.sectionContainer}>
         <ThemedText type="card-title-small" weight="medium">
           Amenities
         </ThemedText>
         <View
-          style={{
-            flexDirection: 'row',
-            flexWrap: 'wrap',
-            gap: 8,
-            paddingTop: 8,
-          }}
+          style={[
+            {
+              flexDirection: 'row',
+              flexWrap: 'wrap',
+              gap: 8,
+              paddingTop: 8,
+            },
+            androidStyles.amenitiesContainer,
+          ]}
         >
           {loadingAmenities ? (
             <ThemedText type="body-small">Loading amenities…</ThemedText>
@@ -232,16 +239,19 @@ const Details = () => {
         </View>
       </View>
 
-      <View>
+      <View style={androidStyles.sectionContainer}>
         <ThemedText type="card-title-small" weight="medium">
           Business Hours
         </ThemedText>
         <View
-          style={{
-            flexDirection: 'column',
-            gap: 6,
-            paddingTop: 10,
-          }}
+          style={[
+            {
+              flexDirection: 'column',
+              gap: 6,
+              paddingTop: 10,
+            },
+            androidStyles.hoursContainer,
+          ]}
         >
           {loadingHours ? (
             <ThemedText type="body-small">Loading hours…</ThemedText>
@@ -265,9 +275,12 @@ const Details = () => {
                 return (
                   <View
                     key={`${h.day_of_week}-${idx}`}
-                    style={{
-                      paddingVertical: 8,
-                    }}
+                    style={[
+                      {
+                        paddingVertical: 8,
+                      },
+                      androidStyles.hoursItem,
+                    ]}
                   >
                     <ThemedText type="body-small" style={{ color }}>
                       {text}
@@ -284,11 +297,11 @@ const Details = () => {
       </View>
 
       {/* Contact Section */}
-      <View>
+      <View style={androidStyles.sectionContainer}>
         <ThemedText type="card-title-small" weight="medium">
           Contact
         </ThemedText>
-        <View style={{ flexDirection: 'column', gap: 8, paddingTop: 8 }}>
+        <View style={[{ flexDirection: 'column', gap: 8, paddingTop: 8 }, androidStyles.contactContainer]}>
           {!accommodationDetails.email &&
           !accommodationDetails.phone_number &&
           !accommodationDetails.website_url ? (
@@ -303,6 +316,16 @@ const Details = () => {
                     Linking.openURL(`mailto:${accommodationDetails.email}`)
                   }
                   accessibilityRole="link"
+                  style={({ pressed }) => [
+                    {
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      gap: 10,
+                    },
+                    androidStyles.contactItem,
+                    Platform.OS === 'android' && pressed && { opacity: 0.7 },
+                  ]}
+                  android_ripple={{ color: 'rgba(0, 0, 0, 0.1)' }}
                 >
                   <View
                     style={{
@@ -334,6 +357,16 @@ const Details = () => {
                     )
                   }
                   accessibilityRole="link"
+                  style={({ pressed }) => [
+                    {
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      gap: 10,
+                    },
+                    androidStyles.contactItem,
+                    Platform.OS === 'android' && pressed && { opacity: 0.7 },
+                  ]}
+                  android_ripple={{ color: 'rgba(0, 0, 0, 0.1)' }}
                 >
                   <View
                     style={{
@@ -362,6 +395,16 @@ const Details = () => {
                     )
                   }
                   accessibilityRole="link"
+                  style={({ pressed }) => [
+                    {
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      gap: 10,
+                    },
+                    androidStyles.contactItem,
+                    Platform.OS === 'android' && pressed && { opacity: 0.7 },
+                  ]}
+                  android_ripple={{ color: 'rgba(0, 0, 0, 0.1)' }}
                 >
                   <View
                     style={{
@@ -387,18 +430,21 @@ const Details = () => {
       </View>
 
       {/* Socials Section */}
-      <View>
+      <View style={androidStyles.sectionContainer}>
         <ThemedText type="card-title-small" weight="medium">
           Socials
         </ThemedText>
         <View
-          style={{
-            flexDirection: 'row',
-            gap: 12,
-            paddingTop: 8,
-            alignItems: 'center',
-            flexWrap: 'wrap',
-          }}
+          style={[
+            {
+              flexDirection: 'row',
+              gap: 12,
+              paddingTop: 8,
+              alignItems: 'center',
+              flexWrap: 'wrap',
+            },
+            androidStyles.socialsContainer,
+          ]}
         >
           {(() => {
             const socials: Array<{ icon: any; url?: string; label: string }> = [
@@ -431,18 +477,21 @@ const Details = () => {
         </View>
       </View>
 
-      <View>
+      <View style={androidStyles.sectionContainer}>
         <ThemedText type="card-title-small" weight="medium">
           Guide Map
         </ThemedText>
 
         <Container
-          style={{
-            height: 400,
-            borderRadius: 10,
-            marginTop: 10,
-            padding: 4,
-          }}
+          style={[
+            {
+              height: 400,
+              borderRadius: 10,
+              marginTop: 10,
+              padding: 4,
+            },
+            androidStyles.mapContainer,
+          ]}
         >
           {Platform.OS === 'web' ? (
             <View
@@ -508,16 +557,21 @@ const Details = () => {
                 });
                 if (url) Linking.openURL(url);
               }}
-              style={{
-                paddingVertical: 10,
-                paddingHorizontal: 14,
-                borderRadius: 10,
-                backgroundColor: '#2563EB',
-                alignSelf: 'flex-start',
-                flexDirection: 'row',
-                alignItems: 'center',
-                gap: 8,
-              }}
+              style={({ pressed }) => [
+                {
+                  paddingVertical: 10,
+                  paddingHorizontal: 14,
+                  borderRadius: 10,
+                  backgroundColor: '#2563EB',
+                  alignSelf: 'flex-start',
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 8,
+                },
+                androidStyles.directionsButton,
+                Platform.OS === 'android' && pressed && { opacity: 0.8 },
+              ]}
+              android_ripple={{ color: 'rgba(255, 255, 255, 0.2)' }}
             >
               <FontAwesome5 name="directions" size={14} color="#fff" />
               <ThemedText type="label-medium" style={{ color: '#fff' }}>
@@ -529,7 +583,7 @@ const Details = () => {
       </View>
 
       {/* Gallery */}
-      <View style={{ marginTop: 16 }}>
+      <View style={[{ marginTop: 16 }, androidStyles.galleryContainer]}>
         <ThemedText type="card-title-small" weight="medium">
           Gallery
         </ThemedText>
@@ -566,13 +620,18 @@ const Details = () => {
                     setLightboxImage(src);
                     setLightboxVisible(true);
                   }}
-                  style={{
-                    width: '31.5%',
-                    aspectRatio: 1,
-                    borderRadius: 10,
-                    overflow: 'hidden',
-                    backgroundColor: '#e5e7eb',
-                  }}
+                  style={({ pressed }) => [
+                    {
+                      width: '31.5%',
+                      aspectRatio: 1,
+                      borderRadius: 10,
+                      overflow: 'hidden',
+                      backgroundColor: '#e5e7eb',
+                    },
+                    androidStyles.galleryImageContainer,
+                    Platform.OS === 'android' && pressed && { opacity: 0.8 },
+                  ]}
+                  android_ripple={{ color: 'rgba(0, 0, 0, 0.1)' }}
                 >
                   <Image
                     source={{ uri: src }}
@@ -595,17 +654,23 @@ const Details = () => {
       >
         <Pressable
           onPress={() => setLightboxVisible(false)}
-          style={{
-            flex: 1,
-            backgroundColor: '#000000cc',
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
+          style={[
+            {
+              flex: 1,
+              backgroundColor: '#000000cc',
+              alignItems: 'center',
+              justifyContent: 'center',
+            },
+            androidStyles.modalContainer,
+          ]}
         >
           {lightboxImage ? (
             <Image
               source={{ uri: lightboxImage }}
-              style={{ width: '90%', height: '70%', borderRadius: 12 }}
+              style={[
+                { width: '90%', height: '70%', borderRadius: 12 },
+                androidStyles.modalImage,
+              ]}
               resizeMode="contain"
             />
           ) : null}
@@ -616,3 +681,135 @@ const Details = () => {
 };
 
 export default Details;
+
+// Android-specific styles
+const androidStyles = StyleSheet.create({
+  container: {
+    ...Platform.select({
+      android: {
+        paddingHorizontal: 16,
+        paddingVertical: 12,
+      },
+    }),
+  },
+  sectionContainer: {
+    ...Platform.select({
+      android: {
+        marginBottom: 20,
+        paddingVertical: 8,
+      },
+    }),
+  },
+  tagContainer: {
+    ...Platform.select({
+      android: {
+        paddingTop: 12,
+        marginBottom: 4,
+      },
+    }),
+  },
+  amenitiesContainer: {
+    ...Platform.select({
+      android: {
+        paddingTop: 12,
+        marginBottom: 4,
+      },
+    }),
+  },
+  hoursContainer: {
+    ...Platform.select({
+      android: {
+        paddingTop: 12,
+        marginBottom: 4,
+      },
+    }),
+  },
+  hoursItem: {
+    ...Platform.select({
+      android: {
+        paddingVertical: 10,
+        paddingHorizontal: 4,
+        borderRadius: 6,
+        marginVertical: 2,
+      },
+    }),
+  },
+  contactContainer: {
+    ...Platform.select({
+      android: {
+        paddingTop: 12,
+        marginBottom: 4,
+      },
+    }),
+  },
+  contactItem: {
+    ...Platform.select({
+      android: {
+        paddingVertical: 12,
+        paddingHorizontal: 8,
+        borderRadius: 8,
+        marginVertical: 2,
+      },
+    }),
+  },
+  socialsContainer: {
+    ...Platform.select({
+      android: {
+        paddingTop: 12,
+        marginBottom: 4,
+      },
+    }),
+  },
+  mapContainer: {
+    ...Platform.select({
+      android: {
+        elevation: 4,
+        borderRadius: 12,
+        overflow: 'hidden',
+      },
+    }),
+  },
+  directionsButton: {
+    ...Platform.select({
+      android: {
+        paddingVertical: 12,
+        paddingHorizontal: 16,
+        borderRadius: 8,
+        elevation: 2,
+        marginTop: 12,
+      },
+    }),
+  },
+  galleryContainer: {
+    ...Platform.select({
+      android: {
+        paddingTop: 12,
+        marginTop: 20,
+      },
+    }),
+  },
+  galleryImageContainer: {
+    ...Platform.select({
+      android: {
+        borderRadius: 12,
+        elevation: 2,
+        overflow: 'hidden',
+      },
+    }),
+  },
+  modalContainer: {
+    ...Platform.select({
+      android: {
+        backgroundColor: 'rgba(0, 0, 0, 0.9)',
+      },
+    }),
+  },
+  modalImage: {
+    ...Platform.select({
+      android: {
+        borderRadius: 16,
+        elevation: 8,
+      },
+    }),
+  },
+});

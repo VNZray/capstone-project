@@ -1,7 +1,7 @@
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { useFonts } from 'expo-font';
 import React from 'react';
-import { StyleSheet, Text, View, type TextProps } from 'react-native';
+import { StyleSheet, Text, View, type TextProps, Platform } from 'react-native';
 
 export type TypographyType =
   | `title-${'extra-small' | 'small' | 'medium' | 'large'}`
@@ -113,6 +113,11 @@ export function ThemedText({
         styles[type],
         isLink,
         getFontWeightStyle(weight),
+        // Android-specific text improvements
+        Platform.OS === 'android' && {
+          textAlignVertical: 'center',
+          includeFontPadding: false,
+        },
         style,
       ]}
       {...rest}

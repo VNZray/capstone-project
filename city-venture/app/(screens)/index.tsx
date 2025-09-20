@@ -24,6 +24,7 @@ const LoginPage = () => {
   const [email, setEmail] = useState('rayven.clores@unc.edu.ph');
   const [password, setPassword] = useState('123456');
   const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const { login, user } = useAuth();
   const [loginError, setLoginError] = useState('');
 
@@ -33,12 +34,27 @@ const LoginPage = () => {
       return;
     }
 
+    setIsLoading(true);
+    setLoginError(''); // Clear previous errors
+
+    // Set timeout to cancel login after 5 seconds
+    const timeoutId = setTimeout(() => {
+      setIsLoading(false);
+      setLoginError('Login timeout. Please try again.');
+    }, 5000);
+
     try {
       await login(email, password);
+      // Clear timeout on success
+      clearTimeout(timeoutId);
+      // Keep loading state - will navigate to home on success
       if (user?.user_role_id === 2 || user?.user_role_id === 3) {
         navigateToHome();
       }
     } catch (error: any) {
+      // Clear timeout and close loading on error
+      clearTimeout(timeoutId);
+      setIsLoading(false);
       console.error('Login error:', error);
       setLoginError(
         error?.message ||
@@ -82,6 +98,7 @@ const LoginPage = () => {
                 value={email}
                 onChangeText={setEmail}
                 variant="outlined"
+                required
               />
               <FormTextInput
                 label="Password"
@@ -93,6 +110,7 @@ const LoginPage = () => {
                 autoCapitalize="none"
                 rightIcon={showPassword ? 'eye-slash' : 'eye'}
                 onPressRightIcon={() => setShowPassword((p) => !p)}
+                required
               />
             </View>
 
@@ -121,10 +139,10 @@ const LoginPage = () => {
             <Button
               fullWidth
               size="large"
-              label="Sign In"
+              label={isLoading ? 'Signing In...' : 'Sign In'}
               color="primary"
               variant="solid"
-              onPress={handleLogin}
+              onPress={isLoading ? undefined : handleLogin}
             />
 
             {/* Footer */}

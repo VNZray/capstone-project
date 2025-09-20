@@ -70,6 +70,10 @@ const Container = ({
 
   const isDark = scheme === 'dark';
   const bgColor = backgroundColor ?? (isDark ? darkColor : lightColor);
+  
+  // Hide elevation on Android when background is transparent
+  const isTransparent = backgroundColor === 'transparent';
+  const effectiveElevation = Platform.OS === 'android' && isTransparent ? 0 : elevation;
 
   const variantStyle = getVariantStyle(variant, bgColor, isDark);
 
@@ -97,7 +101,7 @@ const Container = ({
           display,
         } as ViewStyle,
         variantStyle,
-        getPlatformElevation(elevation),
+        getPlatformElevation(effectiveElevation),
         style,
       ]}
     >
@@ -111,12 +115,31 @@ export default Container;
 const styles = StyleSheet.create({
   base: {
     borderRadius: 8,
+    ...Platform.select({
+      android: {
+        // Android-specific base styles for better visual consistency
+        overflow: 'hidden', // Ensure proper clipping for elevation
+      },
+    }),
   },
 });
 
 function getPlatformElevation(level: number): ViewStyle {
   if (Platform.OS === 'android') {
-    return { elevation: level };
+    // Enhanced elevation for Android with better shadows
+    const elevationStyles: ViewStyle = {
+      elevation: level,
+    };
+    
+    // Add subtle shadow overlay for better depth perception on Android
+    if (level > 0) {
+      elevationStyles.shadowColor = '#000';
+      elevationStyles.shadowOffset = { width: 0, height: level / 2 };
+      elevationStyles.shadowOpacity = 0.1 + (level * 0.02);
+      elevationStyles.shadowRadius = level * 0.8;
+    }
+    
+    return elevationStyles;
   }
 
   switch (level) {
@@ -172,24 +195,38 @@ function getVariantStyle(
   bgColor: string,
   isDark: boolean
 ): ViewStyle {
+  const baseStyle: ViewStyle = {};
+  
   switch (variant) {
     case 'solid':
-      return {
-        backgroundColor: bgColor,
-      };
+      baseStyle.backgroundColor = bgColor;
+      break;
     case 'soft':
-      return {
-        backgroundColor: addOpacity(bgColor, isDark ? 0.4 : 0.4),
-      };
+      baseStyle.backgroundColor = addOpacity(bgColor, isDark ? 0.4 : 0.4);
+      break;
     case 'outlined':
-      return {
-        backgroundColor: addOpacity(bgColor, 0.02),
-        borderWidth: 1,
-        borderColor: addOpacity(bgColor, isDark ? 0.4 : 0.25),
-      };
+      baseStyle.backgroundColor = addOpacity(bgColor, 0.02);
+      baseStyle.borderWidth = 1;
+      baseStyle.borderColor = addOpacity(bgColor, isDark ? 0.4 : 0.25);
+      break;
     default:
-      return {};
+      break;
   }
+
+  // Add Android-specific enhancements
+  if (Platform.OS === 'android') {
+    return {
+      ...baseStyle,
+      // Better anti-aliasing on Android
+      borderStyle: 'solid',
+      // Ensure proper rendering of borders and backgrounds
+      ...(variant === 'outlined' && {
+        borderWidth: StyleSheet.hairlineWidth > 1 ? 1 : StyleSheet.hairlineWidth,
+      }),
+    };
+  }
+
+  return baseStyle;
 }
 
 function addOpacity(color: string, opacity: number): string {
