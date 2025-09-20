@@ -23,13 +23,6 @@ exports.up = function (knex) {
       ])
       .notNullable();
 
-    // Foreign keys
-    table
-      .uuid("business_id")
-      .notNullable()
-      .references("id")
-      .inTable("business")
-      .onDelete("CASCADE");
     table
       .uuid("room_id")
       .notNullable()

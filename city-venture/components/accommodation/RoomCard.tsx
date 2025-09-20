@@ -3,18 +3,18 @@ import { useColorScheme } from '@/hooks/use-color-scheme';
 import { FontAwesome5 } from '@expo/vector-icons';
 import React, { useMemo, useState } from 'react';
 import {
-    Image,
-    ImageSourcePropType,
-    Platform,
-    Pressable,
-    StyleProp,
-    StyleSheet,
-    Text,
-    TextStyle,
-    View,
-    ViewStyle,
+  Image,
+  ImageSourcePropType,
+  Platform,
+  Pressable,
+  StyleProp,
+  StyleSheet,
+  Text,
+  TextStyle,
+  View,
+  ViewStyle,
 } from 'react-native';
-import Chip from './Chip';
+import Chip from '../Chip';
 
 export type RoomCardVariant = 'solid' | 'outlined' | 'soft';
 export type RoomCardSize = 'small' | 'medium' | 'large';
@@ -196,7 +196,19 @@ export const RoomCard: React.FC<RoomCardProps> = ({
     addToFavorite?.(next);
   };
 
-  const priceDisplay = price != null ? (typeof price === 'number' ? `₱${price}` : price) : undefined;
+  const priceDisplay = useMemo(() => {
+    if (price == null) return undefined;
+    const format = (n: number) =>
+      '₱' + n.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    if (typeof price === 'number') return format(price);
+    const raw = price.trim();
+    // Extract numeric part (allow digits & single decimal point)
+    const numeric = raw.replace(/[^0-9.]/g, '');
+    if (!numeric) return raw; // fallback if no numbers
+    const num = Number(numeric);
+    if (isNaN(num)) return raw; // can't parse, return original
+    return format(num);
+  }, [price]);
 
   const Wrapper: React.ElementType = onClick ? Pressable : View;
 
@@ -289,7 +301,7 @@ export const RoomCard: React.FC<RoomCardProps> = ({
                   <View style={[styles.inline, { marginTop: 2, gap: 4 }]}>
                     <FontAwesome5 name="users" size={sz.icon} color={subTextColor} />
                     <Text style={{ color: subTextColor, fontSize: sz.subtitle.fontSize }}>
-                      {capacity} guest{String(capacity) === '1' ? '' : 's'}
+                      {capacity} pax
                     </Text>
                   </View>
                 )}
@@ -328,7 +340,7 @@ export const RoomCard: React.FC<RoomCardProps> = ({
                 <View style={[styles.inline, { marginTop: 6, gap: 4 }]}>
                   <FontAwesome5 name="users" size={sz.icon} color={subTextColor} />
                   <Text style={{ color: subTextColor, fontSize: sz.subtitle.fontSize }}>
-                    {capacity} guest{String(capacity) === '1' ? '' : 's'}
+                    {capacity} pax{String(capacity) === '1' ? '' : 's'}
                   </Text>
                 </View>
               )}

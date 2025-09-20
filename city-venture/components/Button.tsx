@@ -102,10 +102,6 @@ const Button = ({
     <Pressable
       accessibilityRole="button"
       onPress={onPress}
-      android_ripple={{
-        color: addOpacity(colorStyle?.backgroundColor ?? '#000', 0.15),
-        borderless: false,
-      }}
       style={({ pressed }) => [
         styles.base,
         {
@@ -121,6 +117,7 @@ const Button = ({
         },
         colorStyle,
         getPlatformElevation(elevation),
+        // Consistent pressed state for both platforms
         pressed && { opacity: 0.85 },
         style,
       ]}
@@ -200,10 +197,11 @@ export default Button;
 const styles = StyleSheet.create({
   base: {
     borderWidth: 0,
-    // removed overflow: 'hidden' so shadows show on iOS
   },
   text: {
     fontWeight: '600',
+    textAlignVertical: 'center',
+    includeFontPadding: false,
   },
 });
 
