@@ -15,7 +15,7 @@ import { StatusBar, StyleSheet, TextInput, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 const LoginPage = () => {
-  const [email, setEmail] = useState('rayven.clores@unc.edu.ph');
+  const [email, setEmail] = useState('emman@gmail.com');
   const [password, setPassword] = useState('123456');
   const { login, user } = useAuth();
   const [loginError, setLoginError] = useState('');

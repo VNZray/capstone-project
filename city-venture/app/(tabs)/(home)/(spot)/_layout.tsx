@@ -1,12 +1,11 @@
-import { View, Text } from 'react-native'
-import React from 'react'
+import React from 'react';
+import { Slot } from 'expo-router';
+import { TouristSpotProvider } from '@/context/TouristSpotContext';
 
-const SpotLayout = () => {
+export default function SpotLayout() {
   return (
-    <View>
-      <Text>SpotLayout</Text>
-    </View>
-  )
+    <TouristSpotProvider>
+      <Slot />
+    </TouristSpotProvider>
+  );
 }
-
-export default SpotLayout
