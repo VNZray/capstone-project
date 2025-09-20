@@ -3,6 +3,10 @@ export type TouristSpot = {
 	name: string;
 	description: string;
 	address_id: number;
+	barangay_name?: string | null;
+	municipality_name?: string | null;
+	province_name?: string | null;
+	address_details?: TouristSpotAddressDetails | null;
 	latitude?: string | null;
 	longitude?: string | null;
 	contact_phone?: string | null;
@@ -14,14 +18,21 @@ export type TouristSpot = {
 	type_id: number;
 	created_at?: string;
 	updated_at?: string;
-	province_id?: number;
-	municipality_id?: number;
-	barangay_id?: number;
-	province_name?: string;
-	municipality_name?: string;
-	barangay_name?: string;
 	categories?: TouristSpotCategory[];
 	images?: TouristSpotImage[];
+};
+
+export type TouristSpotAddressDetails = {
+	id: number;
+	province_id?: number | null;
+	municipality_id?: number | null;
+	barangay_id?: number | null;
+	province?: string | null;
+	municipality?: string | null;
+	barangay?: string | null;
+	province_name?: string | null;
+	municipality_name?: string | null;
+	barangay_name?: string | null;
 };
 
 export type TouristSpotCategory = {

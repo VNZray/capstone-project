@@ -2,14 +2,15 @@ import React, { useMemo, useState } from 'react';
 import { FlatList, ScrollView, StyleSheet, View, Pressable } from 'react-native';
 import { ThemedText } from '@/components/themed-text';
 import SearchBar from '@/components/SearchBar';
-import TouristSpotCard from '@/components/TouristSpotCard';
-import FeaturedTouristSpotCard from '@/components/FeaturedTouristSpotCard';
+import TouristSpotCard from '@/components/tourist_spots/TouristSpotCard';
+import FeaturedTouristSpotCard from '@/components/tourist_spots/FeaturedTouristSpotCard';
 import Chip from '@/components/Chip';
 import { useTouristSpot } from '@/context/TouristSpotContext';
+import { navigateToTouristSpotProfile } from '@/routes/touristSpotRoutes';
 import Button from '@/components/Button';
 
 const TouristSpotScreen = () => {
-  const { spots, categoriesAndTypes, loading } = useTouristSpot();
+  const { spots, categoriesAndTypes, loading, setSpotId } = useTouristSpot();
   const [query, setQuery] = useState('');
   const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null);
   const [viewMode, setViewMode] = useState<'card' | 'list'>('card');
@@ -61,9 +62,7 @@ const TouristSpotScreen = () => {
         }
         location={location}
         categories={item.categories?.map((c: any) => c.category)}
-        onPress={() => {
-          /* navigate to detail later */
-        }}
+        onPress={() => { setSpotId(item.id); navigateToTouristSpotProfile(); }}
         viewMode={viewMode}
       />
     );
@@ -120,7 +119,7 @@ const TouristSpotScreen = () => {
                     name={f.name}
                     image={img?.file_url || 'https://via.placeholder.com/300x200?text=No+Image'}
                     categories={f.categories?.map((c: any) => c.category)}
-                    onPress={() => {}}
+                    onPress={() => { setSpotId(f.id); navigateToTouristSpotProfile(); }}
                     width={260}
                     height={140}
                   />

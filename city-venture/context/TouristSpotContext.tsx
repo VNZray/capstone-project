@@ -1,5 +1,5 @@
 import React, { createContext, ReactNode, useCallback, useContext, useEffect, useState } from 'react';
-import type { TouristSpot, TouristSpotCategoriesAndTypes, TouristSpotImage, TouristSpotLocationData, TouristSpotSchedule } from '@/types/TouristSpot';
+import type { TouristSpot, TouristSpotCategoriesAndTypes, TouristSpotImage, TouristSpotLocationData, TouristSpotSchedule, TouristSpotAddressDetails } from '@/types/TouristSpot';
 import {
   clearStoredTouristSpotId,
   fetchAllTouristSpots,
@@ -9,6 +9,7 @@ import {
   fetchTouristSpotImages,
   fetchTouristSpotLocationData,
   fetchTouristSpotSchedules,
+  fetchAddressDetailsById,
   getStoredTouristSpotId,
   setStoredTouristSpotId,
 } from '@/services/TouristSpotService';
@@ -23,6 +24,7 @@ interface TouristSpotContextType {
   schedules: TouristSpotSchedule[];
   images: TouristSpotImage[];
   categories: any[];
+  addressDetails: TouristSpotAddressDetails | null;
   setSpotId: (id: string) => void;
   clearSpotId: () => void;
   refreshSpots: () => Promise<void>;
@@ -47,6 +49,7 @@ export const TouristSpotProvider: React.FC<ProviderProps> = ({ children }) => {
   const [schedules, setSchedules] = useState<TouristSpotSchedule[]>([]);
   const [images, setImages] = useState<TouristSpotImage[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
+  const [addressDetails, setAddressDetails] = useState<TouristSpotAddressDetails | null>(null);
 
   // Initialize stored selection
   useEffect(() => {
@@ -88,6 +91,12 @@ export const TouristSpotProvider: React.FC<ProviderProps> = ({ children }) => {
       setSelectedSpot(spot);
       setImages(spot.images || []);
       setCategories(spot.categories || []);
+      if (spot?.address_id) {
+        const addr = await fetchAddressDetailsById(spot.address_id);
+        setAddressDetails(addr);
+      } else {
+        setAddressDetails(null);
+      }
     } catch (e) {
       console.error('Failed to fetch tourist spot', e);
       setSelectedSpot(null);
@@ -166,6 +175,7 @@ export const TouristSpotProvider: React.FC<ProviderProps> = ({ children }) => {
         schedules,
         images,
         categories,
+        addressDetails,
         setSpotId,
         clearSpotId,
         refreshSpots,
