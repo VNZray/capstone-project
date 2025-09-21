@@ -206,10 +206,10 @@ const Details = () => {
                     : `${formatTime(s.open_time)} - ${formatTime(s.close_time)}`;
                 return (
                   <View key={s.id || label} style={styles.scheduleRow}>
-                    <ThemedText type="body-small" style={[styles.scheduleDay, { color: closed ? '#DC2626' : '#222' }]}>
+                    <ThemedText type="body-small" style={[styles.scheduleDay]}>
                       {label}
                     </ThemedText>
-                    <ThemedText type="body-small" style={{ color: closed ? '#DC2626' : '#16A34A', flex: 1 }}>
+                    <ThemedText type="body-small" style={{ flex: 1 }}>
                       {time}
                     </ThemedText>
                   </View>
@@ -303,26 +303,26 @@ const Details = () => {
             }
           }}
           style={({ pressed }) => [
-                          {
-                            paddingVertical: 10,
-                            paddingHorizontal: 14,
-                            borderRadius: 10,
-                            backgroundColor: '#2563EB',
-                            alignSelf: 'flex-start',
-                            flexDirection: 'row',
-                            alignItems: 'center',
-                            gap: 8,
-                          },
-                          styles.directionsButton,
-                          Platform.OS === 'android' && pressed && { opacity: 0.8 },
-                        ]}
-                        android_ripple={{ color: 'rgba(255, 255, 255, 0.2)' }}
+            {
+              paddingVertical: 10,
+              paddingHorizontal: 14,
+              borderRadius: 10,
+              backgroundColor: '#2563EB',
+              alignSelf: 'flex-start',
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 8,
+            },
+            styles.directionsButton,
+            Platform.OS === 'android' && pressed && { opacity: 0.8 },
+          ]}
+          android_ripple={{ color: 'rgba(255, 255, 255, 0.2)' }}
         >
           <FontAwesome5 name="directions" size={14} color="#fff" />
-              <ThemedText type="label-medium" style={{ color: '#fff' }}>
-                Get Directions
-              </ThemedText>
-            </Pressable>
+          <ThemedText type="label-medium" style={{ color: '#fff' }}>
+            Get Directions
+          </ThemedText>
+        </Pressable>
       </Container>
     </PageContainer>
   );

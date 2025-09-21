@@ -44,7 +44,10 @@ const TouristSpotProfile = () => {
     );
   }
 
-  const primaryImage = selectedSpot.images?.find(i => i.is_primary === 1 || i.is_primary === true) || selectedSpot.images?.[0];
+  const primaryImage =
+    selectedSpot.images?.find(
+      (i) => i.is_primary === 1 || i.is_primary === true
+    ) || selectedSpot.images?.[0];
 
   return (
     <View style={{ flex: 1 }}>
@@ -101,7 +104,12 @@ const TouristSpotProfile = () => {
 const styles = StyleSheet.create({
   image: { width: width * 1, height: height * 0.4 },
   tabContent: { marginBottom: 150, overflow: 'visible' },
-  notFoundContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 },
+  notFoundContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
 });
 
 export default TouristSpotProfile;
