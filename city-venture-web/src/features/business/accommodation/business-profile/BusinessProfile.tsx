@@ -741,14 +741,18 @@ const BusinessProfile = () => {
                 Set your operating hours to inform customers when you're available.
               </Typography>
 
-              {businessHours.map((hours: BusinessHours, idx) => (
-                <React.Fragment key={hours.id}>
-                  <Typography
-                    startDecorator={<TimerIcon />}
-                    fontFamily={"poppins"}
-                    level="body-md"
-                  >
-                    {hours.day_of_week}: {formatTime(hours.open_time ?? "")} - {formatTime(hours.close_time ?? "")}
+              {businessHours.map((hours: BusinessHours, idx) => {
+                const key = `${hours.day_of_week}-${hours.id ?? idx}`;
+                return (
+                  <div key={key} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                    <Typography
+                      startDecorator={<TimerIcon />}
+                      fontFamily={"poppins"}
+                      level="body-md"
+                      sx={{ display: 'inline-flex', alignItems: 'center' }}
+                    >
+                      {hours.day_of_week}: {formatTime(hours.open_time ?? "")} - {formatTime(hours.close_time ?? "")}
+                    </Typography>
                     <Chip
                       size="sm"
                       variant="soft"
@@ -757,10 +761,10 @@ const BusinessProfile = () => {
                     >
                       {hours.is_open ? "Open" : "Closed"}
                     </Chip>
-                  </Typography>
-                  {idx < businessHours.length - 1 && <Divider sx={{ my: 1 }} />}
-                </React.Fragment>
-              ))}
+                    {idx < businessHours.length - 1 && <Divider sx={{ my: 1 }} />}
+                  </div>
+                );
+              })}
             </Container>
           </Container>
         </Grid>

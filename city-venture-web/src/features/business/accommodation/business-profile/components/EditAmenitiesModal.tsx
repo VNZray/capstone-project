@@ -1,19 +1,11 @@
 import * as React from "react";
-import {
-  Modal,
-  ModalDialog,
-  DialogContent,
-  DialogActions,
-  Button,
-  FormLabel,
-  FormControl,
-  Autocomplete,
-  Chip,
-} from "@mui/joy";
+import BaseEditModal from '@/src/components/BaseEditModal';
 import { deleteData, getData, insertData } from "@/src/services/Service";
-import CardHeader from "@/src/components/CardHeader";
 import type { Amenity } from "@/src/types/Amenity";
-import Save from "@mui/icons-material/Save";
+import * as Icons from 'lucide-react';
+/* eslint-disable @typescript-eslint/no-explicit-any */
+const icons = Icons as unknown as Record<string, React.ComponentType<any>>;
+/* eslint-enable @typescript-eslint/no-explicit-any */
 interface EditBusinessModalProps {
   open: boolean;
   businessId?: string;
@@ -33,17 +25,12 @@ const EditAmenitiesModal: React.FC<EditBusinessModalProps> = ({
   const [selectedAmenities, setSelectedAmenities] = React.useState<Amenity[]>(
     []
   );
+  const [query, setQuery] = React.useState("");
 
   // get amenities
   const fetchAmenities = async () => {
     const response = await getData("amenities");
-    if (response) {
-      setAmenities(response);
-    }
-  };
-
-  const addAmenity = (name: string) => {
-    insertData({ name }, "amenities");
+    if (response) setAmenities(response);
   };
 
   React.useEffect(() => {
@@ -51,7 +38,7 @@ const EditAmenitiesModal: React.FC<EditBusinessModalProps> = ({
   }, []);
 
   // Fetch amenities for the business and set selectedAmenities
-  const fetchBusinessAmenities = async () => {
+  const fetchBusinessAmenities = React.useCallback(async () => {
     if (!businessId) return;
 
     const businessAmenityResponse = await getData("business-amenities");
@@ -75,11 +62,11 @@ const EditAmenitiesModal: React.FC<EditBusinessModalProps> = ({
           .filter((a): a is Amenity => !!a)
       : [];
     setSelectedAmenities(selected);
-  };
+  }, [businessId]);
 
   React.useEffect(() => {
     fetchBusinessAmenities();
-  }, [businessId]);
+  }, [fetchBusinessAmenities]);
 
   const handleSave = async () => {
     if (businessId) {
@@ -111,110 +98,56 @@ const EditAmenitiesModal: React.FC<EditBusinessModalProps> = ({
 
     onClose();
   };
-
   return (
-    <Modal open={open} onClose={onClose}>
-      <ModalDialog size="lg" variant="outlined" maxWidth={600} minWidth={600}>
-        <CardHeader title="Edit Business" color="white" />
-        <DialogContent>
-          <FormControl>
-            <FormLabel>Update Amenities</FormLabel>
-            <Autocomplete
-              size="lg"
-              multiple
-              freeSolo
-              placeholder="Amenities"
-              limitTags={6}
-              options={amenities}
-              value={selectedAmenities}
-              getOptionLabel={(option) =>
-                typeof option === "string" ? option : option.name
-              }
-              renderTags={(value, getTagProps) =>
-                value.map((option, index) => (
-                  <span key={option.id} style={{ margin: 2 }}>
-                    <Chip
-                      {...getTagProps({ index })}
-                      color="primary"
-                      variant="outlined"
-                      size="lg"
-                    >
-                      {option.name}
-                    </Chip>
-                  </span>
-                ))
-              }
-              filterOptions={(options, state) => {
-                const inputValue = state.inputValue.trim().toLowerCase();
-                const filtered = options.filter(
-                  (option) =>
-                    typeof option !== "string" &&
-                    option.name.toLowerCase().includes(inputValue)
+    <BaseEditModal
+      open={open}
+      onClose={onClose}
+      title="Edit Amenities"
+      description="Select amenities for this business"
+      maxWidth={640}
+      actions={[
+        { label: 'Cancel', onClick: onClose },
+        { label: 'Save', onClick: handleSave, variant: 'primary' },
+      ]}
+    >
+      <div style={{ padding: 8 }}>
+        <div style={{ marginBottom: 8 }}>
+          <input
+            placeholder="Search amenities..."
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            style={{ width: '100%', padding: 8, boxSizing: 'border-box', borderRadius: 6, border: '1px solid #e5e7eb' }}
+          />
+        </div>
+
+        <div style={{ maxHeight: 300, overflow: 'auto', paddingRight: 4 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 4 }}>
+            {amenities
+              .filter((a) => a.name.toLowerCase().includes(query.trim().toLowerCase()))
+              .map((amenity) => {
+                const checked = selectedAmenities.some((s) => s.id === amenity.id);
+                const IconComp = amenity.icon && icons[amenity.icon] ? icons[amenity.icon] : icons.Tag;
+                return (
+                  <label key={amenity.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 8px' }}>
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={(e) => {
+                        if (e.target.checked) setSelectedAmenities((s) => [...s, amenity]);
+                        else setSelectedAmenities((s) => s.filter((x) => x.id !== amenity.id));
+                      }}
+                    />
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                      <IconComp size={16} style={{ color: 'var(--primary-color)' }} />
+                      <span style={{ color: 'var(--primary-color)', fontWeight: 500 }}>{amenity.name}</span>
+                    </span>
+                  </label>
                 );
-
-                // If user typed something not in list → add “Add …”
-                if (
-                  inputValue !== "" &&
-                  !options.some(
-                    (opt) =>
-                      typeof opt !== "string" &&
-                      opt.name.toLowerCase() === inputValue
-                  )
-                ) {
-                  return [
-                    ...filtered,
-                    { id: -1, name: `Add "${state.inputValue}"` },
-                  ];
-                }
-
-                return filtered;
-              }}
-              onChange={async (_, newValue) => {
-                const last = newValue[newValue.length - 1];
-
-                // User chose "Add ..."
-                if (last && typeof last !== "string" && last.id === -1) {
-                  const newAmenityName = last.name
-                    .replace(/^Add\s+"|"$/g, "")
-                    .trim();
-                  addAmenity(newAmenityName);
-                  await fetchAmenities();
-
-                  // Find inserted amenity (assumes fetchAmenities updates amenities)
-                  const inserted = amenities.find(
-                    (a) => a.name.toLowerCase() === newAmenityName.toLowerCase()
-                  );
-                  if (inserted) {
-                    setSelectedAmenities([
-                      ...newValue
-                        .slice(0, -1)
-                        .filter(
-                          (item): item is Amenity => typeof item !== "string"
-                        ),
-                      inserted,
-                    ]);
-                  }
-                } else {
-                  setSelectedAmenities(
-                    newValue.filter(
-                      (item): item is Amenity => typeof item !== "string"
-                    )
-                  );
-                }
-              }}
-            />
-          </FormControl>
-        </DialogContent>
-        <DialogActions>
-          <Button fullWidth variant="plain" color="neutral" onClick={onClose}>
-            Cancel
-          </Button>
-          <Button fullWidth color="primary" startDecorator={<Save />} onClick={handleSave}>
-            Save Changes
-          </Button>
-        </DialogActions>
-      </ModalDialog>
-    </Modal>
+              })}
+          </div>
+        </div>
+      </div>
+    </BaseEditModal>
   );
 };
 

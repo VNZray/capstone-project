@@ -1,18 +1,7 @@
 import * as React from "react";
-import {
-  Modal,
-  ModalDialog,
-  DialogContent,
-  DialogActions,
-  Button,
-  Input,
-  FormControl,
-  FormLabel,
-} from "@mui/joy";
+import BaseEditModal from '@/src/components/BaseEditModal';
 import { updateData } from "@/src/services/Service";
-import CardHeader from "@/src/components/CardHeader";
-import { Facebook, Instagram, Save } from "@mui/icons-material";
-import { Globe, X } from "lucide-react";
+import { Facebook, Instagram, Globe, X } from 'lucide-react';
 
 interface EditDescriptionModalProps {
   open: boolean;
@@ -69,57 +58,75 @@ const EditSocialMediaModal: React.FC<EditDescriptionModalProps> = ({
   };
 
   return (
-    <Modal open={open} onClose={onClose}>
-      <ModalDialog size="lg" variant="outlined" maxWidth={600} minWidth={600}>
-        <CardHeader title="Edit Links" color="white" />
-        <DialogContent>
-          <FormControl>
-            <FormLabel>Facebook</FormLabel>
-            <Input
-              startDecorator={<Facebook color="primary" />}
+    <BaseEditModal
+      open={open}
+      onClose={onClose}
+      title="Edit Links"
+      description="Update social media and website links"
+      maxWidth={640}
+      actions={[
+        { label: 'Cancel', onClick: onClose },
+        { label: 'Save', onClick: handleSave, variant: 'primary' },
+      ]}
+    >
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        <div>
+          <label style={{ display: 'block', marginBottom: 6, fontSize: 14, color: '#374151' }}>Facebook</label>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <Facebook size={18} style={{ color: 'var(--primary-color)' }} />
+            <input
+              aria-label="Facebook URL"
               value={facebook_url}
               onChange={(e) => setFacebookUrl(e.target.value)}
-              size="md"
+              placeholder="https://facebook.com/yourpage"
+              style={{ flex: 1, padding: 8, borderRadius: 8, border: '1px solid #e5e7eb', boxSizing: 'border-box' }}
             />
-          </FormControl>
-          <FormControl>
-            <FormLabel>Instagram</FormLabel>
-            <Input
-              startDecorator={<Instagram sx={{ color: "#E1306C" }} />}
+          </div>
+        </div>
+
+        <div>
+          <label style={{ display: 'block', marginBottom: 6, fontSize: 14, color: '#374151' }}>Instagram</label>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <Instagram size={18} style={{ color: '#E1306C' }} />
+            <input
+              aria-label="Instagram URL"
               value={instagram_url}
               onChange={(e) => setInstagramUrl(e.target.value)}
-              size="md"
+              placeholder="https://instagram.com/yourhandle"
+              style={{ flex: 1, padding: 8, borderRadius: 8, border: '1px solid #e5e7eb', boxSizing: 'border-box' }}
             />
-          </FormControl>
-          <FormControl>
-            <FormLabel>X</FormLabel>
-            <Input
-              startDecorator={<X color="#000" />}
+          </div>
+        </div>
+
+        <div>
+          <label style={{ display: 'block', marginBottom: 6, fontSize: 14, color: '#374151' }}>X</label>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <X size={18} style={{ color: '#000' }} />
+            <input
+              aria-label="X URL"
               value={x_url}
               onChange={(e) => setXUrl(e.target.value)}
-              size="md"
+              placeholder="https://x.com/yourhandle"
+              style={{ flex: 1, padding: 8, borderRadius: 8, border: '1px solid #e5e7eb', boxSizing: 'border-box' }}
             />
-          </FormControl>
-          <FormControl>
-            <FormLabel>Website</FormLabel>
-            <Input
-              startDecorator={<Globe color="#000" />}
+          </div>
+        </div>
+
+        <div>
+          <label style={{ display: 'block', marginBottom: 6, fontSize: 14, color: '#374151' }}>Website</label>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <Globe size={18} style={{ color: '#000' }} />
+            <input
+              aria-label="Website URL"
               value={website_url}
               onChange={(e) => setWebsiteUrl(e.target.value)}
-              size="md"
+              placeholder="https://yourwebsite.com"
+              style={{ flex: 1, padding: 8, borderRadius: 8, border: '1px solid #e5e7eb', boxSizing: 'border-box' }}
             />
-          </FormControl>
-        </DialogContent>
-        <DialogActions>
-          <Button fullWidth variant="plain" color="neutral" onClick={onClose}>
-            Cancel
-          </Button>
-          <Button fullWidth color="primary" startDecorator={<Save />} onClick={handleSave}>
-            Save Changes
-          </Button>
-        </DialogActions>
-      </ModalDialog>
-    </Modal>
+          </div>
+        </div>
+      </div>
+    </BaseEditModal>
   );
 };
 
