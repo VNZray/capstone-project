@@ -70,6 +70,14 @@ async function createUserProcedures(knex) {
     END;
   `);
 
+  // Get user role by ID
+  await knex.raw(`
+    CREATE PROCEDURE GetUserRoleById(IN p_id INT)
+    BEGIN
+      SELECT * FROM user_role WHERE id = p_id;
+    END;
+  `);
+
   // Update user role by ID
   await knex.raw(`
     CREATE PROCEDURE UpdateUserRole(
@@ -148,6 +156,8 @@ async function dropUserProcedures(knex) {
   await knex.raw("DROP PROCEDURE IF EXISTS GetUsersByRoleId;");
   await knex.raw("DROP PROCEDURE IF EXISTS InsertUser;");
   await knex.raw("DROP PROCEDURE IF EXISTS InsertUserRole;");
+  await knex.raw("DROP PROCEDURE IF EXISTS GetAllUserRoles;");
+  await knex.raw("DROP PROCEDURE IF EXISTS GetUserRoleById;");
   await knex.raw("DROP PROCEDURE IF EXISTS UpdateUserRole;");
   await knex.raw("DROP PROCEDURE IF EXISTS UpdateUserRoleByName;");
   await knex.raw("DROP PROCEDURE IF EXISTS UpdateUser;");

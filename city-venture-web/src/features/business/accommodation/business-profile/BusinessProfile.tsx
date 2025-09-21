@@ -1,21 +1,19 @@
 import PageContainer from "@/src/components/PageContainer";
-import Text from "@/src/components/Text";
-import Paper from "@mui/material/Paper";
 import { useBusiness } from "@/src/context/BusinessContext";
 import LocationOnIcon from "@mui/icons-material/LocationOn";
-import StarIcon from "@mui/icons-material/Star";
 import EditIcon from "@mui/icons-material/Edit";
-import { useAddress } from "@/src/hooks/useAddress";
+//
 import { colors } from "@/src/utils/Colors";
-import { Button, Chip, Grid, Typography } from "@mui/joy";
+import { Button, Chip, Grid, Typography, Sheet, Divider, IconButton } from "@mui/joy";
 import BusinessMap from "./components/businessMap"; // <-- new import
+import "./BusinessProfile.css";
 import { LucidePhone, PhilippinePeso, Globe, TimerIcon } from "lucide-react";
 import Container from "@/src/components/Container";
 import { MdEmail, MdFacebook } from "react-icons/md";
 import { HomeWork, LocationCity, Place, Public, X } from "@mui/icons-material";
 import EditDescriptionModal from "./components/EditDescription";
 import type { Business, BusinessHours } from "@/src/types/Business";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import EditContactModal from "./components/EditContactModal";
 import EditSocialMediaModal from "./components/EditSocialMediaModal";
 import EditPricingModal from "./components/EditPricingModal";
@@ -23,12 +21,7 @@ import EditAddressModal from "./components/EditAddressModal";
 import EditMapCoordinatesModal from "./components/EditMapCoordinatesModal";
 import EditBusinessModal from "./components/EditBusinessModal";
 import { FaInstagram } from "react-icons/fa";
-import {
-  getData,
-  getDataByForeignId,
-  getDataById,
-  updateData,
-} from "@/src/services/Service";
+import { getData, getDataByForeignId, updateData } from "@/src/services/Service";
 import type { ExternalBooking } from "@/src/types/ExternalBooking";
 import { bookingLogos } from "@/src/types/BookingLogos";
 import EditBusinessHoursModal from "./components/EditBusinessHoursModal";
@@ -69,16 +62,16 @@ const BusinessProfile = () => {
     fetchAddress();
   }, [businessDetails?.address_id]);
 
-  const getBusinessHours = async () => {
+  const getBusinessHours = useCallback(async () => {
     if (!businessDetails?.id) return;
     const response = await getData("business-hours");
     const filtered = Array.isArray(response)
       ? response.filter((hours) => hours.business_id === businessDetails.id)
       : [];
     setBusinessHours(filtered);
-  };
+  }, [businessDetails?.id]);
 
-  const fetchBusinessAmenities = async () => {
+  const fetchBusinessAmenities = useCallback(async () => {
     if (!businessDetails?.id) return;
 
     const businessAmenityResponse = await getData("business-amenities");
@@ -96,11 +89,11 @@ const BusinessProfile = () => {
       : [];
 
     setAmenities(filtered);
-  };
+  }, [businessDetails?.id]);
 
   React.useEffect(() => {
     fetchBusinessAmenities();
-  }, [businessDetails?.id]);
+  }, [fetchBusinessAmenities]);
 
   const formatTime = (time: string) => {
     const [hour, minute] = time.split(":");
@@ -109,21 +102,21 @@ const BusinessProfile = () => {
     return `${formattedHour}:${minute} ${ampm}`;
   };
 
-  const fetchExternalBookings = async () => {
+  const fetchExternalBookings = useCallback(async () => {
     if (!businessDetails?.id) return;
     const response = await getData("external-booking");
     const filtered = Array.isArray(response)
       ? response.filter((booking) => booking.business_id === businessDetails.id)
       : [];
     setExternalBooking(filtered);
-  };
+  }, [businessDetails?.id]);
 
   useEffect(() => {
     if (businessDetails?.id) {
       fetchExternalBookings();
       getBusinessHours();
     }
-  }, [businessDetails?.id]);
+  }, [businessDetails?.id, fetchExternalBookings, getBusinessHours]);
 
   const [businessData, setBusinessData] = React.useState<Business>({
     id: businessDetails?.id || "",
@@ -248,130 +241,101 @@ const BusinessProfile = () => {
       style={{
         display: "flex",
         flexDirection: "column",
-        gap: "20px",
+        gap: "32px",
+        background: "#fafafa",
+        minHeight: "100vh",
       }}
     >
-      <Grid container spacing={2}>
+      <div className="business-profile-page">
+      <Grid container spacing={4}>
         <Grid
-          xs={8}
+          xs={12}
+          md={8}
           sx={{
             display: "flex",
             flexDirection: "column",
-            gap: "20px",
+            gap: "32px",
           }}
         >
-          {/* --- Business Header --- */}
+          {/* --- Business Hero Banner (Redesigned) --- */}
+          <div className="bp-hero" role="banner">
+            {/* Background image */}
+            <div
+              className="bp-hero__bg"
+              style={{
+                backgroundImage: businessDetails?.business_image
+                  ? `url(${businessDetails.business_image})`
+                  : undefined,
+              }}
+            />
+            {/* Gradient scrim for readability */}
+            <div className="bp-hero__gradient" />
+
+            {/* Removed status badge and top-right edit button as per request */}
+
+            {/* Content Overlay */}
+            <div className="bp-hero__content">
+              <div className="bp-hero__panel">
+                {/* Business Name with inline edit icon */}
+                <div className="bp-hero__title">
+                  <Typography
+                    fontFamily={"poppins"}
+                    level="h1"
+                    fontWeight={700}
+                    sx={{
+                      fontSize: { xs: "26px", sm: "34px", md: "42px" },
+                      lineHeight: 1.15,
+                      color: "#fff",
+                      letterSpacing: "-0.02em",
+                      mb: 0.5,
+                    }}
+                  >
+                    {businessDetails?.business_name || "Business Name"}
+                  </Typography>
+                  <IconButton
+                    aria-label="Edit business"
+                    size="sm"
+                    variant="soft"
+                    onClick={() => setEditBusinessOpen(true)}
+                    className="bp-hero__edit-inline"
+                  >
+                    <EditIcon fontSize="small" />
+                  </IconButton>
+                </div>
+
+                {/* Address */}
+                <div className="bp-hero__row">
+                  <LocationOnIcon className="bp-hero__icon" />
+                  <Typography
+                    fontFamily={"poppins"}
+                    level="body-lg"
+                    sx={{ color: "#e5e7eb", fontSize: { xs: "14px", md: "16px" } }}
+                  >
+                    {businessDetails?.address || address?.barangay_name || address?.municipality_name
+                      ? `${businessDetails?.address || ""}${businessDetails?.address ? ", " : ""}${address?.barangay_name || ""}${address?.barangay_name ? ", " : ""}${address?.municipality_name || ""}`
+                      : "Address not available"}
+                  </Typography>
+                </div>
+
+                {/* Ratings removed as requested */}
+              </div>
+            </div>
+          </div>
+
+          {/* --- Business Details --- */}
           <Container
-            elevation={2}
+            elevation={0}
+            className="bp-main"
             style={{
               padding: "20px",
               display: "flex",
-              alignItems: "center",
               flexDirection: "column",
               gap: "20px",
             }}
           >
-            <div
-              style={{
-                padding: 0,
-                display: "flex",
-                justifyContent: "space-between",
-                width: "100%",
-              }}
-            >
-              <div
-                style={{
-                  display: "flex",
-                  gap: "20px",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
-                <img
-                  width={130}
-                  height={130}
-                  className="card-image"
-                  src={businessDetails?.business_image || ""}
-                  style={{ borderRadius: "8px" }}
-                />
-                <div
-                  style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    justifyContent: "space-between",
-                  }}
-                >
-                  <Typography
-                    fontFamily={"poppins"}
-                    level="h2"
-                    fontWeight={700}
-                  >
-                    {businessDetails?.business_name || "Business Name"}
-                  </Typography>
-                  <Typography
-                    startDecorator={
-                      <LocationOnIcon
-                        style={{ color: colors.success }}
-                        fontSize="medium"
-                      />
-                    }
-                    fontFamily={"poppins"}
-                    level="body-md"
-                  >
-                    {businessDetails?.address}, {address?.barangay_name},{" "}
-                    {address?.municipality_name}, {address?.province_name}
-                  </Typography>
-                  <Typography
-                    startDecorator={
-                      <StarIcon
-                        style={{ color: colors.yellow }}
-                        fontSize="medium"
-                      />
-                    }
-                    fontFamily={"poppins"}
-                    level="body-md"
-                  >
-                    Review
-                  </Typography>
-                  {businessDetails?.status && (
-                    <Chip
-                      size="lg"
-                      color={getStatusColor(businessDetails.status)}
-                      variant="soft"
-                      sx={{ mt: 1 }}
-                    >
-                      {businessDetails.status}
-                    </Chip>
-                  )}
-                </div>
-              </div>
-
-              <div>
-                <Button
-                  color="primary"
-                  size="sm"
-                  variant="outlined"
-                  startDecorator={<EditIcon />}
-                  onClick={() => setEditBusinessOpen(true)}
-                >
-                  Edit
-                </Button>
-              </div>
-            </div>
-          </Container>
-
-          {/* --- Business Details --- */}
-          <Container
-            elevation={2}
-            style={{
-              padding: "20px",
-              display: "flex",
-              gap: "40px",
-            }}
-          >
-            <Container gap="10px" padding="0">
+            <Container gap="12px" padding="0">
               <Container
-                gap="10px"
+                gap="12px"
                 padding="0"
                 direction="row"
                 align="center"
@@ -381,11 +345,13 @@ const BusinessProfile = () => {
                   fontFamily={"poppins"}
                   level="title-lg"
                   fontWeight={700}
+                  sx={{ color: "#1e293b" }}
                 >
                   About your business
                 </Typography>
 
                 <Button
+                  className="bp-edit-btn"
                   startDecorator={<EditIcon />}
                   onClick={() => setEditDescOpen(true)}
                   size="sm"
@@ -395,53 +361,48 @@ const BusinessProfile = () => {
                 </Button>
               </Container>
 
-              <Paper variant="outlined" sx={{ p: 2 }}>
-                <Typography fontFamily={"poppins"} level="body-md">
-                  {businessDetails?.description || "No description available"}
-                </Typography>
-              </Paper>
-            </Container>
-
-            <Container gap="10px" padding="0">
-              <Container
-                gap="10px"
-                padding="0"
-                direction="row"
-                align="center"
-                justify="space-between"
-              >
-                <Typography
-                  fontFamily={"poppins"}
-                  level="title-lg"
-                  fontWeight={700}
-                >
-                  Pricing
-                </Typography>
-
-                <Button
-                  startDecorator={<EditIcon />}
-                  onClick={() => setEditPricingOpen(true)}
-                  size="sm"
-                  variant="outlined"
-                >
-                  Edit
-                </Button>
-              </Container>
-
               <Typography
-                startDecorator={<PhilippinePeso />}
                 fontFamily={"poppins"}
-                level="body-md"
+                level="body-sm"
+                sx={{
+                  color: "#6b7280",
+                  fontWeight: 400,
+                  fontSize: "14px"
+                }}
               >
-                {businessDetails?.min_price?.toLocaleString()}
-                {" - "}
-                {businessDetails?.max_price?.toLocaleString()}
+                Tell customers about your business, services, and what makes you unique.
               </Typography>
+
+              <Sheet
+                className="bp-desc-sheet"
+                variant="outlined"
+                sx={{
+                  p: 2.5,
+                  borderRadius: "16px",
+                  minHeight: "120px",
+                  display: "flex",
+                  alignItems: businessDetails?.description ? "flex-start" : "center"
+                }}
+              >
+                <Typography
+                  fontFamily={"poppins"}
+                  level="body-md"
+                  sx={{
+                    lineHeight: 1.6,
+                    color: businessDetails?.description ? "#64748b" : "#94a3b8",
+                    fontStyle: businessDetails?.description ? "normal" : "italic"
+                  }}
+                >
+                  {businessDetails?.description || "No description available. Add a compelling description to attract more customers."}
+                </Typography>
+              </Sheet>
             </Container>
 
-            <Container gap="10px" padding="0">
+            <Divider sx={{ borderColor: "#e5e7eb", my: 2 }} />
+
+            <Container gap="12px" padding="0">
               <Container
-                gap="10px"
+                gap="12px"
                 padding="0"
                 direction="row"
                 align="center"
@@ -451,6 +412,7 @@ const BusinessProfile = () => {
                   fontFamily={"poppins"}
                   level="title-lg"
                   fontWeight={700}
+                  sx={{ color: "#1e293b" }}
                 >
                   Amenities
                 </Typography>
@@ -459,221 +421,78 @@ const BusinessProfile = () => {
                   startDecorator={<EditIcon />}
                   size="sm"
                   variant="outlined"
+                  className="bp-edit-btn"
                   onClick={() => setEditAmenitiesOpen(true)}
                 >
                   Edit
                 </Button>
               </Container>
 
-              <Paper variant="outlined" sx={{ p: 2, flex: 1 }}>
-                <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
-                  {amenities.map((amenity) => (
-                    <Chip
-                      key={amenity.id}
-                      size="lg"
-                      variant="soft"
-                      color="primary"
-                    >
-                      {amenity.name}
-                    </Chip>
-                  ))}
-                </div>
-              </Paper>
-            </Container>
+              <Typography
+                fontFamily={"poppins"}
+                level="body-sm"
+                sx={{
+                  color: "#6b7280",
+                  fontWeight: 400,
+                  fontSize: "14px"
+                }}
+              >
+                Highlight the features and services available at your business.
+              </Typography>
 
-            {businessDetails?.business_type_id === 1 && (
-              <Container gap="10px" padding="0">
-                <Container
-                  gap="10px"
-                  padding="0"
-                  direction="row"
-                  align="center"
-                  justify="space-between"
-                >
+              <Sheet
+                className="bp-amenities-sheet"
+                variant="outlined"
+                sx={{
+                  p: 2.5,
+                  flex: 1,
+                  borderRadius: "16px",
+                  minHeight: "100px",
+                  display: "flex",
+                  alignItems: amenities.length > 0 ? "flex-start" : "center"
+                }}
+              >
+                {amenities.length > 0 ? (
+                  <div className="bp-amenities" style={{ display: "flex", gap: "10px", flexWrap: "wrap", width: "100%" }}>
+                    {amenities.map((amenity) => (
+                      <Chip
+                        key={amenity.id}
+                        size="md"
+                        variant="soft"
+                        color="neutral"
+                        sx={{
+                          borderRadius: "20px",
+                          fontWeight: 500,
+                          px: 2,
+                          py: 0.5
+                        }}
+                      >
+                        {amenity.name}
+                      </Chip>
+                    ))}
+                  </div>
+                ) : (
                   <Typography
                     fontFamily={"poppins"}
-                    level="title-lg"
-                    fontWeight={700}
+                    level="body-md"
+                    sx={{
+                      color: "#94a3b8",
+                      fontStyle: "italic",
+                      textAlign: "center",
+                      width: "100%"
+                    }}
                   >
-                    Booking Features
+                    No amenities listed. Add amenities to showcase what you offer.
                   </Typography>
-
-                  {businessDetails?.hasBooking ? (
-                    <Button
-                      startDecorator={<EditIcon />}
-                      size="sm"
-                      variant="outlined"
-                    >
-                      Edit
-                    </Button>
-                  ) : (
-                    <Button
-                      onClick={() => activateBooking(businessDetails.id!, true)}
-                      color="success"
-                      size="sm"
-                      variant="solid"
-                    >
-                      Activate
-                    </Button>
-                  )}
-                </Container>
-
-                {businessDetails?.hasBooking ? (
-                  <Chip color="success" size="md" variant="solid">
-                    Activated
-                  </Chip>
-                ) : (
-                  <>
-                    {/* List of external booking links as a card grid */}
-                    <Typography
-                      fontFamily={"poppins"}
-                      level="title-md"
-                      fontWeight={600}
-                    >
-                      {`Currently Using External (Third Party) Booking`}
-                    </Typography>
-
-                    <div
-                      style={{
-                        display: "grid",
-                        gridTemplateColumns: "repeat(6, 1fr)",
-                        gap: "16px",
-                        marginTop: "12px",
-                      }}
-                    >
-                      {externalBooking.map((booking: ExternalBooking) => (
-                        <Container
-                          elevation={2}
-                          key={booking.id}
-                          style={{ padding: "12px", textAlign: "center" }}
-                        >
-                          <a
-                            href={booking.link}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            style={{ display: "block" }}
-                          >
-                            {bookingLogos[booking.name] ? (
-                              <img
-                                src={bookingLogos[booking.name]}
-                                alt={booking.name}
-                                style={{
-                                  height: "60px",
-                                  width: "60px",
-                                  objectFit: "contain",
-                                  marginBottom: "8px",
-                                }}
-                              />
-                            ) : (
-                              <span>{booking.name}</span>
-                            )}
-                          </a>
-                          <Typography fontFamily={"poppins"} level="body-md">
-                            {booking.name}
-                          </Typography>
-                        </Container>
-                      ))}
-                    </div>
-                  </>
                 )}
-              </Container>
-            )}
-
-            <Container gap="10px" padding="0">
-              <Container
-                gap="10px"
-                padding="0"
-                direction="row"
-                align="center"
-                justify="space-between"
-              >
-                <Typography
-                  fontFamily={"poppins"}
-                  level="title-lg"
-                  fontWeight={700}
-                >
-                  Business Hours
-                </Typography>
-
-                <Button
-                  startDecorator={<EditIcon />}
-                  onClick={() => setEditBusinessHoursOpen(true)}
-                  size="sm"
-                  variant="outlined"
-                >
-                  Edit
-                </Button>
-              </Container>
-              {businessHours.map((hours: BusinessHours) => (
-                <Typography
-                  key={hours.id}
-                  startDecorator={<TimerIcon />}
-                  fontFamily={"poppins"}
-                  level="body-md"
-                >
-                  {hours.day_of_week}: {formatTime(hours.open_time ?? "")} -{" "}
-                  {formatTime(hours.close_time ?? "")}
-                  <Chip
-                    size="md"
-                    variant="soft"
-                    style={{ marginLeft: "8px" }}
-                    color={getStatusColor(hours.is_open ? "1" : "0")}
-                  >
-                    {hours.is_open ? "Open" : "Closed"}
-                  </Chip>
-                </Typography>
-              ))}
-            </Container>
-          </Container>
-        </Grid>
-
-        <Grid xs={4}>
-          <Container
-            elevation={2}
-            style={{
-              padding: "20px",
-              display: "flex",
-              gap: "40px",
-            }}
-          >
-            <Container gap="10px" padding="0">
-              <Container
-                gap="10px"
-                padding="0"
-                direction="row"
-                align="center"
-                justify="space-between"
-              >
-                <Typography
-                  fontFamily={"poppins"}
-                  level="title-lg"
-                  fontWeight={700}
-                >
-                  Map Location
-                </Typography>
-
-                <Button
-                  startDecorator={<EditIcon />}
-                  onClick={() => setEditMapCoordinatesOpen(true)}
-                  size="sm"
-                  variant="outlined"
-                >
-                  Edit
-                </Button>
-              </Container>
-
-              {/* Map Component */}
-              <BusinessMap
-                latitude={businessDetails?.latitude}
-                longitude={businessDetails?.longitude}
-                name={businessDetails?.business_name}
-                radius={0}
-              />
+              </Sheet>
             </Container>
 
-            <Container gap="10px" padding="0">
+            <Divider sx={{ borderColor: "#e5e7eb", my: 2 }} />
+
+            <Container gap="12px" padding="0">
               <Container
-                gap="10px"
+                gap="12px"
                 padding="0"
                 direction="row"
                 align="center"
@@ -683,56 +502,13 @@ const BusinessProfile = () => {
                   fontFamily={"poppins"}
                   level="title-lg"
                   fontWeight={700}
-                >
-                  Contact Information
-                </Typography>
-
-                <Button
-                  startDecorator={<EditIcon />}
-                  onClick={() => setEditContactOpen(true)}
-                  size="sm"
-                  variant="outlined"
-                >
-                  Edit
-                </Button>
-              </Container>
-
-              <Typography
-                startDecorator={<MdEmail color={colors.secondary} size={24} />}
-                fontFamily={"poppins"}
-                level="body-md"
-              >
-                {businessDetails?.email || "No email available"}
-              </Typography>
-
-              <Typography
-                startDecorator={
-                  <LucidePhone color={colors.secondary} size={24} />
-                }
-                fontFamily={"poppins"}
-                level="body-md"
-              >
-                {businessDetails?.phone_number || "No phone number available"}
-              </Typography>
-            </Container>
-
-            <Container gap="10px" padding="0">
-              <Container
-                gap="10px"
-                padding="0"
-                direction="row"
-                align="center"
-                justify="space-between"
-              >
-                <Typography
-                  fontFamily={"poppins"}
-                  level="title-lg"
-                  fontWeight={700}
+                  sx={{ color: "#1e293b" }}
                 >
                   Website
                 </Typography>
 
                 <Button
+                  className="bp-edit-btn"
                   startDecorator={<EditIcon />}
                   onClick={() => setEditSocialMediaOpen(true)}
                   size="sm"
@@ -743,13 +519,29 @@ const BusinessProfile = () => {
               </Container>
 
               <Typography
-                startDecorator={
-                  <MdFacebook color={colors.secondary} size={24} />
-                }
+                fontFamily={"poppins"}
+                level="body-sm"
+                sx={{
+                  color: "#6b7280",
+                  fontWeight: 400,
+                  fontSize: "14px"
+                }}
+              >
+                Share your online presence and social media links.
+              </Typography>
+
+              <Typography
+                startDecorator={<MdFacebook color={colors.secondary} size={24} />}
                 fontFamily={"poppins"}
                 level="body-md"
               >
-                {businessDetails?.facebook_url || "No Facebook URL available"}
+                {businessDetails?.facebook_url ? (
+                  <a href={businessDetails.facebook_url} target="_blank" rel="noopener noreferrer" style={{ color: "inherit", textDecoration: "none" }}>
+                    {businessDetails.facebook_url}
+                  </a>
+                ) : (
+                  "No Facebook URL available"
+                )}
               </Typography>
 
               <Typography
@@ -757,7 +549,13 @@ const BusinessProfile = () => {
                 fontFamily={"poppins"}
                 level="body-md"
               >
-                {businessDetails?.instagram_url || "No Instagram URL available"}
+                {businessDetails?.instagram_url ? (
+                  <a href={businessDetails.instagram_url} target="_blank" rel="noopener noreferrer" style={{ color: "inherit", textDecoration: "none" }}>
+                    {businessDetails.instagram_url}
+                  </a>
+                ) : (
+                  "No Instagram URL available"
+                )}
               </Typography>
 
               <Typography
@@ -765,7 +563,13 @@ const BusinessProfile = () => {
                 fontFamily={"poppins"}
                 level="body-md"
               >
-                {businessDetails?.x_url || "No X URL available"}
+                {businessDetails?.x_url ? (
+                  <a href={businessDetails.x_url} target="_blank" rel="noopener noreferrer" style={{ color: "inherit", textDecoration: "none" }}>
+                    {businessDetails.x_url}
+                  </a>
+                ) : (
+                  "No X URL available"
+                )}
               </Typography>
 
               <Typography
@@ -773,13 +577,133 @@ const BusinessProfile = () => {
                 fontFamily={"poppins"}
                 level="body-md"
               >
-                {businessDetails?.website_url || "No Website URL available"}
+                {businessDetails?.website_url ? (
+                  <a href={businessDetails.website_url} target="_blank" rel="noopener noreferrer" style={{ color: "inherit", textDecoration: "none" }}>
+                    {businessDetails.website_url}
+                  </a>
+                ) : (
+                  "No Website URL available"
+                )}
               </Typography>
             </Container>
 
-            <Container gap="10px" padding="0">
+            <Divider sx={{ borderColor: "#e5e7eb", my: 2 }} />
+
+            {businessDetails?.business_type_id === 1 && (
+              <>
+                <Divider sx={{ borderColor: "#e5e7eb", my: 2 }} />
+
+                <Container gap="12px" padding="0">
+                  <Container
+                    gap="12px"
+                    padding="0"
+                    direction="row"
+                    align="center"
+                    justify="space-between"
+                  >
+                    <Typography
+                      fontFamily={"poppins"}
+                      level="title-lg"
+                      fontWeight={700}
+                      sx={{ color: "#1e293b" }}
+                    >
+                      Booking Features
+                    </Typography>
+
+                    {businessDetails?.hasBooking ? (
+                      <Button className="bp-edit-btn" startDecorator={<EditIcon />} size="sm" variant="plain">
+                        Edit
+                      </Button>
+                    ) : (
+                      <Button
+                          className="bp-activate-btn"
+                          onClick={() => activateBooking(businessDetails.id!, true)}
+                          color="success"
+                          size="sm"
+                          variant="solid"
+                        >
+                          Activate
+                        </Button>
+                    )}
+                  </Container>
+
+                  <Typography
+                    fontFamily={"poppins"}
+                    level="body-sm"
+                    sx={{
+                      color: "#6b7280",
+                      fontWeight: 400,
+                      fontSize: "14px"
+                    }}
+                  >
+                    Enable online booking to allow customers to reserve services directly.
+                  </Typography>
+
+                  {businessDetails?.hasBooking ? (
+                    <Chip color="success" size="md" variant="solid">
+                      Activated
+                    </Chip>
+                  ) : (
+                    <>
+                      {/* List of external booking links as a card grid */}
+                      <Typography
+                        fontFamily={"poppins"}
+                        level="title-md"
+                        fontWeight={600}
+                      >
+                        {`Currently Using External (Third Party) Booking`}
+                      </Typography>
+
+                      <div
+                        style={{
+                          display: "grid",
+                          gridTemplateColumns: "repeat(6, 1fr)",
+                          gap: "16px",
+                          marginTop: "12px",
+                        }}
+                      >
+                        {externalBooking.map((booking: ExternalBooking) => (
+                          <Container
+                            elevation={2}
+                            key={booking.id}
+                            style={{ padding: "12px", textAlign: "center" }}
+                          >
+                            <a
+                              href={booking.link}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              style={{ display: "block" }}
+                            >
+                              {bookingLogos[booking.name] ? (
+                                <img
+                                  src={bookingLogos[booking.name]}
+                                  alt={booking.name}
+                                  style={{
+                                    height: "60px",
+                                    width: "60px",
+                                    objectFit: "contain",
+                                    marginBottom: "8px",
+                                  }}
+                                />
+                              ) : (
+                                <span>{booking.name}</span>
+                              )}
+                            </a>
+                            <Typography fontFamily={"poppins"} level="body-md">
+                              {booking.name}
+                            </Typography>
+                          </Container>
+                        ))}
+                      </div>
+                    </>
+                  )}
+                </Container>
+              </>
+            )}
+
+            <Container gap="12px" padding="0">
               <Container
-                gap="10px"
+                gap="12px"
                 padding="0"
                 direction="row"
                 align="center"
@@ -789,19 +713,159 @@ const BusinessProfile = () => {
                   fontFamily={"poppins"}
                   level="title-lg"
                   fontWeight={700}
+                  sx={{ color: "#1e293b" }}
                 >
-                  Address
+                  Business Hours
                 </Typography>
 
                 <Button
+                  className="bp-edit-btn"
                   startDecorator={<EditIcon />}
-                  onClick={() => setEditAddressOpen(true)}
+                  onClick={() => setEditBusinessHoursOpen(true)}
+                  size="sm"
+                  variant="plain"
+                >
+                  Edit
+                </Button>
+              </Container>
+
+              <Typography
+                fontFamily={"poppins"}
+                level="body-sm"
+                sx={{
+                  color: "#6b7280",
+                  fontWeight: 400,
+                  fontSize: "14px"
+                }}
+              >
+                Set your operating hours to inform customers when you're available.
+              </Typography>
+
+              {businessHours.map((hours: BusinessHours, idx) => (
+                <React.Fragment key={hours.id}>
+                  <Typography
+                    startDecorator={<TimerIcon />}
+                    fontFamily={"poppins"}
+                    level="body-md"
+                  >
+                    {hours.day_of_week}: {formatTime(hours.open_time ?? "")} - {formatTime(hours.close_time ?? "")}
+                    <Chip
+                      size="sm"
+                      variant="soft"
+                      style={{ marginLeft: "8px" }}
+                      color={getStatusColor(hours.is_open ? "1" : "0")}
+                    >
+                      {hours.is_open ? "Open" : "Closed"}
+                    </Chip>
+                  </Typography>
+                  {idx < businessHours.length - 1 && <Divider sx={{ my: 1 }} />}
+                </React.Fragment>
+              ))}
+            </Container>
+          </Container>
+        </Grid>
+
+        <Grid xs={12} md={4}>
+          <Container
+            elevation={0}
+            className="bp-sidebar"
+            style={{
+              padding: "20px",
+              display: "flex",
+              flexDirection: "column",
+              gap: "20px",
+            }}
+          >
+            <Container gap="12px" padding="0">
+              <Container
+                gap="12px"
+                padding="0"
+                direction="row"
+                align="center"
+                justify="space-between"
+              >
+                <Typography
+                  fontFamily={"poppins"}
+                  level="title-lg"
+                  fontWeight={700}
+                  sx={{ color: "#1e293b" }}
+                >
+                  Map Location
+                </Typography>
+
+                <Button
+                  className="bp-edit-btn"
+                  startDecorator={<EditIcon />}
+                  onClick={() => setEditMapCoordinatesOpen(true)}
                   size="sm"
                   variant="outlined"
                 >
                   Edit
                 </Button>
               </Container>
+
+              <Typography
+                fontFamily={"poppins"}
+                level="body-sm"
+                sx={{
+                  color: "#6b7280",
+                  fontWeight: 400,
+                  fontSize: "14px"
+                }}
+              >
+                View your business location on the map and update coordinates if needed.
+              </Typography>
+
+              {/* Map Component */}
+              <BusinessMap
+                latitude={businessDetails?.latitude}
+                longitude={businessDetails?.longitude}
+                name={businessDetails?.business_name}
+                radius={0}
+              />
+            </Container>
+
+            <Divider sx={{ borderColor: "#e5e7eb", my: 2 }} />
+
+            <Container gap="12px" padding="0">
+              <Container
+                gap="12px"
+                padding="0"
+                direction="row"
+                align="center"
+                justify="space-between"
+              >
+                <Typography
+                  fontFamily={"poppins"}
+                  level="title-lg"
+                  fontWeight={700}
+                  sx={{ color: "#1e293b" }}
+                >
+                  Address
+                </Typography>
+
+                <Button
+                  className="bp-edit-btn"
+                  startDecorator={<EditIcon />}
+                  onClick={() => setEditAddressOpen(true)}
+                  size="sm"
+                  variant="plain"
+                >
+                  Edit
+                </Button>
+              </Container>
+
+              <Typography
+                fontFamily={"poppins"}
+                level="body-sm"
+                sx={{
+                  color: "#6b7280",
+                  fontWeight: 400,
+                  fontSize: "14px"
+                }}
+              >
+                Display your complete business address for easy navigation.
+              </Typography>
 
               <Typography
                 startDecorator={<Public fontSize="small" />}
@@ -833,95 +897,235 @@ const BusinessProfile = () => {
                 {businessDetails?.address || "No exact location available"}
               </Typography>
             </Container>
+
+            <Divider sx={{ borderColor: "#e5e7eb", my: 2 }} />
+
+            <Container gap="12px" padding="0">
+              <Container
+                gap="12px"
+                padding="0"
+                direction="row"
+                align="center"
+                justify="space-between"
+              >
+                <Typography
+                  fontFamily={"poppins"}
+                  level="title-lg"
+                  fontWeight={700}
+                  sx={{ color: "#1e293b" }}
+                >
+                  Contact Information
+                </Typography>
+
+                <Button
+                  className="bp-edit-btn"
+                  startDecorator={<EditIcon />}
+                  onClick={() => setEditContactOpen(true)}
+                  size="sm"
+                  variant="plain"
+                >
+                  Edit
+                </Button>
+              </Container>
+
+              <Typography
+                fontFamily={"poppins"}
+                level="body-sm"
+                sx={{
+                  color: "#6b7280",
+                  fontWeight: 400,
+                  fontSize: "14px"
+                }}
+              >
+                Provide ways for customers to reach out to your business.
+              </Typography>
+
+              <Typography
+                startDecorator={<MdEmail color={colors.secondary} size={24} />}
+                fontFamily={"poppins"}
+                level="body-md"
+              >
+                {businessDetails?.email ? (
+                  <a href={`mailto:${businessDetails.email}`} style={{ color: "inherit", textDecoration: "none" }}>
+                    {businessDetails.email}
+                  </a>
+                ) : (
+                  "No email available"
+                )}
+              </Typography>
+
+              <Typography
+                startDecorator={<LucidePhone color={colors.secondary} size={24} />}
+                fontFamily={"poppins"}
+                level="body-md"
+              >
+                {businessDetails?.phone_number ? (
+                  <a href={`tel:${businessDetails.phone_number}`} style={{ color: "inherit", textDecoration: "none" }}>
+                    {businessDetails.phone_number}
+                  </a>
+                ) : (
+                  "No phone number available"
+                )}
+              </Typography>
+            </Container>
+
+            <Divider sx={{ borderColor: "#e5e7eb", my: 2 }} />
+
+            <Container gap="12px" padding="0">
+              <Container
+                gap="12px"
+                padding="0"
+                direction="row"
+                align="center"
+                justify="space-between"
+              >
+                <Typography
+                  fontFamily={"poppins"}
+                  level="title-lg"
+                  fontWeight={700}
+                  sx={{ color: "#1e293b" }}
+                >
+                  Pricing Range
+                </Typography>
+
+                <Button
+                  className="bp-edit-btn"
+                  startDecorator={<EditIcon />}
+                  onClick={() => setEditPricingOpen(true)}
+                  size="sm"
+                  variant="outlined"
+                >
+                  Edit
+                </Button>
+              </Container>
+
+              <Typography
+                fontFamily={"poppins"}
+                level="body-sm"
+                sx={{
+                  color: "#6b7280",
+                  fontWeight: 400,
+                  fontSize: "14px"
+                }}
+              >
+                Display your price range to help customers understand your offerings.
+              </Typography>
+
+              <Sheet
+                variant="outlined"
+                sx={{
+                  p: 2.5,
+                  borderRadius: "12px",
+                  background: "rgba(16, 185, 129, 0.05)",
+                  border: "1px solid rgba(16, 185, 129, 0.2)"
+                }}
+              >
+                <Typography
+                  startDecorator={<PhilippinePeso style={{ color: "#059669" }} />}
+                  fontFamily={"poppins"}
+                  level="body-md"
+                  sx={{
+                    fontWeight: 600,
+                    color: "#059669",
+                    fontSize: "16px"
+                  }}
+                >
+                  ₱{businessDetails?.min_price?.toLocaleString() || "0"}
+                  {" - "}
+                  ₱{businessDetails?.max_price?.toLocaleString() || "0"}
+                </Typography>
+              </Sheet>
+            </Container>
           </Container>
         </Grid>
-      </Grid>
+  </Grid>
+  </div>
 
       <EditBusinessHoursModal
-        open={editBusinessHoursOpen}
-        businessId={businessDetails?.id?.toString()}
+        open={editBusinessHoursOpen && Boolean(businessDetails?.id)}
+        businessId={businessDetails?.id?.toString() || ""}
         initialBusinessHours={businessHours as BusinessHours[]}
         onClose={() => setEditBusinessHoursOpen(false)}
         onUpdate={(updated: BusinessHours[]) => setBusinessHours(updated)}
       />
 
       <EditDescriptionModal
-        open={editDescOpen}
+        open={editDescOpen && Boolean(businessDetails?.id)}
         initialDescription={businessDetails?.description || ""}
-        businessId={businessDetails?.id!}
+        businessId={businessDetails?.id || ""}
         onClose={() => setEditDescOpen(false)}
         onSave={handleSaveDescription}
         onUpdate={() => window.location.reload()}
       />
 
       <EditContactModal
-        open={editContactOpen}
+        open={editContactOpen && Boolean(businessDetails?.id)}
         initialEmail={businessDetails?.email || ""}
         initialPhoneNumber={businessDetails?.phone_number || ""}
-        businessId={businessDetails?.id!}
+        businessId={businessDetails?.id || ""}
         onClose={() => setEditContactOpen(false)}
         onSave={handleSaveContact}
         onUpdate={() => window.location.reload()}
       />
 
       <EditSocialMediaModal
-        open={editSocialMediaOpen}
+        open={editSocialMediaOpen && Boolean(businessDetails?.id)}
         initialFbLink={businessDetails?.facebook_url || ""}
         initialIgLink={businessDetails?.instagram_url || ""}
         initialXLink={businessDetails?.x_url || ""}
         initialWebsiteLink={businessDetails?.website_url || ""}
-        businessId={businessDetails?.id!}
+        businessId={businessDetails?.id || ""}
         onClose={() => setEditSocialMediaOpen(false)}
         onSave={handleSaveSocialMedia}
         onUpdate={() => window.location.reload()}
       />
 
       <EditPricingModal
-        open={editPricingOpen}
+        open={editPricingOpen && Boolean(businessDetails?.id)}
         initialMinimumPrice={businessDetails?.min_price || ""}
         initialMaximumPrice={businessDetails?.max_price || ""}
-        businessId={businessDetails?.id!}
+        businessId={businessDetails?.id || ""}
         onClose={() => setEditPricingOpen(false)}
         onSave={handleSavePricing}
         onUpdate={() => window.location.reload()}
       />
 
       <EditAddressModal
-        open={editAddressOpen}
+        open={editAddressOpen && Boolean(businessDetails?.id)}
         addressId={businessDetails?.address_id}
         initialProvince={address?.province_id}
         initialMunicipality={address?.municipality_id}
         initialBarangay={address?.barangay_id}
         initialAddress={businessDetails?.address}
-        businessId={businessDetails?.id!}
+        businessId={businessDetails?.id || ""}
         onClose={() => setEditAddressOpen(false)}
         onSave={handleSaveAddress}
         onUpdate={() => window.location.reload()}
       />
 
       <EditMapCoordinatesModal
-        open={editMapCoordinatesOpen}
+        open={editMapCoordinatesOpen && Boolean(businessDetails?.id)}
         initialLatitude={businessDetails?.latitude || ""}
         initialLongitude={businessDetails?.longitude || ""}
-        businessId={businessDetails?.id!}
+        businessId={businessDetails?.id || ""}
         onClose={() => setEditMapCoordinatesOpen(false)}
         onSave={handleSaveMapCoordinates}
         onUpdate={() => window.location.reload()}
       />
 
       <EditBusinessModal
-        open={editBusinessOpen}
+        open={editBusinessOpen && Boolean(businessDetails?.id)}
         initialBusinessName={businessDetails?.business_name || ""}
         initialBusinessImage={businessDetails?.business_image || ""}
-        businessId={businessDetails?.id!}
+        businessId={businessDetails?.id || ""}
         onClose={() => setEditBusinessOpen(false)}
         onSave={handleSaveBusiness}
         onUpdate={() => window.location.reload()}
       />
 
       <EditAmenitiesModal
-        open={editAmenitiesOpen}
-        businessId={businessDetails?.id!}
+        open={editAmenitiesOpen && Boolean(businessDetails?.id)}
+        businessId={businessDetails?.id || ""}
         onClose={() => setEditAmenitiesOpen(false)}
         onSave={handleSaveBusiness}
         onUpdate={() => window.location.reload()}

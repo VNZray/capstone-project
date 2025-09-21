@@ -21,27 +21,144 @@
   justify-content: space-between;
 }
 
-.sidebar-link {
+/* Brand header */
+.sidebar-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px 8px 16px;
+  margin-top: 12px; /* add breathing room from top container */
+  margin-bottom: 24px; /* increase space before navigation (x2-ish) */
+}
+
+.sidebar-brand-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+}
+
+.sidebar-brand-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.1;
+}
+
+.sidebar-brand-title {
+  color: var(--white);
+  font-size: 0.9rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.sidebar-brand-subtitle {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.business-sidebar .sidebar-link {
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  padding: 0.5rem 0.75rem;
+  padding: 0.5rem; /* remove left/right to align icons with brand */
+  width: 100%; /* ensure full-width background like other items */
+  box-sizing: border-box;
   border-radius: 4px;
   text-decoration: none;
   color: var(--white); /* gray text */
   transition: background 0.2s ease;
 }
 
-.sidebar-link:hover {
+.business-sidebar .sidebar-link:hover {
   background-color: var(--secondary-color); /* light gray */
 }
 
-.sidebar-link.active {
+.business-sidebar .sidebar-link.active {
   background-color: var(--secondary-color); /* blue */
   color: #fff;
+}
+
+/* Logout section UI improvements */
+.business-sidebar .sidebar-logout {
+  margin-top: auto;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08); /* subtle divider */
+}
+
+.business-sidebar .sidebar-logout .sidebar-link {
+  color: var(--white);
+  opacity: 0.9;
+  border-radius: 8px;
+  background: transparent;
+  border: none;
+  text-align: left;
+  padding: 0.5rem; /* align with other links */
+  cursor: pointer;
+}
+
+.business-sidebar .sidebar-logout .sidebar-link:hover {
+  background-color: var(--secondary-color);
+}
+
+.business-sidebar .sidebar-logout .sidebar-link:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(255,255,255,0.12) inset;
 }
 
 .sidebar-icon {
   display: flex;
   align-items: center;
+  width: 20px; /* keep icons on a fixed column for clean alignment */
+  justify-content: center;
+}
+
+/* Nested store section */
+.sidebar-section {
+  margin-top: 0.25rem;
+}
+
+.sidebar-section-header {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  width: 100%;
+  background: transparent; /* reset default button bg */
+  background-color: transparent; /* ensure fully transparent */
+  border: none; /* reset default button border */
+  cursor: pointer;
+}
+
+.sidebar-chevron {
+  margin-left: auto;
+  display: inline-flex;
+  transition: transform 0.2s ease;
+}
+
+.sidebar-chevron.open {
+  transform: rotate(180deg);
+}
+
+.sidebar-subnav {
+  display: flex;
+  flex-direction: column;
+  margin-top: 0.25rem;
+  gap: 0.25rem;
+}
+
+/* Make nested links full width and indent via padding so hover/active bg spans full width */
+.sidebar-subnav .sidebar-link {
+  padding-left: 2.5rem; /* indent nested items */
+}
+
+/* Hover and open states for Store header */
+.sidebar-section-header:hover {
+  background-color: var(--secondary-color);
+}
+
+/* No persistent background when expanded */
+
+.sidebar-section-header:focus,
+.sidebar-section-header:active {
+  box-shadow: none;
+  outline: none;
 }

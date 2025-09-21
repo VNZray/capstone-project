@@ -235,3 +235,18 @@ export async function getAllUserRoles(req, res) {
     return handleDbError(error, res);
   }
 }
+
+// Get user role by ID
+// Calls the GetUserRoleById stored procedure
+export async function getUserRoleById(req, res) {
+  const { id } = req.params;
+  try {
+    const [data] = await db.query("CALL GetUserRoleById(?)", [id]);
+    if (!data[0] || data[0].length === 0) {
+      return res.status(404).json({ message: "User role not found" });
+    }
+    res.json(data[0][0]);
+  } catch (error) {
+    return handleDbError(error, res);
+  }
+}

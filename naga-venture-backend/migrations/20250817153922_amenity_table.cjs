@@ -1,7 +1,11 @@
 exports.up = async function (knex) {
   await knex.schema.createTable("amenity", function (table) {
     table.increments("id").primary(); // int(11) AUTO_INCREMENT PRIMARY KEY
-    table.string("name", 40).notNullable();
+    table.string("name", 100).notNullable();
+    // Add slug, icon, and active flag to support frontend mapping
+    table.string("slug", 100).unique().nullable();
+    table.string("icon", 60).nullable();
+    table.boolean("is_active").notNullable().defaultTo(true);
   });
 
   await knex.schema.createTable("business_amenities", function (table) {

@@ -4,13 +4,11 @@
  */
 export async function seed(knex) {
 
-  // Deletes ALL existing entries
-  await knex("tourist_spot_categories").del();
-  await knex("tourist_spots").del();
-  await knex("address").del();
-
-  // Also clear schedules
-  await knex("tourist_spot_schedules").del();
+  // Deletes ALL existing entries in proper order to respect foreign key constraints
+  await knex("tourist_spot_schedules").del();    // References: tourist_spots
+  await knex("tourist_spot_categories").del();   // References: tourist_spots
+  await knex("tourist_spots").del();             // References: address
+  await knex("address").del();                   // References: province, municipality, barangay
 
   // Insert addresses and get their IDs
   const addressInputs = [
