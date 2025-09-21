@@ -60,34 +60,34 @@ export async function createCategoriesProcedures(knex) {
 
   // Updates direct fields of a tourist spot
   await knex.raw(`
-      CREATE PROCEDURE UpdateTouristSpotDirectFields(
-          IN spot_id CHAR(36),
-          IN latitude DECIMAL(10,8),
-          IN longitude DECIMAL(11,8),
-          IN contact_phone VARCHAR(32),
-          IN contact_email VARCHAR(128),
-          IN website VARCHAR(255),
-          IN entry_fee DECIMAL(10,2),
-          IN spot_status VARCHAR(32)
+    CREATE PROCEDURE UpdateTouristSpotDirectFields(
+      IN p_spot_id CHAR(36),
+      IN p_latitude DECIMAL(10,8),
+      IN p_longitude DECIMAL(11,8),
+      IN p_contact_phone VARCHAR(32),
+      IN p_contact_email VARCHAR(128),
+      IN p_website VARCHAR(255),
+      IN p_entry_fee DECIMAL(10,2),
+      IN p_spot_status VARCHAR(32)
       )
       BEGIN
           UPDATE tourist_spots
           SET
-              latitude = IFNULL(latitude, latitude),
-              longitude = IFNULL(longitude, longitude),
-              contact_phone = IFNULL(NULLIF(contact_phone, ''), contact_phone),
-              contact_email = IFNULL(NULLIF(contact_email, ''), contact_email)
-              website = IFNULL(NULLIF(website, ''), website),
-              entry_fee = IFNULL(entry_fee, entry_fee),
-              spot_status = IFNULL(NULLIF(spot_status, ''), spot_status)
-          WHERE id = spot_id;
+        latitude = IFNULL(NULLIF(p_latitude, 0), latitude),
+        longitude = IFNULL(NULLIF(p_longitude, 0), longitude),
+        contact_phone = IFNULL(NULLIF(p_contact_phone, ''), contact_phone),
+        contact_email = IFNULL(NULLIF(p_contact_email, ''), contact_email),
+        website = IFNULL(NULLIF(p_website, ''), website),
+        entry_fee = IFNULL(p_entry_fee, entry_fee),
+        spot_status = IFNULL(NULLIF(p_spot_status, ''), spot_status)
+      WHERE id = p_spot_id;
       END;
     `);
 }
 
 export async function dropCategoriesProcedures(knex) {
   const names = [
-    'GetTouristSpotCategoriesAndTypes', 'GetTouristSpotCategories', 'DeleteCategoriesByTouristSpot', 'InsertTouristSpotCategory'
+    'GetTouristSpotCategoriesAndTypes', 'GetTouristSpotCategories', 'GetTouristSpotCategoryIds', 'DeleteCategoriesByTouristSpot', 'InsertTouristSpotCategory', 'UpdateTouristSpotDirectFields'
   ];
   for (const n of names) {
     await knex.raw(`DROP PROCEDURE IF EXISTS ${n};`);

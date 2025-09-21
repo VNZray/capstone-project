@@ -34,6 +34,7 @@ const Profile = () => {
   const onEdit = () => router.push('/(tabs)/(profile)/(edit)');
   const onSettings = () => router.push('/(tabs)/(profile)/(settings)');
   const onBookings = () => router.push('/(tabs)/(profile)/(bookings)');
+  const onReports = () => router.push('/(tabs)/(profile)/(reports)');
 
   const activities = [
     {
@@ -204,6 +205,16 @@ const Profile = () => {
             radius={14}
             startIcon="cog"
             onPress={onSettings}
+          />
+          <Button
+            label="Reports"
+            variant="soft"
+            color="info"
+            size="large"
+            fullWidth
+            radius={14}
+            startIcon="flag"
+            onPress={onReports}
           />
         </View>
       </ScrollView>

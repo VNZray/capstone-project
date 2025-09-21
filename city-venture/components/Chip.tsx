@@ -217,10 +217,15 @@ export default function Chip({
       border = isDark ? shade(base, -0.1) : shade(base, -0.1);
     } else {
       // soft
-      const alpha = isDark ? 0.18 : 0.12;
-      bg = rgba(base, alpha);
-      fg = base;
-      border = rgba(base, isDark ? 0.28 : 0.2);
+      if (isDark) {
+        bg = rgba(base, 0.32); // more opaque background
+        fg = '#F8FAFC'; // lighter text for contrast
+        border = rgba(base, 0.38);
+      } else {
+        bg = rgba(base, 0.12);
+        fg = base;
+        border = rgba(base, 0.2);
+      }
     }
 
     // Disabled state reduces contrast

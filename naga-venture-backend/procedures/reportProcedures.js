@@ -108,6 +108,50 @@ async function createReportProcedures(knex) {
     END;
   `);
 
+  // Insert single attachment for a report
+  await knex.raw(`
+    CREATE PROCEDURE InsertReportAttachment(
+      IN p_id CHAR(36),
+      IN p_report_id CHAR(36),
+      IN p_file_url TEXT,
+      IN p_file_name VARCHAR(255),
+      IN p_file_type VARCHAR(50),
+      IN p_file_size INT
+    )
+    BEGIN
+      INSERT INTO report_attachment (id, report_id, file_url, file_name, file_type, file_size)
+      VALUES (p_id, p_report_id, p_file_url, p_file_name, p_file_type, p_file_size);
+      SELECT * FROM report_attachment WHERE id = p_id; 
+    END;
+  `);
+
+  // Bulk insert attachments: expects a JSON array param; iterate and insert
+  // NOTE: MariaDB 10.5+ JSON support used; if version older adjust accordingly
+  await knex.raw(`
+    CREATE PROCEDURE BulkInsertReportAttachments(
+      IN p_report_id CHAR(36),
+      IN p_attachments JSON
+    )
+    BEGIN
+      DECLARE i INT DEFAULT 0;
+      DECLARE arr_length INT;
+      SET arr_length = JSON_LENGTH(p_attachments);
+      WHILE i < arr_length DO
+        INSERT INTO report_attachment (id, report_id, file_url, file_name, file_type, file_size)
+        VALUES (
+          UUID(),
+          p_report_id,
+          JSON_UNQUOTE(JSON_EXTRACT(p_attachments, CONCAT('$[', i, '].file_url'))),
+          JSON_UNQUOTE(JSON_EXTRACT(p_attachments, CONCAT('$[', i, '].file_name'))),
+          JSON_UNQUOTE(JSON_EXTRACT(p_attachments, CONCAT('$[', i, '].file_type'))),
+          JSON_EXTRACT(p_attachments, CONCAT('$[', i, '].file_size'))
+        );
+        SET i = i + 1;
+      END WHILE;
+      SELECT * FROM report_attachment WHERE report_id = p_report_id ORDER BY uploaded_at ASC;
+    END;
+  `);
+
   // Update report status + insert status history; returns updated report row
   await knex.raw(`
     CREATE PROCEDURE UpdateReportStatus(
@@ -145,6 +189,8 @@ async function dropReportProcedures(knex) {
   await knex.raw("DROP PROCEDURE IF EXISTS GetReportsByTarget;");
   await knex.raw("DROP PROCEDURE IF EXISTS GetReportsByStatus;");
   await knex.raw("DROP PROCEDURE IF EXISTS InsertReport;");
+  await knex.raw("DROP PROCEDURE IF EXISTS InsertReportAttachment;");
+  await knex.raw("DROP PROCEDURE IF EXISTS BulkInsertReportAttachments;");
   await knex.raw("DROP PROCEDURE IF EXISTS UpdateReportStatus;");
   await knex.raw("DROP PROCEDURE IF EXISTS DeleteReport;");
 }

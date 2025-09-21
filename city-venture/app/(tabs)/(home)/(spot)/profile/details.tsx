@@ -120,7 +120,7 @@ const Details = () => {
               <Chip
                 key={c.id}
                 label={c.category}
-                variant="soft"
+                variant="solid"
                 size="medium"
               />
             ))}
