@@ -223,10 +223,11 @@ const FormTextInput = React.forwardRef<FormTextInputRef, FormTextInputProps>(
     const [validationError, setValidationError] = useState<string | null>(null);
     const currentValue = controlled ? value! : internal;
 
+    // Sizing tokens unified with Dropdown
     const sizeCfg = useMemo(() => {
       switch (size) {
         case 'small':
-          return { h: 40, font: 13, padH: 12, padV: 8, icon: 14 };
+          return { h: 40, font: 13, padH: 10, padV: 8, icon: 14 };
         case 'large':
           return { h: 54, font: 16, padH: 16, padV: 14, icon: 18 };
         default:

@@ -59,14 +59,14 @@ interface Column {
 const getStatusColor = (status: string) => {
   switch (status) {
     case "Pending":
-      return "nuetral";
+      return "default";
     case "Reserved":
       return "success";
     case "Checked-in":
       return "warning";
     case "Checked-out":
       return "info";
-    case "Cancelled":
+    case "Canceled":
       return "error";
     default:
       return "primary"; // fallback
@@ -147,7 +147,7 @@ const bookingData = [
     check_out_date: "2025-09-09",
     total_price: 3500,
     balance: 3500,
-    booking_status: "Cancelled",
+    booking_status: "Canceled",
   },
   {
     id: "6",
@@ -157,7 +157,7 @@ const bookingData = [
     check_out_date: "2025-09-09",
     total_price: 3500,
     balance: 3500,
-    booking_status: "Cancelled",
+    booking_status: "Canceled",
   },
   {
     id: "7",
@@ -167,7 +167,7 @@ const bookingData = [
     check_out_date: "2025-09-09",
     total_price: 3500,
     balance: 3500,
-    booking_status: "Cancelled",
+    booking_status: "Canceled",
   },
   {
     id: "8",
@@ -177,13 +177,13 @@ const bookingData = [
     check_out_date: "2025-09-09",
     total_price: 3500,
     balance: 3500,
-    booking_status: "Cancelled",
+    booking_status: "Canceled",
   },
 ];
 
 const Bookings = () => {
   const [activeTab, setActiveTab] = useState<
-    "All" | "Pending" | "Reserved" | "Checked-in" | "Checked-out" | "Cancelled"
+    "All" | "Pending" | "Reserved" | "Checked-in" | "Checked-out" | "Canceled"
   >("All");
 
   const [page, setPage] = React.useState(0);
@@ -199,7 +199,7 @@ const Bookings = () => {
   const [reservedCount, setReservedCount] = useState(0);
   const [checkedInCount, setCheckedInCount] = useState(0);
   const [checkedOutCount, setCheckedOutCount] = useState(0);
-  const [cancelledCount, setCancelledCount] = useState(0);
+  const [canceledCount, setCanceledCount] = useState(0);
 
   useEffect(() => {
     setBookingCount(bookingData.length);
@@ -215,8 +215,8 @@ const Bookings = () => {
     setCheckedOutCount(
       bookingData.filter((b) => b.booking_status === "Checked-out").length
     );
-    setCancelledCount(
-      bookingData.filter((b) => b.booking_status === "Cancelled").length
+    setCanceledCount(
+      bookingData.filter((b) => b.booking_status === "Canceled").length
     );
   }, [bookingData]);
 
@@ -489,13 +489,13 @@ const Bookings = () => {
           </CardContent>
         </Card>
 
-        {/* Cancelled */}
+        {/* Canceled */}
         <Card sx={{ flex: 1 }} variant="solid" color="danger" invertedColors>
           <CardContent orientation="horizontal">
             <CircularProgress
               size="lg"
               determinate
-              value={calcPercentage(cancelledCount)}
+              value={calcPercentage(canceledCount)}
             >
               <SvgIcon>
                 {/* X Circle Icon */}
@@ -515,8 +515,8 @@ const Bookings = () => {
               </SvgIcon>
             </CircularProgress>
             <CardContent>
-              <Typography level="body-md">Cancelled</Typography>
-              <Typography level="h2">{cancelledCount}</Typography>
+              <Typography level="body-md">Canceled</Typography>
+              <Typography level="h2">{canceledCount}</Typography>
             </CardContent>
           </CardContent>
         </Card>
@@ -682,7 +682,7 @@ const Bookings = () => {
                                 "Reserved",
                                 "Checked-in",
                                 "Checked-out",
-                                "Cancelled",
+                                "Canceled",
                               ].map((status) => (
                                 <MenuItem
                                   key={status}

@@ -1,16 +1,16 @@
-import axios from "axios";
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import axios from "axios";
 
 import api from "@/services/api";
-import type { TokenPayload, User, UserDetails, UserRoles } from "../types/User";
 import type {
   Address,
-  Municipality,
   Barangay,
+  Municipality,
   Province,
 } from "../types/Address";
 import type { Owner } from "../types/Owner";
 import type { Tourist } from "../types/Tourist";
+import type { TokenPayload, User, UserDetails, UserRoles } from "../types/User";
 interface LoginResponse {
   token: string;
 }
@@ -209,9 +209,8 @@ export const loginUser = async (
   // Step 4: Build user object
   const loggedInUser: UserDetails = {
     id:
-      (ownerData as any).id ||
-      (touristData as any).id ||
-      userData.id,
+      ownerData.id ||
+      touristData.id,
     email,
     password,
     age: (touristData as any).age || ownerData.age || null,

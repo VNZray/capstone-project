@@ -25,7 +25,7 @@ const Rooms = () => {
   });
 
   return (
-    <PageContainer style={{ paddingTop: 0 }}>
+    <PageContainer style={{ paddingTop: 0, paddingBottom: 100 }}>
       <Container
         style={{ overflow: 'visible' }}
         backgroundColor="transparent"

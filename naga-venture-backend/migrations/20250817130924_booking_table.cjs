@@ -1,5 +1,10 @@
-exports.up = function (knex) {
-  return knex.schema.createTable("booking", function (table) {
+const {
+  createProcedures,
+  dropProcedures,
+} = require("../procedures/bookingProcedures");
+
+exports.up = async function (knex) {
+  await knex.schema.createTable("booking", function (table) {
     table.uuid("id").primary().defaultTo(knex.raw("(uuid())"));
     table.integer("pax", 3).notNullable();
     table.integer("num_children", 3).notNullable().defaultTo(0);
@@ -19,9 +24,10 @@ exports.up = function (knex) {
         "Booked",
         "Checked-In",
         "Checked-Out",
-        "Cancelled",
+        "Canceled",
       ])
-      .notNullable();
+      .notNullable()
+      .defaultTo("Pending");
 
     table
       .uuid("room_id")
@@ -39,8 +45,11 @@ exports.up = function (knex) {
     // Timestamps
     table.timestamp("created_at").defaultTo(knex.fn.now());
   });
+
+  await createProcedures(knex);
 };
 
-exports.down = function (knex) {
-  return knex.schema.dropTable("booking");
+exports.down = async function (knex) {
+  await dropProcedures(knex);
+  await knex.schema.dropTable("booking");
 };

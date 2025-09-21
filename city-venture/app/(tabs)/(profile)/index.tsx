@@ -186,7 +186,7 @@ const Profile = () => {
             label="Log Out"
             variant="solid"
             color="error"
-            size="large"
+            size="medium"
             fullWidth
             radius={14}
             startIcon="sign-out-alt"
@@ -199,7 +199,7 @@ const Profile = () => {
             label="Settings"
             variant="soft"
             color="info"
-            size="large"
+            size="medium"
             fullWidth
             radius={14}
             startIcon="cog"

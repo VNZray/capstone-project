@@ -3,25 +3,25 @@ import { card, colors } from '@/constants/color';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { FontAwesome5 } from '@expo/vector-icons';
 import React, {
-    useCallback,
-    useEffect,
-    useImperativeHandle,
-    useMemo,
-    useRef,
-    useState,
+  useCallback,
+  useEffect,
+  useImperativeHandle,
+  useMemo,
+  useRef,
+  useState,
 } from 'react';
 import {
-    FlatList,
-    ListRenderItem,
-    Modal,
-    Platform,
-    Pressable,
-    StyleProp,
-    StyleSheet,
-    Text,
-    TextStyle,
-    View,
-    ViewStyle,
+  FlatList,
+  ListRenderItem,
+  Modal,
+  Platform,
+  Pressable,
+  StyleProp,
+  StyleSheet,
+  Text,
+  TextStyle,
+  View,
+  ViewStyle,
 } from 'react-native';
 import Button from './Button';
 import { ThemedText } from './themed-text';
@@ -290,7 +290,9 @@ const DateInput = React.forwardRef<DateInputRef, DateInputProps>(
     const subTextColor = isDark ? '#9BA1A6' : '#6B7280';
 
     const [open, setOpen] = useState(false);
-    const [internalDate, setInternalDate] = useState<Date | null>(defaultValue);
+    const [internalDate, setInternalDate] = useState<Date | null>(
+      defaultValue !== undefined && defaultValue !== null ? defaultValue : new Date()
+    );
     const [internalRange, setInternalRange] = useState<{
       start: Date | null;
       end: Date | null;
@@ -302,7 +304,9 @@ const DateInput = React.forwardRef<DateInputRef, DateInputProps>(
 
     const controlledSingle = value !== undefined;
     const controlledRange = rangeValue !== undefined;
-    const currentDate = controlledSingle ? value : internalDate;
+    const currentDate = controlledSingle
+      ? value ?? new Date()
+      : internalDate ?? new Date();
     const currentRange = controlledRange ? rangeValue! : internalRange;
 
     const base =
@@ -502,7 +506,15 @@ const DateInput = React.forwardRef<DateInputRef, DateInputProps>(
         setNavMonth(day.getMonth());
       }
       // Normalize to midday to mitigate potential DST / timezone boundary issues
-      const normalized = new Date(day.getFullYear(), day.getMonth(), day.getDate(), 12, 0, 0, 0);
+      const normalized = new Date(
+        day.getFullYear(),
+        day.getMonth(),
+        day.getDate(),
+        12,
+        0,
+        0,
+        0
+      );
       if (mode === 'single') {
         if (!controlledSingle) setInternalDate(normalized);
         onChange?.(normalized);
@@ -562,7 +574,7 @@ const DateInput = React.forwardRef<DateInputRef, DateInputProps>(
       <View style={style} testID={testID}>
         {label && (
           <ThemedText
-            type="label-medium"
+            type="label-small"
             weight="semi-bold"
             mb={6}
             style={{ color: subTextColor }}
@@ -758,7 +770,15 @@ const DateInput = React.forwardRef<DateInputRef, DateInputProps>(
                     style={styles.quickBtn}
                     onPress={() => {
                       const raw = startOfDay(new Date());
-                      const today = new Date(raw.getFullYear(), raw.getMonth(), raw.getDate(), 12, 0, 0, 0);
+                      const today = new Date(
+                        raw.getFullYear(),
+                        raw.getMonth(),
+                        raw.getDate(),
+                        12,
+                        0,
+                        0,
+                        0
+                      );
                       setNavYear(today.getFullYear());
                       setNavMonth(today.getMonth());
                       if (!controlledSingle) setInternalDate(today);
@@ -1048,7 +1068,11 @@ const DateInput = React.forwardRef<DateInputRef, DateInputProps>(
                   const days: string[] = [];
                   const s = startOfDay(currentRange.start);
                   const e = startOfDay(currentRange.end);
-                  for (let d = new Date(s); !isAfter(d, e); d.setDate(d.getDate() + 1))
+                  for (
+                    let d = new Date(s);
+                    !isAfter(d, e);
+                    d.setDate(d.getDate() + 1)
+                  )
                     days.push(formatLocalYMD(d));
                   const aggregated: Record<string, number> = {};
                   days.forEach((k) => {

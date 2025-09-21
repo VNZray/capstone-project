@@ -7,7 +7,7 @@ exports.up = function (knex) {
       .enu("payment_type", ["Full Payment", "Partial Payment"])
       .nullable();
     table
-      .enu("payment_method", ["Gcash", "Paymaya", "Credit Card"])
+      .enu("payment_method", ["Gcash", "Paymaya", "Credit Card", "Cash"])
       .notNullable();
     table.float("amount").notNullable();
     table.enu("status", ["Paid", "Pending Balance"]).defaultTo(null);
