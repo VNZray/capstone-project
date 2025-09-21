@@ -22,6 +22,13 @@ import reportRoutes from "./routes/report.js";
 import roomAmenityRoutes from "./routes/room_amenities.js";
 import businessAmenityRoutes from "./routes/business_amenities.js";
 
+// New Product/Service Management Routes
+import productRoutes from "./routes/products.js";
+import discountRoutes from "./routes/discounts.js";
+import serviceRoutes from "./routes/services.js";
+import orderRoutes from "./routes/orders.js";
+import productReviewRoutes from "./routes/product-reviews.js";
+
 const app = express();
 const PORT = 3000;
 
@@ -45,6 +52,13 @@ const routes = [
   { path: "/api/permit", handler: permitRoutes },
   { path: "/api/room", handler: roomRoutes },
   { path: "/api/reports", handler: reportRoutes },
+  
+  // New Product/Service Management Routes
+  { path: "/api/products", handler: productRoutes },
+  { path: "/api/discounts", handler: discountRoutes },
+  { path: "/api/services", handler: serviceRoutes },
+  { path: "/api/orders", handler: orderRoutes },
+  { path: "/api/product-reviews", handler: productReviewRoutes },
 ];
 
 app.use(cors());
