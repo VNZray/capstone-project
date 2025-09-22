@@ -2,9 +2,10 @@ import Button from '@/components/Button';
 import PageContainer from '@/components/PageContainer';
 import { useAuth } from '@/context/AuthContext';
 import { useRoom } from '@/context/RoomContext';
-import { createBookingAndGuests } from '@/query/accommodationQuery';
+import { createFullBooking } from '@/query/accommodationQuery';
 import { Booking, BookingPayment, Guests } from '@/types/Booking';
-import { useNavigation } from 'expo-router';
+import debugLogger from '@/utils/debugLogger';
+import { useNavigation, useRouter } from 'expo-router';
 import React, { useEffect } from 'react';
 import { Alert, Platform, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -18,6 +19,7 @@ const booking = () => {
   const { roomDetails } = useRoom();
   const { user } = useAuth();
   const navigation = useNavigation();
+  const router = useRouter();
 
   const [step, setStep] = React.useState<
     'booking' | 'payment' | 'online' | 'summary'
@@ -47,6 +49,20 @@ const booking = () => {
       return 'Select check-in and check-out dates.';
     if ((bookingData.pax || 0) < 1) return 'Please enter number of guests.';
     if (!paymentData.payment_method) return 'Please select a payment method.';
+    if (!guestList || guestList.length === 0)
+      return 'Please provide guest information.';
+    if (guestList.length !== bookingData.pax)
+      return 'Number of guests does not match guest information provided.';
+    for (let i = 0; i < guestList.length; i++) {
+      const g = guestList[i];
+      if (!g.name || g.name.trim() === '')
+        return `Guest #${i + 1} name is required.`;
+      if (g.age === null || g.age === undefined || g.age < 0)
+        return `Guest #${i + 1} age is required and must be non-negative.`;
+      if (!g.gender || g.gender.trim() === '')
+        return `Guest #${i + 1} gender is required.`;
+    }
+
     return null;
   };
 
@@ -64,35 +80,57 @@ const booking = () => {
         room_id: roomDetails?.id,
         tourist_id: user?.id,
         booking_status: 'Pending',
-        balance: bookingData.total_price || 0,
+        balance: bookingData.total_price,
       };
       const guestsPayload = guestList.map((g) => ({
         ...g,
-        // booking_id will be attached by API helper
-        gender: g.gender || 'unspecified',
-        age: g.age === null || g.age === undefined ? 0 : g.age,
+        name: g.name,
+        gender: g.gender,
+        age: g.age,
       }));
       const paymentPayload: BookingPayment = {
         ...paymentData,
         payer_type: 'Tourist',
         payer_id: user?.id,
-        payment_for_type: 'Reservation',
         payment_for_id: bookingPayload.room_id,
+        payment_for: 'Reservation',
+        status:
+          paymentData.payment_type === 'Full Payment'
+            ? 'Paid'
+            : 'Pending Balance',
       };
 
-      console.log('[SUBMIT] bookingPayload', bookingPayload);
-      console.log('[SUBMIT] guestsPayload', guestsPayload);
-      console.log('[SUBMIT] paymentPayload', paymentPayload);
+      debugLogger({
+        title: 'Booking Submission: bookingPayload',
+        data: bookingPayload,
+      });
+      debugLogger({
+        title: 'Booking Submission: guestsPayload',
+        data: guestsPayload,
+      });
+      debugLogger({
+        title: 'Booking Submission: paymentPayload',
+        data: paymentPayload,
+      });
 
-  // Use booking+guests only helper (payment submission intentionally skipped per request)
-      const created = await createBookingAndGuests(
+      const created = await createFullBooking(
         bookingPayload,
-        guestsPayload
+        guestsPayload,
+        paymentPayload
       );
+      debugLogger({
+        title: 'Booking Submission: Success',
+        data: created,
+        successMessage: 'Booking successfully created.',
+      });
       Alert.alert('Success', 'Booking successfully created.', created);
       navigation.goBack();
     } catch (e: any) {
-      console.error('Booking submission failed', e?.response?.data || e);
+      debugLogger({
+        title: 'Booking Submission: Error',
+        error: e?.response?.data || e,
+        errorCode: e?.code || e?.response?.status,
+      });
       Alert.alert(
         'Error',
         e?.response?.data?.message || e.message || 'Failed to create booking'
@@ -104,10 +142,57 @@ const booking = () => {
 
   useEffect(() => {
     step === 'booking' && navigation.setOptions({ title: 'Booking' });
-    step === 'payment' && navigation.setOptions({ title: 'Payment' });
+    step === 'payment' && navigation.setOptions({ title: 'Billings' });
     step === 'online' && navigation.setOptions({ title: 'Online Payment' });
     step === 'summary' && navigation.setOptions({ title: 'Summary' });
   }, [step, navigation]);
+
+  // Helper to determine if the current step's required fields are filled
+  const isStepValid = () => {
+    if (step === 'booking') {
+      // Validate booking form fields: pax, num_adults, num_children, trip_purpose, guest info
+      const paxValid =
+        typeof bookingData.pax === 'number' && bookingData.pax > 0;
+      const adultsValid =
+        typeof bookingData.num_adults === 'number' &&
+        bookingData.num_adults > 0;
+      // children can be 0 or more
+      const tripPurposeValid =
+        bookingData.trip_purpose && bookingData.trip_purpose.trim().length > 0;
+      // If guests are being filled in this step, check their validity
+      const guestsValid =
+        guestList.length === bookingData.pax &&
+        guestList.every(
+          (g) =>
+            g.name &&
+            g.name.trim() &&
+            g.gender &&
+            g.gender.trim() &&
+            g.age &&
+            g.age > 0
+        );
+      return paxValid && adultsValid && tripPurposeValid && guestsValid;
+    }
+    if (step === 'payment') {
+      return !!paymentData.payment_method;
+    }
+    if (step === 'summary') {
+      return (
+        guestList &&
+        guestList.length === bookingData.pax &&
+        guestList.every(
+          (g) =>
+            g.name &&
+            g.name.trim() &&
+            g.gender &&
+            g.gender.trim() &&
+            g.age &&
+            g.age > 0
+        )
+      );
+    }
+    return true;
+  };
 
   return (
     <PageContainer padding={0}>
@@ -188,14 +273,22 @@ const booking = () => {
               color="primary"
               variant="solid"
               elevation={3}
-              style={{ flex: 1, opacity: submitting ? 0.6 : 1 }}
+              style={{
+                flex: 1,
+                opacity: submitting || !isStepValid() ? 0.6 : 1,
+              }}
+              disabled={submitting || !isStepValid()}
               onPress={() => {
-                if (submitting) return;
+                if (submitting || !isStepValid()) return;
                 if (step === 'booking') {
                   setStep('payment');
                 } else if (step === 'payment') {
-                  if (paymentData.payment_method === 'Cash') setStep('summary');
-                  else setStep('online');
+                  if (paymentData.payment_method === 'Cash') {
+                    setStep('summary');
+                  } else {
+                    // Redirect to online payment page and pass amount due
+                    router.push({ pathname: '/(tabs)/(home)/(accommodation)/room/booking/OnlinePayment', params: { amount: paymentData.amount?.toString(), payment_method: paymentData.payment_method } });
+                  }
                 } else if (step === 'online') {
                   setStep('summary');
                 } else if (step === 'summary') {

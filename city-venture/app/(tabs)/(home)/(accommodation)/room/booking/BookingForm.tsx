@@ -65,8 +65,8 @@ const BookingForm: React.FC<Props> = ({
         if (pax > next.length) {
           for (let i = next.length; i < pax; i++) {
             next.push({
-              booking_id: data.id ? Number(data.id) : 0,
-              guest_name: '',
+              booking_id: data.id!,
+              name: '',
               age: null,
               gender: '',
             });
@@ -150,7 +150,7 @@ const BookingForm: React.FC<Props> = ({
           minLength={1}
           maxLength={2}
           pattern={/^[1-9]\d*$/}
-          value={typeCounts[type.id] || ''}
+          value={typeCounts[type.id]}
           onChangeText={(value) => {
             setTypeCounts((prev) => ({ ...prev, [type.id]: value }));
           }}
@@ -161,7 +161,7 @@ const BookingForm: React.FC<Props> = ({
             if (num > 100) return 'Too many';
             return null;
           }}
-          style={{ marginBottom: 8 }}
+          
         />
       ))}
     </View>
@@ -173,8 +173,8 @@ const BookingForm: React.FC<Props> = ({
       const next = [...prev];
       if (!next[index]) {
         next[index] = {
-          booking_id: data.id ? Number(data.id) : 0,
-          guest_name: '',
+          booking_id: data.id!,
+          name: '',
           age: null,
           gender: '',
         };
@@ -185,7 +185,7 @@ const BookingForm: React.FC<Props> = ({
   };
 
   const renderGuestForms = () => (
-    <View>
+    <Container padding={0} backgroundColor="transparent">
       {guests.map((g, idx) => {
         const i = idx + 1;
         return (
@@ -201,8 +201,8 @@ const BookingForm: React.FC<Props> = ({
               required
               placeholder="Full Name"
               columns={2}
-              value={g.guest_name}
-              onChangeText={(value) => updateGuest(idx, { guest_name: value })}
+              value={g.name}
+              onChangeText={(value) => updateGuest(idx, { name: value })}
             />
             <FormTextInput
               size="small"
@@ -230,12 +230,12 @@ const BookingForm: React.FC<Props> = ({
               label="Gender"
               size="small"
               items={[
-                { id: 'male', label: 'Male' },
-                { id: 'female', label: 'Female' },
+                { id: 'Male', label: 'Male' },
+                { id: 'Female', label: 'Female' },
               ]}
               value={
                 g.gender === 'Male' || g.gender === 'Female'
-                  ? g.gender.toLowerCase()
+                  ? g.gender
                   : g.gender
               }
               onSelect={(item) => updateGuest(idx, { gender: item.id })}
@@ -244,11 +244,11 @@ const BookingForm: React.FC<Props> = ({
           </Container>
         );
       })}
-    </View>
+    </Container>
   );
   const allGuestsComplete =
     guests.length > 0 &&
-    guests.every((g) => g.guest_name.trim() && g.age && g.age > 0 && g.gender);
+    guests.every((g) => g.name.trim() && g.age && g.age > 0 && g.gender);
 
   return (
     <ScrollView>
@@ -270,6 +270,7 @@ const BookingForm: React.FC<Props> = ({
             if (num > 20) return 'Maximum 20 guests allowed';
             return null;
           }}
+          value={pax === 0 ? '' : pax.toString()}
         />
 
         <Container direction="row" padding={0} backgroundColor="transparent">
@@ -290,6 +291,7 @@ const BookingForm: React.FC<Props> = ({
               return null;
             }}
             onChangeText={(value) => setNumberOfAdults(parseInt(value) || 0)}
+            value={numberOfAdults === 0 ? '' : numberOfAdults.toString()}
           />
 
           <FormTextInput
@@ -307,6 +309,7 @@ const BookingForm: React.FC<Props> = ({
               return null;
             }}
             onChangeText={(value) => setNumberOfChildren(parseInt(value) || 0)}
+            value={numberOfChildren === 0 ? '' : numberOfChildren.toString()}
           />
         </Container>
 
@@ -343,6 +346,7 @@ const BookingForm: React.FC<Props> = ({
           size="small"
           validateOnChange
           label="Traveler Type (Select all that apply)"
+          values={selectedTypes.map((t) => t.id)}
         />
 
         {selectedTypes.length > 0 && <>{renderTypeInputs()}</>}
@@ -371,7 +375,6 @@ const BookingForm: React.FC<Props> = ({
                 return 'Please specify your purpose';
               return null;
             }}
-            style={{ marginTop: 8 }}
           />
         )}
       </PageContainer>

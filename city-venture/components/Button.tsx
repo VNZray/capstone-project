@@ -58,6 +58,7 @@ type ButtonProps = {
   style?: StyleProp<ViewStyle>;
   textStyle?: StyleProp<TextStyle>;
   onPress?: () => void;
+  disabled?: boolean;
 };
 
 const Button = ({
@@ -87,6 +88,7 @@ const Button = ({
   style,
   textStyle,
   onPress,
+  disabled = false,
 }: ButtonProps) => {
   const schemeRaw = useColorScheme();
   const scheme: 'light' | 'dark' | null =
@@ -104,7 +106,8 @@ const Button = ({
   return (
     <Pressable
       accessibilityRole="button"
-      onPress={onPress}
+      onPress={disabled ? undefined : onPress}
+      disabled={disabled}
       style={({ pressed }) => [
         styles.base,
         {
@@ -120,8 +123,9 @@ const Button = ({
         },
         colorStyle,
         getPlatformElevation(elevation),
+        disabled && { opacity: 0.5 },
         // Consistent pressed state for both platforms
-        pressed && { opacity: 0.85 },
+        pressed && !disabled && { opacity: 0.85 },
         style,
       ]}
     >

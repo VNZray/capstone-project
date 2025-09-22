@@ -28,7 +28,6 @@ exports.up = async function (knex) {
       .notNullable()
       .defaultTo("Pending");
     table.text("business_image").nullable();
-    table.timestamp("created_at").defaultTo(knex.fn.now());
     table.string("latitude", 30).notNullable();
     table.string("longitude", 30).notNullable();
     table.text("x_url").nullable();
@@ -36,6 +35,7 @@ exports.up = async function (knex) {
     table.text("facebook_url").nullable();
     table.text("instagram_url").nullable();
     table.boolean("hasBooking").nullable().defaultTo(false);
+    table.timestamp("created_at").defaultTo(knex.fn.now());
   });
 
   await createBusinessProcedures(knex);

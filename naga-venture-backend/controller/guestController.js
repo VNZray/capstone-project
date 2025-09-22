@@ -19,18 +19,26 @@ export async function getGuestById(req, res) {
   }
 }
 
-// Insert guest
+// Insert guest(s)
 export async function insertGuest(req, res) {
   try {
-    const { id = uuidv4(), name, age, gender, booking_id } = req.body;
-    const [rows] = await db.query("CALL InsertGuest(?, ?, ?, ?, ?)", [
-      id,
-      name,
-      age,
-      gender,
-      booking_id,
-    ]);
-    res.status(201).json(rows[0][0]);
+    const guests = Array.isArray(req.body) ? req.body : [req.body];
+    const results = [];
+    for (const guest of guests) {
+      const { id = uuidv4(), name, age, gender, booking_id } = guest;
+      if (!name || !age || !gender || !booking_id) {
+        return res.status(400).json({ error: "Missing required guest fields" });
+      }
+      const [rows] = await db.query("CALL InsertGuest(?, ?, ?, ?, ?)", [
+        id,
+        name,
+        age,
+        gender,
+        booking_id,
+      ]);
+      results.push(rows[0][0]);
+    }
+    res.status(201).json(Array.isArray(req.body) ? results : results[0]);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

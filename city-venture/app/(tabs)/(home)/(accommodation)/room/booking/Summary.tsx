@@ -112,7 +112,7 @@ const Summary: React.FC<Props> = ({ data, guests, payment }) => {
                 gap={4}
               >
                 <ThemedText type="body-extra-small" weight="normal">
-                  Guest {i + 1}: {g.guest_name || '—'} | {g.age ?? '—'} yrs |{' '}
+                  Guest {i + 1}: {g.name || '—'} | {g.age ?? '—'} yrs |{' '}
                   {genderLabel(g.gender) || '—'}
                 </ThemedText>
               </Container>

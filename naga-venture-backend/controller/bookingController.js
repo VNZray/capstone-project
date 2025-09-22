@@ -57,7 +57,6 @@ export async function insertBooking(req, res) {
       tourist_id,
     } = req.body;
 
-    // Basic validation (kept lightweight; expand as needed)
     const missing = [];
     if (pax === undefined) missing.push("pax");
     if (!trip_purpose) missing.push("trip_purpose");
@@ -72,11 +71,9 @@ export async function insertBooking(req, res) {
         .json({ error: "Missing required fields", fields: missing });
     }
 
-    const effectiveBalance = balance ?? total_price; // assume full balance due if not provided
-    const effectiveStatus = booking_status ?? "Pending"; // matches procedure default
-
+    const effectiveBalance = balance ?? total_price; 
+    const effectiveStatus = booking_status ?? "Pending";
     const [rows] = await db.query(
-      // 16 placeholders matching 16 parameters in InsertBooking
       "CALL InsertBooking(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
       [
         id,
@@ -128,7 +125,6 @@ export async function updateBooking(req, res) {
     } = req.body;
 
     const [rows] = await db.query(
-      // 16 placeholders matching UpdateBooking signature
       "CALL UpdateBooking(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
       [
         id,

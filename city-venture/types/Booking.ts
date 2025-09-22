@@ -21,10 +21,10 @@ export type Booking = {
 
 export type Guest = {
     id?: number;
-    booking_id: number;
-    guest_name: string;
+    booking_id: string;
+    name: string;
     age: number | null;
-    gender: 'male' | 'female' | string;
+    gender: 'Male' | 'Female' | string;
 }
 
 export type Guests = Guest[];
@@ -33,7 +33,7 @@ export type Guests = Guest[];
 export type BookingPayment = {
     id?: number;
     payer_type?: 'Tourist' | 'Owner';
-    payment_type: 'Full Payment' | 'Partial Payment';
+    payment_type?: 'Full Payment' | 'Partial Payment';
     payment_method?: 'Gcash' | 'Paymaya' | 'Credit Card' | 'Cash';
     status?: 'Paid' | 'Completed' | 'Pending Balance';
     amount: number;
@@ -41,5 +41,6 @@ export type BookingPayment = {
     payment_for_type?: 'Reservation' | 'Pending Balance' | 'Subscription';
     payment_for_id?: string;
     created_at?: Date;
+    payment_for?: string;
 }
 

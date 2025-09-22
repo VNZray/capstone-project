@@ -19,7 +19,7 @@ async function createGuestProcedures(knex) {
   await knex.raw(`
     CREATE PROCEDURE InsertGuest(
       IN p_id CHAR(36),
-      IN p_name VARCHAR(30),
+      IN p_name VARCHAR(60),
       IN p_age INT,
       IN p_gender ENUM('Male','Female'),
       IN p_booking_id CHAR(36)
