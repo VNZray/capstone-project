@@ -1,8 +1,9 @@
 import { ThemedText } from '@/components/themed-text';
 import { colors } from '@/constants/color';
+import { moderateScale } from '@/utils/responsive';
 import { FontAwesome5 } from '@expo/vector-icons';
 import React from 'react';
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet, View, useWindowDimensions } from 'react-native';
 import Container from './Container';
 
 type StatProps = {
@@ -14,23 +15,41 @@ type StatProps = {
 };
 
 const StatCard = ({ icon, label, value, card, scheme }: StatProps) => {
+  const { width } = useWindowDimensions();
+  const PAD = moderateScale(14, 0.55, width);
+  const RADIUS = moderateScale(16, 0.55, width);
+  const GAP = moderateScale(6, 0.55, width);
+  const ICON_BOX = moderateScale(32, 0.55, width);
+
   return (
     <Container
       flex={1}
-      radius={16}
-      padding={14}
-      gap={6}
+      radius={RADIUS}
+      padding={PAD}
+      gap={GAP}
       direction="row"
       elevation={2}
-      style={[styles.statCard, { backgroundColor: card }]}
+      style={[
+        styles.statCard,
+        { backgroundColor: card, borderRadius: RADIUS, padding: PAD, gap: GAP },
+      ]}
     >
       <View
         style={[
           styles.statIcon,
-          { backgroundColor: scheme === 'dark' ? '#263054' : '#E8F0FF' },
+          {
+            width: ICON_BOX,
+            height: ICON_BOX,
+            backgroundColor: scheme === 'dark' ? '#263054' : '#E8F0FF',
+            borderRadius: moderateScale(8, 0.55, width),
+          },
         ]}
       >
-        <FontAwesome5 name={icon} size={16} color={colors.secondary} />
+        <FontAwesome5
+          name={icon}
+          size={moderateScale(16, 0.5, width)}
+          color={colors.secondary}
+        />
       </View>
       <View>
         <ThemedText type="sub-title-small" weight="bold">

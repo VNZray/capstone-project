@@ -22,8 +22,6 @@ const AccommodationProfile = () => {
   const navigation = useNavigation();
   const [activeTab, setActiveTab] = useState<string>('details');
   const colorScheme = useColorScheme();
-  const isDarkMode = colorScheme === 'dark';
-  const activeBackground = '#0A1B47';
   const { user } = useAuth();
   const { accommodationDetails } = useAccommodation();
 
@@ -157,7 +155,6 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   tabContent: {
-    marginBottom: 150,
     overflow: 'visible',
   },
   notFoundContainer: {

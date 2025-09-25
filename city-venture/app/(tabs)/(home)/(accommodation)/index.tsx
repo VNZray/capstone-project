@@ -1,4 +1,4 @@
-import AccommodationCard from '@/components/AccommodationCard';
+import AccommodationCard from '@/components/accommodation/AccommodationCard';
 import Button from '@/components/Button';
 import Container from '@/components/Container';
 import PageContainer from '@/components/PageContainer';
@@ -22,7 +22,6 @@ const AccommodationDirectory = () => {
   const { loading, allAccommodationDetails, setAccommodationId } =
     useAccommodation();
   const [cardView, setCardView] = useState('card');
-  // Use the first accommodation's ids (if present) to resolve category/type meta
 
   const [search, setSearch] = useState('');
   const [activeTab, setActiveTab] = useState<string>('all');
@@ -100,13 +99,8 @@ const AccommodationDirectory = () => {
   );
 
   return (
-    <PageContainer padding={0} style={{ backgroundColor: bg }}>
-      <Container
-        style={{ overflow: 'visible' }}
-        backgroundColor="transparent"
-        gap={16}
-        paddingBottom={0}
-      >
+    <PageContainer padding={0} gap={0} style={{ backgroundColor: bg }}>
+      <Container gap={0} paddingBottom={0} backgroundColor="transparent" >
         <View style={styles.SearchContainer}>
           <SearchBar
             shape="square"
@@ -131,7 +125,6 @@ const AccommodationDirectory = () => {
         />
       </Container>
 
-      {/**Tab Filter */}
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{
@@ -200,20 +193,16 @@ const AccommodationDirectory = () => {
                 places.
               </ThemedText>
 
-              <View style={styles.notFoundActions}>
-                <Button
-                  label="Clear Filters"
-                  startIcon="redo"
-                  variant="soft"
-                  color="secondary"
-                  size="large"
-                  fullWidth
-                  radius={14}
-                  elevation={1}
-                  textSize={16}
-                  onPress={handleResetFilters}
-                />
-              </View>
+              <Button
+                label="Clear Filters"
+                variant="soft"
+                color="secondary"
+                size="medium"
+                fullWidth
+                radius={14}
+                startIcon="redo"
+                onPress={handleResetFilters}
+              />
             </PageContainer>
           )}
         </View>
@@ -224,10 +213,10 @@ const AccommodationDirectory = () => {
 
 const styles = StyleSheet.create({
   SearchContainer: {
-    backgroundColor: 'transparent',
     display: 'flex',
     flexDirection: 'row',
     gap: 8,
+    overflow: 'visible',
   },
   cardWrapper: {
     gap: 16,

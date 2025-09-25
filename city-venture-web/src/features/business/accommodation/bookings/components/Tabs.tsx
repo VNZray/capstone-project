@@ -3,7 +3,7 @@ import { Button } from "@mui/joy";
 import Container from "@/src/components/Container";
 import { Star, ListChecks, Image } from "lucide-react";
 
-type tabs = "All" | "Pending" | "Reserved" | "Checked-in" | "Checked-out" | "Cancelled";
+type tabs = "All" | "Pending" | "Reserved" | "Checked-in" | "Checked-out" | "Canceled";
 
 interface tabsFilter {
   active: tabs;
@@ -19,7 +19,7 @@ const tabs: {
   { label: "Reserved", icon: <Star size={16} /> },
   { label: "Checked-in", icon: <ListChecks size={16} /> },
   { label: "Checked-out", icon: <Image size={16} /> },
-  { label: "Cancelled", icon: <Star size={16} /> },
+  { label: "Canceled", icon: <Star size={16} /> },
 ];
 
 export default function Tabs({ active, onChange }: tabsFilter) {

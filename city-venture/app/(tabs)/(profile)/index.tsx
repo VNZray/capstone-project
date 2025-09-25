@@ -102,7 +102,7 @@ const Profile = () => {
           <View style={styles.avatarRingOuter}>
             <View style={[styles.avatarRingInner, { backgroundColor: card }]}>
               <Image
-                source={require('@/assets/images/react-logo.png')}
+                source={user.user_profile ? { uri: user.user_profile } : require('@/assets/images/react-logo.png')}
                 style={styles.avatar}
                 resizeMode="cover"
               />
@@ -186,20 +186,20 @@ const Profile = () => {
             label="Log Out"
             variant="solid"
             color="error"
-            size="large"
+            size="medium"
             fullWidth
             radius={14}
             startIcon="sign-out-alt"
             onPress={async () => {
-              await logout();
-              router.replace('/Login');
+              logout();
+              router.replace('/');
             }}
           />
           <Button
             label="Settings"
             variant="soft"
             color="info"
-            size="large"
+            size="medium"
             fullWidth
             radius={14}
             startIcon="cog"

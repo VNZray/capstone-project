@@ -2,14 +2,14 @@ import { useColorScheme } from '@/hooks/use-color-scheme';
 import { FontAwesome5 } from '@expo/vector-icons';
 import React, { useMemo } from 'react';
 import {
-    Platform,
-    Pressable,
-    StyleProp,
-    StyleSheet,
-    Text,
-    TextStyle,
-    View,
-    ViewStyle,
+  Platform,
+  Pressable,
+  StyleProp,
+  StyleSheet,
+  Text,
+  TextStyle,
+  View,
+  ViewStyle,
 } from 'react-native';
 
 export type ChipVariant = 'solid' | 'outlined' | 'soft';
@@ -22,7 +22,7 @@ export type ChipColor =
   | 'warning'
   | 'info'
   | 'link';
-export type ChipSize = 'sm' | 'md' | 'lg';
+export type ChipSize = 'small' | 'medium' | 'large';
 
 type IconName = React.ComponentProps<typeof FontAwesome5>['name'];
 
@@ -67,16 +67,16 @@ const THEME_COLORS: Record<ChipColor, string> = {
 
 const sizes: Record<ChipSize, { padH: number; padV: number; radius: number; font: number; gap: number; icon: number }>
   = {
-    sm: { padH: 10, padV: 6, radius: 16, font: 12, gap: 6, icon: 14 },
-    md: { padH: 14, padV: 8, radius: 18, font: 14, gap: 8, icon: 16 },
-    lg: { padH: 18, padV: 10, radius: 22, font: 16, gap: 10, icon: 18 },
+    small: { padH: 10, padV: 6, radius: 16, font: 12, gap: 6, icon: 14 },
+    medium: { padH: 14, padV: 8, radius: 18, font: 14, gap: 8, icon: 16 },
+    large: { padH: 18, padV: 10, radius: 22, font: 16, gap: 10, icon: 18 },
   };
 
 // Diameter for icon-only circular chips
 const iconOnlyDiameter: Record<ChipSize, number> = {
-  sm: 28,
-  md: 34,
-  lg: 40,
+  small: 28,
+  medium: 34,
+  large: 40,
 };
 
 function hexToRgb(hex: string) {
@@ -111,22 +111,65 @@ function getElevation(level: 1 | 2 | 3 | 4 | 5 | 6): ViewStyle {
     5: { shadowColor: '#000', shadowOpacity: 0.14, shadowRadius: 10, shadowOffset: { width: 0, height: 5 } },
     6: { shadowColor: '#000', shadowOpacity: 0.16, shadowRadius: 12, shadowOffset: { width: 0, height: 6 } },
   };
+  
+  // Enhanced Android elevation with better shadow effects
   const androidElevation: Record<number, ViewStyle> = {
-    1: { elevation: 1 },
-    2: { elevation: 2 },
-    3: { elevation: 3 },
-    4: { elevation: 4 },
-    5: { elevation: 5 },
-    6: { elevation: 6 },
+    1: { 
+      elevation: 1,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.08,
+      shadowRadius: 1,
+    },
+    2: { 
+      elevation: 2,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.10,
+      shadowRadius: 2,
+    },
+    3: { 
+      elevation: 3,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.12,
+      shadowRadius: 3,
+    },
+    4: { 
+      elevation: 4,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.14,
+      shadowRadius: 4,
+    },
+    5: { 
+      elevation: 5,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 3 },
+      shadowOpacity: 0.16,
+      shadowRadius: 5,
+    },
+    6: { 
+      elevation: 6,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 3 },
+      shadowOpacity: 0.18,
+      shadowRadius: 6,
+    },
   };
-  return Platform.select<ViewStyle>({ ios: iosShadow[level], android: androidElevation[level], default: androidElevation[level] })!;
+  
+  return Platform.select<ViewStyle>({ 
+    ios: iosShadow[level], 
+    android: androidElevation[level], 
+    default: androidElevation[level] 
+  })!;
 }
 
 export default function Chip({
   label,
   variant = 'solid',
   color = 'primary',
-  size = 'md',
+  size = 'medium',
   elevation = 0 as any, // allow 0 to mean none
   disabled,
   startIconName,
@@ -241,6 +284,13 @@ export default function Chip({
     backgroundColor: tokens.bg,
     paddingHorizontal: sz.padH,
     paddingVertical: sz.padV,
+    // Android-specific improvements
+    ...Platform.select({
+      android: {
+        overflow: 'hidden', // Ensure proper clipping for ripple effect
+        elevation: elevation && elevation > 0 ? 0 : undefined, // Let parent handle elevation
+      },
+    }),
   };
 
   const elevated = elevation && elevation > 0 ? getElevation(elevation as 1 | 2 | 3 | 4 | 5 | 6) : undefined;
@@ -260,6 +310,16 @@ export default function Chip({
         { margin: margin as any },
         style,
       ]}
+      // Android-specific ripple effect
+      android_ripple={
+        onPress && !disabled
+          ? {
+              color: rgba(tokens.fg, 0.15),
+              borderless: false,
+              radius: isIconOnly ? diameter / 2 : undefined,
+            }
+          : undefined
+      }
     >
       {({ pressed }) => (
         <View
@@ -275,7 +335,7 @@ export default function Chip({
               justifyContent: 'center',
             },
             // pressed overlay for visual feedback
-            pressed && !disabled &&
+            pressed && !disabled && Platform.OS !== 'android' && // Skip for Android since ripple handles feedback
               (variant === 'solid'
                 ? { backgroundColor: shade(tokens.bg, -0.08) }
                 : variant === 'outlined'
@@ -292,7 +352,14 @@ export default function Chip({
 }
 
 const styles = StyleSheet.create({
-  shadowWrapper: {},
+  shadowWrapper: {
+    ...Platform.select({
+      android: {
+        // Better handling of elevation shadows on Android
+        backgroundColor: 'transparent',
+      },
+    }),
+  },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -305,8 +372,21 @@ const styles = StyleSheet.create({
   },
   content: {
     minHeight: 0,
+    ...Platform.select({
+      android: {
+        // Ensure proper text alignment on Android
+        alignItems: 'center',
+      },
+    }),
   },
   text: {
     fontWeight: '700',
+    ...Platform.select({
+      android: {
+        // Better text rendering on Android
+        textAlignVertical: 'center',
+        includeFontPadding: false,
+      },
+    }),
   },
 });

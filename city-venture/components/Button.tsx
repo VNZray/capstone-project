@@ -1,5 +1,6 @@
 import { card, colors } from '@/constants/color';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { moderateScale } from '@/utils/responsive';
 import { FontAwesome5 } from '@expo/vector-icons';
 import React from 'react';
 import {
@@ -11,6 +12,7 @@ import {
   TextStyle,
   View,
   ViewStyle,
+  useWindowDimensions,
 } from 'react-native';
 
 // Variants
@@ -56,6 +58,7 @@ type ButtonProps = {
   style?: StyleProp<ViewStyle>;
   textStyle?: StyleProp<TextStyle>;
   onPress?: () => void;
+  disabled?: boolean;
 };
 
 const Button = ({
@@ -85,12 +88,14 @@ const Button = ({
   style,
   textStyle,
   onPress,
+  disabled = false,
 }: ButtonProps) => {
   const schemeRaw = useColorScheme();
   const scheme: 'light' | 'dark' | null =
     schemeRaw === 'light' || schemeRaw === 'dark' ? schemeRaw : null;
+  const { width: windowWidth } = useWindowDimensions();
 
-  const sizeStyle = getSizeStyle(size, icon);
+  const sizeStyle = getSizeStyle(size, icon, windowWidth);
   const colorStyle = getColorStyle(color, variant, scheme);
 
   // Colors & sizes
@@ -101,11 +106,8 @@ const Button = ({
   return (
     <Pressable
       accessibilityRole="button"
-      onPress={onPress}
-      android_ripple={{
-        color: addOpacity(colorStyle?.backgroundColor ?? '#000', 0.15),
-        borderless: false,
-      }}
+      onPress={disabled ? undefined : onPress}
+      disabled={disabled}
       style={({ pressed }) => [
         styles.base,
         {
@@ -121,7 +123,9 @@ const Button = ({
         },
         colorStyle,
         getPlatformElevation(elevation),
-        pressed && { opacity: 0.85 },
+        disabled && { opacity: 0.5 },
+        // Consistent pressed state for both platforms
+        pressed && !disabled && { opacity: 0.85 },
         style,
       ]}
     >
@@ -135,7 +139,11 @@ const Button = ({
       >
         {/* Top Icon */}
         {topIcon && (
-          <FontAwesome5 name={topIcon} size={computedIconSize} color={iconColor} />
+          <FontAwesome5
+            name={topIcon}
+            size={computedIconSize}
+            color={iconColor}
+          />
         )}
 
         {/* Middle Row: startIcon - label/children - endIcon */}
@@ -148,7 +156,11 @@ const Button = ({
           }}
         >
           {startIcon && (
-            <FontAwesome5 name={startIcon} size={computedIconSize} color={iconColor} />
+            <FontAwesome5
+              name={startIcon}
+              size={computedIconSize}
+              color={iconColor}
+            />
           )}
           {!icon &&
             (children != null
@@ -165,7 +177,7 @@ const Button = ({
                       {child}
                     </Text>
                   ) : (
-                    child as React.ReactNode
+                    (child as React.ReactNode)
                   )
                 )
               : label && (
@@ -181,13 +193,21 @@ const Button = ({
                   </Text>
                 ))}
           {endIcon && (
-            <FontAwesome5 name={endIcon} size={computedIconSize} color={iconColor} />
+            <FontAwesome5
+              name={endIcon}
+              size={computedIconSize}
+              color={iconColor}
+            />
           )}
         </View>
 
         {/* Bottom Icon */}
         {bottomIcon && (
-          <FontAwesome5 name={bottomIcon} size={computedIconSize} color={iconColor} />
+          <FontAwesome5
+            name={bottomIcon}
+            size={computedIconSize}
+            color={iconColor}
+          />
         )}
       </View>
     </Pressable>
@@ -200,47 +220,34 @@ export default Button;
 const styles = StyleSheet.create({
   base: {
     borderWidth: 0,
-    // removed overflow: 'hidden' so shadows show on iOS
   },
   text: {
     fontWeight: '600',
+    textAlignVertical: 'center',
+    includeFontPadding: false,
   },
 });
 
 // ---------- Helpers ----------
-function getSizeStyle(size: Size, icon: boolean): any {
-  switch (size) {
-    case 'small':
-      return {
-        width: icon ? 36 : undefined,
-        height: 36,
-        padding: 8,
-        text: { fontSize: 12 },
-      };
-    case 'medium':
-      return {
-        width: icon ? 44 : undefined,
-        height: 44,
-        padding: 12,
-        text: { fontSize: 14 },
-      };
-    case 'large':
-      return {
-        width: icon ? 52 : undefined,
-        height: 52,
-        padding: 16,
-        text: { fontSize: 16 },
-      };
-    case 'extraLarge':
-      return {
-        width: icon ? 64 : undefined,
-        height: 64,
-        padding: 20,
-        text: { fontSize: 18 },
-      };
-    default:
-      return {};
-  }
+function getSizeStyle(size: Size, icon: boolean, screenWidth?: number): any {
+  // Base sizes from previous implementation
+  const base = {
+    small: { h: 36, pad: 8, fs: 12, icon: 36 },
+    medium: { h: 44, pad: 12, fs: 14, icon: 44 },
+    large: { h: 52, pad: 16, fs: 16, icon: 52 },
+    extraLarge: { h: 64, pad: 20, fs: 18, icon: 64 },
+  } as const;
+  const b = base[size];
+  const h = moderateScale(b.h, 0.55, screenWidth);
+  const padding = moderateScale(b.pad, 0.5, screenWidth);
+  const fontSize = moderateScale(b.fs, 0.4, screenWidth);
+  const iconBox = moderateScale(b.icon, 0.55, screenWidth);
+  return {
+    width: icon ? iconBox : undefined,
+    height: iconBox,
+    padding,
+    text: { fontSize },
+  };
 }
 
 function getColorStyle(

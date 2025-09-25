@@ -1,6 +1,6 @@
 import { background } from '@/constants/color';
 import React, { ReactNode } from 'react';
-import { StyleSheet, useColorScheme, View, ViewStyle } from 'react-native';
+import { Platform, StyleSheet, useColorScheme, View, ViewStyle } from 'react-native';
 
 type PageContainerProps = {
   children: ReactNode;
@@ -29,7 +29,7 @@ const PageContainer = ({
   gap = 20,
   width = '100%',
   height = '100%',
-  padding = 20,
+  padding = 16,
 }: PageContainerProps) => {
     const colorScheme = useColorScheme();
     const bg = colorScheme === 'dark' ? background.dark : background.light;
@@ -70,9 +70,17 @@ export default PageContainer;
 const styles = StyleSheet.create({
   container: {
     flexDirection: 'column',
+    paddingBottom: 100,
     padding: 20,
     height: '100%',
     width: '100%',
     gap: 20,
+    ...Platform.select({
+      android: {
+        // Android-specific improvements for better scrolling and performance
+        flex: 1,
+        backgroundColor: 'transparent', // Let background color be handled by parent
+      },
+    }),
   },
 });

@@ -2,11 +2,11 @@ import {
   clearStoredBusinessId,
   fetchAllBusinessDetails,
   fetchBusinessData,
-  fetchBusinessDetails,
   getStoredBusinessId,
-  setStoredBusinessId,
+  setStoredBusinessId
 } from '@/services/AccommodationService';
 import type { Business, BusinessDetails } from '@/types/Business';
+import debugLogger from '@/utils/debugLogger';
 import type { ReactNode } from 'react';
 import React, {
   createContext,
@@ -59,13 +59,20 @@ export const AccommodationProvider: React.FC<AccommodationProviderProps> = ({
 
   /** Set the selected accommodation ID and store it locally */
   const setAccommodationId = useCallback((id: string) => {
-    console.debug('[AccommodationContext] setAccommodationId ->', id);
+    debugLogger({
+      title: 'AccommodationContext: setAccommodationId',
+      data: { id }
+    });
     setSelectedAccommodationId(id);
     setStoredBusinessId(id);
   }, []);
 
   /** Clear selected accommodation */
   const clearAccommodationId = useCallback(() => {
+    debugLogger({
+      title: 'AccommodationContext: clearAccommodationId',
+      successMessage: 'Cleared selected accommodation.'
+    });
     setSelectedAccommodationId(null);
     setAccommodationDetails(null);
     clearStoredBusinessId();
@@ -75,17 +82,23 @@ export const AccommodationProvider: React.FC<AccommodationProviderProps> = ({
   const fetchAccommodation = useCallback(async () => {
     if (!selectedAccommodationId) return;
     setLoading(true);
-
     try {
-      console.debug('[AccommodationContext] Fetching business data for id=', selectedAccommodationId);
+      debugLogger({
+        title: 'AccommodationContext: Fetching business data',
+        data: { id: selectedAccommodationId }
+      });
       const data = await fetchBusinessData(selectedAccommodationId);
-      console.debug('[AccommodationContext] Fetched business data ->', {
-        id: data?.id,
-        name: data?.business_name,
+      debugLogger({
+        title: 'AccommodationContext: Fetched business data',
+        data: { id: data?.id, name: data?.business_name },
+        successMessage: 'Fetched business data.'
       });
       setAccommodationDetails(data);
     } catch (error) {
-      console.error('Failed to fetch accommodation:', error);
+      debugLogger({
+        title: 'AccommodationContext: Failed to fetch accommodation',
+        error
+      });
       setAccommodationDetails(null);
     } finally {
       setLoading(false);
@@ -95,9 +108,15 @@ export const AccommodationProvider: React.FC<AccommodationProviderProps> = ({
   const fetchAllAccommodations = async () => {
     setLoading(true);
     try {
-      console.debug('[AccommodationContext] Fetching all businesses...');
+      debugLogger({
+        title: 'AccommodationContext: Fetching all businesses',
+      });
       const data = await fetchAllBusinessDetails();
-      console.debug('[AccommodationContext] Total businesses ->', data?.length ?? 0);
+      debugLogger({
+        title: 'AccommodationContext: Total businesses',
+        data: { count: data?.length ?? 0 },
+        successMessage: 'Fetched all businesses.'
+      });
       setAllAccommodationDetails(data);
       if (data.length === 0) {
         setAccommodationDetails(null);
@@ -106,7 +125,10 @@ export const AccommodationProvider: React.FC<AccommodationProviderProps> = ({
         return;
       }
     } catch (error) {
-      console.error('Failed to fetch business listed:', error);
+      debugLogger({
+        title: 'AccommodationContext: Failed to fetch business listed',
+        error
+      });
       setAllAccommodationDetails([]);
     } finally {
       setLoading(false);

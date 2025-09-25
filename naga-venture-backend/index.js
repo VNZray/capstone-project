@@ -21,6 +21,9 @@ import roomRoutes from "./routes/room.js";
 import reportRoutes from "./routes/report.js";
 import roomAmenityRoutes from "./routes/room_amenities.js";
 import businessAmenityRoutes from "./routes/business_amenities.js";
+import guestRoutes from "./routes/guest.js";
+import bookingRoutes from "./routes/booking.js";
+import paymentRoutes from "./routes/paymentRoutes.js";
 
 const app = express();
 const PORT = 3000;
@@ -45,6 +48,9 @@ const routes = [
   { path: "/api/permit", handler: permitRoutes },
   { path: "/api/room", handler: roomRoutes },
   { path: "/api/reports", handler: reportRoutes },
+  { path: "/api/guest", handler: guestRoutes },
+  { path: "/api/booking", handler: bookingRoutes },
+  { path: "/api/payment", handler: paymentRoutes },
 ];
 
 app.use(cors());
