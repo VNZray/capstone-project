@@ -1,32 +1,82 @@
+import Button from '@/components/Button';
 import Container from '@/components/Container';
 import PageContainer from '@/components/PageContainer';
 import { ThemedText } from '@/components/themed-text';
+import { background, card, colors } from '@/constants/color';
 import { useRoom } from '@/context/RoomContext';
 import { Booking, BookingPayment, Guests } from '@/types/Booking';
-import React, { useState } from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
-
-interface SummaryProps {
-  data: any;
-}
+import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import React, { useMemo, useState } from 'react';
+import {
+  Modal,
+  ScrollView,
+  StyleSheet,
+  useColorScheme,
+  View
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 type Props = {
-  data: Booking;
-  guests: Guests;
-  payment: BookingPayment;
-  setData: React.Dispatch<React.SetStateAction<Booking>>;
-  setGuests: React.Dispatch<React.SetStateAction<Guests>>;
-  setPayment: React.Dispatch<React.SetStateAction<BookingPayment>>;
+  data?: Booking;
+  guests?: Guests;
+  payment?: BookingPayment;
+  setData?: React.Dispatch<React.SetStateAction<Booking>>;
+  setGuests?: React.Dispatch<React.SetStateAction<Guests>>;
+  setPayment?: React.Dispatch<React.SetStateAction<BookingPayment>>;
 };
 
 const Summary: React.FC<Props> = ({ data, guests, payment }) => {
   const { roomDetails } = useRoom();
+  const router = useRouter();
+  const params = useLocalSearchParams<{
+    bookingData?: string;
+    guests?: string;
+    paymentData?: string;
+  }>();
+
+  const colorScheme = useColorScheme();
+  const bg = colorScheme === 'dark' ? background.dark : background.light;
+  const cardBg = colorScheme === 'dark' ? card.dark : card.light;
+
+  const bookingData = useMemo(() => {
+    if (data) return data as Booking;
+    if (params?.bookingData) {
+      try {
+        return JSON.parse(String(params.bookingData)) as Booking;
+      } catch {}
+    }
+    return {} as Booking;
+  }, [data, params]);
+  const guestsList = useMemo(() => {
+    if (Array.isArray(guests)) return guests as Guests;
+    if (params?.guests) {
+      try {
+        const parsed = JSON.parse(String(params.guests));
+        return Array.isArray(parsed) ? (parsed as Guests) : [];
+      } catch {}
+    }
+    return [] as Guests;
+  }, [guests, params]);
+  const paymentData = useMemo(() => {
+    if (payment) return payment as BookingPayment;
+    if (params?.paymentData) {
+      try {
+        return JSON.parse(String(params.paymentData)) as BookingPayment;
+      } catch {}
+    }
+    return {} as BookingPayment;
+  }, [payment, params]);
 
   const [checkIn, setCheckIn] = useState<Date | null>(
-    data.check_in_date || new Date()
+    bookingData?.check_in_date
+      ? new Date(bookingData.check_in_date as any)
+      : null
   );
   const [checkOut, setCheckOut] = useState<Date | null>(
-    data.check_out_date || null
+    bookingData?.check_out_date
+      ? new Date(bookingData.check_out_date as any)
+      : null
   );
   let days = 0;
   let nights = 0;
@@ -47,102 +97,177 @@ const Summary: React.FC<Props> = ({ data, guests, payment }) => {
     nights = days > 0 ? days - 1 : 0;
   }
 
-  const paymentLabel = payment.payment_method || '—';
-  const purposeLabel = data.trip_purpose || '—';
+  const [isVisible, setIsVisible] = useState(true); // Always show for now since it's a full screen modal
+  const paymentLabel = paymentData?.payment_method || '—';
+  const purposeLabel = bookingData?.trip_purpose || '—';
   const travelerTypes: { label: string; value: number | undefined }[] = [
-    { label: 'Local', value: data.local_counts },
-    { label: 'Domestic', value: data.domestic_counts },
-    { label: 'Foreign', value: data.foreign_counts },
-    { label: 'Overseas', value: data.overseas_counts },
+    { label: 'Local', value: bookingData?.local_counts },
+    { label: 'Domestic', value: bookingData?.domestic_counts },
+    { label: 'Foreign', value: bookingData?.foreign_counts },
+    { label: 'Overseas', value: bookingData?.overseas_counts },
   ].filter((t) => (t.value || 0) > 0);
 
   return (
-    <ScrollView>
-      <PageContainer padding={16} gap={20}>
-        <Container gap={8}>
-          <ThemedText type="card-title-small" weight="semi-bold">
-            Booking Summary
-          </ThemedText>
-          <Container padding={0} backgroundColor="transparent" gap={6}>
-            <SummaryRow
-              label="Room"
-              value={roomDetails?.room_number ? roomDetails.room_number : '—'}
-            />
-            <SummaryRow
-              label="Check-in"
-              value={data.check_in_date ? formatDate(data.check_in_date) : '—'}
-            />
-            <SummaryRow
-              label="Check-out"
-              value={
-                data.check_out_date ? formatDate(data.check_out_date) : '—'
-              }
-            />
-            <SummaryRow
-              label="Duration"
-              value={
-                checkIn && checkOut && days > 0
-                  ? `${days} day${days > 1 ? 's' : ''} / ${nights} night${
-                      nights !== 1 ? 's' : ''
-                    }`
-                  : 'Select check-in and check-out dates'
-              }
-            />
-            <SummaryRow label="Guests (Pax)" value={String(data.pax || 0)} />
-            <SummaryRow label="Trip Purpose" value={purposeLabel} />
-            <SummaryRow label="Payment Method" value={paymentLabel} />
-          </Container>
-        </Container>
-
-        <Container gap={8}>
-          <ThemedText type="card-title-small" weight="semi-bold">
-            Guest Details
-          </ThemedText>
-          <Container padding={0} backgroundColor="transparent" gap={10}>
-            {guests.length === 0 && (
-              <ThemedText type="body-extra-small" style={{ opacity: 0.6 }}>
-                No guests provided yet.
-              </ThemedText>
-            )}
-            {guests.map((g, i) => (
-              <Container
-                key={i}
-                padding={0}
-                backgroundColor="transparent"
-                gap={4}
+    <Modal
+      visible={isVisible}
+      animationType="fade"
+      style={{ backgroundColor: bg }}
+    >
+      <SafeAreaView style={{ flex: 1, backgroundColor: bg }}>
+        <ScrollView>
+          <PageContainer padding={20} gap={16}>
+            {/* Hero Success Section */}
+            <View style={styles.hero}>
+              <View style={styles.heroIconWrap}>
+                <MaterialCommunityIcons
+                  name="check-decagram"
+                  size={64}
+                  color="#fff"
+                />
+              </View>
+              <ThemedText
+                type="title-large"
+                weight="bold"
+                style={{ textAlign: 'center' }}
               >
-                <ThemedText type="body-extra-small" weight="normal">
-                  Guest {i + 1}: {g.name || '—'} | {g.age ?? '—'} yrs |{' '}
-                  {genderLabel(g.gender) || '—'}
-                </ThemedText>
-              </Container>
-            ))}
-          </Container>
-        </Container>
-
-        <Container gap={8}>
-          <ThemedText type="card-title-small" weight="semi-bold">
-            Traveler Types
-          </ThemedText>
-          <Container padding={0} backgroundColor="transparent" gap={10}>
-            {travelerTypes.length === 0 && (
-              <ThemedText type="body-extra-small" style={{ opacity: 0.6 }}>
-                None selected.
+                Booking Confirmed!
               </ThemedText>
-            )}
-            {travelerTypes.map((t) => (
-              <SummaryRow
-                key={t.label}
-                label={t.label}
-                value={String(t.value)}
-              />
-            ))}
-          </Container>
-        </Container>
+              <ThemedText
+                type="body-small"
+                style={{ textAlign: 'center', opacity: 0.8 }}
+              >
+                Thank you for your reservation. Please review your check-in
+                details below.
+              </ThemedText>
+            </View>
 
-        {/* Cash payment notice removed since 'Cash' is not in current payment_method union */}
-      </PageContainer>
-    </ScrollView>
+            {/* Details Card */}
+            <View style={[styles.card, { backgroundColor: cardBg }]}>
+              <InfoRow
+                icon="door"
+                label="Room"
+                value={
+                  roomDetails?.room_number
+                    ? String(roomDetails.room_number)
+                    : '—'
+                }
+              />
+              <InfoRow
+                icon="calendar-check"
+                label="Check-in"
+                value={
+                  bookingData?.check_in_date
+                    ? formatDate(bookingData.check_in_date)
+                    : '—'
+                }
+              />
+              <InfoRow
+                icon="calendar-remove"
+                label="Check-out"
+                value={
+                  bookingData?.check_out_date
+                    ? formatDate(bookingData.check_out_date)
+                    : '—'
+                }
+              />
+              <InfoRow
+                icon="clock-outline"
+                label="Duration"
+                value={
+                  checkIn && checkOut && days > 0
+                    ? `${days} day${days > 1 ? 's' : ''} / ${nights} night${
+                        nights !== 1 ? 's' : ''
+                      }`
+                    : 'Select check-in and check-out dates'
+                }
+              />
+              <InfoRow
+                icon="account-group"
+                label="Guests (Pax)"
+                value={String(bookingData?.pax || 0)}
+              />
+              <InfoRow
+                icon="wallet"
+                label="Payment Method"
+                value={paymentLabel}
+              />
+              {purposeLabel && (
+                <InfoRow
+                  icon="briefcase"
+                  label="Trip Purpose"
+                  value={purposeLabel}
+                />
+              )}
+            </View>
+
+            {/* Guests Card */}
+            <View style={[styles.card, { backgroundColor: cardBg }]}>
+              <ThemedText
+                type="card-title-small"
+                weight="semi-bold"
+                style={{ marginBottom: 8 }}
+              >
+                Guests
+              </ThemedText>
+              {guestsList.length === 0 ? (
+                <ThemedText type="body-extra-small" style={{ opacity: 0.6 }}>
+                  No guests provided yet.
+                </ThemedText>
+              ) : (
+                guestsList.map((g, i) => (
+                  <ThemedText
+                    key={i}
+                    type="body-extra-small"
+                    weight="normal"
+                    style={{ marginBottom: 4 }}
+                  >
+                    Guest {i + 1}: {g.name || '—'} • {g.age ?? '—'} yrs •{' '}
+                    {genderLabel(g.gender) || '—'}
+                  </ThemedText>
+                ))
+              )}
+            </View>
+
+            {/* Arrival Tips */}
+            <View style={[styles.card, { backgroundColor: cardBg }]}>
+              <ThemedText
+                type="card-title-small"
+                weight="semi-bold"
+                style={{ marginBottom: 8 }}
+              >
+                Arrival & Check-in Info
+              </ThemedText>
+              <Bullet>
+                Bring a valid government-issued ID for verification.
+              </Bullet>
+              <Bullet>Present your booking details at the reception.</Bullet>
+              <Bullet>
+                Check-in starts at 2:00 PM; check-out is until 12:00 NN.
+              </Bullet>
+              <Bullet>
+                For assistance, contact the property staff upon arrival.
+              </Bullet>
+            </View>
+
+            <Button
+            size='large'
+              label="Okay"
+              onPress={() => {
+                setIsVisible(false);
+                router.replace('/(tabs)/(home)/(accommodation)/room/profile');
+              }}
+            />
+
+            {/* Footer */}
+            <View style={styles.footer}>
+              <ThemedText type="label-large" weight='medium' style={{ opacity: 0.6 }}>
+                City Venture
+              </ThemedText>
+            </View>
+          </PageContainer>
+        </ScrollView>
+      </SafeAreaView>
+    </Modal>
   );
 };
 
@@ -168,6 +293,44 @@ const SummaryRow: React.FC<SummaryRowProps> = ({ label, value }) => (
       {value}
     </ThemedText>
   </Container>
+);
+
+// New helper: InfoRow with icon on the left and value on the right
+const InfoRow: React.FC<{ icon: any; label: string; value: string }> = ({
+  icon,
+  label,
+  value,
+}) => (
+  <View style={styles.infoRow}>
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+      <MaterialCommunityIcons name={icon} size={18} color={colors.success} />
+      <ThemedText type="body-extra-small" weight="medium">
+        {label}
+      </ThemedText>
+    </View>
+    <ThemedText
+      type="body-extra-small"
+      weight="normal"
+      style={{ opacity: 0.9 }}
+    >
+      {value}
+    </ThemedText>
+  </View>
+);
+
+// New helper: Bullet line with leading dot/check icon
+const Bullet: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+  <View style={styles.bulletRow}>
+    <MaterialCommunityIcons
+      name="check-circle"
+      size={16}
+      color={colors.success}
+      style={{ marginTop: 2 }}
+    />
+    <ThemedText type="body-extra-small" style={{ flex: 1 }}>
+      {children}
+    </ThemedText>
+  </View>
 );
 
 interface MiniBadgeProps {
@@ -202,6 +365,62 @@ function genderLabel(g: any) {
 }
 
 const styles = StyleSheet.create({
+  headerBar: {
+    paddingHorizontal: 12,
+    paddingTop: 4,
+    paddingBottom: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+  },
+  closeButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    backgroundColor: 'rgba(0,0,0,0.05)',
+  },
+  hero: {
+    alignItems: 'center',
+    gap: 8,
+    paddingVertical: 12,
+  },
+  heroIconWrap: {
+    width: 96,
+    height: 96,
+    borderRadius: 48,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.success,
+    marginBottom: 8,
+    shadowColor: '#000',
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 3,
+  },
+  card: {
+    borderRadius: 16,
+    padding: 14,
+    gap: 10,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(0,0,0,0.06)',
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 1,
+  },
+  infoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 6,
+  },
+  bulletRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 8,
+  },
   inlineWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   badge: {
     paddingHorizontal: 10,
@@ -211,5 +430,9 @@ const styles = StyleSheet.create({
     gap: 2,
     minWidth: 60,
     alignItems: 'center',
+  },
+  footer: {
+    alignItems: 'center',
+    paddingVertical: 12,
   },
 });

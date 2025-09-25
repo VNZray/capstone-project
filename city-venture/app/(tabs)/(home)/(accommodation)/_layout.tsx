@@ -27,7 +27,7 @@ const AccommodationLayout = () => {
               },
               headerTintColor: '#fff',
               headerBackground: () => (
-                <View 
+                <View
                   style={{
                     flex: 1,
                     backgroundColor: 'rgba(0, 0, 0, 0.4)',
@@ -55,6 +55,17 @@ const AccommodationLayout = () => {
                   }}
                 />
               ),
+            }}
+          />
+
+          <Stack.Screen
+            name="room/booking/Summary"
+            options={{
+              headerShown: true,
+              animation: 'slide_from_right',
+              headerTitleAlign: 'center',
+              headerTitle: 'Booking Summary',
+              headerBackVisible: false,
             }}
           />
           <Stack.Screen
