@@ -33,12 +33,17 @@ const Navbar: React.FC<NavbarProps> = ({ servicesId = "features", aboutId = "abo
 
   const logo = new URL("../assets/images/logo.png", import.meta.url).href;
   const { user, logout } = useAuth();
-  const role = user?.role;
-  const displayName = user ? `${user.first_name ?? ""} ${user.last_name ?? ""}`.trim() || user.email : "";
+  const role = user?.role_name ?? ""; // Now normalized by AuthService: "Business Owner" | "Tourism Admin" | "Tourist"
+  const isOwner = role === "Business Owner";
+  const isTourism = role === "Tourism Admin";
+  const isTourist = role === "Tourist";
+  const displayRole = role;
+  const nameOnly = `${user?.first_name ?? ""} ${user?.last_name ?? ""}`.trim();
+  const displayName = nameOnly || ""; // do not fallback to email for display name per requirement
   const initials = (user?.first_name?.[0] ?? user?.email?.[0] ?? "U").toUpperCase();
 
-  const profilePath = role === "Owner" ? "/business/profile" : role === "Tourism" ? "/tourism/profile" : "/";
-  const statusPath = role === "Owner" ? "/business" : role === "Tourism" ? "/tourism/dashboard" : "/";
+  const profilePath = isOwner ? "/business/profile" : isTourism ? "/tourism/profile" : "/";
+  const statusPath = isOwner ? "/business" : isTourism ? "/tourism/dashboard" : "/";
 
   const scrollTo = (id?: string) => {
     if (!id) return;
@@ -125,15 +130,20 @@ const Navbar: React.FC<NavbarProps> = ({ servicesId = "features", aboutId = "abo
               </MenuButton>
               <Menu placement="bottom-end" size="sm" sx={{ minWidth: 220 }}>
                 <MenuItem disabled sx={{ fontWeight: 600 }}>{displayName}</MenuItem>
-                <MenuItem disabled sx={{ fontSize: 12, opacity: 0.8 }}>{role}</MenuItem>
+                {displayRole && (
+                  <MenuItem disabled sx={{ fontSize: 12, opacity: 0.8 }}>{displayRole}</MenuItem>
+                )}
                 <ListDivider />
                 <MenuItem onClick={() => navigate(profilePath)}>Profile</MenuItem>
                 <MenuItem onClick={() => navigate(profilePath)}>Settings</MenuItem>
-                {role === 'Owner' && (
+                {isOwner && (
                   <MenuItem onClick={() => navigate(statusPath)}>My Business</MenuItem>
                 )}
-                {role === 'Tourism' && (
+                {isTourism && (
                   <MenuItem onClick={() => navigate(statusPath)}>Admin Dashboard</MenuItem>
+                )}
+                {isTourist && (
+                  <MenuItem onClick={() => navigate("/business")}>Business Status</MenuItem>
                 )}
                 <ListDivider />
                 <MenuItem color="danger" onClick={() => { logout(); navigate('/'); }}>Logout</MenuItem>
@@ -192,11 +202,14 @@ const Navbar: React.FC<NavbarProps> = ({ servicesId = "features", aboutId = "abo
                 <>
                   <Button variant="plain" color="neutral" onClick={() => { setOpen(false); navigate(profilePath); }} sx={{ textTransform: 'none' }}>Profile</Button>
                   <Button variant="plain" color="neutral" onClick={() => { setOpen(false); navigate(profilePath); }} sx={{ textTransform: 'none' }}>Settings</Button>
-                  {role === 'Owner' && (
+                  {isOwner && (
                     <Button variant="plain" color="neutral" onClick={() => { setOpen(false); navigate(statusPath); }} sx={{ textTransform: 'none' }}>My Business</Button>
                   )}
-                  {role === 'Tourism' && (
+                  {isTourism && (
                     <Button variant="plain" color="neutral" onClick={() => { setOpen(false); navigate(statusPath); }} sx={{ textTransform: 'none' }}>Admin Dashboard</Button>
+                  )}
+                  {isTourist && (
+                    <Button variant="plain" color="neutral" onClick={() => { setOpen(false); navigate("/tourist/business-status"); }} sx={{ textTransform: 'none' }}>My Business Status</Button>
                   )}
                   <Button variant="solid" color="danger" onClick={() => { setOpen(false); logout(); navigate('/'); }} sx={{ textTransform: 'none' }}>Logout</Button>
                 </>
