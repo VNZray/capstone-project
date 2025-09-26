@@ -10,6 +10,7 @@ import {
   Star,
   User,
   LogOut,
+  X,
   LayoutDashboard,
 } from "lucide-react";
 import logo from "@/src/assets/images/light-logo.png";
@@ -21,13 +22,22 @@ import { Typography } from "@mui/joy";
 import { colors } from "../../utils/Colors";
 import Container from "../Container";
 
-export default function Sidebar(): React.ReactElement {
+interface SidebarProps {
+  isOpen?: boolean;
+  onClose?: () => void;
+}
+
+export default function Sidebar({ isOpen = false, onClose }: SidebarProps): React.ReactElement {
   const { businessDetails } = useBusiness();
   const { logout } = useAuth();
   const navigate = useNavigate();
   const route = "/business"
   return (
-    <aside className="sidebar">
+    <aside className={`sidebar ${isOpen ? "open" : ""}`}>
+      {/* Mobile close button */}
+      <button className="sidebar-close" onClick={onClose} aria-label="Close sidebar">
+        <X size={20} />
+      </button>
       <Container background="transparent" direction="row" align="center">
         <Typography textColor={colors.white} startDecorator={<img src={logo} alt="Logo" style={{ width: "40px", height: "40px" }} />} level="title-lg">
           City Venture
@@ -42,6 +52,7 @@ export default function Sidebar(): React.ReactElement {
             to={`${route}/dashboard`}
             label="Dashboard"
             icon={<LayoutDashboard size={18} />}
+            onClick={onClose}
           />
           {businessDetails?.business_type_id === 1 ? (
             <>
@@ -49,11 +60,13 @@ export default function Sidebar(): React.ReactElement {
                 to={`${route}/transactions`}
                 label="Transactions"
                 icon={<Receipt size={18} />}
+                onClick={onClose}
               />
               <NavItem
                 to={`${route}/bookings`}
                 label="Bookings"
                 icon={<CalendarCheck size={18} />}
+                onClick={onClose}
               />
             </>
           ) : null}
@@ -61,38 +74,43 @@ export default function Sidebar(): React.ReactElement {
             to={`${route}/business-profile`}
             label="Business Profile"
             icon={<Store size={18} />}
+            onClick={onClose}
           />
           {businessDetails?.business_type_id === 1 ? (
             <NavItem
               to={`${route}/rooms`}
               label="Manage Rooms"
               icon={<BedDouble size={18} />}
+              onClick={onClose}
             />
           ) : (
             <NavItem
               to={`${route}/offers`}
               label="Manage Offers"
               icon={<Tags size={18} />}
+              onClick={onClose}
             />
           )}
           <NavItem
             to={`${route}/manage-promotion`}
             label="Manage Promotion"
             icon={<Tag size={18} />}
+            onClick={onClose}
           />
           <NavItem
             to={`${route}/reviews`}
             label="Reviews & Ratings"
             icon={<Star size={18} />}
+            onClick={onClose}
           />
-          <NavItem to={`${route}/profile`} label="Profile" icon={<User size={18} />} />
+          <NavItem to={`${route}/profile`} label="Profile" icon={<User size={18} />} onClick={onClose} />
         </div>
 
         <div>
           <NavItem 
             label="Log Out" 
             icon={<LogOut size={18} />} 
-            onClick={() => { logout(); navigate('/'); }}
+            onClick={() => { logout(); navigate('/'); onClose?.(); }}
           />
         </div>
       </nav>
