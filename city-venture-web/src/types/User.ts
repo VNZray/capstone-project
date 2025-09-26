@@ -1,7 +1,9 @@
 export type UserRoles = {
   id: number | null;
   role_name: string;
-  description: string;
+  // Some APIs may return `role_description`; keep both for compatibility
+  description?: string;
+  role_description?: string;
   created_at?: string;
 };
 
@@ -52,7 +54,7 @@ export type UserDetails = {
 
 export type TokenPayload = {
   id: string;
-  user_role_id: string;
+  user_role_id: number;
   exp?: number;
   iat?: number;
 };

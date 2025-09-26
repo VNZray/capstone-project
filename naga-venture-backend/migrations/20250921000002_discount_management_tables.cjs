@@ -1,0 +1,49 @@
+exports.up = async function (knex) {
+  // Create discount table (renamed from discounts to avoid potential conflicts)
+  await knex.schema.createTable("discount", (table) => {
+    table.uuid("id").primary().defaultTo(knex.raw("(UUID())"));
+    table.uuid("business_id").notNullable()
+      .references("id")
+      .inTable("business")
+      .onDelete("CASCADE");
+    table.string("name", 255).notNullable();
+    table.text("description").nullable();
+    table.enu("discount_type", ["percentage", "fixed_amount"]).notNullable();
+    table.decimal("discount_value", 10, 2).notNullable();
+    table.decimal("minimum_order_amount", 10, 2).defaultTo(0);
+    table.decimal("maximum_discount_amount", 10, 2).nullable(); // for percentage discounts
+    table.timestamp("start_datetime").notNullable();
+    table.timestamp("end_datetime").nullable();
+    table.integer("usage_limit").nullable(); // total uses allowed
+    table.integer("usage_limit_per_customer").nullable();
+    table.integer("current_usage_count").defaultTo(0);
+    table.enu("status", ["active", "inactive", "expired", "paused"]).defaultTo("active");
+    table.timestamp("created_at").defaultTo(knex.fn.now());
+    table.timestamp("updated_at").defaultTo(knex.fn.now());
+    
+    table.index("business_id", "idx_discount_business");
+    table.index(["start_datetime", "end_datetime"], "idx_discount_dates");
+    table.index("status", "idx_discount_status");
+  });
+
+  // Create discount_product table (junction table for products eligible for specific discounts)
+  await knex.schema.createTable("discount_product", (table) => {
+    table.uuid("id").primary().defaultTo(knex.raw("(UUID())"));
+    table.uuid("discount_id").notNullable()
+      .references("id")
+      .inTable("discount")
+      .onDelete("CASCADE");
+    table.uuid("product_id").notNullable()
+      .references("id")
+      .inTable("product")
+      .onDelete("CASCADE");
+    table.timestamp("created_at").defaultTo(knex.fn.now());
+    
+    table.unique(["discount_id", "product_id"], "unique_discount_product");
+  });
+};
+
+exports.down = async function (knex) {
+  await knex.schema.dropTableIfExists("discount_product");
+  await knex.schema.dropTableIfExists("discount");
+};

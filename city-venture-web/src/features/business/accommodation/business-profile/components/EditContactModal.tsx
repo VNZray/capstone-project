@@ -1,17 +1,8 @@
 import * as React from "react";
-import {
-  Modal,
-  ModalDialog,
-  DialogContent,
-  DialogActions,
-  Button,
-  Input,
-  FormControl,
-  FormLabel,
-} from "@mui/joy";
+import { Input, FormControl, FormLabel } from "@mui/joy";
 import { updateData } from "@/src/services/Service";
-import CardHeader from "@/src/components/CardHeader";
-import { Email, PhoneOutlined, Save } from "@mui/icons-material";
+import BaseEditModal from '@/src/components/BaseEditModal';
+import { Email, PhoneOutlined } from "@mui/icons-material";
 
 interface EditDescriptionModalProps {
   open: boolean;
@@ -57,41 +48,38 @@ const EditContactModal: React.FC<EditDescriptionModalProps> = ({
   };
 
   return (
-    <Modal open={open} onClose={onClose}>
-      <ModalDialog size="lg" variant="outlined" maxWidth={600} minWidth={600}>
-        <CardHeader title="Edit Contact" color="white" />
-        <DialogContent>
-          <FormControl>
-            <FormLabel>Email</FormLabel>
-            <Input
-              type="email"
-              size="md"
-              startDecorator={<Email color="primary" />}
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-            />
-          </FormControl>
-          <FormControl>
-            <FormLabel>Phone Number</FormLabel>
-            <Input
-              type="tel"
-              size="md"
-              startDecorator={<PhoneOutlined color="primary" />}
-              value={phone_number}
-              onChange={(e) => setPhoneNumber(e.target.value)}
-            />
-          </FormControl>
-        </DialogContent>
-        <DialogActions>
-          <Button fullWidth variant="plain" color="neutral" onClick={onClose}>
-            Cancel
-          </Button>
-          <Button fullWidth color="primary" startDecorator={<Save />} onClick={handleSave}>
-            Save Changes
-          </Button>
-        </DialogActions>
-      </ModalDialog>
-    </Modal>
+    <BaseEditModal
+      open={open}
+      onClose={onClose}
+      title="Edit Contact"
+      description="Update your business contact information"
+      maxWidth={600}
+      actions={[
+        { label: 'Cancel', onClick: onClose },
+        { label: 'Save Changes', onClick: handleSave, variant: 'primary' },
+      ]}
+    >
+      <FormControl>
+        <FormLabel>Email</FormLabel>
+        <Input
+          type="email"
+          size="md"
+          startDecorator={<Email color="primary" />}
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+        />
+      </FormControl>
+      <FormControl>
+        <FormLabel>Phone Number</FormLabel>
+        <Input
+          type="tel"
+          size="md"
+          startDecorator={<PhoneOutlined color="primary" />}
+          value={phone_number}
+          onChange={(e) => setPhoneNumber(e.target.value)}
+        />
+      </FormControl>
+    </BaseEditModal>
   );
 };
 

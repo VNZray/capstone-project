@@ -1,0 +1,396 @@
+/* Minimalist Business Profile - Clean, elegant, and spacious */
+
+.business-profile-page {
+  font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  color: #374151;
+  line-height: 1.6;
+  letter-spacing: -0.01em;
+  background: #fafafa;
+  min-height: 100vh;
+  padding: 0;
+}
+
+/* Header Section - Clean and spacious */
+.bp-header {
+  background: #ffffff;
+  border: none;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.bp-header-info {
+  align-items: flex-start;
+  gap: 24px;
+}
+
+/* Business Image - Subtle and clean */
+.card-image {
+  width: 120px;
+  height: 120px;
+  border-radius: 12px;
+  border: none;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+/* Typography - Modern and readable */
+.bp-header-meta h2,
+.bp-header-meta .MuiTypography-root[level="h2"] {
+  font-size: 32px;
+  font-weight: 600;
+  margin: 0 0 12px 0;
+  letter-spacing: -0.02em;
+  color: #111827;
+  line-height: 1.2;
+}
+
+.bp-header-meta .MuiTypography-root[level="body-md"] {
+  color: #6b7280;
+  font-weight: 400;
+  margin-bottom: 16px;
+  font-size: 16px;
+}
+
+.bp-header-meta .MuiChip-root {
+  margin-top: 12px;
+  border-radius: 20px;
+  font-weight: 500;
+  border: none;
+  background: #f3f4f6;
+  color: #374151;
+}
+
+/* Edit buttons - Minimal and subtle */
+.bp-edit-btn {
+  border-radius: 8px;
+  text-transform: none;
+  color: #6b7280;
+  font-weight: 500;
+  /* force a consistent subtle border regardless of MUI variant */
+  border: 1px solid #e5e7eb !important;
+  background: transparent !important;
+  padding: 8px 16px;
+  font-size: 14px;
+  transition: all 0.2s ease;
+}
+
+.bp-edit-btn:hover {
+  color: #374151;
+  border-color: #d1d5db !important;
+  background: #f9fafb !important;
+}
+
+/* Main Content - Compact spacing */
+.bp-main {
+  display: flex;
+  gap: 24px;
+  flex-direction: column;
+}
+
+.bp-main > div {
+  background: #ffffff;
+  border: none;
+  border-radius: 12px;
+}
+
+/* Sheet components - Clean and spacious */
+.bp-desc-sheet,
+.bp-amenities-sheet {
+  background: #fafafa;
+  border: none;
+  border-radius: 8px;
+  padding: 24px;
+}
+
+/* Amenities styling */
+.bp-amenities {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.bp-amenities .MuiChip-root {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 20px;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  color: #374151;
+  transition: all 0.2s ease;
+}
+
+.bp-amenities .MuiChip-root:hover {
+  background: #f9fafb;
+  border-color: #d1d5db;
+}
+
+/* Activate button */
+.bp-activate-btn {
+  border-radius: 8px;
+  text-transform: none;
+  font-weight: 500;
+  padding: 10px 20px;
+  background: #10b981;
+  border: none;
+  transition: background-color 0.2s ease;
+  color: #ffffff;
+}
+
+.bp-activate-btn:hover {
+  background: #059669;
+}
+
+/* Sidebar - Clean and organized */
+.bp-sidebar {
+  flex-direction: column;
+  gap: 24px;
+  background: #ffffff;
+  border: none;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+/* Section titles */
+.bp-sidebar .MuiTypography-root[level="title-lg"],
+.bp-main .MuiTypography-root[level="title-lg"] {
+  font-weight: 600;
+  color: #111827;
+  letter-spacing: -0.01em;
+  margin-bottom: 16px;
+  font-size: 18px;
+}
+
+/* Links styling */
+.bp-sidebar a {
+  color: #6b7280;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.bp-sidebar a:hover {
+  color: #374151;
+}
+
+/* Typography improvements */
+.bp-sidebar .MuiTypography-root[level="body-md"],
+.bp-main .MuiTypography-root[level="body-md"] {
+  color: #6b7280;
+  font-weight: 400;
+  letter-spacing: 0.005em;
+  line-height: 1.6;
+  margin-bottom: 12px;
+  font-size: 15px;
+}
+
+/* Icon improvements */
+.bp-sidebar .MuiSvgIcon-root,
+.bp-main .MuiSvgIcon-root {
+  color: #9ca3af;
+  margin-right: 12px;
+  font-size: 20px;
+}
+
+.bp-sidebar .MuiTypography-root:hover .MuiSvgIcon-root,
+.bp-main .MuiTypography-root:hover .MuiSvgIcon-root {
+  color: #6b7280;
+}
+
+/* Divider improvements */
+.MuiDivider-root {
+  border-color: #f3f4f6;
+  margin: 16px 0;
+}
+
+/* Business hours chips */
+.bp-main .MuiChip-root[color="success"] {
+  background: #ecfdf5;
+  color: #065f46;
+  border: none;
+  font-weight: 500;
+  border-radius: 16px;
+}
+
+.bp-main .MuiChip-root[color="danger"] {
+  background: #fef2f2;
+  color: #991b1b;
+  border: none;
+  font-weight: 500;
+  border-radius: 16px;
+}
+
+.bp-main .MuiChip-root[color="neutral"] {
+  background: #f9fafb;
+  color: #6b7280;
+  border: none;
+  font-weight: 500;
+  border-radius: 16px;
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+  .business-profile-page {
+    padding: 16px;
+  }
+
+  .bp-header-meta h2,
+  .bp-header-meta .MuiTypography-root[level="h2"] {
+    font-size: 24px;
+  }
+}
+
+@media (max-width: 768px) {
+  .business-profile-page {
+    padding: 12px;
+  }
+
+  .bp-header-info {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+
+  .card-image {
+    width: 100px;
+    height: 100px;
+  }
+
+  .bp-header-meta h2,
+  .bp-header-meta .MuiTypography-root[level="h2"] {
+    font-size: 20px;
+  }
+
+  .bp-main {
+    gap: 16px;
+  }
+
+  .bp-sidebar {
+    margin-top: 16px;
+    gap: 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .business-profile-page {
+    padding: 8px;
+  }
+
+  .card-image {
+    width: 80px;
+    height: 80px;
+  }
+
+  .bp-header-meta h2,
+  .bp-header-meta .MuiTypography-root[level="h2"] {
+    font-size: 18px;
+  }
+}
+
+/* Edit button icon */
+.bp-edit-btn .MuiSvgIcon-root {
+  margin-right: 6px;
+  font-size: 14px;
+}
+
+/* ===============================
+   Hero Banner (Business details)
+   Minimal, photographic, and readable
+   =============================== */
+.bp-hero {
+  position: relative;
+  width: 100%;
+  min-height: 200px;
+  height: clamp(180px, 28vw, 320px);
+  border-radius: 16px;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.bp-hero__bg {
+  position: absolute;
+  inset: 0;
+  background: #0f172a;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  transform: scale(1.02);
+  filter: saturate(1.05);
+}
+
+.bp-hero__gradient {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(80% 60% at 50% 40%, rgba(0,0,0,0.20) 0%, rgba(0,0,0,0.45) 60%, rgba(0,0,0,0.55) 100%),
+              linear-gradient(to top, rgba(0,0,0,0.35), rgba(0,0,0,0.15));
+}
+
+.bp-hero__content {
+  position: absolute;
+  z-index: 2;
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-start; /* left align content */
+  height: auto;
+  left: 20px;
+  bottom: 20px;
+  right: 20px; /* allow panel to size but keep margin from right */
+  padding: 0; /* panel handles its own padding */
+}
+
+.bp-hero__panel {
+  width: min(760px, 100%);
+  /* remove the translucent panel so text sits directly on the image */
+  background: transparent !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+  border: none !important;
+  border-radius: 14px;
+  padding: clamp(8px, 1.6vw, 12px) clamp(10px, 1.6vw, 16px);
+  color: #fff;
+  /* subtle shadow on text instead of a background panel for legibility */
+  text-shadow: 0 2px 8px rgba(0,0,0,0.6);
+  box-shadow: none !important;
+}
+
+.bp-hero__title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.bp-hero__edit-inline {
+  --IconButton-size: 32px;
+  border-radius: 8px !important;
+  color: #0f172a !important;
+  background: rgba(255,255,255,0.9) !important;
+}
+
+.bp-hero__row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.bp-hero__icon {
+  color: #e5e7eb !important;
+  font-size: 18px !important;
+}
+
+.bp-hero__star {
+  font-size: 18px;
+  line-height: 1;
+  color: #d1d5db;
+}
+.bp-hero__star.is-active { color: #fbbf24; }
+
+/* status badge removed per latest design */
+
+/* top-right edit button removed per latest design */
+
+/* old edit button styles deprecated */
+
+@media (max-width: 768px) {
+  .bp-hero { border-radius: 12px; }
+  .bp-hero__panel { padding: 12px 12px; width: calc(100% - 40px); }
+  .bp-hero__content { left: 12px; bottom: 12px; right: 12px; }
+}
+

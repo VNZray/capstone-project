@@ -1,21 +1,9 @@
 import * as React from "react";
-import {
-  Modal,
-  ModalDialog,
-  DialogContent,
-  DialogActions,
-  Button,
-  FormControl,
-  FormLabel,
-  Option,
-  Select,
-  Input,
-} from "@mui/joy";
+import { FormControl, FormLabel, Option, Select, Input } from "@mui/joy";
 import { updateData } from "@/src/services/Service";
-import CardHeader from "@/src/components/CardHeader";
 import { api } from "@/src/services/BusinessService";
 import axios from "axios";
-import { Save } from "@mui/icons-material";
+import BaseEditModal from '@/src/components/BaseEditModal';
 
 interface EditDescriptionModalProps {
   open: boolean;
@@ -154,83 +142,80 @@ const EditAddressModal: React.FC<EditDescriptionModalProps> = ({
   };
 
   return (
-    <Modal open={open} onClose={onClose}>
-      <ModalDialog size="lg" variant="outlined" maxWidth={600} minWidth={600}>
-        <CardHeader title="Edit Location" color="white" />
-        <DialogContent>
-          <FormControl>
-            <FormLabel>Province</FormLabel>
-            <Select
-              size="md"
-              placeholder="-- Select a province --"
-              value={province_id}
-              onChange={(_, value) => setProvinceId(Number(value))}
-            >
-              <Option value="">-- Select province --</Option>
-              {province.map((province) => (
-                <Option key={province.id} value={province.id}>
-                  {province.province}
-                </Option>
-              ))}
-            </Select>
-          </FormControl>
+    <BaseEditModal
+      open={open}
+      onClose={onClose}
+      title="Edit Location"
+      description="Update your business address and administrative divisions"
+      maxWidth={600}
+      actions={[
+        { label: 'Cancel', onClick: onClose },
+        { label: 'Save Changes', onClick: handleSave, variant: 'primary' },
+      ]}
+    >
+      <FormControl>
+        <FormLabel>Province</FormLabel>
+        <Select
+          size="md"
+          placeholder="-- Select a province --"
+          value={province_id}
+          onChange={(_, value) => setProvinceId(Number(value))}
+        >
+          <Option value="">-- Select province --</Option>
+          {province.map((province) => (
+            <Option key={province.id} value={province.id}>
+              {province.province}
+            </Option>
+          ))}
+        </Select>
+      </FormControl>
 
-          <FormControl>
-            <FormLabel>Municipality</FormLabel>
-            <Select
-              size="md"
-              placeholder="-- Select municipality --"
-              value={municipality_id}
-              onChange={(_, value) => setMunicipalityId(Number(value))}
-              disabled={!province_id}
-            >
-              <Option value="">-- Select municipality --</Option>
-              {municipality.map((municipality) => (
-                <Option key={municipality.id} value={municipality.id}>
-                  {municipality.municipality}
-                </Option>
-              ))}
-            </Select>
-          </FormControl>
+      <FormControl>
+        <FormLabel>Municipality</FormLabel>
+        <Select
+          size="md"
+          placeholder="-- Select municipality --"
+          value={municipality_id}
+          onChange={(_, value) => setMunicipalityId(Number(value))}
+          disabled={!province_id}
+        >
+          <Option value="">-- Select municipality --</Option>
+          {municipality.map((municipality) => (
+            <Option key={municipality.id} value={municipality.id}>
+              {municipality.municipality}
+            </Option>
+          ))}
+        </Select>
+      </FormControl>
 
-          <FormControl>
-            <FormLabel>Barangay</FormLabel>
-            <Select
-              size="md"
-              placeholder="-- Select barangay --"
-              value={barangay_id}
-              onChange={(_, value) => setBarangayId(Number(value))}
-              disabled={!municipality_id}
-            >
-              <Option value="">-- Select barangay --</Option>
-              {barangay.map((barangay) => (
-                <Option key={barangay.id} value={barangay.id}>
-                  {barangay.barangay}
-                </Option>
-              ))}
-            </Select>
-          </FormControl>
+      <FormControl>
+        <FormLabel>Barangay</FormLabel>
+        <Select
+          size="md"
+          placeholder="-- Select barangay --"
+          value={barangay_id}
+          onChange={(_, value) => setBarangayId(Number(value))}
+          disabled={!municipality_id}
+        >
+          <Option value="">-- Select barangay --</Option>
+          {barangay.map((barangay) => (
+            <Option key={barangay.id} value={barangay.id}>
+              {barangay.barangay}
+            </Option>
+          ))}
+        </Select>
+      </FormControl>
 
-          <FormControl>
-            <FormLabel>Address</FormLabel>
-            <Input
-              type="text"
-              size="md"
-              value={address}
-              onChange={(e) => setAddress(e.target.value)}
-            />
-          </FormControl>
-        </DialogContent>
-        <DialogActions>
-          <Button fullWidth variant="plain" color="neutral" onClick={onClose}>
-            Cancel
-          </Button>
-          <Button fullWidth color="primary" startDecorator={<Save />} onClick={handleSave}>
-            Save Changes
-          </Button>
-        </DialogActions>
-      </ModalDialog>
-    </Modal>
+      <FormControl>
+        <FormLabel>Address</FormLabel>
+        <Input
+          type="text"
+          size="md"
+          value={address}
+          onChange={(e) => setAddress(e.target.value)}
+        />
+      </FormControl>
+    </BaseEditModal>
   );
 };
 

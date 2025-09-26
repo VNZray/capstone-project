@@ -1,22 +1,8 @@
 import * as React from "react";
-import {
-  Modal,
-  ModalDialog,
-  DialogContent,
-  DialogActions,
-  Button,
-  Input,
-  FormControl,
-  FormLabel,
-  Grid,
-} from "@mui/joy";
 import { updateData } from "@/src/services/Service";
-import CardHeader from "@/src/components/CardHeader";
-import { Add, Email, PhoneOutlined, Save } from "@mui/icons-material";
 import Container from "@/src/components/Container";
-import { colors } from "@/src/utils/Colors";
-import Text from "@/src/components/Text";
 import MapInput from "@/src/components/MapInput";
+import BaseEditModal from '@/src/components/BaseEditModal';
 
 interface EditDescriptionModalProps {
   open: boolean;
@@ -85,87 +71,52 @@ const EditMapCoordinatesModal: React.FC<EditDescriptionModalProps> = ({
   };
 
   return (
-    <Modal open={open} onClose={onClose}>
-      <ModalDialog size="lg" variant="outlined" maxWidth={600} minWidth={600}>
-        <CardHeader title="Edit Map Coordinates" color="white" />
-        <DialogContent>
-          <Container padding="0" gap="20px" style={{ overflow: "hidden" }}>
-            <Container
-              background={colors.secondary}
-              elevation={2}
-              padding="20px"
-            >
-              <Grid container spacing={2} columns={12}>
-                <Grid xs={8}>
-                  <Text color="white" variant="card-title">
-                    Map Coordinates
-                  </Text>
-                  <Text color="white" variant="card-sub-title">
-                    Pin the location of your business in the map
-                  </Text>
-                </Grid>
-                <Grid xs={4}>
-                  <Button
-                    fullWidth
-                    variant="soft"
-                    color="neutral"
-                    size="sm"
-                    style={{ height: "100%" }}
-                    startDecorator={<Add />}
-                    onClick={handleGetCurrentLocation}
-                  >
-                    Locate
-                  </Button>
-                </Grid>
-              </Grid>
-            </Container>
-            <Container padding="0">
-              <Grid container spacing={3} columns={12}>
-                <Grid xs={6}>
-                  <FormControl required>
-                    <FormLabel>Longitude</FormLabel>
-                    <Input
-                      variant="outlined"
-                      size="md"
-                      value={longitude}
-                      onChange={(e) => setLongitude(e.target.value)}
-                    />
-                  </FormControl>
-                </Grid>
-                <Grid xs={6}>
-                  <FormControl required>
-                    <FormLabel>Latitude</FormLabel>
+    <BaseEditModal
+      open={open}
+      onClose={onClose}
+      title="Edit Map Coordinates"
+      description="Pin the location of your business on the map"
+      maxWidth={600}
+      actions={[
+        { label: 'Cancel', onClick: onClose },
+        { label: 'Locate', onClick: handleGetCurrentLocation },
+        { label: 'Save Changes', onClick: handleSave, variant: 'primary' },
+      ]}
+    >
+      <Container padding="0" gap="8px" style={{ overflow: "hidden" }}>
+        <Container padding="8px" style={{ position: 'relative' }}>
+          <div style={{ position: 'relative', borderRadius: 12, overflow: 'hidden' }}>
+            <MapInput
+              latitude={latitude}
+              longitude={longitude}
+              height={240}
+              onChange={(lat, lng) => {
+                setLatitude(lat);
+                setLongitude(lng);
+              }}
+            />
 
-                    <Input
-                      variant="outlined"
-                      size="md"
-                      value={latitude}
-                      onChange={(e) => setLatitude(e.target.value)}
-                    />
-                  </FormControl>
-                </Grid>
-              </Grid>
-              <MapInput
-                latitude={latitude}
-                longitude={longitude}
-                onChange={(lat, lng) => {
-                  setLatitude(lat);
-                  setLongitude(lng);
+            {/* Lower-left small overlay showing coordinates (read-only) */}
+            <div style={{ position: 'absolute', left: 12, bottom: 12 }}>
+              <div
+                style={{
+                  background: 'rgba(0,0,0,0.6)',
+                  color: '#fff',
+                  padding: '6px 8px',
+                  borderRadius: 8,
+                  fontSize: 12,
+                  lineHeight: '14px',
+                  minWidth: 120,
                 }}
-              />
-            </Container>
-          </Container>
-        </DialogContent>
-        <DialogActions>
-          <Button fullWidth variant="plain" color="neutral" onClick={onClose}>
-            Cancel
-          </Button>
-          <Button fullWidth color="primary" startDecorator={<Save />} onClick={handleSave}>
-            Save Changes
-          </Button>
-        </DialogActions>
-      </ModalDialog>
-    </Modal>
+              >
+                <div style={{ fontWeight: 600 }}>Lat: {latitude || '—'}</div>
+                <div>Lng: {longitude || '—'}</div>
+              </div>
+            </div>
+          </div>
+        </Container>
+      </Container>
+    </BaseEditModal>
   );
 };
 

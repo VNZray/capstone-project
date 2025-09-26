@@ -1,22 +1,10 @@
 import * as React from "react";
-import {
-  Modal,
-  ModalDialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Button,
-  Textarea,
-  Input,
-  FormLabel,
-  FormControl,
-} from "@mui/joy";
+import BaseEditModal from '@/src/components/BaseEditModal';
 import { updateData } from "@/src/services/Service";
-import CardHeader from "@/src/components/CardHeader";
 import placeholderImage from "@/src/assets/images/placeholder-image.png";
-import {  UploadIcon } from "lucide-react";
 import { supabase } from "@/src/lib/supabase";
-import { Save } from "@mui/icons-material";
+// ...existing code...
+// ...existing code...
 interface EditBusinessModalProps {
   open: boolean;
   initialBusinessName?: string;
@@ -103,65 +91,93 @@ const EditBusinessModal: React.FC<EditBusinessModalProps> = ({
 
       // Save to state
       setBusinessImage(publicData.publicUrl);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Upload failed:", err);
-      alert(err?.message || "Upload failed");
+      const message = (err instanceof Error && err.message) ? err.message : 'Upload failed';
+      alert(message);
     }
   };
 
   return (
-    <Modal open={open} onClose={onClose}>
-      <ModalDialog size="lg" variant="outlined" maxWidth={600} minWidth={600}>
-        <CardHeader title="Edit Business" color="white" />
-        <DialogContent>
-          <FormControl>
-            <FormLabel>Business Name</FormLabel>
-            <Input
+    <BaseEditModal
+      open={open}
+      onClose={onClose}
+      title="Edit Business"
+      description="Update your business information and contact details"
+      maxWidth={720}
+      actions={[
+        { label: 'Cancel', onClick: onClose },
+        { label: 'Save', onClick: handleSave, variant: 'primary' },
+      ]}
+    >
+      <div style={{ padding: '8px 0' }}>
+        <div style={{ display: 'flex', gap: 16, alignItems: 'flex-start', flexWrap: 'wrap' }}>
+          <div style={{ flex: '0 0 180px', minWidth: 120, maxWidth: '40%' }}>
+            <div style={{
+              borderRadius: 8,
+              overflow: 'hidden',
+              position: 'relative',
+              height: 140,
+              width: '100%',
+              border: '1px solid #e2e8f0',
+              background: '#f8fafc'
+            }}>
+              <img
+                src={business_image || placeholderImage}
+                alt="Business image"
+                style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+              />
+              <button
+                aria-label="Change image"
+                onClick={() => document.getElementById('image-upload')?.click()}
+                style={{
+                  position: 'absolute',
+                  right: 8,
+                  bottom: 8,
+                  background: 'rgba(255,255,255,0.95)',
+                  border: 'none',
+                  padding: 6,
+                  borderRadius: '50%',
+                  cursor: 'pointer'
+                }}
+              >
+                ⤴
+              </button>
+              <input
+                id="image-upload"
+                type="file"
+                accept="image/*"
+                onChange={handleImageSelect}
+                style={{ display: 'none' }}
+              />
+            </div>
+          </div>
+
+          <div style={{ flex: '1 1 0%', minWidth: 0 }}>
+            <label style={{ display: 'block', marginBottom: 6, fontSize: 14, fontWeight: 600, color: '#374151' }}>
+              Business Name
+            </label>
+            <input
               value={business_name}
               onChange={(e) => setBusinessName(e.target.value)}
               placeholder="Enter business name..."
-              size="md"
-            />
-          </FormControl>
-
-          <FormControl sx={{ display: "flex", alignItems: "center", gap: 2, marginTop: 2 }}>
-            <img
-              width={"100%"}
-              height={400}
-              src={business_image}
-              alt={placeholderImage}
-              style={{ objectFit: "cover", borderRadius: 8 }}
-            />
-            <Button
-              size="lg"
-              variant="outlined"
-              color="primary"
-              startDecorator={<UploadIcon />}
-              onClick={() => document.getElementById("image-upload")?.click()}
-            >
-              Change Business Profile
-            </Button>
-            <input
-              id="image-upload"
-              type="file"
-              accept="image/*"
-              onChange={handleImageSelect}
+              aria-label="Business name"
               style={{
-                display: "none",
+                width: '100%',
+                padding: '10px 12px',
+                fontSize: 15,
+                borderRadius: 8,
+                border: '1px solid #e5e7eb',
+                background: '#fff',
+                boxSizing: 'border-box',
+                minWidth: 0,
+                overflowWrap: 'break-word'
               }}
-            />{" "}
-          </FormControl>
-        </DialogContent>
-        <DialogActions>
-          <Button fullWidth variant="plain" color="neutral" onClick={onClose}>
-            Cancel
-          </Button>
-          <Button fullWidth color="primary" startDecorator={<Save />} onClick={handleSave}>
-            Save Changes
-          </Button>
-        </DialogActions>
-      </ModalDialog>
-    </Modal>
+            />
+          </div>
+        </div>
+      </div>
+    </BaseEditModal>
   );
 };
 

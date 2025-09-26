@@ -30,6 +30,10 @@ import RoomPage from "../features/business/accommodation/room/Room";
 import RoomProfile from "../features/business/accommodation/room/RoomProfile";
 import Profile from "../features/business/profile/Profile";
 import Offer from "../features/business/shop/offers/Offer";
+import Products from "../features/business/shop/store/Products";
+import Orders from "../features/business/shop/store/Orders";
+import Discount from "../features/business/shop/store/Discount";
+import Settings from "../features/business/shop/store/Settings";
 
 import AccommodationDashboard from "../features/business/accommodation/dashboard/Dashboard";
 import ShopDashboard from "../features/business/shop/dashboard/Dashboard";
@@ -183,6 +187,39 @@ export default function AppRoutes() {
               element={
                 <ProtectedRoute>
                   <Reviews />
+                </ProtectedRoute>
+              }
+            />
+            {/* Store routes (shop) */}
+            <Route
+              path={`${business}/store/products`}
+              element={
+                <ProtectedRoute>
+                  <Products />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path={`${business}/store/orders`}
+              element={
+                <ProtectedRoute>
+                  <Orders />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path={`${business}/store/discount`}
+              element={
+                <ProtectedRoute>
+                  <Discount />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path={`${business}/store/settings`}
+              element={
+                <ProtectedRoute>
+                  <Settings />
                 </ProtectedRoute>
               }
             />
