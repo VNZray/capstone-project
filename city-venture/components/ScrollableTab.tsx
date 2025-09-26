@@ -15,9 +15,16 @@ type Props = {
   onTabChange?: (tab: Tab, index: number) => void; // ✅ callback
   initialIndex?: number; // ✅ optional initial tab
   activeKey?: string; // ✅ controlled active tab (optional)
+  variant?: 'solid' | 'outlined' | 'soft' ;
 };
 
-const ScrollableTab = ({ tabs, onTabChange, initialIndex = 0, activeKey }: Props) => {
+const ScrollableTab = ({
+  variant,
+  tabs,
+  onTabChange,
+  initialIndex = 0,
+  activeKey,
+}: Props) => {
   const [tabIndex, setTabIndex] = useState(initialIndex);
   const scrollRef = useRef<ScrollView>(null);
 
@@ -44,7 +51,7 @@ const ScrollableTab = ({ tabs, onTabChange, initialIndex = 0, activeKey }: Props
     >
       {tabs.map((t, i) => (
         <Button
-        elevation={2}
+          elevation={2}
           startIcon={t.icon}
           key={t.key}
           onPress={() => onTabPress(i)}
@@ -52,7 +59,7 @@ const ScrollableTab = ({ tabs, onTabChange, initialIndex = 0, activeKey }: Props
           size="medium"
           padding={11}
           iconSize={16}
-          variant={tabIndex === i ? 'solid' : 'solid'}
+          variant={tabIndex === i ? 'solid' : variant}
           color={tabIndex === i ? 'primary' : 'white'}
         />
       ))}
@@ -66,5 +73,7 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     gap: 8,
+    paddingVertical: 16,
+    overflow: 'visible',
   },
 });

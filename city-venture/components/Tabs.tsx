@@ -10,15 +10,26 @@ type Tab = {
   icon: string;
 };
 
+type TabSize = 'small' | 'medium' | 'large';
+
 type Props = {
   tabs: Tab[];
   onTabChange?: (tab: Tab, index: number) => void;
   initialIndex?: number;
+  size?: TabSize; // controls button + icon sizing
+  fullWidth?: boolean; // make all tabs share width equally
 };
 
-const Tabs = ({ tabs, onTabChange, initialIndex = 0 }: Props) => {
+const SIZE_MAP: Record<TabSize, { buttonSize: 'small' | 'medium' | 'large'; padding: number; iconSize: number }> = {
+  small: { buttonSize: 'small',  padding: 6,  iconSize: 14 },
+  medium: { buttonSize: 'medium', padding: 11, iconSize: 16 },
+  large: { buttonSize: 'large',  padding: 14, iconSize: 18 },
+};
+
+const Tabs = ({ tabs, onTabChange, initialIndex = 0, size = 'medium', fullWidth = true }: Props) => {
   const [tabIndex, setTabIndex] = useState(initialIndex);
   const scrollRef = useRef<ScrollView>(null);
+  const sizing = SIZE_MAP[size];
 
   const onTabPress = (index: number) => {
     setTabIndex(index);
@@ -31,14 +42,14 @@ const Tabs = ({ tabs, onTabChange, initialIndex = 0 }: Props) => {
       {tabs.map((t, i) => (
         <Button
           elevation={2}
-          style={{ flex: 1 }}
+          style={fullWidth ? { flex: 1 } : undefined}
           startIcon={t.icon}
           key={t.key}
           onPress={() => onTabPress(i)}
           label={t.label}
-          size="medium"
-          padding={11}
-          iconSize={16}
+          size={sizing.buttonSize}
+          padding={sizing.padding}
+          iconSize={sizing.iconSize}
           variant={tabIndex === i ? 'solid' : 'solid'}
           color={tabIndex === i ? 'primary' : 'white'}
         />

@@ -45,6 +45,7 @@ export default function TabLayout() {
             default: {
               position: 'absolute',
               paddingTop: 8,
+              paddingBottom: 5,
               height: 70,
             },
           }),
@@ -64,7 +65,6 @@ export default function TabLayout() {
           }}
           listeners={{
             tabPress: (e) => {
-              // Always go to the Home root when tapping Home tab
               e.preventDefault();
               router.navigate('/(tabs)/(home)');
             },

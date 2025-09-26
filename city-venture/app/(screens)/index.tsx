@@ -2,34 +2,31 @@ import Button from '@/components/Button';
 import Container from '@/components/Container';
 import FormLogo from '@/components/FormLogo';
 import PageContainer from '@/components/PageContainer';
+import FormTextInput from '@/components/TextInput';
 import { ThemedText } from '@/components/themed-text';
 import { colors } from '@/constants/color';
 import { useAuth } from '@/context/AuthContext';
-import { useColorScheme } from '@/hooks/use-color-scheme';
 import { navigateToHome } from '@/routes/mainRoutes';
 import Entypo from '@expo/vector-icons/Entypo';
-import { useFonts } from 'expo-font';
 import { Link } from 'expo-router';
 import React, { useState } from 'react';
-import { StatusBar, StyleSheet, TextInput, View } from 'react-native';
+import {
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  View,
+} from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 const LoginPage = () => {
   const [email, setEmail] = useState('rayven.clores@unc.edu.ph');
   const [password, setPassword] = useState('123456');
+  const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const { login, user } = useAuth();
   const [loginError, setLoginError] = useState('');
-
-  const colorScheme = useColorScheme();
-
-  const [fontsLoaded] = useFonts({
-    'Poppins-Black': require('@/assets/fonts/Poppins/Poppins-Black.ttf'),
-    'Poppins-Bold': require('@/assets/fonts/Poppins/Poppins-Bold.ttf'),
-    'Poppins-Light': require('@/assets/fonts/Poppins/Poppins-Light.ttf'),
-    'Poppins-Medium': require('@/assets/fonts/Poppins/Poppins-Medium.ttf'),
-    'Poppins-Regular': require('@/assets/fonts/Poppins/Poppins-Regular.ttf'),
-    'Poppins-SemiBold': require('@/assets/fonts/Poppins/Poppins-SemiBold.ttf'),
-  });
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -37,12 +34,27 @@ const LoginPage = () => {
       return;
     }
 
+    setIsLoading(true);
+    setLoginError(''); // Clear previous errors
+
+    // Set timeout to cancel login after 5 seconds
+    const timeoutId = setTimeout(() => {
+      setIsLoading(false);
+      setLoginError('Login timeout. Please try again.');
+    }, 5000);
+
     try {
       await login(email, password);
+      // Clear timeout on success
+      clearTimeout(timeoutId);
+      // Keep loading state - will navigate to home on success
       if (user?.user_role_id === 2 || user?.user_role_id === 3) {
         navigateToHome();
       }
     } catch (error: any) {
+      // Clear timeout and close loading on error
+      clearTimeout(timeoutId);
+      setIsLoading(false);
       console.error('Login error:', error);
       setLoginError(
         error?.message ||
@@ -52,82 +64,96 @@ const LoginPage = () => {
     }
   };
 
-  if (!fontsLoaded) return null;
-
   return (
     <SafeAreaProvider>
       <StatusBar />
-      <PageContainer>
-        {/* Logo */}
-        <FormLogo />
-        {/* Headline */}
-        <View>
-          <ThemedText type="title-medium" weight="bold">
-            Sign In
-          </ThemedText>
-          <ThemedText type="sub-title-small" weight="medium">
-            Navigate with Ease - Your Ultimate City Directory
-          </ThemedText>
-        </View>
+      <PageContainer padding={0}>
+        <KeyboardAvoidingView
+          style={{ flex: 1 }}
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? 80 : 0}
+        >
+          <ScrollView
+            keyboardShouldPersistTaps="handled"
+            contentContainerStyle={styles.scrollContent}
+          >
+            {/* Logo */}
+            <FormLogo />
+            {/* Headline */}
+            <View>
+              <ThemedText type="title-medium" weight="bold">
+                Sign In
+              </ThemedText>
+              <ThemedText type="sub-title-small" weight="medium">
+                Navigate with Ease - Your Ultimate City Directory
+              </ThemedText>
+            </View>
+            {/* Credentials */}
+            <View style={styles.fieldGroup}>
+              <FormTextInput
+                label="Email"
+                placeholder="Enter email"
+                keyboardType="email-address"
+                autoCapitalize="none"
+                value={email}
+                onChangeText={setEmail}
+                variant="outlined"
+                required
+              />
+              <FormTextInput
+                label="Password"
+                placeholder="Enter password"
+                secureTextEntry={!showPassword}
+                value={password}
+                onChangeText={setPassword}
+                variant="outlined"
+                autoCapitalize="none"
+                rightIcon={showPassword ? 'eye-slash' : 'eye'}
+                onPressRightIcon={() => setShowPassword((p) => !p)}
+                required
+              />
+            </View>
 
-        {/* Form */}
-        <View style={styles.inputGroup}>
-          <TextInput
-            style={
-              colorScheme === 'light' ? styles.darkInput : styles.lightInput
-            }
-            placeholder="Email"
-            placeholderTextColor="#999"
-            value={email}
-            onChangeText={setEmail}
-            autoCapitalize="none"
-            keyboardType="email-address"
-          />
-          <TextInput
-            style={
-              colorScheme === 'light' ? styles.darkInput : styles.lightInput
-            }
-            placeholder="Password"
-            placeholderTextColor="#999"
-            secureTextEntry
-            value={password}
-            onChangeText={setPassword}
-          />
-          <Link href="./(screens)/ForgotPassword">
-            <ThemedText type="link-medium">Forgot Password?</ThemedText>
-          </Link>
-        </View>
+            <Link href="./(screens)/ForgotPassword">
+              <ThemedText type="link-medium">Forgot Password?</ThemedText>
+            </Link>
 
-        {/* Error Message */}
-        {loginError ? (
-          <Container padding={16} variant="soft" backgroundColor={colors.error}>
-            <ThemedText
-              startIcon={<Entypo name="warning" size={18} color="#fff" />}
-              lightColor="#fff"
-              type="body-medium"
-            >
-              {loginError}
-            </ThemedText>
-          </Container>
-        ) : null}
+            {/* Error Message */}
+            {loginError ? (
+              <Container
+                padding={16}
+                variant="soft"
+                backgroundColor={colors.error}
+              >
+                <ThemedText
+                  startIcon={<Entypo name="warning" size={18} color="#fff" />}
+                  lightColor="#fff"
+                  type="body-medium"
+                >
+                  {loginError}
+                </ThemedText>
+              </Container>
+            ) : null}
 
-        {/* Login Button */}
-        <Button
-          fullWidth
-          size="large"
-          label="Sign In"
-          color="primary"
-          variant="solid"
-          onPress={handleLogin}
-        />
+            {/* Login Button */}
+            <Button
+              fullWidth
+              size="large"
+              label={isLoading ? 'Signing In...' : 'Sign In'}
+              color="primary"
+              variant="solid"
+              onPress={isLoading ? undefined : handleLogin}
+            />
 
-        {/* Footer */}
-        <View style={styles.footer}>
-          <ThemedText type="body-medium">Don't have an account?</ThemedText>
-          <Link href={'./Register'}>
-            <ThemedText type="link-medium">Sign Up</ThemedText>
-          </Link>
-        </View>
+            {/* Footer */}
+            <View style={styles.footer}>
+              <ThemedText type="body-medium">Don't have an account?</ThemedText>
+              <Link href={'./Register'}>
+                <ThemedText type="link-medium">Sign Up</ThemedText>
+              </Link>
+            </View>
+          </ScrollView>
+        </KeyboardAvoidingView>
       </PageContainer>
     </SafeAreaProvider>
   );
@@ -137,46 +163,15 @@ export default LoginPage;
 
 // ✅ Styles
 const styles = StyleSheet.create({
-  logoContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 20,
+  scrollContent: {
+    padding: 16,
+    gap: 20,
+    flexGrow: 1,
+    justifyContent: 'flex-start',
   },
-  logo: {
-    width: 60,
-    height: 60,
-  },
-  inputGroup: {
+  fieldGroup: {
     flexDirection: 'column',
     gap: 16,
-    marginBottom: 10,
-  },
-  darkInput: {
-    borderWidth: 1,
-    borderColor: '#ddd',
-    backgroundColor: '#F9F9F9',
-    borderRadius: 10,
-    paddingHorizontal: 16,
-    paddingVertical: 16,
-    fontSize: 14,
-    color: '#000',
-  },
-
-  lightInput: {
-    borderWidth: 1,
-    backgroundColor: '#1e1e1e',
-    borderRadius: 10,
-    paddingHorizontal: 16,
-    paddingVertical: 16,
-    fontSize: 14,
-    color: '#fff',
-  },
-
-  errorText: {
-    color: '#ff4d4d',
-    fontSize: 14,
-    marginBottom: 8,
-    fontWeight: '500',
   },
   footer: {
     flexDirection: 'row',

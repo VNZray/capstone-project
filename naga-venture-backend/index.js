@@ -21,6 +21,9 @@ import roomRoutes from "./routes/room.js";
 import reportRoutes from "./routes/report.js";
 import roomAmenityRoutes from "./routes/room_amenities.js";
 import businessAmenityRoutes from "./routes/business_amenities.js";
+import guestRoutes from "./routes/guest.js";
+import bookingRoutes from "./routes/booking.js";
+import paymentRoutes from "./routes/paymentRoutes.js";
 
 // New Product/Service Management Routes
 import productRoutes from "./routes/products.js";
@@ -34,23 +37,29 @@ const PORT = 3000;
 
 // Define all routes in one place
 const routes = [
+  
+  // auth
   { path: "/api/user-roles", handler: userRoleRoutes },
   { path: "/api/users", handler: userRoutes },
+  
+  // business
   { path: "/api/business", handler: businessRoutes },
+  { path: "/api/room", handler: roomRoutes },
   { path: "/api/business-hours", handler: businessHoursRoutes },
+  { path: "/api/amenities", handler: amenityRoutes },
+  { path: "/api/room-amenities", handler: roomAmenityRoutes },
+  { path: "/api/business-amenities", handler: businessAmenityRoutes },
+  { path: "/api/category-and-type", handler: categoryAndTypeRoutes },
+  { path: "/api/external-booking", handler: externalBookingRoutes },
+  
   { path: "/api/tourist", handler: touristRoutes },
   { path: "/api/tourism", handler: tourismRoutes },
   { path: "/api/owner", handler: ownerRoutes },
   { path: "/api/address", handler: addressRoutes },
-  { path: "/api/category-and-type", handler: categoryAndTypeRoutes },
-  { path: "/api/external-booking", handler: externalBookingRoutes },
-  { path: "/api/amenities", handler: amenityRoutes },
-  { path: "/api/room-amenities", handler: roomAmenityRoutes },
-  { path: "/api/business-amenities", handler: businessAmenityRoutes },
+
   { path: "/api/tourist-spots", handler: touristSpotRoutes },
   { path: "/api/approval", handler: approvalRoutes },
   { path: "/api/permit", handler: permitRoutes },
-  { path: "/api/room", handler: roomRoutes },
   { path: "/api/reports", handler: reportRoutes },
   
   // New Product/Service Management Routes
@@ -59,6 +68,9 @@ const routes = [
   { path: "/api/services", handler: serviceRoutes },
   { path: "/api/orders", handler: orderRoutes },
   { path: "/api/product-reviews", handler: productReviewRoutes },
+  { path: "/api/guest", handler: guestRoutes },
+  { path: "/api/booking", handler: bookingRoutes },
+  { path: "/api/payment", handler: paymentRoutes },
 ];
 
 app.use(cors());

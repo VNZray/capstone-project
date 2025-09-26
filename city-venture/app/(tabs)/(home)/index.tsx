@@ -140,7 +140,7 @@ const HomeScreen = () => {
         <ScrollView showsVerticalScrollIndicator={false}>
           {/* Hero Section (white) */}
           <View style={{ backgroundColor: bg }}>
-            <View style={{ width: width }}>
+            <View style={{ width: '100%' }}>
               <Carousel
                 ref={ref}
                 width={width}
@@ -173,7 +173,9 @@ const HomeScreen = () => {
                         startIcon="compass"
                         elevation={2}
                         radius={14}
-                        onPress={() => router.push('/(tabs)/(home)/(spot)' as any)}
+                        onPress={() =>
+                          router.push('/(tabs)/(home)/(spot)' as any)
+                        }
                       />
                     </View>
                   </View>
@@ -510,7 +512,7 @@ const styles = StyleSheet.create({
     padding: 10,
   },
   partnerImg: {
-    width: "100%",
+    width: '100%',
     height: 100,
     borderRadius: 12,
     backgroundColor: '#EAEFF7',
