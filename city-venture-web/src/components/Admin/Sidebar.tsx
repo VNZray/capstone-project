@@ -13,6 +13,7 @@ import {
   ChevronDown,
   ChevronRight,
   LogOut,
+  X,
 } from "lucide-react";
 import "@/src/components/Admin/Sidebar.css";
 import logo from "@/src/assets/images/light-logo.png";
@@ -20,9 +21,22 @@ import { Typography } from "@mui/joy";
 import { colors } from "@/src/utils/Colors";
 import Container from "../Container";
 
-export default function Sidebar(): React.ReactElement {
+interface SidebarProps {
+  isOpen?: boolean;
+  onClose?: () => void;
+}
+
+export default function Sidebar({ isOpen = false, onClose }: SidebarProps): React.ReactElement {
   return (
-    <aside className="sidebar">
+    <aside className={`sidebar ${isOpen ? "open" : ""}`}>
+      {/* Mobile close button */}
+      <button
+        className="sidebar-close"
+        onClick={onClose}
+        aria-label="Close sidebar"
+      >
+        <X size={20} />
+      </button>
       <Container background="transparent" direction="row" align="center">
         <Typography
           textColor={colors.white}
@@ -46,11 +60,13 @@ export default function Sidebar(): React.ReactElement {
             to="/tourism/dashboard"
             label="Dashboard"
             icon={<LayoutDashboard size={18} />}
+            onClick={onClose}
           />
           <NavItem
             to="/tourism/approval"
             label="Approval"
             icon={<CheckCircle size={18} />}
+            onClick={onClose}
           />
           {/* Dropdown for Services */}
           <DropdownNavItem label="Services" icon={<Briefcase size={18} />}>
@@ -58,32 +74,38 @@ export default function Sidebar(): React.ReactElement {
               to="/tourism/services/accommodation"
               label="Accommodation"
               icon={<BedDouble size={18} />}
+              onClick={onClose}
             />
             <NavItem
               to="/tourism/services/event"
               label="Event"
               icon={<Calendar size={18} />}
+              onClick={onClose}
             />
             <NavItem
               to="/tourism/services/shop"
               label="Shop"
               icon={<Store size={18} />}
+              onClick={onClose}
             />
             <NavItem
               to="/tourism/services/tourist-spot"
               label="Tourist Spot"
               icon={<MapPin size={18} />}
+              onClick={onClose}
             />
           </DropdownNavItem>
           <NavItem
             to="/tourism/reports"
             label="Reports"
             icon={<BarChart size={18} />}
+            onClick={onClose}
           />
           <NavItem
             to="/tourism/profile"
             label="Profile"
             icon={<User size={18} />}
+            onClick={onClose}
           />
         </div>
         <div>
@@ -91,6 +113,7 @@ export default function Sidebar(): React.ReactElement {
             to={`tourism/login`}
             label="Log Out"
             icon={<LogOut size={18} />}
+            onClick={onClose}
           />
         </div>
       </nav>
@@ -102,13 +125,15 @@ interface NavItemProps {
   to: string;
   label: string;
   icon?: React.ReactNode;
+  onClick?: () => void;
 }
 
-function NavItem({ to, label, icon }: NavItemProps): React.ReactElement {
+function NavItem({ to, label, icon, onClick }: NavItemProps): React.ReactElement {
   return (
     <NavLink
       to={to}
       className={({ isActive }) => `sidebar-link ${isActive ? "active" : ""}`}
+      onClick={onClick}
     >
       {icon && <span className="sidebar-icon">{icon}</span>}
       <span>{label}</span>

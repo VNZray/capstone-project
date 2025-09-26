@@ -10,6 +10,7 @@ import {
   Star,
   User,
   LogOut,
+  X,
   LayoutDashboard,
   Package,
   ShoppingCart,
@@ -25,7 +26,12 @@ import { useBusiness } from "../../context/BusinessContext";
 import { useAuth } from "@/src/context/AuthContext";
 // removed Typography/Container usage in brand header
 
-export default function Sidebar(): React.ReactElement {
+interface SidebarProps {
+  isOpen?: boolean;
+  onClose?: () => void;
+}
+
+export default function Sidebar({ isOpen = false, onClose }: SidebarProps): React.ReactElement {
   const { businessDetails } = useBusiness();
   const { logout } = useAuth();
   const navigate = useNavigate();
@@ -40,6 +46,16 @@ export default function Sidebar(): React.ReactElement {
     }
   }, [location.pathname]);
   return (
+    <aside className={`sidebar ${isOpen ? "open" : ""}`}>
+      {/* Mobile close button */}
+      <button className="sidebar-close" onClick={onClose} aria-label="Close sidebar">
+        <X size={20} />
+      </button>
+      <Container background="transparent" direction="row" align="center">
+        <Typography textColor={colors.white} startDecorator={<img src={logo} alt="Logo" style={{ width: "40px", height: "40px" }} />} level="title-lg">
+          City Venture
+        </Typography>
+      </Container>
   <aside className="sidebar business-sidebar">
       <div className="sidebar-brand">
         <img src={logo} alt="City Ventures" className="sidebar-brand-icon" />
@@ -57,6 +73,7 @@ export default function Sidebar(): React.ReactElement {
             to={`${route}/dashboard`}
             label="Dashboard"
             icon={<LayoutDashboard size={18} />}
+            onClick={onClose}
           />
           {businessDetails?.business_type_id === 1 ? (
             <>
@@ -64,11 +81,13 @@ export default function Sidebar(): React.ReactElement {
                 to={`${route}/transactions`}
                 label="Transactions"
                 icon={<Receipt size={18} />}
+                onClick={onClose}
               />
               <NavItem
                 to={`${route}/bookings`}
                 label="Bookings"
                 icon={<CalendarCheck size={18} />}
+                onClick={onClose}
               />
             </>
           ) : null}
@@ -76,24 +95,28 @@ export default function Sidebar(): React.ReactElement {
             to={`${route}/business-profile`}
             label="Business Profile"
             icon={<Store size={18} />}
+            onClick={onClose}
           />
           {businessDetails?.business_type_id === 1 ? (
             <NavItem
               to={`${route}/rooms`}
               label="Manage Rooms"
               icon={<BedDouble size={18} />}
+              onClick={onClose}
             />
           ) : (
             <NavItem
               to={`${route}/offers`}
               label="Manage Offers"
               icon={<Tags size={18} />}
+              onClick={onClose}
             />
           )}
           <NavItem
             to={`${route}/manage-promotion`}
             label="Manage Promotion"
             icon={<Tag size={18} />}
+            onClick={onClose}
           />
 
           {/* Store section (Shop only) */}
@@ -142,15 +165,16 @@ export default function Sidebar(): React.ReactElement {
             to={`${route}/reviews`}
             label="Reviews & Ratings"
             icon={<Star size={18} />}
+            onClick={onClose}
           />
-          <NavItem to={`${route}/profile`} label="Profile" icon={<User size={18} />} />
+          <NavItem to={`${route}/profile`} label="Profile" icon={<User size={18} />} onClick={onClose} />
         </div>
 
         <div className="sidebar-logout" style={{ marginTop: "auto", paddingTop: "12px" }}>
           <NavItem 
             label="Log Out" 
             icon={<LogOut size={18} />} 
-            onClick={() => { logout(); navigate('/'); }}
+            onClick={() => { logout(); navigate('/'); onClose?.(); }}
           />
         </div>
       </nav>

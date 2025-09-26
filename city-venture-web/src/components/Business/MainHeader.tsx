@@ -7,7 +7,7 @@ import {
   IconButton,
   Avatar,
 } from "@mui/material";
-import { Bell, Repeat, ArrowLeft } from "lucide-react";
+import { Bell, Repeat, ArrowLeft, Menu } from "lucide-react";
 import { useAuth } from "@/src/context/AuthContext"; // adjust path if needed
 import Text from "../Text";
 
@@ -28,7 +28,11 @@ const pageTitles: Record<string, string> = {
   "/business/owner-profile": "Owner Profile",
 };
 
-export default function MainHeader() {
+interface MainHeaderProps {
+  onMenuClick?: () => void;
+}
+
+export default function MainHeader({ onMenuClick }: MainHeaderProps) {
   const navigate = useNavigate();
   const { user } = useAuth();
   const location = useLocation();
@@ -48,6 +52,12 @@ export default function MainHeader() {
       <Toolbar sx={{ display: "flex", justifyContent: "space-between" }}>
         {/* Left - Back Button & Page Title */}
         <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+          {/* Mobile menu button */}
+          <Box sx={{ display: { xs: "block", md: "none" } }}>
+            <IconButton onClick={onMenuClick} color="inherit" aria-label="Open menu">
+              <Menu size={22} />
+            </IconButton>
+          </Box>
           <IconButton
             onClick={() => navigate(-1)}
             color="inherit"
