@@ -8,8 +8,9 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 
 import api from '@/services/api';
-import { getData, getDataById } from '@/query/mainQuery';
 import { Address } from '@/types/Address';
+import { Bookings } from '@/types/Booking';
+import debugLogger from '@/utils/debugLogger';
 /** Get stored Business ID */
 export const getStoredBusinessId = async (): Promise<string | null> => {
   return await AsyncStorage.getItem('selectedBusinessId');
@@ -119,3 +120,32 @@ export const fetchBusinessData = async (
 
   return businessDetails;
 };
+
+export const fetchBookings = async (
+  tourist_id: string
+): Promise<Bookings[]> => {
+  try {
+    const response = await axios.get(`${api}/booking/tourist/${tourist_id}`);
+    return response.data;
+  } catch (err: any) {
+    debugLogger({
+      title: 'AuthService: Fetch bookings failed',
+      error: err.message,
+    });
+    return [];
+  }
+};
+
+export const fetchAllBookings = async (): Promise<Bookings[]> => {
+  try {
+    const response = await axios.get(`${api}/booking`);
+    return response.data;
+  } catch (err: any) {
+    debugLogger({
+      title: 'AccommodationService: Fetch room bookings failed',
+      error: err.message,
+    });
+    return [];
+  }
+};
+

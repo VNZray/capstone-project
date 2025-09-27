@@ -4,7 +4,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useRoom } from '@/context/RoomContext';
 import { createFullBooking } from '@/query/accommodationQuery';
 import { createCheckoutSession } from '@/services/PayMongoService';
-import { Booking, BookingPayment, Guests } from '@/types/Booking';
+import { Booking, BookingPayment } from '@/types/Booking';
 import debugLogger from '@/utils/debugLogger';
 import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
 import React, { useEffect } from 'react';
@@ -31,40 +31,28 @@ const booking = () => {
     pax: 1,
     num_adults: 1,
     num_children: 0,
+    num_infants: 0,
     foreign_counts: 0,
     domestic_counts: 0,
     overseas_counts: 0,
     local_counts: 1,
   });
 
-  const [guestList, setGuestList] = React.useState<Guests>([]);
+  // Removed guestList state
   const [paymentData, setPaymentData] = React.useState<BookingPayment>({
     payment_type: 'Full Payment',
     amount: 0,
   });
 
   const [submitting, setSubmitting] = React.useState(false);
+
   const validateBeforeSubmit = (): string | null => {
     if (!roomDetails?.id) return 'Room not loaded.';
     if (!user?.id) return 'User not authenticated.';
     if (!bookingData.check_in_date || !bookingData.check_out_date)
       return 'Select check-in and check-out dates.';
-    if ((bookingData.pax || 0) < 1) return 'Please enter number of guests.';
+    if ((bookingData.pax || 0) < 1) return 'Please enter number of pax.';
     if (!paymentData.payment_method) return 'Please select a payment method.';
-    if (!guestList || guestList.length === 0)
-      return 'Please provide guest information.';
-    if (guestList.length !== bookingData.pax)
-      return 'Number of guests does not match guest information provided.';
-    for (let i = 0; i < guestList.length; i++) {
-      const g = guestList[i];
-      if (!g.name || g.name.trim() === '')
-        return `Guest #${i + 1} name is required.`;
-      if (g.age === null || g.age === undefined || g.age < 0)
-        return `Guest #${i + 1} age is required and must be non-negative.`;
-      if (!g.gender || g.gender.trim() === '')
-        return `Guest #${i + 1} gender is required.`;
-    }
-
     return null;
   };
 
@@ -81,15 +69,20 @@ const booking = () => {
         ...bookingData,
         room_id: roomDetails?.id,
         tourist_id: user?.id,
-        booking_status: 'Pending',
-        balance: bookingData.total_price,
+        // Set booking_status depending on payment method: non-cash => Reserved, cash => Pending
+        booking_status:
+          paymentData.payment_method && paymentData.payment_method !== 'Cash'
+            ? 'Reserved'
+            : 'Pending',
+        balance:
+          typeof bookingData.total_price === 'number'
+            ? Math.max(
+                (bookingData.total_price || 0) - (paymentData.amount || 0),
+                0
+              )
+            : undefined,
       };
-      const guestsPayload = guestList.map((g) => ({
-        ...g,
-        name: g.name,
-        gender: g.gender,
-        age: g.age,
-      }));
+      // Removed guestsPayload
       const paymentPayload: BookingPayment = {
         ...paymentData,
         payer_type: 'Tourist',
@@ -107,19 +100,11 @@ const booking = () => {
         data: bookingPayload,
       });
       debugLogger({
-        title: 'Booking Submission: guestsPayload',
-        data: guestsPayload,
-      });
-      debugLogger({
         title: 'Booking Submission: paymentPayload',
         data: paymentPayload,
       });
 
-      const created = await createFullBooking(
-        bookingPayload,
-        guestsPayload,
-        paymentPayload
-      );
+      const created = await createFullBooking(bookingPayload, paymentPayload);
       debugLogger({
         title: 'Booking Submission: Success',
         data: created,
@@ -218,7 +203,6 @@ const booking = () => {
                 ? new Date(bookingData.check_out_date as any).toISOString()
                 : undefined,
             }),
-            guests: JSON.stringify(guestList || []),
             paymentData: JSON.stringify(paymentData || {}),
           },
         });
@@ -261,36 +245,6 @@ const booking = () => {
       const tripPurposeValid =
         bookingData.trip_purpose && bookingData.trip_purpose.trim().length > 0;
       // If guests are being filled in this step, check their validity
-      const guestsValid =
-        guestList.length === bookingData.pax &&
-        guestList.every(
-          (g) =>
-            g.name &&
-            g.name.trim() &&
-            g.gender &&
-            g.gender.trim() &&
-            g.age &&
-            g.age > 0
-        );
-      return paxValid && adultsValid && tripPurposeValid && guestsValid;
-    }
-    if (step === 'payment') {
-      return !!paymentData.payment_method;
-    }
-    if (step === 'summary') {
-      return (
-        guestList &&
-        guestList.length === bookingData.pax &&
-        guestList.every(
-          (g) =>
-            g.name &&
-            g.name.trim() &&
-            g.gender &&
-            g.gender.trim() &&
-            g.age &&
-            g.age > 0
-        )
-      );
     }
     return true;
   };
@@ -302,8 +256,6 @@ const booking = () => {
           <BookingForm
             data={bookingData}
             setData={setBookingData}
-            guests={guestList}
-            setGuests={setGuestList}
             payment={paymentData}
             setPayment={setPaymentData}
           />
@@ -312,8 +264,6 @@ const booking = () => {
           <Billing
             data={bookingData}
             setData={setBookingData}
-            guests={guestList}
-            setGuests={setGuestList}
             payment={paymentData}
             setPayment={setPaymentData}
           />
@@ -321,10 +271,8 @@ const booking = () => {
         {step === 'summary' && (
           <Summary
             data={bookingData}
-            guests={guestList}
             payment={paymentData}
             setData={setBookingData}
-            setGuests={setGuestList}
             setPayment={setPaymentData}
           />
         )}

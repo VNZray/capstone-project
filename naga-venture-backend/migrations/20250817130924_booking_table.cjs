@@ -9,6 +9,7 @@ exports.up = async function (knex) {
     table.integer("pax", 3).notNullable();
     table.integer("num_children", 3).notNullable().defaultTo(0);
     table.integer("num_adults", 3).notNullable().defaultTo(0);
+    table.integer("num_infants", 3).notNullable().defaultTo(0);
     table.integer("foreign_counts", 3).notNullable().defaultTo(0);
     table.integer("domestic_counts", 3).notNullable().defaultTo(0);
     table.integer("overseas_counts", 3).notNullable().defaultTo(0);
@@ -21,7 +22,7 @@ exports.up = async function (knex) {
     table
       .enu("booking_status", [
         "Pending",
-        "Booked",
+        "Reserved",
         "Checked-In",
         "Checked-Out",
         "Canceled",

@@ -1,42 +1,28 @@
 import Button from '@/components/Button';
 import Container from '@/components/Container';
-import DateInput from '@/components/DateInput';
 import PageContainer from '@/components/PageContainer';
 import RadioButton from '@/components/RadioButton';
 import FormTextInput from '@/components/TextInput';
 import { ThemedText } from '@/components/themed-text';
 import { colors } from '@/constants/color';
 import { useRoom } from '@/context/RoomContext';
-import { Booking, BookingPayment, Guests } from '@/types/Booking';
+import { Booking, BookingPayment } from '@/types/Booking';
 import { MaterialIcons } from '@expo/vector-icons';
 import React, { useEffect, useMemo, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 
 type Props = {
   data: Booking;
-  guests: Guests;
   payment: BookingPayment;
   setData: React.Dispatch<React.SetStateAction<Booking>>;
-  setGuests: React.Dispatch<React.SetStateAction<Guests>>;
   setPayment: React.Dispatch<React.SetStateAction<BookingPayment>>;
 };
 
-const Payment: React.FC<Props> = ({
-  data,
-  guests,
-  payment,
-  setData,
-  setGuests,
-  setPayment,
-}) => {
+const Payment: React.FC<Props> = ({ data, payment, setData, setPayment }) => {
   const { roomDetails } = useRoom();
 
-  const [checkIn, setCheckIn] = useState<Date | null>(
-    data.check_in_date || new Date()
-  );
-  const [checkOut, setCheckOut] = useState<Date | null>(
-    data.check_out_date || null
-  );
+  const checkIn = (data.check_in_date as Date) || null;
+  const checkOut = (data.check_out_date as Date) || null;
 
   // Calculate days and nights
   let days = 0;
@@ -125,59 +111,42 @@ const Payment: React.FC<Props> = ({
   );
 
   const subtotal = baseRoomPrice + bookingFee + transactionFee;
+  // Total payable after discounts (full amount owed for the booking)
   const totalPayable = Math.max(subtotal - discountTotal, 0);
 
-  // persist booking and payment changes upward
+  // Derived payment breakdown
+  const isPartial = (paymentType || '').toLowerCase().includes('partial');
+  const amountDue = useMemo(
+    () => (isPartial ? Math.round(totalPayable * 0.5) : totalPayable),
+    [isPartial, totalPayable]
+  );
+  const balance = useMemo(
+    () => Math.max(totalPayable - amountDue, 0),
+    [totalPayable, amountDue]
+  );
+
+  // Persist booking + payment upward whenever dependencies change
   useEffect(() => {
     setData((prev) => ({
       ...prev,
-      check_in_date: checkIn || undefined,
-      check_out_date: checkOut || undefined,
-      total_price: totalPayable || undefined,
+      total_price: totalPayable, // full amount of the booking
     }));
-  }, [checkIn, checkOut, totalPayable, setData]);
-
-  useEffect(() => {
-    const normalizedType = (paymentType || '').toLowerCase();
-    const isPartial = normalizedType.includes('partial');
-    const amount = isPartial ? Math.round(totalPayable * 0.5) : totalPayable;
     setPayment((prev) => ({
       ...prev,
       payment_method: paymentMethod as BookingPayment['payment_method'],
       payment_type: paymentType as BookingPayment['payment_type'],
-      amount: amount,
+      amount: amountDue, // amount to be paid now
     }));
-  }, [paymentMethod, paymentType, totalPayable, setPayment]);
+  }, [paymentMethod, paymentType, totalPayable, amountDue, balance, setPayment, setData]);
 
   return (
     <ScrollView>
       <PageContainer padding={16} gap={16}>
-        <Container padding={0} direction="row" backgroundColor="transparent">
-          <DateInput
-            selectionVariant="filled"
-            size="small"
-            style={{ flex: 1 }}
-            requireConfirmation={true}
-            label="Check-in Date"
-            value={checkIn}
-            onChange={setCheckIn}
-          />
-          <DateInput
-            selectionVariant="filled"
-            size="small"
-            style={{ flex: 1 }}
-            requireConfirmation={true}
-            label="Check-out Date"
-            value={checkOut}
-            onChange={setCheckOut}
-            minDate={checkIn || undefined}
-          />
-        </Container>
+        {/* 1. DETAILS SECTION */}
         <Container gap={8}>
           <ThemedText type="card-title-small" weight="medium">
             Details
           </ThemedText>
-
           <Container
             padding={0}
             backgroundColor="transparent"
@@ -187,7 +156,6 @@ const Payment: React.FC<Props> = ({
             <ThemedText type="body-extra-small" weight="medium">
               Day's of Stay
             </ThemedText>
-
             <ThemedText type="body-extra-small" weight="medium">
               {checkIn && checkOut && days > 0
                 ? `${days} day${days > 1 ? 's' : ''} / ${nights} night${
@@ -196,7 +164,6 @@ const Payment: React.FC<Props> = ({
                 : 'Select check-in and check-out dates'}
             </ThemedText>
           </Container>
-
           <Container
             padding={0}
             backgroundColor="transparent"
@@ -251,12 +218,75 @@ const Payment: React.FC<Props> = ({
           </Container>
         </Container>
 
+        {/* 2. PAYMENT METHOD */}
+        <RadioButton
+          size="medium"
+          label="Select Payment Method"
+          items={[
+            { id: 'Gcash', label: 'Gcash' },
+            { id: 'Paymaya', label: 'Paymaya' },
+            { id: 'Credit Card', label: 'Credit Card' },
+            { id: 'Cash', label: 'Cash' },
+          ]}
+          value={paymentMethod}
+          onChange={(item) => {
+            const selected = item?.id ? String(item.id) : null;
+            setPaymentMethod(selected);
+            // Force Full Payment when Cash is selected
+            if (selected === 'Cash') {
+              setPaymentType('Full Payment');
+            }
+          }}
+        />
+
+        {paymentMethod === 'Cash' && (
+          <Container
+            style={{ flexWrap: 'wrap' }}
+            variant="soft"
+            backgroundColor={colors.warning}
+          >
+            <ThemedText
+              startIcon={
+                <MaterialIcons
+                  name="warning"
+                  size={28}
+                  color={colors.primary}
+                />
+              }
+              type="label-small"
+              weight="medium"
+            >
+              Cash payment may take up to 24 hours or earlier to process. Please
+              wait for confirmation before checking in. Cancel your reservation
+              at any time.
+            </ThemedText>
+          </Container>
+        )}
+
+        {/* 3. PAYMENT TYPE (if not Cash) */}
+        {paymentMethod && paymentMethod !== 'Cash' && (
+          <RadioButton
+            size="medium"
+            label="Payment Type"
+            items={[
+              { id: 'Full Payment', label: 'Full Payment' },
+              { id: 'Partial Payment', label: 'Partial Payment' },
+            ]}
+            value={paymentType}
+            onChange={(item) =>
+              setPaymentType(item?.id ? String(item.id) : 'Full Payment')
+            }
+          />
+        )}
+
+        {/* 4. DISCOUNTS */}
         <Container gap={8}>
           <ThemedText type="card-title-small" weight="medium">
             Discounts
           </ThemedText>
           <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
             <Container padding={0} style={{ flex: 1 }}>
+              {/* Hidden placeholder to keep layout consistent with existing RadioButton styling if any */}
               <RadioButton
                 label={undefined}
                 items={[]}
@@ -271,7 +301,7 @@ const Payment: React.FC<Props> = ({
                 size="small"
               />
             </Container>
-            <Button onPress={handleApplyDiscount} label="Apply"></Button>
+            <Button onPress={handleApplyDiscount} label="Apply" />
           </View>
           {discountError && (
             <ThemedText
@@ -299,24 +329,35 @@ const Payment: React.FC<Props> = ({
               <ThemedText type="body-extra-small" weight="medium">
                 {d.label}
               </ThemedText>
-             <View style={{flexDirection: 'row', alignItems: 'center', gap: 8}}>
-               <ThemedText type="body-extra-small" darkColor={colors.error} lightColor={colors.error} weight="medium">
-                -₱{d.amount.toLocaleString()}
-              </ThemedText>
-              <Button
-                label="Remove"
-                size="small"
-                color="error"
-                startIcon={"trash"}
-                icon
-                variant="soft"
-                onPress={() => {
-                  setDiscounts((prev) => prev.filter((_, i) => i !== idx));
-                }}
-                style={{ paddingHorizontal: 8, paddingVertical: 2, minWidth: 0 }}
-                textStyle={{ fontSize: 12 }}
-              />
-             </View>
+              <View
+                style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}
+              >
+                <ThemedText
+                  type="body-extra-small"
+                  darkColor={colors.error}
+                  lightColor={colors.error}
+                  weight="medium"
+                >
+                  -₱{d.amount.toLocaleString()}
+                </ThemedText>
+                <Button
+                  label="Remove"
+                  size="small"
+                  color="error"
+                  startIcon={'trash'}
+                  icon
+                  variant="soft"
+                  onPress={() => {
+                    setDiscounts((prev) => prev.filter((_, i) => i !== idx));
+                  }}
+                  style={{
+                    paddingHorizontal: 8,
+                    paddingVertical: 2,
+                    minWidth: 0,
+                  }}
+                  textStyle={{ fontSize: 12 }}
+                />
+              </View>
             </Container>
           ))}
           <Container
@@ -328,12 +369,18 @@ const Payment: React.FC<Props> = ({
             <ThemedText type="body-extra-small" weight="medium">
               Total Discounts
             </ThemedText>
-            <ThemedText darkColor={colors.error} lightColor={colors.error}  type="body-extra-small" weight="medium">
+            <ThemedText
+              darkColor={colors.error}
+              lightColor={colors.error}
+              type="body-extra-small"
+              weight="medium"
+            >
               {discountTotal > 0 ? `₱${discountTotal.toLocaleString()}` : '—'}
             </ThemedText>
           </Container>
         </Container>
 
+        {/* 5. TOTAL AMOUNT */}
         <Container gap={8}>
           <ThemedText type="card-title-small" weight="medium">
             Total Amount
@@ -352,7 +399,36 @@ const Payment: React.FC<Props> = ({
               weight="bold"
               style={{ color: colors.primary }}
             >
-              {payment.amount > 0 ? `₱${payment.amount.toLocaleString()}` : '—'}
+              {amountDue > 0 ? `₱${amountDue.toLocaleString()}` : '—'}
+            </ThemedText>
+          </Container>
+          {balance > 0 && (
+            <Container
+              padding={0}
+              backgroundColor="transparent"
+              direction="row"
+              justify="space-between"
+            >
+              <ThemedText type="body-extra-small" weight="medium">
+                Remaining Balance
+              </ThemedText>
+              <ThemedText type="body-extra-small" weight="medium">
+                ₱{balance.toLocaleString()}
+              </ThemedText>
+            </Container>
+          )}
+          <Container
+            padding={0}
+            backgroundColor="transparent"
+            direction="row"
+            justify="space-between"
+            style={{ marginTop: 4 }}
+          >
+            <ThemedText type="body-extra-small" weight="medium" style={{ opacity: 0.7 }}>
+              Total
+            </ThemedText>
+            <ThemedText type="body-extra-small" weight="medium" style={{ opacity: 0.7 }}>
+              {totalPayable > 0 ? `₱${totalPayable.toLocaleString()}` : '—'}
             </ThemedText>
           </Container>
           {paymentType === 'Partial Payment' && (
@@ -364,61 +440,6 @@ const Payment: React.FC<Props> = ({
             </ThemedText>
           )}
         </Container>
-
-        <RadioButton
-          size="medium"
-          label="Select Payment Method"
-          items={[
-            { id: 'Gcash', label: 'Gcash' },
-            { id: 'Paymaya', label: 'Paymaya' },
-            { id: 'Credit Card', label: 'Credit Card' },
-            { id: 'Cash', label: 'Cash' },
-          ]}
-          value={paymentMethod}
-          onChange={(item) =>
-            setPaymentMethod(item?.id ? String(item.id) : null)
-          }
-        />
-
-        {/* Payment Type: Only show if not Cash */}
-        {paymentMethod && paymentMethod !== 'Cash' && (
-          <RadioButton
-            size="medium"
-            label="Payment Type"
-            items={[
-              { id: 'Full Payment', label: 'Full Payment' },
-              { id: 'Partial Payment', label: 'Partial Payment' },
-            ]}
-            value={paymentType}
-            onChange={(item) =>
-              setPaymentType(item?.id ? String(item.id) : 'Full Payment')
-            }
-          />
-        )}
-
-        {paymentMethod === 'Cash' && (
-          <Container
-            style={{ flexWrap: 'wrap' }}
-            variant="soft"
-            backgroundColor={colors.warning}
-          >
-            <ThemedText
-              startIcon={
-                <MaterialIcons
-                  name="warning"
-                  size={28}
-                  color={colors.primary}
-                />
-              }
-              type="label-small"
-              weight="medium"
-            >
-              Cash payment may take up to 24 hours or earlier to process. Please
-              wait for confirmation before checking in. Cancel your reservation
-              at any time.
-            </ThemedText>
-          </Container>
-        )}
       </PageContainer>
     </ScrollView>
   );

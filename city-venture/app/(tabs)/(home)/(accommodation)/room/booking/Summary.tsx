@@ -4,7 +4,7 @@ import PageContainer from '@/components/PageContainer';
 import { ThemedText } from '@/components/themed-text';
 import { background, card, colors } from '@/constants/color';
 import { useRoom } from '@/context/RoomContext';
-import { Booking, BookingPayment, Guests } from '@/types/Booking';
+import { Booking, BookingPayment } from '@/types/Booking';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useMemo, useState } from 'react';
@@ -19,14 +19,12 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 type Props = {
   data?: Booking;
-  guests?: Guests;
   payment?: BookingPayment;
   setData?: React.Dispatch<React.SetStateAction<Booking>>;
-  setGuests?: React.Dispatch<React.SetStateAction<Guests>>;
   setPayment?: React.Dispatch<React.SetStateAction<BookingPayment>>;
 };
 
-const Summary: React.FC<Props> = ({ data, guests, payment }) => {
+const Summary: React.FC<Props> = ({ data, payment }) => {
   const { roomDetails } = useRoom();
   const router = useRouter();
   const params = useLocalSearchParams<{
@@ -48,16 +46,6 @@ const Summary: React.FC<Props> = ({ data, guests, payment }) => {
     }
     return {} as Booking;
   }, [data, params]);
-  const guestsList = useMemo(() => {
-    if (Array.isArray(guests)) return guests as Guests;
-    if (params?.guests) {
-      try {
-        const parsed = JSON.parse(String(params.guests));
-        return Array.isArray(parsed) ? (parsed as Guests) : [];
-      } catch {}
-    }
-    return [] as Guests;
-  }, [guests, params]);
   const paymentData = useMemo(() => {
     if (payment) return payment as BookingPayment;
     if (params?.paymentData) {
@@ -197,34 +185,6 @@ const Summary: React.FC<Props> = ({ data, guests, payment }) => {
                   label="Trip Purpose"
                   value={purposeLabel}
                 />
-              )}
-            </View>
-
-            {/* Guests Card */}
-            <View style={[styles.card, { backgroundColor: cardBg }]}>
-              <ThemedText
-                type="card-title-small"
-                weight="semi-bold"
-                style={{ marginBottom: 8 }}
-              >
-                Guests
-              </ThemedText>
-              {guestsList.length === 0 ? (
-                <ThemedText type="body-extra-small" style={{ opacity: 0.6 }}>
-                  No guests provided yet.
-                </ThemedText>
-              ) : (
-                guestsList.map((g, i) => (
-                  <ThemedText
-                    key={i}
-                    type="body-extra-small"
-                    weight="normal"
-                    style={{ marginBottom: 4 }}
-                  >
-                    Guest {i + 1}: {g.name || '—'} • {g.age ?? '—'} yrs •{' '}
-                    {genderLabel(g.gender) || '—'}
-                  </ThemedText>
-                ))
               )}
             </View>
 

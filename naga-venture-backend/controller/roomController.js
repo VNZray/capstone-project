@@ -59,9 +59,10 @@ export async function insertRoom(request, response) {
       request.body.status ?? null,
       request.body.capacity ?? null,
       request.body.floor ?? null,
+      request.body.room_size ?? null,
     ];
     const [data] = await db.query(
-      "CALL InsertRoom(?,?,?,?,?,?,?,?,?,?)",
+      "CALL InsertRoom(?,?,?,?,?,?,?,?,?,?,?)",
       params
     );
     if (!data[0] || data[0].length === 0) {
@@ -93,9 +94,10 @@ export async function updateRoom(request, response) {
       request.body.status ?? null,
       request.body.capacity ?? null,
       request.body.floor ?? null,
+      request.body.room_size ?? null,
     ];
     const [data] = await db.query(
-      "CALL UpdateRoom(?,?,?,?,?,?,?,?,?,?)",
+      "CALL UpdateRoom(?,?,?,?,?,?,?,?,?,?,?)",
       params
     );
     if (!data[0] || data[0].length === 0) {

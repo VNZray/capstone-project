@@ -51,26 +51,14 @@ const Rooms = () => {
 
         <DateInput
           style={{ flex: 1 }}
+          size="medium"
           mode="range"
-          dateStatuses={{
-            '2025-09-20': 'reserved',
-            '2025-09-21': 'occupied',
-            '2025-09-22': 'unavailable',
-          }}
-          bookedRoomsByDate={{
-            '2025-09-21': [
-              { id: 1, name: 'Room 101', status: 'occupied' },
-              { id: 2, name: 'Room 102', status: 'occupied' },
-            ],
-            '2025-09-20': [{ id: 3, name: 'Room 205', status: 'reserved' }],
-          }}
-          showStatusLegend
-          showBookedRooms
-          selectionVariant="outline"
+          selectionVariant="filled"
           variant="solid"
           disablePast
           disablePastNavigation
           requireConfirmation
+          showStatusLegend={false}
         />
         <Button
           elevation={2}

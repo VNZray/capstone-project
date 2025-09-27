@@ -162,6 +162,22 @@ const DetailsComponent = () => {
                   {roomDetails?.room_type || "-"}
                 </Typography>
               </div>
+                            <div>
+                <Typography
+                  fontFamily={"poppins"}
+                  level="title-md"
+                  fontWeight={500}
+                >
+                  Room Size sqm(㎡)
+                </Typography>
+                <Typography
+                  startDecorator={<ListChecks size={18} />}
+                  fontFamily={"poppins"}
+                  level="body-md"
+                >
+                  {roomDetails?.room_size || "-"}
+                </Typography>
+              </div>
               <div>
                 <Typography
                   fontFamily={"poppins"}

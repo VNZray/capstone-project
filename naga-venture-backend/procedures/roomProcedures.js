@@ -38,13 +38,14 @@ async function createRoomProcedures(knex) {
       IN p_room_image VARCHAR(255),
       IN p_status ENUM('Available','Occupied','Maintenance','Reserved'),
       IN p_capacity INT,
-      IN p_floor INT
+      IN p_floor INT,
+      IN p_room_size INT
     )
     BEGIN
       INSERT INTO room (
-        id, business_id, room_number, room_type, description, room_price, room_image, status, capacity, floor
+        id, business_id, room_number, room_type, description, room_price, room_image, status, capacity, floor, room_size
       ) VALUES (
-        p_id, p_business_id, p_room_number, p_room_type, p_description, p_room_price, p_room_image, p_status, p_capacity, p_floor
+        p_id, p_business_id, p_room_number, p_room_type, p_description, p_room_price, p_room_image, p_status, p_capacity, p_floor, p_room_size
       );
       SELECT * FROM room WHERE id = p_id;
     END;
@@ -62,7 +63,8 @@ async function createRoomProcedures(knex) {
       IN p_room_image VARCHAR(255),
       IN p_status ENUM('Available','Occupied','Maintenance','Reserved'),
       IN p_capacity INT,
-      IN p_floor INT
+      IN p_floor INT,
+      IN p_room_size INT
     )
     BEGIN
       UPDATE room SET
@@ -74,7 +76,8 @@ async function createRoomProcedures(knex) {
         room_image = IFNULL(p_room_image, room_image),
         status = IFNULL(p_status, status),
         capacity = IFNULL(p_capacity, capacity),
-        floor = IFNULL(p_floor, floor)
+        floor = IFNULL(p_floor, floor),
+        room_size = IFNULL(p_room_size, room_size)
       WHERE id = p_id;
       SELECT * FROM room WHERE id = p_id;
     END;

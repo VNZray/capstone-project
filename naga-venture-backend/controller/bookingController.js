@@ -43,6 +43,7 @@ export async function insertBooking(req, res) {
       pax,
       num_children = 0,
       num_adults = 0,
+      num_infants = 0,
       foreign_counts = 0,
       domestic_counts = 0,
       overseas_counts = 0,
@@ -74,12 +75,13 @@ export async function insertBooking(req, res) {
     const effectiveBalance = balance ?? total_price; 
     const effectiveStatus = booking_status ?? "Pending";
     const [rows] = await db.query(
-      "CALL InsertBooking(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+      "CALL InsertBooking(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
       [
         id,
         pax,
         num_children,
         num_adults,
+        num_infants,
         foreign_counts,
         domestic_counts,
         overseas_counts,
@@ -110,6 +112,7 @@ export async function updateBooking(req, res) {
       pax,
       num_children,
       num_adults,
+      num_infants,
       foreign_counts,
       domestic_counts,
       overseas_counts,
@@ -125,12 +128,13 @@ export async function updateBooking(req, res) {
     } = req.body;
 
     const [rows] = await db.query(
-      "CALL UpdateBooking(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+      "CALL UpdateBooking(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
       [
         id,
         pax ?? null,
         num_children ?? null,
         num_adults ?? null,
+        num_infants ?? null,
         foreign_counts ?? null,
         domestic_counts ?? null,
         overseas_counts ?? null,

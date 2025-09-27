@@ -6,9 +6,22 @@ import { Booking, BookingPayment, Guests } from '@/types/Booking';
 import debugLogger from '@/utils/debugLogger';
 import { notifyPayment } from '@/utils/paymentBus';
 import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Alert, Linking, Modal, StyleSheet, useColorScheme, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
+import {
+  Alert,
+  Linking,
+  Modal,
+  StyleSheet,
+  useColorScheme,
+  View,
+} from 'react-native';
+import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { WebView } from 'react-native-webview';
 
 type Params = {
@@ -56,7 +69,11 @@ const OnlinePayment = () => {
     try {
       if (paymentData) p = JSON.parse(String(paymentData));
     } catch {}
-    return { b, g, p } as { b: Partial<Booking>; g: Guests; p: Partial<BookingPayment> };
+    return { b, g, p } as {
+      b: Partial<Booking>;
+      g: Guests;
+      p: Partial<BookingPayment>;
+    };
   }, [bookingData, guests, paymentData]);
 
   const submitBooking = useCallback(async () => {
@@ -84,15 +101,33 @@ const OnlinePayment = () => {
         payment_for_id: bookingPayload.room_id,
         payment_for: 'Reservation',
         status:
-          parsed.p?.payment_type === 'Full Payment' ? 'Paid' : 'Pending Balance',
+          parsed.p?.payment_type === 'Full Payment'
+            ? 'Paid'
+            : 'Pending Balance',
       } as BookingPayment;
 
-      debugLogger({ title: 'OnlinePayment: Auto submit booking (payloads)', data: { bookingPayload, guestsPayload, paymentPayload } });
-      const created = await createFullBooking(bookingPayload, guestsPayload, paymentPayload);
-      debugLogger({ title: 'OnlinePayment: Booking created after payment success', data: created, successMessage: 'Booking successfully created.' });
+      debugLogger({
+        title: 'OnlinePayment: Auto submit booking (payloads)',
+        data: { bookingPayload, guestsPayload, paymentPayload },
+      });
+      const created = await createFullBooking(bookingPayload, paymentPayload);
+      debugLogger({
+        title: 'OnlinePayment: Booking created after payment success',
+        data: created,
+        successMessage: 'Booking successfully created.',
+      });
     } catch (e: any) {
-      debugLogger({ title: 'OnlinePayment: Booking creation failed', error: e?.response?.data || e, errorCode: e?.code || e?.response?.status });
-      Alert.alert('Booking', e?.response?.data?.message || e?.message || 'Booking creation failed after payment.');
+      debugLogger({
+        title: 'OnlinePayment: Booking creation failed',
+        error: e?.response?.data || e,
+        errorCode: e?.code || e?.response?.status,
+      });
+      Alert.alert(
+        'Booking',
+        e?.response?.data?.message ||
+          e?.message ||
+          'Booking creation failed after payment.'
+      );
     } finally {
       setCreating(false);
     }
@@ -143,7 +178,15 @@ const OnlinePayment = () => {
       }
       return true; // allow WebView to load
     },
-    [router, successUrl, cancelUrl, submitBooking, bookingData, guests, paymentData]
+    [
+      router,
+      successUrl,
+      cancelUrl,
+      submitBooking,
+      bookingData,
+      guests,
+      paymentData,
+    ]
   );
 
   if (!checkoutUrl) {
@@ -154,15 +197,17 @@ const OnlinePayment = () => {
 
   return (
     <Modal visible={true} animationType="fade">
-      <SafeAreaView style={{ flex: 1 }}>
-        <WebView
-          ref={webviewRef}
-          source={{ uri: checkoutUrl as string }}
-          startInLoadingState={true}
-          onShouldStartLoadWithRequest={(req) => handleUrl(req.url)}
-          javaScriptEnabled={true}
-        />
-      </SafeAreaView>
+      <SafeAreaProvider>
+        <SafeAreaView style={{ flex: 1 }}>
+          <WebView
+            ref={webviewRef}
+            source={{ uri: checkoutUrl as string }}
+            startInLoadingState={true}
+            onShouldStartLoadWithRequest={(req) => handleUrl(req.url)}
+            javaScriptEnabled={true}
+          />
+        </SafeAreaView>
+      </SafeAreaProvider>
     </Modal>
   );
 };

@@ -31,6 +31,7 @@ async function createProcedures(knex) {
 			IN p_pax INT,
 			IN p_num_children INT,
 			IN p_num_adults INT,
+			IN p_num_infants INT,
 			IN p_foreign_counts INT,
 			IN p_domestic_counts INT,
 			IN p_overseas_counts INT,
@@ -40,16 +41,16 @@ async function createProcedures(knex) {
 			IN p_check_out_date DATE,
 			IN p_total_price FLOAT,
 			IN p_balance FLOAT,
-			IN p_booking_status ENUM('Pending','Booked','Checked-In','Checked-Out','Canceled'),
+			IN p_booking_status ENUM('Pending','Reserved','Checked-In','Checked-Out','Canceled'),
 			IN p_room_id CHAR(36),
 			IN p_tourist_id CHAR(36)
 		)
 		BEGIN
 			INSERT INTO booking (
-				id, pax, num_children, num_adults, foreign_counts, domestic_counts, overseas_counts, local_counts,
+				id, pax, num_children, num_adults, num_infants, foreign_counts, domestic_counts, overseas_counts, local_counts,
 				trip_purpose, check_in_date, check_out_date, total_price, balance, booking_status, room_id, tourist_id
 			) VALUES (
-				p_id, p_pax, p_num_children, p_num_adults, p_foreign_counts, p_domestic_counts, p_overseas_counts, p_local_counts,
+				p_id, p_pax, p_num_children, p_num_adults, p_num_infants, p_foreign_counts, p_domestic_counts, p_overseas_counts, p_local_counts,
 				p_trip_purpose, p_check_in_date, p_check_out_date, p_total_price, p_balance, p_booking_status, p_room_id, p_tourist_id
 			);
 			SELECT * FROM booking WHERE id = p_id;
@@ -63,6 +64,7 @@ async function createProcedures(knex) {
 			IN p_pax INT,
 			IN p_num_children INT,
 			IN p_num_adults INT,
+			IN p_num_infants INT,
 			IN p_foreign_counts INT,
 			IN p_domestic_counts INT,
 			IN p_overseas_counts INT,
@@ -72,7 +74,7 @@ async function createProcedures(knex) {
 			IN p_check_out_date DATE,
 			IN p_total_price FLOAT,
 			IN p_balance FLOAT,
-			IN p_booking_status ENUM('Pending','Booked','Checked-In','Checked-Out','Canceled'),
+			IN p_booking_status ENUM('Pending','Reserved','Checked-In','Checked-Out','Canceled'),
 			IN p_room_id CHAR(36),
 			IN p_tourist_id CHAR(36)
 		)
@@ -82,6 +84,7 @@ async function createProcedures(knex) {
 				pax = IFNULL(p_pax, pax),
 				num_children = IFNULL(p_num_children, num_children),
 				num_adults = IFNULL(p_num_adults, num_adults),
+				num_infants = IFNULL(p_num_infants, num_infants),
 				foreign_counts = IFNULL(p_foreign_counts, foreign_counts),
 				domestic_counts = IFNULL(p_domestic_counts, domestic_counts),
 				overseas_counts = IFNULL(p_overseas_counts, overseas_counts),

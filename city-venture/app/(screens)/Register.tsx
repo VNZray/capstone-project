@@ -22,10 +22,10 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 const RegistrationPage = () => {
   const colorScheme = useColorScheme();
 
-  const [firstName, setFirstName] = useState('Rayven');
-  const [middleName, setMiddleName] = useState('C');
-  const [lastName, setLastName] = useState('Clores');
-  const [email, setEmail] = useState('rayven.clores@unc.edu.ph');
+  const [firstName, setFirstName] = useState('');
+  const [middleName, setMiddleName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('123456');
   const [confirmPassword, setConfirmPassword] = useState('123456');
   const [birthdate, setBirthdate] = useState(new Date());

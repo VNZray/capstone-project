@@ -12,6 +12,7 @@ import type {
 import type { Owner } from "../types/Owner";
 import type { Tourist } from "../types/Tourist";
 import type { TokenPayload, User, UserDetails, UserRoles } from "../types/User";
+import { Bookings } from '@/types/Booking';
 interface LoginResponse {
   token: string;
 }
@@ -348,6 +349,8 @@ export const loginUser = async (
 
   return loggedInUser;
 };
+
+
 
 /** LOGOUT */
 export const logoutUser = async () => {
