@@ -1,6 +1,5 @@
 import { Button, Typography } from "@mui/joy";
 import Container from "../components/Container";
-import PageContainer from "../components/PageContainer";
 import { useNavigate } from "react-router-dom";
 
 export default function About() {

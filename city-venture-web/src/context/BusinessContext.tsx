@@ -6,7 +6,7 @@ import React, {
   useEffect,
 } from "react";
 import type { ReactNode } from "react";
-import type { Business } from "../types/Business";
+import type { Business } from "@/src/types/Business";
 import {
   getStoredBusinessId,
   setStoredBusinessId,
@@ -75,6 +75,8 @@ export const BusinessProvider: React.FC<BusinessProviderProps> = ({
       setLoading(false);
     }
   }, [selectedBusinessId]);
+
+  
 
   /** Fetch when ID changes */
   useEffect(() => {

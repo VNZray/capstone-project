@@ -48,7 +48,8 @@ const COLORS = {
 };
 const colorUrl = (url) => `${COLORS.cyan}${url}${COLORS.reset}`;
 const colorLabel = (label) => `${COLORS.dim}${label}${COLORS.reset}`;
-const colorSection = (title) => `${COLORS.magenta}${COLORS.bold}${title}${COLORS.reset}`;
+const colorSection = (title) =>
+  `${COLORS.magenta}${COLORS.bold}${title}${COLORS.reset}`;
 const colorServer = (text) => `${COLORS.green}${text}${COLORS.reset}`;
 
 // Route sections for clearer organization & logging
@@ -60,6 +61,8 @@ const routeSections = [
       { path: "/api/user-roles", handler: userRoleRoutes, label: "User Roles" },
       { path: "/api/users", handler: userRoutes, label: "Users" },
       { path: "/api/owner", handler: ownerRoutes, label: "Owners" },
+      { path: "/api/tourism", handler: tourismRoutes, label: "Tourism" },
+      { path: "/api/tourist", handler: touristRoutes, label: "Tourists" },
     ],
   },
   {
@@ -95,8 +98,6 @@ const routeSections = [
   {
     section: "Tourism & Spots",
     routes: [
-      { path: "/api/tourism", handler: tourismRoutes, label: "Tourism" },
-      { path: "/api/tourist", handler: touristRoutes, label: "Tourists" },
       {
         path: "/api/tourist-spots",
         handler: touristSpotRoutes,
@@ -152,18 +153,24 @@ routes.forEach((route) => {
 
 app.listen(PORT, "0.0.0.0", () => {
   console.log(colorServer(`🚀 Server running at http://localhost:${PORT}`));
-  console.log(colorServer(`🌐 Also accessible at http://192.168.111.111:${PORT}`));
+  console.log(
+    colorServer(`🌐 Also accessible at http://192.168.111.111:${PORT}`)
+  );
   console.log(colorServer("✅ Connected to MariaDB (Promise Pool)"));
   console.log(colorServer("✅ API is ready to use\n"));
 
   // Grouped endpoint logging
-  console.log(`${COLORS.bold}📌 Available API Endpoints (Grouped):${COLORS.reset}`);
+  console.log(
+    `${COLORS.bold}📌 Available API Endpoints (Grouped):${COLORS.reset}`
+  );
   routeSections.forEach((section) => {
     console.log(`\n▶ ${colorSection(section.section)}`);
     section.routes.forEach((r) => {
       const label = r.label ? ` (${r.label})` : "";
       console.log(
-        `   • ${colorUrl(`http://localhost:${PORT}${r.path}`)}${label ? " " + colorLabel(label) : ""}`
+        `   • ${colorUrl(`http://localhost:${PORT}${r.path}`)}${
+          label ? " " + colorLabel(label) : ""
+        }`
       );
     });
   });

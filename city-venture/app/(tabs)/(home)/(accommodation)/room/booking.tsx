@@ -87,7 +87,7 @@ const booking = () => {
         ...paymentData,
         payer_type: 'Tourist',
         payer_id: user?.id,
-        payment_for_id: bookingPayload.room_id,
+        payment_for_id: bookingPayload.id,
         payment_for: 'Reservation',
         status:
           paymentData.payment_type === 'Full Payment'

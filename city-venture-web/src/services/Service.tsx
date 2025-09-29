@@ -81,7 +81,6 @@ export const uploadTouristSpotImage = async (
   file: File,
   isPrimary: boolean = false,
   altText?: string,
-  categoryName?: string,
   touristSpotName?: string,
   spotFolderName?: string // always use this for folder
 ) => {
@@ -96,7 +95,7 @@ export const uploadTouristSpotImage = async (
         const touristSpot = await getDataById('tourist-spots', touristSpotId);
         spotName = touristSpot.name || `spot-${touristSpotId}`;
       }
-      folderName = spotName.toLowerCase().replace(/[^a-z0-9]/g, '-');
+      folderName = (spotName ?? `spot-${touristSpotId}`).toLowerCase().replace(/[^a-z0-9]/g, '-');
     }
     const fileExt = file.name.split('.').pop();
     const timestamp = new Date().toISOString().replace(/[:.]/g, "-");

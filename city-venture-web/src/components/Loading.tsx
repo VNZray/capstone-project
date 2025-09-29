@@ -1,4 +1,3 @@
-import React from "react";
 import "./styles/Loading.css"; // for styling
 
 export default function Loading() {

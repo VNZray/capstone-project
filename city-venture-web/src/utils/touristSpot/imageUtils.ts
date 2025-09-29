@@ -27,8 +27,7 @@ export const uploadPendingImages = async (
         pendingImage.is_primary, 
         pendingImage.alt_text,
         categoryName,
-        touristSpotName,
-        spotFolderName // always use this for folder
+        spotFolderName || touristSpotName // use spotFolderName if provided, else fallback to touristSpotName
       );
     } catch (error) {
       console.error(`Failed to upload image ${pendingImage.alt_text}:`, error);
