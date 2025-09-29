@@ -37,6 +37,8 @@ import TablePagination from "@mui/material/TablePagination";
 import TableRow from "@mui/material/TableRow";
 import Paper from "@mui/material/Paper";
 import { Chip, TableHead } from "@mui/material";
+import { useAuth } from "@/src/context/AuthContext";
+import { useBusiness } from "@/src/context/BusinessContext";
 
 // Booking columns
 interface Column {
@@ -182,6 +184,8 @@ const bookingData = [
 ];
 
 const Bookings = () => {
+  const { user } = useAuth();
+  const { businessDetails } = useBusiness();
   const [activeTab, setActiveTab] = useState<
     "All" | "Pending" | "Reserved" | "Checked-in" | "Checked-out" | "Canceled"
   >("All");

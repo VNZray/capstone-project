@@ -3,11 +3,13 @@ import type {
   BusinessCategory,
   BusinessDetails,
   BusinessType,
+  Room,
 } from '@/src/types/Business';
 import axios from 'axios';
 
 import api from '@/src/services/api';
 import type { Address } from '@/src/types/Address';
+import type { Bookings } from '../types/Booking';
 /** Get stored Business ID */
 export const getStoredBusinessId = async (): Promise<string | null> => {
   return localStorage.getItem('selectedBusinessId');
@@ -112,4 +114,18 @@ export const fetchBusinessData = async (
   };
 
   return businessDetails;
+};
+
+export const fetchBookingsByRoomId = async (
+  room_id: string
+): Promise<Bookings[]> => {
+  const { data } = await axios.get<Bookings[]>(`${api}/booking/room/${room_id}`);
+  return Array.isArray(data) ? data : [data]; // ensure it's always an array
+};
+
+export const fetchRoomById = async (
+  room_id: string
+): Promise<Room[]> => {
+  const { data } = await axios.get<Room[]>(`${api}/room/${room_id}`);
+  return Array.isArray(data) ? data : [data]; // ensure it's always an array
 };

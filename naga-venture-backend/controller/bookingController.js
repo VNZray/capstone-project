@@ -11,6 +11,18 @@ export async function getAllBookings(req, res) {
   }
 }
 
+export async function getBookingsByRoomId(req, res) {
+  try {
+    const { room_id } = req.params;
+    const [rows] = await db.query("CALL GetBookingsByRoomId(?)", [
+      room_id,
+    ]);
+    res.json(rows[0]);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+}
+
 // Get booking by ID
 export async function getBookingById(req, res) {
   try {

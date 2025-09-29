@@ -24,6 +24,14 @@ async function createProcedures(knex) {
 		END;
 	`);
 
+	// Get bookings by room ID
+	await knex.raw(`
+		CREATE PROCEDURE GetBookingsByRoomId(IN p_room_id CHAR(36))
+		BEGIN
+			SELECT * FROM booking WHERE room_id = p_room_id;
+		END;
+	`);
+
 	// Insert booking
 	await knex.raw(`
 		CREATE PROCEDURE InsertBooking(
