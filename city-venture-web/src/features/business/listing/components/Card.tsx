@@ -60,7 +60,7 @@ const Card: React.FC<CardProps> = ({
           className="image-container card-image-wrapper" 
           style={{ 
             width: compact ? 140 : 200, 
-            height: compact ? 100 : 150, 
+            height: compact ? 120 : 150, 
             flexShrink: 0,
             borderRadius: compact ? 8 : 12,
             overflow: 'hidden',
@@ -73,7 +73,7 @@ const Card: React.FC<CardProps> = ({
             alt={title}
             width={"100%"}
             height={"100%"}
-            className="card-image"
+            style={{ objectFit: "cover", width: "100%", height: "100%" }}
           />
         </div>
         <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "space-between", minHeight: compact ? 100 : 150 }}>

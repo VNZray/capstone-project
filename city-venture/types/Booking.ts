@@ -4,13 +4,14 @@ export type Booking = {
     tourist_id?: string;
     check_in_date?: Date;
     check_out_date?: Date;
-    booking_status?: 'Pending' | 'Booked' | 'Checked-In' | 'Checked-Out' | 'Canceled';
+    booking_status?: 'Pending' | 'Reserved' | 'Checked-In' | 'Checked-Out' | 'Canceled';
     pax: number;
     total_price?: number;
     created_at?: Date;
     updated_at?: Date;
     num_children?: number;
     num_adults?: number;
+    num_infants?: number;
     foreign_counts?: number;
     domestic_counts?: number;
     overseas_counts?: number;
@@ -18,6 +19,8 @@ export type Booking = {
     trip_purpose?: string;
     balance?: number;
 }
+
+export type Bookings = Booking[];
 
 export type Guest = {
     id?: number;

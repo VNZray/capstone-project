@@ -112,7 +112,7 @@ const TouristSpotImageManager: React.FC<TouristSpotImageManagerProps> = ({
       // Always use original spot name for folder
       if (!initialSpotName) throw new Error("No original spot name found for folder!");
       const spotFolderName = initialSpotName.toLowerCase().replace(/[^a-z0-9]/g, '-');
-      await uploadTouristSpotImage(touristSpotId, file, isPrimary, file.name, undefined, initialSpotName, spotFolderName);
+      await uploadTouristSpotImage(touristSpotId, file, isPrimary, file.name, undefined, spotFolderName);
       await loadImages();
     } catch (error) {
       console.error("Upload failed:", error);

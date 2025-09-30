@@ -20,11 +20,9 @@ import {
   ShoppingBag,
 } from "lucide-react";
 import logo from "@/src/assets/images/light-logo.png";
-
 import "./Sidebar.css";
 import { useBusiness } from "../../context/BusinessContext";
 import { useAuth } from "@/src/context/AuthContext";
-// removed Typography/Container usage in brand header
 
 interface SidebarProps {
   isOpen?: boolean;
@@ -46,18 +44,16 @@ export default function Sidebar({ isOpen = false, onClose }: SidebarProps): Reac
     }
   }, [location.pathname]);
   return (
-    <aside className={`sidebar ${isOpen ? "open" : ""}`}>
+    <aside className={`sidebar business-sidebar ${isOpen ? "open" : ""}`}>
       {/* Mobile close button */}
-      <button className="sidebar-close" onClick={onClose} aria-label="Close sidebar">
+      <button
+        className="sidebar-close"
+        onClick={onClose}
+        aria-label="Close sidebar"
+      >
         <X size={20} />
       </button>
-      <Container background="transparent" direction="row" align="center">
-        <Typography textColor={colors.white} startDecorator={<img src={logo} alt="Logo" style={{ width: "40px", height: "40px" }} />} level="title-lg">
-          City Venture
-        </Typography>
-      </Container>
-  <aside className="sidebar business-sidebar">
-      <div className="sidebar-brand">
+      <div className="sidebar-brand" onClick={() => { navigate(route + "/dashboard"); onClose?.(); }} style={{ cursor: "pointer" }}>
         <img src={logo} alt="City Ventures" className="sidebar-brand-icon" />
         <div className="sidebar-brand-text">
           <div className="sidebar-brand-title">CITY VENTURES</div>
@@ -129,36 +125,49 @@ export default function Sidebar({ isOpen = false, onClose }: SidebarProps): Reac
                 aria-expanded={storeOpen}
                 aria-controls="store-subnav"
               >
-                <span className="sidebar-icon"><ShoppingBag size={18} /></span>
+                <span className="sidebar-icon">
+                  <ShoppingBag size={18} />
+                </span>
                 <span>Store</span>
-                <span className={`sidebar-chevron ${storeOpen ? "open" : ""}`}>
+                <span
+                  className={`sidebar-chevron ${storeOpen ? "open" : ""}`}
+                  aria-hidden="true"
+                >
                   <ChevronDown size={16} />
                 </span>
               </button>
-              {storeOpen && (
-                <div id="store-subnav" className="sidebar-subnav">
-                  <NavItem
-                    to={`${route}/store/products`}
-                    label="Products"
-                    icon={<Package size={18} />}
-                  />
-                  <NavItem
-                    to={`${route}/store/orders`}
-                    label="Orders"
-                    icon={<ShoppingCart size={18} />}
-                  />
-                  <NavItem
-                    to={`${route}/store/discount`}
-                    label="Discount"
-                    icon={<Percent size={18} />}
-                  />
-                  <NavItem
-                    to={`${route}/store/settings`}
-                    label="Settings"
-                    icon={<SettingsIcon size={18} />}
-                  />
-                </div>
-              )}
+              <div
+                id="store-subnav"
+                className={`sidebar-subnav ${storeOpen ? "expanded" : "collapsed"}`}
+                role="region"
+                aria-label="Store section"
+                hidden={!storeOpen}
+              >
+                <NavItem
+                  to={`${route}/store/products`}
+                  label="Products"
+                  icon={<Package size={18} />}
+                  onClick={onClose}
+                />
+                <NavItem
+                  to={`${route}/store/orders`}
+                  label="Orders"
+                  icon={<ShoppingCart size={18} />}
+                  onClick={onClose}
+                />
+                <NavItem
+                  to={`${route}/store/discount`}
+                  label="Discount"
+                  icon={<Percent size={18} />}
+                  onClick={onClose}
+                />
+                <NavItem
+                  to={`${route}/store/settings`}
+                  label="Settings"
+                  icon={<SettingsIcon size={18} />}
+                  onClick={onClose}
+                />
+              </div>
             </div>
           )}
           <NavItem
@@ -195,6 +204,7 @@ function NavItem({ to, label, icon, onClick }: NavItemProps): React.ReactElement
       <NavLink
         to={to}
         className={({ isActive }) => `sidebar-link ${isActive ? "active" : ""}`}
+        onClick={onClick}
       >
         {icon && <span className="sidebar-icon">{icon}</span>}
         <span>{label}</span>

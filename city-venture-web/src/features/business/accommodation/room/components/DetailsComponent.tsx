@@ -1,5 +1,5 @@
 import Paper from "@mui/material/Paper";
-import { Button, Chip, Divider, Grid, Sheet, Typography } from "@mui/joy";
+import { Button, Chip, Grid, Typography } from "@mui/joy";
 import { useRoom } from "@/src/context/RoomContext";
 import Container from "@/src/components/Container";
 import { Bed, Users, ListChecks, PhilippinePeso } from "lucide-react";
@@ -9,7 +9,6 @@ import { getData } from "@/src/services/Service";
 import React, { useState } from "react";
 import EditIcon from "@mui/icons-material/Edit";
 import EditBasicInfo from "./EditBasicInfo";
-import { Refresh } from "@mui/icons-material";
 import EditAmenitiesModal from "./EditAmenitiesModal";
 import EditDescriptionModal from "./EditDescription";
 
@@ -160,6 +159,22 @@ const DetailsComponent = () => {
                   level="body-md"
                 >
                   {roomDetails?.room_type || "-"}
+                </Typography>
+              </div>
+                            <div>
+                <Typography
+                  fontFamily={"poppins"}
+                  level="title-md"
+                  fontWeight={500}
+                >
+                  Room Size sqm(㎡)
+                </Typography>
+                <Typography
+                  startDecorator={<ListChecks size={18} />}
+                  fontFamily={"poppins"}
+                  level="body-md"
+                >
+                  {roomDetails?.room_size || "-"}
                 </Typography>
               </div>
               <div>

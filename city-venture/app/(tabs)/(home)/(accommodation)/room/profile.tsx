@@ -21,7 +21,9 @@ import PageContainer from '@/components/PageContainer';
 import { background, colors } from '@/constants/color';
 import { useAuth } from '@/context/AuthContext';
 import { useRoom } from '@/context/RoomContext';
+import useUserBookings from '@/hooks/use-user-bookings';
 import { Tab } from '@/types/Tab';
+import debugLogger from '@/utils/debugLogger';
 import Details from './details';
 import Photos from './photos';
 import Ratings from './ratings';
@@ -36,8 +38,8 @@ const AccommodationProfile = () => {
   const colorScheme = useColorScheme();
   const { user } = useAuth();
   const { roomDetails } = useRoom();
-
-  const [loading, setLoading] = useState(true);
+  const { bookings, loading, error, refetch } = useUserBookings();
+  // local state still if needed else can remove references
   const [newReview, setNewReview] = useState('');
   const [rating, setRating] = useState(5);
   const [modalVisible, setModalVisible] = useState(false);
@@ -53,6 +55,13 @@ const AccommodationProfile = () => {
         headerTitle: roomDetails.room_type,
       });
     }
+
+    debugLogger({
+      title: 'Booking Data',
+      data: bookings,
+    });
+
+
   }, [navigation, roomDetails?.room_type, roomDetails?.id]);
 
   const [averageAccommodationReviews, setAverageAccommodationReviews] =

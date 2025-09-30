@@ -89,12 +89,11 @@ export const createBookingPayment = async (
 // Composite helper to create booking, guests, and payment sequentially
 export const createFullBooking = async (
   booking: Booking,
-  guests: Guests,
   payment: BookingPayment
 ) => {
   debugLogger({
     title: 'FLOW Creating full booking',
-    data: { booking, guests, payment },
+    data: { booking, payment },
   });
   const createdBooking = await bookRoom(booking);
   const bookingId = createdBooking?.id;
@@ -105,15 +104,6 @@ export const createFullBooking = async (
       error: 'Booking ID missing after creation',
     });
     throw new Error('Booking ID missing after creation');
-  }
-  try {
-    await addGuestsToBooking(bookingId, guests || []);
-  } catch (e) {
-    debugLogger({
-      title: 'FLOW Adding guests failed',
-      error: e,
-    });
-    throw e;
   }
   try {
     await createBookingPayment(bookingId, payment);

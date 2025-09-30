@@ -7,7 +7,7 @@ import {
   Box,
 } from "@mui/joy";
 import { History, Clock, User } from "lucide-react";
-import type { Report } from "../../../types/Report";
+import type { Report } from "@/src/types/Report";
 
 interface StatusHistorySectionProps {
   report: Report;

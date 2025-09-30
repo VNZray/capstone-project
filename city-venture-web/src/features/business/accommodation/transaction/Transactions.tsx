@@ -123,12 +123,15 @@ const Transactions = () => {
   const [selectedYear, setSelectedYear] = React.useState<number | "all">("all");
   const [searchTerm, setSearchTerm] = React.useState("");
 
-  const handleChangePage = (event: unknown, newPage: number) => {
+  const handleChangePage = (
+    _event: React.MouseEvent<HTMLButtonElement> | null,
+    newPage: number
+  ) => {
     setPage(newPage);
   };
 
   const handleChangeRowsPerPage = (
-    event: React.ChangeEvent<HTMLInputElement>
+    event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
     setRowsPerPage(+event.target.value);
     setPage(0);

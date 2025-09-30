@@ -4,6 +4,7 @@ import type {
   BusinessDetails,
   BusinessType,
 } from '@/src/types/Business';
+
 import axios from 'axios';
 
 import api from '@/src/services/api';
@@ -113,3 +114,5 @@ export const fetchBusinessData = async (
 
   return businessDetails;
 };
+
+

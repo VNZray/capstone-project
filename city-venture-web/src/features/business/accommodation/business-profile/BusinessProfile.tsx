@@ -324,13 +324,13 @@ const BusinessProfile = () => {
 
           {/* --- Business Details --- */}
           <Container
-            elevation={0}
-            className="bp-main"
+
+            elevation={1}
+            gap="24px"
+            direction="column"
             style={{
               padding: "20px",
               display: "flex",
-              flexDirection: "column",
-              gap: "20px",
             }}
           >
             <Container gap="12px" padding="0">
@@ -664,7 +664,7 @@ const BusinessProfile = () => {
                       >
                         {externalBooking.map((booking: ExternalBooking) => (
                           <Container
-                            elevation={2}
+                            elevation={1}
                             key={booking.id}
                             style={{ padding: "12px", textAlign: "center" }}
                           >
@@ -771,8 +771,7 @@ const BusinessProfile = () => {
 
         <Grid xs={12} md={4}>
           <Container
-            elevation={0}
-            className="bp-sidebar"
+            elevation={1}
             style={{
               padding: "20px",
               display: "flex",

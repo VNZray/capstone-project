@@ -1,10 +1,7 @@
 import Paper from "@mui/material/Paper";
-import { Button, Chip, Grid, Sheet, Typography } from "@mui/joy";
-import { useRoom } from "@/src/context/RoomContext";
+import { Grid, Typography } from "@mui/joy";
 
 const ReviewsComponent = () => {
-  const { roomDetails } = useRoom();
-
   return (
     <Paper
       elevation={0}

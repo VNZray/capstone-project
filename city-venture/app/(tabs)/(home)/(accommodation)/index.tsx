@@ -92,7 +92,9 @@ const AccommodationDirectory = () => {
           ? CATEGORY_ID_TO_KEY[business.business_category_id]
           : undefined;
       const matchesTab = activeTab === 'all' || categoryKey === activeTab;
-      const status = business.status.toLowerCase() === 'pending';
+      const status =
+        business.status.toLowerCase() === 'active' ||
+        business.status.toLowerCase() === 'pending';
 
       return matchesSearch && matchesTab && status;
     }
@@ -100,7 +102,7 @@ const AccommodationDirectory = () => {
 
   return (
     <PageContainer padding={0} gap={0} style={{ backgroundColor: bg }}>
-      <Container gap={0} paddingBottom={0} backgroundColor="transparent" >
+      <Container gap={0} paddingBottom={0} backgroundColor="transparent">
         <View style={styles.SearchContainer}>
           <SearchBar
             shape="square"
