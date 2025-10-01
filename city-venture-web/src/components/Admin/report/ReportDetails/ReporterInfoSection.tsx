@@ -6,7 +6,7 @@ import {
   Divider,
 } from "@mui/joy";
 import { User, Mail, Hash, Clock } from "lucide-react";
-import type { Report } from "../../../../types/Report";
+import type { Report } from "@/src/types/Report";
 
 interface ReporterInfoSectionProps {
   report: Report;

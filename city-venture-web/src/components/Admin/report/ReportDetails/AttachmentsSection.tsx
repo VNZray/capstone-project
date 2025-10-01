@@ -12,7 +12,7 @@ import {
   CardContent,
 } from "@mui/joy";
 import { Paperclip, Download, Eye, FileText, Image } from "lucide-react";
-import type { Report } from "../../../../types/Report";
+import type { Report } from "@/src/types/Report";
 
 interface AttachmentsSectionProps {
   report: Report;

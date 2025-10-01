@@ -7,7 +7,7 @@ import {
   Divider,
 } from "@mui/joy";
 import { Target, Hash, Tag } from "lucide-react";
-import type { Report } from "../../../../types/Report";
+import type { Report } from "@/src/types/Report";
 
 interface TargetInfoSectionProps {
   report: Report;
