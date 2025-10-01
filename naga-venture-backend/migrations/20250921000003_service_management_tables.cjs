@@ -34,7 +34,8 @@ exports.up = async function (knex) {
     table.enu("price_type", ["per_hour", "per_day", "per_week", "per_month", "per_session", "fixed"]).notNullable();
     table.enu("sale_type", ["fixed", "percentage"]).defaultTo("fixed");
     table.decimal("sale_value", 10, 2).defaultTo(0); // discount amount or percentage
-    table.string("duration_estimate", 100).nullable(); // e.g., "2-3 hours", "Full day"
+    table.integer("duration_value").nullable(); // Numeric value for duration (e.g., 2, 5, 1)
+    table.enu("duration_unit", ["minutes", "hours", "days", "weeks"]).nullable(); // Unit for duration value
     table.string("image_url", 500).nullable();
     table.json("features").nullable(); // Store service features/inclusions as JSON array
     table.text("requirements").nullable(); // What customer needs to bring/prepare

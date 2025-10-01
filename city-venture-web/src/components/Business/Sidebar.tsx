@@ -18,7 +18,11 @@ import {
   Settings as SettingsIcon,
   ChevronDown,
   ShoppingBag,
+  Calendar,
 } from "lucide-react";
+
+// Compact icon size
+const ICON_SIZE = 16;
 import logo from "@/src/assets/images/light-logo.png";
 import "./Sidebar.css";
 import { useBusiness } from "../../context/BusinessContext";
@@ -63,12 +67,12 @@ export default function Sidebar({ isOpen = false, onClose }: SidebarProps): Reac
       {/* Navigation */}
       <nav className="sidebar-nav">
         <div
-          style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}
+          style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}
         >
           <NavItem
             to={`${route}/dashboard`}
             label="Dashboard"
-            icon={<LayoutDashboard size={18} />}
+            icon={<LayoutDashboard size={ICON_SIZE} />}
             onClick={onClose}
           />
           {businessDetails?.business_type_id === 1 ? (
@@ -76,13 +80,13 @@ export default function Sidebar({ isOpen = false, onClose }: SidebarProps): Reac
               <NavItem
                 to={`${route}/transactions`}
                 label="Transactions"
-                icon={<Receipt size={18} />}
+                icon={<Receipt size={ICON_SIZE} />}
                 onClick={onClose}
               />
               <NavItem
                 to={`${route}/bookings`}
                 label="Bookings"
-                icon={<CalendarCheck size={18} />}
+                icon={<CalendarCheck size={ICON_SIZE} />}
                 onClick={onClose}
               />
             </>
@@ -90,28 +94,28 @@ export default function Sidebar({ isOpen = false, onClose }: SidebarProps): Reac
           <NavItem
             to={`${route}/business-profile`}
             label="Business Profile"
-            icon={<Store size={18} />}
+            icon={<Store size={ICON_SIZE} />}
             onClick={onClose}
           />
           {businessDetails?.business_type_id === 1 ? (
             <NavItem
               to={`${route}/rooms`}
               label="Manage Rooms"
-              icon={<BedDouble size={18} />}
+              icon={<BedDouble size={ICON_SIZE} />}
               onClick={onClose}
             />
           ) : (
             <NavItem
               to={`${route}/offers`}
               label="Manage Offers"
-              icon={<Tags size={18} />}
+              icon={<Tags size={ICON_SIZE} />}
               onClick={onClose}
             />
           )}
           <NavItem
             to={`${route}/manage-promotion`}
             label="Manage Promotion"
-            icon={<Tag size={18} />}
+            icon={<Tag size={ICON_SIZE} />}
             onClick={onClose}
           />
 
@@ -126,14 +130,14 @@ export default function Sidebar({ isOpen = false, onClose }: SidebarProps): Reac
                 aria-controls="store-subnav"
               >
                 <span className="sidebar-icon">
-                  <ShoppingBag size={18} />
+                  <ShoppingBag size={ICON_SIZE} />
                 </span>
                 <span>Store</span>
                 <span
                   className={`sidebar-chevron ${storeOpen ? "open" : ""}`}
                   aria-hidden="true"
                 >
-                  <ChevronDown size={16} />
+                  <ChevronDown size={14} />
                 </span>
               </button>
               <div
@@ -146,25 +150,37 @@ export default function Sidebar({ isOpen = false, onClose }: SidebarProps): Reac
                 <NavItem
                   to={`${route}/store/products`}
                   label="Products"
-                  icon={<Package size={18} />}
+                  icon={<Package size={ICON_SIZE} />}
+                  onClick={onClose}
+                />
+                <NavItem
+                  to={`${route}/store/services`}
+                  label="Services"
+                  icon={<SettingsIcon size={ICON_SIZE} />}
+                  onClick={onClose}
+                />
+                <NavItem
+                  to={`${route}/store/service-bookings`}
+                  label="Service Bookings"
+                  icon={<Calendar size={ICON_SIZE} />}
                   onClick={onClose}
                 />
                 <NavItem
                   to={`${route}/store/orders`}
                   label="Orders"
-                  icon={<ShoppingCart size={18} />}
+                  icon={<ShoppingCart size={ICON_SIZE} />}
                   onClick={onClose}
                 />
                 <NavItem
                   to={`${route}/store/discount`}
                   label="Discount"
-                  icon={<Percent size={18} />}
+                  icon={<Percent size={ICON_SIZE} />}
                   onClick={onClose}
                 />
                 <NavItem
                   to={`${route}/store/settings`}
                   label="Settings"
-                  icon={<SettingsIcon size={18} />}
+                  icon={<SettingsIcon size={ICON_SIZE} />}
                   onClick={onClose}
                 />
               </div>
@@ -173,16 +189,16 @@ export default function Sidebar({ isOpen = false, onClose }: SidebarProps): Reac
           <NavItem
             to={`${route}/reviews`}
             label="Reviews & Ratings"
-            icon={<Star size={18} />}
+            icon={<Star size={ICON_SIZE} />}
             onClick={onClose}
           />
-          <NavItem to={`${route}/profile`} label="Profile" icon={<User size={18} />} onClick={onClose} />
+          <NavItem to={`${route}/profile`} label="Profile" icon={<User size={ICON_SIZE} />} onClick={onClose} />
         </div>
 
-        <div className="sidebar-logout" style={{ marginTop: "auto", paddingTop: "12px" }}>
+        <div className="sidebar-logout" style={{ marginTop: "auto", paddingTop: "8px" }}>
           <NavItem 
             label="Log Out" 
-            icon={<LogOut size={18} />} 
+            icon={<LogOut size={ICON_SIZE} />} 
             onClick={() => { logout(); navigate('/'); onClose?.(); }}
           />
         </div>

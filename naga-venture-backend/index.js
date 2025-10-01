@@ -31,6 +31,9 @@ import discountRoutes from "./routes/discounts.js";
 import serviceRoutes from "./routes/services.js";
 import orderRoutes from "./routes/orders.js";
 import productReviewRoutes from "./routes/product-reviews.js";
+import serviceBookingRoutes from "./routes/service-bookings.js";
+import notificationRoutes from "./routes/notifications.js";
+import businessSettingsRoutes from "./routes/business-settings.js";
 
 const app = express();
 const PORT = 3000;
@@ -132,9 +135,24 @@ const routeSections = [
       { path: "/api/services", handler: serviceRoutes, label: "Services" },
       { path: "/api/orders", handler: orderRoutes, label: "Orders" },
       {
+        path: "/api/service-bookings",
+        handler: serviceBookingRoutes,
+        label: "Service Bookings",
+      },
+      {
         path: "/api/product-reviews",
         handler: productReviewRoutes,
         label: "Product Reviews",
+      },
+      {
+        path: "/api/notifications",
+        handler: notificationRoutes,
+        label: "Notifications",
+      },
+      {
+        path: "/api/business-settings",
+        handler: businessSettingsRoutes,
+        label: "Business Settings",
       },
     ],
   },

@@ -301,6 +301,75 @@ async function createOrderProcedures(knex) {
       LIMIT 10;
     END;
   `);
+
+  // Verify arrival code
+  await knex.raw(`
+    CREATE PROCEDURE VerifyArrivalCode(
+      IN p_businessId CHAR(36),
+      IN p_arrivalCode VARCHAR(10)
+    )
+    BEGIN
+      SELECT o.*, u.first_name, u.last_name, u.phone_number as user_phone
+      FROM \`order\` o
+      LEFT JOIN user u ON o.user_id = u.id
+      WHERE o.business_id = p_businessId 
+        AND o.arrival_code = p_arrivalCode
+        AND o.status IN ('confirmed', 'preparing', 'ready');
+    END;
+  `);
+
+  // Mark customer as arrived
+  await knex.raw(`
+    CREATE PROCEDURE MarkCustomerArrivedForOrder(IN p_orderId CHAR(36))
+    BEGIN
+      UPDATE \`order\` 
+      SET customer_arrived_at = NOW(),
+          updated_at = NOW()
+      WHERE id = p_orderId;
+      
+      SELECT o.*, b.business_name, u.email as user_email
+      FROM \`order\` o 
+      LEFT JOIN business b ON o.business_id = b.id 
+      LEFT JOIN user u ON o.user_id = u.id 
+      WHERE o.id = p_orderId;
+    END;
+  `);
+
+  // Mark order as ready
+  await knex.raw(`
+    CREATE PROCEDURE MarkOrderAsReady(IN p_orderId CHAR(36))
+    BEGIN
+      UPDATE \`order\` 
+      SET status = 'ready',
+          ready_at = NOW(),
+          updated_at = NOW()
+      WHERE id = p_orderId;
+      
+      SELECT o.*, b.business_name, u.email as user_email
+      FROM \`order\` o 
+      LEFT JOIN business b ON o.business_id = b.id 
+      LEFT JOIN user u ON o.user_id = u.id 
+      WHERE o.id = p_orderId;
+    END;
+  `);
+
+  // Mark order as picked up
+  await knex.raw(`
+    CREATE PROCEDURE MarkOrderAsPickedUp(IN p_orderId CHAR(36))
+    BEGIN
+      UPDATE \`order\` 
+      SET status = 'completed',
+          picked_up_at = NOW(),
+          updated_at = NOW()
+      WHERE id = p_orderId;
+      
+      SELECT o.*, b.business_name, u.email as user_email
+      FROM \`order\` o 
+      LEFT JOIN business b ON o.business_id = b.id 
+      LEFT JOIN user u ON o.user_id = u.id 
+      WHERE o.id = p_orderId;
+    END;
+  `);
 }
 
 async function dropOrderProcedures(knex) {
@@ -315,6 +384,10 @@ async function dropOrderProcedures(knex) {
   await knex.raw("DROP PROCEDURE IF EXISTS UpdatePaymentStatus;");
   await knex.raw("DROP PROCEDURE IF EXISTS CancelOrder;");
   await knex.raw("DROP PROCEDURE IF EXISTS GetOrderStatsByBusiness;");
+  await knex.raw("DROP PROCEDURE IF EXISTS VerifyArrivalCode;");
+  await knex.raw("DROP PROCEDURE IF EXISTS MarkCustomerArrivedForOrder;");
+  await knex.raw("DROP PROCEDURE IF EXISTS MarkOrderAsReady;");
+  await knex.raw("DROP PROCEDURE IF EXISTS MarkOrderAsPickedUp;");
 }
 
 export { createOrderProcedures, dropOrderProcedures };

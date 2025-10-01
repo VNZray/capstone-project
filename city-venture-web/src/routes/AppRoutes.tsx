@@ -31,8 +31,13 @@ import RoomProfile from "../features/business/accommodation/room/RoomProfile";
 import Profile from "../features/business/profile/Profile";
 import Offer from "../features/business/shop/offers/Offer";
 import Products from "../features/business/shop/store/Products";
+import Categories from "../features/business/shop/store/Categories";
+import Services from "../features/business/shop/store/Services";
+import ServiceCategories from "../features/business/shop/store/ServiceCategories";
+import ServiceBookings from "../features/business/shop/store/ServiceBookings";
 import Orders from "../features/business/shop/store/Orders";
 import Discount from "../features/business/shop/store/Discount";
+import DiscountForm from "../features/business/shop/store/DiscountForm";
 import Settings from "../features/business/shop/store/Settings";
 
 import AccommodationDashboard from "../features/business/accommodation/dashboard/Dashboard";
@@ -200,6 +205,38 @@ export default function AppRoutes() {
               }
             />
             <Route
+              path={`${business}/store/categories`}
+              element={
+                <ProtectedRoute>
+                  <Categories />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path={`${business}/store/services`}
+              element={
+                <ProtectedRoute>
+                  <Services />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path={`${business}/store/service-categories`}
+              element={
+                <ProtectedRoute>
+                  <ServiceCategories />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path={`${business}/store/service-bookings`}
+              element={
+                <ProtectedRoute>
+                  <ServiceBookings />
+                </ProtectedRoute>
+              }
+            />
+            <Route
               path={`${business}/store/orders`}
               element={
                 <ProtectedRoute>
@@ -212,6 +249,22 @@ export default function AppRoutes() {
               element={
                 <ProtectedRoute>
                   <Discount />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path={`${business}/store/discount/create`}
+              element={
+                <ProtectedRoute>
+                  <DiscountForm />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path={`${business}/store/discount/:id/edit`}
+              element={
+                <ProtectedRoute>
+                  <DiscountForm />
                 </ProtectedRoute>
               }
             />
