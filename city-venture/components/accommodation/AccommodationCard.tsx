@@ -1,5 +1,6 @@
 import { card } from '@/constants/color';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { moderateScale } from '@/utils/responsive';
 import { Ionicons } from '@expo/vector-icons';
 import React, { useEffect, useMemo, useState } from 'react';
 import {
@@ -14,6 +15,7 @@ import {
   TextStyle,
   View,
   ViewStyle,
+  useWindowDimensions,
 } from 'react-native';
 
 export type AccommodationCardSize = 'small' | 'medium' | 'large';
@@ -76,7 +78,10 @@ const AccommodationCard: React.FC<AccommodationCardProps> = ({
     [isDark]
   );
 
-  const sizing = sizes[size];
+  const { width: windowWidth } = useWindowDimensions();
+  const sizes = getSizes(windowWidth);
+  // Select concrete sizing config for current size prop (fallback to medium if undefined)
+  const sizing = sizes[size] ?? sizes.medium;
   const elevationStyle = getElevation(elevation);
 
   const onToggleFavorite = () => {
@@ -276,47 +281,61 @@ type SizeConfig = {
   favBtn: ViewStyle;
 };
 
-const sizes: Record<AccommodationCardSize, SizeConfig> = {
-  small: {
-    container: { borderRadius: 12 },
-    cardImage: { width: '100%', height: '100%' },
-    listImage: { width: 72, height: 72, borderRadius: 10 },
-    title: { fontSize: 14, fontWeight: '800' },
-    subTitle: { fontSize: 11 },
-    price: { fontSize: 12 },
-    rating: { fontSize: 12, fontWeight: '700' },
-    reviews: { fontSize: 11 },
-    icon: 14,
-    favIconSize: 24,
-    favBtn: { padding: 6 },
-  },
-  medium: {
-    container: { borderRadius: 16 },
-    cardImage: { width: '100%', height: '100%' },
-    listImage: { width: 84, height: 84, borderRadius: 12 },
-    title: { fontSize: 16, fontWeight: '800' },
-    subTitle: { fontSize: 12.5 },
-    price: { fontSize: 13.5 },
-    rating: { fontSize: 13.5, fontWeight: '700' },
-    reviews: { fontSize: 12 },
-    icon: 16,
-    favIconSize: 32,
-    favBtn: { padding: 8 },
-  },
-  large: {
-    container: { borderRadius: 18 },
-    cardImage: { width: '100%', height: '100%' },
-    listImage: { width: 96, height: 96, borderRadius: 14 },
-    title: { fontSize: 18, fontWeight: '800' },
-    subTitle: { fontSize: 13.5 },
-    price: { fontSize: 14 },
-    rating: { fontSize: 14, fontWeight: '700' },
-    reviews: { fontSize: 12.5 },
-    icon: 18,
-    favIconSize: 24,
-    favBtn: { padding: 10 },
-  },
-};
+function getSizes(width: number): Record<AccommodationCardSize, SizeConfig> {
+  return {
+    small: {
+      container: { borderRadius: moderateScale(12, 0.5, width) },
+      cardImage: { width: '100%', height: '100%' },
+      listImage: {
+        width: moderateScale(72, 0.55, width),
+        height: moderateScale(72, 0.55, width),
+        borderRadius: moderateScale(10, 0.5, width),
+      },
+      title: { fontSize: moderateScale(14, 0.45, width), fontWeight: '800' },
+      subTitle: { fontSize: moderateScale(11, 0.45, width) },
+      price: { fontSize: moderateScale(12, 0.45, width) },
+      rating: { fontSize: moderateScale(12, 0.45, width), fontWeight: '700' },
+      reviews: { fontSize: moderateScale(11, 0.45, width) },
+      icon: moderateScale(14, 0.5, width),
+      favIconSize: moderateScale(24, 0.5, width),
+      favBtn: { padding: moderateScale(6, 0.5, width) },
+    },
+    medium: {
+      container: { borderRadius: moderateScale(16, 0.5, width) },
+      cardImage: { width: '100%', height: '100%' },
+      listImage: {
+        width: moderateScale(84, 0.55, width),
+        height: moderateScale(84, 0.55, width),
+        borderRadius: moderateScale(12, 0.5, width),
+      },
+      title: { fontSize: moderateScale(16, 0.45, width), fontWeight: '800' },
+      subTitle: { fontSize: moderateScale(12.5, 0.45, width) },
+      price: { fontSize: moderateScale(13.5, 0.45, width) },
+      rating: { fontSize: moderateScale(13.5, 0.45, width), fontWeight: '700' },
+      reviews: { fontSize: moderateScale(12, 0.45, width) },
+      icon: moderateScale(16, 0.5, width),
+      favIconSize: moderateScale(32, 0.5, width),
+      favBtn: { padding: moderateScale(8, 0.5, width) },
+    },
+    large: {
+      container: { borderRadius: moderateScale(18, 0.5, width) },
+      cardImage: { width: '100%', height: '100%' },
+      listImage: {
+        width: moderateScale(96, 0.55, width),
+        height: moderateScale(96, 0.55, width),
+        borderRadius: moderateScale(14, 0.5, width),
+      },
+      title: { fontSize: moderateScale(18, 0.45, width), fontWeight: '800' },
+      subTitle: { fontSize: moderateScale(13.5, 0.45, width) },
+      price: { fontSize: moderateScale(14, 0.45, width) },
+      rating: { fontSize: moderateScale(14, 0.45, width), fontWeight: '700' },
+      reviews: { fontSize: moderateScale(12.5, 0.45, width) },
+      icon: moderateScale(18, 0.5, width),
+      favIconSize: moderateScale(24, 0.5, width),
+      favBtn: { padding: moderateScale(10, 0.5, width) },
+    },
+  };
+}
 
 function getElevation(level: 1 | 2 | 3 | 4 | 5 | 6): ViewStyle {
   const iosShadow: Record<number, ViewStyle> = {

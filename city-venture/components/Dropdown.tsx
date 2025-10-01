@@ -73,6 +73,15 @@ export interface DropdownProps<T extends DropdownItem = DropdownItem> {
   closeOnSelect?: boolean; // close after single select
   elevation?: 1 | 2 | 3 | 4 | 5 | 6; // trigger elevation
   testID?: string; // testing id
+  // Validation props (mirroring TextInput style)
+  required?: boolean; // must have a selection (or at least one if multi)
+  minSelected?: number; // minimum number of selections for multi
+  maxSelected?: number; // maximum number of selections for multi
+  validateOnChange?: boolean; // validate whenever selection changes
+  validateOnClose?: boolean; // validate when the dropdown panel closes (analogous to blur)
+  customValidator?: (
+    selection: T | T[] | null
+  ) => string | null; // return error message or null
 }
 
 export interface DropdownRef<T extends DropdownItem = DropdownItem> {
@@ -120,6 +129,12 @@ const DropdownInner = <T extends DropdownItem = DropdownItem>(
     closeOnSelect = true,
     elevation = 2,
     testID,
+    required = false,
+    minSelected,
+    maxSelected,
+    validateOnChange = false,
+    validateOnClose = true,
+    customValidator,
   }: DropdownProps<T>,
   ref: React.Ref<DropdownRef<T>>
 ) => {
@@ -150,6 +165,9 @@ const DropdownInner = <T extends DropdownItem = DropdownItem>(
   );
   const [selectedIds, setSelectedIds] =
     useState<Array<string | number>>(defaultValues);
+
+  // validation state
+  const [validationError, setValidationError] = useState<string | null>(null);
 
   // Derived selected(s)
   const controlledSingle = value !== undefined;
@@ -210,15 +228,46 @@ const DropdownInner = <T extends DropdownItem = DropdownItem>(
     return single ? [single] : [];
   }, [filteredItems, effectiveSelectedId, effectiveSelectedIds, multi]);
 
+  // Sizing tokens unified with TextInput
   const sizeConfig = useMemo(() => {
     switch (size) {
       case 'small':
-        return { height: 40, fontSize: 13, padding: 10, icon: 14 };
+        return {
+          height: 40,
+            fontSize: 13,
+            padding: 10,
+            icon: 14,
+            optionPadV: 8,
+            optionPadH: 12,
+            optionFont: 13,
+            optionSubFont: 12,
+            optionIcon: 14,
+        };
       case 'large':
-        return { height: 54, fontSize: 16, padding: 16, icon: 18 };
+        return {
+          height: 54,
+          fontSize: 16,
+          padding: 16,
+          icon: 18,
+          optionPadV: 14,
+          optionPadH: 18,
+          optionFont: 16,
+          optionSubFont: 14,
+          optionIcon: 18,
+        };
       case 'medium':
       default:
-        return { height: 48, fontSize: 14, padding: 14, icon: 16 };
+        return {
+          height: 48,
+          fontSize: 14,
+          padding: 14,
+          icon: 16,
+          optionPadV: 12,
+          optionPadH: 16,
+          optionFont: 14,
+          optionSubFont: 13,
+          optionIcon: 16,
+        };
     }
   }, [size]);
 
@@ -236,10 +285,17 @@ const DropdownInner = <T extends DropdownItem = DropdownItem>(
       }
       if (!controlledMulti) setSelectedIds(next);
       onChangeMulti?.(internalItems.filter((i) => next.includes(i.id)) as T[]);
+      if (validateOnChange) {
+        // defer to next frame so state updates settle
+        requestAnimationFrame(() => validate());
+      }
     } else {
       if (!controlledSingle) setSelectedId(item.id);
       onSelect?.(item);
       if (closeOnSelect) setOpen(false);
+      if (validateOnChange) {
+        requestAnimationFrame(() => validate());
+      }
     }
   };
 
@@ -253,6 +309,9 @@ const DropdownInner = <T extends DropdownItem = DropdownItem>(
         const found = internalItems.find((i) => i.id === effectiveSelectedId);
         if (found) onSelect?.({ ...(found as any), id: undefined });
       }
+    }
+    if (validateOnChange) {
+      requestAnimationFrame(() => validate());
     }
   };
 
@@ -276,29 +335,7 @@ const DropdownInner = <T extends DropdownItem = DropdownItem>(
   ]);
 
   // expose imperative methods
-  useImperativeHandle(
-    ref,
-    () => ({
-      open: () => setOpen(true),
-      close: () => setOpen(false),
-      toggle: () => setOpen((o) => !o),
-      clear: handleClear,
-      getSelected: () => {
-        if (multi) {
-          return internalItems.filter((i) =>
-            effectiveSelectedIds.includes(i.id)
-          );
-        }
-        const single =
-          internalItems.find((i) => i.id === effectiveSelectedId) || null;
-        return single;
-      },
-      refetch: async () => {
-        await loadItems();
-      },
-    }),
-    [multi, internalItems, effectiveSelectedIds, effectiveSelectedId, loadItems]
-  );
+  // (Temporarily moved) useImperativeHandle will be declared after validate
 
   // trigger styles
   const triggerVariant = getTriggerVariantStyles(
@@ -334,6 +371,97 @@ const DropdownInner = <T extends DropdownItem = DropdownItem>(
       requestAnimationFrame(() => measureTrigger());
     }
   }, [open, measureTrigger]);
+  // Validation function (memoized) -- moved up to avoid use-before-declare
+  const validate = useCallback((): boolean => {
+    let error: string | null = null;
+    if (multi) {
+      const selArr = internalItems.filter((i) =>
+        effectiveSelectedIds.includes(i.id)
+      ) as T[];
+      const count = selArr.length;
+      if (required && count === 0) {
+        error = `${label || 'This field'} is required`;
+      } else if (minSelected != null && count < minSelected) {
+        error = `${label || 'Select at least'} ${minSelected}`;
+      } else if (maxSelected != null && count > maxSelected) {
+        error = `${label || 'Select at most'} ${maxSelected}`;
+      }
+      if (!error && customValidator) {
+        error = customValidator(selArr.length ? selArr : []);
+      }
+    } else {
+      const single = internalItems.find((i) => i.id === effectiveSelectedId) as
+        | T
+        | undefined;
+      if (required && !single) {
+        error = `${label || 'This field'} is required`;
+      }
+      if (!error && customValidator) {
+        error = customValidator(single || null);
+      }
+    }
+    setValidationError(error);
+    return error === null;
+  }, [
+    multi,
+    internalItems,
+    effectiveSelectedIds,
+    effectiveSelectedId,
+    required,
+    minSelected,
+    maxSelected,
+    customValidator,
+    label,
+  ]);
+
+  // Revalidate when external controlled value(s) change if requested
+  useEffect(() => {
+    if (validateOnChange) {
+      validate();
+    }
+  }, [effectiveSelectedId, effectiveSelectedIds, validateOnChange, validate]);
+
+  // Validate when panel closes (analogous to blur)
+  useEffect(() => {
+    if (!open && validateOnClose) {
+      validate();
+    }
+  }, [open, validateOnClose, validate]);
+
+  // Expose imperative methods (after validate is defined)
+  useImperativeHandle(
+    ref,
+    () => ({
+      open: () => setOpen(true),
+      close: () => setOpen(false),
+      toggle: () => setOpen((o) => !o),
+      clear: handleClear,
+      getSelected: () => {
+        if (multi) {
+          return internalItems.filter((i) =>
+            effectiveSelectedIds.includes(i.id)
+          );
+        }
+        const single =
+          internalItems.find((i) => i.id === effectiveSelectedId) || null;
+        return single;
+      },
+      refetch: async () => {
+        await loadItems();
+      },
+      validate: () => validate(),
+      getError: () => validationError,
+    }),
+    [
+      multi,
+      internalItems,
+      effectiveSelectedIds,
+      effectiveSelectedId,
+      loadItems,
+      validate,
+      validationError,
+    ]
+  );
 
   return (
     <View style={style} testID={testID}>
@@ -344,7 +472,7 @@ const DropdownInner = <T extends DropdownItem = DropdownItem>(
           mb={6}
           style={{ color: subTextColor }}
         >
-          {label}
+          {label} {required && <Text style={{ color: colors.error }}>*</Text>}
         </ThemedText>
       )}
       {/* Trigger */}
@@ -421,7 +549,7 @@ const DropdownInner = <T extends DropdownItem = DropdownItem>(
         </View>
       </Pressable>
 
-      {!!helperText && !errorText && (
+      {!!helperText && !errorText && !validationError && (
         <ThemedText
           type="label-extra-small"
           mt={4}
@@ -430,13 +558,13 @@ const DropdownInner = <T extends DropdownItem = DropdownItem>(
           {helperText}
         </ThemedText>
       )}
-      {!!errorText && (
+      {(!!errorText || !!validationError) && (
         <ThemedText
           type="label-extra-small"
           mt={4}
           style={{ color: colors.error }}
         >
-          {errorText}
+          {errorText || validationError}
         </ThemedText>
       )}
 
@@ -541,6 +669,8 @@ const DropdownInner = <T extends DropdownItem = DropdownItem>(
                             : 'transparent',
                           opacity: item.disabled ? 0.4 : 1,
                           borderColor: selected ? accent : 'transparent',
+                          paddingVertical: sizeConfig.optionPadV,
+                          paddingHorizontal: sizeConfig.optionPadH,
                         },
                         pressed && !item.disabled && { opacity: 0.7 },
                       ]}
@@ -556,18 +686,24 @@ const DropdownInner = <T extends DropdownItem = DropdownItem>(
                         {item.icon && (
                           <FontAwesome5
                             name={item.icon}
-                            size={16}
+                            size={sizeConfig.optionIcon}
                             color={accent}
                           />
                         )}
                         <View style={{ flex: 1 }}>
-                          <ThemedText type="body-medium" numberOfLines={1}>
+                          <ThemedText
+                            style={{ fontSize: sizeConfig.optionFont }}
+                            numberOfLines={1}
+                          >
                             {item.label}
                           </ThemedText>
                           {!!item.description && (
                             <ThemedText
-                              type="body-small"
-                              style={{ color: subTextColor, marginTop: 2 }}
+                              style={{
+                                color: subTextColor,
+                                marginTop: 2,
+                                fontSize: sizeConfig.optionSubFont,
+                              }}
                               numberOfLines={2}
                             >
                               {item.description}
@@ -580,18 +716,22 @@ const DropdownInner = <T extends DropdownItem = DropdownItem>(
                           selected ? (
                             <FontAwesome5
                               name="check-square"
-                              size={16}
+                              size={sizeConfig.optionIcon}
                               color={accent}
                             />
                           ) : (
                             <FontAwesome5
                               name="square"
-                              size={16}
+                              size={sizeConfig.optionIcon}
                               color={subTextColor}
                             />
                           )
                         ) : selected ? (
-                          <FontAwesome5 name="check" size={16} color={accent} />
+                          <FontAwesome5
+                            name="check"
+                            size={sizeConfig.optionIcon}
+                            color={accent}
+                          />
                         ) : null}
                       </View>
                     </Pressable>

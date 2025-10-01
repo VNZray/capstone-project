@@ -3,25 +3,27 @@ import { card, colors } from '@/constants/color';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { FontAwesome5 } from '@expo/vector-icons';
 import React, {
-    useCallback,
-    useEffect,
-    useImperativeHandle,
-    useMemo,
-    useRef,
-    useState,
+  useCallback,
+  useEffect,
+  useImperativeHandle,
+  useMemo,
+  useRef,
+  useState,
 } from 'react';
 import {
-    FlatList,
-    ListRenderItem,
-    Modal,
-    Platform,
-    Pressable,
-    StyleProp,
-    StyleSheet,
-    Text,
-    TextStyle,
-    View,
-    ViewStyle,
+  Alert,
+  FlatList,
+  ListRenderItem,
+  Modal,
+  Platform,
+  Pressable,
+  TextInput as RNTextInput,
+  StyleProp,
+  StyleSheet,
+  Text,
+  TextStyle,
+  View,
+  ViewStyle,
 } from 'react-native';
 import Button from './Button';
 import { ThemedText } from './themed-text';
@@ -39,6 +41,15 @@ export interface DateInputProps {
   label?: string;
   placeholder?: string;
   rangePlaceholder?: { start?: string; end?: string };
+  /** Allow editing the range placeholders independently (when no dates selected yet or partially selected) */
+  editableRangePlaceholder?: boolean;
+  /** Controlled values for editable range placeholders */
+  rangePlaceholderValue?: { start?: string; end?: string };
+  /** Callback when either range placeholder value changes */
+  onRangePlaceholderValueChange?: (value: {
+    start?: string;
+    end?: string;
+  }) => void;
   minDate?: Date;
   maxDate?: Date;
   disablePast?: boolean;
@@ -60,6 +71,8 @@ export interface DateInputProps {
   requireConfirmation?: boolean;
   /** Map of date (yyyy-mm-dd) => status string (reserved | unavailable | occupied) */
   dateStatuses?: Record<string, 'reserved' | 'unavailable' | 'occupied'>;
+  /** Enable showing status dots / legend in SINGLE mode (previously only range). Parent must also pass dateStatuses. */
+  enableSingleStatusVisuals?: boolean;
   /** Provide booked room info per date; used to render a list below calendar */
   bookedRoomsByDate?: Record<
     string,
@@ -77,6 +90,14 @@ export interface DateInputProps {
   errorText?: string;
   helperText?: string;
   testID?: string;
+  /** Allow editing placeholder text (when no date / range selected) */
+  editablePlaceholder?: boolean;
+  /** Controlled value of editable placeholder (falls back to placeholder prop) */
+  placeholderValue?: string;
+  /** Callback when editable placeholder text changes */
+  onPlaceholderValueChange?: (text: string) => void;
+  /** Message to show in an alert when a user attempts to complete a range that overlaps a status (reserved/unavailable/occupied). If omitted no alert is shown. */
+  overlapAlertMessage?: string;
 }
 
 export interface DateInputRef {
@@ -245,6 +266,9 @@ const DateInput = React.forwardRef<DateInputRef, DateInputProps>(
       label,
       placeholder = 'Select date',
       rangePlaceholder = { start: 'Start date', end: 'End date' },
+      editableRangePlaceholder = false,
+      rangePlaceholderValue,
+      onRangePlaceholderValueChange,
       minDate,
       maxDate,
       disablePast,
@@ -257,11 +281,12 @@ const DateInput = React.forwardRef<DateInputRef, DateInputProps>(
       color = 'primary',
       elevation = 2,
       variant = 'outlined',
-      size = 'medium',
+      size = 'small',
       showAdjacentMonths = true,
       selectionVariant = 'outline',
       requireConfirmation = false,
       dateStatuses,
+      enableSingleStatusVisuals = false,
       bookedRoomsByDate,
       showStatusLegend = true,
       showBookedRooms = true,
@@ -273,6 +298,10 @@ const DateInput = React.forwardRef<DateInputRef, DateInputProps>(
       errorText,
       helperText,
       testID,
+      editablePlaceholder = false,
+      placeholderValue,
+      onPlaceholderValueChange,
+      overlapAlertMessage = 'Selected range overlaps unavailable / reserved / occupied dates.',
     },
     ref
   ) => {
@@ -290,7 +319,11 @@ const DateInput = React.forwardRef<DateInputRef, DateInputProps>(
     const subTextColor = isDark ? '#9BA1A6' : '#6B7280';
 
     const [open, setOpen] = useState(false);
-    const [internalDate, setInternalDate] = useState<Date | null>(defaultValue);
+    const [internalDate, setInternalDate] = useState<Date | null>(
+      defaultValue !== undefined && defaultValue !== null
+        ? defaultValue
+        : new Date()
+    );
     const [internalRange, setInternalRange] = useState<{
       start: Date | null;
       end: Date | null;
@@ -302,7 +335,9 @@ const DateInput = React.forwardRef<DateInputRef, DateInputProps>(
 
     const controlledSingle = value !== undefined;
     const controlledRange = rangeValue !== undefined;
-    const currentDate = controlledSingle ? value : internalDate;
+    const currentDate = controlledSingle
+      ? value ?? new Date()
+      : internalDate ?? new Date();
     const currentRange = controlledRange ? rangeValue! : internalRange;
 
     const base =
@@ -502,7 +537,15 @@ const DateInput = React.forwardRef<DateInputRef, DateInputProps>(
         setNavMonth(day.getMonth());
       }
       // Normalize to midday to mitigate potential DST / timezone boundary issues
-      const normalized = new Date(day.getFullYear(), day.getMonth(), day.getDate(), 12, 0, 0, 0);
+      const normalized = new Date(
+        day.getFullYear(),
+        day.getMonth(),
+        day.getDate(),
+        12,
+        0,
+        0,
+        0
+      );
       if (mode === 'single') {
         if (!controlledSingle) setInternalDate(normalized);
         onChange?.(normalized);
@@ -514,15 +557,43 @@ const DateInput = React.forwardRef<DateInputRef, DateInputProps>(
           if (!controlledRange) setInternalRange(next);
           onRangeChange?.(next);
         } else if (start && !end) {
+          // Determine range direction
+          let rangeStart = start;
+          let rangeEnd = normalized;
           if (isBefore(normalized, start)) {
-            const next = { start: normalized, end: start };
-            if (!controlledRange) setInternalRange(next);
-            onRangeChange?.(next);
-          } else {
-            const next = { start, end: normalized };
-            if (!controlledRange) setInternalRange(next);
-            onRangeChange?.(next);
+            rangeStart = normalized;
+            rangeEnd = start;
           }
+          // Validate the proposed inclusive range does not overlap any status dates
+          if (dateStatuses) {
+            const blocked: Array<'unavailable' | 'reserved' | 'occupied'> = [
+              'unavailable',
+              'reserved',
+              'occupied',
+            ];
+            const cursor = new Date(
+              rangeStart.getFullYear(),
+              rangeStart.getMonth(),
+              rangeStart.getDate()
+            );
+            let invalid = false;
+            while (!invalid && cursor.getTime() <= rangeEnd.getTime()) {
+              const ymd = formatLocalYMD(cursor);
+              const st = dateStatuses[ymd];
+              if (st && blocked.includes(st)) invalid = true;
+              cursor.setDate(cursor.getDate() + 1);
+            }
+            if (invalid) {
+              // Reject this selection & optionally alert user
+              if (overlapAlertMessage) {
+                Alert.alert('Invalid Range', overlapAlertMessage);
+              }
+              return;
+            }
+          }
+          const next = { start: rangeStart, end: rangeEnd };
+          if (!controlledRange) setInternalRange(next);
+          onRangeChange?.(next);
         }
       }
     };
@@ -562,7 +633,7 @@ const DateInput = React.forwardRef<DateInputRef, DateInputProps>(
       <View style={style} testID={testID}>
         {label && (
           <ThemedText
-            type="label-medium"
+            type="label-small"
             weight="semi-bold"
             mb={6}
             style={{ color: subTextColor }}
@@ -591,23 +662,137 @@ const DateInput = React.forwardRef<DateInputRef, DateInputProps>(
             triggerStyle,
           ]}
         >
-          <Text
-            numberOfLines={1}
-            style={[
-              {
-                flex: 1,
-                color:
-                  displayLabel.includes('Select') ||
-                  displayLabel.includes('Start')
-                    ? subTextColor
-                    : textColor,
-                fontSize: sizeCfg.font,
-              },
-              triggerTextStyle,
-            ]}
-          >
-            {displayLabel}
-          </Text>
+          {editablePlaceholder &&
+          ((mode === 'single' && !currentDate) ||
+            (mode === 'range' && !currentRange.start && !currentRange.end)) ? (
+            <RNTextInput
+              value={placeholderValue !== undefined ? placeholderValue : ''}
+              onChangeText={(t) => onPlaceholderValueChange?.(t)}
+              placeholder={placeholder}
+              placeholderTextColor={subTextColor}
+              style={[
+                {
+                  flex: 1,
+                  color: textColor,
+                  fontSize: sizeCfg.font,
+                  padding: 0,
+                },
+                triggerTextStyle,
+              ]}
+            />
+          ) : mode === 'range' && editableRangePlaceholder ? (
+            <View
+              style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}
+            >
+              {currentRange.start ? (
+                <Text
+                  style={[
+                    {
+                      color: textColor,
+                      fontSize: sizeCfg.font,
+                      flexShrink: 1,
+                    },
+                    triggerTextStyle,
+                  ]}
+                  numberOfLines={1}
+                >
+                  {formatYMD(
+                    currentRange.start,
+                    rangePlaceholder.start || 'Start date'
+                  )}
+                </Text>
+              ) : (
+                <RNTextInput
+                  value={rangePlaceholderValue?.start ?? ''}
+                  onChangeText={(t) =>
+                    onRangePlaceholderValueChange?.({
+                      start: t,
+                      end: rangePlaceholderValue?.end,
+                    })
+                  }
+                  placeholder={rangePlaceholder.start || 'Start date'}
+                  placeholderTextColor={subTextColor}
+                  style={[
+                    {
+                      flex: 1,
+                      color: textColor,
+                      fontSize: sizeCfg.font,
+                      padding: 0,
+                      marginRight: 4,
+                    },
+                    triggerTextStyle,
+                  ]}
+                />
+              )}
+              <Text
+                style={{
+                  color: subTextColor,
+                  marginHorizontal: 4,
+                  fontSize: sizeCfg.font,
+                }}
+              >
+                →
+              </Text>
+              {currentRange.end ? (
+                <Text
+                  style={[
+                    {
+                      color: textColor,
+                      fontSize: sizeCfg.font,
+                      flexShrink: 1,
+                    },
+                    triggerTextStyle,
+                  ]}
+                  numberOfLines={1}
+                >
+                  {formatYMD(
+                    currentRange.end,
+                    rangePlaceholder.end || 'End date'
+                  )}
+                </Text>
+              ) : (
+                <RNTextInput
+                  value={rangePlaceholderValue?.end ?? ''}
+                  onChangeText={(t) =>
+                    onRangePlaceholderValueChange?.({
+                      start: rangePlaceholderValue?.start,
+                      end: t,
+                    })
+                  }
+                  placeholder={rangePlaceholder.end || 'End date'}
+                  placeholderTextColor={subTextColor}
+                  style={[
+                    {
+                      flex: 1,
+                      color: textColor,
+                      fontSize: sizeCfg.font,
+                      padding: 0,
+                      marginLeft: 4,
+                    },
+                    triggerTextStyle,
+                  ]}
+                />
+              )}
+            </View>
+          ) : (
+            <Text
+              numberOfLines={1}
+              style={[
+                {
+                  flex: 1,
+                  color:
+                    displayLabel.includes('Select') ||
+                    displayLabel.includes('Start')
+                      ? subTextColor
+                      : textColor,
+                  fontSize: sizeCfg.font,
+                },
+                triggerTextStyle,
+              ]}
+            >
+              {displayLabel}
+            </Text>
+          )}
           {clearable &&
             ((mode === 'single' && currentDate) ||
               (mode === 'range' &&
@@ -758,7 +943,15 @@ const DateInput = React.forwardRef<DateInputRef, DateInputProps>(
                     style={styles.quickBtn}
                     onPress={() => {
                       const raw = startOfDay(new Date());
-                      const today = new Date(raw.getFullYear(), raw.getMonth(), raw.getDate(), 12, 0, 0, 0);
+                      const today = new Date(
+                        raw.getFullYear(),
+                        raw.getMonth(),
+                        raw.getDate(),
+                        12,
+                        0,
+                        0,
+                        0
+                      );
                       setNavYear(today.getFullYear());
                       setNavMonth(today.getMonth());
                       if (!controlledSingle) setInternalDate(today);
@@ -856,6 +1049,7 @@ const DateInput = React.forwardRef<DateInputRef, DateInputProps>(
                             );
                           const ymd = formatLocalYMD(d);
                           const dayStatus = dateStatuses?.[ymd];
+                          // Block selection for any status (unavailable, reserved, occupied)
                           const disabledDay =
                             dayStatus === 'unavailable' ||
                             dayStatus === 'reserved' ||
@@ -884,19 +1078,22 @@ const DateInput = React.forwardRef<DateInputRef, DateInputProps>(
                               bg = isDark ? '#223047' : '#E3EDF8';
                           }
                           const showStatusVisuals = mode === 'range';
+                          const showSingleStatus =
+                            mode === 'single' &&
+                            enableSingleStatusVisuals &&
+                            !!dateStatuses;
                           if (
-                            showStatusVisuals &&
+                            (showStatusVisuals || showSingleStatus) &&
                             !isSelectedEdge &&
                             !inRange &&
                             dayStatus
                           ) {
-                            // apply subtle background for statuses if not selected
-                            if (dayStatus === 'reserved')
+                            // subtle background tint ONLY for unavailable (keep other statuses just dots)
+                            if (dayStatus === 'unavailable') {
                               bg =
-                                statusColors.reserved + (isDark ? '33' : '22');
-                            else if (dayStatus === 'occupied')
-                              bg =
-                                statusColors.occupied + (isDark ? '33' : '22');
+                                statusColors.unavailable +
+                                (isDark ? '33' : '22');
+                            }
                           }
                           const txtColor =
                             isSelectedEdge &&
@@ -947,8 +1144,8 @@ const DateInput = React.forwardRef<DateInputRef, DateInputProps>(
                                 >
                                   {d.getDate()}
                                 </Text>
-                                {showStatusVisuals &&
-                                  !!dayStatus &&
+                                {(showStatusVisuals || showSingleStatus) &&
+                                  dayStatus &&
                                   !isSelectedEdge && (
                                     <View
                                       style={[
@@ -969,43 +1166,51 @@ const DateInput = React.forwardRef<DateInputRef, DateInputProps>(
                   </View>
                 </>
               )}
-              {mode === 'range' && showStatusLegend && (
-                <View style={styles.legendRow}>
-                  <View style={styles.legendItem}>
-                    <View
-                      style={[
-                        styles.legendSwatch,
-                        { backgroundColor: statusColors.reserved },
-                      ]}
-                    />
-                    <Text style={[styles.legendText, { color: subTextColor }]}>
-                      Reserved
-                    </Text>
+              {(mode === 'range' ||
+                (mode === 'single' && enableSingleStatusVisuals)) &&
+                showStatusLegend && (
+                  <View style={styles.legendRow}>
+                    <View style={styles.legendItem}>
+                      <View
+                        style={[
+                          styles.legendSwatch,
+                          { backgroundColor: statusColors.unavailable },
+                        ]}
+                      />
+                      <Text
+                        style={[styles.legendText, { color: subTextColor }]}
+                      >
+                        Not Available
+                      </Text>
+                    </View>
+                    <View style={styles.legendItem}>
+                      <View
+                        style={[
+                          styles.legendSwatch,
+                          { backgroundColor: statusColors.reserved },
+                        ]}
+                      />
+                      <Text
+                        style={[styles.legendText, { color: subTextColor }]}
+                      >
+                        Reserved
+                      </Text>
+                    </View>
+                    <View style={styles.legendItem}>
+                      <View
+                        style={[
+                          styles.legendSwatch,
+                          { backgroundColor: statusColors.occupied },
+                        ]}
+                      />
+                      <Text
+                        style={[styles.legendText, { color: subTextColor }]}
+                      >
+                        Occupied
+                      </Text>
+                    </View>
                   </View>
-                  <View style={styles.legendItem}>
-                    <View
-                      style={[
-                        styles.legendSwatch,
-                        { backgroundColor: statusColors.unavailable },
-                      ]}
-                    />
-                    <Text style={[styles.legendText, { color: subTextColor }]}>
-                      Not Available
-                    </Text>
-                  </View>
-                  <View style={styles.legendItem}>
-                    <View
-                      style={[
-                        styles.legendSwatch,
-                        { backgroundColor: statusColors.occupied },
-                      ]}
-                    />
-                    <Text style={[styles.legendText, { color: subTextColor }]}>
-                      Occupied
-                    </Text>
-                  </View>
-                </View>
-              )}
+                )}
               {showBookedRooms &&
                 mode === 'single' &&
                 currentDate &&
@@ -1048,7 +1253,11 @@ const DateInput = React.forwardRef<DateInputRef, DateInputProps>(
                   const days: string[] = [];
                   const s = startOfDay(currentRange.start);
                   const e = startOfDay(currentRange.end);
-                  for (let d = new Date(s); !isAfter(d, e); d.setDate(d.getDate() + 1))
+                  for (
+                    let d = new Date(s);
+                    !isAfter(d, e);
+                    d.setDate(d.getDate() + 1)
+                  )
                     days.push(formatLocalYMD(d));
                   const aggregated: Record<string, number> = {};
                   days.forEach((k) => {

@@ -6,14 +6,14 @@ import React, {
   useEffect,
 } from "react";
 import type { ReactNode } from "react";
-import type { Room } from "../types/Business";
+import type { Room } from "@/src/types/Business";
 
 import {
   clearStoredRoomId,
   fetchRoomDetails,
   getStoredRoomId,
   setStoredRoomId,
-} from "../services/RoomService";
+} from "@/src/services/RoomService";
 
 interface RoomContextType {
   selectedRoomId: string | null;

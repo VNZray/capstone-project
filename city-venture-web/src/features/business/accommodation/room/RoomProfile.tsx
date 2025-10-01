@@ -2,9 +2,8 @@ import PageContainer from "@/src/components/PageContainer";
 import Paper from "@mui/material/Paper";
 import LocationOnIcon from "@mui/icons-material/LocationOn";
 import StarIcon from "@mui/icons-material/Star";
-import EditIcon from "@mui/icons-material/Edit";
 import { colors } from "@/src/utils/Colors";
-import { Button, Chip, Grid, Sheet, Typography } from "@mui/joy";
+import {Chip, Typography } from "@mui/joy";
 import { useRoom } from "@/src/context/RoomContext";
 import Tabs from "@/src/components/Tabs";
 import { useState } from "react";
@@ -12,7 +11,6 @@ import DetailsComponent from "./components/DetailsComponent";
 import PhotosComponent from "./components/PhotosComponent";
 import ReviewsComponent from "./components/ReviewsComponent";
 import Container from "@/src/components/Container";
-import EditBasicInfo from "./components/EditBasicInfo";
 const RoomProfile = () => {
   const { roomDetails } = useRoom();
   const [activeTab, setActiveTab] = useState<"Details" | "Photos" | "Reviews">(

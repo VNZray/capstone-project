@@ -93,12 +93,26 @@ const RoomCard: React.FC<RoomCardProps> = ({
   const statuses = ["Available", "Reserved", "Occupied", "Maintenance"];
 
   return (
-    <Card variant="outlined" sx={{ maxWidth: "100%", borderRadius: 8 }}>
+    <Card
+      variant="outlined"
+      sx={{
+        maxWidth: "100%",
+        borderRadius: 8,
+      }}
+    >
       <Box sx={{ position: "relative" }}>
         <img
           src={image}
           alt={roomNumber}
-          style={{ width: "100%", height: "300px", borderRadius: 6 }}
+          loading="lazy"
+          style={{
+            width: "100%",
+            height: "auto",
+            maxHeight: "300px",
+            aspectRatio: "16/9",
+            objectFit: "cover",
+            borderRadius: 6,
+          }}
         />
 
         {/* status chip */}
@@ -155,24 +169,24 @@ const RoomCard: React.FC<RoomCardProps> = ({
 
       <CardContent>
         <Grid container>
-          <Grid xs={6}>
+          <Grid xs={12} md={6}>
             <Typography level="h4"> Room {roomNumber}</Typography>
             <Typography level="body-sm" color="neutral">
               {roomType}
             </Typography>
           </Grid>
-          <Grid xs={6}>
+          <Grid xs={12} md={6}>
             <Typography
               sx={{ color: colors.yellow }}
               level="h4"
-              textAlign={"right"}
+              textAlign={{ xs: "left", md: "right" } as any}
             >
               ₱{price.toLocaleString()}
             </Typography>
             <Typography
               level="body-xs"
               color="neutral"
-              textAlign={"right"}
+              textAlign={{ xs: "left", md: "right" } as any}
               sx={{ ml: 0.5 }}
             >
               per night
@@ -185,47 +199,82 @@ const RoomCard: React.FC<RoomCardProps> = ({
           level="body-md"
           color="neutral"
         >
-          Capacity: {capacity}
+          Capacity: {capacity} · Guests: {guests}
         </Typography>
+
+        {/* Amenities list */}
+        {amenities?.length ? (
+          <Box
+            sx={{
+              mt: 1,
+              display: "flex",
+              flexWrap: "wrap",
+              gap: 0.5,
+            }}
+          >
+            {amenities.map((a, idx) => (
+              <Chip key={`${a}-${idx}`} size="sm" variant="soft" color="neutral">
+                {a}
+              </Chip>
+            ))}
+          </Box>
+        ) : null}
       </CardContent>
 
-      <CardActions sx={{ justifyContent: "center" }}>
+      <CardActions
+        sx={{
+          justifyContent: "center",
+          alignItems: { xs: "stretch", sm: "center" },
+          flexDirection: { xs: "column", sm: "row" },
+          gap: 1,
+        }}
+      >
         <Button onClick={onClick} fullWidth variant="solid">
           View Details
         </Button>
 
-        {/* Dropdown for Status Update */}
-        <Dropdown>
-          <MenuButton
-            slots={{ root: IconButton }}
-            slotProps={{
-              root: { variant: "solid", style: { borderRadius: 8 } },
-            }}
-          >
-            {getStatusIcon(room_status)}
-          </MenuButton>
-          <Menu>
-            {statuses.map((s) => (
-              <MenuItem
-                key={s}
-                onClick={() => updateRoomStatus(s)} // call API + update state
-                selected={room_status === s}
-              >
-                {getStatusIcon(s)}
-                <Typography sx={{ ml: 1 }}>{s}</Typography>
-              </MenuItem>
-            ))}
-          </Menu>
-        </Dropdown>
-
-        <IconButton
-          style={{ borderRadius: "8px" }}
-          color="danger"
-          variant="solid"
-          onClick={deleteRoom}
+        {/* Controls group: status dropdown + delete */}
+        <Box
+          sx={{
+            display: "flex",
+            gap: 1,
+            width: { xs: "100%", sm: "auto" },
+            justifyContent: { xs: "space-between", sm: "center" },
+          }}
         >
-          <DeleteIcon />
-        </IconButton>
+          {/* Dropdown for Status Update */}
+          <Dropdown>
+            <MenuButton
+              slots={{ root: IconButton }}
+              slotProps={{
+                root: { variant: "solid", sx: { borderRadius: 2, flex: "0 0 auto" } },
+              }}
+            >
+              {getStatusIcon(room_status)}
+            </MenuButton>
+            <Menu>
+              {statuses.map((s) => (
+                <MenuItem
+                  key={s}
+                  onClick={() => updateRoomStatus(s)} // call API + update state
+                  selected={room_status === s}
+                >
+                  {getStatusIcon(s)}
+                  <Typography sx={{ ml: 1 }}>{s}</Typography>
+                </MenuItem>
+              ))}
+            </Menu>
+          </Dropdown>
+
+          <IconButton
+            sx={{ borderRadius: 2 }}
+            color="danger"
+            variant="solid"
+            onClick={deleteRoom}
+          >
+            <DeleteIcon />
+          </IconButton>
+        </Box>
       </CardActions>
     </Card>
   );

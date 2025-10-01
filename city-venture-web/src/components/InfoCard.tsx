@@ -1,5 +1,5 @@
 import React from "react";
-import { Card, CardContent, Stack } from "@mui/material";
+import { Stack } from "@mui/material";
 import Text from "@/src/components/Text";
 import Container from "@/src/components/Container";
 

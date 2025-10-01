@@ -16,8 +16,8 @@ import {
   Modal,
   Platform,
   Pressable,
-  View,
-  StyleSheet
+  StyleSheet,
+  View
 } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
 
@@ -122,7 +122,7 @@ const Details = () => {
   }, [accommodationDetails?.id]);
 
   return (
-    <PageContainer style={{ paddingTop: 0 }}>
+    <PageContainer style={{ paddingTop: 0, paddingBottom: 100 }}>
       <Container elevation={2} style={androidStyles.container}>
         <ThemedText type="card-title-small" weight="medium">
           About

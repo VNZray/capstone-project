@@ -41,3 +41,24 @@
   /* instead of 100vw */
   overflow-x: hidden;
 }
+
+/* Responsive adjustments */
+@media (max-width: 1024px) {
+  .main-outlet {
+    padding: 1rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .main-outlet {
+    padding: 0.75rem;
+  }
+}
+
+/* Sidebar overlay when open on mobile */
+.sidebar-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  z-index: 1300; /* above MUI AppBar (1100) */
+}

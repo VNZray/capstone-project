@@ -1,0 +1,173 @@
+import api from '@/services/api';
+import { Booking, BookingPayment, Guests } from '@/types/Booking';
+import debugLogger from '@/utils/debugLogger';
+import axios from 'axios';
+
+// Utility: remove undefined fields & normalize dates (YYYY-MM-DD) for backend compatibility
+const normalizeDate = (d: Date | string | undefined) => {
+  if (!d) return undefined;
+  const date = typeof d === 'string' ? new Date(d) : d;
+  if (isNaN(date.getTime())) return undefined;
+  return date.toISOString().split('T')[0];
+};
+
+const sanitizePayload = <T extends Record<string, any>>(obj: T): Partial<T> => {
+  const out: Record<string, any> = {};
+  Object.entries(obj || {}).forEach(([k, v]) => {
+    if (v === undefined) return; // drop undefined
+    if (k.endsWith('_date')) {
+      const normalized = normalizeDate(v as any);
+      if (normalized) out[k] = normalized; // only include valid dates
+      return;
+    }
+    out[k] = v;
+  });
+  return out as Partial<T>;
+};
+
+export const bookRoom = async (bookingData: Booking) => {
+  const booking = sanitizePayload(bookingData);
+  debugLogger({
+    title: 'API POST /booking',
+    data: booking,
+  });
+  const response = await axios.post(`${api}/booking`, booking);
+  debugLogger({
+    title: 'API GET /booking response',
+    data: response.data,
+  });
+  return response.data;
+};
+
+// Add guests to a booking
+
+export const addGuestsToBooking = async (
+  booking_id: string | number,
+  guests: Guests
+) => {
+  if (!guests || guests.length === 0) return null;
+  const mapped = guests.map((g) => ({
+    name: g.name,
+    age: g.age,
+    gender: g.gender,
+    booking_id: booking_id,
+  }));
+  debugLogger({
+    title: 'API POST /guest payload',
+    data: mapped,
+  });
+  const response = await axios.post(`${api}/guest`, mapped);
+  debugLogger({
+    title: 'API POST /guest response',
+    data: response.data,
+  });
+  return response.data;
+};
+
+// Create a payment record for a booking
+export const createBookingPayment = async (
+  booking_id: string | number,
+  payment: BookingPayment
+) => {
+  if (!payment?.payment_method) return null;
+  const payload = sanitizePayload({
+    ...payment,
+    booking_id,
+  });
+  debugLogger({
+    title: 'API POST /payment payload',
+    data: payload,
+  });
+  const response = await axios.post(`${api}/payment`, payload);
+  debugLogger({
+    title: 'API POST /payment response',
+    data: response.data,
+  });
+  return response.data;
+};
+
+// Composite helper to create booking, guests, and payment sequentially
+export const createFullBooking = async (
+  booking: Booking,
+  payment: BookingPayment
+) => {
+  debugLogger({
+    title: 'FLOW Creating full booking',
+    data: { booking, payment },
+  });
+  const createdBooking = await bookRoom(booking);
+  const bookingId = createdBooking?.id;
+  if (!bookingId) {
+    debugLogger({
+      title: 'FLOW Booking create response unexpected',
+      data: createdBooking,
+      error: 'Booking ID missing after creation',
+    });
+    throw new Error('Booking ID missing after creation');
+  }
+  try {
+    await createBookingPayment(bookingId, payment);
+  } catch (e) {
+    debugLogger({
+      title: 'FLOW Creating payment failed',
+      error: e,
+    });
+    throw e;
+  }
+  debugLogger({
+    title: 'FLOW Full booking completed',
+    successMessage: `Booking complete (id=${bookingId})`,
+  });
+  return createdBooking;
+};
+
+export const createBookingAndGuests = async (
+  booking: Booking,
+  guests: Guests
+) => {
+  debugLogger({
+    title: 'FLOW Creating booking (no payment)',
+    data: { booking, guests },
+  });
+  const createdBooking = await bookRoom(booking);
+  const bookingId = createdBooking?.id;
+  if (!bookingId) {
+    debugLogger({
+      title: 'FLOW Booking create response unexpected',
+      data: createdBooking,
+      error: 'Booking ID missing after creation',
+    });
+    throw new Error('Booking ID missing after creation');
+  }
+  try {
+    await addGuestsToBooking(bookingId, guests || []);
+  } catch (e) {
+    debugLogger({
+      title: 'FLOW Adding guests failed',
+      error: e,
+    });
+    throw e;
+  }
+  debugLogger({
+    title: 'FLOW Booking completed (no payment)',
+    successMessage: `Booking complete (id=${bookingId})`,
+  });
+  return createdBooking;
+};
+
+export const getBookingsByTourist = async (tourist_id: string) => {
+  const response = await axios.get(`${api}/booking/tourist/${tourist_id}`);
+  return response.data;
+};
+
+export const getBookingById = async (booking_id: string) => {
+  const response = await axios.get(`${api}/booking/${booking_id}`);
+  return response.data;
+};
+
+export const cancelBooking = async (booking_id: string) => {
+  const response = await axios.put(`${api}/booking/${booking_id}`, {
+    booking_status: 'Canceled',
+  });
+  return response.data;
+};

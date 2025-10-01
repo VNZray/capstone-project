@@ -5,7 +5,7 @@ import {
   logoutUser,
   getStoredUser,
 } from "@/src/services/AuthService";
-import type { UserDetails } from "../types/User";
+import type { UserDetails } from "@/src/types/User";
 interface AuthContextType {
   user: UserDetails | null;
   loading: boolean;
@@ -19,7 +19,7 @@ interface AuthProviderProps {
   children: ReactNode;
 }
 
-export const AuthProvider = ({ children }: AuthProviderProps) => {
+export function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = useState<UserDetails | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -43,15 +43,15 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, loading,  login, logout }}>
+    <AuthContext.Provider value={{ user, loading, login, logout }}>
       {children}
     </AuthContext.Provider>
   );
-};
+}
 
 // eslint-disable-next-line react-refresh/only-export-components
-export const useAuth = (): AuthContextType => {
+export function useAuth(): AuthContextType {
   const context = useContext(AuthContext);
   if (!context) throw new Error("useAuth must be used within an AuthProvider");
   return context;
-};
+}

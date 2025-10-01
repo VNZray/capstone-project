@@ -4,7 +4,9 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "build": "node scripts/build.js",
     "start": "node index.js",
+    "start:prod": "node dist/index.js",
     "dev": "nodemon index.js",
     "make": "knex migrate:make --knexfile knexfile.cjs --env development",
     "latest": "knex migrate:latest --knexfile knexfile.cjs --env development",

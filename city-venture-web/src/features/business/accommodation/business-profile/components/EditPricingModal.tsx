@@ -1,17 +1,8 @@
 import * as React from "react";
-import {
-  Modal,
-  ModalDialog,
-  DialogContent,
-  DialogActions,
-  Button,
-  Input,
-  FormControl,
-  FormLabel,
-} from "@mui/joy";
+import { Input, FormControl, FormLabel } from "@mui/joy";
 import { updateData } from "@/src/services/Service";
-import CardHeader from "@/src/components/CardHeader";
-import { PhilippinePeso, Save } from "lucide-react";
+import BaseEditModal from '@/src/components/BaseEditModal';
+import { PhilippinePeso } from "lucide-react";
 import { colors } from "@/src/utils/Colors";
 
 interface EditDescriptionModalProps {
@@ -58,41 +49,38 @@ const EditPricingModal: React.FC<EditDescriptionModalProps> = ({
   };
 
   return (
-    <Modal open={open} onClose={onClose}>
-      <ModalDialog size="lg" variant="outlined" maxWidth={600} minWidth={600}>
-        <CardHeader title="Edit Pricing" color="white" />
-        <DialogContent>
-          <FormControl>
-            <FormLabel>Minimum Price</FormLabel>
-            <Input
-              type="number"
-              size="md"
-              startDecorator={<PhilippinePeso color={colors.secondary} />}
-              value={min_price}
-              onChange={(e) => setMinimumPrice(e.target.value)}
-            />
-          </FormControl>
-          <FormControl>
-            <FormLabel>Maximum Price</FormLabel>
-            <Input
-              type="number"
-              size="md"
-              startDecorator={<PhilippinePeso color={colors.secondary} />}
-              value={max_price}
-              onChange={(e) => setMaximumPrice(e.target.value)}
-            />
-          </FormControl>
-        </DialogContent>
-        <DialogActions>
-          <Button fullWidth variant="plain" color="neutral" onClick={onClose}>
-            Cancel
-          </Button>
-          <Button fullWidth color="primary" startDecorator={<Save />} onClick={handleSave}>
-            Save Changes
-          </Button>
-        </DialogActions>
-      </ModalDialog>
-    </Modal>
+    <BaseEditModal
+      open={open}
+      onClose={onClose}
+      title="Edit Pricing"
+      description="Set the minimum and maximum price for your offering"
+      maxWidth={600}
+      actions={[
+        { label: 'Cancel', onClick: onClose },
+        { label: 'Save Changes', onClick: handleSave, variant: 'primary' },
+      ]}
+    >
+      <FormControl>
+        <FormLabel>Minimum Price</FormLabel>
+        <Input
+          type="number"
+          size="md"
+          startDecorator={<PhilippinePeso color={colors.secondary} />}
+          value={min_price}
+          onChange={(e) => setMinimumPrice(e.target.value)}
+        />
+      </FormControl>
+      <FormControl>
+        <FormLabel>Maximum Price</FormLabel>
+        <Input
+          type="number"
+          size="md"
+          startDecorator={<PhilippinePeso color={colors.secondary} />}
+          value={max_price}
+          onChange={(e) => setMaximumPrice(e.target.value)}
+        />
+      </FormControl>
+    </BaseEditModal>
   );
 };
 

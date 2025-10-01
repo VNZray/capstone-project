@@ -92,19 +92,17 @@ const AccommodationDirectory = () => {
           ? CATEGORY_ID_TO_KEY[business.business_category_id]
           : undefined;
       const matchesTab = activeTab === 'all' || categoryKey === activeTab;
-      const status = business.status.toLowerCase() === 'pending';
+      const status =
+        business.status.toLowerCase() === 'active' ||
+        business.status.toLowerCase() === 'pending';
 
       return matchesSearch && matchesTab && status;
     }
   );
 
   return (
-    <PageContainer padding={0} style={{ backgroundColor: bg }}>
-      <Container
-        gap={16}
-        paddingBottom={0}
-        backgroundColor='transparent'
-      >
+    <PageContainer padding={0} gap={0} style={{ backgroundColor: bg }}>
+      <Container gap={0} paddingBottom={0} backgroundColor="transparent">
         <View style={styles.SearchContainer}>
           <SearchBar
             shape="square"
@@ -129,7 +127,6 @@ const AccommodationDirectory = () => {
         />
       </Container>
 
-      {/**Tab Filter */}
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{
@@ -198,20 +195,16 @@ const AccommodationDirectory = () => {
                 places.
               </ThemedText>
 
-              <View style={styles.notFoundActions}>
-                <Button
-                  label="Clear Filters"
-                  startIcon="redo"
-                  variant="soft"
-                  color="secondary"
-                  size="large"
-                  fullWidth
-                  radius={14}
-                  elevation={1}
-                  textSize={16}
-                  onPress={handleResetFilters}
-                />
-              </View>
+              <Button
+                label="Clear Filters"
+                variant="soft"
+                color="secondary"
+                size="medium"
+                fullWidth
+                radius={14}
+                startIcon="redo"
+                onPress={handleResetFilters}
+              />
             </PageContainer>
           )}
         </View>
@@ -225,6 +218,7 @@ const styles = StyleSheet.create({
     display: 'flex',
     flexDirection: 'row',
     gap: 8,
+    overflow: 'visible',
   },
   cardWrapper: {
     gap: 16,

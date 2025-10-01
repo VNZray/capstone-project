@@ -48,3 +48,58 @@ Join our community of developers creating universal apps.
 
 - [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
 - [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+
+## City Venture Extensions
+
+### Responsive Design Utilities
+
+A new utility `utils/responsive.ts` provides helpers to scale sizes for small devices:
+
+```ts
+import { scale, moderateScale, useResponsive } from '@/utils/responsive';
+
+const { width, isSmallPhone, moderateScale: ms } = useResponsive();
+const buttonHeight = ms(44); // adapts to screen width
+```
+
+Updated components using this:
+
+- `components/Button.tsx` (adaptive height, padding, font size)
+- `components/accommodation/AccommodationCard.tsx` (list image + text sizing)
+- `components/GridContainer.tsx` (new responsive grid wrapper)
+- `components/TextInput.tsx` (adaptive font size and padding)
+
+#### Adding responsiveness to a new component
+
+1. Import `useWindowDimensions` or `useResponsive`.
+2. Replace fixed numbers with `moderateScale(base, factor, width)`.
+3. Clamp values with the exported `scaled` helper if needed.
+
+Example:
+
+```ts
+const { width } = useWindowDimensions();
+const cardPadding = moderateScale(16, 0.5, width); // smaller on narrow screens
+```
+
+### Typography System
+
+Responsive typography utilities are available in `constants/typography.ts`.
+
+Usage:
+
+```ts
+import { useTypography } from '@/constants/typography';
+const t = useTypography();
+<Text style={{ fontSize: t.body }}>Adaptive body text</Text>
+```
+
+Tokens (baseline before scaling): `display`, `h1`, `h2`, `h3`, `h4`, `body`, `bodySmall`, `caption`, `micro`.
+Scaling is moderated (factor ~0.45) so text doesn’t shrink too aggressively on small phones.
+
+If you need a custom one-off size:
+
+```ts
+import { scaleFont } from '@/constants/typography';
+const size = scaleFont(18);
+```

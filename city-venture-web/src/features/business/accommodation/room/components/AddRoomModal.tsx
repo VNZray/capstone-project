@@ -2,8 +2,6 @@ import * as React from "react";
 import {
   Modal,
   ModalDialog,
-  DialogTitle,
-  DialogContent,
   DialogActions,
   Button,
   Input,
@@ -21,7 +19,6 @@ import type { Room } from "@/src/types/Business";
 import { useBusiness } from "@/src/context/BusinessContext";
 import CardHeader from "@/src/components/CardHeader";
 import { getData, insertData } from "@/src/services/Service";
-import { data } from "react-router-dom";
 import { supabase } from "@/src/lib/supabase";
 import { UploadIcon } from "lucide-react";
 import type { Amenity } from "@/src/types/Amenity";
@@ -38,7 +35,6 @@ export default function AddRoomModal({
   onRoomAdded,
 }: AddRoomModalProps) {
   const { businessDetails } = useBusiness();
-  const [roomImage, setRoomImage] = React.useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = React.useState<string | null>(null);
   const [amenities, setAmenities] = React.useState<Amenity[]>([]);
   const [selectedAmenities, setSelectedAmenities] = React.useState<Amenity[]>(
@@ -151,6 +147,7 @@ export default function AddRoomModal({
       status: "Available",
       room_image: "",
       floor: "",
+      room_size: "",
     });
 
     setPreviewUrl(null);
@@ -249,10 +246,10 @@ export default function AddRoomModal({
                   <Input
                     size="md"
                     type="number"
-                    placeholder="e.g. 2"
-                    value={roomData.capacity}
+                    placeholder="e.g. 2 sqm(㎡)"
+                    value={roomData.room_size}
                     onChange={(e) =>
-                      setRoomData({ ...roomData, capacity: e.target.value })
+                      setRoomData({ ...roomData, room_size: e.target.value })
                     }
                   />
                 </FormControl>

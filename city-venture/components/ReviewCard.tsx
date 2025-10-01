@@ -1,9 +1,10 @@
 import Container from '@/components/Container';
 import { ThemedText } from '@/components/themed-text';
 import { colors } from '@/constants/color';
+import { moderateScale } from '@/utils/responsive';
 import { FontAwesome5 } from '@expo/vector-icons';
 import React from 'react';
-import { Image, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Image, Pressable, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
 
 type Review = {
   id: string;
@@ -51,15 +52,20 @@ const ReviewCard = ({
 }: ReviewCardProps) => {
   const isLong = item.comment.length > 160;
   const displayComment = isLong && !expanded ? item.comment.slice(0, 160) + '…' : item.comment;
+  const { width } = useWindowDimensions();
+  const AVATAR = moderateScale(42, 0.55, width);
+  const GAP = moderateScale(12, 0.55, width);
+  const IMAGE_W = moderateScale(120, 0.5, width);
+  const IMAGE_H = moderateScale(80, 0.5, width);
 
   return (
-    <Container padding={14} gap={16}>
-      <View style={styles.reviewHeader}>
-        <View style={styles.avatarWrap}>
+    <Container padding={moderateScale(14, 0.55, width)} gap={GAP}>
+      <View style={[styles.reviewHeader, { gap: GAP }]}>        
+        <View style={[styles.avatarWrap]}>          
           {item.user.avatar ? (
-            <Image source={{ uri: item.user.avatar }} style={styles.avatar} />
+            <Image source={{ uri: item.user.avatar }} style={{ width: AVATAR, height: AVATAR, borderRadius: 50 }} />
           ) : (
-            <View style={[styles.avatar, { backgroundColor: '#4B5563' }]} />
+            <View style={{ width: AVATAR, height: AVATAR, borderRadius: 50, backgroundColor: '#4B5563' }} />
           )}
         </View>
         <View style={{ flex: 1 }}>
@@ -103,7 +109,7 @@ const ReviewCard = ({
           horizontal 
           showsHorizontalScrollIndicator={false}
           style={styles.imageScrollView}
-          contentContainerStyle={styles.imageContainer}
+          contentContainerStyle={[styles.imageContainer, { gap: moderateScale(8, 0.5, width) }]}
         >
           {item.images.map((imageUri, index) => (
             <Pressable
@@ -113,7 +119,7 @@ const ReviewCard = ({
             >
               <Image 
                 source={{ uri: imageUri }} 
-                style={styles.reviewImage}
+                style={{ width: IMAGE_W, height: IMAGE_H, borderRadius: moderateScale(8, 0.5, width) }}
                 resizeMode="cover"
               />
               {item.images!.length > 1 && index === 0 && (
@@ -224,11 +230,6 @@ const styles = StyleSheet.create({
   avatarWrap: {
     marginRight: 4,
   },
-  avatar: {
-    width: 42,
-    height: 42,
-    borderRadius: 50,
-  },
   inline: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -262,11 +263,6 @@ const styles = StyleSheet.create({
   },
   imageWrapper: {
     position: 'relative',
-  },
-  reviewImage: {
-    width: 120,
-    height: 80,
-    borderRadius: 8,
   },
   imageCounter: {
     position: 'absolute',

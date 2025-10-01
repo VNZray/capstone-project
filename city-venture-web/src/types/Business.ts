@@ -74,6 +74,7 @@ export type Room = {
   status?: string;
   room_image?: string;
   floor?: string;
+  room_size?: string;
 };
 
 export type BusinessHours = {

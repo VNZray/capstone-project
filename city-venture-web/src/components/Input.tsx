@@ -101,6 +101,8 @@ const Input: React.FC<InputProps & BaseProps> = (props) => {
 
   // Default text-like inputs
   const { value, onChange, placeholder, type: inputType, ...restProps } = props;
+  // Remove 'color' if present, as MUI expects specific values
+  const { color, ...filteredRestProps } = restProps as any;
   return (
     <TextField
       label={label}
@@ -110,7 +112,7 @@ const Input: React.FC<InputProps & BaseProps> = (props) => {
       fullWidth
       style={style}
       type={inputType}
-      {...restProps}
+      {...filteredRestProps}
     />
   );
 };

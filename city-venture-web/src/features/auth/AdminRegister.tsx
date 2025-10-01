@@ -30,15 +30,15 @@ const Register = () => {
   const navigate = useNavigate();
   const [firstName, setFirstName] = useState("Rayven");
   const [lastName, setLastName] = useState("Clores");
-  const [position, setPosition] = useState("Tourism");
+  const position = "Tourism";
 
   const [email, setEmail] = useState("admin@gmail.com");
   const [phoneNumber, setPhoneNumber] = useState("09876541231");
   const [password, setPassword] = useState("123456");
   const [confirmPassword, setConfirmPassword] = useState("123456");
-  const [age, setAge] = useState("25");
-  const [gender, setGender] = useState("Male");
-  const [birthdate, setBirthdate] = useState("2000-01-01");
+  const age = 25;
+  const gender = "Male";
+  const birthdate = "2000-01-01";
 
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -62,7 +62,7 @@ const Register = () => {
   const newTourism: Tourism = {
     first_name: firstName,
     last_name: lastName,
-    age: age,
+    age: age.toString(),
     gender: gender,
     birthdate: birthdate,
     position: position,

@@ -1,16 +1,6 @@
 import * as React from "react";
-import {
-  Modal,
-  ModalDialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Button,
-  Textarea,
-} from "@mui/joy";
+import BaseEditModal from '@/src/components/BaseEditModal';
 import { updateData } from "@/src/services/Service";
-import CardHeader from "@/src/components/CardHeader";
-import Save from "@mui/icons-material/Save";
 
 interface EditDescriptionModalProps {
   open: boolean;
@@ -53,28 +43,35 @@ const EditDescriptionModal: React.FC<EditDescriptionModalProps> = ({
   };
 
   return (
-    <Modal open={open} onClose={onClose}>
-      <ModalDialog size="lg" variant="outlined" maxWidth={600} minWidth={600}>
-        <CardHeader title="Edit Description" color="white" />
-        <DialogContent>
-          <Textarea
-            minRows={4}
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            placeholder="Enter business description..."
-            size="md"
-          />
-        </DialogContent>
-        <DialogActions>
-          <Button fullWidth variant="plain" color="neutral" onClick={onClose}>
-            Cancel
-          </Button>
-          <Button fullWidth color="primary" startDecorator={<Save />} onClick={handleSave}>
-            Save Changes
-          </Button>
-        </DialogActions>
-      </ModalDialog>
-    </Modal>
+    <BaseEditModal
+      open={open}
+      onClose={onClose}
+      title="Edit Description"
+      description="Update the business description"
+      maxWidth={640}
+      actions={[
+        { label: 'Cancel', onClick: onClose },
+        { label: 'Save', onClick: handleSave, variant: 'primary' },
+      ]}
+    >
+      <div style={{ padding: '8px 0' }}>
+        <textarea
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          placeholder="Enter business description..."
+          rows={6}
+          style={{
+            width: '100%',
+            padding: '10px',
+            borderRadius: 8,
+            border: '1px solid #e5e7eb',
+            resize: 'vertical',
+            boxSizing: 'border-box',
+            fontFamily: 'inherit'
+          }}
+        />
+      </div>
+    </BaseEditModal>
   );
 };
 

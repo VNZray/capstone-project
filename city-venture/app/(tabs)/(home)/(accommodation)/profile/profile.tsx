@@ -155,7 +155,6 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   tabContent: {
-    marginBottom: 150,
     overflow: 'visible',
   },
   notFoundContainer: {

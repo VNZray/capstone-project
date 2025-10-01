@@ -34,7 +34,7 @@ const roleToLabel: Record<Role, string> = {
 
 export default function UnifiedLogin() {
   const navigate = useNavigate();
-  const { login, user } = useAuth();
+  const { login } = useAuth();
 
   const [role, setRole] = useState<Role>("Tourist");
   const [email, setEmail] = useState("rayvenclores@gmail.com");

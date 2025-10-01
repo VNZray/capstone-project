@@ -1,7 +1,7 @@
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { useFonts } from 'expo-font';
 import React from 'react';
-import { StyleSheet, Text, View, type TextProps, Platform } from 'react-native';
+import { Platform, StyleSheet, Text, View, type TextProps } from 'react-native';
 
 export type TypographyType =
   | `title-${'extra-small' | 'small' | 'medium' | 'large'}`
@@ -139,7 +139,7 @@ export function ThemedText({
 
   // If start/end icon → horizontal layout
   return (
-    <View style={{ flexDirection: 'row', alignItems: 'center', }}>
+    <View style={{ flexDirection: 'row', alignItems: 'center' , }}>
       {startIcon ? <View style={{ marginRight: 6 }}>{startIcon}</View> : null}
       {textElement}
       {endIcon ? <View style={{ marginLeft: 6 }}>{endIcon}</View> : null}

@@ -1,4 +1,5 @@
 import type { Room } from '@/types/Business';
+import debugLogger from '@/utils/debugLogger';
 import type { ReactNode } from 'react';
 import React, {
   createContext,
@@ -71,7 +72,10 @@ export const RoomProvider: React.FC<RoomProviderProps> = ({ children }) => {
       const data = await fetchRoomDetails(selectedRoomId);
       setRoomDetails(data);
     } catch (e) {
-      console.error('Failed to fetch room details', e);
+      debugLogger({
+        title: 'RoomContext: Failed to fetch room details',
+        error: e
+      });
     } finally {
       setLoading(false);
     }
@@ -85,7 +89,10 @@ export const RoomProvider: React.FC<RoomProviderProps> = ({ children }) => {
       const data = await fetchRoomsByBusinessId(selectedAccommodationId);
       setRooms(data);
     } catch (e) {
-      console.error('Failed to fetch rooms by business id', e);
+      debugLogger({
+        title: 'RoomContext: Failed to fetch rooms by business id',
+        error: e
+      });
     } finally {
       setLoading(false);
     }

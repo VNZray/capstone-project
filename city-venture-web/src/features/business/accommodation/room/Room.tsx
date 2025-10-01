@@ -94,9 +94,14 @@ const calcPercentage = (count: number) => {
   return (
     <PageContainer>
       {/* Stats Cards */}
-      <Container padding="0" background="transparent" direction="row">
+      <Container
+        padding="0"
+        background="transparent"
+        direction="row"
+        style={{ flexWrap: "wrap", gap: 16 }}
+      >
         {/* Total Rooms */}
-        <Card sx={{ flex: 1 }} variant="solid" color="primary" invertedColors>
+        <Card sx={{ flex: "1 1 240px", minWidth: 240 }} variant="solid" color="primary" invertedColors>
           <CardContent orientation="horizontal">
             <CircularProgress size="lg" determinate value={calcPercentage(roomCount)}>
               <SvgIcon>
@@ -124,7 +129,7 @@ const calcPercentage = (count: number) => {
         </Card>
 
         {/* Available */}
-        <Card sx={{ flex: 1 }} variant="solid" color="success" invertedColors>
+        <Card sx={{ flex: "1 1 240px", minWidth: 240 }} variant="solid" color="success" invertedColors>
           <CardContent orientation="horizontal">
             <CircularProgress size="lg" determinate value={calcPercentage(availableCount)}>
               <SvgIcon>
@@ -152,7 +157,7 @@ const calcPercentage = (count: number) => {
         </Card>
 
         {/* Occupied */}
-        <Card sx={{ flex: 1 }} variant="solid" color="warning" invertedColors>
+        <Card sx={{ flex: "1 1 240px", minWidth: 240 }} variant="solid" color="warning" invertedColors>
           <CardContent orientation="horizontal">
             <CircularProgress size="lg" determinate value={calcPercentage(occupiedCount)}>
               <SvgIcon>
@@ -180,7 +185,7 @@ const calcPercentage = (count: number) => {
         </Card>
 
         {/* Maintenance */}
-        <Card sx={{ flex: 1 }} variant="solid" color="danger" invertedColors>
+        <Card sx={{ flex: "1 1 240px", minWidth: 240 }} variant="solid" color="danger" invertedColors>
           <CardContent orientation="horizontal">
             <CircularProgress size="lg" determinate value={calcPercentage(maintenanceCount)}>
               <SvgIcon>
@@ -215,8 +220,9 @@ const calcPercentage = (count: number) => {
           justify="space-between"
           align="center"
           padding="16px 16px 0 16px"
+          style={{ flexWrap: "wrap", rowGap: 12, columnGap: 12 }}
         >
-          <div style={{ display: "flex", gap: "12px" }}>
+          <div style={{ display: "flex", gap: 12, alignItems: "center", flex: 1, minWidth: 240 }}>
             <Text variant="header-title">Room Management</Text>
             <Button
               startDecorator={<Calendar />}
@@ -224,6 +230,7 @@ const calcPercentage = (count: number) => {
               color="primary"
               variant="soft"
               onClick={() => setCalendarOpen(true)}
+              sx={{ width: { xs: "100%", sm: "auto" } }}
             >
               Calendar
             </Button>
@@ -234,6 +241,7 @@ const calcPercentage = (count: number) => {
             size="lg"
             color="primary"
             onClick={() => setOpenModal(true)}
+            sx={{ width: { xs: "100%", sm: "auto" } }}
           >
             Add Room
           </Button>
@@ -247,7 +255,14 @@ const calcPercentage = (count: number) => {
           {/* Calendar Popup Modal */}
           <Modal open={calendarOpen} onClose={() => setCalendarOpen(false)}>
             <ModalDialog
-              sx={{ display: "flex", flexDirection: "column", gap: 0 }}
+              sx={{
+                display: "flex",
+                flexDirection: "column",
+                gap: 0,
+                width: { xs: "100%", sm: "auto" },
+                maxWidth: { xs: "calc(100% - 32px)", sm: 600 },
+                m: { xs: 1, sm: "auto" },
+              }}
               size="lg"
               variant="outlined"
             >
@@ -301,7 +316,7 @@ const calcPercentage = (count: number) => {
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "repeat(4, 1fr)",
+            gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
             gap: "1rem",
             width: "100%",
             alignItems: "stretch",

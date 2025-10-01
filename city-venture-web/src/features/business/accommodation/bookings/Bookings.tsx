@@ -1,25 +1,12 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import Text from "@/src/components/Text";
-import InfoCard from "@/src/components/InfoCard";
 import PageContainer from "@/src/components/PageContainer";
 import { colors } from "@/src/utils/Colors";
+import { Search, Eye, Check, XCircle } from "lucide-react";
+import BookingDetails from "./components/BookingDetails";
 import {
-  Bed,
-  DoorOpen,
-  User,
-  LogIn,
-  LogOut,
-  XCircle,
-  Search,
-  Eye,
-} from "lucide-react";
-import {
-  Grid,
   Input,
   Button,
-  Menu,
-  MenuItem,
-  MenuList,
   Card,
   CardContent,
   CircularProgress,
@@ -37,6 +24,12 @@ import TablePagination from "@mui/material/TablePagination";
 import TableRow from "@mui/material/TableRow";
 import Paper from "@mui/material/Paper";
 import { Chip, TableHead } from "@mui/material";
+import { useBusiness } from "@/src/context/BusinessContext";
+import {
+  fetchBookingsByBusinessId,
+  updateBookingStatus,
+} from "@/src/services/BookingService";
+import type { Booking } from "@/src/types/Booking";
 
 // Booking columns
 interface Column {
@@ -59,14 +52,14 @@ interface Column {
 const getStatusColor = (status: string) => {
   switch (status) {
     case "Pending":
-      return "nuetral";
+      return "default";
     case "Reserved":
       return "success";
     case "Checked-in":
       return "warning";
     case "Checked-out":
       return "info";
-    case "Cancelled":
+    case "Canceled":
       return "error";
     default:
       return "primary"; // fallback
@@ -97,93 +90,20 @@ const columns: readonly Column[] = [
   { id: "actions", label: "Actions", minWidth: 150, align: "center" },
 ];
 
-// Dummy booking data (replace with API call later)
-const bookingData = [
-  {
-    id: "1",
-    pax: 3,
-    trip_purpose: "Vacation",
-    check_in_date: "2025-09-01",
-    check_out_date: "2025-09-05",
-    total_price: 4500,
-    balance: 1000,
-    booking_status: "Pending",
-  },
-  {
-    id: "2",
-    pax: 2,
-    trip_purpose: "Business",
-    check_in_date: "2025-09-02",
-    check_out_date: "2025-09-04",
-    total_price: 3000,
-    balance: 0,
-    booking_status: "Reserved",
-  },
-  {
-    id: "3",
-    pax: 1,
-    trip_purpose: "Conference",
-    check_in_date: "2025-09-03",
-    check_out_date: "2025-09-06",
-    total_price: 4000,
-    balance: 500,
-    booking_status: "Checked-in",
-  },
-  {
-    id: "4",
-    pax: 4,
-    trip_purpose: "Family Trip",
-    check_in_date: "2025-09-05",
-    check_out_date: "2025-09-10",
-    total_price: 6000,
-    balance: 0,
-    booking_status: "Checked-out",
-  },
-  {
-    id: "5",
-    pax: 2,
-    trip_purpose: "Anniversary",
-    check_in_date: "2025-09-07",
-    check_out_date: "2025-09-09",
-    total_price: 3500,
-    balance: 3500,
-    booking_status: "Cancelled",
-  },
-  {
-    id: "6",
-    pax: 2,
-    trip_purpose: "Anniversary",
-    check_in_date: "2025-09-07",
-    check_out_date: "2025-09-09",
-    total_price: 3500,
-    balance: 3500,
-    booking_status: "Cancelled",
-  },
-  {
-    id: "7",
-    pax: 2,
-    trip_purpose: "Anniversary",
-    check_in_date: "2025-09-07",
-    check_out_date: "2025-09-09",
-    total_price: 3500,
-    balance: 3500,
-    booking_status: "Cancelled",
-  },
-  {
-    id: "8",
-    pax: 2,
-    trip_purpose: "Anniversary",
-    check_in_date: "2025-09-07",
-    check_out_date: "2025-09-09",
-    total_price: 3500,
-    balance: 3500,
-    booking_status: "Cancelled",
-  },
-];
+// Local helper to normalize status casing differences from backend
+const normalizeStatus = (status?: string) => {
+  if (!status) return "Pending";
+  const lower = status.toLowerCase();
+  if (lower === "checked-in" || lower === "checked_in") return "Checked-in";
+  if (lower === "checked-out" || lower === "checked_out") return "Checked-out";
+  return status.charAt(0).toUpperCase() + status.slice(1);
+};
 
 const Bookings = () => {
+  // const { user } = useAuth(); // (unused currently)
+  const { businessDetails } = useBusiness();
   const [activeTab, setActiveTab] = useState<
-    "All" | "Pending" | "Reserved" | "Checked-in" | "Checked-out" | "Cancelled"
+    "All" | "Pending" | "Reserved" | "Checked-in" | "Checked-out" | "Canceled"
   >("All");
 
   const [page, setPage] = React.useState(0);
@@ -194,31 +114,78 @@ const Bookings = () => {
   >("all");
   const [selectedMonth, setSelectedMonth] = useState<number | "all">("all");
   const [selectedYear, setSelectedYear] = useState<number | "all">("all");
-  const [bookingCount, setBookingCount] = useState(0);
-  const [pendingCount, setPendingCount] = useState(0);
-  const [reservedCount, setReservedCount] = useState(0);
-  const [checkedInCount, setCheckedInCount] = useState(0);
-  const [checkedOutCount, setCheckedOutCount] = useState(0);
-  const [cancelledCount, setCancelledCount] = useState(0);
+  const [bookings, setBookings] = useState<Booking[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [detailsOpen, setDetailsOpen] = useState(false);
+  const [selectedBookingId, setSelectedBookingId] = useState<string | null>(null);
 
+  const bookingCount = bookings.length;
+  const pendingCount = useMemo(
+    () =>
+      bookings.filter((b) => normalizeStatus(b.booking_status) === "Pending")
+        .length,
+    [bookings]
+  );
+  const reservedCount = useMemo(
+    () =>
+      bookings.filter((b) => normalizeStatus(b.booking_status) === "Reserved")
+        .length,
+    [bookings]
+  );
+  const checkedInCount = useMemo(
+    () =>
+      bookings.filter((b) => normalizeStatus(b.booking_status) === "Checked-in")
+        .length,
+    [bookings]
+  );
+  const checkedOutCount = useMemo(
+    () =>
+      bookings.filter(
+        (b) => normalizeStatus(b.booking_status) === "Checked-out"
+      ).length,
+    [bookings]
+  );
+  const canceledCount = useMemo(
+    () =>
+      bookings.filter((b) => normalizeStatus(b.booking_status) === "Canceled")
+        .length,
+    [bookings]
+  );
+
+  // Fetch bookings for selected business
   useEffect(() => {
-    setBookingCount(bookingData.length);
-    setPendingCount(
-      bookingData.filter((b) => b.booking_status === "Pending").length
-    );
-    setReservedCount(
-      bookingData.filter((b) => b.booking_status === "Reserved").length
-    );
-    setCheckedInCount(
-      bookingData.filter((b) => b.booking_status === "Checked-in").length
-    );
-    setCheckedOutCount(
-      bookingData.filter((b) => b.booking_status === "Checked-out").length
-    );
-    setCancelledCount(
-      bookingData.filter((b) => b.booking_status === "Cancelled").length
-    );
-  }, [bookingData]);
+    const load = async () => {
+      if (!businessDetails?.id) return;
+      setLoading(true);
+      setError(null);
+      try {
+        const data = await fetchBookingsByBusinessId(businessDetails.id);
+        // Ensure numeric & string fields present with defaults
+        setBookings(
+          data.map((b) => ({
+            ...b,
+            pax: b.pax ?? 0,
+            total_price: b.total_price ?? 0,
+            balance: b.balance ?? 0,
+            // Cast normalized status back into Booking union where possible
+            booking_status: normalizeStatus(
+              b.booking_status
+            ) as Booking["booking_status"],
+            trip_purpose: b.trip_purpose || "—",
+          }))
+        );
+      } catch (e: any) {
+        console.error("Failed to load bookings", e);
+        setError(e?.message || "Failed to load bookings");
+      } finally {
+        setLoading(false);
+      }
+    };
+    load();
+  }, [businessDetails?.id]);
+
+  // No longer using dummy effect counters (computed via useMemo above)
 
   // format date
   const formatDate = (dateString: string) => {
@@ -231,11 +198,19 @@ const Bookings = () => {
   };
 
   // Extract available years from bookingData
-  const years = Array.from(
-    new Set(bookingData.map((row) => new Date(row.check_in_date).getFullYear()))
-  ).sort((a, b) => b - a);
+  const years = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          bookings
+            .filter((r) => r.check_in_date)
+            .map((row) => new Date(row.check_in_date as any).getFullYear())
+        )
+      ).sort((a, b) => b - a),
+    [bookings]
+  );
 
-  const handleChangePage = (event: unknown, newPage: number) => {
+  const handleChangePage = (_: unknown, newPage: number) => {
     setPage(newPage);
   };
 
@@ -246,26 +221,54 @@ const Bookings = () => {
     setPage(0);
   };
 
-  const handleStatusChange = (id: string, status: string) => {
-    console.log(`Update booking ${id} to ${status}`);
-    // TODO: API call
+  const handleStatusChange = async (id: string, status: string) => {
+    try {
+      // Optimistic update
+      setBookings((prev) =>
+        prev.map((b) =>
+          b.id === id
+            ? { ...b, booking_status: status as Booking["booking_status"] }
+            : b
+        )
+      );
+      await updateBookingStatus(id, status);
+    } catch (e) {
+      console.error("Failed to update status", e);
+      // Optionally refetch or revert (for now just log)
+    }
   };
 
+  const handleViewBooking = (id?: string | null) => {
+    if (!id) return;
+    setSelectedBookingId(id);
+    setDetailsOpen(true);
+  };
+
+  const selectedBooking = useMemo(
+    () => bookings.find(b => b.id === selectedBookingId) || null,
+    [bookings, selectedBookingId]
+  );
+
   // Filtering Logic
-  const filterByDateAndSearch = (data: typeof bookingData) => {
+  const filterByDateAndSearch = (data: Booking[]) => {
     const today = new Date();
 
     return data.filter((row) => {
-      const date = new Date(row.check_in_date);
+      if (!row.check_in_date) return false; // skip invalid
+      const date = new Date(row.check_in_date as any);
 
       // Search filter
       const matchesSearch =
-        row.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        row.trip_purpose.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        row.booking_status.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        row.pax.toString().includes(searchTerm) ||
-        row.total_price.toString().includes(searchTerm) ||
-        row.balance.toString().includes(searchTerm);
+        (row.id || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (row.trip_purpose || "")
+          .toLowerCase()
+          .includes(searchTerm.toLowerCase()) ||
+        (row.booking_status || "")
+          .toLowerCase()
+          .includes(searchTerm.toLowerCase()) ||
+        String(row.pax ?? "").includes(searchTerm) ||
+        String(row.total_price ?? "").includes(searchTerm) ||
+        String(row.balance ?? "").includes(searchTerm);
 
       if (!matchesSearch) return false;
 
@@ -307,16 +310,23 @@ const Bookings = () => {
 
   // Prevent division by zero
   const calcPercentage = (count: number) => {
-    return bookingData.length > 0 ? (count / bookingData.length) * 100 : 0;
+    return bookings.length > 0 ? (count / bookings.length) * 100 : 0;
   };
 
-  const filteredData = filterByDateAndSearch(
-    activeTab === "All"
-      ? bookingData
-      : bookingData.filter((b) => b.booking_status === activeTab)
+  const filteredData = useMemo(
+    () =>
+      filterByDateAndSearch(
+        activeTab === "All"
+          ? bookings
+          : bookings.filter(
+              (b) => normalizeStatus(b.booking_status) === activeTab
+            )
+      ),
+    [activeTab, bookings, searchTerm, filter, selectedMonth, selectedYear]
   );
 
   return (
+    <>
     <PageContainer>
       {/* Summary cards */}
       <Container direction="row" padding="0" background="transparent">
@@ -453,12 +463,7 @@ const Bookings = () => {
         </Card>
 
         {/* Checked-out */}
-        <Card
-          sx={{ flex: 1 }}
-          color="primary"
-          variant="solid"
-          invertedColors
-        >
+        <Card sx={{ flex: 1 }} color="primary" variant="solid" invertedColors>
           <CardContent orientation="horizontal">
             <CircularProgress
               size="lg"
@@ -489,13 +494,13 @@ const Bookings = () => {
           </CardContent>
         </Card>
 
-        {/* Cancelled */}
+        {/* Canceled */}
         <Card sx={{ flex: 1 }} variant="solid" color="danger" invertedColors>
           <CardContent orientation="horizontal">
             <CircularProgress
               size="lg"
               determinate
-              value={calcPercentage(cancelledCount)}
+              value={calcPercentage(canceledCount)}
             >
               <SvgIcon>
                 {/* X Circle Icon */}
@@ -515,8 +520,8 @@ const Bookings = () => {
               </SvgIcon>
             </CircularProgress>
             <CardContent>
-              <Typography level="body-md">Cancelled</Typography>
-              <Typography level="h2">{cancelledCount}</Typography>
+              <Typography level="body-md">Canceled</Typography>
+              <Typography level="h2">{canceledCount}</Typography>
             </CardContent>
           </CardContent>
         </Card>
@@ -627,84 +632,128 @@ const Bookings = () => {
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {filteredData
-                    .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-                    .map((row, index) => (
-                      <TableRow
-                        role="checkbox"
-                        tabIndex={-1}
-                        key={row.id}
-                        sx={{
-                          backgroundColor: index % 2 === 0 ? "#fff" : "#D3D3D3", // 👈 odd row color
-                        }}
+                  {loading && (
+                    <TableRow>
+                      <TableCell colSpan={columns.length} align="center">
+                        <CircularProgress size="sm" /> Loading bookings...
+                      </TableCell>
+                    </TableRow>
+                  )}
+                  {!loading && error && (
+                    <TableRow>
+                      <TableCell
+                        colSpan={columns.length}
+                        align="center"
+                        sx={{ color: "red" }}
                       >
-                        <TableCell>Guest #{row.id}</TableCell>
-                        <TableCell align="center">{row.pax}</TableCell>
-                        <TableCell>{row.trip_purpose}</TableCell>
-                        <TableCell>{formatDate(row.check_in_date)}</TableCell>
-                        <TableCell>{formatDate(row.check_out_date)}</TableCell>
-                        <TableCell align="right">
-                          ₱{row.total_price.toLocaleString()}
-                        </TableCell>
-                        <TableCell align="right">
-                          ₱{row.balance.toLocaleString()}
-                        </TableCell>
-                        <TableCell>
-                          <Chip
-                            color={getStatusColor(row.booking_status)}
-                            label={row.booking_status}
-                          />
-                        </TableCell>
-                        <TableCell align="center">
-                          <Button
-                            size="sm"
-                            variant="outlined"
-                            color="neutral"
-                            startDecorator={<Eye size={16} />}
-                            sx={{ mr: 1 }}
-                          >
-                            View
-                          </Button>
-
-                          <Button
-                            size="sm"
-                            variant="solid"
-                            color="primary"
-                            onClick={() =>
-                              handleStatusChange(row.id, "Confirmed")
-                            }
-                          >
-                            Confirm
-                          </Button>
-                          <Menu>
-                            <MenuList>
-                              {[
-                                "Reserved",
-                                "Checked-in",
-                                "Checked-out",
-                                "Cancelled",
-                              ].map((status) => (
-                                <MenuItem
-                                  key={status}
+                        {error}
+                      </TableCell>
+                    </TableRow>
+                  )}
+                  {!loading && !error && filteredData.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={columns.length} align="center">
+                        No bookings found.
+                      </TableCell>
+                    </TableRow>
+                  )}
+                  {!loading &&
+                    !error &&
+                    filteredData
+                      .slice(
+                        page * rowsPerPage,
+                        page * rowsPerPage + rowsPerPage
+                      )
+                      .map((row, index) => (
+                        <TableRow
+                          role="checkbox"
+                          tabIndex={-1}
+                          key={row.id}
+                          sx={{
+                            backgroundColor:
+                              index % 2 === 0 ? "#fff" : "#D3D3D3",
+                          }}
+                        >
+                          <TableCell>
+                            Guest #{row.id?.slice(0, 6) || "—"}
+                          </TableCell>
+                          <TableCell align="center">{row.pax}</TableCell>
+                          <TableCell>{row.trip_purpose}</TableCell>
+                          <TableCell>
+                            {row.check_in_date
+                              ? formatDate(String(row.check_in_date))
+                              : "—"}
+                          </TableCell>
+                          <TableCell>
+                            {row.check_out_date
+                              ? formatDate(String(row.check_out_date))
+                              : "—"}
+                          </TableCell>
+                          <TableCell align="right">
+                            ₱{(row.total_price ?? 0).toLocaleString()}
+                          </TableCell>
+                          <TableCell align="right">
+                            ₱{(row.balance ?? 0).toLocaleString()}
+                          </TableCell>
+                          <TableCell>
+                            <Chip
+                              color={getStatusColor(
+                                normalizeStatus(row.booking_status)
+                              )}
+                              label={normalizeStatus(row.booking_status)}
+                            />
+                          </TableCell>
+                          <TableCell align="center">
+                            <Button
+                              size="sm"
+                              variant="outlined"
+                              color="neutral"
+                              startDecorator={<Eye size={16} />}
+                              sx={{ mr: 1 }}
+                              onClick={() => handleViewBooking(row.id)}
+                            >
+                              View
+                            </Button>
+                            {normalizeStatus(row.booking_status) ===
+                              "Pending" && (
+                              <>
+                                <Button
+                                  size="sm"
+                                  variant="solid"
+                                  color="primary"
+                                  sx={{ mr: 1 }}
+                                  startDecorator={<Check size={16} />}
                                   onClick={() =>
-                                    handleStatusChange(row.id, status)
+                                    row.id &&
+                                    handleStatusChange(row.id, "Reserved")
                                   }
                                 >
-                                  {status}
-                                </MenuItem>
-                              ))}
-                            </MenuList>
-                          </Menu>
-                        </TableCell>
-                      </TableRow>
-                    ))}
+                                  Confirm
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="outlined"
+                                  color="danger"
+                                  startDecorator={<XCircle size={16} />}
+                                  onClick={() =>
+                                    row.id &&
+                                    handleStatusChange(row.id, "Canceled")
+                                  }
+                                >
+                                  Cancel
+                                </Button>
+                              </>
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      ))}
                 </TableBody>
               </Table>
             </TableContainer>
             <TablePagination
               rowsPerPageOptions={[10, 25, 100]}
               component="div"
-              count={bookingData.length}
+              count={filteredData.length}
               rowsPerPage={rowsPerPage}
               page={page}
               onPageChange={handleChangePage}
@@ -714,6 +763,16 @@ const Bookings = () => {
         </Container>
       </Container>
     </PageContainer>
+    <BookingDetails
+      open={detailsOpen}
+      onClose={() => setDetailsOpen(false)}
+      bookingId={selectedBookingId}
+      booking={selectedBooking}
+      onStatusChange={(id, newStatus) => {
+        setBookings(prev => prev.map(b => b.id === id ? { ...b, booking_status: newStatus as any } : b));
+      }}
+    />
+    </>
   );
 };
 

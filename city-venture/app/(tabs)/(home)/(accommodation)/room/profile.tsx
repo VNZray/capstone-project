@@ -1,7 +1,14 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNavigation, useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
-import { Dimensions, FlatList, Image, StyleSheet, View } from 'react-native';
+import {
+  Dimensions,
+  FlatList,
+  Image,
+  Platform,
+  StyleSheet,
+  View,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import Button from '@/components/Button';
@@ -10,10 +17,13 @@ import { ThemedText } from '@/components/themed-text';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 
 import Container from '@/components/Container';
+import PageContainer from '@/components/PageContainer';
 import { background, colors } from '@/constants/color';
 import { useAuth } from '@/context/AuthContext';
 import { useRoom } from '@/context/RoomContext';
+import useUserBookings from '@/hooks/use-user-bookings';
 import { Tab } from '@/types/Tab';
+import debugLogger from '@/utils/debugLogger';
 import Details from './details';
 import Photos from './photos';
 import Ratings from './ratings';
@@ -28,8 +38,8 @@ const AccommodationProfile = () => {
   const colorScheme = useColorScheme();
   const { user } = useAuth();
   const { roomDetails } = useRoom();
-
-  const [loading, setLoading] = useState(true);
+  const { bookings, loading, error, refetch } = useUserBookings();
+  // local state still if needed else can remove references
   const [newReview, setNewReview] = useState('');
   const [rating, setRating] = useState(5);
   const [modalVisible, setModalVisible] = useState(false);
@@ -45,6 +55,13 @@ const AccommodationProfile = () => {
         headerTitle: roomDetails.room_type,
       });
     }
+
+    debugLogger({
+      title: 'Booking Data',
+      data: bookings,
+    });
+
+
   }, [navigation, roomDetails?.room_type, roomDetails?.id]);
 
   const [averageAccommodationReviews, setAverageAccommodationReviews] =
@@ -100,8 +117,8 @@ const AccommodationProfile = () => {
           pathname: '/(tabs)/(home)/(accommodation)/room/booking',
           params: {
             userId: user.id,
-            roomId: roomDetails.id
-          }
+            roomId: roomDetails.id,
+          },
         });
       } else {
         console.log('User or room details not available');
@@ -121,7 +138,7 @@ const AccommodationProfile = () => {
   }
 
   return (
-    <View style={{ flex: 1 }}>
+    <PageContainer style={{ padding: 0 }}>
       <FlatList
         data={[]}
         keyExtractor={() => 'header'}
@@ -187,30 +204,38 @@ const AccommodationProfile = () => {
           </>
         }
       />
-      {/* Floating Action Bar */}
-      <View style={[styles.fabBar, { paddingBottom: 62 + insets.bottom }]}>
-        {activeTab !== 'ratings' && (
-          <Button
-            icon
-            variant={isFavorite ? 'soft' : 'soft'}
-            color={isFavorite ? 'error' : 'secondary'}
-            startIcon={isFavorite ? 'heart' : 'heart'}
-            onPress={() => setIsFavorite((f) => !f)}
-            elevation={isFavorite ? 3 : 2}
-          />
-        )}
-        <Button
-          label={actionLabel}
-          fullWidth
-          startIcon={primaryIcon}
-          color="primary"
-          variant="solid"
-          onPress={handlePrimaryAction}
-          elevation={3}
-          style={{ flex: 1 }}
-        />
-      </View>
-    </View>
+      {(() => {
+        const baseBottom = Platform.OS === 'ios' ? 60 : 80;
+        return (
+          <View
+            style={[
+              styles.fabBar,
+              { paddingBottom: baseBottom + insets.bottom },
+            ]}
+          >
+            {activeTab !== 'ratings' && (
+              <Button
+                icon
+                variant={isFavorite ? 'soft' : 'soft'}
+                color={isFavorite ? 'error' : 'secondary'}
+                startIcon={isFavorite ? 'heart' : 'heart'}
+                onPress={() => setIsFavorite((f) => !f)}
+              />
+            )}
+            <Button
+              label={actionLabel}
+              fullWidth
+              startIcon={primaryIcon}
+              color="primary"
+              variant="solid"
+              onPress={handlePrimaryAction}
+              elevation={3}
+              style={{ flex: 1 }}
+            />
+          </View>
+        );
+      })()}
+    </PageContainer>
   );
 };
 
@@ -253,7 +278,6 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     paddingHorizontal: 16,
-    paddingTop: 12,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,

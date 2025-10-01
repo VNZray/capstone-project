@@ -30,12 +30,10 @@ type ButtonProps = {
 
 const Button: React.FC<ButtonProps> = ({
   children,
-  iconName,
   color,
   direction = "row",
   variant = "default",
   gap = 5,
-  iconSize = 16,
   width,
   height,
   fontSize = 10,
@@ -45,7 +43,6 @@ const Button: React.FC<ButtonProps> = ({
   icon,
   style,
 }) => {
-  const IconComponent = iconName && (FaIcons[iconName] as React.ElementType);
 
   return (
     <button

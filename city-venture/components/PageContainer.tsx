@@ -1,6 +1,6 @@
 import { background } from '@/constants/color';
 import React, { ReactNode } from 'react';
-import { StyleSheet, useColorScheme, View, ViewStyle, Platform } from 'react-native';
+import { Platform, StyleSheet, useColorScheme, View, ViewStyle } from 'react-native';
 
 type PageContainerProps = {
   children: ReactNode;
@@ -70,6 +70,7 @@ export default PageContainer;
 const styles = StyleSheet.create({
   container: {
     flexDirection: 'column',
+    paddingBottom: 100,
     padding: 20,
     height: '100%',
     width: '100%',

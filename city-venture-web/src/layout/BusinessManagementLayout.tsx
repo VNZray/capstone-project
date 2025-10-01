@@ -1,18 +1,26 @@
 import { Outlet } from "react-router-dom";
+import { useState } from "react";
 import Sidebar from "../components/Business/Sidebar";
 import "../styles/Layout.css"; // Import CSS file
 import MainHeader from "../components/Business/MainHeader";
 
 export default function BusinessManagementLayout() {
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const handleToggleSidebar = () => setIsSidebarOpen((v) => !v);
+  const handleCloseSidebar = () => setIsSidebarOpen(false);
+
   return (
     <div className="main-layout">
-      <Sidebar />
+      <Sidebar isOpen={isSidebarOpen} onClose={handleCloseSidebar} />
       <div className="main-content">
-        <MainHeader />
+        <MainHeader onMenuClick={handleToggleSidebar} />
         <main className="main-outlet">
           <Outlet />
         </main>
       </div>
+      {isSidebarOpen && (
+        <div className="sidebar-overlay" onClick={handleCloseSidebar} aria-hidden="true" />
+      )}
     </div>
   );
 }

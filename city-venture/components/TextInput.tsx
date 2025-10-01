@@ -1,7 +1,12 @@
 import { card, colors } from '@/constants/color';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { FontAwesome5 } from '@expo/vector-icons';
-import React, { useCallback, useImperativeHandle, useMemo, useState } from 'react';
+import React, {
+  useCallback,
+  useImperativeHandle,
+  useMemo,
+  useState,
+} from 'react';
 import {
   Platform,
   Pressable,
@@ -110,45 +115,45 @@ function getElevation(
       shadowOffset: { width: 0, height: 10 },
     },
   };
-  
+
   // Enhanced Android elevation
   const android: Record<number, ViewStyle> = {
-    1: { 
+    1: {
       elevation: 1,
       shadowColor: '#000',
       shadowOffset: { width: 0, height: 1 },
       shadowOpacity: 0.08,
       shadowRadius: 2,
     },
-    2: { 
+    2: {
       elevation: 2,
       shadowColor: '#000',
       shadowOffset: { width: 0, height: 1 },
-      shadowOpacity: 0.10,
+      shadowOpacity: 0.1,
       shadowRadius: 3,
     },
-    3: { 
+    3: {
       elevation: 3,
       shadowColor: '#000',
       shadowOffset: { width: 0, height: 2 },
       shadowOpacity: 0.12,
       shadowRadius: 4,
     },
-    4: { 
+    4: {
       elevation: 4,
       shadowColor: '#000',
       shadowOffset: { width: 0, height: 2 },
       shadowOpacity: 0.14,
       shadowRadius: 5,
     },
-    5: { 
+    5: {
       elevation: 5,
       shadowColor: '#000',
       shadowOffset: { width: 0, height: 3 },
       shadowOpacity: 0.16,
       shadowRadius: 6,
     },
-    6: { 
+    6: {
       elevation: 6,
       shadowColor: '#000',
       shadowOffset: { width: 0, height: 3 },
@@ -156,7 +161,7 @@ function getElevation(
       shadowRadius: 7,
     },
   };
-  
+
   return Platform.select({
     ios: iosShadow[level],
     android: android[level],
@@ -223,10 +228,11 @@ const FormTextInput = React.forwardRef<FormTextInputRef, FormTextInputProps>(
     const [validationError, setValidationError] = useState<string | null>(null);
     const currentValue = controlled ? value! : internal;
 
+    // Sizing tokens unified with Dropdown
     const sizeCfg = useMemo(() => {
       switch (size) {
         case 'small':
-          return { h: 40, font: 13, padH: 12, padV: 8, icon: 14 };
+          return { h: 40, font: 13, padH: 10, padV: 8, icon: 14 };
         case 'large':
           return { h: 54, font: 16, padH: 16, padV: 14, icon: 18 };
         default:
@@ -254,7 +260,7 @@ const FormTextInput = React.forwardRef<FormTextInputRef, FormTextInputProps>(
     const handleChange = (t: string) => {
       if (!controlled) setInternal(t);
       onChangeText?.(t);
-      
+
       // Validate on change if enabled
       if (validateOnChange) {
         validate(t);
@@ -263,7 +269,7 @@ const FormTextInput = React.forwardRef<FormTextInputRef, FormTextInputProps>(
 
     const handleBlur = () => {
       onBlur?.();
-      
+
       // Validate on blur if enabled
       if (validateOnBlur) {
         validate();
@@ -276,33 +282,38 @@ const FormTextInput = React.forwardRef<FormTextInputRef, FormTextInputProps>(
     };
 
     // Validation function
-    const validate = useCallback((valueToValidate?: string): boolean => {
-      const val = valueToValidate ?? currentValue;
-      let error: string | null = null;
+    const validate = useCallback(
+      (valueToValidate?: string): boolean => {
+        const val = valueToValidate ?? currentValue;
+        let error: string | null = null;
 
-      // Required validation
-      if (required && (!val || val.trim() === '')) {
-        error = `${label || 'This field'} is required`;
-      }
-      // Min length validation
-      else if (minLength && val.length < minLength) {
-        error = `${label || 'This field'} must be at least ${minLength} characters`;
-      }
-      // Pattern validation
-      else if (pattern && !pattern.test(val)) {
-        error = `${label || 'This field'} format is invalid`;
-      }
-      // Custom validation
-      else if (customValidator) {
-        const customError = customValidator(val);
-        if (customError) {
-          error = customError;
+        // Required validation
+        if (required && (!val || val.trim() === '')) {
+          error = `${label || 'This field'} is required`;
         }
-      }
+        // Min length validation
+        else if (minLength && val.length < minLength) {
+          error = `${
+            label || 'This field'
+          } must be at least ${minLength} characters`;
+        }
+        // Pattern validation
+        else if (pattern && !pattern.test(val)) {
+          error = `${label || 'This field'} format is invalid`;
+        }
+        // Custom validation
+        else if (customValidator) {
+          const customError = customValidator(val);
+          if (customError) {
+            error = customError;
+          }
+        }
 
-      setValidationError(error);
-      return error === null;
-    }, [currentValue, required, minLength, pattern, customValidator, label]);
+        setValidationError(error);
+        return error === null;
+      },
+      [currentValue, required, minLength, pattern, customValidator, label]
+    );
 
     const getError = useCallback(() => {
       return validationError;
@@ -349,7 +360,7 @@ const FormTextInput = React.forwardRef<FormTextInputRef, FormTextInputProps>(
           >
             {label}
             {required && <Text style={{ color: errorColor }}> *</Text>}
-            {!required && (' (Optional)')}
+            {!required && ' (Optional)'}
           </ThemedText>
         )}
         <View
@@ -357,8 +368,6 @@ const FormTextInput = React.forwardRef<FormTextInputRef, FormTextInputProps>(
             styles.inputOuter,
             {
               minHeight: sizeCfg.h,
-              paddingHorizontal: sizeCfg.padH,
-              paddingVertical: multiline ? sizeCfg.padV : 0,
               borderRadius: 8,
               flexDirection: 'row',
               alignItems: multiline ? 'flex-start' : 'center',
@@ -386,8 +395,12 @@ const FormTextInput = React.forwardRef<FormTextInputRef, FormTextInputProps>(
               {
                 color: textColor,
                 fontSize: sizeCfg.font,
-                paddingVertical: multiline ? 4 : 0,
+                paddingHorizontal: sizeCfg.padH,
+                paddingVertical: multiline ? sizeCfg.padV : 0,
                 flex: 1,
+                height: multiline
+                  ? sizeCfg.h * numberOfLines! || sizeCfg.h
+                  : sizeCfg.h,
               },
               inputStyle,
             ]}
