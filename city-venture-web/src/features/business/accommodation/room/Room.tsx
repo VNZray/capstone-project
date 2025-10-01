@@ -27,10 +27,6 @@ import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { DateCalendar } from "@mui/x-date-pickers/DateCalendar";
 import CardHeader from "@/src/components/CardHeader";
-import Card from "@mui/joy/Card";
-import CardContent from "@mui/joy/CardContent";
-import CircularProgress from "@mui/joy/CircularProgress";
-import SvgIcon from "@mui/joy/SvgIcon";
 
 const RoomPage = () => {
   const navigate = useNavigate();
@@ -93,126 +89,6 @@ const calcPercentage = (count: number) => {
 
   return (
     <PageContainer>
-      {/* Stats Cards */}
-      <Container
-        padding="0"
-        background="transparent"
-        direction="row"
-        style={{ flexWrap: "wrap", gap: 16 }}
-      >
-        {/* Total Rooms */}
-        <Card sx={{ flex: "1 1 240px", minWidth: 240 }} variant="solid" color="primary" invertedColors>
-          <CardContent orientation="horizontal">
-            <CircularProgress size="lg" determinate value={calcPercentage(roomCount)}>
-              <SvgIcon>
-                {/* Building Office Icon */}
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  strokeWidth={1.5}
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M3 21V5a2 2 0 012-2h3v18H3zm6 0V3h6v18H9zm9 0V9h3a2 2 0 012 2v10h-5z"
-                  />
-                </svg>
-              </SvgIcon>
-            </CircularProgress>
-            <CardContent>
-              <Typography level="body-md">Total Rooms</Typography>
-              <Typography level="h2">{roomCount}</Typography>
-            </CardContent>
-          </CardContent>
-        </Card>
-
-        {/* Available */}
-        <Card sx={{ flex: "1 1 240px", minWidth: 240 }} variant="solid" color="success" invertedColors>
-          <CardContent orientation="horizontal">
-            <CircularProgress size="lg" determinate value={calcPercentage(availableCount)}>
-              <SvgIcon>
-                {/* Check Circle Icon */}
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  strokeWidth={1.5}
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M9 12.75l2.25 2.25L15 9.75M12 21a9 9 0 100-18 9 9 0 000 18z"
-                  />
-                </svg>
-              </SvgIcon>
-            </CircularProgress>
-            <CardContent>
-              <Typography level="body-md">Available</Typography>
-              <Typography level="h2">{availableCount}</Typography>
-            </CardContent>
-          </CardContent>
-        </Card>
-
-        {/* Occupied */}
-        <Card sx={{ flex: "1 1 240px", minWidth: 240 }} variant="solid" color="warning" invertedColors>
-          <CardContent orientation="horizontal">
-            <CircularProgress size="lg" determinate value={calcPercentage(occupiedCount)}>
-              <SvgIcon>
-                {/* User Icon */}
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  strokeWidth={1.5}
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.5 20.25a8.25 8.25 0 0115 0v.75h-15v-.75z"
-                  />
-                </svg>
-              </SvgIcon>
-            </CircularProgress>
-            <CardContent>
-              <Typography level="body-md">Occupied</Typography>
-              <Typography level="h2">{occupiedCount}</Typography>
-            </CardContent>
-          </CardContent>
-        </Card>
-
-        {/* Maintenance */}
-        <Card sx={{ flex: "1 1 240px", minWidth: 240 }} variant="solid" color="danger" invertedColors>
-          <CardContent orientation="horizontal">
-            <CircularProgress size="lg" determinate value={calcPercentage(maintenanceCount)}>
-              <SvgIcon>
-                {/* Wrench / Tools Icon */}
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  strokeWidth={1.5}
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M15.232 5.232a4 4 0 105.536 5.536L15.232 5.232zM6.75 6.75L3 21l14.25-3.75L6.75 6.75z"
-                  />
-                </svg>
-              </SvgIcon>
-            </CircularProgress>
-            <CardContent>
-              <Typography level="body-md">Maintenance</Typography>
-              <Typography level="h2">{maintenanceCount}</Typography>
-            </CardContent>
-          </CardContent>
-        </Card>
-      </Container>
-
       {/* Room Management */}
       <Container gap="0" padding="0" elevation={3}>
         <Container

@@ -26,9 +26,19 @@ export const fetchRoomDetails = async (room_id: string): Promise<Room> => {
 
 /** Fetch Rooms by Business ID */
 export async function fetchRoomsByBusinessId(
-  businessId: string
+  businessId: string,
+  opts?: { noCache?: boolean }
 ): Promise<Room[]> {
-  const { data } = await axios.get(`${api}/room/${businessId}`);
+  const cacheSuffix = opts?.noCache ? `?ts=${Date.now()}` : '';
+  const { data } = await axios.get(`${api}/room/${businessId}${cacheSuffix}` , {
+    headers: opts?.noCache
+      ? {
+          'Cache-Control': 'no-cache',
+          Pragma: 'no-cache',
+          Expires: '0',
+        }
+      : undefined,
+  });
   return Array.isArray(data) ? data : [data];
 }
 

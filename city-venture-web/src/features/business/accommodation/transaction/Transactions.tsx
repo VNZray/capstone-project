@@ -13,7 +13,12 @@ import TablePagination from "@mui/material/TablePagination";
 import TableRow from "@mui/material/TableRow";
 import Paper from "@mui/material/Paper";
 import { Chip, TableHead } from "@mui/material";
-import React from "react";
+import React, { useEffect } from "react";
+import { useBusiness } from "@/src/context/BusinessContext";
+import type { Booking } from "@/src/types/Booking";
+import { fetchBookingsByBusinessId } from "@/src/services/BookingService";
+import { fetchPaymentsByBookingId } from "@/src/services/PaymentService";
+import type { Payment } from "@/src/types/Payment";
 
 // Transaction columns
 interface Column {
@@ -74,44 +79,25 @@ const formatDate = (dateString: string) => {
   return new Date(dateString).toLocaleDateString("en-US", options);
 };
 
-// Dummy transaction data
-const transactionData = [
-  {
-    id: "TXN-1001",
-    booking_id: "BK-2001",
-    name: "John Doe",
-    payment_type: "Full Payment",
-    payment_method: "GCash",
-    payment_for: "Reservation",
-    transaction_date: "2023-09-01",
-    amount: 4500,
-    status: "Paid",
-  },
-  {
-    id: "TXN-1002",
-    booking_id: "BK-2002",
-    name: "Jane Smith",
-    payment_type: "Partial Payment",
-    payment_method: "Credit Card",
-    payment_for: "Pending Balance",
-    transaction_date: "2023-09-02",
-    amount: 1500,
-    status: "Pending Balance",
-  },
-  {
-    id: "TXN-1003",
-    booking_id: "BK-2003",
-    name: "Mark Lee",
-    payment_type: "Full Payment",
-    payment_method: "PayMaya",
-    payment_for: "Reservation",
-    transaction_date: "2023-09-15",
-    amount: 5200,
-    status: "Failed",
-  },
-];
+// Row shape for the table derived from Payment + Booking join
+interface TransactionRow {
+  id: string; // payment id
+  booking_id: string; // booking id
+  name: string; // guest name from booking
+  payment_type: string;
+  payment_method: string;
+  payment_for: string;
+  transaction_date: string; // created_at
+  amount: number;
+  status: string;
+}
 
 const Transactions = () => {
+  const { businessDetails } = useBusiness();
+
+  const [rows, setRows] = React.useState<TransactionRow[]>([]);
+  const [loading, setLoading] = React.useState(false);
+  const [error, setError] = React.useState<string | null>(null);
   const [page, setPage] = React.useState(0);
   const [rowsPerPage, setRowsPerPage] = React.useState(10);
   const [filter, setFilter] = React.useState<
@@ -122,6 +108,75 @@ const Transactions = () => {
   );
   const [selectedYear, setSelectedYear] = React.useState<number | "all">("all");
   const [searchTerm, setSearchTerm] = React.useState("");
+
+  // Local helper to normalize status casing differences from backend
+  const normalizeStatus = (status?: string) => {
+    if (!status) return "Pending";
+    const lower = status.toLowerCase();
+    if (lower === "checked-in" || lower === "checked_in") return "Checked-in";
+    if (lower === "checked-out" || lower === "checked_out")
+      return "Checked-out";
+    return status.charAt(0).toUpperCase() + status.slice(1);
+  };
+
+  // Fetch bookings for selected business
+  useEffect(() => {
+    const load = async () => {
+      if (!businessDetails?.id) return;
+      setLoading(true);
+      setError(null);
+      try {
+        const data = await fetchBookingsByBusinessId(businessDetails.id);
+        const normalized = data.map((b) => ({
+          ...b,
+          pax: b.pax ?? 0,
+          id: b.id,
+            total_price: b.total_price ?? 0,
+            balance: b.balance ?? 0,
+            booking_status: normalizeStatus(
+              b.booking_status
+            ) as Booking["booking_status"],
+            trip_purpose: b.trip_purpose || "—",
+        }));
+        // Fetch payments for each booking in parallel
+        const paymentEntries = await Promise.all(normalized.map(async (booking) => {
+          if (!booking.id) return [undefined, []] as const;
+          try {
+            const pay = await fetchPaymentsByBookingId(booking.id);
+            return [booking.id, pay] as const;
+          } catch (err) {
+            console.warn("Failed to fetch payments for booking", booking.id, err);
+            return [booking.id, []] as const;
+          }
+        }));
+        const paymentMap: Record<string, Payment[]> = Object.fromEntries(paymentEntries.filter(e => e[0]) as [string, Payment[]][]);
+
+        const allRows: TransactionRow[] = normalized.flatMap((b) => {
+          if (!b.id) return [];
+          const bookingPayments = paymentMap[b.id] || [];
+          if (!bookingPayments.length) return [];
+          return bookingPayments.map((p: Payment) => ({
+            id: String(p.id),
+            booking_id: b.id!,
+            name: b.id || '—',
+            payment_type: p.payment_type || '—',
+            payment_method: p.payment_method || '—',
+            payment_for: p.payment_for || '—',
+            transaction_date: p.created_at ? new Date(p.created_at).toISOString() : new Date().toISOString(),
+            amount: p.amount ?? 0,
+            status: p.status || 'Pending',
+          }));
+        });
+        setRows(allRows);
+      } catch (e: any) {
+        console.error("Failed to load bookings/payments", e);
+        setError(e?.message || "Failed to load data");
+      } finally {
+        setLoading(false);
+      }
+    };
+    load();
+  }, [businessDetails?.id]);
 
   const handleChangePage = (
     _event: React.MouseEvent<HTMLButtonElement> | null,
@@ -138,12 +193,10 @@ const Transactions = () => {
   };
 
   const years = Array.from(
-    new Set(
-      transactionData.map((row) => new Date(row.transaction_date).getFullYear())
-    )
-  ).sort((a, b) => b - a); // sort descending
+    new Set(rows.map((row) => new Date(row.transaction_date).getFullYear()))
+  ).sort((a, b) => b - a);
 
-  const filterByDate = (data: typeof transactionData) => {
+  const filterByDate = (data: TransactionRow[]) => {
     const today = new Date();
 
     return data.filter((row) => {
@@ -194,7 +247,7 @@ const Transactions = () => {
     });
   };
 
-  const filteredData = filterByDate(transactionData);
+  const filteredData = filterByDate(rows);
 
   return (
     <PageContainer>
@@ -301,7 +354,21 @@ const Transactions = () => {
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {filteredData
+                  {loading && (
+                    <TableRow>
+                      <TableCell colSpan={columns.length} align="center">
+                        Loading payments...
+                      </TableCell>
+                    </TableRow>
+                  )}
+                  {!loading && filteredData.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={columns.length} align="center">
+                        {error ? error : 'No payment transactions found'}
+                      </TableCell>
+                    </TableRow>
+                  )}
+                  {!loading && filteredData
                     .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
                     .map((row, index) => (
                       <TableRow
@@ -316,7 +383,9 @@ const Transactions = () => {
                         <TableCell>{row.payment_type}</TableCell>
                         <TableCell>{row.payment_method}</TableCell>
                         <TableCell>{row.payment_for}</TableCell>
-                        <TableCell>{formatDate(row.transaction_date)}</TableCell>
+                        <TableCell>
+                          {formatDate(row.transaction_date)}
+                        </TableCell>
                         <TableCell align="right">
                           ₱{row.amount.toLocaleString()}
                         </TableCell>

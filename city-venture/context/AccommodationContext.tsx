@@ -24,6 +24,7 @@ interface AccommodationContextType {
   setAccommodationId: (id: string) => void;
   clearAccommodationId: () => void;
   refreshAccommodation: () => Promise<void>;
+  refreshAllAccommodations: () => Promise<void>;
 }
 
 const AccommodationContext = createContext<
@@ -154,6 +155,7 @@ export const AccommodationProvider: React.FC<AccommodationProviderProps> = ({
         setAccommodationId,
         clearAccommodationId,
         refreshAccommodation: fetchAccommodation,
+        refreshAllAccommodations: fetchAllAccommodations,
       }}
     >
       {children}

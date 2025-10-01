@@ -1,7 +1,7 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNavigation } from 'expo-router';
-import { useEffect, useState } from 'react';
-import { Dimensions, FlatList, Image, StyleSheet, View } from 'react-native';
+import { useEffect, useState, useCallback, useRef } from 'react';
+import { Dimensions, FlatList, Image, StyleSheet, View, RefreshControl, NativeSyntheticEvent, NativeScrollEvent } from 'react-native';
 
 import Tabs from '@/components/Tabs';
 import { ThemedText } from '@/components/themed-text';
@@ -23,7 +23,40 @@ const AccommodationProfile = () => {
   const [activeTab, setActiveTab] = useState<string>('details');
   const colorScheme = useColorScheme();
   const { user } = useAuth();
-  const { accommodationDetails } = useAccommodation();
+  const { accommodationDetails, refreshAccommodation, refreshAllAccommodations } = useAccommodation();
+
+  // Refresh & scroll state
+  const [refreshing, setRefreshing] = useState(false);
+  const lastOffset = useRef(0);
+  const atTopRef = useRef(true);
+  const wasScrollingUpRef = useRef(false);
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      // Refresh the focused accommodation + optionally the list (safe no-op if not needed)
+      await Promise.all([
+        refreshAccommodation?.(),
+        refreshAllAccommodations?.(),
+      ]);
+    } finally {
+      setRefreshing(false);
+    }
+  }, [refreshAccommodation, refreshAllAccommodations]);
+
+  const handleScroll = useCallback((e: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const y = e.nativeEvent.contentOffset.y;
+    const prev = lastOffset.current;
+    wasScrollingUpRef.current = y < prev;
+    atTopRef.current = y <= 0; // treat <=0 as top
+    lastOffset.current = y;
+  }, []);
+
+  const handleScrollEndDrag = useCallback(() => {
+    if (atTopRef.current && wasScrollingUpRef.current && !refreshing) {
+      onRefresh();
+    }
+  }, [onRefresh, refreshing]);
 
   const [loading, setLoading] = useState(true);
   const [newReview, setNewReview] = useState('');
@@ -78,6 +111,11 @@ const AccommodationProfile = () => {
         data={[]}
         keyExtractor={() => 'header'}
         renderItem={() => null}
+        contentContainerStyle={{ paddingBottom: 80 }}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+        onScroll={handleScroll}
+        onScrollEndDrag={handleScrollEndDrag}
+        scrollEventThrottle={32}
         ListHeaderComponent={
           <>
             <Image
