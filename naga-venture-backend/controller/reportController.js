@@ -142,3 +142,49 @@ export async function getReportsByStatus(request, response) {
     handleDbError(error, response);
   }
 }
+
+// Add a single attachment to a report
+export async function addReportAttachment(request, response) {
+  const { id } = request.params; // report id
+  const { file_url, file_name, file_type, file_size } = request.body;
+  try {
+    if (!file_url || !file_name) {
+      return response.status(400).json({ message: "file_url and file_name are required" });
+    }
+    const attachmentId = uuidv4();
+    const params = [attachmentId, id, file_url, file_name, file_type || null, file_size || null];
+    const placeholders = params.map(() => "?").join(",");
+    const [result] = await db.query(`CALL InsertReportAttachment(${placeholders})`, params);
+    const row = result[0] ? result[0][0] : null;
+    response.status(201).json({ message: "Attachment added", attachment: row });
+  } catch (error) {
+    handleDbError(error, response);
+  }
+}
+
+// Bulk add attachments (expects array attachments in body)
+export async function bulkAddReportAttachments(request, response) {
+  const { id } = request.params; // report id
+  const { attachments } = request.body;
+  try {
+    if (!Array.isArray(attachments) || attachments.length === 0) {
+      return response.status(400).json({ message: "attachments must be a non-empty array" });
+    }
+    // Validate minimal fields
+    for (const a of attachments) {
+      if (!a.file_url || !a.file_name) {
+        return response.status(400).json({ message: "Each attachment needs file_url and file_name" });
+      }
+    }
+    const json = JSON.stringify(attachments.map(a => ({
+      file_url: a.file_url,
+      file_name: a.file_name,
+      file_type: a.file_type || null,
+      file_size: a.file_size || null,
+    })));
+    const [data] = await db.query("CALL BulkInsertReportAttachments(?, ?)", [id, json]);
+    response.status(201).json({ message: "Attachments added", attachments: data[0] });
+  } catch (error) {
+    handleDbError(error, response);
+  }
+}

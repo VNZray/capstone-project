@@ -1,12 +1,28 @@
-import { View, Text } from 'react-native'
-import React from 'react'
+import React from 'react';
+import { Slot, Stack } from 'expo-router';
+import { TouristSpotProvider } from '@/context/TouristSpotContext';
+import { StatusBar } from 'expo-status-bar';
 
-const SpotLayout = () => {
+export default function SpotLayout() {
   return (
-    <View>
-      <Text>SpotLayout</Text>
-    </View>
-  )
+    <TouristSpotProvider>
+      <StatusBar style="light" />
+      <Stack
+        screenOptions={{
+          headerBackTitle: 'Back',
+        }}
+      >
+        <Stack.Screen
+          name="index"
+          options={{
+            headerShown: true,
+            animation: 'slide_from_right',
+            headerTitleAlign: 'center',
+            headerTitle: 'Tourist Spots',
+            headerBackTitle: 'Back',
+          }}
+        />
+      </Stack>
+    </TouristSpotProvider>
+  );
 }
-
-export default SpotLayout

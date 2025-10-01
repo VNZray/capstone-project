@@ -1,5 +1,7 @@
-// Main tourist spot procedures
+// Procedures for managing main tourist spot data.
+
 export async function createTouristSpotProcedures(knex) {
+  // Retrieves all tourist spots, their types, address details, categories, and images.
   await knex.raw(`
     CREATE PROCEDURE GetAllTouristSpots()
     BEGIN
@@ -36,6 +38,8 @@ export async function createTouristSpotProcedures(knex) {
       ORDER BY is_primary DESC, uploaded_at ASC;
     END;
   `);
+
+  // Retrieves a single tourist spot by ID, including its type, address, categories, and images.
   await knex.raw(`
     CREATE PROCEDURE GetTouristSpotById(IN p_id CHAR(36))
     BEGIN
@@ -66,6 +70,8 @@ export async function createTouristSpotProcedures(knex) {
       ORDER BY is_primary DESC, uploaded_at ASC;
     END;
   `);
+
+  // Inserts a new tourist spot record
   await knex.raw(`
     CREATE PROCEDURE InsertTouristSpot(
   IN p_name VARCHAR(255),
@@ -93,6 +99,8 @@ export async function createTouristSpotProcedures(knex) {
       SELECT @newId AS id;
     END;
   `);
+
+  // Updates an existing tourist spot record
   await knex.raw(`
     CREATE PROCEDURE UpdateTouristSpot(
   IN p_id CHAR(36),

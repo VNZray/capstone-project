@@ -44,9 +44,15 @@ const ReporterInfoSection: React.FC<ReporterInfoSectionProps> = ({ report }) => 
           <Typography level="title-sm">
             Name
           </Typography>
-          <Typography level="body-md">
-            {((report.reporter_first_name || report.reporter_last_name) ? `${report.reporter_first_name || ''} ${report.reporter_last_name || ''}`.trim() : 'Not provided')}
-          </Typography>
+            <Typography level="body-md">
+              {report.reporter_first_name && report.reporter_last_name
+                ? `${report.reporter_first_name} ${report.reporter_last_name}`
+                : report.reporter_first_name
+                  ? report.reporter_first_name
+                  : report.reporter_last_name
+                    ? report.reporter_last_name
+                    : 'Not provided'}
+            </Typography>
         </Stack>
 
         <Stack spacing={1}>

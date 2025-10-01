@@ -1,5 +1,7 @@
-// Image-related procedures
+// Procedures for managing images related to tourist spots.
+
 export async function createImageProcedures(knex) {
+  // Retrieves all images for a given tourist spot ID.
   await knex.raw(`
     CREATE PROCEDURE GetTouristSpotImages(IN p_tourist_spot_id CHAR(36))
     BEGIN
@@ -11,6 +13,8 @@ export async function createImageProcedures(knex) {
       ORDER BY is_primary DESC, uploaded_at ASC;
     END;
   `);
+
+  // Adds a new image for a tourist spot. If is_primary is true, sets all other images to non-primary.
   await knex.raw(`
     CREATE PROCEDURE AddTouristSpotImage(
       IN p_tourist_spot_id CHAR(36),
@@ -30,6 +34,8 @@ export async function createImageProcedures(knex) {
       SELECT * FROM tourist_spot_images WHERE id = @imgId;
     END;
   `);
+
+  // Updates an image's primary status and alt text for a tourist spot.
   await knex.raw(`
     CREATE PROCEDURE UpdateTouristSpotImage(
       IN p_tourist_spot_id CHAR(36),
@@ -49,6 +55,8 @@ export async function createImageProcedures(knex) {
       SELECT * FROM tourist_spot_images WHERE id = p_image_id;
     END;
   `);
+
+  // Deletes an image for a tourist spot.
   await knex.raw(`
     CREATE PROCEDURE DeleteTouristSpotImage(
       IN p_tourist_spot_id CHAR(36),
@@ -59,6 +67,8 @@ export async function createImageProcedures(knex) {
       SELECT ROW_COUNT() AS affected_rows;
     END;
   `);
+
+  // Sets a specific image as the primary image for a tourist spot.
   await knex.raw(`
     CREATE PROCEDURE SetPrimaryTouristSpotImage(
       IN p_tourist_spot_id CHAR(36),
