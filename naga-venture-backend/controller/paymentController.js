@@ -40,6 +40,20 @@ export async function getPaymentById(req, res) {
   }
 }
 
+// Get payments by payment_for_id (booking id reference or subscription id reference)
+export async function getPaymentByPaymentForId(req, res) {
+  const { payment_for_id } = req.params;
+  try {
+    const [data] = await db.query("CALL GetPaymentByPaymentForId(?)", [payment_for_id]);
+    if (!data[0] || data[0].length === 0) {
+      return res.status(404).json({ message: "No payments found" });
+    }
+    res.json(data[0]);
+  } catch (error) {
+    return handleDbError(error, res);
+  }
+}
+
 // Insert a new payment
 export async function insertPayment(req, res) {
   try {

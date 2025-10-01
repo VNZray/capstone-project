@@ -25,6 +25,7 @@ interface RoomContextType {
   setRoomId: (id: string) => void;
   clearRoomId: () => void;
   refreshRoom: () => Promise<void>;
+  refreshRooms: (opts?: { force?: boolean }) => Promise<void>;
 }
 
 const RoomContext = createContext<RoomContextType | undefined>(undefined);
@@ -82,19 +83,32 @@ export const RoomProvider: React.FC<RoomProviderProps> = ({ children }) => {
   }, [selectedRoomId]);
 
   /** Fetch rooms for the selected business */
-  const fetchRoomsForBusiness = useCallback(async () => {
-    if (!selectedAccommodationId) return;
+  const fetchRoomsForBusiness = useCallback(async (opts?: { force?: boolean }) => {
+    if (!selectedAccommodationId) {
+      setRooms(null);
+      setSelectedRoomId(null);
+      return;
+    }
     setLoading(true);
+    const currentAccommodation = selectedAccommodationId;
     try {
-      const data = await fetchRoomsByBusinessId(selectedAccommodationId);
-      setRooms(data);
+      const data = await fetchRoomsByBusinessId(currentAccommodation, { noCache: opts?.force });
+      // Prevent stale overwrite if accommodation changed mid-fetch
+      if (currentAccommodation === selectedAccommodationId) {
+        setRooms(data);
+      }
     } catch (e) {
       debugLogger({
         title: 'RoomContext: Failed to fetch rooms by business id',
         error: e
       });
+      if (currentAccommodation === selectedAccommodationId) {
+        setRooms(null);
+      }
     } finally {
-      setLoading(false);
+      if (currentAccommodation === selectedAccommodationId) {
+        setLoading(false);
+      }
     }
   }, [selectedAccommodationId]);
 
@@ -108,6 +122,9 @@ export const RoomProvider: React.FC<RoomProviderProps> = ({ children }) => {
 
   // Fetch room list whenever the selected accommodation changes
   useEffect(() => {
+    // When accommodation changes, reset selected room and existing list immediately to avoid stale UI
+    setRooms(null);
+    setSelectedRoomId(null);
     fetchRoomsForBusiness();
   }, [fetchRoomsForBusiness]);
 
@@ -121,6 +138,7 @@ export const RoomProvider: React.FC<RoomProviderProps> = ({ children }) => {
         setRoomId,
         clearRoomId,
         refreshRoom: fetchRoom,
+        refreshRooms: fetchRoomsForBusiness,
       }}
     >
       {children}

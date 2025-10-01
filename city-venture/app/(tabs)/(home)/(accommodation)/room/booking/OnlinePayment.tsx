@@ -81,13 +81,16 @@ const OnlinePayment = () => {
     if (!roomDetails?.id || !user?.id) return;
     try {
       setCreating(true);
-      const bookingPayload: Booking = {
-        ...(parsed.b as Booking),
-        room_id: roomDetails.id,
-        tourist_id: user.id,
-        booking_status: 'Pending',
-        balance: (parsed.b as Booking)?.total_price,
-      } as Booking;
+        const total = Number((parsed.b as Booking)?.total_price) || 0;
+        const paid = Number((parsed.p as BookingPayment)?.amount) || 0;
+        const bookingPayload: Booking = {
+          ...(parsed.b as Booking),
+          room_id: roomDetails.id,
+          tourist_id: user.id,
+          // Online payments reserve the booking immediately
+          booking_status: 'Reserved',
+          balance: Math.max(total - paid, 0),
+        } as Booking;
       const guestsPayload = (parsed.g || []).map((g: any) => ({
         ...g,
         name: g.name,
