@@ -8,13 +8,17 @@ async function createReportProcedures(knex) {
   await knex.raw(`
     CREATE PROCEDURE GetAllReports()
     BEGIN
-      SELECT 
-        r.*, 
-        u.email AS reporter_email,
-        u.phone_number AS reporter_contact
-      FROM report r
-      JOIN user u ON r.reporter_id = u.id
-      ORDER BY r.created_at DESC;
+        SELECT 
+          r.*, 
+          u.email AS reporter_email,
+          u.phone_number AS reporter_contact,
+          t.first_name AS reporter_first_name,
+          t.middle_name AS reporter_middle_name,
+          t.last_name AS reporter_last_name
+        FROM report r
+        JOIN user u ON r.reporter_id = u.id
+        LEFT JOIN tourist t ON t.user_id = u.id
+        ORDER BY r.created_at DESC;
     END;
   `);
 
@@ -22,14 +26,18 @@ async function createReportProcedures(knex) {
   await knex.raw(`
     CREATE PROCEDURE GetReportById(IN p_id CHAR(36))
     BEGIN
-      -- Report details
-      SELECT 
-        r.*, 
-        u.email AS reporter_email,
-        u.phone_number AS reporter_contact
-      FROM report r
-      JOIN user u ON r.reporter_id = u.id
-      WHERE r.id = p_id;
+        -- Report details
+        SELECT 
+          r.*, 
+          u.email AS reporter_email,
+          u.phone_number AS reporter_contact,
+          t.first_name AS reporter_first_name,
+          t.middle_name AS reporter_middle_name,
+          t.last_name AS reporter_last_name
+        FROM report r
+        JOIN user u ON r.reporter_id = u.id
+        LEFT JOIN tourist t ON t.user_id = u.id
+        WHERE r.id = p_id;
 
       -- Status history
       SELECT 
@@ -51,9 +59,18 @@ async function createReportProcedures(knex) {
   await knex.raw(`
     CREATE PROCEDURE GetReportsByReporterId(IN p_reporter_id CHAR(36))
     BEGIN
-      SELECT * FROM report 
-      WHERE reporter_id = p_reporter_id
-      ORDER BY created_at DESC;
+        SELECT 
+          r.*, 
+          u.email AS reporter_email,
+          u.phone_number AS reporter_contact,
+          t.first_name AS reporter_first_name,
+          t.middle_name AS reporter_middle_name,
+          t.last_name AS reporter_last_name
+        FROM report r
+        JOIN user u ON r.reporter_id = u.id
+        LEFT JOIN tourist t ON t.user_id = u.id
+        WHERE r.reporter_id = p_reporter_id
+        ORDER BY r.created_at DESC;
     END;
   `);
 
@@ -61,13 +78,18 @@ async function createReportProcedures(knex) {
   await knex.raw(`
     CREATE PROCEDURE GetReportsByTarget(IN p_target_type VARCHAR(30), IN p_target_id VARCHAR(100))
     BEGIN
-      SELECT 
-        r.*, 
-        u.email AS reporter_email
-      FROM report r
-      JOIN user u ON r.reporter_id = u.id
-      WHERE r.target_type = p_target_type AND r.target_id = p_target_id
-      ORDER BY r.created_at DESC;
+        SELECT 
+          r.*, 
+          u.email AS reporter_email,
+          u.phone_number AS reporter_contact,
+          t.first_name AS reporter_first_name,
+          t.middle_name AS reporter_middle_name,
+          t.last_name AS reporter_last_name
+        FROM report r
+        JOIN user u ON r.reporter_id = u.id
+        LEFT JOIN tourist t ON t.user_id = u.id
+        WHERE r.target_type = p_target_type AND r.target_id = p_target_id
+        ORDER BY r.created_at DESC;
     END;
   `);
 
@@ -75,13 +97,18 @@ async function createReportProcedures(knex) {
   await knex.raw(`
     CREATE PROCEDURE GetReportsByStatus(IN p_status VARCHAR(30))
     BEGIN
-      SELECT 
-        r.*, 
-        u.email AS reporter_email
-      FROM report r
-      JOIN user u ON r.reporter_id = u.id
-      WHERE r.status = p_status
-      ORDER BY r.created_at DESC;
+        SELECT 
+          r.*, 
+          u.email AS reporter_email,
+          u.phone_number AS reporter_contact,
+          t.first_name AS reporter_first_name,
+          t.middle_name AS reporter_middle_name,
+          t.last_name AS reporter_last_name
+        FROM report r
+        JOIN user u ON r.reporter_id = u.id
+        LEFT JOIN tourist t ON t.user_id = u.id
+        WHERE r.status = p_status
+        ORDER BY r.created_at DESC;
     END;
   `);
 
