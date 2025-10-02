@@ -1,7 +1,5 @@
 import * as React from 'react';
-import { Box, Typography, Sheet, Avatar, IconButton, Textarea, Button, Chip, Dropdown, Menu, MenuButton, MenuItem, Stack, Tooltip } from '@mui/joy';
-import FavoriteIcon from '@mui/icons-material/Favorite';
-import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder';
+import { Box, Typography, Sheet, Avatar, IconButton, Textarea, Button, Chip, Dropdown, Menu, MenuButton, MenuItem, Stack } from '@mui/joy';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import StarIcon from '@mui/icons-material/Star';
 import VerifiedIcon from '@mui/icons-material/Verified';

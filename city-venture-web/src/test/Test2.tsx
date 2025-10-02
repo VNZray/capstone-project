@@ -2,7 +2,6 @@ import { Typography, Button } from "@mui/joy";
 import TwoColumnLayout from "../layout/TwoColumnLayout";
 import { FaHeart } from "react-icons/fa";
 import { colors } from "../utils/Colors";
-import Header from "../components/Main/Header";
 import "./landing.css";
 
 // Dummy data for gridItems and tileClassFor
@@ -34,7 +33,6 @@ const gridItems = [
   },
 ];
 
-const tileClassFor = (i: number) => "";
 
 export const TestPage2 = () => {
   return (
@@ -120,9 +118,7 @@ export const TestPage2 = () => {
               {gridItems.map((item, i) => (
                 <button
                   key={`${item.title}-${i}`}
-                  type="button"
-                  className={`tile ${tileClassFor(i)}`}
-                  title={item.title}
+                  type="button"                  title={item.title}
                   aria-label={`${item.title} — ${item.subtitle}`}
                   style={{
                     background: "none",
