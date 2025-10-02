@@ -12,7 +12,6 @@ import type {
 import type { Owner } from "../types/Owner";
 import type { Tourist } from "../types/Tourist";
 import type { TokenPayload, User, UserDetails, UserRoles } from "../types/User";
-import { Bookings } from '@/types/Booking';
 interface LoginResponse {
   token: string;
 }
@@ -64,224 +63,118 @@ export const loginUser = async (
   }
 
   const user_id = payload.id;
+  const user_role_id = Number(payload.user_role_id);
   if (!user_id) throw new Error("User ID not found in token");
 
-  // Step 3: Fetch user details
   debugLogger({
-    title: 'AuthService: GET /users/:id',
-    data: user_id
+    title: 'AuthService: Starting parallel data fetch',
+    data: { user_id, user_role_id }
   });
-  const { data: userData } = await axios
-    .get<User>(`${api}/users/${user_id}`)
-    .catch((err) => {
+
+  // Step 3: Fetch all data in parallel for much better performance
+  const [
+    { data: userData },
+    { data: userRole },
+    ownerResp,
+    touristResp
+  ] = await Promise.all([
+    axios.get<User>(`${api}/users/${user_id}`).catch((err) => {
       debugLogger({
         title: 'AuthService: Fetch user failed',
-        error: {
-          user_id,
-          message: err?.message,
-          status: err?.response?.status,
-          data: err?.response?.data,
-        },
+        error: { message: err?.message, status: err?.response?.status },
         errorCode: err?.response?.status
       });
       throw err;
-    });
-  debugLogger({
-    title: 'AuthService: userData',
-    data: userData
-  });
-
-  debugLogger({
-    title: 'AuthService: GET /user-roles/:id',
-    data: userData.user_role_id
-  });
-  const { data: userRole } = await axios
-    .get<UserRoles>(`${api}/user-roles/${userData.user_role_id}`)
-    .catch((err) => {
+    }),
+    axios.get<UserRoles>(`${api}/user-roles/${user_role_id}`).catch((err) => {
       debugLogger({
-        title: 'AuthService: Fetch role by id failed',
-        error: {
-          user_role_id: userData.user_role_id,
-          message: err?.message,
-          status: err?.response?.status,
-          data: err?.response?.data,
-        },
+        title: 'AuthService: Fetch role failed',
+        error: { message: err?.message, status: err?.response?.status },
         errorCode: err?.response?.status
       });
       throw err;
-    });
+    }),
+    // Only fetch owner if user_role_id is 3 (owner)
+    user_role_id === 3 
+      ? axios.get<Owner>(`${api}/owner/user/${user_id}`).catch(() => ({ data: {} as Owner }))
+      : Promise.resolve({ data: {} as Owner }),
+    // Only fetch tourist if user_role_id is 2 (tourist)
+    user_role_id === 2
+      ? axios.get<Tourist>(`${api}/tourist/user/${user_id}`).catch(() => ({ data: {} as Tourist }))
+      : Promise.resolve({ data: {} as Tourist })
+  ]);
+
+  const ownerData = ownerResp.data as Partial<Owner>;
+  const touristData = touristResp.data as Partial<Tourist>;
+
   debugLogger({
-    title: 'AuthService: userRole',
-    data: userRole
+    title: 'AuthService: Core data fetched',
+    data: { 
+      hasOwner: !!ownerData?.id, 
+      hasTourist: !!touristData?.id,
+      role: (userRole as any)?.role_name
+    }
   });
 
-  // Step 4: Fetch user details
-  debugLogger({
-    title: 'AuthService: GET /owner/user/:user_id',
-    data: user_id
-  });
-  const ownerResp = await axios
-    .get<Owner>(`${api}/owner/user/${user_id}`)
-    .catch((err) => {
-      debugLogger({
-        title: 'AuthService: Owner by user lookup failed',
-        error: {
-          user_id,
-          message: err?.message,
-          status: err?.response?.status,
-          data: err?.response?.data,
-        },
-        errorCode: err?.response?.status
-      });
-      return { data: {} as Owner };
-    });
-  const ownerData = ownerResp.data as Partial<Owner> as Owner;
-  debugLogger({
-    title: 'AuthService: ownerData',
-    data: ownerData
-  });
+  // Step 4: Fetch address details if needed (in parallel)
+  let ownerBarangay: Barangay = {} as Barangay;
+  let ownerMunicipality: Municipality = {} as Municipality;
+  let ownerProvince: Province = {} as Province;
+  
+  let touristBarangay: Barangay = {} as Barangay;
+  let touristMunicipality: Municipality = {} as Municipality;
+  let touristProvince: Province = {} as Province;
 
-  let ownerAddressData: Address | null = null;
-  if (ownerData && (ownerData as any).address_id) {
+  const addressId = (ownerData as any)?.address_id || (touristData as any)?.address_id;
+  
+  if (addressId) {
     debugLogger({
-      title: 'AuthService: GET /address/:id',
-      data: (ownerData as any).address_id
+      title: 'AuthService: Fetching address details',
+      data: { address_id: addressId }
     });
-    ownerAddressData = await axios
-      .get<Address>(`${api}/address/${(ownerData as any).address_id}`)
-      .then((r) => r.data)
-      .catch((err) => {
-        debugLogger({
-          title: 'AuthService: Owner address fetch failed',
-          error: {
-            address_id: (ownerData as any).address_id,
-            message: err?.message,
-            status: err?.response?.status,
-            data: err?.response?.data,
-          },
-          errorCode: err?.response?.status
-        });
-        return null;
-      });
-  }
 
-  const ownerBarangay = ownerAddressData
-    ? await axios
-        .get<Barangay>(`${api}/barangay/${ownerAddressData.barangay_id}`)
-        .then((r) => r.data)
-        .catch((err) => {
-          debugLogger({
-            title: 'AuthService: Owner barangay fetch failed',
-            error: err?.response?.status
-          });
-          return { barangay: "" } as Barangay;
-        })
-    : ({} as Barangay);
+    try {
+      const { data: addressData } = await axios.get<Address>(`${api}/address/${addressId}`);
 
-  const ownerMunicipality = ownerAddressData
-    ? await axios
-        .get<Municipality>(
-          `${api}/municipality/${ownerAddressData.municipality_id}`
-        )
-        .then((r) => r.data)
-        .catch((err) => {
-          debugLogger({
-            title: 'AuthService: Owner municipality fetch failed',
-            error: err?.response?.status
-          });
-          return { municipality: "" } as Municipality;
-        })
-    : ({} as Municipality);
+      // Fetch barangay, municipality, province in parallel
+      const [barangayData, municipalityData, provinceData] = await Promise.all([
+        axios.get<Barangay>(`${api}/barangay/${addressData.barangay_id}`)
+          .then(r => r.data)
+          .catch(() => ({ barangay: "" } as Barangay)),
+        axios.get<Municipality>(`${api}/municipality/${addressData.municipality_id}`)
+          .then(r => r.data)
+          .catch(() => ({ municipality: "" } as Municipality)),
+        axios.get<Province>(`${api}/province/${addressData.province_id}`)
+          .then(r => r.data)
+          .catch(() => ({ province: "" } as Province))
+      ]);
 
-  const ownerProvince = ownerAddressData
-    ? await axios
-        .get<Province>(`${api}/province/${ownerAddressData.province_id}`)
-        .then((r) => r.data)
-        .catch((err) => {
-          debugLogger({
-            title: 'AuthService: Owner province fetch failed',
-            error: err?.response?.status
-          });
-          return { province: "" } as Province;
-        })
-    : ({} as Province);
+      if (user_role_id === 3) {
+        ownerBarangay = barangayData;
+        ownerMunicipality = municipalityData;
+        ownerProvince = provinceData;
+      } else {
+        touristBarangay = barangayData;
+        touristMunicipality = municipalityData;
+        touristProvince = provinceData;
+      }
 
-  debugLogger({
-    title: 'AuthService: GET /tourist/user/:user_id',
-    data: user_id
-  });
-  const touristResp = await axios
-    .get<Tourist>(`${api}/tourist/user/${user_id}`)
-    .catch((err) => {
       debugLogger({
-        title: 'AuthService: Tourist by user lookup failed',
-        error: {
-          user_id,
-          message: err?.message,
-          status: err?.response?.status,
-          data: err?.response?.data,
-        },
+        title: 'AuthService: Address details fetched',
+        data: { 
+          barangay: barangayData.barangay, 
+          municipality: municipalityData.municipality,
+          province: provinceData.province
+        }
+      });
+    } catch (err: any) {
+      debugLogger({
+        title: 'AuthService: Address fetch failed',
+        error: { message: err?.message, status: err?.response?.status },
         errorCode: err?.response?.status
       });
-      return { data: {} as Tourist };
-    });
-  const touristData = touristResp.data as Partial<Tourist> as Tourist;
-  debugLogger({
-    title: 'AuthService: touristData',
-    data: touristData
-  });
-
-  const touristAddressData: Address | null = (touristData as any).address_id
-    ? await axios
-        .get<Address>(`${api}/address/${(touristData as any).address_id}`)
-        .then((r) => r.data)
-        .catch((err) => {
-          debugLogger({
-            title: 'AuthService: Tourist address fetch failed',
-            error: err?.response?.status
-          });
-          return null;
-        })
-    : null;
-
-  const touristBarangay = touristAddressData
-    ? await axios
-        .get<Barangay>(`${api}/barangay/${touristAddressData.barangay_id}`)
-        .then((r) => r.data)
-        .catch(() => {
-          debugLogger({
-            title: 'AuthService: Tourist barangay fetch failed',
-            error: 'No barangay found'
-          });
-          return { barangay: "" } as Barangay;
-        })
-    : ({} as Barangay);
-  const touristMunicipality = touristAddressData
-    ? await axios
-        .get<Municipality>(
-          `${api}/municipality/${touristAddressData.municipality_id}`
-        )
-        .then((r) => r.data)
-        .catch(() => {
-          debugLogger({
-            title: 'AuthService: Tourist municipality fetch failed',
-            error: 'No municipality found'
-          });
-          return { municipality: "" } as Municipality;
-        })
-    : ({} as Municipality);
-  const touristProvince = touristAddressData
-    ? await axios
-        .get<Province>(`${api}/province/${touristAddressData.province_id}`)
-        .then((r) => r.data)
-        .catch(() => {
-          debugLogger({
-            title: 'AuthService: Tourist province fetch failed',
-            error: 'No province found'
-          });
-          return { province: "" } as Province;
-        })
-    : ({} as Province);
+    }
+  }
 
   // Step 4: Build user object
   const loggedInUser: UserDetails = {
