@@ -1,238 +1,232 @@
-import Box from "@mui/joy/Box";
-import Card from "@mui/joy/Card";
-import Typography from "@mui/joy/Typography";
-import Chip from "@mui/joy/Chip";
-import LinearProgress from "@mui/joy/LinearProgress";
-import Tabs from "@mui/joy/Tabs";
-import TabList from "@mui/joy/TabList";
-import Tab from "@mui/joy/Tab";
-import Input from "@mui/joy/Input";
-import Select from "@mui/joy/Select";
-import Option from "@mui/joy/Option";
+import * as React from "react";
 import PageContainer from "@/src/components/PageContainer";
-
-const ratingData = [
-  { stars: 5, count: 856, percent: 69 },
-  { stars: 4, count: 248, percent: 20 },
-  { stars: 3, count: 87, percent: 7 },
-  { stars: 2, count: 31, percent: 2 },
-  { stars: 1, count: 25, percent: 2 },
+import { Box, Typography, Sheet, Button } from "@mui/joy";
+import RatingsOverview from "./components/RatingsOverview";
+import StatCard from "./components/StatCard";
+import ReviewFilterTabs from "./components/ReviewFilterTabs";
+import type { ReviewFilterValue } from "./components/ReviewFilterTabs";
+import ReviewCard, { type Review } from "./components/ReviewCard";
+import Container from "@/src/components/Container";
+import FilterListIcon from "@mui/icons-material/FilterList";
+import ReplyIcon from "@mui/icons-material/Reply";
+import ThumbUpIcon from "@mui/icons-material/ThumbUp";
+import ThumbDownIcon from "@mui/icons-material/ThumbDown";
+// Mock reviews (would be fetched via API)
+// Added likes & dislikes counts for unified tourist/business style action bar
+const mockReviews: Review[] = [
+  {
+    id: "r1",
+    user: {
+      name: "Alicia Mendoza",
+      avatar: "https://i.pravatar.cc/120?img=32",
+      verified: true,
+    },
+    rating: 5,
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 12).toISOString(),
+    text: "Absolutely loved our stay! Rooms were clean and the staff was incredibly friendly. Will definitely come back during the festival week!",
+    images: ["https://picsum.photos/seed/rev1/640/400"],
+    liked: true,
+    likes: 12,
+    dislikes: 0,
+    reply: {
+      text: "Thank you so much Alicia! We’re thrilled you enjoyed your stay — hope to host you again soon.",
+      updatedAt: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
+    },
+  },
+  {
+    id: "r2",
+    user: {
+      name: "Brian Cruz",
+      avatar: "https://i.pravatar.cc/120?img=15",
+      verified: false,
+    },
+    rating: 4,
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 36).toISOString(),
+    text: "Great location and welcoming staff. The Wi‑Fi was a bit spotty late at night but overall experience was solid.",
+    images: [],
+    liked: false,
+    likes: 3,
+    dislikes: 1,
+  },
+  {
+    id: "r3",
+    user: {
+      name: "Chen Li",
+      avatar: "https://i.pravatar.cc/120?img=54",
+      verified: true,
+    },
+    rating: 3,
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 72).toISOString(),
+    text: "Rooms were okay, but there was noise from the street. Staff tried to accommodate with a room change the next day.",
+    images: [
+      "https://picsum.photos/seed/rev3/400/260",
+      "https://picsum.photos/seed/rev33/400/260",
+    ],
+    liked: false,
+    likes: 0,
+    dislikes: 2,
+  },
 ];
 
-const Reviews = () => {
-  return (
-    <PageContainer>
-      {/* Summary Cards */}
-      <Box sx={{ display: "flex", gap: 2, mb: 3 }}>
-        <Card
-          variant="outlined"
-          sx={{ flex: 1, p: 2, alignItems: "center", display: "flex", gap: 2 }}
-        >
-          <Box
-            sx={{
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              flex: 1,
-            }}
-          >
-            <Chip
-              color="warning"
-              variant="soft"
-              sx={{ mb: 1, fontSize: 24, p: 1.5 }}
-            >
-              ★
-            </Chip>
-            <Typography level="h2">4.8</Typography>
-            <Typography level="body-sm" sx={{ color: "neutral.600" }}>
-              Overall Rating
-            </Typography>
-            <Typography level="body-xs" sx={{ color: "neutral.500" }}>
-              Based on 1,247 reviews
-            </Typography>
-            <Typography level="body-xs" sx={{ color: "success.500", mt: 0.5 }}>
-              +0.3 from last month
-            </Typography>
-          </Box>
-        </Card>
-        <Card
-          variant="outlined"
-          sx={{ flex: 1, p: 2, alignItems: "center", display: "flex", gap: 2 }}
-        >
-          <Box
-            sx={{
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              flex: 1,
-            }}
-          >
-            <Chip
-              color="primary"
-              variant="soft"
-              sx={{ mb: 1, fontSize: 24, p: 1.5 }}
-            >
-              💬
-            </Chip>
-            <Typography level="h2">1,247</Typography>
-            <Typography level="body-sm" sx={{ color: "neutral.600" }}>
-              Total Reviews
-            </Typography>
-            <Typography level="body-xs" sx={{ color: "neutral.500" }}>
-              All time reviews
-            </Typography>
-            <Typography level="body-xs" sx={{ color: "success.500", mt: 0.5 }}>
-              +42 this month
-            </Typography>
-          </Box>
-        </Card>
-        <Card
-          variant="outlined"
-          sx={{ flex: 1, p: 2, alignItems: "center", display: "flex", gap: 2 }}
-        >
-          <Box
-            sx={{
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              flex: 1,
-            }}
-          >
-            <Chip
-              color="success"
-              variant="soft"
-              sx={{ mb: 1, fontSize: 24, p: 1.5 }}
-            >
-              ↩
-            </Chip>
-            <Typography level="h2">94%</Typography>
-            <Typography level="body-sm" sx={{ color: "neutral.600" }}>
-              Response Rate
-            </Typography>
-            <Typography level="body-xs" sx={{ color: "neutral.500" }}>
-              Average response time
-            </Typography>
-            <Typography level="body-xs" sx={{ color: "primary.500", mt: 0.5 }}>
-              2.3 hours
-            </Typography>
-          </Box>
-        </Card>
-        <Card
-          variant="outlined"
-          sx={{ flex: 1, p: 2, alignItems: "center", display: "flex", gap: 2 }}
-        >
-          <Box
-            sx={{
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              flex: 1,
-            }}
-          >
-            <Chip
-              color="success"
-              variant="soft"
-              sx={{ mb: 1, fontSize: 24, p: 1.5 }}
-            >
-              👍
-            </Chip>
-            <Typography level="h2">89%</Typography>
-            <Typography level="body-sm" sx={{ color: "neutral.600" }}>
-              Positive Reviews
-            </Typography>
-            <Typography level="body-xs" sx={{ color: "neutral.500" }}>
-              4-5 star ratings
-            </Typography>
-            <Typography level="body-xs" sx={{ color: "success.500", mt: 0.5 }}>
-              +5% improvement
-            </Typography>
-          </Box>
-        </Card>
-      </Box>
+const Reviews: React.FC = () => {
+  const [activeFilter, setActiveFilter] =
+    React.useState<ReviewFilterValue | null>("All");
+  const [reviews, setReviews] = React.useState<Review[]>(mockReviews);
 
-      {/* Rating Breakdown */}
-      <Card variant="soft" sx={{ p: 3, mb: 3 }}>
-        <Typography level="h3" sx={{ mb: 2 }}>
-          Rating Breakdown
-        </Typography>
-        <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
-          {ratingData.map((r) => (
-            <Box
-              key={r.stars}
-              sx={{ display: "flex", alignItems: "center", gap: 1 }}
+  const filtered = React.useMemo(
+    () =>
+      reviews.filter((r) =>
+        !activeFilter || activeFilter === "All"
+          ? true
+          : r.rating === activeFilter
+      ),
+    [reviews, activeFilter]
+  );
+
+  const distribution = React.useMemo(() => {
+    const counts = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 } as Record<
+      1 | 2 | 3 | 4 | 5,
+      number
+    >;
+    reviews.forEach((r) => (counts[r.rating as 1 | 2 | 3 | 4 | 5] += 1));
+    return counts;
+  }, [reviews]);
+
+  const handleToggleLike = (id: string) => {
+    setReviews((prev) =>
+      prev.map((r) => (r.id === id ? { ...r, liked: !r.liked } : r))
+    );
+  };
+
+  const handleSaveReply = (id: string, text: string) => {
+    setReviews((prev) =>
+      prev.map((r) =>
+        r.id === id
+          ? {
+              ...r,
+              reply: { text, updatedAt: new Date().toISOString() },
+            }
+          : r
+      )
+    );
+  };
+
+  const handleDeleteReply = (id: string) => {
+    setReviews((prev) =>
+      prev.map((r) => (r.id === id ? { ...r, reply: undefined } : r))
+    );
+  };
+
+  const average = reviews.length
+    ? parseFloat(
+        (
+          reviews.reduce((acc, r) => acc + r.rating, 0) / reviews.length
+        ).toFixed(2)
+      )
+    : 0;
+
+  // Calculate statistics
+  const reviewsWithReplies = reviews.filter((r) => r.reply).length;
+  const responseRate =
+    reviews.length > 0
+      ? Math.round((reviewsWithReplies / reviews.length) * 100)
+      : 0;
+  const positiveReviews = reviews.filter((r) => r.rating >= 4).length;
+  const negativeReviews = reviews.filter((r) => r.rating <= 2).length;
+
+  return (
+    <PageContainer style={{ padding: 0 }}>
+      {/* Unified layout: Overview card spans top, filters below, list follows */}
+      <Box sx={{ display: "flex", flexDirection: "column", gap: 2.5 }}>
+        <Container direction="row" padding="0">
+          <RatingsOverview
+            totalReviews={reviews.length}
+            distribution={distribution}
+            average={average}
+          />
+          {/* Statistics Cards */}
+          <StatCard
+            icon={<ReplyIcon sx={{ fontSize: 22 }} />}
+            label="Response Rate"
+            value={`${reviewsWithReplies}`}
+            percentage={responseRate}
+            color="primary"
+            showProgress
+            total={reviews.length}
+          />
+          <StatCard
+            icon={<ThumbUpIcon sx={{ fontSize: 22 }} />}
+            label="Positive Reviews"
+            value={positiveReviews.toString()}
+            percentage={
+              reviews.length > 0
+                ? Math.round((positiveReviews / reviews.length) * 100)
+                : 0
+            }
+            color="success"
+            showProgress
+            total={reviews.length}
+          />
+          <StatCard
+            icon={<ThumbDownIcon sx={{ fontSize: 22 }} />}
+            label="Negative Reviews"
+            value={negativeReviews.toString()}
+            percentage={
+              reviews.length > 0
+                ? Math.round((negativeReviews / reviews.length) * 100)
+                : 0
+            }
+            color="danger"
+            showProgress
+            total={reviews.length}
+          />
+        </Container>
+
+        <Container
+          elevation={2}
+          direction="row"
+          justify="space-between"
+          align="center"
+        >
+          <ReviewFilterTabs
+            active={activeFilter}
+            counts={distribution}
+            onChange={setActiveFilter}
+          />
+
+          <Button
+            variant="outlined"
+            startDecorator={<FilterListIcon fontSize="small" />}
+          >
+            Filter
+          </Button>
+        </Container>
+        <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+          {filtered.length === 0 && (
+            <Sheet
+              variant="soft"
+              color="neutral"
+              sx={{ p: 4, borderRadius: 12, textAlign: "center" }}
             >
-              <Chip
-                color="warning"
-                variant="soft"
-                sx={{ fontSize: 18, px: 1.2 }}
-              >
-                ★
-              </Chip>
-              <Typography level="body-md" sx={{ width: 24 }}>
-                {r.stars}
+              <Typography level="h4" sx={{ mb: 1 }}>
+                No reviews yet
               </Typography>
-              <Box sx={{ flex: 1, mx: 1 }}>
-                <LinearProgress
-                  determinate
-                  value={r.percent}
-                  color="warning"
-                  sx={{ height: 8, borderRadius: 6, bgcolor: "neutral.200" }}
-                />
-              </Box>
-              <Typography
-                level="body-md"
-                sx={{ width: 40, textAlign: "right" }}
-              >
-                {r.count}
+              <Typography level="body-sm" sx={{ opacity: 0.8 }}>
+                Once guests start leaving feedback, you can view & respond here.
               </Typography>
-              <Typography
-                level="body-md"
-                sx={{ width: 40, textAlign: "right", color: "neutral.500" }}
-              >
-                {r.percent}%
-              </Typography>
-            </Box>
+            </Sheet>
+          )}
+          {filtered.map((rev) => (
+            <ReviewCard
+              key={rev.id}
+              review={rev}
+              onToggleLike={() => handleToggleLike(rev.id)}
+              onSaveReply={(text: string) => handleSaveReply(rev.id, text)}
+              onDeleteReply={() => handleDeleteReply(rev.id)}
+            />
           ))}
         </Box>
-      </Card>
-
-      {/* Filter Tabs, Search, Sort */}
-      <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 2 }}>
-        <Tabs
-          defaultValue={0}
-          sx={{ bgcolor: "transparent", p: 0, minHeight: 0 }}
-        >
-          <TabList>
-            <Tab value={0} variant="solid" color="primary">
-              All Reviews (1247)
-            </Tab>
-            <Tab value={1} variant="plain">
-              Needs Reply (23)
-            </Tab>
-            <Tab value={2} variant="plain">
-              5 Stars (856)
-            </Tab>
-            <Tab value={3} variant="plain">
-              4 Stars (248)
-            </Tab>
-            <Tab value={4} variant="plain">
-              3 Stars (87)
-            </Tab>
-            <Tab value={5} variant="plain">
-              1-2 Stars (56)
-            </Tab>
-          </TabList>
-        </Tabs>
-        <Input placeholder="Search reviews..." sx={{ width: 240 }} />
-        <Select defaultValue="newest" sx={{ width: 160 }}>
-          <Option value="newest">Newest First</Option>
-          <Option value="oldest">Oldest First</Option>
-          <Option value="highest">Highest Rated</Option>
-          <Option value="lowest">Lowest Rated</Option>
-        </Select>
       </Box>
-
-      {/* ...existing code for review list can go here... */}
     </PageContainer>
   );
 };

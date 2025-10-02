@@ -22,7 +22,6 @@ import BusinessRegistration from "../features/business/listing/BusinessRegistrat
 import BusinessManagementLayout from "../layout/BusinessManagementLayout";
 import Transactions from "../features/business/accommodation/transaction/Transactions";
 import Bookings from "../features/business/accommodation/bookings/Bookings";
-import { Reviews } from "@mui/icons-material";
 import { RoomProvider } from "../context/RoomContext";
 import BusinessProfile from "../features/business/accommodation/business-profile/BusinessProfile";
 import ManagePromotion from "../features/business/accommodation/promotion/ManagePromotion";
@@ -40,6 +39,7 @@ import ShopDashboard from "../features/business/shop/dashboard/Dashboard";
 import ManageShop from "../features/business/shop/manage-business/ManageBusiness";
 import AdminLayout from "../layout/AdminLayout";
 import Room from "../features/admin/services/accommodation/Room";
+import Reviews from "../features/business/accommodation/reviews/Reviews";
 
 // Tourism
 import Dashboard from "@/src/features/admin/dashboard/Dashboard";
@@ -51,6 +51,11 @@ import Event from "@/src/features/admin/services/event/Event";
 import Spot from "@/src/features/admin/services/tourist-spot/Spot";
 import OfferAdmin from "@/src/features/admin/services/shop/Offer";
 import { BusinessProvider } from "../context/BusinessContext";
+import OneColumnLayout from "../layout/OneColumnLayout";
+import { TestPage } from "../test/Test";
+import TwoColumnLayout from "../layout/TwoColumnLayout";
+import { TestPage3 } from "../test/Test3";
+import { TestPage2 } from "../test/Test2";
 
 export default function AppRoutes() {
   const user = "/";
@@ -67,6 +72,9 @@ export default function AppRoutes() {
           </AuthProvider>
         }
       >
+        <Route path="/test/one-column" element={<TestPage />} />
+        <Route path="/test/two-column" element={<TestPage2 />} />
+        <Route path="/test/three-column" element={<TestPage3 />} />
         {/* Auth routes */}
         <Route element={<MainLayout />}>
           <Route index element={<LandingPage />} />
