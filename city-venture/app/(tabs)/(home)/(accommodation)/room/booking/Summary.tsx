@@ -13,7 +13,7 @@ import {
   ScrollView,
   StyleSheet,
   useColorScheme,
-  View
+  View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -102,130 +102,130 @@ const Summary: React.FC<Props> = ({ data, payment }) => {
       style={{ backgroundColor: bg }}
     >
       <SafeAreaView style={{ flex: 1, backgroundColor: bg }}>
-        <ScrollView>
-          <PageContainer padding={20} gap={16}>
-            {/* Hero Success Section */}
-            <View style={styles.hero}>
-              <View style={styles.heroIconWrap}>
-                <MaterialCommunityIcons
-                  name="check-decagram"
-                  size={64}
-                  color="#fff"
-                />
-              </View>
-              <ThemedText
-                type="title-large"
-                weight="bold"
-                style={{ textAlign: 'center' }}
-              >
-                Booking Confirmed!
-              </ThemedText>
-              <ThemedText
-                type="body-small"
-                style={{ textAlign: 'center', opacity: 0.8 }}
-              >
-                Thank you for your reservation. Please review your check-in
-                details below.
-              </ThemedText>
+        <PageContainer padding={20} gap={16}>
+          {/* Hero Success Section */}
+          <View style={styles.hero}>
+            <View style={styles.heroIconWrap}>
+              <MaterialCommunityIcons
+                name="check-decagram"
+                size={64}
+                color="#fff"
+              />
             </View>
+            <ThemedText
+              type="title-large"
+              weight="bold"
+              style={{ textAlign: 'center' }}
+            >
+              Booking Confirmed!
+            </ThemedText>
+            <ThemedText
+              type="body-small"
+              style={{ textAlign: 'center', opacity: 0.8 }}
+            >
+              Thank you for your reservation. Please review your check-in
+              details below.
+            </ThemedText>
+          </View>
 
-            {/* Details Card */}
-            <View style={[styles.card, { backgroundColor: cardBg }]}>
-              <InfoRow
-                icon="door"
-                label="Room"
-                value={
-                  roomDetails?.room_number
-                    ? String(roomDetails.room_number)
-                    : '—'
-                }
-              />
-              <InfoRow
-                icon="calendar-check"
-                label="Check-in"
-                value={
-                  bookingData?.check_in_date
-                    ? formatDate(bookingData.check_in_date)
-                    : '—'
-                }
-              />
-              <InfoRow
-                icon="calendar-remove"
-                label="Check-out"
-                value={
-                  bookingData?.check_out_date
-                    ? formatDate(bookingData.check_out_date)
-                    : '—'
-                }
-              />
-              <InfoRow
-                icon="clock-outline"
-                label="Duration"
-                value={
-                  checkIn && checkOut && days > 0
-                    ? `${days} day${days > 1 ? 's' : ''} / ${nights} night${
-                        nights !== 1 ? 's' : ''
-                      }`
-                    : 'Select check-in and check-out dates'
-                }
-              />
-              <InfoRow
-                icon="account-group"
-                label="Guests (Pax)"
-                value={String(bookingData?.pax || 0)}
-              />
-              <InfoRow
-                icon="wallet"
-                label="Payment Method"
-                value={paymentLabel}
-              />
-              {purposeLabel && (
-                <InfoRow
-                  icon="briefcase"
-                  label="Trip Purpose"
-                  value={purposeLabel}
-                />
-              )}
-            </View>
-
-            {/* Arrival Tips */}
-            <View style={[styles.card, { backgroundColor: cardBg }]}>
-              <ThemedText
-                type="card-title-small"
-                weight="semi-bold"
-                style={{ marginBottom: 8 }}
-              >
-                Arrival & Check-in Info
-              </ThemedText>
-              <Bullet>
-                Bring a valid government-issued ID for verification.
-              </Bullet>
-              <Bullet>Present your booking details at the reception.</Bullet>
-              <Bullet>
-                Check-in starts at 2:00 PM; check-out is until 12:00 NN.
-              </Bullet>
-              <Bullet>
-                For assistance, contact the property staff upon arrival.
-              </Bullet>
-            </View>
-
-            <Button
-            size='large'
-              label="Okay"
-              onPress={() => {
-                setIsVisible(false);
-                router.replace('/(tabs)/(home)/(accommodation)/room/profile');
-              }}
+          {/* Details Card */}
+          <View style={[styles.card, { backgroundColor: cardBg }]}>
+            <InfoRow
+              icon="door"
+              label="Room"
+              value={
+                roomDetails?.room_number ? String(roomDetails.room_number) : '—'
+              }
             />
+            <InfoRow
+              icon="calendar-check"
+              label="Check-in"
+              value={
+                bookingData?.check_in_date
+                  ? formatDate(bookingData.check_in_date)
+                  : '—'
+              }
+            />
+            <InfoRow
+              icon="calendar-remove"
+              label="Check-out"
+              value={
+                bookingData?.check_out_date
+                  ? formatDate(bookingData.check_out_date)
+                  : '—'
+              }
+            />
+            <InfoRow
+              icon="clock-outline"
+              label="Duration"
+              value={
+                checkIn && checkOut && days > 0
+                  ? `${days} day${days > 1 ? 's' : ''} / ${nights} night${
+                      nights !== 1 ? 's' : ''
+                    }`
+                  : 'Select check-in and check-out dates'
+              }
+            />
+            <InfoRow
+              icon="account-group"
+              label="Guests (Pax)"
+              value={String(bookingData?.pax || 0)}
+            />
+            <InfoRow
+              icon="wallet"
+              label="Payment Method"
+              value={paymentLabel}
+            />
+            {purposeLabel && (
+              <InfoRow
+                icon="briefcase"
+                label="Trip Purpose"
+                value={purposeLabel}
+              />
+            )}
+          </View>
 
-            {/* Footer */}
-            <View style={styles.footer}>
-              <ThemedText type="label-large" weight='medium' style={{ opacity: 0.6 }}>
-                City Venture
-              </ThemedText>
-            </View>
-          </PageContainer>
-        </ScrollView>
+          {/* Arrival Tips */}
+          <View style={[styles.card, { backgroundColor: cardBg }]}>
+            <ThemedText
+              type="card-title-small"
+              weight="semi-bold"
+              style={{ marginBottom: 8 }}
+            >
+              Arrival & Check-in Info
+            </ThemedText>
+            <Bullet>
+              Bring a valid government-issued ID for verification.
+            </Bullet>
+            <Bullet>Present your booking details at the reception.</Bullet>
+            <Bullet>
+              Check-in starts at 2:00 PM; check-out is until 12:00 NN.
+            </Bullet>
+            <Bullet>
+              For assistance, contact the property staff upon arrival.
+            </Bullet>
+          </View>
+
+          <Button
+            size="large"
+            label="Okay"
+            onPress={() => {
+              setIsVisible(false);
+              router.replace('/(tabs)/(home)/(accommodation)/room/profile');
+            }}
+          />
+
+          {/* Footer */}
+          <View style={styles.footer}>
+            <ThemedText
+              type="label-large"
+              weight="medium"
+              style={{ opacity: 0.6 }}
+            >
+              City Venture
+            </ThemedText>
+          </View>
+        </PageContainer>
       </SafeAreaView>
     </Modal>
   );

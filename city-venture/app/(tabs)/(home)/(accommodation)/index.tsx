@@ -12,16 +12,64 @@ import { navigateToAccommodationProfile } from '@/routes/accommodationRoutes';
 import type { Business } from '@/types/Business';
 import { Tab } from '@/types/Tab';
 import { FontAwesome5 } from '@expo/vector-icons';
-import { useState } from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { useCallback, useRef, useState } from 'react';
+import {
+  RefreshControl,
+  NativeSyntheticEvent,
+  NativeScrollEvent,
+  ScrollView,
+  StyleSheet,
+  View,
+} from 'react-native';
 
 const AccommodationDirectory = () => {
   const colorScheme = useColorScheme();
   const bg = colorScheme === 'dark' ? background.dark : background.light;
 
-  const { loading, allAccommodationDetails, setAccommodationId } =
-    useAccommodation();
+  const {
+    loading,
+    allAccommodationDetails,
+    setAccommodationId,
+    refreshAllAccommodations,
+  } = useAccommodation();
   const [cardView, setCardView] = useState('card');
+  const [refreshing, setRefreshing] = useState(false);
+  const lastScrollOffset = useRef(0);
+  const atTopRef = useRef(true);
+  const wasScrollingUpRef = useRef(false);
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await refreshAllAccommodations();
+    } finally {
+      setRefreshing(false);
+    }
+  }, [refreshAllAccommodations]);
+
+  // Track scroll direction only
+  const handleScroll = useCallback(
+    (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+      const offsetY = e.nativeEvent.contentOffset.y;
+      const prev = lastScrollOffset.current;
+      wasScrollingUpRef.current = offsetY < prev;
+      atTopRef.current = offsetY <= 0; // near/at top
+      lastScrollOffset.current = offsetY;
+    },
+    []
+  );
+
+  // Trigger refresh only after user releases the scroll (end drag) while scrolling up at top
+  const handleScrollEndDrag = useCallback(() => {
+    if (
+      atTopRef.current &&
+      wasScrollingUpRef.current &&
+      !refreshing &&
+      !loading
+    ) {
+      onRefresh();
+    }
+  }, [loading, onRefresh, refreshing]);
 
   const [search, setSearch] = useState('');
   const [activeTab, setActiveTab] = useState<string>('all');
@@ -134,6 +182,12 @@ const AccommodationDirectory = () => {
           paddingBottom: 100,
           paddingHorizontal: 16,
         }}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
+        onScroll={handleScroll}
+        onScrollEndDrag={handleScrollEndDrag}
+        scrollEventThrottle={32}
       >
         <View style={styles.cardWrapper}>
           {loading ? (
@@ -156,11 +210,7 @@ const AccommodationDirectory = () => {
                     ? `${business.min_price} - ${business.max_price}`
                     : 'N/A'
                 }
-                image={
-                  business.business_image
-                    ? { uri: business.business_image }
-                    : require('@/assets/images/gcash.png') // fallback
-                }
+                image={{ uri: business.business_image }}
                 ratings={4.5}
                 view={cardView}
                 favorite={false}

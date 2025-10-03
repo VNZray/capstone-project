@@ -74,13 +74,7 @@ const booking = () => {
           paymentData.payment_method && paymentData.payment_method !== 'Cash'
             ? 'Reserved'
             : 'Pending',
-        balance:
-          typeof bookingData.total_price === 'number'
-            ? Math.max(
-                (bookingData.total_price || 0) - (paymentData.amount || 0),
-                0
-              )
-            : undefined,
+        balance: Number(bookingData.total_price) - Number(paymentData.amount),
       };
       // Removed guestsPayload
       const paymentPayload: BookingPayment = {
@@ -104,14 +98,26 @@ const booking = () => {
         data: paymentPayload,
       });
 
-      const created = await createFullBooking(bookingPayload, paymentPayload);
+      const created = await createFullBooking(
+        bookingPayload,
+        paymentData.payment_method === 'Cash' ? undefined : paymentPayload
+      );
       debugLogger({
         title: 'Booking Submission: Success',
         data: created,
         successMessage: 'Booking successfully created.',
       });
-      Alert.alert('Success', 'Booking successfully created.', created);
-      navigation.goBack();
+      // Update local booking state with returned id/status if present
+      if (created?.id) {
+        setBookingData((prev) => ({ ...prev, id: created.id, booking_status: created.booking_status || prev.booking_status } as Booking));
+      }
+      if (paymentData.payment_method === 'Cash') {
+        // For cash, show the in-flow Summary step with Pending status
+        setStep('summary');
+      } else {
+        Alert.alert('Success', 'Booking successfully created.', created);
+        navigation.goBack();
+      }
     } catch (e: any) {
       debugLogger({
         title: 'Booking Submission: Error',
@@ -279,7 +285,7 @@ const booking = () => {
       </View>
 
       {(() => {
-        const baseBottom = Platform.OS === 'ios' ? 60 : 80;
+        const baseBottom = Platform.OS === 'ios' ? 0 : 0;
         return (
           <View
             style={[

@@ -141,7 +141,7 @@ const Payment: React.FC<Props> = ({ data, payment, setData, setPayment }) => {
 
   return (
     <ScrollView>
-      <PageContainer padding={16} gap={16}>
+      <PageContainer padding={16} gap={16} style={{ paddingBottom: 100 }}>
         {/* 1. DETAILS SECTION */}
         <Container gap={8}>
           <ThemedText type="card-title-small" weight="medium">
