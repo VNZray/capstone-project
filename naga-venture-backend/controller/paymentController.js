@@ -54,6 +54,19 @@ export async function getPaymentByPaymentForId(req, res) {
   }
 }
 
+// Get payments by business ID
+export async function getPaymentByBusinessId(req, res) {
+  try {
+    const { business_id } = req.params;
+    const [rows] = await db.query("CALL GetPaymentsByBusinessId(?)", [
+      business_id,
+    ]);
+    res.json(rows[0]);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+}
+
 // Insert a new payment
 export async function insertPayment(req, res) {
   try {

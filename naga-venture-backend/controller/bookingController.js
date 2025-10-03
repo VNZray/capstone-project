@@ -14,9 +14,7 @@ export async function getAllBookings(req, res) {
 export async function getBookingsByRoomId(req, res) {
   try {
     const { room_id } = req.params;
-    const [rows] = await db.query("CALL GetBookingsByRoomId(?)", [
-      room_id,
-    ]);
+    const [rows] = await db.query("CALL GetBookingsByRoomId(?)", [room_id]);
     res.json(rows[0]);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -47,6 +45,19 @@ export async function getBookingsByTouristId(req, res) {
   }
 }
 
+// Get bookings by business ID
+export async function getBookingsByBusinessId(req, res) {
+  try {
+    const { business_id } = req.params;
+    const [rows] = await db.query("CALL GetBookingsByBusinessId(?)", [
+      business_id,
+    ]);
+    res.json(rows[0]);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+}
+
 // Insert booking
 export async function insertBooking(req, res) {
   try {
@@ -68,6 +79,7 @@ export async function insertBooking(req, res) {
       booking_status,
       room_id,
       tourist_id,
+      business_id,
     } = req.body;
 
     const missing = [];
@@ -84,10 +96,10 @@ export async function insertBooking(req, res) {
         .json({ error: "Missing required fields", fields: missing });
     }
 
-    const effectiveBalance = balance ?? total_price; 
+    const effectiveBalance = balance ?? total_price;
     const effectiveStatus = booking_status ?? "Pending";
     const [rows] = await db.query(
-      "CALL InsertBooking(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+      "CALL InsertBooking(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
       [
         id,
         pax,
@@ -106,6 +118,7 @@ export async function insertBooking(req, res) {
         effectiveStatus,
         room_id,
         tourist_id,
+        business_id,
       ]
     );
     return res.status(201).json(rows[0][0]);
@@ -137,10 +150,11 @@ export async function updateBooking(req, res) {
       booking_status,
       room_id,
       tourist_id,
+      business_id,
     } = req.body;
 
     const [rows] = await db.query(
-      "CALL UpdateBooking(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+      "CALL UpdateBooking(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
       [
         id,
         pax ?? null,
@@ -159,6 +173,7 @@ export async function updateBooking(req, res) {
         booking_status ?? null,
         room_id ?? null,
         tourist_id ?? null,
+        business_id ?? null,
       ]
     );
     return res.json(rows[0][0]);
