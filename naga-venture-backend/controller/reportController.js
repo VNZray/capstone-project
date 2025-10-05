@@ -86,7 +86,7 @@ export async function createReport(request, response) {
 // Update report status (for tourism staff)
 export async function updateReportStatus(request, response) {
   const { id } = request.params;
-  const { status, remarks, updated_by } = request.body;
+  let { status, remarks, updated_by } = request.body;
   try {
     const validStatuses = ["submitted", "under_review", "in_progress", "resolved", "rejected"];
     if (!validStatuses.includes(status)) {
@@ -95,7 +95,30 @@ export async function updateReportStatus(request, response) {
       });
     }
 
-    const [result] = await db.query("CALL UpdateReportStatus(?,?,?,?)", [id, status, remarks || null, updated_by || null]);
+    // Set default remarks if blank
+    if (!remarks || remarks.trim() === "") {
+      switch (status) {
+        case "submitted":
+          remarks = "Report submitted.";
+          break;
+        case "under_review":
+          remarks = "Report is now under review.";
+          break;
+        case "in_progress":
+          remarks = "Report is being processed.";
+          break;
+        case "resolved":
+          remarks = "Report has been resolved.";
+          break;
+        case "rejected":
+          remarks = "Report has been rejected.";
+          break;
+        default:
+          remarks = null;
+      }
+    }
+
+    const [result] = await db.query("CALL UpdateReportStatus(?,?,?,?)", [id, status, remarks, updated_by || null]);
     const updatedRow = result[0] ? result[0][0] : null;
     if (!updatedRow) {
       return response.status(404).json({ message: "Report not found" });

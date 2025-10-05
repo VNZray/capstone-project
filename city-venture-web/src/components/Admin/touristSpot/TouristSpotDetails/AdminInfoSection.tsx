@@ -1,6 +1,5 @@
 import React from "react";
 import {
-  Divider,
   Stack,
   Typography,
   Sheet,
@@ -38,7 +37,7 @@ const AdminInfoSection: React.FC<AdminInfoSectionProps> = ({ spot }) => {
   }, [spot]);
 
   return (
-    <Sheet variant="outlined" sx={{ p: 2, borderRadius: 8 }}>
+    <Sheet sx={{ p: 2 }}>
       <Stack
         direction="row"
         justifyContent="space-between"
@@ -57,7 +56,6 @@ const AdminInfoSection: React.FC<AdminInfoSectionProps> = ({ spot }) => {
         </Typography>
         {spot.spot_status && (
           <>
-            <Divider sx={{ my: 1 }} />
             <Stack spacing={0.5}>
               <Typography level="title-sm" sx={{ color: "text.tertiary" }}>
                 Status

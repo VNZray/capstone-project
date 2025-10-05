@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import { IoAdd } from "react-icons/io5";
 import Text from "@/src/components/Text";
 import SearchBar from "@/src/components/SearchBar";
 import CategoryFilter from "@/src/components/Admin/touristSpot/CategoryFilter";
 import Pagination from "@/src/components/Admin/touristSpot/Pagination";
 import TouristSpotTable from "@/src/components/Admin/touristSpot/TouristSpotTable";
-import TouristSpotDetails from "@/src/components/Admin/touristSpot/TouristSpotDetails";
 import TouristSpotForm from "@/src/components/Admin/touristSpot/TouristSpotForm";
 import type { TouristSpot } from "@/src/types/TouristSpot";
 import { apiService } from "@/src/utils/api";
@@ -26,7 +26,8 @@ const Spot = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [typeFilters, setTypeFilters] = useState<string[]>(["All"]);
-  const [selectedSpotId, setSelectedSpotId] = useState<string | null>(null);
+  const navigate = useNavigate();
+  const location = useLocation();
   const spotsPerPage = 10;
 
   const fetchSpotsAndCategories = useCallback(async () => {
@@ -60,10 +61,8 @@ const Spot = () => {
     setCurrentPage(1);
   };
   const handleViewDetails = (spot: TouristSpot) => {
-    setSelectedSpotId(spot.id);
+    navigate(`/tourism/services/tourist-spot/${spot.id}`);
   };
-
-  const handleBack = () => setSelectedSpotId(null);
 
   const handleEditSpot = (spot: TouristSpot) => {
     setSelectedSpotForEdit(spot);
@@ -111,41 +110,43 @@ const Spot = () => {
 
   const [selectedEditStep, setSelectedEditStep] = useState<number>(0);
 
-  const handleEditFromDetails = async (step: number = 0) => {
-    // Try to find the spot in the currently loaded list
-    let spotToEdit = spots.find((spot) => spot.id === selectedSpotId);
-
-    // If not found (e.g. different page/filter), fetch it from the API
-    if (!spotToEdit && selectedSpotId) {
-      try {
-        spotToEdit = await apiService.getTouristSpotById(selectedSpotId);
-      } catch (e) {
-        console.error("Failed to load spot for editing:", e);
-      }
+  // Handle navigation state coming from the details screen requesting to open edit modal
+  useEffect(() => {
+    const state = location.state as { editSpotId?: string; editStep?: number } | null;
+    if (state?.editSpotId) {
+      const openEdit = async () => {
+        const { editSpotId, editStep = 0 } = state;
+        if (!editSpotId) {
+          navigate(".", { replace: true, state: {} });
+          return;
+        }
+        try {
+          // Prefer existing in-memory list, fallback to API
+          let spotToEdit = spots.find((s) => s.id === editSpotId);
+          if (!spotToEdit) {
+            spotToEdit = await apiService.getTouristSpotById(editSpotId);
+          }
+          setSelectedSpotForEdit(spotToEdit);
+          setSelectedEditStep(editStep);
+          setEditSpotModalVisible(true);
+        } catch (e) {
+          console.error("Failed to prepare edit from details:", e);
+          setSelectedSpotForEdit(undefined);
+          setSelectedEditStep(editStep);
+          setEditSpotModalVisible(true);
+        } finally {
+          // Clear state to avoid reopening on re-render/navigation
+          navigate(".", { replace: true, state: {} });
+        }
+      };
+      openEdit();
     }
-
-    if (spotToEdit) {
-      setSelectedSpotForEdit(spotToEdit);
-      setSelectedEditStep(step);
-      setEditSpotModalVisible(true);
-    } else {
-      // Fallback: still open the modal in edit mode but without initial data
-      setSelectedSpotForEdit(undefined);
-      setSelectedEditStep(step);
-      setEditSpotModalVisible(true);
-    }
-  };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.state]);
 
   return (
     <>
-      {selectedSpotId ? (
-        <TouristSpotDetails
-          spotId={selectedSpotId}
-          onBack={handleBack}
-          onEdit={handleEditFromDetails}
-        />
-      ) : (
-        <Container background={colors.background} elevation={2} className="spot-container">
+      <Container background={colors.background} elevation={2} className="spot-container">
           <div className="filter-and-search-container">
             <div className="filter">
               <CategoryFilter
@@ -194,7 +195,6 @@ const Spot = () => {
             </div>
           )}
         </Container>
-      )}
 
       <TouristSpotForm
         isVisible={isAddSpotModalVisible}

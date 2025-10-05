@@ -218,18 +218,28 @@ class ApiService {
     try {
       switch (targetType) {
         case 'business':
-          // Add business API call when available
-          return { name: `Business ${targetId}`, type: 'Business' };
+          try {
+            const res = await api.get(`/business/${targetId}`);
+            const b = (res.data?.data || res.data) as { business_name?: string };
+            return { name: b.business_name || `Business ${targetId}`, type: 'Business' };
+          } catch {
+            return { name: `Business ${targetId}`, type: 'Business' };
+          }
         case 'tourist_spot': {
           const spot = await this.getTouristSpotById(targetId);
           return { name: spot.name, type: 'Tourist Spot' };
         }
         case 'event':
-          // Add event API call when available
+          // If event endpoint becomes available, replace this with real call
           return { name: `Event ${targetId}`, type: 'Event' };
         case 'accommodation':
-          // Add accommodation API call when available
-          return { name: `Accommodation ${targetId}`, type: 'Accommodation' };
+          try {
+            const res = await api.get(`/business/${targetId}`);
+            const b = (res.data?.data || res.data) as { business_name?: string };
+            return { name: b.business_name || `Accommodation ${targetId}`, type: 'Accommodation' };
+          } catch {
+            return { name: `Accommodation ${targetId}`, type: 'Accommodation' };
+          }
         default:
           return { name: `Unknown ${targetId}`, type: 'Unknown' };
       }
