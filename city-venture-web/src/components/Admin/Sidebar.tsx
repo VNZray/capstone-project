@@ -71,9 +71,9 @@ export default function Sidebar({ isOpen = false, onClose }: SidebarProps): Reac
           {/* Dropdown for Services */}
           <DropdownNavItem label="Services" icon={<Briefcase size={18} />}>
             <NavItem
-              to="/tourism/services/accommodation"
-              label="Accommodation"
-              icon={<BedDouble size={18} />}
+              to="/tourism/services/tourist-spot"
+              label="Tourist Spot"
+              icon={<MapPin size={18} />}
               onClick={onClose}
             />
             <NavItem
@@ -83,15 +83,15 @@ export default function Sidebar({ isOpen = false, onClose }: SidebarProps): Reac
               onClick={onClose}
             />
             <NavItem
-              to="/tourism/services/shop"
-              label="Shop"
-              icon={<Store size={18} />}
+              to="/tourism/services/accommodation"
+              label="Accommodation"
+              icon={<BedDouble size={18} />}
               onClick={onClose}
             />
             <NavItem
-              to="/tourism/services/tourist-spot"
-              label="Tourist Spot"
-              icon={<MapPin size={18} />}
+              to="/tourism/services/shop"
+              label="Shop"
+              icon={<Store size={18} />}
               onClick={onClose}
             />
           </DropdownNavItem>

@@ -14,18 +14,13 @@ import Text from "../Text";
 // import { Button } from "@mui/joy";
 const pageTitles: Record<string, string> = {
   "/tourism/dashboard": "Dashboard",
-  "/tourism/transactions": "Transactions",
-  "/tourism/business-profile": "Business Profile",
-  "/tourism/manage-promotion": "Manage Promotion",
-  "/tourism/reports": "Reports",
+  "/tourism/approval": "Approval",
+  "/tourism/services/accommodation": "Accommodation",
+  "/tourism/services/event": "Event",
+  "/tourism/services/shop": "Shop",
+  "/tourism/services/tourist-spot": "Tourist Spot Management",
+  "/tourism/reports": "Report Management",
   "/tourism/profile": "Profile",
-  "/tourism": "Business Profile",
-  "/tourism/reviews": "Reviews & Ratings",
-  "/tourism/bookings": "Bookings",
-  "/tourism/rooms": "Manage Rooms",
-  "/tourism/offers": "Manage Offers",
-  "/tourism/room-profile": "Manage Room",
-  "/tourism/owner-profile": "Owner Profile",
 };
 
 interface MainHeaderProps {
