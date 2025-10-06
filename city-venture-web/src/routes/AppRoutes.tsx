@@ -49,8 +49,10 @@ import Accommodation from "@/src/features/admin/services/accommodation/Accommoda
 import Shop from "@/src/features/admin/services/shop/Shop";
 import Event from "@/src/features/admin/services/event/Event";
 import Spot from "@/src/features/admin/services/tourist-spot/Spot";
+import TouristSpotDetailsScreen from "@/src/features/admin/services/tourist-spot/TouristSpotDetailsScreen";
 import OfferAdmin from "@/src/features/admin/services/shop/Offer";
 import { BusinessProvider } from "../context/BusinessContext";
+import ReportDetailsScreen from "@/src/features/admin/report/ReportDetailsScreen";
 import OneColumnLayout from "../layout/OneColumnLayout";
 import { TestPage } from "../test/Test";
 import TwoColumnLayout from "../layout/TwoColumnLayout";
@@ -293,6 +295,14 @@ export default function AppRoutes() {
             }
           />
           <Route
+            path={`${tourism}/reports/:id`}
+            element={
+              <ProtectedRoute>
+                <ReportDetailsScreen />
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path={`${tourism}/services/accommodation`}
             element={
               <ProtectedRoute>
@@ -321,6 +331,14 @@ export default function AppRoutes() {
             element={
               <ProtectedRoute>
                 <Spot />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path={`${tourism}/services/tourist-spot/:id`}
+            element={
+              <ProtectedRoute>
+                <TouristSpotDetailsScreen />
               </ProtectedRoute>
             }
           />

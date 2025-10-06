@@ -14,18 +14,15 @@ import Text from "../Text";
 // import { Button } from "@mui/joy";
 const pageTitles: Record<string, string> = {
   "/tourism/dashboard": "Dashboard",
-  "/tourism/transactions": "Transactions",
-  "/tourism/business-profile": "Business Profile",
-  "/tourism/manage-promotion": "Manage Promotion",
-  "/tourism/reports": "Reports",
+  "/tourism/approval": "Approval",
+  "/tourism/services/accommodation": "Accommodation",
+  "/tourism/services/event": "Event",
+  "/tourism/services/shop": "Shop",
+  "/tourism/services/tourist-spot": "Tourist Spot Management",
+  "/tourism/services/tourist-spot/:id": "Tourist Spot Details",
+  "/tourism/reports": "Report Management",
+  "/tourism/reports/:id": "Report Details",
   "/tourism/profile": "Profile",
-  "/tourism": "Business Profile",
-  "/tourism/reviews": "Reviews & Ratings",
-  "/tourism/bookings": "Bookings",
-  "/tourism/rooms": "Manage Rooms",
-  "/tourism/offers": "Manage Offers",
-  "/tourism/room-profile": "Manage Room",
-  "/tourism/owner-profile": "Owner Profile",
 };
 
 interface MainHeaderProps {
@@ -37,7 +34,14 @@ export default function MainHeader({ onMenuClick }: MainHeaderProps) {
   const { user } = useAuth();
   const location = useLocation();
 
-  const title = pageTitles[location.pathname] || "Business Dashboard";
+  // Support exact matches and dynamic route matches (e.g., details page)
+  const title =
+    pageTitles[location.pathname] ||
+    (location.pathname.startsWith("/tourism/services/tourist-spot/")
+      ? "Tourist Spot Details"
+      : location.pathname.startsWith("/tourism/reports/")
+      ? "Report Details"
+      : "Business Dashboard");
 
 
   return (
