@@ -37,6 +37,12 @@ exports.up = async function (knex) {
       .inTable("room")
       .onDelete("CASCADE");
     table
+      .uuid("business_id")
+      .notNullable()
+      .references("id")
+      .inTable("business")
+      .onDelete("CASCADE");
+    table
       .uuid("tourist_id")
       .notNullable()
       .references("id")
