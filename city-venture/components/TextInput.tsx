@@ -402,6 +402,12 @@ const FormTextInput = React.forwardRef<FormTextInputRef, FormTextInputProps>(
                   ? sizeCfg.h * numberOfLines! || sizeCfg.h
                   : sizeCfg.h,
               },
+              // Ensure proper vertical alignment on Android
+              Platform.select({
+                android: {
+                  textAlignVertical: multiline ? 'top' : 'center',
+                },
+              }),
               inputStyle,
             ]}
             placeholder={placeholder}
@@ -497,7 +503,6 @@ const styles = StyleSheet.create({
     ...Platform.select({
       android: {
         // Better text input behavior on Android
-        textAlignVertical: 'top',
         includeFontPadding: false,
         paddingVertical: 0, // Remove default padding that can cause alignment issues
       },
