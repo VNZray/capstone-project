@@ -16,8 +16,14 @@ import {
   MenuButton,
   MenuItem,
   ListDivider,
+  Chip,
+  Box,
+  Tabs,
+  TabList,
+  Tab,
+  TabPanel,
 } from "@mui/joy";
-import { Add } from "@mui/icons-material";
+import { Add, HourglassEmpty, Cancel, CheckCircle } from "@mui/icons-material";
 import logo from "@/src/assets/images/logo.png";
 import "./MyBusiness.css";
 
@@ -26,7 +32,19 @@ const MyBusiness = () => {
   const { user, logout } = useAuth();
   const { setBusinessId } = useBusiness();
   const [businesses, setBusinesses] = useState<Business[]>([]);
+  const [activeTab, setActiveTab] = useState<number>(0);
   const ownerId = user?.id;
+
+  // Filter businesses by status
+  const approvedBusinesses = businesses.filter(
+    (business) => business.status === "Approved" || business.status === "Active" || business.status === "Inactive"
+  );
+  const pendingBusinesses = businesses.filter(
+    (business) => business.status === "Pending"
+  );
+  const rejectedBusinesses = businesses.filter(
+    (business) => business.status === "Rejected"
+  );
 
   useEffect(() => {
     console.log("Owner ID:", ownerId);
@@ -184,7 +202,6 @@ const MyBusiness = () => {
               border: `2px solid ${colors.primary}`,
               "&:hover": {
                 background: `linear-gradient(135deg, #0a1a3d 0%, ${colors.primary} 100%)`,
-                transform: "translateY(-2px) scale(1.02)",
                 boxShadow: "0 8px 25px rgba(0,0,0,0.2)",
                 "& .MuiSvgIcon-root": {
                   transform: "rotate(90deg)",
@@ -200,51 +217,268 @@ const MyBusiness = () => {
           </Button>
         </div>
 
-        <Typography level="body-sm" sx={{ color: "#6B7280", mb: 1 }}>
-          You have {businesses.length}{" "}
-          {businesses.length === 1 ? "listing" : "listings"}
-        </Typography>
-
-        <div className="myb-list">
-          {businesses.slice(0, 4).map((business) => (
-            <div key={business.id} className="myb-list-item">
-              <Card
-                elevation={1}
-                image={business.business_image || placeholderImage}
-                title={business.business_name}
-                subtitle={
-                  business.business_type_id === 1 ? "Accommodation" : "Shop"
-                }
-                rating={5}
-                status={business.status}
-                compact
-              >
-                <Button
-                  onClick={() => {
-                    setBusinessId(business.id!);
-                    navigate(`/business/dashboard`);
-                  }}
-                  fullWidth
-                  size="sm"
-                >
-                  Manage Business
-                </Button>
-              </Card>
-            </div>
-          ))}
-          {businesses.length > 4 && (
-            <Typography
-              level="body-xs"
+        {/* Tabs Section */}
+        <Tabs
+          value={activeTab}
+          onChange={(_event, newValue) => setActiveTab(newValue as number)}
+          sx={{ width: "100%" }}
+        >
+          <TabList
+            sx={{
+              borderRadius: 12,
+              bgcolor: "background.level1",
+              p: 0.5,
+              mb: 3,
+              boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
+            }}
+          >
+            <Tab
+              value={0}
               sx={{
-                color: "#9CA3AF",
-                gridColumn: "1 / -1",
-                textAlign: "right",
+                flex: 1,
+                borderRadius: 10,
+                fontWeight: 600,
+                transition: "all 0.2s ease",
+                "&.Mui-selected": {
+                  bgcolor: colors.primary,
+                  color: "white",
+                },
               }}
             >
-              Showing 4 of {businesses.length}
-            </Typography>
-          )}
-        </div>
+              <CheckCircle sx={{ fontSize: 18, mr: 1 }} />
+              Active ({approvedBusinesses.length})
+            </Tab>
+            <Tab
+              value={1}
+              sx={{
+                flex: 1,
+                borderRadius: 10,
+                fontWeight: 600,
+                transition: "all 0.2s ease",
+                "&.Mui-selected": {
+                  bgcolor: "#F59E0B",
+                  color: "white",
+                },
+              }}
+              disabled={pendingBusinesses.length === 0}
+            >
+              <HourglassEmpty sx={{ fontSize: 18, mr: 1 }} />
+              Pending ({pendingBusinesses.length})
+            </Tab>
+            <Tab
+              value={2}
+              sx={{
+                flex: 1,
+                borderRadius: 10,
+                fontWeight: 600,
+                transition: "all 0.2s ease",
+                "&.Mui-selected": {
+                  bgcolor: "#EF4444",
+                  color: "white",
+                },
+              }}
+              disabled={rejectedBusinesses.length === 0}
+            >
+              <Cancel sx={{ fontSize: 18, mr: 1 }} />
+              Rejected ({rejectedBusinesses.length})
+            </Tab>
+          </TabList>
+
+          {/* Active Businesses Tab */}
+          <TabPanel value={0} sx={{ p: 0 }}>
+            {approvedBusinesses.length > 0 ? (
+              <Box>
+                <Typography level="body-sm" sx={{ color: "#6B7280", mb: 2 }}>
+                  You have {approvedBusinesses.length} active{" "}
+                  {approvedBusinesses.length === 1 ? "listing" : "listings"}
+                </Typography>
+
+                <div className="myb-list">
+                  {approvedBusinesses.map((business) => (
+                    <div key={business.id} className="myb-list-item">
+                      <Card
+                        elevation={1}
+                        image={business.business_image || placeholderImage}
+                        title={business.business_name}
+                        subtitle={
+                          business.business_type_id === 1
+                            ? "Accommodation"
+                            : "Shop"
+                        }
+                        rating={5}
+                        status={business.status}
+                        compact
+                      >
+                        <Button
+                          onClick={() => {
+                            setBusinessId(business.id!);
+                            navigate(`/business/dashboard`);
+                          }}
+                          fullWidth
+                          size="sm"
+                        >
+                          Manage Business
+                        </Button>
+                      </Card>
+                    </div>
+                  ))}
+                </div>
+              </Box>
+            ) : (
+              <Box
+                sx={{
+                  textAlign: "center",
+                  py: 6,
+                  color: "#9CA3AF",
+                }}
+              >
+                <CheckCircle sx={{ fontSize: 48, mb: 2, opacity: 0.3 }} />
+                <Typography level="body-lg" sx={{ fontWeight: 600 }}>
+                  No active businesses yet
+                </Typography>
+                <Typography level="body-sm">
+                  Register a business to get started
+                </Typography>
+              </Box>
+            )}
+          </TabPanel>
+
+          {/* Pending Businesses Tab */}
+          <TabPanel value={1} sx={{ p: 0 }}>
+            {pendingBusinesses.length > 0 ? (
+              <Box>
+                <Typography level="body-sm" sx={{ color: "#6B7280", mb: 2 }}>
+                  {pendingBusinesses.length}{" "}
+                  {pendingBusinesses.length === 1
+                    ? "business is"
+                    : "businesses are"}{" "}
+                  awaiting approval
+                </Typography>
+
+                <div className="myb-list">
+                  {pendingBusinesses.map((business) => (
+                    <div key={business.id} className="myb-list-item">
+                      <Card
+                        elevation={1}
+                        image={business.business_image || placeholderImage}
+                        title={business.business_name}
+                        subtitle={
+                          business.business_type_id === 1
+                            ? "Accommodation"
+                            : "Shop"
+                        }
+                        rating={0}
+                        status={business.status}
+                        compact
+                      >
+                        <Chip
+                          color="warning"
+                          variant="soft"
+                          size="sm"
+                          startDecorator={<HourglassEmpty />}
+                          sx={{ fontWeight: 600 }}
+                        >
+                          Under Review
+                        </Chip>
+                      </Card>
+                    </div>
+                  ))}
+                </div>
+              </Box>
+            ) : (
+              <Box
+                sx={{
+                  textAlign: "center",
+                  py: 6,
+                  color: "#9CA3AF",
+                }}
+              >
+                <HourglassEmpty sx={{ fontSize: 48, mb: 2, opacity: 0.3 }} />
+                <Typography level="body-lg" sx={{ fontWeight: 600 }}>
+                  No pending registrations
+                </Typography>
+              </Box>
+            )}
+          </TabPanel>
+
+          {/* Rejected Businesses Tab */}
+          <TabPanel value={2} sx={{ p: 0 }}>
+            {rejectedBusinesses.length > 0 ? (
+              <Box>
+                <Typography level="body-sm" sx={{ color: "#6B7280", mb: 2 }}>
+                  {rejectedBusinesses.length}{" "}
+                  {rejectedBusinesses.length === 1
+                    ? "registration was"
+                    : "registrations were"}{" "}
+                  denied
+                </Typography>
+
+                <div className="myb-list">
+                  {rejectedBusinesses.map((business) => (
+                    <div key={business.id} className="myb-list-item">
+                      <Card
+                        elevation={1}
+                        image={business.business_image || placeholderImage}
+                        title={business.business_name}
+                        subtitle={
+                          business.business_type_id === 1
+                            ? "Accommodation"
+                            : "Shop"
+                        }
+                        rating={0}
+                        status={business.status}
+                        compact
+                      >
+                        <Box
+                          sx={{
+                            display: "flex",
+                            flexDirection: "column",
+                            gap: 1,
+                          }}
+                        >
+                          <Chip
+                            color="danger"
+                            variant="soft"
+                            size="sm"
+                            startDecorator={<Cancel />}
+                            sx={{ fontWeight: 600 }}
+                          >
+                            Registration Denied
+                          </Chip>
+                          <Button
+                            onClick={() => {
+                              setBusinessId(business.id!);
+                              navigate(`/business/register?edit=${business.id}`);
+                            }}
+                            fullWidth
+                            size="sm"
+                            variant="outlined"
+                            color="primary"
+                          >
+                            Resubmit Application
+                          </Button>
+                        </Box>
+                      </Card>
+                    </div>
+                  ))}
+                </div>
+              </Box>
+            ) : (
+              <Box
+                sx={{
+                  textAlign: "center",
+                  py: 6,
+                  color: "#9CA3AF",
+                }}
+              >
+                <Cancel sx={{ fontSize: 48, mb: 2, opacity: 0.3 }} />
+                <Typography level="body-lg" sx={{ fontWeight: 600 }}>
+                  No rejected registrations
+                </Typography>
+              </Box>
+            )}
+          </TabPanel>
+        </Tabs>
       </div>
     </div>
   );

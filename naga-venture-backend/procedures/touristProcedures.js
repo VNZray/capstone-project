@@ -9,7 +9,7 @@ async function createProcedures(knex) {
 
   // Get tourist by ID
   await knex.raw(`
-		CREATE PROCEDURE GetTouristById(IN p_id CHAR(36))
+		CREATE PROCEDURE GetTouristById(IN p_id CHAR(64))
 		BEGIN
 			SELECT * FROM tourist WHERE id = p_id;
 		END;
@@ -18,7 +18,7 @@ async function createProcedures(knex) {
 	// Insert tourist (matches migration columns)
 	await knex.raw(`
 		CREATE PROCEDURE InsertTourist(
-			IN p_id CHAR(36),
+			IN p_id CHAR(64),
 			IN p_first_name VARCHAR(30),
 			IN p_middle_name VARCHAR(20),
 			IN p_last_name VARCHAR(30),
@@ -29,7 +29,7 @@ async function createProcedures(knex) {
 			IN p_nationality VARCHAR(20),
 			IN p_category ENUM('Domestic','Overseas'),
 			IN p_address_id INT,
-			IN p_user_id CHAR(36)
+			IN p_user_id CHAR(64)
 		)
 		BEGIN
 			INSERT INTO tourist (
@@ -44,7 +44,7 @@ async function createProcedures(knex) {
 	// Update tourist (all fields optional; matches migration columns)
 	await knex.raw(`
 		CREATE PROCEDURE UpdateTourist(
-			IN p_id CHAR(36),
+			IN p_id CHAR(64),
 			IN p_first_name VARCHAR(30),
 			IN p_middle_name VARCHAR(20),
 			IN p_last_name VARCHAR(30),
@@ -55,7 +55,7 @@ async function createProcedures(knex) {
 			IN p_nationality VARCHAR(20),
 			IN p_category ENUM('Domestic','Overseas'),
 			IN p_address_id INT,
-			IN p_user_id CHAR(36)
+			IN p_user_id CHAR(64)
 		)
 		BEGIN
 			UPDATE tourist SET
@@ -77,7 +77,7 @@ async function createProcedures(knex) {
 
   // Delete tourist
   await knex.raw(`
-		CREATE PROCEDURE DeleteTourist(IN p_id CHAR(36))
+		CREATE PROCEDURE DeleteTourist(IN p_id CHAR(64))
 		BEGIN
 			DELETE FROM tourist WHERE id = p_id;
 		END;
@@ -85,7 +85,7 @@ async function createProcedures(knex) {
 
   // Get tourist by user ID
   await knex.raw(`
-    CREATE PROCEDURE GetTouristByUserId(IN p_user_id CHAR(36))
+    CREATE PROCEDURE GetTouristByUserId(IN p_user_id CHAR(64))
     BEGIN
       SELECT * FROM tourist WHERE user_id = p_user_id;
     END;

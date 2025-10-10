@@ -10,7 +10,7 @@ async function createRoomProcedures(knex) {
 
   // Get room by business ID
   await knex.raw(`
-    CREATE PROCEDURE GetRoomByBusinessId(IN p_businessId CHAR(36))
+    CREATE PROCEDURE GetRoomByBusinessId(IN p_businessId CHAR(64))
     BEGIN
       SELECT * FROM room WHERE business_id = p_businessId
       ORDER BY room_number ASC
@@ -20,7 +20,7 @@ async function createRoomProcedures(knex) {
 
   // Get room by ID
   await knex.raw(`
-    CREATE PROCEDURE GetRoomById(IN p_roomId CHAR(36))
+    CREATE PROCEDURE GetRoomById(IN p_roomId CHAR(64))
     BEGIN
       SELECT * FROM room WHERE id = p_roomId;
     END;
@@ -29,8 +29,8 @@ async function createRoomProcedures(knex) {
   // Insert room
   await knex.raw(`
     CREATE PROCEDURE InsertRoom(
-      IN p_id CHAR(36),
-      IN p_business_id CHAR(36),
+      IN p_id CHAR(64),
+      IN p_business_id CHAR(64),
       IN p_room_number VARCHAR(20),
       IN p_room_type VARCHAR(20),
       IN p_description TEXT,
@@ -54,8 +54,8 @@ async function createRoomProcedures(knex) {
   // Update room (all fields optional)
   await knex.raw(`
     CREATE PROCEDURE UpdateRoom(
-      IN p_id CHAR(36),
-      IN p_business_id CHAR(36),
+      IN p_id CHAR(64),
+      IN p_business_id CHAR(64),
       IN p_room_number VARCHAR(20),
       IN p_room_type VARCHAR(20),
       IN p_description TEXT,
@@ -85,7 +85,7 @@ async function createRoomProcedures(knex) {
 
   // Delete room
   await knex.raw(`
-    CREATE PROCEDURE DeleteRoom(IN p_id CHAR(36))
+    CREATE PROCEDURE DeleteRoom(IN p_id CHAR(64))
     BEGIN
       DELETE FROM room WHERE id = p_id;
     END;

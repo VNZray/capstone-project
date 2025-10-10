@@ -9,7 +9,7 @@ async function createGuestProcedures(knex) {
 
   // Get guest by ID
   await knex.raw(`
-    CREATE PROCEDURE GetGuestById(IN p_id CHAR(36))
+    CREATE PROCEDURE GetGuestById(IN p_id CHAR(64))
     BEGIN
       SELECT * FROM guest WHERE id = p_id;
     END;
@@ -18,11 +18,11 @@ async function createGuestProcedures(knex) {
   // Insert guest
   await knex.raw(`
     CREATE PROCEDURE InsertGuest(
-      IN p_id CHAR(36),
+      IN p_id CHAR(64),
       IN p_name VARCHAR(60),
       IN p_age INT,
       IN p_gender ENUM('Male','Female'),
-      IN p_booking_id CHAR(36)
+      IN p_booking_id CHAR(64)
     )
     BEGIN
       INSERT INTO guest (
@@ -37,7 +37,7 @@ async function createGuestProcedures(knex) {
   // Update guest (all fields optional)
   await knex.raw(`
     CREATE PROCEDURE UpdateGuest(
-      IN p_id CHAR(36),
+      IN p_id CHAR(64),
       IN p_name VARCHAR(30),
       IN p_age INT,
       IN p_gender ENUM('Male','Female')
@@ -54,7 +54,7 @@ async function createGuestProcedures(knex) {
 
   // Delete guest
   await knex.raw(`
-    CREATE PROCEDURE DeleteGuest(IN p_id CHAR(36))
+    CREATE PROCEDURE DeleteGuest(IN p_id CHAR(64))
     BEGIN
       DELETE FROM guest WHERE id = p_id;
     END;
@@ -62,7 +62,7 @@ async function createGuestProcedures(knex) {
 
   // Get guest by booking ID
   await knex.raw(`
-    CREATE PROCEDURE GetGuestByBookingId(IN p_booking_id CHAR(36))
+    CREATE PROCEDURE GetGuestByBookingId(IN p_booking_id CHAR(64))
     BEGIN
       SELECT * FROM guest WHERE booking_id = p_booking_id;
     END;

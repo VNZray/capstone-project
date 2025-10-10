@@ -118,6 +118,24 @@ async function createAddressProcedures(knex) {
       WHERE a.id = p_id;
     END;
   `);
+
+  // Join barangay, municipality, province tables to get full address by barangay_id
+  await knex.raw(`
+    CREATE PROCEDURE GetFullAddressByBarangayId(IN p_barangay_id INT)
+    BEGIN
+      SELECT 
+        a.id AS address_id,
+        p.id AS province_id, p.province AS province_name,
+        m.id AS municipality_id, m.municipality AS municipality_name,
+        b.id AS barangay_id, b.barangay AS barangay_name
+      FROM address a
+      LEFT JOIN barangay b ON a.barangay_id = b.id
+      LEFT JOIN municipality m ON b.municipality_id = m.id
+      LEFT JOIN province p ON m.province_id = p.id
+      WHERE a.barangay_id = p_barangay_id;
+    END;
+  `);
+
 }
 
 async function dropAddressProcedures(knex) {
@@ -133,6 +151,7 @@ async function dropAddressProcedures(knex) {
   await knex.raw("DROP PROCEDURE IF EXISTS InsertAddress;");
   await knex.raw("DROP PROCEDURE IF EXISTS UpdateAddress;");
   await knex.raw("DROP PROCEDURE IF EXISTS GetAddressDetailsById;");
+  await knex.raw("DROP PROCEDURE IF EXISTS GetFullAddressByBarangayId;");
 }
 
 export { createAddressProcedures, dropAddressProcedures };

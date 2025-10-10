@@ -5,6 +5,8 @@ import "dotenv/config";
 import userRoutes from "./routes/users.js";
 import userRoleRoutes from "./routes/users_role.js";
 
+import registrationRoutes from "./routes/registration.js";
+
 import businessRoutes from "./routes/business.js";
 import businessHoursRoutes from "./routes/business_hours.js";
 import addressRoutes from "./routes/address.js";
@@ -69,6 +71,11 @@ const routeSections = [
     section: "Business Core",
     routes: [
       { path: "/api/business", handler: businessRoutes, label: "Businesses" },
+      {
+        path: "/api/registration",
+        handler: registrationRoutes,
+        label: "Business Registrations",
+      },
       { path: "/api/address", handler: addressRoutes, label: "Addresses" },
       {
         path: "/api/business-hours",

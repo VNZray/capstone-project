@@ -17,7 +17,11 @@ import Step4 from "./steps/Step4";
 import Step4ImageUpload from "./steps/Step4ImageUpload";
 import Step5 from "./steps/Step5";
 
-import type { Business, BusinessHours } from "@/src/types/Business";
+import type {
+  Business,
+  BusinessHours,
+  Registration,
+} from "@/src/types/Business";
 import axios from "axios";
 import type { Permit } from "@/src/types/Permit";
 import { insertData } from "@/src/services/Service";
@@ -116,6 +120,14 @@ const BusinessRegistration: React.FC = () => {
     hasBooking: false,
   });
 
+  const [registrationData, setRegistrationData] = useState<Registration>({
+    id: "",
+    business_id: "",
+    status: "Pending",
+    message: "",
+    tourism_id: "",
+  });
+
   const [addressData, setAddressData] = useState<Address>({
     barangay_id: 3,
     municipality_id: 24,
@@ -199,6 +211,8 @@ const BusinessRegistration: React.FC = () => {
     setBusinessHours,
     setBusinessAmenities,
     setData: setFormData,
+    setRegistrationData,
+    registrationData,
   };
 
   const handleNext = () => {
@@ -295,6 +309,14 @@ const BusinessRegistration: React.FC = () => {
           )
         );
       }
+
+      // 1️⃣ Insert Business Registration
+      const registration = await axios.post(`${api}/registration`, {
+        ...registrationData,
+        business_id: businessId,
+      });
+
+      console.log("Registration response:", registration.data);
 
       console.log("✅ Business registration submitted successfully");
       navigate("/business");

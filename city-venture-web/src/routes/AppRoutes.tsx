@@ -27,12 +27,12 @@ import BusinessProfile from "../features/business/accommodation/business-profile
 import ManagePromotion from "../features/business/accommodation/promotion/ManagePromotion";
 import RoomPage from "../features/business/accommodation/room/Room";
 import RoomProfile from "../features/business/accommodation/room/RoomProfile";
-import Profile from "../features/business/profile/Profile";
+import Settings from "../features/business/settings/Settings";
 import Offer from "../features/business/shop/offers/Offer";
 import Products from "../features/business/shop/store/Products";
 import Orders from "../features/business/shop/store/Orders";
 import Discount from "../features/business/shop/store/Discount";
-import Settings from "../features/business/shop/store/Settings";
+import ShopSettings from "../features/business/shop/store/Settings";
 
 import AccommodationDashboard from "../features/business/accommodation/dashboard/Dashboard";
 import ShopDashboard from "../features/business/shop/dashboard/Dashboard";
@@ -58,6 +58,7 @@ import { TestPage } from "../test/Test";
 import TwoColumnLayout from "../layout/TwoColumnLayout";
 import { TestPage3 } from "../test/Test3";
 import { TestPage2 } from "../test/Test2";
+import Notification from "../features/business/accommodation/notfication/Notification";
 
 export default function AppRoutes() {
   const user = "/";
@@ -229,15 +230,15 @@ export default function AppRoutes() {
               path={`${business}/store/settings`}
               element={
                 <ProtectedRoute>
-                  <Settings />
+                  <ShopSettings />
                 </ProtectedRoute>
               }
             />
             <Route
-              path={`${business}/profile`}
+              path={`${business}/settings`}
               element={
                 <ProtectedRoute>
-                  <Profile />
+                  <Settings />
                 </ProtectedRoute>
               }
             />
@@ -263,6 +264,23 @@ export default function AppRoutes() {
                 element={
                   <ProtectedRoute>
                     <RoomProfile />
+                  </ProtectedRoute>
+                }
+              />
+            </Route>
+
+            <Route
+              element={
+                <RoomProvider>
+                  <Outlet />
+                </RoomProvider>
+              }
+            >
+              <Route
+                path={`${business}/notification`}
+                element={
+                  <ProtectedRoute>
+                    <Notification />
                   </ProtectedRoute>
                 }
               />
@@ -359,10 +377,10 @@ export default function AppRoutes() {
             }
           />
           <Route
-            path={`${tourism}/profile`}
+            path={`${tourism}/settings`}
             element={
               <ProtectedRoute>
-                <Profile />
+                <Settings />
               </ProtectedRoute>
             }
           />

@@ -144,3 +144,15 @@ export async function getAddressDetailsById(request, response) {
     return handleDbError(error, response);
   }
 }
+
+export async function GetFullAddressByBarangayId(request, response) {
+  const { id } = request.params;
+
+  try {
+    const [data] = await db.query("CALL GetFullAddressByBarangayId(?)", [id]);
+    response.json(data[0][0]);
+  } catch (error) {
+    console.error("Error fetching Address:", error);
+    return handleDbError(error, response);
+  }
+}

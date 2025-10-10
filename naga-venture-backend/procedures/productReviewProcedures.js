@@ -17,7 +17,7 @@ async function createProductReviewProcedures(knex) {
 
   // Get reviews by product ID
   await knex.raw(`
-    CREATE PROCEDURE GetReviewsByProductId(IN p_productId CHAR(36))
+    CREATE PROCEDURE GetReviewsByProductId(IN p_productId CHAR(64))
     BEGIN
       SELECT pr.*, u.email as user_email, o.order_number
       FROM product_review pr 
@@ -30,7 +30,7 @@ async function createProductReviewProcedures(knex) {
 
   // Get reviews by user ID
   await knex.raw(`
-    CREATE PROCEDURE GetReviewsByUserId(IN p_userId CHAR(36))
+    CREATE PROCEDURE GetReviewsByUserId(IN p_userId CHAR(64))
     BEGIN
       SELECT pr.*, p.name as product_name, p.image_url as product_image,
         b.business_name, o.order_number
@@ -45,7 +45,7 @@ async function createProductReviewProcedures(knex) {
 
   // Get reviews by business ID
   await knex.raw(`
-    CREATE PROCEDURE GetReviewsByBusinessId(IN p_businessId CHAR(36))
+    CREATE PROCEDURE GetReviewsByBusinessId(IN p_businessId CHAR(64))
     BEGIN
       SELECT pr.*, p.name as product_name, u.email as user_email,
         o.order_number
@@ -60,7 +60,7 @@ async function createProductReviewProcedures(knex) {
 
   // Get product review by ID
   await knex.raw(`
-    CREATE PROCEDURE GetProductReviewById(IN p_reviewId CHAR(36))
+    CREATE PROCEDURE GetProductReviewById(IN p_reviewId CHAR(64))
     BEGIN
       SELECT pr.*, p.name as product_name, p.image_url as product_image,
         u.email as user_email, b.business_name, o.order_number
@@ -76,10 +76,10 @@ async function createProductReviewProcedures(knex) {
   // Insert product review
   await knex.raw(`
     CREATE PROCEDURE InsertProductReview(
-      IN p_id CHAR(36),
-      IN p_product_id CHAR(36),
-      IN p_user_id CHAR(36),
-      IN p_order_id CHAR(36),
+      IN p_id CHAR(64),
+      IN p_product_id CHAR(64),
+      IN p_user_id CHAR(64),
+      IN p_order_id CHAR(64),
       IN p_rating TINYINT,
       IN p_review_title VARCHAR(255),
       IN p_review_text TEXT,
@@ -128,7 +128,7 @@ async function createProductReviewProcedures(knex) {
   // Update product review
   await knex.raw(`
     CREATE PROCEDURE UpdateProductReview(
-      IN p_id CHAR(36),
+      IN p_id CHAR(64),
       IN p_rating TINYINT,
       IN p_review_title VARCHAR(255),
       IN p_review_text TEXT,
@@ -153,7 +153,7 @@ async function createProductReviewProcedures(knex) {
 
   // Delete product review
   await knex.raw(`
-    CREATE PROCEDURE DeleteProductReview(IN p_reviewId CHAR(36))
+    CREATE PROCEDURE DeleteProductReview(IN p_reviewId CHAR(64))
     BEGIN
       DELETE FROM product_review WHERE id = p_reviewId;
     END;
@@ -162,7 +162,7 @@ async function createProductReviewProcedures(knex) {
   // Update review status (for moderation)
   await knex.raw(`
     CREATE PROCEDURE UpdateReviewStatus(
-      IN p_reviewId CHAR(36),
+      IN p_reviewId CHAR(64),
       IN p_status ENUM('active', 'hidden', 'flagged')
     )
     BEGIN
@@ -178,7 +178,7 @@ async function createProductReviewProcedures(knex) {
 
   // Get product review statistics
   await knex.raw(`
-    CREATE PROCEDURE GetProductReviewStats(IN p_productId CHAR(36))
+    CREATE PROCEDURE GetProductReviewStats(IN p_productId CHAR(64))
     BEGIN
       -- Review statistics
       SELECT 
@@ -205,7 +205,7 @@ async function createProductReviewProcedures(knex) {
 
   // Get business review statistics
   await knex.raw(`
-    CREATE PROCEDURE GetBusinessReviewStats(IN p_businessId CHAR(36))
+    CREATE PROCEDURE GetBusinessReviewStats(IN p_businessId CHAR(64))
     BEGIN
       -- Overall statistics
       SELECT 
@@ -238,13 +238,13 @@ async function createProductReviewProcedures(knex) {
   // Check if user can review product
   await knex.raw(`
     CREATE PROCEDURE CanUserReviewProduct(
-      IN p_productId CHAR(36),
-      IN p_userId CHAR(36)
+      IN p_productId CHAR(64),
+      IN p_userId CHAR(64)
     )
     BEGIN
       DECLARE existing_review_count INT DEFAULT 0;
       DECLARE purchase_count INT DEFAULT 0;
-      DECLARE latest_order_id CHAR(36) DEFAULT NULL;
+      DECLARE latest_order_id CHAR(64) DEFAULT NULL;
       
       -- Check if user has already reviewed this product
       SELECT COUNT(*) INTO existing_review_count 

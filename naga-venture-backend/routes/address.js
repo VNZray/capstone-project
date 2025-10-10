@@ -18,5 +18,6 @@ router.post("/", addressController.insertAddress);
 router.put("/:id", addressController.updateAddress);
 router.get("/:id", addressController.getAddressDetailsById);
 router.get("/", addressController.getAllAddresses);
+router.get("/full-address/:id", addressController.GetFullAddressByBarangayId);
 
 export default router;

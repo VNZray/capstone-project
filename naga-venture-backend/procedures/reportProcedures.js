@@ -24,7 +24,7 @@ async function createReportProcedures(knex) {
 
   // Get single report by ID returning: report row, status history, attachments (3 result sets)
   await knex.raw(`
-    CREATE PROCEDURE GetReportById(IN p_id CHAR(36))
+    CREATE PROCEDURE GetReportById(IN p_id CHAR(64))
     BEGIN
         -- Report details
         SELECT 
@@ -57,7 +57,7 @@ async function createReportProcedures(knex) {
 
   // Get reports by reporter
   await knex.raw(`
-    CREATE PROCEDURE GetReportsByReporterId(IN p_reporter_id CHAR(36))
+    CREATE PROCEDURE GetReportsByReporterId(IN p_reporter_id CHAR(64))
     BEGIN
         SELECT 
           r.*, 
@@ -117,8 +117,8 @@ async function createReportProcedures(knex) {
   // Insert new report + initial status history (submitted)
   await knex.raw(`
     CREATE PROCEDURE InsertReport(
-      IN p_id CHAR(36),
-      IN p_reporter_id CHAR(36),
+      IN p_id CHAR(64),
+      IN p_reporter_id CHAR(64),
       IN p_target_type VARCHAR(30),
       IN p_target_id VARCHAR(100),
       IN p_title VARCHAR(100),
@@ -138,8 +138,8 @@ async function createReportProcedures(knex) {
   // Insert single attachment for a report
   await knex.raw(`
     CREATE PROCEDURE InsertReportAttachment(
-      IN p_id CHAR(36),
-      IN p_report_id CHAR(36),
+      IN p_id CHAR(64),
+      IN p_report_id CHAR(64),
       IN p_file_url TEXT,
       IN p_file_name VARCHAR(255),
       IN p_file_type VARCHAR(50),
@@ -156,7 +156,7 @@ async function createReportProcedures(knex) {
   // NOTE: MariaDB 10.5+ JSON support used; if version older adjust accordingly
   await knex.raw(`
     CREATE PROCEDURE BulkInsertReportAttachments(
-      IN p_report_id CHAR(36),
+      IN p_report_id CHAR(64),
       IN p_attachments JSON
     )
     BEGIN
@@ -182,10 +182,10 @@ async function createReportProcedures(knex) {
   // Update report status + insert status history; returns updated report row
   await knex.raw(`
     CREATE PROCEDURE UpdateReportStatus(
-      IN p_id CHAR(36),
+      IN p_id CHAR(64),
       IN p_status VARCHAR(30),
       IN p_remarks TEXT,
-      IN p_updated_by CHAR(36)
+      IN p_updated_by CHAR(64)
     )
     BEGIN
       UPDATE report 
@@ -201,7 +201,7 @@ async function createReportProcedures(knex) {
 
   // Delete report
   await knex.raw(`
-    CREATE PROCEDURE DeleteReport(IN p_id CHAR(36))
+    CREATE PROCEDURE DeleteReport(IN p_id CHAR(64))
     BEGIN
       DELETE FROM report WHERE id = p_id;
       SELECT ROW_COUNT() AS affected_rows;

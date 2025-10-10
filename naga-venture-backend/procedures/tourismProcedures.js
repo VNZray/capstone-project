@@ -9,7 +9,7 @@ async function createTourismProcedures(knex) {
 
   // Get tourism by ID
   await knex.raw(`
-    CREATE PROCEDURE GetTourismById(IN p_id CHAR(36))
+    CREATE PROCEDURE GetTourismById(IN p_id CHAR(64))
     BEGIN
       SELECT * FROM tourism WHERE id = p_id;
     END;
@@ -18,12 +18,12 @@ async function createTourismProcedures(knex) {
   // Insert tourism
   await knex.raw(`
     CREATE PROCEDURE InsertTourism(
-      IN p_id CHAR(36),
+      IN p_id CHAR(64),
       IN p_first_name VARCHAR(30),
       IN p_middle_name VARCHAR(20),
       IN p_last_name VARCHAR(30),
       IN p_position VARCHAR(20),
-      IN p_user_id CHAR(36)
+      IN p_user_id CHAR(64)
     )
     BEGIN
       INSERT INTO tourism (
@@ -38,12 +38,12 @@ async function createTourismProcedures(knex) {
   // Update tourism (all fields optional)
   await knex.raw(`
     CREATE PROCEDURE UpdateTourism(
-      IN p_id CHAR(36),
+      IN p_id CHAR(64),
       IN p_first_name VARCHAR(30),
       IN p_middle_name VARCHAR(20),
       IN p_last_name VARCHAR(30),
       IN p_position VARCHAR(20),
-      IN p_user_id CHAR(36)
+      IN p_user_id CHAR(64)
     )
     BEGIN
       UPDATE tourism
@@ -59,7 +59,7 @@ async function createTourismProcedures(knex) {
 
   // Delete tourism
   await knex.raw(`
-    CREATE PROCEDURE DeleteTourism(IN p_id CHAR(36))
+    CREATE PROCEDURE DeleteTourism(IN p_id CHAR(64))
     BEGIN
       DELETE FROM tourism WHERE id = p_id;
     END;
@@ -67,7 +67,7 @@ async function createTourismProcedures(knex) {
 
   // Get tourism by user ID
   await knex.raw(`
-    CREATE PROCEDURE GetTourismByUserId(IN p_user_id CHAR(36))
+    CREATE PROCEDURE GetTourismByUserId(IN p_user_id CHAR(64))
     BEGIN
       SELECT * FROM tourism WHERE user_id = p_user_id;
     END;

@@ -11,7 +11,7 @@ async function createProductProcedures(knex) {
 
   // Get product categories by business ID
   await knex.raw(`
-    CREATE PROCEDURE GetProductCategoriesByBusinessId(IN p_businessId CHAR(36))
+    CREATE PROCEDURE GetProductCategoriesByBusinessId(IN p_businessId CHAR(64))
     BEGIN
       SELECT * FROM product_category 
       WHERE business_id = p_businessId AND status = 'active' 
@@ -21,7 +21,7 @@ async function createProductProcedures(knex) {
 
   // Get product category by ID
   await knex.raw(`
-    CREATE PROCEDURE GetProductCategoryById(IN p_categoryId CHAR(36))
+    CREATE PROCEDURE GetProductCategoryById(IN p_categoryId CHAR(64))
     BEGIN
       SELECT * FROM product_category WHERE id = p_categoryId;
     END;
@@ -30,8 +30,8 @@ async function createProductProcedures(knex) {
   // Insert product category
   await knex.raw(`
     CREATE PROCEDURE InsertProductCategory(
-      IN p_id CHAR(36),
-      IN p_business_id CHAR(36),
+      IN p_id CHAR(64),
+      IN p_business_id CHAR(64),
       IN p_name VARCHAR(255),
       IN p_description TEXT,
       IN p_display_order INT,
@@ -48,7 +48,7 @@ async function createProductProcedures(knex) {
   // Update product category
   await knex.raw(`
     CREATE PROCEDURE UpdateProductCategory(
-      IN p_id CHAR(36),
+      IN p_id CHAR(64),
       IN p_name VARCHAR(255),
       IN p_description TEXT,
       IN p_display_order INT,
@@ -69,7 +69,7 @@ async function createProductProcedures(knex) {
 
   // Delete product category
   await knex.raw(`
-    CREATE PROCEDURE DeleteProductCategory(IN p_categoryId CHAR(36))
+    CREATE PROCEDURE DeleteProductCategory(IN p_categoryId CHAR(64))
     BEGIN
       DECLARE product_count INT DEFAULT 0;
       
@@ -99,7 +99,7 @@ async function createProductProcedures(knex) {
 
   // Get products by business ID with stock info
   await knex.raw(`
-    CREATE PROCEDURE GetProductsByBusinessId(IN p_businessId CHAR(36))
+    CREATE PROCEDURE GetProductsByBusinessId(IN p_businessId CHAR(64))
     BEGIN
       SELECT p.*, pc.name as category_name, ps.current_stock, ps.stock_unit
       FROM product p 
@@ -112,7 +112,7 @@ async function createProductProcedures(knex) {
 
   // Get products by category ID
   await knex.raw(`
-    CREATE PROCEDURE GetProductsByCategoryId(IN p_categoryId CHAR(36))
+    CREATE PROCEDURE GetProductsByCategoryId(IN p_categoryId CHAR(64))
     BEGIN
       SELECT p.*, ps.current_stock, ps.stock_unit
       FROM product p 
@@ -124,7 +124,7 @@ async function createProductProcedures(knex) {
 
   // Get product by ID with full details
   await knex.raw(`
-    CREATE PROCEDURE GetProductById(IN p_productId CHAR(36))
+    CREATE PROCEDURE GetProductById(IN p_productId CHAR(64))
     BEGIN
       SELECT p.*, pc.name as category_name, b.business_name, ps.current_stock, ps.stock_unit, ps.minimum_stock, ps.maximum_stock
       FROM product p 
@@ -138,15 +138,15 @@ async function createProductProcedures(knex) {
   // Insert product with initial stock
   await knex.raw(`
     CREATE PROCEDURE InsertProduct(
-      IN p_id CHAR(36),
-      IN p_business_id CHAR(36),
-      IN p_product_category_id CHAR(36),
+      IN p_id CHAR(64),
+      IN p_business_id CHAR(64),
+      IN p_product_category_id CHAR(64),
       IN p_name VARCHAR(255),
       IN p_description TEXT,
       IN p_price DECIMAL(10,2),
       IN p_image_url VARCHAR(500),
       IN p_status ENUM('active', 'inactive', 'out_of_stock'),
-      IN p_stock_id CHAR(36)
+      IN p_stock_id CHAR(64)
     )
     BEGIN
       INSERT INTO product (id, business_id, product_category_id, name, description, price, image_url, status)
@@ -166,8 +166,8 @@ async function createProductProcedures(knex) {
   // Update product
   await knex.raw(`
     CREATE PROCEDURE UpdateProduct(
-      IN p_id CHAR(36),
-      IN p_product_category_id CHAR(36),
+      IN p_id CHAR(64),
+      IN p_product_category_id CHAR(64),
       IN p_name VARCHAR(255),
       IN p_description TEXT,
       IN p_price DECIMAL(10,2),
@@ -195,7 +195,7 @@ async function createProductProcedures(knex) {
 
   // Delete product
   await knex.raw(`
-    CREATE PROCEDURE DeleteProduct(IN p_productId CHAR(36))
+    CREATE PROCEDURE DeleteProduct(IN p_productId CHAR(64))
     BEGIN
       DECLARE order_count INT DEFAULT 0;
       
@@ -213,7 +213,7 @@ async function createProductProcedures(knex) {
   
   // Get product stock
   await knex.raw(`
-    CREATE PROCEDURE GetProductStock(IN p_productId CHAR(36))
+    CREATE PROCEDURE GetProductStock(IN p_productId CHAR(64))
     BEGIN
       SELECT ps.*, p.name as product_name 
       FROM product_stock ps 
@@ -225,12 +225,12 @@ async function createProductProcedures(knex) {
   // Update product stock with history
   await knex.raw(`
     CREATE PROCEDURE UpdateProductStock(
-      IN p_productId CHAR(36),
+      IN p_productId CHAR(64),
       IN p_quantity_change INT,
       IN p_change_type ENUM('restock', 'sale', 'adjustment', 'expired'),
       IN p_notes TEXT,
-      IN p_created_by CHAR(36),
-      IN p_history_id CHAR(36)
+      IN p_created_by CHAR(64),
+      IN p_history_id CHAR(64)
     )
     BEGIN
       DECLARE current_stock_val INT DEFAULT 0;
@@ -262,7 +262,7 @@ async function createProductProcedures(knex) {
 
   // Get product stock history
   await knex.raw(`
-    CREATE PROCEDURE GetProductStockHistory(IN p_productId CHAR(36))
+    CREATE PROCEDURE GetProductStockHistory(IN p_productId CHAR(64))
     BEGIN
       SELECT sh.*, u.email as created_by_user
       FROM stock_history sh 

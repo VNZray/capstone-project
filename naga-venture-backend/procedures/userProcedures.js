@@ -9,7 +9,7 @@ async function createUserProcedures(knex) {
 
   // Get user by ID
   await knex.raw(`
-    CREATE PROCEDURE GetUserById(IN p_id CHAR(36))
+    CREATE PROCEDURE GetUserById(IN p_id CHAR(64))
     BEGIN
       SELECT * FROM user WHERE id = p_id;
     END;
@@ -26,7 +26,7 @@ async function createUserProcedures(knex) {
   // Insert user
   await knex.raw(`
     CREATE PROCEDURE InsertUser(
-      IN p_id CHAR(36),
+      IN p_id CHAR(64),
       IN p_email VARCHAR(40),
       IN p_phone_number VARCHAR(13),
       IN p_password TEXT,
@@ -113,7 +113,7 @@ async function createUserProcedures(knex) {
   // Update user
   await knex.raw(`
     CREATE PROCEDURE UpdateUser(
-      IN p_id CHAR(36),
+      IN p_id CHAR(64),
       IN p_email VARCHAR(40),
       IN p_phone_number VARCHAR(13),
       IN p_password TEXT,
@@ -142,7 +142,7 @@ async function createUserProcedures(knex) {
 
   // Delete user
   await knex.raw(`
-    CREATE PROCEDURE DeleteUser(IN p_id CHAR(36))
+    CREATE PROCEDURE DeleteUser(IN p_id CHAR(64))
     BEGIN
       DELETE FROM user WHERE id = p_id;
     END;

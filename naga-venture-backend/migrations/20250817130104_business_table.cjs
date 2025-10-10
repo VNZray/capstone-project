@@ -15,12 +15,8 @@ exports.up = async function (knex) {
     table.string("phone_number", 14).notNullable().unique();
     table.integer("business_type_id").notNullable();
     table.integer("business_category_id").notNullable();
-    table
-      .integer("address_id")
-      .unsigned()
-      .references("id")
-      .inTable("address")
-      .nullable();
+
+
     table.text("address").notNullable();
     table.uuid("owner_id").notNullable().references("id").inTable("owner");
     table
@@ -36,6 +32,16 @@ exports.up = async function (knex) {
     table.text("instagram_url").nullable();
     table.boolean("hasBooking").nullable().defaultTo(false);
     table.timestamp("created_at").defaultTo(knex.fn.now());
+
+        // Foreign keys
+    table
+      .integer("barangay_id")
+      .unsigned()
+      .nullable()
+      .references("id")
+      .inTable("barangay")
+      .onDelete("CASCADE")
+      .onUpdate("CASCADE");
   });
 
   await createBusinessProcedures(knex);

@@ -92,3 +92,13 @@ export type ExternalBooking = {
   platform_name?: string;
   booking_url?: string;
 };
+
+export type Registration = {
+  id?: string;
+  status?: string;
+  submitted_at?: string;
+  approved_at?: string;
+  message?: string;
+  business_id?: string;
+  tourism_id?: string;
+}
