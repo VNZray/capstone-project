@@ -115,7 +115,7 @@ const RegistrationPage = () => {
     nationality: nationality,
     category: category,
     birthdate: formatDate(birthdate),
-    address_id: barangayId,
+    barangay_id: barangayId,
     age: (new Date().getFullYear() - birthdate.getFullYear()).toString(),
   };
 
@@ -137,16 +137,11 @@ const RegistrationPage = () => {
       const userId = userRes.id;
       console.debug('[Register] Created user', { userId });
 
-      // 2) Create address (use selected location or fallbacks)
-      const addressRes = await insertData(newAddress, 'address');
-      const addressId = addressRes.id;
-      console.debug('[Register] Created address', { addressId });
-
       // 3) Create tourist profile
       const touristPayload: any = {
         ...newTourist,
         email, 
-        address_id: addressId,
+        barangay_id: barangayId,
         user_id: userId,
       };
       console.log('[Register] Inserting tourist (final)', touristPayload);

@@ -115,7 +115,7 @@ const BusinessRegistration: React.FC = () => {
     owner_id: user?.id ?? "",
     business_category_id: 0,
     business_type_id: 0,
-    address_id: 0,
+    barangay_id: 0,
     status: "Pending",
     hasBooking: false,
   });
@@ -243,14 +243,8 @@ const BusinessRegistration: React.FC = () => {
         throw new Error("Missing owner_id");
       }
 
-      // insert address first
-      const addressRes = await insertData(addressData, "address");
-      const addressId = addressRes.id;
       // 1️⃣ Insert Business
-      const res = await axios.post(`${api}/business`, {
-        ...formData,
-        address_id: addressId,
-      });
+      const res = await axios.post(`${api}/business`, formData);
 
       const businessId = res.data.id;
       console.log(businessId);

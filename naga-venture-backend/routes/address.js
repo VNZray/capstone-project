@@ -14,10 +14,6 @@ router.get(
 );
 router.get("/barangays/:id", addressController.getBarangaysByMunicipalityId);
 router.get("/barangay/:id", addressController.getBarangayById);
-router.post("/", addressController.insertAddress);
-router.put("/:id", addressController.updateAddress);
-router.get("/:id", addressController.getAddressDetailsById);
-router.get("/", addressController.getAllAddresses);
-router.get("/full-address/:id", addressController.GetFullAddressByBarangayId);
+router.get("/:id", addressController.GetFullAddressByBarangayId);
 
 export default router;

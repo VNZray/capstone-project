@@ -54,7 +54,7 @@ export const AddressService = {
   // revised address fetching
 
   async fetchFullAddress(barangayId: number) {
-    const response = await getDataById("address/full-address", barangayId);
+    const response = await getDataById("address", barangayId);
     return response;
   },
 };

@@ -35,7 +35,7 @@ async function createBusinessProcedures(knex) {
       IN p_phone_number VARCHAR(14),
       IN p_business_category_id INT,
       IN p_business_type_id INT,
-      IN p_address_id INT,
+      IN p_barangay_id INT,
       IN p_address TEXT,
       IN p_owner_id CHAR(64),
       IN p_status VARCHAR(20),
@@ -51,13 +51,13 @@ async function createBusinessProcedures(knex) {
     BEGIN
       INSERT INTO business (
         id, business_name, description, min_price, max_price, email, phone_number,
-        business_category_id, business_type_id, address_id,
+        business_category_id, business_type_id, barangay_id,
         address, owner_id, status, business_image, latitude, longitude,
         x_url, website_url, facebook_url, instagram_url, hasBooking
       )
       VALUES (
         p_id, p_business_name, p_description, p_min_price, p_max_price, p_email, p_phone_number,
-        p_business_category_id, p_business_type_id, p_address_id,
+        p_business_category_id, p_business_type_id, p_barangay_id,
         p_address, p_owner_id, p_status, p_business_image, p_latitude, p_longitude,
         p_x_url, p_website_url, p_facebook_url, p_instagram_url, p_hasBooking
       );
@@ -78,7 +78,7 @@ async function createBusinessProcedures(knex) {
       IN p_phone_number VARCHAR(14),
       IN p_business_category_id INT,
       IN p_business_type_id INT,
-      IN p_address_id INT,
+      IN p_barangay_id INT,
       IN p_address TEXT,
       IN p_owner_id CHAR(64),
       IN p_status VARCHAR(20),
@@ -101,7 +101,7 @@ async function createBusinessProcedures(knex) {
         phone_number = IFNULL(p_phone_number, phone_number),
         business_category_id = IFNULL(p_business_category_id, business_category_id),
         business_type_id = IFNULL(p_business_type_id, business_type_id),
-        address_id = IFNULL(p_address_id, address_id),
+        barangay_id = IFNULL(p_barangay_id, barangay_id),
         address = IFNULL(p_address, address),
         owner_id = IFNULL(p_owner_id, owner_id),
         status = IFNULL(p_status, status),

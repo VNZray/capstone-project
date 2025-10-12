@@ -8,6 +8,4 @@ export type Tourism = {
   gender?: string | "";
   birthdate?: string | "";
   user_id?: string | "";
-  address_id: number | null;
-
 };

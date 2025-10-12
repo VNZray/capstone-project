@@ -12,18 +12,13 @@ interface Address {
 
 export function useAddress(
     barangay_id?: number,
-    municipality_id?: number,
-    province_id?: number
 ) {
     const [address, setAddress] = useState<Address | null>(null);
     const [loading, setLoading] = useState(false);
 
     useEffect(() => {
-        // Only fetch if all IDs are provided
         if (
-            barangay_id === undefined ||
-            municipality_id === undefined ||
-            province_id === undefined
+            barangay_id === undefined
         ) {
             setAddress(null);
             return;
@@ -32,17 +27,15 @@ export function useAddress(
         const load = async () => {
             setLoading(true);
             try {
-                const barangayResponse = await AddressService.getBarangayById(barangay_id);
-                const municipalityResponse = await AddressService.getMunicipalityById(municipality_id);
-                const provinceResponse = await AddressService.getProvinceById(province_id);
+                const address = await AddressService.fetchFullAddress(barangay_id);
 
                 setAddress({
-                    province_name: provinceResponse.province,
-                    province_id: provinceResponse.id,
-                    municipality_name: municipalityResponse.municipality,
-                    municipality_id: municipalityResponse.id,
-                    barangay_name: barangayResponse.barangay,
-                    barangay_id: barangayResponse.id,
+                    barangay_name: address.barangay_name,
+                    barangay_id: address.barangay_id,
+                    municipality_name: address.municipality_name,
+                    municipality_id: address.municipality_id,
+                    province_name: address.province_name,
+                    province_id: address.province_id,
                 });
 
 
@@ -55,7 +48,7 @@ export function useAddress(
         };
 
         load();
-    }, [barangay_id, municipality_id, province_id]);
+    }, [barangay_id]);
 
     return { address, loading };
 }

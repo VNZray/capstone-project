@@ -66,13 +66,6 @@ const Register = () => {
     gender: gender,
     birthdate: birthdate,
     position: position,
-    address_id: null,
-  };
-
-  const newAddress = {
-    barangay: 6,
-    municipality: 24,
-    province: 20,
   };
 
   const validateForm = () => {
@@ -124,13 +117,10 @@ const Register = () => {
       const userId = userRes.id;
 
       // insert address
-      const addressRes = await insertData(newAddress, "address");
-      const addressId = addressRes.id;
       // Create Tourism
       const tourismResponse = await insertData(
         {
           ...newTourism,
-          address_id: addressId,
           user_id: userId,
         },
         "tourism"

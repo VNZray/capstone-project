@@ -28,6 +28,7 @@ import EditBusinessHoursModal from "./components/EditBusinessHoursModal";
 import type { Amenity } from "@/src/types/Amenity";
 import EditAmenitiesModal from "./components/EditAmenitiesModal";
 import type { Address } from "@/src/types/Address";
+import { useAddress } from "@/src/hooks/useAddress";
 
 const BusinessProfile = () => {
   const { businessDetails } = useBusiness();
@@ -45,22 +46,11 @@ const BusinessProfile = () => {
   const [businessHours, setBusinessHours] = useState<BusinessHours[]>([]);
   const [amenities, setAmenities] = React.useState<Amenity[]>([]);
 
-  const [address, setAddress] = useState<Address | null>(null);
+  // Fetch full hierarchical address (province/municipality/barangay) by barangay_id
+  const { address } = useAddress(
+    businessDetails?.barangay_id
+  );
 
-  useEffect(() => {
-    const fetchAddress = async () => {
-      if (!businessDetails?.address_id) {
-        setAddress(null);
-        return;
-      }
-      const businessAddress = await getDataByForeignId(
-        "address",
-        businessDetails.address_id
-      );
-      setAddress(businessAddress);
-    };
-    fetchAddress();
-  }, [businessDetails?.address_id]);
 
   const getBusinessHours = useCallback(async () => {
     if (!businessDetails?.id) return;
@@ -124,7 +114,7 @@ const BusinessProfile = () => {
     business_name: businessDetails?.business_name || "",
     phone_number: businessDetails?.phone_number || "",
     email: businessDetails?.email || "",
-    address_id: businessDetails?.address_id || 0,
+    barangay_id: businessDetails?.barangay_id || 0,
     address: businessDetails?.address || "",
     description: businessDetails?.description || "",
     instagram_url: businessDetails?.instagram_url || "",
@@ -1095,7 +1085,7 @@ const BusinessProfile = () => {
 
       <EditAddressModal
         open={editAddressOpen && Boolean(businessDetails?.id)}
-        addressId={businessDetails?.address_id}
+        addressId={businessDetails?.barangay_id}
         initialProvince={address?.province_id}
         initialMunicipality={address?.municipality_id}
         initialBarangay={address?.barangay_id}

@@ -15,7 +15,7 @@ export async function insertOwner(req, res) {
       birthdate = null,
       gender = null,
       business_type,
-      address_id = null,
+      barangay_id = null,
       user_id = null,
     } = req.body;
 
@@ -28,7 +28,7 @@ export async function insertOwner(req, res) {
       birthdate,
       gender,
       business_type,
-      address_id,
+      barangay_id,
       user_id,
     ]);
 
@@ -79,7 +79,7 @@ export async function updateOwnerById(req, res) {
     birthdate = null,
     gender = null,
     business_type,
-    address_id = null,
+    barangay_id = null,
     user_id = null,
   } = req.body;
 
@@ -93,7 +93,7 @@ export async function updateOwnerById(req, res) {
       birthdate,
       gender,
       business_type,
-      address_id,
+      barangay_id,
       user_id,
     ]);
 

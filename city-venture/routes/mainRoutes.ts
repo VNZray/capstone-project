@@ -29,15 +29,15 @@ export const navigateToHome = () => {
 
 export const navigateToMap = () => {
     // maps lives directly under (tabs)/maps
-    router.navigate('/(tabs)/maps');
+    router.replace('/(tabs)/maps');
 };
 
 export const navigateToProfile = () => {
     // profile is its own tab group
-    router.navigate('/(tabs)/(profile)');
+    router.replace('/(tabs)/(profile)');
 };
 
 export const navigateToFavorites = () => {
     // favorite lives directly under (tabs)/favorite
-    router.navigate('/(tabs)/favorite');
+    router.replace('/(tabs)/favorite');
 };

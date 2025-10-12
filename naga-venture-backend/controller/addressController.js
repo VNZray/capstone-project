@@ -88,63 +88,6 @@ export const getBarangaysByMunicipalityId = async (request, response) => {
   }
 };
 
-// get all addresses
-export async function getAllAddresses(request, response) {
-  try {
-    const [data] = await db.query("CALL GetAllAddresses()");
-    response.json(data[0]);
-  } catch (error) {
-    return handleDbError(error, response);
-  }
-}
-
-//insert into address table
-export async function insertAddress(request, response) {
-  try {
-    const { province_id, municipality_id, barangay_id } = request.body;
-    const [result] = await db.query(
-      "CALL InsertAddress(?, ?, ?)",
-      [province_id, municipality_id, barangay_id]
-    );
-    response
-      .status(201)
-      .json({ id: result[0][0].id, province_id, municipality_id, barangay_id });
-  } catch (error) {
-    return handleDbError(error, response);
-  }
-}
-
-// update data by ID
-export async function updateAddress(request, response) {
-  const { id } = request.params;
-  try {
-    const province_id = request.body.province_id ?? null;
-    const municipality_id = request.body.municipality_id ?? null;
-    const barangay_id = request.body.barangay_id ?? null;
-    const [result] = await db.query(
-      "CALL UpdateAddress(?, ?, ?, ?)",
-      [id, province_id, municipality_id, barangay_id]
-    );
-    if (!result[0] || result[0].length === 0) {
-      return response.status(404).json({ message: "Data not found" });
-    }
-    response.json(result[0][0]);
-  } catch (error) {
-    return handleDbError(error, response);
-  }
-}
-
-// join tables get province, municipality, barangay by addresses id
-export async function getAddressDetailsById(request, response) {
-  const { id } = request.params;
-  try {
-    const [data] = await db.query("CALL GetAddressDetailsById(?)", [id]);
-    response.json(data[0][0]);
-  } catch (error) {
-    return handleDbError(error, response);
-  }
-}
-
 export async function GetFullAddressByBarangayId(request, response) {
   const { id } = request.params;
 

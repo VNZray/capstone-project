@@ -61,14 +61,9 @@ const Register = () => {
     age: "25",
     gender: "Male",
     birthdate: "2000-01-01",
-    address_id: null,
-  };
-
-  const newAddress = {
-    province_id: 20,
-    municipality_id: 24,
     barangay_id: 6,
   };
+
 
   const handleBusinessTypeChange = (type: BusinessType) => {
     if (businessType === type) {
@@ -142,17 +137,10 @@ const Register = () => {
       const userRes = await insertData(newUser, "users");
       const userId = userRes.id;
 
-      // insert address
-      const addressRes = await insertData(newAddress, "address");
-      const addressId = addressRes.id;
-
-      console.log("Created address ID:", addressId);
-      console.log("Address:", addressRes);
       // Create Owner
       const ownerResponse = await insertData(
         {
           ...newOwner,
-          address_id: addressId,
           user_id: userId,
         },
         "owner"
