@@ -14,7 +14,7 @@ import SearchBar from "@/src/components/SearchBar";
 import Pagination from "@/src/components/Admin/touristSpot/Pagination";
 import ReportTable from "@/src/components/Admin/report/ReportTable";
 import ReportFilters from "@/src/components/Admin/report/ReportFilters";
-import ReportDetails from "@/src/components/Admin/report/ReportDetails";
+import { useNavigate } from "react-router-dom";
 import UpdateStatusModal from "@/src/components/Admin/report/UpdateStatusModal";
 import type { Report } from "@/src/types/Report";
 import { apiService } from "@/src/utils/api";
@@ -28,7 +28,7 @@ const ReportManagement: React.FC = () => {
   const [reports, setReports] = useState<Report[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedReportId, setSelectedReportId] = useState<string | null>(null);
+  const navigate = useNavigate();
   const [showUpdateModal, setShowUpdateModal] = useState(false);
   const [selectedReportForUpdate, setSelectedReportForUpdate] = useState<Report | null>(null);
   const reportsPerPage = 10;
@@ -69,10 +69,8 @@ const ReportManagement: React.FC = () => {
   };
   
   const handleViewDetails = (report: Report) => {
-    setSelectedReportId(report.id);
+    navigate(`/tourism/reports/${report.id}`);
   };
-
-  const handleBack = () => setSelectedReportId(null);
 
   const handleUpdateStatus = (report: Report) => {
     setSelectedReportForUpdate(report);
@@ -134,14 +132,7 @@ const ReportManagement: React.FC = () => {
 
   return (
     <>
-      {selectedReportId ? (
-        <ReportDetails
-          reportId={selectedReportId}
-          onBack={handleBack}
-          onStatusUpdated={fetchReports}
-        />
-      ) : (
-        <Container background={colors.background} elevation={2}>
+      <Container background={colors.background} elevation={2}>
           <Stack spacing={3} sx={{ p: 3 }}>
             {/* Header and Stats */}
             <Stack direction="row" justifyContent="space-between" alignItems="center">
@@ -298,7 +289,6 @@ const ReportManagement: React.FC = () => {
             )}
           </Stack>
         </Container>
-      )}
 
       {selectedReportForUpdate && (
         <UpdateStatusModal

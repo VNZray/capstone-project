@@ -15,7 +15,7 @@ export const uploadPendingImages = async (
   pendingImages: PendingImage[],
   categoryName?: string,
   touristSpotName?: string,
-  spotFolderName?: string // always use this for folder
+  spotFolderName?: string
 ): Promise<void> => {
   if (!pendingImages.length) return;
 

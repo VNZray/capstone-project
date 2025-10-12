@@ -70,7 +70,6 @@ export default PageContainer;
 const styles = StyleSheet.create({
   container: {
     flexDirection: 'column',
-    paddingBottom: 100,
     padding: 20,
     height: '100%',
     width: '100%',

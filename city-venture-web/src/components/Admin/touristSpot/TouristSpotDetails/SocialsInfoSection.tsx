@@ -16,7 +16,7 @@ interface SocialsInfoSectionProps {
 
 const SocialsInfoSection: React.FC<SocialsInfoSectionProps> = ({ spot, onEdit }) => {
   return (
-    <Sheet variant="outlined" sx={{ p: 2, borderRadius: 8 }}>
+    <Sheet sx={{ p: 2 }}>
       <Stack
         direction="row"
         justifyContent="space-between"

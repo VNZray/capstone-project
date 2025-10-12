@@ -82,16 +82,6 @@ const ReportDetails: React.FC<ReportDetailsProps> = ({
 
   return (
     <Stack spacing={1}>
-      {/* Header with Back Button */}
-      <Stack
-        direction="row"
-        justifyContent="space-between"
-        alignItems="center"
-      >
-        <Typography level="h2">Report Details</Typography>
-        <Button variant="plain" onClick={onBack}> ← Back </Button>
-      </Stack>
-
       <Grid container spacing={1}>
         {/* Left Column*/}
         <Grid xs={12} lg={8}>

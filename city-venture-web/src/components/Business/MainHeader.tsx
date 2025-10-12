@@ -45,9 +45,9 @@ export default function MainHeader({ onMenuClick }: MainHeaderProps) {
 
   return (
     <AppBar
-      position="static"
-      elevation={4}
-      sx={{ backgroundColor: "#fff", color: "#000", boxShadow: 2 }}
+      position="sticky"
+      sx={{ backgroundColor: "#fff", color: "#000" }}
+      elevation={1}
     >
       <Toolbar sx={{ display: "flex", justifyContent: "space-between" }}>
         {/* Left - Back Button & Page Title */}

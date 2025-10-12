@@ -1,5 +1,5 @@
 export type Payment = {
-    id?: number;
+    id?: string | number;
     payer_type?: 'Tourist' | 'Owner';
     payment_type?: 'Full Payment' | 'Partial Payment';
     payment_method?: 'Gcash' | 'Paymaya' | 'Credit Card' | 'Cash';
@@ -8,6 +8,8 @@ export type Payment = {
     payer_id?: string;
     payment_for_type?: 'Reservation' | 'Pending Balance' | 'Subscription';
     payment_for_id?: string;
-    created_at?: Date;
+    created_at?: Date | string;
     payment_for?: string;
 }
+
+export type Payments = Payment[];

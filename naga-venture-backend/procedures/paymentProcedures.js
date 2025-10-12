@@ -93,6 +93,33 @@ async function createPaymentProcedures(knex) {
   `);
 }
 
+await knex.raw(`
+  CREATE PROCEDURE GetPaymentsByBusinessId(IN p_business_id CHAR(36))
+  BEGIN
+    SELECT 
+      p.id AS payment_id,
+      p.payer_id,
+      p.payer_type,
+      p.payment_type,
+      p.payment_method,
+      p.amount,
+      p.status,
+      p.payment_for,
+      p.created_at,
+      b.id AS booking_id,
+      b.check_in_date,
+      b.check_out_date,
+      b.total_price,
+      t.first_name,
+      t.last_name
+    FROM payment p
+    INNER JOIN booking b ON p.payment_for_id = b.id
+    INNER JOIN tourist t ON b.tourist_id = t.id
+    WHERE b.business_id = p_business_id;
+  END;
+`);
+
+
 async function dropPaymentProcedures(knex) {
   await knex.raw("DROP PROCEDURE IF EXISTS GetAllPayments;");
   await knex.raw("DROP PROCEDURE IF EXISTS GetPaymentById;");
@@ -101,6 +128,8 @@ async function dropPaymentProcedures(knex) {
   await knex.raw("DROP PROCEDURE IF EXISTS DeletePayment;");
   await knex.raw("DROP PROCEDURE IF EXISTS GetPaymentByPayerId;");
   await knex.raw("DROP PROCEDURE IF EXISTS GetPaymentByPaymentForId;");
+  await knex.raw("DROP PROCEDURE IF EXISTS GetPaymentsByBusinessId;");
+
 }
 
 export { createPaymentProcedures, dropPaymentProcedures };

@@ -27,7 +27,7 @@ const Login: React.FC = () => {
       await login(email, password);
 
       if (user?.role_name === "Admin") {
-        navigate("/tourism/dashboard");
+        navigate("/admin/dashboard");
       }
     } catch (error: any) {
       setLoginError(

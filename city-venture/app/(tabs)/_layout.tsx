@@ -1,5 +1,5 @@
 // app/(tabs)/_layout.js
-import { Tabs, router } from 'expo-router';
+import { Tabs, router, usePathname } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { Platform, View } from 'react-native';
 
@@ -13,6 +13,13 @@ import { useColorScheme } from '@/hooks/use-color-scheme';
 export default function TabLayout() {
   const colorScheme = useColorScheme();
   const [isLoading, setIsLoading] = useState(true);
+  const pathname = usePathname();
+
+  // Determine if current route is within the booking flow; hide tabs if so
+  const hideTabs = React.useMemo(
+    () => !!pathname && /\/room\/booking/i.test(pathname),
+    [pathname]
+  );
 
   useEffect(() => {
     // Simulate an asynchronous loading process
@@ -37,18 +44,20 @@ export default function TabLayout() {
           headerShown: false,
           tabBarButton: HapticTab,
           tabBarBackground: TabBarBackground,
-          tabBarStyle: Platform.select({
-            ios: {
-              position: 'absolute',
-              paddingTop: 10,
-            },
-            default: {
-              position: 'absolute',
-              paddingTop: 8,
-              paddingBottom: 5,
-              height: 70,
-            },
-          }),
+          tabBarStyle: hideTabs
+            ? { display: 'none' }
+            : Platform.select({
+                ios: {
+                  position: 'absolute',
+                  paddingTop: 10,
+                },
+                default: {
+                  position: 'absolute',
+                  paddingTop: 8,
+                  paddingBottom: 5,
+                  height: 70,
+                },
+              }),
         }}
       >
         <Tabs.Screen

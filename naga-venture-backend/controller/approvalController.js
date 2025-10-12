@@ -22,7 +22,7 @@ export const getPendingEditRequests = async (req, res) => {
   }
 };
 
-// Get all pending tourist spots
+// Get all pending tourist spots (will be generalized later)
 export const getPendingTouristSpots = async (req, res) => {
   try {
     const [data] = await db.query("CALL GetPendingTouristSpots()");
@@ -43,7 +43,7 @@ export const getPendingTouristSpots = async (req, res) => {
   }
 };
 
-// Change status from pending to active
+// Change status from pending to active (will be generalized later)
 export const approveTouristSpot = async (req, res) => {
   try {
     const { id } = req.params;
@@ -69,7 +69,21 @@ export const approveTouristSpot = async (req, res) => {
   }
 };
 
-// Approve an edit request for tourist spots
+// Reject a tourist spot (change status from pending to rejected)
+export const rejectTouristSpot = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const [data] = await db.query("CALL RejectTouristSpot(?)", [id]);
+    const affected = data[0]?.[0]?.affected_rows ?? 0;
+    if (affected === 0) return res.status(400).json({ success: false, message: "Tourist spot not found or not pending" });
+    res.json({ success: true, message: "Tourist spot rejected successfully" });
+  } catch (error) {
+    console.error("Error rejecting tourist spot:", error);
+    return handleDbError(error, res);
+  }
+};
+
+// Approve an edit request for tourist spots (will be generalized later)
 export const approveEditRequest = async (req, res) => {
   try {
     const { id } = req.params;
@@ -84,7 +98,7 @@ export const approveEditRequest = async (req, res) => {
   }
 };
 
-// Reject an edit request for tourist spots
+// Reject an edit request for tourist spots (will be generalized later)
 export const rejectEditRequest = async (req, res) => {
   try {
     const { id } = req.params;
@@ -95,20 +109,6 @@ export const rejectEditRequest = async (req, res) => {
     res.json({ success: true, message: "Edit request rejected successfully", data: updated });
   } catch (error) {
     console.error("Error rejecting edit request:", error);
-    return handleDbError(error, res);
-  }
-};
-
-// Reject a tourist spot (change status from pending to rejected)
-export const rejectTouristSpot = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const [data] = await db.query("CALL RejectTouristSpot(?)", [id]);
-    const affected = data[0]?.[0]?.affected_rows ?? 0;
-    if (affected === 0) return res.status(400).json({ success: false, message: "Tourist spot not found or not pending" });
-    res.json({ success: true, message: "Tourist spot rejected successfully" });
-  } catch (error) {
-    console.error("Error rejecting tourist spot:", error);
     return handleDbError(error, res);
   }
 };

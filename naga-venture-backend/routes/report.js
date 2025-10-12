@@ -27,4 +27,10 @@ router.get("/target/:targetType/:targetId", reportController.getReportsByTarget)
 // Get reports by status
 router.get("/status/:status", reportController.getReportsByStatus);
 
+// Add single attachment
+router.post("/:id/attachments", reportController.addReportAttachment);
+
+// Bulk add attachments
+router.post("/:id/attachments/bulk", reportController.bulkAddReportAttachments);
+
 export default router;

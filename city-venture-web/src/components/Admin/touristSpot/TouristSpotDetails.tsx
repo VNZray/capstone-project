@@ -3,8 +3,8 @@ import { apiService } from "@/src/utils/api";
 import type { TouristSpot, TouristSpotSchedule } from "@/src/types/TouristSpot";
 import {
   Alert,
-  Button,
   Grid,
+  Sheet,
   Stack,
   Typography,
 } from "@mui/joy";
@@ -39,7 +39,7 @@ type Props = {
   onEdit?: (step?: number) => void;
 };
 
-const TouristSpotDetails: React.FC<Props> = ({ spotId, onBack, onEdit }) => {
+const TouristSpotDetails: React.FC<Props> = ({ spotId, onEdit }) => {
   const [spot, setSpot] = useState<TouristSpot | null>(null);
   const [schedules, setSchedules] = useState<TouristSpotSchedule[] | null>(
     null
@@ -56,7 +56,6 @@ const TouristSpotDetails: React.FC<Props> = ({ spotId, onBack, onEdit }) => {
         const data = await apiService.getTouristSpotById(spotId);
         setSpot(data);
 
-        // Load schedules
         try {
           const sched = await apiService.getTouristSpotSchedules(spotId);
           setSchedules(sched);
@@ -100,24 +99,11 @@ const TouristSpotDetails: React.FC<Props> = ({ spotId, onBack, onEdit }) => {
   if (!spot) return <Alert color="warning">No details found.</Alert>;
 
   return (
-    <Stack spacing={1}>
-      {/* Header with Back Button */}
-      <Stack
-        direction="row"
-        justifyContent="space-between"
-        alignItems="center"
-      >
-        <Typography level="h2">Tourist Spot Details</Typography>
-        <Button variant="plain" onClick={onBack}>
-          ← Back
-        </Button>
-      </Stack>
-
-      {/* Two-column responsive layout */}
+    <Stack spacing={0.5}>
       <Grid container spacing={1}>
-        {/* Left Column - Main Information */}
         <Grid xs={24} lg={8}>
-          <Stack spacing={2}>
+          <Sheet variant="outlined" sx={{ p: 2, borderRadius: 8 }}>
+          <Stack spacing={0.5}>
             <ImagesInfoSection 
               images={images} 
               onEdit={() => handleSectionEdit(4)} 
@@ -131,11 +117,12 @@ const TouristSpotDetails: React.FC<Props> = ({ spotId, onBack, onEdit }) => {
               onEdit={() => handleSectionEdit(3)} 
             />
           </Stack>
+          </Sheet>
         </Grid>
 
-        {/* Right Column - Location and Admin */}
         <Grid xs={12} lg={4}>
-          <Stack spacing={2}>
+          <Sheet variant="outlined" sx={{ p: 2, borderRadius: 8 }}>
+            <Stack spacing={0.5}>
             <LocationInfoSection 
               spot={spot} 
               onEdit={() => handleSectionEdit(1)} 
@@ -149,6 +136,7 @@ const TouristSpotDetails: React.FC<Props> = ({ spotId, onBack, onEdit }) => {
               onEdit={() => handleSectionEdit(5)} 
             />
           </Stack>
+          </Sheet>
         </Grid>
       </Grid>
     </Stack>

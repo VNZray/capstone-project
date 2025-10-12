@@ -8,16 +8,17 @@ async function createReportProcedures(knex) {
   await knex.raw(`
     CREATE PROCEDURE GetAllReports()
     BEGIN
-      SELECT 
-        r.*, 
-        u.email AS reporter_email,
-        t.first_name AS reporter_first_name,
-        t.last_name AS reporter_last_name,
-        t.phone_number AS reporter_contact
-      FROM report r
-      JOIN user u ON r.reporter_id = u.id
-      LEFT JOIN tourist t ON u.tourist_id = t.id
-      ORDER BY r.created_at DESC;
+        SELECT 
+          r.*, 
+          u.email AS reporter_email,
+          u.phone_number AS reporter_contact,
+          t.first_name AS reporter_first_name,
+          t.middle_name AS reporter_middle_name,
+          t.last_name AS reporter_last_name
+        FROM report r
+        JOIN user u ON r.reporter_id = u.id
+        LEFT JOIN tourist t ON t.user_id = u.id
+        ORDER BY r.created_at DESC;
     END;
   `);
 
@@ -25,17 +26,18 @@ async function createReportProcedures(knex) {
   await knex.raw(`
     CREATE PROCEDURE GetReportById(IN p_id CHAR(36))
     BEGIN
-      -- Report details
-      SELECT 
-        r.*, 
-        u.email AS reporter_email,
-        t.first_name AS reporter_first_name,
-        t.last_name AS reporter_last_name,
-        t.phone_number AS reporter_contact
-      FROM report r
-      JOIN user u ON r.reporter_id = u.id
-      LEFT JOIN tourist t ON u.tourist_id = t.id
-      WHERE r.id = p_id;
+        -- Report details
+        SELECT 
+          r.*, 
+          u.email AS reporter_email,
+          u.phone_number AS reporter_contact,
+          t.first_name AS reporter_first_name,
+          t.middle_name AS reporter_middle_name,
+          t.last_name AS reporter_last_name
+        FROM report r
+        JOIN user u ON r.reporter_id = u.id
+        LEFT JOIN tourist t ON t.user_id = u.id
+        WHERE r.id = p_id;
 
       -- Status history
       SELECT 
@@ -57,9 +59,18 @@ async function createReportProcedures(knex) {
   await knex.raw(`
     CREATE PROCEDURE GetReportsByReporterId(IN p_reporter_id CHAR(36))
     BEGIN
-      SELECT * FROM report 
-      WHERE reporter_id = p_reporter_id
-      ORDER BY created_at DESC;
+        SELECT 
+          r.*, 
+          u.email AS reporter_email,
+          u.phone_number AS reporter_contact,
+          t.first_name AS reporter_first_name,
+          t.middle_name AS reporter_middle_name,
+          t.last_name AS reporter_last_name
+        FROM report r
+        JOIN user u ON r.reporter_id = u.id
+        LEFT JOIN tourist t ON t.user_id = u.id
+        WHERE r.reporter_id = p_reporter_id
+        ORDER BY r.created_at DESC;
     END;
   `);
 
@@ -67,13 +78,18 @@ async function createReportProcedures(knex) {
   await knex.raw(`
     CREATE PROCEDURE GetReportsByTarget(IN p_target_type VARCHAR(30), IN p_target_id VARCHAR(100))
     BEGIN
-      SELECT 
-        r.*, 
-        u.email AS reporter_email
-      FROM report r
-      JOIN user u ON r.reporter_id = u.id
-      WHERE r.target_type = p_target_type AND r.target_id = p_target_id
-      ORDER BY r.created_at DESC;
+        SELECT 
+          r.*, 
+          u.email AS reporter_email,
+          u.phone_number AS reporter_contact,
+          t.first_name AS reporter_first_name,
+          t.middle_name AS reporter_middle_name,
+          t.last_name AS reporter_last_name
+        FROM report r
+        JOIN user u ON r.reporter_id = u.id
+        LEFT JOIN tourist t ON t.user_id = u.id
+        WHERE r.target_type = p_target_type AND r.target_id = p_target_id
+        ORDER BY r.created_at DESC;
     END;
   `);
 
@@ -81,13 +97,18 @@ async function createReportProcedures(knex) {
   await knex.raw(`
     CREATE PROCEDURE GetReportsByStatus(IN p_status VARCHAR(30))
     BEGIN
-      SELECT 
-        r.*, 
-        u.email AS reporter_email
-      FROM report r
-      JOIN user u ON r.reporter_id = u.id
-      WHERE r.status = p_status
-      ORDER BY r.created_at DESC;
+        SELECT 
+          r.*, 
+          u.email AS reporter_email,
+          u.phone_number AS reporter_contact,
+          t.first_name AS reporter_first_name,
+          t.middle_name AS reporter_middle_name,
+          t.last_name AS reporter_last_name
+        FROM report r
+        JOIN user u ON r.reporter_id = u.id
+        LEFT JOIN tourist t ON t.user_id = u.id
+        WHERE r.status = p_status
+        ORDER BY r.created_at DESC;
     END;
   `);
 
@@ -111,6 +132,50 @@ async function createReportProcedures(knex) {
       VALUES (UUID(), p_id, 'submitted', 'Report submitted by user', NULL);
 
       SELECT * FROM report WHERE id = p_id;
+    END;
+  `);
+
+  // Insert single attachment for a report
+  await knex.raw(`
+    CREATE PROCEDURE InsertReportAttachment(
+      IN p_id CHAR(36),
+      IN p_report_id CHAR(36),
+      IN p_file_url TEXT,
+      IN p_file_name VARCHAR(255),
+      IN p_file_type VARCHAR(50),
+      IN p_file_size INT
+    )
+    BEGIN
+      INSERT INTO report_attachment (id, report_id, file_url, file_name, file_type, file_size)
+      VALUES (p_id, p_report_id, p_file_url, p_file_name, p_file_type, p_file_size);
+      SELECT * FROM report_attachment WHERE id = p_id; 
+    END;
+  `);
+
+  // Bulk insert attachments: expects a JSON array param; iterate and insert
+  // NOTE: MariaDB 10.5+ JSON support used; if version older adjust accordingly
+  await knex.raw(`
+    CREATE PROCEDURE BulkInsertReportAttachments(
+      IN p_report_id CHAR(36),
+      IN p_attachments JSON
+    )
+    BEGIN
+      DECLARE i INT DEFAULT 0;
+      DECLARE arr_length INT;
+      SET arr_length = JSON_LENGTH(p_attachments);
+      WHILE i < arr_length DO
+        INSERT INTO report_attachment (id, report_id, file_url, file_name, file_type, file_size)
+        VALUES (
+          UUID(),
+          p_report_id,
+          JSON_UNQUOTE(JSON_EXTRACT(p_attachments, CONCAT('$[', i, '].file_url'))),
+          JSON_UNQUOTE(JSON_EXTRACT(p_attachments, CONCAT('$[', i, '].file_name'))),
+          JSON_UNQUOTE(JSON_EXTRACT(p_attachments, CONCAT('$[', i, '].file_type'))),
+          JSON_EXTRACT(p_attachments, CONCAT('$[', i, '].file_size'))
+        );
+        SET i = i + 1;
+      END WHILE;
+      SELECT * FROM report_attachment WHERE report_id = p_report_id ORDER BY uploaded_at ASC;
     END;
   `);
 
@@ -151,6 +216,8 @@ async function dropReportProcedures(knex) {
   await knex.raw("DROP PROCEDURE IF EXISTS GetReportsByTarget;");
   await knex.raw("DROP PROCEDURE IF EXISTS GetReportsByStatus;");
   await knex.raw("DROP PROCEDURE IF EXISTS InsertReport;");
+  await knex.raw("DROP PROCEDURE IF EXISTS InsertReportAttachment;");
+  await knex.raw("DROP PROCEDURE IF EXISTS BulkInsertReportAttachments;");
   await knex.raw("DROP PROCEDURE IF EXISTS UpdateReportStatus;");
   await knex.raw("DROP PROCEDURE IF EXISTS DeleteReport;");
 }

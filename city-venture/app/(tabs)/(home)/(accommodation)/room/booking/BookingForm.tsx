@@ -204,7 +204,7 @@ const BookingForm: React.FC<Props> = ({ data, payment, setData, setPayment }) =>
 
   return (
     <ScrollView>
-      <PageContainer padding={16} gap={16}>
+      <PageContainer padding={16} gap={16} style={{ paddingBottom: 100 }}>
         <DateInput
           requireConfirmation
           selectionVariant="filled"

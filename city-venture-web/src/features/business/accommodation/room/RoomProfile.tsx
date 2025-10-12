@@ -3,7 +3,7 @@ import Paper from "@mui/material/Paper";
 import LocationOnIcon from "@mui/icons-material/LocationOn";
 import StarIcon from "@mui/icons-material/Star";
 import { colors } from "@/src/utils/Colors";
-import {Chip, Typography } from "@mui/joy";
+import { Chip, Typography } from "@mui/joy";
 import { useRoom } from "@/src/context/RoomContext";
 import Tabs from "@/src/components/Tabs";
 import { useState } from "react";
@@ -11,6 +11,7 @@ import DetailsComponent from "./components/DetailsComponent";
 import PhotosComponent from "./components/PhotosComponent";
 import ReviewsComponent from "./components/ReviewsComponent";
 import Container from "@/src/components/Container";
+import Reviews from "./Reviews";
 const RoomProfile = () => {
   const { roomDetails } = useRoom();
   const [activeTab, setActiveTab] = useState<"Details" | "Photos" | "Reviews">(
@@ -122,21 +123,12 @@ const RoomProfile = () => {
       </Container>
 
       {/* --- Room Details --- */}
-      <Paper
-        elevation={2}
-        style={{
-          borderRadius: "16px",
-          display: "flex",
-          flexDirection: "column",
-        }}
-      >
+      <Container elevation={2} padding="0">
         <Tabs active={activeTab} onChange={setActiveTab} />
         {activeTab === "Details" && <DetailsComponent />}
         {activeTab === "Photos" && <PhotosComponent />}
-        {activeTab === "Reviews" && <ReviewsComponent />}
-      </Paper>
-
-     
+      </Container>
+      {activeTab === "Reviews" && <Reviews />}
     </PageContainer>
   );
 };
