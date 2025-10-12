@@ -29,12 +29,10 @@ import ManagePromotion from "../features/business/accommodation/promotion/Manage
 import RoomPage from "../features/business/accommodation/room/Room";
 import RoomProfile from "../features/business/accommodation/room/RoomProfile";
 import Profile from "../features/business/profile/Profile";
-import Offer from "../features/business/shop/offers/Offer";
 import Products from "../features/business/shop/store/Products";
 import Categories from "../features/business/shop/store/Categories";
 import Services from "../features/business/shop/store/Services";
 import ServiceCategories from "../features/business/shop/store/ServiceCategories";
-import ServiceBookings from "../features/business/shop/store/ServiceBookings";
 import Orders from "../features/business/shop/store/Orders";
 import Discount from "../features/business/shop/store/Discount";
 import DiscountForm from "../features/business/shop/store/DiscountForm";
@@ -54,7 +52,7 @@ import Accommodation from "@/src/features/admin/services/accommodation/Accommoda
 import Shop from "@/src/features/admin/services/shop/Shop";
 import Event from "@/src/features/admin/services/event/Event";
 import Spot from "@/src/features/admin/services/tourist-spot/Spot";
-import OfferAdmin from "@/src/features/admin/services/shop/Offer";
+// Offer pages removed (feature deprecated)
 import { BusinessProvider } from "../context/BusinessContext";
 
 export default function AppRoutes() {
@@ -171,14 +169,7 @@ export default function AppRoutes() {
               </>
             )}
 
-            <Route
-              path={`${business}/offers`}
-              element={
-                <ProtectedRoute>
-                  <Offer />
-                </ProtectedRoute>
-              }
-            />
+            {/* Offers removed from business portal */}
             <Route
               path={`${business}/manage-promotion`}
               element={
@@ -225,14 +216,6 @@ export default function AppRoutes() {
               element={
                 <ProtectedRoute>
                   <ServiceCategories />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path={`${business}/store/service-bookings`}
-              element={
-                <ProtectedRoute>
-                  <ServiceBookings />
                 </ProtectedRoute>
               }
             />
@@ -377,14 +360,7 @@ export default function AppRoutes() {
               </ProtectedRoute>
             }
           />
-          <Route
-            path={`${tourism}/offer/:id`}
-            element={
-              <ProtectedRoute>
-                <Offer />
-              </ProtectedRoute>
-            }
-          />
+            {/* Public offer pages removed */}
           <Route
             path={`${tourism}/profile`}
             element={
@@ -393,14 +369,7 @@ export default function AppRoutes() {
               </ProtectedRoute>
             }
           />
-          <Route
-            path={`${tourism}/offer`}
-            element={
-              <ProtectedRoute>
-                <OfferAdmin />
-              </ProtectedRoute>
-            }
-          />
+            {/* Admin offer pages removed */}
         </Route>
       </Route>
 

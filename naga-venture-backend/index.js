@@ -29,9 +29,9 @@ import paymentRoutes from "./routes/paymentRoutes.js";
 import productRoutes from "./routes/products.js";
 import discountRoutes from "./routes/discounts.js";
 import serviceRoutes from "./routes/services.js";
+import serviceInquiryRoutes from "./routes/service-inquiries.js";
 import orderRoutes from "./routes/orders.js";
 import productReviewRoutes from "./routes/product-reviews.js";
-import serviceBookingRoutes from "./routes/service-bookings.js";
 import notificationRoutes from "./routes/notifications.js";
 import businessSettingsRoutes from "./routes/business-settings.js";
 
@@ -132,13 +132,13 @@ const routeSections = [
     routes: [
       { path: "/api/products", handler: productRoutes, label: "Products" },
       { path: "/api/discounts", handler: discountRoutes, label: "Discounts" },
-      { path: "/api/services", handler: serviceRoutes, label: "Services" },
-      { path: "/api/orders", handler: orderRoutes, label: "Orders" },
+      { path: "/api/services", handler: serviceRoutes, label: "Services (Display Only)" },
       {
-        path: "/api/service-bookings",
-        handler: serviceBookingRoutes,
-        label: "Service Bookings",
+        path: "/api/service-inquiries",
+        handler: serviceInquiryRoutes,
+        label: "Service Inquiries",
       },
+      { path: "/api/orders", handler: orderRoutes, label: "Orders" },
       {
         path: "/api/product-reviews",
         handler: productReviewRoutes,

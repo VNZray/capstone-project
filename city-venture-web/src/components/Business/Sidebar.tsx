@@ -4,7 +4,6 @@ import {
   Receipt,
   CalendarCheck,
   BedDouble,
-  Tags,
   Store,
   Tag,
   Star,
@@ -18,7 +17,6 @@ import {
   Settings as SettingsIcon,
   ChevronDown,
   ShoppingBag,
-  Calendar,
 } from "lucide-react";
 
 // Compact icon size
@@ -104,14 +102,7 @@ export default function Sidebar({ isOpen = false, onClose }: SidebarProps): Reac
               icon={<BedDouble size={ICON_SIZE} />}
               onClick={onClose}
             />
-          ) : (
-            <NavItem
-              to={`${route}/offers`}
-              label="Manage Offers"
-              icon={<Tags size={ICON_SIZE} />}
-              onClick={onClose}
-            />
-          )}
+          ) : null}
           <NavItem
             to={`${route}/manage-promotion`}
             label="Manage Promotion"
@@ -157,12 +148,6 @@ export default function Sidebar({ isOpen = false, onClose }: SidebarProps): Reac
                   to={`${route}/store/services`}
                   label="Services"
                   icon={<SettingsIcon size={ICON_SIZE} />}
-                  onClick={onClose}
-                />
-                <NavItem
-                  to={`${route}/store/service-bookings`}
-                  label="Service Bookings"
-                  icon={<Calendar size={ICON_SIZE} />}
                   onClick={onClose}
                 />
                 <NavItem

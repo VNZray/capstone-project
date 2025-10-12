@@ -16,44 +16,34 @@ async function createBusinessSettingsProcedures(knex) {
       IN p_minimum_preparation_time_minutes INT,
       IN p_order_advance_notice_hours INT,
       IN p_accepts_product_orders BOOLEAN,
-      IN p_accepts_service_bookings BOOLEAN,
       IN p_cancellation_deadline_hours INT,
       IN p_cancellation_penalty_percentage DECIMAL(5,2),
       IN p_cancellation_penalty_fixed DECIMAL(10,2),
       IN p_allow_customer_cancellation BOOLEAN,
-      IN p_service_booking_advance_notice_hours INT,
-      IN p_service_default_duration_minutes INT,
       IN p_auto_confirm_orders BOOLEAN,
-      IN p_auto_confirm_bookings BOOLEAN,
       IN p_send_notifications BOOLEAN
     )
     BEGIN
       INSERT INTO business_settings (
         id, business_id, minimum_preparation_time_minutes, order_advance_notice_hours,
-        accepts_product_orders, accepts_service_bookings, cancellation_deadline_hours,
+        accepts_product_orders, cancellation_deadline_hours,
         cancellation_penalty_percentage, cancellation_penalty_fixed, allow_customer_cancellation,
-        service_booking_advance_notice_hours, service_default_duration_minutes,
-        auto_confirm_orders, auto_confirm_bookings, send_notifications
+        auto_confirm_orders, send_notifications
       ) VALUES (
         UUID(), p_business_id, p_minimum_preparation_time_minutes, p_order_advance_notice_hours,
-        p_accepts_product_orders, p_accepts_service_bookings, p_cancellation_deadline_hours,
+        p_accepts_product_orders, p_cancellation_deadline_hours,
         p_cancellation_penalty_percentage, p_cancellation_penalty_fixed, p_allow_customer_cancellation,
-        p_service_booking_advance_notice_hours, p_service_default_duration_minutes,
-        p_auto_confirm_orders, p_auto_confirm_bookings, p_send_notifications
+        p_auto_confirm_orders, p_send_notifications
       )
       ON DUPLICATE KEY UPDATE
         minimum_preparation_time_minutes = IFNULL(p_minimum_preparation_time_minutes, minimum_preparation_time_minutes),
         order_advance_notice_hours = IFNULL(p_order_advance_notice_hours, order_advance_notice_hours),
         accepts_product_orders = IFNULL(p_accepts_product_orders, accepts_product_orders),
-        accepts_service_bookings = IFNULL(p_accepts_service_bookings, accepts_service_bookings),
         cancellation_deadline_hours = p_cancellation_deadline_hours,
         cancellation_penalty_percentage = IFNULL(p_cancellation_penalty_percentage, cancellation_penalty_percentage),
         cancellation_penalty_fixed = IFNULL(p_cancellation_penalty_fixed, cancellation_penalty_fixed),
         allow_customer_cancellation = IFNULL(p_allow_customer_cancellation, allow_customer_cancellation),
-        service_booking_advance_notice_hours = IFNULL(p_service_booking_advance_notice_hours, service_booking_advance_notice_hours),
-        service_default_duration_minutes = IFNULL(p_service_default_duration_minutes, service_default_duration_minutes),
         auto_confirm_orders = IFNULL(p_auto_confirm_orders, auto_confirm_orders),
-        auto_confirm_bookings = IFNULL(p_auto_confirm_bookings, auto_confirm_bookings),
         send_notifications = IFNULL(p_send_notifications, send_notifications),
         updated_at = NOW();
       

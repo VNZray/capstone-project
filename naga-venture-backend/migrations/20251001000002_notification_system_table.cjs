@@ -43,8 +43,31 @@ exports.up = async function (knex) {
     table.index("is_read", "idx_notification_read");
     table.index("created_at", "idx_notification_created");
   });
+
+  // Create stored procedures
+  console.log("Creating notification stored procedures...");
+  try {
+    const { createNotificationProcedures } = await import("../procedures/notificationProcedures.js");
+    await createNotificationProcedures(knex);
+    console.log("✅ Notification stored procedures created successfully");
+  } catch (error) {
+    console.error("❌ Error creating notification stored procedures:", error);
+    throw error;
+  }
 };
 
 exports.down = async function (knex) {
+  // Drop stored procedures first
+  console.log("Dropping notification stored procedures...");
+  try {
+    const { dropNotificationProcedures } = await import("../procedures/notificationProcedures.js");
+    await dropNotificationProcedures(knex);
+    console.log("✅ Notification stored procedures dropped successfully");
+  } catch (error) {
+    console.error("❌ Error dropping notification stored procedures:", error);
+    throw error;
+  }
+
+  // Drop tables
   await knex.schema.dropTableIfExists("notification");
 };

@@ -7,9 +7,6 @@ import type {
   UpdateServicePayload,
   CreateServiceCategoryPayload,
   UpdateServiceCategoryPayload,
-  ServiceBooking,
-  CreateServiceBookingPayload,
-  UpdateServiceBookingPayload,
 } from "@/src/types/Service";
 
 function normalizeArrayResponse<T>(payload: unknown): T[] {
@@ -114,61 +111,4 @@ export const updateService = async (
 
 export const deleteService = async (id: string): Promise<void> => {
   await axios.delete(`${api}/services/${id}`);
-};
-
-// Service Booking APIs
-export const fetchServiceBookingsByBusinessId = async (
-  businessId: string
-): Promise<ServiceBooking[]> => {
-  try {
-    const { data } = await axios.get<ServiceBooking[]>(
-      `${api}/service-bookings/business/${businessId}`
-    );
-    return normalizeArrayResponse<ServiceBooking>(data);
-  } catch (error) {
-    if (isNotFound(error)) {
-      return [];
-    }
-    throw error;
-  }
-};
-
-export const fetchServiceBookingsByServiceId = async (
-  serviceId: string
-): Promise<ServiceBooking[]> => {
-  try {
-    const { data } = await axios.get<ServiceBooking[]>(
-      `${api}/service-bookings/service/${serviceId}`
-    );
-    return normalizeArrayResponse<ServiceBooking>(data);
-  } catch (error) {
-    if (isNotFound(error)) {
-      return [];
-    }
-    throw error;
-  }
-};
-
-export const fetchServiceBookingById = async (id: string): Promise<ServiceBooking> => {
-  const { data } = await axios.get<ServiceBooking>(`${api}/service-bookings/${id}`);
-  return data;
-};
-
-export const createServiceBooking = async (
-  payload: CreateServiceBookingPayload
-): Promise<ServiceBooking> => {
-  const { data } = await axios.post<ServiceBooking>(`${api}/service-bookings`, payload);
-  return data;
-};
-
-export const updateServiceBooking = async (
-  id: string,
-  payload: UpdateServiceBookingPayload
-): Promise<ServiceBooking> => {
-  const { data } = await axios.put<ServiceBooking>(`${api}/service-bookings/${id}`, payload);
-  return data;
-};
-
-export const deleteServiceBooking = async (id: string): Promise<void> => {
-  await axios.delete(`${api}/service-bookings/${id}`);
 };
