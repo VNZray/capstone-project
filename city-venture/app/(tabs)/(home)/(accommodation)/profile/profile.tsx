@@ -15,6 +15,7 @@ import { Tab } from '@/types/Tab';
 import Details from './details';
 import Ratings from './ratings';
 import Rooms from './rooms';
+import placeholder from '@/assets/images/placeholder.png';
 
 const { width, height } = Dimensions.get('window');
 
@@ -119,11 +120,11 @@ const AccommodationProfile = () => {
         ListHeaderComponent={
           <>
             <Image
-              source={{
-                uri:
-                  accommodationDetails?.business_image ||
-                  'https://via.placeholder.com/400x300',
-              }}
+              source={
+                accommodationDetails?.business_image
+                  ? { uri: accommodationDetails.business_image }
+                  : placeholder
+              }
               style={styles.image}
               resizeMode="cover"
             />
@@ -145,7 +146,7 @@ const AccommodationProfile = () => {
                       size={16}
                       color="#FFB007"
                     />
-                    {accommodationDetails?.address}
+                    {accommodationDetails?.address}, {accommodationDetails?.barangay_name}, {accommodationDetails?.municipality_name}
                   </ThemedText>
 
                   <ThemedText type="body-medium" style={{ marginTop: 4 }}>

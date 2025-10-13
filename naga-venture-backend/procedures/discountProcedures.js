@@ -14,7 +14,7 @@ async function createDiscountProcedures(knex) {
 
   // Get discounts by business ID with product count
   await knex.raw(`
-    CREATE PROCEDURE GetDiscountsByBusinessId(IN p_businessId CHAR(36))
+    CREATE PROCEDURE GetDiscountsByBusinessId(IN p_businessId CHAR(64))
     BEGIN
       SELECT d.*, COUNT(dp.product_id) as applicable_products_count
       FROM discount d 
@@ -27,7 +27,7 @@ async function createDiscountProcedures(knex) {
 
   // Get active discounts by business ID
   await knex.raw(`
-    CREATE PROCEDURE GetActiveDiscountsByBusinessId(IN p_businessId CHAR(36))
+    CREATE PROCEDURE GetActiveDiscountsByBusinessId(IN p_businessId CHAR(64))
     BEGIN
       SELECT d.*, COUNT(dp.product_id) as applicable_products_count
       FROM discount d 
@@ -44,7 +44,7 @@ async function createDiscountProcedures(knex) {
 
   // Get discount by ID with applicable products
   await knex.raw(`
-    CREATE PROCEDURE GetDiscountById(IN p_discountId CHAR(36))
+    CREATE PROCEDURE GetDiscountById(IN p_discountId CHAR(64))
     BEGIN
       SELECT d.*, b.business_name 
       FROM discount d 
@@ -61,8 +61,8 @@ async function createDiscountProcedures(knex) {
   // Insert discount with applicable products
   await knex.raw(`
     CREATE PROCEDURE InsertDiscount(
-      IN p_id CHAR(36),
-      IN p_business_id CHAR(36),
+      IN p_id CHAR(64),
+      IN p_business_id CHAR(64),
       IN p_name VARCHAR(255),
       IN p_description TEXT,
       IN p_discount_type ENUM('percentage', 'fixed_amount'),
@@ -96,9 +96,9 @@ async function createDiscountProcedures(knex) {
   // Insert discount product association
   await knex.raw(`
     CREATE PROCEDURE InsertDiscountProduct(
-      IN p_id CHAR(36),
-      IN p_discount_id CHAR(36),
-      IN p_product_id CHAR(36)
+      IN p_id CHAR(64),
+      IN p_discount_id CHAR(64),
+      IN p_product_id CHAR(64)
     )
     BEGIN
       INSERT INTO discount_product (id, discount_id, product_id)
@@ -108,7 +108,7 @@ async function createDiscountProcedures(knex) {
 
   // Delete discount products for a discount
   await knex.raw(`
-    CREATE PROCEDURE DeleteDiscountProducts(IN p_discountId CHAR(36))
+    CREATE PROCEDURE DeleteDiscountProducts(IN p_discountId CHAR(64))
     BEGIN
       DELETE FROM discount_product WHERE discount_id = p_discountId;
     END;
@@ -117,7 +117,7 @@ async function createDiscountProcedures(knex) {
   // Update discount
   await knex.raw(`
     CREATE PROCEDURE UpdateDiscount(
-      IN p_id CHAR(36),
+      IN p_id CHAR(64),
       IN p_name VARCHAR(255),
       IN p_description TEXT,
       IN p_discount_type ENUM('percentage', 'fixed_amount'),
@@ -155,7 +155,7 @@ async function createDiscountProcedures(knex) {
 
   // Delete discount
   await knex.raw(`
-    CREATE PROCEDURE DeleteDiscount(IN p_discountId CHAR(36))
+    CREATE PROCEDURE DeleteDiscount(IN p_discountId CHAR(64))
     BEGIN
       DECLARE order_count INT DEFAULT 0;
       
@@ -172,9 +172,9 @@ async function createDiscountProcedures(knex) {
   // Validate discount for order
   await knex.raw(`
     CREATE PROCEDURE ValidateDiscount(
-      IN p_discountId CHAR(36),
+      IN p_discountId CHAR(64),
       IN p_order_total DECIMAL(10,2),
-      IN p_user_id CHAR(36)
+      IN p_user_id CHAR(64)
     )
     BEGIN
       DECLARE discount_available INT DEFAULT 0;
@@ -216,7 +216,7 @@ async function createDiscountProcedures(knex) {
 
   // Update discount usage count
   await knex.raw(`
-    CREATE PROCEDURE UpdateDiscountUsage(IN p_discountId CHAR(36))
+    CREATE PROCEDURE UpdateDiscountUsage(IN p_discountId CHAR(64))
     BEGIN
       UPDATE discount 
       SET current_usage_count = current_usage_count + 1 
@@ -226,7 +226,7 @@ async function createDiscountProcedures(knex) {
 
   // Get discount statistics
   await knex.raw(`
-    CREATE PROCEDURE GetDiscountStats(IN p_discountId CHAR(36))
+    CREATE PROCEDURE GetDiscountStats(IN p_discountId CHAR(64))
     BEGIN
       -- Get discount details
       SELECT * FROM discount WHERE id = p_discountId;

@@ -17,6 +17,8 @@ import Dropdown, { DropdownItem } from '@/components/Dropdown';
 import RoomCard from '@/components/accommodation/RoomCard';
 import { useRoom } from '@/context/RoomContext';
 import { navigateToRoomProfile } from '@/routes/accommodationRoutes';
+import placeholder from '@/assets/images/room-placeholder.png';
+
 // NOTE: We derive floor options dynamically from the room list.
 // Fallback options will only be used if no rooms are loaded yet.
 const fallbackFloors: DropdownItem[] = [
@@ -167,7 +169,7 @@ const Rooms = () => {
               <RoomCard
                 elevation={6}
                 key={room.id}
-                image={room.room_image ? { uri: room.room_image } : undefined}
+                image={room.room_image ? { uri: room.room_image } : placeholder}
                 title={room.room_number || 'Room'}
                 subtitle={room.description || room.room_type || ''}
                 capacity={room.capacity || undefined}

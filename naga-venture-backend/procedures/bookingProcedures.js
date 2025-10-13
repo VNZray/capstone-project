@@ -9,7 +9,7 @@ async function createProcedures(knex) {
 
   // Get booking by ID
   await knex.raw(`
-		CREATE PROCEDURE GetBookingById(IN p_id CHAR(36))
+		CREATE PROCEDURE GetBookingById(IN p_id CHAR(64))
 		BEGIN
 			SELECT * FROM booking WHERE id = p_id;
 		END;
@@ -17,7 +17,7 @@ async function createProcedures(knex) {
 
   // Get bookings by tourist ID
   await knex.raw(`
-		CREATE PROCEDURE GetBookingsByTouristId(IN p_tourist_id CHAR(36))
+		CREATE PROCEDURE GetBookingsByTouristId(IN p_tourist_id CHAR(64))
 		BEGIN
 			SELECT * FROM booking WHERE tourist_id = p_tourist_id;
 		END;
@@ -25,7 +25,7 @@ async function createProcedures(knex) {
 
   // Get bookings by room ID
   await knex.raw(`
-		CREATE PROCEDURE GetBookingsByRoomId(IN p_room_id CHAR(36))
+		CREATE PROCEDURE GetBookingsByRoomId(IN p_room_id CHAR(64))
 		BEGIN
 			SELECT * FROM booking WHERE room_id = p_room_id;
 		END;
@@ -33,7 +33,7 @@ async function createProcedures(knex) {
 
   // Get bookings by business ID
   await knex.raw(`
-		CREATE PROCEDURE getBookingsByBusinessId(IN p_business_id CHAR(36))
+		CREATE PROCEDURE getBookingsByBusinessId(IN p_business_id CHAR(64))
 		BEGIN
 			SELECT * FROM booking WHERE business_id = p_business_id;
 		END;
@@ -42,7 +42,7 @@ async function createProcedures(knex) {
   // Insert booking
   await knex.raw(`
 		CREATE PROCEDURE InsertBooking(
-			IN p_id CHAR(36),
+			IN p_id CHAR(64),
 			IN p_pax INT,
 			IN p_num_children INT,
 			IN p_num_adults INT,
@@ -57,9 +57,9 @@ async function createProcedures(knex) {
 			IN p_total_price FLOAT,
 			IN p_balance FLOAT,
 			IN p_booking_status ENUM('Pending','Reserved','Checked-In','Checked-Out','Canceled'),
-			IN p_room_id CHAR(36),
-			IN p_tourist_id CHAR(36),
-			IN p_business_id CHAR(36)
+			IN p_room_id CHAR(64),
+			IN p_tourist_id CHAR(64),
+			IN p_business_id CHAR(64)
 		)
 		BEGIN
 			INSERT INTO booking (
@@ -76,7 +76,7 @@ async function createProcedures(knex) {
   // Update booking (all fields optional except id)
   await knex.raw(`
 		CREATE PROCEDURE UpdateBooking(
-			IN p_id CHAR(36),
+			IN p_id CHAR(64),
 			IN p_pax INT,
 			IN p_num_children INT,
 			IN p_num_adults INT,
@@ -91,9 +91,9 @@ async function createProcedures(knex) {
 			IN p_total_price FLOAT,
 			IN p_balance FLOAT,
 			IN p_booking_status ENUM('Pending','Reserved','Checked-In','Checked-Out','Canceled'),
-			IN p_room_id CHAR(36),
-			IN p_tourist_id CHAR(36),
-			IN p_business_id CHAR(36)
+			IN p_room_id CHAR(64),
+			IN p_tourist_id CHAR(64),
+			IN p_business_id CHAR(64)
 		)
 		BEGIN
 			UPDATE booking
@@ -122,7 +122,7 @@ async function createProcedures(knex) {
 
   // Delete booking
   await knex.raw(`
-		CREATE PROCEDURE DeleteBooking(IN p_id CHAR(36))
+		CREATE PROCEDURE DeleteBooking(IN p_id CHAR(64))
 		BEGIN
 			DELETE FROM booking WHERE id = p_id;
 		END;

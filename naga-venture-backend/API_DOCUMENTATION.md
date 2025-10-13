@@ -99,13 +99,15 @@ Content-Type: application/json
 
 {
   "business_id": "uuid",
-  "product_category_id": "uuid",
+  "category_ids": ["uuid"],
   "name": "string",
   "description": "string", // optional
   "price": 29.99,
   "image_url": "string", // optional
   "status": "active" // optional
 }
+
+> The first entry in `category_ids` is treated as the primary category for display and legacy compatibility.
 ```
 
 #### Update Product
@@ -114,13 +116,15 @@ PUT /api/products/:id
 Content-Type: application/json
 
 {
-  "product_category_id": "uuid",
+  "category_ids": ["uuid"],
   "name": "string",
   "description": "string",
   "price": 29.99,
   "image_url": "string",
   "status": "active|inactive|out_of_stock"
 }
+
+> Omit `category_ids` only if you are not changing categories; when provided, the first ID is saved as the primary category.
 ```
 
 #### Delete Product

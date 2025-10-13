@@ -5,6 +5,8 @@ import "dotenv/config";
 import userRoutes from "./routes/users.js";
 import userRoleRoutes from "./routes/users_role.js";
 
+import registrationRoutes from "./routes/registration.js";
+
 import businessRoutes from "./routes/business.js";
 import businessHoursRoutes from "./routes/business_hours.js";
 import addressRoutes from "./routes/address.js";
@@ -29,8 +31,11 @@ import paymentRoutes from "./routes/paymentRoutes.js";
 import productRoutes from "./routes/products.js";
 import discountRoutes from "./routes/discounts.js";
 import serviceRoutes from "./routes/services.js";
+import serviceInquiryRoutes from "./routes/service-inquiries.js";
 import orderRoutes from "./routes/orders.js";
 import productReviewRoutes from "./routes/product-reviews.js";
+import notificationRoutes from "./routes/notifications.js";
+import businessSettingsRoutes from "./routes/business-settings.js";
 
 const app = express();
 const PORT = 3000;
@@ -69,6 +74,11 @@ const routeSections = [
     section: "Business Core",
     routes: [
       { path: "/api/business", handler: businessRoutes, label: "Businesses" },
+      {
+        path: "/api/registration",
+        handler: registrationRoutes,
+        label: "Business Registrations",
+      },
       { path: "/api/address", handler: addressRoutes, label: "Addresses" },
       {
         path: "/api/business-hours",
@@ -129,12 +139,27 @@ const routeSections = [
     routes: [
       { path: "/api/products", handler: productRoutes, label: "Products" },
       { path: "/api/discounts", handler: discountRoutes, label: "Discounts" },
-      { path: "/api/services", handler: serviceRoutes, label: "Services" },
+      { path: "/api/services", handler: serviceRoutes, label: "Services (Display Only)" },
+      {
+        path: "/api/service-inquiries",
+        handler: serviceInquiryRoutes,
+        label: "Service Inquiries",
+      },
       { path: "/api/orders", handler: orderRoutes, label: "Orders" },
       {
         path: "/api/product-reviews",
         handler: productReviewRoutes,
         label: "Product Reviews",
+      },
+      {
+        path: "/api/notifications",
+        handler: notificationRoutes,
+        label: "Notifications",
+      },
+      {
+        path: "/api/business-settings",
+        handler: businessSettingsRoutes,
+        label: "Business Settings",
       },
     ],
   },

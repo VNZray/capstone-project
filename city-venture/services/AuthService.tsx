@@ -142,19 +142,19 @@ export const loginUser = async (
   });
 
   let ownerAddressData: Address | null = null;
-  if (ownerData && (ownerData as any).address_id) {
+  if (ownerData && (ownerData as any).barangay_id) {
     debugLogger({
       title: 'AuthService: GET /address/:id',
-      data: (ownerData as any).address_id
+      data: (ownerData as any).barangay_id
     });
     ownerAddressData = await axios
-      .get<Address>(`${api}/address/${(ownerData as any).address_id}`)
+      .get<Address>(`${api}/address/${(ownerData as any).barangay_id}`)
       .then((r) => r.data)
       .catch((err) => {
         debugLogger({
           title: 'AuthService: Owner address fetch failed',
           error: {
-            address_id: (ownerData as any).address_id,
+            barangay_id: (ownerData as any).barangay_id,
             message: err?.message,
             status: err?.response?.status,
             data: err?.response?.data,
@@ -231,9 +231,9 @@ export const loginUser = async (
     data: touristData
   });
 
-  const touristAddressData: Address | null = (touristData as any).address_id
+  const touristAddressData: Address | null = (touristData as any).barangay_id
     ? await axios
-        .get<Address>(`${api}/address/${(touristData as any).address_id}`)
+        .get<Address>(`${api}/address/${(touristData as any).barangay_id}`)
         .then((r) => r.data)
         .catch((err) => {
           debugLogger({
@@ -324,9 +324,9 @@ export const loginUser = async (
     last_login: userData.last_login,
     user_role_id: userData.user_role_id,
     description: (userRole as any)?.description,
-    address_id:
-      (ownerData as any).address_id ||
-      (touristData as any).address_id ||
+    barangay_id:
+      (ownerData as any).barangay_id ||
+      (touristData as any).barangay_id ||
       "",
     municipality_name:
       (ownerMunicipality as any).municipality ||

@@ -1,3 +1,5 @@
+const { createDiscountProcedures, dropDiscountProcedures } = require("../procedures/discountProcedures.js");
+
 exports.up = async function (knex) {
   // Create discount table (renamed from discounts to avoid potential conflicts)
   await knex.schema.createTable("discount", (table) => {
@@ -41,9 +43,30 @@ exports.up = async function (knex) {
     
     table.unique(["discount_id", "product_id"], "unique_discount_product");
   });
+
+  // Create stored procedures
+  console.log("Creating discount stored procedures...");
+  try {
+    await createDiscountProcedures(knex);
+    console.log("✅ Discount stored procedures created successfully");
+  } catch (error) {
+    console.error("❌ Error creating discount stored procedures:", error);
+    throw error;
+  }
 };
 
 exports.down = async function (knex) {
+  // Drop stored procedures first
+  console.log("Dropping discount stored procedures...");
+  try {
+    await dropDiscountProcedures(knex);
+    console.log("✅ Discount stored procedures dropped successfully");
+  } catch (error) {
+    console.error("❌ Error dropping discount stored procedures:", error);
+    throw error;
+  }
+
+  // Drop tables
   await knex.schema.dropTableIfExists("discount_product");
   await knex.schema.dropTableIfExists("discount");
 };

@@ -15,64 +15,73 @@ import { useTouristSpot } from '@/context/TouristSpotContext';
 import { navigateToTouristSpotProfile } from '@/routes/touristSpotRoutes';
 import Button from '@/components/Button';
 import PageContainer from '@/components/PageContainer';
+import Loading from '@/components/Loading';
 
 const TouristSpotScreen = () => {
   const { spots, categoriesAndTypes, loading, setSpotId } = useTouristSpot();
+  // Defensive fallbacks to avoid runtime errors while data is loading
+  const safeSpots = Array.isArray(spots) ? spots : [];
+  const categories = Array.isArray(categoriesAndTypes?.categories)
+    ? categoriesAndTypes.categories.filter(Boolean)
+    : [];
   const [query, setQuery] = useState('');
   const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(
     null
   );
   const [viewMode, setViewMode] = useState<'card' | 'list'>('card');
 
+  // Small helper to lowercase strings safely
+  const toLowerSafe = (v: unknown) => (typeof v === 'string' ? v.toLowerCase() : '');
+
   const featured = useMemo(
     () =>
-      spots.filter(
-        (s) => Number(s.is_featured) === 1 || s.is_featured === true
+      safeSpots.filter(
+        (s) => Number(s?.is_featured) === 1 || (s as any)?.is_featured === true
       ),
-    [spots]
+    [safeSpots]
   );
 
-  const categories = categoriesAndTypes?.categories || [];
-
   const filteredSpots = useMemo(() => {
-    return spots.filter((spot) => {
+    return safeSpots.filter((spot: any) => {
       if (selectedCategoryId) {
-        const matchCategory = spot.categories?.some(
-          (c) => c.id === selectedCategoryId
+        const matchCategory = spot?.categories?.some(
+          (c: any) => c?.id === selectedCategoryId
         );
         if (!matchCategory) return false;
       }
       if (query.trim()) {
         const q = query.toLowerCase();
+        const name = toLowerSafe(spot?.name);
+        const desc = toLowerSafe(spot?.description);
         if (
-          !spot.name.toLowerCase().includes(q) &&
-          !spot.description.toLowerCase().includes(q)
+          !name.includes(q) &&
+          !desc.includes(q)
         )
           return false;
       }
       return true;
     });
-  }, [spots, selectedCategoryId, query]);
+  }, [safeSpots, selectedCategoryId, query]);
 
   const renderSpot = ({ item }: any) => {
     const primaryImage =
-      item.images?.find(
-        (img: any) => img.is_primary === 1 || img.is_primary === true
-      ) || item.images?.[0];
-    const location = [item.barangay_name, item.municipality_name]
+      item?.images?.find(
+        (img: any) => img?.is_primary === 1 || img?.is_primary === true
+      ) || item?.images?.[0];
+    const location = [item?.barangay_name, item?.municipality_name]
       .filter(Boolean)
       .join(', ');
     return (
       <TouristSpotCard
-        name={item.name}
+        name={item?.name || 'Untitled'}
         image={
           primaryImage?.file_url ||
           'https://via.placeholder.com/300x200?text=No+Image'
         }
         location={location}
-        categories={item.categories?.map((c: any) => c.category)}
+        categories={item?.categories?.filter(Boolean)?.map((c: any) => c?.category) || []}
         onPress={() => {
-          setSpotId(item.id);
+          if (item?.id != null) setSpotId(item.id);
           navigateToTouristSpotProfile();
         }}
         viewMode={viewMode}
@@ -82,6 +91,11 @@ const TouristSpotScreen = () => {
 
   return (
     <PageContainer>
+      {loading && safeSpots.length === 0 ? (
+        <View style={styles.center}> 
+          <Loading />
+        </View>
+      ) : (
       <ScrollView
         contentContainerStyle={styles.content}
       >
@@ -122,23 +136,23 @@ const TouristSpotScreen = () => {
             >
               {featured.map((f) => {
                 const img =
-                  f.images?.find(
-                    (i: any) => i.is_primary === 1 || i.is_primary === true
-                  ) || f.images?.[0];
-                const loc = [f.barangay_name, f.municipality_name]
+                  f?.images?.find(
+                    (i: any) => i?.is_primary === 1 || i?.is_primary === true
+                  ) || f?.images?.[0];
+                const loc = [f?.barangay_name, f?.municipality_name]
                   .filter(Boolean)
                   .join(', ');
                 return (
-                  <View key={f.id} style={{ marginRight: 12, width: 260 }}>
+                  <View key={String((f as any)?.id)} style={{ marginRight: 12, width: 260 }}>
                     <FeaturedTouristSpotCard
-                      name={f.name}
+                      name={(f as any)?.name || 'Untitled'}
                       image={
                         img?.file_url ||
                         'https://via.placeholder.com/300x200?text=No+Image'
                       }
-                      categories={f.categories?.map((c: any) => c.category)}
+                      categories={f?.categories?.filter(Boolean)?.map((c: any) => c?.category) || []}
                       onPress={() => {
-                        setSpotId(f.id);
+                        if ((f as any)?.id != null) setSpotId((f as any).id);
                         navigateToTouristSpotProfile();
                       }}
                       width={260}
@@ -173,12 +187,12 @@ const TouristSpotScreen = () => {
                 onPress={() => setSelectedCategoryId(null)}
                 style={{ marginRight: 8 }}
               />
-              {categories.map((cat) => (
+              {categories.map((cat: any) => (
                 <Chip
-                  key={cat.id}
-                  label={cat.category}
-                  variant={selectedCategoryId === cat.id ? 'solid' : 'soft'}
-                  onPress={() => setSelectedCategoryId(cat.id)}
+                  key={String(cat?.id)}
+                  label={cat?.category || 'Unknown'}
+                  variant={selectedCategoryId === cat?.id ? 'solid' : 'soft'}
+                  onPress={() => setSelectedCategoryId(cat?.id ?? null)}
                   style={{ marginRight: 8 }}
                 />
               ))}
@@ -191,7 +205,7 @@ const TouristSpotScreen = () => {
           <FlatList
             data={filteredSpots}
             key={viewMode}
-            keyExtractor={(item) => item.id}
+            keyExtractor={(item, index) => String(item?.id ?? index)}
             numColumns={viewMode === 'card' ? 2 : 1}
             scrollEnabled={false}
             columnWrapperStyle={
@@ -215,6 +229,7 @@ const TouristSpotScreen = () => {
           />
         </View>
       </ScrollView>
+      )}
     </PageContainer>
   );
 };
@@ -236,4 +251,5 @@ const styles = StyleSheet.create({
     marginTop: 8,
     gap: 8,
   },
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingTop: 40 },
 });

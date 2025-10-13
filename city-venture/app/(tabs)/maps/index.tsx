@@ -1,5 +1,5 @@
 import * as Location from 'expo-location';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   Image,
   Platform,
@@ -14,6 +14,9 @@ import { ThemedText } from '@/components/themed-text';
 import { colors } from '@/constants/color';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { router } from 'expo-router';
+import { ActivityIndicator } from 'react-native';
+import * as Linking from 'expo-linking';
+import { navigateToAccommodationProfile } from '@/routes/accommodationRoutes';
 
 const Maps = () => {
   const colorScheme = useColorScheme();
@@ -47,29 +50,64 @@ const Maps = () => {
 
   const [userLocation, setUserLocation] =
     useState<Location.LocationObjectCoords | null>(null);
+  const [permissionStatus, setPermissionStatus] = useState<'checking' | 'granted' | 'denied'>('checking');
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const watchRef = useRef<Location.LocationSubscription | null>(null);
 
   useEffect(() => {
+    let mounted = true;
     (async () => {
-      let { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== 'granted') {
-        console.warn('Permission to access location was denied');
-        return;
-      }
-
-      const location = await Location.getCurrentPositionAsync({});
-      setUserLocation(location.coords);
-
-      Location.watchPositionAsync(
-        {
-          accuracy: Location.Accuracy.High,
-          timeInterval: 5000,
-          distanceInterval: 10,
-        },
-        (loc) => {
-          setUserLocation(loc.coords);
+      try {
+        setPermissionStatus('checking');
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        if (!mounted) return;
+        if (status !== 'granted') {
+          setPermissionStatus('denied');
+          setErrorMsg('Location permission was denied. Some features may be limited.');
+          return;
         }
-      );
+        setPermissionStatus('granted');
+
+        try {
+          const location = await Location.getCurrentPositionAsync({});
+          if (!mounted) return;
+          setUserLocation(location.coords);
+        } catch (err) {
+          if (!mounted) return;
+          setErrorMsg('Unable to fetch current location.');
+        }
+
+        try {
+          const subscription = await Location.watchPositionAsync(
+            {
+              accuracy: Location.Accuracy.High,
+              timeInterval: 5000,
+              distanceInterval: 10,
+            },
+            (loc) => {
+              if (!mounted) return;
+              setUserLocation(loc.coords);
+            }
+          );
+          watchRef.current = subscription;
+        } catch (err) {
+          if (!mounted) return;
+          setErrorMsg('Unable to start location updates.');
+        }
+      } catch (err) {
+        if (!mounted) return;
+        setPermissionStatus('denied');
+        setErrorMsg('Unexpected error requesting location permission.');
+      }
     })();
+
+    return () => {
+      mounted = false;
+      if (watchRef.current) {
+        watchRef.current.remove();
+        watchRef.current = null;
+      }
+    };
   }, []);
 
   return (
@@ -80,10 +118,28 @@ const Maps = () => {
             Map view is not supported on the web.
           </Text>
         </View>
+      ) : permissionStatus === 'checking' ? (
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+          <ActivityIndicator size="large" color={colors.primary} />
+          <Text style={{ marginTop: 12, color: '#6A768E' }}>Preparing map…</Text>
+        </View>
+      ) : permissionStatus === 'denied' ? (
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 24 }}>
+          <Text style={{ fontWeight: 'bold', fontSize: 16, marginBottom: 8 }}>Location permission denied</Text>
+          <Text style={{ textAlign: 'center', color: '#6A768E' }}>
+            {errorMsg || 'Please enable location permission in Settings to see your position on the map.'}
+          </Text>
+          <Pressable
+            onPress={() => Linking.openSettings()}
+            style={{ marginTop: 14, backgroundColor: colors.primary, paddingHorizontal: 16, paddingVertical: 8, borderRadius: 8 }}
+          >
+            <Text style={{ color: '#fff', fontWeight: '600' }}>Open Settings</Text>
+          </Pressable>
+        </View>
       ) : (
         <MapView
           style={{ width: '100%', height: '100%' }}
-          showsUserLocation={true}
+          showsUserLocation={permissionStatus === 'granted'}
           followsUserLocation={false}
           initialRegion={{
             latitude: 13.6217,
@@ -103,10 +159,7 @@ const Maps = () => {
             >
               <Callout
                 onPress={() => {
-                  router.navigate(
-                    `/(home)/(accommodations)/profile/${business.id}`
-                  );
-                  console.log('Navigating to business:', business.id);
+                  navigateToAccommodationProfile();
                 }}
               >
                 <View style={styles.calloutContainer}>
