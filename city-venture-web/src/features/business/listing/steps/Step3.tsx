@@ -150,49 +150,60 @@ const Step3: React.FC<Props> = ({
         style={{
           overflow: "auto",
           overflowX: "hidden",
-          padding: '16px 16px 24px',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          width: '100%',
-          boxSizing: 'border-box'
-        }}
-      >
-        <div style={{
+          padding: "16px 16px 24px",
           display: "flex",
           flexDirection: "column",
-          gap: 20,
-          width: '100%',
-          maxWidth: '1000px',
-          margin: '0 auto'
-        }}>
-          <div style={{
-            paddingBottom: 8,
-            textAlign: 'center',
-            borderBottom: '1px solid #e5e7eb',
-            marginBottom: 16,
-            paddingTop: 4
-          }}>
-            <Text variant="label" color="gray" style={{
-              fontSize: 20,
-              fontWeight: 700,
-              lineHeight: 1.3,
-              display: 'block',
-              marginBottom: 8,
-              color: '#111827'
-            }}>
+          alignItems: "center",
+          justifyContent: "center",
+          width: "100%",
+          boxSizing: "border-box",
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            gap: 20,
+            width: "100%",
+            maxWidth: "1000px",
+            margin: "0 auto",
+          }}
+        >
+          <div
+            style={{
+              paddingBottom: 8,
+              textAlign: "center",
+              borderBottom: "1px solid #e5e7eb",
+              marginBottom: 16,
+              paddingTop: 4,
+            }}
+          >
+            <Text
+              variant="label"
+              color="gray"
+              style={{
+                fontSize: 20,
+                fontWeight: 700,
+                lineHeight: 1.3,
+                display: "block",
+                marginBottom: 8,
+                color: "#111827",
+              }}
+            >
               Business Address and Location
             </Text>
-            <Text color="gray" style={{
-              fontSize: 15,
-              fontWeight: 400,
-              opacity: 0.75,
-              display: 'block',
-              maxWidth: '500px',
-              margin: '0 auto',
-              color: '#6b7280'
-            }}>
+            <Text
+              color="gray"
+              style={{
+                fontSize: 15,
+                fontWeight: 400,
+                opacity: 0.75,
+                display: "block",
+                maxWidth: "500px",
+                margin: "0 auto",
+                color: "#6b7280",
+              }}
+            >
               Where is your business located?
             </Text>
           </div>
@@ -201,7 +212,16 @@ const Step3: React.FC<Props> = ({
             <div className="col">
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                 <FormControl required>
-                  <FormLabel sx={{ mb: 0.75, fontSize: '0.875rem', fontWeight: 600, color: '#374151' }}>Province</FormLabel>
+                  <FormLabel
+                    sx={{
+                      mb: 0.75,
+                      fontSize: "0.875rem",
+                      fontWeight: 600,
+                      color: "#374151",
+                    }}
+                  >
+                    Province
+                  </FormLabel>
                   <Select
                     size="md"
                     placeholder="-- Select a province --"
@@ -215,23 +235,24 @@ const Step3: React.FC<Props> = ({
                       }));
                     }}
                     sx={{
-                      '--Select-focusedThickness': '2px',
-                      '--Select-focusedHighlight': 'var(--joy-palette-primary-500)',
-                      backgroundColor: '#fafafa',
-                      border: '1px solid #e0e0e0',
-                      borderRadius: '8px',
-                      boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
-                      transition: 'all 0.2s ease-in-out',
-                      '&:hover': {
-                        backgroundColor: '#ffffff',
-                        borderColor: '#d0d0d0',
-                        boxShadow: '0 2px 6px rgba(0, 0, 0, 0.15)',
+                      "--Select-focusedThickness": "2px",
+                      "--Select-focusedHighlight":
+                        "var(--joy-palette-primary-500)",
+                      backgroundColor: "#fafafa",
+                      border: "1px solid #e0e0e0",
+                      borderRadius: "8px",
+                      boxShadow: "0 1px 3px rgba(0, 0, 0, 0.1)",
+                      transition: "all 0.2s ease-in-out",
+                      "&:hover": {
+                        backgroundColor: "#ffffff",
+                        borderColor: "#d0d0d0",
+                        boxShadow: "0 2px 6px rgba(0, 0, 0, 0.15)",
                       },
-                      '&:focus-within': {
-                        backgroundColor: '#ffffff',
-                        borderColor: 'var(--joy-palette-primary-500)',
-                        boxShadow: '0 0 0 3px rgba(25, 118, 210, 0.1)',
-                      }
+                      "&:focus-within": {
+                        backgroundColor: "#ffffff",
+                        borderColor: "var(--joy-palette-primary-500)",
+                        boxShadow: "0 0 0 3px rgba(25, 118, 210, 0.1)",
+                      },
                     }}
                   >
                     <Option value="">-- Select province --</Option>
@@ -244,7 +265,16 @@ const Step3: React.FC<Props> = ({
                 </FormControl>
 
                 <FormControl required>
-                  <FormLabel sx={{ mb: 0.75, fontSize: '0.875rem', fontWeight: 600, color: '#374151' }}>Municipality</FormLabel>
+                  <FormLabel
+                    sx={{
+                      mb: 0.75,
+                      fontSize: "0.875rem",
+                      fontWeight: 600,
+                      color: "#374151",
+                    }}
+                  >
+                    Municipality
+                  </FormLabel>
                   <Select
                     size="md"
                     placeholder="-- Select municipality --"
@@ -259,23 +289,24 @@ const Step3: React.FC<Props> = ({
                     }}
                     disabled={!addressData.province_id}
                     sx={{
-                      '--Select-focusedThickness': '2px',
-                      '--Select-focusedHighlight': 'var(--joy-palette-primary-500)',
-                      backgroundColor: '#fafafa',
-                      border: '1px solid #e0e0e0',
-                      borderRadius: '8px',
-                      boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
-                      transition: 'all 0.2s ease-in-out',
-                      '&:hover': {
-                        backgroundColor: '#ffffff',
-                        borderColor: '#d0d0d0',
-                        boxShadow: '0 2px 6px rgba(0, 0, 0, 0.15)',
+                      "--Select-focusedThickness": "2px",
+                      "--Select-focusedHighlight":
+                        "var(--joy-palette-primary-500)",
+                      backgroundColor: "#fafafa",
+                      border: "1px solid #e0e0e0",
+                      borderRadius: "8px",
+                      boxShadow: "0 1px 3px rgba(0, 0, 0, 0.1)",
+                      transition: "all 0.2s ease-in-out",
+                      "&:hover": {
+                        backgroundColor: "#ffffff",
+                        borderColor: "#d0d0d0",
+                        boxShadow: "0 2px 6px rgba(0, 0, 0, 0.15)",
                       },
-                      '&:focus-within': {
-                        backgroundColor: '#ffffff',
-                        borderColor: 'var(--joy-palette-primary-500)',
-                        boxShadow: '0 0 0 3px rgba(25, 118, 210, 0.1)',
-                      }
+                      "&:focus-within": {
+                        backgroundColor: "#ffffff",
+                        borderColor: "var(--joy-palette-primary-500)",
+                        boxShadow: "0 0 0 3px rgba(25, 118, 210, 0.1)",
+                      },
                     }}
                   >
                     <Option value="">-- Select municipality --</Option>
@@ -291,7 +322,16 @@ const Step3: React.FC<Props> = ({
                 </FormControl>
 
                 <FormControl required>
-                  <FormLabel sx={{ mb: 0.75, fontSize: '0.875rem', fontWeight: 600, color: '#374151' }}>Barangay</FormLabel>
+                  <FormLabel
+                    sx={{
+                      mb: 0.75,
+                      fontSize: "0.875rem",
+                      fontWeight: 600,
+                      color: "#374151",
+                    }}
+                  >
+                    Barangay
+                  </FormLabel>
                   <Select
                     size="md"
                     placeholder="-- Select barangay --"
@@ -303,26 +343,32 @@ const Step3: React.FC<Props> = ({
                         ...prev,
                         barangay_id: barangay_id,
                       }));
+
+                      setData((prev) => ({
+                        ...prev,
+                        barangay_id: barangay_id,
+                      }));
                     }}
                     disabled={!addressData.municipality_id}
                     sx={{
-                      '--Select-focusedThickness': '2px',
-                      '--Select-focusedHighlight': 'var(--joy-palette-primary-500)',
-                      backgroundColor: '#fafafa',
-                      border: '1px solid #e0e0e0',
-                      borderRadius: '8px',
-                      boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
-                      transition: 'all 0.2s ease-in-out',
-                      '&:hover': {
-                        backgroundColor: '#ffffff',
-                        borderColor: '#d0d0d0',
-                        boxShadow: '0 2px 6px rgba(0, 0, 0, 0.15)',
+                      "--Select-focusedThickness": "2px",
+                      "--Select-focusedHighlight":
+                        "var(--joy-palette-primary-500)",
+                      backgroundColor: "#fafafa",
+                      border: "1px solid #e0e0e0",
+                      borderRadius: "8px",
+                      boxShadow: "0 1px 3px rgba(0, 0, 0, 0.1)",
+                      transition: "all 0.2s ease-in-out",
+                      "&:hover": {
+                        backgroundColor: "#ffffff",
+                        borderColor: "#d0d0d0",
+                        boxShadow: "0 2px 6px rgba(0, 0, 0, 0.15)",
                       },
-                      '&:focus-within': {
-                        backgroundColor: '#ffffff',
-                        borderColor: 'var(--joy-palette-primary-500)',
-                        boxShadow: '0 0 0 3px rgba(25, 118, 210, 0.1)',
-                      }
+                      "&:focus-within": {
+                        backgroundColor: "#ffffff",
+                        borderColor: "var(--joy-palette-primary-500)",
+                        boxShadow: "0 0 0 3px rgba(25, 118, 210, 0.1)",
+                      },
                     }}
                   >
                     <Option value="">-- Select barangay --</Option>
@@ -345,16 +391,16 @@ const Step3: React.FC<Props> = ({
                   startDecorator={<Add />}
                   onClick={handleGetCurrentLocation}
                   sx={{
-                    borderRadius: '8px',
+                    borderRadius: "8px",
                     fontWeight: 500,
-                    mt: 1
+                    mt: 1,
                   }}
                 >
                   Get Current Location
                 </Button>
 
                 {/* Map Section - Right Side */}
-                <div style={{ marginTop: '16px' }}>
+                <div style={{ marginTop: "16px" }}>
                   <MapInput
                     latitude={data.latitude}
                     longitude={data.longitude}
@@ -368,9 +414,27 @@ const Step3: React.FC<Props> = ({
                     }
                   />
                   {/* Coordinate readout (subtle) */}
-                  <div style={{ marginTop: 8, display: 'flex', gap: 12, color: '#6b7280', fontSize: 12 }}>
-                    <span>Lat: <span style={{ color: '#111827', fontWeight: 600 }}>{data.latitude || '-'}</span></span>
-                    <span>Lng: <span style={{ color: '#111827', fontWeight: 600 }}>{data.longitude || '-'}</span></span>
+                  <div
+                    style={{
+                      marginTop: 8,
+                      display: "flex",
+                      gap: 12,
+                      color: "#6b7280",
+                      fontSize: 12,
+                    }}
+                  >
+                    <span>
+                      Lat:{" "}
+                      <span style={{ color: "#111827", fontWeight: 600 }}>
+                        {data.latitude || "-"}
+                      </span>
+                    </span>
+                    <span>
+                      Lng:{" "}
+                      <span style={{ color: "#111827", fontWeight: 600 }}>
+                        {data.longitude || "-"}
+                      </span>
+                    </span>
                   </div>
                 </div>
               </div>

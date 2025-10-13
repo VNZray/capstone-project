@@ -11,7 +11,7 @@ async function createServiceProcedures(knex) {
 
   // Get service categories by business ID
   await knex.raw(`
-    CREATE PROCEDURE GetServiceCategoriesByBusinessId(IN p_businessId CHAR(36))
+    CREATE PROCEDURE GetServiceCategoriesByBusinessId(IN p_businessId CHAR(64))
     BEGIN
       SELECT * FROM service_category 
       WHERE business_id = p_businessId AND status = 'active' 
@@ -21,7 +21,7 @@ async function createServiceProcedures(knex) {
 
   // Get service category by ID
   await knex.raw(`
-    CREATE PROCEDURE GetServiceCategoryById(IN p_categoryId CHAR(36))
+    CREATE PROCEDURE GetServiceCategoryById(IN p_categoryId CHAR(64))
     BEGIN
       SELECT * FROM service_category WHERE id = p_categoryId;
     END;
@@ -30,8 +30,8 @@ async function createServiceProcedures(knex) {
   // Insert service category
   await knex.raw(`
     CREATE PROCEDURE InsertServiceCategory(
-      IN p_id CHAR(36),
-      IN p_business_id CHAR(36),
+      IN p_id CHAR(64),
+      IN p_business_id CHAR(64),
       IN p_name VARCHAR(255),
       IN p_description TEXT,
       IN p_display_order INT,
@@ -48,7 +48,7 @@ async function createServiceProcedures(knex) {
   // Update service category
   await knex.raw(`
     CREATE PROCEDURE UpdateServiceCategory(
-      IN p_id CHAR(36),
+      IN p_id CHAR(64),
       IN p_name VARCHAR(255),
       IN p_description TEXT,
       IN p_display_order INT,
@@ -69,7 +69,7 @@ async function createServiceProcedures(knex) {
 
   // Delete service category
   await knex.raw(`
-    CREATE PROCEDURE DeleteServiceCategory(IN p_categoryId CHAR(36))
+    CREATE PROCEDURE DeleteServiceCategory(IN p_categoryId CHAR(64))
     BEGIN
       DECLARE service_count INT DEFAULT 0;
       
@@ -118,7 +118,7 @@ async function createServiceProcedures(knex) {
 
   // Get services by business ID
   await knex.raw(`
-    CREATE PROCEDURE GetServicesByBusinessId(IN p_businessId CHAR(36))
+    CREATE PROCEDURE GetServicesByBusinessId(IN p_businessId CHAR(64))
     BEGIN
       SELECT 
         s.*, 
@@ -148,7 +148,7 @@ async function createServiceProcedures(knex) {
 
   // Get services by category ID
   await knex.raw(`
-    CREATE PROCEDURE GetServicesByCategoryId(IN p_categoryId CHAR(36))
+    CREATE PROCEDURE GetServicesByCategoryId(IN p_categoryId CHAR(64))
     BEGIN
       SELECT s.*
       FROM service s 
@@ -159,7 +159,7 @@ async function createServiceProcedures(knex) {
 
   // Get service by ID with details
   await knex.raw(`
-    CREATE PROCEDURE GetServiceById(IN p_serviceId CHAR(36))
+    CREATE PROCEDURE GetServiceById(IN p_serviceId CHAR(64))
     BEGIN
       SELECT 
         s.*, 
@@ -191,9 +191,9 @@ async function createServiceProcedures(knex) {
   // Insert service
   await knex.raw(`
     CREATE PROCEDURE InsertService(
-      IN p_id CHAR(36),
-      IN p_business_id CHAR(36),
-      IN p_service_category_id CHAR(36),
+      IN p_id CHAR(64),
+      IN p_business_id CHAR(64),
+      IN p_service_category_id CHAR(64),
       IN p_name VARCHAR(255),
       IN p_description TEXT,
       IN p_base_price DECIMAL(10,2),
@@ -246,8 +246,8 @@ async function createServiceProcedures(knex) {
   // Update service
   await knex.raw(`
     CREATE PROCEDURE UpdateService(
-      IN p_id CHAR(36),
-      IN p_service_category_id CHAR(36),
+      IN p_id CHAR(64),
+      IN p_service_category_id CHAR(64),
       IN p_name VARCHAR(255),
       IN p_description TEXT,
       IN p_base_price DECIMAL(10,2),
@@ -308,7 +308,7 @@ async function createServiceProcedures(knex) {
 
   // Delete service
   await knex.raw(`
-    CREATE PROCEDURE DeleteService(IN p_serviceId CHAR(36))
+    CREATE PROCEDURE DeleteService(IN p_serviceId CHAR(64))
     BEGIN
       DELETE FROM service WHERE id = p_serviceId;
     END;
@@ -363,7 +363,7 @@ async function createServiceProcedures(knex) {
 
   // Get services with pricing calculations
   await knex.raw(`
-    CREATE PROCEDURE GetServicesWithPricing(IN p_businessId CHAR(36))
+    CREATE PROCEDURE GetServicesWithPricing(IN p_businessId CHAR(64))
     BEGIN
       SELECT s.*, sc.name as category_name,
         CASE 
@@ -386,8 +386,8 @@ async function createServiceProcedures(knex) {
   await knex.raw(`
     CREATE PROCEDURE SearchServices(
       IN p_query VARCHAR(255),
-      IN p_business_id CHAR(36),
-      IN p_category_id CHAR(36),
+      IN p_business_id CHAR(64),
+      IN p_category_id CHAR(64),
       IN p_price_type VARCHAR(50),
       IN p_price_min DECIMAL(10,2),
       IN p_price_max DECIMAL(10,2)
@@ -415,7 +415,7 @@ async function createServiceProcedures(knex) {
 
   // Get service statistics for business
   await knex.raw(`
-    CREATE PROCEDURE GetServiceStatsByBusiness(IN p_businessId CHAR(36))
+    CREATE PROCEDURE GetServiceStatsByBusiness(IN p_businessId CHAR(64))
     BEGIN
       -- Overall statistics
       SELECT 

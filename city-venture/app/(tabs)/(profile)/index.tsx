@@ -27,8 +27,16 @@ const Profile = () => {
   );
 
   if (!user) {
-    // If not authenticated, rely on existing auth flow/guards outside this screen
-    return null;
+    // Lightweight unauthenticated fallback to avoid white screen
+    return (
+      <View style={[styles.screen, { alignItems: 'center', justifyContent: 'center' }]}> 
+        <ThemedText type="sub-title-medium" weight="bold">You're not signed in</ThemedText>
+        <ThemedText type="label-medium" style={{ color: '#6A768E', marginTop: 6 }}>Please sign in to view your profile.</ThemedText>
+        <View style={{ marginTop: 14, width: '60%' }}>
+          <Button label="Go to Home" variant="solid" color="primary" size="large" fullWidth radius={14} onPress={() => router.replace('/(tabs)/(home)')} />
+        </View>
+      </View>
+    );
   }
 
   const onEdit = () => router.push('/(tabs)/(profile)/(edit)');
@@ -157,10 +165,10 @@ const Profile = () => {
 
         {/* Personal Info */}
         <Section title="Personal Info" cardBg={card}>
-          <InfoRow icon="envelope" label="Email" value={user.email} />
-          <InfoRow icon="phone" label="Phone" value={user.phone_number!} />
-          <InfoRow icon="flag" label="Nationality" value={user.nationality!} />
-          <InfoRow icon="user" label="Age / Gender" value={`${user.age} / ${user.gender}`} last />
+          <InfoRow icon="envelope" label="Email" value={user.email ?? '—'} />
+          <InfoRow icon="phone" label="Phone" value={user.phone_number ?? '—'} />
+          <InfoRow icon="flag" label="Nationality" value={user.nationality ?? '—'} />
+          <InfoRow icon="user" label="Age / Gender" value={`${user.age ?? '—'} / ${user.gender ?? '—'}`} last />
         </Section>
 
         {/* Activity */}

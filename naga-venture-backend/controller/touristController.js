@@ -41,7 +41,7 @@ export async function createTourist(request, response) {
       request.body.gender ?? null,
       request.body.nationality ?? null,
       request.body.category ?? null,
-      request.body.address_id ?? null,
+      request.body.barangay_id ?? null,
       request.body.user_id ?? null,
     ];
     const [data] = await db.query(
@@ -88,7 +88,7 @@ export async function updateTourist(request, response) {
       request.body.gender ?? null,
       request.body.nationality ?? null,
       request.body.category ?? null,
-      request.body.address_id ?? null,
+      request.body.barangay_id ?? null,
       request.body.user_id ?? null,
     ];
     const [data] = await db.query(

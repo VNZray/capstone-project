@@ -22,11 +22,11 @@ exports.up = async function (knex) {
 
     // Foreign keys
     table
-      .integer("address_id")
+      .integer("barangay_id")
       .unsigned()
       .nullable()
       .references("id")
-      .inTable("address")
+      .inTable("barangay")
       .onDelete("CASCADE")
       .onUpdate("CASCADE");
 
