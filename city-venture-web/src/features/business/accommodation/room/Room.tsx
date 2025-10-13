@@ -10,7 +10,7 @@ import {
   DialogActions,
   Typography,
 } from "@mui/joy";
-import {  Calendar, Search } from "lucide-react";
+import { Calendar, Search } from "lucide-react";
 import { Add } from "@mui/icons-material";
 import StatusFilter from "./components/StatusFilter";
 import { useEffect, useState } from "react";
@@ -45,16 +45,26 @@ const RoomPage = () => {
   const { setRoomId } = useRoom();
   const [rooms, setRooms] = useState<Room[]>([]);
 
-  // Filter rooms dynamically
-  const filteredRooms = rooms.filter((room) => {
-    const matchesSearch =
-      room.room_number?.toLowerCase().includes(search.toLowerCase()) ||
-      room.room_type?.toLowerCase().includes(search.toLowerCase());
+  // Filter and sort rooms dynamically
+  const filteredRooms = rooms
+    .filter((room) => {
+      const matchesSearch =
+        room.room_number?.toLowerCase().includes(search.toLowerCase()) ||
+        room.room_type?.toLowerCase().includes(search.toLowerCase());
 
-    const matchesStatus = status === "All" ? true : room.status === status;
+      const matchesStatus = status === "All" ? true : room.status === status;
 
-    return matchesSearch && matchesStatus;
-  });
+      return matchesSearch && matchesStatus;
+    })
+    .sort((a, b) => {
+      // If room_number is numeric, sort numerically; otherwise, lexicographically
+      const numA = Number(a.room_number);
+      const numB = Number(b.room_number);
+      if (!isNaN(numA) && !isNaN(numB)) {
+        return numA - numB;
+      }
+      return (a.room_number || "").localeCompare(b.room_number || "");
+    });
 
   const fetchRooms = async () => {
     if (!businessDetails?.id) return;
@@ -66,9 +76,9 @@ const RoomPage = () => {
   };
 
   // Prevent division by zero
-const calcPercentage = (count: number) => {
-  return roomCount > 0 ? (count / roomCount) * 100 : 0;
-};
+  const calcPercentage = (count: number) => {
+    return roomCount > 0 ? (count / roomCount) * 100 : 0;
+  };
 
   useEffect(() => {
     if (businessDetails?.id) {
@@ -98,7 +108,15 @@ const calcPercentage = (count: number) => {
           padding="16px 16px 0 16px"
           style={{ flexWrap: "wrap", rowGap: 12, columnGap: 12 }}
         >
-          <div style={{ display: "flex", gap: 12, alignItems: "center", flex: 1, minWidth: 240 }}>
+          <div
+            style={{
+              display: "flex",
+              gap: 12,
+              alignItems: "center",
+              flex: 1,
+              minWidth: 240,
+            }}
+          >
             <Text variant="header-title">Room Management</Text>
             <Button
               startDecorator={<Calendar />}
@@ -192,10 +210,8 @@ const calcPercentage = (count: number) => {
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
+            gridTemplateColumns: "repeat(auto-fill,minmax(280px,1fr))",
             gap: "1rem",
-            width: "100%",
-            alignItems: "stretch",
           }}
         >
           {filteredRooms.map((room) => (

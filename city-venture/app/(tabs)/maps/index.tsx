@@ -1,5 +1,5 @@
 import * as Location from 'expo-location';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useMemo } from 'react';
 import {
   Image,
   Platform,
@@ -9,48 +9,91 @@ import {
   View,
 } from 'react-native';
 import MapView, { Callout, Marker } from 'react-native-maps';
+import placeholder from '@/assets/images/placeholder.png';
 
 import { ThemedText } from '@/components/themed-text';
 import { colors } from '@/constants/color';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import { router } from 'expo-router';
 import { ActivityIndicator } from 'react-native';
 import * as Linking from 'expo-linking';
 import { navigateToAccommodationProfile } from '@/routes/accommodationRoutes';
+import { useAccommodation } from '@/context/AccommodationContext';
+import SearchBar from '@/components/SearchBar';
+import ScrollableTab from '@/components/ScrollableTab';
+import type { Tab } from '@/types/Tab';
+import type { Business } from '@/types/Business';
+import Container from '@/components/Container';
+import Button from '@/components/Button';
+import { MaterialCommunityIcons, FontAwesome5 } from '@expo/vector-icons';
+
+const TABS: Tab[] = [
+  { key: 'all', label: 'All', icon: 'th-large' },
+  { key: 'accommodation', label: 'Accommodation', icon: 'hotel' },
+  { key: 'shop', label: 'Shop', icon: 'shopping-bag' },
+  { key: 'event', label: 'Event', icon: 'calendar' },
+  { key: 'tourist-spot', label: 'Tourist Spot', icon: 'map-marker-alt' },
+];
 
 const Maps = () => {
   const colorScheme = useColorScheme();
   const color = colorScheme === 'dark' ? '#fff' : '#000';
 
-  // ✅ Static businesses data
-  const businesses = [
-    {
-      id: 1,
-      business_name: 'Caramoan Beach Resort',
-      barangay: 'Paniman',
-      city: 'Caramoan',
-      province: 'Camarines Sur',
-      latitude: 13.7712,
-      longitude: 123.8656,
-      image_url:
-        'https://upload.wikimedia.org/wikipedia/commons/thumb/0/0f/Caramoan.jpg/320px-Caramoan.jpg',
-    },
-    {
-      id: 2,
-      business_name: 'Naga City Hotel',
-      barangay: 'Peñafrancia',
-      city: 'Naga City',
-      province: 'Camarines Sur',
-      latitude: 13.6217,
-      longitude: 123.1948,
-      image_url:
-        'https://upload.wikimedia.org/wikipedia/commons/thumb/3/3a/Naga_City_Hall.jpg/320px-Naga_City_Hall.jpg',
-    },
-  ];
+  // Context hooks
+  const { allAccommodationDetails, setAccommodationId } = useAccommodation();
+
+  // Filter state
+  const [search, setSearch] = useState('');
+  const [activeTab, setActiveTab] = useState<string>('all');
+
+  const handleTabChange = (tab: Tab) => {
+    setActiveTab(tab.key);
+  };
+
+  // Filter and prepare businesses for map
+  const filteredBusinesses = useMemo(() => {
+    let businesses: Business[] = [];
+
+    // Only show accommodations for now (business_type_id === 1)
+    if (activeTab === 'all' || activeTab === 'accommodation') {
+      businesses = [...businesses, ...(allAccommodationDetails || [])];
+    }
+
+    // Filter by search term
+    if (search.trim()) {
+      const searchLower = search.toLowerCase();
+      businesses = businesses.filter(
+        (b) =>
+          b.business_name?.toLowerCase().includes(searchLower) ||
+          b.address?.toLowerCase().includes(searchLower)
+      );
+    }
+
+    // Only show businesses with valid coordinates and active/pending status
+    return businesses.filter(
+      (b) =>
+        b.latitude &&
+        b.longitude &&
+        !isNaN(Number(b.latitude)) &&
+        !isNaN(Number(b.longitude)) &&
+        (b.status?.toLowerCase() === 'active' ||
+          b.status?.toLowerCase() === 'pending')
+    );
+  }, [allAccommodationDetails, activeTab, search]);
+
+  const handleBusinessPress = (business: Business) => {
+    if (business.business_type_id === 1) {
+      // Accommodation
+      setAccommodationId(business.id!);
+      navigateToAccommodationProfile();
+    }
+    // Add more business types here when contexts are ready
+  };
 
   const [userLocation, setUserLocation] =
     useState<Location.LocationObjectCoords | null>(null);
-  const [permissionStatus, setPermissionStatus] = useState<'checking' | 'granted' | 'denied'>('checking');
+  const [permissionStatus, setPermissionStatus] = useState<
+    'checking' | 'granted' | 'denied'
+  >('checking');
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const watchRef = useRef<Location.LocationSubscription | null>(null);
 
@@ -63,7 +106,9 @@ const Maps = () => {
         if (!mounted) return;
         if (status !== 'granted') {
           setPermissionStatus('denied');
-          setErrorMsg('Location permission was denied. Some features may be limited.');
+          setErrorMsg(
+            'Location permission was denied. Some features may be limited.'
+          );
           return;
         }
         setPermissionStatus('granted');
@@ -119,21 +164,43 @@ const Maps = () => {
           </Text>
         </View>
       ) : permissionStatus === 'checking' ? (
-        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+        <View
+          style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}
+        >
           <ActivityIndicator size="large" color={colors.primary} />
-          <Text style={{ marginTop: 12, color: '#6A768E' }}>Preparing map…</Text>
+          <Text style={{ marginTop: 12, color: '#6A768E' }}>
+            Preparing map…
+          </Text>
         </View>
       ) : permissionStatus === 'denied' ? (
-        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 24 }}>
-          <Text style={{ fontWeight: 'bold', fontSize: 16, marginBottom: 8 }}>Location permission denied</Text>
+        <View
+          style={{
+            flex: 1,
+            alignItems: 'center',
+            justifyContent: 'center',
+            paddingHorizontal: 24,
+          }}
+        >
+          <Text style={{ fontWeight: 'bold', fontSize: 16, marginBottom: 8 }}>
+            Location permission denied
+          </Text>
           <Text style={{ textAlign: 'center', color: '#6A768E' }}>
-            {errorMsg || 'Please enable location permission in Settings to see your position on the map.'}
+            {errorMsg ||
+              'Please enable location permission in Settings to see your position on the map.'}
           </Text>
           <Pressable
             onPress={() => Linking.openSettings()}
-            style={{ marginTop: 14, backgroundColor: colors.primary, paddingHorizontal: 16, paddingVertical: 8, borderRadius: 8 }}
+            style={{
+              marginTop: 14,
+              backgroundColor: colors.primary,
+              paddingHorizontal: 16,
+              paddingVertical: 8,
+              borderRadius: 8,
+            }}
           >
-            <Text style={{ color: '#fff', fontWeight: '600' }}>Open Settings</Text>
+            <Text style={{ color: '#fff', fontWeight: '600' }}>
+              Open Settings
+            </Text>
           </Pressable>
         </View>
       ) : (
@@ -142,44 +209,107 @@ const Maps = () => {
           showsUserLocation={permissionStatus === 'granted'}
           followsUserLocation={false}
           initialRegion={{
-            latitude: 13.6217,
-            longitude: 123.1948,
-            latitudeDelta: 0.05,
-            longitudeDelta: 0.05,
+            latitude: userLocation?.latitude || 13.6217,
+            longitude: userLocation?.longitude || 123.1948,
+            latitudeDelta: 0.5,
+            longitudeDelta: 0.5,
           }}
         >
-          {businesses.map((business) => (
+          {filteredBusinesses.map((business) => (
             <Marker
               key={business.id}
               coordinate={{
-                latitude: business.latitude,
-                longitude: business.longitude,
+                latitude: Number(business.latitude),
+                longitude: Number(business.longitude),
               }}
-              image={require('@/assets/pins/A-pin.png')}
             >
+              <View style={styles.markerContainer}>
+                <View style={styles.markerImageWrapper}>
+                  {business.business_image ? (
+                    <Image
+                      source={{ uri: business.business_image }}
+                      style={styles.markerImage}
+                    />
+                  ) : (
+                    <Image source={placeholder} style={styles.markerImage} />
+                  )}
+                </View>
+                <View style={styles.markerArrow} />
+              </View>
               <Callout
-                onPress={() => {
-                  navigateToAccommodationProfile();
-                }}
+                tooltip={true}
+                onPress={() => handleBusinessPress(business)}
               >
                 <View style={styles.calloutContainer}>
+                  {/* Image */}
+                  {business.business_image ? (
+                    <Image
+                      source={{ uri: business.business_image }}
+                      style={styles.calloutImage}
+                    />
+                  ) : (
+                    <Image source={placeholder} style={styles.calloutImage} />
+                  )}
+
                   <Text style={styles.calloutTitle}>
                     {business.business_name}
                   </Text>
-                  <Text
-                    style={styles.calloutText}
-                  >{`${business.barangay}, ${business.city}, ${business.province}`}</Text>
-                  {business.image_url && (
-                    <Image
-                      source={{ uri: business.image_url }}
-                      style={styles.calloutImage}
+
+                  {/* Address */}
+                  <View style={styles.infoRow}>
+                    <MaterialCommunityIcons
+                      name="map-marker"
+                      size={14}
+                      color="#666"
                     />
+                    <Text style={styles.calloutText} numberOfLines={2}>
+                      {business.address || 'No address available'}
+                    </Text>
+                  </View>
+
+                  {/* Price Range */}
+                  {(business.min_price || business.max_price) && (
+                    <View style={styles.infoRow}>
+                      <MaterialCommunityIcons
+                        name="cash"
+                        size={14}
+                        color="#666"
+                      />
+                      <Text style={styles.priceText}>
+                        ₱{business.min_price || 0} - ₱{business.max_price || 0}
+                      </Text>
+                    </View>
                   )}
-                  <Pressable style={styles.viewMoreButton}>
-                    <ThemedText style={styles.viewMoreText}>
-                      View More
-                    </ThemedText>
-                  </Pressable>
+
+                  {/* Rating */}
+                  <View style={styles.infoRow}>
+                    <MaterialCommunityIcons
+                      name="star"
+                      size={14}
+                      color="#FFB007"
+                    />
+                    <Text style={styles.ratingText}>4.5</Text>
+                    <Text style={styles.reviewCount}>(120 reviews)</Text>
+                  </View>
+
+                  {/* Status Badge */}
+                  <View
+                    style={[
+                      styles.statusBadge,
+                      business.status?.toLowerCase() === 'active'
+                        ? styles.statusActive
+                        : styles.statusPending,
+                    ]}
+                  >
+                    <Text style={styles.statusText}>
+                      {business.status?.toUpperCase() || 'PENDING'}
+                    </Text>
+                  </View>
+
+                  <Button
+                    label="View More"
+                    onPress={() => handleBusinessPress(business)}
+                  />
                 </View>
               </Callout>
             </Marker>
@@ -197,6 +327,32 @@ const Maps = () => {
         </MapView>
       )}
 
+      {/* Floating Search Bar and Tabs */}
+      {Platform.OS !== 'web' && (
+        <View style={styles.searchContainer}>
+          <Container
+            gap={0}
+            paddingBottom={0}
+            backgroundColor="transparent"
+            style={{ overflow: 'visible' }}
+          >
+            <SearchBar
+              shape="square"
+              containerStyle={{ flex: 1 }}
+              value={search}
+              onChangeText={(text) => setSearch(text)}
+              onSearch={() => {}}
+              placeholder={'Search location or business'}
+            />
+            <ScrollableTab
+              tabs={TABS}
+              onTabChange={handleTabChange}
+              activeKey={activeTab}
+            />
+          </Container>
+        </View>
+      )}
+
       <Text
         style={{ position: 'absolute', bottom: 10, alignSelf: 'center', color }}
       >
@@ -207,26 +363,126 @@ const Maps = () => {
 };
 
 const styles = StyleSheet.create({
+  searchContainer: {
+    position: 'absolute',
+    zIndex: 1000,
+  },
+  markerContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  markerImageWrapper: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: '#fff',
+    padding: 3,
+    borderWidth: 3,
+    borderColor: colors.primary,
+    overflow: 'hidden',
+    elevation: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 3,
+  },
+  markerImage: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 27,
+  },
+  markerArrow: {
+    width: 0,
+    height: 0,
+    backgroundColor: 'transparent',
+    borderStyle: 'solid',
+    borderLeftWidth: 8,
+    borderRightWidth: 8,
+    borderTopWidth: 12,
+    borderLeftColor: 'transparent',
+    borderRightColor: 'transparent',
+    borderTopColor: colors.primary,
+    marginTop: -1,
+  },
   calloutContainer: {
-    width: 220,
-    padding: 8,
+    width: 240,
+    padding: 10,
     backgroundColor: 'white',
-    borderRadius: 10,
+    borderRadius: 12,
     elevation: 4,
   },
   calloutTitle: {
     fontWeight: 'bold',
     fontSize: 16,
+    marginBottom: 6,
+    color: '#333',
+  },
+  categoryBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F0F4FF',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    alignSelf: 'flex-start',
+    marginBottom: 6,
+    gap: 4,
+  },
+  categoryText: {
+    fontSize: 11,
+    color: colors.primary,
+    fontWeight: '600',
+  },
+  infoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 6,
+    gap: 6,
   },
   calloutText: {
-    marginVertical: 4,
-    fontSize: 14,
+    fontSize: 12,
+    color: '#666',
+    flex: 1,
+  },
+  priceText: {
+    fontSize: 13,
+    color: '#2E7D32',
+    fontWeight: '600',
+  },
+  ratingText: {
+    fontSize: 13,
+    color: '#333',
+    fontWeight: '600',
+    marginLeft: 2,
+  },
+  reviewCount: {
+    fontSize: 11,
+    color: '#999',
+    marginLeft: 4,
+  },
+  statusBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+    alignSelf: 'flex-start',
+    marginBottom: 8,
+  },
+  statusActive: {
+    backgroundColor: '#E8F5E9',
+  },
+  statusPending: {
+    backgroundColor: '#FFF3E0',
+  },
+  statusText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#333',
   },
   calloutImage: {
     width: '100%',
-    height: 100,
+    height: 120,
     borderRadius: 8,
-    marginTop: 5,
+    marginBottom: 8,
   },
   viewMoreButton: {
     marginTop: 8,

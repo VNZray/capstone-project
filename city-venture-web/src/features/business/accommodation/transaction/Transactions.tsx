@@ -12,7 +12,7 @@ import TableContainer from "@mui/material/TableContainer";
 import TablePagination from "@mui/material/TablePagination";
 import TableRow from "@mui/material/TableRow";
 import Paper from "@mui/material/Paper";
-import { Chip, TableHead } from "@mui/material";
+import { TableHead } from "@mui/material";
 import React, { useEffect } from "react";
 import { useBusiness } from "@/src/context/BusinessContext";
 // import type { Booking } from "@/src/types/Booking";
