@@ -35,7 +35,7 @@ import ServiceCategories from "../features/business/shop/store/ServiceCategories
 import Orders from "../features/business/shop/store/Orders";
 import Discount from "../features/business/shop/store/Discount";
 import DiscountForm from "../features/business/shop/store/DiscountForm";
-import Settings from "../features/business/shop/store/Settings";
+import ShopSettings from "../features/business/shop/store/Settings";
 
 import AccommodationDashboard from "../features/business/accommodation/dashboard/Dashboard";
 import ShopDashboard from "../features/business/shop/dashboard/Dashboard";
@@ -43,6 +43,7 @@ import ManageShop from "../features/business/shop/manage-business/ManageBusiness
 import AdminLayout from "../layout/AdminLayout";
 import Room from "../features/admin/services/accommodation/Room";
 import Reviews from "../features/business/accommodation/reviews/Reviews";
+import Settings from "../features/business/settings/Settings";
 
 // Tourism
 import Dashboard from "@/src/features/admin/dashboard/Dashboard";
@@ -53,14 +54,9 @@ import Shop from "@/src/features/admin/services/shop/Shop";
 import Event from "@/src/features/admin/services/event/Event";
 import Spot from "@/src/features/admin/services/tourist-spot/Spot";
 import TouristSpotDetailsScreen from "@/src/features/admin/services/tourist-spot/TouristSpotDetailsScreen";
-import OfferAdmin from "@/src/features/admin/services/shop/Offer";
 import { BusinessProvider } from "../context/BusinessContext";
 import ReportDetailsScreen from "@/src/features/admin/report/ReportDetailsScreen";
-import OneColumnLayout from "../layout/OneColumnLayout";
-import { TestPage } from "../test/Test";
-import TwoColumnLayout from "../layout/TwoColumnLayout";
-import { TestPage3 } from "../test/Test3";
-import { TestPage2 } from "../test/Test2";
+
 
 export default function AppRoutes() {
   const user = "/";
@@ -77,9 +73,6 @@ export default function AppRoutes() {
           </AuthProvider>
         }
       >
-        <Route path="/test/one-column" element={<TestPage />} />
-        <Route path="/test/two-column" element={<TestPage2 />} />
-        <Route path="/test/three-column" element={<TestPage3 />} />
         {/* Auth routes */}
         <Route element={<MainLayout />}>
           <Route index element={<LandingPage />} />
@@ -92,7 +85,7 @@ export default function AppRoutes() {
           path={`${business}/signup`}
           element={<BusinessPortalRegister />}
         />
-        // tourism routes
+        
         <Route path={`${tourism}/login`} element={<AdminLogin />} />
         <Route path={`${tourism}/signup`} element={<AdminRegister />} />
         <Route
@@ -265,15 +258,15 @@ export default function AppRoutes() {
               path={`${business}/store/settings`}
               element={
                 <ProtectedRoute>
-                  <Settings />
+                  <ShopSettings />
                 </ProtectedRoute>
               }
             />
             <Route
-              path={`${business}/profile`}
+              path={`${business}/settings`}
               element={
                 <ProtectedRoute>
-                  <Profile />
+                  <Settings />
                 </ProtectedRoute>
               }
             />
