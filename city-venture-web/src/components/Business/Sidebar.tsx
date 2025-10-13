@@ -7,7 +7,6 @@ import {
   Store,
   Tag,
   Star,
-  User,
   LogOut,
   X,
   LayoutDashboard,
