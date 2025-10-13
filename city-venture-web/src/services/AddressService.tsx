@@ -50,4 +50,11 @@ export const AddressService = {
     const response = await getData("address");
     return response;
   },
+
+  // revised address fetching
+
+  async fetchFullAddress(barangayId: number) {
+    const response = await getDataById("address", barangayId);
+    return response;
+  },
 };

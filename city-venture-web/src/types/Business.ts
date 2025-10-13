@@ -20,7 +20,7 @@ export type Business = {
   status: string;
   business_image?: string | "";
   hasBooking?: boolean;
-  address_id: number;
+  barangay_id: number;
 };
 
 export type BusinessType = {
@@ -53,7 +53,7 @@ export type BusinessDetails = {
   status: string;
   business_image?: string | "";
   hasBooking?: boolean;
-  address_id: number;
+  barangay_id: number;
   province_name?: string | "";
   municipality_name?: string | "";
   barangay_name?: string | "";
@@ -92,3 +92,13 @@ export type ExternalBooking = {
   platform_name?: string;
   booking_url?: string;
 };
+
+export type Registration = {
+  id?: string;
+  status?: string;
+  submitted_at?: string;
+  approved_at?: string;
+  message?: string;
+  business_id?: string;
+  tourism_id?: string;
+}

@@ -72,8 +72,8 @@ export const fetchBusinessCategory = async (
   return res.data;
 };
 
-export const fetchAddress = async (address_id: number): Promise<Address> => {
-  const res = await axios.get<Address>(`${api}/address/${address_id}`);
+export const fetchAddress = async (barangay_id: number): Promise<Address> => {
+  const res = await axios.get<Address>(`${api}/address/${barangay_id}`);
   return res.data;
 };
 
@@ -87,7 +87,7 @@ export const fetchBusinessData = async (
   const business_category = await fetchBusinessCategory(
     business.business_category_id
   );
-  const address = await fetchAddress(business.address_id);
+  const address = await fetchAddress(business.barangay_id);
 
   const businessDetails: BusinessDetails = {
     id: business.id,
@@ -108,7 +108,7 @@ export const fetchBusinessData = async (
     status: business.status,
     business_image: business.business_image ?? '',
     hasBooking: business.hasBooking ?? false,
-    address_id: business.address_id,
+    barangay_id: business.barangay_id,
     province_name: address.province_name ?? '',
     municipality_name: address.municipality_name ?? '',
     barangay_name: address.barangay_name ?? '',

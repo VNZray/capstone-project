@@ -43,6 +43,10 @@ export default function MainHeader({ onMenuClick }: MainHeaderProps) {
     navigate("/business");
   };
 
+  const navigateToNotification = () => {
+    navigate("/business/notification");
+  };
+
   return (
     <AppBar
       position="sticky"
@@ -54,7 +58,11 @@ export default function MainHeader({ onMenuClick }: MainHeaderProps) {
         <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
           {/* Mobile menu button */}
           <Box sx={{ display: { xs: "block", md: "none" } }}>
-            <IconButton onClick={onMenuClick} color="inherit" aria-label="Open menu">
+            <IconButton
+              onClick={onMenuClick}
+              color="inherit"
+              aria-label="Open menu"
+            >
               <Menu size={22} />
             </IconButton>
           </Box>
@@ -66,14 +74,14 @@ export default function MainHeader({ onMenuClick }: MainHeaderProps) {
           >
             <ArrowLeft size={22} />
           </IconButton>
-          <Text variant="header-title">{title}</Text>
+          {/* <Text variant="header-title">{title}</Text> */}
         </Box>
 
         {/* Right - Actions */}
         <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
           {/* Notification */}
           <IconButton
-            onClick={() => console.log("Notification pressed")}
+            onClick={navigateToNotification}
             color="inherit"
           >
             <Bell size={22} />

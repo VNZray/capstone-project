@@ -1,10 +1,9 @@
 // app/(tabs)/_layout.js
 import { Tabs, router, usePathname } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import React, { useMemo } from 'react';
 import { Platform, View } from 'react-native';
 
 import { HapticTab } from '@/components/haptic-tab';
-import Loading from '@/components/Loading';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import TabBarBackground from '@/components/ui/TabBarBackground';
 import { Colors } from '@/constants/color';
@@ -12,7 +11,6 @@ import { AccommodationProvider } from '@/context/AccommodationContext';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 export default function TabLayout() {
   const colorScheme = useColorScheme();
-  const [isLoading, setIsLoading] = useState(true);
   const pathname = usePathname();
 
   // Determine if current route is within the booking flow; hide tabs if so
@@ -21,20 +19,7 @@ export default function TabLayout() {
     [pathname]
   );
 
-  useEffect(() => {
-    // Simulate an asynchronous loading process
-    setTimeout(() => {
-      setIsLoading(false);
-    }, 2000); // Adjust the time as needed
-  }, []);
-
-  if (isLoading) {
-    return (
-      <View style={{ flex: 1 }}>
-        <Loading />
-      </View>
-    );
-  }
+  // Remove artificial loading delay for faster tab responses
 
   return (
     <AccommodationProvider>
@@ -64,19 +49,13 @@ export default function TabLayout() {
           name="(home)"
           options={{
             title: 'Home',
-            headerTitle: 'Naga Venture',
+            headerTitle: 'City Venture',
             headerShown: false,
             animation: 'shift',
             headerTitleAlign: 'left',
             tabBarIcon: ({ color }) => (
               <IconSymbol size={32} name="house.fill" color={color} />
             ),
-          }}
-          listeners={{
-            tabPress: (e) => {
-              e.preventDefault();
-              router.navigate('/(tabs)/(home)');
-            },
           }}
         />
 

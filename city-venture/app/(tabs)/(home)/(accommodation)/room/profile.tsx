@@ -27,6 +27,7 @@ import debugLogger from '@/utils/debugLogger';
 import Details from './details';
 import Photos from './photos';
 import Ratings from './ratings';
+import placeholder from '@/assets/images/room-placeholder.png';
 
 const { width, height } = Dimensions.get('window');
 
@@ -147,11 +148,11 @@ const AccommodationProfile = () => {
         ListHeaderComponent={
           <>
             <Image
-              source={{
-                uri:
-                  roomDetails?.room_image ||
-                  'https://via.placeholder.com/400x300',
-              }}
+              source={
+                roomDetails?.room_image
+                  ? { uri: roomDetails.room_image }
+                  : placeholder
+              }
               style={styles.image}
               resizeMode="cover"
             />

@@ -10,5 +10,5 @@ export type Tourist = {
     category?: string | "";
     birthdate?: string | "";
     user_id?: string | "";
-    address_id: number | null;
+    barangay_id: number | null;
 };

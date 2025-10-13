@@ -30,9 +30,8 @@ type Props = {
 const Step7: React.FC<Props> = ({
   data,
   permitData,
-  addressData,
 }) => {
-  const { address } = useAddress(addressData?.barangay_id, addressData?.municipality_id, addressData?.province_id);
+  const { address } = useAddress(data?.barangay_id);
   const { category, type } = useCategoryAndType(data?.business_type_id, data?.business_category_id);
 
   const InfoRow = ({

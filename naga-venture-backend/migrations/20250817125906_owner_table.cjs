@@ -13,12 +13,16 @@ exports.up = async function (knex) {
     table.date("birthdate");
     table.enu("gender", ["Male", "Female"]);
     table.enu("business_type", ["Shop", "Accommodation", "Both"]).notNullable();
+    // Foreign keys
     table
-      .integer("address_id")
+      .integer("barangay_id")
       .unsigned()
+      .nullable()
       .references("id")
-      .inTable("address")
-      .nullable();
+      .inTable("barangay")
+      .onDelete("CASCADE")
+      .onUpdate("CASCADE");
+
 
     table
       .uuid("user_id")

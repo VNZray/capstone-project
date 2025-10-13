@@ -7,6 +7,6 @@ export type Owner = {
   age: string | "";
   gender: string | "";
   birthdate: string | "";
-  address_id: number | null;
+  barangay_id: number | null;
   user_id?: string | "";
 };
