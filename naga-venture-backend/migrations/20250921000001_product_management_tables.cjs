@@ -1,4 +1,5 @@
 const { v4: uuidv4 } = require('uuid');
+const { createProductProcedures, dropProductProcedures } = require("../procedures/productProcedures.js");
 
 exports.up = async function (knex) {
   // Create product_category table (renamed to avoid conflict with existing 'category' table)
@@ -81,9 +82,30 @@ exports.up = async function (knex) {
     table.index("product_id", "idx_stock_history_product");
     table.index("created_at", "idx_stock_history_date");
   });
+
+  // Create stored procedures
+  console.log("Creating product stored procedures...");
+  try {
+    await createProductProcedures(knex);
+    console.log("✅ Product stored procedures created successfully");
+  } catch (error) {
+    console.error("❌ Error creating product stored procedures:", error);
+    throw error;
+  }
 };
 
 exports.down = async function (knex) {
+  // Drop stored procedures first
+  console.log("Dropping product stored procedures...");
+  try {
+    await dropProductProcedures(knex);
+    console.log("✅ Product stored procedures dropped successfully");
+  } catch (error) {
+    console.error("❌ Error dropping product stored procedures:", error);
+    throw error;
+  }
+
+  // Drop tables
   await knex.schema.dropTableIfExists("stock_history");
   await knex.schema.dropTableIfExists("product_stock");
   await knex.schema.dropTableIfExists("product");
