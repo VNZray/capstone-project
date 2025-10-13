@@ -27,9 +27,6 @@ import BusinessProfile from "../features/business/accommodation/business-profile
 import ManagePromotion from "../features/business/accommodation/promotion/ManagePromotion";
 import RoomPage from "../features/business/accommodation/room/Room";
 import RoomProfile from "../features/business/accommodation/room/RoomProfile";
-import Profile from "../features/business/profile/Profile";
-import Settings from "../features/business/settings/Settings";
-import Offer from "../features/business/shop/offers/Offer";
 import Products from "../features/business/shop/store/Products";
 import Categories from "../features/business/shop/store/Categories";
 import Services from "../features/business/shop/store/Services";
@@ -59,11 +56,6 @@ import TouristSpotDetailsScreen from "@/src/features/admin/services/tourist-spot
 import { BusinessProvider } from "../context/BusinessContext";
 import ReportDetailsScreen from "@/src/features/admin/report/ReportDetailsScreen";
 
-import OneColumnLayout from "../layout/OneColumnLayout";
-import { TestPage } from "../test/Test";
-import TwoColumnLayout from "../layout/TwoColumnLayout";
-import { TestPage3 } from "../test/Test3";
-import { TestPage2 } from "../test/Test2";
 import Notification from "../features/business/accommodation/notfication/Notification";
 
 export default function AppRoutes() {
