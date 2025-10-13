@@ -15,10 +15,10 @@ import Paper from "@mui/material/Paper";
 import { Chip, TableHead } from "@mui/material";
 import React, { useEffect } from "react";
 import { useBusiness } from "@/src/context/BusinessContext";
-import type { Booking } from "@/src/types/Booking";
-import { fetchBookingsByBusinessId } from "@/src/services/BookingService";
-import { fetchPaymentsByBookingId } from "@/src/services/PaymentService";
-import type { Payment } from "@/src/types/Payment";
+// import type { Booking } from "@/src/types/Booking";
+// import { fetchBookingsByBusinessId } from "@/src/services/BookingService";
+import { fetchPaymentsByBusinessId } from "@/src/services/PaymentService";
+// import type { Payment } from "@/src/types/Payment";
 
 // Transaction columns
 interface Column {
@@ -52,7 +52,6 @@ const getStatusColor = (status: string) => {
 };
 
 const columns: readonly Column[] = [
-  { id: "id", label: "Payment ID", minWidth: 120 },
   { id: "booking_id", label: "Booking ID", minWidth: 120 },
   { id: "name", label: "Guest Name", minWidth: 150 },
   { id: "payment_type", label: "Payment Type", minWidth: 120 },
@@ -66,17 +65,19 @@ const columns: readonly Column[] = [
     align: "right",
     format: (value: number) => `₱${value.toLocaleString()}`,
   },
-  { id: "status", label: "Status", minWidth: 120 },
 ];
 
-// format date
+// format date with time
 const formatDate = (dateString: string) => {
-  const options: Intl.DateTimeFormatOptions = {
+  const d = new Date(dateString);
+  return d.toLocaleString("en-US", {
     year: "numeric",
     month: "long",
     day: "numeric",
-  };
-  return new Date(dateString).toLocaleDateString("en-US", options);
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: true,
+  });
 };
 
 // Row shape for the table derived from Payment + Booking join
@@ -110,64 +111,35 @@ const Transactions = () => {
   const [searchTerm, setSearchTerm] = React.useState("");
 
   // Local helper to normalize status casing differences from backend
-  const normalizeStatus = (status?: string) => {
-    if (!status) return "Pending";
-    const lower = status.toLowerCase();
-    if (lower === "checked-in" || lower === "checked_in") return "Checked-in";
-    if (lower === "checked-out" || lower === "checked_out")
-      return "Checked-out";
-    return status.charAt(0).toUpperCase() + status.slice(1);
-  };
+  // const normalizeStatus = (status?: string) => {
+  //   if (!status) return "Pending";
+  //   const lower = status.toLowerCase();
+  //   if (lower === "checked-in" || lower === "checked_in") return "Checked-in";
+  //   if (lower === "checked-out" || lower === "checked_out")
+  //     return "Checked-out";
+  //   return status.charAt(0).toUpperCase() + status.slice(1);
+  // };
 
-  // Fetch bookings for selected business
+  // Fetch payments for selected business (joined with booking + tourist)
   useEffect(() => {
     const load = async () => {
       if (!businessDetails?.id) return;
       setLoading(true);
       setError(null);
       try {
-        const data = await fetchBookingsByBusinessId(businessDetails.id);
-        const normalized = data.map((b) => ({
-          ...b,
-          pax: b.pax ?? 0,
-          id: b.id,
-            total_price: b.total_price ?? 0,
-            balance: b.balance ?? 0,
-            booking_status: normalizeStatus(
-              b.booking_status
-            ) as Booking["booking_status"],
-            trip_purpose: b.trip_purpose || "—",
+        const payments = await fetchPaymentsByBusinessId(String(businessDetails.id));
+        const mapped: TransactionRow[] = payments.map((p: any) => ({
+          id: String(p.payment_id ?? p.id ?? ''),
+          booking_id: String(p.booking_id ?? ''),
+          name: [p.first_name, p.last_name].filter(Boolean).join(' ') || '—',
+          payment_type: p.payment_type || '—',
+          payment_method: p.payment_method || '—',
+          payment_for: p.payment_for || '—',
+          transaction_date: p.created_at ? new Date(p.created_at).toISOString() : new Date().toISOString(),
+          amount: Number(p.amount ?? 0),
+          status: p.status || 'Pending',
         }));
-        // Fetch payments for each booking in parallel
-        const paymentEntries = await Promise.all(normalized.map(async (booking) => {
-          if (!booking.id) return [undefined, []] as const;
-          try {
-            const pay = await fetchPaymentsByBookingId(booking.id);
-            return [booking.id, pay] as const;
-          } catch (err) {
-            console.warn("Failed to fetch payments for booking", booking.id, err);
-            return [booking.id, []] as const;
-          }
-        }));
-        const paymentMap: Record<string, Payment[]> = Object.fromEntries(paymentEntries.filter(e => e[0]) as [string, Payment[]][]);
-
-        const allRows: TransactionRow[] = normalized.flatMap((b) => {
-          if (!b.id) return [];
-          const bookingPayments = paymentMap[b.id] || [];
-          if (!bookingPayments.length) return [];
-          return bookingPayments.map((p: Payment) => ({
-            id: String(p.id),
-            booking_id: b.id!,
-            name: b.id || '—',
-            payment_type: p.payment_type || '—',
-            payment_method: p.payment_method || '—',
-            payment_for: p.payment_for || '—',
-            transaction_date: p.created_at ? new Date(p.created_at).toISOString() : new Date().toISOString(),
-            amount: p.amount ?? 0,
-            status: p.status || 'Pending',
-          }));
-        });
-        setRows(allRows);
+        setRows(mapped);
       } catch (e: any) {
         console.error("Failed to load bookings/payments", e);
         setError(e?.message || "Failed to load data");
@@ -203,7 +175,6 @@ const Transactions = () => {
       const date = new Date(row.transaction_date);
 
       const matchesSearch =
-        row.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
         row.booking_id.toLowerCase().includes(searchTerm.toLowerCase()) ||
         row.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         row.payment_method.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -377,7 +348,6 @@ const Transactions = () => {
                           backgroundColor: index % 2 === 0 ? "#fff" : "#f7f7f7",
                         }}
                       >
-                        <TableCell>{row.id}</TableCell>
                         <TableCell>{row.booking_id}</TableCell>
                         <TableCell>{row.name}</TableCell>
                         <TableCell>{row.payment_type}</TableCell>
@@ -388,12 +358,6 @@ const Transactions = () => {
                         </TableCell>
                         <TableCell align="right">
                           ₱{row.amount.toLocaleString()}
-                        </TableCell>
-                        <TableCell>
-                          <Chip
-                            color={getStatusColor(row.status)}
-                            label={row.status}
-                          />
                         </TableCell>
                       </TableRow>
                     ))}

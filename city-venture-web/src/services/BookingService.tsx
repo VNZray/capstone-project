@@ -55,3 +55,8 @@ export const fetchBookingById = async (
   const { data } = await axios.get<Bookings[number]>(`${api}/booking/${id}`);
   return data;
 };
+
+export const fetchTourist = async (tourist_id: string) => {
+  const { data } = await axios.get(`${api}/tourist/${tourist_id}`);
+  return data;
+};

@@ -77,11 +77,17 @@ export const loginUser = async (
         data: err?.response?.data,
       });
       // Fallback: if the endpoint fails, try to determine role from user_role_id
-      console.warn("[AuthService] Using fallback role mapping based on user_role_id");
-      const fallbackRole = userData.user_role_id === 1 ? "Admin" 
-                          : userData.user_role_id === 2 ? "Tourist"
-                          : userData.user_role_id === 3 ? "Owner"
-                          : "Tourist";
+      console.warn(
+        "[AuthService] Using fallback role mapping based on user_role_id"
+      );
+      const fallbackRole =
+        userData.user_role_id === 1
+          ? "Admin"
+          : userData.user_role_id === 2
+          ? "Tourist"
+          : userData.user_role_id === 3
+          ? "Owner"
+          : "Tourist";
       return { data: { role_name: fallbackRole, description: "" } };
     });
   console.debug("[AuthService] userRole", userRole);
@@ -97,12 +103,12 @@ export const loginUser = async (
   if (userData.user_profile) {
     try {
       const parsed = JSON.parse(userData.user_profile as unknown as string);
-      if (parsed && typeof parsed === 'object') profileInfo = parsed as ProfileInfo;
+      if (parsed && typeof parsed === "object")
+        profileInfo = parsed as ProfileInfo;
     } catch {
       // ignore non-JSON profiles
     }
   }
-
 
   // Step 4: Fetch user details
   console.debug("[AuthService] GET /owner/user/:user_id", user_id);
@@ -121,14 +127,14 @@ export const loginUser = async (
   console.debug("[AuthService] ownerData", ownerData);
 
   let ownerAddressData: Address | null = null;
-  if (ownerData?.address_id != null) {
-    console.debug("[AuthService] GET /address/:id", ownerData.address_id);
+  if (ownerData?.barangay_id != null) {
+    console.debug("[AuthService] GET /address/:id", ownerData.barangay_id);
     ownerAddressData = await axios
-      .get<Address>(`${api}/address/${ownerData.address_id}`)
+      .get<Address>(`${api}/address/${ownerData.barangay_id}`)
       .then((r) => r.data)
       .catch((err) => {
         console.warn("[AuthService] Owner address fetch failed", {
-          address_id: ownerData.address_id,
+          barangay_id: ownerData.barangay_id,
           message: err?.message,
           status: err?.response?.status,
           data: err?.response?.data,
@@ -139,7 +145,9 @@ export const loginUser = async (
 
   const ownerBarangay: Partial<Barangay> = ownerAddressData
     ? await axios
-        .get<Barangay>(`${api}/address/barangay/${ownerAddressData.barangay_id}`)
+        .get<Barangay>(
+          `${api}/address/barangay/${ownerAddressData.barangay_id}`
+        )
         .then((r) => r.data)
         .catch((err) => {
           console.warn(
@@ -167,7 +175,9 @@ export const loginUser = async (
 
   const ownerProvince: Partial<Province> = ownerAddressData
     ? await axios
-        .get<Province>(`${api}/address/province/${ownerAddressData.province_id}`)
+        .get<Province>(
+          `${api}/address/province/${ownerAddressData.province_id}`
+        )
         .then((r) => r.data)
         .catch((err) => {
           console.warn(
@@ -194,9 +204,9 @@ export const loginUser = async (
   console.debug("[AuthService] touristData", touristData);
 
   const touristAddressData: Address | null =
-    touristData?.address_id != null
+    touristData?.barangay_id != null
       ? await axios
-          .get<Address>(`${api}/address/${touristData.address_id}`)
+          .get<Address>(`${api}/address/${touristData.barangay_id}`)
           .then((r) => r.data)
           .catch((err) => {
             console.warn(
@@ -209,7 +219,9 @@ export const loginUser = async (
 
   const touristBarangay: Partial<Barangay> = touristAddressData
     ? await axios
-        .get<Barangay>(`${api}/address/barangay/${touristAddressData.barangay_id}`)
+        .get<Barangay>(
+          `${api}/address/barangay/${touristAddressData.barangay_id}`
+        )
         .then((r) => r.data)
         .catch(() => ({ barangay: "" } as Partial<Barangay>))
     : {};
@@ -223,7 +235,9 @@ export const loginUser = async (
     : {};
   const touristProvince: Partial<Province> = touristAddressData
     ? await axios
-        .get<Province>(`${api}/address/province/${touristAddressData.province_id}`)
+        .get<Province>(
+          `${api}/address/province/${touristAddressData.province_id}`
+        )
         .then((r) => r.data)
         .catch(() => ({ province: "" } as Partial<Province>))
     : {};
@@ -243,15 +257,17 @@ export const loginUser = async (
     });
 
   const tourismAddressData: Address | null =
-    tourismData?.address_id != null
+    tourismData?.barangay_id != null
       ? await axios
-          .get<Address>(`${api}/address/${tourismData.address_id}`)
+          .get<Address>(`${api}/address/${tourismData.barangay_id}`)
           .then((r) => r.data)
           .catch(() => null)
       : null;
   const tourismBarangay: Partial<Barangay> = tourismAddressData
     ? await axios
-        .get<Barangay>(`${api}/address/barangay/${tourismAddressData.barangay_id}`)
+        .get<Barangay>(
+          `${api}/address/barangay/${tourismAddressData.barangay_id}`
+        )
         .then((r) => r.data)
         .catch(() => ({ barangay: "" } as Partial<Barangay>))
     : {};
@@ -265,7 +281,9 @@ export const loginUser = async (
     : {};
   const tourismProvince: Partial<Province> = tourismAddressData
     ? await axios
-        .get<Province>(`${api}/address/province/${tourismAddressData.province_id}`)
+        .get<Province>(
+          `${api}/address/province/${tourismAddressData.province_id}`
+        )
         .then((r) => r.data)
         .catch(() => ({ province: "" } as Partial<Province>))
     : {};
@@ -285,8 +303,8 @@ export const loginUser = async (
     email,
     password,
     phone_number: userData.phone_number,
-  // Store normalized role aligned with new design
-  role_name: normalizedRoleName,
+    // Store normalized role aligned with new design
+    role_name: normalizedRoleName,
     first_name:
       ownerData?.first_name ||
       touristData?.first_name ||
@@ -306,10 +324,7 @@ export const loginUser = async (
       profileInfo.last_name ||
       "",
     gender:
-      ownerData?.gender ||
-      touristData?.gender ||
-      tourismData?.gender ||
-      "",
+      ownerData?.gender || touristData?.gender || tourismData?.gender || "",
     birthdate:
       ownerData?.birthdate ||
       touristData?.birthdate ||
@@ -326,7 +341,11 @@ export const loginUser = async (
     last_login: userData.last_login,
     user_role_id: userData.user_role_id,
     description: userRole?.description || "",
-    address_id: ownerData?.address_id ?? tourismData?.address_id ?? touristData?.address_id ?? "",
+    barangay_id:
+      ownerData?.barangay_id ??
+      tourismData?.barangay_id ??
+      touristData?.barangay_id ??
+      "",
     municipality_name:
       ownerMunicipality?.municipality ||
       touristMunicipality?.municipality ||
@@ -367,4 +386,9 @@ export const getStoredUser = (): UserDetails | null => {
 /** Get Stored Token */
 export const getToken = (): string | null => {
   return localStorage.getItem("token");
+};
+
+export const fetchUserData = async (user_id: string): Promise<User> => {
+  const { data } = await axios.get<User>(`${api}/users/${user_id}`);
+  return data;
 };
