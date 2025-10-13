@@ -17,6 +17,7 @@ import {
   Settings as SettingsIcon,
   ChevronDown,
   ShoppingBag,
+  Settings,
 } from "lucide-react";
 
 // Compact icon size
@@ -177,7 +178,7 @@ export default function Sidebar({ isOpen = false, onClose }: SidebarProps): Reac
             icon={<Star size={ICON_SIZE} />}
             onClick={onClose}
           />
-          <NavItem to={`${route}/profile`} label="Profile" icon={<User size={ICON_SIZE} />} onClick={onClose} />
+          <NavItem to={`${route}/settings`} label="Settings" icon={<Settings size={18} />} onClick={onClose} />
         </div>
 
         <div className="sidebar-logout" style={{ marginTop: "auto", paddingTop: "8px" }}>
