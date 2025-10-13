@@ -27,12 +27,14 @@ import BusinessProfile from "../features/business/accommodation/business-profile
 import ManagePromotion from "../features/business/accommodation/promotion/ManagePromotion";
 import RoomPage from "../features/business/accommodation/room/Room";
 import RoomProfile from "../features/business/accommodation/room/RoomProfile";
-import Settings from "../features/business/settings/Settings";
-import Offer from "../features/business/shop/offers/Offer";
 import Products from "../features/business/shop/store/Products";
+import Categories from "../features/business/shop/store/Categories";
+import Services from "../features/business/shop/store/Services";
+import ServiceCategories from "../features/business/shop/store/ServiceCategories";
 import Orders from "../features/business/shop/store/Orders";
 import Discount from "../features/business/shop/store/Discount";
-import ShopSettings from "../features/business/shop/store/Settings";
+import DiscountForm from "../features/business/shop/store/DiscountForm";
+import Settings from "../features/business/shop/store/Settings";
 
 import AccommodationDashboard from "../features/business/accommodation/dashboard/Dashboard";
 import ShopDashboard from "../features/business/shop/dashboard/Dashboard";
@@ -58,7 +60,6 @@ import { TestPage } from "../test/Test";
 import TwoColumnLayout from "../layout/TwoColumnLayout";
 import { TestPage3 } from "../test/Test3";
 import { TestPage2 } from "../test/Test2";
-import Notification from "../features/business/accommodation/notfication/Notification";
 
 export default function AppRoutes() {
   const user = "/";
@@ -177,14 +178,7 @@ export default function AppRoutes() {
               </>
             )}
 
-            <Route
-              path={`${business}/offers`}
-              element={
-                <ProtectedRoute>
-                  <Offer />
-                </ProtectedRoute>
-              }
-            />
+            {/* Offers removed from business portal */}
             <Route
               path={`${business}/manage-promotion`}
               element={
@@ -211,6 +205,30 @@ export default function AppRoutes() {
               }
             />
             <Route
+              path={`${business}/store/categories`}
+              element={
+                <ProtectedRoute>
+                  <Categories />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path={`${business}/store/services`}
+              element={
+                <ProtectedRoute>
+                  <Services />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path={`${business}/store/service-categories`}
+              element={
+                <ProtectedRoute>
+                  <ServiceCategories />
+                </ProtectedRoute>
+              }
+            />
+            <Route
               path={`${business}/store/orders`}
               element={
                 <ProtectedRoute>
@@ -227,10 +245,26 @@ export default function AppRoutes() {
               }
             />
             <Route
+              path={`${business}/store/discount/create`}
+              element={
+                <ProtectedRoute>
+                  <DiscountForm />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path={`${business}/store/discount/:id/edit`}
+              element={
+                <ProtectedRoute>
+                  <DiscountForm />
+                </ProtectedRoute>
+              }
+            />
+            <Route
               path={`${business}/store/settings`}
               element={
                 <ProtectedRoute>
-                  <ShopSettings />
+                  <Settings />
                 </ProtectedRoute>
               }
             />
@@ -239,6 +273,15 @@ export default function AppRoutes() {
               element={
                 <ProtectedRoute>
                   <Settings />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path={`${business}/notification`}
+              element={
+                <ProtectedRoute>
+                  <Notification />
                 </ProtectedRoute>
               }
             />
@@ -264,23 +307,6 @@ export default function AppRoutes() {
                 element={
                   <ProtectedRoute>
                     <RoomProfile />
-                  </ProtectedRoute>
-                }
-              />
-            </Route>
-
-            <Route
-              element={
-                <RoomProvider>
-                  <Outlet />
-                </RoomProvider>
-              }
-            >
-              <Route
-                path={`${business}/notification`}
-                element={
-                  <ProtectedRoute>
-                    <Notification />
                   </ProtectedRoute>
                 }
               />
@@ -368,14 +394,7 @@ export default function AppRoutes() {
               </ProtectedRoute>
             }
           />
-          <Route
-            path={`${tourism}/offer/:id`}
-            element={
-              <ProtectedRoute>
-                <Offer />
-              </ProtectedRoute>
-            }
-          />
+          {/* Public offer pages removed */}
           <Route
             path={`${tourism}/settings`}
             element={
@@ -384,14 +403,7 @@ export default function AppRoutes() {
               </ProtectedRoute>
             }
           />
-          <Route
-            path={`${tourism}/offer`}
-            element={
-              <ProtectedRoute>
-                <OfferAdmin />
-              </ProtectedRoute>
-            }
-          />
+          {/* Admin offer pages removed */}
         </Route>
       </Route>
 
