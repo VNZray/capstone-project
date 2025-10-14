@@ -37,9 +37,6 @@ const LocationInfoSection: React.FC<LocationInfoSectionProps> = ({ spot, onEdit 
       <Stack spacing={2}>
         {/* Map */}
         <Stack spacing={1}>
-          <Typography level="title-sm" sx={{ color: "text.tertiary" }}>
-            Location on Map
-          </Typography>
           <Sheet
             variant="outlined"
             sx={{

@@ -61,8 +61,6 @@ export const createTouristSpot = async (request, response) => {
     const {
       name,
       description,
-      province_id,
-      municipality_id,
       barangay_id,
       latitude,
       longitude,
@@ -78,8 +76,6 @@ export const createTouristSpot = async (request, response) => {
     if (
       !name ||
       !description ||
-      !province_id ||
-      !municipality_id ||
       !barangay_id ||
       !type_id ||
       !Array.isArray(category_ids) ||
@@ -88,16 +84,9 @@ export const createTouristSpot = async (request, response) => {
       return response.status(400).json({
         success: false,
         message:
-          "Name, description, province_id, municipality_id, barangay_id, type_id, and category_ids are required",
+          "Name, description, barangay_id, type_id, and category_ids are required",
       });
     }
-
-    // Use InsertAddress procedure
-    const [addressResult] = await db.query(
-      "CALL InsertAddress(?, ?, ?)",
-      [province_id, municipality_id, barangay_id]
-    );
-    const address_id = addressResult[0] && addressResult[0][0] ? addressResult[0][0].id : null;
 
     conn = await db.getConnection();
     await conn.beginTransaction();
@@ -108,7 +97,7 @@ export const createTouristSpot = async (request, response) => {
       [
         name,
         description,
-        address_id,
+        barangay_id,
         latitude ?? null,
         longitude ?? null,
         contact_phone ?? null,

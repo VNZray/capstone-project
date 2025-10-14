@@ -141,7 +141,6 @@ const Spot = () => {
       };
       openEdit();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.state]);
 
   return (
