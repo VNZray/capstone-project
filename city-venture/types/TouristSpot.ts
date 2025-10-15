@@ -2,10 +2,13 @@ export type TouristSpot = {
 	id: string;
 	name: string;
 	description: string;
-	address_id: number;
-	barangay_name?: string | null;
-	municipality_name?: string | null;
-	province_name?: string | null;
+	// Address computed directly from barangay joins
+	barangay_id?: number | null;
+	municipality_id?: number | null;
+	province_id?: number | null;
+	barangay?: string | null;
+	municipality?: string | null;
+	province?: string | null;
 	address_details?: TouristSpotAddressDetails | null;
 	latitude?: string | null;
 	longitude?: string | null;
@@ -23,16 +26,12 @@ export type TouristSpot = {
 };
 
 export type TouristSpotAddressDetails = {
-	id: number;
 	province_id?: number | null;
 	municipality_id?: number | null;
 	barangay_id?: number | null;
 	province?: string | null;
 	municipality?: string | null;
 	barangay?: string | null;
-	province_name?: string | null;
-	municipality_name?: string | null;
-	barangay_name?: string | null;
 };
 
 export type TouristSpotCategory = {
@@ -73,8 +72,6 @@ export type TouristSpotType = {
 export type TouristSpotCoreCreate = {
 	name: string;
 	description: string;
-	province_id: number;
-	municipality_id: number;
 	barangay_id: number;
 	latitude?: string | null;
 	longitude?: string | null;
@@ -100,9 +97,9 @@ export type TouristSpotCategoriesAndTypes = {
 };
 
 export type TouristSpotLocationData = {
-	provinces: { id: number; province_name: string }[];
-	municipalities: { id: number; municipality_name: string; province_id: number }[];
-	barangays: { id: number; barangay_name: string; municipality_id: number }[];
+	provinces: { id: number; province: string }[];
+	municipalities: { id: number; municipality: string; province_id: number }[];
+	barangays: { id: number; barangay: string; municipality_id: number }[];
 };
 
 export type TouristSpotsResponse = TouristSpot[];

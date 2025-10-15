@@ -61,6 +61,16 @@ const ProfileLayout = () => {
           headerBackTitle: 'Back',
         }}
       />
+      <Stack.Screen
+        name="(reports)"
+        options={{
+          headerShown: false,
+          animation: 'slide_from_right',
+          headerTitleAlign: 'center',
+          headerTitle: 'Reports',
+          headerBackTitle: 'Back',
+        }}
+      />
     </Stack>
   );
 };
