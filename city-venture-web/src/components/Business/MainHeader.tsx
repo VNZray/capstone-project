@@ -1,4 +1,4 @@
-import { useLocation, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import {
   Box,
   AppBar,
@@ -9,24 +9,23 @@ import {
 } from "@mui/material";
 import { Bell, Repeat, ArrowLeft, Menu } from "lucide-react";
 import { useAuth } from "@/src/context/AuthContext"; // adjust path if needed
-import Text from "../Text";
 
 import { Button } from "@mui/joy";
-const pageTitles: Record<string, string> = {
-  "/business/dashboard": "Dashboard",
-  "/business/transactions": "Transactions",
-  "/business/business-profile": "Business Profile",
-  "/business/manage-promotion": "Manage Promotion",
-  "/business/reports": "Reports",
-  "/business/profile": "Profile",
-  "/business": "Business Profile",
-  "/business/reviews": "Reviews & Ratings",
-  "/business/bookings": "Bookings",
-  "/business/rooms": "Manage Rooms",
-  "/business/offers": "Manage Offers",
-  "/business/room-profile": "Manage Room",
-  "/business/owner-profile": "Owner Profile",
-};
+// const pageTitles: Record<string, string> = {
+//   "/business/dashboard": "Dashboard",
+//   "/business/transactions": "Transactions",
+//   "/business/business-profile": "Business Profile",
+//   "/business/manage-promotion": "Manage Promotion",
+//   "/business/reports": "Reports",
+//   "/business/profile": "Profile",
+//   "/business": "Business Profile",
+//   "/business/reviews": "Reviews & Ratings",
+//   "/business/bookings": "Bookings",
+//   "/business/rooms": "Manage Rooms",
+//   "/business/offers": "Manage Offers",
+//   "/business/room-profile": "Manage Room",
+//   "/business/owner-profile": "Owner Profile",
+// };
 
 interface MainHeaderProps {
   onMenuClick?: () => void;
@@ -35,9 +34,9 @@ interface MainHeaderProps {
 export default function MainHeader({ onMenuClick }: MainHeaderProps) {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const location = useLocation();
+  // const location = useLocation();
 
-  const title = pageTitles[location.pathname] || "Business Dashboard";
+  // const title = pageTitles[location.pathname] || "Business Dashboard";
 
   const navigateToBusiness = () => {
     navigate("/business");
@@ -80,10 +79,7 @@ export default function MainHeader({ onMenuClick }: MainHeaderProps) {
         {/* Right - Actions */}
         <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
           {/* Notification */}
-          <IconButton
-            onClick={navigateToNotification}
-            color="inherit"
-          >
+          <IconButton onClick={navigateToNotification} color="inherit">
             <Bell size={22} />
           </IconButton>
 
@@ -104,12 +100,7 @@ export default function MainHeader({ onMenuClick }: MainHeaderProps) {
           </Box>
 
           {/* Avatar */}
-          <Avatar
-            src={user?.user_profile || undefined}
-            sx={{ width: 40, height: 40 }}
-          >
-            {!user?.user_profile && user?.first_name?.[0]}
-          </Avatar>
+          <Avatar src={user?.user_profile} sx={{ width: 40, height: 40 }} />
 
           {/* Switch Profile */}
           <Button

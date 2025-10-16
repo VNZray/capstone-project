@@ -36,6 +36,7 @@ const booking = () => {
     domestic_counts: 0,
     overseas_counts: 0,
     local_counts: 1,
+    business_id: roomDetails?.business_id,
   });
 
   // Removed guestList state
@@ -81,7 +82,6 @@ const booking = () => {
         ...paymentData,
         payer_type: 'Tourist',
         payer_id: user?.id,
-        payment_for_id: bookingPayload.id,
         payment_for: 'Reservation',
         status:
           paymentData.payment_type === 'Full Payment'
@@ -112,7 +112,6 @@ const booking = () => {
         setBookingData((prev) => ({ ...prev, id: created.id, booking_status: created.booking_status || prev.booking_status } as Booking));
       }
       if (paymentData.payment_method === 'Cash') {
-        // For cash, show the in-flow Summary step with Pending status
         setStep('summary');
       } else {
         Alert.alert('Success', 'Booking successfully created.', created);

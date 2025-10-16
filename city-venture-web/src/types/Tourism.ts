@@ -8,4 +8,5 @@ export type Tourism = {
   gender?: string | "";
   birthdate?: string | "";
   user_id?: string | "";
+  barangay_id?: number | null;
 };
