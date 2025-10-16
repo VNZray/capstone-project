@@ -6,6 +6,7 @@ import {
   Sheet,
 } from "@mui/joy";
 import { Edit } from "lucide-react";
+import { Place } from "@mui/icons-material";
 import MapInput from "../MapInput";
 import type { TouristSpot } from "@/src/types/TouristSpot";
 
@@ -23,11 +24,19 @@ const LocationInfoSection: React.FC<LocationInfoSectionProps> = ({ spot, onEdit 
         alignItems="center"
         sx={{ mb: 2 }}
       >
-        <Typography level="h4">Location</Typography>
+        <Typography
+          fontFamily={"poppins"}
+          level="title-lg"
+          fontWeight={700}
+          sx={{ color: "#1e293b" }}
+        >
+          Location
+        </Typography>
         <Button
           variant="outlined"
           size="sm"
           startDecorator={<Edit size={16} />}
+          className="tsd-edit-btn"
           onClick={onEdit}
         >
           Edit
@@ -60,10 +69,14 @@ const LocationInfoSection: React.FC<LocationInfoSectionProps> = ({ spot, onEdit 
 
         {/* Address */}
         <Stack spacing={0.5}>
-          <Typography level="title-sm" sx={{ color: "text.tertiary" }}>
-            Address
+          <Typography
+            level="body-sm"
+            fontWeight={600}
+            sx={{ color: "#1e293b", mb: 0.5 }}
+          >
+            Address:
           </Typography>
-          <Typography level="body-md">
+          <Typography startDecorator={<Place fontSize="small" />} level="body-md">
             {spot.barangay}, {spot.municipality}, {spot.province}
           </Typography>
         </Stack>

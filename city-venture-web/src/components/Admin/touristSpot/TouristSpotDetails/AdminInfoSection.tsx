@@ -44,7 +44,14 @@ const AdminInfoSection: React.FC<AdminInfoSectionProps> = ({ spot }) => {
         alignItems="center"
         sx={{ mb: 2 }}
       >
-        <Typography level="h4">Administrative Information</Typography>
+        <Typography
+          fontFamily={"poppins"}
+          level="title-lg"
+          fontWeight={700}
+          sx={{ color: "#1e293b" }}
+        >
+          Administrative Information
+        </Typography>
       </Stack>
 
       <Stack spacing={1}>
