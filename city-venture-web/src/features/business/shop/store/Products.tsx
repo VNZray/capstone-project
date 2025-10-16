@@ -18,21 +18,21 @@ import PageContainer from "@/src/components/PageContainer";
 import { useBusiness } from "@/src/context/BusinessContext";
 import { useNavigate } from "react-router-dom";
 import * as ProductService from "@/src/services/ProductService";
+import * as ShopCategoryService from "@/src/services/ShopCategoryService";
 import ProductFormModal from "./components/ProductFormModal";
 import StockManagementModal from "./components/StockManagementModal";
 import type {
   Product,
-  ProductCategory,
   CreateProductPayload,
   UpdateStockPayload,
-  CreateCategoryPayload,
 } from "@/src/types/Product";
+import type { ShopCategory, CreateShopCategoryPayload } from "@/src/types/ShopCategory";
 
 export default function Products() {
   const navigate = useNavigate();
   const { businessDetails } = useBusiness();
   const [products, setProducts] = useState<Product[]>([]);
-  const [categories, setCategories] = useState<ProductCategory[]>([]);
+  const [categories, setCategories] = useState<ShopCategory[]>([]);
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState<"table" | "grid">("table");
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
@@ -69,7 +69,7 @@ export default function Products() {
       console.log('Attempting to fetch data for business:', businessDetails.id);
       const [productsData, categoriesData] = await Promise.all([
         ProductService.fetchProductsByBusinessId(businessDetails.id),
-        ProductService.fetchProductCategoriesByBusinessId(businessDetails.id),
+        ShopCategoryService.fetchShopCategoriesByBusinessIdAndType(businessDetails.id, 'product'),
       ]);
       
       console.log('Products data received:', productsData);
@@ -118,19 +118,19 @@ export default function Products() {
   };
 
   // Handle category creation
-  const handleCategoryCreate = async (payload: CreateCategoryPayload): Promise<ProductCategory> => {
+  const handleCategoryCreate = async (payload: CreateShopCategoryPayload): Promise<ShopCategory> => {
     if (!businessDetails?.id) {
       throw new Error("Business not selected");
     }
 
     try {
-      const newCategory = await ProductService.createProductCategory(payload);
+      const newCategory = await ShopCategoryService.createShopCategory(payload);
       setSuccess("Category created successfully!");
-      
+
       // Refresh categories to include the new entry (keeps ordering consistent)
-      const categoriesData = await ProductService.fetchProductCategoriesByBusinessId(businessDetails.id);
+      const categoriesData = await ShopCategoryService.fetchShopCategoriesByBusinessIdAndType(businessDetails.id, 'product');
       setCategories(categoriesData);
-      
+
       setTimeout(() => setSuccess(null), 3000);
       return newCategory;
     } catch (err) {

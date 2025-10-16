@@ -16,20 +16,20 @@ import { FiPlus, FiEdit2, FiTrash2, FiClock, FiGrid, FiList, FiCheckCircle, FiAl
 import PageContainer from "@/src/components/PageContainer";
 import { useBusiness } from "@/src/context/BusinessContext";
 import * as ServiceApi from "@/src/services/ServiceApi";
+import * as ShopCategoryService from "@/src/services/ShopCategoryService";
 import ServiceFormModal from "./components/ServiceFormModal";
 import { useNavigate } from "react-router-dom";
 import type {
   Service,
-  ServiceCategory,
   CreateServicePayload,
-  CreateServiceCategoryPayload,
 } from "@/src/types/Service";
+import type { ShopCategory, ShopCategoryAssignment, CreateShopCategoryPayload } from "@/src/types/ShopCategory";
 
 export default function Services() {
   const navigate = useNavigate();
   const { businessDetails } = useBusiness();
   const [services, setServices] = useState<Service[]>([]);
-  const [categories, setCategories] = useState<ServiceCategory[]>([]);
+  const [categories, setCategories] = useState<ShopCategory[]>([]);
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState<"table" | "grid">("table");
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
@@ -44,7 +44,7 @@ export default function Services() {
   // Filter services by selected category
   const filteredServices = selectedCategoryId
     ? services.filter(service => 
-        service.categories?.some((cat: ServiceCategory) => cat.id === selectedCategoryId)
+        service.categories?.some((cat: ShopCategoryAssignment) => cat.id === selectedCategoryId)
       )
     : services;
 
@@ -61,7 +61,7 @@ export default function Services() {
     try {
       const [servicesData, categoriesData] = await Promise.all([
         ServiceApi.fetchServicesByBusinessId(businessDetails.id),
-        ServiceApi.fetchServiceCategoriesByBusinessId(businessDetails.id),
+        ShopCategoryService.fetchShopCategoriesByBusinessIdAndType(businessDetails.id, 'service'),
       ]);
       
       setServices(Array.isArray(servicesData) ? servicesData : []);
@@ -105,18 +105,18 @@ export default function Services() {
   };
 
   // Handle category creation
-  const handleCategoryCreate = async (payload: CreateServiceCategoryPayload): Promise<ServiceCategory> => {
+  const handleCategoryCreate = async (payload: CreateShopCategoryPayload): Promise<ShopCategory> => {
     if (!businessDetails?.id) {
       throw new Error("Business not selected");
     }
 
     try {
-      const newCategory = await ServiceApi.createServiceCategory(payload);
+      const newCategory = await ShopCategoryService.createShopCategory(payload);
       setSuccess("Category created successfully!");
-      
-      const categoriesData = await ServiceApi.fetchServiceCategoriesByBusinessId(businessDetails.id);
+
+      const categoriesData = await ShopCategoryService.fetchShopCategoriesByBusinessIdAndType(businessDetails.id, 'service');
       setCategories(categoriesData);
-      
+
       setTimeout(() => setSuccess(null), 3000);
       return newCategory;
     } catch (err) {
@@ -264,7 +264,7 @@ export default function Services() {
               </Chip>
               {categories.slice(0, 10).map((category) => {
                 const serviceCount = services.filter(service =>
-                  service.categories?.some((cat: ServiceCategory) => cat.id === category.id)
+                  service.categories?.some((cat: ShopCategoryAssignment) => cat.id === category.id)
                 ).length;
                 
                 return (
@@ -338,7 +338,7 @@ export default function Services() {
                     <td>
                       <Stack direction="row" spacing={0.5} flexWrap="wrap">
                         {service.categories && service.categories.length > 0 ? (
-                          service.categories.map((cat: ServiceCategory) => (
+                          service.categories.map((cat: ShopCategoryAssignment) => (
                             <Chip
                               key={cat.id}
                               size="sm"
@@ -445,7 +445,7 @@ export default function Services() {
                   </Typography>
                   <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5 }}>
                     {service.categories && service.categories.length > 0 ? (
-                      service.categories.map((cat: ServiceCategory) => (
+                      service.categories.map((cat: ShopCategoryAssignment) => (
                         <Chip
                           key={cat.id}
                           size="sm"

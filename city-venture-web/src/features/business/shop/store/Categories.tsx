@@ -17,32 +17,35 @@ import {
   FormLabel,
   Input,
   Textarea,
+  Select,
+  Option,
 } from "@mui/joy";
 import { FiPlus, FiEdit2, FiTrash2, FiCheckCircle, FiAlertCircle, FiTag, FiArrowLeft } from "react-icons/fi";
 import PageContainer from "@/src/components/PageContainer";
 import { useBusiness } from "@/src/context/BusinessContext";
-import * as ProductService from "@/src/services/ProductService";
-import type { ProductCategory, CreateCategoryPayload } from "@/src/types/Product";
+import * as ShopCategoryService from "@/src/services/ShopCategoryService";
+import type { ShopCategory, CreateShopCategoryPayload } from "@/src/types/ShopCategory";
 import { useNavigate } from "react-router-dom";
 
 export default function Categories() {
   const navigate = useNavigate();
   const { businessDetails } = useBusiness();
-  const [categories, setCategories] = useState<ProductCategory[]>([]);
+  const [categories, setCategories] = useState<ShopCategory[]>([]);
   const [loading, setLoading] = useState(true);
   
   // Modal states
   const [categoryModalOpen, setCategoryModalOpen] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState<ProductCategory | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<ShopCategory | null>(null);
   
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
   // Form state
-  const [formData, setFormData] = useState<CreateCategoryPayload>({
+  const [formData, setFormData] = useState<CreateShopCategoryPayload>({
     business_id: businessDetails?.id || "",
     name: "",
     description: "",
+    category_type: "product",
     display_order: 0,
     status: "active",
   });
@@ -59,7 +62,10 @@ export default function Categories() {
     setError(null);
     
     try {
-      const categoriesData = await ProductService.fetchProductCategoriesByBusinessId(businessDetails.id);
+      const categoriesData = await ShopCategoryService.fetchShopCategoriesByBusinessIdAndType(
+        businessDetails.id,
+        'product'
+      );
       setCategories(Array.isArray(categoriesData) ? categoriesData : []);
     } catch (err) {
       console.error("Error fetching categories:", err);
@@ -80,6 +86,7 @@ export default function Categories() {
       business_id: businessDetails?.id || "",
       name: "",
       description: "",
+      category_type: "product",
       display_order: categories.length,
       status: "active",
     });
@@ -88,14 +95,15 @@ export default function Categories() {
   };
 
   // Open modal for add/edit
-  const openModal = (category?: ProductCategory) => {
+  const openModal = (category?: ShopCategory) => {
     if (category) {
       setSelectedCategory(category);
       setFormData({
         business_id: category.business_id,
         name: category.name,
         description: category.description || "",
-        display_order: category.display_order,
+        category_type: category.category_type,
+        display_order: category.display_order || 0,
         status: category.status,
       });
     } else {
@@ -125,10 +133,10 @@ export default function Categories() {
 
     try {
       if (selectedCategory) {
-        await ProductService.updateProductCategory(selectedCategory.id, formData);
+        await ShopCategoryService.updateShopCategory(selectedCategory.id, formData);
         setSuccess("Category updated successfully!");
       } else {
-        await ProductService.createProductCategory(formData);
+        await ShopCategoryService.createShopCategory(formData);
         setSuccess("Category created successfully!");
       }
       
@@ -150,7 +158,7 @@ export default function Categories() {
     }
 
     try {
-      await ProductService.deleteProductCategory(categoryId);
+      await ShopCategoryService.deleteShopCategory(categoryId);
       setSuccess("Category deleted successfully!");
       await fetchCategories();
       setTimeout(() => setSuccess(null), 3000);
@@ -236,10 +244,11 @@ export default function Categories() {
               <thead>
                 <tr>
                   <th style={{ width: "5%" }}>Order</th>
-                  <th style={{ width: "30%" }}>Category Name</th>
-                  <th style={{ width: "45%" }}>Description</th>
+                  <th style={{ width: "25%" }}>Category Name</th>
+                  <th style={{ width: "35%" }}>Description</th>
+                  <th style={{ width: "10%" }}>Type</th>
                   <th style={{ width: "10%" }}>Status</th>
-                  <th style={{ width: "10%", textAlign: "center" }}>Actions</th>
+                  <th style={{ width: "15%", textAlign: "center" }}>Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -262,6 +271,15 @@ export default function Categories() {
                       <Typography level="body-sm" color="neutral">
                         {category.description || "—"}
                       </Typography>
+                    </td>
+                    <td>
+                      <Chip
+                        size="sm"
+                        color={category.category_type === "product" ? "primary" : category.category_type === "service" ? "success" : "warning"}
+                        variant="soft"
+                      >
+                        {category.category_type.charAt(0).toUpperCase() + category.category_type.slice(1)}
+                      </Chip>
                     </td>
                     <td>
                       <Chip
@@ -349,6 +367,22 @@ export default function Categories() {
                     {formErrors.name}
                   </Typography>
                 )}
+              </FormControl>
+
+              {/* Category Type */}
+              <FormControl>
+                <FormLabel>Category Type</FormLabel>
+                <Select
+                  value={formData.category_type}
+                  onChange={(_, value) => setFormData({ ...formData, category_type: value as "product" | "service" | "both" })}
+                >
+                  <Option value="product">Product</Option>
+                  <Option value="service">Service</Option>
+                  <Option value="both">Both</Option>
+                </Select>
+                <Typography level="body-xs" color="neutral">
+                  Select which type of items this category will contain
+                </Typography>
               </FormControl>
 
               {/* Description */}

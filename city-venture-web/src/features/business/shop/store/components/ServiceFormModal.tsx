@@ -21,18 +21,17 @@ import {
 import { FiInfo, FiPlus } from "react-icons/fi";
 import type {
   Service,
-  ServiceCategory,
   CreateServicePayload,
-  CreateServiceCategoryPayload,
 } from "@/src/types/Service";
+import type { ShopCategoryAssignment, CreateShopCategoryPayload } from "@/src/types/ShopCategory";
 
 interface ServiceFormModalProps {
   open: boolean;
   onClose: () => void;
   onSubmit: (payload: CreateServicePayload) => Promise<void>;
-  onCreateCategory: (payload: CreateServiceCategoryPayload) => Promise<ServiceCategory>;
+  onCreateCategory: (payload: CreateShopCategoryPayload) => Promise<ShopCategoryAssignment>;
   service?: Service | null;
-  categories: ServiceCategory[];
+  categories: ShopCategoryAssignment[];
   businessId: string;
 }
 
@@ -218,7 +217,7 @@ export default function ServiceFormModal({
   const getSelectedCategories = () => {
     return selectedCategoryIds
       .map((id) => categories.find((cat) => cat.id === id))
-      .filter((cat): cat is ServiceCategory => cat !== undefined);
+      .filter((cat): cat is ShopCategoryAssignment => cat !== undefined);
   };
 
   const availableCategories = categories.filter(

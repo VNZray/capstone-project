@@ -1,30 +1,4 @@
-// Service Category Types
-export interface ServiceCategory {
-  id: string;
-  business_id: string;
-  name: string;
-  description?: string | null;
-  display_order?: number;
-  status?: string;
-  created_at?: string;
-  updated_at?: string;
-  is_primary?: boolean;
-}
-
-export interface CreateServiceCategoryPayload {
-  business_id: string;
-  name: string;
-  description?: string;
-  display_order?: number;
-  status?: string;
-}
-
-export interface UpdateServiceCategoryPayload {
-  name?: string;
-  description?: string;
-  display_order?: number;
-  status?: string;
-}
+import type { ShopCategory, ShopCategoryAssignment } from "@/src/types/ShopCategory";
 
 // Service Types
 export interface Service {
@@ -43,7 +17,7 @@ export interface Service {
   advance_booking_hours?: number | null;
   created_at?: string;
   updated_at?: string;
-  categories?: ServiceCategory[];
+  categories?: ShopCategoryAssignment[];
 }
 
 export interface CreateServicePayload {

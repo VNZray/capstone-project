@@ -1,24 +1,8 @@
 const { createServiceProcedures, dropServiceProcedures } = require("../procedures/serviceProcedures.js");
 
 exports.up = async function (knex) {
-  // Create service_category table (separate from existing category table)
-  await knex.schema.createTable("service_category", (table) => {
-    table.uuid("id").primary().defaultTo(knex.raw("(UUID())"));
-    table.uuid("business_id").notNullable()
-      .references("id")
-      .inTable("business")
-      .onDelete("CASCADE");
-    table.string("name", 255).notNullable();
-    table.text("description").nullable();
-    table.integer("display_order").defaultTo(0);
-    table.enu("status", ["active", "inactive"]).defaultTo("active");
-    table.timestamp("created_at").defaultTo(knex.fn.now());
-    table.timestamp("updated_at").defaultTo(knex.fn.now());
-    
-    table.index("business_id", "idx_service_category_business");
-    table.index("status", "idx_service_category_status");
-  });
-
+  // Note: shop_category table should be created by migration 20250920000001_create_shop_category.cjs
+  
   // Create service table (display only with contact information)
   await knex.schema.createTable("service", (table) => {
     table.uuid("id").primary().defaultTo(knex.raw("(UUID())"));
@@ -26,9 +10,9 @@ exports.up = async function (knex) {
       .references("id")
       .inTable("business")
       .onDelete("CASCADE");
-    table.uuid("service_category_id").notNullable()  // Changed from category_id to service_category_id
+    table.uuid("shop_category_id").notNullable()  // Changed to shop_category_id
       .references("id")
-      .inTable("service_category")
+      .inTable("shop_category")  // Reference unified shop_category table
       .onDelete("CASCADE");
     table.string("name", 255).notNullable();
     table.text("description").nullable();
@@ -57,7 +41,7 @@ exports.up = async function (knex) {
     table.timestamp("updated_at").defaultTo(knex.fn.now());
     
     table.index("business_id", "idx_service_business");
-    table.index("service_category_id", "idx_service_category");
+    table.index("shop_category_id", "idx_service_shop_category");
     table.index("status", "idx_service_status");
   });
 
@@ -83,7 +67,6 @@ exports.down = async function (knex) {
     throw error;
   }
 
-  // Drop tables
+  // Drop table (shop_category is managed by its own migration)
   await knex.schema.dropTableIfExists("service");
-  await knex.schema.dropTableIfExists("service_category");
 };

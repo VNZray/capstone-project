@@ -17,15 +17,16 @@ import {
   ChipDelete,
 } from "@mui/joy";
 import { FiPlus } from "react-icons/fi";
-import type { Product, ProductCategory, CreateProductPayload, CreateCategoryPayload } from "@/src/types/Product";
+import type { Product, CreateProductPayload } from "@/src/types/Product";
+import type { ShopCategoryAssignment, CreateShopCategoryPayload } from "@/src/types/ShopCategory";
 
 interface ProductFormModalProps {
   open: boolean;
   onClose: () => void;
   onSubmit: (payload: CreateProductPayload) => Promise<void>;
-  onCreateCategory: (payload: CreateCategoryPayload) => Promise<ProductCategory>;
+  onCreateCategory: (payload: CreateShopCategoryPayload) => Promise<ShopCategoryAssignment>;
   product?: Product | null;
-  categories: ProductCategory[];
+  categories: ShopCategoryAssignment[];
   businessId: string;
 }
 
@@ -118,12 +119,13 @@ export default function ProductFormModal({
 
     setCategoryLoading(true);
     try {
-      const categoryPayload: CreateCategoryPayload = {
+      const categoryPayload: CreateShopCategoryPayload = {
         business_id: businessId,
         name: newCategoryName.trim(),
         description: newCategoryDescription.trim() || undefined,
         display_order: categories.length + 1,
         status: "active",
+        category_type: "product",
       };
 
       const newCategory = await onCreateCategory(categoryPayload);

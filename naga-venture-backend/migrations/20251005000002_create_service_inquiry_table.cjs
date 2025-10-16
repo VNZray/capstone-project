@@ -17,14 +17,10 @@ exports.up = async function (knex) {
       .inTable("business")
       .onDelete("CASCADE");
     
-    // Support both logged-in users and guests
+    // Support logged-in users (guest_id removed - guest table doesn't exist)
     table.uuid("user_id").nullable()
       .references("id")
       .inTable("user")
-      .onDelete("CASCADE");
-    table.uuid("guest_id").nullable()
-      .references("id")
-      .inTable("guest")
       .onDelete("CASCADE");
     
     // Inquiry details
@@ -57,12 +53,10 @@ exports.up = async function (knex) {
     table.index("service_id", "idx_service_inquiry_service");
     table.index("business_id", "idx_service_inquiry_business");
     table.index("user_id", "idx_service_inquiry_user");
-    table.index("guest_id", "idx_service_inquiry_guest");
     table.index("status", "idx_service_inquiry_status");
     table.index("created_at", "idx_service_inquiry_created");
     
-    // Constraint: must have either user_id or guest_id
-    table.check("(user_id IS NOT NULL) OR (guest_id IS NOT NULL)", {}, "chk_service_inquiry_user_or_guest");
+    // Note: user_id is nullable to allow anonymous inquiries
   });
 
   console.log("✅ Created service_inquiry table");

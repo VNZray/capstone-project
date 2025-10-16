@@ -24,22 +24,23 @@ import {
 import { FiArrowLeft, FiPlus, FiEdit2, FiTrash2, FiCheckCircle, FiAlertCircle, FiInfo } from "react-icons/fi";
 import PageContainer from "@/src/components/PageContainer";
 import { useBusiness } from "@/src/context/BusinessContext";
-import * as ServiceApi from "@/src/services/ServiceApi";
+import * as ShopCategoryService from "@/src/services/ShopCategoryService";
 import { useNavigate } from "react-router-dom";
-import type { ServiceCategory, CreateServiceCategoryPayload } from "@/src/types/Service";
+import type { ShopCategory, CreateShopCategoryPayload } from "@/src/types/ShopCategory";
 
 export default function ServiceCategories() {
   const navigate = useNavigate();
   const { businessDetails } = useBusiness();
-  const [categories, setCategories] = useState<ServiceCategory[]>([]);
+  const [categories, setCategories] = useState<ShopCategory[]>([]);
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState<ServiceCategory | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<ShopCategory | null>(null);
   const [formData, setFormData] = useState({
     name: "",
     description: "",
     display_order: "",
     status: "active" as "active" | "inactive",
+    category_type: "service" as "product" | "service" | "both",
   });
   const [formLoading, setFormLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -53,7 +54,7 @@ export default function ServiceCategories() {
 
     setLoading(true);
     try {
-      const data = await ServiceApi.fetchServiceCategoriesByBusinessId(businessDetails.id);
+      const data = await ShopCategoryService.fetchShopCategoriesByBusinessIdAndType(businessDetails.id, 'service');
       setCategories(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error("Error fetching categories:", err);
@@ -68,7 +69,7 @@ export default function ServiceCategories() {
     fetchCategories();
   }, [fetchCategories]);
 
-  const handleOpenModal = (category?: ServiceCategory) => {
+  const handleOpenModal = (category?: ShopCategory) => {
     if (category) {
       setSelectedCategory(category);
       setFormData({
@@ -76,6 +77,7 @@ export default function ServiceCategories() {
         description: category.description || "",
         display_order: category.display_order?.toString() || "",
         status: category.status as "active" | "inactive" || "active",
+        category_type: category.category_type || "service",
       });
     } else {
       setSelectedCategory(null);
@@ -84,6 +86,7 @@ export default function ServiceCategories() {
         description: "",
         display_order: "",
         status: "active",
+        category_type: "service",
       });
     }
     setModalOpen(true);
@@ -97,6 +100,7 @@ export default function ServiceCategories() {
       description: "",
       display_order: "",
       status: "active",
+      category_type: "service",
     });
   };
 
@@ -117,19 +121,20 @@ export default function ServiceCategories() {
     setError(null);
 
     try {
-      const payload: CreateServiceCategoryPayload = {
+      const payload: CreateShopCategoryPayload = {
         business_id: businessDetails.id,
         name: formData.name.trim(),
         description: formData.description.trim() || undefined,
         display_order: formData.display_order ? parseInt(formData.display_order) : undefined,
         status: formData.status,
+        category_type: formData.category_type,
       };
 
       if (selectedCategory) {
-        await ServiceApi.updateServiceCategory(selectedCategory.id, payload);
+        await ShopCategoryService.updateShopCategory(selectedCategory.id, payload);
         setSuccess("Category updated successfully!");
       } else {
-        await ServiceApi.createServiceCategory(payload);
+        await ShopCategoryService.createShopCategory(payload);
         setSuccess("Category created successfully!");
       }
 
@@ -150,7 +155,7 @@ export default function ServiceCategories() {
     }
 
     try {
-      await ServiceApi.deleteServiceCategory(categoryId);
+      await ShopCategoryService.deleteShopCategory(categoryId);
       setSuccess("Category deleted successfully!");
       await fetchCategories();
       setTimeout(() => setSuccess(null), 3000);
@@ -234,8 +239,9 @@ export default function ServiceCategories() {
               <thead>
                 <tr>
                   <th style={{ width: "5%" }}>Order</th>
-                  <th style={{ width: "25%" }}>Name</th>
-                  <th style={{ width: "45%" }}>Description</th>
+                  <th style={{ width: "20%" }}>Name</th>
+                  <th style={{ width: "40%" }}>Description</th>
+                  <th style={{ width: "10%" }}>Type</th>
                   <th style={{ width: "10%" }}>Status</th>
                   <th style={{ width: "15%", textAlign: "center" }}>Actions</th>
                 </tr>
@@ -257,6 +263,15 @@ export default function ServiceCategories() {
                       <Typography level="body-sm" color="neutral">
                         {category.description || '—'}
                       </Typography>
+                    </td>
+                    <td>
+                      <Chip
+                        size="sm"
+                        color={category.category_type === "product" ? "primary" : category.category_type === "service" ? "success" : "warning"}
+                        variant="soft"
+                      >
+                        {category.category_type.charAt(0).toUpperCase() + category.category_type.slice(1)}
+                      </Chip>
                     </td>
                     <td>
                       <Chip
@@ -344,6 +359,21 @@ export default function ServiceCategories() {
                     setFormData({ ...formData, name: e.target.value })
                   }
                 />
+              </FormControl>
+
+              <FormControl>
+                <FormLabel>Category Type</FormLabel>
+                <Select
+                  value={formData.category_type}
+                  onChange={(_, value) => setFormData({ ...formData, category_type: value as "product" | "service" | "both" })}
+                >
+                  <Option value="product">Product</Option>
+                  <Option value="service">Service</Option>
+                  <Option value="both">Both</Option>
+                </Select>
+                <Typography level="body-xs" color="neutral">
+                  Select which type of items this category will contain
+                </Typography>
               </FormControl>
 
               <FormControl>

@@ -120,10 +120,10 @@ This module provides a complete product management interface for business owners
 - `DELETE /api/products/:id` - Delete product
 
 ### Categories
-- `GET /api/product-categories/business/:businessId` - Fetch categories
-- `POST /api/product-categories` - Create category
-- `PUT /api/product-categories/:id` - Update category
-- `DELETE /api/product-categories/:id` - Delete category
+- `GET /api/shop-categories?business_id=:businessId&type=product` - Fetch product categories
+- `POST /api/shop-categories` - Create category (include category_type)
+- `PUT /api/shop-categories/:id` - Update category
+- `DELETE /api/shop-categories/:id` - Delete category
 
 ### Stock
 - `PUT /api/product-stock/:productId` - Update stock
@@ -154,7 +154,7 @@ This module provides a complete product management interface for business owners
 
 ### Main State Variables
 - `products`: Array of Product objects
-- `categories`: Array of ProductCategory objects
+- `categories`: Array of ShopCategory objects (or assignment entries when attached to products/services)
 - `loading`: Boolean for loading state
 - `viewMode`: "table" | "grid"
 - `selectedProduct`: Product being edited/managed

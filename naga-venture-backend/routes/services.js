@@ -3,17 +3,8 @@ import * as serviceController from "../controller/serviceController.js";
 
 const router = express.Router();
 
-// ==================== SERVICE CATEGORY ROUTES ====================
-
-// Service Categories
-router.get("/categories", serviceController.getAllServiceCategories);
-router.post("/categories", serviceController.insertServiceCategory);
-router.get("/categories/business/:businessId", serviceController.getServiceCategoriesByBusinessId);
-router.get("/categories/:id", serviceController.getServiceCategoryById);
-router.put("/categories/:id", serviceController.updateServiceCategory);
-router.delete("/categories/:id", serviceController.deleteServiceCategory);
-
 // ==================== SERVICE ROUTES ====================
+// Note: Service categories are now managed via /api/shop-categories routes
 
 // Services
 router.get("/", serviceController.getAllServices);

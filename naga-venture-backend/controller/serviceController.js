@@ -32,96 +32,6 @@ const mapServiceRow = (row) => {
 
 const mapServiceRows = (rows = []) => rows.map(mapServiceRow);
 
-// ==================== SERVICE CATEGORIES ====================
-
-// Get all service categories
-export async function getAllServiceCategories(req, res) {
-  try {
-    const [data] = await db.query("CALL GetAllServiceCategories()");
-    res.json(data);
-  } catch (error) {
-    return handleDbError(error, res);
-  }
-}
-
-// Get service categories by business ID
-export async function getServiceCategoriesByBusinessId(req, res) {
-  const { businessId } = req.params;
-  try {
-    const [data] = await db.query("CALL GetServiceCategoriesByBusinessId(?)", [businessId]);
-    res.json(data);
-  } catch (error) {
-    return handleDbError(error, res);
-  }
-}
-
-// Get service category by ID
-export async function getServiceCategoryById(req, res) {
-  const { id } = req.params;
-  try {
-    const [data] = await db.query("CALL GetServiceCategoryById(?)", [id]);
-    if (!data || data.length === 0) {
-      return res.status(404).json({ message: "Service category not found" });
-    }
-    res.json(data[0]);
-  } catch (error) {
-    return handleDbError(error, res);
-  }
-}
-
-// Insert a new service category
-export async function insertServiceCategory(req, res) {
-  try {
-    const id = uuidv4();
-    const { business_id, name, description, display_order, status } = req.body;
-
-    const [data] = await db.query("CALL InsertServiceCategory(?, ?, ?, ?, ?, ?)", [
-      id, business_id, name, description || null, display_order || 0, status || 'active'
-    ]);
-    
-    res.status(201).json({
-      message: "Service category created successfully",
-      data: data[0]
-    });
-  } catch (error) {
-    return handleDbError(error, res);
-  }
-}
-
-// Update service category
-export async function updateServiceCategory(req, res) {
-  const { id } = req.params;
-  try {
-    const { name, description, display_order, status } = req.body;
-
-    const [data] = await db.query("CALL UpdateServiceCategory(?, ?, ?, ?, ?)", [
-      id, name, description, display_order, status
-    ]);
-
-    if (!data || data.length === 0) {
-      return res.status(404).json({ message: "Service category not found" });
-    }
-
-    res.json({
-      message: "Service category updated successfully",
-      data: data[0]
-    });
-  } catch (error) {
-    return handleDbError(error, res);
-  }
-}
-
-// Delete service category
-export async function deleteServiceCategory(req, res) {
-  const { id } = req.params;
-  try {
-    await db.query("CALL DeleteServiceCategory(?)", [id]);
-    res.json({ message: "Service category deleted successfully" });
-  } catch (error) {
-    return handleDbError(error, res);
-  }
-}
-
 // ==================== SERVICES ====================
 
 // Get all services
@@ -239,8 +149,8 @@ export async function insertService(req, res) {
       // Insert category mappings using stored procedure
       await connection.query("CALL InsertServiceCategoryMappings(?, ?)", [serviceId, categoryIdsJson]);
 
-      // Update the service_category_id with the primary category
-      await connection.query("UPDATE service SET service_category_id = ? WHERE id = ?", [primaryCategoryId, serviceId]);
+      // Update the shop_category_id field with the primary category
+      await connection.query("UPDATE service SET shop_category_id = ? WHERE id = ?", [primaryCategoryId, serviceId]);
 
       await connection.commit();
       connection.release();
@@ -325,8 +235,8 @@ export async function updateService(req, res) {
       // Update category mappings using stored procedure
       await connection.query("CALL UpdateServiceCategoryMappings(?, ?)", [id, categoryIdsJson]);
 
-      // Update the service_category_id with the primary category
-      await connection.query("UPDATE service SET service_category_id = ? WHERE id = ?", [primaryCategoryId, id]);
+      // Update the shop_category_id field with the primary category
+      await connection.query("UPDATE service SET shop_category_id = ? WHERE id = ?", [primaryCategoryId, id]);
 
       await connection.commit();
       connection.release();
