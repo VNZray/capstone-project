@@ -35,6 +35,8 @@ import Orders from "../features/business/shop/store/Orders";
 import Discount from "../features/business/shop/store/Discount";
 import DiscountForm from "../features/business/shop/store/DiscountForm";
 import ShopSettings from "../features/business/shop/store/Settings";
+import ManageShopPromotion from "../features/business/shop/promotion/ManagePromotion";
+import PromotionForm from "../features/business/shop/promotion/PromotionForm";
 
 import AccommodationDashboard from "../features/business/accommodation/dashboard/Dashboard";
 import ShopDashboard from "../features/business/shop/dashboard/Dashboard";
@@ -251,6 +253,30 @@ export default function AppRoutes() {
               element={
                 <ProtectedRoute>
                   <DiscountForm />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path={`${business}/promotion`}
+              element={
+                <ProtectedRoute>
+                  <ManageShopPromotion />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path={`${business}/promotion/create`}
+              element={
+                <ProtectedRoute>
+                  <PromotionForm />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path={`${business}/promotion/:id/edit`}
+              element={
+                <ProtectedRoute>
+                  <PromotionForm />
                 </ProtectedRoute>
               }
             />

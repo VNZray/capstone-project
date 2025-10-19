@@ -5,7 +5,6 @@ import {
   CalendarCheck,
   BedDouble,
   Store,
-  Tag,
   Star,
   LogOut,
   X,
@@ -17,6 +16,7 @@ import {
   ChevronDown,
   ShoppingBag,
   Settings,
+  Megaphone,
 } from "lucide-react";
 
 // Compact icon size
@@ -95,6 +95,12 @@ export default function Sidebar({ isOpen = false, onClose }: SidebarProps): Reac
             icon={<Store size={ICON_SIZE} />}
             onClick={onClose}
           />
+          <NavItem
+            to={`${route}/promotion`}
+            label="Manage Promotions"
+            icon={<Megaphone size={ICON_SIZE} />}
+            onClick={onClose}
+          />
           {businessDetails?.business_type_id === 1 ? (
             <NavItem
               to={`${route}/rooms`}
@@ -103,12 +109,6 @@ export default function Sidebar({ isOpen = false, onClose }: SidebarProps): Reac
               onClick={onClose}
             />
           ) : null}
-          <NavItem
-            to={`${route}/manage-promotion`}
-            label="Manage Promotion"
-            icon={<Tag size={ICON_SIZE} />}
-            onClick={onClose}
-          />
 
           {/* Store section (Shop only) */}
           {businessDetails?.business_type_id !== 1 && (
