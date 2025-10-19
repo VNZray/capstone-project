@@ -21,7 +21,7 @@ import {
 
 // Compact icon size
 const ICON_SIZE = 16;
-import logo from "@/src/assets/images/light-logo.png";
+import logo from "@/src/assets/logo/city-ventures-main.png";
 import "./Sidebar.css";
 import { useBusiness } from "../../context/BusinessContext";
 import { useAuth } from "@/src/context/AuthContext";
