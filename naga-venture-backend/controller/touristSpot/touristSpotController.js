@@ -148,3 +148,71 @@ export const createTouristSpot = async (request, response) => {
     }
   }
 };
+
+// Featured management
+export const getFeaturedTouristSpots = async (request, response) => {
+  try {
+    const [data] = await db.query("CALL GetFeaturedTouristSpots()");
+    const spots = data[0] || [];
+    const categories = data[1] || [];
+    const images = data[2] || [];
+
+    const catMap = new Map();
+    for (const c of categories) {
+      if (!catMap.has(c.tourist_spot_id)) catMap.set(c.tourist_spot_id, []);
+      catMap.get(c.tourist_spot_id).push({ id: c.id, category: c.category, type_id: c.type_id });
+    }
+    const imgMap = new Map();
+    for (const i of images) {
+      if (!imgMap.has(i.tourist_spot_id)) imgMap.set(i.tourist_spot_id, []);
+      imgMap.get(i.tourist_spot_id).push(i);
+    }
+
+    const merged = spots.map(s => ({
+      ...s,
+      categories: catMap.get(s.id) || [],
+      images: imgMap.get(s.id) || [],
+    }));
+    response.json({ success: true, data: merged, message: "Featured tourist spots retrieved successfully" });
+  } catch (error) {
+    return handleDbError(error, response);
+  }
+};
+
+export const getNonFeaturedTouristSpots = async (request, response) => {
+  try {
+    const [data] = await db.query("CALL GetNonFeaturedTouristSpots()");
+    const rows = data[0] || [];
+    response.json({ success: true, data: rows, message: "Non-featured tourist spots retrieved successfully" });
+  } catch (error) {
+    return handleDbError(error, response);
+  }
+};
+
+export const featureTouristSpot = async (request, response) => {
+  try {
+    const { id } = request.params;
+    const [resArr] = await db.query("CALL FeatureTouristSpot(?)", [id]);
+    const affected = resArr && resArr[0] && resArr[0][0] ? resArr[0][0].affected_rows : 0;
+    if (affected === 0) {
+      return response.status(400).json({ success: false, message: "Unable to feature tourist spot" });
+    }
+    response.json({ success: true, message: "Tourist spot featured successfully" });
+  } catch (error) {
+    return handleDbError(error, response);
+  }
+};
+
+export const unfeatureTouristSpot = async (request, response) => {
+  try {
+    const { id } = request.params;
+    const [resArr] = await db.query("CALL UnfeatureTouristSpot(?)", [id]);
+    const affected = resArr && resArr[0] && resArr[0][0] ? resArr[0][0].affected_rows : 0;
+    if (affected === 0) {
+      return response.status(400).json({ success: false, message: "Unable to unfeature tourist spot" });
+    }
+    response.json({ success: true, message: "Tourist spot unfeatured successfully" });
+  } catch (error) {
+    return handleDbError(error, response);
+  }
+};

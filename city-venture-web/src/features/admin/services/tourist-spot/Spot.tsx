@@ -12,6 +12,7 @@ import { apiService } from "@/src/utils/api";
 import "./Spot.css";
 import Container from "@/src/components/Container";
 import { colors } from "@/src/utils/Colors";
+import FeaturedSpotsModal from "@/src/components/Admin/touristSpot/FeaturedSpotsModal";
 
 const Spot = () => {
   const [currentPage, setCurrentPage] = useState(1);
@@ -19,6 +20,7 @@ const Spot = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [isAddSpotModalVisible, setAddSpotModalVisible] = useState(false);
   const [isEditSpotModalVisible, setEditSpotModalVisible] = useState(false);
+  const [isFeaturedModalOpen, setFeaturedModalOpen] = useState(false);
   const [selectedSpotForEdit, setSelectedSpotForEdit] = useState<
     TouristSpot | undefined
   >(undefined);
@@ -164,14 +166,24 @@ const Spot = () => {
                   containerStyle={{ flex: 1, maxWidth: 300 }}
                 />
               </div>
-              <div className="add">
-                <button
-                  className="add-button"
-                  onClick={() => setAddSpotModalVisible(true)}
-                >
-                  <IoAdd size={20} color="#FFF" />
-                  <Text variant="normal" color="white" className="add-button-text">Add</Text>
-                </button>
+              <div className="actions-inline">
+                <div className="add">
+                  <button
+                    className="add-button"
+                    onClick={() => setAddSpotModalVisible(true)}
+                  >
+                    <IoAdd size={20} color="#FFF" />
+                    <Text variant="normal" color="white" className="add-button-text">Add Tourist Spot</Text>
+                  </button>
+                </div>
+                <div className="add">
+                  <button
+                    className="add-button"
+                    onClick={() => setFeaturedModalOpen(true)}
+                  >
+                    <Text variant="normal" color="white" className="add-button-text">Manage Featured</Text>
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -210,6 +222,8 @@ const Spot = () => {
         initialStep={selectedEditStep}
         mode="edit"
       />
+
+      <FeaturedSpotsModal open={isFeaturedModalOpen} onClose={() => setFeaturedModalOpen(false)} />
     </>
   );
 };
