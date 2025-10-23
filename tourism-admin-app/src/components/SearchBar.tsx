@@ -18,9 +18,13 @@ const SearchBar: React.FC<SearchBarProps> = ({
   containerStyle,
   inputStyle
 }) => {
-  const handleKeyPress = (e: React.KeyboardEvent) => {
+  const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
-      onSearch();
+      try {
+        onSearch();
+      } catch (err) {
+        console.error('Search handler threw:', err);
+      }
     }
   };
 
@@ -38,16 +42,17 @@ const SearchBar: React.FC<SearchBarProps> = ({
         ...containerStyle
       }}
     >
-      <IoSearch 
-        size={20} 
-        color="#666" 
-        style={{ marginRight: '8px' }}
+      <IoSearch
+        size={20}
+        color="#666"
+        style={{ marginRight: '8px', cursor: 'pointer' }}
+  onClick={() => { try { onSearch(); } catch (err) { console.error('Search handler threw:', err); } }}
       />
       <input
         type="text"
         value={value}
         onChange={(e) => onChangeText(e.target.value)}
-        onKeyPress={handleKeyPress}
+        onKeyDown={handleKeyDown}
         placeholder={placeholder}
         style={{
           border: 'none',

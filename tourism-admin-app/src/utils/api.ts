@@ -105,6 +105,68 @@ class ApiService {
     return response.data;
   }
 
+  // Events
+  async getEventCategoriesAndTypes(): Promise<{
+    categories: { id: number; category: string }[];
+    types?: { id: number; type: string }[];
+  }> {
+    // Use the new event categories endpoint
+    const response = await this.request<{ id: number; category: string }[]>(`/event/categories`);
+    const categories = (response as any).data ?? (response as any);
+    return {
+      categories: Array.isArray(categories) ? categories : [],
+      types: []
+    };
+  }
+
+  async getEvents(): Promise<any[]> {
+    const response = await this.request<any[]>(`/event`);
+    return (response as any).data ?? (response as any);
+  }
+
+  async getEventById(id: string): Promise<any> {
+    const response = await this.request<any>(`/event/${id}`);
+    return (response as any).data ?? (response as any);
+  }
+
+  async createEvent(payload: any): Promise<ApiResponse<any>> {
+    return this.request<any>(`/event`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  }
+
+  async updateEvent(id: string, payload: any): Promise<ApiResponse<any>> {
+    return this.request<any>(`/event/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(payload),
+    });
+  }
+
+  // Multipart upload support for events (photos/files)
+  async createEventWithFiles(formData: FormData): Promise<any> {
+    const url = `${API_BASE_URL}/event`;
+    const response = await fetch(url, {
+      method: 'POST',
+      body: formData,
+      // Let the browser set Content-Type with boundary for FormData
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.message || 'Upload failed');
+    return data.data ?? data;
+  }
+
+  async updateEventWithFiles(id: string, formData: FormData): Promise<any> {
+    const url = `${API_BASE_URL}/event/${id}`;
+    const response = await fetch(url, {
+      method: 'PUT',
+      body: formData,
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.message || 'Upload failed');
+    return data.data ?? data;
+  }
+
   // Location Data
   async getLocationData(): Promise<{
     provinces: Province[];

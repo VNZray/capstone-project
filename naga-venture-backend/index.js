@@ -18,6 +18,7 @@ import permitRoutes from "./routes/permit.js";
 import roomRoutes from "./routes/room.js";
 import roomAmenityRoutes from "./routes/room_amenities.js";
 import businessAmenityRoutes from "./routes/business_amenities.js";
+import eventRoutes from "./routes/event.js";
 
 const app = express();
 const PORT = 3000;
@@ -41,6 +42,7 @@ const routes = [
   { path: "/api/approval", handler: approvalRoutes },
   { path: "/api/permit", handler: permitRoutes },
   { path: "/api/room", handler: roomRoutes },
+  { path: "/api/event", handler: eventRoutes },
 ];
 
 app.use(cors());

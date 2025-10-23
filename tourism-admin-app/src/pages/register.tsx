@@ -15,13 +15,13 @@ import { insertTourism } from "@/src/services/TourismService";
 import axios from "axios";
 import api from "../services/api";
 
-type BusinessType = "Accommodation" | "Shop" | "Both" | null;
+// (BusinessType removed as it was unused)
 
 const Register = () => {
   const navigate = useNavigate();
   const [firstName, setFirstName] = useState("Rayven");
   const [lastName, setLastName] = useState("Clores");
-  const [position, setPosition] = useState("Manager");
+  const [position, _setPosition] = useState("Manager");
 
   const [email, setEmail] = useState("admin@gmail.com");
   const [phoneNumber, setPhoneNumber] = useState("09876541231");
@@ -39,12 +39,7 @@ const Register = () => {
     position: position.trim(),
   };
 
-  const newUser = {
-    email: email,
-    phone_number: phoneNumber,
-    role: "Owner",
-    password: password,
-  };
+  // const newUser = { /* not used currently */ };
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
