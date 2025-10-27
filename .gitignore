@@ -5,3 +5,5 @@ node_modules/
 .env.local
 .env
 .Hans-AI-Doc-Lib/
+.github/
+.vscode/
