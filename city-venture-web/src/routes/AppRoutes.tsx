@@ -30,7 +30,6 @@ import RoomProfile from "../features/business/accommodation/room/RoomProfile";
 import Products from "../features/business/shop/store/Products";
 import Categories from "../features/business/shop/store/Categories";
 import Services from "../features/business/shop/store/Services";
-import ServiceCategories from "../features/business/shop/store/ServiceCategories";
 import Orders from "../features/business/shop/store/Orders";
 import Discount from "../features/business/shop/store/Discount";
 import DiscountForm from "../features/business/shop/store/DiscountForm";
@@ -213,14 +212,6 @@ export default function AppRoutes() {
               element={
                 <ProtectedRoute>
                   <Services />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path={`${business}/store/service-categories`}
-              element={
-                <ProtectedRoute>
-                  <ServiceCategories />
                 </ProtectedRoute>
               }
             />

@@ -230,7 +230,9 @@ export default function Services() {
               variant="outlined"
               color="neutral"
               startDecorator={<FiTag />}
-              onClick={() => navigate("/business/store/service-categories")}
+              onClick={() =>
+                navigate("/business/store/categories?type=service&from=services")
+              }
             >
               Manage Categories
             </Button>

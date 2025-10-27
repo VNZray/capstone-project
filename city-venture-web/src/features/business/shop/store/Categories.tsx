@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import {
   Typography,
   Button,
@@ -25,30 +25,71 @@ import PageContainer from "@/src/components/PageContainer";
 import { useBusiness } from "@/src/context/BusinessContext";
 import * as ShopCategoryService from "@/src/services/ShopCategoryService";
 import type { ShopCategory, CreateShopCategoryPayload } from "@/src/types/ShopCategory";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
+
+type CategoryFilter = "all" | "product" | "service" | "both";
 
 export default function Categories() {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { businessDetails } = useBusiness();
+
+  const normalizeFilter = (value: string | null): CategoryFilter => {
+    if (value === "product" || value === "service" || value === "both") {
+      return value;
+    }
+    return "all";
+  };
+
+  const [activeFilter, setActiveFilter] = useState<CategoryFilter>(() =>
+    normalizeFilter(searchParams.get("type"))
+  );
+
+  useEffect(() => {
+    const nextFilter = normalizeFilter(searchParams.get("type"));
+    setActiveFilter((prev) => (prev === nextFilter ? prev : nextFilter));
+  }, [searchParams]);
+
+  const originParam = searchParams.get("from");
+  const origin =
+    originParam === "services"
+      ? "services"
+      : originParam === "products"
+      ? "products"
+      : null;
+  const backPath =
+    origin === "services"
+      ? "/business/store/services"
+      : "/business/store/products";
+
   const [categories, setCategories] = useState<ShopCategory[]>([]);
   const [loading, setLoading] = useState(true);
-  
+
   // Modal states
   const [categoryModalOpen, setCategoryModalOpen] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState<ShopCategory | null>(null);
-  
+  const [selectedCategory, setSelectedCategory] =
+    useState<ShopCategory | null>(null);
+
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
+  const getDefaultCategoryType = (
+    filter: CategoryFilter
+  ): "product" | "service" | "both" => {
+    if (filter === "service") return "service";
+    if (filter === "both") return "both";
+    return "product";
+  };
+
   // Form state
-  const [formData, setFormData] = useState<CreateShopCategoryPayload>({
+  const [formData, setFormData] = useState<CreateShopCategoryPayload>(() => ({
     business_id: businessDetails?.id || "",
     name: "",
     description: "",
-    category_type: "product",
+    category_type: getDefaultCategoryType(activeFilter),
     display_order: 0,
     status: "active",
-  });
+  }));
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
   // Fetch categories
@@ -60,13 +101,23 @@ export default function Categories() {
 
     setLoading(true);
     setError(null);
-    
+
     try {
-      const categoriesData = await ShopCategoryService.fetchShopCategoriesByBusinessIdAndType(
-        businessDetails.id,
-        'product'
-      );
-      setCategories(Array.isArray(categoriesData) ? categoriesData : []);
+      const categoriesData =
+        await ShopCategoryService.fetchShopCategoriesByBusinessId(
+          businessDetails.id
+        );
+      const normalized = Array.isArray(categoriesData)
+        ? [...categoriesData].sort((a, b) => {
+            const orderA = a.display_order ?? 0;
+            const orderB = b.display_order ?? 0;
+            if (orderA !== orderB) {
+              return orderA - orderB;
+            }
+            return a.name.localeCompare(b.name);
+          })
+        : [];
+      setCategories(normalized);
     } catch (err) {
       console.error("Error fetching categories:", err);
       setError("Failed to load categories.");
@@ -80,13 +131,94 @@ export default function Categories() {
     fetchCategories();
   }, [fetchCategories]);
 
+  useEffect(() => {
+    setFormData((prev) => ({
+      ...prev,
+      business_id: businessDetails?.id || "",
+    }));
+  }, [businessDetails?.id]);
+
+  const filterLabels: Record<CategoryFilter, string> = {
+    all: "All Categories",
+    product: "Product Categories",
+    service: "Service Categories",
+    both: "Shared Categories",
+  };
+
+  const filterChipOptions: Array<{
+    value: CategoryFilter;
+    color: "primary" | "info" | "success" | "warning";
+  }> = [
+    { value: "all", color: "primary" },
+    { value: "product", color: "info" },
+    { value: "service", color: "success" },
+    { value: "both", color: "warning" },
+  ];
+
+  const filterCounts = useMemo(
+    () => ({
+      all: categories.length,
+      product: categories.filter(
+        (category) =>
+          category.category_type === "product" ||
+          category.category_type === "both"
+      ).length,
+      service: categories.filter(
+        (category) =>
+          category.category_type === "service" ||
+          category.category_type === "both"
+      ).length,
+      both: categories.filter(
+        (category) => category.category_type === "both"
+      ).length,
+    }),
+    [categories]
+  );
+
+  const filteredCategories = useMemo(() => {
+    switch (activeFilter) {
+      case "product":
+        return categories.filter(
+          (category) =>
+            category.category_type === "product" ||
+            category.category_type === "both"
+        );
+      case "service":
+        return categories.filter(
+          (category) =>
+            category.category_type === "service" ||
+            category.category_type === "both"
+        );
+      case "both":
+        return categories.filter(
+          (category) => category.category_type === "both"
+        );
+      default:
+        return categories;
+    }
+  }, [categories, activeFilter]);
+
+  const handleFilterChange = (filter: CategoryFilter) => {
+    setActiveFilter(filter);
+    const nextParams = new URLSearchParams(searchParams);
+    if (filter === "all") {
+      nextParams.delete("type");
+    } else {
+      nextParams.set("type", filter);
+    }
+    if (origin) {
+      nextParams.set("from", origin);
+    }
+    setSearchParams(nextParams);
+  };
+
   // Reset form
   const resetForm = () => {
     setFormData({
       business_id: businessDetails?.id || "",
       name: "",
       description: "",
-      category_type: "product",
+      category_type: getDefaultCategoryType(activeFilter),
       display_order: categories.length,
       status: "active",
     });
@@ -179,6 +311,8 @@ export default function Categories() {
     return status === "active" ? "success" : "neutral";
   };
 
+  const hasAnyCategories = categories.length > 0;
+
   if (!businessDetails) {
     return (
       <PageContainer>
@@ -207,27 +341,39 @@ export default function Categories() {
               <IconButton
                 variant="outlined"
                 color="neutral"
-                onClick={() => navigate("/business/store/products")}
+                onClick={() => navigate(backPath)}
               >
                 <FiArrowLeft />
               </IconButton>
               <Box>
                 <Typography level="h2" fontWeight={700}>
-                  Product Categories
+                  Shop Categories
                 </Typography>
                 <Typography level="body-sm" color="neutral">
-                  Organize your products into categories
+                  Manage categories for both products and services. Currently
+                  showing {filterLabels[activeFilter].toLowerCase()}.
                 </Typography>
               </Box>
             </Stack>
           </Box>
-          
-          <Button
-            startDecorator={<FiPlus />}
-            onClick={() => openModal()}
-          >
+
+          <Button startDecorator={<FiPlus />} onClick={() => openModal()}>
             Add Category
           </Button>
+        </Stack>
+
+        <Stack direction="row" flexWrap="wrap" spacing={1}>
+          {filterChipOptions.map(({ value, color }) => (
+            <Chip
+              key={value}
+              variant={activeFilter === value ? "solid" : "outlined"}
+              color={color}
+              onClick={() => handleFilterChange(value)}
+              sx={{ cursor: "pointer" }}
+            >
+              {filterLabels[value]} ({filterCounts[value]})
+            </Chip>
+          ))}
         </Stack>
 
         {/* Loading State */}
@@ -238,7 +384,7 @@ export default function Categories() {
         )}
 
         {/* Categories Table */}
-        {!loading && categories.length > 0 && (
+        {!loading && filteredCategories.length > 0 && (
           <Sheet variant="outlined" sx={{ borderRadius: "sm", overflow: "hidden" }}>
             <Table>
               <thead>
@@ -252,11 +398,11 @@ export default function Categories() {
                 </tr>
               </thead>
               <tbody>
-                {categories.map((category) => (
+                {filteredCategories.map((category) => (
                   <tr key={category.id}>
                     <td>
                       <Typography level="body-sm" fontWeight={600}>
-                        {category.display_order}
+                        {category.display_order ?? "-"}
                       </Typography>
                     </td>
                     <td>
@@ -269,7 +415,7 @@ export default function Categories() {
                     </td>
                     <td>
                       <Typography level="body-sm" color="neutral">
-                        {category.description || "—"}
+                        {category.description || "-"}
                       </Typography>
                     </td>
                     <td>
@@ -318,7 +464,7 @@ export default function Categories() {
         )}
 
         {/* Empty State */}
-        {!loading && categories.length === 0 && (
+        {!loading && filteredCategories.length === 0 && (
           <Box
             sx={{
               textAlign: "center",
@@ -328,15 +474,16 @@ export default function Categories() {
           >
             <FiTag size={64} style={{ opacity: 0.3, marginBottom: 16 }} />
             <Typography level="h4" mb={1}>
-              No categories yet
+              {hasAnyCategories
+                ? `No ${filterLabels[activeFilter].toLowerCase()}`
+                : "No categories yet"}
             </Typography>
             <Typography level="body-sm" color="neutral" mb={3}>
-              Create your first category to organize your products
+              {hasAnyCategories
+                ? "Try a different filter or create a new category for this group."
+                : "Create your first category to organize your store items."}
             </Typography>
-            <Button
-              startDecorator={<FiPlus />}
-              onClick={() => openModal()}
-            >
+            <Button startDecorator={<FiPlus />} onClick={() => openModal()}>
               Add Category
             </Button>
           </Box>

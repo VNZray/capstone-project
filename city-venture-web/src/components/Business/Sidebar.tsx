@@ -17,6 +17,7 @@ import {
   ShoppingBag,
   Settings,
   Megaphone,
+  Tag,
 } from "lucide-react";
 
 // Compact icon size
@@ -142,6 +143,12 @@ export default function Sidebar({ isOpen = false, onClose }: SidebarProps): Reac
                   to={`${route}/store/products`}
                   label="Products"
                   icon={<Package size={ICON_SIZE} />}
+                  onClick={onClose}
+                />
+                <NavItem
+                  to={`${route}/store/categories`}
+                  label="Categories"
+                  icon={<Tag size={ICON_SIZE} />}
                   onClick={onClose}
                 />
                 <NavItem

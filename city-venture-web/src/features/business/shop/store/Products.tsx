@@ -261,7 +261,9 @@ export default function Products() {
               variant="outlined"
               color="neutral"
               startDecorator={<FiTag />}
-              onClick={() => navigate("/business/store/categories")}
+              onClick={() =>
+                navigate("/business/store/categories?type=product&from=products")
+              }
             >
               Manage Categories
             </Button>
