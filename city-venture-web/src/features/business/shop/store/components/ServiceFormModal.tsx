@@ -22,6 +22,7 @@ import { FiInfo, FiPlus } from "react-icons/fi";
 import type {
   Service,
   CreateServicePayload,
+  ContactMethod,
 } from "@/src/types/Service";
 import type { ShopCategoryAssignment, CreateShopCategoryPayload } from "@/src/types/ShopCategory";
 
@@ -47,17 +48,18 @@ export default function ServiceFormModal({
   const [formData, setFormData] = useState({
     name: "",
     description: "",
+    image_url: "",
     base_price: "",
-    price_type: "fixed" as "fixed" | "per_hour" | "per_person" | "custom",
-    duration_value: "",
-    duration_unit: "hours" as "minutes" | "hours" | "days" | "weeks",
-    capacity: "",
-    status: "active" as "active" | "inactive",
-    terms_conditions: "",
-    cancellation_policy: "",
-    advance_booking_hours: "",
+    price_type: "fixed" as "per_hour" | "per_day" | "per_week" | "per_month" | "per_session" | "fixed",
+    requirements: "",
+    contact_notes: "",
+    display_order: "",
+    status: "active" as "active" | "inactive" | "seasonal",
   });
 
+  const [contactMethods, setContactMethods] = useState<ContactMethod[]>([]);
+  const [newContactType, setNewContactType] = useState<ContactMethod["type"]>("phone");
+  const [newContactValue, setNewContactValue] = useState("");
   const [selectedCategoryIds, setSelectedCategoryIds] = useState<string[]>([]);
   const [newCategoryName, setNewCategoryName] = useState("");
   const [newCategoryDescription, setNewCategoryDescription] = useState("");
@@ -72,16 +74,15 @@ export default function ServiceFormModal({
       setFormData({
         name: service.name || "",
         description: service.description || "",
+        image_url: service.image_url || "",
         base_price: service.base_price?.toString() || "",
         price_type: service.price_type || "fixed",
-        duration_value: service.duration_value?.toString() || "",
-        duration_unit: service.duration_unit || "hours",
-        capacity: service.capacity?.toString() || "",
+        requirements: service.requirements || "",
+        contact_notes: service.contact_notes || "",
+        display_order: service.display_order?.toString() || "0",
         status: service.status || "active",
-        terms_conditions: service.terms_conditions || "",
-        cancellation_policy: service.cancellation_policy || "",
-        advance_booking_hours: service.advance_booking_hours?.toString() || "",
       });
+      setContactMethods(service.contact_methods || []);
       setSelectedCategoryIds(
         service.categories?.map((cat) => cat.id) || []
       );
@@ -90,16 +91,15 @@ export default function ServiceFormModal({
       setFormData({
         name: "",
         description: "",
+        image_url: "",
         base_price: "",
         price_type: "fixed",
-        duration_value: "",
-        duration_unit: "hours",
-        capacity: "",
+        requirements: "",
+        contact_notes: "",
+        display_order: "0",
         status: "active",
-        terms_conditions: "",
-        cancellation_policy: "",
-        advance_booking_hours: "",
       });
+      setContactMethods([]);
       setSelectedCategoryIds([]);
     }
     setError(null);
@@ -136,19 +136,14 @@ export default function ServiceFormModal({
         business_id: businessId,
         name: formData.name.trim(),
         description: formData.description.trim() || undefined,
+        image_url: formData.image_url.trim() || undefined,
         base_price: parseFloat(formData.base_price),
         price_type: formData.price_type,
-        duration_value: formData.duration_value
-          ? parseInt(formData.duration_value)
-          : undefined,
-        duration_unit: formData.duration_value ? formData.duration_unit : undefined,
-        capacity: formData.capacity ? parseInt(formData.capacity) : undefined,
+        requirements: formData.requirements.trim() || undefined,
+        contact_methods: contactMethods.length > 0 ? contactMethods : undefined,
+        contact_notes: formData.contact_notes.trim() || undefined,
+        display_order: formData.display_order ? parseInt(formData.display_order) : undefined,
         status: formData.status,
-        terms_conditions: formData.terms_conditions.trim() || undefined,
-        cancellation_policy: formData.cancellation_policy.trim() || undefined,
-        advance_booking_hours: formData.advance_booking_hours
-          ? parseInt(formData.advance_booking_hours)
-          : undefined,
         category_ids: selectedCategoryIds,
       };
 
@@ -165,6 +160,24 @@ export default function ServiceFormModal({
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleAddContactMethod = () => {
+    if (!newContactValue.trim()) {
+      setError("Contact value is required");
+      return;
+    }
+
+    setContactMethods([
+      ...contactMethods,
+      { type: newContactType, value: newContactValue.trim() }
+    ]);
+    setNewContactValue("");
+    setError(null);
+  };
+
+  const handleRemoveContactMethod = (index: number) => {
+    setContactMethods(contactMethods.filter((_, i) => i !== index));
   };
 
   const handleAddCategory = (categoryId: string | null) => {
@@ -278,9 +291,195 @@ export default function ServiceFormModal({
 
             <Divider />
 
+            {/* Pricing */}
+            <Typography level="title-sm" fontWeight={600}>
+              Pricing
+            </Typography>
+
+            <Stack direction="row" spacing={2}>
+              <FormControl sx={{ flex: 1 }}>
+                <FormLabel>Price Type</FormLabel>
+                <Select
+                  value={formData.price_type}
+                  onChange={(_, value) =>
+                    setFormData({
+                      ...formData,
+                      price_type: value as typeof formData.price_type,
+                    })
+                  }
+                >
+                  <Option value="fixed">Fixed Price</Option>
+                  <Option value="per_hour">Per Hour</Option>
+                  <Option value="per_day">Per Day</Option>
+                  <Option value="per_week">Per Week</Option>
+                  <Option value="per_month">Per Month</Option>
+                  <Option value="per_session">Per Session</Option>
+                </Select>
+              </FormControl>
+
+              <FormControl required sx={{ flex: 1 }}>
+                <FormLabel>Base Price (₱)</FormLabel>
+                <Input
+                  type="number"
+                  placeholder="0.00"
+                  value={formData.base_price}
+                  onChange={(e) =>
+                    setFormData({ ...formData, base_price: e.target.value })
+                  }
+                  slotProps={{
+                    input: {
+                      min: "0",
+                      step: "0.01",
+                    },
+                  }}
+                />
+              </FormControl>
+            </Stack>
+
+            <FormControl>
+              <FormLabel>Image URL</FormLabel>
+              <Input
+                type="url"
+                placeholder="https://example.com/image.jpg"
+                value={formData.image_url}
+                onChange={(e) =>
+                  setFormData({ ...formData, image_url: e.target.value })
+                }
+              />
+            </FormControl>
+
+            <FormControl>
+              <FormLabel>Requirements</FormLabel>
+              <Textarea
+                minRows={2}
+                placeholder="What customers should know or bring..."
+                value={formData.requirements}
+                onChange={(e) =>
+                  setFormData({ ...formData, requirements: e.target.value })
+                }
+              />
+            </FormControl>
+
+            <Divider />
+
+            {/* Contact Methods */}
+            <Typography level="title-sm" fontWeight={600}>
+              Contact Methods
+            </Typography>
+
+            {contactMethods.length > 0 && (
+              <Stack spacing={1}>
+                {contactMethods.map((method, index) => (
+                  <Chip
+                    key={index}
+                    variant="outlined"
+                    endDecorator={
+                      <ChipDelete onDelete={() => handleRemoveContactMethod(index)} />
+                    }
+                  >
+                    <strong>{method.type}:</strong> {method.value}
+                  </Chip>
+                ))}
+              </Stack>
+            )}
+
+            <Stack direction="row" spacing={1}>
+              <FormControl sx={{ flex: 1 }}>
+                <FormLabel>Type</FormLabel>
+                <Select
+                  value={newContactType}
+                  onChange={(_, value) => setNewContactType(value as ContactMethod["type"])}
+                >
+                  <Option value="phone">Phone</Option>
+                  <Option value="email">Email</Option>
+                  <Option value="facebook">Facebook</Option>
+                  <Option value="viber">Viber</Option>
+                  <Option value="whatsapp">WhatsApp</Option>
+                  <Option value="other">Other</Option>
+                </Select>
+              </FormControl>
+              <FormControl sx={{ flex: 2 }}>
+                <FormLabel>Value</FormLabel>
+                <Input
+                  placeholder="Contact value"
+                  value={newContactValue}
+                  onChange={(e) => setNewContactValue(e.target.value)}
+                  onKeyPress={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      handleAddContactMethod();
+                    }
+                  }}
+                />
+              </FormControl>
+              <Box sx={{ display: "flex", alignItems: "flex-end" }}>
+                <Button onClick={handleAddContactMethod} variant="outlined">
+                  <FiPlus />
+                </Button>
+              </Box>
+            </Stack>
+
+            <FormControl>
+              <FormLabel>Contact Notes</FormLabel>
+              <Textarea
+                minRows={2}
+                placeholder="e.g., Call between 9 AM - 5 PM"
+                value={formData.contact_notes}
+                onChange={(e) =>
+                  setFormData({ ...formData, contact_notes: e.target.value })
+                }
+              />
+            </FormControl>
+
+            <Divider />
+
+            {/* Display Settings */}
+            <Typography level="title-sm" fontWeight={600}>
+              Display Settings
+            </Typography>
+
+            <FormControl>
+              <FormLabel>Display Order</FormLabel>
+              <Input
+                type="number"
+                placeholder="0"
+                value={formData.display_order}
+                onChange={(e) =>
+                  setFormData({ ...formData, display_order: e.target.value })
+                }
+                slotProps={{
+                  input: {
+                    min: "0",
+                  },
+                }}
+              />
+              <Typography level="body-xs" color="neutral" sx={{ mt: 0.5 }}>
+                Lower numbers appear first
+              </Typography>
+            </FormControl>
+
+            <FormControl>
+              <FormLabel>Status</FormLabel>
+              <Select
+                value={formData.status}
+                onChange={(_, value) =>
+                  setFormData({
+                    ...formData,
+                    status: value as typeof formData.status,
+                  })
+                }
+              >
+                <Option value="active">Active</Option>
+                <Option value="inactive">Inactive</Option>
+                <Option value="seasonal">Seasonal</Option>
+              </Select>
+            </FormControl>
+
+            <Divider />
+
             {/* Categories */}
             <Typography level="title-sm" fontWeight={600}>
-              Categories
+              Categories *
             </Typography>
 
             <FormControl>
@@ -337,197 +536,8 @@ export default function ServiceFormModal({
               </Typography>
             </FormControl>
 
-            <Divider />
-
-            {/* Pricing & Duration */}
-            <Typography level="title-sm" fontWeight={600}>
-              Pricing & Duration
-            </Typography>
-
-            <Stack direction="row" spacing={2}>
-              <FormControl sx={{ flex: 1 }}>
-                <FormLabel>Price Type</FormLabel>
-                <Select
-                  value={formData.price_type}
-                  onChange={(_, value) =>
-                    setFormData({
-                      ...formData,
-                      price_type: value as typeof formData.price_type,
-                    })
-                  }
-                >
-                  <Option value="fixed">Fixed Price</Option>
-                  <Option value="per_hour">Per Hour</Option>
-                  <Option value="per_person">Per Person</Option>
-                  <Option value="custom">Custom</Option>
-                </Select>
-              </FormControl>
-
-              <FormControl required sx={{ flex: 1 }}>
-                <FormLabel>Base Price (₱)</FormLabel>
-                <Input
-                  type="number"
-                  placeholder="0.00"
-                  value={formData.base_price}
-                  onChange={(e) =>
-                    setFormData({ ...formData, base_price: e.target.value })
-                  }
-                  slotProps={{
-                    input: {
-                      min: "0",
-                      step: "0.01",
-                    },
-                  }}
-                />
-              </FormControl>
-            </Stack>
-
-            <Stack direction="row" spacing={2}>
-              <FormControl sx={{ flex: 2 }}>
-                <FormLabel>Duration</FormLabel>
-                <Input
-                  type="number"
-                  placeholder="e.g., 2"
-                  value={formData.duration_value}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      duration_value: e.target.value,
-                    })
-                  }
-                  slotProps={{
-                    input: {
-                      min: "0",
-                      step: "1",
-                    },
-                  }}
-                />
-              </FormControl>
-
-              <FormControl sx={{ flex: 1 }}>
-                <FormLabel>Unit</FormLabel>
-                <Select
-                  value={formData.duration_unit}
-                  onChange={(_, value) =>
-                    setFormData({
-                      ...formData,
-                      duration_unit: value as typeof formData.duration_unit,
-                    })
-                  }
-                >
-                  <Option value="minutes">Minutes</Option>
-                  <Option value="hours">Hours</Option>
-                  <Option value="days">Days</Option>
-                  <Option value="weeks">Weeks</Option>
-                </Select>
-              </FormControl>
-            </Stack>
-
-            <Divider />
-
-            {/* Booking Settings */}
-            <Typography level="title-sm" fontWeight={600}>
-              Booking Settings
-            </Typography>
-
-            <Stack direction="row" spacing={2}>
-              <FormControl sx={{ flex: 1 }}>
-                <FormLabel>Capacity</FormLabel>
-                <Input
-                  type="number"
-                  placeholder="Max people"
-                  value={formData.capacity}
-                  onChange={(e) =>
-                    setFormData({ ...formData, capacity: e.target.value })
-                  }
-                  slotProps={{
-                    input: {
-                      min: "1",
-                    },
-                  }}
-                />
-              </FormControl>
-
-              <FormControl sx={{ flex: 1 }}>
-                <FormLabel>Advance Booking (hours)</FormLabel>
-                <Input
-                  type="number"
-                  placeholder="e.g., 24"
-                  value={formData.advance_booking_hours}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      advance_booking_hours: e.target.value,
-                    })
-                  }
-                  slotProps={{
-                    input: {
-                      min: "0",
-                    },
-                  }}
-                />
-                <Typography level="body-xs" color="neutral" sx={{ mt: 0.5 }}>
-                  Minimum hours required before customers can book. Example: 24 hours = customers must book at least 1 day ahead
-                </Typography>
-              </FormControl>
-            </Stack>
-
-            <FormControl>
-              <FormLabel>Status</FormLabel>
-              <Select
-                value={formData.status}
-                onChange={(_, value) =>
-                  setFormData({
-                    ...formData,
-                    status: value as typeof formData.status,
-                  })
-                }
-              >
-                <Option value="active">Active</Option>
-                <Option value="inactive">Inactive</Option>
-              </Select>
-            </FormControl>
-
-            <Divider />
-
-            {/* Policies */}
-            <Typography level="title-sm" fontWeight={600}>
-              Terms & Policies (Optional)
-            </Typography>
-
-            <FormControl>
-              <FormLabel>Terms & Conditions</FormLabel>
-              <Textarea
-                minRows={2}
-                placeholder="Service terms and conditions..."
-                value={formData.terms_conditions}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    terms_conditions: e.target.value,
-                  })
-                }
-              />
-            </FormControl>
-
-            <FormControl>
-              <FormLabel>Cancellation Policy</FormLabel>
-              <Textarea
-                minRows={2}
-                placeholder="Cancellation and refund policy..."
-                value={formData.cancellation_policy}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    cancellation_policy: e.target.value,
-                  })
-                }
-              />
-            </FormControl>
-
-            {/* Action Buttons */}
-            <Stack direction="row" spacing={2} justifyContent="flex-end" pt={2}>
-              <Button variant="outlined" color="neutral" onClick={onClose}>
+            <Stack direction="row" spacing={2} justifyContent="flex-end" mt={2}>
+              <Button variant="outlined" onClick={onClose} disabled={loading}>
                 Cancel
               </Button>
               <Button type="submit" loading={loading}>
@@ -539,70 +549,51 @@ export default function ServiceFormModal({
       </ModalDialog>
     </Modal>
 
-    {/* Category Creation Modal - Separate */}
+    {/* Create Category Modal */}
     <Modal open={categoryModalOpen} onClose={() => setCategoryModalOpen(false)}>
-      <ModalDialog size="sm" sx={{ maxWidth: 400, width: "90%" }}>
+      <ModalDialog sx={{ maxWidth: 400, width: "100%" }}>
         <ModalClose />
         <Typography level="h4" fontWeight={700} mb={2}>
           Create New Category
         </Typography>
 
         <Stack spacing={2}>
-          <FormControl error={!!error && error.includes("Category name")}>
-            <FormLabel>Category Name *</FormLabel>
+          {error && (
+            <Alert color="danger" variant="soft" startDecorator={<FiInfo />}>
+              {error}
+            </Alert>
+          )}
+
+          <FormControl required>
+            <FormLabel>Category Name</FormLabel>
             <Input
-              placeholder="e.g., Spa Services, Tours, Activities"
+              placeholder="e.g., Wellness Services"
               value={newCategoryName}
-              onChange={(e) => {
-                setNewCategoryName(e.target.value);
-                if (error) setError(null);
-              }}
+              onChange={(e) => setNewCategoryName(e.target.value)}
               disabled={isCreatingCategory}
-              autoFocus
             />
-            {error && error.includes("Category name") && (
-              <Typography level="body-sm" color="danger">
-                {error}
-              </Typography>
-            )}
           </FormControl>
 
           <FormControl>
-            <FormLabel>Description</FormLabel>
+            <FormLabel>Description (Optional)</FormLabel>
             <Textarea
-              placeholder="Brief description of this category (optional)"
               minRows={2}
+              placeholder="Brief description..."
               value={newCategoryDescription}
               onChange={(e) => setNewCategoryDescription(e.target.value)}
               disabled={isCreatingCategory}
             />
           </FormControl>
 
-          {error && !error.includes("Category name") && (
-            <Typography level="body-sm" color="danger">
-              {error}
-            </Typography>
-          )}
-
-          <Stack direction="row" spacing={2} justifyContent="flex-end" mt={2}>
+          <Stack direction="row" spacing={2} justifyContent="flex-end">
             <Button
               variant="outlined"
-              color="neutral"
-              onClick={() => {
-                setCategoryModalOpen(false);
-                setNewCategoryName("");
-                setNewCategoryDescription("");
-                setError(null);
-              }}
+              onClick={() => setCategoryModalOpen(false)}
               disabled={isCreatingCategory}
             >
               Cancel
             </Button>
-            <Button
-              onClick={handleCreateCategory}
-              loading={isCreatingCategory}
-              startDecorator={<FiPlus />}
-            >
+            <Button onClick={handleCreateCategory} loading={isCreatingCategory}>
               Create Category
             </Button>
           </Stack>

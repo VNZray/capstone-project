@@ -168,11 +168,10 @@ export default function Services() {
     return priceType.replace("_", " ");
   };
 
-  // Format duration
-  const formatDuration = (value: number | null | undefined, unit: string | null | undefined): string => {
-    if (!value || !unit) return "—";
-    const unitLabel = value === 1 ? unit.slice(0, -1) : unit; // Remove 's' for singular
-    return `${value} ${unitLabel}`;
+  // Format contact methods
+  const formatContactMethods = (methods: Array<{ type: string; value: string }> | undefined): string => {
+    if (!methods || methods.length === 0) return "—";
+    return methods.map(m => `${m.type}: ${m.value}`).join(", ");
   };
 
   if (!businessDetails) {
@@ -300,7 +299,7 @@ export default function Services() {
                   <th style={{ width: "30%" }}>Service</th>
                   <th style={{ width: "15%" }}>Category</th>
                   <th style={{ width: "15%" }}>Price</th>
-                  <th style={{ width: "10%" }}>Duration</th>
+                  <th style={{ width: "15%" }}>Contact</th>
                   <th style={{ width: "10%" }}>Status</th>
                   <th style={{ width: "10%", textAlign: "center" }}>Actions</th>
                 </tr>
@@ -363,7 +362,7 @@ export default function Services() {
                     </td>
                     <td>
                       <Typography level="body-sm">
-                        {formatDuration(service.duration_value, service.duration_unit)}
+                        {formatContactMethods(service.contact_methods)}
                       </Typography>
                     </td>
                     <td>
@@ -469,7 +468,7 @@ export default function Services() {
                   </Typography>
                   <Typography level="body-xs" color="neutral">
                     {formatPriceType(service.price_type)}
-                    {service.duration_value && service.duration_unit && ` • ${formatDuration(service.duration_value, service.duration_unit)}`}
+                    {service.contact_methods && service.contact_methods.length > 0 && ` • ${service.contact_methods.length} contact method(s)`}
                   </Typography>
                 </Stack>
                 
