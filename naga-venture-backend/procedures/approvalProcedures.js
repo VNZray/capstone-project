@@ -28,15 +28,13 @@ export async function createTouristSpotApprovalProcedures(knex) {
         ts.spot_status AS original_status
       FROM tourist_spot_edits tse
       JOIN type t ON tse.type_id = t.id
-      JOIN address a ON tse.address_id = a.id
-      JOIN province p ON a.province_id = p.id
-      JOIN municipality m ON a.municipality_id = m.id
-      JOIN barangay b ON a.barangay_id = b.id
+      JOIN barangay b ON tse.barangay_id = b.id
+      JOIN municipality m ON b.municipality_id = m.id
+      JOIN province p ON m.province_id = p.id
       JOIN tourist_spots ts ON tse.tourist_spot_id = ts.id
-      LEFT JOIN address oa ON ts.address_id = oa.id
-      LEFT JOIN province op ON oa.province_id = op.id
-      LEFT JOIN municipality om ON oa.municipality_id = om.id
-      LEFT JOIN barangay ob ON oa.barangay_id = ob.id
+      LEFT JOIN barangay ob ON ts.barangay_id = ob.id
+      LEFT JOIN municipality om ON ob.municipality_id = om.id
+      LEFT JOIN province op ON om.province_id = op.id
       LEFT JOIN type ot ON ts.type_id = ot.id
       WHERE tse.approval_status = 'pending'
       ORDER BY tse.submitted_at DESC;
@@ -58,16 +56,15 @@ export async function createTouristSpotApprovalProcedures(knex) {
     CREATE PROCEDURE GetPendingTouristSpots()
     BEGIN
       SELECT 
-        ts.id, ts.name, ts.description, ts.address_id,
+        ts.id, ts.name, ts.description, ts.barangay_id,
         ts.latitude, ts.longitude, ts.contact_phone, ts.contact_email, ts.website, ts.entry_fee,
         ts.spot_status, ts.is_featured, t.type, ts.type_id,
         ts.created_at, ts.updated_at, p.province, m.municipality, b.barangay
       FROM tourist_spots ts
       JOIN type t ON ts.type_id = t.id
-      JOIN address a ON ts.address_id = a.id
-      JOIN province p ON a.province_id = p.id
-      JOIN municipality m ON a.municipality_id = m.id
-      JOIN barangay b ON a.barangay_id = b.id
+      JOIN barangay b ON ts.barangay_id = b.id
+      JOIN municipality m ON b.municipality_id = m.id
+      JOIN province p ON m.province_id = p.id
       WHERE ts.spot_status = 'pending'
       ORDER BY ts.created_at DESC;
 
@@ -111,9 +108,9 @@ export async function createTouristSpotApprovalProcedures(knex) {
         START TRANSACTION;
         UPDATE tourist_spots ts
           JOIN tourist_spot_edits tse ON tse.id = p_edit_id AND ts.id = tse.tourist_spot_id
-        SET ts.name = tse.name,
+          SET ts.name = tse.name,
             ts.description = tse.description,
-            ts.address_id = tse.address_id,
+            ts.barangay_id = tse.barangay_id,
             ts.latitude = tse.latitude,
             ts.longitude = tse.longitude,
             ts.contact_phone = tse.contact_phone,

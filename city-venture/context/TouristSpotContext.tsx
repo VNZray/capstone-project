@@ -9,7 +9,6 @@ import {
   fetchTouristSpotImages,
   fetchTouristSpotLocationData,
   fetchTouristSpotSchedules,
-  fetchAddressDetailsById,
   getStoredTouristSpotId,
   setStoredTouristSpotId,
 } from '@/services/TouristSpotService';
@@ -91,12 +90,17 @@ export const TouristSpotProvider: React.FC<ProviderProps> = ({ children }) => {
       setSelectedSpot(spot);
       setImages(spot.images || []);
       setCategories(spot.categories || []);
-      if (spot?.address_id) {
-        const addr = await fetchAddressDetailsById(spot.address_id);
-        setAddressDetails(addr);
-      } else {
-        setAddressDetails(null);
-      }
+      // spot already includes barangay/municipality/province fields from backend
+      if (spot?.barangay_id) {
+        setAddressDetails({
+          barangay_id: spot.barangay_id ?? null,
+          municipality_id: spot.municipality_id ?? null,
+          province_id: spot.province_id ?? null,
+          barangay: spot.barangay ?? null,
+          municipality: spot.municipality ?? null,
+          province: spot.province ?? null,
+        });
+      } else setAddressDetails(null);
     } catch (e) {
       console.error('Failed to fetch tourist spot', e);
       setSelectedSpot(null);

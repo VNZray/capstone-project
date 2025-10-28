@@ -9,10 +9,14 @@ import { router } from 'expo-router';
 import Dropdown, { DropdownItem } from '@/components/Dropdown';
 import { fetchAllTouristSpots } from '@/services/TouristSpotService';
 import { fetchAllBusinessDetails } from '@/services/AccommodationService';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { useColorScheme } from '@/hooks/use-color-scheme';
 
 const targetTypes = ['business','event','tourist_spot','accommodation'];
 
 export default function SubmitReport(){
+  const scheme = useColorScheme();
+  const bg = scheme === 'dark' ? '#0F1222' : '#F5F7FB';
   const { user } = useAuth();
   const [targetType,setTargetType] = useState('business');
   const [targetId,setTargetId] = useState('');
@@ -82,6 +86,7 @@ export default function SubmitReport(){
   };
 
   return (
+    <SafeAreaView style={{ flex: 1, backgroundColor: bg }}>
     <ScrollView contentContainerStyle={styles.container}>
       <ThemedText type="title-small" weight="bold" style={{marginBottom:12}}>Submit a Report</ThemedText>
       <ThemedText type="body-small">Target Type</ThemedText>
@@ -118,6 +123,7 @@ export default function SubmitReport(){
       </View>
   <Button label={loading? 'Submitting...':'Submit Report'} onPress={onSubmit} fullWidth size="large" variant={loading? 'soft':'solid'} startIcon="flag" />
     </ScrollView>
+    </SafeAreaView>
   );
 }
 

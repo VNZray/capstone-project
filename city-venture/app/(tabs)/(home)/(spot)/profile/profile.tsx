@@ -75,9 +75,9 @@ const TouristSpotProfile = () => {
                   </ThemedText>
                   <ThemedText type="body-small">
                     {[
-                      addressDetails?.barangay_name || selectedSpot?.barangay_name,
-                      addressDetails?.municipality_name || selectedSpot?.municipality_name,
-                      addressDetails?.province_name || selectedSpot?.province_name,
+                      addressDetails?.barangay || selectedSpot?.barangay,
+                      addressDetails?.municipality || selectedSpot?.municipality,
+                      addressDetails?.province || selectedSpot?.province,
                     ].filter(Boolean).join(', ')}
                   </ThemedText>
                 </View>

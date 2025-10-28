@@ -8,7 +8,6 @@ import type {
   TouristSpotLocationData,
   TouristSpotSchedule,
   TouristSpotCategory,
-  TouristSpotAddressDetails,
 } from '@/types/TouristSpot';
 
 const STORAGE_KEY_SELECTED_SPOT = 'selectedTouristSpotId';
@@ -37,16 +36,6 @@ export const fetchTouristSpotById = async (id: string): Promise<TouristSpot> => 
   return data?.data;
 };
 
-export const fetchAddressDetailsById = async (id: number): Promise<TouristSpotAddressDetails | null> => {
-  if (!id) return null;
-  try {
-    const { data } = await axios.get(`${api}/address/${id}`);
-    return data || null;
-  } catch (e) {
-    console.warn('Failed to fetch address details', e);
-    return null;
-  }
-};
 
 // Fetch categories and types
 export const fetchTouristSpotCategoriesAndTypes = async (): Promise<TouristSpotCategoriesAndTypes> => {
