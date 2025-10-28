@@ -5,25 +5,13 @@ const {
 
 exports.up = async function (knex) {
   await knex.schema.createTable("owner", (table) => {
-    table.uuid("id").primary().defaultTo(knex.raw("(UUID())")); // MariaDB's UUID()
+    table.uuid("id").primary().defaultTo(knex.raw("(UUID())"));
     table.string("first_name", 30).notNullable();
     table.string("middle_name", 20);
     table.string("last_name", 30).notNullable();
     table.integer("age", 2);
     table.date("birthdate");
     table.enu("gender", ["Male", "Female"]);
-    table.enu("business_type", ["Shop", "Accommodation", "Both"]).notNullable();
-    // Foreign keys
-    table
-      .integer("barangay_id")
-      .unsigned()
-      .nullable()
-      .references("id")
-      .inTable("barangay")
-      .onDelete("CASCADE")
-      .onUpdate("CASCADE");
-
-
     table
       .uuid("user_id")
       .notNullable()

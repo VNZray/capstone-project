@@ -2,19 +2,21 @@ import React from "react";
 
 interface PageContainerProps {
   children: React.ReactNode;
+  padding?: string | number;
+  gap?: string | number;
   style?: React.CSSProperties;
 }
 
-const PageContainer: React.FC<PageContainerProps> = ({ children, style }) => {
+const PageContainer: React.FC<PageContainerProps> = ({ children, style, padding, gap = "20px" }) => {
   return (
     <div
       style={{
         display: "flex",
         flexDirection: "column",
-        padding: 0,
+        padding: padding,
         flex: 1,
         ...style,
-        gap: 20,
+        gap: gap,
       }}
     >
       {children}

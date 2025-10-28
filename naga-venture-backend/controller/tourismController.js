@@ -2,6 +2,21 @@ import db from "../db.js";
 import { handleDbError } from "../utils/errorHandler.js";
 import { v4 as uuidv4 } from "uuid";
 
+// Single source of truth for tourism fields (excluding id)
+const TOURISM_FIELDS = [
+  "first_name",
+  "middle_name",
+  "last_name",
+  "position",
+  "user_id",
+];
+
+const makePlaceholders = (n) => Array(n).fill("?").join(",");
+const buildTourismParams = (id, body) => [
+  id,
+  ...TOURISM_FIELDS.map((f) => body?.[f] ?? null),
+];
+
 // Get all tourism
 export async function getAllTourism(request, response) {
   try {
@@ -30,15 +45,9 @@ export async function getTourismById(request, response) {
 export async function createTourism(request, response) {
   try {
     const id = uuidv4();
-    const params = [
-      id,
-      request.body.first_name ?? null,
-      request.body.middle_name ?? null,
-      request.body.last_name ?? null,
-      request.body.position ?? null,
-      request.body.user_id ?? null,
-    ];
-    const [data] = await db.query("CALL InsertTourism(?,?,?,?,?,?)", params);
+    const params = buildTourismParams(id, request.body);
+    const placeholders = makePlaceholders(params.length);
+    const [data] = await db.query(`CALL InsertTourism(${placeholders})`, params);
     if (!data[0] || data[0].length === 0) {
       return response.status(404).json({ error: "Inserted row not found" });
     }
@@ -52,15 +61,9 @@ export async function createTourism(request, response) {
 export async function updateTourism(request, response) {
   const { id } = request.params;
   try {
-    const params = [
-      id,
-      request.body.first_name ?? null,
-      request.body.middle_name ?? null,
-      request.body.last_name ?? null,
-      request.body.position ?? null,
-      request.body.user_id ?? null,
-    ];
-    const [data] = await db.query("CALL UpdateTourism(?,?,?,?,?,?)", params);
+    const params = buildTourismParams(id, request.body);
+    const placeholders = makePlaceholders(params.length);
+    const [data] = await db.query(`CALL UpdateTourism(${placeholders})`, params);
     if (!data[0] || data[0].length === 0) {
       return response.status(404).json({ message: "Tourism not found" });
     }

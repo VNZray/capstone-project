@@ -2,6 +2,29 @@ import db from "../db.js";
 import { handleDbError } from "../utils/errorHandler.js";
 import { v4 as uuidv4 } from "uuid";
 
+// Single source of truth for tourist fields used in SPs (excluding id which is always first)
+const TOURIST_FIELDS = [
+  "first_name",
+  "middle_name",
+  "last_name",
+  "ethnicity",
+  "birthdate",
+  "age",
+  "gender",
+  "nationality",
+  "origin",
+  "user_id",
+];
+
+// Build an array of placeholders like "?, ?, ?"
+const makePlaceholders = (n) => Array(n).fill("?").join(",");
+
+// Build params for SP calls: id first, then mapped body fields (null if missing)
+const buildTouristParams = (id, body) => [
+  id,
+  ...TOURIST_FIELDS.map((f) => (body?.[f] ?? null)),
+];
+
 // Get all tourists
 export async function getAllTourists(request, response) {
   try {
@@ -30,24 +53,9 @@ export async function getTouristById(request, response) {
 export async function createTourist(request, response) {
   try {
     const id = uuidv4();
-    const params = [
-      id,
-      request.body.first_name ?? null,
-      request.body.middle_name ?? null,
-      request.body.last_name ?? null,
-      request.body.ethnicity ?? null,
-      request.body.birthdate ?? null,
-      request.body.age ?? null,
-      request.body.gender ?? null,
-      request.body.nationality ?? null,
-      request.body.category ?? null,
-      request.body.barangay_id ?? null,
-      request.body.user_id ?? null,
-    ];
-    const [data] = await db.query(
-      "CALL InsertTourist(?,?,?,?,?,?,?,?,?,?,?,?)",
-      params
-    );
+    const params = buildTouristParams(id, request.body);
+    const placeholders = makePlaceholders(params.length);
+    const [data] = await db.query(`CALL InsertTourist(${placeholders})`, params);
     if (!data[0] || data[0].length === 0) {
       return response.status(404).json({ error: "Inserted row not found" });
     }
@@ -77,24 +85,9 @@ export async function deleteTourist(request, response) {
 export async function updateTourist(request, response) {
   const { id } = request.params;
   try {
-    const params = [
-      id,
-      request.body.first_name ?? null,
-      request.body.middle_name ?? null,
-      request.body.last_name ?? null,
-      request.body.ethnicity ?? null,
-      request.body.birthdate ?? null,
-      request.body.age ?? null,
-      request.body.gender ?? null,
-      request.body.nationality ?? null,
-      request.body.category ?? null,
-      request.body.barangay_id ?? null,
-      request.body.user_id ?? null,
-    ];
-    const [data] = await db.query(
-      "CALL UpdateTourist(?,?,?,?,?,?,?,?,?,?,?,?)",
-      params
-    );
+    const params = buildTouristParams(id, request.body);
+    const placeholders = makePlaceholders(params.length);
+    const [data] = await db.query(`CALL UpdateTourist(${placeholders})`, params);
     if (!data[0] || data[0].length === 0) {
       return response.status(404).json({ message: "Tourist not found" });
     }

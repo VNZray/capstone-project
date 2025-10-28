@@ -3,10 +3,9 @@ export type Owner = {
   first_name: string;
   middle_name?: string | "";
   last_name: string;
-  business_type: string;
+  business_type?: string;
   age: string | "";
   gender: string | "";
   birthdate: string | "";
-  barangay_id: number | null;
   user_id?: string | "";
 };
