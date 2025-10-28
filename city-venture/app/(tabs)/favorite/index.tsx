@@ -1,11 +1,13 @@
 import Button from '@/components/Button';
 import SearchBar from '@/components/SearchBar';
+import ScrollableTab from '@/components/ScrollableTab';
 import { ThemedText } from '@/components/themed-text';
 import { background, card, colors } from '@/constants/color';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { router, useNavigation } from 'expo-router';
 import React, { useLayoutEffect, useRef, useState } from 'react';
+import type { Tab } from '@/types/Tab';
 import {
   Animated,
   Dimensions,
@@ -25,27 +27,33 @@ type FavItem = {
   image: any;
 };
 
-const TABS = [
+const TABS: Tab[] = [
   {
     key: 'accommodation',
     label: 'Accommodation',
-    icon: 'hotel' as const,
-    emoji: '🏨',
+    icon: 'hotel',
+  },
+  {
+    key: 'room',
+    label: 'Room',
+    icon: 'door-open',
   },
   {
     key: 'spots',
     label: 'Tourist Spots',
-    icon: 'map-marker-alt' as const,
-    emoji: '📍',
+    icon: 'map-marker-alt',
   },
-  { key: 'shops', label: 'Shops', icon: 'shopping-bag' as const, emoji: '🛍️' },
+  {
+    key: 'shops',
+    label: 'Shops',
+    icon: 'shopping-bag',
+  },
   {
     key: 'events',
     label: 'Events',
-    icon: 'calendar-alt' as const,
-    emoji: '🎉',
+    icon: 'calendar-alt',
   },
-] as const;
+];
 
 type TabKey = (typeof TABS)[number]['key'];
 
@@ -90,6 +98,14 @@ const Favorite = () => {
         image: require('@/assets/images/android-icon-foreground.png'),
       },
     ],
+    room: [
+      {
+        id: 'r1',
+        title: 'Deluxe Room 101',
+        subtitle: 'Spacious room with city view',
+        image: require('@/assets/images/partial-react-logo.png'),
+      },
+    ],
     spots: [
       {
         id: 's1',
@@ -121,7 +137,7 @@ const Favorite = () => {
   const scrollRef = useRef<ScrollView>(null);
   const scrollX = useRef(new Animated.Value(0)).current;
 
-  const onTabPress = (index: number) => {
+  const handleTabChange = (tab: Tab, index: number) => {
     setTabIndex(index);
     scrollRef.current?.scrollTo({ x: SCREEN_WIDTH * index, animated: false });
   };
@@ -192,32 +208,13 @@ const Favorite = () => {
           onSearch={() => {}}
           placeholder="Search favorites…"
         />
-      </View>
 
-      {/* Tabs */}
-      <View style={{ paddingHorizontal: 20, marginTop: 14 }}>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.tabRow}
-        >
-          {TABS.map((t, i) => (
-            <Button
-              startIcon={t.icon}
-              key={t.key}
-              onPress={() => onTabPress(i)}
-              label={t.label}
-              size="medium"
-              textSize={11}
-              iconSize={14}
-              padding={11}
-              variant={tabIndex === i ? 'solid' : 'soft'}
-              color={tabIndex === i ? 'primary' : 'secondary'}
-            />
-          ))}
-        </ScrollView>
+        <ScrollableTab
+          tabs={TABS}
+          onTabChange={handleTabChange}
+          activeKey={TABS[tabIndex].key}
+        />
       </View>
-
       {/* Pages */}
       <Animated.ScrollView
         ref={scrollRef}
@@ -257,7 +254,7 @@ const Favorite = () => {
                   data={data}
                   keyExtractor={(it) => it.id}
                   renderItem={({ item }) => renderCard(item, key)}
-                  contentContainerStyle={{ paddingVertical: 14, gap: 12 }}
+                  contentContainerStyle={{ paddingVertical: 0, gap: 12 }}
                   refreshControl={
                     <RefreshControl
                       refreshing={refreshing}

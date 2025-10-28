@@ -18,6 +18,7 @@ export type Booking = {
     local_counts?: number;
     trip_purpose?: string;
     balance?: number;
+    business_id?: string;
 }
 
 export type Bookings = Booking[];

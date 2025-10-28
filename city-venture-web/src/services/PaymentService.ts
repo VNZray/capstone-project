@@ -27,3 +27,14 @@ export async function fetchPaymentByPaymentForId(payment_for_id: string): Promis
     if (!res.ok) return null;
     return res.json();
 }
+
+// New: fetch payments joined with booking and tourist by business id
+export async function fetchPaymentsByBusinessId(businessId: string): Promise<any[]> {
+    const res = await fetch(`${api}/payment/business/${businessId}`);
+    if (!res.ok) {
+        if (res.status === 404) return [];
+        throw new Error(`Failed to fetch business payments (${res.status})`);
+    }
+    const data = await res.json();
+    return Array.isArray(data) ? data : [];
+}

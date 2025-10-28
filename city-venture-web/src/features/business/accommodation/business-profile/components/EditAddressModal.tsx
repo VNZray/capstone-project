@@ -3,7 +3,7 @@ import { FormControl, FormLabel, Option, Select, Input } from "@mui/joy";
 import { updateData } from "@/src/services/Service";
 import { api } from "@/src/services/BusinessService";
 import axios from "axios";
-import BaseEditModal from '@/src/components/BaseEditModal';
+import BaseEditModal from "@/src/components/BaseEditModal";
 
 interface EditDescriptionModalProps {
   open: boolean;
@@ -121,18 +121,21 @@ const EditAddressModal: React.FC<EditDescriptionModalProps> = ({
   ]);
 
   const handleSave = async () => {
-    if (businessId && addressId) {
+    if (businessId) {
       try {
         await updateData(
-          addressId,
-          { province_id, municipality_id, barangay_id },
-          "address"
+          businessId,
+          {
+            address,
+            barangay_id,
+            municipality_id,
+            province_id,
+          },
+          "business"
         );
-
-        await updateData(businessId, { address }, "business");
         onSave(province_id, municipality_id, barangay_id, address);
       } catch (err) {
-        console.error("Failed to update business contact", err);
+        console.error("Failed to update business address", err);
       }
     } else {
       onSave(province_id, municipality_id, barangay_id, address);
@@ -149,8 +152,8 @@ const EditAddressModal: React.FC<EditDescriptionModalProps> = ({
       description="Update your business address and administrative divisions"
       maxWidth={600}
       actions={[
-        { label: 'Cancel', onClick: onClose },
-        { label: 'Save Changes', onClick: handleSave, variant: 'primary' },
+        { label: "Cancel", onClick: onClose },
+        { label: "Save Changes", onClick: handleSave, variant: "primary" },
       ]}
     >
       <FormControl>

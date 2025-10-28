@@ -15,6 +15,7 @@ function deriveApiFromDevHost(): string | undefined {
 				const match = scriptURL.match(/^[a-zA-Z]+:\/\/([^:\/]+)(?::\d+)?\//);
 				const host = match?.[1];
 				if (host) return `http://${host}:3000/api`;
+				console.warn("Failed to parse host from scriptURL", host);
 			}
 		}
 	} catch {
