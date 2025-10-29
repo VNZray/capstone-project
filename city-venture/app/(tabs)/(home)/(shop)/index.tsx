@@ -1,31 +1,52 @@
 import React, { useEffect, useState } from 'react';
 import {
   View,
-  Text,
   FlatList,
   StyleSheet,
   RefreshControl,
   ActivityIndicator,
+  ScrollView,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { colors } from '@/constants/color';
-import { useTypography } from '@/constants/typography';
 import ShopCard from '@/components/ShopCard';
 import PageContainer from '@/components/PageContainer';
+import SearchBar from '@/components/SearchBar';
+import FeaturedShopCard from '@/components/shops/FeaturedShopCard';
+import SpecialOfferCard from '@/components/shops/SpecialOfferCard';
+import CategoryChip from '@/components/shops/CategoryChip';
+import SectionHeader from '@/components/shops/SectionHeader';
 import { fetchAllBusinessDetails } from '@/services/BusinessService';
 import type { Business } from '@/types/Business';
+import { ThemedText } from '@/components/themed-text';
+
+const SHOP_CATEGORIES = [
+  { id: '1', icon: 'fast-food', iconFamily: 'Ionicons', label: 'Food & Beverage' },
+  { id: '2', icon: 'heart-pulse', iconFamily: 'MaterialCommunityIcons', label: 'Health & Beauty' },
+  { id: '3', icon: 'laptop', iconFamily: 'Ionicons', label: 'Technology & Services' },
+  { id: '4', icon: 'cart', iconFamily: 'Ionicons', label: 'Shopping & Retail' },
+  { id: '5', icon: 'briefcase', iconFamily: 'Ionicons', label: 'Professional Services' },
+  { id: '6', icon: 'hammer', iconFamily: 'Ionicons', label: 'Construction & Repair' },
+] as const;
+
+const PLACEHOLDER_OFFERS = [
+  { id: '1', title: 'Summer Sale', discount: '50% OFF' },
+  { id: '2', title: 'New Customer Special', discount: '30% OFF' },
+  { id: '3', title: 'Limited Time Offer', discount: '25% OFF' },
+];
 
 const Shop = () => {
   const router = useRouter();
   const scheme = useColorScheme();
   const isDark = scheme === 'dark';
-  const type = useTypography();
 
   const [businesses, setBusinesses] = useState<Business[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
   const palette = {
     bg: isDark ? '#0D1B2A' : '#F8F9FA',
@@ -39,14 +60,11 @@ const Shop = () => {
     try {
       setError(null);
       const data = await fetchAllBusinessDetails();
-      console.log('📊 Businesses fetched:', data.length);
-      console.log('📊 Business statuses:', data.map(b => ({ name: b.business_name, status: b.status })));
       
       // Filter only active/approved businesses
       const activeBusinesses = data.filter(b => 
         b.status === 'Approved' || b.status === 'Active'
       );
-      console.log('✅ Active businesses:', activeBusinesses.length);
       setBusinesses(activeBusinesses);
     } catch (err: any) {
       console.error('❌ Error loading businesses:', err);
@@ -67,40 +85,33 @@ const Shop = () => {
   };
 
   const handleBusinessPress = (business: Business) => {
-    // Using a simpler navigation approach
     router.push(`/(tabs)/(home)/(shop)/business-details?businessId=${business.id}`);
   };
 
-  const renderBusinessCard = ({ item }: { item: Business }) => (
-    <ShopCard
-      image={item.business_image || require('@/assets/images/placeholder.png')}
-      name={item.business_name}
-      category={item.description || 'No description'}
-      elevation={2}
-      onPress={() => handleBusinessPress(item)}
-      style={styles.card}
-    />
-  );
+  const handleSearch = () => {
+    console.log('🔍 Searching for:', searchQuery);
+    // Implement search functionality
+  };
 
-  const renderEmpty = () => (
-    <View style={styles.emptyContainer}>
-      <Text style={{ fontSize: type.h3, color: palette.subText, fontWeight: '600' }}>
-        No businesses available
-      </Text>
-      <Text style={{ fontSize: type.body, color: palette.subText, marginTop: 8 }}>
-        Check back later for new shops and services
-      </Text>
-    </View>
-  );
+  const handleCategoryPress = (categoryId: string) => {
+    setSelectedCategory(categoryId === selectedCategory ? null : categoryId);
+    console.log('📂 Category selected:', categoryId);
+  };
+
+  // Get featured businesses (top 5 with highest ratings or random)
+  const featuredBusinesses = businesses.slice(0, 5);
+  
+  // Get all businesses for "Discover More" section
+  const discoverMoreBusinesses = businesses;
 
   if (loading) {
     return (
       <PageContainer>
         <View style={styles.centerContainer}>
           <ActivityIndicator size="large" color={colors.primary} />
-          <Text style={{ fontSize: type.body, color: palette.text, marginTop: 16 }}>
-            Loading businesses...
-          </Text>
+          <ThemedText type="body-medium" style={{ marginTop: 16 }}>
+            Loading shops...
+          </ThemedText>
         </View>
       </PageContainer>
     );
@@ -110,25 +121,23 @@ const Shop = () => {
     return (
       <PageContainer>
         <View style={styles.centerContainer}>
-          <Text style={{ fontSize: type.h3, color: colors.error, marginBottom: 8, fontWeight: '600' }}>
+          <ThemedText type="title-medium" style={{ color: colors.error, marginBottom: 8 }}>
             Error
-          </Text>
-          <Text style={{ fontSize: type.body, color: palette.subText }}>
+          </ThemedText>
+          <ThemedText type="body-medium" style={{ color: palette.subText }}>
             {error}
-          </Text>
+          </ThemedText>
         </View>
       </PageContainer>
     );
   }
 
   return (
-    <PageContainer>
+    <PageContainer padding={0}>
       <FlatList
-        data={businesses}
-        renderItem={renderBusinessCard}
+        data={discoverMoreBusinesses}
         keyExtractor={(item) => item.id || ''}
-        contentContainerStyle={styles.listContent}
-        ListEmptyComponent={renderEmpty}
+        showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -136,7 +145,123 @@ const Shop = () => {
             tintColor={colors.primary}
           />
         }
-        showsVerticalScrollIndicator={false}
+        ListHeaderComponent={
+          <>
+            {/* Search Bar Section */}
+            <View style={styles.searchSection}>
+              <SearchBar
+                placeholder="Search shops..."
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+                onSearch={handleSearch}
+                variant="icon-right"
+                size="md"
+                shape="rounded"
+              />
+            </View>
+
+            {/* Featured Shops Section */}
+            {featuredBusinesses.length > 0 && (
+              <View style={styles.section}>
+                <SectionHeader
+                  title="Featured Shops"
+                  showViewAll
+                  onViewAllPress={() => console.log('View all featured')}
+                />
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.featuredContainer}
+                >
+                  {featuredBusinesses.map((business, index) => (
+                    <FeaturedShopCard
+                      key={business.id || index}
+                      image={business.business_image || require('@/assets/images/placeholder.png')}
+                      name={business.business_name}
+                      category={business.description || ''}
+                      rating={4.5}
+                      isFeatured={true}
+                      onPress={() => handleBusinessPress(business)}
+                    />
+                  ))}
+                </ScrollView>
+              </View>
+            )}
+
+            {/* Special Offers Section */}
+            <View style={styles.section}>
+              <SectionHeader
+                title="Special Offers"
+                showViewAll
+                onViewAllPress={() => console.log('View all offers')}
+              />
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.offersContainer}
+              >
+                {PLACEHOLDER_OFFERS.map((offer) => (
+                  <SpecialOfferCard
+                    key={offer.id}
+                    image={require('@/assets/images/placeholder.png')}
+                    title={offer.title}
+                    discount={offer.discount}
+                    onPress={() => console.log('Offer pressed:', offer.title)}
+                  />
+                ))}
+              </ScrollView>
+            </View>
+
+            {/* Shop Categories Section */}
+            <View style={styles.section}>
+              <SectionHeader
+                title="Shop Categories"
+                showViewAll
+                onViewAllPress={() => console.log('View all categories')}
+              />
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.categoriesContainer}
+              >
+                {SHOP_CATEGORIES.map((category) => (
+                  <CategoryChip
+                    key={category.id}
+                    icon={category.icon}
+                    iconFamily={category.iconFamily as any}
+                    label={category.label}
+                    isSelected={selectedCategory === category.id}
+                    onPress={() => handleCategoryPress(category.id)}
+                  />
+                ))}
+              </ScrollView>
+            </View>
+
+            {/* Discover More Header */}
+            <SectionHeader title="Discover More" />
+          </>
+        }
+        renderItem={({ item }) => (
+          <View style={styles.shopCardWrapper}>
+            <ShopCard
+              image={item.business_image || require('@/assets/images/placeholder.png')}
+              name={item.business_name}
+              category={item.description || 'No description'}
+              elevation={2}
+              onPress={() => handleBusinessPress(item)}
+            />
+          </View>
+        )}
+        ListEmptyComponent={
+          <View style={styles.emptyContainer}>
+            <ThemedText type="title-medium" style={{ color: palette.subText }}>
+              No shops available
+            </ThemedText>
+            <ThemedText type="body-medium" style={{ color: palette.subText, marginTop: 8 }}>
+              Check back later for new shops and services
+            </ThemedText>
+          </View>
+        }
       />
     </PageContainer>
   );
@@ -145,12 +270,29 @@ const Shop = () => {
 export default Shop;
 
 const styles = StyleSheet.create({
-  listContent: {
-    padding: 16,
-    gap: 16,
+  searchSection: {
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 8,
   },
-  card: {
-    marginBottom: 8,
+  section: {
+    marginVertical: 12,
+  },
+  featuredContainer: {
+    paddingHorizontal: 8,
+    paddingVertical: 8,
+  },
+  offersContainer: {
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+  },
+  categoriesContainer: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+  },
+  shopCardWrapper: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
   },
   centerContainer: {
     flex: 1,
