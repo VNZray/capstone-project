@@ -21,8 +21,8 @@ import {
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 const LoginPage = () => {
-  const [email, setEmail] = useState('emman@gmail.com');
-  const [password, setPassword] = useState('123456');
+  const [email, setEmail] = useState('tourist@example.com');
+  const [password, setPassword] = useState('tourist123');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const { login, user } = useAuth();

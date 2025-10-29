@@ -27,7 +27,7 @@ const LoginPage = () => {
   const [password, setPassword] = useState('123456');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const { login, user } = useAuth();
+  const { login } = useAuth();
   const [loginError, setLoginError] = useState('');
   const timeoutRef = useRef<number | null>(null);
 
@@ -68,15 +68,15 @@ const LoginPage = () => {
     }, 5000);
 
     try {
-      await login(email, password);
+      const loggedInUser = await login(email, password);
       // Clear timeout on success
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current);
         timeoutRef.current = null;
       }
       setIsLoading(false);
-      // Navigate to home on success
-      if (user?.user_role_id === 2 || user?.user_role_id === 3) {
+      // Navigate to home on success - use returned user data instead of context state
+      if (loggedInUser?.user_role_id === 2 || loggedInUser?.user_role_id === 3) {
         navigateToHome();
       }
     } catch (error: any) {

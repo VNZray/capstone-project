@@ -15,21 +15,21 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const getHeaderHeights = () => {
   if (SCREEN_WIDTH < 360) {
     return {
-      HEADER_HEIGHT_EXPANDED: 320,
-      HEADER_HEIGHT_COLLAPSED: 120,
-      SCROLL_THRESHOLD: 200,
+      HEADER_HEIGHT_EXPANDED: 280, // 35% for small devices
+      HEADER_HEIGHT_COLLAPSED: 252, // 10% collapse (280 - 28)
+      SCROLL_THRESHOLD: 120,
     };
   } else if (SCREEN_WIDTH < 375) {
     return {
-      HEADER_HEIGHT_EXPANDED: 330,
-      HEADER_HEIGHT_COLLAPSED: 130,
-      SCROLL_THRESHOLD: 210,
+      HEADER_HEIGHT_EXPANDED: 292, // 35% for medium devices
+      HEADER_HEIGHT_COLLAPSED: 263, // 10% collapse (292 - 29)
+      SCROLL_THRESHOLD: 130,
     };
   } else {
     return {
-      HEADER_HEIGHT_EXPANDED: 340,
-      HEADER_HEIGHT_COLLAPSED: 140,
-      SCROLL_THRESHOLD: 220,
+      HEADER_HEIGHT_EXPANDED: 315, // 35% for larger devices
+      HEADER_HEIGHT_COLLAPSED: 284, // 10% collapse (315 - 31)
+      SCROLL_THRESHOLD: 145,
     };
   }
 };
@@ -59,13 +59,33 @@ export const useCollapsibleHeader = () => {
 
   // Background image parallax + darkening effect
   const backgroundImageStyle = useAnimatedStyle(() => {
+    const translateY = scrollY.value * -0.45;
+    const scale = interpolate(
+      progress.value,
+      [0, 1],
+      [1.12, 1],
+      Extrapolate.CLAMP
+    );
+
+    // Smooth darkening from transparent to SOLID primary navy
     const backgroundColor = interpolateColor(
       progress.value,
       [0, 1],
-      ['rgba(13, 35, 87, 1)', 'rgba(5, 18, 56, 1)']
+      ['rgba(0,0,0,0)', 'rgba(10, 26, 66, 1)'] // Fully opaque primary navy
     );
 
-    return { backgroundColor };
+    return {
+      transform: [
+        { translateY },
+        { scale },
+      ],
+      backgroundColor,
+    };
+  });
+
+  // Background tint (deprecated - darkening now applied directly to image)
+  const backgroundTintStyle = useAnimatedStyle(() => {
+    return { backgroundColor: 'transparent' };
   });
 
   // Greeting text animation (fades out first for clean transition)
@@ -90,17 +110,18 @@ export const useCollapsibleHeader = () => {
     };
   });
 
-  // Header background color animation (solid navy backing the header)
+  // Header background color animation (removed - let background image handle darkening)
   const headerBackgroundStyle = useAnimatedStyle(() => {
-    return { opacity: 1 };
+    // No fade-in of navy gradient - background image darkening handles it all
+    return { opacity: 0 };
   });
 
-  // Content margin adjustment (tighter spacing but preserve rounded corners)
+  // Content margin adjustment (tighter spacing)
   const contentMarginStyle = useAnimatedStyle(() => {
     const marginTop = interpolate(
       progress.value,
       [0, 1],
-      [-16, 0], // Allow slight overlap, lock flush when collapsed
+      [-35, 0], // Tighter overlap effect for better spacing
       Extrapolate.CLAMP
     );
 
@@ -123,6 +144,7 @@ export const useCollapsibleHeader = () => {
     scrollHandler,
     headerAnimatedStyle,
     backgroundImageStyle,
+    backgroundTintStyle,
     greetingStyle,
     headerBackgroundStyle,
     contentMarginStyle,

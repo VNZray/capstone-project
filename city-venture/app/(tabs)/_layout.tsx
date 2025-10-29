@@ -1,7 +1,7 @@
 // app/(tabs)/_layout.js
-import { Tabs, router, usePathname } from 'expo-router';
-import React, { useMemo } from 'react';
-import { Platform, View } from 'react-native';
+import { Tabs, usePathname } from 'expo-router';
+import React from 'react';
+import { Platform, Dimensions } from 'react-native';
 
 import { HapticTab } from '@/components/haptic-tab';
 import { IconSymbol } from '@/components/ui/icon-symbol';
@@ -9,15 +9,21 @@ import TabBarBackground from '@/components/ui/TabBarBackground';
 import { Colors } from '@/constants/color';
 import { AccommodationProvider } from '@/context/AccommodationContext';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+
 export default function TabLayout() {
   const colorScheme = useColorScheme();
   const pathname = usePathname();
+  const windowWidth = Dimensions.get('window').width;
 
   // Determine if current route is within the booking flow; hide tabs if so
   const hideTabs = React.useMemo(
     () => !!pathname && /\/room\/booking/i.test(pathname),
     [pathname]
   );
+
+  // Responsive tab bar height and icon size
+  const tabBarHeight = windowWidth < 360 ? 60 : windowWidth < 375 ? 65 : 70;
+  const iconSize = windowWidth < 360 ? 26 : windowWidth < 375 ? 28 : 32;
 
   // Remove artificial loading delay for faster tab responses
 
@@ -40,7 +46,7 @@ export default function TabLayout() {
                   position: 'absolute',
                   paddingTop: 8,
                   paddingBottom: 5,
-                  height: 70,
+                  height: tabBarHeight,
                 },
               }),
         }}
@@ -54,7 +60,7 @@ export default function TabLayout() {
             animation: 'shift',
             headerTitleAlign: 'left',
             tabBarIcon: ({ color }) => (
-              <IconSymbol size={32} name="house.fill" color={color} />
+              <IconSymbol size={iconSize} name="house.fill" color={color} />
             ),
           }}
         />
@@ -67,7 +73,7 @@ export default function TabLayout() {
             animation: 'shift',
             headerTitleAlign: 'center',
             tabBarIcon: ({ color }) => (
-              <IconSymbol size={32} name="map.fill" color={color} />
+              <IconSymbol size={iconSize} name="map.fill" color={color} />
             ),
           }}
         />
@@ -80,7 +86,7 @@ export default function TabLayout() {
             animation: 'shift',
             headerTitleAlign: 'center',
             tabBarIcon: ({ color }) => (
-              <IconSymbol size={32} name="heart.fill" color={color} />
+              <IconSymbol size={iconSize} name="heart.fill" color={color} />
             ),
           }}
         />
@@ -94,7 +100,7 @@ export default function TabLayout() {
             animation: 'shift',
             headerTitleAlign: 'left',
             tabBarIcon: ({ color }) => (
-              <IconSymbol size={32} name="person.crop.circle" color={color} />
+              <IconSymbol size={iconSize} name="person.crop.circle" color={color} />
             ),
           }}
         />

@@ -25,7 +25,7 @@ interface LoginResponse {
 export const loginUser = async (
   email: string,
   password: string
-): Promise<User> => {
+): Promise<UserDetails> => {
   // Step 1: Login request
   debugLogger({
     title: 'AuthService: POST /users/login',

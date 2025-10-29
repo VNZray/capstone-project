@@ -9,7 +9,7 @@ import type { UserDetails } from "../types/User";
 interface AuthContextType {
   user: UserDetails | null;
   loading: boolean;
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<UserDetails>;
   logout: () => void;
 }
 
@@ -37,6 +37,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const login = useCallback(async (email: string, password: string) => {
     const loggedInUser = await loginUser(email, password);
     setUser(loggedInUser);
+    return loggedInUser;
   }, []);
 
   /** LOGOUT */

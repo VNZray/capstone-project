@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import Animated from 'react-native-reanimated';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { FontAwesome5 } from '@expo/vector-icons';
 
@@ -23,6 +24,7 @@ import { useCollapsibleHeader } from '@/hooks/useCollapsibleHeader';
 import { useAuth } from '@/context/AuthContext';
 import { navigateToAccommodationHome } from '@/routes/accommodationRoutes';
 import { navigateToShopHome } from '@/routes/shopRoutes';
+import { FeaturedLocation } from '@/query/HomeData';
 
 const width = Dimensions.get('screen').width;
 
@@ -40,6 +42,7 @@ const CollapsibleHomeScreen = () => {
     scrollHandler,
     headerAnimatedStyle,
     backgroundImageStyle,
+    backgroundTintStyle,
     greetingStyle,
     headerBackgroundStyle,
     contentMarginStyle,
@@ -49,8 +52,13 @@ const CollapsibleHomeScreen = () => {
     SCROLL_THRESHOLD,
   } = useCollapsibleHeader();
 
-  const heroHeight = HEADER_HEIGHT_EXPANDED + 60;
-  const contentTopInset = Math.max(HEADER_HEIGHT_EXPANDED - 80, HEADER_HEIGHT_COLLAPSED + 40);
+  const heroImage = useMemo(() => {
+    if (!FeaturedLocation?.length) return undefined;
+    const randomIndex = Math.floor(Math.random() * FeaturedLocation.length);
+    return FeaturedLocation[randomIndex]?.uri ?? FeaturedLocation[0]?.uri;
+  }, []);
+
+  const heroHeight = HEADER_HEIGHT_EXPANDED + 180;
 
   // Sample highlight data - moved before early return
   const spots = useMemo(
@@ -156,7 +164,28 @@ const CollapsibleHomeScreen = () => {
             { height: heroHeight },
             backgroundImageStyle,
           ]}
-        />
+        >
+          {heroImage ? (
+            <Image
+              source={{ uri: heroImage }}
+              style={styles.heroImage}
+              resizeMode="cover"
+            />
+          ) : null}
+          {/* Darkening overlay - applied here */}
+          <Animated.View
+            style={[
+              StyleSheet.absoluteFillObject,
+              backgroundImageStyle,
+            ]}
+            pointerEvents="none"
+          />
+          <LinearGradient
+            colors={['rgba(0,0,0,0.4)', 'rgba(0,0,0,0.05)']}
+            locations={[0, 1]}
+            style={StyleSheet.absoluteFillObject}
+          />
+        </Animated.View>
 
         <CollapsibleHeader
           userName={user.first_name || 'Explorer'}
@@ -177,7 +206,7 @@ const CollapsibleHomeScreen = () => {
           }}
         />
 
-        {/* Main Content with Sticky Quick Nav */}
+        {/* Main Content with Rounded Top */}
         <Animated.ScrollView
           style={{ flex: 1 }}
           contentInsetAdjustmentBehavior="never"
@@ -185,14 +214,14 @@ const CollapsibleHomeScreen = () => {
           scrollEventThrottle={16}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{
-            paddingTop: contentTopInset,
+            paddingTop: width < 360 ? HEADER_HEIGHT_EXPANDED - 80 : HEADER_HEIGHT_EXPANDED - 60,
             paddingBottom: 32,
           }}
-          stickyHeaderIndices={[0]}
         >
-          {/* Sticky Quick Navigation */}
-          <View style={styles.stickyNavWrapper}>
-            <Animated.View style={[styles.stickyNavCard, { backgroundColor: bg }]}>
+          {/* Content Container with Rounded Top */}
+          <Animated.View style={[styles.contentContainer, { backgroundColor: bg }, contentMarginStyle]}>
+            {/* Quick Navigation */}
+            <View style={{ backgroundColor: bg, padding: 24 }}>
               <Container
                 elevation={2}
                 padding={width < 360 ? 12 : 16}
@@ -237,11 +266,8 @@ const CollapsibleHomeScreen = () => {
                   onPress={() => router.push('/(tabs)/(home)/(event)')}
                 />
               </Container>
-            </Animated.View>
-          </View>
+            </View>
 
-          {/* Scrollable Body */}
-          <Animated.View style={[styles.bodyContainer, { backgroundColor: bg }, contentMarginStyle]}>
             {/* Highlighted Tourist Spots */}
             <SectionHeader
               title="Highlighted Tourist Spots"
@@ -511,36 +537,17 @@ const styles = StyleSheet.create({
     right: 0,
     overflow: 'hidden',
     backgroundColor: colors.primary,
-    zIndex: 0,
   },
-  stickyNavWrapper: {
-    paddingHorizontal: 16,
-    paddingBottom: 8,
-    backgroundColor: colors.primary,
-    zIndex: 20,
+  heroImage: {
+    width: '100%',
+    height: '100%',
   },
-  stickyNavCard: {
+  contentContainer: {
     borderTopLeftRadius: 32,
     borderTopRightRadius: 32,
-    borderBottomLeftRadius: 18,
-    borderBottomRightRadius: 18,
-    paddingVertical: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.16,
-    shadowRadius: 12,
-    elevation: 8,
-    overflow: 'hidden',
-  },
-  bodyContainer: {
-    borderTopLeftRadius: 0,
-    borderTopRightRadius: 0,
-    borderBottomLeftRadius: 32,
-    borderBottomRightRadius: 32,
     overflow: 'hidden',
     borderTopWidth: 1,
-    borderTopColor: 'rgba(0, 0, 0, 0.05)',
-    paddingTop: 16,
+    borderTopColor: 'rgba(0, 0, 0, 0.08)',
   },
   spotCard: { width: 220, borderRadius: 16, overflow: 'hidden' },
   spotImg: { width: '100%', height: 120 },
