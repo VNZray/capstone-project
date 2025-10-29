@@ -1,34 +1,32 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import Button from '@/components/Button';
-import Container from '@/components/Container';
-import { ThemedText } from '@/components/themed-text';
-import { colors } from '@/constants/color';
-import { useColorScheme } from '@/hooks/use-color-scheme';
-import { FeaturedLocation } from '@/query/HomeData';
-import { FontAwesome5 } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
-import { router } from 'expo-router';
 import React, { useEffect, useMemo, useRef } from 'react';
 import {
   Dimensions,
   FlatList,
   Image,
   Pressable,
-  ScrollView,
   StyleSheet,
   View,
 } from 'react-native';
-import { useSharedValue } from 'react-native-reanimated';
-import Carousel from 'react-native-reanimated-carousel';
-import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
+import Animated from 'react-native-reanimated';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { router } from 'expo-router';
+import { FontAwesome5 } from '@expo/vector-icons';
 
+import Button from '@/components/Button';
+import Container from '@/components/Container';
+import CollapsibleHeader from '@/components/CollapsibleHeader';
+import { ThemedText } from '@/components/themed-text';
+import { colors } from '@/constants/color';
+import { useColorScheme } from '@/hooks/use-color-scheme';
+import { useCollapsibleHeader } from '@/hooks/useCollapsibleHeader';
 import { useAuth } from '@/context/AuthContext';
 import { navigateToAccommodationHome } from '@/routes/accommodationRoutes';
 import { navigateToShopHome } from '@/routes/shopRoutes';
 
 const width = Dimensions.get('screen').width;
 
-const HomeScreen = () => {
+const CollapsibleHomeScreen = () => {
   const scheme = useColorScheme();
   const bg = scheme === 'dark' ? '#0F1222' : '#FFFFFF';
   const altBg = scheme === 'dark' ? '#0B0E1B' : '#F6F7FA';
@@ -37,19 +35,24 @@ const HomeScreen = () => {
 
   const { user } = useAuth();
   const didRedirect = useRef(false);
-  const ref = useRef<any>(null);
-  const progress = useSharedValue(0);
 
-  useEffect(() => {
-    if (!user && !didRedirect.current) {
-      didRedirect.current = true;
-      router.replace('/(screens)/Login');
-    }
-  }, [user]);
+  const {
+    scrollHandler,
+    headerAnimatedStyle,
+    backgroundImageStyle,
+    greetingStyle,
+    headerBackgroundStyle,
+    contentMarginStyle,
+    searchBarBackgroundStyle,
+    HEADER_HEIGHT_EXPANDED,
+    HEADER_HEIGHT_COLLAPSED,
+    SCROLL_THRESHOLD,
+  } = useCollapsibleHeader();
 
-  if (!user) return null;
+  const heroHeight = HEADER_HEIGHT_EXPANDED + 60;
+  const contentTopInset = Math.max(HEADER_HEIGHT_EXPANDED - 80, HEADER_HEIGHT_COLLAPSED + 40);
 
-  // Sample highlight data
+  // Sample highlight data - moved before early return
   const spots = useMemo(
     () => [
       {
@@ -131,311 +134,319 @@ const HomeScreen = () => {
         img: require('@/assets/images/android-icon-monochrome.png'),
       },
     ],
-    []
+    [],
   );
+
+  useEffect(() => {
+    if (!user && !didRedirect.current) {
+      didRedirect.current = true;
+      router.replace('/(screens)/Login');
+    }
+  }, [user]);
+
+  if (!user) return null;
 
   return (
     <SafeAreaProvider>
-      <SafeAreaView style={{ flex: 1, backgroundColor: bg }}>
-        <ScrollView showsVerticalScrollIndicator={false}>
-          {/* Hero Section (white) */}
-          <View style={{ backgroundColor: bg }}>
-            <View style={{ width: '100%' }}>
-              <Carousel
-                ref={ref}
-                width={width}
-                height={360}
-                data={FeaturedLocation}
-                onProgressChange={progress}
-                renderItem={({ item }) => (
-                  <View style={styles.carouselItem}>
-                    <Image
-                      source={{ uri: item.uri }}
-                      style={styles.image}
-                      resizeMode="cover"
-                    />
-                    <LinearGradient
-                      colors={['rgba(0,0,0,0.0)', 'rgba(0,0,0,0.6)']}
-                      style={styles.overlay}
-                    />
-                    <View style={styles.overlayContent}>
-                      <ThemedText
-                        type="title-small"
-                        weight="bold"
-                        style={{ color: '#fff' }}
-                      >
-                        Discover Naga’s Hidden Gems
-                      </ThemedText>
-                      <Button
-                        label="Start Exploring"
-                        variant="soft"
-                        color="info"
-                        startIcon="compass"
-                        elevation={2}
-                        radius={14}
-                        onPress={() =>
-                          router.push('/(tabs)/(home)/(spot)' as any)
-                        }
-                      />
-                    </View>
-                  </View>
-                )}
-              />
-            </View>
-          </View>
+      <View style={{ flex: 1, backgroundColor: bg }}>
+        <Animated.View
+          pointerEvents="none"
+          style={[
+            styles.heroBackground,
+            { height: heroHeight },
+            backgroundImageStyle,
+          ]}
+        />
 
-          {/* Quick Navigation (light gray) */}
-          <View style={{ backgroundColor: altBg, padding: 16 }}>
-            <Container
-              elevation={2}
-              padding={16}
-              direction="row"
-              justify="space-between"
-              align="center"
-              radius={14}
-            >
-              <Button
-                label="Place to stay"
-                color="white"
-                topIcon="hotel"
-                iconSize={24}
-                textSize={10}
-                onPress={() => navigateToAccommodationHome()}
-              />
+        <CollapsibleHeader
+          userName={user.first_name || 'Explorer'}
+          headerAnimatedStyle={headerAnimatedStyle}
+          greetingStyle={greetingStyle}
+          headerBackgroundStyle={headerBackgroundStyle}
+          searchBarBackgroundStyle={searchBarBackgroundStyle}
+          onSearchPress={() => {
+            // TODO: Navigate to search screen
+            console.log('Search pressed');
+          }}
+          onNotificationPress={() => {
+            router.push('/(tabs)/profile' as any);
+          }}
+          onCartPress={() => {
+            // TODO: Navigate to cart screen
+            console.log('Cart pressed');
+          }}
+        />
 
-              <Button
-                label="Shops"
-                color="white"
-                topIcon="shopping-bag"
-                iconSize={24}
-                textSize={10}
-                onPress={() => navigateToShopHome()}
-              />
-
-              <Button
-                label="Tourist Spots"
-                color="white"
-                topIcon="map-marker"
-                iconSize={24}
-                textSize={10}
-                onPress={() => router.push('/(tabs)/(home)/(spot)')}
-              />
-
-              <Button
-                label="Events"
-                color="white"
-                topIcon="calendar"
-                iconSize={24}
-                textSize={10}
-                onPress={() => router.push('/(tabs)/(home)/(event)')}
-              />
-            </Container>
-          </View>
-
-          {/* Highlighted Tourist Spots (white) */}
-          <SectionHeader
-            title="Highlighted Tourist Spots"
-            subtitle="Don’t miss these popular places"
-            bg={bg}
-          />
-          <FlatList
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            data={spots}
-            keyExtractor={(i) => i.id}
-            contentContainerStyle={{
-              paddingHorizontal: 16,
-              paddingBottom: 10,
-              gap: 12,
-            }}
-            renderItem={({ item }) => (
-              <View
-                style={[styles.spotCard, { backgroundColor: card }, shadow(2)]}
+        {/* Main Content with Sticky Quick Nav */}
+        <Animated.ScrollView
+          style={{ flex: 1 }}
+          contentInsetAdjustmentBehavior="never"
+          onScroll={scrollHandler}
+          scrollEventThrottle={16}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{
+            paddingTop: contentTopInset,
+            paddingBottom: 32,
+          }}
+          stickyHeaderIndices={[0]}
+        >
+          {/* Sticky Quick Navigation */}
+          <View style={styles.stickyNavWrapper}>
+            <Animated.View style={[styles.stickyNavCard, { backgroundColor: bg }]}>
+              <Container
+                elevation={2}
+                padding={width < 360 ? 12 : 16}
+                direction="row"
+                justify="space-between"
+                align="center"
+                radius={14}
               >
-                <Image source={{ uri: item.img }} style={styles.spotImg} />
-                <View style={{ padding: 10 }}>
-                  <ThemedText type="body-medium" weight="semi-bold">
-                    {item.name}
-                  </ThemedText>
-                  <ThemedText type="label-small" style={{ color: textMuted }}>
-                    {item.tag}
-                  </ThemedText>
-                </View>
-                <FontAwesome5
-                  name="map-marker-alt"
-                  size={16}
-                  color={colors.secondary}
-                  style={{ position: 'absolute', right: 10, top: 10 }}
+                <Button
+                  label="Place to stay"
+                  color="white"
+                  topIcon="hotel"
+                  iconSize={width < 360 ? 20 : 24}
+                  textSize={width < 360 ? 9 : 10}
+                  onPress={() => navigateToAccommodationHome()}
                 />
-              </View>
-            )}
-          />
 
-          {/* Partners (light gray) */}
-          <SectionHeader
-            title="Partnered Businesses"
-            subtitle="Trusted Partners of City Venture"
-            bg={altBg}
-          />
-          <View style={{ backgroundColor: altBg, paddingBottom: 10 }}>
+                <Button
+                  label="Shops"
+                  color="white"
+                  topIcon="shopping-bag"
+                  iconSize={width < 360 ? 20 : 24}
+                  textSize={width < 360 ? 9 : 10}
+                  onPress={() => navigateToShopHome()}
+                />
+
+                <Button
+                  label="Tourist Spots"
+                  color="white"
+                  topIcon="map-marker"
+                  iconSize={width < 360 ? 20 : 24}
+                  textSize={width < 360 ? 9 : 10}
+                  onPress={() => router.push('/(tabs)/(home)/(spot)')}
+                />
+
+                <Button
+                  label="Events"
+                  color="white"
+                  topIcon="calendar"
+                  iconSize={width < 360 ? 20 : 24}
+                  textSize={width < 360 ? 9 : 10}
+                  onPress={() => router.push('/(tabs)/(home)/(event)')}
+                />
+              </Container>
+            </Animated.View>
+          </View>
+
+          {/* Scrollable Body */}
+          <Animated.View style={[styles.bodyContainer, { backgroundColor: bg }, contentMarginStyle]}>
+            {/* Highlighted Tourist Spots */}
+            <SectionHeader
+              title="Highlighted Tourist Spots"
+              subtitle="Don't miss these popular places"
+              bg={bg}
+            />
             <FlatList
               horizontal
               showsHorizontalScrollIndicator={false}
-              data={partners}
+              data={spots}
               keyExtractor={(i) => i.id}
-              contentContainerStyle={{ paddingHorizontal: 16, gap: 12 }}
+              contentContainerStyle={{
+                paddingHorizontal: 16,
+                paddingBottom: 10,
+                gap: 12,
+              }}
               renderItem={({ item }) => (
                 <View
-                  style={[
-                    styles.partnerCard,
-                    { backgroundColor: card },
-                    shadow(1),
-                  ]}
+                  style={[styles.spotCard, { backgroundColor: card }, shadow(2)]}
                 >
-                  <Image source={item.img} style={styles.partnerImg} />
-                  <View style={{ marginTop: 6 }}>
-                    <ThemedText type="label-medium" weight="semi-bold">
+                  <Image source={{ uri: item.img }} style={styles.spotImg} />
+                  <View style={{ padding: 10 }}>
+                    <ThemedText type="body-medium" weight="semi-bold">
                       {item.name}
                     </ThemedText>
                     <ThemedText type="label-small" style={{ color: textMuted }}>
                       {item.tag}
                     </ThemedText>
                   </View>
+                  <FontAwesome5
+                    name="map-marker-alt"
+                    size={16}
+                    color={colors.secondary}
+                    style={{ position: 'absolute', right: 10, top: 10 }}
+                  />
                 </View>
               )}
             />
-          </View>
 
-          {/* Upcoming Events (white) */}
-          <SectionHeader
-            title="Upcoming Events"
-            subtitle="Mark your calendars"
-            bg={bg}
-            actionLabel="See All"
-            onAction={() => router.push('/(tabs)/(home)/(event)' as any)}
-          />
-          <View style={{ backgroundColor: bg }}>
-            {events.map((e) => (
-              <View
-                key={e.id}
-                style={[styles.eventCard, { backgroundColor: card }, shadow(1)]}
-              >
-                <Image source={e.img} style={styles.eventImg} />
-                <View style={{ flex: 1, marginLeft: 10 }}>
-                  <ThemedText type="body-medium" weight="semi-bold">
-                    {e.name}
-                  </ThemedText>
-                  <ThemedText type="label-small" style={{ color: textMuted }}>
-                    {e.date} • {e.desc}
-                  </ThemedText>
-                </View>
-                <FontAwesome5 name="chevron-right" size={12} color="#9AA4B2" />
-              </View>
-            ))}
-          </View>
+            {/* Partners */}
+            <SectionHeader
+              title="Partnered Businesses"
+              subtitle="Trusted Partners of City Venture"
+              bg={altBg}
+            />
+            <View style={{ backgroundColor: altBg, paddingBottom: 10 }}>
+              <FlatList
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                data={partners}
+                keyExtractor={(i) => i.id}
+                contentContainerStyle={{ paddingHorizontal: 16, gap: 12 }}
+                renderItem={({ item }) => (
+                  <View
+                    style={[
+                      styles.partnerCard,
+                      { backgroundColor: card },
+                      shadow(1),
+                    ]}
+                  >
+                    <Image source={item.img} style={styles.partnerImg} />
+                    <View style={{ marginTop: 6 }}>
+                      <ThemedText type="label-medium" weight="semi-bold">
+                        {item.name}
+                      </ThemedText>
+                      <ThemedText type="label-small" style={{ color: textMuted }}>
+                        {item.tag}
+                      </ThemedText>
+                    </View>
+                  </View>
+                )}
+              />
+            </View>
 
-          {/* News & Articles (light gray) */}
-          <SectionHeader
-            title="News & Articles"
-            subtitle="What’s new in Naga"
-            bg={altBg}
-          />
-          <View
-            style={{
-              backgroundColor: altBg,
-              paddingHorizontal: 16,
-              paddingBottom: 16,
-              gap: 10,
-            }}
-          >
-            {news.map((n) => (
-              <View
-                key={n.id}
-                style={[styles.newsCard, { backgroundColor: card }, shadow(1)]}
-              >
-                <Image source={n.img} style={styles.newsThumb} />
-                <ThemedText
-                  type="body-small"
-                  weight="semi-bold"
-                  style={{ flex: 1 }}
-                  numberOfLines={2}
+            {/* Upcoming Events */}
+            <SectionHeader
+              title="Upcoming Events"
+              subtitle="Mark your calendars"
+              bg={bg}
+              actionLabel="See All"
+              onAction={() => router.push('/(tabs)/(home)/(event)' as any)}
+            />
+            <View style={{ backgroundColor: bg }}>
+              {events.map((e) => (
+                <View
+                  key={e.id}
+                  style={[styles.eventCard, { backgroundColor: card }, shadow(1)]}
                 >
-                  {n.title}
-                </ThemedText>
-                <FontAwesome5
-                  name="arrow-right"
-                  size={12}
-                  color={colors.secondary}
-                />
-              </View>
-            ))}
-          </View>
+                  <Image source={e.img} style={styles.eventImg} />
+                  <View style={{ flex: 1, marginLeft: 10 }}>
+                    <ThemedText type="body-medium" weight="semi-bold">
+                      {e.name}
+                    </ThemedText>
+                    <ThemedText type="label-small" style={{ color: textMuted }}>
+                      {e.date} • {e.desc}
+                    </ThemedText>
+                  </View>
+                  <FontAwesome5 name="chevron-right" size={12} color="#9AA4B2" />
+                </View>
+              ))}
+            </View>
 
-          {/* About City Venture (white) */}
-          <View style={{ backgroundColor: bg, padding: 16 }}>
-            <Container elevation={2} padding={16} backgroundColor={card}>
-              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                <Image
-                  source={require('@/assets/logo/logo.png')}
+            {/* News & Articles */}
+            <SectionHeader
+              title="News & Articles"
+              subtitle="What's new in Naga"
+              bg={altBg}
+            />
+            <View
+              style={{
+                backgroundColor: altBg,
+                paddingHorizontal: 16,
+                paddingBottom: 16,
+                gap: 10,
+              }}
+            >
+              {news.map((n) => (
+                <View
+                  key={n.id}
+                  style={[styles.newsCard, { backgroundColor: card }, shadow(1)]}
+                >
+                  <Image source={n.img} style={styles.newsThumb} />
+                  <ThemedText
+                    type="body-small"
+                    weight="semi-bold"
+                    style={{ flex: 1 }}
+                    numberOfLines={2}
+                  >
+                    {n.title}
+                  </ThemedText>
+                  <FontAwesome5
+                    name="arrow-right"
+                    size={12}
+                    color={colors.secondary}
+                  />
+                </View>
+              ))}
+            </View>
+
+            {/* About City Venture */}
+            <View style={{ backgroundColor: bg, padding: 16 }}>
+              <Container elevation={2} padding={16} backgroundColor={card}>
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  <Image
+                    source={require('@/assets/logo/logo.png')}
+                    style={{
+                      width: 48,
+                      height: 48,
+                      borderRadius: 12,
+                      marginRight: 12,
+                    }}
+                  />
+                  <View style={{ flex: 1 }}>
+                    <ThemedText type="sub-title-small" weight="bold">
+                      About City Venture
+                    </ThemedText>
+                    <ThemedText type="label-small" style={{ color: textMuted }}>
+                      City Venture is your trusted companion for exploring Naga
+                      City—connecting you with accommodations, shops, events, and
+                      tourist spots.
+                    </ThemedText>
+                  </View>
+                </View>
+                <View style={{ marginTop: 12 }}>
+                  <Button
+                    label="Learn More"
+                    variant="soft"
+                    color="primary"
+                    startIcon="info-circle"
+                    radius={12}
+                    onPress={() => router.push('/' as any)}
+                  />
+                </View>
+              </Container>
+            </View>
+
+            {/* Footer */}
+            <View style={{ backgroundColor: altBg, padding: 16 }}>
+              <Container elevation={1} padding={16} backgroundColor={altBg}>
+                <View
                   style={{
-                    width: 48,
-                    height: 48,
-                    borderRadius: 12,
-                    marginRight: 12,
+                    flexDirection: 'row',
+                    justifyContent: 'space-between',
                   }}
-                />
-                <View style={{ flex: 1 }}>
-                  <ThemedText type="sub-title-small" weight="bold">
-                    About City Venture
-                  </ThemedText>
-                  <ThemedText type="label-small" style={{ color: textMuted }}>
-                    City Venture is your trusted companion for exploring Naga
-                    City—connecting you with accommodations, shops, events, and
-                    tourist spots.
-                  </ThemedText>
+                >
+                  <FooterLink label="Contact" />
+                  <FooterLink label="Terms" />
+                  <FooterLink label="Privacy" />
+                  <View style={{ flexDirection: 'row', gap: 12 }}>
+                    <FontAwesome5 name="facebook" size={14} color={textMuted} />
+                    <FontAwesome5 name="twitter" size={14} color={textMuted} />
+                    <FontAwesome5 name="instagram" size={14} color={textMuted} />
+                  </View>
                 </View>
-              </View>
-              <View style={{ marginTop: 12 }}>
-                <Button
-                  label="Learn More"
-                  variant="soft"
-                  color="primary"
-                  startIcon="info-circle"
-                  radius={12}
-                  onPress={() => router.push('/' as any)}
-                />
-              </View>
-            </Container>
-          </View>
-
-          {/* Footer (light gray) */}
-          <View style={{ backgroundColor: altBg, padding: 16 }}>
-            <Container elevation={1} padding={16} backgroundColor={altBg}>
-              <View
-                style={{
-                  flexDirection: 'row',
-                  justifyContent: 'space-between',
-                }}
-              >
-                <FooterLink label="Contact" />
-                <FooterLink label="Terms" />
-                <FooterLink label="Privacy" />
-                <View style={{ flexDirection: 'row', gap: 12 }}>
-                  <FontAwesome5 name="facebook" size={14} color={textMuted} />
-                  <FontAwesome5 name="twitter" size={14} color={textMuted} />
-                  <FontAwesome5 name="instagram" size={14} color={textMuted} />
-                </View>
-              </View>
-            </Container>
-          </View>
-          <View style={{ height: 70 }} />
-        </ScrollView>
-      </SafeAreaView>
+              </Container>
+            </View>
+            <View style={{ height: 70 }} />
+          </Animated.View>
+        </Animated.ScrollView>
+      </View>
     </SafeAreaProvider>
   );
 };
 
-export default HomeScreen;
+export default CollapsibleHomeScreen;
 
 const SectionHeader = ({
   title,
@@ -493,15 +504,43 @@ const FooterLink = ({ label }: { label: string }) => (
 );
 
 const styles = StyleSheet.create({
-  carouselItem: { flex: 1, overflow: 'hidden', padding: 0 },
-  image: { width: '100%', height: '100%', borderRadius: 0 },
-  overlay: { position: 'absolute', left: 0, right: 0, bottom: 0, height: 120 },
-  overlayContent: {
+  heroBackground: {
     position: 'absolute',
-    left: 16,
-    right: 16,
-    bottom: 16,
-    gap: 8,
+    top: 0,
+    left: 0,
+    right: 0,
+    overflow: 'hidden',
+    backgroundColor: colors.primary,
+    zIndex: 0,
+  },
+  stickyNavWrapper: {
+    paddingHorizontal: 16,
+    paddingBottom: 8,
+    backgroundColor: colors.primary,
+    zIndex: 20,
+  },
+  stickyNavCard: {
+    borderTopLeftRadius: 32,
+    borderTopRightRadius: 32,
+    borderBottomLeftRadius: 18,
+    borderBottomRightRadius: 18,
+    paddingVertical: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.16,
+    shadowRadius: 12,
+    elevation: 8,
+    overflow: 'hidden',
+  },
+  bodyContainer: {
+    borderTopLeftRadius: 0,
+    borderTopRightRadius: 0,
+    borderBottomLeftRadius: 32,
+    borderBottomRightRadius: 32,
+    overflow: 'hidden',
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(0, 0, 0, 0.05)',
+    paddingTop: 16,
   },
   spotCard: { width: 220, borderRadius: 16, overflow: 'hidden' },
   spotImg: { width: '100%', height: 120 },
