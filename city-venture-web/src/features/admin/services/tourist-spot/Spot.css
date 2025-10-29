@@ -95,3 +95,10 @@
     justify-content: center;
   }
 }
+
+/* Grouped action buttons (Add + Manage Featured) */
+.actions-inline {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}

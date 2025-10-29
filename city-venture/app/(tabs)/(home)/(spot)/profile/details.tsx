@@ -47,12 +47,6 @@ const withScheme = (url?: string | null) => {
 
 const Details = () => {
   const { selectedSpot, schedules, images, addressDetails } = useTouristSpot();
-  console.log(
-    '[TouristSpot Details] address_id:',
-    selectedSpot?.address_id,
-    'addressDetails:',
-    addressDetails
-  );
   const [aboutExpanded, setAboutExpanded] = useState(false);
   const description = useMemo(() => {
     const raw = selectedSpot?.description?.replace(/^"|"$/g, '').trim() || '';
@@ -286,10 +280,9 @@ const Details = () => {
         {addressDetails ? (
           <ThemedText type="body-small" style={{ marginTop: 8 }}>
             {[
-              addressDetails.barangay_name || selectedSpot.barangay_name,
-              addressDetails.municipality_name ||
-                selectedSpot.municipality_name,
-              addressDetails.province_name || selectedSpot.province_name,
+              addressDetails.barangay || selectedSpot.barangay,
+              addressDetails.municipality || selectedSpot.municipality,
+              addressDetails.province || selectedSpot.province,
             ]
               .filter(Boolean)
               .join(', ')}

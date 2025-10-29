@@ -1,14 +1,5 @@
 import React from "react";
-import {
-  Stack,
-  Typography,
-  FormControl,
-  FormLabel,
-  Input,
-  Switch,
-  Box,
-  Card,
-} from "@mui/joy";
+import { Stack, Typography, Box, Card } from "@mui/joy";
 import type { DaySchedule } from "@/src/types/TouristSpot";
 
 interface ScheduleStepProps {
@@ -23,102 +14,124 @@ const ScheduleStep: React.FC<ScheduleStepProps> = ({
   onScheduleChange,
 }) => {
   return (
-    <Stack spacing={1}>
-      <Typography level="h4">Operating Schedule</Typography>
-      <Typography level="body-sm" sx={{ color: 'text.secondary' }}>
-        Set the operating hours for each day of the week
+    <Stack spacing={1.5}>
+      <Typography
+        fontFamily={"poppins"}
+        level="title-lg"
+        fontWeight={700}
+        sx={{ color: "#1e293b" }}
+      >
+        Operating Schedule
       </Typography>
-      
-      <Card variant="outlined" sx={{ p: .5 }}>
-        <Stack spacing={1}>
+      <Typography level="body-sm" sx={{ color: "text.secondary" }}>
+        Configure opening hours for each day
+      </Typography>
+
+      <Card variant="outlined" sx={{ p: 1 }}>
+        <Stack spacing={0}>
           {schedules.map((sched) => (
             <Box
               key={sched.dayIndex}
               sx={{
-                display: 'flex',
-                alignItems: 'center',
+                display: "flex",
+                alignItems: "center",
                 gap: 2,
-                flexWrap: 'wrap',
+                flexWrap: "wrap",
                 py: 1,
-                borderBottom: sched.dayIndex < 6 ? '1px solid' : 'none',
-                borderColor: 'divider',
+                borderBottom: sched.dayIndex < 6 ? "1px solid" : "none",
+                borderColor: "divider",
               }}
             >
               {/* Day name */}
-              <Box sx={{ width: 80, flexShrink: 0 }}>
-                <Typography level="body-sm" fontWeight="md">
-                  {daysOfWeek[sched.dayIndex]}
-                </Typography>
-              </Box>
+              <div
+                style={{
+                  width: 120,
+                  color: "var(--primary-color)",
+                  fontWeight: 600,
+                }}
+              >
+                {daysOfWeek[sched.dayIndex]}
+              </div>
 
-              {/* Open/Closed toggle */}
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <FormControl orientation="horizontal" sx={{ minWidth: 0 }}>
-                  <Switch
-                    size="sm"
-                    checked={!sched.is_closed}
-                    onChange={(e) => {
-                      onScheduleChange((prev) =>
-                        prev.map((s) =>
-                          s.dayIndex === sched.dayIndex
-                            ? { ...s, is_closed: !e.target.checked }
-                            : s
-                        )
-                      );
-                    }}
-                  />
-                  <FormLabel sx={{ fontSize: 'xs', ml: 0.5 }}>
-                    {sched.is_closed ? 'Closed' : 'Open'}
-                  </FormLabel>
-                </FormControl>
-              </Box>
+              {/* Time inputs (read-only when closed) */}
+              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                <input
+                  type="time"
+                  value={sched.open_time}
+                  readOnly={sched.is_closed}
+                  onChange={(e) => {
+                    const newTime = e.target.value;
+                    onScheduleChange((prev) =>
+                      prev.map((s) =>
+                        s.dayIndex === sched.dayIndex
+                          ? { ...s, open_time: newTime }
+                          : s
+                      )
+                    );
+                  }}
+                  style={{
+                    padding: 8,
+                    borderRadius: 6,
+                    border: "1px solid #e5e7eb",
+                    width: 120,
+                    background: sched.is_closed ? "#f9fafb" : "#fff",
+                  }}
+                />
 
-              {/* Time inputs */}
-              {!sched.is_closed && (
-                <>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <Typography level="body-xs" sx={{ color: 'text.tertiary', width: 30 }}>
-                      From
-                    </Typography>
-                    <Input
-                      size="sm"
-                      type="time"
-                      value={sched.open_time}
-                      onChange={(e) => {
-                        onScheduleChange((prev) =>
-                          prev.map((s) =>
-                            s.dayIndex === sched.dayIndex
-                              ? { ...s, open_time: e.target.value }
-                              : s
-                          )
-                        );
-                      }}
-                      sx={{ width: 120 }}
-                    />
-                  </Box>
+                <input
+                  type="time"
+                  value={sched.close_time}
+                  readOnly={sched.is_closed}
+                  onChange={(e) => {
+                    const newTime = e.target.value;
+                    onScheduleChange((prev) =>
+                      prev.map((s) =>
+                        s.dayIndex === sched.dayIndex
+                          ? { ...s, close_time: newTime }
+                          : s
+                      )
+                    );
+                  }}
+                  style={{
+                    padding: 8,
+                    borderRadius: 6,
+                    border: "1px solid #e5e7eb",
+                    width: 120,
+                    background: sched.is_closed ? "#f9fafb" : "#fff",
+                  }}
+                />
+              </div>
 
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <Typography level="body-xs" sx={{ color: 'text.tertiary', width: 20 }}>
-                      To
-                    </Typography>
-                    <Input
-                      size="sm"
-                      type="time"
-                      value={sched.close_time}
-                      onChange={(e) => {
-                        onScheduleChange((prev) =>
-                          prev.map((s) =>
-                            s.dayIndex === sched.dayIndex
-                              ? { ...s, close_time: e.target.value }
-                              : s
-                          )
-                        );
-                      }}
-                      sx={{ width: 120 }}
-                    />
-                  </Box>
-                </>
-              )}
+              {/* Status + toggle */}
+              <div style={{ minWidth: 100, display: "flex", alignItems: "center", gap: 8 }}>
+                <span
+                  style={{
+                    display: "inline-block",
+                    width: 10,
+                    height: 10,
+                    borderRadius: 999,
+                    background: sched.is_closed ? "#d1d5db" : "var(--primary-color)",
+                  }}
+                />
+                <span style={{ color: "var(--primary-color)", fontWeight: 600 }}>
+                  {sched.is_closed ? "Closed" : "Open"}
+                </span>
+              </div>
+              <input
+                type="checkbox"
+                checked={!sched.is_closed}
+                onChange={(e) => {
+                  const checked = e.target.checked;
+                  onScheduleChange((prev) =>
+                    prev.map((s) =>
+                      s.dayIndex === sched.dayIndex
+                        ? { ...s, is_closed: !checked }
+                        : s
+                    )
+                  );
+                }}
+                style={{ accentColor: "var(--primary-color)" }}
+              />
             </Box>
           ))}
         </Stack>

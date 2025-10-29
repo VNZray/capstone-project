@@ -139,9 +139,6 @@ const TouristSpotScreen = () => {
                   f?.images?.find(
                     (i: any) => i?.is_primary === 1 || i?.is_primary === true
                   ) || f?.images?.[0];
-                const loc = [f?.barangay_name, f?.municipality_name]
-                  .filter(Boolean)
-                  .join(', ');
                 return (
                   <View key={String((f as any)?.id)} style={{ marginRight: 12, width: 260 }}>
                     <FeaturedTouristSpotCard

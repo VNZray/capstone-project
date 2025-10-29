@@ -3,6 +3,10 @@ export {
   getAllTouristSpots,
   getTouristSpotById,
   createTouristSpot,
+  getFeaturedTouristSpots,
+  getNonFeaturedTouristSpots,
+  featureTouristSpot,
+  unfeatureTouristSpot,
 } from './touristSpotController.js';
 
 // Schedule management

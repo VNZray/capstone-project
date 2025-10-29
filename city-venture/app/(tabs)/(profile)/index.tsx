@@ -192,19 +192,6 @@ const Profile = () => {
         {/* Footer Actions */}
         <View style={[styles.sectionPad, { gap: 12 }]}>
           <Button
-            label="Log Out"
-            variant="solid"
-            color="error"
-            size="medium"
-            fullWidth
-            radius={14}
-            startIcon="sign-out-alt"
-            onPress={async () => {
-              logout();
-              router.replace('/');
-            }}
-          />
-          <Button
             label="Settings"
             variant="soft"
             color="info"
@@ -223,6 +210,19 @@ const Profile = () => {
             radius={14}
             startIcon="flag"
             onPress={onReports}
+          />
+          <Button
+            label="Log Out"
+            variant="solid"
+            color="error"
+            size="medium"
+            fullWidth
+            radius={14}
+            startIcon="sign-out-alt"
+            onPress={async () => {
+              logout();
+              router.replace('/');
+            }}
           />
         </View>
       </ScrollView>
