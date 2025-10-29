@@ -5,10 +5,14 @@ import Button from '@/components/Button';
 import { useAuth } from '@/context/AuthContext';
 import { getReportsByReporter } from '@/services/ReportService';
 import { router } from 'expo-router';
+import { useColorScheme } from '@/hooks/use-color-scheme';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 interface ReportItem { id:string; title:string; status:string; target_type:string; created_at:string; description:string; }
 
 export default function MyReports(){
+  const scheme = useColorScheme();
+  const isDark = scheme === 'dark';
   const { user } = useAuth();
   const [data,setData] = useState<ReportItem[]>([]);
   const [loading,setLoading] = useState(false);
@@ -30,23 +34,23 @@ export default function MyReports(){
   };
   useEffect(()=>{ load(); },[user?.user_id, user?.id]);
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={[styles.container,{ backgroundColor: isDark ? '#0F1222' : '#F5F7FB' }]}>
       <View style={styles.headerRow}>
         <ThemedText type="title-small" weight="bold">My Reports</ThemedText>
-  <Button label="New" size="small" variant="soft" onPress={()=>router.push('/(tabs)/(profile)/(reports)/submit' as any)} />
+  <Button label="New" size="small" variant="solid" color="primary" startIcon="plus" onPress={()=>router.push('/(tabs)/(profile)/(reports)/submit' as any)} />
       </View>
       <FlatList data={data} keyExtractor={i=>i.id} refreshControl={<RefreshControl refreshing={loading} onRefresh={load} />} renderItem={({item})=>{
         return (
-          <Pressable onPress={()=>router.push(`/(tabs)/(profile)/(reports)/detail/${item.id}` as any)} style={styles.card}>
+          <Pressable onPress={()=>router.push(`/(tabs)/(profile)/(reports)/detail/${item.id}` as any)} style={[styles.card,{ backgroundColor: isDark ? '#161A2E' : '#fff', borderColor: isDark ? '#28304a' : '#E2E8F0' }]}>
             <ThemedText type="body-medium" weight="semi-bold">{item.title}</ThemedText>
-            <ThemedText type="label-small" style={{color:'#64748B', marginTop:4}}>{item.target_type} • {new Date(item.created_at).toLocaleDateString()}</ThemedText>
+            <ThemedText type="label-small" style={{color: isDark ? '#A9B2D0' : '#64748B', marginTop:4}}>{item.target_type} • {new Date(item.created_at).toLocaleDateString()}</ThemedText>
             <View style={[styles.statusPillBase, statusPillColor(item.status)]}>
               <ThemedText type="label-small" style={{color:'#fff'}}>{item.status.replace('_',' ')}</ThemedText>
             </View>
           </Pressable>
         );
       }} ListEmptyComponent={!loading? <ThemedText type="body-small" style={{marginTop:24}}>No reports yet.</ThemedText>:null} />
-    </View>
+    </SafeAreaView>
   );
 }
 

@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import logo from "@/src/assets/images/logo.png";
 import "./LoginStyle.css";
 import Text from "../../components/Text";
+import ResponsiveText from "../../components/ResponsiveText";
 import Container from "../../components/Container";
 import { useAuth } from "@/src/context/AuthContext"; // adjust path if needed
 import { Input, Button } from "@mui/joy";
@@ -52,9 +53,9 @@ const Login: React.FC = () => {
         <Container elevation={3} padding="40px" radius="0.5rem" width="450px">
           <div className="logo-container">
             <img src={logo} alt="Logo" className="logo" />
-            <Text variant="header-title" color="dark">
+            <ResponsiveText type="title-small" weight="bold">
               City Venture
-            </Text>
+            </ResponsiveText>
           </div>
 
           {/* Title and Subtitle */}

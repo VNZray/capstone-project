@@ -15,8 +15,8 @@ import type {
 
 type Props = {
   data: Business;
-  addressData: Address;
   setData: React.Dispatch<React.SetStateAction<Business>>;
+  addressData: Address;
   setAddressData: React.Dispatch<React.SetStateAction<Address>>;
   api: string;
 };

@@ -99,7 +99,7 @@ const Navbar: React.FC<NavbarProps> = ({ servicesId = "features", aboutId = "abo
               </Button>
               <Button
                 variant="solid"
-                onClick={() => navigate("/business/signup")}
+                onClick={() => navigate("/business-registration")}
                 sx={{
                   backgroundColor: colors.primary,
                   color: '#ffffff',

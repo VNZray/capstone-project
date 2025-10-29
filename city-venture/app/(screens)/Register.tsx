@@ -30,7 +30,7 @@ const RegistrationPage = () => {
   const [confirmPassword, setConfirmPassword] = useState('123456');
   const [birthdate, setBirthdate] = useState(new Date());
   const [ethnicity, setEthnicity] = useState<string>('');
-  const [category, setCategory] = useState<string>('');
+  const [origin, setOrigin] = useState<string>('');
   const [gender, setGender] = useState<string>('');
   const [phoneNumber, setPhoneNumber] = useState('09784561234');
   const [nationality, setNationality] = useState('Filipino');
@@ -48,7 +48,6 @@ const RegistrationPage = () => {
   const [barangay, setBarangay] = useState<{ id: number; barangay: string }[]>(
     []
   );
-
 
   const fetchProvince = async () => {
     try {
@@ -104,6 +103,7 @@ const RegistrationPage = () => {
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
     otp: null,
+    barangay_id: barangayId,
   };
 
   const newTourist: Tourist = {
@@ -113,9 +113,8 @@ const RegistrationPage = () => {
     ethnicity: ethnicity,
     gender: gender,
     nationality: nationality,
-    category: category,
+    origin: origin,
     birthdate: formatDate(birthdate),
-    barangay_id: barangayId,
     age: (new Date().getFullYear() - birthdate.getFullYear()).toString(),
   };
 
@@ -140,8 +139,7 @@ const RegistrationPage = () => {
       // 3) Create tourist profile
       const touristPayload: any = {
         ...newTourist,
-        email, 
-        barangay_id: barangayId,
+        email,
         user_id: userId,
       };
       console.log('[Register] Inserting tourist (final)', touristPayload);
@@ -215,23 +213,23 @@ const RegistrationPage = () => {
             </ThemedText>
           </View>
 
-            <FormTextInput
-              label="First Name"
-              placeholder="Enter your first name"
-              value={firstName}
-              onChangeText={setFirstName}
-              variant="outlined"
-              autoCapitalize="words"
-            />
+          <FormTextInput
+            label="First Name"
+            placeholder="Enter your first name"
+            value={firstName}
+            onChangeText={setFirstName}
+            variant="outlined"
+            autoCapitalize="words"
+          />
 
-            <FormTextInput
-              label="Middle Name"
-              placeholder="Enter your middle name"
-              value={middleName}
-              onChangeText={setMiddleName}
-              variant="outlined"
-              autoCapitalize="words"
-            />
+          <FormTextInput
+            label="Middle Name"
+            placeholder="Enter your middle name"
+            value={middleName}
+            onChangeText={setMiddleName}
+            variant="outlined"
+            autoCapitalize="words"
+          />
 
           <FormTextInput
             label="Last Name"
@@ -393,23 +391,23 @@ const RegistrationPage = () => {
 
           <View>
             <ThemedText mb={6} type="label-medium">
-              Category:
+              Origin:
             </ThemedText>
             <View style={styles.radioGroup}>
-              {['Domestic', 'Overseas'].map((type) => (
+              {['Domestic', 'Local', 'Overseas'].map((type) => (
                 <TouchableOpacity
                   key={type}
                   style={[
                     colorScheme === 'light'
                       ? styles.radioButton
                       : styles.darkRadioButton,
-                    category === type && styles.radioSelected,
+                    origin === type && styles.radioSelected,
                   ]}
-                  onPress={() => setCategory(type)}
+                  onPress={() => setOrigin(type)}
                 >
                   <ThemedText
                     type="label-small"
-                    style={[category === type && styles.radioTextSelected]}
+                    style={[origin === type && styles.radioTextSelected]}
                   >
                     {type.charAt(0).toUpperCase() + type.slice(1)}
                   </ThemedText>

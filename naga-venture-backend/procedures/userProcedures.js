@@ -35,15 +35,16 @@ async function createUserProcedures(knex) {
       IN p_is_verified BOOLEAN,
       IN p_is_active BOOLEAN,
       IN p_last_login TIMESTAMP,
-      IN p_user_role_id INT
+      IN p_user_role_id INT,
+      IN p_barangay_id INT
     )
     BEGIN
       INSERT INTO user (
         id, email, phone_number, password, user_profile, otp,
-        is_verified, is_active, last_login, user_role_id
+        is_verified, is_active, last_login, user_role_id, barangay_id
       ) VALUES (
         p_id, p_email, p_phone_number, p_password, p_user_profile, p_otp,
-        p_is_verified, p_is_active, p_last_login, p_user_role_id
+        p_is_verified, p_is_active, p_last_login, p_user_role_id, p_barangay_id
       );
       SELECT * FROM user WHERE id = p_id;
     END;
@@ -122,7 +123,8 @@ async function createUserProcedures(knex) {
       IN p_is_verified BOOLEAN,
       IN p_is_active BOOLEAN,
       IN p_last_login TIMESTAMP,
-      IN p_user_role_id INT
+      IN p_user_role_id INT,
+      IN p_barangay_id INT
     )
     BEGIN
       UPDATE user
@@ -134,7 +136,8 @@ async function createUserProcedures(knex) {
           is_verified = IFNULL(p_is_verified, is_verified),
           is_active = IFNULL(p_is_active, is_active),
           last_login = IFNULL(p_last_login, last_login),
-          user_role_id = IFNULL(p_user_role_id, user_role_id)
+          user_role_id = IFNULL(p_user_role_id, user_role_id),
+          barangay_id = IFNULL(p_barangay_id, barangay_id)
       WHERE id = p_id;
       SELECT * FROM user WHERE id = p_id;
     END;

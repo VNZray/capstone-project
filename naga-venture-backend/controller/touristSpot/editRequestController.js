@@ -6,12 +6,12 @@ export const submitEditRequest = async (req, res) => {
   try {
     const { id } = req.params;
     const {
-      name, description, province_id, municipality_id, barangay_id,
+      name, description, barangay_id,
       latitude, longitude, contact_phone, contact_email, website,
       entry_fee, type_id, spot_status, is_featured
     } = req.body;
 
-    if (!id || !name || !description || !province_id || !municipality_id || !barangay_id || !type_id) {
+    if (!id || !name || !description || !barangay_id || !type_id) {
       return res.status(400).json({ success: false, message: "Missing required fields" });
     }
 
@@ -27,11 +27,7 @@ export const submitEditRequest = async (req, res) => {
     const changed = {
       name: normalize(current.name) !== normalize(name),
       description: normalize(current.description) !== normalize(description),
-      address: (
-        current.province_id !== Number(province_id) ||
-        current.municipality_id !== Number(municipality_id) ||
-        current.barangay_id !== Number(barangay_id)
-      ),
+      address: (current.barangay_id !== Number(barangay_id)),
       latitude: Number(current.latitude) !== Number(latitude),
       longitude: Number(current.longitude) !== Number(longitude),
       contact_phone: normalize(current.contact_phone) !== normalize(contact_phone),
@@ -80,19 +76,15 @@ export const submitEditRequest = async (req, res) => {
     }
 
     // If any approval-required field changed
-    let address_id_to_use = current.address_id;
+    let barangay_id_to_use = current.barangay_id;
     if (changed.address) {
-      const [addressResult] = await db.query(
-        "CALL InsertAddress(?, ?, ?)",
-        [province_id, municipality_id, barangay_id]
-      );
-      address_id_to_use = addressResult && addressResult[0] && addressResult[0][0] ? addressResult[0][0].id : null;
+      barangay_id_to_use = barangay_id;
     }
-    await db.query("CALL SubmitTouristSpotEditRequest(?,?,?,?,?,?,?,?,?,?,?,?,?)", [
+    await db.query("CALL SubmitTouristSpotEditRequest(?,?,?,?,?,?,?,?,?,?,?,?)", [
       id,
       name,
       description,
-      address_id_to_use,
+      barangay_id_to_use,
       latitude ?? current.latitude,
       longitude ?? current.longitude,
       contact_phone ?? current.contact_phone,

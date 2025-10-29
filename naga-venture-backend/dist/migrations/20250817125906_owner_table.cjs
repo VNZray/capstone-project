@@ -12,12 +12,11 @@ exports.up = async function (knex) {
     table.integer("age", 2);
     table.date("birthdate");
     table.enu("gender", ["Male", "Female"]);
-    table.enu("business_type", ["Shop", "Accommodation", "Both"]).notNullable();
     table
-      .integer("address_id")
+      .integer("barangay_id")
       .unsigned()
       .references("id")
-      .inTable("address")
+      .inTable("barangay")
       .nullable();
 
     table

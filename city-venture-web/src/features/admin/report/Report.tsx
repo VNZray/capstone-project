@@ -8,7 +8,6 @@ import {
   Box,
   Sheet
 } from "@mui/joy";
-import Text from "@/src/components/Text";
 import Container from "@/src/components/Container";
 import SearchBar from "@/src/components/SearchBar";
 import Pagination from "@/src/components/Admin/touristSpot/Pagination";
@@ -90,15 +89,15 @@ const ReportManagement: React.FC = () => {
 
   const filteredAndSearchedReports = useMemo(() => {
     let filtered = reports;
-    
+
     if (selectedStatus !== "All") {
       filtered = filtered.filter((report) => report.status === selectedStatus);
     }
-    
+
     if (selectedTargetType !== "All") {
       filtered = filtered.filter((report) => report.target_type === selectedTargetType);
     }
-    
+
     if (searchQuery) {
       filtered = filtered.filter((report) =>
         report.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -106,8 +105,13 @@ const ReportManagement: React.FC = () => {
         (report.reporter_email && report.reporter_email.toLowerCase().includes(searchQuery.toLowerCase()))
       );
     }
-    
-    return filtered;
+
+    // Sort by updated_at (or created_at) descending so newest are on top
+    return filtered.slice().sort((a, b) => {
+      const dateA = new Date(a.updated_at || a.created_at || 0).getTime();
+      const dateB = new Date(b.updated_at || b.created_at || 0).getTime();
+      return dateB - dateA;
+    });
   }, [reports, selectedStatus, selectedTargetType, searchQuery]);
 
   const totalPages = Math.ceil(filteredAndSearchedReports.length / reportsPerPage);
@@ -133,89 +137,70 @@ const ReportManagement: React.FC = () => {
   return (
     <>
       <Container background={colors.background} elevation={2}>
-          <Stack spacing={3} sx={{ p: 3 }}>
-            {/* Header and Stats */}
-            <Stack direction="row" justifyContent="space-between" alignItems="center">
-              <Text variant="title">Report Management</Text>
-            </Stack>
-
-            {/* Stats Cards */}
-            <Grid container spacing={2}>
-              <Grid xs={12} sm={6} md={2.4}>
-                <Card variant="outlined">
-                  <CardContent>
-                    <Stack alignItems="center" spacing={1}>
-                      <Typography level="h2" sx={{ color: 'text.primary' }}>
-                        {stats.total}
-                      </Typography>
-                      <Typography level="body-sm" sx={{ color: 'text.secondary' }}>
-                        Total
-                      </Typography>
-                    </Stack>
-                  </CardContent>
-                </Card>
-              </Grid>
-              
-              <Grid xs={12} sm={6} md={2.4}>
-                <Card variant="outlined" sx={{ borderLeft: '4px solid', borderColor: 'warning.500' }}>
-                  <CardContent>
-                    <Stack alignItems="center" spacing={1}>
-                      <Typography level="h2" sx={{ color: 'warning.500' }}>
-                        {stats.pending}
-                      </Typography>
-                      <Typography level="body-sm" sx={{ color: 'text.secondary' }}>
-                        Pending
-                      </Typography>
-                    </Stack>
-                  </CardContent>
-                </Card>
-              </Grid>
-              
-              <Grid xs={12} sm={6} md={2.4}>
-                <Card variant="outlined" sx={{ borderLeft: '4px solid', borderColor: 'primary.500' }}>
-                  <CardContent>
-                    <Stack alignItems="center" spacing={1}>
-                      <Typography level="h2" sx={{ color: 'primary.500' }}>
-                        {stats.inProgress}
-                      </Typography>
-                      <Typography level="body-sm" sx={{ color: 'text.secondary' }}>
-                        In Progress
-                      </Typography>
-                    </Stack>
-                  </CardContent>
-                </Card>
-              </Grid>
-              
-              <Grid xs={12} sm={6} md={2.4}>
-                <Card variant="outlined" sx={{ borderLeft: '4px solid', borderColor: 'success.500' }}>
-                  <CardContent>
-                    <Stack alignItems="center" spacing={1}>
-                      <Typography level="h2" sx={{ color: 'success.500' }}>
-                        {stats.resolved}
-                      </Typography>
-                      <Typography level="body-sm" sx={{ color: 'text.secondary' }}>
-                        Resolved
-                      </Typography>
-                    </Stack>
-                  </CardContent>
-                </Card>
-              </Grid>
-              
-              <Grid xs={12} sm={6} md={2.4}>
-                <Card variant="outlined" sx={{ borderLeft: '4px solid', borderColor: 'danger.500' }}>
-                  <CardContent>
-                    <Stack alignItems="center" spacing={1}>
-                      <Typography level="h2" sx={{ color: 'danger.500' }}>
-                        {stats.rejected}
-                      </Typography>
-                      <Typography level="body-sm" sx={{ color: 'text.secondary' }}>
-                        Rejected
-                      </Typography>
-                    </Stack>
-                  </CardContent>
-                </Card>
-              </Grid>
+        <Stack spacing={2} sx={{ p: 2 }}>
+          {/* Minimal Stats Cards */}
+          <Grid container spacing={1}>
+            <Grid xs={6} sm={3} md={2.4}>
+              <Card variant="plain" sx={{ boxShadow: 'none', p: 1 }}>
+                <CardContent sx={{ textAlign: 'center', p: 1 }}>
+                  <Typography level="h3" sx={{ color: 'text.primary', fontWeight: 600 }}>
+                    {stats.total}
+                  </Typography>
+                  <Typography level="body-xs" sx={{ color: 'text.secondary', mt: 0.5 }}>
+                    Total
+                  </Typography>
+                </CardContent>
+              </Card>
             </Grid>
+            <Grid xs={6} sm={3} md={2.4}>
+              <Card variant="plain" sx={{ boxShadow: 'none', p: 1 }}>
+                <CardContent sx={{ textAlign: 'center', p: 1 }}>
+                  <Typography level="h3" sx={{ color: 'warning.500', fontWeight: 600 }}>
+                    {stats.pending}
+                  </Typography>
+                  <Typography level="body-xs" sx={{ color: 'text.secondary', mt: 0.5 }}>
+                    Pending
+                  </Typography>
+                </CardContent>
+              </Card>
+            </Grid>
+            <Grid xs={6} sm={3} md={2.4}>
+              <Card variant="plain" sx={{ boxShadow: 'none', p: 1 }}>
+                <CardContent sx={{ textAlign: 'center', p: 1 }}>
+                  <Typography level="h3" sx={{ color: 'primary.500', fontWeight: 600 }}>
+                    {stats.inProgress}
+                  </Typography>
+                  <Typography level="body-xs" sx={{ color: 'text.secondary', mt: 0.5 }}>
+                    In Progress
+                  </Typography>
+                </CardContent>
+              </Card>
+            </Grid>
+            <Grid xs={6} sm={3} md={2.4}>
+              <Card variant="plain" sx={{ boxShadow: 'none', p: 1 }}>
+                <CardContent sx={{ textAlign: 'center', p: 1 }}>
+                  <Typography level="h3" sx={{ color: 'success.500', fontWeight: 600 }}>
+                    {stats.resolved}
+                  </Typography>
+                  <Typography level="body-xs" sx={{ color: 'text.secondary', mt: 0.5 }}>
+                    Resolved
+                  </Typography>
+                </CardContent>
+              </Card>
+            </Grid>
+            <Grid xs={6} sm={3} md={2.4}>
+              <Card variant="plain" sx={{ boxShadow: 'none', p: 1 }}>
+                <CardContent sx={{ textAlign: 'center', p: 1 }}>
+                  <Typography level="h3" sx={{ color: 'danger.500', fontWeight: 600 }}>
+                    {stats.rejected}
+                  </Typography>
+                  <Typography level="body-xs" sx={{ color: 'text.secondary', mt: 0.5 }}>
+                    Rejected
+                  </Typography>
+                </CardContent>
+              </Card>
+            </Grid>
+          </Grid>
 
             {/* Filters, Search, and Refresh aligned with cards/table */}
               <Grid container spacing={2} justifyContent="space-between"  alignItems="center" sx={{ width: '99%'}}>

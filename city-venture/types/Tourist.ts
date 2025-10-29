@@ -7,8 +7,7 @@ export type Tourist = {
     gender?: string | "";
     nationality?: string | "";
     ethnicity?: string | "";
-    category?: string | "";
+    origin?: string | "";
     birthdate?: string | "";
     user_id?: string | "";
-    barangay_id: number | null;
 };

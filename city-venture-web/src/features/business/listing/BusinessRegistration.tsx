@@ -24,10 +24,10 @@ import type {
 } from "@/src/types/Business";
 import axios from "axios";
 import type { Permit } from "@/src/types/Permit";
-import { insertData } from "@/src/services/Service";
 import type { BusinessAmenity } from "@/src/types/Amenity";
 import type { Address } from "@/src/types/Address";
 import api from "@/src/services/api";
+import type { Owner } from "@/src/types/Owner";
 // steps definition
 const steps = [
   "Basic",
@@ -244,7 +244,10 @@ const BusinessRegistration: React.FC = () => {
       }
 
       // 1️⃣ Insert Business
-      const res = await axios.post(`${api}/business`, formData);
+      const res = await axios.post(`${api}/business`, {
+        ...formData,
+        barangay_id: addressData.barangay_id,
+      });
 
       const businessId = res.data.id;
       console.log(businessId);

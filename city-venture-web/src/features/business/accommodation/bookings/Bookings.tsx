@@ -58,7 +58,7 @@ const GuestAvatarCell: FC<GuestAvatarCellProps> = ({ info }) => {
     </div>
   );
 };
-import Text from "@/src/components/Text";
+import ResponsiveText from "@/src/components/ResponsiveText";
 import PageContainer from "@/src/components/PageContainer";
 import { colors } from "@/src/utils/Colors";
 import { Search, Eye, Check, XCircle } from "lucide-react";
@@ -180,38 +180,7 @@ const Bookings = () => {
     null
   );
 
-  const bookingCount = bookings.length;
-  const pendingCount = useMemo(
-    () =>
-      bookings.filter((b) => normalizeStatus(b.booking_status) === "Pending")
-        .length,
-    [bookings]
-  );
-  const reservedCount = useMemo(
-    () =>
-      bookings.filter((b) => normalizeStatus(b.booking_status) === "Reserved")
-        .length,
-    [bookings]
-  );
-  const checkedInCount = useMemo(
-    () =>
-      bookings.filter((b) => normalizeStatus(b.booking_status) === "Checked-in")
-        .length,
-    [bookings]
-  );
-  const checkedOutCount = useMemo(
-    () =>
-      bookings.filter(
-        (b) => normalizeStatus(b.booking_status) === "Checked-out"
-      ).length,
-    [bookings]
-  );
-  const canceledCount = useMemo(
-    () =>
-      bookings.filter((b) => normalizeStatus(b.booking_status) === "Canceled")
-        .length,
-    [bookings]
-  );
+  // removed unused booking counters to satisfy lint
   // Prefetch guest info (name and user_profile) for all visible bookings
   const [guestInfoById, setGuestInfoById] = useState<Record<string, { name: string; user_profile?: string }>>({});
   useEffect(() => {
@@ -291,8 +260,6 @@ const Bookings = () => {
     load();
   }, [businessDetails?.id]);
 
-  // No longer using dummy effect counters (computed via useMemo above)
-
   // format date
   const formatDate = (dateString: string) => {
     const options: Intl.DateTimeFormatOptions = {
@@ -340,7 +307,6 @@ const Bookings = () => {
       await updateBookingStatus(id, status);
     } catch (e) {
       console.error("Failed to update status", e);
-      // Optionally refetch or revert (for now just log)
     }
   };
 
@@ -439,7 +405,7 @@ const Bookings = () => {
             align="center"
             padding="16px 16px 0 16px"
           >
-            <Text variant="header-title">Manage Reservation</Text>
+            <ResponsiveText type="title-small" weight="bold">Manage Reservation</ResponsiveText>
           </Container>
 
           {/* Search + Filters */}

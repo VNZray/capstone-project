@@ -1,6 +1,42 @@
 import db from "../db.js";
 import { v4 as uuidv4 } from "uuid";
 import { handleDbError } from "../utils/errorHandler.js";
+// Booking fields in the order expected by the stored procedures after id
+const BOOKING_FIELDS = [
+  "pax",
+  "num_children",
+  "num_adults",
+  "num_infants",
+  "foreign_counts",
+  "domestic_counts",
+  "overseas_counts",
+  "local_counts",
+  "trip_purpose",
+  "check_in_date",
+  "check_out_date",
+  "total_price",
+  "balance",
+  "booking_status",
+  "room_id",
+  "tourist_id",
+  "business_id",
+];
+
+const makePlaceholders = (n) => Array(n).fill("?").join(", ");
+
+const buildBookingParams = (id, body, options = {}) => {
+  // map fields in BOOKING_FIELDS order. For insert, allow defaults via options
+  return [
+    id,
+    ...BOOKING_FIELDS.map((f) => {
+      if (Object.prototype.hasOwnProperty.call(body, f)) return body[f];
+      // insert defaults
+      if (options.defaultBalanceFor === f) return options.defaultBalanceValue;
+      if (options.defaultStatusFor === f) return options.defaultStatusValue;
+      return null;
+    }),
+  ];
+};
 // Get all bookings
 export async function getAllBookings(req, res) {
   try {
@@ -98,29 +134,15 @@ export async function insertBooking(req, res) {
 
     const effectiveBalance = balance ?? total_price;
     const effectiveStatus = booking_status ?? "Pending";
-    const [rows] = await db.query(
-      "CALL InsertBooking(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-      [
-        id,
-        pax,
-        num_children,
-        num_adults,
-        num_infants,
-        foreign_counts,
-        domestic_counts,
-        overseas_counts,
-        local_counts,
-        trip_purpose,
-        check_in_date,
-        check_out_date,
-        total_price,
-        effectiveBalance,
-        effectiveStatus,
-        room_id,
-        tourist_id,
-        business_id,
-      ]
-    );
+    // build params with defaults applied for balance and booking_status
+    const params = buildBookingParams(id, req.body, {
+      defaultBalanceFor: "balance",
+      defaultBalanceValue: effectiveBalance,
+      defaultStatusFor: "booking_status",
+      defaultStatusValue: effectiveStatus,
+    });
+    const placeholders = makePlaceholders(params.length);
+    const [rows] = await db.query(`CALL InsertBooking(${placeholders})`, params);
     return res.status(201).json(rows[0][0]);
   } catch (error) {
     return handleDbError(error, res);
@@ -133,48 +155,17 @@ export async function updateBooking(req, res) {
     const { id } = req.params;
     if (!id) return res.status(400).json({ error: "id parameter is required" });
 
-    const {
-      pax,
-      num_children,
-      num_adults,
-      num_infants,
-      foreign_counts,
-      domestic_counts,
-      overseas_counts,
-      local_counts,
-      trip_purpose,
-      check_in_date,
-      check_out_date,
-      total_price,
-      balance,
-      booking_status,
-      room_id,
-      tourist_id,
-      business_id,
-    } = req.body;
-
     const [rows] = await db.query(
-      "CALL UpdateBooking(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-      [
-        id,
-        pax ?? null,
-        num_children ?? null,
-        num_adults ?? null,
-        num_infants ?? null,
-        foreign_counts ?? null,
-        domestic_counts ?? null,
-        overseas_counts ?? null,
-        local_counts ?? null,
-        trip_purpose ?? null,
-        check_in_date ?? null,
-        check_out_date ?? null,
-        total_price ?? null,
-        balance ?? null,
-        booking_status ?? null,
-        room_id ?? null,
-        tourist_id ?? null,
-        business_id ?? null,
-      ]
+      // build params for update, coalescing undefined to null
+      (() => {
+        const body = req.body || {};
+        const params = [
+          id,
+          ...BOOKING_FIELDS.map((f) => (Object.prototype.hasOwnProperty.call(body, f) ? body[f] : null)),
+        ];
+        const placeholders = makePlaceholders(params.length);
+        return db.query(`CALL UpdateBooking(${placeholders})`, params);
+      })()
     );
     return res.json(rows[0][0]);
   } catch (err) {
