@@ -11,15 +11,16 @@ export type User = {
   id?: string | "";
   email: string;
   phone_number?: string | "";
-  password: string | "";
+  password?: string | "";
   user_profile?: string | "";
   otp?: number | null;
-  is_active: boolean;
-  is_verified: boolean;
-  created_at: string;
-  updated_at: string;
+  is_active?: boolean;
+  is_verified?: boolean;
+  created_at?: string;
+  updated_at?: string;
   last_login?: string | "";
   user_role_id: number;
+  barangay_id?: number | undefined | null;
 };
 
 export type UserDetails = {

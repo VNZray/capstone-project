@@ -8,6 +8,8 @@ import MainLayout from "../layout/MainLayout";
 
 import LandingPage from "@/src/pages/LandingPage";
 import About from "../pages/About";
+import Registration from "../pages/BusinessRegistration";
+
 
 import BusinessPortalLogin from "../features/auth/BusinessPortalLogin";
 import BusinessPortalRegister from "../features/auth/BusinessPortalRegister";
@@ -81,11 +83,13 @@ export default function AppRoutes() {
         </Route>
         <Route path={`/login`} element={<UnifiedLogin />} />
         <Route path={`${business}/login`} element={<BusinessPortalLogin />} />
+        <Route path={`business-registration`} element={<Registration />} />
+
         <Route
           path={`${business}/signup`}
           element={<BusinessPortalRegister />}
         />
-        
+
         <Route path={`${tourism}/login`} element={<AdminLogin />} />
         <Route path={`${tourism}/signup`} element={<AdminRegister />} />
         <Route
@@ -396,7 +400,7 @@ export default function AppRoutes() {
               </ProtectedRoute>
             }
           />
-            {/* Public offer pages removed */}
+          {/* Public offer pages removed */}
           <Route
             path={`${tourism}/settings`}
             element={
@@ -405,7 +409,7 @@ export default function AppRoutes() {
               </ProtectedRoute>
             }
           />
-            {/* Admin offer pages removed */}
+          {/* Admin offer pages removed */}
         </Route>
       </Route>
 

@@ -104,9 +104,10 @@ export async function insertUser(req, res) {
       req.body.is_active ?? false,
       req.body.last_login ?? null,
       req.body.user_role_id ?? null,
+      req.body.barangay_id ?? null
     ];
     const [data] = await db.query(
-      "CALL InsertUser(?,?,?,?,?,?,?,?,?,?)",
+      "CALL InsertUser(?,?,?,?,?,?,?,?,?,?,?)",
       params
     );
     if (!data[0] || data[0].length === 0) {
@@ -137,9 +138,10 @@ export async function updateUser(req, res) {
       req.body.is_active ?? null,
       req.body.last_login ?? null,
       req.body.user_role_id ?? null,
+      req.body.barangay_id ?? null
     ];
     const [data] = await db.query(
-      "CALL UpdateUser(?,?,?,?,?,?,?,?,?,?)",
+      "CALL UpdateUser(?,?,?,?,?,?,?,?,?,?,?)",
       params
     );
     if (!data[0] || data[0].length === 0) {
