@@ -52,6 +52,7 @@ const Register = () => {
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
     otp: null,
+    barangay_id: 6,
   };
 
   const newOwner: Owner = {
@@ -61,7 +62,6 @@ const Register = () => {
     age: "25",
     gender: "Male",
     birthdate: "2000-01-01",
-    barangay_id: 6,
   };
 
 
@@ -293,34 +293,6 @@ const Register = () => {
               />
               <FormHelperText>{errors.phoneNumber}</FormHelperText>
             </FormControl>
-          </div>
-
-          {/* Business Type */}
-          <div style={{ marginTop: 12 }}>
-            <FormLabel>Business Owned</FormLabel>
-            <div
-              style={{
-                display: "flex",
-                gap: 12,
-                alignItems: "center",
-                flexWrap: "wrap",
-                marginTop: 6,
-              }}
-            >
-              <Checkbox
-                label="Accommodation"
-                checked={
-                  businessType === "Accommodation" || businessType === "Both"
-                }
-                onChange={() => handleBusinessTypeChange("Accommodation")}
-              />
-              <Checkbox
-                label="Shop"
-                checked={businessType === "Shop" || businessType === "Both"}
-                onChange={() => handleBusinessTypeChange("Shop")}
-              />
-            </div>
-            <FormHelperText>{errors.businessType}</FormHelperText>
           </div>
 
           {/* Passwords */}

@@ -18,6 +18,7 @@ export type User = {
   updated_at: string;
   last_login?: string | "";
   user_role_id: number;
+  barangay_id?: number | undefined | null;
 };
 
 export type UserDetails = {

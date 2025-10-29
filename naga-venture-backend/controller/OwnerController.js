@@ -2,35 +2,27 @@ import db from "../db.js";
 import { handleDbError } from "../utils/errorHandler.js";
 import { v4 as uuidv4 } from "uuid";
 
+const OWNER_FIELDS = [
+  "first_name",
+  "middle_name",
+  "last_name",
+  "age",
+  "birthdate",
+  "gender",
+  "user_id",
+];
+
+const makePlaceholders = (n) => Array(n).fill("?").join(",");
+
+const buildOwnerParams = (id, body) => [id, ...OWNER_FIELDS.map((f) => body?.[f] ?? null)];
+
 // Insert Owner (calls InsertOwner SP)
 export async function insertOwner(req, res) {
   try {
     const id = uuidv4();
-
-    const {
-      first_name,
-      middle_name = null,
-      last_name,
-      age = null,
-      birthdate = null,
-      gender = null,
-      business_type,
-      barangay_id = null,
-      user_id = null,
-    } = req.body;
-
-    const [rows] = await db.query("CALL InsertOwner(?,?,?,?,?,?,?,?,?,?)", [
-      id,
-      first_name,
-      middle_name,
-      last_name,
-      age,
-      birthdate,
-      gender,
-      business_type,
-      barangay_id,
-      user_id,
-    ]);
+    const params = buildOwnerParams(id, req.body);
+    const placeholders = makePlaceholders(params.length);
+    const [rows] = await db.query(`CALL InsertOwner(${placeholders})`, params);
 
     return res.status(201).json(rows[0][0]);
   } catch (error) {
@@ -70,32 +62,10 @@ export async function getAllOwners(req, res) {
 // Update owner (calls UpdateOwner SP)
 export async function updateOwnerById(req, res) {
   const { id } = req.params;
-
-  const {
-    first_name,
-    middle_name = null,
-    last_name,
-    age = null,
-    birthdate = null,
-    gender = null,
-    business_type,
-    barangay_id = null,
-    user_id = null,
-  } = req.body;
-
   try {
-    const [rows] = await db.query("CALL UpdateOwner(?,?,?,?,?,?,?,?,?,?)", [
-      id,
-      first_name,
-      middle_name,
-      last_name,
-      age,
-      birthdate,
-      gender,
-      business_type,
-      barangay_id,
-      user_id,
-    ]);
+    const params = buildOwnerParams(id, req.body);
+    const placeholders = makePlaceholders(params.length);
+    const [rows] = await db.query(`CALL UpdateOwner(${placeholders})`, params);
 
     if (!rows[0] || rows[0].length === 0) {
       return res
