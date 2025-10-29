@@ -17,6 +17,7 @@ import {
   ChevronDown,
   ShoppingBag,
   Settings,
+  GroupIcon,
 } from "lucide-react";
 
 // Compact icon size
@@ -25,18 +26,23 @@ import logo from "@/src/assets/images/light-logo.png";
 import "./Sidebar.css";
 import { useBusiness } from "../../context/BusinessContext";
 import { useAuth } from "@/src/context/AuthContext";
+import { VerifiedUserTwoTone } from "@mui/icons-material";
+import { FaUserFriends } from "react-icons/fa";
 
 interface SidebarProps {
   isOpen?: boolean;
   onClose?: () => void;
 }
 
-export default function Sidebar({ isOpen = false, onClose }: SidebarProps): React.ReactElement {
+export default function Sidebar({
+  isOpen = false,
+  onClose,
+}: SidebarProps): React.ReactElement {
   const { businessDetails } = useBusiness();
   const { logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const route = "/business"
+  const route = "/business";
   const [storeOpen, setStoreOpen] = React.useState(false);
 
   React.useEffect(() => {
@@ -55,7 +61,14 @@ export default function Sidebar({ isOpen = false, onClose }: SidebarProps): Reac
       >
         <X size={20} />
       </button>
-      <div className="sidebar-brand" onClick={() => { navigate(route + "/dashboard"); onClose?.(); }} style={{ cursor: "pointer" }}>
+      <div
+        className="sidebar-brand"
+        onClick={() => {
+          navigate(route + "/dashboard");
+          onClose?.();
+        }}
+        style={{ cursor: "pointer" }}
+      >
         <img src={logo} alt="City Ventures" className="sidebar-brand-icon" />
         <div className="sidebar-brand-text">
           <div className="sidebar-brand-title">CITY VENTURES</div>
@@ -133,7 +146,9 @@ export default function Sidebar({ isOpen = false, onClose }: SidebarProps): Reac
               </button>
               <div
                 id="store-subnav"
-                className={`sidebar-subnav ${storeOpen ? "expanded" : "collapsed"}`}
+                className={`sidebar-subnav ${
+                  storeOpen ? "expanded" : "collapsed"
+                }`}
                 role="region"
                 aria-label="Store section"
                 hidden={!storeOpen}
@@ -177,14 +192,32 @@ export default function Sidebar({ isOpen = false, onClose }: SidebarProps): Reac
             icon={<Star size={ICON_SIZE} />}
             onClick={onClose}
           />
-          <NavItem to={`${route}/settings`} label="Settings" icon={<Settings size={18} />} onClick={onClose} />
+          <NavItem
+            to={`${route}/manage-staff`}
+            label="Manage Staff"
+            icon={<FaUserFriends/>}
+            onClick={onClose}
+          />
+          <NavItem
+            to={`${route}/settings`}
+            label="Settings"
+            icon={<Settings size={18} />}
+            onClick={onClose}
+          />
         </div>
 
-        <div className="sidebar-logout" style={{ marginTop: "auto", paddingTop: "8px" }}>
-          <NavItem 
-            label="Log Out" 
-            icon={<LogOut size={ICON_SIZE} />} 
-            onClick={() => { logout(); navigate('/'); onClose?.(); }}
+        <div
+          className="sidebar-logout"
+          style={{ marginTop: "auto", paddingTop: "8px" }}
+        >
+          <NavItem
+            label="Log Out"
+            icon={<LogOut size={ICON_SIZE} />}
+            onClick={() => {
+              logout();
+              navigate("/");
+              onClose?.();
+            }}
           />
         </div>
       </nav>
@@ -199,7 +232,12 @@ interface NavItemProps {
   onClick?: () => void;
 }
 
-function NavItem({ to, label, icon, onClick }: NavItemProps): React.ReactElement {
+function NavItem({
+  to,
+  label,
+  icon,
+  onClick,
+}: NavItemProps): React.ReactElement {
   if (to) {
     return (
       <NavLink
