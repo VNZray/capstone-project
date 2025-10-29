@@ -145,15 +145,8 @@ export default function Categories() {
     both: "Shared Categories",
   };
 
-  const filterChipOptions: Array<{
-    value: CategoryFilter;
-    color: "primary" | "info" | "success" | "warning";
-  }> = [
-    { value: "all", color: "primary" },
-    { value: "product", color: "info" },
-    { value: "service", color: "success" },
-    { value: "both", color: "warning" },
-  ];
+  // Keep simple list of filter values; visual state (color/variant) will follow product-style chips
+  const filterChipOptions: CategoryFilter[] = ["all", "product", "service", "both"];
 
   const filterCounts = useMemo(
     () => ({
@@ -338,14 +331,16 @@ export default function Categories() {
         >
           <Box>
             <Stack direction="row" alignItems="center" spacing={2}>
-              <IconButton
-                variant="outlined"
-                color="neutral"
-                onClick={() => navigate(backPath)}
-              >
-                <FiArrowLeft />
-              </IconButton>
-              <Box>
+                {origin ? (
+                  <IconButton
+                    variant="outlined"
+                    color="neutral"
+                    onClick={() => navigate(backPath)}
+                  >
+                    <FiArrowLeft />
+                  </IconButton>
+                ) : null}
+                <Box>
                 <Typography level="h2" fontWeight={700}>
                   Shop Categories
                 </Typography>
@@ -363,11 +358,11 @@ export default function Categories() {
         </Stack>
 
         <Stack direction="row" flexWrap="wrap" spacing={1}>
-          {filterChipOptions.map(({ value, color }) => (
+          {filterChipOptions.map((value) => (
             <Chip
               key={value}
               variant={activeFilter === value ? "solid" : "outlined"}
-              color={color}
+              color={activeFilter === value ? "primary" : "neutral"}
               onClick={() => handleFilterChange(value)}
               sx={{ cursor: "pointer" }}
             >
@@ -419,13 +414,18 @@ export default function Categories() {
                       </Typography>
                     </td>
                     <td>
-                      <Chip
-                        size="sm"
-                        color={category.category_type === "product" ? "primary" : category.category_type === "service" ? "success" : "warning"}
-                        variant="soft"
-                      >
-                        {category.category_type.charAt(0).toUpperCase() + category.category_type.slice(1)}
-                      </Chip>
+                      {(() => {
+                        const isProduct = category.category_type === "product";
+                        return (
+                          <Chip
+                            size="md"
+                            variant={isProduct ? "solid" : "outlined"}
+                            color={isProduct ? "primary" : "neutral"}
+                          >
+                            {category.category_type.charAt(0).toUpperCase() + category.category_type.slice(1)}
+                          </Chip>
+                        );
+                      })()}
                     </td>
                     <td>
                       <Chip
