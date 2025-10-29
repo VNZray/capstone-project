@@ -9,7 +9,7 @@ import {
 } from "@mui/material";
 import { Bell, ArrowLeft, Menu } from "lucide-react";
 import { useAuth } from "@/src/context/AuthContext"; // adjust path if needed
-import Text from "../Text";
+import ResponsiveText from "../ResponsiveText";
 
 // import { Button } from "@mui/joy";
 const pageTitles: Record<string, string> = {
@@ -67,7 +67,7 @@ export default function MainHeader({ onMenuClick }: MainHeaderProps) {
           >
             <ArrowLeft size={22} />
           </IconButton>
-          <Text variant="header-title">{title}</Text>
+          <ResponsiveText type="title-small" weight="bold">{title}</ResponsiveText>
         </Box>
 
         {/* Right - Actions */}
