@@ -1,11 +1,7 @@
 import React from "react";
-import {
-  Button,
-  Link,
-  Stack,
-  Typography,
-  Sheet,
-} from "@mui/joy";
+import { Button, Stack, Typography, Sheet } from "@mui/joy";
+import { LucidePhone, Globe } from "lucide-react";
+import { MdEmail } from "react-icons/md";
 import { Edit } from "lucide-react";
 import type { TouristSpot } from "@/src/types/TouristSpot";
 
@@ -23,11 +19,19 @@ const SocialsInfoSection: React.FC<SocialsInfoSectionProps> = ({ spot, onEdit })
         alignItems="center"
         sx={{ mb: 2 }}
       >
-        <Typography level="h4">Contact & Social Media</Typography>
+        <Typography
+          fontFamily={"poppins"}
+          level="title-lg"
+          fontWeight={700}
+          sx={{ color: "#1e293b" }}
+          >
+            Contact & Social Media
+        </Typography>
         <Button
           variant="outlined"
           size="sm"
           startDecorator={<Edit size={16} />}
+          className="tsd-edit-btn"
           onClick={onEdit}
         >
           Edit
@@ -35,49 +39,26 @@ const SocialsInfoSection: React.FC<SocialsInfoSectionProps> = ({ spot, onEdit })
       </Stack>
 
       <Stack spacing={2}>
-        {/* Contact Phone */}
-        <Stack spacing={0.5}>
-          <Typography level="title-sm" sx={{ color: "text.tertiary" }}>
-            Phone
-          </Typography>
-          <Typography level="body-md">
-            {spot.contact_phone || "Not provided"}
-          </Typography>
-        </Stack>
+        {/* Email */}
+        <Typography startDecorator={<MdEmail size={20} />} level="body-md">
+          {spot.contact_email || "No email available"}
+        </Typography>
 
-        {/* Contact Email */}
-        <Stack spacing={0.5}>
-          <Typography level="title-sm" sx={{ color: "text.tertiary" }}>
-            Email
-          </Typography>
-          <Typography level="body-md">
-            {spot.contact_email || "Not provided"}
-          </Typography>
-        </Stack>
+        {/* Phone */}
+        <Typography startDecorator={<LucidePhone size={20} />} level="body-md">
+          {spot.contact_phone || "No phone number available"}
+        </Typography>
 
         {/* Website */}
-        <Stack spacing={0.5}>
-          <Typography level="title-sm" sx={{ color: "text.tertiary" }}>
-            Website
-          </Typography>
+        <Typography startDecorator={<Globe size={20} />} level="body-md">
           {spot.website ? (
-            <Link
-              href={spot.website}
-              target="_blank"
-              rel="noopener noreferrer"
-              sx={{
-                wordBreak: "break-all",
-                fontSize: "sm",
-              }}
-            >
-              {spot.website.length > 40
-                ? `${spot.website.substring(0, 40)}...`
-                : spot.website}
-            </Link>
+            <a href={spot.website} target="_blank" rel="noopener noreferrer" style={{ color: "inherit", textDecoration: "none" }}>
+              {spot.website}
+            </a>
           ) : (
-            <Typography level="body-md">Not provided</Typography>
+            "No Website URL available"
           )}
-        </Stack>
+        </Typography>
       </Stack>
     </Sheet>
   );

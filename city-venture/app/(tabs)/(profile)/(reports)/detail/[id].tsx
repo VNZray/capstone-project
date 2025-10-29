@@ -3,20 +3,25 @@ import { View, StyleSheet, ScrollView, Image } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { getReportById } from '@/services/ReportService';
 import { ThemedText } from '@/components/themed-text';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { useColorScheme } from '@/hooks/use-color-scheme';
 
 interface StatusHistory { id:string; status:string; remarks:string; updated_at:string; }
 interface Attachment { id:string; file_url:string; file_name:string; }
 interface Report { id:string; title:string; description:string; status:string; target_type:string; created_at:string; status_history:StatusHistory[]; attachments:Attachment[]; }
 
 export default function ReportDetail(){
+  const scheme = useColorScheme();
+  const isDark = scheme === 'dark';
   const { id } = useLocalSearchParams<{id:string}>();
   const [report,setReport] = useState<Report| null>(null);
   useEffect(()=>{ (async ()=>{ if(id){ const r = await getReportById(id); setReport(r);} })(); },[id]);
-  if(!report) return <View style={{flex:1,justifyContent:'center',alignItems:'center'}}><ThemedText type="body-small">Loading...</ThemedText></View>;
+  if(!report) return <SafeAreaView style={{flex:1,justifyContent:'center',alignItems:'center', backgroundColor: isDark ? '#0F1222' : '#F5F7FB'}}><ThemedText type="body-small">Loading...</ThemedText></SafeAreaView>;
   return (
+    <SafeAreaView style={{ flex:1, backgroundColor: isDark ? '#0F1222' : '#F5F7FB' }}>
     <ScrollView contentContainerStyle={styles.container}>
       <ThemedText type="title-small" weight="bold">{report.title}</ThemedText>
-      <ThemedText type="label-small" style={{marginTop:4, color:'#64748B'}}>{report.target_type} • {new Date(report.created_at).toLocaleString()}</ThemedText>
+      <ThemedText type="label-small" style={{marginTop:4, color: isDark ? '#A9B2D0' : '#64748B'}}>{report.target_type} • {new Date(report.created_at).toLocaleString()}</ThemedText>
       <ThemedText type="body-small" style={{marginTop:12}}>{report.description}</ThemedText>
       <ThemedText type="sub-title-small" weight="bold" style={{marginTop:24}}>Status Timeline</ThemedText>
       <View style={{marginTop:12}}>
@@ -27,7 +32,7 @@ export default function ReportDetail(){
               <View style={[styles.timelineIndicator, last && {backgroundColor:'#16A34A'}]} />
               <View style={{flex:1, marginLeft:12}}>
                 <ThemedText type="body-small" weight="semi-bold">{s.status.replace('_',' ')}</ThemedText>
-                <ThemedText type="label-small" style={{color:'#64748B'}}>{new Date(s.updated_at).toLocaleString()}</ThemedText>
+                <ThemedText type="label-small" style={{color: isDark ? '#A9B2D0' : '#64748B'}}>{new Date(s.updated_at).toLocaleString()}</ThemedText>
                 {s.remarks? <ThemedText type="label-small" style={{marginTop:4}}>{s.remarks}</ThemedText>: null}
               </View>
             </View>
@@ -43,6 +48,7 @@ export default function ReportDetail(){
         </View>
       </>: null}
     </ScrollView>
+    </SafeAreaView>
   );
 }
 
