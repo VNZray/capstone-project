@@ -1,3 +1,6 @@
+const { createPromotionProcedures, dropPromotionProcedures } = require("../procedures/promotionProcedures.js");
+
+
 exports.up = function (knex) {
   return knex.schema.createTable("promotion", (table) => {
     table.uuid("id").primary().defaultTo(knex.raw("(UUID())"));
@@ -26,10 +29,10 @@ exports.up = function (knex) {
       })
       .notNullable();
 
-  table.decimal("discount_value", 10, 2).notNullable();
+    table.decimal("discount_value", 10, 2).notNullable();
   // Start date defaults to now; end date is provided by app and allowed to be NULL until set
-  table.timestamp("start_date").notNullable().defaultTo(knex.fn.now());
-  table.timestamp("end_date").nullable().defaultTo(null);
+    table.timestamp("start_date").notNullable().defaultTo(knex.fn.now());
+    table.timestamp("end_date").nullable().defaultTo(null);
     table.boolean("is_active").defaultTo(true);
     table.timestamp("created_at").defaultTo(knex.fn.now());
     table.timestamp("updated_at").defaultTo(knex.fn.now());
