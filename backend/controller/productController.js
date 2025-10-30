@@ -32,6 +32,96 @@ const mapProductRow = (row) => {
 
 const mapProductRows = (rows = []) => rows.map(mapProductRow);
 
+// ==================== PRODUCT CATEGORIES ====================
+
+// Get all product categories
+export async function getAllProductCategories(req, res) {
+  try {
+    const [data] = await db.query("CALL GetAllProductCategories()");
+    res.json(data);
+  } catch (error) {
+    return handleDbError(error, res);
+  }
+}
+
+// Get product categories by business ID
+export async function getProductCategoriesByBusinessId(req, res) {
+  const { businessId } = req.params;
+  try {
+    const [data] = await db.query("CALL GetProductCategoriesByBusinessId(?)", [businessId]);
+    res.json(data);
+  } catch (error) {
+    return handleDbError(error, res);
+  }
+}
+
+// Get product category by ID
+export async function getProductCategoryById(req, res) {
+  const { id } = req.params;
+  try {
+    const [data] = await db.query("CALL GetProductCategoryById(?)", [id]);
+    if (!data || data.length === 0) {
+      return res.status(404).json({ message: "Product category not found" });
+    }
+    res.json(data[0]);
+  } catch (error) {
+    return handleDbError(error, res);
+  }
+}
+
+// Insert a new product category
+export async function insertProductCategory(req, res) {
+  try {
+    const id = uuidv4();
+    const { business_id, name, description, display_order, status } = req.body;
+
+    const [data] = await db.query("CALL InsertProductCategory(?, ?, ?, ?, ?, ?)", [
+      id, business_id, name, description || null, display_order || 0, status || 'active'
+    ]);
+    
+    res.status(201).json({
+      message: "Product category created successfully",
+      data: data[0]
+    });
+  } catch (error) {
+    return handleDbError(error, res);
+  }
+}
+
+// Update product category
+export async function updateProductCategory(req, res) {
+  const { id } = req.params;
+  try {
+    const { name, description, display_order, status } = req.body;
+
+    const [data] = await db.query("CALL UpdateProductCategory(?, ?, ?, ?, ?)", [
+      id, name, description, display_order, status
+    ]);
+
+    if (!data || data.length === 0) {
+      return res.status(404).json({ message: "Product category not found" });
+    }
+
+    res.json({
+      message: "Product category updated successfully",
+      data: data[0]
+    });
+  } catch (error) {
+    return handleDbError(error, res);
+  }
+}
+
+// Delete product category
+export async function deleteProductCategory(req, res) {
+  const { id } = req.params;
+  try {
+    await db.query("CALL DeleteProductCategory(?)", [id]);
+    res.json({ message: "Product category deleted successfully" });
+  } catch (error) {
+    return handleDbError(error, res);
+  }
+}
+
 // ==================== PRODUCTS ====================
 
 // Get all products
@@ -127,6 +217,7 @@ export async function insertProduct(req, res) {
 
       // Update the shop_category_id field with the primary category
       await connection.query("UPDATE product SET shop_category_id = ? WHERE id = ?", [primaryCategoryId, productId]);
+      await connection.query("UPDATE product SET product_category_id = ? WHERE id = ?", [primaryCategoryId, productId]);
 
       await connection.commit();
       connection.release();
@@ -196,6 +287,7 @@ export async function updateProduct(req, res) {
 
       // Update the shop_category_id field with the primary category
       await connection.query("UPDATE product SET shop_category_id = ? WHERE id = ?", [primaryCategoryId, id]);
+      await connection.query("UPDATE product SET product_category_id = ? WHERE id = ?", [primaryCategoryId, id]);
 
       await connection.commit();
       connection.release();

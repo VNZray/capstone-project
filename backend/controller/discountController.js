@@ -307,3 +307,4 @@ export async function updateExpiredDiscounts(req, res) {
     return handleDbError(error, res);
   }
 }
+}
