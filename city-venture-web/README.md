@@ -76,4 +76,4 @@ Utility functions for formatting, validation, and other helper logic.
 
 - Tourist → `/`
 - Business Owner → `/business`
-- Admin (Tourism) → `/tourism/dashboard`
+- Admin (Tourism) → `/tourism`

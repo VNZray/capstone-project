@@ -41,4 +41,3 @@
 - Tourist
   - Email: `tourist@cityventure.test`
   - Password: `Tourist123!`
-  
