@@ -137,13 +137,10 @@ const routeSections = [
   {
     section: "Commerce (Products & Services)",
     routes: [
-      { path: "/api/products", handler: productRoutes, label: "Products" },
-      { path: "/api/discounts", handler: discountRoutes, label: "Discounts" },
       { path: "/api/shop-categories", handler: shopCategoryRoutes, label: "Shop Categories (Unified)" },
       { path: "/api/products", handler: productRoutes, label: "Products" },
       { path: "/api/discounts", handler: discountRoutes, label: "Discounts" },
       { path: "/api/promotions", handler: promotionRoutes, label: "Promotions" },
-      { path: "/api/discounts", handler: discountRoutes, label: "Discounts" },
       { path: "/api/services", handler: serviceRoutes, label: "Services (Display Only)" },
       {
         path: "/api/service-inquiries",
