@@ -5,7 +5,6 @@ import {
   CalendarCheck,
   BedDouble,
   Store,
-  Tag,
   Star,
   LogOut,
   X,
@@ -17,12 +16,14 @@ import {
   ChevronDown,
   ShoppingBag,
   Settings,
+  Megaphone,
+  Tag,
   GroupIcon,
 } from "lucide-react";
 
 // Compact icon size
 const ICON_SIZE = 16;
-import logo from "@/src/assets/images/light-logo.png";
+import logo from "@/src/assets/logo/city-ventures-main.png";
 import "./Sidebar.css";
 import { useBusiness } from "../../context/BusinessContext";
 import { useAuth } from "@/src/context/AuthContext";
@@ -108,6 +109,12 @@ export default function Sidebar({
             icon={<Store size={ICON_SIZE} />}
             onClick={onClose}
           />
+          <NavItem
+            to={`${route}/promotion`}
+            label="Manage Promotions"
+            icon={<Megaphone size={ICON_SIZE} />}
+            onClick={onClose}
+          />
           {businessDetails?.business_type_id === 1 ? (
             <NavItem
               to={`${route}/rooms`}
@@ -116,12 +123,6 @@ export default function Sidebar({
               onClick={onClose}
             />
           ) : null}
-          <NavItem
-            to={`${route}/manage-promotion`}
-            label="Manage Promotion"
-            icon={<Tag size={ICON_SIZE} />}
-            onClick={onClose}
-          />
 
           {/* Store section (Shop only) */}
           {businessDetails?.business_type_id !== 1 && (
@@ -157,6 +158,12 @@ export default function Sidebar({
                   to={`${route}/store/products`}
                   label="Products"
                   icon={<Package size={ICON_SIZE} />}
+                  onClick={onClose}
+                />
+                <NavItem
+                  to={`${route}/store/categories`}
+                  label="Categories"
+                  icon={<Tag size={ICON_SIZE} />}
                   onClick={onClose}
                 />
                 <NavItem

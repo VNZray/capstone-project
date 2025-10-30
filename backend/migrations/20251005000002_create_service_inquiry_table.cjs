@@ -18,6 +18,7 @@ exports.up = async function (knex) {
       .onDelete("CASCADE");
     
     // Support logged-in users
+    // Support logged-in users (guest_id removed - guest table doesn't exist)
     table.uuid("user_id").nullable()
       .references("id")
       .inTable("user")
@@ -58,6 +59,8 @@ exports.up = async function (knex) {
 
     // Constraint: must have user_id
     table.check("(user_id IS NOT NULL)", {}, "chk_service_inquiry_user");
+    
+    // Note: user_id is nullable to allow anonymous inquiries
   });
 
   console.log("✅ Created service_inquiry table");

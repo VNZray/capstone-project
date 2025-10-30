@@ -216,6 +216,8 @@ export async function insertProduct(req, res) {
       }
 
       await connection.query("UPDATE product SET product_category_id = ? WHERE id = ?", [primaryCategoryId, productId]);
+      // Update the shop_category_id field with the primary category
+      await connection.query("UPDATE product SET shop_category_id = ? WHERE id = ?", [primaryCategoryId, productId]);
 
       await connection.commit();
       connection.release();
@@ -284,6 +286,8 @@ export async function updateProduct(req, res) {
       }
 
       await connection.query("UPDATE product SET product_category_id = ? WHERE id = ?", [primaryCategoryId, id]);
+      // Update the shop_category_id field with the primary category
+      await connection.query("UPDATE product SET shop_category_id = ? WHERE id = ?", [primaryCategoryId, id]);
 
       await connection.commit();
       connection.release();

@@ -25,16 +25,6 @@ export interface Product {
   stock_unit?: string;
 }
 
-export interface ProductCategory {
-  id: string;
-  business_id: string;
-  name: string;
-  description: string | null;
-  display_order: number;
-  status: 'active' | 'inactive';
-  created_at: string;
-  updated_at: string;
-}
 
 export interface ProductStock {
   id: string;
@@ -85,10 +75,3 @@ export interface UpdateStockPayload {
   created_by?: string;
 }
 
-export interface CreateCategoryPayload {
-  business_id: string;
-  name: string;
-  description?: string;
-  display_order?: number;
-  status?: 'active' | 'inactive';
-}

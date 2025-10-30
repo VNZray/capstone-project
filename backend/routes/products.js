@@ -14,6 +14,8 @@ router.put("/categories/:id", productController.updateProductCategory);
 router.delete("/categories/:id", productController.deleteProductCategory);
 
 // ==================== PRODUCT ROUTES ====================
+// ==================== PRODUCT ROUTES ====================
+// Note: Product categories are now managed via /api/shop-categories routes
 
 // Products
 router.get("/", productController.getAllProducts);

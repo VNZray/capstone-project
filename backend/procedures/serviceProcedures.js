@@ -86,6 +86,9 @@ async function createServiceProcedures(knex) {
   // ==================== SERVICES ====================
   
   // Get all services with category and business info
+  // ==================== SERVICES (DISPLAY-ONLY) ====================
+  
+  // Get all services
   await knex.raw(`
     CREATE PROCEDURE GetAllServices()
     BEGIN
@@ -112,6 +115,12 @@ async function createServiceProcedures(knex) {
       FROM service s 
       LEFT JOIN service_category sc_primary ON s.service_category_id = sc_primary.id 
       LEFT JOIN business b ON s.business_id = b.id 
+        sc.name AS category_name,
+        b.business_name
+      FROM service s 
+      LEFT JOIN shop_category sc ON s.shop_category_id = sc.id 
+      LEFT JOIN business b ON s.business_id = b.id 
+      WHERE s.status = 'active'
       ORDER BY s.created_at DESC;
     END;
   `);
@@ -143,6 +152,11 @@ async function createServiceProcedures(knex) {
       LEFT JOIN service_category sc_primary ON s.service_category_id = sc_primary.id 
       WHERE s.business_id = p_businessId AND s.status IN ('active', 'seasonal')
       ORDER BY sc_primary.display_order, s.display_order, s.name;
+        sc.name AS category_name
+      FROM service s 
+      LEFT JOIN shop_category sc ON s.shop_category_id = sc.id 
+      WHERE s.business_id = p_businessId
+      ORDER BY s.display_order, s.name;
     END;
   `);
 
@@ -153,6 +167,7 @@ async function createServiceProcedures(knex) {
       SELECT s.*
       FROM service s 
       WHERE s.service_category_id = p_categoryId AND s.status = 'active'
+      WHERE s.shop_category_id = p_categoryId AND s.status = 'active'
       ORDER BY s.display_order, s.name;
     END;
   `);
@@ -183,6 +198,10 @@ async function createServiceProcedures(knex) {
         ) AS categories
       FROM service s 
       LEFT JOIN service_category sc_primary ON s.service_category_id = sc_primary.id 
+        sc.name AS category_name,
+        b.business_name
+      FROM service s 
+      LEFT JOIN shop_category sc ON s.shop_category_id = sc.id 
       LEFT JOIN business b ON s.business_id = b.id 
       WHERE s.id = p_serviceId;
     END;
@@ -216,6 +235,26 @@ async function createServiceProcedures(knex) {
         p_id, p_business_id, p_service_category_id, p_name, p_description, p_base_price, p_price_type,
         IFNULL(p_sale_type, 'fixed'), IFNULL(p_sale_value, 0), p_duration_value, p_duration_unit, p_image_url,
         p_features, p_requirements, IFNULL(p_display_order, 0), IFNULL(p_status, 'active')
+      IN p_shop_category_id CHAR(64),
+      IN p_name VARCHAR(255),
+      IN p_description TEXT,
+      IN p_base_price DECIMAL(10,2),
+      IN p_price_type VARCHAR(50),
+      IN p_image_url VARCHAR(500),
+      IN p_requirements TEXT,
+      IN p_contact_methods JSON,
+      IN p_contact_notes TEXT,
+      IN p_display_order INT,
+      IN p_status VARCHAR(20)
+    )
+    BEGIN
+      INSERT INTO service (
+        id, business_id, shop_category_id, name, description, base_price, price_type,
+        image_url, requirements, contact_methods, contact_notes, display_order, status
+      ) VALUES (
+        p_id, p_business_id, p_shop_category_id, p_name, p_description, p_base_price, p_price_type,
+        p_image_url, p_requirements, 
+        IFNULL(p_contact_methods, JSON_ARRAY()), p_contact_notes, IFNULL(p_display_order, 0), IFNULL(p_status, 'active')
       );
       
       SELECT 
@@ -239,6 +278,9 @@ async function createServiceProcedures(knex) {
         ) AS categories
       FROM service s 
       LEFT JOIN service_category sc_primary ON s.service_category_id = sc_primary.id 
+        sc.name AS category_name
+      FROM service s 
+      LEFT JOIN shop_category sc ON s.shop_category_id = sc.id 
       WHERE s.id = p_id;
     END;
   `);
@@ -265,6 +307,21 @@ async function createServiceProcedures(knex) {
     BEGIN
       UPDATE service SET
         service_category_id = IFNULL(p_service_category_id, service_category_id),
+      IN p_shop_category_id CHAR(64),
+      IN p_name VARCHAR(255),
+      IN p_description TEXT,
+      IN p_base_price DECIMAL(10,2),
+      IN p_price_type VARCHAR(50),
+      IN p_image_url VARCHAR(500),
+      IN p_requirements TEXT,
+      IN p_contact_methods JSON,
+      IN p_contact_notes TEXT,
+      IN p_display_order INT,
+      IN p_status VARCHAR(20)
+    )
+    BEGIN
+      UPDATE service SET
+        shop_category_id = IFNULL(p_shop_category_id, shop_category_id),
         name = IFNULL(p_name, name),
         description = IFNULL(p_description, description),
         base_price = IFNULL(p_base_price, base_price),
@@ -276,6 +333,10 @@ async function createServiceProcedures(knex) {
         image_url = IFNULL(p_image_url, image_url),
         features = IFNULL(p_features, features),
         requirements = IFNULL(p_requirements, requirements),
+        image_url = IFNULL(p_image_url, image_url),
+        requirements = IFNULL(p_requirements, requirements),
+        contact_methods = IFNULL(p_contact_methods, contact_methods),
+        contact_notes = IFNULL(p_contact_notes, contact_notes),
         display_order = IFNULL(p_display_order, display_order),
         status = IFNULL(p_status, status),
         updated_at = NOW()
@@ -302,6 +363,9 @@ async function createServiceProcedures(knex) {
         ) AS categories
       FROM service s 
       LEFT JOIN service_category sc_primary ON s.service_category_id = sc_primary.id 
+        sc.name AS category_name
+      FROM service s 
+      LEFT JOIN shop_category sc ON s.shop_category_id = sc.id 
       WHERE s.id = p_id;
     END;
   `);
@@ -383,6 +447,7 @@ async function createServiceProcedures(knex) {
   `);
 
   // Search services with filters
+  // Search services with basic filters
   await knex.raw(`
     CREATE PROCEDURE SearchServices(
       IN p_query VARCHAR(255),
@@ -418,6 +483,25 @@ async function createServiceProcedures(knex) {
     CREATE PROCEDURE GetServiceStatsByBusiness(IN p_businessId CHAR(64))
     BEGIN
       -- Overall statistics
+      IN p_status VARCHAR(20)
+    )
+    BEGIN
+      SELECT s.*, sc.name as category_name, b.business_name
+      FROM service s 
+      LEFT JOIN shop_category sc ON s.shop_category_id = sc.id 
+      LEFT JOIN business b ON s.business_id = b.id 
+      WHERE (p_query IS NULL OR s.name LIKE CONCAT('%', p_query, '%') OR s.description LIKE CONCAT('%', p_query, '%'))
+        AND (p_business_id IS NULL OR s.business_id = p_business_id)
+        AND (p_category_id IS NULL OR s.shop_category_id = p_category_id)
+        AND (p_status IS NULL OR s.status = p_status)
+      ORDER BY s.display_order, s.name;
+    END;
+  `);
+
+  // Get service statistics for business (overview)
+  await knex.raw(`
+    CREATE PROCEDURE GetServiceStatsByBusiness(IN p_businessId CHAR(64))
+    BEGIN
       SELECT 
         COUNT(*) as total_services,
         COUNT(CASE WHEN status = 'active' THEN 1 END) as active_services,
@@ -450,6 +534,7 @@ async function dropServiceProcedures(knex) {
   await knex.raw("DROP PROCEDURE IF EXISTS DeleteServiceCategory;");
   
   // Services procedures
+  // Drop all service-related procedures
   await knex.raw("DROP PROCEDURE IF EXISTS GetAllServices;");
   await knex.raw("DROP PROCEDURE IF EXISTS GetServicesByBusinessId;");
   await knex.raw("DROP PROCEDURE IF EXISTS GetServicesByCategoryId;");
@@ -462,6 +547,11 @@ async function dropServiceProcedures(knex) {
   await knex.raw("DROP PROCEDURE IF EXISTS GetServicesWithPricing;");
   await knex.raw("DROP PROCEDURE IF EXISTS SearchServices;");
   await knex.raw("DROP PROCEDURE IF EXISTS GetServiceStatsByBusiness;");
+  await knex.raw("DROP PROCEDURE IF EXISTS SearchServices;");
+  await knex.raw("DROP PROCEDURE IF EXISTS GetServiceStatsByBusiness;");
+  await knex.raw("DROP PROCEDURE IF EXISTS InsertServiceCategoryMappings;");
+  await knex.raw("DROP PROCEDURE IF EXISTS UpdateServiceCategoryMappings;");
+  await knex.raw("DROP PROCEDURE IF EXISTS GetServicesWithPricing;");
 }
 
 export { createServiceProcedures, dropServiceProcedures };

@@ -1,78 +1,58 @@
-// Service Category Types
-export interface ServiceCategory {
-  id: string;
-  business_id: string;
-  name: string;
-  description?: string | null;
-  display_order?: number;
-  status?: string;
-  created_at?: string;
-  updated_at?: string;
-  is_primary?: boolean;
-}
+import type { ShopCategory, ShopCategoryAssignment } from "@/src/types/ShopCategory";
 
-export interface CreateServiceCategoryPayload {
-  business_id: string;
-  name: string;
-  description?: string;
-  display_order?: number;
-  status?: string;
-}
-
-export interface UpdateServiceCategoryPayload {
-  name?: string;
-  description?: string;
-  display_order?: number;
-  status?: string;
+// Contact method type for services
+export interface ContactMethod {
+  type: "phone" | "email" | "facebook" | "viber" | "whatsapp" | "other";
+  value: string;
 }
 
 // Service Types
 export interface Service {
   id: string;
   business_id: string;
+  shop_category_id: string;
   name: string;
   description?: string | null;
+  image_url?: string | null;
   base_price: number;
-  price_type: "fixed" | "per_hour" | "per_person" | "custom";
-  duration_value?: number | null;
-  duration_unit?: "minutes" | "hours" | "days" | "weeks" | null;
-  capacity?: number | null;
-  status: "active" | "inactive";
-  terms_conditions?: string | null;
-  cancellation_policy?: string | null;
-  advance_booking_hours?: number | null;
+  price_type: "per_hour" | "per_day" | "per_week" | "per_month" | "per_session" | "fixed";
+  requirements?: string | null;
+  contact_methods: ContactMethod[];
+  contact_notes?: string | null;
+  display_order: number;
+  status: "active" | "inactive" | "seasonal";
   created_at?: string;
   updated_at?: string;
-  categories?: ServiceCategory[];
+  category_name?: string;
+  categories?: ShopCategoryAssignment[];
 }
 
 export interface CreateServicePayload {
   business_id: string;
   name: string;
   description?: string;
+  image_url?: string;
   base_price: number;
-  price_type: "fixed" | "per_hour" | "per_person" | "custom";
-  duration_value?: number;
-  duration_unit?: "minutes" | "hours" | "days" | "weeks";
-  capacity?: number;
-  status?: "active" | "inactive";
-  terms_conditions?: string;
-  cancellation_policy?: string;
-  advance_booking_hours?: number;
+  price_type: "per_hour" | "per_day" | "per_week" | "per_month" | "per_session" | "fixed";
+  requirements?: string;
+  contact_methods?: ContactMethod[];
+  contact_notes?: string;
+  display_order?: number;
+  status?: "active" | "inactive" | "seasonal";
   category_ids: string[];
 }
 
 export interface UpdateServicePayload {
   name?: string;
   description?: string;
+  image_url?: string;
   base_price?: number;
-  price_type?: "fixed" | "per_hour" | "per_person" | "custom";
-  duration_value?: number;
-  duration_unit?: "minutes" | "hours" | "days" | "weeks";
-  capacity?: number;
-  status?: "active" | "inactive";
-  terms_conditions?: string;
-  cancellation_policy?: string;
-  advance_booking_hours?: number;
+  price_type?: "per_hour" | "per_day" | "per_week" | "per_month" | "per_session" | "fixed";
+  requirements?: string;
+  contact_methods?: ContactMethod[];
+  contact_notes?: string;
+  display_order?: number;
+  status?: "active" | "inactive" | "seasonal";
   category_ids?: string[];
 }
+

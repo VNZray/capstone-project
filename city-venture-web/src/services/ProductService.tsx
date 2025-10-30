@@ -2,13 +2,11 @@ import axios from 'axios';
 import api from '@/src/services/api';
 import type {
   Product,
-  ProductCategory,
   ProductStock,
   StockHistory,
   CreateProductPayload,
   UpdateProductPayload,
   UpdateStockPayload,
-  CreateCategoryPayload,
 } from '@/src/types/Product';
 
 function normalizeArrayResponse<T>(payload: unknown): T[] {
@@ -34,62 +32,6 @@ function normalizeArrayResponse<T>(payload: unknown): T[] {
 
   return [] as T[];
 }
-
-// ==================== PRODUCT CATEGORIES ====================
-
-/** Get all product categories */
-export const fetchAllProductCategories = async (): Promise<ProductCategory[]> => {
-  const { data } = await axios.get<ProductCategory[]>(`${api}/products/categories`);
-  return normalizeArrayResponse<ProductCategory>(data);
-};
-
-/** Get product categories by business ID */
-export const fetchProductCategoriesByBusinessId = async (
-  businessId: string
-): Promise<ProductCategory[]> => {
-  const { data } = await axios.get<ProductCategory[]>(
-    `${api}/products/categories/business/${businessId}`
-  );
-  return normalizeArrayResponse<ProductCategory>(data);
-};
-
-/** Get product category by ID */
-export const fetchProductCategoryById = async (
-  categoryId: string
-): Promise<ProductCategory> => {
-  const { data } = await axios.get<ProductCategory>(
-    `${api}/products/categories/${categoryId}`
-  );
-  return (data as { data?: ProductCategory }).data ?? data;
-};
-
-/** Create product category */
-export const createProductCategory = async (
-  payload: CreateCategoryPayload
-): Promise<ProductCategory> => {
-  const { data } = await axios.post<{ message: string; data: ProductCategory }>(
-    `${api}/products/categories`,
-    payload
-  );
-  return data.data;
-};
-
-/** Update product category */
-export const updateProductCategory = async (
-  categoryId: string,
-  payload: Partial<CreateCategoryPayload>
-): Promise<ProductCategory> => {
-  const { data } = await axios.put<{ message: string; data: ProductCategory }>(
-    `${api}/products/categories/${categoryId}`,
-    payload
-  );
-  return data.data;
-};
-
-/** Delete product category */
-export const deleteProductCategory = async (categoryId: string): Promise<void> => {
-  await axios.delete(`${api}/products/categories/${categoryId}`);
-};
 
 // ==================== PRODUCTS ====================
 

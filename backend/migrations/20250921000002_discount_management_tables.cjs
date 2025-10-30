@@ -2,6 +2,7 @@ const { createDiscountProcedures, dropDiscountProcedures } = require("../procedu
 
 exports.up = async function (knex) {
   // Create discount table (renamed from discounts to avoid potential conflicts)
+  // Create discount table (simplified MVP structure - fixed discount amounts only)
   await knex.schema.createTable("discount", (table) => {
     table.uuid("id").primary().defaultTo(knex.raw("(UUID())"));
     table.uuid("business_id").notNullable()
@@ -19,6 +20,10 @@ exports.up = async function (knex) {
     table.integer("usage_limit").nullable(); // total uses allowed
     table.integer("usage_limit_per_customer").nullable();
     table.integer("current_usage_count").defaultTo(0);
+    // Removed: discount_type, discount_value (individual prices stored in discount_product table)
+    // Removed: minimum_order_amount, maximum_discount_amount, usage_limit_per_customer, usage_limit, current_usage_count
+    table.timestamp("start_datetime").notNullable();
+    table.timestamp("end_datetime").nullable();
     table.enu("status", ["active", "inactive", "expired", "paused"]).defaultTo("active");
     table.timestamp("created_at").defaultTo(knex.fn.now());
     table.timestamp("updated_at").defaultTo(knex.fn.now());
@@ -29,6 +34,7 @@ exports.up = async function (knex) {
   });
 
   // Create discount_product table (junction table for products eligible for specific discounts)
+  // Create discount_product table (products eligible for discounts with per-product controls)
   await knex.schema.createTable("discount_product", (table) => {
     table.uuid("id").primary().defaultTo(knex.raw("(UUID())"));
     table.uuid("discount_id").notNullable()
@@ -39,6 +45,10 @@ exports.up = async function (knex) {
       .references("id")
       .inTable("product")
       .onDelete("CASCADE");
+    table.decimal("discounted_price", 10, 2).notNullable().comment("Individual discounted price for this product");
+    table.integer("stock_limit").nullable().comment("Stock limit for this product. NULL = unlimited");
+    table.integer("current_stock_used").defaultTo(0).comment("Current stock used for this product");
+    table.integer("purchase_limit").nullable().comment("Max quantity per customer. NULL = unlimited");
     table.timestamp("created_at").defaultTo(knex.fn.now());
     
     table.unique(["discount_id", "product_id"], "unique_discount_product");

@@ -94,6 +94,7 @@ async function createProductProcedures(knex) {
       SELECT 
         p.*, 
         pc_primary.name AS primary_category_name,
+        sc_primary.name AS primary_category_name,
         b.business_name,
         (
           SELECT COALESCE(
@@ -103,6 +104,9 @@ async function createProductProcedures(knex) {
                 'name', pc.name,
                 'is_primary', pcm.is_primary,
                 'display_order', pc.display_order
+                'name', sc.name,
+                'is_primary', pcm.is_primary,
+                'display_order', sc.display_order
               ) SEPARATOR ','
             ), ']'),
             '[]'
@@ -113,6 +117,11 @@ async function createProductProcedures(knex) {
         ) AS categories
       FROM product p 
       LEFT JOIN product_category pc_primary ON p.product_category_id = pc_primary.id 
+          JOIN shop_category sc ON pcm.category_id = sc.id
+          WHERE pcm.product_id = p.id
+        ) AS categories
+      FROM product p 
+      LEFT JOIN shop_category sc_primary ON p.shop_category_id = sc_primary.id 
       LEFT JOIN business b ON p.business_id = b.id 
       ORDER BY p.created_at DESC;
     END;
@@ -125,6 +134,7 @@ async function createProductProcedures(knex) {
       SELECT 
         p.*, 
         pc_primary.name AS primary_category_name,
+        sc_primary.name AS primary_category_name,
         ps.current_stock, 
         ps.stock_unit,
         (
@@ -135,6 +145,9 @@ async function createProductProcedures(knex) {
                 'name', pc.name,
                 'is_primary', pcm.is_primary,
                 'display_order', pc.display_order
+                'name', sc.name,
+                'is_primary', pcm.is_primary,
+                'display_order', sc.display_order
               ) SEPARATOR ','
             ), ']'),
             '[]'
@@ -145,6 +158,11 @@ async function createProductProcedures(knex) {
         ) AS categories
       FROM product p 
       LEFT JOIN product_category pc_primary ON p.product_category_id = pc_primary.id 
+          JOIN shop_category sc ON pcm.category_id = sc.id
+          WHERE pcm.product_id = p.id
+        ) AS categories
+      FROM product p 
+      LEFT JOIN shop_category sc_primary ON p.shop_category_id = sc_primary.id 
       LEFT JOIN product_stock ps ON p.id = ps.product_id
       WHERE p.business_id = p_businessId AND p.status IN ('active', 'out_of_stock')
       ORDER BY p.created_at DESC;
@@ -158,6 +176,7 @@ async function createProductProcedures(knex) {
       SELECT 
         p.*, 
         pc_primary.name AS primary_category_name,
+        sc_primary.name AS primary_category_name,
         ps.current_stock, 
         ps.stock_unit,
         (
@@ -168,6 +187,9 @@ async function createProductProcedures(knex) {
                 'name', pc.name,
                 'is_primary', pcm.is_primary,
                 'display_order', pc.display_order
+                'name', sc.name,
+                'is_primary', pcm.is_primary,
+                'display_order', sc.display_order
               ) SEPARATOR ','
             ), ']'),
             '[]'
@@ -178,6 +200,11 @@ async function createProductProcedures(knex) {
         ) AS categories
       FROM product p 
       LEFT JOIN product_category pc_primary ON p.product_category_id = pc_primary.id 
+          JOIN shop_category sc ON pcm.category_id = sc.id
+          WHERE pcm.product_id = p.id
+        ) AS categories
+      FROM product p 
+      LEFT JOIN shop_category sc_primary ON p.shop_category_id = sc_primary.id 
       LEFT JOIN product_stock ps ON p.id = ps.product_id
       WHERE EXISTS (
         SELECT 1 FROM product_category_map pcm_filter 
@@ -195,6 +222,7 @@ async function createProductProcedures(knex) {
       SELECT 
         p.*, 
         pc_primary.name AS primary_category_name,
+        sc_primary.name AS primary_category_name,
         b.business_name, 
         ps.current_stock, 
         ps.stock_unit, 
@@ -208,6 +236,9 @@ async function createProductProcedures(knex) {
                 'name', pc.name,
                 'is_primary', pcm.is_primary,
                 'display_order', pc.display_order
+                'name', sc.name,
+                'is_primary', pcm.is_primary,
+                'display_order', sc.display_order
               ) SEPARATOR ','
             ), ']'),
             '[]'
@@ -218,6 +249,11 @@ async function createProductProcedures(knex) {
         ) AS categories
       FROM product p 
       LEFT JOIN product_category pc_primary ON p.product_category_id = pc_primary.id 
+          JOIN shop_category sc ON pcm.category_id = sc.id
+          WHERE pcm.product_id = p.id
+        ) AS categories
+      FROM product p 
+      LEFT JOIN shop_category sc_primary ON p.shop_category_id = sc_primary.id 
       LEFT JOIN business b ON p.business_id = b.id 
       LEFT JOIN product_stock ps ON p.id = ps.product_id
       WHERE p.id = p_productId;
@@ -230,6 +266,7 @@ async function createProductProcedures(knex) {
       IN p_id CHAR(64),
       IN p_business_id CHAR(64),
       IN p_product_category_id CHAR(64),
+      IN p_shop_category_id CHAR(64),
       IN p_name VARCHAR(255),
       IN p_description TEXT,
       IN p_price DECIMAL(10,2),
@@ -240,6 +277,8 @@ async function createProductProcedures(knex) {
     BEGIN
       INSERT INTO product (id, business_id, product_category_id, name, description, price, image_url, status)
       VALUES (p_id, p_business_id, p_product_category_id, p_name, p_description, p_price, p_image_url, IFNULL(p_status, 'active'));
+      INSERT INTO product (id, business_id, shop_category_id, name, description, price, image_url, status)
+      VALUES (p_id, p_business_id, p_shop_category_id, p_name, p_description, p_price, p_image_url, IFNULL(p_status, 'active'));
       
       INSERT INTO product_stock (id, product_id, current_stock, minimum_stock, stock_unit)
       VALUES (p_stock_id, p_id, 0, 0, 'pieces');
@@ -247,6 +286,9 @@ async function createProductProcedures(knex) {
       SELECT p.*, pc.name as category_name, ps.current_stock, ps.stock_unit
       FROM product p 
       LEFT JOIN product_category pc ON p.product_category_id = pc.id 
+      SELECT p.*, sc.name as category_name, ps.current_stock, ps.stock_unit
+      FROM product p 
+      LEFT JOIN shop_category sc ON p.shop_category_id = sc.id 
       LEFT JOIN product_stock ps ON p.id = ps.product_id
       WHERE p.id = p_id;
     END;
@@ -257,6 +299,7 @@ async function createProductProcedures(knex) {
     CREATE PROCEDURE UpdateProduct(
       IN p_id CHAR(64),
       IN p_product_category_id CHAR(64),
+      IN p_shop_category_id CHAR(64),
       IN p_name VARCHAR(255),
       IN p_description TEXT,
       IN p_price DECIMAL(10,2),
@@ -266,6 +309,7 @@ async function createProductProcedures(knex) {
     BEGIN
       UPDATE product SET
         product_category_id = IFNULL(p_product_category_id, product_category_id),
+        shop_category_id = IFNULL(p_shop_category_id, shop_category_id),
         name = IFNULL(p_name, name),
         description = IFNULL(p_description, description),
         price = IFNULL(p_price, price),
@@ -277,6 +321,9 @@ async function createProductProcedures(knex) {
       SELECT p.*, pc.name as category_name, ps.current_stock, ps.stock_unit
       FROM product p 
       LEFT JOIN product_category pc ON p.product_category_id = pc.id 
+      SELECT p.*, sc.name as category_name, ps.current_stock, ps.stock_unit
+      FROM product p 
+      LEFT JOIN shop_category sc ON p.shop_category_id = sc.id 
       LEFT JOIN product_stock ps ON p.id = ps.product_id
       WHERE p.id = p_id;
     END;

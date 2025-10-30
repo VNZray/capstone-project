@@ -165,6 +165,9 @@ export const productValidation = [
 
 export const discountValidation = [
   validateRequiredFields(['business_id', 'name', 'discount_type', 'discount_value', 'start_datetime']),
+// Simplified discount validation (removed discount_type requirement)
+export const discountValidation = [
+  validateRequiredFields(['business_id', 'name', 'discount_value', 'start_datetime']),
   validateUUID('business_id'),
   validatePrice,
   validateDateRange,
