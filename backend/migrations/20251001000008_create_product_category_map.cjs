@@ -9,6 +9,7 @@ exports.up = async function (knex) {
         .onDelete("CASCADE");
       table.uuid("category_id").notNullable()
         .references("id")
+        .inTable("product_category")
         .inTable("shop_category")  // Reference unified shop_category table
         .onDelete("CASCADE");
       table.boolean("is_primary").defaultTo(false);
@@ -24,6 +25,12 @@ exports.up = async function (knex) {
   // Backfill existing product-category relationships
   await knex.raw(`
     INSERT INTO product_category_map (id, product_id, category_id, is_primary)
+    SELECT UUID(), id, product_category_id, 1
+    FROM product
+    WHERE product_category_id IS NOT NULL
+      AND NOT EXISTS (
+        SELECT 1 FROM product_category_map pcm
+        WHERE pcm.product_id = product.id AND pcm.category_id = product.product_category_id
     SELECT UUID(), id, shop_category_id, 1
     FROM product
     WHERE shop_category_id IS NOT NULL

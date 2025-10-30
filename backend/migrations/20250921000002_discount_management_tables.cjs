@@ -1,6 +1,7 @@
 const { createDiscountProcedures, dropDiscountProcedures } = require("../procedures/discountProcedures.js");
 
 exports.up = async function (knex) {
+  // Create discount table (renamed from discounts to avoid potential conflicts)
   // Create discount table (simplified MVP structure - fixed discount amounts only)
   await knex.schema.createTable("discount", (table) => {
     table.uuid("id").primary().defaultTo(knex.raw("(UUID())"));
@@ -10,6 +11,15 @@ exports.up = async function (knex) {
       .onDelete("CASCADE");
     table.string("name", 255).notNullable();
     table.text("description").nullable();
+    table.enu("discount_type", ["percentage", "fixed_amount"]).notNullable();
+    table.decimal("discount_value", 10, 2).notNullable();
+    table.decimal("minimum_order_amount", 10, 2).defaultTo(0);
+    table.decimal("maximum_discount_amount", 10, 2).nullable(); // for percentage discounts
+    table.timestamp("start_datetime").notNullable();
+    table.timestamp("end_datetime").nullable();
+    table.integer("usage_limit").nullable(); // total uses allowed
+    table.integer("usage_limit_per_customer").nullable();
+    table.integer("current_usage_count").defaultTo(0);
     // Removed: discount_type, discount_value (individual prices stored in discount_product table)
     // Removed: minimum_order_amount, maximum_discount_amount, usage_limit_per_customer, usage_limit, current_usage_count
     table.timestamp("start_datetime").notNullable();
@@ -23,6 +33,7 @@ exports.up = async function (knex) {
     table.index("status", "idx_discount_status");
   });
 
+  // Create discount_product table (junction table for products eligible for specific discounts)
   // Create discount_product table (products eligible for discounts with per-product controls)
   await knex.schema.createTable("discount_product", (table) => {
     table.uuid("id").primary().defaultTo(knex.raw("(UUID())"));

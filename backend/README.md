@@ -39,5 +39,5 @@
   - Email: `owner@cityventure.test`
   - Password: `Owner123!`
 - Tourist
-    - Email: `tourist@cityventure.test`
-    - Password: `Tourist123!`
+  - Email: `tourist@cityventure.test`
+  - Password: `Tourist123!`

@@ -3,6 +3,17 @@ import * as productController from "../controller/productController.js";
 
 const router = express.Router();
 
+// ==================== PRODUCT CATEGORY ROUTES ====================
+
+// Product Categories
+router.get("/categories", productController.getAllProductCategories);
+router.post("/categories", productController.insertProductCategory);
+router.get("/categories/business/:businessId", productController.getProductCategoriesByBusinessId);
+router.get("/categories/:id", productController.getProductCategoryById);
+router.put("/categories/:id", productController.updateProductCategory);
+router.delete("/categories/:id", productController.deleteProductCategory);
+
+// ==================== PRODUCT ROUTES ====================
 // ==================== PRODUCT ROUTES ====================
 // Note: Product categories are now managed via /api/shop-categories routes
 

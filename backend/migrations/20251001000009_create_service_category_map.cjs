@@ -13,6 +13,12 @@ exports.up = async function (knex) {
         .onDelete("CASCADE");
       table.uuid("category_id").notNullable()
         .references("id")
+        .inTable("service_category")
+        .onDelete("CASCADE");
+      table.boolean("is_primary").defaultTo(false);
+      table.timestamp("created_at").defaultTo(knex.fn.now());
+      table.timestamp("updated_at").defaultTo(knex.fn.now());
+
         .inTable("shop_category")  // Reference unified shop_category table
         .onDelete("CASCADE");
       table.boolean("is_primary").defaultTo(false); // true for the main category (same as shop_category_id)
@@ -27,6 +33,14 @@ exports.up = async function (knex) {
   }
 
   // Backfill existing service-category relationships
+  await knex.raw(`
+    INSERT INTO service_category_map (id, service_id, category_id, is_primary)
+    SELECT UUID(), id, service_category_id, 1
+    FROM service
+    WHERE service_category_id IS NOT NULL
+      AND NOT EXISTS (
+        SELECT 1 FROM service_category_map scm
+        WHERE scm.service_id = service.id AND scm.category_id = service.service_category_id
   // Ensures all services have at least their primary category mapped
   await knex.raw(`
     INSERT INTO service_category_map (id, service_id, category_id, is_primary)

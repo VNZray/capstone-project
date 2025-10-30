@@ -36,11 +36,13 @@ async function createDiscountProcedures(knex) {
         AND d.status = 'active' 
         AND d.start_datetime <= NOW() 
         AND (d.end_datetime IS NULL OR d.end_datetime >= NOW())
+        AND (d.usage_limit IS NULL OR d.current_usage_count < d.usage_limit)
       GROUP BY d.id
       ORDER BY d.start_datetime ASC;
     END;
   `);
 
+  // Get discount by ID with applicable products
   // Get discount by ID with applicable products (including stock and purchase limits)
   await knex.raw(`
     CREATE PROCEDURE GetDiscountById(IN p_discountId CHAR(64))
@@ -50,6 +52,7 @@ async function createDiscountProcedures(knex) {
       LEFT JOIN business b ON d.business_id = b.id 
       WHERE d.id = p_discountId;
       
+      SELECT p.id, p.name, p.price, p.image_url
       SELECT p.id, p.name, p.price, p.image_url, 
              dp.discounted_price, dp.stock_limit, dp.current_stock_used, dp.purchase_limit
       FROM discount_product dp 
@@ -58,6 +61,7 @@ async function createDiscountProcedures(knex) {
     END;
   `);
 
+  // Insert discount with applicable products
   // Insert discount with simplified structure (removed discount_value, usage_limit)
   await knex.raw(`
     CREATE PROCEDURE InsertDiscount(
@@ -65,12 +69,27 @@ async function createDiscountProcedures(knex) {
       IN p_business_id CHAR(64),
       IN p_name VARCHAR(255),
       IN p_description TEXT,
+      IN p_discount_type ENUM('percentage', 'fixed_amount'),
+      IN p_discount_value DECIMAL(10,2),
+      IN p_minimum_order_amount DECIMAL(10,2),
+      IN p_maximum_discount_amount DECIMAL(10,2),
+      IN p_start_datetime TIMESTAMP,
+      IN p_end_datetime TIMESTAMP,
+      IN p_usage_limit INT,
+      IN p_usage_limit_per_customer INT,
       IN p_start_datetime TIMESTAMP,
       IN p_end_datetime TIMESTAMP,
       IN p_status ENUM('active', 'inactive', 'expired', 'paused')
     )
     BEGIN
       INSERT INTO discount (
+        id, business_id, name, description, discount_type, discount_value, 
+        minimum_order_amount, maximum_discount_amount, start_datetime, end_datetime, 
+        usage_limit, usage_limit_per_customer, status
+      ) VALUES (
+        p_id, p_business_id, p_name, p_description, p_discount_type, p_discount_value,
+        IFNULL(p_minimum_order_amount, 0), p_maximum_discount_amount, p_start_datetime, 
+        p_end_datetime, p_usage_limit, p_usage_limit_per_customer, IFNULL(p_status, 'active')
         id, business_id, name, description, 
         start_datetime, end_datetime, status
       ) VALUES (
@@ -85,11 +104,17 @@ async function createDiscountProcedures(knex) {
     END;
   `);
 
+  // Insert discount product association
   // Insert discount product association with stock and purchase limits
   await knex.raw(`
     CREATE PROCEDURE InsertDiscountProduct(
       IN p_id CHAR(64),
       IN p_discount_id CHAR(64),
+      IN p_product_id CHAR(64)
+    )
+    BEGIN
+      INSERT INTO discount_product (id, discount_id, product_id)
+      VALUES (p_id, p_discount_id, p_product_id);
       IN p_product_id CHAR(64),
       IN p_discounted_price DECIMAL(10,2),
       IN p_stock_limit INT,
@@ -109,12 +134,21 @@ async function createDiscountProcedures(knex) {
     END;
   `);
 
+  // Update discount
   // Update discount (simplified structure - removed discount_value, usage_limit)
   await knex.raw(`
     CREATE PROCEDURE UpdateDiscount(
       IN p_id CHAR(64),
       IN p_name VARCHAR(255),
       IN p_description TEXT,
+      IN p_discount_type ENUM('percentage', 'fixed_amount'),
+      IN p_discount_value DECIMAL(10,2),
+      IN p_minimum_order_amount DECIMAL(10,2),
+      IN p_maximum_discount_amount DECIMAL(10,2),
+      IN p_start_datetime TIMESTAMP,
+      IN p_end_datetime TIMESTAMP,
+      IN p_usage_limit INT,
+      IN p_usage_limit_per_customer INT,
       IN p_start_datetime TIMESTAMP,
       IN p_end_datetime TIMESTAMP,
       IN p_status ENUM('active', 'inactive', 'expired', 'paused')
@@ -123,6 +157,14 @@ async function createDiscountProcedures(knex) {
       UPDATE discount SET
         name = IFNULL(p_name, name),
         description = IFNULL(p_description, description),
+        discount_type = IFNULL(p_discount_type, discount_type),
+        discount_value = IFNULL(p_discount_value, discount_value),
+        minimum_order_amount = IFNULL(p_minimum_order_amount, minimum_order_amount),
+        maximum_discount_amount = IFNULL(p_maximum_discount_amount, maximum_discount_amount),
+        start_datetime = IFNULL(p_start_datetime, start_datetime),
+        end_datetime = IFNULL(p_end_datetime, end_datetime),
+        usage_limit = IFNULL(p_usage_limit, usage_limit),
+        usage_limit_per_customer = IFNULL(p_usage_limit_per_customer, usage_limit_per_customer),
         start_datetime = IFNULL(p_start_datetime, start_datetime),
         end_datetime = IFNULL(p_end_datetime, end_datetime),
         status = IFNULL(p_status, status),
@@ -152,6 +194,7 @@ async function createDiscountProcedures(knex) {
     END;
   `);
 
+  // Validate discount for order
   // Validate discount for order (simplified - removed usage_limit check)
   await knex.raw(`
     CREATE PROCEDURE ValidateDiscount(
@@ -161,6 +204,7 @@ async function createDiscountProcedures(knex) {
     )
     BEGIN
       DECLARE discount_available INT DEFAULT 0;
+      DECLARE user_usage_count INT DEFAULT 0;
       
       -- Check if discount is available
       SELECT COUNT(*) INTO discount_available
@@ -168,10 +212,28 @@ async function createDiscountProcedures(knex) {
       WHERE id = p_discountId 
         AND status = 'active' 
         AND start_datetime <= NOW() 
+        AND (end_datetime IS NULL OR end_datetime >= NOW())
+        AND (usage_limit IS NULL OR current_usage_count < usage_limit)
+        AND minimum_order_amount <= p_order_total;
         AND (end_datetime IS NULL OR end_datetime >= NOW());
       
       IF discount_available = 0 THEN
         SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Discount is not available or conditions not met';
+      END IF;
+      
+      -- Check user usage limit if user provided
+      IF p_user_id IS NOT NULL THEN
+        SELECT COUNT(*) INTO user_usage_count 
+        FROM \`order\` 
+        WHERE discount_id = p_discountId AND user_id = p_user_id;
+        
+        SELECT usage_limit_per_customer INTO @user_limit
+        FROM discount 
+        WHERE id = p_discountId;
+        
+        IF @user_limit IS NOT NULL AND user_usage_count >= @user_limit THEN
+          SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'User has reached discount usage limit';
+        END IF;
       END IF;
       
       -- Return discount details for calculation
@@ -179,6 +241,13 @@ async function createDiscountProcedures(knex) {
     END;
   `);
 
+  // Update discount usage count
+  await knex.raw(`
+    CREATE PROCEDURE UpdateDiscountUsage(IN p_discountId CHAR(64))
+    BEGIN
+      UPDATE discount 
+      SET current_usage_count = current_usage_count + 1 
+      WHERE id = p_discountId;
   // Update discount product stock usage
   await knex.raw(`
     CREATE PROCEDURE UpdateDiscountProductStock(
@@ -260,6 +329,8 @@ async function dropDiscountProcedures(knex) {
   await knex.raw("DROP PROCEDURE IF EXISTS UpdateDiscount;");
   await knex.raw("DROP PROCEDURE IF EXISTS DeleteDiscount;");
   await knex.raw("DROP PROCEDURE IF EXISTS ValidateDiscount;");
+  await knex.raw("DROP PROCEDURE IF EXISTS UpdateDiscountUsage;");
+  await knex.raw("DROP PROCEDURE IF EXISTS GetDiscountStats;");
   await knex.raw("DROP PROCEDURE IF EXISTS UpdateDiscountProductStock;");
   await knex.raw("DROP PROCEDURE IF EXISTS BatchUpdateDiscountProducts;");
   await knex.raw("DROP PROCEDURE IF EXISTS GetDiscountStats;");

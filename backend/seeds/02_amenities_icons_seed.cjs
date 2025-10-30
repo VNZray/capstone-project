@@ -1,6 +1,7 @@
 exports.seed = async function (knex) {
   const table = 'amenity';
 
+  // Insert the minimal 9 amenities; if slugs exist this will fail — consider clearing specific rows first.
   // Delete existing amenities to ensure clean seed
   await knex(table).del();
 
