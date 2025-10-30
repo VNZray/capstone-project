@@ -115,78 +115,6 @@ export async function insertService(req, res) {
       description, 
       base_price, 
       price_type,
-      sale_type,
-      sale_value,
-      duration_value,
-      duration_unit,
-      image_url, 
-      features,
-      requirements,
-      display_order,
-      status 
-    } = req.body;
-
-    // Validate category_ids
-    if (!Array.isArray(category_ids) || category_ids.length === 0) {
-      return res.status(400).json({ 
-        message: "At least one category must be provided",
-        error: "MISSING_CATEGORIES",
-        received: { category_ids }
-      });
-    }
-
-    // Filter out any null/undefined/empty values
-    const validCategoryIds = category_ids.filter(id => id && typeof id === 'string' && id.trim());
-    
-    if (validCategoryIds.length === 0) {
-      return res.status(400).json({ 
-        message: "At least one valid category ID must be provided",
-        error: "INVALID_CATEGORIES",
-        received: { category_ids }
-      });
-    }
-
-    // Parse features if it's a string, then convert to JSON string for MySQL
-    const parsedFeatures = typeof features === 'string' ? JSON.parse(features) : features;
-    const featuresJson = parsedFeatures ? JSON.stringify(parsedFeatures) : null;
-
-    const primaryCategoryId = validCategoryIds[0];
-    const categoryIdsJson = JSON.stringify(validCategoryIds);
-
-    const connection = await db.getConnection();
-
-    try {
-      await connection.beginTransaction();
-
-      // Insert service with primary category
-      await connection.query("CALL InsertService(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", [
-        serviceId, business_id, primaryCategoryId, name, description || null, base_price, price_type,
-        sale_type || 'fixed', sale_value || 0, duration_value || null, duration_unit || null, image_url || null, 
-        featuresJson, requirements || null, display_order || 0, status || 'active'
-      ]);
-
-      // Insert category mappings using stored procedure
-      await connection.query("CALL InsertServiceCategoryMappings(?, ?)", [serviceId, categoryIdsJson]);
-
-      // Update the service_category_id with the primary category
-      await connection.query("UPDATE service SET service_category_id = ? WHERE id = ?", [primaryCategoryId, serviceId]);
-
-      await connection.commit();
-      connection.release();
-
-      const [serviceRows] = await db.query("CALL GetServiceById(?)", [serviceId]);
-      const rows = extractRows(serviceRows);
-      const service = rows && rows[0] ? mapServiceRow(rows[0]) : null;
-      
-      res.status(201).json({
-        message: "Service created successfully",
-        data: service
-      });
-    } catch (error) {
-      await connection.rollback();
-      connection.release();
-      throw error;
-    }
       image_url, 
       requirements,
       contact_methods,
@@ -252,88 +180,11 @@ export async function updateService(req, res) {
   const { id } = req.params;
   try {
     const { 
-      category_ids = [],
       shop_category_id,
       name, 
       description, 
       base_price, 
       price_type,
-      sale_type,
-      sale_value,
-      duration_value,
-      duration_unit,
-      image_url, 
-      features,
-      requirements,
-      display_order,
-      status 
-    } = req.body;
-
-    // Validate category_ids
-    if (!Array.isArray(category_ids) || category_ids.length === 0) {
-      return res.status(400).json({ 
-        message: "At least one category must be provided",
-        error: "MISSING_CATEGORIES",
-        received: { category_ids }
-      });
-    }
-
-    // Filter out any null/undefined/empty values
-    const validCategoryIds = category_ids.filter(id => id && typeof id === 'string' && id.trim());
-    
-    if (validCategoryIds.length === 0) {
-      return res.status(400).json({ 
-        message: "At least one valid category ID must be provided",
-        error: "INVALID_CATEGORIES",
-        received: { category_ids }
-      });
-    }
-
-    // Parse features if it's a string, then convert to JSON string for MySQL
-    const parsedFeatures = typeof features === 'string' ? JSON.parse(features) : features;
-    const featuresJson = parsedFeatures ? JSON.stringify(parsedFeatures) : null;
-
-    const connection = await db.getConnection();
-
-    const primaryCategoryId = validCategoryIds[0];
-    const categoryIdsJson = JSON.stringify(validCategoryIds);
-
-    try {
-      await connection.beginTransaction();
-
-      // Update service with primary category
-      await connection.query("CALL UpdateService(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", [
-        id, primaryCategoryId, name, description, base_price, price_type, sale_type, sale_value,
-        duration_value, duration_unit, image_url, featuresJson, requirements, display_order, status
-      ]);
-
-      // Update category mappings using stored procedure
-      await connection.query("CALL UpdateServiceCategoryMappings(?, ?)", [id, categoryIdsJson]);
-
-      // Update the service_category_id with the primary category
-      await connection.query("UPDATE service SET service_category_id = ? WHERE id = ?", [primaryCategoryId, id]);
-
-      await connection.commit();
-      connection.release();
-
-      const [serviceRows] = await db.query("CALL GetServiceById(?)", [id]);
-      const rows = extractRows(serviceRows);
-      const service = rows && rows[0] ? mapServiceRow(rows[0]) : null;
-
-      if (!service) {
-        return res.status(404).json({ message: "Service not found" });
-      }
-
-      res.json({
-        message: "Service updated successfully",
-        data: service
-      });
-    } catch (error) {
-      await connection.rollback();
-      connection.release();
-      throw error;
-    }
-  } catch (error) {
       image_url, 
       requirements,
       contact_methods,
@@ -420,31 +271,6 @@ export async function deleteService(req, res) {
   }
 }
 
-// Get services with pricing calculations
-export async function getServicesWithPricing(req, res) {
-  const { businessId } = req.params;
-  try {
-    const [data] = await db.query("CALL GetServicesWithPricing(?)", [businessId]);
-    res.json(data);
-  } catch (error) {
-    return handleDbError(error, res);
-  }
-}
-
-// Search services
-export async function searchServices(req, res) {
-  const { query, business_id, category_id, price_min, price_max, price_type } = req.query;
-  
-  try {
-    const [data] = await db.query("CALL SearchServices(?, ?, ?, ?, ?, ?)", [
-      query || null,
-      business_id || null,
-      category_id || null,
-      price_type || null,
-      price_min ? parseFloat(price_min) : null,
-      price_max ? parseFloat(price_max) : null
-    ]);
-    res.json(data);
 // Search services with filters
 export async function searchServices(req, res) {
   const { query, business_id, category_id, status = 'active' } = req.query;
@@ -470,16 +296,6 @@ export async function getServiceStatsByBusiness(req, res) {
   try {
     const [results] = await db.query("CALL GetServiceStatsByBusiness(?)", [businessId]);
     
-    if (!results || results.length < 2) {
-      return res.status(404).json({ message: "Business not found or no data available" });
-    }
-
-    const overview = results[0][0];
-    const by_category = results[1];
-
-    res.json({
-      overview: overview,
-      by_category: by_category
     if (!results || results.length === 0) {
       return res.status(404).json({ message: "Business not found or no data available" });
     }

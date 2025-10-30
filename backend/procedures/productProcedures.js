@@ -1,90 +1,4 @@
 async function createProductProcedures(knex) {
-  // ==================== PRODUCT CATEGORIES ====================
-  
-  // Get all product categories
-  await knex.raw(`
-    CREATE PROCEDURE GetAllProductCategories()
-    BEGIN
-      SELECT * FROM product_category ORDER BY display_order, name;
-    END;
-  `);
-
-  // Get product categories by business ID
-  await knex.raw(`
-    CREATE PROCEDURE GetProductCategoriesByBusinessId(IN p_businessId CHAR(64))
-    BEGIN
-      SELECT * FROM product_category 
-      WHERE business_id = p_businessId AND status = 'active' 
-      ORDER BY display_order, name;
-    END;
-  `);
-
-  // Get product category by ID
-  await knex.raw(`
-    CREATE PROCEDURE GetProductCategoryById(IN p_categoryId CHAR(64))
-    BEGIN
-      SELECT * FROM product_category WHERE id = p_categoryId;
-    END;
-  `);
-
-  // Insert product category
-  await knex.raw(`
-    CREATE PROCEDURE InsertProductCategory(
-      IN p_id CHAR(64),
-      IN p_business_id CHAR(64),
-      IN p_name VARCHAR(255),
-      IN p_description TEXT,
-      IN p_display_order INT,
-      IN p_status ENUM('active', 'inactive')
-    )
-    BEGIN
-      INSERT INTO product_category (id, business_id, name, description, display_order, status)
-      VALUES (p_id, p_business_id, p_name, p_description, IFNULL(p_display_order, 0), IFNULL(p_status, 'active'));
-      
-      SELECT * FROM product_category WHERE id = p_id;
-    END;
-  `);
-
-  // Update product category
-  await knex.raw(`
-    CREATE PROCEDURE UpdateProductCategory(
-      IN p_id CHAR(64),
-      IN p_name VARCHAR(255),
-      IN p_description TEXT,
-      IN p_display_order INT,
-      IN p_status ENUM('active', 'inactive')
-    )
-    BEGIN
-      UPDATE product_category SET
-        name = IFNULL(p_name, name),
-        description = IFNULL(p_description, description),
-        display_order = IFNULL(p_display_order, display_order),
-        status = IFNULL(p_status, status),
-        updated_at = NOW()
-      WHERE id = p_id;
-
-      SELECT * FROM product_category WHERE id = p_id;
-    END;
-  `);
-
-  // Delete product category
-  await knex.raw(`
-    CREATE PROCEDURE DeleteProductCategory(IN p_categoryId CHAR(64))
-    BEGIN
-      DECLARE product_count INT DEFAULT 0;
-      
-      SELECT COUNT(*) INTO product_count 
-      FROM product_category_map 
-      WHERE category_id = p_categoryId;
-      
-      IF product_count > 0 THEN
-        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Cannot delete category that is assigned to products';
-      ELSE
-        DELETE FROM product_category WHERE id = p_categoryId;
-      END IF;
-    END;
-  `);
-
   // ==================== PRODUCTS ====================
   
   // Get all products with category and business info
@@ -93,26 +7,26 @@ async function createProductProcedures(knex) {
     BEGIN
       SELECT 
         p.*, 
-        pc_primary.name AS primary_category_name,
+        sc_primary.name AS primary_category_name,
         b.business_name,
         (
           SELECT COALESCE(
             CONCAT('[', GROUP_CONCAT(
               JSON_OBJECT(
                 'id', pcm.category_id,
-                'name', pc.name,
+                'name', sc.name,
                 'is_primary', pcm.is_primary,
-                'display_order', pc.display_order
+                'display_order', sc.display_order
               ) SEPARATOR ','
             ), ']'),
             '[]'
           )
           FROM product_category_map pcm
-          JOIN product_category pc ON pcm.category_id = pc.id
+          JOIN shop_category sc ON pcm.category_id = sc.id
           WHERE pcm.product_id = p.id
         ) AS categories
       FROM product p 
-      LEFT JOIN product_category pc_primary ON p.product_category_id = pc_primary.id 
+      LEFT JOIN shop_category sc_primary ON p.shop_category_id = sc_primary.id 
       LEFT JOIN business b ON p.business_id = b.id 
       ORDER BY p.created_at DESC;
     END;
@@ -124,7 +38,7 @@ async function createProductProcedures(knex) {
     BEGIN
       SELECT 
         p.*, 
-        pc_primary.name AS primary_category_name,
+        sc_primary.name AS primary_category_name,
         ps.current_stock, 
         ps.stock_unit,
         (
@@ -132,19 +46,19 @@ async function createProductProcedures(knex) {
             CONCAT('[', GROUP_CONCAT(
               JSON_OBJECT(
                 'id', pcm.category_id,
-                'name', pc.name,
+                'name', sc.name,
                 'is_primary', pcm.is_primary,
-                'display_order', pc.display_order
+                'display_order', sc.display_order
               ) SEPARATOR ','
             ), ']'),
             '[]'
           )
           FROM product_category_map pcm
-          JOIN product_category pc ON pcm.category_id = pc.id
+          JOIN shop_category sc ON pcm.category_id = sc.id
           WHERE pcm.product_id = p.id
         ) AS categories
       FROM product p 
-      LEFT JOIN product_category pc_primary ON p.product_category_id = pc_primary.id 
+      LEFT JOIN shop_category sc_primary ON p.shop_category_id = sc_primary.id 
       LEFT JOIN product_stock ps ON p.id = ps.product_id
       WHERE p.business_id = p_businessId AND p.status IN ('active', 'out_of_stock')
       ORDER BY p.created_at DESC;
@@ -157,7 +71,7 @@ async function createProductProcedures(knex) {
     BEGIN
       SELECT 
         p.*, 
-        pc_primary.name AS primary_category_name,
+        sc_primary.name AS primary_category_name,
         ps.current_stock, 
         ps.stock_unit,
         (
@@ -165,19 +79,19 @@ async function createProductProcedures(knex) {
             CONCAT('[', GROUP_CONCAT(
               JSON_OBJECT(
                 'id', pcm.category_id,
-                'name', pc.name,
+                'name', sc.name,
                 'is_primary', pcm.is_primary,
-                'display_order', pc.display_order
+                'display_order', sc.display_order
               ) SEPARATOR ','
             ), ']'),
             '[]'
           )
           FROM product_category_map pcm
-          JOIN product_category pc ON pcm.category_id = pc.id
+          JOIN shop_category sc ON pcm.category_id = sc.id
           WHERE pcm.product_id = p.id
         ) AS categories
       FROM product p 
-      LEFT JOIN product_category pc_primary ON p.product_category_id = pc_primary.id 
+      LEFT JOIN shop_category sc_primary ON p.shop_category_id = sc_primary.id 
       LEFT JOIN product_stock ps ON p.id = ps.product_id
       WHERE EXISTS (
         SELECT 1 FROM product_category_map pcm_filter 
@@ -194,7 +108,7 @@ async function createProductProcedures(knex) {
     BEGIN
       SELECT 
         p.*, 
-        pc_primary.name AS primary_category_name,
+        sc_primary.name AS primary_category_name,
         b.business_name, 
         ps.current_stock, 
         ps.stock_unit, 
@@ -205,19 +119,19 @@ async function createProductProcedures(knex) {
             CONCAT('[', GROUP_CONCAT(
               JSON_OBJECT(
                 'id', pcm.category_id,
-                'name', pc.name,
+                'name', sc.name,
                 'is_primary', pcm.is_primary,
-                'display_order', pc.display_order
+                'display_order', sc.display_order
               ) SEPARATOR ','
             ), ']'),
             '[]'
           )
           FROM product_category_map pcm
-          JOIN product_category pc ON pcm.category_id = pc.id
+          JOIN shop_category sc ON pcm.category_id = sc.id
           WHERE pcm.product_id = p.id
         ) AS categories
       FROM product p 
-      LEFT JOIN product_category pc_primary ON p.product_category_id = pc_primary.id 
+      LEFT JOIN shop_category sc_primary ON p.shop_category_id = sc_primary.id 
       LEFT JOIN business b ON p.business_id = b.id 
       LEFT JOIN product_stock ps ON p.id = ps.product_id
       WHERE p.id = p_productId;
@@ -229,7 +143,7 @@ async function createProductProcedures(knex) {
     CREATE PROCEDURE InsertProduct(
       IN p_id CHAR(64),
       IN p_business_id CHAR(64),
-      IN p_product_category_id CHAR(64),
+      IN p_shop_category_id CHAR(64),
       IN p_name VARCHAR(255),
       IN p_description TEXT,
       IN p_price DECIMAL(10,2),
@@ -238,15 +152,15 @@ async function createProductProcedures(knex) {
       IN p_stock_id CHAR(64)
     )
     BEGIN
-      INSERT INTO product (id, business_id, product_category_id, name, description, price, image_url, status)
-      VALUES (p_id, p_business_id, p_product_category_id, p_name, p_description, p_price, p_image_url, IFNULL(p_status, 'active'));
+      INSERT INTO product (id, business_id, shop_category_id, name, description, price, image_url, status)
+      VALUES (p_id, p_business_id, p_shop_category_id, p_name, p_description, p_price, p_image_url, IFNULL(p_status, 'active'));
       
       INSERT INTO product_stock (id, product_id, current_stock, minimum_stock, stock_unit)
       VALUES (p_stock_id, p_id, 0, 0, 'pieces');
       
-      SELECT p.*, pc.name as category_name, ps.current_stock, ps.stock_unit
+      SELECT p.*, sc.name as category_name, ps.current_stock, ps.stock_unit
       FROM product p 
-      LEFT JOIN product_category pc ON p.product_category_id = pc.id 
+      LEFT JOIN shop_category sc ON p.shop_category_id = sc.id 
       LEFT JOIN product_stock ps ON p.id = ps.product_id
       WHERE p.id = p_id;
     END;
@@ -256,7 +170,7 @@ async function createProductProcedures(knex) {
   await knex.raw(`
     CREATE PROCEDURE UpdateProduct(
       IN p_id CHAR(64),
-      IN p_product_category_id CHAR(64),
+      IN p_shop_category_id CHAR(64),
       IN p_name VARCHAR(255),
       IN p_description TEXT,
       IN p_price DECIMAL(10,2),
@@ -265,7 +179,7 @@ async function createProductProcedures(knex) {
     )
     BEGIN
       UPDATE product SET
-        product_category_id = IFNULL(p_product_category_id, product_category_id),
+        shop_category_id = IFNULL(p_shop_category_id, shop_category_id),
         name = IFNULL(p_name, name),
         description = IFNULL(p_description, description),
         price = IFNULL(p_price, price),
@@ -274,9 +188,9 @@ async function createProductProcedures(knex) {
         updated_at = NOW()
       WHERE id = p_id;
 
-      SELECT p.*, pc.name as category_name, ps.current_stock, ps.stock_unit
+      SELECT p.*, sc.name as category_name, ps.current_stock, ps.stock_unit
       FROM product p 
-      LEFT JOIN product_category pc ON p.product_category_id = pc.id 
+      LEFT JOIN shop_category sc ON p.shop_category_id = sc.id 
       LEFT JOIN product_stock ps ON p.id = ps.product_id
       WHERE p.id = p_id;
     END;
@@ -363,14 +277,6 @@ async function createProductProcedures(knex) {
 }
 
 async function dropProductProcedures(knex) {
-  // Product Categories procedures
-  await knex.raw("DROP PROCEDURE IF EXISTS GetAllProductCategories;");
-  await knex.raw("DROP PROCEDURE IF EXISTS GetProductCategoriesByBusinessId;");
-  await knex.raw("DROP PROCEDURE IF EXISTS GetProductCategoryById;");
-  await knex.raw("DROP PROCEDURE IF EXISTS InsertProductCategory;");
-  await knex.raw("DROP PROCEDURE IF EXISTS UpdateProductCategory;");
-  await knex.raw("DROP PROCEDURE IF EXISTS DeleteProductCategory;");
-  
   // Products procedures
   await knex.raw("DROP PROCEDURE IF EXISTS GetAllProducts;");
   await knex.raw("DROP PROCEDURE IF EXISTS GetProductsByBusinessId;");
