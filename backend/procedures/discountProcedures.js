@@ -43,7 +43,6 @@ async function createDiscountProcedures(knex) {
   `);
 
   // Get discount by ID with applicable products
-  // Get discount by ID with applicable products (including stock and purchase limits)
   await knex.raw(`
     CREATE PROCEDURE GetDiscountById(IN p_discountId CHAR(64))
     BEGIN
@@ -53,8 +52,6 @@ async function createDiscountProcedures(knex) {
       WHERE d.id = p_discountId;
       
       SELECT p.id, p.name, p.price, p.image_url
-      SELECT p.id, p.name, p.price, p.image_url, 
-             dp.discounted_price, dp.stock_limit, dp.current_stock_used, dp.purchase_limit
       FROM discount_product dp 
       JOIN product p ON dp.product_id = p.id 
       WHERE dp.discount_id = p_discountId;
@@ -62,7 +59,6 @@ async function createDiscountProcedures(knex) {
   `);
 
   // Insert discount with applicable products
-  // Insert discount with simplified structure (removed discount_value, usage_limit)
   await knex.raw(`
     CREATE PROCEDURE InsertDiscount(
       IN p_id CHAR(64),
@@ -77,8 +73,6 @@ async function createDiscountProcedures(knex) {
       IN p_end_datetime TIMESTAMP,
       IN p_usage_limit INT,
       IN p_usage_limit_per_customer INT,
-      IN p_start_datetime TIMESTAMP,
-      IN p_end_datetime TIMESTAMP,
       IN p_status ENUM('active', 'inactive', 'expired', 'paused')
     )
     BEGIN
@@ -90,11 +84,6 @@ async function createDiscountProcedures(knex) {
         p_id, p_business_id, p_name, p_description, p_discount_type, p_discount_value,
         IFNULL(p_minimum_order_amount, 0), p_maximum_discount_amount, p_start_datetime, 
         p_end_datetime, p_usage_limit, p_usage_limit_per_customer, IFNULL(p_status, 'active')
-        id, business_id, name, description, 
-        start_datetime, end_datetime, status
-      ) VALUES (
-        p_id, p_business_id, p_name, p_description,
-        p_start_datetime, p_end_datetime, IFNULL(p_status, 'active')
       );
 
       SELECT d.*, b.business_name 
@@ -105,7 +94,6 @@ async function createDiscountProcedures(knex) {
   `);
 
   // Insert discount product association
-  // Insert discount product association with stock and purchase limits
   await knex.raw(`
     CREATE PROCEDURE InsertDiscountProduct(
       IN p_id CHAR(64),
@@ -115,14 +103,6 @@ async function createDiscountProcedures(knex) {
     BEGIN
       INSERT INTO discount_product (id, discount_id, product_id)
       VALUES (p_id, p_discount_id, p_product_id);
-      IN p_product_id CHAR(64),
-      IN p_discounted_price DECIMAL(10,2),
-      IN p_stock_limit INT,
-      IN p_purchase_limit INT
-    )
-    BEGIN
-      INSERT INTO discount_product (id, discount_id, product_id, discounted_price, stock_limit, purchase_limit)
-      VALUES (p_id, p_discount_id, p_product_id, p_discounted_price, p_stock_limit, p_purchase_limit);
     END;
   `);
 
@@ -135,7 +115,6 @@ async function createDiscountProcedures(knex) {
   `);
 
   // Update discount
-  // Update discount (simplified structure - removed discount_value, usage_limit)
   await knex.raw(`
     CREATE PROCEDURE UpdateDiscount(
       IN p_id CHAR(64),
@@ -149,8 +128,6 @@ async function createDiscountProcedures(knex) {
       IN p_end_datetime TIMESTAMP,
       IN p_usage_limit INT,
       IN p_usage_limit_per_customer INT,
-      IN p_start_datetime TIMESTAMP,
-      IN p_end_datetime TIMESTAMP,
       IN p_status ENUM('active', 'inactive', 'expired', 'paused')
     )
     BEGIN
@@ -165,8 +142,6 @@ async function createDiscountProcedures(knex) {
         end_datetime = IFNULL(p_end_datetime, end_datetime),
         usage_limit = IFNULL(p_usage_limit, usage_limit),
         usage_limit_per_customer = IFNULL(p_usage_limit_per_customer, usage_limit_per_customer),
-        start_datetime = IFNULL(p_start_datetime, start_datetime),
-        end_datetime = IFNULL(p_end_datetime, end_datetime),
         status = IFNULL(p_status, status),
         updated_at = NOW()
       WHERE id = p_id;
@@ -195,7 +170,6 @@ async function createDiscountProcedures(knex) {
   `);
 
   // Validate discount for order
-  // Validate discount for order (simplified - removed usage_limit check)
   await knex.raw(`
     CREATE PROCEDURE ValidateDiscount(
       IN p_discountId CHAR(64),
@@ -215,7 +189,6 @@ async function createDiscountProcedures(knex) {
         AND (end_datetime IS NULL OR end_datetime >= NOW())
         AND (usage_limit IS NULL OR current_usage_count < usage_limit)
         AND minimum_order_amount <= p_order_total;
-        AND (end_datetime IS NULL OR end_datetime >= NOW());
       
       IF discount_available = 0 THEN
         SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Discount is not available or conditions not met';
@@ -248,33 +221,6 @@ async function createDiscountProcedures(knex) {
       UPDATE discount 
       SET current_usage_count = current_usage_count + 1 
       WHERE id = p_discountId;
-  // Update discount product stock usage
-  await knex.raw(`
-    CREATE PROCEDURE UpdateDiscountProductStock(
-      IN p_discount_id CHAR(64),
-      IN p_product_id CHAR(64),
-      IN p_quantity INT
-    )
-    BEGIN
-      UPDATE discount_product 
-      SET current_stock_used = current_stock_used + p_quantity
-      WHERE discount_id = p_discount_id AND product_id = p_product_id;
-    END;
-  `);
-
-  // Batch update discount products (for setting stock and purchase limits)
-  await knex.raw(`
-    CREATE PROCEDURE BatchUpdateDiscountProducts(
-      IN p_discount_id CHAR(64),
-      IN p_stock_limit INT,
-      IN p_purchase_limit INT
-    )
-    BEGIN
-      UPDATE discount_product 
-      SET 
-        stock_limit = p_stock_limit,
-        purchase_limit = p_purchase_limit
-      WHERE discount_id = p_discount_id;
     END;
   `);
 
@@ -302,20 +248,6 @@ async function createDiscountProcedures(knex) {
       LIMIT 10;
     END;
   `);
-
-  // Update expired discounts - automatically mark discounts as 'expired' if end_datetime has passed
-  await knex.raw(`
-    CREATE PROCEDURE UpdateExpiredDiscounts()
-    BEGIN
-      UPDATE discount 
-      SET status = 'expired', updated_at = NOW()
-      WHERE status != 'expired' 
-        AND end_datetime IS NOT NULL 
-        AND end_datetime < NOW();
-      
-      SELECT ROW_COUNT() as updated_count;
-    END;
-  `);
 }
 
 async function dropDiscountProcedures(knex) {
@@ -331,10 +263,6 @@ async function dropDiscountProcedures(knex) {
   await knex.raw("DROP PROCEDURE IF EXISTS ValidateDiscount;");
   await knex.raw("DROP PROCEDURE IF EXISTS UpdateDiscountUsage;");
   await knex.raw("DROP PROCEDURE IF EXISTS GetDiscountStats;");
-  await knex.raw("DROP PROCEDURE IF EXISTS UpdateDiscountProductStock;");
-  await knex.raw("DROP PROCEDURE IF EXISTS BatchUpdateDiscountProducts;");
-  await knex.raw("DROP PROCEDURE IF EXISTS GetDiscountStats;");
-  await knex.raw("DROP PROCEDURE IF EXISTS UpdateExpiredDiscounts;");
 }
 
 export { createDiscountProcedures, dropDiscountProcedures };

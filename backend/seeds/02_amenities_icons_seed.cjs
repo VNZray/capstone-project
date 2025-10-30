@@ -2,10 +2,6 @@ exports.seed = async function (knex) {
   const table = 'amenity';
 
   // Insert the minimal 9 amenities; if slugs exist this will fail — consider clearing specific rows first.
-  // Delete existing amenities to ensure clean seed
-  await knex(table).del();
-
-  // Insert the minimal 9 amenities
   await knex(table).insert([
     { name: 'Free Parking', slug: 'free-parking', icon: 'parking', is_active: true },
     { name: 'Free Wi‑Fi', slug: 'free-wifi', icon: 'Wifi', is_active: true },

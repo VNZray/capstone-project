@@ -20,8 +20,6 @@ exports.up = async function (knex) {
     table.index("status", "idx_product_category_status");
   });
 
-  // Note: shop_category table should be created by migration 20250920000001_create_shop_category.cjs
-  
   // Create product table
   await knex.schema.createTable("product", (table) => {
     table.uuid("id").primary().defaultTo(knex.raw("(UUID())"));
@@ -32,9 +30,6 @@ exports.up = async function (knex) {
     table.uuid("product_category_id").notNullable()  // Changed from category_id to product_category_id
       .references("id")
       .inTable("product_category")
-    table.uuid("shop_category_id").notNullable()  // Changed to shop_category_id
-      .references("id")
-      .inTable("shop_category")  // Reference unified shop_category table
       .onDelete("CASCADE");
     table.string("name", 255).notNullable();
     table.text("description").nullable();
@@ -46,7 +41,6 @@ exports.up = async function (knex) {
     
     table.index("business_id", "idx_product_business");
     table.index("product_category_id", "idx_product_category");
-    table.index("shop_category_id", "idx_product_shop_category");
     table.index("status", "idx_product_status");
   });
 
@@ -116,8 +110,4 @@ exports.down = async function (knex) {
   await knex.schema.dropTableIfExists("product_stock");
   await knex.schema.dropTableIfExists("product");
   await knex.schema.dropTableIfExists("product_category");
-  // Drop tables (shop_category is managed by its own migration)
-  await knex.schema.dropTableIfExists("stock_history");
-  await knex.schema.dropTableIfExists("product_stock");
-  await knex.schema.dropTableIfExists("product");
 };
