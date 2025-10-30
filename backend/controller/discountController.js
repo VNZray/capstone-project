@@ -60,7 +60,7 @@ export async function getDiscountById(req, res) {
   }
 }
 
-// Insert a new discount
+// Insert a new discount (simplified structure)
 export async function insertDiscount(req, res) {
   try {
     const id = uuidv4();
@@ -68,31 +68,31 @@ export async function insertDiscount(req, res) {
       business_id,
       name,
       description,
-      discount_type,
-      discount_value,
-      minimum_order_amount,
-      maximum_discount_amount,
       start_datetime,
       end_datetime,
-      usage_limit,
-      usage_limit_per_customer,
       status,
-      applicable_products
+      applicable_products // Array of { product_id, discounted_price, stock_limit, purchase_limit }
     } = req.body;
 
-    // Insert discount using stored procedure
-    const [data] = await db.query("CALL InsertDiscount(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", [
-      id, business_id, name, description || null, discount_type, discount_value,
-      minimum_order_amount || 0, maximum_discount_amount || null, start_datetime,
-      end_datetime || null, usage_limit || null, usage_limit_per_customer || null,
+    // Insert discount using stored procedure (simplified parameters, no discount_value)
+    const [data] = await db.query("CALL InsertDiscount(?, ?, ?, ?, ?, ?, ?)", [
+      id, business_id, name, description || null,
+      start_datetime, end_datetime || null,
       status || 'active'
     ]);
 
-    // Insert applicable products if provided
+    // Insert applicable products with discounted price, stock and purchase limits if provided
     if (applicable_products && applicable_products.length > 0) {
-      for (const productId of applicable_products) {
+      for (const product of applicable_products) {
         const dpId = uuidv4();
-        await db.query("CALL InsertDiscountProduct(?, ?, ?)", [dpId, id, productId]);
+        await db.query("CALL InsertDiscountProduct(?, ?, ?, ?, ?, ?)", [
+          dpId, 
+          id, 
+          product.product_id,
+          product.discounted_price,
+          product.stock_limit || null,
+          product.purchase_limit || null
+        ]);
       }
     }
     
@@ -105,29 +105,22 @@ export async function insertDiscount(req, res) {
   }
 }
 
-// Update discount
+// Update discount (simplified structure)
 export async function updateDiscount(req, res) {
   const { id } = req.params;
   try {
     const {
       name,
       description,
-      discount_type,
-      discount_value,
-      minimum_order_amount,
-      maximum_discount_amount,
       start_datetime,
       end_datetime,
-      usage_limit,
-      usage_limit_per_customer,
       status,
-      applicable_products
+      applicable_products // Array of { product_id, discounted_price, stock_limit, purchase_limit }
     } = req.body;
 
-    const [data] = await db.query("CALL UpdateDiscount(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", [
-      id, name, description, discount_type, discount_value, minimum_order_amount,
-      maximum_discount_amount, start_datetime, end_datetime, usage_limit,
-      usage_limit_per_customer, status
+    const [data] = await db.query("CALL UpdateDiscount(?, ?, ?, ?, ?, ?)", [
+      id, name, description, start_datetime, end_datetime, 
+      status
     ]);
 
     if (!data || data.length === 0) {
@@ -139,11 +132,18 @@ export async function updateDiscount(req, res) {
       // Remove existing product associations
       await db.query("CALL DeleteDiscountProducts(?)", [id]);
       
-      // Add new product associations
+      // Add new product associations with discounted price and limits
       if (applicable_products.length > 0) {
-        for (const productId of applicable_products) {
+        for (const product of applicable_products) {
           const dpId = uuidv4();
-          await db.query("CALL InsertDiscountProduct(?, ?, ?)", [dpId, id, productId]);
+          await db.query("CALL InsertDiscountProduct(?, ?, ?, ?, ?, ?)", [
+            dpId, 
+            id, 
+            product.product_id,
+            product.discounted_price,
+            product.stock_limit || null,
+            product.purchase_limit || null
+          ]);
         }
       }
     }
@@ -168,13 +168,13 @@ export async function deleteDiscount(req, res) {
   }
 }
 
-// Apply discount to order (validation)
+// Apply discount to order (validation) - Simplified
 export async function validateDiscount(req, res) {
   const { discountId } = req.params;
   const { order_total, user_id, product_ids } = req.body;
   
   try {
-    // Use stored procedure for validation
+    // Use stored procedure for validation (simplified - no minimum order check)
     const [data] = await db.query("CALL ValidateDiscount(?, ?, ?)", [
       discountId, order_total, user_id || null
     ]);
@@ -187,9 +187,9 @@ export async function validateDiscount(req, res) {
 
     const discountData = data[0];
 
-    // Check if discount applies to specific products (still need this logic as it's complex)
+    // Check if discount applies to specific products
     const [applicableProducts] = await db.query(
-      "SELECT product_id FROM discount_product WHERE discount_id = ?",
+      "SELECT product_id, stock_limit, current_stock_used, purchase_limit FROM discount_product WHERE discount_id = ?",
       [discountId]
     );
 
@@ -202,28 +202,25 @@ export async function validateDiscount(req, res) {
           message: "Discount is not applicable to the products in your order" 
         });
       }
-    }
 
-    // Calculate discount amount
-    let discountAmount = 0;
-    if (discountData.discount_type === 'percentage') {
-      discountAmount = (order_total * discountData.discount_value) / 100;
-      if (discountData.maximum_discount_amount) {
-        discountAmount = Math.min(discountAmount, discountData.maximum_discount_amount);
+      // Check stock limits for applicable products
+      for (const product of applicableProducts) {
+        if (product.stock_limit !== null && product.current_stock_used >= product.stock_limit) {
+          return res.status(400).json({
+            message: "Discount stock limit reached for one or more products"
+          });
+        }
       }
-    } else {
-      discountAmount = discountData.discount_value;
     }
 
-    // Ensure discount doesn't exceed order total
-    discountAmount = Math.min(discountAmount, order_total);
+    // Discount value is now fixed amount (not percentage)
+    const discountAmount = Math.min(discountData.discount_value, order_total);
 
     res.json({
       valid: true,
       discount: {
         id: discountData.id,
         name: discountData.name,
-        discount_type: discountData.discount_type,
         discount_value: discountData.discount_value,
         discount_amount: Number(discountAmount.toFixed(2))
       }
@@ -233,13 +230,31 @@ export async function validateDiscount(req, res) {
   }
 }
 
-// Update discount usage count (called when order is completed)
-export async function updateDiscountUsage(req, res) {
-  const { discountId } = req.params;
+// Update discount product stock (called when product is purchased with discount)
+export async function updateDiscountProductStock(req, res) {
+  const { discountId, productId } = req.params;
+  const { quantity } = req.body;
   
   try {
-    await db.query("CALL UpdateDiscountUsage(?)", [discountId]);
-    res.json({ message: "Discount usage count updated successfully" });
+    await db.query("CALL UpdateDiscountProductStock(?, ?, ?)", [discountId, productId, quantity || 1]);
+    res.json({ message: "Discount product stock updated successfully" });
+  } catch (error) {
+    return handleDbError(error, res);
+  }
+}
+
+// Batch update discount products (set stock and purchase limits for all products)
+export async function batchUpdateDiscountProducts(req, res) {
+  const { discountId } = req.params;
+  const { stock_limit, purchase_limit } = req.body;
+  
+  try {
+    await db.query("CALL BatchUpdateDiscountProducts(?, ?, ?)", [
+      discountId, 
+      stock_limit || null, 
+      purchase_limit || null
+    ]);
+    res.json({ message: "Discount products updated successfully" });
   } catch (error) {
     return handleDbError(error, res);
   }
@@ -264,6 +279,29 @@ export async function getDiscountStats(req, res) {
       discount: discount,
       statistics: statistics,
       recent_orders: recent_orders
+    });
+  } catch (error) {
+    return handleDbError(error, res);
+  }
+}
+
+// Update expired discounts - automatically mark discounts as 'expired' if end_datetime has passed
+export async function updateExpiredDiscounts(req, res) {
+  try {
+    const [results] = await db.query("CALL UpdateExpiredDiscounts()");
+    
+    if (!results || results.length === 0) {
+      return res.json({ 
+        message: "No expired discounts to update",
+        updated_count: 0 
+      });
+    }
+
+    const result = results[0][0] || { updated_count: 0 };
+
+    res.json({
+      message: "Expired discounts updated successfully",
+      updated_count: result.updated_count
     });
   } catch (error) {
     return handleDbError(error, res);
