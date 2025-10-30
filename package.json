@@ -3,10 +3,10 @@
   "private": true,
   "workspaces": [
     "city-venture-web",
-    "naga-venture-backend"
+    "backend"
   ],
   "scripts": {
-    "start": "concurrently \"npm run dev -w city-venture-web\" \"npm run dev -w naga-venture-backend\""
+    "start": "concurrently \"npm run dev -w city-venture-web\" \"npm run dev -w backend\""
   },
   "devDependencies": {
     "concurrently": "^8.2.2",
