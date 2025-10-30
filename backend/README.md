@@ -33,13 +33,12 @@
 
 ### Sample Accounts (after seed)
 
-- Admin (Tourism)
-    - Email: `admin@cityventure.test`
-    - Password: `Admin123!`
-- Business Owner
-    - Email: `owner@cityventure.test`
-    - Password: `Owner123!`
-- Tourist
-    - Email: `tourist@cityventure.test`
-    - Password: `Tourist123!`
-    
+1. Admin (Tourism)
+    [ ] Email: `admin@cityventure.test`
+    [ ] Password: `Admin123!`
+2. Business Owner
+    [ ] Email: `owner@cityventure.test`
+    [ ] Password: `Owner123!`
+3. Tourist
+    [ ] Email: `tourist@cityventure.test`
+    [ ] Password: `Tourist123!`
