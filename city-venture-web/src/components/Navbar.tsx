@@ -1,5 +1,5 @@
 import React from "react";
-import { Button, Typography, Avatar, Dropdown, Menu, MenuButton, MenuItem, ListDivider, IconButton } from "@mui/joy";
+import { Button, Avatar, Dropdown, Menu, MenuButton, MenuItem, ListDivider, IconButton } from "@mui/joy";
 import "./styles/navbar.css";
 import { useNavigate } from "react-router-dom";
 import { colors } from "../utils/Colors";
@@ -31,7 +31,7 @@ const Navbar: React.FC<NavbarProps> = ({ servicesId = "features", aboutId = "abo
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  const logo = new URL("../assets/images/logo.png", import.meta.url).href;
+  const logo = new URL("../assets/logo/city-ventures-horizontal.png", import.meta.url).href;
   const { user, logout } = useAuth();
   const role = user?.role_name ?? ""; // Now normalized by AuthService: "Business Owner" | "Tourism Admin" | "Tourist"
   const isOwner = role === "Business Owner";
@@ -64,8 +64,7 @@ const Navbar: React.FC<NavbarProps> = ({ servicesId = "features", aboutId = "abo
       <div className="nav-inner">
         {/* Brand */}
         <div className="brand" role="button" onClick={() => { setOpen(false); navigate("/"); }}>
-          <img src={logo} alt="City Venture" />
-          <Typography level="title-lg" textColor={colors.primary} sx={{ fontSize: 16, fontWeight: 700, letterSpacing: 1,opacity: 0.9 }}>City Venture</Typography>
+          <img src={logo} alt="City Venture" style={{ height: "50px", width: "auto" }} />
         </div>
 
         {/* Links (desktop) */}
@@ -100,7 +99,7 @@ const Navbar: React.FC<NavbarProps> = ({ servicesId = "features", aboutId = "abo
               </Button>
               <Button
                 variant="solid"
-                onClick={() => navigate("/business/signup")}
+                onClick={() => navigate("/business-registration")}
                 sx={{
                   backgroundColor: colors.primary,
                   color: '#ffffff',

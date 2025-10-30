@@ -109,14 +109,12 @@ export async function updateBusiness(req, res) {
       req.body.business_image ?? null,
       req.body.latitude ?? null,
       req.body.longitude ?? null,
-      req.body.x_url ?? null,
       req.body.website_url ?? null,
       req.body.facebook_url ?? null,
       req.body.instagram_url ?? null,
       req.body.hasBooking ?? null,
     ];
 
-    // Dynamically build placeholders: "?,?,?,..."
     const placeholders = params.map(() => "?").join(",");
 
     const [result] = await db.query(

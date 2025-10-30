@@ -1,12 +1,6 @@
 import React from "react";
-import {
-  Button,
-  Stack,
-  Typography,
-  Sheet,
-  Box,
-  Divider,
-} from "@mui/joy";
+import { Button, Stack, Typography, Sheet, Box, Chip } from "@mui/joy";
+import { TimerIcon } from "lucide-react";
 import { Edit } from "lucide-react";
 import type { TouristSpotSchedule } from "@/src/types/TouristSpot";
 
@@ -26,11 +20,20 @@ const HoursInfoSection: React.FC<HoursInfoSectionProps> = ({ schedules, onEdit }
         alignItems="center"
         sx={{ mb: 2 }}
       >
-        <Typography level="h4">Operating Hours</Typography>
+        <Typography
+          fontFamily={"poppins"}
+          level="title-lg"
+          fontWeight={700}
+          sx={{ color: "#1e293b" }}
+        >
+          Operating Hours
+        </Typography>
+
         <Button
           variant="outlined"
           size="sm"
           startDecorator={<Edit size={16} />}
+          className="tsd-edit-btn"
           onClick={onEdit}
         >
           Edit
@@ -40,18 +43,16 @@ const HoursInfoSection: React.FC<HoursInfoSectionProps> = ({ schedules, onEdit }
       {schedules && schedules.length > 0 ? (
         <Box>
           {schedules.map((s, idx) => (
-            <Box
-              key={`${s.id ?? idx}`}
-              sx={{ display: "flex", alignItems: "center", py: 0.5 }}
-            >
-              <Typography level="body-md" sx={{ minWidth: 48, fontWeight: 500 }}>
+            <Box key={`${s.id ?? idx}`} sx={{ display: "flex", alignItems: "center", py: 0.5, gap: 1 }}>
+              <Typography startDecorator={<TimerIcon />} level="body-md" sx={{ minWidth: 64, fontWeight: 500 }}>
                 {dayNames[s.day_of_week] ?? s.day_of_week}
               </Typography>
               <Typography level="body-md" sx={{ ml: 2, color: s.is_closed ? "text.tertiary" : "inherit" }}>
-                {s.is_closed
-                  ? "Closed"
-                  : `${s.open_time ?? "—"} - ${s.close_time ?? "—"}`}
+                {s.is_closed ? "Closed" : `${s.open_time ?? "—"} - ${s.close_time ?? "—"}`}
               </Typography>
+              <Chip size="sm" variant="soft" sx={{ ml: 1 }} color={s.is_closed ? "neutral" : "success"}>
+                {s.is_closed ? "Closed" : "Open"}
+              </Chip>
             </Box>
           ))}
         </Box>

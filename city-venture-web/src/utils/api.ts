@@ -39,6 +39,27 @@ class ApiService {
     return response.data.data;
   }
 
+  // Featured management
+  async getFeaturedTouristSpots(): Promise<TouristSpot[]> {
+    const response: AxiosResponse<ApiResponse<TouristSpot[]>> = await api.get('/tourist-spots/featured/list');
+    return response.data.data || [];
+  }
+
+  async getNonFeaturedTouristSpots(): Promise<TouristSpot[]> {
+    const response: AxiosResponse<ApiResponse<TouristSpot[]>> = await api.get('/tourist-spots/featured/non-featured');
+    return response.data.data || [];
+  }
+
+  async featureTouristSpot(id: string): Promise<ApiResponse<void>> {
+    const response: AxiosResponse<ApiResponse<void>> = await api.put(`/tourist-spots/featured/${id}`);
+    return response.data;
+  }
+
+  async unfeatureTouristSpot(id: string): Promise<ApiResponse<void>> {
+    const response: AxiosResponse<ApiResponse<void>> = await api.delete(`/tourist-spots/featured/${id}`);
+    return response.data;
+  }
+
   async createTouristSpot(
     spotData: Partial<TouristSpot> & { schedules?: TouristSpotSchedule[] }
   ): Promise<ApiResponse<TouristSpot>> {

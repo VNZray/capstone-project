@@ -18,18 +18,9 @@ exports.up = async function (knex) {
     table.integer("age").notNullable();
     table.enu("gender", ["Male", "Female", "Prefer not to say"]).notNullable();
     table.string("nationality", 20).notNullable();
-    table.enu("category", ["Domestic", "Overseas"]).notNullable();
+    table.enu("origin", ["Domestic", "Local", "Overseas"]).notNullable();
 
     // Foreign keys
-    table
-      .integer("barangay_id")
-      .unsigned()
-      .nullable()
-      .references("id")
-      .inTable("barangay")
-      .onDelete("CASCADE")
-      .onUpdate("CASCADE");
-
     table
       .uuid("user_id")
       .notNullable()
@@ -37,7 +28,6 @@ exports.up = async function (knex) {
       .inTable("user")
       .onDelete("CASCADE")
       .onUpdate("CASCADE");
-
   });
 
   await createProcedures(knex);

@@ -8,6 +8,7 @@ import MainLayout from "../layout/MainLayout";
 
 import LandingPage from "@/src/pages/LandingPage";
 import About from "../pages/About";
+import Registration from "../pages/BusinessRegistration";
 
 import BusinessPortalLogin from "../features/auth/BusinessPortalLogin";
 import BusinessPortalRegister from "../features/auth/BusinessPortalRegister";
@@ -30,11 +31,12 @@ import RoomProfile from "../features/business/accommodation/room/RoomProfile";
 import Products from "../features/business/shop/store/Products";
 import Categories from "../features/business/shop/store/Categories";
 import Services from "../features/business/shop/store/Services";
-import ServiceCategories from "../features/business/shop/store/ServiceCategories";
 import Orders from "../features/business/shop/store/Orders";
 import Discount from "../features/business/shop/store/Discount";
 import DiscountForm from "../features/business/shop/store/DiscountForm";
 import ShopSettings from "../features/business/shop/store/Settings";
+import ManageShopPromotion from "../features/business/shop/promotion/ManagePromotion";
+import PromotionForm from "../features/business/shop/promotion/PromotionForm";
 
 import AccommodationDashboard from "../features/business/accommodation/dashboard/Dashboard";
 import ShopDashboard from "../features/business/shop/dashboard/Dashboard";
@@ -57,6 +59,8 @@ import { BusinessProvider } from "../context/BusinessContext";
 import ReportDetailsScreen from "@/src/features/admin/report/ReportDetailsScreen";
 
 import Notification from "../features/business/accommodation/notfication/Notification";
+import AccommodationStaff from "../features/business/accommodation/Staff/ManageStaff";
+import ShopStaff from "../features/business/shop/Staff/ManageStaff";
 
 export default function AppRoutes() {
   const user = "/";
@@ -81,11 +85,13 @@ export default function AppRoutes() {
         </Route>
         <Route path={`/login`} element={<UnifiedLogin />} />
         <Route path={`${business}/login`} element={<BusinessPortalLogin />} />
+        <Route path={`business-registration`} element={<Registration />} />
+
         <Route
           path={`${business}/signup`}
           element={<BusinessPortalRegister />}
         />
-        
+
         <Route path={`${tourism}/login`} element={<AdminLogin />} />
         <Route path={`${tourism}/signup`} element={<AdminRegister />} />
         <Route
@@ -147,6 +153,14 @@ export default function AppRoutes() {
                   element={
                     <ProtectedRoute>
                       <AccommodationDashboard />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path={`${business}/manage-staff`}
+                  element={
+                    <ProtectedRoute>
+                      <AccommodationStaff />
                     </ProtectedRoute>
                   }
                 />
@@ -215,14 +229,6 @@ export default function AppRoutes() {
               }
             />
             <Route
-              path={`${business}/store/service-categories`}
-              element={
-                <ProtectedRoute>
-                  <ServiceCategories />
-                </ProtectedRoute>
-              }
-            />
-            <Route
               path={`${business}/store/orders`}
               element={
                 <ProtectedRoute>
@@ -255,10 +261,42 @@ export default function AppRoutes() {
               }
             />
             <Route
+              path={`${business}/promotion`}
+              element={
+                <ProtectedRoute>
+                  <ManageShopPromotion />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path={`${business}/promotion/create`}
+              element={
+                <ProtectedRoute>
+                  <PromotionForm />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path={`${business}/promotion/:id/edit`}
+              element={
+                <ProtectedRoute>
+                  <PromotionForm />
+                </ProtectedRoute>
+              }
+            />
+            <Route
               path={`${business}/store/settings`}
               element={
                 <ProtectedRoute>
                   <ShopSettings />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path={`${business}/store/manage-staff`}
+              element={
+                <ProtectedRoute>
+                  <ShopStaff />
                 </ProtectedRoute>
               }
             />
@@ -396,7 +434,7 @@ export default function AppRoutes() {
               </ProtectedRoute>
             }
           />
-            {/* Public offer pages removed */}
+          {/* Public offer pages removed */}
           <Route
             path={`${tourism}/settings`}
             element={
@@ -405,7 +443,7 @@ export default function AppRoutes() {
               </ProtectedRoute>
             }
           />
-            {/* Admin offer pages removed */}
+          {/* Admin offer pages removed */}
         </Route>
       </Route>
 

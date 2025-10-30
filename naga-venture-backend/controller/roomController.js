@@ -2,6 +2,25 @@ import db from "../db.js";
 import { v4 as uuidv4 } from "uuid";
 import { handleDbError } from "../utils/errorHandler.js";
 
+const ROOM_FIELDS = [
+  "business_id",
+  "room_number",
+  "room_type",
+  "description",
+  "room_price",
+  "room_image",
+  "status",
+  "capacity",
+  "floor",
+  "room_size",
+];
+
+const makePlaceholders = (n) => Array(n).fill("?").join(",");
+const buildRoomParams = (id, body) => [
+  id,
+  ...ROOM_FIELDS.map((f) => body?.[f] ?? null),
+];
+
 // fetch all data
 export async function getAllRoom(request, response) {
   try {
@@ -48,23 +67,9 @@ export const getRoomByBusinessId = async (request, response) => {
 export async function insertRoom(request, response) {
   try {
     const id = uuidv4();
-    const params = [
-      id,
-      request.body.business_id ?? null,
-      request.body.room_number ?? null,
-      request.body.room_type ?? null,
-      request.body.description ?? null,
-      request.body.room_price ?? null,
-      request.body.room_image ?? null,
-      request.body.status ?? null,
-      request.body.capacity ?? null,
-      request.body.floor ?? null,
-      request.body.room_size ?? null,
-    ];
-    const [data] = await db.query(
-      "CALL InsertRoom(?,?,?,?,?,?,?,?,?,?,?)",
-      params
-    );
+    const params = buildRoomParams(id, request.body);
+    const placeholders = makePlaceholders(params.length);
+    const [data] = await db.query(`CALL InsertRoom(${placeholders})`, params);
     if (!data[0] || data[0].length === 0) {
       return response.status(404).json({ error: "Inserted row not found" });
     }
@@ -84,22 +89,10 @@ export async function updateRoom(request, response) {
       return response.status(404).json({ message: "Room not found" });
     }
     const params = [
-      id,
-      request.body.business_id ?? null,
-      request.body.room_number ?? null,
-      request.body.room_type ?? null,
-      request.body.description ?? null,
-      request.body.room_price ?? null,
-      request.body.room_image ?? null,
-      request.body.status ?? null,
-      request.body.capacity ?? null,
-      request.body.floor ?? null,
-      request.body.room_size ?? null,
+      ...buildRoomParams(id, request.body),
     ];
-    const [data] = await db.query(
-      "CALL UpdateRoom(?,?,?,?,?,?,?,?,?,?,?)",
-      params
-    );
+    const placeholders = makePlaceholders(params.length);
+    const [data] = await db.query(`CALL UpdateRoom(${placeholders})`, params);
     if (!data[0] || data[0].length === 0) {
       return response
         .status(404)

@@ -247,7 +247,7 @@ export default function UnifiedLogin() {
               <Typography textAlign="center" level="body-sm">
                 New to City Venture?{" "}
                 <Link to="/business/signup" className="ul-link">
-                  Create a business account
+                  Register your business
                 </Link>
               </Typography>
             )}

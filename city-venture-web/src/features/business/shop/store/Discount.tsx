@@ -17,8 +17,6 @@ import {
   TabList,
   Tab,
   Input,
-  Select,
-  Option,
 } from "@mui/joy";
 import { 
   FiPlus, 
@@ -31,7 +29,7 @@ import {
   FiClock,
   FiPause,
   FiSearch,
-  FiFilter,
+  FiRefreshCw,
 } from "react-icons/fi";
 import PageContainer from "@/src/components/PageContainer";
 import { useBusiness } from "@/src/context/BusinessContext";
@@ -48,7 +46,6 @@ export default function DiscountManagement(): React.ReactElement {
   const [loading, setLoading] = useState(true);
   const [activeFilter, setActiveFilter] = useState<DiscountFilter>("all");
   const [searchQuery, setSearchQuery] = useState("");
-  const [discountTypeFilter, setDiscountTypeFilter] = useState<string>("all");
   
   // Modal states
   const [statsModalOpen, setStatsModalOpen] = useState(false);
@@ -92,6 +89,9 @@ export default function DiscountManagement(): React.ReactElement {
       const startDate = new Date(discount.start_datetime);
       const endDate = discount.end_datetime ? new Date(discount.end_datetime) : null;
 
+      // Determine actual status: if end date has passed, treat as expired
+      const isExpired = !!endDate && endDate < now;
+
       // Status filter logic
       let matchesStatus = false;
       switch (activeFilter) {
@@ -102,6 +102,7 @@ export default function DiscountManagement(): React.ReactElement {
         case "ongoing":
           // Active status AND currently within date range
           matchesStatus = (
+            !isExpired &&
             discount.status === "active" &&
             startDate <= now &&
             (!endDate || endDate >= now)
@@ -110,19 +111,17 @@ export default function DiscountManagement(): React.ReactElement {
 
         case "scheduled":
           // Active status BUT start date is in the future
-          matchesStatus = discount.status === "active" && startDate > now;
+          matchesStatus = !isExpired && discount.status === "active" && startDate > now;
           break;
 
         case "expired":
           // Expired status OR end date has passed
-          matchesStatus = 
-            discount.status === "expired" ||
-            (!!endDate && endDate < now && discount.status !== "inactive");
+          matchesStatus = isExpired || discount.status === "expired";
           break;
 
         case "inactive":
           // Inactive or paused status
-          matchesStatus = discount.status === "inactive" || discount.status === "paused";
+          matchesStatus = !isExpired && (discount.status === "inactive" || discount.status === "paused");
           break;
 
         default:
@@ -135,14 +134,9 @@ export default function DiscountManagement(): React.ReactElement {
         discount.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         discount.description?.toLowerCase().includes(searchQuery.toLowerCase());
 
-      // Discount type filter
-      const matchesType =
-        discountTypeFilter === "all" ||
-        discount.discount_type === discountTypeFilter;
-
-      return matchesStatus && matchesSearch && matchesType;
+      return matchesStatus && matchesSearch;
     });
-  }, [discounts, activeFilter, searchQuery, discountTypeFilter]);
+  }, [discounts, activeFilter, searchQuery]);
 
   // Get count for each filter
   const getFilterCount = (filter: DiscountFilter): number => {
@@ -156,23 +150,31 @@ export default function DiscountManagement(): React.ReactElement {
         return discounts.filter((d) => {
           const startDate = new Date(d.start_datetime);
           const endDate = d.end_datetime ? new Date(d.end_datetime) : null;
-          return d.status === "active" && startDate <= now && (!endDate || endDate >= now);
+          const isExpired = !!endDate && endDate < now;
+          return !isExpired && d.status === "active" && startDate <= now && (!endDate || endDate >= now);
         }).length;
 
       case "scheduled":
         return discounts.filter((d) => {
           const startDate = new Date(d.start_datetime);
-          return d.status === "active" && startDate > now;
+          const endDate = d.end_datetime ? new Date(d.end_datetime) : null;
+          const isExpired = !!endDate && endDate < now;
+          return !isExpired && d.status === "active" && startDate > now;
         }).length;
 
       case "expired":
         return discounts.filter((d) => {
           const endDate = d.end_datetime ? new Date(d.end_datetime) : null;
-          return d.status === "expired" || (endDate && endDate < now && d.status !== "inactive");
+          const isExpired = !!endDate && endDate < now;
+          return isExpired || d.status === "expired";
         }).length;
 
       case "inactive":
-        return discounts.filter((d) => d.status === "inactive" || d.status === "paused").length;
+        return discounts.filter((d) => {
+          const endDate = d.end_datetime ? new Date(d.end_datetime) : null;
+          const isExpired = !!endDate && endDate < now;
+          return !isExpired && (d.status === "inactive" || d.status === "paused");
+        }).length;
 
       default:
         return 0;
@@ -211,6 +213,17 @@ export default function DiscountManagement(): React.ReactElement {
     navigate("/business/store/discount/create");
   };
 
+  // Get effective status (considering if end date has passed)
+  const getEffectiveStatus = (discount: Discount): string => {
+    const now = new Date();
+    const endDate = discount.end_datetime ? new Date(discount.end_datetime) : null;
+    
+    if (endDate && endDate < now) {
+      return "expired";
+    }
+    return discount.status;
+  };
+
   // Get status color
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -239,21 +252,17 @@ export default function DiscountManagement(): React.ReactElement {
     }
   };
 
-  // Format date
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("en-US", {
+  // Format date and time from UTC datetime string
+  const formatDateTime = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString("en-PH", {
       year: "numeric",
       month: "short",
       day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true,
     });
-  };
-
-  // Format currency
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: "USD",
-    }).format(amount);
   };
 
   // Check if business is selected
@@ -271,7 +280,7 @@ export default function DiscountManagement(): React.ReactElement {
     <PageContainer>
       <Stack spacing={3}>
         {/* Header */}
-        <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 2 }}>
           <Box>
             <Typography level="h2" fontWeight="bold">
               Discount Management
@@ -280,13 +289,26 @@ export default function DiscountManagement(): React.ReactElement {
               Create and manage discounts for your products
             </Typography>
           </Box>
-          <Button
-            startDecorator={<FiPlus />}
-            onClick={handleCreate}
-            size="lg"
-          >
-            Create Discount
-          </Button>
+          <Box sx={{ display: "flex", gap: 1 }}>
+            <Tooltip title="Refresh discounts">
+              <IconButton
+                onClick={fetchData}
+                loading={loading}
+                color="neutral"
+                variant="outlined"
+                size="lg"
+              >
+                <FiRefreshCw />
+              </IconButton>
+            </Tooltip>
+            <Button
+              startDecorator={<FiPlus />}
+              onClick={handleCreate}
+              size="lg"
+            >
+              Create Discount
+            </Button>
+          </Box>
         </Box>
 
         {/* Status Tabs */}
@@ -315,7 +337,7 @@ export default function DiscountManagement(): React.ReactElement {
           </Tabs>
         )}
 
-        {/* Search and Filters */}
+        {/* Search */}
         {!loading && !error && discounts.length > 0 && (
           <Stack direction="row" spacing={2} flexWrap="wrap" useFlexGap>
             <Input
@@ -325,17 +347,6 @@ export default function DiscountManagement(): React.ReactElement {
               onChange={(e) => setSearchQuery(e.target.value)}
               sx={{ flex: 1, minWidth: 250, maxWidth: 500 }}
             />
-            <Select
-              placeholder="Discount Type"
-              value={discountTypeFilter}
-              onChange={(_, value) => setDiscountTypeFilter(value as string)}
-              startDecorator={<FiFilter />}
-              sx={{ minWidth: 200 }}
-            >
-              <Option value="all">All Types</Option>
-              <Option value="percentage">Percentage</Option>
-              <Option value="fixed_amount">Fixed Amount</Option>
-            </Select>
           </Stack>
         )}
 
@@ -417,13 +428,10 @@ export default function DiscountManagement(): React.ReactElement {
               <Table>
                 <thead>
                   <tr>
-                    <th style={{ width: "25%" }}>Name</th>
-                    <th style={{ width: "15%" }}>Type</th>
-                    <th style={{ width: "15%" }}>Value</th>
-                    <th style={{ width: "15%" }}>Valid Period</th>
-                    <th style={{ width: "10%" }}>Usage</th>
+                    <th style={{ width: "40%" }}>Name</th>
+                    <th style={{ width: "25%" }}>Valid Period</th>
                     <th style={{ width: "10%" }}>Status</th>
-                    <th style={{ width: "10%", textAlign: "right" }}>Actions</th>
+                    <th style={{ width: "25%", textAlign: "right" }}>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -444,48 +452,25 @@ export default function DiscountManagement(): React.ReactElement {
                         </Stack>
                       </td>
                       <td>
-                        <Chip variant="soft" size="sm">
-                          {discount.discount_type === "percentage" ? "Percentage" : "Fixed Amount"}
-                        </Chip>
-                      </td>
-                      <td>
-                        <Typography level="body-sm" fontWeight="md">
-                          {discount.discount_type === "percentage"
-                            ? `${discount.discount_value}%`
-                            : formatCurrency(discount.discount_value)}
-                        </Typography>
-                        {discount.minimum_order_amount > 0 && (
-                          <Typography level="body-xs" textColor="text.secondary">
-                            Min: {formatCurrency(discount.minimum_order_amount)}
-                          </Typography>
-                        )}
-                      </td>
-                      <td>
                         <Stack spacing={0.5}>
-                          <Typography level="body-xs">
-                            {formatDate(discount.start_datetime)}
+                          <Typography level="body-xs" fontWeight="md">
+                            {formatDateTime(discount.start_datetime)}
                           </Typography>
                           <Typography level="body-xs" textColor="text.secondary">
                             {discount.end_datetime
-                              ? `to ${formatDate(discount.end_datetime)}`
+                              ? `to ${formatDateTime(discount.end_datetime)}`
                               : "No end date"}
                           </Typography>
                         </Stack>
                       </td>
                       <td>
-                        <Typography level="body-sm">
-                          {discount.current_usage_count}
-                          {discount.usage_limit ? ` / ${discount.usage_limit}` : ""}
-                        </Typography>
-                      </td>
-                      <td>
                         <Chip
                           variant="soft"
-                          color={getStatusColor(discount.status)}
-                          startDecorator={getStatusIcon(discount.status)}
+                          color={getStatusColor(getEffectiveStatus(discount))}
+                          startDecorator={getStatusIcon(getEffectiveStatus(discount))}
                           size="sm"
                         >
-                          {discount.status}
+                          {getEffectiveStatus(discount)}
                         </Chip>
                       </td>
                       <td>
@@ -547,14 +532,6 @@ export default function DiscountManagement(): React.ReactElement {
               </Typography>
               <Typography level="h3" fontWeight="bold">
                 {discounts.filter(d => d.status === "active").length}
-              </Typography>
-            </Card>
-            <Card variant="soft" color="warning">
-              <Typography level="body-sm" textColor="text.secondary">
-                Total Usage
-              </Typography>
-              <Typography level="h3" fontWeight="bold">
-                {discounts.reduce((sum, d) => sum + d.current_usage_count, 0)}
               </Typography>
             </Card>
           </Box>

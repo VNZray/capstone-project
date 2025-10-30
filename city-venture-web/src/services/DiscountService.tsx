@@ -35,8 +35,21 @@ function normalizeArrayResponse<T>(payload: unknown): T[] {
 
 // ==================== DISCOUNT MANAGEMENT ====================
 
+/** Update expired discounts in database (auto-mark as expired if end_datetime has passed) */
+export const updateExpiredDiscounts = async (): Promise<void> => {
+  try {
+    await axios.post(`${api}/discounts/maintenance/update-expired`);
+  } catch (error) {
+    // Silently fail - this is a maintenance operation
+    console.warn("Failed to update expired discounts:", error);
+  }
+};
+
 /** Get all discounts */
 export const fetchAllDiscounts = async (): Promise<Discount[]> => {
+  // First, update expired discounts in database
+  await updateExpiredDiscounts();
+  
   const { data } = await axios.get<Discount[]>(`${api}/discounts`);
   return normalizeArrayResponse<Discount>(data);
 };
@@ -45,6 +58,9 @@ export const fetchAllDiscounts = async (): Promise<Discount[]> => {
 export const fetchDiscountsByBusinessId = async (
   businessId: string
 ): Promise<Discount[]> => {
+  // First, update expired discounts in database
+  await updateExpiredDiscounts();
+  
   const { data } = await axios.get<Discount[]>(
     `${api}/discounts/business/${businessId}`
   );
@@ -55,6 +71,9 @@ export const fetchDiscountsByBusinessId = async (
 export const fetchActiveDiscountsByBusinessId = async (
   businessId: string
 ): Promise<Discount[]> => {
+  // First, update expired discounts in database
+  await updateExpiredDiscounts();
+  
   const { data } = await axios.get<Discount[]>(
     `${api}/discounts/business/${businessId}/active`
   );

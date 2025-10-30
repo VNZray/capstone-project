@@ -25,15 +25,13 @@ async function createOwnerProcedures(knex) {
       IN p_age INT,
       IN p_birthdate DATE,
       IN p_gender ENUM('Male','Female'),
-      IN p_business_type ENUM('Shop','Accommodation','Both'),
-      IN p_address_id INT,
       IN p_user_id CHAR(36)
     )
     BEGIN
       INSERT INTO owner (
-        id, first_name, middle_name, last_name, age, birthdate, gender, business_type, address_id, user_id
+        id, first_name, middle_name, last_name, age, birthdate, gender, user_id
       ) VALUES (
-        p_id, p_first_name, p_middle_name, p_last_name, p_age, p_birthdate, p_gender, p_business_type, p_address_id, p_user_id
+        p_id, p_first_name, p_middle_name, p_last_name, p_age, p_birthdate, p_gender, p_user_id
       );
       SELECT * FROM owner WHERE id = p_id;
     END;
@@ -49,8 +47,6 @@ async function createOwnerProcedures(knex) {
       IN p_age INT,
       IN p_birthdate DATE,
       IN p_gender ENUM('Male','Female'),
-      IN p_business_type ENUM('Shop','Accommodation','Both'),
-      IN p_address_id INT,
       IN p_user_id CHAR(36)
     )
     BEGIN
@@ -61,8 +57,6 @@ async function createOwnerProcedures(knex) {
           age = IFNULL(p_age, age),
           birthdate = IFNULL(p_birthdate, birthdate),
           gender = IFNULL(p_gender, gender),
-          business_type = IFNULL(p_business_type, business_type),
-          address_id = IFNULL(p_address_id, address_id),
           user_id = IFNULL(p_user_id, user_id)
       WHERE id = p_id;
       SELECT * FROM owner WHERE id = p_id;

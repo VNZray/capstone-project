@@ -126,15 +126,16 @@ export const loginUser = async (
     });
   console.debug("[AuthService] ownerData", ownerData);
 
-  let ownerAddressData: Address | null = null;
-  if (ownerData?.barangay_id != null) {
-    console.debug("[AuthService] GET /address/:id", ownerData.barangay_id);
-    ownerAddressData = await axios
-      .get<Address>(`${api}/address/${ownerData.barangay_id}`)
+  // Address is now tied to User (barangay_id moved to User)
+  let addressData: Address | null = null;
+  if (userData?.barangay_id != null) {
+    console.debug("[AuthService] GET /address/:id", userData.barangay_id);
+    addressData = await axios
+      .get<Address>(`${api}/address/${userData.barangay_id}`)
       .then((r) => r.data)
       .catch((err) => {
-        console.warn("[AuthService] Owner address fetch failed", {
-          barangay_id: ownerData.barangay_id,
+        console.warn("[AuthService] Address fetch failed", {
+          barangay_id: userData.barangay_id,
           message: err?.message,
           status: err?.response?.status,
           data: err?.response?.data,
@@ -143,49 +144,27 @@ export const loginUser = async (
       });
   }
 
-  const ownerBarangay: Partial<Barangay> = ownerAddressData
+  const barangay: Partial<Barangay> = addressData
     ? await axios
-        .get<Barangay>(
-          `${api}/address/barangay/${ownerAddressData.barangay_id}`
-        )
+        .get<Barangay>(`${api}/address/barangay/${addressData.barangay_id}`)
         .then((r) => r.data)
-        .catch((err) => {
-          console.warn(
-            "[AuthService] Owner barangay fetch failed",
-            err?.response?.status
-          );
-          return { barangay: "" } as Partial<Barangay>;
-        })
+        .catch(() => ({ barangay: "" } as Partial<Barangay>))
     : {};
 
-  const ownerMunicipality: Partial<Municipality> = ownerAddressData
+  const municipality: Partial<Municipality> = addressData
     ? await axios
         .get<Municipality>(
-          `${api}/address/municipality/${ownerAddressData.municipality_id}`
+          `${api}/address/municipality/${addressData.municipality_id}`
         )
         .then((r) => r.data)
-        .catch((err) => {
-          console.warn(
-            "[AuthService] Owner municipality fetch failed",
-            err?.response?.status
-          );
-          return { municipality: "" } as Partial<Municipality>;
-        })
+        .catch(() => ({ municipality: "" } as Partial<Municipality>))
     : {};
 
-  const ownerProvince: Partial<Province> = ownerAddressData
+  const province: Partial<Province> = addressData
     ? await axios
-        .get<Province>(
-          `${api}/address/province/${ownerAddressData.province_id}`
-        )
+        .get<Province>(`${api}/address/province/${addressData.province_id}`)
         .then((r) => r.data)
-        .catch((err) => {
-          console.warn(
-            "[AuthService] Owner province fetch failed",
-            err?.response?.status
-          );
-          return { province: "" } as Partial<Province>;
-        })
+        .catch(() => ({ province: "" } as Partial<Province>))
     : {};
 
   console.debug("[AuthService] GET /tourist/user/:user_id", user_id);
@@ -203,44 +182,7 @@ export const loginUser = async (
     });
   console.debug("[AuthService] touristData", touristData);
 
-  const touristAddressData: Address | null =
-    touristData?.barangay_id != null
-      ? await axios
-          .get<Address>(`${api}/address/${touristData.barangay_id}`)
-          .then((r) => r.data)
-          .catch((err) => {
-            console.warn(
-              "[AuthService] Tourist address fetch failed",
-              err?.response?.status
-            );
-            return null;
-          })
-      : null;
-
-  const touristBarangay: Partial<Barangay> = touristAddressData
-    ? await axios
-        .get<Barangay>(
-          `${api}/address/barangay/${touristAddressData.barangay_id}`
-        )
-        .then((r) => r.data)
-        .catch(() => ({ barangay: "" } as Partial<Barangay>))
-    : {};
-  const touristMunicipality: Partial<Municipality> = touristAddressData
-    ? await axios
-        .get<Municipality>(
-          `${api}/address/municipality/${touristAddressData.municipality_id}`
-        )
-        .then((r) => r.data)
-        .catch(() => ({ municipality: "" } as Partial<Municipality>))
-    : {};
-  const touristProvince: Partial<Province> = touristAddressData
-    ? await axios
-        .get<Province>(
-          `${api}/address/province/${touristAddressData.province_id}`
-        )
-        .then((r) => r.data)
-        .catch(() => ({ province: "" } as Partial<Province>))
-    : {};
+  // Address details already derived from userData.barangay_id above
 
   console.debug("[AuthService] GET /tourism/user/:user_id", user_id);
   const tourismData: Partial<Tourism> | null = await axios
@@ -256,37 +198,7 @@ export const loginUser = async (
       return null;
     });
 
-  const tourismAddressData: Address | null =
-    tourismData?.barangay_id != null
-      ? await axios
-          .get<Address>(`${api}/address/${tourismData.barangay_id}`)
-          .then((r) => r.data)
-          .catch(() => null)
-      : null;
-  const tourismBarangay: Partial<Barangay> = tourismAddressData
-    ? await axios
-        .get<Barangay>(
-          `${api}/address/barangay/${tourismAddressData.barangay_id}`
-        )
-        .then((r) => r.data)
-        .catch(() => ({ barangay: "" } as Partial<Barangay>))
-    : {};
-  const tourismMunicipality: Partial<Municipality> = tourismAddressData
-    ? await axios
-        .get<Municipality>(
-          `${api}/address/municipality/${tourismAddressData.municipality_id}`
-        )
-        .then((r) => r.data)
-        .catch(() => ({ municipality: "" } as Partial<Municipality>))
-    : {};
-  const tourismProvince: Partial<Province> = tourismAddressData
-    ? await axios
-        .get<Province>(
-          `${api}/address/province/${tourismAddressData.province_id}`
-        )
-        .then((r) => r.data)
-        .catch(() => ({ province: "" } as Partial<Province>))
-    : {};
+  // Address details already derived from userData.barangay_id above
 
   // Step 4: Build user object
   // Normalize role for UI usage
@@ -334,33 +246,17 @@ export const loginUser = async (
     ethnicity: touristData?.ethnicity || "",
     category: touristData?.category || "",
     user_profile: userData.user_profile,
-    is_active: userData.is_active,
-    is_verified: userData.is_verified,
-    created_at: userData.created_at,
-    updated_at: userData.updated_at,
-    last_login: userData.last_login,
+    is_active: Boolean(userData.is_active),
+    is_verified: Boolean(userData.is_verified),
+    created_at: userData.created_at || "",
+    updated_at: userData.updated_at || "",
+    last_login: userData.last_login || "",
     user_role_id: userData.user_role_id,
     description: userRole?.description || "",
-    barangay_id:
-      ownerData?.barangay_id ??
-      tourismData?.barangay_id ??
-      touristData?.barangay_id ??
-      "",
-    municipality_name:
-      ownerMunicipality?.municipality ||
-      touristMunicipality?.municipality ||
-      tourismMunicipality?.municipality ||
-      "",
-    barangay_name:
-      ownerBarangay?.barangay ||
-      touristBarangay?.barangay ||
-      tourismBarangay?.barangay ||
-      "",
-    province_name:
-      ownerProvince?.province ||
-      touristProvince?.province ||
-      tourismProvince?.province ||
-      "",
+    barangay_id: userData?.barangay_id ?? "",
+    municipality_name: municipality?.municipality || "",
+    barangay_name: barangay?.barangay || "",
+    province_name: province?.province || "",
     user_id: userData.id || "",
   };
 

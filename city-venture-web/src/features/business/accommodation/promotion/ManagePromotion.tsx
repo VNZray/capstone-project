@@ -9,6 +9,7 @@ import PromoCard from "./components/PromoCard";
 import type { PromoStatus } from "./components/PromoCard";
 import AddPromoModal from "./components/AddPromoModal";
 import { useMemo, useState } from "react";
+import ResponsiveText from "@/src/components/ResponsiveText";
 
 type Status = "All" | "Active" | "Paused" | "Expired";
 
@@ -148,7 +149,7 @@ const ManagePromotion = () => {
               minWidth: 240,
             }}
           >
-            <Text variant="header-title">Manage Promotion</Text>
+            <ResponsiveText type="title-small" weight="bold">Manage Promotion</ResponsiveText>
           </div>
 
           <Button
