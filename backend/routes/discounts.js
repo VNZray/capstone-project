@@ -18,7 +18,7 @@ router.delete("/:id", discountController.deleteDiscount);
 
 // Discount Validation and Usage
 router.post("/:discountId/validate", discountController.validateDiscount);
-router.put("/:discountId/usage", discountController.updateDiscountUsage);
+// router.put("/:discountId/usage", discountController.updateDiscountUsage);
 router.get("/:id/stats", discountController.getDiscountStats);
 
 export default router;

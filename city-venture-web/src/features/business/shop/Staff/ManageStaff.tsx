@@ -1,11 +1,10 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import Container from "@/src/components/Container";
 import PageContainer from "@/src/components/PageContainer";
 import ResponsiveText from "@/src/components/ResponsiveText";
-import Input from "@/src/components/Input";
 import Button from "@/src/components/Button";
-
-type StaffRole = "Manager" | "Cashier" | "Front Desk" | "Housekeeping" | "Staff";
+import StaffAddModal, { type StaffRole } from "@/src/components/StaffAddModal";
+import { Select, Option } from "@mui/joy";
 
 type Staff = {
   id: string;
@@ -28,49 +27,21 @@ const ROLE_OPTIONS: { label: string; value: StaffRole }[] = [
 const uuid = () => crypto.randomUUID();
 
 const ManageStaff = () => {
-  // Form state
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
-  const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
-  const [role, setRole] = useState<StaffRole>("Staff");
-  const [error, setError] = useState<string>("");
-
   // Staff list
   const [staff, setStaff] = useState<Staff[]>([]);
+  const [addOpen, setAddOpen] = useState(false);
 
-  const canAdd = useMemo(() => firstName.trim() && email.trim(), [firstName, email]);
-
-  const resetForm = () => {
-    setFirstName("");
-    setLastName("");
-    setEmail("");
-    setPhone("");
-    setRole("Staff");
-    setError("");
-  };
-
-  const handleAddStaff = () => {
-    if (!canAdd) {
-      setError("First name and email are required.");
-      return;
-    }
-    // Very light validation
-    if (!email.includes("@")) {
-      setError("Enter a valid email address.");
-      return;
-    }
+  const handleAddStaff = (data: { first_name: string; last_name?: string; email: string; phone_number?: string; role: StaffRole; }) => {
     const item: Staff = {
       id: uuid(),
-      first_name: firstName.trim(),
-      last_name: lastName.trim() || undefined,
-      email: email.trim(),
-      phone_number: phone.trim() || undefined,
-      role,
+      first_name: data.first_name,
+      last_name: data.last_name,
+      email: data.email,
+      phone_number: data.phone_number,
+      role: data.role,
       is_active: true,
     };
     setStaff((prev) => [item, ...prev]);
-    resetForm();
   };
 
   const handleChangeRole = (id: string, next: StaffRole) => {
@@ -93,60 +64,13 @@ const ManageStaff = () => {
           Staff Management
         </ResponsiveText>
       </Container>
-
-      {/* Add Staff Form */}
+      {/* Add Staff Modal trigger */}
       <Container elevation={3}>
-        <ResponsiveText type="sub-title-small" weight="semi-bold" mb={0.25}>
-          Add Staff
-        </ResponsiveText>
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
-            gap: 12,
-          }}
-        >
-          <Input
-            type="text"
-            label="First Name"
-            value={firstName}
-            onChange={(e) => setFirstName((e.target as HTMLInputElement).value)}
-          />
-          <Input
-            type="text"
-            label="Last Name"
-            value={lastName}
-            onChange={(e) => setLastName((e.target as HTMLInputElement).value)}
-          />
-          <Input
-            type="email"
-            label="Email"
-            value={email}
-            onChange={(e) => setEmail((e.target as HTMLInputElement).value)}
-          />
-          <Input
-            type="text"
-            label="Phone Number"
-            value={phone}
-            onChange={(e) => setPhone((e.target as HTMLInputElement).value)}
-          />
-          <Input
-            type="select"
-            label="Role"
-            value={role}
-            onChange={(e) => setRole(e.target.value as StaffRole)}
-            options={ROLE_OPTIONS}
-          />
-        </div>
-        {error ? (
-          <ResponsiveText type="body-small" color="#c00" mt={0.5}>
-            {error}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <ResponsiveText type="sub-title-small" weight="semi-bold" mb={0}>
+            Team
           </ResponsiveText>
-        ) : null}
-        <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 12 }}>
-          <Button variant="primary" onClick={handleAddStaff} disabled={!canAdd}>
-            Add Staff
-          </Button>
+          <Button variant="primary" onClick={() => setAddOpen(true)}>Add Staff</Button>
         </div>
       </Container>
 
@@ -199,13 +123,15 @@ const ManageStaff = () => {
                 ) : null}
 
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-                  <Input
-                    type="select"
-                    label="Change Role"
-                    value={s.role}
-                    onChange={(e) => handleChangeRole(s.id, e.target.value as StaffRole)}
-                    options={ROLE_OPTIONS}
-                  />
+                  <div>
+                    <Select value={s.role} onChange={(_e, val) => val && handleChangeRole(s.id, val)}>
+                      {ROLE_OPTIONS.map((opt) => (
+                        <Option key={opt.value} value={opt.value}>
+                          {opt.label}
+                        </Option>
+                      ))}
+                    </Select>
+                  </div>
                   <div style={{ display: "flex", alignItems: "flex-end", gap: 8 }}>
                     <Button
                       variant={s.is_active ? "secondary" : "primary"}
@@ -226,6 +152,7 @@ const ManageStaff = () => {
           </div>
         )}
       </Container>
+      <StaffAddModal open={addOpen} onClose={() => setAddOpen(false)} onSave={handleAddStaff} />
     </PageContainer>
   );
 };

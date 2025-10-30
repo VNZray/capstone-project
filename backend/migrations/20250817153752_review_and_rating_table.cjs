@@ -4,18 +4,20 @@ exports.up = function (knex) {
     .createTable("review_and_rating", (table) => {
       table.uuid("id").primary().defaultTo(knex.raw("(UUID())"));
       table
-        .enu("reviewable_type", [
+        .enu("review_type", [
           "Accommodation",
           "Room",
           "Shop",
           "Event",
           "Tourist Spot",
+          "Product",
+          "Service",
         ])
         .notNullable();
-      table.uuid("reviewable_id").notNullable();
+      table.uuid("review_type_id").notNullable();
       table.integer("rating", 1).notNullable(); // tinyint(1)
-      table.text("comment").notNullable();
-      table.uuid("touriat_id").notNullable();
+      table.text("message").notNullable();
+      table.uuid("tourist_id").notNullable();
       table.timestamp("created_at").defaultTo(knex.fn.now()).notNullable();
     })
     
@@ -27,7 +29,7 @@ exports.up = function (knex) {
         .references("id")
         .inTable("review_and_rating")
         .onDelete("CASCADE");
-      table.text("reply").notNullable();
+      table.text("message").notNullable();
       table.timestamp("created_at").defaultTo(knex.fn.now()).notNullable();
     });
 };

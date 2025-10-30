@@ -9,8 +9,6 @@ import {
   Sheet,
   IconButton,
 } from '@mui/joy';
-  const [confirmOpen, setConfirmOpen] = useState(false);
-  const [pendingUnfeatureId, setPendingUnfeatureId] = useState<string | null>(null);
 import Autocomplete from '@mui/joy/Autocomplete';
 import { IoClose } from 'react-icons/io5';
 import "@/src/components/styles/touristspots/TouristSpotTable.css";
@@ -26,6 +24,8 @@ const FeaturedSpotsModal: React.FC<FeaturedSpotsModalProps> = ({ open, onClose }
   const [selectedToAddId, setSelectedToAddId] = useState<string>('');
   const [selectedOption, setSelectedOption] = useState<TouristSpot | null>(null);
   const [loading, setLoading] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [pendingUnfeatureId, setPendingUnfeatureId] = useState<string | null>(null);
 
   const loadData = async () => {
     setLoading(true);
