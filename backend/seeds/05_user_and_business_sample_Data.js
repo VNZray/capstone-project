@@ -58,9 +58,11 @@ export async function seed(knex) {
   // insertedAddress will be an array like [id] for MySQL, or an object for PG when using .returning().
   const addressId = Array.isArray(insertedAddress) ? insertedAddress[0] : insertedAddress;
   // The owner/tourist/business tables in this schema reference the barangay (integer) directly
-  // (see migrations: owner.barangay_id, tourist.barangay_id, business.barangay_id).
+  // (see migrations: business.barangay_id; owner and tourist do not have barangay_id).
   const barangayId = 1; // we inserted address with barangay_id = 1 above
 
+  // The `owner` table does not include `barangay_id` or `business_type` in current migrations
+  // Keep the owner profile fields that exist in the schema
   const owner = {
     id: '44444444-4444-4444-4444-444444444444',
     first_name: 'Juan',
@@ -69,8 +71,6 @@ export async function seed(knex) {
     age: 35,
     birthdate: '1990-01-01',
     gender: 'Male',
-    business_type: 'Both', // can own multiple types
-    barangay_id: barangayId,
     user_id: '33333333-3333-3333-3333-333333333333'
   };
   await knex('owner').insert(owner);
@@ -86,7 +86,7 @@ export async function seed(knex) {
   };
   await knex('tourism').insert(tourism);
 
-  // Create a tourist profile linked to tourist user
+  // `tourist` migration defines `origin` (enum) not `category`, and currently has no barangay_id
   const tourist = {
     id: '88888888-8888-8888-8888-888888888888',
     first_name: 'Ana',
@@ -97,8 +97,7 @@ export async function seed(knex) {
     age: 30,
     gender: 'Female',
     nationality: 'Filipino',
-    category: 'Domestic',
-    barangay_id: barangayId,
+    origin: 'Domestic',
     user_id: '22222222-2222-2222-2222-222222222222' // tourist user
   };
   await knex('tourist').insert(tourist);
