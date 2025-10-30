@@ -1,18 +1,14 @@
-// Discount Types
+// Discount Types (Simplified MVP Structure)
 export interface Discount {
   id: string;
   business_id: string;
   name: string;
   description: string | null;
-  discount_type: 'percentage' | 'fixed_amount';
-  discount_value: number;
-  minimum_order_amount: number;
-  maximum_discount_amount: number | null;
+  // Removed: discount_type (always fixed amount)
+  // Removed: discount_value (individual prices stored in discount_product table)
+  // Removed: minimum_order_amount, maximum_discount_amount, usage_limit_per_customer, usage_limit
   start_datetime: string;
   end_datetime: string | null;
-  usage_limit: number | null;
-  usage_limit_per_customer: number | null;
-  current_usage_count: number;
   status: 'active' | 'inactive' | 'expired' | 'paused';
   created_at: string;
   updated_at: string;
@@ -22,9 +18,16 @@ export interface Discount {
 
 export interface ApplicableProduct {
   id: string;
-  discount_id: string;
+  discount_id?: string;
   product_id: string;
   product_name?: string;
+  name?: string;
+  price?: number;
+  image_url?: string;
+  discounted_price: number; // Individual discounted price for this product
+  stock_limit: number | null; // NULL = unlimited
+  current_stock_used: number;
+  purchase_limit: number | null; // NULL = unlimited
   created_at: string;
 }
 
@@ -34,7 +37,6 @@ export interface DiscountStats {
     total_orders: number;
     total_revenue_impact: number;
     average_order_value: number;
-    remaining_uses: number | null;
   };
   recent_orders: RecentOrder[];
 }
@@ -58,8 +60,7 @@ export interface ValidateDiscountResponse {
   discount?: {
     id: string;
     name: string;
-    discount_type: 'percentage' | 'fixed_amount';
-    discount_value: number;
+    discounted_price: number; // Individual product discount
     discount_amount: number;
   };
   message?: string;
@@ -69,29 +70,26 @@ export interface CreateDiscountPayload {
   business_id: string;
   name: string;
   description?: string;
-  discount_type: 'percentage' | 'fixed_amount';
-  discount_value: number;
-  minimum_order_amount?: number;
-  maximum_discount_amount?: number;
+  // Removed: discount_value (individual prices in applicable_products)
   start_datetime: string;
   end_datetime?: string;
-  usage_limit?: number;
-  usage_limit_per_customer?: number;
   status?: 'active' | 'inactive' | 'expired' | 'paused';
-  applicable_products?: string[];
+  applicable_products?: DiscountProductPayload[]; // Changed from string[] to include limits
+}
+
+export interface DiscountProductPayload {
+  product_id: string;
+  discounted_price: number; // Individual discounted price for this product
+  stock_limit?: number | null;
+  purchase_limit?: number | null;
 }
 
 export interface UpdateDiscountPayload {
   name?: string;
   description?: string;
-  discount_type?: 'percentage' | 'fixed_amount';
-  discount_value?: number;
-  minimum_order_amount?: number;
-  maximum_discount_amount?: number;
+  // Removed: discount_value (individual prices in applicable_products)
   start_datetime?: string;
   end_datetime?: string;
-  usage_limit?: number;
-  usage_limit_per_customer?: number;
   status?: 'active' | 'inactive' | 'expired' | 'paused';
-  applicable_products?: string[];
+  applicable_products?: DiscountProductPayload[]; // Changed from string[] to include limits
 }

@@ -16,20 +16,20 @@ import { FiPlus, FiEdit2, FiTrash2, FiClock, FiGrid, FiList, FiCheckCircle, FiAl
 import PageContainer from "@/src/components/PageContainer";
 import { useBusiness } from "@/src/context/BusinessContext";
 import * as ServiceApi from "@/src/services/ServiceApi";
+import * as ShopCategoryService from "@/src/services/ShopCategoryService";
 import ServiceFormModal from "./components/ServiceFormModal";
 import { useNavigate } from "react-router-dom";
 import type {
   Service,
-  ServiceCategory,
   CreateServicePayload,
-  CreateServiceCategoryPayload,
 } from "@/src/types/Service";
+import type { ShopCategory, ShopCategoryAssignment, CreateShopCategoryPayload } from "@/src/types/ShopCategory";
 
 export default function Services() {
   const navigate = useNavigate();
   const { businessDetails } = useBusiness();
   const [services, setServices] = useState<Service[]>([]);
-  const [categories, setCategories] = useState<ServiceCategory[]>([]);
+  const [categories, setCategories] = useState<ShopCategory[]>([]);
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState<"table" | "grid">("table");
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
@@ -44,7 +44,7 @@ export default function Services() {
   // Filter services by selected category
   const filteredServices = selectedCategoryId
     ? services.filter(service => 
-        service.categories?.some((cat: ServiceCategory) => cat.id === selectedCategoryId)
+        service.categories?.some((cat: ShopCategoryAssignment) => cat.id === selectedCategoryId)
       )
     : services;
 
@@ -61,7 +61,7 @@ export default function Services() {
     try {
       const [servicesData, categoriesData] = await Promise.all([
         ServiceApi.fetchServicesByBusinessId(businessDetails.id),
-        ServiceApi.fetchServiceCategoriesByBusinessId(businessDetails.id),
+        ShopCategoryService.fetchShopCategoriesByBusinessIdAndType(businessDetails.id, 'service'),
       ]);
       
       setServices(Array.isArray(servicesData) ? servicesData : []);
@@ -105,18 +105,18 @@ export default function Services() {
   };
 
   // Handle category creation
-  const handleCategoryCreate = async (payload: CreateServiceCategoryPayload): Promise<ServiceCategory> => {
+  const handleCategoryCreate = async (payload: CreateShopCategoryPayload): Promise<ShopCategory> => {
     if (!businessDetails?.id) {
       throw new Error("Business not selected");
     }
 
     try {
-      const newCategory = await ServiceApi.createServiceCategory(payload);
+      const newCategory = await ShopCategoryService.createShopCategory(payload);
       setSuccess("Category created successfully!");
-      
-      const categoriesData = await ServiceApi.fetchServiceCategoriesByBusinessId(businessDetails.id);
+
+      const categoriesData = await ShopCategoryService.fetchShopCategoriesByBusinessIdAndType(businessDetails.id, 'service');
       setCategories(categoriesData);
-      
+
       setTimeout(() => setSuccess(null), 3000);
       return newCategory;
     } catch (err) {
@@ -168,11 +168,10 @@ export default function Services() {
     return priceType.replace("_", " ");
   };
 
-  // Format duration
-  const formatDuration = (value: number | null | undefined, unit: string | null | undefined): string => {
-    if (!value || !unit) return "—";
-    const unitLabel = value === 1 ? unit.slice(0, -1) : unit; // Remove 's' for singular
-    return `${value} ${unitLabel}`;
+  // Format contact methods
+  const formatContactMethods = (methods: Array<{ type: string; value: string }> | undefined): string => {
+    if (!methods || methods.length === 0) return "—";
+    return methods.map(m => `${m.type}: ${m.value}`).join(", ");
   };
 
   if (!businessDetails) {
@@ -231,7 +230,9 @@ export default function Services() {
               variant="outlined"
               color="neutral"
               startDecorator={<FiTag />}
-              onClick={() => navigate("/business/store/service-categories")}
+              onClick={() =>
+                navigate("/business/store/categories?type=service&from=services")
+              }
             >
               Manage Categories
             </Button>
@@ -264,7 +265,7 @@ export default function Services() {
               </Chip>
               {categories.slice(0, 10).map((category) => {
                 const serviceCount = services.filter(service =>
-                  service.categories?.some((cat: ServiceCategory) => cat.id === category.id)
+                  service.categories?.some((cat: ShopCategoryAssignment) => cat.id === category.id)
                 ).length;
                 
                 return (
@@ -300,7 +301,7 @@ export default function Services() {
                   <th style={{ width: "30%" }}>Service</th>
                   <th style={{ width: "15%" }}>Category</th>
                   <th style={{ width: "15%" }}>Price</th>
-                  <th style={{ width: "10%" }}>Duration</th>
+                  <th style={{ width: "15%" }}>Contact</th>
                   <th style={{ width: "10%" }}>Status</th>
                   <th style={{ width: "10%", textAlign: "center" }}>Actions</th>
                 </tr>
@@ -338,7 +339,7 @@ export default function Services() {
                     <td>
                       <Stack direction="row" spacing={0.5} flexWrap="wrap">
                         {service.categories && service.categories.length > 0 ? (
-                          service.categories.map((cat: ServiceCategory) => (
+                          service.categories.map((cat: ShopCategoryAssignment) => (
                             <Chip
                               key={cat.id}
                               size="sm"
@@ -363,7 +364,7 @@ export default function Services() {
                     </td>
                     <td>
                       <Typography level="body-sm">
-                        {formatDuration(service.duration_value, service.duration_unit)}
+                        {formatContactMethods(service.contact_methods)}
                       </Typography>
                     </td>
                     <td>
@@ -445,7 +446,7 @@ export default function Services() {
                   </Typography>
                   <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5 }}>
                     {service.categories && service.categories.length > 0 ? (
-                      service.categories.map((cat: ServiceCategory) => (
+                      service.categories.map((cat: ShopCategoryAssignment) => (
                         <Chip
                           key={cat.id}
                           size="sm"
@@ -469,7 +470,7 @@ export default function Services() {
                   </Typography>
                   <Typography level="body-xs" color="neutral">
                     {formatPriceType(service.price_type)}
-                    {service.duration_value && service.duration_unit && ` • ${formatDuration(service.duration_value, service.duration_unit)}`}
+                    {service.contact_methods && service.contact_methods.length > 0 && ` • ${service.contact_methods.length} contact method(s)`}
                   </Typography>
                 </Stack>
                 

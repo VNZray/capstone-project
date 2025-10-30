@@ -29,12 +29,14 @@ import paymentRoutes from "./routes/paymentRoutes.js";
 // New Product/Service Management Routes
 import productRoutes from "./routes/products.js";
 import discountRoutes from "./routes/discounts.js";
+import promotionRoutes from "./routes/promotions.js";
 import serviceRoutes from "./routes/services.js";
 import serviceInquiryRoutes from "./routes/service-inquiries.js";
 import orderRoutes from "./routes/orders.js";
 import productReviewRoutes from "./routes/product-reviews.js";
 import notificationRoutes from "./routes/notifications.js";
 import businessSettingsRoutes from "./routes/business-settings.js";
+import shopCategoryRoutes from "./routes/shop-categories.js";
 
 const app = express();
 const PORT = 3000;
@@ -136,6 +138,11 @@ const routeSections = [
     section: "Commerce (Products & Services)",
     routes: [
       { path: "/api/products", handler: productRoutes, label: "Products" },
+      { path: "/api/discounts", handler: discountRoutes, label: "Discounts" },
+      { path: "/api/shop-categories", handler: shopCategoryRoutes, label: "Shop Categories (Unified)" },
+      { path: "/api/products", handler: productRoutes, label: "Products" },
+      { path: "/api/discounts", handler: discountRoutes, label: "Discounts" },
+      { path: "/api/promotions", handler: promotionRoutes, label: "Promotions" },
       { path: "/api/discounts", handler: discountRoutes, label: "Discounts" },
       { path: "/api/services", handler: serviceRoutes, label: "Services (Display Only)" },
       {
