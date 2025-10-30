@@ -63,6 +63,18 @@ const Step1: React.FC<Props> = ({ data, setData, setBusinessAmenities }) => {
           />
         </FormControl>
 
+        <FormControl required>
+          <FormLabel>Business Phone Number</FormLabel>
+          <Input
+            placeholder="Enter your business phone number"
+            fullWidth
+            value={data.phone_number}
+            onChange={(e) =>
+              setData((prev) => ({ ...prev, phone_number: e.target.value }))
+            }
+          />
+        </FormControl>
+
         <FormControl>
           <FormLabel
             sx={{
