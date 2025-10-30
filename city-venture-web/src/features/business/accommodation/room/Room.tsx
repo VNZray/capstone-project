@@ -1,6 +1,5 @@
 import Container from "@/src/components/Container";
 import PageContainer from "@/src/components/PageContainer";
-import Text from "@/src/components/Text";
 import {
   Button,
   Input,
@@ -8,7 +7,6 @@ import {
   ModalDialog,
   DialogTitle,
   DialogActions,
-  Typography,
 } from "@mui/joy";
 import { Calendar, Search } from "lucide-react";
 import { Add } from "@mui/icons-material";
@@ -27,6 +25,7 @@ import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { DateCalendar } from "@mui/x-date-pickers/DateCalendar";
 import CardHeader from "@/src/components/CardHeader";
+import ResponsiveText from "@/src/components/ResponsiveText";
 
 const RoomPage = () => {
   const navigate = useNavigate();
@@ -117,7 +116,7 @@ const RoomPage = () => {
               minWidth: 240,
             }}
           >
-            <Text variant="header-title">Room Management</Text>
+            <ResponsiveText type="title-small" weight="bold">Room Management</ResponsiveText>
             <Button
               startDecorator={<Calendar />}
               size="lg"

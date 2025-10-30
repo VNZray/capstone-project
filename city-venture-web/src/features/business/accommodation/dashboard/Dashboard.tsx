@@ -1,4 +1,4 @@
-import Text from "@/src/components/Text";
+import ResponsiveText from "@/src/components/ResponsiveText";
 import { useBusiness } from "@/src/context/BusinessContext";
 
 const Dashboard = () => {
@@ -8,7 +8,7 @@ const Dashboard = () => {
 
   return (
     <>
-      <Text variant="title">{businessDetails?.business_name}</Text>
+      <ResponsiveText type="title-small" weight="bold">{businessDetails?.business_name}</ResponsiveText>
     </>
   );
 };

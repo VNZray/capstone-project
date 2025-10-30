@@ -39,6 +39,7 @@ import {
   Info,
 } from "@mui/icons-material";
 import { colors } from "@/src/utils/Colors";
+import ResponsiveText from "@/src/components/ResponsiveText";
 
 const Settings = () => {
   const { user } = useAuth();
@@ -97,12 +98,12 @@ const Settings = () => {
       <Box sx={{ width: "100%" }}>
         {/* Header */}
         <Box sx={{ mb: 4 }}>
-          <Text variant="title" style={{ fontSize: 32, fontWeight: 700 }}>
+          <ResponsiveText type="title-small" weight="bold">
             Settings
-          </Text>
-          <Typography level="body-sm" sx={{ color: "text.secondary", mt: 1 }}>
+          </ResponsiveText>
+          <ResponsiveText type="body-medium">
             Manage your business preferences and configurations
-          </Typography>
+          </ResponsiveText>
         </Box>
 
         {/* Business Status Section */}

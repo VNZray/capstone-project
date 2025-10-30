@@ -18,7 +18,7 @@ export type User = {
   updated_at: string;
   last_login?: string | "";
   user_role_id: number;
-  barangay_id?: number | undefined | null;
+  barangay_id?: number | null | undefined;
 };
 
 export type UserDetails = {
@@ -44,7 +44,7 @@ export type UserDetails = {
   updated_at: string;
   last_login?: string | "";
   user_role_id: number;
-  barangay_id?: number | "";
+  barangay_id?: number | null | undefined;
   address?: string | "";
   user_id?: string | "";
   province_name?: string | "";

@@ -3,6 +3,7 @@ import { useLocation } from "react-router-dom";
 import "./Header.css";
 import { useNavigate, Link } from "react-router-dom";
 import Text from "@/src/components/Text";
+import ResponsiveText from "@/src/components/ResponsiveText";
 import { useAuth } from "@/src/context/AuthContext"; // adjust path if needed
 import Button from "@/src/components/Button";
 
@@ -37,7 +38,7 @@ export default function Header(): React.JSX.Element {
   return (
     <header className="header">
       {/* Page Title */}
-      <Text variant="header-title">{title}</Text>
+  <ResponsiveText type="title-small" weight="bold">{title}</ResponsiveText>
 
       {/* User Info */}
       <div className="header-user">

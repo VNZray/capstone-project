@@ -1,4 +1,3 @@
-import Text from "@/src/components/Text";
 import PageContainer from "@/src/components/PageContainer";
 import { colors } from "@/src/utils/Colors";
 import { Search } from "lucide-react";
@@ -18,6 +17,7 @@ import { useBusiness } from "@/src/context/BusinessContext";
 // import type { Booking } from "@/src/types/Booking";
 // import { fetchBookingsByBusinessId } from "@/src/services/BookingService";
 import { fetchPaymentsByBusinessId } from "@/src/services/PaymentService";
+import ResponsiveText from "@/src/components/ResponsiveText";
 // import type { Payment } from "@/src/types/Payment";
 
 // Transaction columns
@@ -37,19 +37,6 @@ interface Column {
   align?: "center" | "right" | "left";
   format?: (value: number) => string;
 }
-
-const getStatusColor = (status: string) => {
-  switch (status) {
-    case "Paid":
-      return "success";
-    case "Pending Balance":
-      return "warning";
-    case "Failed":
-      return "error";
-    default:
-      return "default";
-  }
-};
 
 const columns: readonly Column[] = [
   { id: "booking_id", label: "Booking ID", minWidth: 120 },
@@ -230,7 +217,7 @@ const Transactions = () => {
           align="center"
           padding="16px 16px 0 16px"
         >
-          <Text variant="header-title">Transaction History</Text>
+          <ResponsiveText type="title-small" weight="bold">Transaction History</ResponsiveText>
         </Container>
 
         {/* Search + Filter */}
