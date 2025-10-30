@@ -8,12 +8,8 @@ import {
   Textarea,
   Button,
   Stack,
-  Select,
   Option,
-  Radio,
-  RadioGroup,
   Box,
-  Divider,
   Alert,
   Card,
   Grid,
@@ -22,14 +18,93 @@ import {
   Table,
   IconButton,
   Sheet,
+  Select,
+  Chip,
+  Checkbox,
 } from "@mui/joy";
-import { FiAlertCircle, FiX, FiTag } from "react-icons/fi";
+import { FiAlertCircle, FiX, FiTag, FiSettings, FiChevronDown } from "react-icons/fi";
 import PageContainer from "@/src/components/PageContainer";
 import { useBusiness } from "@/src/context/BusinessContext";
 import * as DiscountService from "@/src/services/DiscountService";
 import * as ProductService from "@/src/services/ProductService";
 import type { CreateDiscountPayload } from "@/src/types/Discount";
 import type { Product } from "@/src/types/Product";
+
+interface ProductWithDiscount extends Product {
+  original_price: number;
+  discounted_price: number;
+  stock_limit: number | null;
+  purchase_limit: number | null;
+  has_no_stock_limit: boolean;
+  has_no_purchase_limit: boolean;
+}
+
+// Helper function to get current datetime in local format for datetime-local input
+const getCurrentDateTimeLocal = (): string => {
+  const now = new Date();
+  // Get the local ISO string and slice to get datetime-local format
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const date = String(now.getDate()).padStart(2, '0');
+  const hours = String(now.getHours()).padStart(2, '0');
+  const minutes = String(now.getMinutes()).padStart(2, '0');
+  
+  return `${year}-${month}-${date}T${hours}:${minutes}`;
+};
+
+// Helper function to get datetime 1 hour from now in local format for datetime-local input
+const getDateTimeOneHourFromNow = (): string => {
+  const now = new Date();
+  now.setHours(now.getHours() + 1);
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const date = String(now.getDate()).padStart(2, '0');
+  const hours = String(now.getHours()).padStart(2, '0');
+  const minutes = String(now.getMinutes()).padStart(2, '0');
+  
+  return `${year}-${month}-${date}T${hours}:${minutes}`;
+};
+
+// Helper function to convert UTC datetime string to local datetime string for datetime-local input
+// Expects UTC datetime string like "2025-10-19T03:20:00Z" or "2025-10-19T03:20:00"
+// Returns local datetime string like "2025-10-19T11:20"
+const convertUTCToLocalDateTime = (utcDateString: string): string => {
+  if (!utcDateString) return "";
+  
+  const utcDate = new Date(utcDateString);
+  const year = utcDate.getFullYear();
+  const month = String(utcDate.getMonth() + 1).padStart(2, '0');
+  const date = String(utcDate.getDate()).padStart(2, '0');
+  const hours = String(utcDate.getHours()).padStart(2, '0');
+  const minutes = String(utcDate.getMinutes()).padStart(2, '0');
+  
+  return `${year}-${month}-${date}T${hours}:${minutes}`;
+};
+
+// Helper function to convert local datetime string to UTC ISO string for API submission
+// Expects local datetime string like "2025-10-19T11:20"
+// The datetime-local input gives us local time, but new Date() interprets it as UTC
+// So we need to adjust by the timezone offset
+// Returns UTC ISO string like "2025-10-19T03:20:00Z"
+const convertLocalDateTimeToUTC = (localDateString: string): string => {
+  if (!localDateString) return "";
+  
+  // Parse the datetime-local string: "2025-10-19T07:34"
+  const [datePart, timePart] = localDateString.split('T');
+  const [year, month, day] = datePart.split('-').map(Number);
+  const [hours, minutes] = timePart.split(':').map(Number);
+  
+  // Create a date object from the local time
+  const localDate = new Date(year, month - 1, day, hours, minutes, 0);
+  
+  // Get the timezone offset in milliseconds
+  const timezoneOffset = new Date().getTimezoneOffset() * 60 * 1000;
+  
+  // Adjust the date by the timezone offset to get UTC
+  const utcDate = new Date(localDate.getTime() - timezoneOffset);
+  
+  return utcDate.toISOString();
+};
 
 export default function DiscountForm(): React.ReactElement {
   const navigate = useNavigate();
@@ -40,20 +115,23 @@ export default function DiscountForm(): React.ReactElement {
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [selectedProducts, setSelectedProducts] = useState<Product[]>([]);
+  const [selectedProducts, setSelectedProducts] = useState<ProductWithDiscount[]>([]);
+
+  // Batch update controls
+  const [showBatchUpdate, setShowBatchUpdate] = useState(false);
+  const [batchSelectedProducts, setBatchSelectedProducts] = useState<Set<string>>(new Set());
+  const [batchStockLimit, setBatchStockLimit] = useState<number | null>(null);
+  const [batchPurchaseLimit, setBatchPurchaseLimit] = useState<number | null>(null);
+  const [batchStockLimitType, setBatchStockLimitType] = useState<'no_update' | 'no_limit' | 'set_limit'>('no_update');
+  const [batchPurchaseLimitType, setBatchPurchaseLimitType] = useState<'no_update' | 'no_limit' | 'set_limit'>('no_update');
+  const [batchDiscountPercentage, setBatchDiscountPercentage] = useState<number>(0);
 
   const [formData, setFormData] = useState<CreateDiscountPayload>({
     business_id: businessDetails?.id || "",
     name: "",
     description: "",
-    discount_type: "percentage",
-    discount_value: 0,
-    minimum_order_amount: 0,
-    maximum_discount_amount: undefined,
-    start_datetime: new Date().toISOString().slice(0, 16),
-    end_datetime: "",
-    usage_limit: undefined,
-    usage_limit_per_customer: undefined,
+    start_datetime: getCurrentDateTimeLocal(),
+    end_datetime: getDateTimeOneHourFromNow(),
     status: "active",
     applicable_products: [],
   });
@@ -73,36 +151,44 @@ export default function DiscountForm(): React.ReactElement {
         if (discountId) {
           const discountData = await DiscountService.fetchDiscountById(discountId);
           
-          // Helper to extract product ID from applicable product (handles both formats)
-          const getProductId = (ap: { product_id?: string; id?: string }): string => {
-            return ap.product_id || ap.id || '';
-          };
-
           setFormData({
             business_id: discountData.business_id,
             name: discountData.name,
             description: discountData.description || "",
-            discount_type: discountData.discount_type,
-            discount_value: discountData.discount_value,
-            minimum_order_amount: discountData.minimum_order_amount,
-            maximum_discount_amount: discountData.maximum_discount_amount || undefined,
-            start_datetime: new Date(discountData.start_datetime).toISOString().slice(0, 16),
+            start_datetime: convertUTCToLocalDateTime(discountData.start_datetime),
             end_datetime: discountData.end_datetime 
-              ? new Date(discountData.end_datetime).toISOString().slice(0, 16) 
+              ? convertUTCToLocalDateTime(discountData.end_datetime)
               : "",
-            usage_limit: discountData.usage_limit || undefined,
-            usage_limit_per_customer: discountData.usage_limit_per_customer || undefined,
             status: discountData.status,
-            // API returns product objects with 'id' field, not 'product_id'
-            applicable_products: discountData.applicable_products?.map(getProductId) || [],
+            applicable_products: discountData.applicable_products?.map(ap => ({
+              product_id: ap.product_id || ap.id,
+              discounted_price: ap.discounted_price,
+              stock_limit: ap.stock_limit,
+              purchase_limit: ap.purchase_limit,
+            })) || [],
           });
 
-          // Set selected products
-          // API returns full product objects directly in applicable_products
+          // Set selected products with discount details
           if (discountData.applicable_products && discountData.applicable_products.length > 0) {
-            const selected = productsData.filter((p: Product) => 
-              discountData.applicable_products!.some(ap => getProductId(ap) === p.id)
-            );
+            const selected = productsData
+              .filter((p: Product) => 
+                discountData.applicable_products!.some(ap => (ap.product_id || ap.id) === p.id)
+              )
+              .map((p: Product) => {
+                const applicableProduct = discountData.applicable_products!.find(
+                  ap => (ap.product_id || ap.id) === p.id
+                );
+                return {
+                  ...p,
+                  original_price: p.price,
+                  // Use individual discounted price from applicable_products
+                  discounted_price: applicableProduct?.discounted_price ?? 0,
+                  stock_limit: applicableProduct?.stock_limit ?? null,
+                  purchase_limit: applicableProduct?.purchase_limit ?? null,
+                  has_no_stock_limit: applicableProduct?.stock_limit === null,
+                  has_no_purchase_limit: applicableProduct?.purchase_limit === null,
+                };
+              });
             setSelectedProducts(selected);
           }
         }
@@ -124,12 +210,9 @@ export default function DiscountForm(): React.ReactElement {
       newErrors.name = "Discount name is required";
     }
 
-    if (formData.discount_value <= 0) {
-      newErrors.discount_value = "Discount value must be greater than 0";
-    }
-
-    if (formData.discount_type === "percentage" && formData.discount_value > 100) {
-      newErrors.discount_value = "Percentage discount cannot exceed 100%";
+    // Validate that at least one product is selected
+    if (selectedProducts.length === 0) {
+      newErrors.products = "Please select at least one product for this discount";
     }
 
     if (!formData.start_datetime) {
@@ -138,6 +221,22 @@ export default function DiscountForm(): React.ReactElement {
 
     if (formData.end_datetime && new Date(formData.end_datetime) <= new Date(formData.start_datetime)) {
       newErrors.end_datetime = "End date must be after start date";
+    }
+
+    // Validate that discounted price is less than original price for selected products
+    for (const product of selectedProducts) {
+      if (product.discounted_price >= product.original_price) {
+        newErrors.discount_value = `Discounted price must be less than original price (${formatCurrency(product.original_price)})`;
+        break;
+      }
+    }
+
+    // Validate that promotion stock limit does not exceed stock quantity
+    for (const product of selectedProducts) {
+      if (!product.has_no_stock_limit && product.stock_limit && product.stock_limit > (product.current_stock || 0)) {
+        newErrors.stock_limit = `Promotion stock limit (${product.stock_limit}) for "${product.name}" cannot exceed available stock (${product.current_stock})`;
+        break;
+      }
     }
 
     setErrors(newErrors);
@@ -151,12 +250,25 @@ export default function DiscountForm(): React.ReactElement {
       return;
     }
 
+    const payload = {
+      ...formData,
+      // Convert local datetime to UTC before sending to API
+      start_datetime: convertLocalDateTimeToUTC(formData.start_datetime),
+      end_datetime: formData.end_datetime ? convertLocalDateTimeToUTC(formData.end_datetime) : "",
+      applicable_products: selectedProducts.map(p => ({
+        product_id: p.id,
+        discounted_price: p.discounted_price, // Include individual discounted price
+        stock_limit: p.stock_limit,
+        purchase_limit: p.purchase_limit,
+      })),
+    };
+
     setLoading(true);
     try {
       if (discountId) {
-        await DiscountService.updateDiscount(discountId, formData);
+        await DiscountService.updateDiscount(discountId, payload);
       } else {
-        await DiscountService.createDiscount(formData);
+        await DiscountService.createDiscount(payload);
       }
       navigate("/business/store/discount");
     } catch (error) {
@@ -178,11 +290,26 @@ export default function DiscountForm(): React.ReactElement {
       return;
     }
 
-    const newSelectedProducts = [...selectedProducts, product];
+    const productWithDiscount: ProductWithDiscount = {
+      ...product,
+      original_price: product.price,
+      discounted_price: product.price, // Start with original price, user will adjust
+      stock_limit: null,
+      purchase_limit: null,
+      has_no_stock_limit: true,
+      has_no_purchase_limit: true,
+    };
+
+    const newSelectedProducts = [...selectedProducts, productWithDiscount];
     setSelectedProducts(newSelectedProducts);
     setFormData(prev => ({
       ...prev,
-      applicable_products: newSelectedProducts.map(p => p.id),
+      applicable_products: newSelectedProducts.map(p => ({
+        product_id: p.id,
+        discounted_price: p.discounted_price,
+        stock_limit: p.stock_limit,
+        purchase_limit: p.purchase_limit,
+      })),
     }));
   };
 
@@ -191,33 +318,122 @@ export default function DiscountForm(): React.ReactElement {
     setSelectedProducts(newSelectedProducts);
     setFormData(prev => ({
       ...prev,
-      applicable_products: newSelectedProducts.map(p => p.id),
+      applicable_products: newSelectedProducts.map(p => ({
+        product_id: p.id,
+        discounted_price: p.discounted_price,
+        stock_limit: p.stock_limit,
+        purchase_limit: p.purchase_limit,
+      })),
     }));
   };
 
-  const calculateDiscountPreview = (product: Product) => {
-    if (formData.discount_type === "percentage") {
-      const discountAmount = (product.price * formData.discount_value) / 100;
-      const maxDiscount = formData.maximum_discount_amount || Infinity;
-      const finalDiscount = Math.min(discountAmount, maxDiscount);
-      return {
-        originalPrice: product.price,
-        discountAmount: finalDiscount,
-        finalPrice: product.price - finalDiscount,
-      };
-    } else {
-      return {
-        originalPrice: product.price,
-        discountAmount: formData.discount_value,
-        finalPrice: Math.max(0, product.price - formData.discount_value),
-      };
+  const updateProductDiscount = (productId: string, field: string, value: any) => {
+    const newSelectedProducts = selectedProducts.map(p => {
+      if (p.id === productId) {
+        return { ...p, [field]: value };
+      }
+      return p;
+    });
+    setSelectedProducts(newSelectedProducts);
+    setFormData(prev => ({
+      ...prev,
+      applicable_products: newSelectedProducts.map(p => ({
+        product_id: p.id,
+        discounted_price: p.discounted_price,
+        stock_limit: p.stock_limit,
+        purchase_limit: p.purchase_limit,
+      })),
+    }));
+    
+    // Clear validation errors when user makes changes
+    if (field === 'discounted_price' || field === 'stock_limit') {
+      setErrors(prev => {
+        const newErrors = { ...prev };
+        if (field === 'discounted_price') {
+          delete newErrors.discount_value;
+        }
+        if (field === 'stock_limit') {
+          delete newErrors.stock_limit;
+        }
+        return newErrors;
+      });
     }
   };
 
+  const applyBatchLimits = () => {
+    // Get the products to apply batch settings to
+    const productsToUpdate = batchSelectedProducts.size > 0
+      ? selectedProducts.filter(p => batchSelectedProducts.has(p.id))
+      : selectedProducts;
+
+    if (productsToUpdate.length === 0) {
+      return;
+    }
+
+    let updatedProducts = [...selectedProducts];
+
+    // Apply changes only to selected products
+    updatedProducts = updatedProducts.map(p => {
+      if (!productsToUpdate.some(pu => pu.id === p.id)) {
+        return p; // Skip products not selected for batch update
+      }
+
+      let newProduct = { ...p };
+
+      // Apply discount percentage if set
+      if (batchDiscountPercentage > 0 && batchDiscountPercentage <= 100) {
+        newProduct.discounted_price = p.original_price * (1 - batchDiscountPercentage / 100);
+      }
+
+      // Apply stock limit if specified
+      if (batchStockLimitType !== 'no_update') {
+        if (batchStockLimitType === 'no_limit') {
+          newProduct.stock_limit = null;
+          newProduct.has_no_stock_limit = true;
+        } else {
+          newProduct.stock_limit = batchStockLimit ?? null;
+          newProduct.has_no_stock_limit = false;
+        }
+      }
+
+      // Apply purchase limit if specified
+      if (batchPurchaseLimitType !== 'no_update') {
+        if (batchPurchaseLimitType === 'no_limit') {
+          newProduct.purchase_limit = null;
+          newProduct.has_no_purchase_limit = true;
+        } else {
+          newProduct.purchase_limit = batchPurchaseLimit ?? null;
+          newProduct.has_no_purchase_limit = false;
+        }
+      }
+
+      return newProduct;
+    });
+
+    setSelectedProducts(updatedProducts);
+    setFormData(prev => ({
+      ...prev,
+      applicable_products: updatedProducts.map(p => ({
+        product_id: p.id,
+        discounted_price: p.discounted_price,
+        stock_limit: p.stock_limit,
+        purchase_limit: p.purchase_limit,
+      })),
+    }));
+
+    // Clear batch selection after applying
+    setBatchSelectedProducts(new Set());
+  };
+
+  const calculateDiscountPercentage = (original: number, discounted: number): number => {
+    if (original === 0) return 0;
+    return Math.round(((original - discounted) / original) * 100);
+  };
+
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("en-US", {
+    return new Intl.NumberFormat("en-PH", {
       style: "currency",
-      currency: "USD",
+      currency: "PHP",
     }).format(amount);
   };
 
@@ -264,262 +480,175 @@ export default function DiscountForm(): React.ReactElement {
 
         <form onSubmit={handleSubmit}>
           <Stack spacing={3}>
-            {/* Discount Form - Compact Layout */}
-            <Card variant="outlined">
+            {/* Discount Form - Modern Layout */}
+            <Card variant="outlined" sx={{ bgcolor: "background.surface", borderRadius: "md" }}>
               <Stack spacing={2.5}>
-                <Typography level="title-lg" fontWeight="bold" startDecorator={<FiTag />}>
-                  Discount Details
-                </Typography>
+                <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, pb: 0.5 }}>
+                  <Box sx={{ 
+                    display: "flex", 
+                    alignItems: "center", 
+                    justifyContent: "center",
+                    width: 36,
+                    height: 36,
+                    borderRadius: "md",
+                    bgcolor: "primary.softBg",
+                    color: "primary.solidBg"
+                  }}>
+                    <FiTag size={18} />
+                  </Box>
+                  <Typography level="h4" fontWeight="600">
+                    Discount Details
+                  </Typography>
+                </Box>
 
-                {/* Row 1: Name and Description */}
-                <Grid container spacing={2}>
+                {/* Two Column Layout */}
+                <Grid container spacing={3}>
+                  {/* Left Column: Name and Description */}
                   <Grid xs={12} md={6}>
-                    <FormControl error={!!errors.name} size="sm">
-                      <FormLabel>Discount Name *</FormLabel>
-                      <Input
-                        size="sm"
-                        value={formData.name}
-                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                        placeholder="e.g., Summer Sale, Buy One Get One"
-                      />
-                      {errors.name && (
-                        <Typography level="body-xs" color="danger">
-                          {errors.name}
-                        </Typography>
-                      )}
-                    </FormControl>
+                    <Stack spacing={2.5}>
+                      <FormControl error={!!errors.name}>
+                        <FormLabel sx={{ fontWeight: 600, mb: 0.75 }}>Discount Name *</FormLabel>
+                        <Input
+                          value={formData.name}
+                          onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                          placeholder="e.g., Flash Sale, Weekend Special"
+                          sx={{ 
+                            '--Input-focusedThickness': '2px',
+                            '&:hover': { borderColor: 'primary.outlinedBorder' }
+                          }}
+                        />
+                        {errors.name && (
+                          <Typography level="body-xs" color="danger" sx={{ mt: 0.5 }}>
+                            {errors.name}
+                          </Typography>
+                        )}
+                      </FormControl>
+
+                      <FormControl>
+                        <FormLabel sx={{ fontWeight: 600, mb: 0.75 }}>Description</FormLabel>
+                        <Textarea
+                          value={formData.description}
+                          onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                          placeholder="Briefly describe this discount offer..."
+                          minRows={4}
+                          sx={{ 
+                            '--Textarea-focusedThickness': '2px',
+                            '&:hover': { borderColor: 'primary.outlinedBorder' }
+                          }}
+                        />
+                      </FormControl>
+                    </Stack>
                   </Grid>
 
+                  {/* Right Column: Date and Status */}
                   <Grid xs={12} md={6}>
-                    <FormControl size="sm">
-                      <FormLabel>Description</FormLabel>
-                      <Textarea
-                        size="sm"
-                        value={formData.description}
-                        onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                        placeholder="Describe the discount offer"
-                        minRows={2}
-                      />
-                    </FormControl>
-                  </Grid>
-                </Grid>
+                    <Stack spacing={2.5}>
+                      <FormControl error={!!errors.start_datetime}>
+                        <FormLabel sx={{ fontWeight: 600, mb: 0.75 }}>Start Date & Time *</FormLabel>
+                        <Input
+                          type="datetime-local"
+                          value={formData.start_datetime}
+                          onChange={(e) => setFormData({ ...formData, start_datetime: e.target.value })}
+                          slotProps={{
+                            input: {
+                              style: {
+                                scrollbarWidth: 'none',
+                                msOverflowStyle: 'none',
+                              }
+                            }
+                          }}
+                          sx={{
+                            '--Input-focusedThickness': '2px',
+                            '&:hover': { borderColor: 'primary.outlinedBorder' },
+                            '& input[type="datetime-local"]::-webkit-outer-spin-button, & input[type="datetime-local"]::-webkit-inner-spin-button': {
+                              WebkitAppearance: 'none',
+                              margin: 0,
+                            },
+                            '& input[type="datetime-local"]': {
+                              MozAppearance: 'textfield',
+                            }
+                          }}
+                        />
+                        {errors.start_datetime && (
+                          <Typography level="body-xs" color="danger" sx={{ mt: 0.5 }}>
+                            {errors.start_datetime}
+                          </Typography>
+                        )}
+                      </FormControl>
 
-                <Divider />
+                      <FormControl error={!!errors.end_datetime}>
+                        <FormLabel sx={{ fontWeight: 600, mb: 0.75 }}>End Date & Time *</FormLabel>
+                        <Input
+                          type="datetime-local"
+                          value={formData.end_datetime}
+                          onChange={(e) => setFormData({ ...formData, end_datetime: e.target.value })}
+                          slotProps={{
+                            input: {
+                              style: {
+                                scrollbarWidth: 'none',
+                                msOverflowStyle: 'none',
+                              }
+                            }
+                          }}
+                          sx={{
+                            '--Input-focusedThickness': '2px',
+                            '&:hover': { borderColor: 'primary.outlinedBorder' },
+                            '& input[type="datetime-local"]::-webkit-outer-spin-button, & input[type="datetime-local"]::-webkit-inner-spin-button': {
+                              WebkitAppearance: 'none',
+                              margin: 0,
+                            },
+                            '& input[type="datetime-local"]': {
+                              MozAppearance: 'textfield',
+                            }
+                          }}
+                        />
+                        {errors.end_datetime && (
+                          <Typography level="body-xs" color="danger" sx={{ mt: 0.5 }}>
+                            {errors.end_datetime}
+                          </Typography>
+                        )}
+                      </FormControl>
 
-                {/* Row 2: Discount Configuration */}
-                <Grid container spacing={2} alignItems="flex-start">
-                  <Grid xs={12} sm={6} md={3}>
-                    <FormControl size="sm">
-                      <FormLabel>Discount Type *</FormLabel>
-                      <RadioGroup
-                        value={formData.discount_type}
-                        onChange={(e) => setFormData({ 
-                          ...formData, 
-                          discount_type: e.target.value as "percentage" | "fixed_amount" 
-                        })}
-                        size="sm"
-                      >
-                        <Box sx={{ display: "flex", gap: 2 }}>
-                          <Radio value="percentage" label="Percentage" size="sm" />
-                          <Radio value="fixed_amount" label="Fixed" size="sm" />
-                        </Box>
-                      </RadioGroup>
-                    </FormControl>
-                  </Grid>
-
-                  <Grid xs={12} sm={6} md={3}>
-                    <FormControl error={!!errors.discount_value} size="sm">
-                      <FormLabel>
-                        Value * {formData.discount_type === "percentage" ? "(%)" : "($)"}
-                      </FormLabel>
-                      <Input
-                        size="sm"
-                        type="number"
-                        value={formData.discount_value}
-                        onChange={(e) => setFormData({ 
-                          ...formData, 
-                          discount_value: parseFloat(e.target.value) || 0 
-                        })}
-                        slotProps={{
-                          input: {
-                            min: 0,
-                            max: formData.discount_type === "percentage" ? 100 : undefined,
-                            step: formData.discount_type === "percentage" ? 1 : 0.01,
-                          }
-                        }}
-                      />
-                      {errors.discount_value && (
-                        <Typography level="body-xs" color="danger">
-                          {errors.discount_value}
-                        </Typography>
-                      )}
-                    </FormControl>
-                  </Grid>
-
-                  <Grid xs={12} sm={6} md={3}>
-                    <FormControl size="sm">
-                      <FormLabel>Min. Order ($)</FormLabel>
-                      <Input
-                        size="sm"
-                        type="number"
-                        value={formData.minimum_order_amount}
-                        onChange={(e) => setFormData({ 
-                          ...formData, 
-                          minimum_order_amount: parseFloat(e.target.value) || 0 
-                        })}
-                        placeholder="0"
-                        slotProps={{
-                          input: {
-                            min: 0,
-                            step: 0.01,
-                          }
-                        }}
-                      />
-                    </FormControl>
-                  </Grid>
-
-                  <Grid xs={12} sm={6} md={3}>
-                    <FormControl size="sm">
-                      <FormLabel>Max. Discount Cap ($)</FormLabel>
-                      <Input
-                        size="sm"
-                        type="number"
-                        value={formData.maximum_discount_amount || ""}
-                        onChange={(e) => setFormData({ 
-                          ...formData, 
-                          maximum_discount_amount: e.target.value ? parseFloat(e.target.value) : undefined 
-                        })}
-                        placeholder="No limit"
-                        disabled={formData.discount_type === "fixed_amount"}
-                        slotProps={{
-                          input: {
-                            min: 0,
-                            step: 0.01,
-                          }
-                        }}
-                      />
-                    </FormControl>
-                  </Grid>
-                </Grid>
-
-                <Divider />
-
-                {/* Row 3: Date and Usage Limits */}
-                <Grid container spacing={2}>
-                  <Grid xs={12} sm={6} md={3}>
-                    <FormControl error={!!errors.start_datetime} size="sm">
-                      <FormLabel>Start Date & Time *</FormLabel>
-                      <Input
-                        size="sm"
-                        type="datetime-local"
-                        value={formData.start_datetime}
-                        onChange={(e) => setFormData({ ...formData, start_datetime: e.target.value })}
-                      />
-                      {errors.start_datetime && (
-                        <Typography level="body-xs" color="danger">
-                          {errors.start_datetime}
-                        </Typography>
-                      )}
-                    </FormControl>
-                  </Grid>
-
-                  <Grid xs={12} sm={6} md={3}>
-                    <FormControl error={!!errors.end_datetime} size="sm">
-                      <FormLabel>End Date & Time</FormLabel>
-                      <Input
-                        size="sm"
-                        type="datetime-local"
-                        value={formData.end_datetime}
-                        onChange={(e) => setFormData({ ...formData, end_datetime: e.target.value })}
-                        placeholder="No end date"
-                      />
-                      {errors.end_datetime && (
-                        <Typography level="body-xs" color="danger">
-                          {errors.end_datetime}
-                        </Typography>
-                      )}
-                    </FormControl>
-                  </Grid>
-
-                  <Grid xs={12} sm={6} md={2}>
-                    <FormControl size="sm">
-                      <FormLabel>Total Uses</FormLabel>
-                      <Input
-                        size="sm"
-                        type="number"
-                        value={formData.usage_limit || ""}
-                        onChange={(e) => setFormData({ 
-                          ...formData, 
-                          usage_limit: e.target.value ? parseInt(e.target.value) : undefined 
-                        })}
-                        placeholder="∞"
-                        slotProps={{
-                          input: {
-                            min: 1,
-                          }
-                        }}
-                      />
-                    </FormControl>
-                  </Grid>
-
-                  <Grid xs={12} sm={6} md={2}>
-                    <FormControl size="sm">
-                      <FormLabel>Per Customer</FormLabel>
-                      <Input
-                        size="sm"
-                        type="number"
-                        value={formData.usage_limit_per_customer || ""}
-                        onChange={(e) => setFormData({ 
-                          ...formData, 
-                          usage_limit_per_customer: e.target.value ? parseInt(e.target.value) : undefined 
-                        })}
-                        placeholder="∞"
-                        slotProps={{
-                          input: {
-                            min: 1,
-                          }
-                        }}
-                      />
-                    </FormControl>
-                  </Grid>
-
-                  <Grid xs={12} sm={6} md={2}>
-                    <FormControl size="sm">
-                      <FormLabel>Status</FormLabel>
-                      <Select
-                        size="sm"
-                        value={formData.status}
-                        onChange={(_, value) => setFormData({ 
-                          ...formData, 
-                          status: value as "active" | "inactive" | "expired" | "paused" 
-                        })}
-                      >
-                        <Option value="active">Active</Option>
-                        <Option value="inactive">Inactive</Option>
-                        <Option value="paused">Paused</Option>
-                      </Select>
-                    </FormControl>
+                      <FormControl>
+                        <FormLabel sx={{ fontWeight: 600, mb: 0.75 }}>Status</FormLabel>
+                        <Select
+                          value={formData.status}
+                          onChange={(_, value) => setFormData({ 
+                            ...formData, 
+                            status: value as "active" | "inactive" | "expired" | "paused" 
+                          })}
+                          indicator={<FiChevronDown />}
+                          sx={{
+                            '--Select-focusedThickness': '2px',
+                            '&:hover': { borderColor: 'primary.outlinedBorder' }
+                          }}
+                        >
+                          <Option value="active">Active</Option>
+                          <Option value="inactive">Inactive</Option>
+                          <Option value="paused">Paused</Option>
+                        </Select>
+                      </FormControl>
+                    </Stack>
                   </Grid>
                 </Grid>
 
                 {errors.submit && (
-                  <Alert color="danger" variant="soft" size="sm">
+                  <Alert color="danger" variant="soft" sx={{ borderRadius: "sm" }}>
                     {errors.submit}
                   </Alert>
                 )}
 
-                {/* Action Buttons in Form */}
-                <Box sx={{ display: "flex", gap: 2, justifyContent: "flex-end", pt: 1 }}>
+                {/* Action Buttons */}
+                <Box sx={{ display: "flex", gap: 1.5, justifyContent: "flex-end", pt: 1, borderTop: '1px solid', borderColor: 'divider' }}>
                   <Button
                     variant="outlined"
                     color="neutral"
                     onClick={() => navigate("/business/store/discount")}
                     disabled={loading}
-                    size="sm"
                   >
                     Cancel
                   </Button>
-                  <Button type="submit" loading={loading} size="sm">
+                  <Button type="submit" loading={loading}>
                     {discountId ? "Update Discount" : "Create Discount"}
                   </Button>
                 </Box>
@@ -527,74 +656,475 @@ export default function DiscountForm(): React.ReactElement {
             </Card>
 
             {/* Applicable Products Section */}
-            <Card variant="outlined">
-              <Stack spacing={2}>
-                <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <Card variant="outlined" sx={{ bgcolor: "background.surface", borderRadius: "md" }}>
+              <Stack spacing={2.5}>
+                {errors.products && (
+                  <Alert color="danger" variant="soft" startDecorator={<FiAlertCircle />} sx={{ borderRadius: "sm" }}>
+                    {errors.products}
+                  </Alert>
+                )}
+                <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 2, flexWrap: "wrap" }}>
                   <Box>
-                    <Typography level="title-lg" fontWeight="bold">
+                    <Typography level="h4" fontWeight="600" sx={{ mb: 0.5 }}>
                       Applicable Products
                     </Typography>
-                    <Typography level="body-sm" textColor="text.secondary">
-                      {selectedProducts.length === 0 
-                        ? "Discount applies to all products" 
-                        : `${selectedProducts.length} product${selectedProducts.length > 1 ? 's' : ''} selected`}
-                    </Typography>
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                      <Typography level="body-sm" textColor="text.secondary">
+                        {selectedProducts.length === 0 
+                          ? "No products selected yet" 
+                          : `${selectedProducts.length} product${selectedProducts.length > 1 ? 's' : ''} selected`}
+                      </Typography>
+                      {selectedProducts.length > 0 && (
+                        <Chip size="sm" variant="soft" color="primary">
+                          {selectedProducts.length}
+                        </Chip>
+                      )}
+                    </Box>
                   </Box>
-                  <FormControl sx={{ minWidth: 300 }} size="sm">
-                    <Select
-                      size="sm"
-                      placeholder="Add products..."
-                      onChange={(_, value) => handleProductSelect(value as string | null)}
-                      value={null}
+                  <Box sx={{ display: "flex", gap: 1.5, flexWrap: "wrap" }}>
+                    <FormControl sx={{ minWidth: 280 }}>
+                      <Select
+                        placeholder="Add products..."
+                        onChange={(_, value) => handleProductSelect(value as string | null)}
+                        value={null}
+                        indicator={<FiChevronDown />}
+                        sx={{
+                          '--Select-focusedThickness': '2px',
+                          '&:hover': { borderColor: 'primary.outlinedBorder' }
+                        }}
+                      >
+                        {products
+                          .filter(p => !selectedProducts.some(sp => sp.id === p.id))
+                          .map((product) => (
+                            <Option key={product.id} value={product.id}>
+                              {product.name} - ₱{product.price}
+                            </Option>
+                          ))}
+                      </Select>
+                    </FormControl>
+                    <Button
+                      variant={showBatchUpdate ? "solid" : "outlined"}
+                      color="primary"
+                      onClick={() => setShowBatchUpdate(!showBatchUpdate)}
+                      startDecorator={<FiSettings />}
                     >
-                      {products
-                        .filter(p => !selectedProducts.some(sp => sp.id === p.id))
-                        .map((product) => (
-                          <Option key={product.id} value={product.id}>
-                            {product.name} - ${product.price}
-                          </Option>
-                        ))}
-                    </Select>
-                  </FormControl>
+                      Batch Update
+                    </Button>
+                  </Box>
                 </Box>
 
+                {/* Batch Update Section - Modern Compact */}
+                {showBatchUpdate && (
+                  <Box
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 2.5,
+                      p: 2.5,
+                      bgcolor: "primary.softBg",
+                      borderRadius: "md",
+                      border: "1px solid",
+                      borderColor: "primary.outlinedBorder",
+                      flexWrap: "wrap",
+                    }}
+                  >
+                    <Box sx={{ display: "flex", flexDirection: "column", gap: 1, minWidth: 140 }}>
+                      <Typography level="body-sm" fontWeight="700" textColor="primary.plainColor">
+                        Bulk Actions
+                      </Typography>
+                      <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                        <Checkbox
+                          size="sm"
+                          checked={batchSelectedProducts.size === selectedProducts.length && selectedProducts.length > 0}
+                          indeterminate={batchSelectedProducts.size > 0 && batchSelectedProducts.size < selectedProducts.length}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setBatchSelectedProducts(new Set(selectedProducts.map(p => p.id)));
+                            } else {
+                              setBatchSelectedProducts(new Set());
+                            }
+                          }}
+                        />
+                        <Chip
+                          size="sm"
+                          variant="solid"
+                          color={batchSelectedProducts.size > 0 ? "primary" : "neutral"}
+                        >
+                          {batchSelectedProducts.size > 0 
+                            ? `${batchSelectedProducts.size} selected` 
+                            : "Select all"}
+                        </Chip>
+                      </Box>
+                    </Box>
+
+                    {/* Discount Percentage */}
+                    <Box sx={{ display: "flex", flexDirection: "column", gap: 0.75, minWidth: 150 }}>
+                      <Typography level="body-xs" fontWeight="600" textColor="text.primary">
+                        Discount %
+                      </Typography>
+                      <Input
+                        type="number"
+                        value={batchDiscountPercentage || ""}
+                        onChange={(e) => setBatchDiscountPercentage(e.target.value ? parseFloat(e.target.value) : 0)}
+                        placeholder="0"
+                        slotProps={{ 
+                          input: { 
+                            min: 0, 
+                            max: 100,
+                            step: 0.01
+                          } 
+                        }}
+                        endDecorator={<Typography level="body-sm" fontWeight="600">% OFF</Typography>}
+                        sx={{ 
+                          width: "100%",
+                          '--Input-focusedThickness': '2px'
+                        }}
+                      />
+                    </Box>
+
+                    {/* Stock Limit */}
+                    <Box sx={{ display: "flex", flexDirection: "column", gap: 0.75, minWidth: 180 }}>
+                      <Typography level="body-xs" fontWeight="600" textColor="text.primary">
+                        Promotion Stock
+                      </Typography>
+                      <Box sx={{ display: "flex", gap: 0.75, width: "100%" }}>
+                        <Select
+                          value={batchStockLimitType}
+                          onChange={(_, value) => setBatchStockLimitType(value as 'no_update' | 'no_limit' | 'set_limit')}
+                          sx={{ flex: 1, '--Select-focusedThickness': '2px' }}
+                          indicator={<FiChevronDown />}
+                        >
+                          <Option value="no_update">No Update</Option>
+                          <Option value="no_limit">No Limit</Option>
+                          <Option value="set_limit">Set Limit</Option>
+                        </Select>
+                        {batchStockLimitType === 'set_limit' && (
+                          <Input
+                            type="number"
+                            value={batchStockLimit || ""}
+                            onChange={(e) => setBatchStockLimit(e.target.value ? parseInt(e.target.value) : null)}
+                            placeholder="Qty"
+                            slotProps={{ input: { min: 1 } }}
+                            sx={{ width: 85 }}
+                          />
+                        )}
+                      </Box>
+                    </Box>
+
+                    {/* Purchase Limit */}
+                    <Box sx={{ display: "flex", flexDirection: "column", gap: 0.75, minWidth: 180 }}>
+                      <Typography level="body-xs" fontWeight="600" textColor="text.primary">
+                        Purchase Limit
+                      </Typography>
+                      <Box sx={{ display: "flex", gap: 0.75, width: "100%" }}>
+                        <Select
+                          value={batchPurchaseLimitType}
+                          onChange={(_, value) => setBatchPurchaseLimitType(value as 'no_update' | 'no_limit' | 'set_limit')}
+                          sx={{ flex: 1, '--Select-focusedThickness': '2px' }}
+                          indicator={<FiChevronDown />}
+                        >
+                          <Option value="no_update">No Update</Option>
+                          <Option value="no_limit">No Limit</Option>
+                          <Option value="set_limit">Set Limit</Option>
+                        </Select>
+                        {batchPurchaseLimitType === 'set_limit' && (
+                          <Input
+                            type="number"
+                            value={batchPurchaseLimit || ""}
+                            onChange={(e) => setBatchPurchaseLimit(e.target.value ? parseInt(e.target.value) : null)}
+                            placeholder="Qty"
+                            slotProps={{ input: { min: 1 } }}
+                            sx={{ width: 85 }}
+                          />
+                        )}
+                      </Box>
+                    </Box>
+
+                    {/* Action Buttons */}
+                    <Box sx={{ display: "flex", gap: 1.5, ml: "auto", flexWrap: "wrap" }}>
+                      <Button
+                        onClick={applyBatchLimits}
+                        variant="solid"
+                        color="primary"
+                      >
+                        Apply Changes
+                      </Button>
+                      <Button
+                        variant="outlined"
+                        color="neutral"
+                        onClick={() => setShowBatchUpdate(false)}
+                      >
+                        Close
+                      </Button>
+                    </Box>
+                  </Box>
+                )}
+
                 {selectedProducts.length > 0 ? (
-                  <Sheet variant="outlined" sx={{ borderRadius: "sm", overflow: "hidden" }}>
-                    <Table size="sm" stripe="odd">
+                  <Sheet variant="outlined" sx={{ borderRadius: "md", overflow: "hidden", border: "1px solid", borderColor: "divider" }}>
+                    <Table 
+                      sx={{ 
+                        '& thead th': { 
+                          bgcolor: 'background.level1',
+                          fontWeight: 700,
+                          fontSize: '0.8125rem',
+                          py: 1.5,
+                          borderBottom: '2px solid',
+                          borderColor: 'divider',
+                        },
+                        '& tbody tr': {
+                          '&:hover': {
+                            bgcolor: 'background.level1',
+                          }
+                        },
+                        '& tbody td': {
+                          py: 2,
+                        }
+                      }}
+                    >
                       <thead>
                         <tr>
-                          <th style={{ width: "50%" }}>Product Name</th>
-                          <th style={{ width: "20%", textAlign: "right" }}>Original Price</th>
-                          <th style={{ width: "25%", textAlign: "right" }}>Discounted Price</th>
+                          {showBatchUpdate && <th style={{ width: "5%" }}>Select</th>}
+                          <th style={{ width: "12%" }}>Product</th>
+                          <th style={{ width: "8%", textAlign: "right" }}>Stock Qty</th>
+                          <th style={{ width: "9%", textAlign: "right" }}>Original</th>
+                          <th style={{ width: "13%" }}>Price & Discount</th>
+                          <th style={{ width: "14%" }}>Promotion Stock</th>
+                          <th style={{ width: "14%" }}>Purchase Limit</th>
                           <th style={{ width: "5%", textAlign: "center" }}></th>
                         </tr>
                       </thead>
                       <tbody>
                         {selectedProducts.map((product) => {
-                          const preview = calculateDiscountPreview(product);
+                          const discountPercentage = calculateDiscountPercentage(product.original_price, product.discounted_price);
+                          const isSelected = batchSelectedProducts.has(product.id);
                           return (
                             <tr key={product.id}>
+                              {showBatchUpdate && (
+                                <td style={{ textAlign: "center" }}>
+                                  <Checkbox
+                                    size="sm"
+                                    checked={isSelected}
+                                    onChange={(e) => {
+                                      const newSet = new Set(batchSelectedProducts);
+                                      if (e.target.checked) {
+                                        newSet.add(product.id);
+                                      } else {
+                                        newSet.delete(product.id);
+                                      }
+                                      setBatchSelectedProducts(newSet);
+                                    }}
+                                  />
+                                </td>
+                              )}
                               <td>
-                                <Stack spacing={0.25}>
-                                  <Typography level="body-sm" fontWeight="md">
+                                <Stack spacing={0.5}>
+                                  <Typography level="body-sm" fontWeight="600">
                                     {product.name}
                                   </Typography>
                                   {product.category_name && (
-                                    <Typography level="body-xs" textColor="text.tertiary">
+                                    <Chip size="sm" variant="soft" color="neutral">
                                       {product.category_name}
-                                    </Typography>
+                                    </Chip>
                                   )}
                                 </Stack>
                               </td>
                               <td style={{ textAlign: "right" }}>
-                                <Typography level="body-sm" sx={{ textDecoration: "line-through" }}>
-                                  {formatCurrency(preview.originalPrice)}
-                                </Typography>
+                                <Chip size="sm" variant="soft" color="neutral">
+                                  {product.current_stock || 0}
+                                </Chip>
                               </td>
                               <td style={{ textAlign: "right" }}>
-                                <Typography level="body-sm" fontWeight="bold" color="primary">
-                                  {formatCurrency(preview.finalPrice)}
+                                <Typography level="body-sm" fontWeight="600" sx={{ textDecoration: "line-through", textColor: "text.tertiary" }}>
+                                  {formatCurrency(product.original_price)}
                                 </Typography>
+                              </td>
+                              <td>
+                                <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}>
+                                  <Box sx={{ display: "flex", gap: 0.5, alignItems: "center", justifyContent: "center", flexShrink: 0, minWidth: "fit-content" }}>
+                                    <Input
+                                      size="sm"
+                                      type="number"
+                                      value={product.discounted_price || ""}
+                                      onChange={(e) => {
+                                        const value = e.target.value;
+                                        if (value === "") {
+                                          updateProductDiscount(product.id, 'discounted_price', 0);
+                                        } else {
+                                          updateProductDiscount(product.id, 'discounted_price', parseFloat(value) || 0);
+                                        }
+                                      }}
+                                      slotProps={{
+                                        input: {
+                                          min: 0,
+                                          max: product.original_price,
+                                          step: 0.01,
+                                        }
+                                      }}
+                                      placeholder="Price"
+                                      startDecorator="₱"
+                                      sx={{ 
+                                        width: 75,
+                                        '& input::-webkit-outer-spin-button, & input::-webkit-inner-spin-button': {
+                                          WebkitAppearance: 'none',
+                                          margin: 0,
+                                        },
+                                        '& input[type=number]': {
+                                          MozAppearance: 'textfield',
+                                        }
+                                      }}
+                                    />
+                                    <Typography level="body-xs" textColor="text.tertiary" sx={{ fontWeight: 500, flexShrink: 0 }}>
+                                      or
+                                    </Typography>
+                                    <Input
+                                      size="sm"
+                                      type="number"
+                                      value={Math.round(discountPercentage * 100) / 100 || ""}
+                                      onChange={(e) => {
+                                        const value = e.target.value;
+                                        const percentage = value === "" ? 0 : parseFloat(value) || 0;
+                                        const calculatedPrice = product.original_price * (1 - percentage / 100);
+                                        const roundedPrice = Math.round(calculatedPrice * 100) / 100;
+                                        updateProductDiscount(product.id, 'discounted_price', roundedPrice);
+                                      }}
+                                      slotProps={{
+                                        input: {
+                                          min: 0,
+                                          max: 100,
+                                          step: 0.01,
+                                        }
+                                      }}
+                                      placeholder="Off"
+                                      endDecorator="%"
+                                      sx={{ 
+                                        width: 75,
+                                        '& input::-webkit-outer-spin-button, & input::-webkit-inner-spin-button': {
+                                          WebkitAppearance: 'none',
+                                          margin: 0,
+                                        },
+                                        '& input[type=number]': {
+                                          MozAppearance: 'textfield',
+                                        }
+                                      }}
+                                    />
+                                  </Box>
+                                  {errors.discount_value && product.discounted_price >= product.original_price && (
+                                    <Typography level="body-xs" color="danger" sx={{ fontSize: "11px" }}>
+                                      Discounted price must be less than original
+                                    </Typography>
+                                  )}
+                                </Box>
+                              </td>
+                              <td>
+                                <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}>
+                                  <Box sx={{ display: "flex", gap: 0.5 }}>
+                                    <Select
+                                      size="sm"
+                                      value={product.has_no_stock_limit ? 'no_limit' : 'set_limit'}
+                                      onChange={(_, value) => {
+                                        const isNoLimit = value === 'no_limit';
+                                        const newSelectedProducts = selectedProducts.map(p => {
+                                          if (p.id === product.id) {
+                                            return {
+                                              ...p,
+                                              has_no_stock_limit: isNoLimit,
+                                              stock_limit: isNoLimit ? null : (p.stock_limit || 1),
+                                            };
+                                          }
+                                          return p;
+                                        });
+                                        setSelectedProducts(newSelectedProducts);
+                                        setFormData(prev => ({
+                                          ...prev,
+                                          applicable_products: newSelectedProducts.map(p => ({
+                                            product_id: p.id,
+                                            discounted_price: p.discounted_price,
+                                            stock_limit: p.stock_limit,
+                                            purchase_limit: p.purchase_limit,
+                                          })),
+                                        }));
+                                      }}
+                                      sx={{ flex: 1 }}
+                                      indicator={<FiChevronDown />}
+                                    >
+                                      <Option value="no_limit">No Limit</Option>
+                                      <Option value="set_limit">Set Limit</Option>
+                                    </Select>
+                                    {!product.has_no_stock_limit && (
+                                      <Input
+                                        size="sm"
+                                        type="number"
+                                        value={product.stock_limit || ""}
+                                        onChange={(e) => updateProductDiscount(product.id, 'stock_limit', e.target.value ? parseInt(e.target.value) : null)}
+                                        placeholder="Qty"
+                                        slotProps={{ input: { min: 1 } }}
+                                        sx={{ 
+                                          width: 70,
+                                          '& input::-webkit-outer-spin-button, & input::-webkit-inner-spin-button': {
+                                            WebkitAppearance: 'none',
+                                            margin: 0,
+                                          },
+                                          '& input[type=number]': {
+                                            MozAppearance: 'textfield',
+                                          }
+                                        }}
+                                      />
+                                    )}
+                                  </Box>
+                                  {!product.has_no_stock_limit && product.stock_limit && product.stock_limit > (product.current_stock || 0) && (
+                                    <Typography level="body-xs" color="danger" sx={{ fontSize: "11px" }}>
+                                      Must be ≤ {product.current_stock}
+                                    </Typography>
+                                  )}
+                                </Box>
+                              </td>
+                              <td>
+                                <Box sx={{ display: "flex", gap: 0.5 }}>
+                                  <Select
+                                    size="sm"
+                                    value={product.has_no_purchase_limit ? 'no_limit' : 'set_limit'}
+                                    onChange={(_, value) => {
+                                      const isNoLimit = value === 'no_limit';
+                                      const newSelectedProducts = selectedProducts.map(p => {
+                                        if (p.id === product.id) {
+                                          return {
+                                            ...p,
+                                            has_no_purchase_limit: isNoLimit,
+                                            purchase_limit: isNoLimit ? null : (p.purchase_limit || 1),
+                                          };
+                                        }
+                                        return p;
+                                      });
+                                      setSelectedProducts(newSelectedProducts);
+                                      setFormData(prev => ({
+                                        ...prev,
+                                        applicable_products: newSelectedProducts.map(p => ({
+                                          product_id: p.id,
+                                          discounted_price: p.discounted_price,
+                                          stock_limit: p.stock_limit,
+                                          purchase_limit: p.purchase_limit,
+                                        })),
+                                      }));
+                                    }}
+                                    sx={{ flex: 1 }}
+                                    indicator={<FiChevronDown />}
+                                  >
+                                    <Option value="no_limit">No Limit</Option>
+                                    <Option value="set_limit">Set Limit</Option>
+                                  </Select>
+                                  {!product.has_no_purchase_limit && (
+                                    <Input
+                                      size="sm"
+                                      type="number"
+                                      value={product.purchase_limit || ""}
+                                      onChange={(e) => updateProductDiscount(product.id, 'purchase_limit', e.target.value ? parseInt(e.target.value) : null)}
+                                      placeholder="Qty"
+                                      slotProps={{ input: { min: 1 } }}
+                                      sx={{ width: 70 }}
+                                    />
+                                  )}
+                                </Box>
                               </td>
                               <td style={{ textAlign: "center" }}>
                                 <IconButton
@@ -614,7 +1144,7 @@ export default function DiscountForm(): React.ReactElement {
                   </Sheet>
                 ) : (
                   <Alert color="neutral" variant="soft" size="sm" startDecorator={<FiAlertCircle />}>
-                    No specific products selected. This discount will apply to all products that meet the minimum order requirements.
+                    No products selected. Add products above to set discounted prices and limits.
                   </Alert>
                 )}
               </Stack>

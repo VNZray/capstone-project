@@ -17,6 +17,8 @@
   padding: 20px 20px; /* thicker but minimal */
   margin: 0 auto;
   gap: 12px;
+  max-width: 1400px;
+  width: 100%;
 }
 
 .brand {
