@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import PageContainer from '@/components/PageContainer';
 import RatingSummary from '@/components/RatingSummary';
 import ReviewCard from '@/components/ReviewCard';
@@ -7,6 +7,9 @@ import Container from '@/components/Container';
 import { card, colors } from '@/constants/color';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { FlatList, Pressable, StyleSheet, View } from 'react-native';
+import { useTouristSpot } from '@/context/TouristSpotContext';
+import FeedbackService from '@/services/FeedbackService';
+import type { ReviewAndRating, Replies } from '@/types/Feedback';
 
 type Review = {
   id: string;
@@ -21,10 +24,6 @@ type Review = {
   comment: string;
   images?: string[];
   createdAt: string;
-  likes: number;
-  dislikes: number;
-  youLiked?: boolean;
-  youDisliked?: boolean;
   replies?: Array<{
     id: string;
     user: { name: string; role?: 'tourist' | 'owner' };
@@ -49,8 +48,6 @@ const SAMPLE_REVIEWS: Review[] = [
       'https://images.unsplash.com/photo-1501785888041-af3ef285b470?w=400',
     ],
     createdAt: '2025-09-15T10:00:00Z',
-    likes: 9,
-    dislikes: 0,
     replies: [
       {
         id: 'r1',
@@ -67,8 +64,6 @@ const SAMPLE_REVIEWS: Review[] = [
     comment:
       'Great experience overall though it was a bit crowded in the afternoon.',
     createdAt: '2025-09-14T12:20:00Z',
-    likes: 3,
-    dislikes: 0,
   },
 ];
 
@@ -80,7 +75,40 @@ const Ratings = () => {
   const [activeFilter, setActiveFilter] =
     useState<(typeof ratingTabs)[number]>('All');
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
-  const [reviewState, setReviewState] = useState(SAMPLE_REVIEWS);
+  const [reviewState, setReviewState] = useState<Review[]>(SAMPLE_REVIEWS);
+  const { selectedSpotId } = useTouristSpot();
+
+  useEffect(() => {
+    let cancelled = false;
+    async function load() {
+      if (!selectedSpotId) {
+        setReviewState([]);
+        return;
+      }
+      try {
+        const rows = await FeedbackService.getReviewsByTypeAndEntityId(
+          'Tourist Spot',
+          selectedSpotId
+        );
+        if (cancelled) return;
+        const mapped: Review[] = rows.map((r: ReviewAndRating) => ({
+          id: r.id,
+          user: { name: 'Tourist', role: 'tourist' as const },
+          rating: r.rating,
+          comment: r.message,
+          createdAt: r.created_at,
+        }));
+        setReviewState(mapped);
+      } catch (e) {
+        console.warn('Failed to load tourist spot reviews', e);
+        if (!cancelled) setReviewState([]);
+      }
+    }
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedSpotId]);
 
   const avgRating = useMemo(() => {
     if (!reviewState.length) return 0;
@@ -107,43 +135,35 @@ const Ratings = () => {
     return reviewState.filter((r) => r.rating === star);
   }, [activeFilter, reviewState]);
 
-  const toggleLike = (id: string, type: 'like' | 'dislike') => {
-    setReviewState((prev) =>
-      prev.map((r) => {
-        if (r.id !== id) return r;
-        let { likes, dislikes, youLiked, youDisliked } = r;
-        if (type === 'like') {
-          if (youLiked) {
-            likes -= 1;
-            youLiked = false;
-          } else {
-            likes += 1;
-            youLiked = true;
-            if (youDisliked) {
-              dislikes -= 1;
-              youDisliked = false;
-            }
-          }
-        } else {
-          if (youDisliked) {
-            dislikes -= 1;
-            youDisliked = false;
-          } else {
-            dislikes += 1;
-            youDisliked = true;
-            if (youLiked) {
-              likes -= 1;
-              youLiked = false;
-            }
-          }
-        }
-        return { ...r, likes, dislikes, youLiked, youDisliked };
-      })
-    );
-  };
+  // Likes/Dislikes/Share removed by request; only Reply is kept.
 
-  const toggleExpand = (id: string) =>
+  const toggleExpand = (id: string) => {
     setExpanded((e) => ({ ...e, [id]: !e[id] }));
+    const nowExpanded = !expanded[id];
+    if (nowExpanded) {
+      const target = reviewState.find((r) => r.id === id);
+      if (target && !target.replies) {
+        (async () => {
+          try {
+            const rep: Replies = await FeedbackService.getRepliesByReviewId(id);
+            const mappedReplies: NonNullable<Review['replies']> = rep.map(
+              (rp) => ({
+                id: rp.id,
+                user: { name: 'Owner/Staff', role: 'owner' as const },
+                comment: rp.message,
+                createdAt: rp.created_at,
+              })
+            );
+            setReviewState((prev) =>
+              prev.map((r) => (r.id === id ? { ...r, replies: mappedReplies } : r))
+            );
+          } catch (e) {
+            console.warn('Failed to load replies for review', id, e);
+          }
+        })();
+      }
+    }
+  };
   const canReply = (
     from: Review['user']['role'],
     to?: Review['user']['role']
@@ -197,10 +217,8 @@ const Ratings = () => {
             item={item}
             expanded={expanded[item.id] || false}
             onToggleExpand={() => toggleExpand(item.id)}
-            onToggleLike={(type) => toggleLike(item.id, type)}
             canReply={canReply('owner', item.user.role)}
             onReply={() => {}}
-            onShare={() => {}}
           />
         )}
         contentContainerStyle={{ paddingVertical: 16, paddingBottom: 40 }}

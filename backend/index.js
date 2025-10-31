@@ -24,7 +24,9 @@ import reportRoutes from "./routes/report.js";
 import roomAmenityRoutes from "./routes/room_amenities.js";
 import businessAmenityRoutes from "./routes/business_amenities.js";
 import bookingRoutes from "./routes/booking.js";
-import paymentRoutes from "./routes/paymentRoutes.js";
+import paymentRoutes from "./routes/payment.js";
+import staffRoutes from "./routes/staff.js";
+import permissionRoutes from "./routes/permission.js";
 
 // New Product/Service Management Routes
 import productRoutes from "./routes/products.js";
@@ -37,6 +39,9 @@ import productReviewRoutes from "./routes/product-reviews.js";
 import notificationRoutes from "./routes/notifications.js";
 import businessSettingsRoutes from "./routes/business-settings.js";
 import shopCategoryRoutes from "./routes/shop-categories.js";
+import feedbackReviewRoutes from "./routes/feedback-reviews.js";
+import feedbackReplyRoutes from "./routes/feedback-replies.js";
+import feedbackReviewPhotoRoutes from "./routes/feedback-review-photos.js";
 
 const app = express();
 const PORT = 3000;
@@ -69,6 +74,9 @@ const routeSections = [
       { path: "/api/owner", handler: ownerRoutes, label: "Owners" },
       { path: "/api/tourism", handler: tourismRoutes, label: "Tourism" },
       { path: "/api/tourist", handler: touristRoutes, label: "Tourists" },
+      { path: "/api/staff", handler: staffRoutes, label: "Staff" },
+  { path: "/api/permissions", handler: permissionRoutes, label: "Permissions & Role Permissions" },
+
     ],
   },
   {
@@ -163,6 +171,14 @@ const routeSections = [
         handler: businessSettingsRoutes,
         label: "Business Settings",
       },
+    ],
+  },
+  {
+    section: "Feedback & Reviews",
+    routes: [
+      { path: "/api/reviews", handler: feedbackReviewRoutes, label: "Reviews (Generic)" },
+      { path: "/api/replies", handler: feedbackReplyRoutes, label: "Replies" },
+      { path: "/api/review-photos", handler: feedbackReviewPhotoRoutes, label: "Review Photos" },
     ],
   },
 ];

@@ -1,5 +1,5 @@
 import express from "express";
-import * as roomAmenityController from "../controller/roomAmenityController.js"; // Add `.js` extension
+import * as roomAmenityController from "../controller/accommodation/roomAmenityController.js"; // Add `.js` extension
 
 const router = express.Router();
 
