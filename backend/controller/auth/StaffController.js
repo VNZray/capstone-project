@@ -7,6 +7,7 @@ const STAFF_FIELDS = [
 	"middle_name",
 	"last_name",
 	"user_id",
+	"business_id",
 ];
 
 const makePlaceholders = (n) => Array(n).fill("?").join(",");

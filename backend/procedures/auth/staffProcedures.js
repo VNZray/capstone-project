@@ -31,11 +31,12 @@ async function createProcedures(knex) {
 			IN p_first_name VARCHAR(255),
 			IN p_middle_name VARCHAR(255),
 			IN p_last_name VARCHAR(255),
-			IN p_user_id CHAR(64)
+			IN p_user_id CHAR(64),
+			IN p_business_id CHAR(64)
 		)
 		BEGIN
-			INSERT INTO staff (id, first_name, middle_name, last_name, user_id)
-			VALUES (p_id, p_first_name, p_middle_name, p_last_name, p_user_id);
+			INSERT INTO staff (id, first_name, middle_name, last_name, user_id, business_id)
+			VALUES (p_id, p_first_name, p_middle_name, p_last_name, p_user_id, p_business_id);
 			SELECT * FROM staff WHERE id = p_id;
 		END;
 	`);
@@ -47,14 +48,16 @@ async function createProcedures(knex) {
 			IN p_first_name VARCHAR(255),
 			IN p_middle_name VARCHAR(255),
 			IN p_last_name VARCHAR(255),
-			IN p_user_id CHAR(64)
+			IN p_user_id CHAR(64),
+			IN p_business_id CHAR(64)
 		)
 		BEGIN
 			UPDATE staff
 			SET first_name = IFNULL(p_first_name, first_name),
 					middle_name = IFNULL(p_middle_name, middle_name),
 					last_name = IFNULL(p_last_name, last_name),
-					user_id = IFNULL(p_user_id, user_id)
+					user_id = IFNULL(p_user_id, user_id),
+					business_id = IFNULL(p_business_id, business_id)
 			WHERE id = p_id;
 			SELECT * FROM staff WHERE id = p_id;
 		END;

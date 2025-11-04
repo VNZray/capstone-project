@@ -7,16 +7,20 @@ exports.up = async function (knex) {
     table.string("middle_name").notNullable();
     table.string("last_name").notNullable();
 
+    table.string("business_id")
+      .notNullable()
+      .references("id")
+      .inTable("business")
+      .onDelete("CASCADE");
     table
       .uuid("user_id")
-      .nullable()
+      .notNullable()
       .references("id")
       .inTable("user")
       .onDelete("CASCADE");
 
     table.index(["user_id"], "idx_user_id");
-    table.timestamp("created_at").defaultTo(knex.fn.now()).notNullable();
-
+    table.index(["business_id"], "idx_business_id");
   });
 
   await createProcedures(knex);

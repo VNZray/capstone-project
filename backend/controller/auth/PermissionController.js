@@ -1,5 +1,6 @@
 import db from "../../db.js";
 import { handleDbError } from "../../utils/errorHandler.js";
+import { getUserPermissions } from "../../services/permissionService.js";
 
 // Permissions CRUD
 export async function getAllPermissions(req, res) {
@@ -88,6 +89,17 @@ export async function unassignPermissionFromRole(req, res) {
   try {
     await db.query("CALL DeleteRolePermission(?, ?)", [user_role_id, permission_id]);
     return res.json({ message: "Permission unassigned from role" });
+  } catch (error) {
+    return handleDbError(error, res);
+  }
+}
+
+// Authenticated user's permissions
+export async function getMyPermissions(req, res) {
+  try {
+    if (!req.user?.id) return res.status(401).json({ message: 'Not authenticated' });
+    const perms = await getUserPermissions(req.user.id);
+    return res.json({ permissions: Array.from(perms) });
   } catch (error) {
     return handleDbError(error, res);
   }
