@@ -59,6 +59,7 @@ const GuestAvatarCell: FC<GuestAvatarCellProps> = ({ info }) => {
   );
 };
 import ResponsiveText from "@/src/components/ResponsiveText";
+import NoDataFound from "@/src/components/NoDataFound";
 import PageContainer from "@/src/components/PageContainer";
 import { colors } from "@/src/utils/Colors";
 import { Search, Eye, Check, XCircle } from "lucide-react";
@@ -523,7 +524,11 @@ const Bookings = () => {
                     {!loading && !error && filteredData.length === 0 && (
                       <TableRow>
                         <TableCell colSpan={columns.length} align="center">
-                          No bookings found.
+                          <NoDataFound
+                            icon={searchTerm.trim() ? "search" : "database"}
+                            title={searchTerm.trim() ? "No Results Found" : "No Bookings"}
+                            message={searchTerm.trim() ? `No bookings match "${searchTerm}". Try a different search term.` : "No bookings found."}
+                          />
                         </TableCell>
                       </TableRow>
                     )}

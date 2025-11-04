@@ -1,5 +1,4 @@
 import PageContainer from "@/src/components/PageContainer";
-import Paper from "@mui/material/Paper";
 import LocationOnIcon from "@mui/icons-material/LocationOn";
 import StarIcon from "@mui/icons-material/Star";
 import { colors } from "@/src/utils/Colors";
@@ -9,9 +8,9 @@ import Tabs from "@/src/components/Tabs";
 import { useState } from "react";
 import DetailsComponent from "./components/DetailsComponent";
 import PhotosComponent from "./components/PhotosComponent";
-import ReviewsComponent from "./components/ReviewsComponent";
 import Container from "@/src/components/Container";
 import Reviews from "./Reviews";
+import NoDataFound from "@/src/components/NoDataFound";
 const RoomProfile = () => {
   const { roomDetails } = useRoom();
   const [activeTab, setActiveTab] = useState<"Details" | "Photos" | "Reviews">(
@@ -30,6 +29,10 @@ const RoomProfile = () => {
         return "neutral"; // fallback
     }
   };
+
+  if (!roomDetails || Object.keys(roomDetails).length === 0) {
+    return <NoDataFound message="No room data found." />;
+  }
 
   return (
     <PageContainer

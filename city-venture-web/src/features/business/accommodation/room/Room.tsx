@@ -25,6 +25,8 @@ import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { DateCalendar } from "@mui/x-date-pickers/DateCalendar";
 import CardHeader from "@/src/components/CardHeader";
+
+import NoDataFound from "@/src/components/NoDataFound";
 import ResponsiveText from "@/src/components/ResponsiveText";
 
 const RoomPage = () => {
@@ -116,7 +118,9 @@ const RoomPage = () => {
               minWidth: 240,
             }}
           >
-            <ResponsiveText type="title-small" weight="bold">Room Management</ResponsiveText>
+            <ResponsiveText type="title-small" weight="bold">
+              Room Management
+            </ResponsiveText>
             <Button
               startDecorator={<Calendar />}
               size="lg"
@@ -206,38 +210,52 @@ const RoomPage = () => {
       </Container>
 
       <Container background="transparent" padding="0">
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fill,minmax(280px,1fr))",
-            gap: "1rem",
-          }}
-        >
-          {filteredRooms.map((room) => (
-            <RoomCard
-              roomType={room.room_type!}
-              capacity={room.capacity}
-              onDeleted={() => fetchRooms()}
-              id={room.id}
-              key={room.id}
-              image={room.room_image || placeholderImage}
-              status={room.status!}
-              floor={room.floor!}
-              roomNumber={room.room_number!}
-              type={room.room_type!}
-              price={room.room_price!}
-              guests={2}
-              amenities={[]}
-              onUpdate={() => {
-                fetchRooms();
-              }}
-              onClick={async () => {
-                setRoomId(room.id); // ensure stored
-                navigate("/business/room-profile");
-              }}
-            />
-          ))}
-        </div>
+        {rooms.length === 0 ? (
+          <NoDataFound
+            icon="database"
+            title="No Room Listed"
+            message="No rooms yet. Add your first room above."
+          />
+        ) : filteredRooms.length === 0 && search.trim() !== "" ? (
+          <NoDataFound
+            icon="search"
+            title="No Results Found"
+            message={`No rooms match "${search}". Try a different search term.`}
+          />
+        ) : (
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fill,minmax(280px,1fr))",
+              gap: "1rem",
+            }}
+          >
+            {filteredRooms.map((room) => (
+              <RoomCard
+                roomType={room.room_type!}
+                capacity={room.capacity}
+                onDeleted={() => fetchRooms()}
+                id={room.id}
+                key={room.id}
+                image={room.room_image || placeholderImage}
+                status={room.status!}
+                floor={room.floor!}
+                roomNumber={room.room_number!}
+                type={room.room_type!}
+                price={room.room_price!}
+                guests={2}
+                amenities={[]}
+                onUpdate={() => {
+                  fetchRooms();
+                }}
+                onClick={async () => {
+                  setRoomId(room.id); // ensure stored
+                  navigate("/business/room-profile");
+                }}
+              />
+            ))}
+          </div>
+        )}
       </Container>
     </PageContainer>
   );

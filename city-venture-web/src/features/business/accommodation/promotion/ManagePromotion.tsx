@@ -1,6 +1,7 @@
 import Container from "@/src/components/Container";
 import PageContainer from "@/src/components/PageContainer";
-import Text from "@/src/components/Text";
+// Removed unused import 'Text'
+import NoDataFound from "@/src/components/NoDataFound";
 import { Add } from "@mui/icons-material";
 import { Button, Input } from "@mui/joy";
 import { Search } from "lucide-react";
@@ -79,46 +80,8 @@ const initialPromos: StaticPromo[] = [
   {
     id: "promo_4",
     title: "Trial Access Lounge",
-    description: "Get free trial access to premium lounge for first-time guests.",
-    startDate: new Date(Date.now() - 1000 * 60 * 60 * 24 * 1).toISOString(),
-    endDate: new Date(Date.now() + 1000 * 60 * 60 * 24 * 5).toISOString(),
-    promoType: "FREE_TRIAL",
-    status: "PAUSED", // demonstration of paused
-    image: "https://picsum.photos/seed/promo4/640/360",
-    usageLimit: 100,
-    usedCount: 100,
-    appliesToAll: true,
-  },
-    {
-    id: "promo_4",
-    title: "Trial Access Lounge",
-    description: "Get free trial access to premium lounge for first-time guests.",
-    startDate: new Date(Date.now() - 1000 * 60 * 60 * 24 * 1).toISOString(),
-    endDate: new Date(Date.now() + 1000 * 60 * 60 * 24 * 5).toISOString(),
-    promoType: "FREE_TRIAL",
-    status: "PAUSED", // demonstration of paused
-    image: "https://picsum.photos/seed/promo4/640/360",
-    usageLimit: 100,
-    usedCount: 100,
-    appliesToAll: true,
-  },
-    {
-    id: "promo_4",
-    title: "Trial Access Lounge",
-    description: "Get free trial access to premium lounge for first-time guests.",
-    startDate: new Date(Date.now() - 1000 * 60 * 60 * 24 * 1).toISOString(),
-    endDate: new Date(Date.now() + 1000 * 60 * 60 * 24 * 5).toISOString(),
-    promoType: "FREE_TRIAL",
-    status: "PAUSED", // demonstration of paused
-    image: "https://picsum.photos/seed/promo4/640/360",
-    usageLimit: 100,
-    usedCount: 100,
-    appliesToAll: true,
-  },
-    {
-    id: "promo_4",
-    title: "Trial Access Lounge",
-    description: "Get free trial access to premium lounge for first-time guests.",
+    description:
+      "Get free trial access to premium lounge for first-time guests.",
     startDate: new Date(Date.now() - 1000 * 60 * 60 * 24 * 1).toISOString(),
     endDate: new Date(Date.now() + 1000 * 60 * 60 * 24 * 5).toISOString(),
     promoType: "FREE_TRIAL",
@@ -166,7 +129,8 @@ const ManagePromotion = () => {
         if (status === "Paused" && p.status !== "PAUSED") return false;
         if (status === "Expired" && p.status !== "EXPIRED") return false;
       }
-      if (query && !p.title.toLowerCase().includes(query.toLowerCase())) return false;
+      if (query && !p.title.toLowerCase().includes(query.toLowerCase()))
+        return false;
       return true;
     });
   }, [status, query, promos]);
@@ -190,7 +154,9 @@ const ManagePromotion = () => {
               minWidth: 240,
             }}
           >
-            <ResponsiveText type="title-small" weight="bold">Manage Promotion</ResponsiveText>
+            <ResponsiveText type="title-small" weight="bold">
+              Manage Promotion
+            </ResponsiveText>
           </div>
 
           <Button
@@ -224,45 +190,52 @@ const ManagePromotion = () => {
 
         <StatusFilter active={status} onChange={setStatus} />
       </Container>
+      {filteredPromos.length === 0 && (
+        <NoDataFound
+          icon={query.trim() ? "search" : "database"}
+          title={query.trim() ? "No Results Found" : "No Promotions"}
+          message={
+            query.trim()
+              ? `No promotions match "${query}". Try a different search term or filter.`
+              : "No promotions found."
+          }
+        />
+      )}
 
-      
-        {/* Promo cards grid */}
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fill,minmax(280px,1fr))",
-            gap: 20,
-          }}
-        >
-          {filteredPromos.map((p) => (
-            <PromoCard
-              key={p.id}
-              id={p.id}
-              title={p.title}
-              description={p.description}
-              startDate={p.startDate}
-              endDate={p.endDate}
-              promoCode={p.promoCode}
-              promoType={p.promoType}
-              discountValue={p.discountValue}
-              status={p.status}
-              image={p.image}
-              usageLimit={p.usageLimit}
-              usedCount={p.usedCount}
-              appliesToAll={p.appliesToAll}
-              roomCount={p.appliesToAll ? undefined : p.roomIds?.length || 0}
-              onEdit={(id) => console.log("Edit", id)}
-              onDelete={(id) => console.log("Delete", id)}
-              onStatusChange={(id, next) => console.log("Status change", id, next)}
-              onClick={(id) => console.log("Open details", id)}
-            />
-          ))}
-          {filteredPromos.length === 0 && (
-            <Text variant="paragraph" style={{ opacity: 0.6 }}>
-              No promotions match your filters.
-            </Text>
-          )}
-        </div>
+      {/* Promo cards grid */}
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fill,minmax(280px,1fr))",
+          gap: 20,
+        }}
+      >
+        {filteredPromos.map((p) => (
+          <PromoCard
+            key={p.id}
+            id={p.id}
+            title={p.title}
+            description={p.description}
+            startDate={p.startDate}
+            endDate={p.endDate}
+            promoCode={p.promoCode}
+            promoType={p.promoType}
+            discountValue={p.discountValue}
+            status={p.status}
+            image={p.image}
+            usageLimit={p.usageLimit}
+            usedCount={p.usedCount}
+            appliesToAll={p.appliesToAll}
+            roomCount={p.appliesToAll ? undefined : p.roomIds?.length || 0}
+            onEdit={(id) => console.log("Edit", id)}
+            onDelete={(id) => console.log("Delete", id)}
+            onStatusChange={(id, next) =>
+              console.log("Status change", id, next)
+            }
+            onClick={(id) => console.log("Open details", id)}
+          />
+        ))}
+      </div>
       {/** AddPromoModal removed in favor of full Promotion Form navigation */}
       {/**
       <AddPromoModal

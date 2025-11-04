@@ -18,6 +18,7 @@ import { useBusiness } from "@/src/context/BusinessContext";
 // import { fetchBookingsByBusinessId } from "@/src/services/BookingService";
 import { fetchPaymentsByBusinessId } from "@/src/services/PaymentService";
 import ResponsiveText from "@/src/components/ResponsiveText";
+import NoDataFound from "@/src/components/NoDataFound";
 // import type { Payment } from "@/src/types/Payment";
 
 // Transaction columns
@@ -322,7 +323,11 @@ const Transactions = () => {
                   {!loading && filteredData.length === 0 && (
                     <TableRow>
                       <TableCell colSpan={columns.length} align="center">
-                        {error ? error : 'No payment transactions found'}
+                        <NoDataFound
+                          icon={searchTerm.trim() ? "search" : "database"}
+                          title={searchTerm.trim() ? "No Results Found" : "No Transactions"}
+                          message={error ? error : searchTerm.trim() ? `No transactions match "${searchTerm}". Try a different search term.` : "No payment transactions found."}
+                        />
                       </TableCell>
                     </TableRow>
                   )}
