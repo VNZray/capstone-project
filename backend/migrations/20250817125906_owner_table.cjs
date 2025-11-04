@@ -1,7 +1,7 @@
 const {
   createOwnerProcedures,
   dropOwnerProcedures,
-} = require("../procedures/ownerProcedures");
+} = require("../procedures/auth/ownerProcedures");
 
 exports.up = async function (knex) {
   await knex.schema.createTable("owner", (table) => {

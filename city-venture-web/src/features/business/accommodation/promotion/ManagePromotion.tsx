@@ -7,9 +7,10 @@ import { Search } from "lucide-react";
 import StatusFilter from "./components/StatusFilter";
 import PromoCard from "./components/PromoCard";
 import type { PromoStatus } from "./components/PromoCard";
-import AddPromoModal from "./components/AddPromoModal";
+// import AddPromoModal from "./components/AddPromoModal"; // disabled: use full Promotion Form page instead
 import { useMemo, useState } from "react";
 import ResponsiveText from "@/src/components/ResponsiveText";
+import { useNavigate } from "react-router-dom";
 
 type Status = "All" | "Active" | "Paused" | "Expired";
 
@@ -88,35 +89,75 @@ const initialPromos: StaticPromo[] = [
     usedCount: 100,
     appliesToAll: true,
   },
+    {
+    id: "promo_4",
+    title: "Trial Access Lounge",
+    description: "Get free trial access to premium lounge for first-time guests.",
+    startDate: new Date(Date.now() - 1000 * 60 * 60 * 24 * 1).toISOString(),
+    endDate: new Date(Date.now() + 1000 * 60 * 60 * 24 * 5).toISOString(),
+    promoType: "FREE_TRIAL",
+    status: "PAUSED", // demonstration of paused
+    image: "https://picsum.photos/seed/promo4/640/360",
+    usageLimit: 100,
+    usedCount: 100,
+    appliesToAll: true,
+  },
+    {
+    id: "promo_4",
+    title: "Trial Access Lounge",
+    description: "Get free trial access to premium lounge for first-time guests.",
+    startDate: new Date(Date.now() - 1000 * 60 * 60 * 24 * 1).toISOString(),
+    endDate: new Date(Date.now() + 1000 * 60 * 60 * 24 * 5).toISOString(),
+    promoType: "FREE_TRIAL",
+    status: "PAUSED", // demonstration of paused
+    image: "https://picsum.photos/seed/promo4/640/360",
+    usageLimit: 100,
+    usedCount: 100,
+    appliesToAll: true,
+  },
+    {
+    id: "promo_4",
+    title: "Trial Access Lounge",
+    description: "Get free trial access to premium lounge for first-time guests.",
+    startDate: new Date(Date.now() - 1000 * 60 * 60 * 24 * 1).toISOString(),
+    endDate: new Date(Date.now() + 1000 * 60 * 60 * 24 * 5).toISOString(),
+    promoType: "FREE_TRIAL",
+    status: "PAUSED", // demonstration of paused
+    image: "https://picsum.photos/seed/promo4/640/360",
+    usageLimit: 100,
+    usedCount: 100,
+    appliesToAll: true,
+  },
 ];
 
 const ManagePromotion = () => {
   const [status, setStatus] = useState<Status>("All");
   const [query, setQuery] = useState("");
-  const [promos, setPromos] = useState<StaticPromo[]>(initialPromos);
-  const [addOpen, setAddOpen] = useState(false);
+  const [promos] = useState<StaticPromo[]>(initialPromos);
+  const navigate = useNavigate();
 
-  const handlePromoAdded = () => {
-    // For demonstration append a synthetic promo (would replace with API response)
-    setPromos((prev) => [
-      {
-        id: `promo_${Date.now()}`,
-        title: "New Promotion",
-        description: "Recently added promotion placeholder.",
-        startDate: new Date().toISOString().slice(0,10),
-        endDate: new Date(Date.now()+ 1000*60*60*24*7).toISOString().slice(0,10),
-        promoType: "DISCOUNT",
-        discountValue: 10,
-        status: "ACTIVE",
-        usageLimit: 100,
-        usedCount: 0,
-        appliesToAll: false,
-        roomIds: ["room_5", "room_1"],
-      },
-      ...prev,
-    ]);
-    setAddOpen(false);
-  };
+  // const [addOpen, setAddOpen] = useState(false);
+  // const handlePromoAdded = () => {
+  //   // For demonstration append a synthetic promo (would replace with API response)
+  //   setPromos((prev) => [
+  //     {
+  //       id: `promo_${Date.now()}`,
+  //       title: "New Promotion",
+  //       description: "Recently added promotion placeholder.",
+  //       startDate: new Date().toISOString().slice(0,10),
+  //       endDate: new Date(Date.now()+ 1000*60*60*24*7).toISOString().slice(0,10),
+  //       promoType: "DISCOUNT",
+  //       discountValue: 10,
+  //       status: "ACTIVE",
+  //       usageLimit: 100,
+  //       usedCount: 0,
+  //       appliesToAll: false,
+  //       roomIds: ["room_5", "room_1"],
+  //     },
+  //     ...prev,
+  //   ]);
+  //   setAddOpen(false);
+  // };
 
   const filteredPromos = useMemo(() => {
     return promos.filter((p) => {
@@ -156,7 +197,8 @@ const ManagePromotion = () => {
             startDecorator={<Add />}
             size="lg"
             color="primary"
-            onClick={() => setAddOpen(true)}
+            // onClick={() => setAddOpen(true)}
+            onClick={() => navigate("/business/create-promotion")}
             sx={{ width: { xs: "100%", sm: "auto" } }}
           >
             Create Promo
@@ -221,11 +263,14 @@ const ManagePromotion = () => {
             </Text>
           )}
         </div>
+      {/** AddPromoModal removed in favor of full Promotion Form navigation */}
+      {/**
       <AddPromoModal
         open={addOpen}
         onClose={() => setAddOpen(false)}
         onAdded={handlePromoAdded}
       />
+      */}
     </PageContainer>
   );
 };

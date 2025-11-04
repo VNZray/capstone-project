@@ -33,9 +33,9 @@ const Navbar: React.FC<NavbarProps> = ({ servicesId = "features", aboutId = "abo
 
   const logo = new URL("../assets/logo/city-ventures-horizontal.png", import.meta.url).href;
   const { user, logout } = useAuth();
-  const role = user?.role_name ?? ""; // Now normalized by AuthService: "Business Owner" | "Tourism Admin" | "Tourist"
-  const isOwner = role === "Business Owner";
-  const isTourism = role === "Tourism Admin";
+  const role = user?.role_name ?? ""; // Now normalized by AuthService: "Owner" | "Admin" | "Tourist"
+  const isOwner = role === "Owner";
+  const isTourism = role === "Admin";
   const isTourist = role === "Tourist";
   const displayRole = role;
   const nameOnly = `${user?.first_name ?? ""} ${user?.last_name ?? ""}`.trim();
@@ -131,6 +131,7 @@ const Navbar: React.FC<NavbarProps> = ({ servicesId = "features", aboutId = "abo
                 <MenuItem disabled sx={{ fontWeight: 600 }}>{displayName}</MenuItem>
                 {displayRole && (
                   <MenuItem disabled sx={{ fontSize: 12, opacity: 0.8 }}>{displayRole}</MenuItem>
+                  
                 )}
                 <ListDivider />
                 <MenuItem onClick={() => navigate(profilePath)}>Profile</MenuItem>

@@ -1,6 +1,6 @@
-import db from "../db.js";
+import db from "../../db.js";
 import { v4 as uuidv4 } from "uuid";
-import { handleDbError } from "../utils/errorHandler.js";
+import { handleDbError } from "../../utils/errorHandler.js";
 
 const ROOM_FIELDS = [
   "business_id",

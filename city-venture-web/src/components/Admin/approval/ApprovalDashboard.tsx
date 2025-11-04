@@ -333,7 +333,7 @@ const ApprovalDashboard: React.FC = () => {
     );
 
   return (
-    <Box sx={{ p: { xs: 1.5, md: 3 }, maxWidth: 1400, mx: "auto" }}>
+    <Box>
       <Stack
         direction="row"
         justifyContent="space-between"

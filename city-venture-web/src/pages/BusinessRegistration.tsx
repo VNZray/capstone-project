@@ -61,7 +61,7 @@ const BusinessRegistration = () => {
     phone_number: "9380410303",
     password: "123456",
     barangay_id: 3,
-    user_role_id: 3,
+    user_role_id: 4,
   });
 
   const [ownerData, setOwnerData] = useState<Owner>({
@@ -189,7 +189,6 @@ const BusinessRegistration = () => {
       if (!effectiveUserId) {
         const userRes = await axios.post(`${api}/users`, {
           ...userData,
-          user_role_id: 3,
         });
         effectiveUserId = userRes?.data?.id;
         if (!effectiveUserId) throw new Error("User creation failed");

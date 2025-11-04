@@ -1,6 +1,6 @@
-import db from "../db.js";
+import db from "../../db.js";
 import { v4 as uuidv4 } from "uuid";
-import { handleDbError } from "../utils/errorHandler.js";
+import { handleDbError } from "../../utils/errorHandler.js";
 // Booking fields in the order expected by the stored procedures after id
 const BOOKING_FIELDS = [
   "pax",
