@@ -118,7 +118,6 @@ const BusinessProfile = () => {
     address: businessDetails?.address || "",
     description: businessDetails?.description || "",
     instagram_url: businessDetails?.instagram_url || "",
-    x_url: businessDetails?.x_url || "",
     website_url: businessDetails?.website_url || "",
     facebook_url: businessDetails?.facebook_url || "",
     longitude: businessDetails?.longitude || "",
@@ -182,7 +181,6 @@ const BusinessProfile = () => {
       ...businessData,
       facebook_url: fbLink,
       instagram_url: igLink,
-      x_url: ttLink,
     });
   };
 
@@ -545,20 +543,6 @@ const BusinessProfile = () => {
                   </a>
                 ) : (
                   "No Instagram URL available"
-                )}
-              </Typography>
-
-              <Typography
-                startDecorator={<X sx={{ color: "#000", fontSize: "24px" }} />}
-                fontFamily={"poppins"}
-                level="body-md"
-              >
-                {businessDetails?.x_url ? (
-                  <a href={businessDetails.x_url} target="_blank" rel="noopener noreferrer" style={{ color: "inherit", textDecoration: "none" }}>
-                    {businessDetails.x_url}
-                  </a>
-                ) : (
-                  "No X URL available"
                 )}
               </Typography>
 
@@ -1065,7 +1049,6 @@ const BusinessProfile = () => {
         open={editSocialMediaOpen && Boolean(businessDetails?.id)}
         initialFbLink={businessDetails?.facebook_url || ""}
         initialIgLink={businessDetails?.instagram_url || ""}
-        initialXLink={businessDetails?.x_url || ""}
         initialWebsiteLink={businessDetails?.website_url || ""}
         businessId={businessDetails?.id || ""}
         onClose={() => setEditSocialMediaOpen(false)}

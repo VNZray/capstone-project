@@ -45,7 +45,7 @@ import AdminLayout from "../layout/AdminLayout";
 import Room from "../features/admin/services/accommodation/Room";
 import Reviews from "../features/business/accommodation/reviews/Reviews";
 import Settings from "../features/business/settings/Settings";
-
+import AccommodationPromotionForm from "../features/business/accommodation/promotion/components/PromotionForm";
 // Tourism
 import Dashboard from "@/src/features/admin/dashboard/Dashboard";
 import Approval from "@/src/features/admin/approval/Approval";
@@ -68,6 +68,16 @@ export default function AppRoutes() {
   const tourism = "/tourism";
   const business_type = "Accommodation";
 
+  // Normalized role names as produced by AuthService
+  const TOURISM_ROLES = ["Admin"]; // Tourism Head/Officer normalize to Tourism Admin
+  const BUSINESS_ROLES = [
+    "Business Owner",
+    "Manager",
+    "Room Manager",
+    "Receptionist",
+    "Sales Associate",
+  ];
+
   return (
     <Routes>
       <Route
@@ -78,6 +88,7 @@ export default function AppRoutes() {
         }
       >
         {/* Auth routes */}
+
         <Route element={<MainLayout />}>
           <Route index element={<LandingPage />} />
           <Route path={`${user}`} element={<LandingPage />} />
@@ -105,7 +116,7 @@ export default function AppRoutes() {
             <Route
               path={`${business}`}
               element={
-                <ProtectedRoute>
+                <ProtectedRoute requiredRoles={BUSINESS_ROLES}>
                   <MyBusiness />
                 </ProtectedRoute>
               }
@@ -114,7 +125,7 @@ export default function AppRoutes() {
             <Route
               path={`${business}/register`}
               element={
-                <ProtectedRoute>
+                <ProtectedRoute requiredRoles={BUSINESS_ROLES}>
                   <BusinessRegistration />
                 </ProtectedRoute>
               }
@@ -124,7 +135,7 @@ export default function AppRoutes() {
             <Route
               path={`${business}/transactions`}
               element={
-                <ProtectedRoute>
+                <ProtectedRoute requiredRoles={BUSINESS_ROLES}>
                   <Transactions />
                 </ProtectedRoute>
               }
@@ -132,7 +143,7 @@ export default function AppRoutes() {
             <Route
               path={`${business}/bookings`}
               element={
-                <ProtectedRoute>
+                <ProtectedRoute requiredRoles={BUSINESS_ROLES}>
                   <Bookings />
                 </ProtectedRoute>
               }
@@ -143,7 +154,7 @@ export default function AppRoutes() {
                 <Route
                   path={`${business}/business-profile`}
                   element={
-                    <ProtectedRoute>
+                    <ProtectedRoute requiredRoles={BUSINESS_ROLES}>
                       <BusinessProfile />
                     </ProtectedRoute>
                   }
@@ -151,7 +162,7 @@ export default function AppRoutes() {
                 <Route
                   path={`${business}/dashboard`}
                   element={
-                    <ProtectedRoute>
+                    <ProtectedRoute requiredRoles={BUSINESS_ROLES}>
                       <AccommodationDashboard />
                     </ProtectedRoute>
                   }
@@ -159,7 +170,7 @@ export default function AppRoutes() {
                 <Route
                   path={`${business}/manage-staff`}
                   element={
-                    <ProtectedRoute>
+                    <ProtectedRoute requiredRoles={BUSINESS_ROLES}>
                       <AccommodationStaff />
                     </ProtectedRoute>
                   }
@@ -170,7 +181,7 @@ export default function AppRoutes() {
                 <Route
                   path={`${business}/manage-business`}
                   element={
-                    <ProtectedRoute>
+                    <ProtectedRoute requiredRoles={BUSINESS_ROLES}>
                       <ManageShop />
                     </ProtectedRoute>
                   }
@@ -178,7 +189,7 @@ export default function AppRoutes() {
                 <Route
                   path={`${business}/dashboard`}
                   element={
-                    <ProtectedRoute>
+                    <ProtectedRoute requiredRoles={BUSINESS_ROLES}>
                       <ShopDashboard />
                     </ProtectedRoute>
                   }
@@ -190,15 +201,23 @@ export default function AppRoutes() {
             <Route
               path={`${business}/manage-promotion`}
               element={
-                <ProtectedRoute>
+                <ProtectedRoute requiredRoles={BUSINESS_ROLES}>
                   <ManagePromotion />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path={`${business}/create-promotion`}
+              element={
+                <ProtectedRoute requiredRoles={BUSINESS_ROLES}>
+                  <AccommodationPromotionForm />
                 </ProtectedRoute>
               }
             />
             <Route
               path={`${business}/reviews`}
               element={
-                <ProtectedRoute>
+                <ProtectedRoute requiredRoles={BUSINESS_ROLES}>
                   <Reviews />
                 </ProtectedRoute>
               }
@@ -207,7 +226,7 @@ export default function AppRoutes() {
             <Route
               path={`${business}/store/products`}
               element={
-                <ProtectedRoute>
+                <ProtectedRoute requiredRoles={BUSINESS_ROLES}>
                   <Products />
                 </ProtectedRoute>
               }
@@ -215,7 +234,7 @@ export default function AppRoutes() {
             <Route
               path={`${business}/store/categories`}
               element={
-                <ProtectedRoute>
+                <ProtectedRoute requiredRoles={BUSINESS_ROLES}>
                   <Categories />
                 </ProtectedRoute>
               }
@@ -223,7 +242,7 @@ export default function AppRoutes() {
             <Route
               path={`${business}/store/services`}
               element={
-                <ProtectedRoute>
+                <ProtectedRoute requiredRoles={BUSINESS_ROLES}>
                   <Services />
                 </ProtectedRoute>
               }
@@ -231,7 +250,7 @@ export default function AppRoutes() {
             <Route
               path={`${business}/store/orders`}
               element={
-                <ProtectedRoute>
+                <ProtectedRoute requiredRoles={BUSINESS_ROLES}>
                   <Orders />
                 </ProtectedRoute>
               }
@@ -239,7 +258,7 @@ export default function AppRoutes() {
             <Route
               path={`${business}/store/discount`}
               element={
-                <ProtectedRoute>
+                <ProtectedRoute requiredRoles={BUSINESS_ROLES}>
                   <Discount />
                 </ProtectedRoute>
               }
@@ -247,7 +266,7 @@ export default function AppRoutes() {
             <Route
               path={`${business}/store/discount/create`}
               element={
-                <ProtectedRoute>
+                <ProtectedRoute requiredRoles={BUSINESS_ROLES}>
                   <DiscountForm />
                 </ProtectedRoute>
               }
@@ -255,7 +274,7 @@ export default function AppRoutes() {
             <Route
               path={`${business}/store/discount/:id/edit`}
               element={
-                <ProtectedRoute>
+                <ProtectedRoute requiredRoles={BUSINESS_ROLES}>
                   <DiscountForm />
                 </ProtectedRoute>
               }
@@ -263,7 +282,7 @@ export default function AppRoutes() {
             <Route
               path={`${business}/promotion`}
               element={
-                <ProtectedRoute>
+                <ProtectedRoute requiredRoles={BUSINESS_ROLES}>
                   <ManageShopPromotion />
                 </ProtectedRoute>
               }
@@ -271,7 +290,7 @@ export default function AppRoutes() {
             <Route
               path={`${business}/promotion/create`}
               element={
-                <ProtectedRoute>
+                <ProtectedRoute requiredRoles={BUSINESS_ROLES}>
                   <PromotionForm />
                 </ProtectedRoute>
               }
@@ -279,7 +298,7 @@ export default function AppRoutes() {
             <Route
               path={`${business}/promotion/:id/edit`}
               element={
-                <ProtectedRoute>
+                <ProtectedRoute requiredRoles={BUSINESS_ROLES}>
                   <PromotionForm />
                 </ProtectedRoute>
               }
@@ -287,7 +306,7 @@ export default function AppRoutes() {
             <Route
               path={`${business}/store/settings`}
               element={
-                <ProtectedRoute>
+                <ProtectedRoute requiredRoles={BUSINESS_ROLES}>
                   <ShopSettings />
                 </ProtectedRoute>
               }
@@ -295,7 +314,7 @@ export default function AppRoutes() {
             <Route
               path={`${business}/store/manage-staff`}
               element={
-                <ProtectedRoute>
+                <ProtectedRoute requiredRoles={BUSINESS_ROLES}>
                   <ShopStaff />
                 </ProtectedRoute>
               }
@@ -303,7 +322,7 @@ export default function AppRoutes() {
             <Route
               path={`${business}/settings`}
               element={
-                <ProtectedRoute>
+                <ProtectedRoute requiredRoles={BUSINESS_ROLES}>
                   <Settings />
                 </ProtectedRoute>
               }
@@ -320,7 +339,7 @@ export default function AppRoutes() {
               <Route
                 path={`${business}/rooms`}
                 element={
-                  <ProtectedRoute>
+                  <ProtectedRoute requiredRoles={BUSINESS_ROLES}>
                     <RoomPage />
                   </ProtectedRoute>
                 }
@@ -328,7 +347,7 @@ export default function AppRoutes() {
               <Route
                 path={`${business}/room-profile`}
                 element={
-                  <ProtectedRoute>
+                  <ProtectedRoute requiredRoles={BUSINESS_ROLES}>
                     <RoomProfile />
                   </ProtectedRoute>
                 }
@@ -345,7 +364,7 @@ export default function AppRoutes() {
               <Route
                 path={`${business}/notification`}
                 element={
-                  <ProtectedRoute>
+                  <ProtectedRoute requiredRoles={BUSINESS_ROLES}>
                     <Notification />
                   </ProtectedRoute>
                 }
@@ -357,7 +376,7 @@ export default function AppRoutes() {
           <Route
             path={`${tourism}/dashboard`}
             element={
-              <ProtectedRoute>
+              <ProtectedRoute requiredRoles={TOURISM_ROLES}>
                 <Dashboard />
               </ProtectedRoute>
             }
@@ -365,7 +384,7 @@ export default function AppRoutes() {
           <Route
             path={`${tourism}/approval`}
             element={
-              <ProtectedRoute>
+              <ProtectedRoute requiredRoles={TOURISM_ROLES}>
                 <Approval />
               </ProtectedRoute>
             }
@@ -373,7 +392,7 @@ export default function AppRoutes() {
           <Route
             path={`${tourism}/reports`}
             element={
-              <ProtectedRoute>
+              <ProtectedRoute requiredRoles={TOURISM_ROLES}>
                 <Report />
               </ProtectedRoute>
             }
@@ -381,7 +400,7 @@ export default function AppRoutes() {
           <Route
             path={`${tourism}/reports/:id`}
             element={
-              <ProtectedRoute>
+              <ProtectedRoute requiredRoles={TOURISM_ROLES}>
                 <ReportDetailsScreen />
               </ProtectedRoute>
             }
@@ -389,7 +408,7 @@ export default function AppRoutes() {
           <Route
             path={`${tourism}/services/accommodation`}
             element={
-              <ProtectedRoute>
+              <ProtectedRoute requiredRoles={TOURISM_ROLES}>
                 <Accommodation />
               </ProtectedRoute>
             }
@@ -397,7 +416,7 @@ export default function AppRoutes() {
           <Route
             path={`${tourism}/services/shop`}
             element={
-              <ProtectedRoute>
+              <ProtectedRoute requiredRoles={TOURISM_ROLES}>
                 <Shop />
               </ProtectedRoute>
             }
@@ -405,7 +424,7 @@ export default function AppRoutes() {
           <Route
             path={`${tourism}/services/event`}
             element={
-              <ProtectedRoute>
+              <ProtectedRoute requiredRoles={TOURISM_ROLES}>
                 <Event />
               </ProtectedRoute>
             }
@@ -413,7 +432,7 @@ export default function AppRoutes() {
           <Route
             path={`${tourism}/services/tourist-spot`}
             element={
-              <ProtectedRoute>
+              <ProtectedRoute requiredRoles={TOURISM_ROLES}>
                 <Spot />
               </ProtectedRoute>
             }
@@ -421,7 +440,7 @@ export default function AppRoutes() {
           <Route
             path={`${tourism}/services/tourist-spot/:id`}
             element={
-              <ProtectedRoute>
+              <ProtectedRoute requiredRoles={TOURISM_ROLES}>
                 <TouristSpotDetailsScreen />
               </ProtectedRoute>
             }
@@ -429,7 +448,7 @@ export default function AppRoutes() {
           <Route
             path={`${tourism}/room/:id`}
             element={
-              <ProtectedRoute>
+              <ProtectedRoute requiredRoles={TOURISM_ROLES}>
                 <Room />
               </ProtectedRoute>
             }
@@ -438,7 +457,7 @@ export default function AppRoutes() {
           <Route
             path={`${tourism}/settings`}
             element={
-              <ProtectedRoute>
+              <ProtectedRoute requiredRoles={TOURISM_ROLES}>
                 <Settings />
               </ProtectedRoute>
             }

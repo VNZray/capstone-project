@@ -75,9 +75,11 @@ const RatingSummary = ({ avgRating, totalReviews, distribution }: RatingSummaryP
         </View>
       </View>
       <View style={styles.summaryRight}>
-        {distribution.map((d) =>
-          renderDistributionBar(d.stars, d.pct, d.count)
-        )}
+        {distribution.map((d) => (
+          <React.Fragment key={d.stars}>
+            {renderDistributionBar(d.stars, d.pct, d.count)}
+          </React.Fragment>
+        ))}
       </View>
     </Container>
   );

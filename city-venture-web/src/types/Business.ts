@@ -9,7 +9,6 @@ export type Business = {
   address?: string | "";
   description?: string | "";
   instagram_url?: string | "";
-  x_url?: string | "";
   website_url?: string | "";
   facebook_url?: string | "";
   latitude?: string | "";

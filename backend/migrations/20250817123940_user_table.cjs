@@ -1,7 +1,7 @@
 const {
   createUserProcedures,
   dropUserProcedures,
-} = require("../procedures/userProcedures");
+} = require("../procedures/auth/userProcedures");
 
 exports.up = async function (knex) {
   await knex.schema.createTable("user_role", (table) => {

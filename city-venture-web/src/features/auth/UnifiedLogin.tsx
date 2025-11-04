@@ -138,10 +138,7 @@ export default function UnifiedLogin() {
                 <Typography level="body-sm">Tourist</Typography>
               </Tab>
               <Tab value="Owner" sx={{ borderRadius: 10, flex: 1 }}>
-                <Typography level="body-sm">Business Owner</Typography>
-              </Tab>
-              <Tab value="Admin" sx={{ borderRadius: 10, flex: 1 }}>
-                <Typography level="body-sm">Admin</Typography>
+                <Typography level="body-sm">Business</Typography>
               </Tab>
             </TabList>
           </Tabs>

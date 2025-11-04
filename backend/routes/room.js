@@ -1,5 +1,5 @@
 import express from "express";
-import * as roomController from "../controller/roomController.js"; // Add `.js` extension
+import * as roomController from "../controller/accommodation/roomController.js"; // Add `.js` extension
 
 const router = express.Router();
 

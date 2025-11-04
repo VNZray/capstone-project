@@ -2,31 +2,39 @@ import React, { useState } from "react";
 import { NavLink } from "react-router-dom";
 import {
   LayoutDashboard,
-  CheckCircle,
+  CheckCircle2,
   BedDouble,
-  Calendar,
+  CalendarDays,
   Store,
   MapPin,
   Briefcase,
-  BarChart,
-  User,
+  BarChart2,
+  User2,
+  Users2,
+  Settings2,
   ChevronDown,
   ChevronRight,
   LogOut,
   X,
+  Settings,
 } from "lucide-react";
 import "@/src/components/Admin/Sidebar.css";
 import logo from "@/src/assets/images/light-logo.png";
 import { Typography } from "@mui/joy";
 import { colors } from "@/src/utils/Colors";
 import Container from "../Container";
+import useRBAC from "@/src/hooks/useRBAC";
 
 interface SidebarProps {
   isOpen?: boolean;
   onClose?: () => void;
 }
 
-export default function Sidebar({ isOpen = false, onClose }: SidebarProps): React.ReactElement {
+export default function Sidebar({
+  isOpen = false,
+  onClose,
+}: SidebarProps): React.ReactElement {
+  const { canAny } = useRBAC();
   return (
     <aside className={`sidebar ${isOpen ? "open" : ""}`}>
       {/* Mobile close button */}
@@ -56,55 +64,80 @@ export default function Sidebar({ isOpen = false, onClose }: SidebarProps): Reac
         <div
           style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}
         >
-          <NavItem
-            to="/tourism/dashboard"
-            label="Dashboard"
-            icon={<LayoutDashboard size={18} />}
-            onClick={onClose}
-          />
-          <NavItem
-            to="/tourism/approval"
-            label="Approval"
-            icon={<CheckCircle size={18} />}
-            onClick={onClose}
-          />
+          {canAny("view_reports") && (
+            <NavItem
+              to="/tourism/dashboard"
+              label="Dashboard"
+              icon={<LayoutDashboard size={18} />} // Dashboard icon
+              onClick={onClose}
+            />
+          )}
+          {canAny(
+            "approve_tourist_spot",
+            "approve_business",
+            "approve_event",
+            "approve_shop"
+          ) && (
+            <NavItem
+              to="/tourism/approval"
+              label="Approval"
+              icon={<CheckCircle2 size={18} />} // Approval icon
+              onClick={onClose}
+            />
+          )}
           {/* Dropdown for Services */}
-          <DropdownNavItem label="Services" icon={<Briefcase size={18} />}>
+          {canAny("manage_services", "view_all_profiles") && (
+            <DropdownNavItem label="Services" icon={<Briefcase size={18} />}>
+              <NavItem
+                to="/tourism/services/tourist-spot"
+                label="Tourist Spot"
+                icon={<MapPin size={18} />} // MapPin for Tourist Spot
+                onClick={onClose}
+              />
+              <NavItem
+                to="/tourism/services/event"
+                label="Event"
+                icon={<CalendarDays size={18} />} // CalendarDays for Event
+                onClick={onClose}
+              />
+              <NavItem
+                to="/tourism/services/accommodation"
+                label="Accommodation"
+                icon={<BedDouble size={18} />} // BedDouble for Accommodation
+                onClick={onClose}
+              />
+              <NavItem
+                to="/tourism/services/shop"
+                label="Shop"
+                icon={<Store size={18} />} // Store for Shop
+                onClick={onClose}
+              />
+            </DropdownNavItem>
+          )}
+          {canAny("view_reports") && (
             <NavItem
-              to="/tourism/services/tourist-spot"
-              label="Tourist Spot"
-              icon={<MapPin size={18} />}
+              to="/tourism/reports"
+              label="Reports"
+              icon={<BarChart2 size={18} />} // BarChart2 for Reports
               onClick={onClose}
             />
-            <NavItem
-              to="/tourism/services/event"
-              label="Event"
-              icon={<Calendar size={18} />}
-              onClick={onClose}
-            />
-            <NavItem
-              to="/tourism/services/accommodation"
-              label="Accommodation"
-              icon={<BedDouble size={18} />}
-              onClick={onClose}
-            />
-            <NavItem
-              to="/tourism/services/shop"
-              label="Shop"
-              icon={<Store size={18} />}
-              onClick={onClose}
-            />
-          </DropdownNavItem>
-          <NavItem
-            to="/tourism/reports"
-            label="Reports"
-            icon={<BarChart size={18} />}
-            onClick={onClose}
-          />
+          )}
           <NavItem
             to="/tourism/profile"
             label="Profile"
-            icon={<User size={18} />}
+            icon={<User2 size={18} />} // User2 for Profile
+            onClick={onClose}
+          />
+          <NavItem
+            to="/tourism/users"
+            label="User Management"
+            icon={<Users2 size={18} />} // Users2 for User Management
+            onClick={onClose}
+          />
+          <NavItem
+            to="/tourism/settings"
+            label="Settings"
+            icon={<Settings size={18} />} // Settings2 for Settings
             onClick={onClose}
           />
         </div>
@@ -128,7 +161,12 @@ interface NavItemProps {
   onClick?: () => void;
 }
 
-function NavItem({ to, label, icon, onClick }: NavItemProps): React.ReactElement {
+function NavItem({
+  to,
+  label,
+  icon,
+  onClick,
+}: NavItemProps): React.ReactElement {
   return (
     <NavLink
       to={to}
@@ -162,7 +200,9 @@ function DropdownNavItem({
       >
         {icon && <span className="sidebar-icon">{icon}</span>}
         <div className="nav-label">
-          <span>{label}</span>
+          <span style={{ fontFamily: "Poppins, sans-serif", fontSize: 16 }}>
+            {label}
+          </span>
         </div>
         {open ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
       </button>

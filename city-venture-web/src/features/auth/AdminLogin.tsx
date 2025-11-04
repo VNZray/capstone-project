@@ -10,7 +10,7 @@ import { Input, Button } from "@mui/joy";
 import { colors } from "../../utils/Colors";
 
 const Login: React.FC = () => {
-  const [email, setEmail] = useState("rayvenclores@gmail.com");
+  const [email, setEmail] = useState("admin@gmail.com");
   const [password, setPassword] = useState("123456");
   const [loginError, setLoginError] = useState("");
   const navigate = useNavigate();
@@ -28,7 +28,7 @@ const Login: React.FC = () => {
       await login(email, password);
 
       if (user?.role_name === "Admin") {
-        navigate("/admin/dashboard");
+        navigate("/tourism/dashboard");
       }
     } catch (error: any) {
       setLoginError(
