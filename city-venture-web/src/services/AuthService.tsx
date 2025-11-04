@@ -39,6 +39,9 @@ export const loginUser = async (
   const { token } = data;
   console.debug("[AuthService] Received token", token ? "<redacted>" : null);
 
+  // Set Authorization header for subsequent requests (matches backend RBAC)
+  axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+
   // Step 2: Decode token safely
   let payload: TokenPayload;
   try {
@@ -76,21 +79,46 @@ export const loginUser = async (
         status: err?.response?.status,
         data: err?.response?.data,
       });
-      // Fallback: if the endpoint fails, try to determine role from user_role_id
+      // Fallback: map from seeded role ids
       console.warn(
         "[AuthService] Using fallback role mapping based on user_role_id"
       );
-      const fallbackRole =
-        userData.user_role_id === 1
+      const id = userData.user_role_id;
+      const fallbackRoleName =
+        id === 1
           ? "Admin"
-          : userData.user_role_id === 2
-          ? "Tourist"
-          : userData.user_role_id === 3
+          : id === 2
+          ? "Tourism Officer"
+          : id === 3
+          ? "Event Coordinator"
+          : id === 4
           ? "Owner"
+          : id === 5
+          ? "Manager"
+          : id === 6
+          ? "Room Manager"
+          : id === 7
+          ? "Receptionist"
+          : id === 8
+          ? "Sales Associate"
           : "Tourist";
-      return { data: { role_name: fallbackRole, description: "" } };
+      return { data: { role_name: fallbackRoleName, description: "" } };
     });
   console.debug("[AuthService] userRole", userRole);
+
+  // Step 3.5: Fetch permissions for the authenticated user (RBAC)
+  console.debug("[AuthService] GET /permissions/me");
+  const myPermissions: string[] = await axios
+    .get<{ permissions: string[] }>(`${api}/permissions/me`)
+    .then((r) => r.data?.permissions || [])
+    .catch((err) => {
+      console.warn("[AuthService] Fetch my permissions failed", {
+        message: err?.message,
+        status: err?.response?.status,
+        data: err?.response?.data,
+      });
+      return [] as string[];
+    });
   // Optional: parse user_profile for basic info if present (fallback when no owner/tourist/tourism records)
   type ProfileInfo = Partial<{
     first_name: string;
@@ -205,8 +233,15 @@ export const loginUser = async (
   const rawRoleName = (userRole?.role_name ?? "").toString();
   const normalizedRoleName = (() => {
     const r = rawRoleName.toLowerCase();
+    if (r.includes("tourism head")) return "Tourism Head";
+    if (r.includes("tourism officer")) return "Tourism Officer";
+    if (r.includes("admin")) return "Admin";
+    if (r.includes("event coordinator")) return "Event Coordinator";
     if (r.includes("owner")) return "Business Owner";
-    if (r.includes("tourism") || r.includes("admin")) return "Tourism Admin";
+    if (r.includes("manager") && !r.includes("room")) return "Manager";
+    if (r.includes("room manager")) return "Room Manager";
+    if (r.includes("receptionist")) return "Receptionist";
+    if (r.includes("sales associate")) return "Sales Associate";
     return "Tourist";
   })();
 
@@ -258,6 +293,7 @@ export const loginUser = async (
     barangay_name: barangay?.barangay || "",
     province_name: province?.province || "",
     user_id: userData.id || "",
+    permissions: myPermissions,
   };
 
   // Save to localStorage

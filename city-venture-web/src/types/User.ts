@@ -51,6 +51,8 @@ export type UserDetails = {
   province_name?: string | "";
   municipality_name?: string | "";
   barangay_name?: string | "";
+  // RBAC: permissions from backend
+  permissions?: string[];
 };
 
 export type TokenPayload = {

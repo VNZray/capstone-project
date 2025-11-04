@@ -4,7 +4,14 @@ import { colors } from '@/constants/color';
 import { moderateScale } from '@/utils/responsive';
 import { FontAwesome5 } from '@expo/vector-icons';
 import React from 'react';
-import { Image, Pressable, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
+import {
+  Image,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  View,
+  useWindowDimensions,
+} from 'react-native';
 
 type Review = {
   id: string;
@@ -19,10 +26,6 @@ type Review = {
   comment: string;
   images?: string[];
   createdAt: string;
-  likes: number;
-  dislikes: number;
-  youLiked?: boolean;
-  youDisliked?: boolean;
   replies?: Array<{
     id: string;
     user: { name: string; role?: 'tourist' | 'owner' };
@@ -35,37 +38,51 @@ type ReviewCardProps = {
   item: Review;
   expanded: boolean;
   onToggleExpand: () => void;
-  onToggleLike: (type: 'like' | 'dislike') => void;
   canReply: boolean;
   onReply?: () => void;
-  onShare?: () => void;
+  canDelete?: boolean;
+  onDelete?: () => void;
 };
 
 const ReviewCard = ({
   item,
   expanded,
   onToggleExpand,
-  onToggleLike,
   canReply,
   onReply,
-  onShare,
+  canDelete,
+  onDelete,
 }: ReviewCardProps) => {
-  const isLong = item.comment.length > 160;
-  const displayComment = isLong && !expanded ? item.comment.slice(0, 160) + '…' : item.comment;
+  const commentStr = item.comment ?? '';
+  const isLong = commentStr.length > 160;
+  const displayComment = isLong && !expanded ? commentStr.slice(0, 160) + '…' : commentStr;
   const { width } = useWindowDimensions();
   const AVATAR = moderateScale(42, 0.55, width);
   const GAP = moderateScale(12, 0.55, width);
   const IMAGE_W = moderateScale(120, 0.5, width);
   const IMAGE_H = moderateScale(80, 0.5, width);
+  const ratingNum = Number.isFinite((item as any)?.rating)
+    ? Number((item as any).rating)
+    : 0;
 
   return (
     <Container padding={moderateScale(14, 0.55, width)} gap={GAP}>
-      <View style={[styles.reviewHeader, { gap: GAP }]}>        
-        <View style={[styles.avatarWrap]}>          
+      <View style={[styles.reviewHeader, { gap: GAP }]}>
+        <View style={[styles.avatarWrap]}>
           {item.user.avatar ? (
-            <Image source={{ uri: item.user.avatar }} style={{ width: AVATAR, height: AVATAR, borderRadius: 50 }} />
+            <Image
+              source={{ uri: item.user.avatar }}
+              style={{ width: AVATAR, height: AVATAR, borderRadius: 50 }}
+            />
           ) : (
-            <View style={{ width: AVATAR, height: AVATAR, borderRadius: 50, backgroundColor: '#4B5563' }} />
+            <View
+              style={{
+                width: AVATAR,
+                height: AVATAR,
+                borderRadius: 50,
+                backgroundColor: '#4B5563',
+              }}
+            />
           )}
         </View>
         <View style={{ flex: 1 }}>
@@ -94,37 +111,46 @@ const ReviewCard = ({
         <View style={styles.inline}>
           <FontAwesome5 name="star" size={14} color="#FFC107" solid />
           <ThemedText type="label-small" style={{ marginLeft: 4 }}>
-            {item.rating.toFixed(1)}
+            {ratingNum.toFixed(1)}
           </ThemedText>
         </View>
       </View>
-      
-      <ThemedText type="body-small">
-        {displayComment}
-      </ThemedText>
-      
+
+      <ThemedText type="body-small">{displayComment}</ThemedText>
+
       {/* Review Images */}
       {item.images && item.images.length > 0 && (
-        <ScrollView 
-          horizontal 
+        <ScrollView
+          horizontal
           showsHorizontalScrollIndicator={false}
           style={styles.imageScrollView}
-          contentContainerStyle={[styles.imageContainer, { gap: moderateScale(8, 0.5, width) }]}
+          contentContainerStyle={[
+            styles.imageContainer,
+            { gap: moderateScale(8, 0.5, width) },
+          ]}
         >
           {item.images.map((imageUri, index) => (
             <Pressable
-              key={index}
+              key={imageUri || String(index)}
               onPress={() => console.log('View full image:', imageUri)}
               style={styles.imageWrapper}
             >
-              <Image 
-                source={{ uri: imageUri }} 
-                style={{ width: IMAGE_W, height: IMAGE_H, borderRadius: moderateScale(8, 0.5, width) }}
+              <Image
+                source={{ uri: imageUri }}
+                style={{
+                  width: IMAGE_W,
+                  height: IMAGE_H,
+                  borderRadius: moderateScale(8, 0.5, width),
+                }}
                 resizeMode="cover"
               />
               {item.images!.length > 1 && index === 0 && (
                 <View style={styles.imageCounter}>
-                  <ThemedText type="label-extra-small" lightColor="#fff" darkColor="#fff">
+                  <ThemedText
+                    type="label-extra-small"
+                    lightColor="#fff"
+                    darkColor="#fff"
+                  >
                     +{item.images!.length - 1}
                   </ThemedText>
                 </View>
@@ -133,7 +159,7 @@ const ReviewCard = ({
           ))}
         </ScrollView>
       )}
-      
+
       {isLong && (
         <Pressable style={styles.readMoreBtn} onPress={onToggleExpand}>
           <ThemedText type="link-small" weight="semi-bold">
@@ -141,48 +167,29 @@ const ReviewCard = ({
           </ThemedText>
         </Pressable>
       )}
-      
+
       {/* Actions */}
-      <View style={[styles.inline, { gap: 16 }]}>
-        <Pressable style={styles.actionBtn} onPress={() => onToggleLike('like')}>
-          <FontAwesome5
-            name="thumbs-up"
-            size={14}
-            color={item.youLiked ? colors.success : '#888'}
-          />
-          <ThemedText type="label-small" style={{ marginLeft: 6 }}>
-            {item.likes}
-          </ThemedText>
-        </Pressable>
-        
-        <Pressable style={styles.actionBtn} onPress={() => onToggleLike('dislike')}>
-          <FontAwesome5
-            name="thumbs-down"
-            size={14}
-            color={item.youDisliked ? colors.error : '#888'}
-          />
-          <ThemedText type="label-small" style={{ marginLeft: 6 }}>
-            {item.dislikes}
-          </ThemedText>
-        </Pressable>
-        
-        <Pressable style={styles.actionBtn} onPress={onShare}>
-          <FontAwesome5 name="share" size={14} color={colors.primary} />
-          <ThemedText type="label-small" style={{ marginLeft: 6 }}>
-            Share
-          </ThemedText>
-        </Pressable>
-        
-        {canReply && (
-          <Pressable style={styles.actionBtn} onPress={onReply}>
-            <FontAwesome5 name="reply" size={14} color={colors.secondary} />
-            <ThemedText type="label-small" style={{ marginLeft: 6 }}>
-              Reply
-            </ThemedText>
-          </Pressable>
-        )}
-      </View>
-      
+      {(canReply || canDelete) && (
+        <View style={[styles.inline, { gap: 16 }]}>
+          {canReply && (
+            <Pressable style={styles.actionBtn} onPress={onReply}>
+              <FontAwesome5 name="reply" size={14} color={colors.secondary} />
+              <ThemedText type="label-small" style={{ marginLeft: 6 }}>
+                Reply
+              </ThemedText>
+            </Pressable>
+          )}
+          {canDelete && (
+            <Pressable style={styles.actionBtn} onPress={onDelete}>
+              <FontAwesome5 name="trash" size={14} color={colors.error || '#EF4444'} />
+              <ThemedText type="label-small" style={{ marginLeft: 6 }}>
+                Delete
+              </ThemedText>
+            </Pressable>
+          )}
+        </View>
+      )}
+
       {/* Replies */}
       {!!item.replies?.length && (
         <View style={{ gap: 10 }}>
@@ -201,10 +208,7 @@ const ReviewCard = ({
                 >
                   {rep.user.name}
                 </ThemedText>
-                <ThemedText
-                  type="label-extra-small"
-                  style={{ marginLeft: 8 }}
-                >
+                <ThemedText type="label-extra-small" style={{ marginLeft: 8 }}>
                   {new Date(rep.createdAt).toLocaleDateString()}
                 </ThemedText>
               </View>

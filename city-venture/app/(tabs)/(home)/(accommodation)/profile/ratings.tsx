@@ -5,8 +5,18 @@ import ReviewCard from '@/components/ReviewCard';
 import { ThemedText } from '@/components/themed-text';
 import { card, colors } from '@/constants/color';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import React, { useMemo, useState } from 'react';
-import { FlatList, Pressable, StyleSheet, View } from 'react-native';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Alert, FlatList, Pressable, StyleSheet, View } from 'react-native';
+import { useAccommodation } from '@/context/AccommodationContext';
+import {
+  getRepliesByReviewId,
+  getBusinessReviews,
+} from '@/services/FeedbackService';
+import type { ReviewWithAuthor } from '@/types/Feedback';
+import debugLogger from '@/utils/debugLogger';
+import { useAuth } from '@/context/AuthContext';
+
+const ratingTabs = ['All', '5', '4', '3', '2', '1'] as const;
 
 type Review = {
   id: string;
@@ -33,59 +43,41 @@ type Review = {
   }>;
 };
 
-const SAMPLE_REVIEWS: Review[] = [
-  {
-    id: '1',
+function mapReviewFactory(currentUserId?: string) {
+  return function mapReview(r: ReviewWithAuthor): Review {
+  const fullName = [
+    (r.tourist as any)?.first_name,
+    (r.tourist as any)?.middle_name,
+    (r.tourist as any)?.last_name,
+  ]
+    .filter(Boolean)
+    .join(' ')
+    .trim();
+  const displayName = fullName || (r.user as any)?.email || 'Tourist';
+  const isCurrentUser = currentUserId
+    ? String(r.tourist_id) === String(currentUserId)
+    : false;
+  return {
+    id: r.id,
     user: {
-      name: 'Jane D.',
-      avatar: undefined,
-      isVerified: true,
+      name: displayName,
+      avatar: (r.user as any)?.user_profile || undefined,
       role: 'tourist',
-      isCurrentUser: true,
+      isVerified: true,
+      isCurrentUser,
     },
-    rating: 5,
-    comment:
-      'Amazing stay! The room was spotless and the location perfect for exploring nearby attractions. Highly recommended for families and solo travelers alike. Will definitely come back again because it felt like home away from home.',
-    images: [
-      'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=400',
-      'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=400',
-      'https://images.unsplash.com/photo-1595576508898-0ad5c879a061?w=400',
-    ],
-    createdAt: '2025-09-15T10:00:00Z',
-    likes: 12,
+    rating: Number(r.rating || 0),
+    comment: r.message || '',
+    images: Array.isArray(r.photos)
+      ? r.photos.map((p) => p.photo_url).filter(Boolean)
+      : [],
+    createdAt: r.created_at,
+    likes: 0,
     dislikes: 0,
-    replies: [
-      {
-        id: 'r1',
-        user: { name: 'Host Admin', role: 'owner' },
-        comment: 'Thank you so much Jane! Glad you enjoyed your stay.',
-        createdAt: '2025-09-16T09:30:00Z',
-      },
-    ],
-  },
-  {
-    id: '2',
-    user: { name: 'Carlos M.', isVerified: true, role: 'tourist', isCurrentUser: true },
-    rating: 4,
-    comment:
-      'Great value overall, though Wi-Fi was a bit inconsistent in the evenings.',
-    images: ['https://images.unsplash.com/photo-1618773928121-c32242e63f39?w=400'],
-    createdAt: '2025-09-14T12:20:00Z',
-    likes: 4,
-    dislikes: 1,
-  },
-  {
-    id: '3',
-    user: { name: 'Lina P.', role: 'tourist' },
-    rating: 3,
-    comment: 'Average experience. Clean room but a bit noisy at night.',
-    createdAt: '2025-09-10T08:15:00Z',
-    likes: 1,
-    dislikes: 0,
-  },
-];
-
-const ratingTabs = ['All', '5', '4', '3', '2', '1'] as const;
+    replies: [],
+  };
+  };
+}
 
 const Ratings = () => {
   const scheme = useColorScheme();
@@ -93,7 +85,36 @@ const Ratings = () => {
   const [activeFilter, setActiveFilter] =
     useState<(typeof ratingTabs)[number]>('All');
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
-  const [reviewState, setReviewState] = useState(SAMPLE_REVIEWS);
+  const { selectedAccommodationId } = useAccommodation();
+  const [reviewState, setReviewState] = useState<Review[]>([]);
+  const [loading, setLoading] = useState(false);
+  const { user } = useAuth();
+
+  useEffect(() => {
+    const load = async () => {
+      if (!selectedAccommodationId) {
+        setReviewState([]);
+        return;
+      }
+      setLoading(true);
+      try {
+        const rows = await getBusinessReviews(
+          selectedAccommodationId,
+          'Accommodation'
+        );
+        const mapReview = mapReviewFactory(String(user?.id || ''));
+        const mapped = rows.map(mapReview);
+        setReviewState(mapped);
+        debugLogger({ title: 'Ratings: Fetched reviews success', data: rows });
+      } catch (e) {
+        setReviewState([]);
+        debugLogger({ title: 'Ratings: Fetched reviews', data: reviewState });
+      } finally {
+        setLoading(false);
+      }
+    };
+    load();
+  }, [selectedAccommodationId]);
 
   const avgRating = useMemo(() => {
     if (!reviewState.length) return 0;
@@ -120,43 +141,39 @@ const Ratings = () => {
     return reviewState.filter((r) => r.rating === star);
   }, [activeFilter, reviewState]);
 
-  const toggleLike = (id: string, type: 'like' | 'dislike') => {
-    setReviewState((prev) =>
-      prev.map((r) => {
-        if (r.id !== id) return r;
-        let { likes, dislikes, youLiked, youDisliked } = r;
-        if (type === 'like') {
-          if (youLiked) {
-            likes -= 1;
-            youLiked = false;
-          } else {
-            likes += 1;
-            youLiked = true;
-            if (youDisliked) {
-              dislikes -= 1;
-              youDisliked = false;
-            }
-          }
-        } else {
-          if (youDisliked) {
-            dislikes -= 1;
-            youDisliked = false;
-          } else {
-            dislikes += 1;
-            youDisliked = true;
-            if (youLiked) {
-              likes -= 1;
-              youLiked = false;
-            }
-          }
-        }
-        return { ...r, likes, dislikes, youLiked, youDisliked };
-      })
-    );
+  // Lazy-load replies when expanding a review
+  const loadReplies = async (id: string) => {
+    try {
+      const reps = await getRepliesByReviewId(id);
+      setReviewState((prev) =>
+        prev.map((r) =>
+          r.id === id
+            ? {
+                ...r,
+                replies: reps.map((rep) => ({
+                  id: rep.id,
+                  user: { name: 'Owner', role: 'owner' },
+                  comment: rep.message,
+                  createdAt: rep.created_at,
+                })),
+              }
+            : r
+        )
+      );
+    } catch {}
   };
 
   const toggleExpand = (id: string) => {
-    setExpanded((e) => ({ ...e, [id]: !e[id] }));
+    setExpanded((e) => {
+      const next = !e[id];
+      if (next) {
+        const target = reviewState.find((r) => r.id === id);
+        if (target && (!target.replies || target.replies.length === 0)) {
+          loadReplies(id);
+        }
+      }
+      return { ...e, [id]: next };
+    });
   };
 
   const canReply = (
@@ -168,10 +185,34 @@ const Ratings = () => {
     return true; // tourist <-> owner only
   };
 
+  const confirmDelete = (id: string) => {
+    Alert.alert(
+      'Delete review',
+      'Are you sure you want to delete this review? This action cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              setLoading(true);
+              const { deleteReview } = await import('@/services/FeedbackService');
+              await deleteReview(id);
+              setReviewState((prev) => prev.filter((r) => r.id !== id));
+            } finally {
+              setLoading(false);
+            }
+          },
+        },
+      ]
+    );
+  };
+
   return (
-    <PageContainer style={{ paddingTop: 0 }}>
+    <PageContainer style={{ paddingTop: 0, marginBottom: 60 }}>
       {/* Summary */}
-      <RatingSummary 
+      <RatingSummary
         avgRating={avgRating}
         totalReviews={reviewState.length}
         distribution={distribution}
@@ -217,10 +258,10 @@ const Ratings = () => {
             item={item}
             expanded={expanded[item.id] || false}
             onToggleExpand={() => toggleExpand(item.id)}
-            onToggleLike={(type) => toggleLike(item.id, type)}
-            canReply={canReply('owner', item.user.role)}
+            canReply={canReply('owner', item.user.role) && !item.user.isCurrentUser}
+            canDelete={!!item.user.isCurrentUser}
+            onDelete={() => confirmDelete(item.id)}
             onReply={() => console.log('Reply to', item.id)}
-            onShare={() => console.log('Share review', item.id)}
           />
         )}
         contentContainerStyle={{ paddingVertical: 16, paddingBottom: 40 }}
@@ -232,6 +273,25 @@ const Ratings = () => {
             <ThemedText type="body-small">No reviews yet.</ThemedText>
           </Container>
         }
+        refreshing={loading}
+        onRefresh={() => {
+          // re-trigger effect by toggling selected id, or call loader directly
+          if (!selectedAccommodationId) return;
+          (async () => {
+            setLoading(true);
+            try {
+              const rows = await getBusinessReviews(
+                selectedAccommodationId,
+                'Accommodation'
+              );
+              const mapReview = mapReviewFactory(String(user?.id || ''));
+              const mapped = rows.map(mapReview);
+              setReviewState(mapped);
+            } finally {
+              setLoading(false);
+            }
+          })();
+        }}
       />
     </PageContainer>
   );

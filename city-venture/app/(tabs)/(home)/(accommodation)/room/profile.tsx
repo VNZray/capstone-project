@@ -1,14 +1,7 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNavigation, useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
-import {
-  Dimensions,
-  FlatList,
-  Image,
-  Platform,
-  StyleSheet,
-  View,
-} from 'react-native';
+import { Dimensions, FlatList, Image, Platform, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import Button from '@/components/Button';
@@ -28,6 +21,8 @@ import Details from './details';
 import Photos from './photos';
 import Ratings from './ratings';
 import placeholder from '@/assets/images/room-placeholder.png';
+import AddReview from '@/components/reviews/Addeview';
+import FeedbackService from '@/services/FeedbackService';
 
 const { width, height } = Dimensions.get('window');
 
@@ -39,31 +34,19 @@ const AccommodationProfile = () => {
   const colorScheme = useColorScheme();
   const { user } = useAuth();
   const { roomDetails } = useRoom();
-  const { bookings, loading, error, refetch } = useUserBookings();
-  // local state still if needed else can remove references
-  const [newReview, setNewReview] = useState('');
-  const [rating, setRating] = useState(5);
+  const { bookings } = useUserBookings();
   const [modalVisible, setModalVisible] = useState(false);
-  const [feedbackMessage, setFeedbackMessage] = useState('');
-  const [feedbackType, setFeedbackType] = useState<'success' | 'error' | ''>(
-    ''
-  );
+  const [reviewSubmitting, setReviewSubmitting] = useState(false);
+  const [reviewError, setReviewError] = useState<string | null>(null);
+  const [ratingsRefreshKey, setRatingsRefreshKey] = useState(0);
   const bg = colorScheme === 'dark' ? background.dark : background.light;
 
   useEffect(() => {
-    if (roomDetails?.room_type && roomDetails?.id) {
-      navigation.setOptions({
-        headerTitle: roomDetails.room_type,
-      });
+    if (roomDetails?.room_type) {
+      navigation.setOptions({ headerTitle: roomDetails.room_type });
     }
-
-    debugLogger({
-      title: 'Booking Data',
-      data: bookings,
-    });
-
-
-  }, [navigation, roomDetails?.room_type, roomDetails?.id]);
+    debugLogger({ title: 'Booking Data', data: bookings });
+  }, [navigation, roomDetails?.room_type, bookings]);
 
   const [averageAccommodationReviews, setAverageAccommodationReviews] =
     useState(0);
@@ -109,21 +92,18 @@ const AccommodationProfile = () => {
   const primaryIcon = activeTab === 'ratings' ? 'comment' : 'calendar-check';
   const handlePrimaryAction = () => {
     if (activeTab === 'ratings') {
-      // trigger review flow (placeholder)
-      console.log('Open write review modal');
+      if (user?.role_name?.toLowerCase() !== 'tourist') return;
+      setReviewError(null);
+      setModalVisible(true);
+      return;
+    }
+    if (user && roomDetails) {
+      router.push({
+        pathname: '/(tabs)/(home)/(accommodation)/room/booking',
+        params: { userId: user.id, roomId: roomDetails.id },
+      });
     } else {
-      // Navigate to booking flow with user ID and room ID
-      if (user && roomDetails) {
-        router.push({
-          pathname: '/(tabs)/(home)/(accommodation)/room/booking',
-          params: {
-            userId: user.id,
-            roomId: roomDetails.id,
-          },
-        });
-      } else {
-        console.log('User or room details not available');
-      }
+      console.log('User or room details not available');
     }
   };
 
@@ -200,20 +180,17 @@ const AccommodationProfile = () => {
             <View style={styles.tabContent}>
               {activeTab === 'details' && <Details />}
               {activeTab === 'photos' && <Photos />}
-              {activeTab === 'ratings' && <Ratings />}
+              {activeTab === 'ratings' && (
+                <Ratings />
+              )}
             </View>
           </>
         }
       />
-      {(() => {
+      {!modalVisible && (() => {
         const baseBottom = Platform.OS === 'ios' ? 60 : 80;
         return (
-          <View
-            style={[
-              styles.fabBar,
-              { paddingBottom: baseBottom + insets.bottom },
-            ]}
-          >
+          <View style={[styles.fabBar, { paddingBottom: baseBottom + insets.bottom }]}>
             {activeTab !== 'ratings' && (
               <Button
                 icon
@@ -236,6 +213,39 @@ const AccommodationProfile = () => {
           </View>
         );
       })()}
+      <AddReview
+        visible={modalVisible}
+        onClose={() => setModalVisible(false)}
+        submitting={reviewSubmitting}
+        error={reviewError}
+        title="Write a review"
+        onSubmit={async ({ rating, message }) => {
+          if (!roomDetails?.id) {
+            setReviewError('Missing room ID.');
+            return;
+          }
+          if (user?.role_name?.toLowerCase() !== 'tourist') {
+            setReviewError('Only tourists can write reviews.');
+            return;
+          }
+          try {
+            setReviewSubmitting(true);
+            await FeedbackService.createReview({
+              review_type: 'Room',
+              review_type_id: String(roomDetails.id),
+              rating,
+              message,
+              tourist_id: String(user?.id ?? ''),
+            });
+            setReviewSubmitting(false);
+            setModalVisible(false);
+            setRatingsRefreshKey((k) => k + 1);
+          } catch (e) {
+            setReviewSubmitting(false);
+            setReviewError('Failed to submit review. Please try again.');
+          }
+        }}
+      />
     </PageContainer>
   );
 };

@@ -7,11 +7,10 @@ interface EditDescriptionModalProps {
   open: boolean;
   initialFbLink?: string;
   initialIgLink?: string;
-  initialXLink?: string;
   initialWebsiteLink?: string;
   businessId?: string;
   onClose: () => void;
-  onSave: (facebook_url: string, instagram_url: string, x_url: string, website_url: string) => void;
+  onSave: (facebook_url: string, instagram_url: string, website_url: string) => void;
   onUpdate?: () => void;
 }
 
@@ -19,7 +18,6 @@ const EditSocialMediaModal: React.FC<EditDescriptionModalProps> = ({
   open,
   initialFbLink = "",
   initialIgLink = "",
-  initialXLink = "",
   initialWebsiteLink = "",
   businessId,
   onClose,
@@ -28,30 +26,28 @@ const EditSocialMediaModal: React.FC<EditDescriptionModalProps> = ({
 }) => {
   const [facebook_url, setFacebookUrl] = React.useState(initialFbLink);
   const [instagram_url, setInstagramUrl] = React.useState(initialIgLink);
-  const [x_url, setXUrl] = React.useState(initialXLink);
   const [website_url, setWebsiteUrl] = React.useState(initialWebsiteLink);
 
   React.useEffect(() => {
     setFacebookUrl(initialFbLink);
     setInstagramUrl(initialIgLink);
-    setXUrl(initialXLink);
     setWebsiteUrl(initialWebsiteLink);
-  }, [initialFbLink, initialIgLink, initialXLink, initialWebsiteLink, open]);
+  }, [initialFbLink, initialIgLink, initialWebsiteLink, open]);
 
   const handleSave = async () => {
     if (businessId) {
       try {
         await updateData(
           businessId,
-          { facebook_url, instagram_url, x_url, website_url },
+          { facebook_url, instagram_url, website_url },
           "business"
         );
-        onSave(facebook_url, instagram_url, x_url, website_url);
+        onSave(facebook_url, instagram_url, website_url);
       } catch (err) {
         console.error("Failed to update business contact", err);
       }
     } else {
-      onSave(facebook_url, instagram_url, x_url, website_url);
+      onSave(facebook_url, instagram_url, website_url);
     }
     if (onUpdate) onUpdate();
     onClose();
@@ -93,20 +89,6 @@ const EditSocialMediaModal: React.FC<EditDescriptionModalProps> = ({
               value={instagram_url}
               onChange={(e) => setInstagramUrl(e.target.value)}
               placeholder="https://instagram.com/yourhandle"
-              style={{ flex: 1, padding: 8, borderRadius: 8, border: '1px solid #e5e7eb', boxSizing: 'border-box' }}
-            />
-          </div>
-        </div>
-
-        <div>
-          <label style={{ display: 'block', marginBottom: 6, fontSize: 14, color: '#374151' }}>X</label>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <X size={18} style={{ color: '#000' }} />
-            <input
-              aria-label="X URL"
-              value={x_url}
-              onChange={(e) => setXUrl(e.target.value)}
-              placeholder="https://x.com/yourhandle"
               style={{ flex: 1, padding: 8, borderRadius: 8, border: '1px solid #e5e7eb', boxSizing: 'border-box' }}
             />
           </div>

@@ -2,6 +2,28 @@ import db from "../db.js";
 import { v4 as uuidv4 } from "uuid";
 import { handleDbError } from "../utils/errorHandler.js";
 
+// Helper: normalize various date inputs to MySQL DATETIME string (YYYY-MM-DD HH:MM:SS)
+// - Accepts ISO strings (e.g., 2025-11-04T00:47:00.000Z) or Date objects
+// - Formats using UTC to avoid implicit timezone shifts in storage
+// - Returns null if input is falsy or invalid
+function toMySQLDateTime(input) {
+  if (!input) return null;
+  try {
+    const d = input instanceof Date ? input : new Date(input);
+    if (isNaN(d.getTime())) return null;
+    const pad = (n) => String(n).padStart(2, "0");
+    const YYYY = d.getUTCFullYear();
+    const MM = pad(d.getUTCMonth() + 1);
+    const DD = pad(d.getUTCDate());
+    const HH = pad(d.getUTCHours());
+    const mm = pad(d.getUTCMinutes());
+    const ss = pad(d.getUTCSeconds());
+    return `${YYYY}-${MM}-${DD} ${HH}:${mm}:${ss}`;
+  } catch (_) {
+    return null;
+  }
+}
+
 // Get all promotions
 export async function getAllPromotions(req, res) {
   try {
@@ -79,6 +101,19 @@ export async function insertPromotion(req, res) {
       end_date
     } = req.body;
 
+    // Normalize date inputs to MySQL DATETIME format
+    const pStart = toMySQLDateTime(start_date);
+    const pEnd = toMySQLDateTime(end_date);
+
+    // Basic validation: end date must be after start date when both provided
+    if (pStart && pEnd) {
+      const startMs = new Date(pStart.replace(' ', 'T') + 'Z').getTime();
+      const endMs = new Date(pEnd.replace(' ', 'T') + 'Z').getTime();
+      if (!isNaN(startMs) && !isNaN(endMs) && endMs < startMs) {
+        return res.status(400).json({ message: "end_date must be after start_date" });
+      }
+    }
+
     const [data] = await db.query("CALL InsertPromotion(?, ?, ?, ?, ?, ?, ?, ?)", [
       id, 
       business_id, 
@@ -86,8 +121,8 @@ export async function insertPromotion(req, res) {
       description || null,
       image_url || null,
       external_link || null,
-      start_date || null,
-      end_date || null
+      pStart,
+      pEnd
     ]);
     
     res.status(201).json({
@@ -113,14 +148,27 @@ export async function updatePromotion(req, res) {
       is_active
     } = req.body;
 
+    // Normalize date inputs to MySQL DATETIME format
+    const pStart = toMySQLDateTime(start_date);
+    const pEnd = toMySQLDateTime(end_date);
+
+    // Basic validation: end date must be after start date when both provided
+    if (pStart && pEnd) {
+      const startMs = new Date(pStart.replace(' ', 'T') + 'Z').getTime();
+      const endMs = new Date(pEnd.replace(' ', 'T') + 'Z').getTime();
+      if (!isNaN(startMs) && !isNaN(endMs) && endMs < startMs) {
+        return res.status(400).json({ message: "end_date must be after start_date" });
+      }
+    }
+
     const [data] = await db.query("CALL UpdatePromotion(?, ?, ?, ?, ?, ?, ?, ?)", [
       id, 
       title || null, 
       description || null,
       image_url || null,
       external_link || null,
-      start_date || null, 
-      end_date || null,
+      pStart, 
+      pEnd,
       is_active !== undefined ? is_active : null
     ]);
 

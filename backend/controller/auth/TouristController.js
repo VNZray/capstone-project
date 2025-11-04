@@ -1,5 +1,5 @@
-import db from "../db.js";
-import { handleDbError } from "../utils/errorHandler.js";
+import db from "../../db.js";
+import { handleDbError } from "../../utils/errorHandler.js";
 import { v4 as uuidv4 } from "uuid";
 
 // Single source of truth for tourist fields used in SPs (excluding id which is always first)

@@ -1,7 +1,17 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNavigation } from 'expo-router';
 import { useEffect, useState, useCallback, useRef } from 'react';
-import { Dimensions, FlatList, Image, StyleSheet, View, RefreshControl, NativeSyntheticEvent, NativeScrollEvent } from 'react-native';
+import {
+  Dimensions,
+  FlatList,
+  Image,
+  StyleSheet,
+  View,
+  RefreshControl,
+  NativeSyntheticEvent,
+  NativeScrollEvent,
+  Platform,
+} from 'react-native';
 
 import Tabs from '@/components/Tabs';
 import { ThemedText } from '@/components/themed-text';
@@ -16,6 +26,10 @@ import Details from './details';
 import Ratings from './ratings';
 import Rooms from './rooms';
 import placeholder from '@/assets/images/placeholder.png';
+import Button from '@/components/Button';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import AddReview from '@/components/reviews/Addeview';
+import FeedbackService from '@/services/FeedbackService';
 
 const { width, height } = Dimensions.get('window');
 
@@ -24,7 +38,11 @@ const AccommodationProfile = () => {
   const [activeTab, setActiveTab] = useState<string>('details');
   const colorScheme = useColorScheme();
   const { user } = useAuth();
-  const { accommodationDetails, refreshAccommodation, refreshAllAccommodations } = useAccommodation();
+  const {
+    accommodationDetails,
+    refreshAccommodation,
+    refreshAllAccommodations,
+  } = useAccommodation();
 
   // Refresh & scroll state
   const [refreshing, setRefreshing] = useState(false);
@@ -45,28 +63,29 @@ const AccommodationProfile = () => {
     }
   }, [refreshAccommodation, refreshAllAccommodations]);
 
-  const handleScroll = useCallback((e: NativeSyntheticEvent<NativeScrollEvent>) => {
-    const y = e.nativeEvent.contentOffset.y;
-    const prev = lastOffset.current;
-    wasScrollingUpRef.current = y < prev;
-    atTopRef.current = y <= 0; // treat <=0 as top
-    lastOffset.current = y;
-  }, []);
+  const handleScroll = useCallback(
+    (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+      const y = e.nativeEvent.contentOffset.y;
+      const prev = lastOffset.current;
+      wasScrollingUpRef.current = y < prev;
+      atTopRef.current = y <= 0; // treat <=0 as top
+      lastOffset.current = y;
+    },
+    []
+  );
 
   const handleScrollEndDrag = useCallback(() => {
     if (atTopRef.current && wasScrollingUpRef.current && !refreshing) {
       onRefresh();
     }
   }, [onRefresh, refreshing]);
+  const insets = useSafeAreaInsets();
 
   const [loading, setLoading] = useState(true);
-  const [newReview, setNewReview] = useState('');
-  const [rating, setRating] = useState(5);
   const [modalVisible, setModalVisible] = useState(false);
-  const [feedbackMessage, setFeedbackMessage] = useState('');
-  const [feedbackType, setFeedbackType] = useState<'success' | 'error' | ''>(
-    ''
-  );
+  const [reviewSubmitting, setReviewSubmitting] = useState(false);
+  const [reviewError, setReviewError] = useState<string | null>(null);
+  const [ratingsRefreshKey, setRatingsRefreshKey] = useState(0);
   const bg = colorScheme === 'dark' ? background.dark : background.light;
 
   useEffect(() => {
@@ -113,7 +132,9 @@ const AccommodationProfile = () => {
         keyExtractor={() => 'header'}
         renderItem={() => null}
         contentContainerStyle={{ paddingBottom: 80 }}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
         onScroll={handleScroll}
         onScrollEndDrag={handleScrollEndDrag}
         scrollEventThrottle={32}
@@ -146,7 +167,9 @@ const AccommodationProfile = () => {
                       size={16}
                       color="#FFB007"
                     />
-                    {accommodationDetails?.address}, {accommodationDetails?.barangay_name}, {accommodationDetails?.municipality_name}
+                    {accommodationDetails?.address},{' '}
+                    {accommodationDetails?.barangay_name},{' '}
+                    {accommodationDetails?.municipality_name}
                   </ThemedText>
 
                   <ThemedText type="body-medium" style={{ marginTop: 4 }}>
@@ -175,6 +198,68 @@ const AccommodationProfile = () => {
             </View>
           </>
         }
+      />
+      {!modalVisible && (() => {
+        const baseBottom = Platform.OS === 'ios' ? 60 : 80;
+        return (
+          <View
+            style={[
+              styles.fabBar,
+              { paddingBottom: baseBottom + insets.bottom },
+            ]}
+          >
+            {activeTab === 'ratings' && user?.role_name?.toLowerCase() === 'tourist' && (
+              <Button
+                label={'Leave a Review'}
+                fullWidth
+                startIcon={'comment'}
+                color="primary"
+                variant="solid"
+                onPress={() => {
+                  setReviewError(null);
+                  setModalVisible(true);
+                }}
+                elevation={3}
+                style={{ flex: 1 }}
+              />
+            )}
+          </View>
+        );
+      })()}
+
+      {/* AddReview modal */}
+      <AddReview
+        visible={modalVisible}
+        onClose={() => setModalVisible(false)}
+        submitting={reviewSubmitting}
+        error={reviewError}
+        title="Write a review"
+        onSubmit={async ({ rating, message }) => {
+          if (!accommodationDetails?.id) {
+            setReviewError('Missing accommodation ID.');
+            return;
+          }
+          if (user?.role_name?.toLowerCase() !== 'tourist') {
+            setReviewError('Only tourists can write reviews.');
+            return;
+          }
+          try {
+            setReviewSubmitting(true);
+            await FeedbackService.createReview({
+              review_type: 'Accommodation',
+              review_type_id: String(accommodationDetails.id),
+              rating,
+              message,
+              tourist_id: String(user.id || ''),
+            });
+            setReviewSubmitting(false);
+            setModalVisible(false);
+            setRatingsRefreshKey((k) => k + 1);
+          } catch (e) {
+            setReviewSubmitting(false);
+            setReviewError('Failed to submit review. Please try again.');
+          }
+        }}
       />
     </View>
   );
@@ -211,6 +296,16 @@ const styles = StyleSheet.create({
     padding: 16,
     backgroundColor: 'transparent',
     marginBottom: 80,
+  },
+  fabBar: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    paddingHorizontal: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
   },
 });
 

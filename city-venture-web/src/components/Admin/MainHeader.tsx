@@ -67,7 +67,7 @@ export default function MainHeader({ onMenuClick }: MainHeaderProps) {
           >
             <ArrowLeft size={22} />
           </IconButton>
-          <ResponsiveText type="title-small" weight="bold">{title}</ResponsiveText>
+          <ResponsiveText type="card-title-large" weight="bold">{title}</ResponsiveText>
         </Box>
 
         {/* Right - Actions */}

@@ -1,5 +1,5 @@
 import express from "express";
-import * as businessController from "../controller/businessController.js"; // Add `.js` extension
+import * as businessController from "../controller/BusinessController.js"; // Add `.js` extension
 
 const router = express.Router();
 
