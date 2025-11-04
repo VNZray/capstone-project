@@ -164,7 +164,7 @@ function DropdownNavItem({
         <div className="nav-label">
           <span>{label}</span>
         </div>
-        {open ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+        {open ? <ChevronDown size={16} /> : <ChevronRight size={18} />}
       </button>
 
       {open && <div className="dropdown-children">{children}</div>}
