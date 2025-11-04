@@ -2,22 +2,20 @@ import React from "react";
 import { Card, Typography, Box, Stack } from "@mui/joy";
 import { TrendingUp, TrendingDown } from "lucide-react";
 
-interface StatCardProps {
-  icon: React.ReactNode;
-  label: string;
-  value: string;
+interface RevenueCardProps {
+  title: string;
+  amount: number;
   change: number;
   period: string;
-  color?: "primary" | "success" | "warning" | "danger";
+  icon?: React.ReactNode;
 }
 
-const StatCard: React.FC<StatCardProps> = ({
-  icon,
-  label,
-  value,
+const RevenueCard: React.FC<RevenueCardProps> = ({
+  title,
+  amount,
   change,
   period,
-  color = "primary",
+  icon,
 }) => {
   const isPositive = change >= 0;
 
@@ -32,33 +30,35 @@ const StatCard: React.FC<StatCardProps> = ({
         transition: "all 0.2s",
         "&:hover": {
           boxShadow: "md",
-          borderColor: `${color}.outlinedBorder`,
+          borderColor: "primary.outlinedBorder",
         },
       }}
     >
       <Stack spacing={1.5}>
         <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <Typography level="body-sm" sx={{ color: "text.secondary", fontWeight: 500 }}>
-            {label}
+            {title}
           </Typography>
-          <Box
-            sx={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              width: 36,
-              height: 36,
-              borderRadius: "50%",
-              bgcolor: `${color}.softBg`,
-              color: `${color}.solidBg`,
-            }}
-          >
-            {icon}
-          </Box>
+          {icon && (
+            <Box
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                width: 36,
+                height: 36,
+                borderRadius: "50%",
+                bgcolor: "primary.softBg",
+                color: "primary.solidBg",
+              }}
+            >
+              {icon}
+            </Box>
+          )}
         </Box>
 
         <Typography level="h2" fontWeight="700" sx={{ color: "text.primary" }}>
-          {value}
+          ₱{amount.toLocaleString()}
         </Typography>
 
         <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
@@ -76,7 +76,7 @@ const StatCard: React.FC<StatCardProps> = ({
           >
             {isPositive ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
             <Typography level="body-xs" fontWeight="600">
-              {Math.abs(change).toFixed(1)}%
+              {Math.abs(change)}%
             </Typography>
           </Box>
           <Typography level="body-xs" sx={{ color: "text.tertiary" }}>
@@ -88,4 +88,4 @@ const StatCard: React.FC<StatCardProps> = ({
   );
 };
 
-export default StatCard;
+export default RevenueCard;
