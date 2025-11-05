@@ -2,10 +2,9 @@ import React from "react";
 import { useLocation } from "react-router-dom";
 import "./Header.css";
 import { useNavigate, Link } from "react-router-dom";
-import Text from "@/src/components/Text";
 import ResponsiveText from "@/src/components/ResponsiveText";
+import ResponsiveButton from "@/src/components/ResponsiveButton";
 import { useAuth } from "@/src/context/AuthContext"; // adjust path if needed
-import Button from "@/src/components/Button";
 
 export default function Header(): React.JSX.Element {
   const location = useLocation();
@@ -43,13 +42,18 @@ export default function Header(): React.JSX.Element {
       {/* User Info */}
       <div className="header-user">
         <Link to={`/profile`}>
-          <Text variant="normal">
+          <ResponsiveText type="body-small" weight="medium">
             {user?.first_name || "Guest"} {user?.last_name || ""}
-          </Text>
+          </ResponsiveText>
         </Link>
-        <Button variant="primary" color="white" fontSize={14} iconName="FaSignOutAlt" onClick={handleLogout}>
+        <ResponsiveButton 
+          variant="solid" 
+          color="primary" 
+          onClick={handleLogout}
+          size="sm"
+        >
           Log Out
-        </Button>
+        </ResponsiveButton>
       </div>
     </header>
   );

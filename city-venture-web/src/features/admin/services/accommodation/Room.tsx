@@ -1,9 +1,9 @@
-import Text from "@/src/components/Text";
+import ResponsiveText from "@/src/components/ResponsiveText";
 
 const Room: React.FC = () => {
   return (
     <>
-      <Text variant="title">Room</Text>
+      <ResponsiveText type="title-large" weight="bold">Room</ResponsiveText>
     </>
   );
 };

@@ -1,7 +1,7 @@
 // src/pages/manage-business/components/BusinessMap.tsx
 import React from "react";
 import { GoogleMap, Marker, useJsApiLoader } from "@react-google-maps/api";
-import Text from "@/src/components/Text";
+import ResponsiveText from "@/src/components/ResponsiveText";
 
 type BusinessMapProps = {
   latitude?: number | string;
@@ -35,7 +35,7 @@ const BusinessMap: React.FC<BusinessMapProps> = ({
     lng: Number(longitude) || 120.9842,
   };
 
-  if (!isLoaded) return <Text>Loading map...</Text>;
+  if (!isLoaded) return <ResponsiveText>Loading map...</ResponsiveText>;
 
   return (
     <GoogleMap

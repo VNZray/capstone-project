@@ -17,12 +17,12 @@ import {
 import placeholderImage from "@/src/assets/images/placeholder-image.png";
 import type { Room } from "@/src/types/Business";
 import { useBusiness } from "@/src/context/BusinessContext";
-import CardHeader from "@/src/components/CardHeader";
 import { getData, insertData } from "@/src/services/Service";
 import { supabase } from "@/src/lib/supabase";
 import { UploadIcon } from "lucide-react";
 import type { Amenity } from "@/src/types/Amenity";
 import { useEffect } from "react";
+import ResponsiveText from "@/src/components/ResponsiveText";
 interface AddRoomModalProps {
   open: boolean;
   onClose: () => void;
@@ -164,7 +164,7 @@ export default function AddRoomModal({
         variant="outlined"
         role="dialog"
       >
-        <CardHeader title="Add New Room" color="white" />
+        <ResponsiveText type="title-small">Add New Room</ResponsiveText>
 
         <form
           onSubmit={(e) => {
