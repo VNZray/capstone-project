@@ -12,14 +12,23 @@
     npm i
     npx expo start
 
-## Use Global Components for Unified UI
+## Unified UI and Organized Files
 
-    [] PageContainer.tsx
-    [] Container.tsx
-    [] ResponsiveText.tsx
-    [] ResponsiveButton.tsx
-    [] IconButton.tsx
-    [] SearchBar.tsx
-    
-    - Go To
-        http://localhost:5173/test
+1. Use global omponents for consistent and unified UI
+    - PageContainer.tsx
+    - Container.tsx
+    - ResponsiveText.tsx
+    - ResponsiveButton.tsx
+    - IconButton.tsx
+    - SearchBar.tsx
+2. Use utils/Colors.ts for consistent color
+3. Configure the IP Address in api.tsx to run the app locally
+4. Use clean architecture
+
+## For Component Demo
+
+    http://localhost:5173/test
+
+## For Admin
+
+    http://localhost:5173/tourism/login
