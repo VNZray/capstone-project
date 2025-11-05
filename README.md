@@ -12,14 +12,14 @@
     npm i
     npx expo start
 
-## Use Global Components for Unified UI
+1. Use Global Components for Unified UI
+    - PageContainer.tsx
+    - Container.tsx
+    - ResponsiveText.tsx
+    - ResponsiveButton.tsx
+    - IconButton.tsx
+    - SearchBar.tsx
 
-    [] PageContainer.tsx
-    [] Container.tsx
-    [] ResponsiveText.tsx
-    [] ResponsiveButton.tsx
-    [] IconButton.tsx
-    [] SearchBar.tsx
-    
-    - Go To
-        http://localhost:5173/test
+## For Testing, go to
+
+    http://localhost:5173/test
