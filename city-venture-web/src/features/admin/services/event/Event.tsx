@@ -1,9 +1,9 @@
-import Text from "@/src/components/Text";
+import ResponsiveText from "@/src/components/ResponsiveText";
 
 const Event: React.FC = () => {
   return (
     <>
-      <Text variant="title">Event</Text>
+      <ResponsiveText type="title-large" weight="bold">Event</ResponsiveText>
     </>
   );
 };

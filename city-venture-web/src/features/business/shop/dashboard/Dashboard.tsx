@@ -1,9 +1,9 @@
-import Text from "@/src/components/Text";
+import ResponsiveText from "@/src/components/ResponsiveText";
 
 const Dashboard = () => {
   return (
     <>
-      <Text variant="title">Shop Dashboard</Text>
+      <ResponsiveText type="title-large" weight="bold">Shop Dashboard</ResponsiveText>
     </>
   );
 };

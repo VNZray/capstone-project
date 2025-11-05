@@ -3,7 +3,7 @@ import PageContainer from "@/src/components/PageContainer";
 import Container from "@/src/components/Container";
 import { Button, LinearProgress, IconButton, Box, Stack } from "@mui/joy";
 import { ArrowBackRounded } from "@mui/icons-material";
-import Text from "@/src/components/Text";
+import ResponsiveText from "@/src/components/ResponsiveText";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/src/context/AuthContext";
 import { colors } from "@/src/utils/Colors";
@@ -27,7 +27,6 @@ import type { Permit } from "@/src/types/Permit";
 import type { BusinessAmenity } from "@/src/types/Amenity";
 import type { Address } from "@/src/types/Address";
 import api from "@/src/services/api";
-import type { Owner } from "@/src/types/Owner";
 // steps definition
 const steps = [
   "Basic",
@@ -405,35 +404,21 @@ const BusinessRegistration: React.FC = () => {
                 }}
               >
                 <div>
-                  <Text
-                    variant="title"
-                    style={{
-                      display: "block",
-                      fontSize: 18,
-                      fontWeight: 600,
-                      lineHeight: 1.2,
-                    }}
-                  >
-                    Register your business
-                  </Text>
-                  <Text
-                    variant="label"
-                    color={colors.gray}
-                    style={{ fontSize: 12 }}
-                  >
+                  <div style={{ marginBottom: 8 }}>
+                    <ResponsiveText type="title-extra-small" weight="bold">
+                      Register your business
+                    </ResponsiveText>
+                  </div>
+                  <ResponsiveText type="body-extra-small" color={colors.gray}>
                     A simple, step-by-step flow to get you listed.
-                  </Text>
+                  </ResponsiveText>
                 </div>
               </div>
 
               <Stack alignItems="flex-end" gap={0.5}>
-                <Text
-                  variant="label"
-                  color={colors.gray}
-                  style={{ fontSize: 12 }}
-                >
+                <ResponsiveText type="body-small" color={colors.gray}>
                   Step {activeStep + 1} of {steps.length}
-                </Text>
+                </ResponsiveText>
                 <Box sx={{ width: 160, "--LinearProgress-thickness": "4px" }}>
                   <LinearProgress
                     determinate

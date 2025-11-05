@@ -2,7 +2,7 @@ import { useState } from "react";
 import Container from "@/src/components/Container";
 import PageContainer from "@/src/components/PageContainer";
 import ResponsiveText from "@/src/components/ResponsiveText";
-import Button from "@/src/components/Button";
+import ResponsiveButton from "@/src/components/ResponsiveButton";
 import StaffAddModal, { type StaffRole } from "@/src/components/StaffAddModal";
 import { Select, Option } from "@mui/joy";
 
@@ -70,7 +70,9 @@ const ManageStaff = () => {
           <ResponsiveText type="sub-title-small" weight="semi-bold" mb={0}>
             Team
           </ResponsiveText>
-          <Button variant="primary" onClick={() => setAddOpen(true)}>Add Staff</Button>
+          <ResponsiveButton variant="solid" color="primary" onClick={() => setAddOpen(true)}>
+            Add Staff
+          </ResponsiveButton>
         </div>
       </Container>
 
@@ -133,19 +135,26 @@ const ManageStaff = () => {
                     </Select>
                   </div>
                   <div style={{ display: "flex", alignItems: "flex-end", gap: 8 }}>
-                    <Button
-                      variant={s.is_active ? "secondary" : "primary"}
+                    <ResponsiveButton
+                      variant={s.is_active ? "outlined" : "solid"}
+                      color={s.is_active ? "secondary" : "primary"}
                       onClick={() => handleToggleActive(s.id)}
-                      style={{ width: "100%" }}
+                      fullWidth
+                      size="sm"
                     >
                       {s.is_active ? "Deactivate" : "Activate"}
-                    </Button>
+                    </ResponsiveButton>
                   </div>
                 </div>
                 <div style={{ display: "flex", justifyContent: "flex-end" }}>
-                  <Button variant="cancel" onClick={() => handleRemove(s.id)}>
+                  <ResponsiveButton 
+                    variant="outlined" 
+                    color="error" 
+                    onClick={() => handleRemove(s.id)}
+                    size="sm"
+                  >
                     Remove
-                  </Button>
+                  </ResponsiveButton>
                 </div>
               </Container>
             ))}

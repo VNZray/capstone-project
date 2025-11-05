@@ -2,9 +2,11 @@ import { useState } from "react";
 import Container from "@/src/components/Container";
 import PageContainer from "@/src/components/PageContainer";
 import ResponsiveText from "@/src/components/ResponsiveText";
-import Button from "@/src/components/Button";
 import StaffAddModal, { type StaffRole } from "@/src/components/StaffAddModal";
-import { Select, Option } from "@mui/joy";
+import { Input, Button } from "@mui/joy";
+import StaffCard from "./components/StaffCard";
+import { Search } from "lucide-react";
+import NoDataFound from "@/src/components/NoDataFound";
 
 type Staff = {
   id: string;
@@ -16,13 +18,14 @@ type Staff = {
   is_active: boolean;
 };
 
-const ROLE_OPTIONS: { label: string; value: StaffRole }[] = [
-  { label: "Manager", value: "Manager" },
-  { label: "Cashier", value: "Cashier" },
-  { label: "Front Desk", value: "Front Desk" },
-  { label: "Housekeeping", value: "Housekeeping" },
-  { label: "Staff", value: "Staff" },
-];
+// Commented out for now - can be reactivated when implementing role management
+// const ROLE_OPTIONS: { label: string; value: StaffRole }[] = [
+//   { label: "Manager", value: "Manager" },
+//   { label: "Cashier", value: "Cashier" },
+//   { label: "Front Desk", value: "Front Desk" },
+//   { label: "Housekeeping", value: "Housekeeping" },
+//   { label: "Staff", value: "Staff" },
+// ];
 
 const uuid = () => crypto.randomUUID();
 
@@ -30,8 +33,15 @@ const ManageStaff = () => {
   // Staff list
   const [staff, setStaff] = useState<Staff[]>([]);
   const [addOpen, setAddOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
 
-  const handleAddStaff = (data: { first_name: string; last_name?: string; email: string; phone_number?: string; role: StaffRole; }) => {
+  const handleAddStaff = (data: {
+    first_name: string;
+    last_name?: string;
+    email: string;
+    phone_number?: string;
+    role: StaffRole;
+  }) => {
     const item: Staff = {
       id: uuid(),
       first_name: data.first_name,
@@ -44,115 +54,113 @@ const ManageStaff = () => {
     setStaff((prev) => [item, ...prev]);
   };
 
-  const handleChangeRole = (id: string, next: StaffRole) => {
-    setStaff((prev) => prev.map((s) => (s.id === id ? { ...s, role: next } : s)));
-  };
+  // Commented out for now - can be reactivated when implementing staff management actions
+  // const handleChangeRole = (id: string, next: StaffRole) => {
+  //   setStaff((prev) =>
+  //     prev.map((s) => (s.id === id ? { ...s, role: next } : s))
+  //   );
+  // };
 
-  const handleToggleActive = (id: string) => {
-    setStaff((prev) => prev.map((s) => (s.id === id ? { ...s, is_active: !s.is_active } : s)));
-  };
+  // const handleToggleActive = (id: string) => {
+  //   setStaff((prev) =>
+  //     prev.map((s) => (s.id === id ? { ...s, is_active: !s.is_active } : s))
+  //   );
+  // };
 
-  const handleRemove = (id: string) => {
-    setStaff((prev) => prev.filter((s) => s.id !== id));
-  };
+  // const handleRemove = (id: string) => {
+  //   setStaff((prev) => prev.filter((s) => s.id !== id));
+  // };
+
+  // Filter staff based on search term
+  const filteredStaff = staff.filter((s) => {
+    const searchLower = searchTerm.toLowerCase();
+    return (
+      s.first_name.toLowerCase().includes(searchLower) ||
+      s.last_name?.toLowerCase().includes(searchLower) ||
+      s.email.toLowerCase().includes(searchLower) ||
+      s.phone_number?.toLowerCase().includes(searchLower) ||
+      s.role.toLowerCase().includes(searchLower)
+    );
+  });
 
   return (
     <PageContainer>
       {/* Header */}
-      <Container padding="0">
-        <ResponsiveText type="title-small" weight="bold">
-          Staff Management
-        </ResponsiveText>
-      </Container>
-      {/* Add Staff Modal trigger */}
-      <Container elevation={3}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <ResponsiveText type="sub-title-small" weight="semi-bold" mb={0}>
-            Team
+      <Container gap="0" padding="0" elevation={3}>
+        <Container
+          direction="row"
+          justify="space-between"
+          align="center"
+          padding="16px 16px 0 16px"
+        >
+          <ResponsiveText type="title-small" weight="bold">
+            Manage Staff
           </ResponsiveText>
-          <Button variant="primary" onClick={() => setAddOpen(true)}>Add Staff</Button>
-        </div>
+
+          <Button
+            size="lg"
+            color="primary"
+            onClick={() => setAddOpen(true)}
+            sx={{ width: { xs: "100%", sm: "auto" } }}
+          >
+            Add Staff
+          </Button>
+        </Container>
+
+        {/* Search + Filters */}
+        <Container
+          direction="row"
+          justify="space-between"
+          align="center"
+          gap="16px"
+        >
+          <Input
+            startDecorator={<Search />}
+            placeholder="Search Staff"
+            size="lg"
+            fullWidth
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)} // 👈 bind state
+          />
+        </Container>
       </Container>
 
       {/* Staff List */}
-      <Container>
-        <ResponsiveText type="sub-title-small" weight="semi-bold" mb={0.25}>
+      <Container padding="0 16px 16px 16px">
+        <ResponsiveText type="sub-title-small" weight="semi-bold">
           Team Members
         </ResponsiveText>
         {staff.length === 0 ? (
-          <ResponsiveText type="body-medium" color="#666">
-            No staff yet. Add your first team member above.
-          </ResponsiveText>
+          <NoDataFound
+            icon="database"
+            title="No Staff Yet"
+            message="No staff members yet. Add your first team member above."
+          />
+        ) : filteredStaff.length === 0 ? (
+          <NoDataFound
+            icon="search"
+            title="No Results Found"
+            message={`No staff members match "${searchTerm}". Try a different search term.`}
+          />
         ) : (
           <div
             style={{
               display: "grid",
-              gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))",
-              gap: 12,
+              gridTemplateColumns: "repeat(auto-fill,minmax(280px,1fr))",
+              gap: 20,
             }}
           >
-            {staff.map((s) => (
-              <Container key={s.id} elevation={2} style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <ResponsiveText type="card-title-small" weight="bold">
-                    {s.first_name} {s.last_name || ""}
-                  </ResponsiveText>
-                  <span
-                    style={{
-                      fontSize: "0.75rem",
-                      fontWeight: 600,
-                      padding: "2px 8px",
-                      borderRadius: 999,
-                      background: s.is_active ? "#e6f7ee" : "#f4f4f4",
-                      color: s.is_active ? "#0a8f5a" : "#666",
-                    }}
-                  >
-                    {s.is_active ? "Active" : "Inactive"}
-                  </span>
-                </div>
-                <ResponsiveText type="card-sub-title-small" color="#555">
-                  {s.role}
-                </ResponsiveText>
-                <ResponsiveText type="body-small" color="#444">
-                  {s.email}
-                </ResponsiveText>
-                {s.phone_number ? (
-                  <ResponsiveText type="body-small" color="#444">
-                    {s.phone_number}
-                  </ResponsiveText>
-                ) : null}
-
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-                  <div>
-                    <Select value={s.role} onChange={(_e, val) => val && handleChangeRole(s.id, val)}>
-                      {ROLE_OPTIONS.map((opt) => (
-                        <Option key={opt.value} value={opt.value}>
-                          {opt.label}
-                        </Option>
-                      ))}
-                    </Select>
-                  </div>
-                  <div style={{ display: "flex", alignItems: "flex-end", gap: 8 }}>
-                    <Button
-                      variant={s.is_active ? "secondary" : "primary"}
-                      onClick={() => handleToggleActive(s.id)}
-                      style={{ width: "100%" }}
-                    >
-                      {s.is_active ? "Deactivate" : "Activate"}
-                    </Button>
-                  </div>
-                </div>
-                <div style={{ display: "flex", justifyContent: "flex-end" }}>
-                  <Button variant="cancel" onClick={() => handleRemove(s.id)}>
-                    Remove
-                  </Button>
-                </div>
-              </Container>
+            {filteredStaff.map((s) => (
+              <StaffCard key={s.id} email={s.email} password="******" />
             ))}
           </div>
         )}
       </Container>
-      <StaffAddModal open={addOpen} onClose={() => setAddOpen(false)} onSave={handleAddStaff} />
+      <StaffAddModal
+        open={addOpen}
+        onClose={() => setAddOpen(false)}
+        onSave={handleAddStaff}
+      />
     </PageContainer>
   );
 };

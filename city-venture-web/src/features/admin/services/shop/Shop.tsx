@@ -1,9 +1,9 @@
-import Text from "@/src/components/Text";
+import ResponsiveText from "@/src/components/ResponsiveText";
 
 const Shop: React.FC = () => {
   return (
     <>
-      <Text variant="title">Shop</Text>
+      <ResponsiveText type="title-large" weight="bold">Shop</ResponsiveText>
     </>
   );
 };

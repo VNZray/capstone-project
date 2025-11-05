@@ -8,7 +8,7 @@ import {
   Textarea,
 } from "@mui/joy";
 import { updateData } from "@/src/services/Service";
-import CardHeader from "@/src/components/CardHeader";
+import ResponsiveText from "@/src/components/ResponsiveText";
 
 interface EditDescriptionModalProps {
   open: boolean;
@@ -53,7 +53,7 @@ const EditDescriptionModal: React.FC<EditDescriptionModalProps> = ({
   return (
     <Modal open={open} onClose={onClose}>
       <ModalDialog size="lg" variant="outlined" maxWidth={600} minWidth={600}>
-        <CardHeader title="Edit Description" color="white" />
+        <ResponsiveText type="title-small">Edit Room Description</ResponsiveText>
         <DialogContent>
           <Textarea
             minRows={4}

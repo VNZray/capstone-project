@@ -15,8 +15,8 @@ import {
   getData,
   insertData,
 } from "@/src/services/Service";
-import CardHeader from "@/src/components/CardHeader";
 import type { Amenity } from "@/src/types/Amenity";
+import ResponsiveText from "@/src/components/ResponsiveText";
 interface EditBusinessModalProps {
   open: boolean;
   roomId?: string;
@@ -118,7 +118,7 @@ const EditAmenitiesModal: React.FC<EditBusinessModalProps> = ({
   return (
     <Modal open={open} onClose={onClose}>
       <ModalDialog size="lg" variant="outlined" maxWidth={600} minWidth={600}>
-        <CardHeader title="Edit Business" color="white" />
+        <ResponsiveText type="title-small">Add New Room</ResponsiveText>
         <DialogContent>
           <FormControl>
             <FormLabel>Update Amenities</FormLabel>
