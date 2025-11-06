@@ -3,16 +3,16 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { IoAdd } from "react-icons/io5";
 import Text from "@/src/components/Text";
 import SearchBar from "@/src/components/SearchBar";
-import CategoryFilter from "@/src/components/Admin/touristSpot/CategoryFilter";
-import Pagination from "@/src/components/Admin/touristSpot/Pagination";
-import TouristSpotTable from "@/src/components/Admin/touristSpot/TouristSpotTable";
-import TouristSpotForm from "@/src/components/Admin/touristSpot/TouristSpotForm";
+import CategoryFilter from "@/src/features/admin/services/tourist-spot/components/CategoryFilter";
+import Pagination from "@/src/features/admin/services/tourist-spot/components/Pagination";
+import TouristSpotTable from "@/src/features/admin/services/tourist-spot/components/TouristSpotTable";
+import TouristSpotForm from "@/src/features/admin/services/tourist-spot/components/TouristSpotForm";
 import type { TouristSpot } from "@/src/types/TouristSpot";
 import { apiService } from "@/src/utils/api";
 import "./Spot.css";
 import Container from "@/src/components/Container";
 import { colors } from "@/src/utils/Colors";
-import FeaturedSpotsModal from "@/src/components/Admin/touristSpot/FeaturedSpotsModal";
+import FeaturedSpotsModal from "@/src/features/admin/services/tourist-spot/components/FeaturedSpotsModal";
 
 const Spot = () => {
   const [currentPage, setCurrentPage] = useState(1);

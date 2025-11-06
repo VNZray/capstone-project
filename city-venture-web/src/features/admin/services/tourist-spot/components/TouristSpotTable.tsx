@@ -2,7 +2,7 @@ import React from "react";
 import Typography from "@mui/joy/Typography";
 import type { TouristSpot } from "@/src/types/TouristSpot";
 import Chip from "@mui/joy/Chip";
-import "@/src/components/styles/touristspots/TouristSpotTable.css";
+import "./TouristSpotTable.css";
 
 interface TouristSpotTableProps {
   spots: TouristSpot[];

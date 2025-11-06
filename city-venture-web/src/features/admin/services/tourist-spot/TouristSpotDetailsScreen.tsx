@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import TouristSpotDetails from "@/src/components/Admin/touristSpot/TouristSpotDetails";
-import TouristSpotForm from "@/src/components/Admin/touristSpot/TouristSpotForm";
+import TouristSpotDetails from "@/src/features/admin/services/tourist-spot/components/TouristSpotDetails";
+import TouristSpotForm from "@/src/features/admin/services/tourist-spot/components/TouristSpotForm";
 import { apiService } from "@/src/utils/api";
 import type { TouristSpot } from "@/src/types/TouristSpot";
 

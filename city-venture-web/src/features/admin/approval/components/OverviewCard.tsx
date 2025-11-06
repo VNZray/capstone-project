@@ -8,7 +8,7 @@ import {
   Button,
   Divider,
 } from "@mui/joy";
-import "@/src/components/styles/approval/OverviewCard.css";
+import "./OverviewCard.css";
 
 interface OverviewCardProps {
   title: string;

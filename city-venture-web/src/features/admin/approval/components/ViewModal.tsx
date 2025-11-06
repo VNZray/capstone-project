@@ -14,7 +14,7 @@ import {
 } from "@mui/joy";
 import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
 import CheckRoundedIcon from "@mui/icons-material/CheckRounded";
-import "@/src/components/styles/approval/ViewModal.css";
+import "./ViewModal.css";
 
 interface ViewModalProps {
   isOpen: boolean;
