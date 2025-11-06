@@ -3,6 +3,7 @@ import { Box, Typography, Stack } from "@mui/joy";
 import { SearchX, Database, FileX, Inbox } from "lucide-react";
 
 interface NoDataFoundProps {
+  children?: React.ReactNode;
   title?: string;
   message?: string;
   icon?: "search" | "database" | "file" | "inbox";
@@ -14,6 +15,7 @@ const NoDataFound: React.FC<NoDataFoundProps> = ({
   message = "We couldn't find what you searched for. Try searching again.",
   icon = "search",
   size = "medium",
+  children,
 }) => {
   // Icon size mapping
   const iconSizeMap = {
@@ -133,6 +135,8 @@ const NoDataFound: React.FC<NoDataFoundProps> = ({
         >
           {message}
         </Typography>
+
+        {children}
       </Stack>
     </Box>
   );

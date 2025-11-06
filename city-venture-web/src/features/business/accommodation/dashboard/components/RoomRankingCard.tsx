@@ -2,6 +2,7 @@ import React from "react";
 import { Card, Typography, Box, Stack, Chip } from "@mui/joy";
 import { TrendingUp, Award, Star } from "lucide-react";
 import { colors } from "@/src/utils/Colors";
+import Container from "@/src/components/Container";
 
 interface RoomRank {
   roomNumber: string;
@@ -39,15 +40,11 @@ const RoomRankingCard: React.FC<RoomRankingCardProps> = ({ rooms, title, type })
   };
 
   return (
-    <Card
-      variant="outlined"
-      sx={{
-        p: 0,
-        borderRadius: 12,
-        border: "1px solid",
-        borderColor: "divider",
-        overflow: "hidden",
-      }}
+    <Container
+      elevation={2}
+      hoverEffect="lift"
+      hoverDuration={300}
+      hover
     >
       <Box sx={{ p: 2.5, borderBottom: "1px solid", borderColor: "divider", display: "flex", alignItems: "center", gap: 1 }}>
         <TrendingUp size={20} style={{ color: colors.primary }} />
@@ -133,7 +130,7 @@ const RoomRankingCard: React.FC<RoomRankingCardProps> = ({ rooms, title, type })
           </Stack>
         )}
       </Box>
-    </Card>
+    </Container>
   );
 };
 

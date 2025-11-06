@@ -4,9 +4,8 @@ import CardContent from "@mui/joy/CardContent";
 import CardActions from "@mui/joy/CardActions";
 import Typography from "@mui/joy/Typography";
 import Chip from "@mui/joy/Chip";
-import Button from "@mui/joy/Button";
 import Box from "@mui/joy/Box";
-import IconButton from "@mui/joy/IconButton";
+// import IconButton from "@mui/joy/IconButton";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 import HotelIcon from "@mui/icons-material/Hotel"; // Occupied
@@ -17,6 +16,10 @@ import { Grid, Dropdown, Menu, MenuButton, MenuItem } from "@mui/joy";
 import { colors } from "@/src/utils/Colors";
 import { deleteData, updateData } from "@/src/services/Service";
 import { PeopleAltTwoTone } from "@mui/icons-material";
+import Container from "@/src/components/Container";
+import IconButton from "@/src/components/IconButton";
+import { Delete, Trash } from "lucide-react";
+import Button from "@/src/components/Button";
 
 interface RoomCardProps {
   id: string;
@@ -93,13 +96,7 @@ const RoomCard: React.FC<RoomCardProps> = ({
   const statuses = ["Available", "Reserved", "Occupied", "Maintenance"];
 
   return (
-    <Card
-      variant="outlined"
-      sx={{
-        maxWidth: "100%",
-        borderRadius: 8,
-      }}
-    >
+    <Container elevation={2}>
       <Box sx={{ position: "relative" }}>
         <img
           src={image}
@@ -213,7 +210,12 @@ const RoomCard: React.FC<RoomCardProps> = ({
             }}
           >
             {amenities.map((a, idx) => (
-              <Chip key={`${a}-${idx}`} size="sm" variant="soft" color="neutral">
+              <Chip
+                key={`${a}-${idx}`}
+                size="sm"
+                variant="soft"
+                color="neutral"
+              >
                 {a}
               </Chip>
             ))}
@@ -229,6 +231,10 @@ const RoomCard: React.FC<RoomCardProps> = ({
           gap: 1,
         }}
       >
+        {/* <Button onClick={onClick} fullWidth variant="solid">
+          View Details
+        </Button> */}
+
         <Button onClick={onClick} fullWidth variant="solid">
           View Details
         </Button>
@@ -247,7 +253,11 @@ const RoomCard: React.FC<RoomCardProps> = ({
             <MenuButton
               slots={{ root: IconButton }}
               slotProps={{
-                root: { variant: "solid", sx: { borderRadius: 2, flex: "0 0 auto" } },
+                root: {
+                  variant: "soft",
+                  colorScheme: "secondary",
+                  sx: { borderRadius: 2, flex: "0 0 auto" },
+                },
               }}
             >
               {getStatusIcon(room_status)}
@@ -266,17 +276,12 @@ const RoomCard: React.FC<RoomCardProps> = ({
             </Menu>
           </Dropdown>
 
-          <IconButton
-            sx={{ borderRadius: 2 }}
-            color="danger"
-            variant="solid"
-            onClick={deleteRoom}
-          >
-            <DeleteIcon />
+          <IconButton colorScheme="red" variant="soft" onClick={deleteRoom}>
+            <Trash />
           </IconButton>
         </Box>
       </CardActions>
-    </Card>
+    </Container>
   );
 };
 

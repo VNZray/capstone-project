@@ -3,10 +3,13 @@ import Container from "@/src/components/Container";
 import PageContainer from "@/src/components/PageContainer";
 import ResponsiveText from "@/src/components/ResponsiveText";
 import StaffAddModal, { type StaffRole } from "@/src/components/StaffAddModal";
-import { Input, Button } from "@mui/joy";
+import { Input } from "@mui/joy";
 import StaffCard from "./components/StaffCard";
 import { Search } from "lucide-react";
 import NoDataFound from "@/src/components/NoDataFound";
+import Button from "@/src/components/Button";
+import IconButton from "@/src/components/IconButton";
+import { Add } from "@mui/icons-material";
 
 type Staff = {
   id: string;
@@ -96,16 +99,17 @@ const ManageStaff = () => {
           <ResponsiveText type="title-small" weight="bold">
             Manage Staff
           </ResponsiveText>
-
-          <Button
-            size="lg"
-            color="primary"
-            onClick={() => setAddOpen(true)}
-            sx={{ width: { xs: "100%", sm: "auto" } }}
-          >
-            Add Staff
-          </Button>
         </Container>
+
+        <IconButton
+          onClick={() => setAddOpen(true)}
+          size="lg"
+          floating
+          floatPosition="bottom-right"
+          hoverEffect="rotate"
+        >
+          <Add />
+        </IconButton>
 
         {/* Search + Filters */}
         <Container
@@ -135,7 +139,15 @@ const ManageStaff = () => {
             icon="database"
             title="No Staff Yet"
             message="No staff members yet. Add your first team member above."
-          />
+          >
+            <Button
+              startDecorator={<Add />}
+              size="lg"
+              onClick={() => setAddOpen(true)}
+            >
+              Add Staff
+            </Button>
+          </NoDataFound>
         ) : filteredStaff.length === 0 ? (
           <NoDataFound
             icon="search"

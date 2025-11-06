@@ -1,953 +1,870 @@
-import { Divider, Box } from "@mui/joy";
-import Container from "../components/Container";
-import PageContainer from "../components/PageContainer";
-import ResponsiveButton from "../components/ResponsiveButton";
+import Button from "../components/Button";
 import IconButton from "../components/IconButton";
-import ResponsiveText from "../components/ResponsiveText";
+import { Box, Typography, Divider } from "@mui/joy";
 import { colors } from "../utils/Colors";
 import {
   AddAPhoto,
   Delete,
   Edit,
-  Close,
-  Save,
-  Favorite,
-  Share,
-  Search,
   Settings,
-  Download,
-  Upload,
-  MoreVert,
-  MoreHoriz,
+  Save,
+  CheckCircle,
+  Warning,
+  Info,
 } from "@mui/icons-material";
 
-export const Test = (): React.JSX.Element => {
-  const fontWeights = [
-    "normal",
-    "medium",
-    "semi-bold",
-    "bold",
-    "bolder",
-    "extra-bold",
-    "black",
-  ] as const;
-
+const Test = () => {
   return (
-    <PageContainer padding="40px 450px">
-      <Container align="center" elevation={3} padding="20px">
-        <ResponsiveText type="title-large" weight="bold">
-          Test Page
-        </ResponsiveText>
-      </Container>
+    <Box
+      sx={{
+        padding: "40px",
+        backgroundColor: colors.lightBackground,
+        minHeight: "100vh",
+      }}
+    >
+      <Typography
+        level="h1"
+        sx={{ marginBottom: "40px", color: colors.primary }}
+      >
+        Custom City Venture UI Button & IconButton Showcase
+      </Typography>
 
-      {/* Font Weights Section */}
-      <Container align="center" elevation={2} padding="20px">
-        <ResponsiveText type="title-medium" weight="bold" mb={1.5}>
-          Font Weights (All using body-large)
-        </ResponsiveText>
-        <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
-          {fontWeights.map((weight) => (
-            <Box
-              key={weight}
-              sx={{ display: "flex", alignItems: "center", gap: 2 }}
+      {/* ============== SOLID VARIANT ============== */}
+      <Box sx={{ marginBottom: "60px" }}>
+        <Typography
+          level="h2"
+          sx={{ marginBottom: "20px", color: colors.primary }}
+        >
+          Solid Variant
+        </Typography>
+
+        {/* All Colors */}
+        <Box sx={{ marginBottom: "30px" }}>
+          <Typography
+            level="h4"
+            sx={{ marginBottom: "12px", color: colors.secondary }}
+          >
+            All Color Schemes
+          </Typography>
+          <Box sx={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
+            <Button variant="solid" colorScheme="primary">
+              Primary
+            </Button>
+            <Button variant="solid" colorScheme="secondary">
+              Secondary
+            </Button>
+            <Button variant="solid" colorScheme="success">
+              Success
+            </Button>
+            <Button variant="solid" colorScheme="error">
+              Error
+            </Button>
+            <Button variant="solid" colorScheme="warningLabel">
+              Warning
+            </Button>
+            <Button variant="solid" colorScheme="orange">
+              Orange
+            </Button>
+            <Button variant="solid" colorScheme="yellow">
+              Yellow
+            </Button>
+            <Button variant="solid" colorScheme="gray">
+              Gray
+            </Button>
+          </Box>
+        </Box>
+
+        {/* With Icons */}
+        <Box sx={{ marginBottom: "30px" }}>
+          <Typography
+            level="h4"
+            sx={{ marginBottom: "12px", color: colors.secondary }}
+          >
+            With Start Decorator (Icon)
+          </Typography>
+          <Box sx={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
+            <Button
+              variant="solid"
+              colorScheme="primary"
+              startDecorator={<AddAPhoto />}
             >
-              <ResponsiveText
-                type="label-small"
-                style={{ minWidth: 100, color: "#666" }}
-              >
-                {weight}:
-              </ResponsiveText>
-              <ResponsiveText type="body-large" weight={weight}>
-                The quick brown fox jumps over the lazy dog
-              </ResponsiveText>
-            </Box>
-          ))}
+              Upload
+            </Button>
+            <Button
+              variant="solid"
+              colorScheme="secondary"
+              startDecorator={<Edit />}
+            >
+              Edit
+            </Button>
+            <Button
+              variant="solid"
+              colorScheme="success"
+              startDecorator={<CheckCircle />}
+            >
+              Save
+            </Button>
+            <Button
+              variant="solid"
+              colorScheme="error"
+              startDecorator={<Delete />}
+            >
+              Delete
+            </Button>
+          </Box>
         </Box>
-      </Container>
 
-      <Divider sx={{ my: 3 }} />
-
-      {/* Title Sizes */}
-      <Container align="center" elevation={2} padding="20px">
-        <ResponsiveText type="title-medium" weight="bold" mb={1.5}>
-          Title Sizes
-        </ResponsiveText>
-        <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
-          <ResponsiveText type="title-extra-large" weight="bold">
-            title-extra-large (40px base)
-          </ResponsiveText>
-          <ResponsiveText type="title-large" weight="bold">
-            title-large (32px base)
-          </ResponsiveText>
-          <ResponsiveText type="title-medium" weight="bold">
-            title-medium (28px base)
-          </ResponsiveText>
-          <ResponsiveText type="title-normal" weight="bold">
-            title-normal (26px base)
-          </ResponsiveText>
-          <ResponsiveText type="title-small" weight="bold">
-            title-small (24px base)
-          </ResponsiveText>
-          <ResponsiveText type="title-extra-small" weight="bold">
-            title-extra-small (20px base)
-          </ResponsiveText>
-        </Box>
-      </Container>
-
-      {/* Header Sizes */}
-      <Container align="center" elevation={3} padding="20px">
-        <ResponsiveText type="title-medium" weight="bold" mb={1.5}>
-          Header Sizes
-        </ResponsiveText>
-        <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
-          <ResponsiveText type="header-extra-large" weight="semi-bold">
-            header-extra-large (40px base)
-          </ResponsiveText>
-          <ResponsiveText type="header-large" weight="semi-bold">
-            header-large (32px base)
-          </ResponsiveText>
-          <ResponsiveText type="header-medium" weight="semi-bold">
-            header-medium (28px base)
-          </ResponsiveText>
-          <ResponsiveText type="header-normal" weight="semi-bold">
-            header-normal (26px base)
-          </ResponsiveText>
-          <ResponsiveText type="header-small" weight="semi-bold">
-            header-small (24px base)
-          </ResponsiveText>
-          <ResponsiveText type="header-extra-small" weight="semi-bold">
-            header-extra-small (20px base)
-          </ResponsiveText>
-        </Box>
-      </Container>
-
-      {/* Sub-Title Sizes */}
-      <Container align="center" elevation={3} padding="20px">
-        <ResponsiveText type="title-medium" weight="bold" mb={1.5}>
-          Sub-Title Sizes
-        </ResponsiveText>
-        <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
-          <ResponsiveText type="sub-title-extra-large" weight="medium">
-            sub-title-extra-large (24px base)
-          </ResponsiveText>
-          <ResponsiveText type="sub-title-large" weight="medium">
-            sub-title-large (22px base)
-          </ResponsiveText>
-          <ResponsiveText type="sub-title-medium" weight="medium">
-            sub-title-medium (20px base)
-          </ResponsiveText>
-          <ResponsiveText type="sub-title-normal" weight="medium">
-            sub-title-normal (19px base)
-          </ResponsiveText>
-          <ResponsiveText type="sub-title-small" weight="medium">
-            sub-title-small (18px base)
-          </ResponsiveText>
-          <ResponsiveText type="sub-title-extra-small" weight="medium">
-            sub-title-extra-small (16px base)
-          </ResponsiveText>
-        </Box>
-      </Container>
-
-      {/* Body Sizes */}
-      <Container align="center" elevation={3} padding="20px">
-        <ResponsiveText type="title-medium" weight="bold" mb={1.5}>
-          Body Sizes
-        </ResponsiveText>
-        <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
-          <ResponsiveText type="body-extra-large">
-            body-extra-large (20px base) - The quick brown fox jumps over the
-            lazy dog
-          </ResponsiveText>
-          <ResponsiveText type="body-large">
-            body-large (18px base) - The quick brown fox jumps over the lazy dog
-          </ResponsiveText>
-          <ResponsiveText type="body-medium">
-            body-medium (16px base) - The quick brown fox jumps over the lazy
-            dog
-          </ResponsiveText>
-          <ResponsiveText type="body-normal">
-            body-normal (15px base) - The quick brown fox jumps over the lazy
-            dog
-          </ResponsiveText>
-          <ResponsiveText type="body-small">
-            body-small (14px base) - The quick brown fox jumps over the lazy dog
-          </ResponsiveText>
-          <ResponsiveText type="body-extra-small">
-            body-extra-small (12px base) - The quick brown fox jumps over the
-            lazy dog
-          </ResponsiveText>
-        </Box>
-      </Container>
-
-      {/* Card Title Sizes */}
-      <Container align="center" elevation={3} padding="20px">
-        <ResponsiveText type="title-medium" weight="bold" mb={1.5}>
-          Card Title Sizes
-        </ResponsiveText>
-        <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
-          <ResponsiveText type="card-title-extra-large" weight="semi-bold">
-            card-title-extra-large (22px base)
-          </ResponsiveText>
-          <ResponsiveText type="card-title-large" weight="semi-bold">
-            card-title-large (20px base)
-          </ResponsiveText>
-          <ResponsiveText type="card-title-medium" weight="semi-bold">
-            card-title-medium (18px base)
-          </ResponsiveText>
-          <ResponsiveText type="card-title-normal" weight="semi-bold">
-            card-title-normal (17px base)
-          </ResponsiveText>
-          <ResponsiveText type="card-title-small" weight="semi-bold">
-            card-title-small (16px base)
-          </ResponsiveText>
-          <ResponsiveText type="card-title-extra-small" weight="semi-bold">
-            card-title-extra-small (14px base)
-          </ResponsiveText>
-        </Box>
-      </Container>
-
-      {/* Card Sub-Title Sizes */}
-      <Container align="center" elevation={3} padding="20px">
-        <ResponsiveText type="title-medium" weight="bold" mb={1.5}>
-          Card Sub-Title Sizes
-        </ResponsiveText>
-        <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
-          <ResponsiveText type="card-sub-title-extra-large">
-            card-sub-title-extra-large (18px base)
-          </ResponsiveText>
-          <ResponsiveText type="card-sub-title-large">
-            card-sub-title-large (16px base)
-          </ResponsiveText>
-          <ResponsiveText type="card-sub-title-medium">
-            card-sub-title-medium (14px base)
-          </ResponsiveText>
-          <ResponsiveText type="card-sub-title-normal">
-            card-sub-title-normal (13px base)
-          </ResponsiveText>
-          <ResponsiveText type="card-sub-title-small">
-            card-sub-title-small (12px base)
-          </ResponsiveText>
-          <ResponsiveText type="card-sub-title-extra-small">
-            card-sub-title-extra-small (10px base)
-          </ResponsiveText>
-        </Box>
-      </Container>
-
-      {/* Label Sizes */}
-      <Container align="center" elevation={3} padding="20px">
-        <ResponsiveText type="title-medium" weight="bold" mb={1.5}>
-          Label Sizes
-        </ResponsiveText>
-        <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
-          <ResponsiveText type="label-extra-large" weight="medium">
-            label-extra-large (18px base)
-          </ResponsiveText>
-          <ResponsiveText type="label-large" weight="medium">
-            label-large (16px base)
-          </ResponsiveText>
-          <ResponsiveText type="label-medium" weight="medium">
-            label-medium (14px base)
-          </ResponsiveText>
-          <ResponsiveText type="label-normal" weight="medium">
-            label-normal (13px base)
-          </ResponsiveText>
-          <ResponsiveText type="label-small" weight="medium">
-            label-small (12px base)
-          </ResponsiveText>
-          <ResponsiveText type="label-extra-small" weight="medium">
-            label-extra-small (10px base)
-          </ResponsiveText>
-        </Box>
-      </Container>
-
-      {/* Link Sizes */}
-      <Container align="center" elevation={3} padding="20px">
-        <ResponsiveText type="title-medium" weight="bold" mb={1.5}>
-          Link Sizes
-        </ResponsiveText>
-        <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
-          <ResponsiveText type="link-extra-large">
-            link-extra-large (20px base) - Click here
-          </ResponsiveText>
-          <ResponsiveText type="link-large">
-            link-large (18px base) - Click here
-          </ResponsiveText>
-          <ResponsiveText type="link-medium">
-            link-medium (16px base) - Click here
-          </ResponsiveText>
-          <ResponsiveText type="link-normal">
-            link-normal (15px base) - Click here
-          </ResponsiveText>
-          <ResponsiveText type="link-small">
-            link-small (14px base) - Click here
-          </ResponsiveText>
-          <ResponsiveText type="link-extra-small">
-            link-extra-small (12px base) - Click here
-          </ResponsiveText>
-        </Box>
-      </Container>
-
-      <Divider sx={{ my: 3 }} />
-
-      {/* ===== RESPONSIVE BUTTON SHOWCASE ===== */}
-      <Container align="center" elevation={2} padding="20px">
-        <ResponsiveText type="title-medium" weight="bold" mb={2}>
-          ResponsiveButton - All Variants
-        </ResponsiveText>
-        <Box
-          sx={{
-            display: "flex",
-            gap: 2,
-            flexWrap: "wrap",
-            justifyContent: "center",
-          }}
-        >
-          <ResponsiveButton variant="solid" color="primary">
-            Solid
-          </ResponsiveButton>
-          <ResponsiveButton variant="outlined" color="primary">
-            Outlined
-          </ResponsiveButton>
-          <ResponsiveButton variant="soft" color="primary">
-            Soft
-          </ResponsiveButton>
-          <ResponsiveButton variant="plain" color="primary">
-            Plain
-          </ResponsiveButton>
-        </Box>
-      </Container>
-
-      {/* All Colors */}
-      <Container align="center" elevation={2} padding="20px">
-        <ResponsiveText type="title-medium" weight="bold" mb={2}>
-          All Colors (Solid Variant)
-        </ResponsiveText>
-        <Box
-          sx={{
-            display: "flex",
-            gap: 2,
-            flexWrap: "wrap",
-            justifyContent: "center",
-          }}
-        >
-          <ResponsiveButton variant="solid" color="primary">
-            Primary
-          </ResponsiveButton>
-          <ResponsiveButton variant="solid" color="secondary">
-            Secondary
-          </ResponsiveButton>
-          <ResponsiveButton variant="solid" color="gray">
-            Gray
-          </ResponsiveButton>
-          <ResponsiveButton variant="solid" color="success">
-            Success
-          </ResponsiveButton>
-          <ResponsiveButton variant="solid" color="warningBackground">
-            Warning
-          </ResponsiveButton>
-          <ResponsiveButton variant="solid" color="error">
-            Error
-          </ResponsiveButton>
-          <ResponsiveButton variant="solid" color="orange">
-            Orange
-          </ResponsiveButton>
-        </Box>
-      </Container>
-
-      {/* All Sizes */}
-      <Container align="center" elevation={2} padding="20px">
-        <ResponsiveText type="title-medium" weight="bold" mb={2}>
-          All Sizes
-        </ResponsiveText>
-        <Box
-          sx={{
-            display: "flex",
-            gap: 2,
-            flexWrap: "wrap",
-            justifyContent: "center",
-            alignItems: "center",
-          }}
-        >
-          <ResponsiveButton size="xs" variant="solid">
-            XSmall
-          </ResponsiveButton>
-          <ResponsiveButton size="sm" variant="solid">
-            Small
-          </ResponsiveButton>
-          <ResponsiveButton size="md" variant="solid">
-            Medium
-          </ResponsiveButton>
-          <ResponsiveButton size="lg" variant="solid">
-            Large
-          </ResponsiveButton>
-          <ResponsiveButton size="xl" variant="solid">
-            XLarge
-          </ResponsiveButton>
-        </Box>
-      </Container>
-
-      {/* All Hover Effects */}
-      <Container align="center" elevation={2} padding="20px">
-        <ResponsiveText type="title-medium" weight="bold" mb={2}>
-          All Hover Effects
-        </ResponsiveText>
-        <Box
-          sx={{
-            display: "flex",
-            gap: 2,
-            flexWrap: "wrap",
-            justifyContent: "center",
-          }}
-        >
-          <ResponsiveButton variant="solid" hoverEffect="lift">
-            Lift
-          </ResponsiveButton>
-          <ResponsiveButton variant="solid" hoverEffect="scale">
-            Scale
-          </ResponsiveButton>
-          <ResponsiveButton variant="solid" hoverEffect="glow">
-            Glow
-          </ResponsiveButton>
-          <ResponsiveButton variant="solid" hoverEffect="shadow-expand">
-            Shadow Expand
-          </ResponsiveButton>
-        </Box>
-      </Container>
-
-      {/* With Icons */}
-      <Container align="center" elevation={2} padding="20px">
-        <ResponsiveText type="title-medium" weight="bold" mb={2}>
-          Buttons with Icons
-        </ResponsiveText>
-        <Box
-          sx={{
-            display: "flex",
-            gap: 2,
-            flexWrap: "wrap",
-            justifyContent: "center",
-          }}
-        >
-          <ResponsiveButton
-            variant="solid"
-            color="primary"
-            startIcon={<AddAPhoto />}
+        {/* With End Decorator */}
+        <Box sx={{ marginBottom: "30px" }}>
+          <Typography
+            level="h4"
+            sx={{ marginBottom: "12px", color: colors.secondary }}
           >
-            Add Photo
-          </ResponsiveButton>
-          <ResponsiveButton
-            variant="outlined"
-            color="success"
-            startIcon={<Save />}
-          >
-            Save
-          </ResponsiveButton>
-          <ResponsiveButton variant="soft" color="error" startIcon={<Delete />}>
-            Delete
-          </ResponsiveButton>
-          <ResponsiveButton
-            variant="plain"
-            color="secondary"
-            endIcon={<Download />}
-          >
-            Download
-          </ResponsiveButton>
-          <ResponsiveButton
-            variant="solid"
-            color="orange"
-            startIcon={<Upload />}
-            endIcon={<Share />}
-          >
-            Upload & Share
-          </ResponsiveButton>
+            With End Decorator (Icon)
+          </Typography>
+          <Box sx={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
+            <Button
+              variant="solid"
+              colorScheme="primary"
+              endDecorator={<Settings />}
+            >
+              Settings
+            </Button>
+            <Button
+              variant="solid"
+              colorScheme="secondary"
+              endDecorator={<Save />}
+            >
+              Confirm
+            </Button>
+            <Button
+              variant="solid"
+              colorScheme="warningLabel"
+              endDecorator={<Warning />}
+            >
+              Warning
+            </Button>
+          </Box>
         </Box>
-      </Container>
 
-      {/* Button States */}
-      <Container align="center" elevation={2} padding="20px">
-        <ResponsiveText type="title-medium" weight="bold" mb={2}>
-          Button States
-        </ResponsiveText>
-        <Box
-          sx={{
-            display: "flex",
-            gap: 2,
-            flexWrap: "wrap",
-            justifyContent: "center",
-          }}
-        >
-          <ResponsiveButton variant="solid">Default</ResponsiveButton>
-          <ResponsiveButton variant="solid" loading>
-            Loading
-          </ResponsiveButton>
-          <ResponsiveButton variant="solid" disabled>
-            Disabled
-          </ResponsiveButton>
-        </Box>
-      </Container>
-
-      {/* Special Features */}
-      <Container align="center" elevation={2} padding="20px">
-        <ResponsiveText type="title-medium" weight="bold" mb={2}>
-          Special Features
-        </ResponsiveText>
-        <Box
-          sx={{
-            display: "flex",
-            gap: 2,
-            flexWrap: "wrap",
-            justifyContent: "center",
-            flexDirection: "column",
-            alignItems: "center",
-          }}
-        >
+        {/* Size Variants */}
+        <Box>
+          <Typography
+            level="h4"
+            sx={{ marginBottom: "12px", color: colors.secondary }}
+          >
+            Size Variants
+          </Typography>
           <Box
             sx={{
               display: "flex",
-              gap: 2,
+              gap: "12px",
+              alignItems: "center",
               flexWrap: "wrap",
-              justifyContent: "center",
             }}
           >
-            <ResponsiveButton variant="solid" gradient>
-              With Gradient
-            </ResponsiveButton>
-            <ResponsiveButton
-              variant="solid"
-              fullWidth
-              style={{ maxWidth: "300px" }}
-            >
-              Full Width Button
-            </ResponsiveButton>
+            <Button variant="solid" colorScheme="primary" size="sm">
+              Small
+            </Button>
+            <Button variant="solid" colorScheme="primary" size="md">
+              Medium
+            </Button>
+            <Button variant="solid" colorScheme="primary" size="lg">
+              Large
+            </Button>
           </Box>
         </Box>
-      </Container>
+      </Box>
 
-      <Divider sx={{ my: 3 }} />
+      <Divider sx={{ marginBottom: "60px" }} />
 
-      {/* ===== ICON BUTTON SHOWCASE ===== */}
-      <Container align="center" elevation={2} padding="20px">
-        <ResponsiveText type="title-medium" weight="bold" mb={2}>
-          IconButton - All Variants
-        </ResponsiveText>
-        <Box
-          sx={{
-            display: "flex",
-            gap: 2,
-            flexWrap: "wrap",
-            justifyContent: "center",
-          }}
+      {/* ============== OUTLINED VARIANT ============== */}
+      <Box sx={{ marginBottom: "60px" }}>
+        <Typography
+          level="h2"
+          sx={{ marginBottom: "20px", color: colors.primary }}
         >
-          <IconButton
-            icon={<Edit />}
+          Outlined Variant
+        </Typography>
+
+        {/* All Colors */}
+        <Box sx={{ marginBottom: "30px" }}>
+          <Typography
+            level="h4"
+            sx={{ marginBottom: "12px", color: colors.secondary }}
+          >
+            All Color Schemes
+          </Typography>
+          <Box sx={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
+            <Button variant="outlined" colorScheme="primary">
+              Primary
+            </Button>
+            <Button variant="outlined" colorScheme="secondary">
+              Secondary
+            </Button>
+            <Button variant="outlined" colorScheme="success">
+              Success
+            </Button>
+            <Button variant="outlined" colorScheme="error">
+              Error
+            </Button>
+            <Button variant="outlined" colorScheme="warningLabel">
+              Warning
+            </Button>
+            <Button variant="outlined" colorScheme="orange">
+              Orange
+            </Button>
+            <Button variant="outlined" colorScheme="yellow">
+              Yellow
+            </Button>
+            <Button variant="outlined" colorScheme="gray">
+              Gray
+            </Button>
+          </Box>
+        </Box>
+
+        {/* With Icons */}
+        <Box sx={{ marginBottom: "30px" }}>
+          <Typography
+            level="h4"
+            sx={{ marginBottom: "12px", color: colors.secondary }}
+          >
+            With Icons
+          </Typography>
+          <Box sx={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
+            <Button
+              variant="outlined"
+              colorScheme="primary"
+              startDecorator={<AddAPhoto />}
+            >
+              Upload
+            </Button>
+            <Button
+              variant="outlined"
+              colorScheme="secondary"
+              startDecorator={<Edit />}
+            >
+              Edit
+            </Button>
+            <Button
+              variant="outlined"
+              colorScheme="success"
+              startDecorator={<CheckCircle />}
+            >
+              Save
+            </Button>
+            <Button
+              variant="outlined"
+              colorScheme="error"
+              startDecorator={<Delete />}
+            >
+              Delete
+            </Button>
+          </Box>
+        </Box>
+
+        {/* Size Variants */}
+        <Box>
+          <Typography
+            level="h4"
+            sx={{ marginBottom: "12px", color: colors.secondary }}
+          >
+            Size Variants
+          </Typography>
+          <Box
+            sx={{
+              display: "flex",
+              gap: "12px",
+              alignItems: "center",
+              flexWrap: "wrap",
+            }}
+          >
+            <Button variant="outlined" colorScheme="primary" size="sm">
+              Small
+            </Button>
+            <Button variant="outlined" colorScheme="primary" size="md">
+              Medium
+            </Button>
+            <Button variant="outlined" colorScheme="primary" size="lg">
+              Large
+            </Button>
+          </Box>
+        </Box>
+      </Box>
+
+      <Divider sx={{ marginBottom: "60px" }} />
+
+      {/* ============== SOFT VARIANT ============== */}
+      <Box sx={{ marginBottom: "60px" }}>
+        <Typography
+          level="h2"
+          sx={{ marginBottom: "20px", color: colors.primary }}
+        >
+          Soft Variant
+        </Typography>
+
+        {/* All Colors */}
+        <Box sx={{ marginBottom: "30px" }}>
+          <Typography
+            level="h4"
+            sx={{ marginBottom: "12px", color: colors.secondary }}
+          >
+            All Color Schemes
+          </Typography>
+          <Box sx={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
+            <Button variant="soft" colorScheme="primary">
+              Primary
+            </Button>
+            <Button variant="soft" colorScheme="secondary">
+              Secondary
+            </Button>
+            <Button variant="soft" colorScheme="success">
+              Success
+            </Button>
+            <Button variant="soft" colorScheme="error">
+              Error
+            </Button>
+            <Button variant="soft" colorScheme="warningLabel">
+              Warning
+            </Button>
+            <Button variant="soft" colorScheme="orange">
+              Orange
+            </Button>
+            <Button variant="soft" colorScheme="yellow">
+              Yellow
+            </Button>
+            <Button variant="soft" colorScheme="gray">
+              Gray
+            </Button>
+          </Box>
+        </Box>
+
+        {/* With Icons */}
+        <Box sx={{ marginBottom: "30px" }}>
+          <Typography
+            level="h4"
+            sx={{ marginBottom: "12px", color: colors.secondary }}
+          >
+            With Icons
+          </Typography>
+          <Box sx={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
+            <Button
+              variant="soft"
+              colorScheme="primary"
+              startDecorator={<AddAPhoto />}
+            >
+              Upload
+            </Button>
+            <Button
+              variant="soft"
+              colorScheme="secondary"
+              startDecorator={<Edit />}
+            >
+              Edit
+            </Button>
+            <Button
+              variant="soft"
+              colorScheme="success"
+              startDecorator={<CheckCircle />}
+            >
+              Save
+            </Button>
+            <Button
+              variant="soft"
+              colorScheme="error"
+              startDecorator={<Delete />}
+            >
+              Delete
+            </Button>
+          </Box>
+        </Box>
+
+        {/* Size Variants */}
+        <Box>
+          <Typography
+            level="h4"
+            sx={{ marginBottom: "12px", color: colors.secondary }}
+          >
+            Size Variants
+          </Typography>
+          <Box
+            sx={{
+              display: "flex",
+              gap: "12px",
+              alignItems: "center",
+              flexWrap: "wrap",
+            }}
+          >
+            <Button variant="soft" colorScheme="primary" size="sm">
+              Small
+            </Button>
+            <Button variant="soft" colorScheme="primary" size="md">
+              Medium
+            </Button>
+            <Button variant="soft" colorScheme="primary" size="lg">
+              Large
+            </Button>
+          </Box>
+        </Box>
+      </Box>
+
+      <Divider sx={{ marginBottom: "60px" }} />
+
+      {/* ============== PLAIN VARIANT ============== */}
+      <Box sx={{ marginBottom: "60px" }}>
+        <Typography
+          level="h2"
+          sx={{ marginBottom: "20px", color: colors.primary }}
+        >
+          Plain Variant
+        </Typography>
+
+        {/* All Colors */}
+        <Box sx={{ marginBottom: "30px" }}>
+          <Typography
+            level="h4"
+            sx={{ marginBottom: "12px", color: colors.secondary }}
+          >
+            All Color Schemes
+          </Typography>
+          <Box sx={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
+            <Button variant="plain" colorScheme="primary">
+              Primary
+            </Button>
+            <Button variant="plain" colorScheme="secondary">
+              Secondary
+            </Button>
+            <Button variant="plain" colorScheme="success">
+              Success
+            </Button>
+            <Button variant="plain" colorScheme="error">
+              Error
+            </Button>
+            <Button variant="plain" colorScheme="warningLabel">
+              Warning
+            </Button>
+            <Button variant="plain" colorScheme="orange">
+              Orange
+            </Button>
+            <Button variant="plain" colorScheme="yellow">
+              Yellow
+            </Button>
+            <Button variant="plain" colorScheme="gray">
+              Gray
+            </Button>
+          </Box>
+        </Box>
+
+        {/* With Icons */}
+        <Box sx={{ marginBottom: "30px" }}>
+          <Typography
+            level="h4"
+            sx={{ marginBottom: "12px", color: colors.secondary }}
+          >
+            With Icons
+          </Typography>
+          <Box sx={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
+            <Button
+              variant="plain"
+              colorScheme="primary"
+              startDecorator={<AddAPhoto />}
+            >
+              Upload
+            </Button>
+            <Button
+              variant="plain"
+              colorScheme="secondary"
+              startDecorator={<Edit />}
+            >
+              Edit
+            </Button>
+            <Button
+              variant="plain"
+              colorScheme="success"
+              startDecorator={<CheckCircle />}
+            >
+              Save
+            </Button>
+            <Button
+              variant="plain"
+              colorScheme="error"
+              startDecorator={<Delete />}
+            >
+              Delete
+            </Button>
+          </Box>
+        </Box>
+
+        {/* Size Variants */}
+        <Box>
+          <Typography
+            level="h4"
+            sx={{ marginBottom: "12px", color: colors.secondary }}
+          >
+            Size Variants
+          </Typography>
+          <Box
+            sx={{
+              display: "flex",
+              gap: "12px",
+              alignItems: "center",
+              flexWrap: "wrap",
+            }}
+          >
+            <Button variant="plain" colorScheme="primary" size="sm">
+              Small
+            </Button>
+            <Button variant="plain" colorScheme="primary" size="md">
+              Medium
+            </Button>
+            <Button variant="plain" colorScheme="primary" size="lg">
+              Large
+            </Button>
+          </Box>
+        </Box>
+      </Box>
+
+      <Divider sx={{ marginBottom: "60px" }} />
+
+      {/* ============== DISABLED STATE ============== */}
+      <Box sx={{ marginBottom: "60px" }}>
+        <Typography
+          level="h2"
+          sx={{ marginBottom: "20px", color: colors.primary }}
+        >
+          Disabled State
+        </Typography>
+
+        <Box sx={{ marginBottom: "30px" }}>
+          <Typography
+            level="h4"
+            sx={{ marginBottom: "12px", color: colors.secondary }}
+          >
+            All Variants Disabled
+          </Typography>
+          <Box sx={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
+            <Button variant="solid" colorScheme="primary" disabled>
+              Solid
+            </Button>
+            <Button variant="outlined" colorScheme="secondary" disabled>
+              Outlined
+            </Button>
+            <Button variant="soft" colorScheme="success" disabled>
+              Soft
+            </Button>
+            <Button variant="plain" colorScheme="error" disabled>
+              Plain
+            </Button>
+          </Box>
+        </Box>
+
+        <Box>
+          <Typography
+            level="h4"
+            sx={{ marginBottom: "12px", color: colors.secondary }}
+          >
+            Disabled with Icons
+          </Typography>
+          <Box sx={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
+            <Button
+              variant="solid"
+              colorScheme="primary"
+              startDecorator={<Edit />}
+              disabled
+            >
+              Edit
+            </Button>
+            <Button
+              variant="outlined"
+              colorScheme="error"
+              startDecorator={<Delete />}
+              disabled
+            >
+              Delete
+            </Button>
+            <Button
+              variant="soft"
+              colorScheme="secondary"
+              startDecorator={<AddAPhoto />}
+              disabled
+            >
+              Upload
+            </Button>
+          </Box>
+        </Box>
+      </Box>
+
+      <Divider sx={{ marginBottom: "60px" }} />
+
+      {/* ============== ICON BUTTON ============== */}
+      <Box sx={{ marginBottom: "60px" }}>
+        <Typography
+          level="h2"
+          sx={{ marginBottom: "20px", color: colors.primary }}
+        >
+          Icon Buttons
+        </Typography>
+
+        {/* Solid Icon Buttons */}
+        <Box sx={{ marginBottom: "30px" }}>
+          <Typography
+            level="h4"
+            sx={{ marginBottom: "12px", color: colors.secondary }}
+          >
+            Solid Variant
+          </Typography>
+          <Box
+            sx={{
+              display: "flex",
+              gap: "12px",
+              flexWrap: "wrap",
+              alignItems: "center",
+            }}
+          >
+            <IconButton variant="solid" colorScheme="primary">
+              <Edit />
+            </IconButton>
+            <IconButton variant="solid" colorScheme="secondary">
+              <Settings />
+            </IconButton>
+            <IconButton variant="solid" colorScheme="success">
+              <CheckCircle />
+            </IconButton>
+            <IconButton variant="solid" colorScheme="error">
+              <Delete />
+            </IconButton>
+            <IconButton variant="solid" colorScheme="warningLabel">
+              <Warning />
+            </IconButton>
+            <IconButton variant="solid" colorScheme="orange">
+              <AddAPhoto />
+            </IconButton>
+          </Box>
+        </Box>
+
+        {/* Outlined Icon Buttons */}
+        <Box sx={{ marginBottom: "30px" }}>
+          <Typography
+            level="h4"
+            sx={{ marginBottom: "12px", color: colors.secondary }}
+          >
+            Outlined Variant
+          </Typography>
+          <Box
+            sx={{
+              display: "flex",
+              gap: "12px",
+              flexWrap: "wrap",
+              alignItems: "center",
+            }}
+          >
+            <IconButton variant="outlined" colorScheme="primary">
+              <Edit />
+            </IconButton>
+            <IconButton variant="outlined" colorScheme="secondary">
+              <Settings />
+            </IconButton>
+            <IconButton variant="outlined" colorScheme="success">
+              <CheckCircle />
+            </IconButton>
+            <IconButton variant="outlined" colorScheme="error">
+              <Delete />
+            </IconButton>
+            <IconButton variant="outlined" colorScheme="warningLabel">
+              <Warning />
+            </IconButton>
+            <IconButton variant="outlined" colorScheme="orange">
+              <AddAPhoto />
+            </IconButton>
+          </Box>
+        </Box>
+
+        {/* Soft Icon Buttons */}
+        <Box sx={{ marginBottom: "30px" }}>
+          <Typography
+            level="h4"
+            sx={{ marginBottom: "12px", color: colors.secondary }}
+          >
+            Soft Variant
+          </Typography>
+          <Box
+            sx={{
+              display: "flex",
+              gap: "12px",
+              flexWrap: "wrap",
+              alignItems: "center",
+            }}
+          >
+            <IconButton variant="soft" colorScheme="primary">
+              <Edit />
+            </IconButton>
+            <IconButton variant="soft" colorScheme="secondary">
+              <Settings />
+            </IconButton>
+            <IconButton variant="soft" colorScheme="success">
+              <CheckCircle />
+            </IconButton>
+            <IconButton variant="soft" colorScheme="error">
+              <Delete />
+            </IconButton>
+            <IconButton variant="soft" colorScheme="warningLabel">
+              <Warning />
+            </IconButton>
+            <IconButton variant="soft" colorScheme="orange">
+              <AddAPhoto />
+            </IconButton>
+          </Box>
+        </Box>
+
+        {/* Plain Icon Buttons */}
+        <Box sx={{ marginBottom: "30px" }}>
+          <Typography
+            level="h4"
+            sx={{ marginBottom: "12px", color: colors.secondary }}
+          >
+            Plain Variant
+          </Typography>
+          <Box
+            sx={{
+              display: "flex",
+              gap: "12px",
+              flexWrap: "wrap",
+              alignItems: "center",
+            }}
+          >
+            <IconButton variant="plain" colorScheme="primary">
+              <Edit />
+            </IconButton>
+            <IconButton variant="plain" colorScheme="secondary">
+              <Settings />
+            </IconButton>
+            <IconButton variant="plain" colorScheme="success">
+              <CheckCircle />
+            </IconButton>
+            <IconButton variant="plain" colorScheme="error">
+              <Delete />
+            </IconButton>
+            <IconButton variant="plain" colorScheme="warningLabel">
+              <Warning />
+            </IconButton>
+            <IconButton variant="plain" colorScheme="orange">
+              <AddAPhoto />
+            </IconButton>
+          </Box>
+        </Box>
+
+        {/* Icon Button Sizes */}
+        <Box sx={{ marginBottom: "30px" }}>
+          <Typography
+            level="h4"
+            sx={{ marginBottom: "12px", color: colors.secondary }}
+          >
+            Size Variants
+          </Typography>
+          <Box
+            sx={{
+              display: "flex",
+              gap: "12px",
+              alignItems: "center",
+              flexWrap: "wrap",
+            }}
+          >
+            <IconButton variant="solid" colorScheme="primary" size="sm">
+              <Edit />
+            </IconButton>
+            <IconButton variant="solid" colorScheme="primary" size="md">
+              <Edit />
+            </IconButton>
+            <IconButton variant="solid" colorScheme="primary" size="lg">
+              <Edit />
+            </IconButton>
+          </Box>
+        </Box>
+
+        {/* Disabled Icon Buttons */}
+        <Box>
+          <Typography
+            level="h4"
+            sx={{ marginBottom: "12px", color: colors.secondary }}
+          >
+            Disabled Icon Buttons
+          </Typography>
+          <Box
+            sx={{
+              display: "flex",
+              gap: "12px",
+              flexWrap: "wrap",
+              alignItems: "center",
+            }}
+          >
+            <IconButton variant="solid" colorScheme="primary" disabled>
+              <Edit />
+            </IconButton>
+            <IconButton variant="outlined" colorScheme="secondary" disabled>
+              <Settings />
+            </IconButton>
+            <IconButton variant="soft" colorScheme="success" disabled>
+              <CheckCircle />
+            </IconButton>
+            <IconButton variant="plain" colorScheme="error" disabled>
+              <Delete />
+            </IconButton>
+          </Box>
+        </Box>
+      </Box>
+
+      <Divider sx={{ marginBottom: "60px" }} />
+
+      {/* ============== CUSTOM STYLING ============== */}
+      <Box sx={{ marginBottom: "60px" }}>
+        <Typography
+          level="h2"
+          sx={{ marginBottom: "20px", color: colors.primary }}
+        >
+          Custom Styling Examples
+        </Typography>
+
+        <Box sx={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
+          <Button
             variant="solid"
-            color="primary"
-            ariaLabel="Edit"
-          />
-          <IconButton
-            icon={<Delete />}
-            variant="outlined"
-            color="primary"
-            ariaLabel="Delete"
-          />
-          <IconButton
-            icon={<Favorite />}
+            colorScheme="primary"
+            sx={{
+              padding: "16px 32px",
+              fontSize: "16px",
+              borderRadius: "12px",
+              fontWeight: "bold",
+            }}
+            startDecorator={<Save />}
+          >
+            Large Custom Button
+          </Button>
+          <Button
             variant="soft"
-            color="primary"
-            ariaLabel="Like"
-          />
+            colorScheme="secondary"
+            sx={{
+              width: "200px",
+              padding: "12px",
+              borderRadius: "20px",
+            }}
+            endDecorator={<Info />}
+          >
+            Full Width Custom
+          </Button>
           <IconButton
-            icon={<Share />}
-            variant="plain"
-            color="primary"
-            ariaLabel="Share"
-          />
+            variant="solid"
+            colorScheme="error"
+            sx={{
+              width: "60px",
+              height: "60px",
+              borderRadius: "12px",
+            }}
+          >
+            <Delete />
+          </IconButton>
         </Box>
-      </Container>
-
-      {/* Icon Button - All Colors */}
-      <Container align="center" elevation={2} padding="20px">
-        <ResponsiveText type="title-medium" weight="bold" mb={2}>
-          IconButton - All Colors (Solid Variant)
-        </ResponsiveText>
-        <Box
-          sx={{
-            display: "flex",
-            gap: 2,
-            flexWrap: "wrap",
-            justifyContent: "center",
-          }}
-        >
-          <IconButton
-            icon={<Settings />}
-            variant="solid"
-            color="primary"
-            ariaLabel="Settings"
-          />
-          <IconButton
-            icon={<Settings />}
-            variant="solid"
-            color="secondary"
-            ariaLabel="Settings"
-          />
-          <IconButton
-            icon={<Settings />}
-            variant="solid"
-            color="gray"
-            ariaLabel="Settings"
-          />
-          <IconButton
-            icon={<Settings />}
-            variant="solid"
-            color="success"
-            ariaLabel="Settings"
-          />
-          <IconButton
-            icon={<Settings />}
-            variant="solid"
-            color="warningBackground"
-            ariaLabel="Settings"
-          />
-          <IconButton
-            icon={<Settings />}
-            variant="solid"
-            color="error"
-            ariaLabel="Settings"
-          />
-          <IconButton
-            icon={<Settings />}
-            variant="solid"
-            color="orange"
-            ariaLabel="Settings"
-          />
-        </Box>
-      </Container>
-
-      {/* Icon Button - All Sizes */}
-      <Container align="center" elevation={2} padding="20px">
-        <ResponsiveText type="title-medium" weight="bold" mb={2}>
-          IconButton - All Sizes (Square)
-        </ResponsiveText>
-        <Box
-          sx={{
-            display: "flex",
-            gap: 2,
-            flexWrap: "wrap",
-            justifyContent: "center",
-            alignItems: "center",
-          }}
-        >
-          <IconButton
-            icon={<Search />}
-            size="xs"
-            variant="solid"
-            color="primary"
-            ariaLabel="Search"
-          />
-          <IconButton
-            icon={<Search />}
-            size="sm"
-            variant="solid"
-            color="primary"
-            ariaLabel="Search"
-          />
-          <IconButton
-            icon={<Search />}
-            size="md"
-            variant="solid"
-            color="primary"
-            ariaLabel="Search"
-          />
-          <IconButton
-            icon={<Search />}
-            size="lg"
-            variant="solid"
-            color="primary"
-            ariaLabel="Search"
-          />
-          <IconButton
-            icon={<Search />}
-            size="xl"
-            variant="solid"
-            color="primary"
-            ariaLabel="Search"
-          />
-        </Box>
-      </Container>
-
-      {/* Icon Button - Rounded */}
-      <Container align="center" elevation={2} padding="20px">
-        <ResponsiveText type="title-medium" weight="bold" mb={2}>
-          IconButton - All Sizes (Rounded/Circular)
-        </ResponsiveText>
-        <Box
-          sx={{
-            display: "flex",
-            gap: 2,
-            flexWrap: "wrap",
-            justifyContent: "center",
-            alignItems: "center",
-          }}
-        >
-          <IconButton
-            icon={<Close />}
-            size="xs"
-            isRounded={true}
-            variant="solid"
-            color="primary"
-            ariaLabel="Close"
-          />
-          <IconButton
-            icon={<Close />}
-            size="sm"
-            isRounded={true}
-            variant="solid"
-            color="primary"
-            ariaLabel="Close"
-          />
-          <IconButton
-            icon={<Close />}
-            size="md"
-            isRounded={true}
-            variant="solid"
-            color="primary"
-            ariaLabel="Close"
-          />
-          <IconButton
-            icon={<Close />}
-            size="lg"
-            isRounded={true}
-            variant="solid"
-            color="primary"
-            ariaLabel="Close"
-          />
-          <IconButton
-            icon={<Close />}
-            size="xl"
-            isRounded={true}
-            variant="solid"
-            color="primary"
-            ariaLabel="Close"
-          />
-        </Box>
-      </Container>
-
-      {/* Icon Button - All Hover Effects */}
-      <Container align="center" elevation={2} padding="20px">
-        <ResponsiveText type="title-medium" weight="bold" mb={2}>
-          IconButton - All Hover Effects
-        </ResponsiveText>
-        <Box
-          sx={{
-            display: "flex",
-            gap: 2,
-            flexWrap: "wrap",
-            justifyContent: "center",
-          }}
-        >
-          <IconButton
-            icon={<Edit />}
-            variant="solid"
-            color="primary"
-            hoverEffect="lift"
-            ariaLabel="Edit with lift"
-          />
-          <IconButton
-            icon={<Delete />}
-            variant="solid"
-            color="error"
-            hoverEffect="scale"
-            ariaLabel="Delete with scale"
-          />
-          <IconButton
-            icon={<Favorite />}
-            variant="solid"
-            color="orange"
-            hoverEffect="glow"
-            ariaLabel="Like with glow"
-          />
-          <IconButton
-            icon={<Share />}
-            variant="solid"
-            color="secondary"
-            hoverEffect="shadow-expand"
-            ariaLabel="Share with shadow"
-          />
-        </Box>
-      </Container>
-
-      {/* Icon Button - States */}
-      <Container align="center" elevation={2} padding="20px">
-        <ResponsiveText type="title-medium" weight="bold" mb={2}>
-          IconButton - States
-        </ResponsiveText>
-        <Box
-          sx={{
-            display: "flex",
-            gap: 2,
-            flexWrap: "wrap",
-            justifyContent: "center",
-          }}
-        >
-          <IconButton
-            icon={<Save />}
-            variant="solid"
-            color="success"
-            ariaLabel="Save"
-          />
-          <IconButton
-            icon={<Save />}
-            variant="solid"
-            color="success"
-            loading
-            ariaLabel="Saving"
-          />
-          <IconButton
-            icon={<Save />}
-            variant="solid"
-            color="success"
-            disabled
-            ariaLabel="Save disabled"
-          />
-        </Box>
-      </Container>
-
-      {/* Icon Button - Mixed Variants & Colors */}
-      <Container align="center" elevation={2} padding="20px">
-        <ResponsiveText type="title-medium" weight="bold" mb={2}>
-          IconButton - Mixed Variants & Colors
-        </ResponsiveText>
-        <Box
-          sx={{
-            display: "flex",
-            gap: 2,
-            flexWrap: "wrap",
-            justifyContent: "center",
-          }}
-        >
-          <IconButton
-            icon={<AddAPhoto />}
-            variant="solid"
-            color="primary"
-            size="lg"
-            hoverEffect="lift"
-            ariaLabel="Add photo"
-          />
-          <IconButton
-            icon={<Edit />}
-            variant="outlined"
-            color="secondary"
-            size="lg"
-            isRounded={true}
-            hoverEffect="glow"
-            ariaLabel="Edit"
-          />
-          <IconButton
-            icon={<Delete />}
-            variant="soft"
-            color="error"
-            size="lg"
-            hoverEffect="scale"
-            ariaLabel="Delete"
-          />
-          <IconButton
-            icon={<MoreVert />}
-            variant="plain"
-            color="gray"
-            size="lg"
-            hoverEffect="shadow-expand"
-            ariaLabel="More options"
-          />
-          <IconButton
-            icon={<MoreHoriz />}
-            variant="solid"
-            color="orange"
-            size="lg"
-            isRounded={true}
-            hoverEffect="lift"
-            ariaLabel="More options"
-          />
-        </Box>
-      </Container>
-
-      <Divider sx={{ my: 3 }} />
-
-      <Container direction="column" gap="40px">
-        <Container
-          hover={true}
-          hoverEffect="shadow-expand"
-          hoverDuration={300}
-          cursor="pointer"
-          background={colors.primary}
-        >
-          <ResponsiveText>Container 1</ResponsiveText>
-        </Container>
-        <Container
-          hover={true}
-          hoverEffect="shadow-expand"
-          hoverDuration={300}
-          cursor="pointer"
-          background={colors.warningBackground}
-        >
-          <ResponsiveText>Container 2</ResponsiveText>
-        </Container>
-        <Container
-          hover={true}
-          hoverEffect="shadow-expand"
-          hoverDuration={300}
-          cursor="pointer"
-          background={colors.red}
-          elevation={3}
-        >
-          {" "}
-          <ResponsiveText>Container 3</ResponsiveText>
-        </Container>
-        <Container
-          hover={true}
-          hoverEffect="shadow-expand"
-          hoverDuration={300}
-          cursor="pointer"
-          background={colors.secondary}
-          elevation={4}
-        >
-          {" "}
-          <ResponsiveText>Container 4</ResponsiveText>
-        </Container>
-        <Container
-          hover={true}
-          hoverEffect="shadow-expand"
-          hoverDuration={300}
-          cursor="pointer"
-          background={colors.success}
-          elevation={5}
-        >
-          {" "}
-          <ResponsiveText>Container 5</ResponsiveText>
-        </Container>
-        <Container
-          hover={true}
-          hoverEffect="shadow-expand"
-          hoverDuration={300}
-          cursor="pointer"
-          elevation={6}
-          background={colors.orange}
-        >
-          {" "}
-          <ResponsiveText>Container 6</ResponsiveText>
-        </Container>
-
-        <Container
-          hover={true}
-          hoverEffect="lift"
-          hoverDuration={300}
-          cursor="pointer"
-          elevation={2}
-        >
-          {" "}
-          <ResponsiveText>Container 7</ResponsiveText>
-        </Container>
-      </Container>
-
-      <Divider sx={{ my: 3 }} />
-    </PageContainer>
+      </Box>
+    </Box>
   );
 };
+
+export default Test;

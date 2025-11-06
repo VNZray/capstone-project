@@ -28,6 +28,8 @@ export type ResponsiveTextProps = React.HTMLAttributes<HTMLSpanElement> & {
 	align?: TextAlign;
 	color?: string;
 	responsive?: boolean; // If true, text color adapts to parent background
+	margin?: number | string;
+	padding?: number | string;
 
 	// ...existing code...
 	pt?: number;
@@ -110,7 +112,7 @@ const BASE_REM: Record<ResponsiveTextType, number> = {
 	"label-medium": 0.875, // 14px
 	"label-normal": 0.8125, // 13px
 	"label-small": 0.75, // 12px
-	"label-extra-small": 0.625, // 10px
+	"label-extra-small": 0.6875, // 11px
 
 	// ===== Link Sizes =====
 	// extra-large: 20px, large: 18px, medium: 16px, normal: 15px, small: 14px, extra-small: 12px
@@ -214,6 +216,8 @@ export default function ResponsiveText({
 	align = "left",
 	color = "#111111",
 	responsive = true,
+	margin,
+	padding,
 	pt = 0,
 	pr = 0,
 	pb = 0,
@@ -257,6 +261,8 @@ export default function ResponsiveText({
 			style={{
 				fontSize,
 				fontFamily: "'Poppins', sans-serif",
+				margin,
+				padding,
 				color: textColor,
 				textAlign: align as any,
 				paddingTop: pt ? `${pt}rem` : undefined,

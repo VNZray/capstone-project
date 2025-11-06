@@ -1,14 +1,20 @@
 import Container from "@/src/components/Container";
 import PageContainer from "@/src/components/PageContainer";
 import {
-  Button,
   Input,
   Modal,
   ModalDialog,
   DialogTitle,
   DialogActions,
 } from "@mui/joy";
-import { Calendar, Search } from "lucide-react";
+import {
+  Calendar,
+  ListChecks,
+  PauseCircle,
+  PlayCircle,
+  Search,
+  TimerOff,
+} from "lucide-react";
 import { Add } from "@mui/icons-material";
 import StatusFilter from "./components/StatusFilter";
 import { useEffect, useState } from "react";
@@ -27,6 +33,9 @@ import { DateCalendar } from "@mui/x-date-pickers/DateCalendar";
 
 import NoDataFound from "@/src/components/NoDataFound";
 import ResponsiveText from "@/src/components/ResponsiveText";
+import Button from "@/src/components/Button";
+import IconButton from "@/src/components/IconButton";
+import DynamicTab from "@/src/components/ui/DynamicTab";
 
 const RoomPage = () => {
   const navigate = useNavigate();
@@ -44,7 +53,14 @@ const RoomPage = () => {
   const [search, setSearch] = useState("");
   const { setRoomId } = useRoom();
   const [rooms, setRooms] = useState<Room[]>([]);
+  const [activeTab, setActiveTab] = useState("all");
 
+  const tabs = [
+    { id: "all", label: "All", icon: <ListChecks size={16} /> },
+    { id: "available", label: "Available", icon: <PlayCircle size={16} /> },
+    { id: "occupied", label: "Occupied", icon: <PauseCircle size={16} /> },
+    { id: "maintenance", label: "Maintenance", icon: <TimerOff size={16} /> },
+  ];
   // Filter and sort rooms dynamically
   const filteredRooms = rooms
     .filter((room) => {
@@ -122,25 +138,23 @@ const RoomPage = () => {
             </ResponsiveText>
             <Button
               startDecorator={<Calendar />}
-              size="lg"
-              color="primary"
-              variant="soft"
+              colorScheme="secondary"
+              variant="solid"
               onClick={() => setCalendarOpen(true)}
-              sx={{ width: { xs: "100%", sm: "auto" } }}
             >
               Calendar
             </Button>
           </div>
 
-          <Button
-            startDecorator={<Add />}
-            size="lg"
-            color="primary"
+          <IconButton
             onClick={() => setOpenModal(true)}
-            sx={{ width: { xs: "100%", sm: "auto" } }}
+            size="lg"
+            floating
+            floatPosition="bottom-right"
+            hoverEffect="rotate"
           >
-            Add Room
-          </Button>
+            <Add />
+          </IconButton>
 
           {/* Add Room Modal */}
           <AddRoomModal
@@ -170,17 +184,13 @@ const RoomPage = () => {
               <DialogActions>
                 <Button
                   fullWidth
-                  color="neutral"
+                  colorScheme="secondary"
                   variant="plain"
                   onClick={() => setCalendarOpen(false)}
                 >
                   Close
                 </Button>
-                <Button
-                  fullWidth
-                  color="primary"
-                  onClick={() => setCalendarOpen(false)}
-                >
+                <Button fullWidth onClick={() => setCalendarOpen(false)}>
                   Confirm
                 </Button>
               </DialogActions>
@@ -204,8 +214,25 @@ const RoomPage = () => {
           />
         </Container>
 
-        {/* Tabs Placeholder */}
-        <StatusFilter active={status} onChange={setStatus} />
+        {/* Tabs */}
+        <DynamicTab
+          tabs={tabs}
+          activeTabId={activeTab}
+          onChange={(tabId) => {
+            setActiveTab(String(tabId));
+            setStatus(
+              tabId === "all"
+                ? "All"
+                : tabId === "available"
+                ? "Available"
+                : tabId === "occupied"
+                ? "Occupied"
+                : tabId === "maintenance"
+                ? "Maintenance"
+                : "All"
+            );
+          }}
+        />
       </Container>
 
       <Container background="transparent" padding="0">
@@ -214,7 +241,15 @@ const RoomPage = () => {
             icon="database"
             title="No Room Listed"
             message="No rooms yet. Add your first room above."
-          />
+          >
+            <Button
+              startDecorator={<Add />}
+              size="lg"
+              onClick={() => setOpenModal(true)}
+            >
+              Add Room
+            </Button>
+          </NoDataFound>
         ) : filteredRooms.length === 0 && search.trim() !== "" ? (
           <NoDataFound
             icon="search"

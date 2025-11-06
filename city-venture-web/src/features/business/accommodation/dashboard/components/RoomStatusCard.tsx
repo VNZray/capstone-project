@@ -1,5 +1,6 @@
 import React from "react";
 import { Card, Typography, Box, Stack, LinearProgress } from "@mui/joy";
+import Container from "@/src/components/Container";
 
 interface RoomStatusCardProps {
   totalRooms: number;
@@ -19,19 +20,11 @@ const RoomStatusCard: React.FC<RoomStatusCardProps> = ({
   const maintenancePercent = totalRooms > 0 ? (maintenance / totalRooms) * 100 : 0;
 
   return (
-    <Card
-      variant="outlined"
-      sx={{
-        p: 2.5,
-        borderRadius: 12,
-        border: "1px solid",
-        borderColor: "divider",
-        transition: "all 0.2s",
-        "&:hover": {
-          boxShadow: "md",
-          borderColor: "primary.outlinedBorder",
-        },
-      }}
+    <Container
+      elevation={2}
+      hoverEffect="lift"
+      hoverDuration={300}
+      hover
     >
       <Stack spacing={2}>
         <Box>
@@ -105,7 +98,7 @@ const RoomStatusCard: React.FC<RoomStatusCardProps> = ({
           </Box>
         </Stack>
       </Stack>
-    </Card>
+    </Container>
   );
 };
 

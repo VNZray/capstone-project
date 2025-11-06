@@ -5,8 +5,8 @@ import "./styles/container.css";
 interface ContainerProps {
   children: React.ReactNode;
   elevation?: 0 | 1 | 2 | 3 | 4 | 5 | 6;
-  align?: string;
-  justify?: string;
+  align?: string | "flex-start" | "center" | "flex-end" | "stretch" | "baseline";
+  justify?: string | "flex-start" | "center" | "flex-end" | "space-between" | "space-around";
   className?: string;
   width?: string;
   height?: string;
@@ -87,7 +87,7 @@ const Container: React.FC<ContainerProps> = ({
         return {
           ...baseHoverStyles,
           transform: "translateY(-8px)",
-          boxShadow: "0 12px 24px rgba(0, 0, 0, 0.15)",
+          boxShadow: "0 0px 24px rgba(0, 0, 0, 0.25)",
         };
       case "glow":
         return {
