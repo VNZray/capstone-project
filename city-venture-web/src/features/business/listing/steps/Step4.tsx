@@ -1,4 +1,4 @@
-import Text from "@/src/components/Text";
+import ResponsiveText from "@/src/components/ResponsiveText";
 import React, { useRef } from "react";
 import type { Business } from "@/src/types/Business";
 import { Button, FormControl, FormLabel, Input, Sheet } from "@mui/joy";
@@ -89,8 +89,8 @@ const StepPermits: React.FC<Props> = ({ data, permitData, setPermitData }) => {
       <div className="stepperContent" style={{ overflow: 'visible', padding: '16px 16px 24px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-start', width: '100%', boxSizing: 'border-box' }}>
         <div style={{ display: "flex", flexDirection: "column", gap: 24, width: '100%', maxWidth: '1000px', margin: '0 auto' }}>
           <div style={{ paddingBottom: 12, textAlign: 'center', borderBottom: '1px solid #e5e7eb', marginBottom: 20, paddingTop: 4 }}>
-            <Text variant="label" color="gray" style={{ fontSize: 20, fontWeight: 700, lineHeight: 1.3, display: 'block', marginBottom: 8, color: '#111827' }}>Business Permits</Text>
-            <Text color="gray" style={{ fontSize: 15, fontWeight: 400, opacity: 0.75, display: 'block', maxWidth: '500px', margin: '0 auto', color: '#6b7280' }}>Upload your business permits and documents</Text>
+            <ResponsiveText type="label-large" weight="bold" color="#111827" mb={1}>Business Permits</ResponsiveText>
+            <ResponsiveText type="body-extra-small" color="#6b7280">Upload your business permits and documents</ResponsiveText>
           </div>
 
           <div style={{ paddingRight: 6 }}>
@@ -121,8 +121,8 @@ const StepPermits: React.FC<Props> = ({ data, permitData, setPermitData }) => {
                         <DocumentScannerOutlined sx={{ color: '#6b7280', fontSize: 18 }} />
                       </div>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                        <Text variant="card-title" style={{ color: '#374151', fontWeight: 600, fontSize: 14, lineHeight: 1.2 }}>Mayor's Permit</Text>
-                        <Text variant="card-sub-title" style={{ color: '#6b7280', fontSize: 12, lineHeight: 1.3 }}>Local city or municipal permit</Text>
+                        <ResponsiveText type="body-small" weight="bold" color="#374151">Mayor's Permit</ResponsiveText>
+                        <ResponsiveText type="body-extra-small" color="#6b7280">Local city or municipal permit</ResponsiveText>
                         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                           <Input
                             size="sm"
@@ -171,8 +171,8 @@ const StepPermits: React.FC<Props> = ({ data, permitData, setPermitData }) => {
                         <DocumentScannerOutlined sx={{ color: '#6b7280', fontSize: 18 }} />
                       </div>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                        <Text variant="card-title" style={{ color: '#374151', fontWeight: 600, fontSize: 14, lineHeight: 1.2 }}>Business Permit</Text>
-                        <Text variant="card-sub-title" style={{ color: '#6b7280', fontSize: 12, lineHeight: 1.3 }}>DTI/SEC certificate or business registration</Text>
+                        <ResponsiveText type="body-small" weight="bold" color="#374151">Business Permit</ResponsiveText>
+                        <ResponsiveText type="body-extra-small" color="#6b7280">DTI/SEC certificate or business registration</ResponsiveText>
                         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                           <Input
                             size="sm"
@@ -200,12 +200,12 @@ const StepPermits: React.FC<Props> = ({ data, permitData, setPermitData }) => {
             <Sheet color="warning" variant="soft" sx={{ p: 1.5, borderRadius: 10, backgroundColor: '#fef3c7', border: '1px solid #f59e0b', margin: '12px 8px 0' }}>
               <Label>
                 <FileCopy color="warning" fontSize="small" />
-                <Text variant="label" color="#92400e" style={{ fontWeight: 600, fontSize: 13 }}>File Requirements</Text>
+                <ResponsiveText type="body-small" weight="bold" color="#92400e">File Requirements</ResponsiveText>
               </Label>
               <ul className="req-grid" style={{ display: 'grid', columnGap: 12, rowGap: 4, marginTop: 6, paddingLeft: 16 }}>
                 {requirements.map((req, idx) => (
                   <li key={idx} style={{ lineHeight: 1.3 }}>
-                    <Text variant="paragraph" color="#92400e" style={{ fontSize: 12 }}>{req}</Text>
+                    <ResponsiveText type="body-extra-small" color="#92400e">{req}</ResponsiveText>
                   </li>
                 ))}
               </ul>

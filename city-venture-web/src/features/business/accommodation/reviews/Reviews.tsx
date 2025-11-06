@@ -1,6 +1,7 @@
 import * as React from "react";
+import NoDataFound from "@/src/components/NoDataFound";
 import PageContainer from "@/src/components/PageContainer";
-import { Box, Typography, Sheet, Button } from "@mui/joy";
+import { Box, Button } from "@mui/joy";
 import RatingsOverview from "./components/RatingsOverview";
 import StatCard from "./components/StatCard";
 import ReviewFilterTabs from "./components/ReviewFilterTabs";
@@ -203,18 +204,11 @@ const Reviews: React.FC = () => {
         </Container>
         <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
           {filtered.length === 0 && (
-            <Sheet
-              variant="soft"
-              color="neutral"
-              sx={{ p: 4, borderRadius: 12, textAlign: "center" }}
-            >
-              <Typography level="h4" sx={{ mb: 1 }}>
-                No reviews yet
-              </Typography>
-              <Typography level="body-sm" sx={{ opacity: 0.8 }}>
-                Once guests start leaving feedback, you can view & respond here.
-              </Typography>
-            </Sheet>
+            <NoDataFound
+              icon="database"
+              title="No Reviews Yet"
+              message="Once guests start leaving feedback, you can view & respond here."
+            />
           )}
           {filtered.map((rev) => (
             <ReviewCard

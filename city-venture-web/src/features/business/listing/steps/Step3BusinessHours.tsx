@@ -1,7 +1,7 @@
 import React from "react";
 import { FormControl, FormLabel, Input, Typography } from "@mui/joy";
 import { Switch } from "@mui/material";
-import Text from "@/src/components/Text";
+import ResponsiveText from "@/src/components/ResponsiveText";
 import type { Business, BusinessHours } from "@/src/types/Business";
 
 type Props = {
@@ -61,27 +61,12 @@ const Step3BusinessHours: React.FC<Props> = ({ businessHours, setBusinessHours }
             marginBottom: 20,
             paddingTop: 4
           }}>
-            <Text variant="label" color="gray" style={{
-              fontSize: 20,
-              fontWeight: 700,
-              lineHeight: 1.3,
-              display: 'block',
-              marginBottom: 8,
-              color: '#111827'
-            }}>
+            <ResponsiveText type="label-large" weight="bold" color="#111827" mb={1}>
               Business Hours
-            </Text>
-            <Text color="gray" style={{
-              fontSize: 15,
-              fontWeight: 400,
-              opacity: 0.75,
-              display: 'block',
-              maxWidth: '500px',
-              margin: '0 auto',
-              color: '#6b7280'
-            }}>
+            </ResponsiveText>
+            <ResponsiveText type="body-extra-small" color="#6b7280">
               When is your business open for customers?
-            </Text>
+            </ResponsiveText>
           </div>
 
           <div style={{ display: "flex", flexDirection: "column", gap: 12, padding: '0 8px' }}>

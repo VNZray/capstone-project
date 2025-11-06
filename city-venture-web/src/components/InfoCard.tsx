@@ -1,7 +1,7 @@
 import React from "react";
 import { Stack } from "@mui/material";
-import Text from "@/src/components/Text";
 import Container from "@/src/components/Container";
+import ResponsiveText from "./ResponsiveText";
 
 type InfoCardProps = {
   icon?: React.ReactNode;
@@ -34,10 +34,10 @@ export default function InfoCard({
         )}
 
         {/* Title */}
-        <Text variant="card-title">{title}</Text>
+        <ResponsiveText type="card-title-normal">{title}</ResponsiveText>
 
         {/* Subtitle */}
-        {subtitle && <Text variant="card-sub-title">{subtitle}</Text>}
+        {subtitle && <ResponsiveText type="card-sub-title-normal">{subtitle}</ResponsiveText>}
       </Stack>
     </Container>
   );

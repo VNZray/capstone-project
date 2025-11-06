@@ -1,9 +1,9 @@
-import Text from "@/src/components/Text";
+import ResponsiveText from "@/src/components/ResponsiveText";
 
 const Profile = () => {
   return (
     <>
-      <Text variant="title">Profile Page</Text>
+      <ResponsiveText type="title-large" weight="bold">Profile Page</ResponsiveText>
     </>
   );
 };

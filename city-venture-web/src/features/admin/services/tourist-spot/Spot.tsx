@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { IoAdd } from "react-icons/io5";
-import Text from "@/src/components/Text";
+import ResponsiveText from "@/src/components/ResponsiveText";
 import SearchBar from "@/src/components/SearchBar";
 import CategoryFilter from "@/src/features/admin/services/tourist-spot/components/CategoryFilter";
 import Pagination from "@/src/features/admin/services/tourist-spot/components/Pagination";
@@ -173,7 +173,9 @@ const Spot = () => {
                     onClick={() => setAddSpotModalVisible(true)}
                   >
                     <IoAdd size={20} color="#FFF" />
-                    <Text variant="normal" color="white" className="add-button-text">Add Tourist Spot</Text>
+                    <ResponsiveText type="body-small" weight="medium" color="white" style={{ marginLeft: 8 }}>
+                      Add Tourist Spot
+                    </ResponsiveText>
                   </button>
                 </div>
                 <div className="add">
@@ -181,7 +183,9 @@ const Spot = () => {
                     className="add-button"
                     onClick={() => setFeaturedModalOpen(true)}
                   >
-                    <Text variant="normal" color="white" className="add-button-text">Manage Featured</Text>
+                    <ResponsiveText type="body-small" weight="medium" color="white">
+                      Manage Featured
+                    </ResponsiveText>
                   </button>
                 </div>
               </div>
@@ -191,11 +195,11 @@ const Spot = () => {
           {loading ? (
             <div className="loading-container">
               <div className="loading-spinner"></div>
-              <Text variant="normal" color="text-color">Loading tourist spots...</Text>
+              <ResponsiveText type="body-medium" color="#666">Loading tourist spots...</ResponsiveText>
             </div>
           ) : error ? (
             <div className="error-container">
-              <Text variant="normal" color="red">Error: {error}</Text>
+              <ResponsiveText type="body-medium" color="#ff4d4d">Error: {error}</ResponsiveText>
             </div>
           ) : (
             <div className="content">

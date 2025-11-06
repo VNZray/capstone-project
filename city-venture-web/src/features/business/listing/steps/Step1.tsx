@@ -14,7 +14,7 @@ import { ToggleButton, ToggleButtonGroup } from "@mui/material";
 import { Chip } from "@mui/joy";
 import HotelIcon from "@mui/icons-material/Hotel";
 import StoreIcon from "@mui/icons-material/Store";
-import Text from "@/src/components/Text";
+import ResponsiveText from "@/src/components/ResponsiveText";
 import type { Amenity, BusinessAmenity } from "@/src/types/Amenity";
 import { getData, insertData } from "@/src/services/Service";
 type Props = {
@@ -125,27 +125,12 @@ const Step1: React.FC<Props> = ({
           marginBottom: 20,
           paddingTop: 4
         }}>
-          <Text variant="label" color="gray" style={{ 
-            fontSize: 20, 
-            fontWeight: 700, 
-            lineHeight: 1.3,
-            display: 'block',
-            marginBottom: 8,
-            color: '#111827'
-          }}>
+          <ResponsiveText type="label-large" weight="bold" color="#111827" mb={1}>
             Basic information
-          </Text>
-          <Text color="gray" style={{ 
-            fontSize: 15, 
-            fontWeight: 400, 
-            opacity: 0.75, 
-            display: 'block',
-            maxWidth: '500px',
-            margin: '0 auto',
-            color: '#6b7280'
-          }}>
+          </ResponsiveText>
+          <ResponsiveText type="body-extra-small" color="#6b7280">
             Tell us about your business to get started
-          </Text>
+          </ResponsiveText>
         </div>
         <div className="twoCol">
           <div className="col">
@@ -244,7 +229,7 @@ const Step1: React.FC<Props> = ({
                     >
                       {type.type.toLowerCase() === "accommodation" && <HotelIcon fontSize="small" />}
                       {type.type.toLowerCase() === "shop" && <StoreIcon fontSize="small" />}
-                      <Text style={{ fontSize: '0.875rem', fontWeight: 500 }}>{type.type}</Text>
+                      <ResponsiveText type="body-small" weight="medium">{type.type}</ResponsiveText>
                     </ToggleButton>
                   ))}
                 </ToggleButtonGroup>

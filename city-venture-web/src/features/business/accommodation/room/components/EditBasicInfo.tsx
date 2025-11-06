@@ -12,7 +12,7 @@ import {
   Option,
 } from "@mui/joy";
 import { updateData } from "@/src/services/Service";
-import CardHeader from "@/src/components/CardHeader";
+import ResponsiveText from "@/src/components/ResponsiveText";
 
 interface EditDescriptionModalProps {
   open: boolean;
@@ -90,7 +90,7 @@ const EditBasicInfo: React.FC<EditDescriptionModalProps> = ({
   return (
     <Modal open={open} onClose={onClose}>
       <ModalDialog size="lg" variant="outlined" maxWidth={500} minWidth={500}>
-        <CardHeader title="Edit Contact" color="white" />
+        <ResponsiveText type="title-small">Edit Basic Information</ResponsiveText>
         <DialogContent>
           <FormControl>
             <FormLabel>Room Number</FormLabel>

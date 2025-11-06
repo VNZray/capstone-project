@@ -2,7 +2,6 @@ import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import logo from "@/src/assets/images/logo.png";
 import "./LoginStyle.css";
-import Text from "../../components/Text";
 import ResponsiveText from "../../components/ResponsiveText";
 import Container from "../../components/Container";
 import { useAuth } from "@/src/context/AuthContext"; // adjust path if needed
@@ -65,12 +64,12 @@ const Login: React.FC = () => {
               flexDirection: "column",
             }}
           >
-            <Text variant="title" color="dark" style={{ marginBottom: 6 }}>
+            <ResponsiveText type="title-large" weight="bold" mb={0.75} color="dark">
               Sign In
-            </Text>
-            <Text variant="paragraph" color="dark" style={{ marginBottom: 24 }}>
+            </ResponsiveText>
+            <ResponsiveText type="body-medium" mb={3} color="dark">
               Navigate with Ease - Your Ultimate City Directory
-            </Text>
+            </ResponsiveText>
           </div>
 
           {/* Form Fields */}
@@ -94,9 +93,9 @@ const Login: React.FC = () => {
             />
 
             <Link to="/TouristApp/(screens)/ForgotPassword" className="link">
-              <Text variant="normal" color="secondary-color">
+              <ResponsiveText type="body-small" color="#0077B6">
                 Forgot Password?
-              </Text>
+              </ResponsiveText>
             </Link>
           </div>
 
@@ -120,21 +119,21 @@ const Login: React.FC = () => {
             </Button>
 
             {loginError && (
-              <Text variant="paragraph" color={colors.error}>
+              <ResponsiveText type="body-medium" color={colors.error} mt={2}>
                 {loginError}
-              </Text>
+              </ResponsiveText>
             )}
           </div>
 
           {/* Sign Up Link */}
           <div className="signup-row">
-            <Text variant="normal" color="dark">
+            <ResponsiveText type="body-small" color="dark">
               Don't Have an Account?
-            </Text>
+            </ResponsiveText>
             <Link to="/tourism/signup" className="link">
-              <Text variant="medium" color="secondary-color">
+              <ResponsiveText type="body-small" weight="semi-bold" color="#0077B6">
                 Sign Up
-              </Text>
+              </ResponsiveText>
             </Link>
           </div>
         </Container>

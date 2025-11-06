@@ -1,4 +1,4 @@
-import Text from "@/src/components/Text";
+import ResponsiveText from "@/src/components/ResponsiveText";
 import React from "react";
 import type { Business } from "@/src/types/Business";
 import { useAddress } from "@/src/hooks/useAddress";
@@ -42,12 +42,12 @@ const Step7: React.FC<Props> = ({
     value?: string | number;
   }) => (
     <div style={{ display: "flex", justifyContent: "space-between" }}>
-      <Text variant="medium" color="dark">
+      <ResponsiveText type="label-small" weight="semi-bold" color="dark">
         {label}:
-      </Text>
-      <Text variant="normal" color="dark">
+      </ResponsiveText>
+      <ResponsiveText type="body-extra-small" color="dark">
         {value || "-"}
-      </Text>
+      </ResponsiveText>
     </div>
   );
 
@@ -104,27 +104,12 @@ const Step7: React.FC<Props> = ({
             marginBottom: 12,
             paddingTop: 4
           }}>
-            <Text variant="label" color="gray" style={{
-              fontSize: 20,
-              fontWeight: 700,
-              lineHeight: 1.3,
-              display: 'block',
-              marginBottom: 6,
-              color: '#111827'
-            }}>
+            <ResponsiveText type="label-large" weight="bold" color="#111827" mb={0.75}>
               Review & Submit
-            </Text>
-            <Text color="gray" style={{
-              fontSize: 15,
-              fontWeight: 400,
-              opacity: 0.75,
-              display: 'block',
-              maxWidth: '500px',
-              margin: '0 auto',
-              color: '#6b7280'
-            }}>
+            </ResponsiveText>
+            <ResponsiveText type="body-extra-small" color="#6b7280">
               Review your information before submitting
-            </Text>
+            </ResponsiveText>
           </div>
           <div style={{ paddingRight: 6 }}>
           <div style={{ display: "flex", flexDirection: "column", gap: 12, padding: '0 8px' }}>
@@ -229,9 +214,9 @@ const Step7: React.FC<Props> = ({
               title="Business Description"
               icon={<DescriptionOutlined color="primary" />}
             >
-              <Text variant="normal" color="dark">
+              <ResponsiveText type="body-small" color="dark">
                 {data.description || "-"}
-              </Text>
+              </ResponsiveText>
             </Section>
 
             {/* PERMITS */}
@@ -250,9 +235,9 @@ const Step7: React.FC<Props> = ({
                       borderBottom: '1px solid #f3f4f6'
                     }}
                   >
-                    <Text variant="medium" color="dark">
+                    <ResponsiveText type="body-small" weight="semi-bold" color="dark">
                       {permit.permit_type.replace("_", " ")}
-                    </Text>
+                    </ResponsiveText>
                     <a
                       href={permit.file_url}
                       target="_blank"
@@ -268,9 +253,9 @@ const Step7: React.FC<Props> = ({
                   </div>
                 ))
               ) : (
-                <Text variant="normal" color="dark">
+                <ResponsiveText type="body-small" color="dark">
                   No permits uploaded yet.
-                </Text>
+                </ResponsiveText>
               )}
             </Section>
           </div>
