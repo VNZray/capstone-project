@@ -15,7 +15,7 @@ import EventSeatIcon from "@mui/icons-material/EventSeat"; // Reserved
 import { Grid, Dropdown, Menu, MenuButton, MenuItem } from "@mui/joy";
 import { colors } from "@/src/utils/Colors";
 import { deleteData, updateData } from "@/src/services/Service";
-import { PeopleAltTwoTone } from "@mui/icons-material";
+import { FormatSize, Height, PeopleAltTwoTone, WidthFull, WidthWide } from "@mui/icons-material";
 import Container from "@/src/components/Container";
 import IconButton from "@/src/components/IconButton";
 import { Delete, Trash } from "lucide-react";
@@ -30,7 +30,7 @@ interface RoomCardProps {
   roomType: string;
   type: string;
   price: string;
-  guests: number;
+  room_size: number | string;
   capacity?: string;
   amenities: string[];
   onDeleted: () => void;
@@ -48,7 +48,7 @@ const RoomCard: React.FC<RoomCardProps> = ({
   roomType,
   price,
   capacity,
-  guests,
+  room_size,
   amenities,
   onDeleted,
   onClick,
@@ -96,7 +96,7 @@ const RoomCard: React.FC<RoomCardProps> = ({
   const statuses = ["Available", "Reserved", "Occupied", "Maintenance"];
 
   return (
-    <Container elevation={2}>
+    <Container onClick={onClick} elevation={2} hover hoverEffect="lift" hoverDuration={50} cursor="pointer">
       <Box sx={{ position: "relative" }}>
         <img
           src={image}
@@ -196,9 +196,15 @@ const RoomCard: React.FC<RoomCardProps> = ({
           level="body-md"
           color="neutral"
         >
-          Capacity: {capacity} · Guests: {guests}
+          Capacity: {capacity}
         </Typography>
-
+        <Typography
+          startDecorator={<WidthWide sx={{ fontSize: "1.25rem" }} />}
+          level="body-md"
+          color="neutral"
+        >
+          Room Size: {room_size} sqm
+        </Typography>
         {/* Amenities list */}
         {amenities?.length ? (
           <Box
@@ -222,65 +228,6 @@ const RoomCard: React.FC<RoomCardProps> = ({
           </Box>
         ) : null}
       </CardContent>
-
-      <CardActions
-        sx={{
-          justifyContent: "center",
-          alignItems: { xs: "stretch", sm: "center" },
-          flexDirection: { xs: "column", sm: "row" },
-          gap: 1,
-        }}
-      >
-        {/* <Button onClick={onClick} fullWidth variant="solid">
-          View Details
-        </Button> */}
-
-        <Button onClick={onClick} fullWidth variant="solid">
-          View Details
-        </Button>
-
-        {/* Controls group: status dropdown + delete */}
-        <Box
-          sx={{
-            display: "flex",
-            gap: 1,
-            width: { xs: "100%", sm: "auto" },
-            justifyContent: { xs: "space-between", sm: "center" },
-          }}
-        >
-          {/* Dropdown for Status Update */}
-          <Dropdown>
-            <MenuButton
-              slots={{ root: IconButton }}
-              slotProps={{
-                root: {
-                  variant: "soft",
-                  colorScheme: "secondary",
-                  sx: { borderRadius: 2, flex: "0 0 auto" },
-                },
-              }}
-            >
-              {getStatusIcon(room_status)}
-            </MenuButton>
-            <Menu>
-              {statuses.map((s) => (
-                <MenuItem
-                  key={s}
-                  onClick={() => updateRoomStatus(s)} // call API + update state
-                  selected={room_status === s}
-                >
-                  {getStatusIcon(s)}
-                  <Typography sx={{ ml: 1 }}>{s}</Typography>
-                </MenuItem>
-              ))}
-            </Menu>
-          </Dropdown>
-
-          <IconButton colorScheme="red" variant="soft" onClick={deleteRoom}>
-            <Trash />
-          </IconButton>
-        </Box>
-      </CardActions>
     </Container>
   );
 };

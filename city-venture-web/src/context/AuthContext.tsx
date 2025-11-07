@@ -5,7 +5,7 @@ import {
   logoutUser,
   getStoredUser,
   getToken,
-} from "@/src/services/AuthService";
+} from "@/src/services/auth/AuthService";
 import axios from "axios";
 import type { UserDetails } from "@/src/types/User";
 import api from "@/src/services/api";

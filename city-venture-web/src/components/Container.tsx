@@ -5,8 +5,20 @@ import "./styles/container.css";
 interface ContainerProps {
   children: React.ReactNode;
   elevation?: 0 | 1 | 2 | 3 | 4 | 5 | 6;
-  align?: string | "flex-start" | "center" | "flex-end" | "stretch" | "baseline";
-  justify?: string | "flex-start" | "center" | "flex-end" | "space-between" | "space-around";
+  align?:
+    | string
+    | "flex-start"
+    | "center"
+    | "flex-end"
+    | "stretch"
+    | "baseline";
+  justify?:
+    | string
+    | "flex-start"
+    | "center"
+    | "flex-end"
+    | "space-between"
+    | "space-around";
   className?: string;
   width?: string;
   height?: string;
@@ -17,22 +29,36 @@ interface ContainerProps {
   background?: string;
   direction?: "row" | "column";
   opacity?: number;
-  
+
   // Hover effects
   hover?: boolean;
   hoverEffect?: "lift" | "glow" | "scale" | "highlight" | "shadow-expand";
   hoverBackground?: string;
   hoverScaleAmount?: number; // 0.95 to 1.1, default 1.05
   hoverDuration?: number; // in ms, default 300
-  
+
   // Animation
-  animation?: "fade-in" | "slide-up" | "slide-down" | "slide-left" | "slide-right" | "zoom-in" | "bounce" | "pulse";
+  animation?:
+    | "fade-in"
+    | "slide-up"
+    | "slide-down"
+    | "slide-left"
+    | "slide-right"
+    | "zoom-in"
+    | "bounce"
+    | "pulse";
   animationDuration?: number; // in ms, default 500
   animationDelay?: number; // in ms, default 0
-  
+
   // Interaction
   cursor?: "pointer" | "default" | "grab" | "text";
   disabled?: boolean;
+  onClick?: (event: React.MouseEvent<HTMLDivElement>) => void;
+  onDoubleClick?: (event: React.MouseEvent<HTMLDivElement>) => void;
+  onContextMenu?: (event: React.MouseEvent<HTMLDivElement>) => void;
+  onMouseEnterProp?: (event: React.MouseEvent<HTMLDivElement>) => void;
+  onMouseLeaveProp?: (event: React.MouseEvent<HTMLDivElement>) => void;
+  onKeyDown?: (event: React.KeyboardEvent<HTMLDivElement>) => void;
 }
 
 const Container: React.FC<ContainerProps> = ({
@@ -60,6 +86,12 @@ const Container: React.FC<ContainerProps> = ({
   animationDelay = 0,
   cursor = "default",
   disabled = false,
+  onClick,
+  onDoubleClick,
+  onContextMenu,
+  onMouseEnterProp,
+  onMouseLeaveProp,
+  onKeyDown,
 }) => {
   const [isHovered, setIsHovered] = React.useState(false);
 
@@ -129,7 +161,8 @@ const Container: React.FC<ContainerProps> = ({
     justifyContent: justify,
     opacity,
     cursor: disabled ? "not-allowed" : cursor,
-    ...(hover && !isHovered && { transition: `all ${hoverDuration}ms ease-in-out` }),
+    ...(hover &&
+      !isHovered && { transition: `all ${hoverDuration}ms ease-in-out` }),
     ...getHoverStyles(),
     ...getAnimationCSS(),
     ...style,
@@ -210,12 +243,23 @@ const Container: React.FC<ContainerProps> = ({
           50% { opacity: 0.7; }
         }
       `}</style>
-      
+
       <div
         className={`container elevation-${elevation} ${className}`.trim()}
         style={containerStyle}
-        onMouseEnter={() => setIsHovered(true)}
-        onMouseLeave={() => setIsHovered(false)}
+        onMouseEnter={(e) => {
+          setIsHovered(true);
+          onMouseEnterProp?.(e);
+        }}
+        onMouseLeave={(e) => {
+          setIsHovered(false);
+          onMouseLeaveProp?.(e);
+        }}
+        onClick={!disabled ? onClick : undefined}
+        onDoubleClick={!disabled ? onDoubleClick : undefined}
+        onContextMenu={!disabled ? onContextMenu : undefined}
+        onKeyDown={!disabled ? onKeyDown : undefined}
+        tabIndex={onClick || onDoubleClick || onKeyDown ? 0 : undefined}
       >
         {children}
       </div>

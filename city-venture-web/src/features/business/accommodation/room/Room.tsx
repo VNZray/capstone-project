@@ -158,6 +158,7 @@ const RoomPage = () => {
 
           {/* Add Room Modal */}
           <AddRoomModal
+            business_name={businessDetails?.business_name}
             open={openModal}
             onClose={() => setOpenModal(false)}
             onRoomAdded={fetchRooms}
@@ -277,7 +278,7 @@ const RoomPage = () => {
                 roomNumber={room.room_number!}
                 type={room.room_type!}
                 price={room.room_price!}
-                guests={2}
+                room_size={room.room_size!}
                 amenities={[]}
                 onUpdate={() => {
                   fetchRooms();

@@ -1,16 +1,17 @@
 import axios from "axios";
 
 import api from "@/src/services/api";
-import type { TokenPayload, User, UserDetails, UserRoles } from "../types/User";
+import type { TokenPayload, User, UserDetails, UserRoles } from "../../types/User";
 import type {
   Address,
   Municipality,
   Barangay,
   Province,
-} from "../types/Address";
-import type { Owner } from "../types/Owner";
-import type { Tourist } from "../types/Tourist";
-import type { Tourism } from "../types/Tourism";
+} from "../../types/Address";
+import type { Owner } from "../../types/Owner";
+import type { Tourist } from "../../types/Tourist";
+import type { Tourism } from "../../types/Tourism";
+import type { Staff } from "../../types/Staff";
 interface LoginResponse {
   token: string;
 }
@@ -226,6 +227,20 @@ export const loginUser = async (
       return null;
     });
 
+  console.debug("[AuthService] GET /staff/user/:user_id", user_id);
+  const staffData: Partial<Staff> | null = await axios
+    .get<Staff>(`${api}/staff/user/${user_id}`)
+    .then((r) => r.data as Partial<Staff>)
+    .catch((err) => {
+      console.warn("[AuthService] Staff by user lookup failed", {
+        user_id,
+        message: err?.message,
+        status: err?.response?.status,
+        data: err?.response?.data,
+      });
+      return null;
+    });
+
   // Address details already derived from userData.barangay_id above
 
   // Step 4: Build user object
@@ -256,19 +271,19 @@ export const loginUser = async (
       ownerData?.first_name ||
       touristData?.first_name ||
       tourismData?.first_name ||
-      profileInfo.first_name ||
+      staffData?.first_name ||
       "",
     middle_name:
       ownerData?.middle_name ||
       touristData?.middle_name ||
       tourismData?.middle_name ||
-      profileInfo.middle_name ||
+      staffData?.middle_name ||
       "",
     last_name:
       ownerData?.last_name ||
       touristData?.last_name ||
       tourismData?.last_name ||
-      profileInfo.last_name ||
+      staffData?.last_name ||
       "",
     gender:
       ownerData?.gender || touristData?.gender || tourismData?.gender || "",
@@ -294,30 +309,31 @@ export const loginUser = async (
     province_name: province?.province || "",
     user_id: userData.id || "",
     permissions: myPermissions,
+    business_id: staffData?.business_id || "",
   };
 
-  // Save to localStorage
-  localStorage.setItem("token", token);
-  localStorage.setItem("user", JSON.stringify(loggedInUser));
+  // Save to sessionStorage
+  sessionStorage.setItem("token", token);
+  sessionStorage.setItem("user", JSON.stringify(loggedInUser));
 
   return loggedInUser;
 };
 
 /** LOGOUT */
 export const logoutUser = () => {
-  localStorage.removeItem("token");
-  localStorage.removeItem("user");
+  sessionStorage.removeItem("token");
+  sessionStorage.removeItem("user");
 };
 
 /** Get Stored User */
 export const getStoredUser = (): UserDetails | null => {
-  const storedUser = localStorage.getItem("user");
+  const storedUser = sessionStorage.getItem("user");
   return storedUser ? JSON.parse(storedUser) : null;
 };
 
 /** Get Stored Token */
 export const getToken = (): string | null => {
-  return localStorage.getItem("token");
+  return sessionStorage.getItem("token");
 };
 
 export const fetchUserData = async (user_id: string): Promise<User> => {

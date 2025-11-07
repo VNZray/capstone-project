@@ -96,7 +96,7 @@ import {
   fetchTourist,
   updateBookingStatus,
 } from "@/src/services/BookingService";
-import { fetchUserData } from "@/src/services/AuthService";
+import { fetchUserData } from "@/src/services/auth/AuthService";
 import api from "@/src/services/api";
 import type { Booking } from "@/src/types/Booking";
 import DynamicTab from "@/src/components/ui/DynamicTab";
@@ -279,6 +279,8 @@ const Bookings = () => {
             trip_purpose: b.trip_purpose || "—",
           }))
         );
+
+        console.log(data.map((b) => ({ id: b.id, status: b.booking_status })));
       } catch (e: any) {
         console.error("Failed to load bookings", e);
         setError(e?.message || "Failed to load bookings");
@@ -414,10 +416,10 @@ const Bookings = () => {
   const filteredData = useMemo(
     () =>
       filterByDateAndSearch(
-        activeTab === "All"
+        activeTab === "all"
           ? bookings
           : bookings.filter(
-              (b) => normalizeStatus(b.booking_status) === activeTab
+              (b) => normalizeStatus(b.booking_status).toLowerCase() === activeTab.toLowerCase()
             )
       ),
     [activeTab, bookings, searchTerm, filter, selectedMonth, selectedYear]
