@@ -9,12 +9,12 @@ import {
   Select,
   Option,
   Textarea,
-  Button,
   Stack,
   Alert,
 } from "@mui/joy";
 import type { Report } from "@/src/types/Report";
 import { apiService } from "@/src/utils/api";
+import ResponsiveButton from "@/src/components/ResponsiveButton";
 
 interface UpdateStatusModalProps {
   open: boolean;
@@ -118,22 +118,27 @@ const UpdateStatusModal: React.FC<UpdateStatusModalProps> = ({
             </FormControl>
 
             <Stack direction="row" spacing={2} sx={{ justifyContent: 'flex-end', mt: 3 }}>
-              <Button
+              <ResponsiveButton
                 variant="outlined"
-                color="neutral"
+                color="gray"
                 onClick={handleCancel}
                 disabled={loading}
+                size="sm"
+                hoverEffect="lift"
               >
                 Cancel
-              </Button>
-              <Button
+              </ResponsiveButton>
+              <ResponsiveButton
                 type="submit"
                 variant="solid"
                 loading={loading}
                 disabled={selectedStatus === report.status && !remarks.trim()}
+                color="primary"
+                size="sm"
+                hoverEffect="lift"
               >
                 Update Status
-              </Button>
+              </ResponsiveButton>
             </Stack>
           </Stack>
         </form>

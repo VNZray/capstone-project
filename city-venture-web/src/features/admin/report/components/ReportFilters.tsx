@@ -1,6 +1,7 @@
 import React from "react";
-import { Select, Option, Button, FormControl, FormLabel, Stack } from "@mui/joy";
+import { Select, Option, FormControl, FormLabel, Stack } from "@mui/joy";
 import { IoRefresh } from "react-icons/io5";
+import ResponsiveButton from "@/src/components/ResponsiveButton";
 
 interface ReportFiltersProps {
   selectedStatus: string;
@@ -66,14 +67,15 @@ const ReportFilters: React.FC<ReportFiltersProps> = ({
         </Select>
       </FormControl>
 
-      <Button
+      <ResponsiveButton
         variant="outlined"
         size="sm"
-        startDecorator={<IoRefresh />}
+        startIcon={<IoRefresh />}
         onClick={onRefresh}
+        hoverEffect="lift"
       >
         Refresh
-      </Button>
+      </ResponsiveButton>
     </Stack>
   );
 };

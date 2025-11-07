@@ -1,6 +1,5 @@
 import React from "react";
 import {
-  Button,
   Stack,
   Typography,
   Sheet,
@@ -10,6 +9,7 @@ import {
 } from "@mui/joy";
 import { ChevronDown } from "lucide-react";
 import { Edit } from "lucide-react";
+import ResponsiveButton from "@/src/components/ResponsiveButton";
 
 interface TouristSpotImage {
   id: string;
@@ -51,15 +51,16 @@ const ImagesInfoSection: React.FC<ImagesInfoSectionProps> = ({ images, onEdit })
         >
           Images
         </Typography>
-        <Button
+        <ResponsiveButton
           variant="outlined"
           size="sm"
-          startDecorator={<Edit size={16} />}
-          className="tsd-edit-btn"
+          startIcon={<Edit size={16} />}
           onClick={onEdit}
+          hoverEffect="lift"
+          radius="8px"
         >
           Edit
-        </Button>
+        </ResponsiveButton>
       </Stack>
 
       {images.length > 0 ? (

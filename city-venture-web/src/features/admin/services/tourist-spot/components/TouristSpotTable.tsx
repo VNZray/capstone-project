@@ -3,6 +3,7 @@ import Typography from "@mui/joy/Typography";
 import type { TouristSpot } from "@/src/types/TouristSpot";
 import Chip from "@mui/joy/Chip";
 import "./TouristSpotTable.css";
+import ResponsiveButton from "@/src/components/ResponsiveButton";
 
 interface TouristSpotTableProps {
   spots: TouristSpot[];
@@ -54,20 +55,22 @@ const TouristSpotTable: React.FC<TouristSpotTableProps> = ({
           </div>
           <Typography level="body-md" color="neutral" sx={{ flex: 1 }}>{spot.spot_status}</Typography>
           <div style={{ flex: 2, display: 'flex', gap: 8 }}>
-            <button
-              className="edit-button"
-              style={{ background: '#1976d2', color: '#fff', border: 'none', borderRadius: 6, padding: '4px 12px', cursor: 'pointer', fontWeight: 500 }}
+            <ResponsiveButton
+              variant="solid"
+              color="primary"
+              size="sm"
               onClick={() => onEdit(spot)}
             >
               Edit
-            </button>
-            <button
-              className="view-details-button"
-              style={{ background: '#43a047', color: '#fff', border: 'none', borderRadius: 6, padding: '4px 12px', cursor: 'pointer', fontWeight: 500 }}
+            </ResponsiveButton>
+            <ResponsiveButton
+              variant="solid"
+              color="success"
+              size="sm"
               onClick={() => onViewDetails(spot)}
             >
               View Details
-            </button>
+            </ResponsiveButton>
           </div>
         </div>
       ))}

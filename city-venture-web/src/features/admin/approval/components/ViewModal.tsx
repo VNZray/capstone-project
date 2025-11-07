@@ -10,11 +10,11 @@ import {
   Divider,
   Sheet,
   Box,
-  Button,
 } from "@mui/joy";
 import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
 import CheckRoundedIcon from "@mui/icons-material/CheckRounded";
 import "./ViewModal.css";
+import ResponsiveButton from "@/src/components/ResponsiveButton";
 
 interface ViewModalProps {
   isOpen: boolean;
@@ -347,44 +347,30 @@ const ViewModal: React.FC<ViewModalProps> = ({ isOpen, onClose, item, onApprove,
           borderColor: 'divider',
           backgroundColor: 'background.surface'
         }}>
-          <Button
+          <ResponsiveButton
             variant="outlined"
-            color="danger"
+            color="error"
             onClick={handleRejectClick}
             disabled={!onReject || (processingId != null && processingId === id)}
-            startDecorator={<CloseRoundedIcon />}
-            size="lg"
-            sx={{
-              minWidth: 120,
-              fontWeight: 500,
-              borderRadius: 'md',
-              '&:hover': {
-                backgroundColor: 'danger.50',
-                borderColor: 'danger.300'
-              }
-            }}
+            startIcon={<CloseRoundedIcon />}
+            size="sm"
+            hoverEffect="lift"
+            style={{ minWidth: 120, fontWeight: 500, borderRadius: '10px' }}
           >
             Reject
-          </Button>
-          <Button
+          </ResponsiveButton>
+          <ResponsiveButton
             variant="solid"
-            color="success"
+            color="primary"
             onClick={handleApproveClick}
             disabled={!onApprove || (processingId != null && processingId === id)}
-            startDecorator={<CheckRoundedIcon />}
-            size="lg"
-            sx={{
-              minWidth: 120,
-              fontWeight: 500,
-              borderRadius: 'md',
-              backgroundColor: '#0A1B47',
-              '&:hover': {
-                backgroundColor: '#0f2356'
-              }
-            }}
+            startIcon={<CheckRoundedIcon />}
+            size="sm"
+            hoverEffect="lift"
+            style={{ minWidth: 120, fontWeight: 600, borderRadius: '10px' }}
           >
             Approve
-          </Button>
+          </ResponsiveButton>
         </Box>
       </ModalDialog>
     </Modal>

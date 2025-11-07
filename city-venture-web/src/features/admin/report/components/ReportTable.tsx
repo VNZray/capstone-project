@@ -2,11 +2,11 @@ import React, { useEffect, useState } from "react";
 import { 
   Typography, 
   Chip, 
-  Button, 
   Stack, 
   Sheet, 
   Grid 
 } from "@mui/joy";
+import ResponsiveButton from "@/src/components/ResponsiveButton";
 import type { Report } from "@/src/types/Report";
 import { apiService } from "@/src/utils/api";
 
@@ -205,22 +205,22 @@ const ReportTable: React.FC<ReportTableProps> = ({
             
             <Grid xs={12} sm={2}>
               <Stack direction="row" spacing={1}>
-                <Button
+                <ResponsiveButton
                   size="sm"
                   variant="outlined"
                   color="success"
                   onClick={() => onViewDetails(report)}
                 >
                   View
-                </Button>
-                <Button
+                </ResponsiveButton>
+                <ResponsiveButton
                   size="sm"
                   variant="outlined"
                   color="primary"
                   onClick={() => onUpdateStatus(report)}
                 >
                   Update
-                </Button>
+                </ResponsiveButton>
               </Stack>
             </Grid>
           </Grid>

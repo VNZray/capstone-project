@@ -5,13 +5,13 @@ import {
   Modal,
   ModalDialog,
   Typography,
-  Button,
   Sheet,
   IconButton,
 } from '@mui/joy';
+import ResponsiveButton from '@/src/components/ResponsiveButton';
 import Autocomplete from '@mui/joy/Autocomplete';
 import { IoClose } from 'react-icons/io5';
-import "@/src/components/styles/touristspots/TouristSpotTable.css";
+import "./TouristSpotTable.css";
 
 interface FeaturedSpotsModalProps {
   open: boolean;
@@ -110,7 +110,17 @@ const FeaturedSpotsModal: React.FC<FeaturedSpotsModalProps> = ({ open, onClose }
                 noOptionsText={loading ? 'Loading…' : 'No matches'}
                 sx={{ minWidth: 320, maxWidth: 480, flex: 1 }}
               />
-              <Button onClick={handleAdd} disabled={!selectedToAddId || loading}>Add</Button>
+              <ResponsiveButton
+                onClick={handleAdd}
+                disabled={!selectedToAddId || loading}
+                size="sm"
+                variant="solid"
+                color="primary"
+                hoverEffect="lift"
+                radius="18px"
+              >
+                Add
+              </ResponsiveButton>
             </div>
           </div>
         </Sheet>
@@ -134,8 +144,25 @@ const FeaturedSpotsModal: React.FC<FeaturedSpotsModalProps> = ({ open, onClose }
               <Typography level="title-lg" sx={{ mb: 1 }}>Remove from Featured?</Typography>
               <Typography sx={{ mb: 2 }}>Are you sure you want to remove this tourist spot from featured?</Typography>
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
-                <Button variant="plain" onClick={() => { setConfirmOpen(false); setPendingUnfeatureId(null); }}>Cancel</Button>
-                <Button color="danger" onClick={handleUnfeature} loading={loading}>Remove</Button>
+                <ResponsiveButton
+                  variant="soft"
+                  color="gray"
+                  size="sm"
+                  onClick={() => { setConfirmOpen(false); setPendingUnfeatureId(null); }}
+                  hoverEffect="lift"
+                >
+                  Cancel
+                </ResponsiveButton>
+                <ResponsiveButton
+                  color="error"
+                  variant="solid"
+                  size="sm"
+                  onClick={handleUnfeature}
+                  disabled={loading}
+                  hoverEffect="lift"
+                >
+                  Remove
+                </ResponsiveButton>
               </div>
             </ModalDialog>
           </Modal>
@@ -152,7 +179,15 @@ const FeaturedSpotsModal: React.FC<FeaturedSpotsModalProps> = ({ open, onClose }
         </div>
 
         <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 16, gap: 8 }}>
-          <Button variant="soft" onClick={onClose}>Close</Button>
+          <ResponsiveButton
+            variant="solid"
+            color="primary"
+            size="sm"
+            onClick={onClose}
+            hoverEffect="lift"
+          >
+            Close
+          </ResponsiveButton>
         </div>
       </ModalDialog>
     </Modal>

@@ -14,7 +14,7 @@
 
 ## Unified UI and Organized Files
 
-1. Use global omponents for consistent and unified UI
+1. Use global components for consistent and unified UI
     - PageContainer.tsx
     - Container.tsx
     - ResponsiveText.tsx

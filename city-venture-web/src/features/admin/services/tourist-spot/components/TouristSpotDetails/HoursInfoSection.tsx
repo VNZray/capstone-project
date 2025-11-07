@@ -1,8 +1,9 @@
 import React from "react";
-import { Button, Stack, Typography, Sheet, Box, Chip } from "@mui/joy";
+import { Stack, Typography, Sheet, Box, Chip } from "@mui/joy";
 import { TimerIcon } from "lucide-react";
 import { Edit } from "lucide-react";
 import type { TouristSpotSchedule } from "@/src/types/TouristSpot";
+import ResponsiveButton from "@/src/components/ResponsiveButton";
 
 interface HoursInfoSectionProps {
   schedules: TouristSpotSchedule[] | null;
@@ -29,15 +30,16 @@ const HoursInfoSection: React.FC<HoursInfoSectionProps> = ({ schedules, onEdit }
           Operating Hours
         </Typography>
 
-        <Button
+        <ResponsiveButton
           variant="outlined"
           size="sm"
-          startDecorator={<Edit size={16} />}
-          className="tsd-edit-btn"
+          startIcon={<Edit size={16} />}
           onClick={onEdit}
+          hoverEffect="lift"
+          radius="8px"
         >
           Edit
-        </Button>
+        </ResponsiveButton>
       </Stack>
 
       {schedules && schedules.length > 0 ? (

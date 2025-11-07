@@ -10,6 +10,7 @@ import {
   Card,
   CardContent,
 } from "@mui/joy";
+import ResponsiveText from "@/src/components/ResponsiveText";
 import type { FormOption, TouristSpotFormData, DaySchedule } from "@/src/types/TouristSpot";
 
 interface ReviewStepProps {
@@ -37,18 +38,24 @@ const ReviewStep: React.FC<ReviewStepProps> = ({
 }) => {
   return (
     <Stack spacing={2}>
-      <Typography level="h4">Review & Submit</Typography>
-            {mode === "edit" && (
+      <ResponsiveText type="title-small" weight="semi-bold" color="#0A1B47">Review & Submit</ResponsiveText>
+      {mode === "edit" && (
         <FormControl>
           <FormLabel>Status</FormLabel>
           <Select
-            value={formData.spot_status}
+            placeholder="Select status"
+            value={formData.spot_status || null}
             onChange={(_e, value) =>
               onFormDataChange((prev) => ({
                 ...prev,
-                spot_status: (value as string) as "pending" | "active" | "inactive",
+                spot_status: (value as string) as "active" | "inactive" | "pending" | "",
               }))
             }
+            slotProps={{
+              listbox: {
+                sx: { zIndex: 3000, maxHeight: 240, overflow: 'auto' }
+              }
+            }}
           >
             <SelectOption value="active">Active</SelectOption>
             <SelectOption value="inactive">Inactive</SelectOption>
@@ -62,9 +69,7 @@ const ReviewStep: React.FC<ReviewStepProps> = ({
             <Card variant="outlined">
               <CardContent>
                 <Stack spacing={2}>
-                  <Typography level="title-sm" sx={{ color: 'primary.600' }}>
-                    Basic Information
-                  </Typography>
+                  <ResponsiveText type="label-medium" weight="semi-bold" color="#0A1B47">Basic Information</ResponsiveText>
                   <Typography level="body-sm"><strong>Name:</strong> {formData.name}</Typography>
                   <Typography level="body-sm"><strong>Description:</strong> {formData.description}</Typography>
                   <Typography level="body-sm">
@@ -80,9 +85,7 @@ const ReviewStep: React.FC<ReviewStepProps> = ({
             <Card variant="outlined">
               <CardContent>
                 <Stack spacing={2}>
-                  <Typography level="title-sm" sx={{ color: 'primary.600' }}>
-                    Location
-                  </Typography>
+                  <ResponsiveText type="label-medium" weight="semi-bold" color="#0A1B47">Location</ResponsiveText>
                   <Typography level="body-sm">
                     <strong>Address:</strong> {selectedBarangay?.label}, {selectedMunicipality?.label}, {selectedProvince?.label}
                   </Typography>
@@ -103,9 +106,7 @@ const ReviewStep: React.FC<ReviewStepProps> = ({
             <Card variant="outlined">
               <CardContent>
                 <Stack spacing={2}>
-                  <Typography level="title-sm" sx={{ color: 'primary.600' }}>
-                    Contact Information
-                  </Typography>
+                  <ResponsiveText type="label-medium" weight="semi-bold" color="#0A1B47">Contact Information</ResponsiveText>
                   {formData.contact_phone && (
                     <Typography level="body-sm"><strong>Phone:</strong> {formData.contact_phone}</Typography>
                   )}
@@ -127,9 +128,7 @@ const ReviewStep: React.FC<ReviewStepProps> = ({
             <Card variant="outlined">
               <CardContent>
                 <Stack spacing={2}>
-                  <Typography level="title-sm" sx={{ color: 'primary.600' }}>
-                    Operating Hours
-                  </Typography>
+                  <ResponsiveText type="label-medium" weight="semi-bold" color="#0A1B47">Operating Hours</ResponsiveText>
                   {schedules.filter(s => !s.is_closed).length > 0 ? (
                     schedules.filter(s => !s.is_closed).map(sched => (
                       <Typography level="body-sm" key={sched.dayIndex}>

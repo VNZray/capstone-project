@@ -1,9 +1,10 @@
 import React from "react";
-import { Button, Stack, Typography, Sheet } from "@mui/joy";
+import { Stack, Typography, Sheet } from "@mui/joy";
 import { LucidePhone, Globe } from "lucide-react";
 import { MdEmail } from "react-icons/md";
 import { Edit } from "lucide-react";
 import type { TouristSpot } from "@/src/types/TouristSpot";
+import ResponsiveButton from "@/src/components/ResponsiveButton";
 
 interface SocialsInfoSectionProps {
   spot: TouristSpot;
@@ -27,15 +28,16 @@ const SocialsInfoSection: React.FC<SocialsInfoSectionProps> = ({ spot, onEdit })
           >
             Contact & Social Media
         </Typography>
-        <Button
+        <ResponsiveButton
           variant="outlined"
           size="sm"
-          startDecorator={<Edit size={16} />}
-          className="tsd-edit-btn"
+          startIcon={<Edit size={16} />}
           onClick={onEdit}
+          hoverEffect="lift"
+          radius="8px"
         >
           Edit
-        </Button>
+        </ResponsiveButton>
       </Stack>
 
       <Stack spacing={2}>

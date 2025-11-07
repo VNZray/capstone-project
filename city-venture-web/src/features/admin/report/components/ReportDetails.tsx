@@ -3,7 +3,6 @@ import { apiService } from "@/src/utils/api";
 import type { Report } from "@/src/types/Report";
 import {
   Alert,
-  Button,
   Stack,
   Typography,
   Grid,
@@ -25,7 +24,6 @@ interface ReportDetailsProps {
 
 const ReportDetails: React.FC<ReportDetailsProps> = ({
   reportId,
-  onBack,
   onStatusUpdated,
 }) => {
   const [report, setReport] = useState<Report | null>(null);

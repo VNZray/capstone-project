@@ -1,131 +1,108 @@
 import React from "react";
-import { 
-  Stack, 
-  Typography, 
-  Box, 
-  Button,
-  Divider
-} from "@mui/joy";
-import { Check, X } from "lucide-react";
+import { Box, Stack, Divider } from "@mui/joy";
+import { User, MapPin, Share2, Clock, ImageIcon, CheckCircle, Check, X } from "lucide-react";
+import ResponsiveButton from "@/src/components/ResponsiveButton";
+import ResponsiveText from "@/src/components/ResponsiveText";
 import type { TouristSpotFormData } from "@/src/types/TouristSpot";
 
-const steps = [
-  "Basic",
-  "Location", 
-  "Socials",
-  "Hours",
-  "Images",
-  "Review"
-];
-
-type TouristSpotStepperProps = {
-  currentStep: number; // index starting at 0
+export interface TouristSpotStepperProps {
+  currentStep: number;
   onStepChange: (step: number) => void;
   onNext: () => void;
   onBack: () => void;
   onCancel: () => void;
+  mode: "add" | "edit";
+  loading: boolean;
+  formData: TouristSpotFormData;
   children?: React.ReactNode;
-  mode?: "add" | "edit";
-  loading?: boolean;
-  formData: TouristSpotFormData; // Added formData prop
-};
+}
 
-export default function TouristSpotStepper({ 
-  currentStep, 
-  onStepChange, 
-  onNext, 
-  onBack, 
+const stepData = [
+  { label: "Basic", icon: User },
+  { label: "Location", icon: MapPin },
+  { label: "Socials", icon: Share2 },
+  { label: "Hours", icon: Clock },
+  { label: "Images", icon: ImageIcon },
+  { label: "Review", icon: CheckCircle },
+];
+
+const TouristSpotStepper: React.FC<TouristSpotStepperProps> = ({
+  currentStep,
+  onStepChange,
+  onNext,
+  onBack,
   onCancel,
+  mode,
+  loading,
+  formData,
   children,
-  mode = "edit",
-  loading = false,
-  formData
-}: TouristSpotStepperProps) {
+}) => {
   const isFirstStep = currentStep === 0;
-  const isLastStep = currentStep === steps.length - 1;
+  const isLastStep = currentStep === stepData.length - 1;
 
-  const canAccessStep = (step: number, formData: TouristSpotFormData) => {
+  const canAccessStep = (step: number) => {
     if (step === 0) return true;
-    if (step === 1) return !!(formData.name && formData.description && formData.category_ids && formData.category_ids.length > 0);
+    if (step === 1) return !!(formData.name && formData.description && formData.category_ids.length > 0);
     if (step === 2) return !!(formData.province_id && formData.municipality_id && formData.barangay_id);
-    return true; // Images and Review are always accessible if previous steps are valid
+    return true;
   };
 
   const StepIndicator: React.FC<{ 
-    step: number; 
-    currentStep: number; 
+    step: number;
     label: string;
-    onClick: () => void;
-    formData: TouristSpotFormData; // Added formData prop
-  }> = ({ step, currentStep, label, onClick, formData }) => {
+    icon: React.ElementType;
+  }> = ({ step, label, icon: Icon }) => {
     const isCompleted = step < currentStep;
     const isActive = step === currentStep;
-    const isDisabled = !canAccessStep(step, formData);
-
+    const disabled = !canAccessStep(step);
     return (
       <Box
-        onClick={!isDisabled ? onClick : undefined}
+        onClick={!disabled ? () => onStepChange(step) : undefined}
         sx={{
-          cursor: isDisabled ? "not-allowed" : "pointer",
+          cursor: disabled ? "not-allowed" : "pointer",
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
           flex: 1,
           position: "relative",
-          opacity: isDisabled ? 0.5 : 1,
-          "&:hover": {
-            opacity: isDisabled ? 0.5 : 0.8
-          }
+          opacity: disabled ? 0.5 : 1,
+          transition: "opacity .2s ease",
+          '&:hover': { opacity: disabled ? 0.5 : 0.85 }
         }}
       >
-        {/* Step Circle */}
         <Box
           sx={{
-            width: 32,
-            height: 32,
+            width: 42,
+            height: 42,
             borderRadius: "50%",
-            backgroundColor: isCompleted
-              ? "primary.solidBg"
-              : isActive
-              ? "primary.solidBg"
-              : "neutral.outlinedBorder",
-            color: isCompleted || isActive ? "primary.solidColor" : "text.tertiary",
+            backgroundColor: isCompleted || isActive ? "var(--primary-color, #0A1B47)" : "#e2e8f0",
+            color: isCompleted || isActive ? "#ffffff" : "#64748b",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            fontSize: "sm",
-            fontWeight: "bold",
             mb: 1,
-            border: isActive ? "2px solid" : "none",
-            borderColor: isActive ? "primary.solidBg" : "neutral.outlinedBorder"
+            fontSize: 18,
+            fontWeight: 600,
+            boxShadow: isActive ? "0 4px 10px rgba(0,0,0,0.12)" : "0 1px 3px rgba(0,0,0,0.08)",
+            border: isActive ? "3px solid #0A1B47" : "2px solid transparent",
+            transition: "all .25s ease"
           }}
         >
-          {isCompleted ? <Check size={16} /> : step + 1}
+          {isCompleted ? <Check size={20} /> : <Icon size={20} />}
         </Box>
-        
-        {/* Step Label */}
-        <Typography 
-          level="body-xs" 
-          sx={{ 
-            color: isCompleted || isActive ? "text.primary" : "text.tertiary",
-            fontWeight: isActive ? "bold" : "normal",
-            textAlign: "center"
-          }}
-        >
+        <ResponsiveText type="label-small" weight={isActive ? "semi-bold" : "normal"} color={isCompleted || isActive ? "#0A1B47" : "#64748b"}>
           {label}
-        </Typography>
-        
-        {/* Connecting Line */}
-        {step < steps.length - 1 && (
+        </ResponsiveText>
+        {step < stepData.length - 1 && (
           <Box
             sx={{
               position: "absolute",
-              top: 16,
+              top: 21,
               left: "50%",
               width: "100%",
               height: 2,
-              backgroundColor: isCompleted ? "primary.solidBg" : "neutral.outlinedBorder",
-              zIndex: -1
+              backgroundColor: isCompleted ? "var(--primary-color, #0A1B47)" : "#e2e8f0",
+              zIndex: -1,
             }}
           />
         )}
@@ -134,76 +111,67 @@ export default function TouristSpotStepper({
   };
 
   return (
-    <Box sx={{ width: "95%", maxWidth: 1100, mx: "auto", p: 3 }}>
+  <Box sx={{ width: "100%", maxWidth: 860, mx: "auto", p: 3 }}>
       {/* Header */}
-      <Box sx={{ mb: 2 }}>
-        <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1 }}>
-          <Typography level="h3">
-            {mode === "add" ? "Add New Tourist Spot" : "Edit Tourist Spot"}
-          </Typography>
-          <Typography level="body-sm" sx={{ color: "text.secondary" }}>
-            Step {currentStep + 1} of {steps.length}
-          </Typography>
+      <Box sx={{ mb: 4 }}>
+        <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 3 }}>
+          <ResponsiveText type="title-medium" weight="semi-bold" color="#0A1B47">
+            {mode === "edit" ? "Edit Tourist Spot" : "Add Tourist Spot"}
+          </ResponsiveText>
+          <ResponsiveText type="label-small" color="#64748b">
+            Step {currentStep + 1} of {stepData.length}
+          </ResponsiveText>
         </Stack>
-                
-        <Stack>
-          <Divider sx={{ my: 2 }} />
-        </Stack>
-        
-        {/* Stepper */}
-        <Stack direction="row" spacing={0} sx={{ position: "relative", mb: 2 }}>
-          {steps.map((label, index) => (
-            <StepIndicator 
-              key={label} 
-              step={index} 
-              currentStep={currentStep} 
-              label={label}
-              onClick={() => onStepChange(index)}
-              formData={formData}
-            />
+        <Stack direction="row" spacing={0} sx={{ position: "relative", mb: 3 }}>
+          {stepData.map((s, i) => (
+            <StepIndicator key={s.label} step={i} label={s.label} icon={s.icon} />
           ))}
         </Stack>
-        <Divider sx={{ my: 1 }} />
+        <Divider />
       </Box>
 
-      {/* Content Area */}
-      <Box sx={{ mb: 4, minHeight: 400 }}>
-        {children}
-      </Box>
+      {/* Content */}
+      <Box sx={{ mb: 4, minHeight: 550 }}>{children}</Box>
 
-      {/* Navigation Buttons */}
+      {/* Navigation */}
       <Stack direction="row" justifyContent="space-between" alignItems="center">
-        <Button
+        <ResponsiveButton
           variant="outlined"
-          color="neutral"
-          startDecorator={<X size={16} />}
+          color="gray"
+          startIcon={<X size={16} />}
           onClick={onCancel}
+          size="sm"
+          hoverEffect="lift"
+          disabled={loading}
         >
           Cancel
-        </Button>
-        
+        </ResponsiveButton>
         <Stack direction="row" spacing={2}>
-          <Button
+          <ResponsiveButton
             variant="outlined"
-            disabled={isFirstStep}
+            color="primary"
             onClick={onBack}
+            disabled={isFirstStep || loading}
+            size="sm"
+            hoverEffect="lift"
           >
             Back
-          </Button>
-          <Button
+          </ResponsiveButton>
+          <ResponsiveButton
             variant="solid"
+            color="primary"
             onClick={onNext}
             disabled={loading}
+            size="sm"
+            hoverEffect="lift"
+            loading={loading}
           >
-            {loading 
-              ? "Processing..." 
-              : isLastStep 
-                ? "Save" 
-                : "Next"
-            }
-          </Button>
+            {isLastStep ? (mode === "edit" ? "Save Changes" : "Submit Spot") : "Next"}
+          </ResponsiveButton>
         </Stack>
       </Stack>
     </Box>
   );
-}
+};
+
+export default TouristSpotStepper;

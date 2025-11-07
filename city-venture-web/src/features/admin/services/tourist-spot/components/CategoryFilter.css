@@ -5,24 +5,23 @@
 
 .categories-scroll {
   display: flex;
-  gap: 10px;
+  gap: 8px;
   overflow-x: auto;
-  padding-bottom: 5px;
+  padding: 4px 2px 8px 2px;
+  scrollbar-width: thin;
 }
 
-.categories-scroll::-webkit-scrollbar {
-  height: 4px;
-}
+.categories-scroll::-webkit-scrollbar { height: 4px; }
 
-.categories-scroll::-webkit-scrollbar-track {
-  background: #f1f1f1;
-  border-radius: 2px;
-}
+.categories-scroll::-webkit-scrollbar-track { background: transparent; }
 
 .categories-scroll::-webkit-scrollbar-thumb {
-  background: #c1c1c1;
+  background: #c8ced8;
   border-radius: 2px;
 }
+
+/* Deprecated legacy per-button classes retained in case of leftover DOM; can remove later */
+.category-button { display: none; }
 
 .category-button {
   background-color: #e0e0e0;

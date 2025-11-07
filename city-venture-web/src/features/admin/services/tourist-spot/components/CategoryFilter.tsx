@@ -1,5 +1,5 @@
 import React from 'react';
-import Text from '@/src/components/Text';
+import ResponsiveButton from '@/src/components/ResponsiveButton';
 import "./CategoryFilter.css";
 
 interface CategoryFilterProps {
@@ -17,18 +17,18 @@ const CategoryFilter: React.FC<CategoryFilterProps> = ({
     <div className="category-filter-container">
       <div className="categories-scroll">
         {categories.map((category, index) => (
-          <button
+          <ResponsiveButton
             key={index}
-            className={`category-button ${selectedCategory === category ? 'active' : ''}`}
             onClick={() => onCategorySelect(category)}
+            variant={selectedCategory === category ? 'solid' : 'soft'}
+            color="primary"
+            size="sm"
+            radius="20px"
+            hoverEffect="lift"
+            style={{ whiteSpace: 'nowrap' }}
           >
-            <Text 
-              variant="normal" 
-              color={selectedCategory === category ? 'white' : 'text-color'}
-            >
-              {category}
-            </Text>
-          </button>
+            {category}
+          </ResponsiveButton>
         ))}
       </div>
     </div>
