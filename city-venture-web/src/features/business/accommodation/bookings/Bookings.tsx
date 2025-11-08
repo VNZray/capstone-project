@@ -23,7 +23,12 @@ const GuestAvatarCell: FC<GuestAvatarCellProps> = ({ info }) => {
   const initials = useMemo(() => {
     if (!info?.name) return "?";
     const parts = info.name.split(" ").filter(Boolean);
-    return parts.map((p) => p[0]).join("").toUpperCase() || "?";
+    return (
+      parts
+        .map((p) => p[0])
+        .join("")
+        .toUpperCase() || "?"
+    );
   }, [info?.name]);
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -62,13 +67,18 @@ import ResponsiveText from "@/src/components/ResponsiveText";
 import NoDataFound from "@/src/components/NoDataFound";
 import PageContainer from "@/src/components/PageContainer";
 import { colors } from "@/src/utils/Colors";
-import { Search, Eye, Check, XCircle } from "lucide-react";
-import BookingDetails from "./components/BookingDetails";
 import {
-  Input,
-  Button,
-  CircularProgress,
-} from "@mui/joy";
+  Search,
+  Eye,
+  Check,
+  XCircle,
+  List,
+  Clock,
+  LogIn,
+  LogOut,
+} from "lucide-react";
+import BookingDetails from "./components/BookingDetails";
+import { Input, Button, CircularProgress } from "@mui/joy";
 import Container from "@/src/components/Container";
 import Tabs from "./components/Tabs";
 import { Select, Option } from "@mui/joy";
@@ -86,9 +96,10 @@ import {
   fetchTourist,
   updateBookingStatus,
 } from "@/src/services/BookingService";
-import { fetchUserData } from "@/src/services/AuthService";
+import { fetchUserData } from "@/src/services/auth/AuthService";
 import api from "@/src/services/api";
 import type { Booking } from "@/src/types/Booking";
+import DynamicTab from "@/src/components/ui/DynamicTab";
 
 // Booking columns
 interface Column {
@@ -161,9 +172,16 @@ const normalizeStatus = (status?: string) => {
 const Bookings = () => {
   // const { user } = useAuth(); // (unused currently)
   const { businessDetails } = useBusiness();
-  const [activeTab, setActiveTab] = useState<
-    "All" | "Pending" | "Reserved" | "Checked-in" | "Checked-out" | "Canceled"
-  >("All");
+
+  const [activeTab, setActiveTab] = useState("all");
+  const tabs = [
+    { id: "all", label: "All", icon: <List size={16} /> },
+    { id: "pending", label: "Pending", icon: <Clock size={16} /> },
+    { id: "reserved", label: "Reserved", icon: <Check size={16} /> },
+    { id: "checked-in", label: "Checked-in", icon: <LogIn size={16} /> },
+    { id: "checked-out", label: "Checked-out", icon: <LogOut size={16} /> },
+    { id: "canceled", label: "Canceled", icon: <XCircle size={16} /> },
+  ];
 
   const [page, setPage] = React.useState(0);
   const [rowsPerPage, setRowsPerPage] = React.useState(10);
@@ -183,14 +201,18 @@ const Bookings = () => {
 
   // removed unused booking counters to satisfy lint
   // Prefetch guest info (name and user_profile) for all visible bookings
-  const [guestInfoById, setGuestInfoById] = useState<Record<string, { name: string; user_profile?: string }>>({});
+  const [guestInfoById, setGuestInfoById] = useState<
+    Record<string, { name: string; user_profile?: string }>
+  >({});
   useEffect(() => {
     const loadGuests = async () => {
       const uniqueIds = Array.from(
         new Set(
           bookings
             .map((b) => b.tourist_id)
-            .filter((id): id is string => typeof id === "string" && id.length > 0)
+            .filter(
+              (id): id is string => typeof id === "string" && id.length > 0
+            )
         )
       );
       if (uniqueIds.length === 0) return;
@@ -207,7 +229,10 @@ const Bookings = () => {
               userData = await fetchUserData(tourist.user_id);
             }
             return {
-              name: [tourist?.first_name, tourist?.last_name].filter(Boolean).join(" ") || "—",
+              name:
+                [tourist?.first_name, tourist?.last_name]
+                  .filter(Boolean)
+                  .join(" ") || "—",
               user_profile: userData?.user_profile,
             };
           } catch {
@@ -215,7 +240,10 @@ const Bookings = () => {
           }
         })
       );
-      const mapUpdates: Record<string, { name: string; user_profile?: string }> = {};
+      const mapUpdates: Record<
+        string,
+        { name: string; user_profile?: string }
+      > = {};
       results.forEach((res, idx) => {
         const id = toFetch[idx];
         if (res.status === "fulfilled" && res.value) {
@@ -251,6 +279,8 @@ const Bookings = () => {
             trip_purpose: b.trip_purpose || "—",
           }))
         );
+
+        console.log(data.map((b) => ({ id: b.id, status: b.booking_status })));
       } catch (e: any) {
         console.error("Failed to load bookings", e);
         setError(e?.message || "Failed to load bookings");
@@ -386,10 +416,10 @@ const Bookings = () => {
   const filteredData = useMemo(
     () =>
       filterByDateAndSearch(
-        activeTab === "All"
+        activeTab === "all"
           ? bookings
           : bookings.filter(
-              (b) => normalizeStatus(b.booking_status) === activeTab
+              (b) => normalizeStatus(b.booking_status).toLowerCase() === activeTab.toLowerCase()
             )
       ),
     [activeTab, bookings, searchTerm, filter, selectedMonth, selectedYear]
@@ -406,7 +436,9 @@ const Bookings = () => {
             align="center"
             padding="16px 16px 0 16px"
           >
-            <ResponsiveText type="title-small" weight="bold">Manage Reservation</ResponsiveText>
+            <ResponsiveText type="title-small" weight="bold">
+              Manage Reservation
+            </ResponsiveText>
           </Container>
 
           {/* Search + Filters */}
@@ -472,7 +504,11 @@ const Bookings = () => {
           </Container>
 
           {/* Tabs */}
-          <Tabs active={activeTab} onChange={setActiveTab} />
+          <DynamicTab
+            tabs={tabs}
+            activeTabId={activeTab}
+            onChange={(tabId) => setActiveTab(String(tabId))}
+          />
 
           {/* Booking Table */}
           <Container>
@@ -526,8 +562,16 @@ const Bookings = () => {
                         <TableCell colSpan={columns.length} align="center">
                           <NoDataFound
                             icon={searchTerm.trim() ? "search" : "database"}
-                            title={searchTerm.trim() ? "No Results Found" : "No Bookings"}
-                            message={searchTerm.trim() ? `No bookings match "${searchTerm}". Try a different search term.` : "No bookings found."}
+                            title={
+                              searchTerm.trim()
+                                ? "No Results Found"
+                                : "No Bookings"
+                            }
+                            message={
+                              searchTerm.trim()
+                                ? `No bookings match "${searchTerm}". Try a different search term.`
+                                : "No bookings found."
+                            }
                           />
                         </TableCell>
                       </TableRow>
@@ -550,7 +594,9 @@ const Bookings = () => {
                             }}
                           >
                             <TableCell>
-                              <GuestAvatarCell info={guestInfoById[row.tourist_id as string]} />
+                              <GuestAvatarCell
+                                info={guestInfoById[row.tourist_id as string]}
+                              />
                             </TableCell>
                             <TableCell align="center">{row.pax}</TableCell>
                             <TableCell>{row.trip_purpose}</TableCell>

@@ -5,25 +5,24 @@ import {
   DialogActions,
   Button,
   Input,
-  Select,
-  Option,
   FormControl,
   FormLabel,
   Stack,
   Textarea,
   Grid,
   Autocomplete,
+  FormHelperText,
+  Alert,
 } from "@mui/joy";
-import placeholderImage from "@/src/assets/images/placeholder-image.png";
 import type { Room } from "@/src/types/Business";
 import { useBusiness } from "@/src/context/BusinessContext";
 import { getData, insertData } from "@/src/services/Service";
-import { supabase } from "@/src/lib/supabase";
-import { UploadIcon } from "lucide-react";
 import type { Amenity } from "@/src/types/Amenity";
 import { useEffect } from "react";
 import ResponsiveText from "@/src/components/ResponsiveText";
+import ImageUpload from "@/src/components/ImageUpload";
 interface AddRoomModalProps {
+  business_name?: string;
   open: boolean;
   onClose: () => void;
   onRoomAdded?: () => void;
@@ -33,13 +32,33 @@ export default function AddRoomModal({
   open,
   onClose,
   onRoomAdded,
+  business_name,
 }: AddRoomModalProps) {
   const { businessDetails } = useBusiness();
-  const [previewUrl, setPreviewUrl] = React.useState<string | null>(null);
   const [amenities, setAmenities] = React.useState<Amenity[]>([]);
   const [selectedAmenities, setSelectedAmenities] = React.useState<Amenity[]>(
     []
   );
+  const [existingRoomNumbers, setExistingRoomNumbers] = React.useState<
+    string[]
+  >([]);
+  const [error, setError] = React.useState("");
+
+  // Predefined room types
+  const roomTypeOptions = [
+    "Single",
+    "Couple",
+    "Family",
+    "Deluxe",
+    "Suite",
+    "Twin",
+    "Studio",
+    "Penthouse",
+    "Standard",
+    "Premium",
+    "Economy",
+    "Luxury",
+  ];
 
   // get amenities
   const fetchAmenities = async () => {
@@ -49,13 +68,32 @@ export default function AddRoomModal({
     }
   };
 
+  // Fetch existing room numbers for this business
+  const fetchExistingRoomNumbers = async () => {
+    const rooms = await getData("room");
+    if (rooms) {
+      const businessRooms = rooms.filter(
+        (room: Room) => room.business_id === businessDetails?.id
+      );
+      setExistingRoomNumbers(
+        businessRooms.map((room: Room) =>
+          (room.room_number || "").trim().toLowerCase()
+        )
+      );
+    }
+  };
+
   const addAmenity = (name: string) => {
     insertData({ name }, "amenities");
   };
 
   useEffect(() => {
     fetchAmenities();
-  }, []);
+    if (open) {
+      fetchExistingRoomNumbers();
+      setError("");
+    }
+  }, [open]);
 
   const [roomData, setRoomData] = React.useState<Room>({
     id: "",
@@ -70,51 +108,22 @@ export default function AddRoomModal({
     floor: "",
   });
 
-  // Upload immediately after selecting an image
-  const handleImageSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    // Set preview for UI
-    const preview = URL.createObjectURL(file);
-    setPreviewUrl(preview);
-
-    try {
-      // Create a unique file name
-      const fileExt = file.name.split(".").pop();
-      const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
-      const safeRoomNumber = roomData.room_number
-        ? roomData.room_number.replace(/\s+/g, "_")
-        : "room";
-      const fileName = `${safeRoomNumber}_${timestamp}.${fileExt}`;
-      const filePath = fileName;
-
-      // Upload to Supabase
-      const { data: uploadData, error: uploadError } = await supabase.storage
-        .from("room-profile")
-        .upload(filePath, file, { upsert: true });
-
-      if (uploadError) throw uploadError;
-      if (!uploadData?.path) throw new Error("Upload failed: no file path");
-
-      // Get public URL
-      const { data: publicData } = supabase.storage
-        .from("room-profile")
-        .getPublicUrl(uploadData.path);
-
-      if (!publicData?.publicUrl) {
-        throw new Error("Failed to get public URL");
-      }
-
-      // Save to state
-      setRoomData((prev) => ({ ...prev, room_image: publicData.publicUrl }));
-    } catch (err: any) {
-      console.error("Upload failed:", err);
-      alert(err?.message || "Upload failed");
-    }
-  };
-
   const handleSave = async () => {
+    // Validate room number is not empty
+    if (!roomData.room_number?.trim()) {
+      setError("Room number is required");
+      return;
+    }
+
+    // Check for duplicate room number within this business
+    const roomNumberLower = (roomData.room_number || "").trim().toLowerCase();
+    if (existingRoomNumbers.includes(roomNumberLower)) {
+      setError(
+        `Room number "${roomData.room_number}" already exists for this business`
+      );
+      return;
+    }
+
     const payload = {
       ...roomData,
       business_id: businessDetails?.id ?? null, // ensure valid FK
@@ -122,7 +131,17 @@ export default function AddRoomModal({
 
     const response = await insertData(payload, "room");
     if (response.error) {
-      alert(`Error: ${response.error}`);
+      // Check if it's a unique constraint violation
+      if (
+        response.error.includes("Duplicate entry") ||
+        response.error.includes("UNIQUE")
+      ) {
+        setError(
+          `Room number "${roomData.room_number}" already exists for this business`
+        );
+      } else {
+        setError(response.error);
+      }
       return;
     }
 
@@ -149,8 +168,8 @@ export default function AddRoomModal({
       floor: "",
       room_size: "",
     });
+    setError("");
 
-    setPreviewUrl(null);
     if (onRoomAdded) onRoomAdded();
     onClose();
   };
@@ -173,18 +192,27 @@ export default function AddRoomModal({
           }}
         >
           <Stack spacing={2}>
+            {error && (
+              <Alert color="danger" variant="soft">
+                {error}
+              </Alert>
+            )}
+
             <Grid container spacing={2}>
               <Grid sx={{ paddingLeft: "0" }} xs={4}>
-                <FormControl required>
+                <FormControl required error={!!error && error.includes("Room number")}>
                   <FormLabel>Room Number</FormLabel>
                   <Input
                     size="md"
-                    placeholder="Enter room number"
+                    placeholder="e.g. Room 1"
                     value={roomData.room_number}
                     onChange={(e) =>
                       setRoomData({ ...roomData, room_number: e.target.value })
                     }
                   />
+                  {error && error.includes("Room number") && (
+                    <FormHelperText>{error}</FormHelperText>
+                  )}
                 </FormControl>
               </Grid>
 
@@ -194,7 +222,7 @@ export default function AddRoomModal({
                   <Input
                     size="md"
                     type="number"
-                    placeholder="Enter floor"
+                    placeholder="e.g. 1"
                     value={roomData.floor}
                     onChange={(e) =>
                       setRoomData({
@@ -226,17 +254,18 @@ export default function AddRoomModal({
               <Grid sx={{ paddingLeft: "0" }} xs={6}>
                 <FormControl required>
                   <FormLabel>Room Type</FormLabel>
-                  <Select
-                    size="md"
-                    value={roomData.room_type}
-                    onChange={(_, value) =>
-                      setRoomData({ ...roomData, room_type: value || "" })
-                    }
-                  >
-                    <Option value="Single">Single</Option>
-                    <Option value="Double">Double</Option>
-                    <Option value="Suite">Suite</Option>
-                  </Select>
+                  <Autocomplete
+                    freeSolo
+                    placeholder="Select or type room type"
+                    options={roomTypeOptions}
+                    value={roomData.room_type || ""}
+                    onChange={(_, value) => {
+                      setRoomData({ ...roomData, room_type: value || "" });
+                    }}
+                    onInputChange={(_, value) => {
+                      setRoomData({ ...roomData, room_type: value || "" });
+                    }}
+                  />
                 </FormControl>
               </Grid>
 
@@ -246,7 +275,7 @@ export default function AddRoomModal({
                   <Input
                     size="md"
                     type="number"
-                    placeholder="e.g. 2 sqm(㎡)"
+                    placeholder="e.g. 2 m²"
                     value={roomData.room_size}
                     onChange={(e) =>
                       setRoomData({ ...roomData, room_size: e.target.value })
@@ -365,52 +394,24 @@ export default function AddRoomModal({
               />
             </FormControl>
 
-            {/* Room Image */}
-            <FormControl sx={{ alignItems: "center", gap: 2 }}>
+            {/* Room Image Upload */}
+            <FormControl>
               <FormLabel>Room Image</FormLabel>
-
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "center",
-                  alignItems: "center",
-                  flexDirection: "column",
-                  width: "160px",
-                  height: "160px",
-                  borderStyle: "dashed",
-                  borderWidth: "1px",
-                  borderColor: "grey.400",
-                  borderRadius: "8px",
+              <ImageUpload
+                folderName={business_name!}
+                uploadTo="room-profile"
+                placeholder="Click to upload room image"
+                maxSizeMB={5}
+                storeLocally={true}
+                onUploadComplete={(publicUrl) => {
+                  setRoomData((prev) => ({
+                    ...prev,
+                    room_image: publicUrl,
+                  }));
                 }}
-              >
-                <img
-                  src={previewUrl || placeholderImage}
-                  alt="Room Preview"
-                  style={{
-                    width: "100%",
-                    height: "100%",
-                    borderRadius: "8px",
-                    boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
-                  }}
-                />
-              </div>
-
-              <Button
-                size="md"
-                variant="outlined"
-                color="primary"
-                startDecorator={<UploadIcon />}
-                onClick={() => document.getElementById("image-upload")?.click()}
-              >
-                Upload Photo
-              </Button>
-              <input
-                id="image-upload"
-                type="file"
-                accept="image/*"
-                onChange={handleImageSelect}
-                style={{
-                  display: "none",
+                onError={(error) => {
+                  console.error("Upload error:", error);
+                  alert(`Upload failed: ${error}`);
                 }}
               />
             </FormControl>

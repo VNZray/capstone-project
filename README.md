@@ -18,7 +18,7 @@
     - PageContainer.tsx
     - Container.tsx
     - ResponsiveText.tsx
-    - ResponsiveButton.tsx
+    - Button.tsx
     - IconButton.tsx
     - SearchBar.tsx
 2. Use utils/Colors.ts for consistent color

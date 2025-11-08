@@ -4,7 +4,13 @@ import PageContainer from "@/src/components/PageContainer";
 import NoDataFound from "@/src/components/NoDataFound";
 import { Add } from "@mui/icons-material";
 import { Button, Input } from "@mui/joy";
-import { Search } from "lucide-react";
+import {
+  ListChecks,
+  PauseCircle,
+  PlayCircle,
+  Search,
+  TimerOff,
+} from "lucide-react";
 import StatusFilter from "./components/StatusFilter";
 import PromoCard from "./components/PromoCard";
 import type { PromoStatus } from "./components/PromoCard";
@@ -12,6 +18,8 @@ import type { PromoStatus } from "./components/PromoCard";
 import { useMemo, useState } from "react";
 import ResponsiveText from "@/src/components/ResponsiveText";
 import { useNavigate } from "react-router-dom";
+import DynamicTab from "@/src/components/ui/DynamicTab";
+import IconButton from "@/src/components/IconButton";
 
 type Status = "All" | "Active" | "Paused" | "Expired";
 
@@ -98,7 +106,14 @@ const ManagePromotion = () => {
   const [query, setQuery] = useState("");
   const [promos] = useState<StaticPromo[]>(initialPromos);
   const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState("all");
 
+  const tabs = [
+    { id: "all", label: "All", icon: <ListChecks size={16} /> },
+    { id: "active", label: "Active", icon: <PlayCircle size={16} /> },
+    { id: "paused", label: "Paused", icon: <PauseCircle size={16} /> },
+    { id: "expired", label: "Expired", icon: <TimerOff size={16} /> },
+  ];
   // const [addOpen, setAddOpen] = useState(false);
   // const handlePromoAdded = () => {
   //   // For demonstration append a synthetic promo (would replace with API response)
@@ -159,16 +174,15 @@ const ManagePromotion = () => {
             </ResponsiveText>
           </div>
 
-          <Button
-            startDecorator={<Add />}
-            size="lg"
-            color="primary"
-            // onClick={() => setAddOpen(true)}
+          <IconButton
             onClick={() => navigate("/business/create-promotion")}
-            sx={{ width: { xs: "100%", sm: "auto" } }}
+            size="lg"
+            floating
+            floatPosition="bottom-right"
+            hoverEffect="rotate"
           >
-            Create Promo
-          </Button>
+            <Add />
+          </IconButton>
         </Container>
 
         {/* Search + Filter */}
@@ -188,54 +202,75 @@ const ManagePromotion = () => {
           />
         </Container>
 
-        <StatusFilter active={status} onChange={setStatus} />
-      </Container>
-      {filteredPromos.length === 0 && (
-        <NoDataFound
-          icon={query.trim() ? "search" : "database"}
-          title={query.trim() ? "No Results Found" : "No Promotions"}
-          message={
-            query.trim()
-              ? `No promotions match "${query}". Try a different search term or filter.`
-              : "No promotions found."
-          }
+        {/* Tabs */}
+        <DynamicTab
+          tabs={tabs}
+          activeTabId={activeTab}
+          onChange={(tabId) => {
+            setActiveTab(String(tabId));
+            setStatus(
+              tabId === "all"
+                ? "All"
+                : tabId === "active"
+                ? "Active"
+                : tabId === "paused"
+                ? "Paused"
+                : tabId === "expired"
+                ? "Expired"
+                : "All"
+            );
+          }}
         />
-      )}
+      </Container>
 
-      {/* Promo cards grid */}
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fill,minmax(280px,1fr))",
-          gap: 20,
-        }}
-      >
-        {filteredPromos.map((p) => (
-          <PromoCard
-            key={p.id}
-            id={p.id}
-            title={p.title}
-            description={p.description}
-            startDate={p.startDate}
-            endDate={p.endDate}
-            promoCode={p.promoCode}
-            promoType={p.promoType}
-            discountValue={p.discountValue}
-            status={p.status}
-            image={p.image}
-            usageLimit={p.usageLimit}
-            usedCount={p.usedCount}
-            appliesToAll={p.appliesToAll}
-            roomCount={p.appliesToAll ? undefined : p.roomIds?.length || 0}
-            onEdit={(id) => console.log("Edit", id)}
-            onDelete={(id) => console.log("Delete", id)}
-            onStatusChange={(id, next) =>
-              console.log("Status change", id, next)
-            }
-            onClick={(id) => console.log("Open details", id)}
-          />
-        ))}
-      </div>
+      {/* No Data / No Search Results / Promo Cards */}
+      {promos.length === 0 ? (
+        <NoDataFound
+          icon={"database"}
+          title={"No Promotions"}
+          message={"No promotions found. Create your first promotion to attract more guests."}
+        />
+      ) : filteredPromos.length === 0 ? (
+        <NoDataFound
+          icon={"search"}
+          title={"No Search Results"}
+          message={`No promotions match "${query}". Try a different search term or filter.`}
+        />
+      ) : (
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fill,minmax(280px,1fr))",
+            gap: 20,
+          }}
+        >
+          {filteredPromos.map((p) => (
+            <PromoCard
+              key={p.id}
+              id={p.id}
+              title={p.title}
+              description={p.description}
+              startDate={p.startDate}
+              endDate={p.endDate}
+              promoCode={p.promoCode}
+              promoType={p.promoType}
+              discountValue={p.discountValue}
+              status={p.status}
+              image={p.image}
+              usageLimit={p.usageLimit}
+              usedCount={p.usedCount}
+              appliesToAll={p.appliesToAll}
+              roomCount={p.appliesToAll ? undefined : p.roomIds?.length || 0}
+              onEdit={(id) => console.log("Edit", id)}
+              onDelete={(id) => console.log("Delete", id)}
+              onStatusChange={(id, next) =>
+                console.log("Status change", id, next)
+              }
+              onClick={(id) => console.log("Open details", id)}
+            />
+          ))}
+        </div>
+      )}
       {/** AddPromoModal removed in favor of full Promotion Form navigation */}
       {/**
       <AddPromoModal

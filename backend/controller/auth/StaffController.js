@@ -67,6 +67,20 @@ export async function getStaffByUserId(req, res) {
 	}
 }
 
+// Read by business ID (GetStaffByBusinessId) - with user details and role
+export async function getStaffByBusinessId(req, res) {
+	const { business_id } = req.params;
+	try {
+		const [rows] = await db.query("CALL GetStaffByBusinessId(?)", [business_id]);
+		if (!rows[0] || rows[0].length === 0) {
+			return res.status(200).json([]); // Return empty array if no staff
+		}
+		return res.json(rows[0]);
+	} catch (error) {
+		return handleDbError(error, res);
+	}
+}
+
 // Update by id (UpdateStaff)
 export async function updateStaffById(req, res) {
 	const { id } = req.params;

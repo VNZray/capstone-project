@@ -2,6 +2,7 @@ import React from "react";
 import { Card, Typography, Box, Chip, Stack } from "@mui/joy";
 import { Calendar, User } from "lucide-react";
 import { colors } from "@/src/utils/Colors";
+import Container from "@/src/components/Container";
 
 interface Booking {
   id: string;
@@ -44,15 +45,11 @@ const BookingsList: React.FC<BookingsListProps> = ({ bookings, title }) => {
   };
 
   return (
-    <Card
-      variant="outlined"
-      sx={{
-        p: 0,
-        borderRadius: 12,
-        border: "1px solid",
-        borderColor: "divider",
-        overflow: "hidden",
-      }}
+    <Container
+      elevation={2}
+      hoverEffect="lift"
+      hoverDuration={300}
+      hover
     >
       <Box sx={{ p: 2.5, borderBottom: "1px solid", borderColor: "divider" }}>
         <Typography level="title-lg" fontWeight="700">
@@ -128,7 +125,7 @@ const BookingsList: React.FC<BookingsListProps> = ({ bookings, title }) => {
           </Stack>
         )}
       </Box>
-    </Card>
+    </Container>
   );
 };
 

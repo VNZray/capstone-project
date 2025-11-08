@@ -2,6 +2,7 @@ import React from "react";
 import { Card, Typography, Box, Stack } from "@mui/joy";
 import { Users, MapPin, Globe, Plane } from "lucide-react";
 import { colors } from "@/src/utils/Colors";
+import Container from "@/src/components/Container";
 
 interface TouristStatsCardProps {
   local: number;
@@ -50,15 +51,11 @@ const TouristStatsCard: React.FC<TouristStatsCardProps> = ({
   ];
 
   return (
-    <Card
-      variant="outlined"
-      sx={{
-        p: 0,
-        borderRadius: 12,
-        border: "1px solid",
-        borderColor: "divider",
-        overflow: "hidden",
-      }}
+    <Container
+      elevation={2}
+      hoverEffect="lift"
+      hoverDuration={300}
+      hover
     >
       <Box sx={{ p: 2.5, borderBottom: "1px solid", borderColor: "divider", display: "flex", alignItems: "center", gap: 1 }}>
         <Users size={20} style={{ color: colors.primary }} />
@@ -154,7 +151,7 @@ const TouristStatsCard: React.FC<TouristStatsCardProps> = ({
           </Typography>
         </Box>
       </Box>
-    </Card>
+    </Container>
   );
 };
 

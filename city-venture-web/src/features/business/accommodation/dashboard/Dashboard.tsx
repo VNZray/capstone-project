@@ -556,7 +556,7 @@ const Dashboard = () => {
         </ResponsiveText>
       </Box>
       <Grid container spacing={2.5} sx={{ mb: 2 }}>
-        <Grid xs={12} md={6}>
+        <Grid xs={12} md={3}>
           <RevenueCard
             title="Monthly Revenue"
             amount={
@@ -569,7 +569,7 @@ const Dashboard = () => {
             icon={<DollarSign size={20} />}
           />
         </Grid>
-        <Grid xs={12} md={6}>
+        <Grid xs={12} md={3}>
           <RevenueCard
             title="Annual Revenue"
             amount={stats.annualRevenue}
@@ -666,17 +666,14 @@ const Dashboard = () => {
               }
               color="primary"
             />
-            <Box
-              sx={{
-                p: 2.5,
-                borderRadius: 12,
-                border: "1px solid",
-                borderColor: "divider",
-                bgcolor: "background.surface",
-              }}
+            <Container
+              elevation={2}
+              hoverEffect="lift"
+              hoverDuration={300}
+              hover
             >
               <ResponsiveText
-                type="body-medium"
+                type="label-small"
                 weight="medium"
                 style={{ marginBottom: 12 }}
               >
@@ -684,39 +681,39 @@ const Dashboard = () => {
               </ResponsiveText>
               <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
                 <Box sx={{ display: "flex", justifyContent: "space-between" }}>
-                  <ResponsiveText type="body-small">
+                  <ResponsiveText type="body-extra-small">
                     Local Tourists:
                   </ResponsiveText>
-                  <ResponsiveText type="body-small" weight="bold">
+                  <ResponsiveText type="body-extra-small" weight="bold">
                     {touristStats.local.toLocaleString()}
                   </ResponsiveText>
                 </Box>
                 <Box sx={{ display: "flex", justifyContent: "space-between" }}>
-                  <ResponsiveText type="body-small">
+                  <ResponsiveText type="body-extra-small">
                     Domestic Tourists:
                   </ResponsiveText>
-                  <ResponsiveText type="body-small" weight="bold">
+                  <ResponsiveText type="body-extra-small" weight="bold">
                     {touristStats.domestic.toLocaleString()}
                   </ResponsiveText>
                 </Box>
                 <Box sx={{ display: "flex", justifyContent: "space-between" }}>
-                  <ResponsiveText type="body-small">
+                  <ResponsiveText type="body-extra-small">
                     Foreign Tourists:
                   </ResponsiveText>
-                  <ResponsiveText type="body-small" weight="bold">
+                  <ResponsiveText type="body-extra-small" weight="bold">
                     {touristStats.foreign.toLocaleString()}
                   </ResponsiveText>
                 </Box>
                 <Box sx={{ display: "flex", justifyContent: "space-between" }}>
-                  <ResponsiveText type="body-small">
+                  <ResponsiveText type="body-extra-small">
                     Overseas Tourists:
                   </ResponsiveText>
-                  <ResponsiveText type="body-small" weight="bold">
+                  <ResponsiveText type="body-extra-small" weight="bold">
                     {touristStats.overseas.toLocaleString()}
                   </ResponsiveText>
                 </Box>
               </Box>
-            </Box>
+            </Container>
           </Box>
         </Grid>
       </Grid>

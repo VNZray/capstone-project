@@ -4,7 +4,7 @@ exports.up = async function (knex) {
   await knex.schema.createTable("staff", (table) => {
     table.uuid("id").primary().defaultTo(knex.raw("(UUID())"));
     table.string("first_name").notNullable();
-    table.string("middle_name").notNullable();
+    table.string("middle_name").nullable();
     table.string("last_name").notNullable();
 
     table.string("business_id")

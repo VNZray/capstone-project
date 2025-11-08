@@ -128,6 +128,7 @@ const Transactions = () => {
           status: p.status || 'Pending',
         }));
         setRows(mapped);
+        console.log(mapped.map((b) => ({ id: b.id, status: b.status })));
       } catch (e: any) {
         console.error("Failed to load bookings/payments", e);
         setError(e?.message || "Failed to load data");

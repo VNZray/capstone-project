@@ -13,6 +13,7 @@ import LocalOfferIcon from "@mui/icons-material/LocalOffer"; // promo type / cod
 import DiscountIcon from "@mui/icons-material/Discount"; // discount marker (available in MUI v5 icons set)
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import { Button, Divider, LinearProgress } from "@mui/joy";
+import Container from "@/src/components/Container";
 
 // Status types (can be expanded)
 export type PromoStatus = "ACTIVE" | "SCHEDULED" | "EXPIRED" | "PAUSED";
@@ -130,15 +131,11 @@ const PromoCard: React.FC<PromoCardProps> = ({
   }, [isExpired]);
 
   return (
-    <Card
-      variant="outlined"
-      sx={{
-        maxWidth: "100%",
-        borderRadius: 8,
-        display: "flex",
-        flexDirection: "column",
-      }}
-      aria-label={`Promotion card ${title}`}
+    <Container
+      elevation={2}
+      hoverEffect="lift"
+      hoverDuration={300}
+      hover
     >
       {/* IMAGE + STATUS & TYPE CHIPS */}
       <Box
@@ -372,7 +369,7 @@ const PromoCard: React.FC<PromoCardProps> = ({
           <DeleteIcon />
         </IconButton>
       </CardActions>
-    </Card>
+    </Container>
   );
 };
 

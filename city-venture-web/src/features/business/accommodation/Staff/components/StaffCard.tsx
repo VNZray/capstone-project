@@ -1,60 +1,90 @@
 import Container from "@/src/components/Container";
-import { AspectRatio, Button, Divider, IconButton } from "@mui/joy";
+import { AspectRatio, Divider, IconButton } from "@mui/joy";
 import placeholder from "@/src/assets/images/placeholder-image.png";
 import ResponsiveText from "@/src/components/ResponsiveText";
-import { Block, Remove } from "@mui/icons-material";
-import { Edit, Trash } from "lucide-react";
+import { Email, Lock } from "@mui/icons-material";
+import { Edit, Trash2, Ban } from "lucide-react";
+import Button from "@/src/components/Button";
 
 interface StaffProps {
-  email: string;
-  password: string;
+  id: string;
+  first_name?: string;
+  last_name?: string;
+  role?: string;
+  is_active?: boolean;
+  onEdit?: (id: string) => void;
+  onToggleActive?: (id: string) => void;
+  onDelete?: (id: string) => void;
 }
 
-const StaffCard: React.FC<StaffProps> = ({ email, password }) => {
+const StaffCard: React.FC<StaffProps> = ({
+  id,
+  first_name = "Ryven",
+  last_name = "Clores",
+  role = "Staff",
+  is_active = true,
+  onEdit,
+  onToggleActive,
+  onDelete,
+}) => {
   return (
-    <Container elevation={2} direction="column" align="center">
-      <Container padding="0" width="70%">
+    <Container elevation={2} direction="column" align="center" padding="16px">
+      {/* Avatar */}
+      <Container padding="0" width="75%">
         <AspectRatio
           sx={{ borderRadius: "50%", overflow: "hidden" }}
           ratio="2/2"
         >
           <img
             src={placeholder}
-            alt="Staff Member"
+            alt={`${first_name} ${last_name}`}
             style={{ backgroundSize: "cover" }}
           />
         </AspectRatio>
       </Container>
 
+      {/* Name and Role */}
       <Container gap="0" padding="0" align="center">
-        <ResponsiveText type="label-large" weight="bold">
-          Rayven Clores
+        <ResponsiveText type="label-medium" weight="bold">
+          {first_name} {last_name}
         </ResponsiveText>
-        <ResponsiveText type="label-medium" weight="semi-bold">
-          Manager
-        </ResponsiveText>
-      </Container>
-
-      <Container width="100%" align="left" gap="0" padding="0">
-        <ResponsiveText type="label-medium" weight="medium">
-          Email: {email}
-        </ResponsiveText>
-        <ResponsiveText type="label-medium" weight="medium">
-          Password: {password}
+        <ResponsiveText type="label-small" weight="semi-bold">
+          {role}
         </ResponsiveText>
       </Container>
 
-      <Divider />
-      <Container width="100%" direction="row" padding="0">
-        <Button fullWidth>Edit</Button>
-        <IconButton variant="soft" color="primary">
-          {<Block />}
+      <Divider sx={{ my: 1, width: "100%" }} />
+      {/* Actions */}
+      <Container width="100%" direction="row" padding="0" gap="8px">
+        <Button
+          fullWidth
+          size="sm"
+          onClick={() => onEdit?.(id)}
+          startDecorator={<Edit size={16} />}
+        >
+          Edit
+        </Button>
+        <IconButton
+          variant="soft"
+          color="warning"
+          size="sm"
+          onClick={() => onToggleActive?.(id)}
+          title={is_active ? "Deactivate" : "Activate"}
+        >
+          <Ban size={18} />
         </IconButton>
-        <IconButton variant="soft" color="danger">
-          {<Trash />}
+        <IconButton
+          variant="soft"
+          color="danger"
+          size="sm"
+          onClick={() => onDelete?.(id)}
+          title="Delete"
+        >
+          <Trash2 size={18} />
         </IconButton>
       </Container>
     </Container>
   );
 };
+
 export default StaffCard;

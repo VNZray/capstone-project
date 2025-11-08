@@ -1,6 +1,7 @@
 import React from "react";
 import { Card, Typography, Box, Stack } from "@mui/joy";
 import { TrendingUp, TrendingDown } from "lucide-react";
+import Container from "@/src/components/Container";
 
 interface RevenueCardProps {
   title: string;
@@ -20,19 +21,11 @@ const RevenueCard: React.FC<RevenueCardProps> = ({
   const isPositive = change >= 0;
 
   return (
-    <Card
-      variant="outlined"
-      sx={{
-        p: 2.5,
-        borderRadius: 12,
-        border: "1px solid",
-        borderColor: "divider",
-        transition: "all 0.2s",
-        "&:hover": {
-          boxShadow: "md",
-          borderColor: "primary.outlinedBorder",
-        },
-      }}
+    <Container
+      elevation={2}
+      hoverEffect="lift"
+      hoverDuration={300}
+      hover
     >
       <Stack spacing={1.5}>
         <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -84,7 +77,7 @@ const RevenueCard: React.FC<RevenueCardProps> = ({
           </Typography>
         </Box>
       </Stack>
-    </Card>
+    </Container>
   );
 };
 
