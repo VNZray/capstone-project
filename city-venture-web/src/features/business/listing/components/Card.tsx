@@ -49,11 +49,8 @@ const Card: React.FC<CardProps> = ({
         borderRadius: compact ? 10 : 16,
         overflow: 'hidden',
         boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
-        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-        border: '1px solid rgba(0,0,0,0.06)',
       }} 
       elevation={elevation}
-      className="business-card"
     >
       <div style={{ display: "flex", flexDirection: "row", gap: compact ? 12 : 20, padding: compact ? 12 : 16 }}>
         <div 

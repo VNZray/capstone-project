@@ -34,7 +34,7 @@ const Navbar: React.FC<NavbarProps> = ({ servicesId = "features", aboutId = "abo
   const logo = new URL("../assets/logo/city-ventures-horizontal.png", import.meta.url).href;
   const { user, logout } = useAuth();
   const role = user?.role_name ?? ""; // Now normalized by AuthService: "Owner" | "Admin" | "Tourist"
-  const isOwner = role === "Owner";
+  const isOwner = role === "Business Owner";
   const isTourism = role === "Admin";
   const isTourist = role === "Tourist";
   const displayRole = role;
