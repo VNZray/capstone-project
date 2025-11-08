@@ -7,7 +7,7 @@ interface RevenueCardProps {
   title: string;
   amount: number;
   change: number;
-  period: string;
+  period?: string | "";
   icon?: React.ReactNode;
 }
 
@@ -15,21 +15,25 @@ const RevenueCard: React.FC<RevenueCardProps> = ({
   title,
   amount,
   change,
-  period,
+  period = "",
   icon,
 }) => {
   const isPositive = change >= 0;
 
   return (
-    <Container
-      elevation={2}
-      hoverEffect="lift"
-      hoverDuration={300}
-      hover
-    >
+    <Container elevation={2} hoverEffect="lift" hoverDuration={300} hover>
       <Stack spacing={1.5}>
-        <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <Typography level="body-sm" sx={{ color: "text.secondary", fontWeight: 500 }}>
+        <Box
+          sx={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+          }}
+        >
+          <Typography
+            level="body-sm"
+            sx={{ color: "text.secondary", fontWeight: 500 }}
+          >
             {title}
           </Typography>
           {icon && (
@@ -54,28 +58,34 @@ const RevenueCard: React.FC<RevenueCardProps> = ({
           ₱{amount.toLocaleString()}
         </Typography>
 
-        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-          <Box
-            sx={{
-              display: "flex",
-              alignItems: "center",
-              gap: 0.5,
-              px: 1,
-              py: 0.5,
-              borderRadius: 6,
-              bgcolor: isPositive ? "success.softBg" : "danger.softBg",
-              color: isPositive ? "success.solidBg" : "danger.solidBg",
-            }}
-          >
-            {isPositive ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
-            <Typography level="body-xs" fontWeight="600">
-              {Math.abs(change)}%
+        {period === "" ? null : (
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+            <Box
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                gap: 0.5,
+                px: 1,
+                py: 0.5,
+                borderRadius: 6,
+                bgcolor: isPositive ? "success.softBg" : "danger.softBg",
+                color: isPositive ? "success.solidBg" : "danger.solidBg",
+              }}
+            >
+              {isPositive ? (
+                <TrendingUp size={14} />
+              ) : (
+                <TrendingDown size={14} />
+              )}
+              <Typography level="body-xs" fontWeight="600">
+                {Math.abs(change)}%
+              </Typography>
+            </Box>
+            <Typography level="body-xs" sx={{ color: "text.tertiary" }}>
+              vs {period}
             </Typography>
           </Box>
-          <Typography level="body-xs" sx={{ color: "text.tertiary" }}>
-            vs {period}
-          </Typography>
-        </Box>
+        )}
       </Stack>
     </Container>
   );

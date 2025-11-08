@@ -12,7 +12,10 @@ import RoomStatusCard from "./components/RoomStatusCard";
 import RoomRankingCard from "./components/RoomRankingCard";
 import OccupancyPieChart from "./components/OccupancyPieChart";
 import NoDataFound from "@/src/components/NoDataFound";
-import TouristStatsCard from "./components/TouristStatsCard";
+import TouristSummaryCards from "./components/TouristSummaryCards";
+import TouristBarChart from "./components/TouristBarChart";
+import TouristPieChart from "./components/TouristPieChart";
+import TopRoomsCard from "./components/TopRoomsCard";
 import {
   DollarSign,
   Eye,
@@ -23,6 +26,9 @@ import {
   Award,
   CreditCard,
   Users,
+  MapPin,
+  Globe,
+  Plane,
 } from "lucide-react";
 import { getData } from "@/src/services/Service";
 import { fetchBookingsByBusinessId } from "@/src/services/BookingService";
@@ -30,6 +36,7 @@ import { fetchPaymentsByBusinessId } from "@/src/services/PaymentService";
 import { colors } from "@/src/utils/Colors";
 import type { Room } from "@/src/types/Business";
 import type { Booking } from "@/src/types/Booking";
+import { useAuth } from "@/src/context/AuthContext";
 
 interface DashboardStats {
   profileViews: number;
@@ -50,6 +57,7 @@ interface DashboardStats {
 
 const Dashboard = () => {
   const { businessDetails, loading: businessLoading } = useBusiness();
+  const { user } = useAuth();
   const [filterPeriod, setFilterPeriod] = useState<"month" | "year" | "all">(
     "month"
   );
@@ -64,6 +72,39 @@ const Dashboard = () => {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [payments, setPayments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Separate filter for Key Performance Metrics
+  const [kpiFilterPeriod, setKpiFilterPeriod] = useState<
+    "month" | "year" | "all"
+  >("month");
+  const [kpiSelectedMonth, setKpiSelectedMonth] = useState<number>(
+    new Date().getMonth()
+  );
+  const [kpiSelectedYear, setKpiSelectedYear] = useState<number>(
+    new Date().getFullYear()
+  );
+
+  // Separate filter for Booking Overview
+  const [bookingFilterPeriod, setBookingFilterPeriod] = useState<
+    "month" | "year" | "all"
+  >("month");
+  const [bookingSelectedMonth, setBookingSelectedMonth] = useState<number>(
+    new Date().getMonth()
+  );
+  const [bookingSelectedYear, setBookingSelectedYear] = useState<number>(
+    new Date().getFullYear()
+  );
+
+  // Separate filter for tourist demographics
+  const [touristFilterPeriod, setTouristFilterPeriod] = useState<
+    "week" | "month" | "year" | "all"
+  >("month");
+  const [touristSelectedMonth, setTouristSelectedMonth] = useState<number>(
+    new Date().getMonth()
+  );
+  const [touristSelectedYear, setTouristSelectedYear] = useState<number>(
+    new Date().getFullYear()
+  );
 
   // Fetch all data
   useEffect(() => {
@@ -94,6 +135,161 @@ const Dashboard = () => {
 
     fetchData();
   }, [businessDetails?.id]);
+
+  // Calculate statistics for KPI section
+  const kpiStats = useMemo(() => {
+    const now = new Date();
+
+    // Filter bookings based on KPI selected period
+    const filteredBookings = bookings.filter((booking) => {
+      const bookingDate = new Date(
+        booking.created_at || booking.check_in_date || ""
+      );
+
+      if (kpiFilterPeriod === "month") {
+        return (
+          bookingDate.getMonth() === kpiSelectedMonth &&
+          bookingDate.getFullYear() === kpiSelectedYear
+        );
+      } else if (kpiFilterPeriod === "year") {
+        return bookingDate.getFullYear() === kpiSelectedYear;
+      }
+      return true; // all
+    });
+
+    // Calculate previous period for comparison
+    let previousBookingsCount = 0;
+
+    if (kpiFilterPeriod === "month") {
+      const prevMonth = kpiSelectedMonth === 0 ? 11 : kpiSelectedMonth - 1;
+      const prevYear =
+        kpiSelectedMonth === 0 ? kpiSelectedYear - 1 : kpiSelectedYear;
+
+      previousBookingsCount = bookings.filter((b) => {
+        const d = new Date(b.created_at || b.check_in_date || "");
+        return d.getMonth() === prevMonth && d.getFullYear() === prevYear;
+      }).length;
+    } else if (kpiFilterPeriod === "year") {
+      const prevYear = kpiSelectedYear - 1;
+
+      previousBookingsCount = bookings.filter(
+        (b) =>
+          new Date(b.created_at || b.check_in_date || "").getFullYear() ===
+          prevYear
+      ).length;
+    }
+
+    const bookingsChange =
+      previousBookingsCount > 0
+        ? ((filteredBookings.length - previousBookingsCount) /
+            previousBookingsCount) *
+          100
+        : 0;
+
+    // Room statistics (always all-time)
+    const availableRooms = rooms.filter((r) => r.status === "Available").length;
+    const occupiedRooms = rooms.filter((r) => r.status === "Occupied").length;
+    const maintenanceRooms = rooms.filter(
+      (r) => r.status === "Maintenance"
+    ).length;
+    const occupancyRate =
+      rooms.length > 0 ? (occupiedRooms / rooms.length) * 100 : 0;
+
+    // Average booking value
+    const averageBookingValue =
+      filteredBookings.length > 0
+        ? filteredBookings.reduce(
+            (sum, b) => sum + (Number(b.total_price) || 0),
+            0
+          ) / filteredBookings.length
+        : 0;
+
+    // Mock profile views (would come from analytics API)
+    const profileViews = Math.floor(Math.random() * 5000) + 1000;
+
+    return {
+      profileViews,
+      profileViewsChange: Math.floor(Math.random() * 40) - 10,
+      totalBookings: filteredBookings.length,
+      totalBookingsChange: bookingsChange,
+      totalRooms: rooms.length,
+      availableRooms,
+      occupiedRooms,
+      maintenanceRooms,
+      occupancyRate,
+      averageBookingValue,
+    };
+  }, [bookings, rooms, kpiFilterPeriod, kpiSelectedMonth, kpiSelectedYear]);
+
+  // Calculate revenue statistics (uses KPI filter)
+  const revenueStats = useMemo(() => {
+    const now = new Date();
+    const currentYear = now.getFullYear();
+
+    // Filter payments based on KPI selected period
+    const filteredPayments = payments.filter((payment) => {
+      const paymentDate = new Date(payment.created_at || "");
+
+      if (kpiFilterPeriod === "month") {
+        return (
+          paymentDate.getMonth() === kpiSelectedMonth &&
+          paymentDate.getFullYear() === kpiSelectedYear
+        );
+      } else if (kpiFilterPeriod === "year") {
+        return paymentDate.getFullYear() === kpiSelectedYear;
+      }
+      return true; // all
+    });
+
+    // Calculate revenue
+    const currentRevenue = filteredPayments.reduce(
+      (sum, payment) => sum + (Number(payment.amount) || 0),
+      0
+    );
+
+    // Calculate previous period for comparison
+    let previousRevenue = 0;
+
+    if (kpiFilterPeriod === "month") {
+      const prevMonth = kpiSelectedMonth === 0 ? 11 : kpiSelectedMonth - 1;
+      const prevYear =
+        kpiSelectedMonth === 0 ? kpiSelectedYear - 1 : kpiSelectedYear;
+
+      previousRevenue = payments
+        .filter((p) => {
+          const d = new Date(p.created_at || "");
+          return d.getMonth() === prevMonth && d.getFullYear() === prevYear;
+        })
+        .reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
+    } else if (kpiFilterPeriod === "year") {
+      const prevYear = kpiSelectedYear - 1;
+
+      previousRevenue = payments
+        .filter((p) => new Date(p.created_at || "").getFullYear() === prevYear)
+        .reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
+    }
+
+    // Calculate changes
+    const revenueChange =
+      previousRevenue > 0
+        ? ((currentRevenue - previousRevenue) / previousRevenue) * 100
+        : 0;
+
+    return {
+      monthlyRevenue: kpiFilterPeriod === "month" ? currentRevenue : 0,
+      monthlyRevenueChange: revenueChange,
+      annualRevenue:
+        kpiFilterPeriod === "year"
+          ? currentRevenue
+          : payments
+              .filter(
+                (p) =>
+                  new Date(p.created_at || "").getFullYear() === currentYear
+              )
+              .reduce((sum, p) => sum + (Number(p.amount) || 0), 0),
+      annualRevenueChange: revenueChange,
+    };
+  }, [payments, kpiFilterPeriod, kpiSelectedMonth, kpiSelectedYear]);
 
   // Calculate statistics based on filter
   const stats: DashboardStats = useMemo(() => {
@@ -231,15 +427,30 @@ const Dashboard = () => {
     };
   }, [bookings, payments, rooms, filterPeriod, selectedMonth, selectedYear]);
 
-  // Recent bookings (last 5)
+  // Recent bookings (current week only)
   const recentBookings = useMemo(() => {
+    const now = new Date();
+    
+    // Get the start of the week (Sunday)
+    const startOfWeek = new Date(now);
+    startOfWeek.setDate(now.getDate() - now.getDay());
+    startOfWeek.setHours(0, 0, 0, 0);
+    
+    // Get the end of the week (Saturday)
+    const endOfWeek = new Date(startOfWeek);
+    endOfWeek.setDate(startOfWeek.getDate() + 6);
+    endOfWeek.setHours(23, 59, 59, 999);
+    
     return bookings
+      .filter((booking) => {
+        const bookingDate = new Date(booking.created_at || booking.check_in_date || "");
+        return bookingDate >= startOfWeek && bookingDate <= endOfWeek;
+      })
       .sort(
         (a, b) =>
           new Date(b.created_at || "").getTime() -
           new Date(a.created_at || "").getTime()
       )
-      .slice(0, 5)
       .map((booking) => ({
         id: booking.id || "",
         guestName: `Guest ${booking.tourist_id?.substring(0, 8) || "Unknown"}`,
@@ -361,20 +572,29 @@ const Dashboard = () => {
       .slice(0, 5);
   }, [bookings, rooms]);
 
-  // Tourist Statistics
+  // Tourist Statistics (separate filter)
   const touristStats = useMemo(() => {
+    const now = new Date();
+
     const filtered = bookings.filter((booking) => {
-      if (filterPeriod === "all") return true;
+      if (touristFilterPeriod === "all") return true;
+
       const bookingDate = new Date(booking.created_at || "");
 
-      if (filterPeriod === "month") {
+      if (touristFilterPeriod === "week") {
+        // Last 7 days
+        const weekAgo = new Date(now);
+        weekAgo.setDate(weekAgo.getDate() - 7);
+        return bookingDate >= weekAgo && bookingDate <= now;
+      } else if (touristFilterPeriod === "month") {
         return (
-          bookingDate.getMonth() === selectedMonth &&
-          bookingDate.getFullYear() === selectedYear
+          bookingDate.getMonth() === touristSelectedMonth &&
+          bookingDate.getFullYear() === touristSelectedYear
         );
+      } else if (touristFilterPeriod === "year") {
+        return bookingDate.getFullYear() === touristSelectedYear;
       }
-
-      return bookingDate.getFullYear() === selectedYear;
+      return true;
     });
 
     const local = filtered.reduce(
@@ -401,7 +621,57 @@ const Dashboard = () => {
       overseas,
       total: local + domestic + foreign + overseas,
     };
-  }, [bookings, filterPeriod, selectedMonth, selectedYear]);
+  }, [
+    bookings,
+    touristFilterPeriod,
+    touristSelectedMonth,
+    touristSelectedYear,
+  ]);
+
+  // Booking Status Statistics
+  const bookingStatusStats = useMemo(() => {
+    // Filter bookings based on booking overview selected period
+    const filteredBookings = bookings.filter((booking) => {
+      const bookingDate = new Date(
+        booking.created_at || booking.check_in_date || ""
+      );
+
+      if (bookingFilterPeriod === "month") {
+        return (
+          bookingDate.getMonth() === bookingSelectedMonth &&
+          bookingDate.getFullYear() === bookingSelectedYear
+        );
+      } else if (bookingFilterPeriod === "year") {
+        return bookingDate.getFullYear() === bookingSelectedYear;
+      }
+      return true; // all
+    });
+
+    const reserved = filteredBookings.filter(
+      (b) => b.booking_status === "Reserved"
+    ).length;
+    const checkedIn = filteredBookings.filter(
+      (b) => b.booking_status === "Checked-In"
+    ).length;
+    const checkedOut = filteredBookings.filter(
+      (b) => b.booking_status === "Checked-Out"
+    ).length;
+    const canceled = filteredBookings.filter(
+      (b) => b.booking_status === "Canceled"
+    ).length;
+
+    return {
+      reserved,
+      checkedIn,
+      checkedOut,
+      canceled,
+    };
+  }, [
+    bookings,
+    bookingFilterPeriod,
+    bookingSelectedMonth,
+    bookingSelectedYear,
+  ]);
 
   if (businessLoading || loading) {
     return (
@@ -430,21 +700,23 @@ const Dashboard = () => {
   return (
     <PageContainer>
       {/* Header with Filters */}
-      <Container elevation={2} padding="20px" style={{ marginBottom: 20 }}>
-        <Box
-          sx={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            flexWrap: "wrap",
-            gap: 2,
-          }}
-        >
-          <ResponsiveText type="card-title-medium" weight="bold">
-            {businessDetails?.business_name} Dashboard
-          </ResponsiveText>
-
-          <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap" }}>
+      <Container
+        gap="2px"
+        elevation={2}
+        padding="20px"
+        style={{ marginBottom: 20 }}
+      >
+        <ResponsiveText type="card-title-medium" weight="bold">
+          {businessDetails?.business_name} Dashboard
+        </ResponsiveText>
+        <ResponsiveText type="card-sub-title-small" weight="normal">
+          Welcome{" "}
+          <b>
+            {user?.first_name} {user?.last_name}
+          </b>{" "}
+          to your accommodation dashboard.
+        </ResponsiveText>
+        {/* <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap" }}>
             <Select
               size="lg"
               value={filterPeriod}
@@ -492,25 +764,92 @@ const Dashboard = () => {
                 ))}
               </Select>
             )}
-          </Box>
-        </Box>
+          </Box> */}
       </Container>
 
       {/* Key Metrics Grid */}
-      <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-        <BarChart3 size={24} style={{ color: colors.primary }} />
-        <ResponsiveText type="label-large" weight="bold">
-          Key Performance Metrics
-        </ResponsiveText>
+      <Box
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          flexWrap: "wrap",
+          gap: 2,
+          mb: 2,
+        }}
+      >
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+          <BarChart3 size={24} style={{ color: colors.primary }} />
+          <ResponsiveText type="label-large" weight="bold">
+            Key Performance Metrics
+          </ResponsiveText>
+        </Box>
+
+        {/* KPI Filters */}
+        <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap" }}>
+          <Select
+            size="md"
+            value={kpiFilterPeriod}
+            onChange={(_, val) =>
+              setKpiFilterPeriod(val as "month" | "year" | "all")
+            }
+            sx={{ minWidth: 120 }}
+          >
+            <Option value="month">Monthly</Option>
+            <Option value="year">Yearly</Option>
+            <Option value="all">All Time</Option>
+          </Select>
+
+          {kpiFilterPeriod === "month" && (
+            <Select
+              size="md"
+              value={kpiSelectedMonth}
+              onChange={(_, val) => setKpiSelectedMonth(val as number)}
+              sx={{ minWidth: 130 }}
+            >
+              {Array.from({ length: 12 }).map((_, i) => (
+                <Option key={i} value={i}>
+                  {new Date(0, i).toLocaleString("default", {
+                    month: "long",
+                  })}
+                </Option>
+              ))}
+            </Select>
+          )}
+
+          {(kpiFilterPeriod === "month" || kpiFilterPeriod === "year") && (
+            <Select
+              size="md"
+              value={kpiSelectedYear}
+              onChange={(_, val) => setKpiSelectedYear(val as number)}
+              sx={{ minWidth: 100 }}
+            >
+              {Array.from(
+                { length: 5 },
+                (_, i) => new Date().getFullYear() - i
+              ).map((year) => (
+                <Option key={year} value={year}>
+                  {year}
+                </Option>
+              ))}
+            </Select>
+          )}
+        </Box>
       </Box>
       <Grid container spacing={2.5} sx={{ mb: 2 }}>
         <Grid xs={12} sm={6} md={3}>
           <StatCard
             icon={<Eye size={20} />}
             label="Profile Views"
-            value={stats.profileViews.toLocaleString()}
-            change={stats.profileViewsChange}
-            period={filterPeriod === "month" ? "last month" : "last year"}
+            value={kpiStats.profileViews.toLocaleString()}
+            change={kpiStats.profileViewsChange}
+            period={
+              kpiFilterPeriod === "month"
+                ? "last month"
+                : kpiFilterPeriod === "year"
+                ? "last year"
+                : ""
+            }
             color="primary"
           />
         </Grid>
@@ -518,9 +857,15 @@ const Dashboard = () => {
           <StatCard
             icon={<Calendar size={20} />}
             label="Total Bookings"
-            value={stats.totalBookings.toLocaleString()}
-            change={stats.totalBookingsChange}
-            period={filterPeriod === "month" ? "last month" : "last year"}
+            value={kpiStats.totalBookings.toLocaleString()}
+            change={kpiStats.totalBookingsChange}
+            period={
+              kpiFilterPeriod === "month"
+                ? "last month"
+                : kpiFilterPeriod === "year"
+                ? "last year"
+                : ""
+            }
             color="success"
           />
         </Grid>
@@ -528,84 +873,163 @@ const Dashboard = () => {
           <StatCard
             icon={<TrendingUp size={20} />}
             label="Occupancy Rate"
-            value={`${stats.occupancyRate.toFixed(1)}%`}
+            value={`${kpiStats.occupancyRate.toFixed(1)}%`}
             change={5.2}
-            period="last period"
+            period={
+              kpiFilterPeriod === "month"
+                ? "last month"
+                : kpiFilterPeriod === "year"
+                ? "last year"
+                : ""
+            }
             color="warning"
           />
         </Grid>
         <Grid xs={12} sm={6} md={3}>
           <StatCard
-            icon={<BarChart3 size={20} />}
-            label="Avg. Booking Value"
-            value={`₱${stats.averageBookingValue.toLocaleString(undefined, {
+            icon={<DollarSign size={20} />}
+            label={
+              kpiFilterPeriod === "month"
+                ? "Monthly Revenue"
+                : kpiFilterPeriod === "year"
+                ? "Yearly Revenue"
+                : "Total Revenue"
+            }
+            value={`₱${(kpiFilterPeriod === "month"
+              ? revenueStats.monthlyRevenue
+              : kpiFilterPeriod === "year"
+              ? revenueStats.annualRevenue
+              : payments.reduce((sum, p) => sum + (Number(p.amount) || 0), 0)
+            ).toLocaleString(undefined, {
               maximumFractionDigits: 0,
             })}`}
-            change={8.3}
-            period="last period"
-            color="primary"
-          />
-        </Grid>
-      </Grid>
-
-      {/* Revenue Cards */}
-      <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-        <DollarSign size={24} style={{ color: colors.success }} />
-        <ResponsiveText type="label-large" weight="bold">
-          Revenue Overview
-        </ResponsiveText>
-      </Box>
-      <Grid container spacing={2.5} sx={{ mb: 2 }}>
-        <Grid xs={12} md={3}>
-          <RevenueCard
-            title="Monthly Revenue"
-            amount={
-              filterPeriod === "month"
-                ? stats.monthlyRevenue
-                : stats.annualRevenue / 12
+            change={revenueStats.monthlyRevenueChange}
+            period={
+              kpiFilterPeriod === "month"
+                ? "last month"
+                : kpiFilterPeriod === "year"
+                ? "last year"
+                : ""
             }
-            change={stats.monthlyRevenueChange}
-            period="last month"
-            icon={<DollarSign size={20} />}
-          />
-        </Grid>
-        <Grid xs={12} md={3}>
-          <RevenueCard
-            title="Annual Revenue"
-            amount={stats.annualRevenue}
-            change={stats.annualRevenueChange}
-            period="last year"
-            icon={<TrendingUp size={20} />}
+            color="success"
           />
         </Grid>
       </Grid>
 
       {/* Room Status and Statistics */}
-      <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-        <Hotel size={24} style={{ color: colors.warningLabel }} />
-        <ResponsiveText type="label-large" weight="bold">
-          Room Management
-        </ResponsiveText>
+      <Box
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          flexWrap: "wrap",
+          gap: 2,
+          mb: 2,
+        }}
+      >
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+          <Hotel size={24} style={{ color: colors.warningLabel }} />
+          <ResponsiveText type="label-large" weight="bold">
+            Booking Overview
+          </ResponsiveText>
+        </Box>
+
+        {/* Booking Filters */}
+        <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap" }}>
+          <Select
+            size="md"
+            value={bookingFilterPeriod}
+            onChange={(_, val) =>
+              setBookingFilterPeriod(val as "month" | "year" | "all")
+            }
+            sx={{ minWidth: 120 }}
+          >
+            <Option value="month">Monthly</Option>
+            <Option value="year">Yearly</Option>
+            <Option value="all">All Time</Option>
+          </Select>
+
+          {bookingFilterPeriod === "month" && (
+            <Select
+              size="md"
+              value={bookingSelectedMonth}
+              onChange={(_, val) => setBookingSelectedMonth(val as number)}
+              sx={{ minWidth: 130 }}
+            >
+              {Array.from({ length: 12 }).map((_, i) => (
+                <Option key={i} value={i}>
+                  {new Date(0, i).toLocaleString("default", {
+                    month: "long",
+                  })}
+                </Option>
+              ))}
+            </Select>
+          )}
+
+          {(bookingFilterPeriod === "month" ||
+            bookingFilterPeriod === "year") && (
+            <Select
+              size="md"
+              value={bookingSelectedYear}
+              onChange={(_, val) => setBookingSelectedYear(val as number)}
+              sx={{ minWidth: 100 }}
+            >
+              {Array.from(
+                { length: 5 },
+                (_, i) => new Date().getFullYear() - i
+              ).map((year) => (
+                <Option key={year} value={year}>
+                  {year}
+                </Option>
+              ))}
+            </Select>
+          )}
+        </Box>
       </Box>
       <Grid container spacing={2.5} sx={{ mb: 2 }}>
-        <Grid xs={12} md={4}>
-          <OccupancyPieChart
-            totalRooms={stats.totalRooms}
-            available={stats.availableRooms}
-            occupied={stats.occupiedRooms}
-            maintenance={stats.maintenanceRooms}
+        <Grid xs={12} sm={6} md={3}>
+          <StatCard
+            icon={<Calendar size={20} />}
+            label="Reserved"
+            value={bookingStatusStats.reserved.toLocaleString()}
+            change={0}
+            color="warning"
           />
         </Grid>
-        <Grid xs={12} md={4}>
-          <RoomStatusCard
-            totalRooms={stats.totalRooms}
-            available={stats.availableRooms}
-            occupied={stats.occupiedRooms}
-            maintenance={stats.maintenanceRooms}
+        <Grid xs={12} sm={6} md={3}>
+          <StatCard
+            icon={<Calendar size={20} />}
+            label="Checked-In"
+            value={bookingStatusStats.checkedIn.toLocaleString()}
+            change={0}
+            color="success"
           />
         </Grid>
-        <Grid xs={12} md={4}>
+        <Grid xs={12} sm={6} md={3}>
+          <StatCard
+            icon={<Calendar size={20} />}
+            label="Checked-Out"
+            value={bookingStatusStats.checkedOut.toLocaleString()}
+            change={0}
+            color="primary"
+          />
+        </Grid>
+        <Grid xs={12} sm={6} md={3}>
+          <StatCard
+            icon={<Calendar size={20} />}
+            label="Canceled"
+            value={bookingStatusStats.canceled.toLocaleString()}
+            change={0}
+            color="danger"
+          />
+        </Grid>
+      </Grid>
+      <Grid container spacing={2.5} sx={{ mb: 2 }}>
+        <Grid xs={12} md={6}>
           <BookingsList bookings={recentBookings} title="Recent Bookings" />
+        </Grid>
+        <Grid xs={6}>
+          <PaymentsList payments={recentPayments} title="Recent Payments" />
         </Grid>
       </Grid>
 
@@ -618,14 +1042,14 @@ const Dashboard = () => {
       </Box>
       <Grid container spacing={2.5} sx={{ mb: 2 }}>
         <Grid xs={12} md={6}>
-          <RoomRankingCard
+          <TopRoomsCard
             rooms={topRoomsByBookings}
             title="Most Booked Rooms"
             type="bookings"
           />
         </Grid>
         <Grid xs={12} md={6}>
-          <RoomRankingCard
+          <TopRoomsCard
             rooms={topRoomsByRevenue}
             title="Highest Revenue Rooms"
             type="revenue"
@@ -634,100 +1058,108 @@ const Dashboard = () => {
       </Grid>
 
       {/* Tourist Demographics */}
-      <Box sx={{ mt: 3, display: "flex", alignItems: "center", gap: 1 }}>
-        <Users size={24} style={{ color: colors.primary }} />
-        <ResponsiveText type="label-large" weight="bold">
-          Tourist Demographics
-        </ResponsiveText>
+      <Box
+        sx={{
+          mt: 3,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          flexWrap: "wrap",
+          gap: 2,
+        }}
+      >
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+          <Users size={24} style={{ color: colors.primary }} />
+          <ResponsiveText type="label-large" weight="bold">
+            Tourist Demographics
+          </ResponsiveText>
+        </Box>
+
+        {/* Tourist-specific filters */}
+        <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap" }}>
+          <Select
+            size="md"
+            value={touristFilterPeriod}
+            onChange={(_, val) =>
+              setTouristFilterPeriod(val as "week" | "month" | "year" | "all")
+            }
+            sx={{ minWidth: 120 }}
+          >
+            <Option value="week">Weekly</Option>
+            <Option value="month">Monthly</Option>
+            <Option value="year">Yearly</Option>
+            <Option value="all">All Time</Option>
+          </Select>
+
+          {touristFilterPeriod === "month" && (
+            <Select
+              size="md"
+              value={touristSelectedMonth}
+              onChange={(_, val) => setTouristSelectedMonth(val as number)}
+              sx={{ minWidth: 130 }}
+            >
+              {Array.from({ length: 12 }).map((_, i) => (
+                <Option key={i} value={i}>
+                  {new Date(0, i).toLocaleString("default", {
+                    month: "long",
+                  })}
+                </Option>
+              ))}
+            </Select>
+          )}
+
+          {(touristFilterPeriod === "month" ||
+            touristFilterPeriod === "year") && (
+            <Select
+              size="md"
+              value={touristSelectedYear}
+              onChange={(_, val) => setTouristSelectedYear(val as number)}
+              sx={{ minWidth: 100 }}
+            >
+              {Array.from(
+                { length: 5 },
+                (_, i) => new Date().getFullYear() - i
+              ).map((year) => (
+                <Option key={year} value={year}>
+                  {year}
+                </Option>
+              ))}
+            </Select>
+          )}
+        </Box>
       </Box>
+
+      {/* Summary Cards */}
+      <Box sx={{ mb: 2 }}>
+        <TouristSummaryCards
+          local={touristStats.local}
+          domestic={touristStats.domestic}
+          foreign={touristStats.foreign}
+          overseas={touristStats.overseas}
+          total={touristStats.total}
+        />
+      </Box>
+
+      {/* Charts Section */}
       <Grid container spacing={2.5} sx={{ mb: 2 }}>
+        {/* Bar Chart */}
         <Grid xs={12} md={6}>
-          <TouristStatsCard
+          <TouristBarChart
             local={touristStats.local}
             domestic={touristStats.domestic}
             foreign={touristStats.foreign}
             overseas={touristStats.overseas}
-            totalBookings={touristStats.total}
           />
         </Grid>
-        <Grid xs={12} md={6}>
-          <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-            <StatCard
-              icon={<Users size={20} />}
-              label="Total Tourists"
-              value={touristStats.total.toLocaleString()}
-              change={0}
-              period={
-                filterPeriod === "month"
-                  ? "this month"
-                  : filterPeriod === "year"
-                  ? "this year"
-                  : "all time"
-              }
-              color="primary"
-            />
-            <Container
-              elevation={2}
-              hoverEffect="lift"
-              hoverDuration={300}
-              hover
-            >
-              <ResponsiveText
-                type="label-small"
-                weight="medium"
-                style={{ marginBottom: 12 }}
-              >
-                Tourist Breakdown
-              </ResponsiveText>
-              <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
-                <Box sx={{ display: "flex", justifyContent: "space-between" }}>
-                  <ResponsiveText type="body-extra-small">
-                    Local Tourists:
-                  </ResponsiveText>
-                  <ResponsiveText type="body-extra-small" weight="bold">
-                    {touristStats.local.toLocaleString()}
-                  </ResponsiveText>
-                </Box>
-                <Box sx={{ display: "flex", justifyContent: "space-between" }}>
-                  <ResponsiveText type="body-extra-small">
-                    Domestic Tourists:
-                  </ResponsiveText>
-                  <ResponsiveText type="body-extra-small" weight="bold">
-                    {touristStats.domestic.toLocaleString()}
-                  </ResponsiveText>
-                </Box>
-                <Box sx={{ display: "flex", justifyContent: "space-between" }}>
-                  <ResponsiveText type="body-extra-small">
-                    Foreign Tourists:
-                  </ResponsiveText>
-                  <ResponsiveText type="body-extra-small" weight="bold">
-                    {touristStats.foreign.toLocaleString()}
-                  </ResponsiveText>
-                </Box>
-                <Box sx={{ display: "flex", justifyContent: "space-between" }}>
-                  <ResponsiveText type="body-extra-small">
-                    Overseas Tourists:
-                  </ResponsiveText>
-                  <ResponsiveText type="body-extra-small" weight="bold">
-                    {touristStats.overseas.toLocaleString()}
-                  </ResponsiveText>
-                </Box>
-              </Box>
-            </Container>
-          </Box>
-        </Grid>
-      </Grid>
 
-      {/* Recent Payments */}
-      <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-        <CreditCard size={24} style={{ color: colors.secondary }} />
-        <ResponsiveText type="label-large" weight="bold">
-          Recent Transactions
-        </ResponsiveText>
-      </Box>
-      <Grid container spacing={2.5}>
-        <Grid xs={12}>
-          <PaymentsList payments={recentPayments} title="Recent Payments" />
+        {/* Pie Chart */}
+        <Grid xs={12} md={6}>
+          <TouristPieChart
+            local={touristStats.local}
+            domestic={touristStats.domestic}
+            foreign={touristStats.foreign}
+            overseas={touristStats.overseas}
+          />
         </Grid>
       </Grid>
     </PageContainer>

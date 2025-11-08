@@ -101,7 +101,6 @@ const OnlinePayment = () => {
         ...(parsed.p as BookingPayment),
         payer_type: 'Tourist',
         payer_id: user.id,
-        payment_for_id: bookingPayload.room_id,
         payment_for: 'Reservation',
         status:
           parsed.p?.payment_type === 'Full Payment'

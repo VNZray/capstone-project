@@ -28,6 +28,6 @@ const api =
 	// process.env.EXPO_PUBLIC_API_URL ||
 	// deriveApiFromDevHost() ||
 	// "http://localhost:3000/api" ||
-	 "http://192.168.1.6:3000/api";
+	 "http://192.168.1.5:3000/api";
 
 export default api;

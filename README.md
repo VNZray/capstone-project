@@ -21,6 +21,8 @@
     - Button.tsx
     - IconButton.tsx
     - SearchBar.tsx
+    - DynamicTab.tsx
+    - NoDataFound.tsx
 2. Use utils/Colors.ts for consistent color
 3. Configure the IP Address in api.tsx to run the app locally
 4. Use clean architecture

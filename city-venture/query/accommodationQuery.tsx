@@ -48,7 +48,7 @@ export const createBookingPayment = async (
   if (!payment?.payment_method) return null;
   const payload = sanitizePayload({
     ...payment,
-    booking_id,
+    payment_for_id: booking_id,
   });
   debugLogger({
     title: 'API POST /payment payload',
@@ -64,13 +64,16 @@ export const createBookingPayment = async (
 
 // Composite helper to create booking, guests, and payment sequentially
 export const createFullBooking = async (
-  booking: Booking,
+  booking?: Booking,
   payment?: BookingPayment
 ) => {
   debugLogger({
     title: 'FLOW Creating full booking',
     data: { booking, payment },
   });
+  if (!booking) {
+    throw new Error('Booking data is required');
+  }
   const createdBooking = await bookRoom(booking);
   const bookingId = createdBooking?.id;
   if (!bookingId) {

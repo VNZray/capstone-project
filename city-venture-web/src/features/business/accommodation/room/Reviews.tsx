@@ -1,16 +1,19 @@
 import * as React from "react";
 import PageContainer from "@/src/components/PageContainer";
-import { Box, Typography, Sheet, Button } from "@mui/joy";
+import { Box, Button } from "@mui/joy";
 import RatingsOverview from "./components/RatingsOverview";
 import StatCard from "./components/StatCard";
-import ReviewFilterTabs from "./components/ReviewFilterTabs";
 import type { ReviewFilterValue } from "./components/ReviewFilterTabs";
 import ReviewCard, { type Review } from "./components/ReviewCard";
 import Container from "@/src/components/Container";
+import NoDataFound from "@/src/components/NoDataFound";
+import DynamicTab from "@/src/components/ui/DynamicTab";
 import FilterListIcon from "@mui/icons-material/FilterList";
 import ReplyIcon from "@mui/icons-material/Reply";
 import ThumbUpIcon from "@mui/icons-material/ThumbUp";
 import ThumbDownIcon from "@mui/icons-material/ThumbDown";
+import { useState } from "react";
+import { ListChecks, Star } from "lucide-react";
 // Mock reviews (would be fetched via API)
 // Added likes & dislikes counts for unified tourist/business style action bar
 const mockReviews: Review[] = [
@@ -72,6 +75,16 @@ const Reviews: React.FC = () => {
   const [activeFilter, setActiveFilter] =
     React.useState<ReviewFilterValue | null>("All");
   const [reviews, setReviews] = React.useState<Review[]>(mockReviews);
+  const [activeTab, setActiveTab] = useState("all");
+
+  const tabs = [
+    { id: "all", label: "All", icon: <ListChecks size={16} /> },
+    { id: "1", label: "1", icon: <Star size={16} /> },
+    { id: "2", label: "2", icon: <Star size={16} /> },
+    { id: "3", label: "3", icon: <Star size={16} /> },
+    { id: "4", label: "4", icon: <Star size={16} /> },
+    { id: "5", label: "5", icon: <Star size={16} /> },
+  ];
 
   const filtered = React.useMemo(
     () =>
@@ -188,10 +201,27 @@ const Reviews: React.FC = () => {
           justify="space-between"
           align="center"
         >
-          <ReviewFilterTabs
-            active={activeFilter}
-            counts={distribution}
-            onChange={setActiveFilter}
+          {/* Tabs */}
+          <DynamicTab
+            padding={0}
+            tabs={tabs}
+            activeTabId={activeTab}
+            onChange={(tabId) => {
+              setActiveTab(String(tabId));
+              setActiveFilter(
+                tabId === "1"
+                  ? 1
+                  : tabId === "2"
+                  ? 2
+                  : tabId === "3"
+                  ? 3
+                  : tabId === "4"
+                  ? 4
+                  : tabId === "5"
+                  ? 5
+                  : "All"
+              );
+            }}
           />
 
           <Button
@@ -203,18 +233,11 @@ const Reviews: React.FC = () => {
         </Container>
         <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
           {filtered.length === 0 && (
-            <Sheet
-              variant="soft"
-              color="neutral"
-              sx={{ p: 4, borderRadius: 12, textAlign: "center" }}
-            >
-              <Typography level="h4" sx={{ mb: 1 }}>
-                No reviews yet
-              </Typography>
-              <Typography level="body-sm" sx={{ opacity: 0.8 }}>
-                Once guests start leaving feedback, you can view & respond here.
-              </Typography>
-            </Sheet>
+            <NoDataFound
+              icon="database"
+              title="No Reviews Yet"
+              message="Once guests start leaving feedback, you can view & respond here."
+            />
           )}
           {filtered.map((rev) => (
             <ReviewCard
