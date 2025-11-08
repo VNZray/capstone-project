@@ -62,20 +62,81 @@ export const createBookingPayment = async (
   return response.data;
 };
 
-// Composite helper to create booking, guests, and payment sequentially
+// Pay for a booking - creates payment record and updates booking balance
+export const payBooking = async (
+  bookingId: string | number,
+  payment: BookingPayment,
+  totalPrice: number
+) => {
+  debugLogger({
+    title: 'FLOW Pay booking',
+    data: { bookingId, payment, totalPrice },
+  });
+
+  if (!payment || payment.payment_method === 'Cash') {
+    debugLogger({
+      title: 'FLOW Payment skipped (Cash or no payment data)',
+      successMessage: `No payment record created for booking ${bookingId}`,
+    });
+    return null;
+  }
+
+  try {
+    // Ensure payment_for_id is set to the booking ID
+    const paymentWithBookingId: BookingPayment = {
+      ...payment,
+      payment_for_id: String(bookingId),
+    };
+    
+    const paymentResult = await createBookingPayment(bookingId, paymentWithBookingId);
+    
+    // After successful payment creation, adjust booking balance if partial or full
+    const paid = Number(payment.amount) || 0;
+    const newBalance = Math.max(totalPrice - paid, 0);
+    
+    try {
+      if (!isNaN(newBalance)) {
+        await axios.put(`${api}/booking/${bookingId}`, { balance: newBalance });
+        debugLogger({
+          title: 'FLOW Booking balance updated',
+          data: { bookingId, newBalance },
+        });
+      }
+    } catch (e) {
+      debugLogger({
+        title: 'FLOW Updating booking balance failed (non-fatal)',
+        error: e,
+      });
+    }
+
+    debugLogger({
+      title: 'FLOW Payment completed',
+      successMessage: `Payment complete for booking ${bookingId}`,
+    });
+    
+    return paymentResult;
+  } catch (e) {
+    debugLogger({
+      title: 'FLOW Creating payment failed',
+      error: e,
+    });
+    throw e;
+  }
+};
+
+// Composite helper to create booking and payment sequentially
 export const createFullBooking = async (
-  booking?: Booking,
+  booking: Booking,
   payment?: BookingPayment
 ) => {
   debugLogger({
     title: 'FLOW Creating full booking',
     data: { booking, payment },
   });
-  if (!booking) {
-    throw new Error('Booking data is required');
-  }
+  
   const createdBooking = await bookRoom(booking);
   const bookingId = createdBooking?.id;
+  
   if (!bookingId) {
     debugLogger({
       title: 'FLOW Booking create response unexpected',
@@ -85,39 +146,17 @@ export const createFullBooking = async (
     throw new Error('Booking ID missing after creation');
   }
 
-  // If no payment provided or payment method is Cash, skip creating a payment record
-  if (!payment || payment.payment_method === 'Cash') {
+  // If payment is provided and not Cash, process the payment
+  if (payment && payment.payment_method !== 'Cash') {
+    const totalPrice = Number(booking.total_price) || 0;
+    await payBooking(bookingId, payment, totalPrice);
+  } else {
     debugLogger({
       title: 'FLOW Booking created without payment record',
       successMessage: `Booking complete (id=${bookingId}) - no payment created`,
     });
-    return createdBooking;
   }
-
-  try {
-    await createBookingPayment(bookingId, payment);
-    // After successful payment creation, adjust booking balance if partial or full
-    const total = Number(booking.total_price) || 0;
-    const paid = Number(payment.amount) || 0;
-    const newBalance = Math.max(total - paid, 0);
-    try {
-      if (!isNaN(newBalance)) {
-        await axios.put(`${api}/booking/${bookingId}`, { balance: newBalance });
-        (createdBooking as any).balance = newBalance;
-      }
-    } catch (e) {
-      debugLogger({
-        title: 'FLOW Updating booking balance failed (non-fatal)',
-        error: e,
-      });
-    }
-  } catch (e) {
-    debugLogger({
-      title: 'FLOW Creating payment failed',
-      error: e,
-    });
-    throw e;
-  }
+  
   debugLogger({
     title: 'FLOW Full booking completed',
     successMessage: `Booking complete (id=${bookingId})`,
