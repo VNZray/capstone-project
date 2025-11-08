@@ -451,21 +451,28 @@ const Dashboard = () => {
           new Date(b.created_at || "").getTime() -
           new Date(a.created_at || "").getTime()
       )
-      .map((booking) => ({
-        id: booking.id || "",
-        guestName: `Guest ${booking.tourist_id?.substring(0, 8) || "Unknown"}`,
-        roomNumber: booking.room_id?.substring(0, 6) || "N/A",
-        checkIn: String(booking.check_in_date || ""),
-        checkOut: String(booking.check_out_date || ""),
-        status: (booking.booking_status || "Pending") as
-          | "Pending"
-          | "Reserved"
-          | "Checked-in"
-          | "Checked-out"
-          | "Canceled",
-        amount: Number(booking.total_price) || 0,
-      }));
-  }, [bookings]);
+      .map((booking) => {
+        // Find the room for this booking
+        const room = rooms.find((r) => r.id === booking.room_id);
+        
+        return {
+          id: booking.id || "",
+          guestName: `Guest ${booking.tourist_id?.substring(0, 8) || "Unknown"}`,
+          roomNumber: room?.room_number || "N/A",
+          roomType: room?.room_type || "Unknown",
+          checkIn: String(booking.check_in_date || ""),
+          checkOut: String(booking.check_out_date || ""),
+          status: (booking.booking_status || "Pending") as
+            | "Pending"
+            | "Reserved"
+            | "Checked-in"
+            | "Checked-out"
+            | "Canceled",
+          amount: Number(booking.total_price) || 0,
+          touristId: booking.tourist_id || "",
+        };
+      });
+  }, [bookings, rooms]);
 
   // Recent payments (last 5)
   const recentPayments = useMemo(() => {

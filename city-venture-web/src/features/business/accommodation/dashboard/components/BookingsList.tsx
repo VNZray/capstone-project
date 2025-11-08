@@ -1,17 +1,20 @@
-import React from "react";
-import { Card, Typography, Box, Chip, Stack } from "@mui/joy";
-import { Calendar, User } from "lucide-react";
+import React, { useEffect, useState } from "react";
+import { Card, Typography, Box, Chip, Stack, Avatar } from "@mui/joy";
+import { Calendar } from "lucide-react";
 import { colors } from "@/src/utils/Colors";
 import Container from "@/src/components/Container";
+import { fetchTourist } from "@/src/services/BookingService";
 
 interface Booking {
   id: string;
   guestName: string;
   roomNumber: string;
+  roomType?: string;
   checkIn: string;
   checkOut: string;
   status: "Pending" | "Reserved" | "Checked-in" | "Checked-out" | "Canceled";
   amount: number;
+  touristId?: string;
 }
 
 interface BookingsListProps {
@@ -37,11 +40,65 @@ const getStatusColor = (status: string) => {
 };
 
 const BookingsList: React.FC<BookingsListProps> = ({ bookings, title }) => {
+  const [touristData, setTouristData] = useState<Record<string, any>>({});
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchTouristData = async () => {
+      const tourists: Record<string, any> = {};
+      
+      for (const booking of bookings) {
+        if (booking.touristId && !tourists[booking.touristId]) {
+          try {
+            const data = await fetchTourist(booking.touristId);
+            tourists[booking.touristId] = data;
+          } catch (error) {
+            console.error("Failed to fetch tourist data:", error);
+          }
+        }
+      }
+      
+      setTouristData(tourists);
+      setLoading(false);
+    };
+
+    if (bookings.length > 0) {
+      fetchTouristData();
+    } else {
+      setLoading(false);
+    }
+  }, [bookings]);
+
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString("en-US", {
       month: "short",
       day: "numeric",
     });
+  };
+
+  const getTouristName = (booking: Booking) => {
+    if (booking.touristId && touristData[booking.touristId]) {
+      const tourist = touristData[booking.touristId];
+      return `${tourist.first_name || ""} ${tourist.last_name || ""}`.trim() || "Guest";
+    }
+    return booking.guestName;
+  };
+
+  const getTouristAvatar = (booking: Booking) => {
+    if (booking.touristId && touristData[booking.touristId]) {
+      const tourist = touristData[booking.touristId];
+      return tourist.profile_pic || null;
+    }
+    return null;
+  };
+
+  const getTouristInitials = (booking: Booking) => {
+    const name = getTouristName(booking);
+    const parts = name.split(" ");
+    if (parts.length >= 2) {
+      return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+    }
+    return name.substring(0, 2).toUpperCase();
   };
 
   return (
@@ -62,7 +119,21 @@ const BookingsList: React.FC<BookingsListProps> = ({ bookings, title }) => {
       </Box>
 
       <Box sx={{ height: 400, overflowY: "auto", overflowX: "hidden" }}>
-        {bookings.length === 0 ? (
+        {loading ? (
+          <Box 
+            sx={{ 
+              p: 4, 
+              textAlign: "center",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center"
+            }}
+          >
+            <Typography level="body-sm" sx={{ color: "text.tertiary" }}>
+              Loading bookings...
+            </Typography>
+          </Box>
+        ) : bookings.length === 0 ? (
           <Box 
             sx={{ 
               p: 6, 
@@ -124,30 +195,45 @@ const BookingsList: React.FC<BookingsListProps> = ({ bookings, title }) => {
               >
                 <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", mb: 1.5 }}>
                   <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
-                    <Box
-                      sx={{
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        width: 40,
-                        height: 40,
-                        borderRadius: "12px",
-                        bgcolor: "primary.softBg",
-                        color: "primary.solidBg",
-                        transition: "all 0.2s",
-                        "&:hover": {
-                          transform: "scale(1.1)"
-                        }
-                      }}
-                    >
-                      <User size={18} />
-                    </Box>
+                    {getTouristAvatar(booking) ? (
+                      <Avatar
+                        src={getTouristAvatar(booking)}
+                        alt={getTouristName(booking)}
+                        sx={{
+                          width: 40,
+                          height: 40,
+                          borderRadius: "12px",
+                          transition: "all 0.2s",
+                          "&:hover": {
+                            transform: "scale(1.1)"
+                          }
+                        }}
+                      />
+                    ) : (
+                      <Avatar
+                        sx={{
+                          width: 40,
+                          height: 40,
+                          borderRadius: "12px",
+                          bgcolor: "primary.softBg",
+                          color: "primary.solidBg",
+                          transition: "all 0.2s",
+                          fontWeight: 700,
+                          fontSize: "0.875rem",
+                          "&:hover": {
+                            transform: "scale(1.1)"
+                          }
+                        }}
+                      >
+                        {getTouristInitials(booking)}
+                      </Avatar>
+                    )}
                     <Box>
                       <Typography level="title-sm" fontWeight="700" sx={{ mb: 0.25 }}>
-                        {booking.guestName}
+                        {getTouristName(booking)}
                       </Typography>
                       <Typography level="body-xs" sx={{ color: "text.tertiary" }}>
-                        Room {booking.roomNumber}
+                        Room {booking.roomNumber} {booking.roomType && `• ${booking.roomType}`}
                       </Typography>
                     </Box>
                   </Box>
