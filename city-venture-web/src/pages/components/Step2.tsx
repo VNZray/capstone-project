@@ -1,11 +1,10 @@
 import Container from "@/src/components/Container";
 import PageContainer from "@/src/components/PageContainer";
-import ResponsiveText from "@/src/components/ResponsiveText";
-import type { Address } from "@/src/types/Address";
+import Typography from "@/src/components/Typography";
 import type { Owner } from "@/src/types/Owner";
 import type { User } from "@/src/types/User";
 import { Email } from "@mui/icons-material";
-import { FormControl, Input, Textarea, FormLabel } from "@mui/joy";
+import { FormControl, Input, FormLabel } from "@mui/joy";
 import { Phone } from "lucide-react";
 
 type Props = {
@@ -24,12 +23,12 @@ const Step2: React.FC<Props> = ({
   return (
     <PageContainer gap={0} padding={0}>
       <Container gap="0">
-        <ResponsiveText type="title-small" weight="medium">
+        <Typography.CardTitle>
           Owner Information
-        </ResponsiveText>
-        <ResponsiveText type="body-medium">
+        </Typography.CardTitle>
+        <Typography.CardSubTitle>
           Please provide your business information.
-        </ResponsiveText>
+        </Typography.CardSubTitle>
       </Container>
 
       <Container>

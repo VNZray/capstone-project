@@ -19,7 +19,7 @@ import { useBusiness } from "@/src/context/BusinessContext";
 import { getData, insertData } from "@/src/services/Service";
 import type { Amenity } from "@/src/types/Amenity";
 import { useEffect } from "react";
-import ResponsiveText from "@/src/components/ResponsiveText";
+import Typography from "@/src/components/Typography";
 import ImageUpload from "@/src/components/ImageUpload";
 interface AddRoomModalProps {
   business_name?: string;
@@ -183,7 +183,7 @@ export default function AddRoomModal({
         variant="outlined"
         role="dialog"
       >
-        <ResponsiveText type="title-small">Add New Room</ResponsiveText>
+        <Typography.CardTitle>Add New Room</Typography.CardTitle>
 
         <form
           onSubmit={(e) => {

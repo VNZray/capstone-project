@@ -3,7 +3,7 @@ import PageContainer from "@/src/components/PageContainer";
 // Removed unused import 'Text'
 import NoDataFound from "@/src/components/NoDataFound";
 import { Add } from "@mui/icons-material";
-import { Button, Input } from "@mui/joy";
+import { Input } from "@mui/joy";
 import {
   ListChecks,
   PauseCircle,
@@ -11,12 +11,11 @@ import {
   Search,
   TimerOff,
 } from "lucide-react";
-import StatusFilter from "./components/StatusFilter";
 import PromoCard from "./components/PromoCard";
 import type { PromoStatus } from "./components/PromoCard";
 // import AddPromoModal from "./components/AddPromoModal"; // disabled: use full Promotion Form page instead
 import { useMemo, useState } from "react";
-import ResponsiveText from "@/src/components/ResponsiveText";
+import Typography from "@/src/components/Typography";
 import { useNavigate } from "react-router-dom";
 import DynamicTab from "@/src/components/ui/DynamicTab";
 import IconButton from "@/src/components/IconButton";
@@ -169,9 +168,9 @@ const ManagePromotion = () => {
               minWidth: 240,
             }}
           >
-            <ResponsiveText type="title-small" weight="bold">
+            <Typography.Header>
               Manage Promotion
-            </ResponsiveText>
+            </Typography.Header>
           </div>
 
           <IconButton

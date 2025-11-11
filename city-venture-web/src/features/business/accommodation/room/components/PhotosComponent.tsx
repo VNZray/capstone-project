@@ -11,7 +11,7 @@ import {
 } from "@mui/joy";
 import Container from "@/src/components/Container";
 import Button from "@/src/components/Button";
-import ResponsiveText from "@/src/components/ResponsiveText";
+import Typography from "@/src/components/Typography";
 import NoDataFound from "@/src/components/NoDataFound";
 import { Upload, Trash2 } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
@@ -66,7 +66,9 @@ export default function PhotosComponent() {
   }, [roomDetails?.id]);
 
   // Handle batch file upload
-  const handleBatchUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleBatchUpload = async (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
     const files = event.target.files;
     if (!files || files.length === 0 || !roomDetails?.id) return;
 
@@ -99,7 +101,7 @@ export default function PhotosComponent() {
         };
 
         await insertData(photoData, "room-photos");
-        
+
         // Update progress
         setUploadProgress(Math.round(((index + 1) / files.length) * 100));
       });
@@ -157,7 +159,7 @@ export default function PhotosComponent() {
 
     try {
       setIsLoading(true);
-      
+
       const deletePromises = Array.from(selectedPhotos).map((photoId) =>
         deleteData(photoId, "room-photos")
       );
@@ -198,9 +200,7 @@ export default function PhotosComponent() {
           align="center"
           justify="space-between"
         >
-          <ResponsiveText type="title-normal" weight="semi-bold">
-            Room Photos
-          </ResponsiveText>
+          <Typography.CardTitle>Room Photos</Typography.CardTitle>
 
           <Container padding="0" direction="row" gap="12px">
             {isEditMode ? (
@@ -249,9 +249,7 @@ export default function PhotosComponent() {
 
         {isLoading ? (
           <Container padding="40px" align="center">
-            <ResponsiveText type="body-medium" color="#666">
-              Loading photos...
-            </ResponsiveText>
+            <Typography.Body>Loading photos...</Typography.Body>
           </Container>
         ) : photos.length === 0 ? (
           <NoDataFound
@@ -289,9 +287,9 @@ export default function PhotosComponent() {
                     ? "Deselect All"
                     : "Select All"}
                 </Button>
-                <ResponsiveText type="body-small" color="#666">
+                <Typography.Body>
                   {selectedPhotos.size} of {photos.length} selected
-                </ResponsiveText>
+                </Typography.Body>
               </Container>
             )}
 
@@ -308,8 +306,11 @@ export default function PhotosComponent() {
                       ? "4px solid #1976d2"
                       : "2px solid transparent",
                     transition: "all 0.2s ease",
-                    transform: selectedPhotos.has(photo.id) ? "scale(0.95)" : "scale(1)",
-                    opacity: isEditMode && !selectedPhotos.has(photo.id) ? 0.7 : 1,
+                    transform: selectedPhotos.has(photo.id)
+                      ? "scale(0.95)"
+                      : "scale(1)",
+                    opacity:
+                      isEditMode && !selectedPhotos.has(photo.id) ? 0.7 : 1,
                   }}
                   onClick={() => isEditMode && togglePhotoSelection(photo.id)}
                 >
@@ -389,7 +390,10 @@ export default function PhotosComponent() {
       </Paper>
 
       {/* Upload Photo Modal */}
-      <Modal open={uploadModalOpen} onClose={() => !isUploading && setUploadModalOpen(false)}>
+      <Modal
+        open={uploadModalOpen}
+        onClose={() => !isUploading && setUploadModalOpen(false)}
+      >
         <ModalDialog
           size="lg"
           sx={{
@@ -398,16 +402,14 @@ export default function PhotosComponent() {
           }}
         >
           <DialogTitle>
-            <ResponsiveText type="title-small" weight="semi-bold">
-              Upload Room Photos
-            </ResponsiveText>
+            <Typography.CardTitle>Upload Room Photos</Typography.CardTitle>
           </DialogTitle>
 
           <DialogContent>
             <Container padding="0" gap="16px">
-              <ResponsiveText type="body-medium" color="#666">
+              <Typography.Body>
                 Select multiple photos for Room {roomDetails?.room_number}
-              </ResponsiveText>
+              </Typography.Body>
 
               {/* Hidden file input */}
               <input
@@ -440,27 +442,27 @@ export default function PhotosComponent() {
                       size="lg"
                       color="primary"
                     />
-                    <ResponsiveText type="body-medium" weight="medium">
+                    <Typography.Body>
                       Uploading {uploadProgress}%
-                    </ResponsiveText>
-                    <ResponsiveText type="body-small" color="#666">
+                    </Typography.Body>
+                    <Typography.Body>
                       {uploadProgress === 0
                         ? `Preparing to upload ${totalFiles} file(s)...`
-                        : `Processing ${Math.ceil((uploadProgress / 100) * totalFiles)} of ${totalFiles}`}
-                    </ResponsiveText>
+                        : `Processing ${Math.ceil(
+                            (uploadProgress / 100) * totalFiles
+                          )} of ${totalFiles}`}
+                    </Typography.Body>
                   </>
                 ) : (
                   <>
                     <Upload size={48} style={{ color: "#1976d2" }} />
-                    <ResponsiveText type="body-large" weight="medium">
-                      Click to select photos
-                    </ResponsiveText>
-                    <ResponsiveText type="body-small" color="#666">
+                    <Typography.Body>Click to select photos</Typography.Body>
+                    <Typography.Body>
                       You can select multiple images at once
-                    </ResponsiveText>
-                    <ResponsiveText type="body-small" color="#999">
+                    </Typography.Body>
+                    <Typography.Body>
                       PNG, JPG, GIF up to 5MB each
-                    </ResponsiveText>
+                    </Typography.Body>
                   </>
                 )}
               </Container>

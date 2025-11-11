@@ -3,7 +3,7 @@ import PageContainer from "@/src/components/PageContainer";
 import Container from "@/src/components/Container";
 import { Button, LinearProgress, IconButton, Box, Stack } from "@mui/joy";
 import { ArrowBackRounded } from "@mui/icons-material";
-import ResponsiveText from "@/src/components/ResponsiveText";
+import Typography from "@/src/components/Typography";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/src/context/AuthContext";
 import { colors } from "@/src/utils/Colors";
@@ -405,20 +405,20 @@ const BusinessRegistration: React.FC = () => {
               >
                 <div>
                   <div style={{ marginBottom: 8 }}>
-                    <ResponsiveText type="title-extra-small" weight="bold">
+                    <Typography.Title size="normal">
                       Register your business
-                    </ResponsiveText>
+                    </Typography.Title>
                   </div>
-                  <ResponsiveText type="body-extra-small" color={colors.gray}>
+                  <Typography.Body size="xs" sx={{ color: colors.gray }}>
                     A simple, step-by-step flow to get you listed.
-                  </ResponsiveText>
+                  </Typography.Body>
                 </div>
               </div>
 
               <Stack alignItems="flex-end" gap={0.5}>
-                <ResponsiveText type="body-small" color={colors.gray}>
+                <Typography.Body size="sm" sx={{ color: colors.gray }}>
                   Step {activeStep + 1} of {steps.length}
-                </ResponsiveText>
+                </Typography.Body>
                 <Box sx={{ width: 160, "--LinearProgress-thickness": "4px" }}>
                   <LinearProgress
                     determinate

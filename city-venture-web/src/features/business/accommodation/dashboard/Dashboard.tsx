@@ -1,16 +1,12 @@
 import { useState, useEffect, useMemo } from "react";
-import ResponsiveText from "@/src/components/ResponsiveText";
+import Typography from "@/src/components/Typography";
 import PageContainer from "@/src/components/PageContainer";
 import Container from "@/src/components/Container";
 import { useBusiness } from "@/src/context/BusinessContext";
 import { Box, Select, Option, Grid } from "@mui/joy";
 import StatCard from "./components/StatCard";
-import RevenueCard from "./components/RevenueCard";
 import BookingsList from "./components/BookingsList";
 import PaymentsList from "./components/PaymentsList";
-import RoomStatusCard from "./components/RoomStatusCard";
-import RoomRankingCard from "./components/RoomRankingCard";
-import OccupancyPieChart from "./components/OccupancyPieChart";
 import NoDataFound from "@/src/components/NoDataFound";
 import TouristSummaryCards from "./components/TouristSummaryCards";
 import TouristBarChart from "./components/TouristBarChart";
@@ -24,11 +20,7 @@ import {
   BarChart3,
   Hotel,
   Award,
-  CreditCard,
   Users,
-  MapPin,
-  Globe,
-  Plane,
 } from "lucide-react";
 import { getData } from "@/src/services/Service";
 import { fetchBookingsByBusinessId } from "@/src/services/BookingService";
@@ -430,20 +422,22 @@ const Dashboard = () => {
   // Recent bookings (current week only)
   const recentBookings = useMemo(() => {
     const now = new Date();
-    
+
     // Get the start of the week (Sunday)
     const startOfWeek = new Date(now);
     startOfWeek.setDate(now.getDate() - now.getDay());
     startOfWeek.setHours(0, 0, 0, 0);
-    
+
     // Get the end of the week (Saturday)
     const endOfWeek = new Date(startOfWeek);
     endOfWeek.setDate(startOfWeek.getDate() + 6);
     endOfWeek.setHours(23, 59, 59, 999);
-    
+
     return bookings
       .filter((booking) => {
-        const bookingDate = new Date(booking.created_at || booking.check_in_date || "");
+        const bookingDate = new Date(
+          booking.created_at || booking.check_in_date || ""
+        );
         return bookingDate >= startOfWeek && bookingDate <= endOfWeek;
       })
       .sort(
@@ -454,10 +448,12 @@ const Dashboard = () => {
       .map((booking) => {
         // Find the room for this booking
         const room = rooms.find((r) => r.id === booking.room_id);
-        
+
         return {
           id: booking.id || "",
-          guestName: `Guest ${booking.tourist_id?.substring(0, 8) || "Unknown"}`,
+          guestName: `Guest ${
+            booking.tourist_id?.substring(0, 8) || "Unknown"
+          }`,
           roomNumber: room?.room_number || "N/A",
           roomType: room?.room_type || "Unknown",
           checkIn: String(booking.check_in_date || ""),
@@ -684,9 +680,7 @@ const Dashboard = () => {
     return (
       <PageContainer>
         <Container>
-          <ResponsiveText type="label-large" weight="bold">
-            Loading Dashboard...
-          </ResponsiveText>
+          <Typography.Title>Loading Dashboard...</Typography.Title>
         </Container>
       </PageContainer>
     );
@@ -706,72 +700,23 @@ const Dashboard = () => {
 
   return (
     <PageContainer>
-      {/* Header with Filters */}
+      {/* CardTitle with Filters */}
       <Container
         gap="2px"
         elevation={2}
         padding="20px"
         style={{ marginBottom: 20 }}
       >
-        <ResponsiveText type="card-title-medium" weight="bold">
+        <Typography.Header>
           {businessDetails?.business_name} Dashboard
-        </ResponsiveText>
-        <ResponsiveText type="card-sub-title-small" weight="normal">
+        </Typography.Header>
+        <Typography.CardSubTitle>
           Welcome{" "}
           <b>
             {user?.first_name} {user?.last_name}
           </b>{" "}
           to your accommodation dashboard.
-        </ResponsiveText>
-        {/* <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap" }}>
-            <Select
-              size="lg"
-              value={filterPeriod}
-              onChange={(_, val) =>
-                setFilterPeriod(val as "month" | "year" | "all")
-              }
-              sx={{ minWidth: 150 }}
-            >
-              <Option value="month">Monthly</Option>
-              <Option value="year">Yearly</Option>
-              <Option value="all">All Time</Option>
-            </Select>
-
-            {filterPeriod === "month" && (
-              <Select
-                size="lg"
-                value={selectedMonth}
-                onChange={(_, val) => setSelectedMonth(val as number)}
-                sx={{ minWidth: 150 }}
-              >
-                {Array.from({ length: 12 }).map((_, i) => (
-                  <Option key={i} value={i}>
-                    {new Date(0, i).toLocaleString("default", {
-                      month: "long",
-                    })}
-                  </Option>
-                ))}
-              </Select>
-            )}
-
-            {(filterPeriod === "month" || filterPeriod === "year") && (
-              <Select
-                size="lg"
-                value={selectedYear}
-                onChange={(_, val) => setSelectedYear(val as number)}
-                sx={{ minWidth: 120 }}
-              >
-                {Array.from(
-                  { length: 5 },
-                  (_, i) => new Date().getFullYear() - i
-                ).map((year) => (
-                  <Option key={year} value={year}>
-                    {year}
-                  </Option>
-                ))}
-              </Select>
-            )}
-          </Box> */}
+        </Typography.CardSubTitle>
       </Container>
 
       {/* Key Metrics Grid */}
@@ -787,9 +732,7 @@ const Dashboard = () => {
       >
         <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
           <BarChart3 size={24} style={{ color: colors.primary }} />
-          <ResponsiveText type="label-large" weight="bold">
-            Key Performance Metrics
-          </ResponsiveText>
+          <Typography.CardTitle>Key Performance Metrics</Typography.CardTitle>
         </Box>
 
         {/* KPI Filters */}
@@ -935,10 +878,11 @@ const Dashboard = () => {
         }}
       >
         <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-          <Hotel size={24} style={{ color: colors.warningLabel }} />
-          <ResponsiveText type="label-large" weight="bold">
+          <Typography.CardTitle
+            startDecorator={<Hotel style={{ color: colors.warningLabel }} />}
+          >
             Booking Overview
-          </ResponsiveText>
+          </Typography.CardTitle>
         </Box>
 
         {/* Booking Filters */}
@@ -1042,10 +986,11 @@ const Dashboard = () => {
 
       {/* Room Rankings */}
       <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-        <Award size={24} style={{ color: "#FFD700" }} />
-        <ResponsiveText type="label-large" weight="bold">
+        <Typography.CardTitle
+          startDecorator={<Award style={{ color: "#FFD700" }} />}
+        >
           Top Performing Rooms
-        </ResponsiveText>
+        </Typography.CardTitle>
       </Box>
       <Grid container spacing={2.5} sx={{ mb: 2 }}>
         <Grid xs={12} md={6}>
@@ -1076,10 +1021,9 @@ const Dashboard = () => {
         }}
       >
         <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-          <Users size={24} style={{ color: colors.primary }} />
-          <ResponsiveText type="label-large" weight="bold">
+          <Typography.CardTitle startDecorator={<Users />}>
             Tourist Demographics
-          </ResponsiveText>
+          </Typography.CardTitle>
         </Box>
 
         {/* Tourist-specific filters */}

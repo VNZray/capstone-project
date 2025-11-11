@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import axios from "axios";
 import Container from "@/src/components/Container";
 import PageContainer from "@/src/components/PageContainer";
-import ResponsiveText from "@/src/components/ResponsiveText";
+import Typography from "@/src/components/Typography";
 import StaffAddModal, {
   type StaffRole,
 } from "@/src/features/business/accommodation/Staff/components/StaffAddModal";
@@ -178,9 +178,7 @@ const ManageStaff = () => {
           align="center"
           padding="16px 16px 0 16px"
         >
-          <ResponsiveText type="title-small" weight="bold">
-            Manage Staff
-          </ResponsiveText>
+          <Typography.Header>Manage Staff</Typography.Header>
         </Container>
 
         <IconButton
@@ -214,17 +212,17 @@ const ManageStaff = () => {
       {/* Error State */}
       {error && (
         <Container padding="16px" elevation={2}>
-          <ResponsiveText type="body-small" weight="normal" color="danger">
+          <Typography.Body size="sm" sx={{ color: "danger.500" }}>
             {error}
-          </ResponsiveText>
+          </Typography.Body>
         </Container>
       )}
 
       {/* Staff List */}
       <Container padding="0 16px 16px 16px">
-        <ResponsiveText type="sub-title-small" weight="semi-bold">
+        <Typography.Header size="sm" weight="semibold">
           Team Members
-        </ResponsiveText>
+        </Typography.Header>
         {loading ? (
           <NoDataFound icon="database" title="Loading..." message="" />
         ) : staff.length === 0 ? (

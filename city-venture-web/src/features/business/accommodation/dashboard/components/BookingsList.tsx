@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Card, Typography, Box, Chip, Stack, Avatar } from "@mui/joy";
+import { Typography, Box, Chip, Stack, Avatar } from "@mui/joy";
 import { Calendar } from "lucide-react";
 import { colors } from "@/src/utils/Colors";
 import Container from "@/src/components/Container";

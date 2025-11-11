@@ -1,5 +1,5 @@
 import React from "react";
-import { Card, Typography, Box, Stack } from "@mui/joy";
+import {Typography, Box, Stack } from "@mui/joy";
 import { TrendingUp, TrendingDown } from "lucide-react";
 import Container from "@/src/components/Container";
 

@@ -11,7 +11,7 @@ import { MdCheck } from "react-icons/md";
 import { styled } from "@mui/material/styles";
 import { useTheme } from "@mui/material/styles";
 import { colors } from "../utils/Colors";
-import ResponsiveText from "@/src/components/ResponsiveText";
+import Typography from "@/src/components/Typography";
 type StepperProps = {
   currentStep: number; // index starting at 0
   steps: string[]; // steps provided by parent
@@ -147,9 +147,9 @@ export default function Stepper({
               },
             }}
           >
-            <ResponsiveText align="center" type="label-medium" weight="medium">
+            <Typography.Label size="sm" align="center">
               {label}
-            </ResponsiveText>
+            </Typography.Label>
           </StepLabel>
         </Step>
       ))}

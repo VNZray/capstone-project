@@ -15,7 +15,7 @@ import {
   Alert,
 } from "@mui/joy";
 import { updateData, getData } from "@/src/services/Service";
-import ResponsiveText from "@/src/components/ResponsiveText";
+import Typography from "@/src/components/Typography";
 import type { Room } from "@/src/types/Business";
 
 interface EditDescriptionModalProps {
@@ -177,7 +177,7 @@ const EditBasicInfo: React.FC<EditDescriptionModalProps> = ({
   return (
     <Modal open={open} onClose={onClose}>
       <ModalDialog size="lg" variant="outlined" maxWidth={500} minWidth={500}>
-        <ResponsiveText type="title-small">Edit Basic Information</ResponsiveText>
+        <Typography.CardTitle>Edit Basic Information</Typography.CardTitle>
         <DialogContent>
           {error && (
             <Alert color="danger" variant="soft">

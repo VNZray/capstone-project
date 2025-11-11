@@ -63,7 +63,7 @@ const GuestAvatarCell: FC<GuestAvatarCellProps> = ({ info }) => {
     </div>
   );
 };
-import ResponsiveText from "@/src/components/ResponsiveText";
+import Typography from "@/src/components/Typography";
 import NoDataFound from "@/src/components/NoDataFound";
 import PageContainer from "@/src/components/PageContainer";
 import { colors } from "@/src/utils/Colors";
@@ -436,9 +436,9 @@ const Bookings = () => {
             align="center"
             padding="16px 16px 0 16px"
           >
-            <ResponsiveText type="title-small" weight="bold">
+            <Typography.Header>
               Manage Reservation
-            </ResponsiveText>
+            </Typography.Header>
           </Container>
 
           {/* Search + Filters */}

@@ -16,7 +16,7 @@ import {
   insertData,
 } from "@/src/services/Service";
 import type { Amenity } from "@/src/types/Amenity";
-import ResponsiveText from "@/src/components/ResponsiveText";
+import Typography from "@/src/components/Typography";
 interface EditBusinessModalProps {
   open: boolean;
   roomId?: string;
@@ -118,7 +118,7 @@ const EditAmenitiesModal: React.FC<EditBusinessModalProps> = ({
   return (
     <Modal open={open} onClose={onClose}>
       <ModalDialog size="lg" variant="outlined" maxWidth={600} minWidth={600}>
-        <ResponsiveText type="title-small">Add New Room</ResponsiveText>
+        <Typography.CardTitle>Add New Room</Typography.CardTitle>
         <DialogContent>
           <FormControl>
             <FormLabel>Update Amenities</FormLabel>

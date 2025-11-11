@@ -1,9 +1,9 @@
-import ResponsiveText from "@/src/components/ResponsiveText";
+import Typography from "@/src/components/Typography";
 
 const ManageBusiness = () => {
   return (
     <>
-      <ResponsiveText type="title-large" weight="bold">Manage Shop</ResponsiveText>
+      <Typography.Title size="lg" weight="bold">Manage Shop</Typography.Title>
     </>
   );
 };

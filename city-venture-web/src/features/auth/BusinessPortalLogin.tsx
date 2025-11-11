@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import logo from "@/src/assets/images/logo.png";
 import "./LoginStyle.css";
-import ResponsiveText from "../../components/ResponsiveText";
+import Typography from "@/src/components/Typography";
 import Container from "../../components/Container";
 import { useAuth } from "@/src/context/AuthContext"; // adjust path if needed
 import { Input, Button } from "@mui/joy";
@@ -52,9 +52,9 @@ const Login: React.FC = () => {
         <Container elevation={3} padding="40px" radius="0.5rem" width="450px">
           <div className="logo-container">
             <img src={logo} alt="Logo" className="logo" />
-            <ResponsiveText type="title-small" weight="bold">
+            <Typography.Title size="sm">
               City Venture
-            </ResponsiveText>
+            </Typography.Title>
           </div>
 
           {/* Title and Subtitle */}
@@ -64,12 +64,12 @@ const Login: React.FC = () => {
               flexDirection: "column",
             }}
           >
-            <ResponsiveText type="title-large" weight="bold" mb={0.75} color="dark">
+            <Typography.Title size="lg" sx={{ mb: 0.75 }}>
               Sign In
-            </ResponsiveText>
-            <ResponsiveText type="body-medium" mb={3} color="dark">
+            </Typography.Title>
+            <Typography.Body size="md" sx={{ mb: 3 }}>
               Navigate with Ease - Your Ultimate City Directory
-            </ResponsiveText>
+            </Typography.Body>
           </div>
 
           {/* Form Fields */}
@@ -93,9 +93,9 @@ const Login: React.FC = () => {
             />
 
             <Link to="/TouristApp/(screens)/ForgotPassword" className="link">
-              <ResponsiveText type="body-small" color="#0077B6">
+              <Typography.Body size="sm" sx={{ color: "#0077B6" }}>
                 Forgot Password?
-              </ResponsiveText>
+              </Typography.Body>
             </Link>
           </div>
 
@@ -119,21 +119,21 @@ const Login: React.FC = () => {
             </Button>
 
             {loginError && (
-              <ResponsiveText type="body-medium" color={colors.error} mt={2}>
+              <Typography.Body size="md" sx={{ color: colors.error, mt: 2 }}>
                 {loginError}
-              </ResponsiveText>
+              </Typography.Body>
             )}
           </div>
 
           {/* Sign Up Link */}
           <div className="signup-row">
-            <ResponsiveText type="body-small" color="dark">
+            <Typography.Body size="sm">
               Don't Have an Account?
-            </ResponsiveText>
+            </Typography.Body>
             <Link to="/register" className="link">
-              <ResponsiveText type="body-small" weight="semi-bold" color="#0077B6">
+              <Typography.Body size="sm" weight="semibold" sx={{ color: "#0077B6" }}>
                 Sign Up
-              </ResponsiveText>
+              </Typography.Body>
             </Link>
           </div>
         </Container>

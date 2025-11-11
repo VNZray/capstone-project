@@ -17,7 +17,7 @@ import { useBusiness } from "@/src/context/BusinessContext";
 // import type { Booking } from "@/src/types/Booking";
 // import { fetchBookingsByBusinessId } from "@/src/services/BookingService";
 import { fetchPaymentsByBusinessId } from "@/src/services/PaymentService";
-import ResponsiveText from "@/src/components/ResponsiveText";
+import Typography from "@/src/components/Typography";
 import NoDataFound from "@/src/components/NoDataFound";
 // import type { Payment } from "@/src/types/Payment";
 
@@ -115,17 +115,21 @@ const Transactions = () => {
       setLoading(true);
       setError(null);
       try {
-        const payments = await fetchPaymentsByBusinessId(String(businessDetails.id));
+        const payments = await fetchPaymentsByBusinessId(
+          String(businessDetails.id)
+        );
         const mapped: TransactionRow[] = payments.map((p: any) => ({
-          id: String(p.payment_id ?? p.id ?? ''),
-          booking_id: String(p.booking_id ?? ''),
-          name: [p.first_name, p.last_name].filter(Boolean).join(' ') || '—',
-          payment_type: p.payment_type || '—',
-          payment_method: p.payment_method || '—',
-          payment_for: p.payment_for || '—',
-          transaction_date: p.created_at ? new Date(p.created_at).toISOString() : new Date().toISOString(),
+          id: String(p.payment_id ?? p.id ?? ""),
+          booking_id: String(p.booking_id ?? ""),
+          name: [p.first_name, p.last_name].filter(Boolean).join(" ") || "—",
+          payment_type: p.payment_type || "—",
+          payment_method: p.payment_method || "—",
+          payment_for: p.payment_for || "—",
+          transaction_date: p.created_at
+            ? new Date(p.created_at).toISOString()
+            : new Date().toISOString(),
           amount: Number(p.amount ?? 0),
-          status: p.status || 'Pending',
+          status: p.status || "Pending",
         }));
         setRows(mapped);
         console.log(mapped.map((b) => ({ id: b.id, status: b.status })));
@@ -219,7 +223,7 @@ const Transactions = () => {
           align="center"
           padding="16px 16px 0 16px"
         >
-          <ResponsiveText type="title-small" weight="bold">Transaction History</ResponsiveText>
+          <Typography.Header>Transaction History</Typography.Header>
         </Container>
 
         {/* Search + Filter */}
@@ -326,34 +330,49 @@ const Transactions = () => {
                       <TableCell colSpan={columns.length} align="center">
                         <NoDataFound
                           icon={searchTerm.trim() ? "search" : "database"}
-                          title={searchTerm.trim() ? "No Results Found" : "No Transactions"}
-                          message={error ? error : searchTerm.trim() ? `No transactions match "${searchTerm}". Try a different search term.` : "No payment transactions found."}
+                          title={
+                            searchTerm.trim()
+                              ? "No Results Found"
+                              : "No Transactions"
+                          }
+                          message={
+                            error
+                              ? error
+                              : searchTerm.trim()
+                              ? `No transactions match "${searchTerm}". Try a different search term.`
+                              : "No payment transactions found."
+                          }
                         />
                       </TableCell>
                     </TableRow>
                   )}
-                  {!loading && filteredData
-                    .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-                    .map((row, index) => (
-                      <TableRow
-                        key={row.id}
-                        sx={{
-                          backgroundColor: index % 2 === 0 ? "#fff" : "#f7f7f7",
-                        }}
-                      >
-                        <TableCell>{row.booking_id}</TableCell>
-                        <TableCell>{row.name}</TableCell>
-                        <TableCell>{row.payment_type}</TableCell>
-                        <TableCell>{row.payment_method}</TableCell>
-                        <TableCell>{row.payment_for}</TableCell>
-                        <TableCell>
-                          {formatDate(row.transaction_date)}
-                        </TableCell>
-                        <TableCell align="right">
-                          ₱{row.amount.toLocaleString()}
-                        </TableCell>
-                      </TableRow>
-                    ))}
+                  {!loading &&
+                    filteredData
+                      .slice(
+                        page * rowsPerPage,
+                        page * rowsPerPage + rowsPerPage
+                      )
+                      .map((row, index) => (
+                        <TableRow
+                          key={row.id}
+                          sx={{
+                            backgroundColor:
+                              index % 2 === 0 ? "#fff" : "#f7f7f7",
+                          }}
+                        >
+                          <TableCell>{row.booking_id}</TableCell>
+                          <TableCell>{row.name}</TableCell>
+                          <TableCell>{row.payment_type}</TableCell>
+                          <TableCell>{row.payment_method}</TableCell>
+                          <TableCell>{row.payment_for}</TableCell>
+                          <TableCell>
+                            {formatDate(row.transaction_date)}
+                          </TableCell>
+                          <TableCell align="right">
+                            ₱{row.amount.toLocaleString()}
+                          </TableCell>
+                        </TableRow>
+                      ))}
                 </TableBody>
               </Table>
             </TableContainer>

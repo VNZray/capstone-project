@@ -1,6 +1,6 @@
 import React from "react";
 import { GoogleMap, Marker, useJsApiLoader } from "@react-google-maps/api";
-import ResponsiveText from "./ResponsiveText";
+import Typography from "@/src/components/Typography";
 
 const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
 
@@ -60,7 +60,7 @@ const MapInput: React.FC<Props> = ({ latitude, longitude, onChange, height }) =>
           />
         </GoogleMap>
       ) : (
-        <ResponsiveText color="white">Loading map...</ResponsiveText>
+        <Typography.Body>Loading map...</Typography.Body>
       )}
     </div>
   );

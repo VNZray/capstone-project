@@ -4,7 +4,6 @@ import PageContainer from "@/src/components/PageContainer";
 import { Box, Button } from "@mui/joy";
 import RatingsOverview from "./components/RatingsOverview";
 import StatCard from "./components/StatCard";
-import ReviewFilterTabs from "./components/ReviewFilterTabs";
 import type { ReviewFilterValue } from "./components/ReviewFilterTabs";
 import ReviewCard, { type Review } from "./components/ReviewCard";
 import Container from "@/src/components/Container";

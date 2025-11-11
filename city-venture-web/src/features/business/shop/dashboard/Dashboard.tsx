@@ -1,9 +1,9 @@
-import ResponsiveText from "@/src/components/ResponsiveText";
+import Typography from "@/src/components/Typography";
 
 const Dashboard = () => {
   return (
     <>
-      <ResponsiveText type="title-large" weight="bold">Shop Dashboard</ResponsiveText>
+      <Typography.Title size="lg" weight="bold">Shop Dashboard</Typography.Title>
     </>
   );
 };

@@ -1,6 +1,6 @@
 import React from "react";
 import "./Card.css";
-import ResponsiveText from "@/src/components/ResponsiveText";
+import Typography from "@/src/components/Typography";
 import Container from "@/src/components/Container";
 
 import { Star } from "@mui/icons-material";
@@ -77,22 +77,25 @@ const Card: React.FC<CardProps> = ({
           <Container elevation={0} padding="0">
             <Grid container spacing={2} columns={12}>
               <Grid xs={8}>
-                <ResponsiveText 
-                  type="card-sub-title-large"
-                  weight="bold"
-                  color="#1f2937"
-                  mb={compact ? 0.5 : 1}
+                <Typography.CardTitle 
+                  size="lg"
+                  sx={{
+                    color: "#1f2937",
+                    mb: compact ? 0.5 : 1
+                  }}
                 >
                   {title}
-                </ResponsiveText>
-                <ResponsiveText 
-                  type="body-extra-small"
-                  weight="medium"
-                  color="#6b7280"
-                  mb={compact ? 0 : 1.5}
+                </Typography.CardTitle>
+                <Typography.Body 
+                  size="xs"
+                  weight="semibold"
+                  sx={{
+                    color: "#6b7280",
+                    mb: compact ? 0 : 1.5
+                  }}
                 >
                   {subtitle}
-                </ResponsiveText>
+                </Typography.Body>
                 {/* Status Chip */}
                 {status && (
                   <Chip
