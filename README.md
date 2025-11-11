@@ -38,6 +38,24 @@
 
     http://localhost:5173/test
 
+## For Business
+
+    http://localhost:5173/login
+
 ## For Admin
 
     http://localhost:5173/tourism/login
+
+## Test Account
+
+1. Business Portal
+    - email: `owner@gmail.com` | `owner1@gmail.com` | `owner2@gmail.com`
+    - password: owner123
+
+2. Admin Portal
+    - email: `admin@gmail.com`
+    - password: admin123
+
+3. Tourist
+    - email: `tourist@gmail.com`
+    - password: tourist123
