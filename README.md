@@ -19,12 +19,12 @@
     - Container.tsx
     - Typography.tsx
         - Sample Use:
-            [] <Typography.Title></Typography.Title>
-            [] <Typography.Header></Typography.Header>
-            [] <Typography.CardTitle></Typography.CardTitle>
-            [] <Typography.CardSubTitle></Typography.CardSubTitle>
-            [] <Typography.Label></Typography.Label>
-            [] <Typography.Body></Typography.Body>
+            - [ ] <Typography.Title></Typography.Title>
+            - [ ] <Typography.Header></Typography.Header>
+            - [ ] <Typography.CardTitle></Typography.CardTitle>
+            - [ ] <Typography.CardSubTitle></Typography.CardSubTitle>
+            - [ ] <Typography.Label></Typography.Label>
+            - [ ] <Typography.Body></Typography.Body>
     - Button.tsx
     - IconButton.tsx
     - SearchBar.tsx
