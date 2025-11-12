@@ -4,7 +4,7 @@ import { LucidePhone, Globe } from "lucide-react";
 import { MdEmail } from "react-icons/md";
 import { Edit } from "lucide-react";
 import type { TouristSpot } from "@/src/types/TouristSpot";
-import ResponsiveButton from "@/src/components/ResponsiveButton";
+import Button from "@/src/components/Button";
 
 interface SocialsInfoSectionProps {
   spot: TouristSpot;
@@ -28,16 +28,15 @@ const SocialsInfoSection: React.FC<SocialsInfoSectionProps> = ({ spot, onEdit })
           >
             Contact & Social Media
         </Typography>
-        <ResponsiveButton
+        <Button
           variant="outlined"
           size="sm"
-          startIcon={<Edit size={16} />}
+          startDecorator={<Edit size={16} />}
           onClick={onEdit}
-          hoverEffect="lift"
-          radius="8px"
+          sx={{ borderRadius: '8px' }}
         >
           Edit
-        </ResponsiveButton>
+        </Button>
       </Stack>
 
       <Stack spacing={2}>

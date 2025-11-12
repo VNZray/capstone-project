@@ -7,7 +7,7 @@ import {
 } from "@mui/joy";
 import { Edit, Flag} from "lucide-react";
 import type { Report } from "@/src/types/Report";
-import ResponsiveButton from "@/src/components/ResponsiveButton";
+import Button from "@/src/components/Button";
 
 interface BasicReportSectionProps {
   report: Report;
@@ -35,15 +35,14 @@ const BasicReportSection: React.FC<BasicReportSectionProps> = ({ report, onEdit 
         sx={{ mb: 2 }}
       >
         <Typography level="h3">{report.title}</Typography>
-        <ResponsiveButton
+        <Button
           variant="outlined"
           size="sm"
-          startIcon={<Edit size={16} />}
+          startDecorator={<Edit size={16} />}
           onClick={onEdit}
-          hoverEffect="lift"
         >
           Update Status
-        </ResponsiveButton>
+        </Button>
       </Stack>
 
       <Stack spacing={2}>

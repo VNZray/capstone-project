@@ -8,7 +8,8 @@ import {
   Sheet,
   IconButton,
 } from '@mui/joy';
-import ResponsiveButton from '@/src/components/ResponsiveButton';
+import Button from '@/src/components/Button';
+// Removed ResponsiveButton import
 import Autocomplete from '@mui/joy/Autocomplete';
 import { IoClose } from 'react-icons/io5';
 import "./TouristSpotTable.css";
@@ -110,17 +111,16 @@ const FeaturedSpotsModal: React.FC<FeaturedSpotsModalProps> = ({ open, onClose }
                 noOptionsText={loading ? 'Loading…' : 'No matches'}
                 sx={{ minWidth: 320, maxWidth: 480, flex: 1 }}
               />
-              <ResponsiveButton
+              <Button
                 onClick={handleAdd}
                 disabled={!selectedToAddId || loading}
                 size="sm"
                 variant="solid"
-                color="primary"
-                hoverEffect="lift"
-                radius="18px"
+                colorScheme="primary"
+                sx={{ borderRadius: '18px' }}
               >
                 Add
-              </ResponsiveButton>
+              </Button>
             </div>
           </div>
         </Sheet>
@@ -144,25 +144,23 @@ const FeaturedSpotsModal: React.FC<FeaturedSpotsModalProps> = ({ open, onClose }
               <Typography level="title-lg" sx={{ mb: 1 }}>Remove from Featured?</Typography>
               <Typography sx={{ mb: 2 }}>Are you sure you want to remove this tourist spot from featured?</Typography>
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
-                <ResponsiveButton
+                <Button
                   variant="soft"
-                  color="gray"
+                  colorScheme="gray"
                   size="sm"
                   onClick={() => { setConfirmOpen(false); setPendingUnfeatureId(null); }}
-                  hoverEffect="lift"
                 >
                   Cancel
-                </ResponsiveButton>
-                <ResponsiveButton
-                  color="error"
+                </Button>
+                <Button
+                  colorScheme="error"
                   variant="solid"
                   size="sm"
                   onClick={handleUnfeature}
                   disabled={loading}
-                  hoverEffect="lift"
                 >
                   Remove
-                </ResponsiveButton>
+                </Button>
               </div>
             </ModalDialog>
           </Modal>
@@ -179,15 +177,14 @@ const FeaturedSpotsModal: React.FC<FeaturedSpotsModalProps> = ({ open, onClose }
         </div>
 
         <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 16, gap: 8 }}>
-          <ResponsiveButton
+          <Button
             variant="solid"
-            color="primary"
+            colorScheme="primary"
             size="sm"
             onClick={onClose}
-            hoverEffect="lift"
           >
             Close
-          </ResponsiveButton>
+          </Button>
         </div>
       </ModalDialog>
     </Modal>

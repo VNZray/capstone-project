@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { IoAdd } from "react-icons/io5";
-import ResponsiveButton from "@/src/components/ResponsiveButton";
+import Button from "@/src/components/Button";
 import ResponsiveText from "@/src/components/ResponsiveText";
 import SearchBar from "@/src/components/SearchBar";
 import CategoryFilter from "@/src/features/admin/services/tourist-spot/components/CategoryFilter";
@@ -168,25 +168,23 @@ const Spot = () => {
               />
             </div>
             <div className="actions-inline">
-              <ResponsiveButton
+              <Button
                 onClick={() => setAddSpotModalVisible(true)}
-                startIcon={<IoAdd size={20} />}
-                color="primary"
+                startDecorator={<IoAdd size={20} />}
+                colorScheme="primary"
                 variant="solid"
                 size="md"
-                hoverEffect="lift"
               >
                 Add Tourist Spot
-              </ResponsiveButton>
-              <ResponsiveButton
+              </Button>
+              <Button
                 onClick={() => setFeaturedModalOpen(true)}
-                color="primary"
+                colorScheme="primary"
                 variant="solid"
                 size="md"
-                hoverEffect="lift"
               >
                 Manage Featured
-              </ResponsiveButton>
+              </Button>
             </div>
           </div>
         </div>

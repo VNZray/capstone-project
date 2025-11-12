@@ -4,7 +4,7 @@ import VisibilityRoundedIcon from "@mui/icons-material/VisibilityRounded";
 import CheckRoundedIcon from "@mui/icons-material/CheckRounded";
 import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
 import type { ApprovalTableItem } from "@/src/types/approval";
-import ResponsiveButton from "@/src/components/ResponsiveButton";
+import Button from "@/src/components/Button";
 
 interface ActionButtonsProps {
   item: ApprovalTableItem;
@@ -25,42 +25,39 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({
   return (
     <div style={{ paddingTop: 8 }}>
       <Stack spacing={1}>
-        <ResponsiveButton
-          startIcon={<VisibilityRoundedIcon />}
+        <Button
+          startDecorator={<VisibilityRoundedIcon />}
           variant="solid"
-          color="primary"
+            colorScheme="primary"
           onClick={() => onView(item)}
           fullWidth
-          hoverEffect="lift"
           size="sm"
         >
           View Details
-        </ResponsiveButton>
+        </Button>
 
         <Stack direction="row" spacing={1}>
-          <ResponsiveButton
-            startIcon={<CheckRoundedIcon />}
-            color="success"
+          <Button
+            startDecorator={<CheckRoundedIcon />}
+            colorScheme="success"
             onClick={() => onApprove(id)}
             loading={isProcessing}
-            style={{ flex: "1 1 0%", minWidth: 120 }}
-            hoverEffect="lift"
+            sx={{ flex: "1 1 0%", minWidth: 120 }}
             size="sm"
           >
             Approve
-          </ResponsiveButton>
-          <ResponsiveButton
-            startIcon={<CloseRoundedIcon />}
-            color="error"
+          </Button>
+          <Button
+            startDecorator={<CloseRoundedIcon />}
+            colorScheme="error"
             variant="outlined"
             onClick={() => onReject(id)}
             disabled={isProcessing}
-            style={{ flex: "1 1 0%", minWidth: 120 }}
-            hoverEffect="lift"
+            sx={{ flex: "1 1 0%", minWidth: 120 }}
             size="sm"
           >
             Reject
-          </ResponsiveButton>
+          </Button>
         </Stack>
       </Stack>
     </div>

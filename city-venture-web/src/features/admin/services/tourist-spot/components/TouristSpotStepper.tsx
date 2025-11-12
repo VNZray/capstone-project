@@ -1,7 +1,7 @@
 import React from "react";
 import { Box, Stack, Divider } from "@mui/joy";
 import { User, MapPin, Share2, Clock, ImageIcon, CheckCircle, Check, X } from "lucide-react";
-import ResponsiveButton from "@/src/components/ResponsiveButton";
+import Button from "@/src/components/Button";
 import ResponsiveText from "@/src/components/ResponsiveText";
 import type { TouristSpotFormData } from "@/src/types/TouristSpot";
 
@@ -135,39 +135,36 @@ const TouristSpotStepper: React.FC<TouristSpotStepperProps> = ({
 
       {/* Navigation */}
       <Stack direction="row" justifyContent="space-between" alignItems="center">
-        <ResponsiveButton
+        <Button
           variant="outlined"
-          color="gray"
-          startIcon={<X size={16} />}
+          colorScheme="gray"
+          startDecorator={<X size={16} />}
           onClick={onCancel}
           size="sm"
-          hoverEffect="lift"
           disabled={loading}
         >
           Cancel
-        </ResponsiveButton>
+        </Button>
         <Stack direction="row" spacing={2}>
-          <ResponsiveButton
+          <Button
             variant="outlined"
-            color="primary"
+            colorScheme="primary"
             onClick={onBack}
             disabled={isFirstStep || loading}
             size="sm"
-            hoverEffect="lift"
           >
             Back
-          </ResponsiveButton>
-          <ResponsiveButton
+          </Button>
+          <Button
             variant="solid"
-            color="primary"
+            colorScheme="primary"
             onClick={onNext}
             disabled={loading}
             size="sm"
-            hoverEffect="lift"
             loading={loading}
           >
             {isLastStep ? (mode === "edit" ? "Save Changes" : "Submit Spot") : "Next"}
-          </ResponsiveButton>
+          </Button>
         </Stack>
       </Stack>
     </Box>

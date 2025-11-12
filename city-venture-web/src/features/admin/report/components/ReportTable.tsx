@@ -6,7 +6,7 @@ import {
   Sheet, 
   Grid 
 } from "@mui/joy";
-import ResponsiveButton from "@/src/components/ResponsiveButton";
+import Button from "@/src/components/Button";
 import type { Report } from "@/src/types/Report";
 import { apiService } from "@/src/utils/api";
 
@@ -205,22 +205,22 @@ const ReportTable: React.FC<ReportTableProps> = ({
             
             <Grid xs={12} sm={2}>
               <Stack direction="row" spacing={1}>
-                <ResponsiveButton
+                <Button
                   size="sm"
                   variant="outlined"
-                  color="success"
+                  colorScheme="success"
                   onClick={() => onViewDetails(report)}
                 >
                   View
-                </ResponsiveButton>
-                <ResponsiveButton
+                </Button>
+                <Button
                   size="sm"
                   variant="outlined"
-                  color="primary"
+                  colorScheme="primary"
                   onClick={() => onUpdateStatus(report)}
                 >
                   Update
-                </ResponsiveButton>
+                </Button>
               </Stack>
             </Grid>
           </Grid>

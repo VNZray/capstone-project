@@ -7,7 +7,7 @@ import {
   Chip,
   Divider,
 } from "@mui/joy";
-import ResponsiveButton from "@/src/components/ResponsiveButton";
+import Button from "@/src/components/Button";
 import "./OverviewCard.css";
 
 interface OverviewCardProps {
@@ -78,15 +78,14 @@ const OverviewCard: React.FC<OverviewCardProps> = ({
                   <Typography level="body-md">{item.name}</Typography>
                 </Stack>
                 {onView && (
-                  <ResponsiveButton
+                  <Button
                     size="sm"
                     variant="soft"
-                    color="primary"
-                    hoverEffect="lift"
+                    colorScheme="primary"
                     onClick={() => onView(item)}
                   >
                     View
-                  </ResponsiveButton>
+                  </Button>
                 )}
               </Stack>
             ))}

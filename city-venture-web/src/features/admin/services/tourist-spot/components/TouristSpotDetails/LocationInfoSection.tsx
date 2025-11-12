@@ -8,7 +8,7 @@ import { Edit } from "lucide-react";
 import { Place } from "@mui/icons-material";
 import MapInput from "../MapInput";
 import type { TouristSpot } from "@/src/types/TouristSpot";
-import ResponsiveButton from "@/src/components/ResponsiveButton";
+import Button from "@/src/components/Button";
 
 interface LocationInfoSectionProps {
   spot: TouristSpot;
@@ -32,16 +32,15 @@ const LocationInfoSection: React.FC<LocationInfoSectionProps> = ({ spot, onEdit 
         >
           Location
         </Typography>
-        <ResponsiveButton
+        <Button
           variant="outlined"
           size="sm"
-          startIcon={<Edit size={16} />}
+          startDecorator={<Edit size={16} />}
           onClick={onEdit}
-          hoverEffect="lift"
-          radius="8px"
+          sx={{ borderRadius: '8px' }}
         >
           Edit
-        </ResponsiveButton>
+        </Button>
       </Stack>
 
       <Stack spacing={2}>

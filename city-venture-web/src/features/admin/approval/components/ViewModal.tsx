@@ -14,7 +14,7 @@ import {
 import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
 import CheckRoundedIcon from "@mui/icons-material/CheckRounded";
 import "./ViewModal.css";
-import ResponsiveButton from "@/src/components/ResponsiveButton";
+import Button from "@/src/components/Button";
 
 interface ViewModalProps {
   isOpen: boolean;
@@ -507,34 +507,28 @@ const ViewModal: React.FC<ViewModalProps> = ({
             backgroundColor: "background.surface",
           }}
         >
-          <ResponsiveButton
+          <Button
             variant="outlined"
-            color="error"
+            colorScheme="error"
             onClick={handleRejectClick}
-            disabled={
-              !onReject || (processingId != null && processingId === id)
-            }
-            startIcon={<CloseRoundedIcon />}
+            disabled={!onReject || (processingId != null && processingId === id)}
+            startDecorator={<CloseRoundedIcon />}
             size="sm"
-            hoverEffect="lift"
-            style={{ minWidth: 120, fontWeight: 500, borderRadius: "10px" }}
+            sx={{ minWidth: 120, fontWeight: 500, borderRadius: "10px" }}
           >
             Reject
-          </ResponsiveButton>
-          <ResponsiveButton
+          </Button>
+          <Button
             variant="solid"
-            color="primary"
+            colorScheme="primary"
             onClick={handleApproveClick}
-            disabled={
-              !onApprove || (processingId != null && processingId === id)
-            }
-            startIcon={<CheckRoundedIcon />}
+            disabled={!onApprove || (processingId != null && processingId === id)}
+            startDecorator={<CheckRoundedIcon />}
             size="sm"
-            hoverEffect="lift"
-            style={{ minWidth: 120, fontWeight: 600, borderRadius: "10px" }}
+            sx={{ minWidth: 120, fontWeight: 600, borderRadius: "10px" }}
           >
             Approve
-          </ResponsiveButton>
+          </Button>
         </Box>
       </ModalDialog>
     </Modal>

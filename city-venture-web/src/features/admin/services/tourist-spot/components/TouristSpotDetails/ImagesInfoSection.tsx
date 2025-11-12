@@ -9,7 +9,7 @@ import {
 } from "@mui/joy";
 import { ChevronDown } from "lucide-react";
 import { Edit } from "lucide-react";
-import ResponsiveButton from "@/src/components/ResponsiveButton";
+import Button from "@/src/components/Button";
 
 interface TouristSpotImage {
   id: string;
@@ -51,16 +51,15 @@ const ImagesInfoSection: React.FC<ImagesInfoSectionProps> = ({ images, onEdit })
         >
           Images
         </Typography>
-        <ResponsiveButton
+        <Button
           variant="outlined"
           size="sm"
-          startIcon={<Edit size={16} />}
+          startDecorator={<Edit size={16} />}
           onClick={onEdit}
-          hoverEffect="lift"
-          radius="8px"
+          sx={{ borderRadius: '8px' }}
         >
           Edit
-        </ResponsiveButton>
+        </Button>
       </Stack>
 
       {images.length > 0 ? (

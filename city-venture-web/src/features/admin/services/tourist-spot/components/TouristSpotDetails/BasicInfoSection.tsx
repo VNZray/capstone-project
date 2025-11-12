@@ -2,7 +2,7 @@ import React from "react";
 import { Stack, Typography, Sheet, Chip } from "@mui/joy";
 import { Edit } from "lucide-react";
 import type { TouristSpot } from "@/src/types/TouristSpot";
-import ResponsiveButton from "@/src/components/ResponsiveButton";
+import Button from "@/src/components/Button";
 
 interface BasicInfoSectionProps {
   spot: TouristSpot;
@@ -39,16 +39,15 @@ const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({ spot, onEdit }) => 
         >
           About the spot
         </Typography>
-        <ResponsiveButton
+        <Button
           variant="outlined"
           size="sm"
-          startIcon={<Edit size={16} />}
+          startDecorator={<Edit size={16} />}
           onClick={onEdit}
-          hoverEffect="lift"
-          radius="8px"
+          sx={{ borderRadius: '8px' }}
         >
           Edit
-        </ResponsiveButton>
+        </Button>
       </Stack>
 
       <Stack spacing={2}>

@@ -1,5 +1,5 @@
 import React from 'react';
-import ResponsiveButton from '@/src/components/ResponsiveButton';
+import Button from '@/src/components/Button';
 import "./CategoryFilter.css";
 
 interface CategoryFilterProps {
@@ -17,18 +17,17 @@ const CategoryFilter: React.FC<CategoryFilterProps> = ({
     <div className="category-filter-container">
       <div className="categories-scroll">
         {categories.map((category, index) => (
-          <ResponsiveButton
+          <Button
             key={index}
             onClick={() => onCategorySelect(category)}
             variant={selectedCategory === category ? 'solid' : 'soft'}
-            color="primary"
+            colorScheme="primary"
             size="sm"
-            radius="20px"
-            hoverEffect="lift"
+            sx={{ borderRadius: '20px' }}
             style={{ whiteSpace: 'nowrap' }}
           >
             {category}
-          </ResponsiveButton>
+          </Button>
         ))}
       </div>
     </div>
