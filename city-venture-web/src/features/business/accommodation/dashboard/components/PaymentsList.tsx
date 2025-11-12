@@ -2,6 +2,7 @@ import React from "react";
 import { Card, Typography, Box, Stack } from "@mui/joy";
 import { Calendar, CheckCircle, XCircle } from "lucide-react";
 import { colors } from "@/src/utils/Colors";
+import Container from "@/src/components/Container";
 
 interface Payment {
   id: string;
@@ -40,15 +41,11 @@ const PaymentsList: React.FC<PaymentsListProps> = ({ payments, title }) => {
   };
 
   return (
-    <Card
-      variant="outlined"
-      sx={{
-        p: 0,
-        borderRadius: 12,
-        border: "1px solid",
-        borderColor: "divider",
-        overflow: "hidden",
-      }}
+    <Container
+      elevation={2}
+      hoverEffect="lift"
+      hoverDuration={300}
+      hover
     >
       <Box sx={{ p: 2.5, borderBottom: "1px solid", borderColor: "divider" }}>
         <Typography level="title-lg" fontWeight="700">
@@ -108,7 +105,7 @@ const PaymentsList: React.FC<PaymentsListProps> = ({ payments, title }) => {
           </Stack>
         )}
       </Box>
-    </Card>
+    </Container>
   );
 };
 

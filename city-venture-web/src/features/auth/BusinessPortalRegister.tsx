@@ -24,7 +24,7 @@ import axios from "axios";
 import { insertData } from "../../services/Service";
 import type { User } from "@/src/types/User";
 import type { Owner } from "@/src/types/Owner";
-import { loginUser } from "@/src/services/AuthService";
+import { loginUser } from "@/src/services/auth/AuthService";
 
 const Register = () => {
   const navigate = useNavigate();

@@ -53,6 +53,7 @@ export type UserDetails = {
   barangay_name?: string | "";
   // RBAC: permissions from backend
   permissions?: string[];
+  business_id?: string;
 };
 
 export type TokenPayload = {

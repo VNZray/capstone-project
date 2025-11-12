@@ -61,7 +61,8 @@ import ReportDetailsScreen from "@/src/features/admin/report/ReportDetailsScreen
 import Notification from "../features/business/accommodation/notfication/Notification";
 import AccommodationStaff from "../features/business/accommodation/Staff/ManageStaff";
 import ShopStaff from "../features/business/shop/Staff/ManageStaff";
-import { Test } from "../pages/Test";
+import Test from "../pages/Test";
+import TestButton from "../pages/TestButton";
 
 export default function AppRoutes() {
   const user = "/";
@@ -99,6 +100,7 @@ export default function AppRoutes() {
         <Route path={`${business}/login`} element={<BusinessPortalLogin />} />
         <Route path={`business-registration`} element={<Registration />} />
         <Route path={`/test`} element={<Test />} />
+        <Route path={`/test-button`} element={<TestButton />} />
 
         <Route
           path={`${business}/signup`}

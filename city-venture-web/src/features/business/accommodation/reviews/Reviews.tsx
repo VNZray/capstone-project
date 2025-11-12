@@ -12,6 +12,9 @@ import FilterListIcon from "@mui/icons-material/FilterList";
 import ReplyIcon from "@mui/icons-material/Reply";
 import ThumbUpIcon from "@mui/icons-material/ThumbUp";
 import ThumbDownIcon from "@mui/icons-material/ThumbDown";
+import { useState } from "react";
+import { ListChecks, Star } from "lucide-react";
+import DynamicTab from "@/src/components/ui/DynamicTab";
 // Mock reviews (would be fetched via API)
 // Added likes & dislikes counts for unified tourist/business style action bar
 const mockReviews: Review[] = [
@@ -73,6 +76,16 @@ const Reviews: React.FC = () => {
   const [activeFilter, setActiveFilter] =
     React.useState<ReviewFilterValue | null>("All");
   const [reviews, setReviews] = React.useState<Review[]>(mockReviews);
+  const [activeTab, setActiveTab] = useState("all");
+
+  const tabs = [
+    { id: "all", label: "All", icon: <ListChecks size={16} /> },
+    { id: "1", label: "1", icon: <Star size={16} /> },
+    { id: "2", label: "2", icon: <Star size={16} /> },
+    { id: "3", label: "3", icon: <Star size={16} /> },
+    { id: "4", label: "4", icon: <Star size={16} /> },
+    { id: "5", label: "5", icon: <Star size={16} /> },
+  ];
 
   const filtered = React.useMemo(
     () =>
@@ -189,10 +202,27 @@ const Reviews: React.FC = () => {
           justify="space-between"
           align="center"
         >
-          <ReviewFilterTabs
-            active={activeFilter}
-            counts={distribution}
-            onChange={setActiveFilter}
+          {/* Tabs */}
+          <DynamicTab
+            padding={0}
+            tabs={tabs}
+            activeTabId={activeTab}
+            onChange={(tabId) => {
+              setActiveTab(String(tabId));
+              setActiveFilter(
+                tabId === "1"
+                  ? 1
+                  : tabId === "2"
+                  ? 2
+                  : tabId === "3"
+                  ? 3
+                  : tabId === "4"
+                  ? 4
+                  : tabId === "5"
+                  ? 5
+                  : "All"
+              );
+            }}
           />
 
           <Button

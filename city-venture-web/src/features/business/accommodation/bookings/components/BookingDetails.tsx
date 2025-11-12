@@ -21,7 +21,7 @@ import {
 } from "lucide-react";
 import type { Booking } from "@/src/types/Booking";
 import { fetchTourist } from "@/src/services/BookingService";
-import { fetchUserData } from "@/src/services/AuthService";
+import { fetchUserData } from "@/src/services/auth/AuthService";
 import api from "@/src/services/api";
 
 interface BookingDetailsProps {
@@ -196,18 +196,12 @@ const BookingDetails: React.FC<BookingDetailsProps> = ({
           width: "90%",
           maxWidth: 600,
           borderRadius: "md",
-          p: 4,
+          p: 2,
           boxShadow: "lg",
-          maxHeight: "90vh",
           overflowY: "auto",
         }}
       >
         <ModalClose variant="plain" sx={{ m: 1 }} />
-
-        {/* Header */}
-        <Typography level="h4" component="h2" sx={{ mb: 3, fontWeight: 700 }}>
-          Booking Details
-        </Typography>
 
         {/* Guest Profile Section */}
         <Box
@@ -419,7 +413,7 @@ const BookingDetails: React.FC<BookingDetailsProps> = ({
           <>
             <Divider sx={{ my: 2 }} />
             <Box sx={{ mb: 3 }}>
-              <Typography level="body-sm" sx={{ mb: 2, fontWeight: 600 }}>
+              <Typography level="body-sm" sx={{ mb: 2,fontWeight: 600 }}>
                 Update Booking Status
               </Typography>
 
@@ -458,13 +452,6 @@ const BookingDetails: React.FC<BookingDetailsProps> = ({
             </Box>
           </>
         )}
-
-        {/* Close Button */}
-        <Box sx={{ display: "flex", gap: 2, justifyContent: "flex-end" }}>
-          <Button variant="outlined" color="neutral" onClick={onClose}>
-            Close
-          </Button>
-        </Box>
       </Sheet>
     </Modal>
   );

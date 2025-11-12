@@ -2,6 +2,7 @@ import React from "react";
 import { Card, Typography, Box, Stack } from "@mui/joy";
 import { PieChart } from "lucide-react";
 import { colors } from "@/src/utils/Colors";
+import Container from "@/src/components/Container";
 
 interface OccupancyPieChartProps {
   totalRooms: number;
@@ -56,19 +57,11 @@ const OccupancyPieChart: React.FC<OccupancyPieChartProps> = ({
   };
 
   return (
-    <Card
-      variant="outlined"
-      sx={{
-        p: 2.5,
-        borderRadius: 12,
-        border: "1px solid",
-        borderColor: "divider",
-        transition: "all 0.2s",
-        "&:hover": {
-          boxShadow: "md",
-          borderColor: "primary.outlinedBorder",
-        },
-      }}
+    <Container
+      elevation={2}
+      hoverEffect="lift"
+      hoverDuration={300}
+      hover
     >
       <Stack spacing={2}>
         <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
@@ -159,7 +152,7 @@ const OccupancyPieChart: React.FC<OccupancyPieChartProps> = ({
           </Typography>
         </Box>
       </Stack>
-    </Card>
+    </Container>
   );
 };
 

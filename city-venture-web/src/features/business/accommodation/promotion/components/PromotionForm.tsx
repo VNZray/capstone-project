@@ -21,31 +21,41 @@ import {
   Option,
   Autocomplete,
 } from "@mui/joy";
-import { FiAlertCircle, FiVolume2, FiImage, FiExternalLink, FiUpload, FiX, FiTag, FiPercent } from "react-icons/fi";
+import {
+  FiAlertCircle,
+  FiVolume2,
+  FiImage,
+  FiExternalLink,
+  FiUpload,
+  FiX,
+  FiTag,
+  FiPercent,
+} from "react-icons/fi";
 import PageContainer from "@/src/components/PageContainer";
 import { useBusiness } from "@/src/context/BusinessContext";
 import * as PromotionService from "@/src/services/PromotionService";
 import type { CreatePromotionPayload } from "@/src/types/Promotion";
 import { supabase } from "@/src/lib/supabase";
+import Container from "@/src/components/Container";
 
 // Helper function to get datetime +1 hour from a given datetime string
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 const getDateTimeOneHourLater = (dateTimeString: string): string => {
   if (!dateTimeString) return "";
-  
-  const [datePart, timePart] = dateTimeString.split('T');
-  const [year, month, day] = datePart.split('-').map(Number);
-  const [hours, minutes] = timePart.split(':').map(Number);
-  
+
+  const [datePart, timePart] = dateTimeString.split("T");
+  const [year, month, day] = datePart.split("-").map(Number);
+  const [hours, minutes] = timePart.split(":").map(Number);
+
   const date = new Date(year, month - 1, day, hours, minutes, 0);
   date.setHours(date.getHours() + 1);
-  
+
   const newYear = date.getFullYear();
-  const newMonth = String(date.getMonth() + 1).padStart(2, '0');
-  const newDay = String(date.getDate()).padStart(2, '0');
-  const newHours = String(date.getHours()).padStart(2, '0');
-  const newMinutes = String(date.getMinutes()).padStart(2, '0');
-  
+  const newMonth = String(date.getMonth() + 1).padStart(2, "0");
+  const newDay = String(date.getDate()).padStart(2, "0");
+  const newHours = String(date.getHours()).padStart(2, "0");
+  const newMinutes = String(date.getMinutes()).padStart(2, "0");
+
   return `${newYear}-${newMonth}-${newDay}T${newHours}:${newMinutes}`;
 };
 
@@ -53,40 +63,40 @@ const getDateTimeOneHourLater = (dateTimeString: string): string => {
 const getCurrentDateTimeLocal = (): string => {
   const now = new Date();
   const year = now.getFullYear();
-  const month = String(now.getMonth() + 1).padStart(2, '0');
-  const date = String(now.getDate()).padStart(2, '0');
-  const hours = String(now.getHours()).padStart(2, '0');
-  const minutes = String(now.getMinutes()).padStart(2, '0');
-  
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const date = String(now.getDate()).padStart(2, "0");
+  const hours = String(now.getHours()).padStart(2, "0");
+  const minutes = String(now.getMinutes()).padStart(2, "0");
+
   return `${year}-${month}-${date}T${hours}:${minutes}`;
 };
 
 // Helper function to convert UTC datetime string to local datetime string
 const convertUTCToLocalDateTime = (utcDateString: string): string => {
   if (!utcDateString) return "";
-  
+
   const utcDate = new Date(utcDateString);
   const year = utcDate.getFullYear();
-  const month = String(utcDate.getMonth() + 1).padStart(2, '0');
-  const date = String(utcDate.getDate()).padStart(2, '0');
-  const hours = String(utcDate.getHours()).padStart(2, '0');
-  const minutes = String(utcDate.getMinutes()).padStart(2, '0');
-  
+  const month = String(utcDate.getMonth() + 1).padStart(2, "0");
+  const date = String(utcDate.getDate()).padStart(2, "0");
+  const hours = String(utcDate.getHours()).padStart(2, "0");
+  const minutes = String(utcDate.getMinutes()).padStart(2, "0");
+
   return `${year}-${month}-${date}T${hours}:${minutes}`;
 };
 
 // Helper function to convert local datetime string to UTC ISO string
 const convertLocalDateTimeToUTC = (localDateString: string): string => {
   if (!localDateString) return "";
-  
-  const [datePart, timePart] = localDateString.split('T');
-  const [year, month, day] = datePart.split('-').map(Number);
-  const [hours, minutes] = timePart.split(':').map(Number);
-  
+
+  const [datePart, timePart] = localDateString.split("T");
+  const [year, month, day] = datePart.split("-").map(Number);
+  const [hours, minutes] = timePart.split(":").map(Number);
+
   const localDate = new Date(year, month - 1, day, hours, minutes, 0);
   const timezoneOffset = new Date().getTimezoneOffset() * 60 * 1000;
   const utcDate = new Date(localDate.getTime() - timezoneOffset);
-  
+
   return utcDate.toISOString();
 };
 
@@ -94,14 +104,14 @@ export default function PromotionForm(): React.ReactElement {
   const navigate = useNavigate();
   const { id: promotionId } = useParams<{ id?: string }>();
   const { businessDetails } = useBusiness();
-  
+
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [hasEndDate, setHasEndDate] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string>("");
-  const [savedEndDate, setSavedEndDate] = useState<string>("");  // Track original end date
+  const [savedEndDate, setSavedEndDate] = useState<string>(""); // Track original end date
 
   const [formData, setFormData] = useState<CreatePromotionPayload>({
     business_id: businessDetails?.id || "",
@@ -132,7 +142,10 @@ export default function PromotionForm(): React.ReactElement {
   // Update business_id when businessDetails changes
   useEffect(() => {
     if (businessDetails?.id && !promotionId) {
-      setFormData(prev => ({ ...prev, business_id: businessDetails.id || "" }));
+      setFormData((prev) => ({
+        ...prev,
+        business_id: businessDetails.id || "",
+      }));
     }
   }, [businessDetails?.id, promotionId]);
 
@@ -148,13 +161,17 @@ export default function PromotionForm(): React.ReactElement {
 
       try {
         if (promotionId) {
-          const promotionData = await PromotionService.fetchPromotionById(promotionId);
-          
-          const convertedStartDate = convertUTCToLocalDateTime(promotionData.start_date);
-          const convertedEndDate = promotionData.end_date 
+          const promotionData = await PromotionService.fetchPromotionById(
+            promotionId
+          );
+
+          const convertedStartDate = convertUTCToLocalDateTime(
+            promotionData.start_date
+          );
+          const convertedEndDate = promotionData.end_date
             ? convertUTCToLocalDateTime(promotionData.end_date)
             : "";
-          
+
           const newFormData = {
             business_id: promotionData.business_id,
             title: promotionData.title,
@@ -164,16 +181,16 @@ export default function PromotionForm(): React.ReactElement {
             start_date: convertedStartDate,
             end_date: convertedEndDate,
           };
-          
+
           setFormData(newFormData);
 
           setHasEndDate(!!promotionData.end_date);
-          
+
           // Save the original end date for toggling
           if (convertedEndDate) {
             setSavedEndDate(convertedEndDate);
           }
-          
+
           // Set preview URL if image exists
           if (promotionData.image_url) {
             setPreviewUrl(promotionData.image_url);
@@ -201,13 +218,19 @@ export default function PromotionForm(): React.ReactElement {
       newErrors.start_date = "Start date is required";
     }
 
-    if (hasEndDate && formData.end_date && formData.start_date && new Date(formData.end_date) <= new Date(formData.start_date)) {
+    if (
+      hasEndDate &&
+      formData.end_date &&
+      formData.start_date &&
+      new Date(formData.end_date) <= new Date(formData.start_date)
+    ) {
       newErrors.end_date = "End date must be after start date";
     }
 
     // Promo type specific validation (UI only)
     if (promoType === "DISCOUNT") {
-      const val = typeof discountValue === "number" ? discountValue : Number.NaN;
+      const val =
+        typeof discountValue === "number" ? discountValue : Number.NaN;
       if (!val || isNaN(val) || val <= 0) {
         newErrors.discount_value = "Discount % must be greater than 0";
       }
@@ -251,9 +274,18 @@ export default function PromotionForm(): React.ReactElement {
     if (!file) return;
 
     // Validate file type
-    const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+    const validTypes = [
+      "image/jpeg",
+      "image/jpg",
+      "image/png",
+      "image/gif",
+      "image/webp",
+    ];
     if (!validTypes.includes(file.type)) {
-      setErrors({ ...errors, image_url: "Please upload a valid image file (JPEG, PNG, GIF, or WebP)" });
+      setErrors({
+        ...errors,
+        image_url: "Please upload a valid image file (JPEG, PNG, GIF, or WebP)",
+      });
       return;
     }
 
@@ -286,9 +318,9 @@ export default function PromotionForm(): React.ReactElement {
       // Upload to Supabase storage with public read access
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from("promotion-banners")
-        .upload(fileName, file, { 
+        .upload(fileName, file, {
           upsert: true,
-          contentType: file.type 
+          contentType: file.type,
         });
 
       if (uploadError) throw uploadError;
@@ -304,7 +336,10 @@ export default function PromotionForm(): React.ReactElement {
       setFormData({ ...formData, image_url: publicData.publicUrl });
     } catch (error: any) {
       console.error("Image upload error:", error);
-      setErrors({ ...errors, image_url: error?.message || "Image upload failed. Please try again." });
+      setErrors({
+        ...errors,
+        image_url: error?.message || "Image upload failed. Please try again.",
+      });
       setPreviewUrl("");
     } finally {
       setUploading(false);
@@ -327,7 +362,10 @@ export default function PromotionForm(): React.ReactElement {
     const payload = {
       ...formData,
       start_date: convertLocalDateTimeToUTC(formData.start_date || ""),
-      end_date: hasEndDate && formData.end_date ? convertLocalDateTimeToUTC(formData.end_date) : null,
+      end_date:
+        hasEndDate && formData.end_date
+          ? convertLocalDateTimeToUTC(formData.end_date)
+          : null,
       image_url: formData.image_url?.trim() || null,
       external_link: formData.external_link?.trim() || null,
       description: formData.description?.trim() || null,
@@ -347,7 +385,7 @@ export default function PromotionForm(): React.ReactElement {
       } else {
         await PromotionService.createPromotion(payload);
       }
-  navigate("/business/promotion");
+      navigate("/business/promotion");
     } catch (error) {
       console.error("Error submitting promotion:", error);
       setErrors({ submit: "Failed to save promotion. Please try again." });
@@ -359,7 +397,11 @@ export default function PromotionForm(): React.ReactElement {
   if (!businessDetails?.id) {
     return (
       <PageContainer>
-        <Alert color="warning" variant="soft" startDecorator={<FiAlertCircle />}>
+        <Alert
+          color="warning"
+          variant="soft"
+          startDecorator={<FiAlertCircle />}
+        >
           Please select a business to manage promotions.
         </Alert>
       </PageContainer>
@@ -388,11 +430,17 @@ export default function PromotionForm(): React.ReactElement {
           >
             Promotions
           </Link>
-          <Typography>{promotionId ? "Edit Promotion" : "Create Promotion"}</Typography>
+          <Typography>
+            {promotionId ? "Edit Promotion" : "Create Promotion"}
+          </Typography>
         </Breadcrumbs>
 
         {errors.fetch && (
-          <Alert color="danger" variant="soft" startDecorator={<FiAlertCircle />}>
+          <Alert
+            color="danger"
+            variant="soft"
+            startDecorator={<FiAlertCircle />}
+          >
             {errors.fetch}
           </Alert>
         )}
@@ -400,19 +448,28 @@ export default function PromotionForm(): React.ReactElement {
         <form onSubmit={handleSubmit}>
           <Stack spacing={3}>
             {/* Promotion Form */}
-            <Card variant="outlined" sx={{ bgcolor: "background.surface", borderRadius: "md" }}>
+            <Container elevation={2}>
               <Stack spacing={2.5}>
-                <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, pb: 0.5 }}>
-                  <Box sx={{ 
-                    display: "flex", 
-                    alignItems: "center", 
-                    justifyContent: "center",
-                    width: 36,
-                    height: 36,
-                    borderRadius: "md",
-                    bgcolor: "primary.softBg",
-                    color: "primary.solidBg"
-                  }}>
+                <Box
+                  sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 1.5,
+                    pb: 0.5,
+                  }}
+                >
+                  <Box
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      width: 36,
+                      height: 36,
+                      borderRadius: "md",
+                      bgcolor: "primary.softBg",
+                      color: "primary.solidBg",
+                    }}
+                  >
                     <FiVolume2 size={18} />
                   </Box>
                   <Typography level="h4" fontWeight="600">
@@ -426,14 +483,20 @@ export default function PromotionForm(): React.ReactElement {
                   <Grid xs={12} md={6}>
                     <Stack spacing={2.5}>
                       <FormControl error={!!errors.title}>
-                        <FormLabel sx={{ fontWeight: 600, mb: 0.75 }}>Promotion Title *</FormLabel>
+                        <FormLabel sx={{ fontWeight: 600, mb: 0.75 }}>
+                          Promotion Title *
+                        </FormLabel>
                         <Input
                           value={formData.title || ""}
-                          onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                          onChange={(e) =>
+                            setFormData({ ...formData, title: e.target.value })
+                          }
                           placeholder="e.g., Grand Opening Sale, Summer Special"
-                          sx={{ 
-                            '--Input-focusedThickness': '2px',
-                            '&:hover': { borderColor: 'primary.outlinedBorder' }
+                          sx={{
+                            "--Input-focusedThickness": "2px",
+                            "&:hover": {
+                              borderColor: "primary.outlinedBorder",
+                            },
                           }}
                         />
                         {errors.title && (
@@ -442,15 +505,24 @@ export default function PromotionForm(): React.ReactElement {
                       </FormControl>
 
                       <FormControl>
-                        <FormLabel sx={{ fontWeight: 600, mb: 0.75 }}>Description</FormLabel>
+                        <FormLabel sx={{ fontWeight: 600, mb: 0.75 }}>
+                          Description
+                        </FormLabel>
                         <Textarea
                           value={formData.description || ""}
-                          onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                          onChange={(e) =>
+                            setFormData({
+                              ...formData,
+                              description: e.target.value,
+                            })
+                          }
                           placeholder="Describe this promotional announcement..."
                           minRows={4}
-                          sx={{ 
-                            '--Textarea-focusedThickness': '2px',
-                            '&:hover': { borderColor: 'primary.outlinedBorder' }
+                          sx={{
+                            "--Textarea-focusedThickness": "2px",
+                            "&:hover": {
+                              borderColor: "primary.outlinedBorder",
+                            },
                           }}
                         />
                       </FormControl>
@@ -461,14 +533,23 @@ export default function PromotionForm(): React.ReactElement {
                   <Grid xs={12} md={6}>
                     <Stack spacing={2.5}>
                       <FormControl error={!!errors.start_date}>
-                        <FormLabel sx={{ fontWeight: 600, mb: 0.75 }}>Start Date & Time *</FormLabel>
+                        <FormLabel sx={{ fontWeight: 600, mb: 0.75 }}>
+                          Start Date & Time *
+                        </FormLabel>
                         <Input
                           type="datetime-local"
                           value={formData.start_date || ""}
-                          onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
+                          onChange={(e) =>
+                            setFormData({
+                              ...formData,
+                              start_date: e.target.value,
+                            })
+                          }
                           sx={{
-                            '--Input-focusedThickness': '2px',
-                            '&:hover': { borderColor: 'primary.outlinedBorder' }
+                            "--Input-focusedThickness": "2px",
+                            "&:hover": {
+                              borderColor: "primary.outlinedBorder",
+                            },
                           }}
                         />
                         {errors.start_date && (
@@ -478,26 +559,35 @@ export default function PromotionForm(): React.ReactElement {
 
                       {/* End Date Section */}
                       <Stack spacing={1.5}>
-                        <FormLabel sx={{ fontWeight: 600 }}>End Date & Time</FormLabel>
-                        
+                        <FormLabel sx={{ fontWeight: 600 }}>
+                          End Date & Time
+                        </FormLabel>
+
                         {/* Toggle Button Section */}
-                        <Box sx={{ 
-                          display: "flex", 
-                          alignItems: "center", 
-                          gap: 1.5,
-                          p: 1.5,
-                          bgcolor: "background.level1",
-                          borderRadius: "md",
-                          border: "1px solid",
-                          borderColor: "divider",
-                        }}>
+                        <Box
+                          sx={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 1.5,
+                            p: 1.5,
+                            bgcolor: "background.level1",
+                            borderRadius: "md",
+                            border: "1px solid",
+                            borderColor: "divider",
+                          }}
+                        >
                           <Box sx={{ flex: 1 }}>
                             <Typography level="body-sm" fontWeight="600">
-                              {hasEndDate ? "Promotion ends on a specific date" : "Promotion runs indefinitely"}
+                              {hasEndDate
+                                ? "Promotion ends on a specific date"
+                                : "Promotion runs indefinitely"}
                             </Typography>
-                            <Typography level="body-xs" sx={{ color: "text.secondary", mt: 0.25 }}>
-                              {hasEndDate 
-                                ? "Select when this promotion should expire" 
+                            <Typography
+                              level="body-xs"
+                              sx={{ color: "text.secondary", mt: 0.25 }}
+                            >
+                              {hasEndDate
+                                ? "Select when this promotion should expire"
                                 : "Keep running until you manually deactivate it"}
                             </Typography>
                           </Box>
@@ -507,8 +597,15 @@ export default function PromotionForm(): React.ReactElement {
                               if (e.target.checked) {
                                 // When enabling: use saved end date if available (for existing promotions),
                                 // otherwise set to +1 hour from start date (for new promotions)
-                                const endDateValue = savedEndDate || getDateTimeOneHourLater(formData.start_date || "");
-                                setFormData({ ...formData, end_date: endDateValue });
+                                const endDateValue =
+                                  savedEndDate ||
+                                  getDateTimeOneHourLater(
+                                    formData.start_date || ""
+                                  );
+                                setFormData({
+                                  ...formData,
+                                  end_date: endDateValue,
+                                });
                               } else {
                                 // When disabling: save current end date before clearing
                                 if (formData.end_date) {
@@ -528,15 +625,23 @@ export default function PromotionForm(): React.ReactElement {
                             <Input
                               type="datetime-local"
                               value={formData.end_date || ""}
-                              onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
+                              onChange={(e) =>
+                                setFormData({
+                                  ...formData,
+                                  end_date: e.target.value,
+                                })
+                              }
                               slotProps={{
                                 input: {
-                                  'aria-label': 'End date and time for promotion',
-                                }
+                                  "aria-label":
+                                    "End date and time for promotion",
+                                },
                               }}
                               sx={{
-                                '--Input-focusedThickness': '2px',
-                                '&:hover': { borderColor: 'primary.outlinedBorder' }
+                                "--Input-focusedThickness": "2px",
+                                "&:hover": {
+                                  borderColor: "primary.outlinedBorder",
+                                },
                               }}
                             />
                             {errors.end_date && (
@@ -549,22 +654,31 @@ export default function PromotionForm(): React.ReactElement {
                   </Grid>
                 </Grid>
               </Stack>
-            </Card>
+            </Container>
 
             {/* Promotion Type & Scope */}
-            <Card variant="outlined" sx={{ bgcolor: "background.surface", borderRadius: "md" }}>
+            <Container elevation={2}>
               <Stack spacing={2.5}>
-                <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, pb: 0.5 }}>
-                  <Box sx={{ 
-                    display: "flex", 
-                    alignItems: "center", 
-                    justifyContent: "center",
-                    width: 36,
-                    height: 36,
-                    borderRadius: "md",
-                    bgcolor: "warning.softBg",
-                    color: "warning.solidBg"
-                  }}>
+                <Box
+                  sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 1.5,
+                    pb: 0.5,
+                  }}
+                >
+                  <Box
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      width: 36,
+                      height: 36,
+                      borderRadius: "md",
+                      bgcolor: "warning.softBg",
+                      color: "warning.solidBg",
+                    }}
+                  >
                     <FiTag size={18} />
                   </Box>
                   <Typography level="h4" fontWeight="600">
@@ -575,8 +689,15 @@ export default function PromotionForm(): React.ReactElement {
                 <Grid container spacing={3}>
                   <Grid xs={12} md={6}>
                     <FormControl>
-                      <FormLabel sx={{ fontWeight: 600, mb: 0.75 }}>Type</FormLabel>
-                      <Select value={promoType} onChange={(_, v) => setPromoType((v as PromoType) || "DISCOUNT")}> 
+                      <FormLabel sx={{ fontWeight: 600, mb: 0.75 }}>
+                        Type
+                      </FormLabel>
+                      <Select
+                        value={promoType}
+                        onChange={(_, v) =>
+                          setPromoType((v as PromoType) || "DISCOUNT")
+                        }
+                      >
                         <Option value="DISCOUNT">Discount</Option>
                         <Option value="CODE">Promo Code</Option>
                       </Select>
@@ -586,16 +707,24 @@ export default function PromotionForm(): React.ReactElement {
                   {promoType === "DISCOUNT" && (
                     <Grid xs={12} md={6}>
                       <FormControl error={!!errors.discount_value}>
-                        <FormLabel sx={{ fontWeight: 600, mb: 0.75 }}>Discount %</FormLabel>
+                        <FormLabel sx={{ fontWeight: 600, mb: 0.75 }}>
+                          Discount %
+                        </FormLabel>
                         <Input
                           type="number"
                           value={discountValue}
-                          onChange={(e) => setDiscountValue(e.target.value ? Number(e.target.value) : "")}
+                          onChange={(e) =>
+                            setDiscountValue(
+                              e.target.value ? Number(e.target.value) : ""
+                            )
+                          }
                           placeholder="e.g., 20"
                           startDecorator={<FiPercent />}
                         />
                         {errors.discount_value && (
-                          <FormHelperText>{errors.discount_value}</FormHelperText>
+                          <FormHelperText>
+                            {errors.discount_value}
+                          </FormHelperText>
                         )}
                       </FormControl>
                     </Grid>
@@ -606,10 +735,14 @@ export default function PromotionForm(): React.ReactElement {
                   <Grid container spacing={3}>
                     <Grid xs={12} md={6}>
                       <FormControl error={!!errors.promo_code}>
-                        <FormLabel sx={{ fontWeight: 600, mb: 0.75 }}>Promo Code</FormLabel>
+                        <FormLabel sx={{ fontWeight: 600, mb: 0.75 }}>
+                          Promo Code
+                        </FormLabel>
                         <Input
                           value={promoCode}
-                          onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
+                          onChange={(e) =>
+                            setPromoCode(e.target.value.toUpperCase())
+                          }
                           placeholder="e.g., WEEKND50"
                         />
                         {errors.promo_code && (
@@ -619,11 +752,17 @@ export default function PromotionForm(): React.ReactElement {
                     </Grid>
                     <Grid xs={12} md={6}>
                       <FormControl error={!!errors.amount}>
-                        <FormLabel sx={{ fontWeight: 600, mb: 0.75 }}>Amount</FormLabel>
+                        <FormLabel sx={{ fontWeight: 600, mb: 0.75 }}>
+                          Amount
+                        </FormLabel>
                         <Input
                           type="number"
                           value={amount}
-                          onChange={(e) => setAmount(e.target.value ? Number(e.target.value) : "")}
+                          onChange={(e) =>
+                            setAmount(
+                              e.target.value ? Number(e.target.value) : ""
+                            )
+                          }
                           placeholder="e.g., 500"
                           startDecorator={<span>₱</span>}
                         />
@@ -638,24 +777,31 @@ export default function PromotionForm(): React.ReactElement {
                 {promoType === "DISCOUNT" && (
                   <Stack spacing={1.5}>
                     <FormLabel sx={{ fontWeight: 600 }}>Applies To</FormLabel>
-                    <Box sx={{ 
-                      display: "flex", 
-                      alignItems: "center", 
-                      gap: 1.5,
-                      p: 1.5,
-                      bgcolor: "background.level1",
-                      borderRadius: "md",
-                      border: "1px solid",
-                      borderColor: "divider",
-                    }}>
+                    <Box
+                      sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 1.5,
+                        p: 1.5,
+                        bgcolor: "background.level1",
+                        borderRadius: "md",
+                        border: "1px solid",
+                        borderColor: "divider",
+                      }}
+                    >
                       <Box sx={{ flex: 1 }}>
                         <Typography level="body-sm" fontWeight="600">
                           {appliesToAll ? "All Rooms" : "Specific Rooms"}
                         </Typography>
-                        <Typography level="body-xs" sx={{ color: "text.secondary", mt: 0.25 }}>
-                          {appliesToAll 
+                        <Typography
+                          level="body-xs"
+                          sx={{ color: "text.secondary", mt: 0.25 }}
+                        >
+                          {appliesToAll
                             ? "Discount will apply to all rooms"
-                            : `${selectedRooms.length || 0} room${selectedRooms.length === 1 ? "" : "s"} selected`}
+                            : `${selectedRooms.length || 0} room${
+                                selectedRooms.length === 1 ? "" : "s"
+                              } selected`}
                         </Typography>
                       </Box>
                       <Switch
@@ -667,14 +813,24 @@ export default function PromotionForm(): React.ReactElement {
 
                     {!appliesToAll && (
                       <FormControl error={!!errors.room_ids}>
-                        <FormLabel sx={{ fontWeight: 600, mb: 0.75 }}>Select Rooms</FormLabel>
+                        <FormLabel sx={{ fontWeight: 600, mb: 0.75 }}>
+                          Select Rooms
+                        </FormLabel>
                         <Autocomplete
                           multiple
                           placeholder="Search & select rooms"
                           options={staticRooms}
                           getOptionLabel={(r) => r.name}
-                          value={staticRooms.filter((r) => selectedRooms.includes(r.id))}
-                          onChange={(_, val) => setSelectedRooms((val as { id: string; name: string }[]).map(r => r.id))}
+                          value={staticRooms.filter((r) =>
+                            selectedRooms.includes(r.id)
+                          )}
+                          onChange={(_, val) =>
+                            setSelectedRooms(
+                              (val as { id: string; name: string }[]).map(
+                                (r) => r.id
+                              )
+                            )
+                          }
                         />
                         {errors.room_ids && (
                           <FormHelperText>{errors.room_ids}</FormHelperText>
@@ -684,22 +840,31 @@ export default function PromotionForm(): React.ReactElement {
                   </Stack>
                 )}
               </Stack>
-            </Card>
+            </Container>
 
             {/* Media Section */}
-            <Card variant="outlined" sx={{ bgcolor: "background.surface", borderRadius: "md" }}>
+            <Container elevation={2}>
               <Stack spacing={2.5}>
-                <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, pb: 0.5 }}>
-                  <Box sx={{ 
-                    display: "flex", 
-                    alignItems: "center", 
-                    justifyContent: "center",
-                    width: 36,
-                    height: 36,
-                    borderRadius: "md",
-                    bgcolor: "success.softBg",
-                    color: "success.solidBg"
-                  }}>
+                <Box
+                  sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 1.5,
+                    pb: 0.5,
+                  }}
+                >
+                  <Box
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      width: 36,
+                      height: 36,
+                      borderRadius: "md",
+                      bgcolor: "success.softBg",
+                      color: "success.solidBg",
+                    }}
+                  >
                     <FiImage size={18} />
                   </Box>
                   <Typography level="h4" fontWeight="600">
@@ -719,10 +884,13 @@ export default function PromotionForm(): React.ReactElement {
                           accept="image/jpeg,image/jpg,image/png,image/gif,image/webp"
                           onChange={handleImageUpload}
                           disabled={uploading}
-                          style={{ display: 'none' }}
+                          style={{ display: "none" }}
                           id="image-upload-input"
                         />
-                        <label htmlFor="image-upload-input" style={{ width: '100%' }}>
+                        <label
+                          htmlFor="image-upload-input"
+                          style={{ width: "100%" }}
+                        >
                           <Button
                             component="span"
                             variant="outlined"
@@ -730,9 +898,13 @@ export default function PromotionForm(): React.ReactElement {
                             startDecorator={<FiUpload />}
                             loading={uploading}
                             fullWidth
-                            sx={{ justifyContent: 'flex-start' }}
+                            sx={{ justifyContent: "flex-start" }}
                           >
-                            {uploading ? "Uploading..." : previewUrl ? "Change Image" : "Choose Image"}
+                            {uploading
+                              ? "Uploading..."
+                              : previewUrl
+                              ? "Change Image"
+                              : "Choose Image"}
                           </Button>
                         </label>
                         {errors.image_url && (
@@ -743,14 +915,21 @@ export default function PromotionForm(): React.ReactElement {
                         </FormHelperText>
                       </FormControl>
 
-                      <Typography level="body-sm" fontWeight="600" sx={{ mt: 1 }}>
+                      <Typography
+                        level="body-sm"
+                        fontWeight="600"
+                        sx={{ mt: 1 }}
+                      >
                         Or paste image URL
                       </Typography>
                       <FormControl>
                         <Input
                           value={formData.image_url || ""}
                           onChange={(e) => {
-                            setFormData({ ...formData, image_url: e.target.value });
+                            setFormData({
+                              ...formData,
+                              image_url: e.target.value,
+                            });
                             if (e.target.value) {
                               setPreviewUrl(e.target.value);
                             }
@@ -758,9 +937,11 @@ export default function PromotionForm(): React.ReactElement {
                           placeholder="https://example.com/image.jpg"
                           startDecorator={<FiImage />}
                           disabled={uploading}
-                          sx={{ 
-                            '--Input-focusedThickness': '2px',
-                            '&:hover': { borderColor: 'primary.outlinedBorder' }
+                          sx={{
+                            "--Input-focusedThickness": "2px",
+                            "&:hover": {
+                              borderColor: "primary.outlinedBorder",
+                            },
                           }}
                         />
                       </FormControl>
@@ -774,12 +955,17 @@ export default function PromotionForm(): React.ReactElement {
                       </FormLabel>
                       <Input
                         value={formData.external_link || ""}
-                        onChange={(e) => setFormData({ ...formData, external_link: e.target.value })}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            external_link: e.target.value,
+                          })
+                        }
                         placeholder="https://example.com/more-info"
                         startDecorator={<FiExternalLink />}
-                        sx={{ 
-                          '--Input-focusedThickness': '2px',
-                          '&:hover': { borderColor: 'primary.outlinedBorder' }
+                        sx={{
+                          "--Input-focusedThickness": "2px",
+                          "&:hover": { borderColor: "primary.outlinedBorder" },
                         }}
                       />
                       {errors.external_link && (
@@ -795,7 +981,14 @@ export default function PromotionForm(): React.ReactElement {
                 {/* Image Preview */}
                 {previewUrl && (
                   <Box>
-                    <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 1 }}>
+                    <Box
+                      sx={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        mb: 1,
+                      }}
+                    >
                       <Typography level="body-sm" fontWeight="600">
                         Image Preview
                       </Typography>
@@ -813,8 +1006,12 @@ export default function PromotionForm(): React.ReactElement {
                       src={previewUrl}
                       alt="Promotion preview"
                       onError={(e) => {
-                        (e.target as HTMLImageElement).style.display = 'none';
-                        setErrors({ ...errors, image_url: "Failed to load image. Please check the URL." });
+                        (e.target as HTMLImageElement).style.display = "none";
+                        setErrors({
+                          ...errors,
+                          image_url:
+                            "Failed to load image. Please check the URL.",
+                        });
                       }}
                       sx={{
                         maxWidth: "100%",
@@ -828,18 +1025,24 @@ export default function PromotionForm(): React.ReactElement {
                   </Box>
                 )}
               </Stack>
-            </Card>
+            </Container>
 
             {/* Error Alert */}
             {errors.submit && (
-              <Alert color="danger" variant="soft" startDecorator={<FiAlertCircle />}>
+              <Alert
+                color="danger"
+                variant="soft"
+                startDecorator={<FiAlertCircle />}
+              >
                 {errors.submit}
               </Alert>
             )}
 
             {/* Action Buttons */}
-            <Card variant="outlined">
-              <Box sx={{ display: "flex", gap: 1.5, justifyContent: "flex-end" }}>
+            <Container elevation={2}>
+              <Box
+                sx={{ display: "flex", gap: 1.5, justifyContent: "flex-end" }}
+              >
                 <Button
                   variant="outlined"
                   color="neutral"
@@ -852,7 +1055,7 @@ export default function PromotionForm(): React.ReactElement {
                   {promotionId ? "Update Promotion" : "Create Promotion"}
                 </Button>
               </Box>
-            </Card>
+            </Container>
           </Stack>
         </form>
       </Stack>

@@ -4,7 +4,7 @@ async function createProcedures(knex) {
 	await knex.raw(`
 		CREATE PROCEDURE GetAllStaff()
 		BEGIN
-			SELECT * FROM staff ORDER BY created_at DESC;
+			SELECT * FROM staff;
 		END;
 	`);
 
@@ -13,6 +13,30 @@ async function createProcedures(knex) {
 		CREATE PROCEDURE GetStaffById(IN p_id CHAR(64))
 		BEGIN
 			SELECT * FROM staff WHERE id = p_id;
+		END;
+	`);
+
+	// Get staff details by business ID
+	await knex.raw(`
+		CREATE PROCEDURE GetStaffByBusinessId(IN p_business_id CHAR(64))
+		BEGIN
+			SELECT 
+				s.id,
+				s.first_name,
+				s.middle_name,
+				s.last_name,
+				s.user_id,
+				s.business_id,
+				u.email,
+				u.phone_number,
+				u.password,
+				u.user_profile,
+				u.is_active,
+				ur.role_name AS role
+			FROM staff s
+			LEFT JOIN user u ON s.user_id = u.id
+			LEFT JOIN user_role ur ON u.user_role_id = ur.id
+			WHERE s.business_id = p_business_id;
 		END;
 	`);
 
@@ -75,6 +99,7 @@ async function createProcedures(knex) {
 async function dropProcedures(knex) {
 	await knex.raw("DROP PROCEDURE IF EXISTS GetAllStaff;");
 	await knex.raw("DROP PROCEDURE IF EXISTS GetStaffById;");
+	await knex.raw("DROP PROCEDURE IF EXISTS GetStaffByBusinessId;");
 	await knex.raw("DROP PROCEDURE IF EXISTS GetStaffByUserId;");
 	await knex.raw("DROP PROCEDURE IF EXISTS InsertStaff;");
 	await knex.raw("DROP PROCEDURE IF EXISTS UpdateStaff;");

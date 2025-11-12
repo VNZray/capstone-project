@@ -17,7 +17,8 @@ const DetailsComponent = () => {
   const [amenities, setAmenities] = React.useState<Amenity[]>([]);
   const [editBasicInfoModalOpen, setEditBasicInfoModalOpen] = useState(false);
   const [editAmenitiesModalOpen, setEditAmenitiesModalOpen] = useState(false);
-  const [editDescriptionModalOpen, setEditDescriptionModalOpen] = useState(false);
+  const [editDescriptionModalOpen, setEditDescriptionModalOpen] =
+    useState(false);
 
   const fetchRoomAmenities = async () => {
     if (!roomDetails?.id) return;
@@ -99,34 +100,34 @@ const DetailsComponent = () => {
                   level="title-md"
                   fontWeight={500}
                 >
-                  Room Number
+                  Room Type
                 </Typography>
                 <Typography
-                  startDecorator={<Bed size={18} />}
+                  startDecorator={<ListChecks size={18} />}
                   fontFamily={"poppins"}
                   level="body-md"
                 >
-                  {roomDetails?.room_number || "-"}
+                  {roomDetails?.room_type || "-"}
                 </Typography>
               </div>
-
               <div>
                 <Typography
                   fontFamily={"poppins"}
                   level="title-md"
                   fontWeight={500}
                 >
-                  Floor
+                  Room Size sqm(㎡)
                 </Typography>
                 <Typography
-                  startDecorator={<HeightIcon fontSize="small" />}
+                  startDecorator={<ListChecks size={18} />}
                   fontFamily={"poppins"}
                   level="body-md"
                 >
-                  {roomDetails?.floor || "-"}
+                  {roomDetails?.room_size || "-"}
                 </Typography>
               </div>
-
+            </Container>
+            <Container padding="0" direction="column" style={{ flex: 1 }}>
               <div>
                 <Typography
                   fontFamily={"poppins"}
@@ -143,40 +144,7 @@ const DetailsComponent = () => {
                   {roomDetails?.room_price?.toLocaleString() || "-"}
                 </Typography>
               </div>
-            </Container>
-            <Container padding="0" direction="column" style={{ flex: 1 }}>
-              <div>
-                <Typography
-                  fontFamily={"poppins"}
-                  level="title-md"
-                  fontWeight={500}
-                >
-                  Room Type
-                </Typography>
-                <Typography
-                  startDecorator={<ListChecks size={18} />}
-                  fontFamily={"poppins"}
-                  level="body-md"
-                >
-                  {roomDetails?.room_type || "-"}
-                </Typography>
-              </div>
-                            <div>
-                <Typography
-                  fontFamily={"poppins"}
-                  level="title-md"
-                  fontWeight={500}
-                >
-                  Room Size sqm(㎡)
-                </Typography>
-                <Typography
-                  startDecorator={<ListChecks size={18} />}
-                  fontFamily={"poppins"}
-                  level="body-md"
-                >
-                  {roomDetails?.room_size || "-"}
-                </Typography>
-              </div>
+
               <div>
                 <Typography
                   fontFamily={"poppins"}
@@ -282,6 +250,7 @@ const DetailsComponent = () => {
         initialFloor={roomDetails?.floor}
         initialCapacity={roomDetails?.capacity}
         initialPrice={roomDetails?.room_price}
+        initialStatus={roomDetails?.status}
         roomId={roomDetails?.id}
         onClose={() => setEditBasicInfoModalOpen(false)}
         onSave={() => {
