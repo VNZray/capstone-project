@@ -225,7 +225,7 @@
 
 
 @media (max-width: 900px) {
-  body {
+  .main-hero {
     padding-top: 90px;
   }
 }
