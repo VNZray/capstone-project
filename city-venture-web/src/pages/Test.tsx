@@ -4,6 +4,7 @@ import { useState } from "react";
 import ButtonShowcase from "../test/ButtonShowcase";
 import TextShowcase from "../test/TextShowcase";
 import CardShowcase from "../test/CardShowcase";
+import TableShowcase from "../test/TableShowcase";
 
 const Test = () => {
   const [activeTab, setActiveTab] = useState("button");
@@ -16,6 +17,8 @@ const Test = () => {
         return <TextShowcase />;
       case "card":
         return <CardShowcase />;
+      case "table":
+        return <TableShowcase />;
     }
   };
 
@@ -23,6 +26,7 @@ const Test = () => {
     { id: "button", label: "Button" },
     { id: "text", label: "Text" },
     { id: "card", label: "Card" },
+    { id: "table", label: "Table" },
   ];
   return (
     <PageContainer>

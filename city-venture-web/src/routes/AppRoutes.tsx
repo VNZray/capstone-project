@@ -6,7 +6,7 @@ import NotFound from "../pages/NotFound";
 // Layouts
 import MainLayout from "../layout/MainLayout";
 
-import LandingPage from "@/src/pages/LandingPage";
+import LandingPage from "@/src/features/landing-page/LandingPage";
 import About from "../pages/About";
 import Registration from "../pages/BusinessRegistration";
 
@@ -57,6 +57,8 @@ import Spot from "@/src/features/admin/services/tourist-spot/Spot";
 import TouristSpotDetailsScreen from "@/src/features/admin/services/tourist-spot/TouristSpotDetailsScreen";
 import { BusinessProvider } from "../context/BusinessContext";
 import ReportDetailsScreen from "@/src/features/admin/report/ReportDetailsScreen";
+import AccommodationSubscription from "@/src/features/business/accommodation/subscription/Subscription";
+import ShopSubscription from "@/src/features/business/shop/subscription/Subscription";
 
 import Notification from "../features/business/accommodation/notfication/Notification";
 import AccommodationStaff from "../features/business/accommodation/Staff/ManageStaff";
@@ -179,6 +181,14 @@ export default function AppRoutes() {
                     </ProtectedRoute>
                   }
                 />
+                <Route
+                  path={`${business}/subscription`}
+                  element={
+                    <ProtectedRoute requiredRoles={BUSINESS_ROLES}>
+                      <AccommodationSubscription />
+                    </ProtectedRoute>
+                  }
+                />
               </>
             ) : (
               <>
@@ -195,6 +205,14 @@ export default function AppRoutes() {
                   element={
                     <ProtectedRoute requiredRoles={BUSINESS_ROLES}>
                       <ShopDashboard />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path={`${business}/subscription`}
+                  element={
+                    <ProtectedRoute requiredRoles={BUSINESS_ROLES}>
+                      <ShopSubscription />
                     </ProtectedRoute>
                   }
                 />

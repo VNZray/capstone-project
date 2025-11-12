@@ -9,8 +9,8 @@ import { Input, Button } from "@mui/joy";
 import { colors } from "../../utils/Colors";
 
 const Login: React.FC = () => {
-  const [email, setEmail] = useState("rayvenclores@gmail.com");
-  const [password, setPassword] = useState("123456");
+  const [email, setEmail] = useState("owner1@gmail.com");
+  const [password, setPassword] = useState("owner123");
   const [loginError, setLoginError] = useState("");
   const navigate = useNavigate();
   const { login, user } = useAuth(); // from AuthProvider

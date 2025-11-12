@@ -1,6 +1,6 @@
 import { Button, Typography } from "@mui/joy";
-import Container from "../components/Container";
-import PageContainer from "../components/PageContainer";
+import Container from "@/src/components/Container";
+import PageContainer from "@/src/components/PageContainer";
 import { useNavigate } from "react-router-dom";
 import React from "react";
 import {
@@ -13,7 +13,7 @@ import {
   FaStar,
   FaHeart,
 } from "react-icons/fa";
-import { colors } from "../utils/Colors";
+import { colors } from "@/src/utils/Colors";
 // import heroImage from "@/src/assets/images/uma-hotel-residences.jpg";
 import "./landing.css";
 // Use curated local assets for the hero grid mosaic

@@ -67,8 +67,8 @@ const TouristPieChart: React.FC<TouristPieChartProps> = ({
 
       <Box
         sx={{
-          p: 2.5,
-          height: 350,
+          height: { xs: 320, sm: 380, md: 420 },
+          width: "100%",
           display: "flex",
           justifyContent: "center",
           alignItems: "center",
@@ -91,13 +91,12 @@ const TouristPieChart: React.FC<TouristPieChartProps> = ({
               },
             ]}
             colors={pieData.map((item) => item.color)}
-            width={400}
-            height={300}
             slotProps={{
               legend: {
                 position: { vertical: "middle", horizontal: "end" },
               },
             }}
+            margin={{ top: 20, right: 60, bottom: 20, left: 20 }}
           />
         ) : (
           <Typography level="body-md" sx={{ color: "text.tertiary" }}>

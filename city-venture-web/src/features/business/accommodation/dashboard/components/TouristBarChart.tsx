@@ -43,7 +43,18 @@ const TouristBarChart: React.FC<TouristBarChartProps> = ({
         </Typography>
       </Box>
 
-      <Box sx={{ p: 2.5, height: 350 }}>
+      <Box
+        sx={{
+          p: 2.5,
+          height: { xs: 280, sm: 340, md: 380 },
+          width: "100%",
+          maxWidth: 600,
+          mx: "auto",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
         <BarChart
           dataset={chartData}
           xAxis={[
@@ -66,9 +77,9 @@ const TouristBarChart: React.FC<TouristBarChartProps> = ({
             },
           ]}
           colors={[colors.primary, colors.success, colors.warningLabel, colors.error]}
-          slotProps={{
-          }}
-          margin={{ top: 10, right: 10, bottom: 50, left: 60 }}
+          width={undefined}
+          height={undefined}
+          sx={{ width: "100%", height: "100%" }}
         />
       </Box>
     </Container>

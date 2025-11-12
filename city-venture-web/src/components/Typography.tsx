@@ -48,105 +48,105 @@ const getFontSize = (
   const sizeMap = {
     title: {
       xs: {
-        fontSize: "clamp(1.5rem, 4vw, 2rem)",
+        fontSize: "clamp(1.5rem, 4vw, 2rem)", // 24px - 32px
         fontWeight: getFontWeight("semibold"),
       },
       sm: {
-        fontSize: "clamp(1.75rem, 4.5vw, 2.5rem)",
+        fontSize: "clamp(1.75rem, 4.5vw, 2.5rem)", // 28px - 40px
         fontWeight: getFontWeight("semibold"),
       },
       normal: {
-        fontSize: "clamp(2rem, 5vw, 3rem)",
+        fontSize: "clamp(2rem, 5vw, 3rem)", // 32px - 48px
         fontWeight: getFontWeight("semibold"),
       },
       md: {
-        fontSize: "clamp(2.5rem, 6vw, 3.5rem)",
+        fontSize: "clamp(2.5rem, 6vw, 3.5rem)", // 40px - 56px
         fontWeight: getFontWeight("semibold"),
       },
       lg: {
-        fontSize: "clamp(3rem, 7vw, 4.5rem)",
+        fontSize: "clamp(3rem, 7vw, 4.5rem)", // 48px - 72px
         fontWeight: getFontWeight("semibold"),
       },
     },
     header: {
       xs: {
-        fontSize: "clamp(1.125rem, 2.5vw, 1.5rem)",
+        fontSize: "clamp(1.125rem, 2.5vw, 1.5rem)", // 18px - 24px
         fontWeight: getFontWeight("semibold"),
       },
       sm: {
-        fontSize: "clamp(1.25rem, 3vw, 1.75rem)",
+        fontSize: "clamp(1.25rem, 3vw, 1.75rem)", // 20px - 28px
         fontWeight: getFontWeight("semibold"),
       },
       normal: {
-        fontSize: "clamp(1.5rem, 3.5vw, 2rem)",
+        fontSize: "clamp(1.5rem, 3.5vw, 2rem)", // 24px - 32px
         fontWeight: getFontWeight("semibold"),
       },
       md: {
-        fontSize: "clamp(1.75rem, 4vw, 2.25rem)",
+        fontSize: "clamp(1.75rem, 4vw, 2.25rem)", // 28px - 36px
         fontWeight: getFontWeight("semibold"),
       },
       lg: {
-        fontSize: "clamp(2rem, 4.5vw, 2.75rem)",
+        fontSize: "clamp(2rem, 4.5vw, 2.75rem)", // 32px - 44px
         fontWeight: getFontWeight("semibold"),
       },
     },
     label: {
       xs: {
-        fontSize: "clamp(0.625rem, 1.5vw, 0.75rem)",
+        fontSize: "clamp(0.625rem, 1.5vw, 0.75rem)", // 10px - 12px
         fontWeight: getFontWeight("semibold"),
       },
       sm: {
-        fontSize: "clamp(0.75rem, 2vw, 0.875rem)",
+        fontSize: "clamp(0.75rem, 2vw, 0.875rem)", // 12px - 14px
         fontWeight: getFontWeight("semibold"),
       },
       normal: {
-        fontSize: "clamp(0.875rem, 2.25vw, 1rem)",
+        fontSize: "clamp(0.875rem, 2.25vw, 1rem)", // 14px - 16px
         fontWeight: getFontWeight("semibold"),
       },
       md: {
-        fontSize: "clamp(1rem, 2.5vw, 1.125rem)",
+        fontSize: "clamp(1rem, 2.5vw, 1.125rem)", // 16px - 18px
         fontWeight: getFontWeight("semibold"),
       },
       lg: {
-        fontSize: "clamp(1.125rem, 3vw, 1.25rem)",
+        fontSize: "clamp(1.125rem, 3vw, 1.25rem)", // 18px - 20px
         fontWeight: getFontWeight("semibold"),
       },
     },
     cardTitle: {
       xs: {
-        fontSize: "clamp(0.875rem, 2vw, 1rem)",
+        fontSize: "clamp(0.875rem, 2vw, 1rem)", // 14px - 16px
         fontWeight: getFontWeight("semibold"),
       },
       sm: {
-        fontSize: "clamp(1rem, 2.5vw, 1.25rem)",
+        fontSize: "clamp(1rem, 2.5vw, 1.25rem)", // 16px - 20px
         fontWeight: getFontWeight("semibold"),
       },
       normal: {
-        fontSize: "clamp(1.125rem, 3vw, 1.5rem)",
+        fontSize: "clamp(1.125rem, 3vw, 1.5rem)", // 18px - 24px
         fontWeight: getFontWeight("semibold"),
       },
       md: {
-        fontSize: "clamp(1.25rem, 3.5vw, 1.75rem)",
+        fontSize: "clamp(1.25rem, 3.5vw, 1.75rem)", // 20px - 28px
         fontWeight: getFontWeight("semibold"),
       },
       lg: {
-        fontSize: "clamp(1.5rem, 4vw, 2rem)",
+        fontSize: "clamp(1.5rem, 4vw, 2rem)", // 24px - 32px
         fontWeight: getFontWeight("semibold"),
       },
     },
     cardSubTitle: {
-      xs: { fontSize: "clamp(0.75rem, 1.75vw, 0.875rem)" },
-      sm: { fontSize: "clamp(0.8125rem, 2vw, 1rem)" },
-      normal: { fontSize: "clamp(0.875rem, 2.25vw, 1.125rem)" },
-      md: { fontSize: "clamp(1rem, 2.5vw, 1.25rem)" },
-      lg: { fontSize: "clamp(1.125rem, 3vw, 1.5rem)" },
+      xs: { fontSize: "clamp(0.75rem, 1.75vw, 0.875rem)" }, // 12px - 14px
+      sm: { fontSize: "clamp(0.8125rem, 2vw, 1rem)" }, // 13px - 16px
+      normal: { fontSize: "clamp(0.875rem, 2.25vw, 1.125rem)" }, // 14px - 18px
+      md: { fontSize: "clamp(1rem, 2.5vw, 1.25rem)" }, // 16px - 20px
+      lg: { fontSize: "clamp(1.125rem, 3vw, 1.5rem)" }, // 18px - 24px
     },
     body: {
-      xs: { fontSize: "clamp(0.75rem, 1.75vw, 0.875rem)" },
-      sm: { fontSize: "clamp(0.875rem, 2vw, 1rem)" },
-      normal: { fontSize: "clamp(1rem, 2.5vw, 1.125rem)" },
-      md: { fontSize: "clamp(1.125rem, 3vw, 1.25rem)" },
-      lg: { fontSize: "clamp(1.25rem, 3.5vw, 1.5rem)" },
+      xs: { fontSize: "clamp(0.75rem, 2vw, 0.75rem)" }, // 12px
+      sm: { fontSize: "clamp(0.875rem, 2.25vw, 0.875rem)" }, // 14px
+      normal: { fontSize: "clamp(1rem, 2.5vw, 1rem)" }, // 16px
+      md: { fontSize: "clamp(1.125rem, 3vw, 1.125rem)" }, // 18px
+      lg: { fontSize: "clamp(1.25rem, 3.5vw, 1.25rem)" }, // 20px
     },
   };
 
@@ -332,7 +332,7 @@ const BaseTypography = ({
       cardTitle: "h3",
       cardSubTitle: "h4",
       label: "body-sm",
-      body: "body-md",
+      body: "body-sm",
     };
     return levelMap[variant] as TypographyProps["level"];
   };

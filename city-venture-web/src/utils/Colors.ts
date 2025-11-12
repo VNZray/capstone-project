@@ -25,4 +25,5 @@ export const colors = {
   warningLabel: "#ed6c02",
   info: "#5bc0de",
   purple: "#f2d1f2",
+  odd: "#F3F4F6",
 };

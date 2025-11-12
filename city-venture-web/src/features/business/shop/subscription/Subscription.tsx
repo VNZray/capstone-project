@@ -6,7 +6,7 @@ import Button from "@/src/components/Button";
 import DynamicTab from "@/src/components/ui/DynamicTab";
 import PricingCard from "./components/PricingCard";
 import BillingModal from "./components/BillingModal";
-import { Box, Divider } from "@mui/joy";
+import { Box } from "@mui/joy";
 import {
   Check,
   TrendingUp,
@@ -15,7 +15,6 @@ import {
   Eye,
   FileText,
 } from "lucide-react";
-import { colors } from "@/src/utils/Colors";
 
 type BillingCycle = "monthly" | "yearly";
 
@@ -50,6 +49,7 @@ const plans: Plan[] = [
       "Basic analytics",
       "Email support",
       "Standard visibility",
+      "Mobile access",
     ],
   },
   {
@@ -72,6 +72,10 @@ const plans: Plan[] = [
       "Advanced promotion tools",
       "Featured in search results",
       "Visibility boost",
+      "Publication to mobile app",
+      "API access",
+      "Dedicated account manager",
+      "Custom domain",
     ],
   },
 ];
@@ -86,6 +90,7 @@ const Subscription = () => {
     { key: 'bookingSystem' as const, label: 'Booking System', icon: <Calendar size={20} /> },
     { key: 'promotionTools' as const, label: 'Promotion Tools', icon: <TrendingUp size={20} /> },
     { key: 'visibilityBoost' as const, label: 'Visibility Boost', icon: <Eye size={20} /> },
+    { key: 'publication' as const, label: 'App Publication', icon: <FileText size={20} /> },
   ];
 
   const handleUpgrade = (planId: string) => {
@@ -98,7 +103,6 @@ const Subscription = () => {
 
   const handlePaymentConfirm = (paymentMethod: string, paymentDetails: any) => {
     console.log("Payment confirmed:", { paymentMethod, paymentDetails, plan: selectedPlan });
-    // Here you would typically send this data to your backend
     alert(`Payment successful! You've upgraded to ${selectedPlan?.name} plan using ${paymentMethod.toUpperCase()}.`);
     setBillingModalOpen(false);
     setSelectedPlan(null);
@@ -112,7 +116,7 @@ const Subscription = () => {
           <Typography.Header size="lg" align="center" color="primary">
             Choose Your Perfect Plan
           </Typography.Header>
-          <Typography.Body size="normal" align="center" color="default" typography={{ marginTop: "12px" }}>
+          <Typography.Body size="normal" align="center" color="default" sx={{ marginTop: "12px" }}>
             Unlock powerful features to grow your business and reach more customers.
             Upgrade anytime as your needs evolve.
           </Typography.Body>
@@ -194,7 +198,7 @@ const Subscription = () => {
             },
             "& th": {
               fontWeight: 600,
-              backgroundColor: colors.primary,
+              backgroundColor: "#F9FAFB",
             },
           }}
         >
@@ -277,7 +281,7 @@ const Subscription = () => {
             },
             {
               question: "What payment methods do you accept?",
-              answer: "We accept all major credit cards, debit cards, and online payment platforms.",
+              answer: "We accept GCash, Maya, and all major credit/debit cards for your convenience.",
             },
             {
               question: "Is there a refund policy?",
@@ -306,10 +310,10 @@ const Subscription = () => {
         background="linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
         style={{ textAlign: "center" }}
       >
-        <Typography.CardTitle  typography={{ color: "#FFFFFF" }}>
+        <Typography.Header size="md" sx={{ color: "#FFFFFF" }}>
           Still have questions?
-        </Typography.CardTitle>
-        <Typography.Body typography={{ color: "#F3F4F6" }}>
+        </Typography.Header>
+        <Typography.Body size="normal" sx={{ color: "#F3F4F6" }}>
           Our team is here to help you choose the perfect plan for your business
         </Typography.Body>
         <Box sx={{ marginTop: "16px" }}>

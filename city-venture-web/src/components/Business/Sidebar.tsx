@@ -18,6 +18,7 @@ import {
   Settings,
   Megaphone,
   Tag,
+  CreditCard,
 } from "lucide-react";
 
 // Compact icon size
@@ -59,6 +60,12 @@ export default function Sidebar({
         className="sidebar-close"
         onClick={onClose}
         aria-label="Close sidebar"
+        style={{
+          position: "absolute",
+          top: 0,
+          right: 0,
+          zIndex: 2,
+        }}
       >
         <X size={20} />
       </button>
@@ -124,7 +131,7 @@ export default function Sidebar({
               onClick={onClose}
             />
           )}
-      
+
           {(hasRole("Business Owner", "Manager", "Sales Associate") ||
             canAny("view_promotions", "manage_promotions")) &&
             (businessDetails?.business_type_id === 2 ? (
@@ -155,6 +162,33 @@ export default function Sidebar({
                 to={`${route}/rooms`}
                 label="Manage Rooms"
                 icon={<BedDouble size={ICON_SIZE} />}
+                onClick={onClose}
+              />
+            )}
+
+          {businessDetails?.business_type_id === 1 &&
+            (hasRole(
+              "Business Owner",
+              "Manager",
+              "Room Manager",
+              "Receptionist"
+            ) ||
+              canAny("view_rooms", "add_room", "edit_room", "delete_room")) && (
+              <NavItem
+                to={`${route}/subscription`}
+                label="Subscription"
+                icon={<CreditCard size={ICON_SIZE} />}
+                onClick={onClose}
+              />
+            )}
+
+          {businessDetails?.business_type_id === 2 &&
+            (hasRole("Business Owner", "Manager") ||
+              canAny("view_rooms", "add_room", "edit_room", "delete_room")) && (
+              <NavItem
+                to={`${route}/subscription`}
+                label="Subscription"
+                icon={<CreditCard size={ICON_SIZE} />}
                 onClick={onClose}
               />
             )}

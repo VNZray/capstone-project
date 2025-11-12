@@ -50,19 +50,34 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
 
   // KPI (Key Performance Indicator) Filters
-  const [kpiFilterPeriod, setKpiFilterPeriod] = useState<FilterPeriod["period"]>("month");
-  const [kpiSelectedMonth, setKpiSelectedMonth] = useState<number>(new Date().getMonth());
-  const [kpiSelectedYear, setKpiSelectedYear] = useState<number>(new Date().getFullYear());
+  const [kpiFilterPeriod, setKpiFilterPeriod] =
+    useState<FilterPeriod["period"]>("month");
+  const [kpiSelectedMonth, setKpiSelectedMonth] = useState<number>(
+    new Date().getMonth()
+  );
+  const [kpiSelectedYear, setKpiSelectedYear] = useState<number>(
+    new Date().getFullYear()
+  );
 
   // Booking Overview Filters
-  const [bookingFilterPeriod, setBookingFilterPeriod] = useState<FilterPeriod["period"]>("month");
-  const [bookingSelectedMonth, setBookingSelectedMonth] = useState<number>(new Date().getMonth());
-  const [bookingSelectedYear, setBookingSelectedYear] = useState<number>(new Date().getFullYear());
+  const [bookingFilterPeriod, setBookingFilterPeriod] =
+    useState<FilterPeriod["period"]>("month");
+  const [bookingSelectedMonth, setBookingSelectedMonth] = useState<number>(
+    new Date().getMonth()
+  );
+  const [bookingSelectedYear, setBookingSelectedYear] = useState<number>(
+    new Date().getFullYear()
+  );
 
   // Tourist Demographics Filters
-  const [touristFilterPeriod, setTouristFilterPeriod] = useState<FilterPeriod["period"]>("month");
-  const [touristSelectedMonth, setTouristSelectedMonth] = useState<number>(new Date().getMonth());
-  const [touristSelectedYear, setTouristSelectedYear] = useState<number>(new Date().getFullYear());
+  const [touristFilterPeriod, setTouristFilterPeriod] =
+    useState<FilterPeriod["period"]>("month");
+  const [touristSelectedMonth, setTouristSelectedMonth] = useState<number>(
+    new Date().getMonth()
+  );
+  const [touristSelectedYear, setTouristSelectedYear] = useState<number>(
+    new Date().getFullYear()
+  );
 
   // Fetch all data
   useEffect(() => {
@@ -111,16 +126,40 @@ const Dashboard = () => {
     [touristFilterPeriod, touristSelectedMonth, touristSelectedYear]
   );
 
-  const kpiStats = useMemo(() => calculateKPIStats(data, kpiFilter), [data, kpiFilter]);
-  const revenueStats = useMemo(() => calculateRevenueStats(data.payments, kpiFilter), [data.payments, kpiFilter]);
-  const bookingStatusStats = useMemo(() => calculateBookingStatusStats(data.bookings, bookingFilter), [data.bookings, bookingFilter]);
-  const touristStats = useMemo(() => calculateTouristStats(data.bookings, touristFilter), [data.bookings, touristFilter]);
+  const kpiStats = useMemo(
+    () => calculateKPIStats(data, kpiFilter),
+    [data, kpiFilter]
+  );
+  const revenueStats = useMemo(
+    () => calculateRevenueStats(data.payments, kpiFilter),
+    [data.payments, kpiFilter]
+  );
+  const bookingStatusStats = useMemo(
+    () => calculateBookingStatusStats(data.bookings, bookingFilter),
+    [data.bookings, bookingFilter]
+  );
+  const touristStats = useMemo(
+    () => calculateTouristStats(data.bookings, touristFilter),
+    [data.bookings, touristFilter]
+  );
 
-  const recentBookings = useMemo(() => getRecentBookings(data.bookings, data.rooms), [data.bookings, data.rooms]);
-  const recentPayments = useMemo(() => getRecentPayments(data.payments), [data.payments]);
+  const recentBookings = useMemo(
+    () => getRecentBookings(data.bookings, data.rooms),
+    [data.bookings, data.rooms]
+  );
+  const recentPayments = useMemo(
+    () => getRecentPayments(data.payments),
+    [data.payments]
+  );
 
-  const topRoomsByBookings = useMemo(() => getTopRoomsByBookings(data.bookings, data.rooms), [data.bookings, data.rooms]);
-  const topRoomsByRevenue = useMemo(() => getTopRoomsByRevenue(data.bookings, data.rooms), [data.bookings, data.rooms]);
+  const topRoomsByBookings = useMemo(
+    () => getTopRoomsByBookings(data.bookings, data.rooms),
+    [data.bookings, data.rooms]
+  );
+  const topRoomsByRevenue = useMemo(
+    () => getTopRoomsByRevenue(data.bookings, data.rooms),
+    [data.bookings, data.rooms]
+  );
 
   if (businessLoading || loading) {
     return (
@@ -147,10 +186,21 @@ const Dashboard = () => {
   return (
     <PageContainer>
       {/* Header */}
-      <Container gap="2px" elevation={2} padding="20px" style={{ marginBottom: 20 }}>
-        <Typography.Header>{businessDetails?.business_name} Dashboard</Typography.Header>
+      <Container
+        gap="2px"
+        elevation={2}
+        padding="20px"
+        style={{ marginBottom: 20 }}
+      >
+        <Typography.Header>
+          {businessDetails?.business_name} Dashboard
+        </Typography.Header>
         <Typography.CardSubTitle>
-          Welcome <b>{user?.first_name} {user?.last_name}</b> to your accommodation dashboard.
+          Welcome{" "}
+          <b>
+            {user?.first_name} {user?.last_name}
+          </b>{" "}
+          to your accommodation dashboard.
         </Typography.CardSubTitle>
       </Container>
 
@@ -174,7 +224,9 @@ const Dashboard = () => {
           <Select
             size="md"
             value={kpiFilterPeriod}
-            onChange={(_, val) => setKpiFilterPeriod(val as FilterPeriod["period"])}
+            onChange={(_, val) =>
+              setKpiFilterPeriod(val as FilterPeriod["period"])
+            }
             sx={{ minWidth: 120 }}
           >
             <Option value="month">Monthly</Option>
@@ -204,7 +256,10 @@ const Dashboard = () => {
               onChange={(_, val) => setKpiSelectedYear(val as number)}
               sx={{ minWidth: 100 }}
             >
-              {Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i).map((year) => (
+              {Array.from(
+                { length: 5 },
+                (_, i) => new Date().getFullYear() - i
+              ).map((year) => (
                 <Option key={year} value={year}>
                   {year}
                 </Option>
@@ -220,7 +275,13 @@ const Dashboard = () => {
             label="Profile Views"
             value={kpiStats.profileViews.toLocaleString()}
             change={kpiStats.profileViewsChange}
-            period={kpiFilterPeriod === "month" ? "last month" : kpiFilterPeriod === "year" ? "last year" : ""}
+            period={
+              kpiFilterPeriod === "month"
+                ? "last month"
+                : kpiFilterPeriod === "year"
+                ? "last year"
+                : ""
+            }
             color="primary"
           />
         </Grid>
@@ -230,7 +291,13 @@ const Dashboard = () => {
             label="Total Bookings"
             value={kpiStats.totalBookings.toLocaleString()}
             change={kpiStats.totalBookingsChange}
-            period={kpiFilterPeriod === "month" ? "last month" : kpiFilterPeriod === "year" ? "last year" : ""}
+            period={
+              kpiFilterPeriod === "month"
+                ? "last month"
+                : kpiFilterPeriod === "year"
+                ? "last year"
+                : ""
+            }
             color="success"
           />
         </Grid>
@@ -240,7 +307,13 @@ const Dashboard = () => {
             label="Occupancy Rate"
             value={`${kpiStats.occupancyRate.toFixed(1)}%`}
             change={5.2}
-            period={kpiFilterPeriod === "month" ? "last month" : kpiFilterPeriod === "year" ? "last year" : ""}
+            period={
+              kpiFilterPeriod === "month"
+                ? "last month"
+                : kpiFilterPeriod === "year"
+                ? "last year"
+                : ""
+            }
             color="warning"
           />
         </Grid>
@@ -258,10 +331,19 @@ const Dashboard = () => {
               ? revenueStats.monthlyRevenue
               : kpiFilterPeriod === "year"
               ? revenueStats.annualRevenue
-              : data.payments.reduce((sum, p) => sum + (Number(p.amount) || 0), 0)
+              : data.payments.reduce(
+                  (sum, p) => sum + (Number(p.amount) || 0),
+                  0
+                )
             ).toLocaleString(undefined, { maximumFractionDigits: 0 })}`}
             change={revenueStats.monthlyRevenueChange}
-            period={kpiFilterPeriod === "month" ? "last month" : kpiFilterPeriod === "year" ? "last year" : ""}
+            period={
+              kpiFilterPeriod === "month"
+                ? "last month"
+                : kpiFilterPeriod === "year"
+                ? "last year"
+                : ""
+            }
             color="success"
           />
         </Grid>
@@ -279,7 +361,9 @@ const Dashboard = () => {
         }}
       >
         <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-          <Typography.CardTitle startDecorator={<Hotel style={{ color: colors.warningLabel }} />}>
+          <Typography.CardTitle
+            startDecorator={<Hotel style={{ color: colors.warningLabel }} />}
+          >
             Booking Overview
           </Typography.CardTitle>
         </Box>
@@ -288,7 +372,9 @@ const Dashboard = () => {
           <Select
             size="md"
             value={bookingFilterPeriod}
-            onChange={(_, val) => setBookingFilterPeriod(val as FilterPeriod["period"])}
+            onChange={(_, val) =>
+              setBookingFilterPeriod(val as FilterPeriod["period"])
+            }
             sx={{ minWidth: 120 }}
           >
             <Option value="month">Monthly</Option>
@@ -311,14 +397,18 @@ const Dashboard = () => {
             </Select>
           )}
 
-          {(bookingFilterPeriod === "month" || bookingFilterPeriod === "year") && (
+          {(bookingFilterPeriod === "month" ||
+            bookingFilterPeriod === "year") && (
             <Select
               size="md"
               value={bookingSelectedYear}
               onChange={(_, val) => setBookingSelectedYear(val as number)}
               sx={{ minWidth: 100 }}
             >
-              {Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i).map((year) => (
+              {Array.from(
+                { length: 5 },
+                (_, i) => new Date().getFullYear() - i
+              ).map((year) => (
                 <Option key={year} value={year}>
                   {year}
                 </Option>
@@ -366,26 +456,36 @@ const Dashboard = () => {
         </Grid>
       </Grid>
       <Grid container spacing={2.5} sx={{ mb: 2 }}>
-        <Grid xs={12} md={6}>
+        <Grid xs={12} md={12} lg={6}>
           <BookingsList bookings={recentBookings} title="Recent Bookings" />
         </Grid>
-        <Grid xs={6}>
+        <Grid xs={12} md={12} lg={6}>
           <PaymentsList payments={recentPayments} title="Recent Payments" />
         </Grid>
       </Grid>
 
       {/* Top Performing Rooms */}
       <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-        <Typography.CardTitle startDecorator={<Award style={{ color: "#FFD700" }} />}>
+        <Typography.CardTitle
+          startDecorator={<Award style={{ color: "#FFD700" }} />}
+        >
           Top Performing Rooms
         </Typography.CardTitle>
       </Box>
       <Grid container spacing={2.5} sx={{ mb: 2 }}>
         <Grid xs={12} md={6}>
-          <TopRoomsCard rooms={topRoomsByBookings} title="Most Booked Rooms" type="bookings" />
+          <TopRoomsCard
+            rooms={topRoomsByBookings}
+            title="Most Booked Rooms"
+            type="bookings"
+          />
         </Grid>
         <Grid xs={12} md={6}>
-          <TopRoomsCard rooms={topRoomsByRevenue} title="Highest Revenue Rooms" type="revenue" />
+          <TopRoomsCard
+            rooms={topRoomsByRevenue}
+            title="Highest Revenue Rooms"
+            type="revenue"
+          />
         </Grid>
       </Grid>
 
@@ -410,7 +510,9 @@ const Dashboard = () => {
           <Select
             size="md"
             value={touristFilterPeriod}
-            onChange={(_, val) => setTouristFilterPeriod(val as FilterPeriod["period"])}
+            onChange={(_, val) =>
+              setTouristFilterPeriod(val as FilterPeriod["period"])
+            }
             sx={{ minWidth: 120 }}
           >
             <Option value="week">Weekly</Option>
@@ -434,14 +536,18 @@ const Dashboard = () => {
             </Select>
           )}
 
-          {(touristFilterPeriod === "month" || touristFilterPeriod === "year") && (
+          {(touristFilterPeriod === "month" ||
+            touristFilterPeriod === "year") && (
             <Select
               size="md"
               value={touristSelectedYear}
               onChange={(_, val) => setTouristSelectedYear(val as number)}
               sx={{ minWidth: 100 }}
             >
-              {Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i).map((year) => (
+              {Array.from(
+                { length: 5 },
+                (_, i) => new Date().getFullYear() - i
+              ).map((year) => (
                 <Option key={year} value={year}>
                   {year}
                 </Option>

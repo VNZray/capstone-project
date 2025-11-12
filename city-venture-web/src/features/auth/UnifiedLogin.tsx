@@ -37,8 +37,8 @@ export default function UnifiedLogin() {
   const { login } = useAuth();
 
   const [role, setRole] = useState<Role>("Tourist");
-  const [email, setEmail] = useState("rayvenclores@gmail.com");
-  const [password, setPassword] = useState("123456");
+  const [email, setEmail] = useState("owner1@gmail.com");
+  const [password, setPassword] = useState("owner123");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string>("");
   const [loading, setLoading] = useState(false);

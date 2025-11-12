@@ -176,7 +176,7 @@ const BusinessRegistration = () => {
     if (activeStep > 0) {
       setActiveStep((prev) => prev - 1);
     } else {
-      navigate("/business"); // Go back to business list if on first step
+      navigate("/"); // Go back to business list if on first step
     }
   };
 
