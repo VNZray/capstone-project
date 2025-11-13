@@ -4,7 +4,11 @@ import Typography from "@/src/components/Typography";
 import Button from "@/src/components/Button";
 import { AspectRatio } from "@mui/joy";
 import { FaHeart } from "react-icons/fa";
-import placeholder from "@/src/assets/images/placeholder-image.png";
+import Grid1 from "@/src/assets/gridimages/grid1.jpg";
+import Grid2 from "@/src/assets/gridimages/grid2.jpg";
+import Grid3 from "@/src/assets/gridimages/grid3.jpg";
+import Grid4 from "@/src/assets/gridimages/grid4.jpg";
+import Grid5 from "@/src/assets/gridimages/grid5.jpg";
 
 interface GridItem {
   src: string;
@@ -33,19 +37,26 @@ function tileClassFor(index: number): string {
 }
 
 const HeroSection: React.FC<HeroSectionProps> = ({ gridItems }) => {
+  // Default grid images if no items provided
+  const defaultGridImages = [
+    { src: Grid1, title: "Peñafrancia Basilica", subtitle: "Faith & Devotion" },
+    { src: Grid2, title: "Mt. Isarog", subtitle: "Adventure Awaits" },
+    { src: Grid3, title: "Naga River", subtitle: "Natural Beauty" },
+    { src: Grid4, title: "Local Cuisine", subtitle: "Taste of Bicol" },
+    { src: Grid5, title: "Cultural Heritage", subtitle: "Rich Traditions" },
+  ];
+
+  const displayItems = gridItems.length > 0 ? gridItems : defaultGridImages;
+
   return (
-    <section
-      id="hero"
-      className="main-hero"
-      style={{padding: 16}}
-    >
+    <section id="hero" className="main-hero" style={{ padding: 16 }}>
       <div className="hero-inner">
         {/* Left column: Welcome and actions */}
         <div className="hero-left">
           <span className="hero-eyebrow">
             <FaHeart className="heart" aria-hidden="true" /> Explore Naga City
           </span>
-          
+
           <Typography.Title
             size="lg"
             color="primary"
@@ -58,7 +69,8 @@ const HeroSection: React.FC<HeroSectionProps> = ({ gridItems }) => {
 
           <div className="hero-quote">— Where Faith Meets Adventure</div>
 
-          <Typography.Body size="md"
+          <Typography.Body
+            size="md"
             sx={{ maxWidth: 620, opacity: 0.9, marginBottom: 3 }}
           >
             Iconic attractions, vibrant culture, and hidden gems — curated in
@@ -121,7 +133,7 @@ const HeroSection: React.FC<HeroSectionProps> = ({ gridItems }) => {
         {/* Right column: Dynamic attractions grid */}
         <div className="hero-right">
           <div className="attractions-grid">
-            {gridItems.map((item, i) => (
+            {displayItems.map((item, i) => (
               <button
                 key={`${item.title}-${i}`}
                 type="button"
@@ -137,15 +149,7 @@ const HeroSection: React.FC<HeroSectionProps> = ({ gridItems }) => {
                     overflow: "hidden",
                   }}
                 >
-                  <img
-                    src={placeholder}
-                    alt={item.title}
-                    style={{
-                      objectFit: "cover",
-                      width: "100%",
-                      height: "100%",
-                    }}
-                  />
+                  <img src={item.src} alt={item.title} />
                 </AspectRatio>
                 <div className="tile-label" aria-hidden>
                   <div className="tile-title">{item.title}</div>

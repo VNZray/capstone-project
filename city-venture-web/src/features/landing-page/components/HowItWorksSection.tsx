@@ -179,7 +179,7 @@ const HowItWorksSection: React.FC = () => {
             <Button
               size="lg"
               colorScheme="primary"
-              onClick={() => navigate("/business/signup")}
+              onClick={() => navigate("/business-registration")}
               sx={{
                 borderRadius: 12,
                 px: 3,
@@ -194,7 +194,7 @@ const HowItWorksSection: React.FC = () => {
               size="lg"
               variant="outlined"
               colorScheme="gray"
-              onClick={() => navigate("/login")}
+              onClick={() => navigate("/business/login")}
               sx={{ borderRadius: 12 }}
             >
               Login

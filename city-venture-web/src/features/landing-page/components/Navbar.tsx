@@ -1,5 +1,14 @@
 import React from "react";
-import { Button, Avatar, Dropdown, Menu, MenuButton, MenuItem, ListDivider, IconButton } from "@mui/joy";
+import {
+  Button,
+  Avatar,
+  Dropdown,
+  Menu,
+  MenuButton,
+  MenuItem,
+  ListDivider,
+  IconButton,
+} from "@mui/joy";
 import "../style/navbar.css";
 import { useNavigate } from "react-router-dom";
 import { colors } from "../../../utils/Colors";
@@ -12,7 +21,10 @@ interface NavbarProps {
   aboutId?: string;
 }
 
-const Navbar: React.FC<NavbarProps> = ({ servicesId = "features", aboutId = "about" }) => {
+const Navbar: React.FC<NavbarProps> = ({
+  servicesId = "features",
+  aboutId = "about",
+}) => {
   const navigate = useNavigate();
   const [open, setOpen] = React.useState(false);
   const [bgOpacity, setBgOpacity] = React.useState(0.02);
@@ -38,10 +50,22 @@ const Navbar: React.FC<NavbarProps> = ({ servicesId = "features", aboutId = "abo
   const displayRole = role;
   const nameOnly = `${user?.first_name ?? ""} ${user?.last_name ?? ""}`.trim();
   const displayName = nameOnly || ""; // do not fallback to email for display name per requirement
-  const initials = (user?.first_name?.[0] ?? user?.email?.[0] ?? "U").toUpperCase();
+  const initials = (
+    user?.first_name?.[0] ??
+    user?.email?.[0] ??
+    "U"
+  ).toUpperCase();
 
-  const profilePath = isOwner ? "/business/profile" : isTourism ? "/tourism/profile" : "/";
-  const statusPath = isOwner ? "/business" : isTourism ? "/tourism/dashboard" : "/";
+  const profilePath = isOwner
+    ? "/business/profile"
+    : isTourism
+    ? "/tourism/profile"
+    : "/";
+  const statusPath = isOwner
+    ? "/business"
+    : isTourism
+    ? "/tourism/dashboard"
+    : "/";
 
   const scrollTo = (id?: string) => {
     if (!id) return;
@@ -52,7 +76,9 @@ const Navbar: React.FC<NavbarProps> = ({ servicesId = "features", aboutId = "abo
     }
   };
 
-  const navStyle = { "--nav-bg": String(bgOpacity) } as React.CSSProperties & { [key: string]: string };
+  const navStyle = { "--nav-bg": String(bgOpacity) } as React.CSSProperties & {
+    [key: string]: string;
+  };
 
   return (
     <nav
@@ -61,15 +87,53 @@ const Navbar: React.FC<NavbarProps> = ({ servicesId = "features", aboutId = "abo
     >
       <div className="nav-inner">
         {/* Brand */}
-        <div className="brand" role="button" onClick={() => { setOpen(false); navigate("/"); }}>
-          <img src={logo} alt="City Venture" style={{ height: "50px", width: "auto" }} />
+        <div
+          className="brand"
+          role="button"
+          onClick={() => {
+            setOpen(false);
+            navigate("/");
+          }}
+        >
+          <img
+            src={logo}
+            alt="City Venture"
+            style={{ height: "50px", width: "auto" }}
+          />
         </div>
 
         {/* Links (desktop) */}
         <div className="nav-links" aria-label="Primary">
-          <a className="nav-link" href="#hero" onClick={(e) => { e.preventDefault(); scrollTo("hero"); }}>Home</a>
-          <a className="nav-link" href={`#${aboutId}`} onClick={(e) => { e.preventDefault(); scrollTo(aboutId); }}>About</a>
-          <a className="nav-link" href="#features" onClick={(e) => { e.preventDefault(); scrollTo(servicesId); }}>Services</a>
+          <a
+            className="nav-link"
+            href="#hero"
+            onClick={(e) => {
+              e.preventDefault();
+              scrollTo("hero");
+            }}
+          >
+            Home
+          </a>
+          <a
+            className="nav-link"
+            href={`#${aboutId}`}
+            onClick={(e) => {
+              e.preventDefault();
+              scrollTo(aboutId);
+            }}
+          >
+            About
+          </a>
+          <a
+            className="nav-link"
+            href="#features"
+            onClick={(e) => {
+              e.preventDefault();
+              scrollTo(servicesId);
+            }}
+          >
+            Services
+          </a>
         </div>
 
         {/* Actions (desktop) */}
@@ -81,16 +145,16 @@ const Navbar: React.FC<NavbarProps> = ({ servicesId = "features", aboutId = "abo
                 color="neutral"
                 onClick={() => navigate("/login")}
                 sx={{
-                  color: '#374151',
+                  color: "#374151",
                   fontWeight: 500,
-                  textTransform: 'none',
+                  textTransform: "none",
                   px: 0,
-                  backgroundColor: 'transparent',
-                  padding: '6px 12px',
-                  '&:hover': {
-                    backgroundColor: 'transparent',
-                    textDecoration: 'none'
-                  }
+                  backgroundColor: "transparent",
+                  padding: "6px 12px",
+                  "&:hover": {
+                    backgroundColor: "transparent",
+                    textDecoration: "none",
+                  },
                 }}
               >
                 Login
@@ -100,17 +164,17 @@ const Navbar: React.FC<NavbarProps> = ({ servicesId = "features", aboutId = "abo
                 onClick={() => navigate("/business-registration")}
                 sx={{
                   backgroundColor: colors.primary,
-                  color: '#ffffff',
+                  color: "#ffffff",
                   fontWeight: 600,
-                  textTransform: 'none',
+                  textTransform: "none",
                   borderRadius: 8,
-                  padding: '8px 16px',
-                  boxShadow: '0 2px 8px rgba(10,27,71,0.2)',
-                  '&:hover': {
-                    backgroundColor: '#0a1a3d',
-                    transform: 'translateY(-1px)',
-                    boxShadow: '0 4px 16px rgba(10,27,71,0.3)'
-                  }
+                  padding: "8px 16px",
+                  boxShadow: "0 2px 8px rgba(10,27,71,0.2)",
+                  "&:hover": {
+                    backgroundColor: "#0a1a3d",
+                    transform: "translateY(-1px)",
+                    boxShadow: "0 4px 16px rgba(10,27,71,0.3)",
+                  },
                 }}
               >
                 Sign Up
@@ -120,34 +184,106 @@ const Navbar: React.FC<NavbarProps> = ({ servicesId = "features", aboutId = "abo
             <Dropdown>
               <MenuButton
                 slots={{ root: IconButton }}
-                slotProps={{ root: { variant: 'soft', color: 'neutral', sx: { borderRadius: 12 } } }}
+                slotProps={{
+                  root: {
+                    variant: "soft",
+                    color: "neutral",
+                    sx: { borderRadius: 12 },
+                  },
+                }}
                 aria-label="User menu"
               >
                 <Avatar size="sm">{initials}</Avatar>
               </MenuButton>
               <Menu placement="bottom-end" size="sm" sx={{ minWidth: 220 }}>
-                <MenuItem disabled sx={{ fontWeight: 600 }}>{displayName}</MenuItem>
+                <MenuItem disabled sx={{ fontWeight: 600 }}>
+                  {displayName}
+                </MenuItem>
                 {displayRole && (
-                  <MenuItem disabled sx={{ fontSize: 12, opacity: 0.8 }}>{displayRole}</MenuItem>
+                  <MenuItem disabled sx={{ fontSize: 12, opacity: 0.8 }}>
+                    {displayRole}
+                  </MenuItem>
                 )}
                 <ListDivider />
-                <MenuItem onClick={() => navigate(profilePath)}>Profile</MenuItem>
-                <MenuItem onClick={() => navigate(profilePath)}>Settings</MenuItem>
+
+                {(isOwner ||
+                  [
+                    "Manager",
+                    "Room Manager",
+                    "Receptionist",
+                    "Sales Associate",
+                  ].includes(role)) && (
+                  <MenuItem
+                    onClick={() => {
+                      const staffRoles = [
+                        "Manager",
+                        "Room Manager",
+                        "Receptionist",
+                        "Sales Associate",
+                      ];
+                      if (
+                        role === "Business Owner" ||
+                        staffRoles.includes(role)
+                      ) {
+                        navigate("/user/profile");
+                      } else {
+                        navigate("/tourist/profile");
+                      }
+                    }}
+                  >
+                    Profile
+                  </MenuItem>
+                )}
+
                 {isTourism && (
-                  <MenuItem onClick={() => navigate(statusPath)}>Admin Dashboard</MenuItem>
+                  <MenuItem onClick={() => navigate("/tourism/profile")}>
+                    Profile
+                  </MenuItem>
                 )}
-                {(isOwner || ["Manager", "Room Manager", "Receptionist", "Sales Associate"].includes(role)) && (
-                  <MenuItem onClick={() => {
-                    const staffRoles = ["Manager", "Room Manager", "Receptionist", "Sales Associate"];
-                    if (role === "Business Owner") {
-                      navigate("/business");
-                    } else if (staffRoles.includes(role)) {
-                      navigate("/business/dashboard");
-                    }
-                  }}>My Business</MenuItem>
+
+                <MenuItem onClick={() => navigate(profilePath)}>
+                  Settings
+                </MenuItem>
+                {isTourism && (
+                  <MenuItem onClick={() => navigate(statusPath)}>
+                    Admin Dashboard
+                  </MenuItem>
+                )}
+                {(isOwner ||
+                  [
+                    "Manager",
+                    "Room Manager",
+                    "Receptionist",
+                    "Sales Associate",
+                  ].includes(role)) && (
+                  <MenuItem
+                    onClick={() => {
+                      const staffRoles = [
+                        "Manager",
+                        "Room Manager",
+                        "Receptionist",
+                        "Sales Associate",
+                      ];
+                      if (role === "Business Owner") {
+                        navigate("/business");
+                      } else if (staffRoles.includes(role)) {
+                        navigate("/business/dashboard");
+                      }
+                    }}
+                  >
+                    My Business
+                  </MenuItem>
                 )}
                 <ListDivider />
-                <MenuItem color="danger" onClick={() => { logout(); navigate('/'); }}>Logout</MenuItem>
+                <MenuItem
+                  color="danger"
+                  onClick={() => {
+                    logout();
+                    navigate("/");
+                  }}
+                >
+                  Logout
+                </MenuItem>
               </Menu>
             </Dropdown>
           )}
@@ -164,9 +300,36 @@ const Navbar: React.FC<NavbarProps> = ({ servicesId = "features", aboutId = "abo
             borderRadius: 10,
           }}
         >
-          <span style={{ display: "block", width: 18, height: 2, background: colors.primary, borderRadius: 2, transition: 'all 0.2s ease' }} />
-          <span style={{ display: "block", width: 18, height: 2, background: colors.primary, borderRadius: 2, transition: 'all 0.2s ease' }} />
-          <span style={{ display: "block", width: 18, height: 2, background: colors.primary, borderRadius: 2, transition: 'all 0.2s ease' }} />
+          <span
+            style={{
+              display: "block",
+              width: 18,
+              height: 2,
+              background: colors.primary,
+              borderRadius: 2,
+              transition: "all 0.2s ease",
+            }}
+          />
+          <span
+            style={{
+              display: "block",
+              width: 18,
+              height: 2,
+              background: colors.primary,
+              borderRadius: 2,
+              transition: "all 0.2s ease",
+            }}
+          />
+          <span
+            style={{
+              display: "block",
+              width: 18,
+              height: 2,
+              background: colors.primary,
+              borderRadius: 2,
+              transition: "all 0.2s ease",
+            }}
+          />
         </button>
       </div>
 
@@ -174,94 +337,111 @@ const Navbar: React.FC<NavbarProps> = ({ servicesId = "features", aboutId = "abo
       {open && (
         <div className="mobile-menu" role="dialog" aria-modal="true">
           <div className="mobile-menu-inner">
-            <a 
-              className="nav-link" 
-              style={{ 
-                color: colors.primary, 
-                fontSize: '16px', 
+            <a
+              className="nav-link"
+              style={{
+                color: colors.primary,
+                fontSize: "16px",
                 fontWeight: 600,
-                padding: '12px 8px',
-                borderBottom: `1px solid rgba(13,27,42,0.1)`
-              }} 
-              href="#hero" 
-              onClick={(e) => { e.preventDefault(); scrollTo("hero"); }}
+                padding: "12px 8px",
+                borderBottom: `1px solid rgba(13,27,42,0.1)`,
+              }}
+              href="#hero"
+              onClick={(e) => {
+                e.preventDefault();
+                scrollTo("hero");
+              }}
             >
               Home
             </a>
-            <a 
-              className="nav-link" 
-              style={{ 
-                color: colors.primary, 
-                fontSize: '16px', 
+            <a
+              className="nav-link"
+              style={{
+                color: colors.primary,
+                fontSize: "16px",
                 fontWeight: 600,
-                padding: '12px 8px',
-                borderBottom: `1px solid rgba(13,27,42,0.1)`
-              }} 
-              href={`#${aboutId}`} 
-              onClick={(e) => { e.preventDefault(); scrollTo(aboutId); }}
+                padding: "12px 8px",
+                borderBottom: `1px solid rgba(13,27,42,0.1)`,
+              }}
+              href={`#${aboutId}`}
+              onClick={(e) => {
+                e.preventDefault();
+                scrollTo(aboutId);
+              }}
             >
               About
             </a>
-            <a 
-              className="nav-link" 
-              style={{ 
-                color: colors.primary, 
-                fontSize: '16px', 
+            <a
+              className="nav-link"
+              style={{
+                color: colors.primary,
+                fontSize: "16px",
                 fontWeight: 600,
-                padding: '12px 8px',
-                borderBottom: `1px solid rgba(13,27,42,0.1)`
-              }} 
-              href={`#${servicesId}`} 
-              onClick={(e) => { e.preventDefault(); scrollTo(servicesId); }}
+                padding: "12px 8px",
+                borderBottom: `1px solid rgba(13,27,42,0.1)`,
+              }}
+              href={`#${servicesId}`}
+              onClick={(e) => {
+                e.preventDefault();
+                scrollTo(servicesId);
+              }}
             >
               Services
             </a>
-            <div style={{ 
-              display: "flex", 
-              flexDirection: 'column',
-              gap: 12, 
-              marginTop: 16, 
-              paddingTop: 16, 
-              borderTop: `2px solid ${colors.primary}` 
-            }}>
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: 12,
+                marginTop: 16,
+                paddingTop: 16,
+                borderTop: `2px solid ${colors.primary}`,
+              }}
+            >
               {!user ? (
                 <>
                   <Button
                     variant="outlined"
                     color="neutral"
-                    onClick={() => { setOpen(false); navigate("/login"); }}
-                    sx={{ 
+                    onClick={() => {
+                      setOpen(false);
+                      navigate("/login");
+                    }}
+                    sx={{
                       color: colors.primary,
                       borderColor: colors.primary,
-                      textTransform: 'none',
+                      textTransform: "none",
                       fontWeight: 600,
                       borderRadius: 10,
-                      padding: '12px 20px',
-                      fontSize: '16px',
-                      '&:hover': { 
-                        backgroundColor: 'rgba(10,27,71,0.05)',
+                      padding: "12px 20px",
+                      fontSize: "16px",
+                      "&:hover": {
+                        backgroundColor: "rgba(10,27,71,0.05)",
                         borderColor: colors.primary,
-                      } 
+                      },
                     }}
                   >
                     Login
                   </Button>
                   <Button
                     variant="solid"
-                    onClick={() => { setOpen(false); navigate("/business-registration"); }}
-                    sx={{ 
-                      backgroundColor: colors.primary, 
-                      color: '#ffffff', 
-                      fontWeight: 600, 
-                      textTransform: 'none', 
-                      borderRadius: 10, 
-                      padding: '12px 20px',
-                      fontSize: '16px',
-                      boxShadow: '0 2px 8px rgba(10,27,71,0.2)', 
-                      '&:hover': { 
-                        backgroundColor: '#0a1a3d', 
-                        boxShadow: '0 4px 16px rgba(10,27,71,0.3)' 
-                      } 
+                    onClick={() => {
+                      setOpen(false);
+                      navigate("/business-registration");
+                    }}
+                    sx={{
+                      backgroundColor: colors.primary,
+                      color: "#ffffff",
+                      fontWeight: 600,
+                      textTransform: "none",
+                      borderRadius: 10,
+                      padding: "12px 20px",
+                      fontSize: "16px",
+                      boxShadow: "0 2px 8px rgba(10,27,71,0.2)",
+                      "&:hover": {
+                        backgroundColor: "#0a1a3d",
+                        boxShadow: "0 4px 16px rgba(10,27,71,0.3)",
+                      },
                     }}
                   >
                     Sign Up
@@ -269,65 +449,122 @@ const Navbar: React.FC<NavbarProps> = ({ servicesId = "features", aboutId = "abo
                 </>
               ) : (
                 <>
-                  <Button 
-                    variant="outlined" 
-                    color="neutral" 
-                    onClick={() => { setOpen(false); navigate(profilePath); }} 
-                    sx={{ textTransform: 'none', borderRadius: 10, padding: '12px 20px', fontSize: '16px' }}
+                  <Button
+                    variant="outlined"
+                    color="neutral"
+                    onClick={() => {
+                      setOpen(false);
+                      navigate(profilePath);
+                    }}
+                    sx={{
+                      textTransform: "none",
+                      borderRadius: 10,
+                      padding: "12px 20px",
+                      fontSize: "16px",
+                    }}
                   >
                     Profile
                   </Button>
-                  <Button 
-                    variant="outlined" 
-                    color="neutral" 
-                    onClick={() => { setOpen(false); navigate(profilePath); }} 
-                    sx={{ textTransform: 'none', borderRadius: 10, padding: '12px 20px', fontSize: '16px' }}
+                  <Button
+                    variant="outlined"
+                    color="neutral"
+                    onClick={() => {
+                      setOpen(false);
+                      navigate(profilePath);
+                    }}
+                    sx={{
+                      textTransform: "none",
+                      borderRadius: 10,
+                      padding: "12px 20px",
+                      fontSize: "16px",
+                    }}
                   >
                     Settings
                   </Button>
                   {isOwner && (
-                    <Button 
-                      variant="outlined" 
-                      color="neutral" 
-                      onClick={() => { setOpen(false); navigate(statusPath); }} 
-                      sx={{ textTransform: 'none', borderRadius: 10, padding: '12px 20px', fontSize: '16px' }}
+                    <Button
+                      variant="outlined"
+                      color="neutral"
+                      onClick={() => {
+                        setOpen(false);
+                        navigate(statusPath);
+                      }}
+                      sx={{
+                        textTransform: "none",
+                        borderRadius: 10,
+                        padding: "12px 20px",
+                        fontSize: "16px",
+                      }}
                     >
                       My Business
                     </Button>
                   )}
                   {isTourism && (
-                    <Button 
-                      variant="outlined" 
-                      color="neutral" 
-                      onClick={() => { setOpen(false); navigate(statusPath); }} 
-                      sx={{ textTransform: 'none', borderRadius: 10, padding: '12px 20px', fontSize: '16px' }}
+                    <Button
+                      variant="outlined"
+                      color="neutral"
+                      onClick={() => {
+                        setOpen(false);
+                        navigate(statusPath);
+                      }}
+                      sx={{
+                        textTransform: "none",
+                        borderRadius: 10,
+                        padding: "12px 20px",
+                        fontSize: "16px",
+                      }}
                     >
                       Admin Dashboard
                     </Button>
                   )}
-                  {(isOwner || ["Manager", "Room Manager", "Receptionist", "Sales Associate"].includes(role)) && (
-                    <Button 
-                      variant="outlined" 
-                      color="neutral" 
-                      onClick={() => { 
-                        setOpen(false); 
-                        const staffRoles = ["Manager", "Room Manager", "Receptionist", "Sales Associate"];
+                  {(isOwner ||
+                    [
+                      "Manager",
+                      "Room Manager",
+                      "Receptionist",
+                      "Sales Associate",
+                    ].includes(role)) && (
+                    <Button
+                      variant="outlined"
+                      color="neutral"
+                      onClick={() => {
+                        setOpen(false);
+                        const staffRoles = [
+                          "Manager",
+                          "Room Manager",
+                          "Receptionist",
+                          "Sales Associate",
+                        ];
                         if (role === "Business Owner") {
                           navigate("/business");
                         } else if (staffRoles.includes(role)) {
                           navigate("/business/dashboard");
                         }
-                      }} 
-                      sx={{ textTransform: 'none', borderRadius: 10, padding: '12px 20px', fontSize: '16px' }}
+                      }}
+                      sx={{
+                        textTransform: "none",
+                        borderRadius: 10,
+                        padding: "12px 20px",
+                        fontSize: "16px",
+                      }}
                     >
                       My Business
                     </Button>
                   )}
-                  <Button 
-                    variant="solid" 
-                    color="danger" 
-                    onClick={() => { setOpen(false); logout(); navigate('/'); }} 
-                    sx={{ textTransform: 'none', borderRadius: 10, padding: '12px 20px', fontSize: '16px' }}
+                  <Button
+                    variant="solid"
+                    color="danger"
+                    onClick={() => {
+                      setOpen(false);
+                      logout();
+                      navigate("/");
+                    }}
+                    sx={{
+                      textTransform: "none",
+                      borderRadius: 10,
+                      padding: "12px 20px",
+                      fontSize: "16px",
+                    }}
                   >
                     Logout
                   </Button>

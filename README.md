@@ -30,6 +30,10 @@
     - SearchBar.tsx
     - DynamicTab.tsx
     - NoDataFound.tsx
+    - PermissionGuard.tsx
+        - For specific component rendering based on roles and permissions
+    - ProtectedRoute.tsx
+        - For specific pages rendering based on roles and permissions
 2. Use utils/Colors.ts for consistent color
 3. Configure the IP Address in api.tsx to run the app locally
 4. Use clean architecture

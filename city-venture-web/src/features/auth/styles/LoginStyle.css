@@ -25,6 +25,66 @@
   object-fit: cover;
 }
 
+/* Mobile Responsive Styles */
+@media (max-width: 768px) {
+  .login-left-container {
+    display: none !important; /* Hide background image on mobile */
+  }
+
+  .login-right-container {
+    width: 100% !important;
+    padding: 20px;
+  }
+  
+  .login-container, .register-container {
+    flex-direction: column;
+    height: auto;
+    min-height: 100vh;
+  }
+
+  .left-container {
+    display: none; /* Hide background image on mobile */
+  }
+
+  .right-container {
+    flex: 1;
+    width: 100%;
+    padding: 16px;
+    justify-content: flex-start;
+    padding-top: 40px;
+  }
+}
+
+@media (max-width: 480px) {
+  .login-right-container {
+    padding: 12px !important;
+  }
+  
+  .right-container {
+    padding: 12px;
+    padding-top: 24px;
+  }
+}
+
+/* Small tablet view - show smaller image */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .login-left-container {
+    flex: 0.6;
+  }
+  
+  .login-right-container {
+    flex: 1;
+  }
+  
+  .left-container {
+    flex: 0.6;
+  }
+  
+  .right-container {
+    flex: 1;
+  }
+}
+
 .form-container {
   width: 100%;
   max-width: 500px;

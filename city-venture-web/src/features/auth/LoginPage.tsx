@@ -153,7 +153,7 @@ const Login: React.FC = () => {
 
             <Typography.Body align="center" size={"sm"}>
               Create tourist account
-              <Link to={"/tourist/login"} style={{ textDecoration: "none" }}>
+              <Link to={"/register"} style={{ textDecoration: "none" }}>
                 <Typography.Body
                   size={"sm"}
                   startDecorator

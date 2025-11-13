@@ -27,7 +27,7 @@ import {
 import { Add, HourglassEmpty, Cancel, CheckCircle } from "@mui/icons-material";
 import logo from "@/src/assets/images/logo.png";
 import { RoleGuard } from "@/src/components/PermissionGuard";
-import "./MyBusiness.css";
+import "./styles/MyBusiness.css";
 
 const MyBusiness = () => {
   const navigate = useNavigate();
@@ -150,7 +150,7 @@ const MyBusiness = () => {
                 </MenuItem>
                 <ListDivider />
                 <MenuItem
-                  onClick={() => navigate("/business/profile")}
+                  onClick={() => navigate("/user/profile")}
                   sx={{ fontWeight: 600 }}
                 >
                   Profile

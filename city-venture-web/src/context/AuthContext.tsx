@@ -12,7 +12,7 @@ import api from "@/src/services/api";
 interface AuthContextType {
   user: UserDetails | null;
   loading: boolean;
-  login: (email: string, password: string) => Promise<UserDetails>;
+  login: (email: string, password: string, rememberMe?: boolean) => Promise<UserDetails>;
   logout: () => void;
 }
 
@@ -26,7 +26,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = useState<UserDetails | null>(null);
   const [loading, setLoading] = useState(true);
 
-  /** Load user from localStorage */
+  /** Load user from storage and sync across tabs */
   useEffect(() => {
     (async () => {
       const storedUser = getStoredUser();
@@ -43,7 +43,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
           const { data } = await axios.get<{ permissions: string[] }>(`${api}/permissions/me`);
           const updatedUser: UserDetails = { ...storedUser, permissions: data?.permissions || [] };
           setUser(updatedUser);
-          localStorage.setItem("user", JSON.stringify(updatedUser));
+          const rememberMe = localStorage.getItem("rememberMe") === "true";
+          const storage = rememberMe ? localStorage : sessionStorage;
+          storage.setItem("user", JSON.stringify(updatedUser));
         } catch (err) {
           // Non-fatal: keep going without permissions; UI will hide items
            console.warn("[AuthContext] Failed to refresh permissions on load", err);
@@ -52,11 +54,38 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
       setLoading(false);
     })();
+
+    // Listen for storage changes to sync auth state across tabs
+    const handleStorageChange = (e: StorageEvent) => {
+      // Handle logout from another tab
+      if (e.key === "logout-event") {
+        setUser(null);
+        delete axios.defaults.headers.common["Authorization"];
+        return;
+      }
+
+      // Handle login from another tab
+      if (e.key === "user" || e.key === "token") {
+        const storedUser = getStoredUser();
+        const token = getToken();
+        
+        if (storedUser && token) {
+          setUser(storedUser);
+          axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+        } else {
+          setUser(null);
+          delete axios.defaults.headers.common["Authorization"];
+        }
+      }
+    };
+
+    window.addEventListener("storage", handleStorageChange);
+    return () => window.removeEventListener("storage", handleStorageChange);
   }, []);
 
   /** LOGIN */
-  const login = useCallback(async (email: string, password: string) => {
-    const loggedInUser = await loginUser(email, password);
+  const login = useCallback(async (email: string, password: string, rememberMe = false) => {
+    const loggedInUser = await loginUser(email, password, rememberMe);
     setUser(loggedInUser);
     return loggedInUser;
   }, []);

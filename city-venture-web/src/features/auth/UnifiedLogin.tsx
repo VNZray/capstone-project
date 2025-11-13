@@ -22,7 +22,7 @@ import LockRounded from "@mui/icons-material/LockRounded";
 import GoogleIcon from "@mui/icons-material/Google";
 import Divider from "@mui/joy/Divider";
 import Checkbox from "@mui/joy/Checkbox";
-import "./LoginUnified.css";
+import "./styles/LoginUnified.css";
 
 type Role = "Tourist" | "Owner" | "Admin";
 

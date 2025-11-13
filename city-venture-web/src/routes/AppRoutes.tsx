@@ -10,8 +10,7 @@ import LandingPage from "@/src/features/landing-page/LandingPage";
 import About from "../pages/About";
 import Registration from "../pages/BusinessRegistration";
 
-import BusinessPortalLogin from "../features/auth/BusinessPortalLogin";
-import BusinessPortalRegister from "../features/auth/BusinessPortalRegister";
+import BusinessPortalLogin from "../features/auth/LoginPage";
 import AdminLogin from "../features/auth/AdminLogin";
 import AdminRegister from "../features/auth/AdminRegister";
 import UnifiedLogin from "@/src/features/auth/UnifiedLogin";
@@ -66,6 +65,9 @@ import AccommodationStaff from "../features/business/accommodation/Staff/ManageS
 import ShopStaff from "../features/business/shop/Staff/ManageStaff";
 import Test from "../pages/Test";
 import TestButton from "../pages/TestButton";
+import OwnerProfile from "../features/business/profile/Profile";
+import TourismProfile from "../features/admin/profile/Profile";
+import TouristRegister from "../features/auth/TouristRegister";
 
 export default function AppRoutes() {
   const user = "/";
@@ -100,17 +102,14 @@ export default function AppRoutes() {
           <Route path={`${user}about`} element={<About />} />
         </Route>
         <Route path={`/unauthorized`} element={<Unauthorized />} />
-        <Route path={`/login`} element={<UnifiedLogin />} />
-        <Route path={`${business}/login`} element={<BusinessPortalLogin />} />
+        {/* <Route path={`/login`} element={<UnifiedLogin />} /> */}
+        <Route path={`/login`} element={<BusinessPortalLogin />} />
         <Route path={`business-registration`} element={<Registration />} />
         <Route path={`/test`} element={<Test />} />
         <Route path={`/test-button`} element={<TestButton />} />
-
-        <Route
-          path={`${business}/signup`}
-          element={<BusinessPortalRegister />}
-        />
-
+        <Route path={`user/profile`} element={<OwnerProfile />} />
+        <Route path={`tourism/profile`} element={<TourismProfile />} />
+        <Route path={`/register`} element={<TouristRegister />} />
         <Route path={`${tourism}/login`} element={<AdminLogin />} />
         <Route path={`${tourism}/signup`} element={<AdminRegister />} />
         <Route

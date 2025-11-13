@@ -4,8 +4,10 @@ import Container from "@/src/components/Container";
 import Typography from "@/src/components/Typography";
 import Button from "@/src/components/Button";
 import { FaMobileAlt, FaCheckCircle } from "react-icons/fa";
-import { Grid } from "@mui/joy";
+import { AspectRatio, Grid } from "@mui/joy";
 import placeholder from "@/src/assets/images/placeholder-image.png";
+import dashboard_preview from "@/src/assets/images/dashboard_preview.png";
+
 interface FeaturesSectionProps {
   mobilePreview?: string;
   dashboardPreview?: string;
@@ -31,13 +33,19 @@ const FeaturesSection: React.FC<FeaturesSectionProps> = ({
 
   return (
     <section id="why-choose-us" style={{ padding: "16px" }}>
-      <Container align="center" padding="0" gap="80px" style={{ margin: "0 0 60px 0" }}>
+      <Container
+        align="center"
+        padding="0"
+        gap="80px"
+        style={{ margin: "0 0 60px 0" }}
+      >
         <Grid xs={12} sm={11} md={11} lg={9} container spacing={4}>
           <Grid xs={12} sm={12} md={12} lg={6}>
             {/* Mobile app showcase */}
             <Container
               elevation={2}
               padding="0"
+              gap="0"
               radius="18px"
               style={{ overflow: "hidden" }}
             >
@@ -53,25 +61,14 @@ const FeaturesSection: React.FC<FeaturesSectionProps> = ({
                   Mobile App Preview
                 </Typography.Label>
               </Container>
-              <div
-                style={{
-                  height: 360,
-                  display: "grid",
-                  placeItems: "center",
-                  background: "#F7FAFC",
-                }}
-              >
+              <AspectRatio ratio="16/9">
                 <img
-                  src={mobilePreview || placeholder}
-                  alt="Mobile app placeholder"
-                  style={{
-                    maxWidth: "90%",
-                    maxHeight: "100%",
-                    objectFit: "contain",
-                    borderRadius: 12,
-                  }}
+                  src={
+                    mobilePreview ||
+                    "https://cdn.dribbble.com/userupload/44244484/file/08ed1664e91d12793bdc96d92ed8bca5.png?resize=400x0"
+                  }
                 />
-              </div>
+              </AspectRatio>
             </Container>
           </Grid>
 
@@ -239,6 +236,7 @@ const FeaturesSection: React.FC<FeaturesSectionProps> = ({
               elevation={2}
               padding="0"
               radius="16px"
+              gap="0"
               style={{ overflow: "hidden" }}
             >
               <Container
@@ -247,25 +245,9 @@ const FeaturesSection: React.FC<FeaturesSectionProps> = ({
               >
                 <Typography.Label size="sm">Dashboard Preview</Typography.Label>
               </Container>
-              <div
-                style={{
-                  height: 360,
-                  display: "grid",
-                  placeItems: "center",
-                  background: "#F7FAFC",
-                }}
-              >
-                <img
-                  src={dashboardPreview || placeholder}
-                  alt="Dashboard placeholder"
-                  style={{
-                    maxWidth: "90%",
-                    maxHeight: "100%",
-                    objectFit: "contain",
-                    borderRadius: 12,
-                  }}
-                />
-              </div>
+              <AspectRatio ratio={"16/9"}>
+                <img src={dashboardPreview || dashboard_preview} />
+              </AspectRatio>
             </Container>
           </Grid>
         </Grid>
