@@ -35,7 +35,6 @@ const Navbar: React.FC<NavbarProps> = ({ servicesId = "features", aboutId = "abo
   const role = user?.role_name ?? ""; // Now normalized by AuthService: "Owner" | "Admin" | "Tourist"
   const isOwner = role === "Business Owner";
   const isTourism = role === "Admin";
-  const isTourist = role === "Tourist";
   const displayRole = role;
   const nameOnly = `${user?.first_name ?? ""} ${user?.last_name ?? ""}`.trim();
   const displayName = nameOnly || ""; // do not fallback to email for display name per requirement
@@ -130,19 +129,22 @@ const Navbar: React.FC<NavbarProps> = ({ servicesId = "features", aboutId = "abo
                 <MenuItem disabled sx={{ fontWeight: 600 }}>{displayName}</MenuItem>
                 {displayRole && (
                   <MenuItem disabled sx={{ fontSize: 12, opacity: 0.8 }}>{displayRole}</MenuItem>
-                  
                 )}
                 <ListDivider />
                 <MenuItem onClick={() => navigate(profilePath)}>Profile</MenuItem>
                 <MenuItem onClick={() => navigate(profilePath)}>Settings</MenuItem>
-                {isOwner && (
-                  <MenuItem onClick={() => navigate(statusPath)}>My Business</MenuItem>
-                )}
                 {isTourism && (
                   <MenuItem onClick={() => navigate(statusPath)}>Admin Dashboard</MenuItem>
                 )}
-                {isTourist && (
-                  <MenuItem onClick={() => navigate("/business")}>Business Status</MenuItem>
+                {(isOwner || ["Manager", "Room Manager", "Receptionist", "Sales Associate"].includes(role)) && (
+                  <MenuItem onClick={() => {
+                    const staffRoles = ["Manager", "Room Manager", "Receptionist", "Sales Associate"];
+                    if (role === "Business Owner") {
+                      navigate("/business");
+                    } else if (staffRoles.includes(role)) {
+                      navigate("/business/dashboard");
+                    }
+                  }}>My Business</MenuItem>
                 )}
                 <ListDivider />
                 <MenuItem color="danger" onClick={() => { logout(); navigate('/'); }}>Logout</MenuItem>
@@ -303,14 +305,22 @@ const Navbar: React.FC<NavbarProps> = ({ servicesId = "features", aboutId = "abo
                       Admin Dashboard
                     </Button>
                   )}
-                  {isTourist && (
+                  {(isOwner || ["Manager", "Room Manager", "Receptionist", "Sales Associate"].includes(role)) && (
                     <Button 
                       variant="outlined" 
                       color="neutral" 
-                      onClick={() => { setOpen(false); navigate("/tourist/business-status"); }} 
+                      onClick={() => { 
+                        setOpen(false); 
+                        const staffRoles = ["Manager", "Room Manager", "Receptionist", "Sales Associate"];
+                        if (role === "Business Owner") {
+                          navigate("/business");
+                        } else if (staffRoles.includes(role)) {
+                          navigate("/business/dashboard");
+                        }
+                      }} 
                       sx={{ textTransform: 'none', borderRadius: 10, padding: '12px 20px', fontSize: '16px' }}
                     >
-                      My Business Status
+                      My Business
                     </Button>
                   )}
                   <Button 

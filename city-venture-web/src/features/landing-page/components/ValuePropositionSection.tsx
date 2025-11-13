@@ -3,9 +3,8 @@ import { useNavigate } from "react-router-dom";
 import Container from "@/src/components/Container";
 import Typography from "@/src/components/Typography";
 import Button from "@/src/components/Button";
-import { Box, Chip, Grid } from "@mui/joy";
+import { Chip, Grid } from "@mui/joy";
 import { FaAppStoreIos, FaGooglePlay } from "react-icons/fa";
-import { colors } from "@/src/utils/Colors";
 
 const ValuePropositionSection: React.FC = () => {
   const navigate = useNavigate();

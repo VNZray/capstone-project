@@ -7,7 +7,6 @@ import FeaturesSection from "./components/FeaturesSection";
 import HowItWorksSection from "./components/HowItWorksSection";
 import FooterSection from "./components/FooterSection";
 import PageContainer from "@/src/components/PageContainer";
-import Header from "./components/Header";
 
 export default function LandingPage() {
   useEffect(() => {
@@ -15,10 +14,7 @@ export default function LandingPage() {
   }, []);
 
   const logoImage = new URL("../assets/images/logo.png", import.meta.url).href;
-  const placeholderImage = new URL(
-    "../assets/images/placeholder-image.png",
-    import.meta.url
-  ).href;
+
 
   const gridItems = [
     {
@@ -54,7 +50,7 @@ export default function LandingPage() {
         <HeroSection gridItems={gridItems} />
         <ValuePropositionSection />
         <BenefitsSection />
-        <FeaturesSection placeholderImage={placeholderImage} />
+        <FeaturesSection />
         <HowItWorksSection />
       </main>
       <FooterSection logoImage={logoImage} />

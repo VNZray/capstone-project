@@ -1,10 +1,9 @@
-import React, { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo } from "react";
 import Typography from "@/src/components/Typography";
 import NoDataFound from "@/src/components/NoDataFound";
 import PageContainer from "@/src/components/PageContainer";
 import {
   Search,
-  Eye,
   Check,
   XCircle,
   List,
@@ -13,9 +12,8 @@ import {
   LogOut,
 } from "lucide-react";
 import BookingDetails from "./components/BookingDetails";
-import { Input, Box } from "@mui/joy";
+import { Input} from "@mui/joy";
 import Container from "@/src/components/Container";
-import Button from "@/src/components/Button";
 import { Select, Option } from "@mui/joy";
 import { useBusiness } from "@/src/context/BusinessContext";
 import {
@@ -24,7 +22,6 @@ import {
   updateBookingStatus,
 } from "@/src/services/BookingService";
 import { fetchUserData } from "@/src/services/auth/AuthService";
-import api from "@/src/services/api";
 import type { Booking } from "@/src/types/Booking";
 import DynamicTab from "@/src/components/ui/DynamicTab";
 import Table, {

@@ -9,13 +9,11 @@ import placeholder from "@/src/assets/images/placeholder-image.png";
 interface FeaturesSectionProps {
   mobilePreview?: string;
   dashboardPreview?: string;
-  placeholderImage: string;
 }
 
 const FeaturesSection: React.FC<FeaturesSectionProps> = ({
   mobilePreview,
   dashboardPreview,
-  placeholderImage,
 }) => {
   const navigate = useNavigate();
 

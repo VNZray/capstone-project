@@ -26,6 +26,7 @@ import {
 } from "@mui/joy";
 import { Add, HourglassEmpty, Cancel, CheckCircle } from "@mui/icons-material";
 import logo from "@/src/assets/images/logo.png";
+import { RoleGuard } from "@/src/components/PermissionGuard";
 import "./MyBusiness.css";
 
 const MyBusiness = () => {
@@ -192,36 +193,38 @@ const MyBusiness = () => {
           >
             My Businesses
           </Typography>
-          <Button
-            variant="solid"
-            size="md"
-            startDecorator={<Add />}
-            onClick={() => navigate("/business/register")}
-            sx={{
-              background: `linear-gradient(135deg, ${colors.primary} 0%, #0a1a3d 100%)`,
-              borderRadius: 10,
-              px: 2,
-              py: 1,
-              fontWeight: 600,
-              fontSize: ".95rem",
-              boxShadow: "0 4px 16px rgba(0,0,0,0.15)",
-              transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
-              border: `2px solid ${colors.primary}`,
-              "&:hover": {
-                background: `linear-gradient(135deg, #0a1a3d 0%, ${colors.primary} 100%)`,
-                boxShadow: "0 8px 25px rgba(0,0,0,0.2)",
-                "& .MuiSvgIcon-root": {
-                  transform: "rotate(90deg)",
+          <RoleGuard role="Business Owner">
+            <Button
+              variant="solid"
+              size="md"
+              startDecorator={<Add />}
+              onClick={() => navigate("/business/register")}
+              sx={{
+                background: `linear-gradient(135deg, ${colors.primary} 0%, #0a1a3d 100%)`,
+                borderRadius: 10,
+                px: 2,
+                py: 1,
+                fontWeight: 600,
+                fontSize: ".95rem",
+                boxShadow: "0 4px 16px rgba(0,0,0,0.15)",
+                transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+                border: `2px solid ${colors.primary}`,
+                "&:hover": {
+                  background: `linear-gradient(135deg, #0a1a3d 0%, ${colors.primary} 100%)`,
+                  boxShadow: "0 8px 25px rgba(0,0,0,0.2)",
+                  "& .MuiSvgIcon-root": {
+                    transform: "rotate(90deg)",
+                  },
                 },
-              },
-              "&:active": {
-                transform: "translateY(0) scale(1)",
-                transition: "all 0.1s ease",
-              },
-            }}
-          >
-            Register Business
-          </Button>
+                "&:active": {
+                  transform: "translateY(0) scale(1)",
+                  transition: "all 0.1s ease",
+                },
+              }}
+            >
+              Register Business
+            </Button>
+          </RoleGuard>
         </div>
 
         {/* Tabs Section */}

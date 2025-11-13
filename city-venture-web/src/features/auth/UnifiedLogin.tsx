@@ -59,8 +59,19 @@ export default function UnifiedLogin() {
         await login(email, password);
         navigate("/");
       } else if (role === "Owner") {
-        await login(email, password);
-        navigate("/business");
+        const loggedInUser = await login(email, password);
+        
+        // Check if user is staff (not Business Owner) and redirect to dashboard
+        const staffRoles = ["Manager", "Room Manager", "Receptionist", "Sales Associate"];
+        const userRole = loggedInUser.role_name || "";
+        
+        if (staffRoles.includes(userRole)) {
+          // Staff members go directly to business dashboard
+          navigate("/business/dashboard");
+        } else {
+          // Business Owners go to business listing page
+          navigate("/business");
+        }
       } else {
         await login(email, password);
         navigate("/tourism/dashboard");

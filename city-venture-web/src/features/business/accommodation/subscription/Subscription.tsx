@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import PageContainer from "@/src/components/PageContainer";
 import Typography from "@/src/components/Typography";
 import Container from "@/src/components/Container";
@@ -6,14 +6,13 @@ import Button from "@/src/components/Button";
 import DynamicTab from "@/src/components/ui/DynamicTab";
 import PricingCard from "./components/PricingCard";
 import BillingModal from "./components/BillingModal";
-import { Box, Divider } from "@mui/joy";
+import { Box } from "@mui/joy";
 import {
   Check,
   TrendingUp,
   Calendar,
   Bell,
   Eye,
-  FileText,
 } from "lucide-react";
 import { colors } from "@/src/utils/Colors";
 

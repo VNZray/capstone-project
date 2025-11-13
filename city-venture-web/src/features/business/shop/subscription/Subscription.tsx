@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import PageContainer from "@/src/components/PageContainer";
 import Typography from "@/src/components/Typography";
 import Container from "@/src/components/Container";

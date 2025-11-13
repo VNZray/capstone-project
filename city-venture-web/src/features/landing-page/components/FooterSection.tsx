@@ -17,7 +17,7 @@ interface FooterSectionProps {
   logoImage: string;
 }
 
-const FooterSection: React.FC<FooterSectionProps> = ({ logoImage }) => {
+const FooterSection: React.FC<FooterSectionProps> = () => {
   const footerColumns = [
     {
       title: "For Tourists",

@@ -15,6 +15,7 @@ import BusinessPortalRegister from "../features/auth/BusinessPortalRegister";
 import AdminLogin from "../features/auth/AdminLogin";
 import AdminRegister from "../features/auth/AdminRegister";
 import UnifiedLogin from "@/src/features/auth/UnifiedLogin";
+import Unauthorized from "@/src/pages/Unauthorized";
 import BusinessLayout from "../layout/BusinessLayout";
 import MyBusiness from "../features/business/listing/MyBusiness";
 import { AuthProvider } from "../context/AuthContext";
@@ -73,7 +74,7 @@ export default function AppRoutes() {
   const business_type = "Accommodation";
 
   // Normalized role names as produced by AuthService
-  const TOURISM_ROLES = ["Admin"]; // Tourism Head/Officer normalize to Tourism Admin
+  const TOURISM_ROLES = ["Admin", "Tourism Officer"];
   const BUSINESS_ROLES = [
     "Business Owner",
     "Manager",
@@ -98,6 +99,7 @@ export default function AppRoutes() {
           <Route path={`${user}`} element={<LandingPage />} />
           <Route path={`${user}about`} element={<About />} />
         </Route>
+        <Route path={`/unauthorized`} element={<Unauthorized />} />
         <Route path={`/login`} element={<UnifiedLogin />} />
         <Route path={`${business}/login`} element={<BusinessPortalLogin />} />
         <Route path={`business-registration`} element={<Registration />} />
@@ -122,7 +124,7 @@ export default function AppRoutes() {
             <Route
               path={`${business}`}
               element={
-                <ProtectedRoute requiredRoles={BUSINESS_ROLES}>
+                <ProtectedRoute requiredRoles={["Business Owner"]}>
                   <MyBusiness />
                 </ProtectedRoute>
               }
@@ -131,7 +133,7 @@ export default function AppRoutes() {
             <Route
               path={`${business}/register`}
               element={
-                <ProtectedRoute requiredRoles={BUSINESS_ROLES}>
+                <ProtectedRoute requiredRoles={["Business Owner"]}>
                   <BusinessRegistration />
                 </ProtectedRoute>
               }
@@ -176,7 +178,7 @@ export default function AppRoutes() {
                 <Route
                   path={`${business}/manage-staff`}
                   element={
-                    <ProtectedRoute requiredRoles={BUSINESS_ROLES}>
+                    <ProtectedRoute requiredRoles={["Business Owner"]}>
                       <AccommodationStaff />
                     </ProtectedRoute>
                   }
@@ -184,7 +186,7 @@ export default function AppRoutes() {
                 <Route
                   path={`${business}/subscription`}
                   element={
-                    <ProtectedRoute requiredRoles={BUSINESS_ROLES}>
+                    <ProtectedRoute requiredRoles={["Business Owner"]}>
                       <AccommodationSubscription />
                     </ProtectedRoute>
                   }
@@ -211,7 +213,7 @@ export default function AppRoutes() {
                 <Route
                   path={`${business}/subscription`}
                   element={
-                    <ProtectedRoute requiredRoles={BUSINESS_ROLES}>
+                    <ProtectedRoute requiredRoles={["Business Owner"]}>
                       <ShopSubscription />
                     </ProtectedRoute>
                   }
@@ -344,7 +346,7 @@ export default function AppRoutes() {
             <Route
               path={`${business}/settings`}
               element={
-                <ProtectedRoute requiredRoles={BUSINESS_ROLES}>
+                <ProtectedRoute requiredRoles={["Business Owner"]}>
                   <Settings />
                 </ProtectedRoute>
               }

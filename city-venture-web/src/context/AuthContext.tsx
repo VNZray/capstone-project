@@ -12,7 +12,7 @@ import api from "@/src/services/api";
 interface AuthContextType {
   user: UserDetails | null;
   loading: boolean;
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<UserDetails>;
   logout: () => void;
 }
 
@@ -46,7 +46,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
           localStorage.setItem("user", JSON.stringify(updatedUser));
         } catch (err) {
           // Non-fatal: keep going without permissions; UI will hide items
-          // console.warn("[AuthContext] Failed to refresh permissions on load", err);
+           console.warn("[AuthContext] Failed to refresh permissions on load", err);
         }
       }
 
@@ -58,6 +58,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const login = useCallback(async (email: string, password: string) => {
     const loggedInUser = await loginUser(email, password);
     setUser(loggedInUser);
+    return loggedInUser;
   }, []);
 
   /** LOGOUT */

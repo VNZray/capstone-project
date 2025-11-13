@@ -155,25 +155,17 @@ export default function Sidebar({
               "Business Owner",
               "Manager",
               "Room Manager",
-              "Receptionist"
-            ) ||
-              canAny("view_rooms", "add_room", "edit_room", "delete_room")) && (
+            ) && (
               <NavItem
                 to={`${route}/rooms`}
                 label="Manage Rooms"
                 icon={<BedDouble size={ICON_SIZE} />}
                 onClick={onClose}
               />
-            )}
+            ))}
 
           {businessDetails?.business_type_id === 1 &&
-            (hasRole(
-              "Business Owner",
-              "Manager",
-              "Room Manager",
-              "Receptionist"
-            ) ||
-              canAny("view_rooms", "add_room", "edit_room", "delete_room")) && (
+            hasRole("Business Owner") && (
               <NavItem
                 to={`${route}/subscription`}
                 label="Subscription"
@@ -183,8 +175,7 @@ export default function Sidebar({
             )}
 
           {businessDetails?.business_type_id === 2 &&
-            (hasRole("Business Owner", "Manager") ||
-              canAny("view_rooms", "add_room", "edit_room", "delete_room")) && (
+            hasRole("Business Owner") && (
               <NavItem
                 to={`${route}/subscription`}
                 label="Subscription"
@@ -273,29 +264,22 @@ export default function Sidebar({
               onClick={onClose}
             />
           )}
-          {(hasRole("Business Owner", "Manager") ||
-            canAny(
-              "view_staff",
-              "add_staff",
-              "edit_staff",
-              "remove_staff"
-            )) && (
+          {(hasRole("Business Owner") && (
             <NavItem
               to={`${route}/manage-staff`}
               label="Manage Staff"
               icon={<FaUserFriends />}
               onClick={onClose}
             />
-          )}
-          {(hasRole("Business Owner", "Manager") ||
-            canAny("edit_business_profile")) && (
+          ))}
+          {(hasRole("Business Owner") && (
             <NavItem
               to={`${route}/settings`}
               label="Settings"
               icon={<Settings size={18} />}
               onClick={onClose}
             />
-          )}
+          ))}
         </div>
 
         <div
@@ -307,7 +291,7 @@ export default function Sidebar({
             icon={<LogOut size={ICON_SIZE} />}
             onClick={() => {
               logout();
-              navigate("/");
+              navigate("/login");
               onClose?.();
             }}
           />

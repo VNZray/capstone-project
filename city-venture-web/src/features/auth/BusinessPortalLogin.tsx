@@ -24,9 +24,20 @@ const Login: React.FC = () => {
     try {
       setLoginError("");
 
-      await login(email, password);
+      const loggedInUser = await login(email, password);
 
-      if (user?.role_name === "Owner") {
+      // Check if user is staff (not Business Owner) and redirect accordingly
+      const staffRoles = ["Manager", "Room Manager", "Receptionist", "Sales Associate"];
+      const userRole = loggedInUser.role_name || "";
+      
+      if (staffRoles.includes(userRole)) {
+        // Staff members go directly to business dashboard
+        navigate("/business/dashboard");
+      } else if (userRole === "Business Owner") {
+        // Business Owners go to business listing page
+        navigate("/business");
+      } else {
+        // Default fallback
         navigate("/business/dashboard");
       }
     } catch (error: any) {
