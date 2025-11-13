@@ -10,13 +10,10 @@ import {
   Autocomplete,
   Chip,
 } from "@mui/joy";
-import {
-  deleteData,
-  getData,
-  insertData,
-} from "@/src/services/Service";
+import { deleteData, getData, insertData } from "@/src/services/Service";
 import type { Amenity } from "@/src/types/Amenity";
 import Typography from "@/src/components/Typography";
+import Alert from "@/src/components/Alert";
 interface EditBusinessModalProps {
   open: boolean;
   roomId?: string;
@@ -36,6 +33,17 @@ const EditAmenitiesModal: React.FC<EditBusinessModalProps> = ({
   const [selectedAmenities, setSelectedAmenities] = React.useState<Amenity[]>(
     []
   );
+  const [alertConfig, setAlertConfig] = React.useState<{
+    open: boolean;
+    type: "success" | "error" | "warning" | "info";
+    title: string;
+    message: string;
+  }>({
+    open: false,
+    type: "info",
+    title: "",
+    message: "",
+  });
 
   // get amenities
   const fetchAmenities = async () => {
@@ -103,121 +111,156 @@ const EditAmenitiesModal: React.FC<EditBusinessModalProps> = ({
             "room-amenities"
           );
         }
+
+        setAlertConfig({
+          open: true,
+          type: "success",
+          title: "Amenities Updated",
+          message: `Successfully updated room amenities. ${selectedAmenities.length} amenities are now linked to this room.`,
+        });
+
         onSave(selectedAmenities.map((a) => a.id).join(","));
+
+        setTimeout(() => {
+          onClose();
+          if (onUpdate) onUpdate();
+        }, 1500);
       } catch (err) {
+        const errorMessage =
+          err instanceof Error ? err.message : "Failed to update amenities";
+
+        setAlertConfig({
+          open: true,
+          type: "error",
+          title: "Update Failed",
+          message: errorMessage,
+        });
+
         console.error("Failed to update room amenities", err);
       }
     } else {
       onSave(selectedAmenities.map((a) => a.id).join(","));
+      onClose();
     }
-    if (onUpdate) onUpdate();
-
-    onClose();
   };
 
   return (
-    <Modal open={open} onClose={onClose}>
-      <ModalDialog size="lg" variant="outlined" maxWidth={600} minWidth={600}>
-        <Typography.CardTitle>Add New Room</Typography.CardTitle>
-        <DialogContent>
-          <FormControl>
-            <FormLabel>Update Amenities</FormLabel>
-            <Autocomplete
-              size="lg"
-              multiple
-              freeSolo
-              placeholder="Amenities"
-              limitTags={6}
-              options={amenities}
-              value={selectedAmenities}
-              getOptionLabel={(option) =>
-                typeof option === "string" ? option : option.name
-              }
-              renderTags={(value, getTagProps) =>
-                value.map((option, index) => (
-                  <span key={option.id} style={{ margin: 2 }}>
-                    <Chip
-                      {...getTagProps({ index })}
-                      color="primary"
-                      variant="outlined"
-                      size="lg"
-                    >
-                      {option.name}
-                    </Chip>
-                  </span>
-                ))
-              }
-              filterOptions={(options, state) => {
-                const inputValue = state.inputValue.trim().toLowerCase();
-                const filtered = options.filter(
-                  (option) =>
-                    typeof option !== "string" &&
-                    option.name.toLowerCase().includes(inputValue)
-                );
-
-                // If user typed something not in list → add “Add …”
-                if (
-                  inputValue !== "" &&
-                  !options.some(
-                    (opt) =>
-                      typeof opt !== "string" &&
-                      opt.name.toLowerCase() === inputValue
-                  )
-                ) {
-                  return [
-                    ...filtered,
-                    { id: -1, name: `Add "${state.inputValue}"` },
-                  ];
+    <>
+      <Modal open={open} onClose={onClose}>
+        <ModalDialog size="lg" variant="outlined" maxWidth={600} minWidth={600}>
+          <Typography.CardTitle>Add New Room</Typography.CardTitle>
+          <DialogContent>
+            <FormControl>
+              <FormLabel>Update Amenities</FormLabel>
+              <Autocomplete
+                size="lg"
+                multiple
+                freeSolo
+                placeholder="Amenities"
+                limitTags={6}
+                options={amenities}
+                value={selectedAmenities}
+                getOptionLabel={(option) =>
+                  typeof option === "string" ? option : option.name
                 }
-
-                return filtered;
-              }}
-              onChange={async (_, newValue) => {
-                const last = newValue[newValue.length - 1];
-
-                // User chose "Add ..."
-                if (last && typeof last !== "string" && last.id === -1) {
-                  const newAmenityName = last.name
-                    .replace(/^Add\s+"|"$/g, "")
-                    .trim();
-                  addAmenity(newAmenityName);
-                  await fetchAmenities();
-
-                  // Find inserted amenity (assumes fetchAmenities updates amenities)
-                  const inserted = amenities.find(
-                    (a) => a.name.toLowerCase() === newAmenityName.toLowerCase()
+                renderTags={(value, getTagProps) =>
+                  value.map((option, index) => (
+                    <span key={option.id} style={{ margin: 2 }}>
+                      <Chip
+                        {...getTagProps({ index })}
+                        color="primary"
+                        variant="outlined"
+                        size="lg"
+                      >
+                        {option.name}
+                      </Chip>
+                    </span>
+                  ))
+                }
+                filterOptions={(options, state) => {
+                  const inputValue = state.inputValue.trim().toLowerCase();
+                  const filtered = options.filter(
+                    (option) =>
+                      typeof option !== "string" &&
+                      option.name.toLowerCase().includes(inputValue)
                   );
-                  if (inserted) {
-                    setSelectedAmenities([
-                      ...newValue
-                        .slice(0, -1)
-                        .filter(
-                          (item): item is Amenity => typeof item !== "string"
-                        ),
-                      inserted,
-                    ]);
-                  }
-                } else {
-                  setSelectedAmenities(
-                    newValue.filter(
-                      (item): item is Amenity => typeof item !== "string"
+
+                  // If user typed something not in list → add “Add …”
+                  if (
+                    inputValue !== "" &&
+                    !options.some(
+                      (opt) =>
+                        typeof opt !== "string" &&
+                        opt.name.toLowerCase() === inputValue
                     )
-                  );
-                }
-              }}
-            />
-          </FormControl>
-        </DialogContent>
-        <DialogActions>
-          <Button fullWidth variant="plain" color="neutral" onClick={onClose}>
-            Cancel
-          </Button>
-          <Button fullWidth color="primary" onClick={handleSave}>
-            Save
-          </Button>
-        </DialogActions>
-      </ModalDialog>
-    </Modal>
+                  ) {
+                    return [
+                      ...filtered,
+                      { id: -1, name: `Add "${state.inputValue}"` },
+                    ];
+                  }
+
+                  return filtered;
+                }}
+                onChange={async (_, newValue) => {
+                  const last = newValue[newValue.length - 1];
+
+                  // User chose "Add ..."
+                  if (last && typeof last !== "string" && last.id === -1) {
+                    const newAmenityName = last.name
+                      .replace(/^Add\s+"|"$/g, "")
+                      .trim();
+                    addAmenity(newAmenityName);
+                    await fetchAmenities();
+
+                    // Find inserted amenity (assumes fetchAmenities updates amenities)
+                    const inserted = amenities.find(
+                      (a) =>
+                        a.name.toLowerCase() === newAmenityName.toLowerCase()
+                    );
+                    if (inserted) {
+                      setSelectedAmenities([
+                        ...newValue
+                          .slice(0, -1)
+                          .filter(
+                            (item): item is Amenity => typeof item !== "string"
+                          ),
+                        inserted,
+                      ]);
+                    }
+                  } else {
+                    setSelectedAmenities(
+                      newValue.filter(
+                        (item): item is Amenity => typeof item !== "string"
+                      )
+                    );
+                  }
+                }}
+              />
+            </FormControl>
+          </DialogContent>
+          <DialogActions>
+            <Button fullWidth variant="plain" color="neutral" onClick={onClose}>
+              Cancel
+            </Button>
+            <Button fullWidth color="primary" onClick={handleSave}>
+              Save
+            </Button>
+          </DialogActions>
+        </ModalDialog>
+      </Modal>
+
+      <Alert
+        open={alertConfig.open}
+        onClose={() => setAlertConfig((prev) => ({ ...prev, open: false }))}
+        onConfirm={() => setAlertConfig((prev) => ({ ...prev, open: false }))}
+        type={alertConfig.type}
+        title={alertConfig.title}
+        message={alertConfig.message}
+        confirmText="OK"
+        showCancel={false}
+      />
+    </>
   );
 };
 

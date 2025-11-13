@@ -134,8 +134,8 @@ exports.seed = async function (knex) {
 
     if (businessRooms.length === 0) continue;
 
-    // Create 15-25 bookings per business across different months
-    const bookingCount = Math.floor(Math.random() * 11) + 15; // 15-25 bookings
+    // Create 25-30 bookings per business across different months
+    const bookingCount = Math.floor(Math.random() * 6) + 50; // 50-55 bookings
 
     for (let i = 0; i < bookingCount; i++) {
       const room = businessRooms[Math.floor(Math.random() * businessRooms.length)];
@@ -155,6 +155,12 @@ exports.seed = async function (knex) {
       const statuses = ["Reserved", "Checked-In", "Checked-Out", "Canceled"];
       const status = statuses[Math.floor(Math.random() * statuses.length)];
 
+      // Calculate pax (total tourists)
+      const pax = touristCounts.local + touristCounts.domestic + touristCounts.foreign + touristCounts.overseas;
+      const numAdults = Math.floor(pax * 0.7);
+      const numChildren = Math.floor(pax * 0.2);
+      const numInfants = pax - numAdults - numChildren;
+
       bookings.push({
         id: uuidv4(),
         tourist_id: tourist.id,
@@ -164,13 +170,17 @@ exports.seed = async function (knex) {
         check_out_date: checkOutDate.toISOString().split("T")[0],
         booking_status: status,
         total_price: totalPrice,
-        number_of_nights: numberOfNights,
+        pax: pax,
+        num_adults: numAdults,
+        num_children: numChildren,
+        num_infants: numInfants,
+        trip_purpose: "Leisure",
         local_counts: touristCounts.local,
         domestic_counts: touristCounts.domestic,
         foreign_counts: touristCounts.foreign,
         overseas_counts: touristCounts.overseas,
-        created_at: new Date(checkInDate).toISOString(),
-        updated_at: new Date(checkInDate).toISOString(),
+        balance: 0,
+        created_at: knex.fn.now(),
       });
     }
   }

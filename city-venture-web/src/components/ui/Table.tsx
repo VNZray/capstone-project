@@ -126,8 +126,8 @@ const StatusChip: React.FC<StatusChipProps> = ({ status, colorMap }) => {
   const defaultColorMap: Record<string, ChipColor> = {
     pending: "warning",
     reserved: "primary",
-    "checked-in": "success",
-    "checked-out": "neutral",
+    "checked-in": "warning",
+    "checked-out": "success",
     canceled: "danger",
     active: "success",
     inactive: "neutral",

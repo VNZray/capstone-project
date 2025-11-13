@@ -306,7 +306,7 @@ const Dashboard = () => {
             icon={<TrendingUp size={20} />}
             label="Occupancy Rate"
             value={`${kpiStats.occupancyRate.toFixed(1)}%`}
-            change={5.2}
+            change={kpiStats.occupancyRateChange}
             period={
               kpiFilterPeriod === "month"
                 ? "last month"
