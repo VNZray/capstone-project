@@ -20,6 +20,7 @@ const pageTitles: Record<string, string> = {
   "/tourism/services/shop": "Shop",
   "/tourism/services/tourist-spot": "Tourist Spot Management",
   "/tourism/services/tourist-spot/:id": "Tourist Spot Details",
+  "/tourism/staff": "Manage Tourism Staff",
   "/tourism/reports": "Report Management",
   "/tourism/reports/:id": "Report Details",
   "/tourism/profile": "Profile",

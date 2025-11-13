@@ -31,18 +31,20 @@ exports.seed = async function seedRolePermissions(knex) {
 
   const rolePermissionsByName = new Map([
     // System / Government Level
-    ['Tourism Head', ALL_PERM_IDS],
+    ['Admin', ALL_PERM_IDS],
     [
       'Tourism Officer',
       idsFor([
         'view_dashboard',
         'view_reports',
-        'approve_business',
-        'approve_event',
-        'approve_tourist_spot',
-        'approve_shop',
+        // No approvals for officer
+        // 'approve_business',
+        // 'approve_event',
+        // 'approve_tourist_spot',
+        // 'approve_shop',
         'view_all_profiles',
-        'manage_users',
+        // No staff management and no generic manage_users to avoid access to staff page
+        // 'manage_users',
         'manage_services',
       ]),
     ],

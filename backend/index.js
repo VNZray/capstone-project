@@ -42,6 +42,7 @@ import shopCategoryRoutes from "./routes/shop-categories.js";
 import feedbackReviewRoutes from "./routes/feedback-reviews.js";
 import feedbackReplyRoutes from "./routes/feedback-replies.js";
 import feedbackReviewPhotoRoutes from "./routes/feedback-review-photos.js";
+import tourismStaffManagementRoutes from "./routes/tourism_staff_management.js";
 
 const app = express();
 const PORT = 3000;
@@ -73,6 +74,7 @@ const routeSections = [
       { path: "/api/users", handler: userRoutes, label: "Users" },
       { path: "/api/owner", handler: ownerRoutes, label: "Owners" },
       { path: "/api/tourism", handler: tourismRoutes, label: "Tourism" },
+      { path: "/api/tourism-staff", handler: tourismStaffManagementRoutes, label: "Tourism Staff (Admin)" },
       { path: "/api/tourist", handler: touristRoutes, label: "Tourists" },
       { path: "/api/staff", handler: staffRoutes, label: "Staff" },
   { path: "/api/permissions", handler: permissionRoutes, label: "Permissions & Role Permissions" },

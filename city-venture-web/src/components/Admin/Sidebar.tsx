@@ -14,12 +14,14 @@ import {
   ChevronRight,
   LogOut,
   X,
+  Users,
 } from "lucide-react";
 import "@/src/components/Admin/Sidebar.css";
 import logo from "@/src/assets/images/light-logo.png";
 import { Typography } from "@mui/joy";
 import { colors } from "@/src/utils/Colors";
 import Container from "../Container";
+import useRBAC from "@/src/hooks/useRBAC";
 
 interface SidebarProps {
   isOpen?: boolean;
@@ -27,6 +29,7 @@ interface SidebarProps {
 }
 
 export default function Sidebar({ isOpen = false, onClose }: SidebarProps): React.ReactElement {
+  const { canAny } = useRBAC();
   return (
     <aside className={`sidebar ${isOpen ? "open" : ""}`}>
       {/* Mobile close button */}
@@ -62,12 +65,14 @@ export default function Sidebar({ isOpen = false, onClose }: SidebarProps): Reac
             icon={<LayoutDashboard size={18} />}
             onClick={onClose}
           />
-          <NavItem
-            to="/tourism/approval"
-            label="Approval"
-            icon={<CheckCircle size={18} />}
-            onClick={onClose}
-          />
+          {canAny('approve_business','approve_event','approve_tourist_spot','approve_shop') && (
+            <NavItem
+              to="/tourism/approval"
+              label="Approval"
+              icon={<CheckCircle size={18} />}
+              onClick={onClose}
+            />
+          )}
           {/* Dropdown for Services */}
           <DropdownNavItem label="Services" icon={<Briefcase size={18} />}>
             <NavItem
@@ -101,6 +106,14 @@ export default function Sidebar({ isOpen = false, onClose }: SidebarProps): Reac
             icon={<BarChart size={18} />}
             onClick={onClose}
           />
+          {canAny('manage_users', 'manage_tourism_staff') && (
+            <NavItem
+              to="/tourism/staff"
+              label="Manage Tourism Staff"
+              icon={<Users size={18} />}
+              onClick={onClose}
+            />
+          )}
           <NavItem
             to="/tourism/profile"
             label="Profile"

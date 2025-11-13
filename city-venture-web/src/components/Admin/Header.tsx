@@ -3,8 +3,8 @@ import { useLocation } from "react-router-dom";
 import "./Header.css";
 import { useNavigate, Link } from "react-router-dom";
 import ResponsiveText from "@/src/components/ResponsiveText";
-import ResponsiveButton from "@/src/components/ResponsiveButton";
 import { useAuth } from "@/src/context/AuthContext"; // adjust path if needed
+import Button from "@/src/components/Button";
 
 export default function Header(): React.JSX.Element {
   const location = useLocation();
@@ -46,14 +46,14 @@ export default function Header(): React.JSX.Element {
             {user?.first_name || "Guest"} {user?.last_name || ""}
           </ResponsiveText>
         </Link>
-        <ResponsiveButton 
+        <Button 
           variant="solid" 
-          color="primary" 
+          colorScheme="primary"
           onClick={handleLogout}
           size="sm"
         >
           Log Out
-        </ResponsiveButton>
+        </Button>
       </div>
     </header>
   );
