@@ -31,7 +31,7 @@ exports.seed = async function seedRolePermissions(knex) {
 
   const rolePermissionsByName = new Map([
     // System / Government Level
-    ['Tourism Head', ALL_PERM_IDS],
+    ['Admin', ALL_PERM_IDS],
     [
       'Tourism Officer',
       idsFor([
@@ -58,7 +58,7 @@ exports.seed = async function seedRolePermissions(knex) {
 
     // Business Side
     [
-      'Owner',
+      'Business Owner',
       idsFor([
         // Business profile
         'view_business_profile',
@@ -76,6 +76,9 @@ exports.seed = async function seedRolePermissions(knex) {
         // Promotions
         'view_promotions',
         'manage_promotions',
+
+        'manage_subscriptions',
+
         // Reviews
         'view_reviews',
         'respond_reviews',
@@ -84,6 +87,10 @@ exports.seed = async function seedRolePermissions(knex) {
         'add_staff',
         'edit_staff',
         'remove_staff',
+
+        // Settings
+        'view_settings',
+        'edit_settings'
       ]),
     ],
     [

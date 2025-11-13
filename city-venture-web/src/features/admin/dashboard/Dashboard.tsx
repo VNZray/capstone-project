@@ -1,9 +1,9 @@
-import ResponsiveText from "@/src/components/ResponsiveText";
+import Typography from "@/src/components/Typography";
 
 const Dashboard: React.FC = () => {
   return (
     <>
-      <ResponsiveText type="title-large" weight="bold">Dashboard</ResponsiveText>
+      <Typography.Title size="lg">Dashboard</Typography.Title>
     </>
   );
 };

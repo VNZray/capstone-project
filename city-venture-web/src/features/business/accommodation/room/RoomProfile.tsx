@@ -5,7 +5,6 @@ import { colors } from "@/src/utils/Colors";
 import {
   AspectRatio,
   Chip,
-  Typography,
   Dropdown,
   Menu,
   MenuButton,
@@ -28,7 +27,7 @@ import EventSeatIcon from "@mui/icons-material/EventSeat";
 import HotelIcon from "@mui/icons-material/Hotel";
 import BuildIcon from "@mui/icons-material/Build";
 import ChangeProfile from "./components/ChangeProfile";
-
+import Typography from "@/src/components/Typography";
 const RoomProfile = () => {
   const { roomDetails } = useRoom();
   const navigate = useNavigate();
@@ -133,34 +132,26 @@ const RoomProfile = () => {
               flex: 1,
             }}
           >
-            <Typography fontFamily={"poppins"} level="h1" fontWeight={700}>
+            <Typography.Header>
               Room {roomDetails?.room_number || "Room Number"}
-            </Typography>
-            <Typography
+            </Typography.Header>
+            <Typography.Body
               startDecorator={
-                <LocationOnIcon
-                  style={{ color: colors.success }}
-                  fontSize="medium"
-                />
+                <LocationOnIcon style={{ color: colors.success }} />
               }
-              fontFamily={"poppins"}
-              level="body-md"
             >
               Floor {roomDetails?.floor || "Floor"}
-            </Typography>
-            <Typography
+            </Typography.Body>
+            <Typography.Body
               startDecorator={
                 <StarIcon style={{ color: colors.yellow }} fontSize="medium" />
               }
-              fontFamily={"poppins"}
-              level="body-md"
             >
               Review
-            </Typography>
+            </Typography.Body>
 
             {/* Current Status Display */}
             <Chip
-              size="lg"
               color={getStatusColor(roomDetails?.status || "Available")}
               variant="solid"
               startDecorator={getStatusIcon(roomDetails?.status || "Available")}
@@ -168,8 +159,6 @@ const RoomProfile = () => {
               {roomDetails?.status || "Available"}
             </Chip>
           </div>
-
-          {/* Status chip + Action menu */}
 
           {/* Three-dot Menu */}
           <Dropdown>
@@ -179,7 +168,6 @@ const RoomProfile = () => {
                 root: {
                   variant: "plain",
                   colorScheme: "secondary",
-                  size: "lg",
                 },
               }}
             >
@@ -192,7 +180,6 @@ const RoomProfile = () => {
                 borderRadius: "8px",
               }}
             >
-
               {/* Update Profile */}
               <MenuItem
                 onClick={() => setIsEditingProfile(true)}
@@ -204,7 +191,9 @@ const RoomProfile = () => {
                   px: 1.5,
                 }}
               >
-                <Typography startDecorator={<Edit />} level="body-sm">Change Profile</Typography>
+                <Typography.Body size="xs" startDecorator={<Edit size={18} />}>
+                  Change Profile
+                </Typography.Body>
               </MenuItem>
 
               {/* Divider */}
@@ -231,7 +220,12 @@ const RoomProfile = () => {
                   },
                 }}
               >
-                <Typography startDecorator={<Trash2 />} level="body-sm">Delete Room</Typography>
+                <Typography.Body
+                  size="xs"
+                  startDecorator={<Trash2 size={18} />}
+                >
+                  Delete Room
+                </Typography.Body>
               </MenuItem>
             </Menu>
           </Dropdown>

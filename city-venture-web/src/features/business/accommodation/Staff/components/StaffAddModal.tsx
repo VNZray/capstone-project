@@ -16,6 +16,7 @@ export type StaffFormData = {
   first_name: string;
   last_name?: string;
   email: string;
+  password: string;
   phone_number?: string;
   role: StaffRole;
 };
@@ -41,10 +42,9 @@ export default function StaffAddModal({
   const [lastName, setLastName] = React.useState("");
   const [email, setEmail] = React.useState("");
   const [phone, setPhone] = React.useState("");
+  const [password, setPassword] = React.useState("123456");
   const [role, setRole] = React.useState<StaffRole>("Manager");
   const [error, setError] = React.useState<string>("");
-
-  
 
   React.useEffect(() => {
     if (!open) return;
@@ -53,6 +53,7 @@ export default function StaffAddModal({
     setLastName("");
     setEmail("");
     setPhone("");
+    setPassword("123456");
     setRole("Manager");
     setError("");
   }, [open]);
@@ -72,6 +73,7 @@ export default function StaffAddModal({
       first_name: firstName.trim(),
       last_name: lastName.trim() || undefined,
       email: email.trim(),
+      password: password.trim(),
       phone_number: phone.trim() || undefined,
       role,
     });

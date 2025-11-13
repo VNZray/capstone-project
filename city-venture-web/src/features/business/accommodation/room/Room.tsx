@@ -16,7 +16,6 @@ import {
   TimerOff,
 } from "lucide-react";
 import { Add } from "@mui/icons-material";
-import StatusFilter from "./components/StatusFilter";
 import { useEffect, useState } from "react";
 import AddRoomModal from "./components/AddRoomModal";
 import RoomCard from "./components/RoomCard";
@@ -32,10 +31,10 @@ import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { DateCalendar } from "@mui/x-date-pickers/DateCalendar";
 
 import NoDataFound from "@/src/components/NoDataFound";
-import ResponsiveText from "@/src/components/ResponsiveText";
 import Button from "@/src/components/Button";
 import IconButton from "@/src/components/IconButton";
 import DynamicTab from "@/src/components/ui/DynamicTab";
+import Typography from "@/src/components/Typography";
 
 const RoomPage = () => {
   const navigate = useNavigate();
@@ -133,9 +132,9 @@ const RoomPage = () => {
               minWidth: 240,
             }}
           >
-            <ResponsiveText type="title-small" weight="bold">
+            <Typography.Header>
               Room Management
-            </ResponsiveText>
+            </Typography.Header>
             <Button
               startDecorator={<Calendar />}
               colorScheme="secondary"
@@ -177,7 +176,7 @@ const RoomPage = () => {
               size="lg"
               variant="outlined"
             >
-              <ResponsiveText type="title-small">Calendar</ResponsiveText>
+              <Typography.CardTitle>Calendar</Typography.CardTitle>
               <DialogTitle></DialogTitle>
               <LocalizationProvider dateAdapter={AdapterDayjs}>
                 <DateCalendar sx={{ width: "100%" }} />

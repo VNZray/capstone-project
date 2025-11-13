@@ -19,7 +19,8 @@ interface LoginResponse {
 /** LOGIN */
 export const loginUser = async (
   email: string,
-  password: string
+  password: string,
+  rememberMe: boolean = false
 ): Promise<UserDetails> => {
   // Step 1: Login request
   console.debug("[AuthService] POST /users/login", { email });
@@ -312,28 +313,47 @@ export const loginUser = async (
     business_id: staffData?.business_id || "",
   };
 
-  // Save to sessionStorage
-  sessionStorage.setItem("token", token);
-  sessionStorage.setItem("user", JSON.stringify(loggedInUser));
+  // Save to localStorage or sessionStorage based on rememberMe
+  const storage = rememberMe ? localStorage : sessionStorage;
+  storage.setItem("token", token);
+  storage.setItem("user", JSON.stringify(loggedInUser));
+  storage.setItem("rememberMe", rememberMe.toString());
+
+  // If rememberMe is false, clear localStorage to avoid conflicts
+  if (!rememberMe) {
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    localStorage.removeItem("rememberMe");
+  }
 
   return loggedInUser;
 };
 
 /** LOGOUT */
 export const logoutUser = () => {
+  // Clear both storages to ensure complete logout
   sessionStorage.removeItem("token");
   sessionStorage.removeItem("user");
+  sessionStorage.removeItem("rememberMe");
+  localStorage.removeItem("token");
+  localStorage.removeItem("user");
+  localStorage.removeItem("rememberMe");
+  
+  // Notify other tabs to logout
+  localStorage.setItem("logout-event", Date.now().toString());
 };
 
 /** Get Stored User */
 export const getStoredUser = (): UserDetails | null => {
-  const storedUser = sessionStorage.getItem("user");
+  // Check localStorage first (remember me), then sessionStorage
+  const storedUser = localStorage.getItem("user") || sessionStorage.getItem("user");
   return storedUser ? JSON.parse(storedUser) : null;
 };
 
 /** Get Stored Token */
 export const getToken = (): string | null => {
-  return sessionStorage.getItem("token");
+  // Check localStorage first (remember me), then sessionStorage
+  return localStorage.getItem("token") || sessionStorage.getItem("token");
 };
 
 export const fetchUserData = async (user_id: string): Promise<User> => {

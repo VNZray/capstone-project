@@ -1,9 +1,9 @@
-import ResponsiveText from "@/src/components/ResponsiveText";
+import Typography from "@/src/components/Typography";
 
 const Accommodation: React.FC = () => {
   return (
     <>
-      <ResponsiveText type="title-large" weight="bold">Accommodation</ResponsiveText>
+      <Typography.Title size="lg">Accommodation</Typography.Title>
     </>
   );
 };

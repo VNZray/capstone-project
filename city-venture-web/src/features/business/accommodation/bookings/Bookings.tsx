@@ -1,75 +1,9 @@
-import React, { useEffect, useState, useMemo } from "react";
-// Avatar cell for guest info
-import type { FC } from "react";
-interface GuestInfo {
-  name: string;
-  user_profile?: string;
-}
-interface GuestAvatarCellProps {
-  info?: GuestInfo;
-}
-const GuestAvatarCell: FC<GuestAvatarCellProps> = ({ info }) => {
-  const [error, setError] = useState(false);
-  // Normalize image URL
-  const avatarSrc = useMemo(() => {
-    const raw = (info?.user_profile ?? "").toString().trim();
-    if (!raw) return undefined;
-    if (/^(?:https?:|data:)/i.test(raw)) return raw;
-    const base = (api || "").replace(/\/?api\/?$/, "").replace(/\/$/, "");
-    const path = raw.startsWith("/") ? raw : `/${raw}`;
-    return `${base}${path}`;
-  }, [info?.user_profile]);
-  // Initials fallback
-  const initials = useMemo(() => {
-    if (!info?.name) return "?";
-    const parts = info.name.split(" ").filter(Boolean);
-    return (
-      parts
-        .map((p) => p[0])
-        .join("")
-        .toUpperCase() || "?"
-    );
-  }, [info?.name]);
-  return (
-    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-      {avatarSrc && !error ? (
-        <img
-          width={30}
-          height={30}
-          style={{ borderRadius: "50%", objectFit: "cover" }}
-          src={avatarSrc}
-          alt={info?.name || "Guest"}
-          onError={() => setError(true)}
-        />
-      ) : (
-        <div
-          style={{
-            width: 30,
-            height: 30,
-            borderRadius: "50%",
-            background: "#eee",
-            color: "#888",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            fontWeight: 600,
-            fontSize: 14,
-          }}
-        >
-          {initials}
-        </div>
-      )}
-      <div>{info?.name || "—"}</div>
-    </div>
-  );
-};
-import ResponsiveText from "@/src/components/ResponsiveText";
+import { useEffect, useState, useMemo } from "react";
+import Typography from "@/src/components/Typography";
 import NoDataFound from "@/src/components/NoDataFound";
 import PageContainer from "@/src/components/PageContainer";
-import { colors } from "@/src/utils/Colors";
 import {
   Search,
-  Eye,
   Check,
   XCircle,
   List,
@@ -78,18 +12,9 @@ import {
   LogOut,
 } from "lucide-react";
 import BookingDetails from "./components/BookingDetails";
-import { Input, Button, CircularProgress } from "@mui/joy";
+import { Input} from "@mui/joy";
 import Container from "@/src/components/Container";
-import Tabs from "./components/Tabs";
 import { Select, Option } from "@mui/joy";
-import Table from "@mui/material/Table";
-import TableBody from "@mui/material/TableBody";
-import TableCell from "@mui/material/TableCell";
-import TableContainer from "@mui/material/TableContainer";
-import TablePagination from "@mui/material/TablePagination";
-import TableRow from "@mui/material/TableRow";
-import Paper from "@mui/material/Paper";
-import { Chip, TableHead } from "@mui/material";
 import { useBusiness } from "@/src/context/BusinessContext";
 import {
   fetchBookingsByBusinessId,
@@ -97,68 +22,19 @@ import {
   updateBookingStatus,
 } from "@/src/services/BookingService";
 import { fetchUserData } from "@/src/services/auth/AuthService";
-import api from "@/src/services/api";
 import type { Booking } from "@/src/types/Booking";
 import DynamicTab from "@/src/components/ui/DynamicTab";
+import Table, {
+  type TableColumn,
+  GuestAvatar,
+  StatusChip,
+  type GuestInfo,
+} from "@/src/components/ui/Table";
 
-// Booking columns
-interface Column {
-  id:
-    | "guest"
-    | "pax"
-    | "trip_purpose"
-    | "check_in_date"
-    | "check_out_date"
-    | "total_price"
-    | "balance"
-    | "booking_status"
-    | "actions";
-  label: string;
-  minWidth?: number;
-  align?: "center" | "right" | "left";
-  format?: (value: number) => string;
+// Extend Booking type to include guest info
+interface BookingRow extends Booking {
+  guest?: GuestInfo;
 }
-
-const getStatusColor = (status: string) => {
-  switch (status) {
-    case "Pending":
-      return "default";
-    case "Reserved":
-      return "success";
-    case "Checked-in":
-      return "warning";
-    case "Checked-out":
-      return "info";
-    case "Canceled":
-      return "error";
-    default:
-      return "primary"; // fallback
-  }
-};
-
-const columns: readonly Column[] = [
-  { id: "guest", label: "Guest", minWidth: 120 },
-  { id: "pax", label: "Pax", minWidth: 50, align: "center" },
-  { id: "trip_purpose", label: "Purpose", minWidth: 120 },
-  { id: "check_in_date", label: "Check-in", minWidth: 120 },
-  { id: "check_out_date", label: "Check-out", minWidth: 120 },
-  {
-    id: "total_price",
-    label: "Total Price",
-    minWidth: 120,
-    align: "right",
-    format: (value: number) => `₱${value.toLocaleString()}`,
-  },
-  {
-    id: "balance",
-    label: "Balance",
-    minWidth: 120,
-    align: "right",
-    format: (value: number) => `₱${value.toLocaleString()}`,
-  },
-  { id: "booking_status", label: "Status", minWidth: 120 },
-  { id: "actions", label: "Actions", minWidth: 150, align: "center" },
-];
 
 // Local helper to normalize status casing differences from backend
 const normalizeStatus = (status?: string) => {
@@ -183,8 +59,6 @@ const Bookings = () => {
     { id: "canceled", label: "Canceled", icon: <XCircle size={16} /> },
   ];
 
-  const [page, setPage] = React.useState(0);
-  const [rowsPerPage, setRowsPerPage] = React.useState(10);
   const [searchTerm, setSearchTerm] = useState("");
   const [filter, setFilter] = useState<
     "day" | "week" | "month" | "year" | "all"
@@ -314,17 +188,6 @@ const Bookings = () => {
     [bookings]
   );
 
-  const handleChangePage = (_: unknown, newPage: number) => {
-    setPage(newPage);
-  };
-
-  const handleChangeRowsPerPage = (
-    event: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    setRowsPerPage(+event.target.value);
-    setPage(0);
-  };
-
   const handleStatusChange = async (id: string, status: string) => {
     try {
       // Optimistic update
@@ -419,271 +282,191 @@ const Bookings = () => {
         activeTab === "all"
           ? bookings
           : bookings.filter(
-              (b) => normalizeStatus(b.booking_status).toLowerCase() === activeTab.toLowerCase()
+              (b) =>
+                normalizeStatus(b.booking_status).toLowerCase() ===
+                activeTab.toLowerCase()
             )
       ),
     [activeTab, bookings, searchTerm, filter, selectedMonth, selectedYear]
   );
 
+  // Define columns for the custom Table component
+  const columns: TableColumn<BookingRow>[] = useMemo(
+    () => [
+      {
+        id: "guest",
+        label: "Guest",
+        minWidth: 180,
+        render: (row) => {
+          const info = guestInfoById[row.tourist_id as string];
+          if (!info) return "—";
+
+          const nameParts = info.name.split(" ");
+          const guest: GuestInfo = {
+            firstName: nameParts[0] || "",
+            lastName: nameParts[nameParts.length - 1] || "",
+            userProfile: info.user_profile,
+          };
+
+          return <GuestAvatar guest={guest} size={32} />;
+        },
+      },
+      {
+        id: "pax",
+        label: "Pax",
+        minWidth: 60,
+        align: "center",
+      },
+      {
+        id: "trip_purpose",
+        label: "Purpose",
+        minWidth: 120,
+      },
+      {
+        id: "check_in_date",
+        label: "Check-in",
+        minWidth: 140,
+        format: (value: string) => (value ? formatDate(String(value)) : "—"),
+      },
+      {
+        id: "check_out_date",
+        label: "Check-out",
+        minWidth: 140,
+        format: (value: string) => (value ? formatDate(String(value)) : "—"),
+      },
+      {
+        id: "total_price",
+        label: "Total Price",
+        minWidth: 120,
+        align: "right",
+        format: (value: number) => `₱${(value ?? 0).toLocaleString()}`,
+      },
+      {
+        id: "balance",
+        label: "Balance",
+        minWidth: 120,
+        align: "right",
+        format: (value: number) => `₱${(value ?? 0).toLocaleString()}`,
+      },
+      {
+        id: "booking_status",
+        label: "Status",
+        minWidth: 120,
+        render: (row) => (
+          <StatusChip status={normalizeStatus(row.booking_status)} />
+        ),
+      },
+    ],
+    [guestInfoById, formatDate, handleStatusChange, handleViewBooking]
+  );
+
   return (
-    <>
-      <PageContainer>
-        {/* Reservations */}
-        <Container gap="0" padding="0" elevation={3}>
-          <Container
-            direction="row"
-            justify="space-between"
-            align="center"
-            padding="16px 16px 0 16px"
-          >
-            <ResponsiveText type="title-small" weight="bold">
-              Manage Reservation
-            </ResponsiveText>
-          </Container>
+    <PageContainer >
+      {/* Reservations */}
+      <Container gap="0" padding="0" elevation={3}>
+        <Container
+          direction="row"
+          justify="space-between"
+          align="center"
+          padding="16px 16px 0 16px"
+        >
+          <Typography.Header>Manage Reservation</Typography.Header>
+        </Container>
 
-          {/* Search + Filters */}
-          <Container
-            padding="16px 16px 0 16px"
-            direction="row"
-            justify="space-between"
-            align="center"
-            gap="16px"
-          >
-            <Input
-              startDecorator={<Search />}
-              placeholder="Search Reservations"
-              size="lg"
-              fullWidth
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)} // 👈 bind state
-            />
-
-            {/* Range Filter */}
-            <Select
-              size="lg"
-              defaultValue="all"
-              onChange={(_, val) => setFilter(val as typeof filter)}
-              sx={{ minWidth: 160 }}
-            >
-              <Option value="all">All</Option>
-              <Option value="day">Today</Option>
-              <Option value="week">This Week</Option>
-              <Option value="month">This Month</Option>
-              <Option value="year">This Year</Option>
-            </Select>
-
-            {/* Month Filter */}
-            <Select
-              size="lg"
-              defaultValue="all"
-              onChange={(_, val) => setSelectedMonth(val as number | "all")}
-              sx={{ minWidth: 160 }}
-            >
-              <Option value="all">All Months</Option>
-              {Array.from({ length: 12 }).map((_, i) => (
-                <Option key={i} value={i}>
-                  {new Date(0, i).toLocaleString("default", { month: "long" })}
-                </Option>
-              ))}
-            </Select>
-
-            {/* Year Filter */}
-            <Select
-              size="lg"
-              defaultValue="all"
-              onChange={(_, val) => setSelectedYear(val as number | "all")}
-              sx={{ minWidth: 140 }}
-            >
-              <Option value="all">All Years</Option>
-              {years.map((year) => (
-                <Option key={year} value={year}>
-                  {year}
-                </Option>
-              ))}
-            </Select>
-          </Container>
-
-          {/* Tabs */}
-          <DynamicTab
-            tabs={tabs}
-            activeTabId={activeTab}
-            onChange={(tabId) => setActiveTab(String(tabId))}
+        {/* Search + Filters */}
+        <Container
+          padding="16px 16px 0 16px"
+          direction="row"
+          justify="space-between"
+          align="center"
+          gap="16px"
+          style={{ flexWrap: "wrap" }}
+        >
+          <Input
+            startDecorator={<Search />}
+            placeholder="Search Reservations"
+            size="lg"
+            sx={{ flex: 1 }}
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)} // 👈 bind state
           />
 
-          {/* Booking Table */}
-          <Container>
-            <Paper
-              elevation={1}
-              sx={{ width: "100%", overflow: "hidden", borderRadius: 2 }}
-            >
-              <TableContainer sx={{ maxHeight: 600 }}>
-                <Table size="small" stickyHeader aria-label="booking table">
-                  <TableHead>
-                    <TableRow>
-                      {columns.map((column) => (
-                        <TableCell
-                          size="medium"
-                          key={column.id}
-                          align={column.align}
-                          style={{
-                            minWidth: column.minWidth,
-                            backgroundColor: colors.primary,
-                            color: colors.white,
-                            fontFamily: "poppins",
-                            fontWeight: 600,
-                          }}
-                        >
-                          {column.label}
-                        </TableCell>
-                      ))}
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {loading && (
-                      <TableRow>
-                        <TableCell colSpan={columns.length} align="center">
-                          <CircularProgress size="sm" /> Loading bookings...
-                        </TableCell>
-                      </TableRow>
-                    )}
-                    {!loading && error && (
-                      <TableRow>
-                        <TableCell
-                          colSpan={columns.length}
-                          align="center"
-                          sx={{ color: "red" }}
-                        >
-                          {error}
-                        </TableCell>
-                      </TableRow>
-                    )}
-                    {!loading && !error && filteredData.length === 0 && (
-                      <TableRow>
-                        <TableCell colSpan={columns.length} align="center">
-                          <NoDataFound
-                            icon={searchTerm.trim() ? "search" : "database"}
-                            title={
-                              searchTerm.trim()
-                                ? "No Results Found"
-                                : "No Bookings"
-                            }
-                            message={
-                              searchTerm.trim()
-                                ? `No bookings match "${searchTerm}". Try a different search term.`
-                                : "No bookings found."
-                            }
-                          />
-                        </TableCell>
-                      </TableRow>
-                    )}
-                    {!loading &&
-                      !error &&
-                      filteredData
-                        .slice(
-                          page * rowsPerPage,
-                          page * rowsPerPage + rowsPerPage
-                        )
-                        .map((row, index) => (
-                          <TableRow
-                            role="checkbox"
-                            tabIndex={-1}
-                            key={row.id}
-                            sx={{
-                              backgroundColor:
-                                index % 2 === 0 ? "#fff" : "#D3D3D3",
-                            }}
-                          >
-                            <TableCell>
-                              <GuestAvatarCell
-                                info={guestInfoById[row.tourist_id as string]}
-                              />
-                            </TableCell>
-                            <TableCell align="center">{row.pax}</TableCell>
-                            <TableCell>{row.trip_purpose}</TableCell>
-                            <TableCell>
-                              {row.check_in_date
-                                ? formatDate(String(row.check_in_date))
-                                : "—"}
-                            </TableCell>
-                            <TableCell>
-                              {row.check_out_date
-                                ? formatDate(String(row.check_out_date))
-                                : "—"}
-                            </TableCell>
-                            <TableCell align="right">
-                              ₱{(row.total_price ?? 0).toLocaleString()}
-                            </TableCell>
-                            <TableCell align="right">
-                              ₱{(row.balance ?? 0).toLocaleString()}
-                            </TableCell>
-                            <TableCell>
-                              <Chip
-                                color={getStatusColor(
-                                  normalizeStatus(row.booking_status)
-                                )}
-                                label={normalizeStatus(row.booking_status)}
-                              />
-                            </TableCell>
-                            <TableCell align="center">
-                              <Button
-                                size="sm"
-                                variant="outlined"
-                                color="neutral"
-                                startDecorator={<Eye size={16} />}
-                                sx={{ mr: 1 }}
-                                onClick={() => handleViewBooking(row.id)}
-                              >
-                                View
-                              </Button>
-                              {normalizeStatus(row.booking_status) ===
-                                "Pending" && (
-                                <>
-                                  <Button
-                                    size="sm"
-                                    variant="solid"
-                                    color="primary"
-                                    sx={{ mr: 1 }}
-                                    startDecorator={<Check size={16} />}
-                                    onClick={() =>
-                                      row.id &&
-                                      handleStatusChange(row.id, "Reserved")
-                                    }
-                                  >
-                                    Confirm
-                                  </Button>
-                                  <Button
-                                    size="sm"
-                                    variant="outlined"
-                                    color="danger"
-                                    startDecorator={<XCircle size={16} />}
-                                    onClick={() =>
-                                      row.id &&
-                                      handleStatusChange(row.id, "Canceled")
-                                    }
-                                  >
-                                    Cancel
-                                  </Button>
-                                </>
-                              )}
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                  </TableBody>
-                </Table>
-              </TableContainer>
-              <TablePagination
-                rowsPerPageOptions={[10, 25, 100]}
-                component="div"
-                count={filteredData.length}
-                rowsPerPage={rowsPerPage}
-                page={page}
-                onPageChange={handleChangePage}
-                onRowsPerPageChange={handleChangeRowsPerPage}
-              />
-            </Paper>
-          </Container>
+          {/* Range Filter */}
+          <Select
+            size="lg"
+            defaultValue="all"
+            onChange={(_, val) => setFilter(val as typeof filter)}
+          >
+            <Option value="all">All</Option>
+            <Option value="day">Today</Option>
+            <Option value="week">This Week</Option>
+            <Option value="month">This Month</Option>
+            <Option value="year">This Year</Option>
+          </Select>
+
+          {/* Month Filter */}
+          <Select
+            size="lg"
+            defaultValue="all"
+            onChange={(_, val) => setSelectedMonth(val as number | "all")}
+          >
+            <Option value="all">All Months</Option>
+            {Array.from({ length: 12 }).map((_, i) => (
+              <Option key={i} value={i}>
+                {new Date(0, i).toLocaleString("default", { month: "long" })}
+              </Option>
+            ))}
+          </Select>
+
+          {/* Year Filter */}
+          <Select
+            size="lg"
+            defaultValue="all"
+            onChange={(_, val) => setSelectedYear(val as number | "all")}
+          >
+            <Option value="all">All Years</Option>
+            {years.map((year) => (
+              <Option key={year} value={year}>
+                {year}
+              </Option>
+            ))}
+          </Select>
         </Container>
-      </PageContainer>
+
+        {/* Tabs */}
+        <DynamicTab
+          tabs={tabs}
+          activeTabId={activeTab}
+          onChange={(tabId) => setActiveTab(String(tabId))}
+        />
+      </Container>
+
+      {/* Booking Table */}
+      {error ? (
+        <NoDataFound
+          icon="database"
+          title="Error Loading Bookings"
+          message={error}
+          size="medium"
+        />
+      ) : (
+        <Table
+          columns={columns}
+          data={filteredData}
+          rowsPerPage={10}
+          loading={loading}
+          emptyMessage={
+            searchTerm.trim()
+              ? `No bookings match "${searchTerm}". Try a different search term.`
+              : "No bookings found."
+          }
+          rowKey="id"
+          stickyHeader={true}
+          maxHeight="600px"
+          onRowClick={(row) => handleViewBooking(row.id)}
+        />
+      )}
+
       <BookingDetails
         open={detailsOpen}
         onClose={() => setDetailsOpen(false)}
@@ -691,7 +474,7 @@ const Bookings = () => {
         booking={selectedBooking}
         onStatusChange={handleStatusChange}
       />
-    </>
+    </PageContainer>
   );
 };
 

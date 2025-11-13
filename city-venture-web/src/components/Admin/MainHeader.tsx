@@ -3,13 +3,12 @@ import {
   Box,
   AppBar,
   Toolbar,
-  Typography,
   IconButton,
   Avatar,
 } from "@mui/material";
 import { Bell, ArrowLeft, Menu } from "lucide-react";
-import { useAuth } from "@/src/context/AuthContext"; // adjust path if needed
-import ResponsiveText from "../ResponsiveText";
+import { useAuth } from "@/src/context/AuthContext";
+import Typography from "@/src/components/Typography";
 
 // import { Button } from "@mui/joy";
 const pageTitles: Record<string, string> = {
@@ -67,7 +66,7 @@ export default function MainHeader({ onMenuClick }: MainHeaderProps) {
           >
             <ArrowLeft size={22} />
           </IconButton>
-          <ResponsiveText type="card-title-large" weight="bold">{title}</ResponsiveText>
+          <Typography.Header size="sm">{title}</Typography.Header>
         </Box>
 
         {/* Right - Actions */}
@@ -88,12 +87,12 @@ export default function MainHeader({ onMenuClick }: MainHeaderProps) {
               alignItems: "flex-end",
             }}
           >
-            <Typography variant="subtitle2" sx={{ fontWeight: "bold" }}>
+            <Typography.Body weight="semibold" size="sm">
               {user?.first_name} {user?.last_name}
-            </Typography>
-            <Typography variant="caption" sx={{ color: "text.secondary" }}>
+            </Typography.Body>
+            <Typography.Body size="xs" sx={{ color: "text.secondary" }}>
               {user?.email}
-            </Typography>
+            </Typography.Body>
           </Box>
 
           {/* Avatar */}

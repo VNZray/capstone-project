@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { IoAdd } from "react-icons/io5";
-import ResponsiveText from "@/src/components/ResponsiveText";
+import Typography from "@/src/components/Typography";
 import SearchBar from "@/src/components/SearchBar";
 import CategoryFilter from "@/src/components/Admin/touristSpot/CategoryFilter";
 import Pagination from "@/src/components/Admin/touristSpot/Pagination";
@@ -173,9 +173,9 @@ const Spot = () => {
                     onClick={() => setAddSpotModalVisible(true)}
                   >
                     <IoAdd size={20} color="#FFF" />
-                    <ResponsiveText type="body-small" weight="medium" color="white" style={{ marginLeft: 8 }}>
+                    <Typography.Body size="sm" weight="semibold" sx={{ color: "white", marginLeft: "8px" }}>
                       Add Tourist Spot
-                    </ResponsiveText>
+                    </Typography.Body>
                   </button>
                 </div>
                 <div className="add">
@@ -183,9 +183,9 @@ const Spot = () => {
                     className="add-button"
                     onClick={() => setFeaturedModalOpen(true)}
                   >
-                    <ResponsiveText type="body-small" weight="medium" color="white">
+                    <Typography.Body size="sm" weight="semibold" sx={{ color: "white" }}>
                       Manage Featured
-                    </ResponsiveText>
+                    </Typography.Body>
                   </button>
                 </div>
               </div>
@@ -195,11 +195,11 @@ const Spot = () => {
           {loading ? (
             <div className="loading-container">
               <div className="loading-spinner"></div>
-              <ResponsiveText type="body-medium" color="#666">Loading tourist spots...</ResponsiveText>
+              <Typography.Body size="md" sx={{ color: "#666" }}>Loading tourist spots...</Typography.Body>
             </div>
           ) : error ? (
             <div className="error-container">
-              <ResponsiveText type="body-medium" color="#ff4d4d">Error: {error}</ResponsiveText>
+              <Typography.Body size="md" sx={{ color: "#ff4d4d" }}>Error: {error}</Typography.Body>
             </div>
           ) : (
             <div className="content">

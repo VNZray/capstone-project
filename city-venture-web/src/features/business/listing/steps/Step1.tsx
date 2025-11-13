@@ -14,7 +14,7 @@ import { ToggleButton, ToggleButtonGroup } from "@mui/material";
 import { Chip } from "@mui/joy";
 import HotelIcon from "@mui/icons-material/Hotel";
 import StoreIcon from "@mui/icons-material/Store";
-import ResponsiveText from "@/src/components/ResponsiveText";
+import Typography from "@/src/components/Typography";
 import type { Amenity, BusinessAmenity } from "@/src/types/Amenity";
 import { getData, insertData } from "@/src/services/Service";
 type Props = {
@@ -125,12 +125,12 @@ const Step1: React.FC<Props> = ({
           marginBottom: 20,
           paddingTop: 4
         }}>
-          <ResponsiveText type="label-large" weight="bold" color="#111827" mb={1}>
+          <Typography.Label size="lg" sx={{ mb: 1, color: "#111827" }}>
             Basic information
-          </ResponsiveText>
-          <ResponsiveText type="body-extra-small" color="#6b7280">
+          </Typography.Label>
+          <Typography.Body size="xs" sx={{ color: "#6b7280" }}>
             Tell us about your business to get started
-          </ResponsiveText>
+          </Typography.Body>
         </div>
         <div className="twoCol">
           <div className="col">
@@ -229,7 +229,7 @@ const Step1: React.FC<Props> = ({
                     >
                       {type.type.toLowerCase() === "accommodation" && <HotelIcon fontSize="small" />}
                       {type.type.toLowerCase() === "shop" && <StoreIcon fontSize="small" />}
-                      <ResponsiveText type="body-small" weight="medium">{type.type}</ResponsiveText>
+                      <Typography.Body size="sm" weight="semibold">{type.type}</Typography.Body>
                     </ToggleButton>
                   ))}
                 </ToggleButtonGroup>

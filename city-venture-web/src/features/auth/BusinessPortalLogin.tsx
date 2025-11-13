@@ -1,144 +1,172 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import logo from "@/src/assets/images/logo.png";
-import "./LoginStyle.css";
-import ResponsiveText from "../../components/ResponsiveText";
-import Container from "../../components/Container";
+import "./styles/LoginStyle.css";
 import { useAuth } from "@/src/context/AuthContext"; // adjust path if needed
-import { Input, Button } from "@mui/joy";
-import { colors } from "../../utils/Colors";
+import PageContainer from "@/src/components/PageContainer";
+import LoginForm from "./components/LoginForm";
+import { Divider } from "@mui/joy";
+import Typography from "@/src/components/Typography";
+type Role = "Tourist" | "Owner" | "Admin";
 
 const Login: React.FC = () => {
-  const [email, setEmail] = useState("rayvenclores@gmail.com");
-  const [password, setPassword] = useState("123456");
+  const [email, setEmail] = useState("owner1@gmail.com");
+  const [password, setPassword] = useState("owner123");
   const [loginError, setLoginError] = useState("");
   const navigate = useNavigate();
   const { login, user } = useAuth(); // from AuthProvider
+  const [rememberMe, setRememberMe] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  const handleLogin = async () => {
+  // Load saved credentials on mount
+  useEffect(() => {
+    const savedEmail = localStorage.getItem("rememberedEmail");
+    const savedPassword = localStorage.getItem("rememberedPassword");
+    if (savedEmail && savedPassword) {
+      setEmail(savedEmail);
+      setPassword(savedPassword);
+      setRememberMe(true);
+    }
+  }, []);
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoginError("");
     if (!email || !password) {
-      setLoginError("Email and password are required.");
+      setLoginError("Email and password are required");
       return;
     }
+    setLoading(true);
 
     try {
-      setLoginError("");
+      const loggedInUser = await login(email, password, rememberMe);
 
-      await login(email, password);
-
-      if (user?.role_name === "Owner") {
-        navigate("/business/dashboard");
+      // Save credentials if remember me is checked
+      if (rememberMe) {
+        localStorage.setItem("rememberedEmail", email);
+        localStorage.setItem("rememberedPassword", password);
+      } else {
+        localStorage.removeItem("rememberedEmail");
+        localStorage.removeItem("rememberedPassword");
       }
-    } catch (error: any) {
-      setLoginError(
-        error?.response?.data?.message || error?.message || "Login failed."
-      );
+
+      // Check if user is staff (not Business Owner) and redirect to dashboard
+      const staffRoles = [
+        "Manager",
+        "Room Manager",
+        "Receptionist",
+        "Sales Associate",
+      ];
+
+      const tourism = ["Admin", "Tourism Office"];
+      const tourist = "Tourist";
+      const owner = "Business Owner";
+
+      const userRole = loggedInUser.role_name || "";
+
+      if (staffRoles.includes(userRole)) {
+        // Staff members go directly to business dashboard
+        navigate("/business/dashboard");
+      } else if (userRole === tourist) {
+        // Tourist to landing page
+        navigate("/");
+      } else if (tourism.includes(userRole)) {
+        // Tourism
+        navigate("/tourism/dashboard");
+      } else if (userRole === owner) {
+        // Business Owners go to business listing page
+        navigate("/business");
+      } else {
+        setLoginError("Access Denied");
+      }
+    } catch (err: unknown) {
+      const anyErr = err as {
+        response?: { data?: { message?: string } };
+        message?: string;
+      };
+      const msg =
+        anyErr?.response?.data?.message || anyErr?.message || "Login failed.";
+      setLoginError(msg);
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div className="login-container">
-      {/* Left Background Image */}
-      <div className="left-container">
-        <img
-          src="https://i0.wp.com/nagayon.com/wp-content/uploads/2024/08/oragon-monument-by-colline.jpg"
-          alt="Background"
-          className="background-image"
-        />
-      </div>
-
-      {/* Right Login Form */}
-      <div className="right-container">
-        <Container elevation={3} padding="40px" radius="0.5rem" width="450px">
-          <div className="logo-container">
-            <img src={logo} alt="Logo" className="logo" />
-            <ResponsiveText type="title-small" weight="bold">
-              City Venture
-            </ResponsiveText>
-          </div>
-
-          {/* Title and Subtitle */}
-          <div
+    <PageContainer padding={0} style={{ height: "100%", overflow: "hidden" }}>
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "row",
+          flex: 1,
+        }}
+      >
+        {/* Left Background Image - Hidden on mobile */}
+        <div
+          style={{
+            flex: 1,
+            display: "block",
+          }}
+          className="login-left-container"
+        >
+          <img
+            src="https://www2.naga.gov.ph/wp-content/uploads/2021/10/Aerial-View-Naga-City-ScubaFlyer-PH.jpg"
+            width={"100%"}
+            height={"100%"}
             style={{
-              display: "flex",
-              flexDirection: "column",
+              objectFit: "cover",
             }}
+            alt="Naga City Background"
+          />
+        </div>
+
+        {/* Right Login Form */}
+        <div
+          className="login-right-container"
+          style={{
+            flex: 1,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <LoginForm
+            email={email}
+            password={password}
+            rememberMe={rememberMe}
+            onEmailChange={setEmail}
+            onPasswordChange={setPassword}
+            onRememberMeChange={setRememberMe}
+            onLogin={handleLogin}
+            error={loginError}
+            forgotPasswordLink="/TouristApp/(screens)/ForgotPassword"
+            signUpLink="/business-registration"
+            size="large"
+            title="Sign In"
+            subtitle="Navigate with Ease - Your Ultimate City Directory"
+            signUpPromptText="Want to register your business?"
+            signUpLinkText="Click here"
+            showRememberMe={true}
+            loading={loading}
           >
-            <ResponsiveText type="title-large" weight="bold" mb={0.75} color="dark">
-              Sign In
-            </ResponsiveText>
-            <ResponsiveText type="body-medium" mb={3} color="dark">
-              Navigate with Ease - Your Ultimate City Directory
-            </ResponsiveText>
-          </div>
+            <Divider>Or</Divider>
 
-          {/* Form Fields */}
-          <div className="form-fields">
-            <Input
-              variant="soft"
-              type="email"
-              placeholder="Enter your email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              size="lg"
-            />
-
-            <Input
-              type="password"
-              variant="soft"
-              placeholder="Enter your password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              size="lg"
-            />
-
-            <Link to="/TouristApp/(screens)/ForgotPassword" className="link">
-              <ResponsiveText type="body-small" color="#0077B6">
-                Forgot Password?
-              </ResponsiveText>
-            </Link>
-          </div>
-
-          {/* Login Button */}
-          <div
-            style={{
-              marginTop: 20,
-              width: "100%",
-              display: "flex",
-              flexDirection: "column",
-            }}
-          >
-            <Button
-              color="primary"
-              onClick={handleLogin}
-              size="lg"
-              variant="solid"
-              style={{ flex: 1, minHeight: "50px" }}
-            >
-              Sign In
-            </Button>
-
-            {loginError && (
-              <ResponsiveText type="body-medium" color={colors.error} mt={2}>
-                {loginError}
-              </ResponsiveText>
-            )}
-          </div>
-
-          {/* Sign Up Link */}
-          <div className="signup-row">
-            <ResponsiveText type="body-small" color="dark">
-              Don't Have an Account?
-            </ResponsiveText>
-            <Link to="/register" className="link">
-              <ResponsiveText type="body-small" weight="semi-bold" color="#0077B6">
-                Sign Up
-              </ResponsiveText>
-            </Link>
-          </div>
-        </Container>
+            <Typography.Body align="center" size={"sm"}>
+              Create tourist account
+              <Link to={"/tourist/login"} style={{ textDecoration: "none" }}>
+                <Typography.Body
+                  size={"sm"}
+                  startDecorator
+                  sx={{ color: "#0077B6" }}
+                >
+                  Sign Up
+                </Typography.Body>
+              </Link>
+            </Typography.Body>
+          </LoginForm>
+        </div>
       </div>
-    </div>
+    </PageContainer>
   );
 };
 

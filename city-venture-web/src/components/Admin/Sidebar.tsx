@@ -20,7 +20,7 @@ import {
 } from "lucide-react";
 import "@/src/components/Admin/Sidebar.css";
 import logo from "@/src/assets/images/light-logo.png";
-import { Typography } from "@mui/joy";
+import Typography from "@/src/components/Typography";
 import { colors } from "@/src/utils/Colors";
 import Container from "../Container";
 import useRBAC from "@/src/hooks/useRBAC";
@@ -46,19 +46,23 @@ export default function Sidebar({
         <X size={20} />
       </button>
       <Container background="transparent" direction="row" align="center">
-        <Typography
-          textColor={colors.white}
-          startDecorator={
-            <img
-              src={logo}
-              alt="Logo"
-              style={{ width: "40px", height: "40px" }}
-            />
-          }
-          level="title-lg"
+        <Typography.Title
+          size="sm"
+          color="default"
+          sx={{
+            color: colors.white,
+            display: "flex",
+            alignItems: "center",
+            gap: 1.5,
+          }}
         >
+          <img
+            src={logo}
+            alt="Logo"
+            style={{ width: "40px", height: "40px" }}
+          />
           City Venture
-        </Typography>
+        </Typography.Title>
       </Container>
       <nav className="admin-sidebar-nav">
         <div
@@ -200,9 +204,7 @@ function DropdownNavItem({
       >
         {icon && <span className="sidebar-icon">{icon}</span>}
         <div className="nav-label">
-          <span style={{ fontFamily: "Poppins, sans-serif", fontSize: 16 }}>
-            {label}
-          </span>
+          <Typography.Body size="sm">{label}</Typography.Body>
         </div>
         {open ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
       </button>

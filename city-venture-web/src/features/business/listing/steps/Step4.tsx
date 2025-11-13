@@ -1,4 +1,4 @@
-import ResponsiveText from "@/src/components/ResponsiveText";
+import Typography from "@/src/components/Typography";
 import React, { useRef } from "react";
 import type { Business } from "@/src/types/Business";
 import { Button, FormControl, FormLabel, Input, Sheet } from "@mui/joy";
@@ -89,8 +89,8 @@ const StepPermits: React.FC<Props> = ({ data, permitData, setPermitData }) => {
       <div className="stepperContent" style={{ overflow: 'visible', padding: '16px 16px 24px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-start', width: '100%', boxSizing: 'border-box' }}>
         <div style={{ display: "flex", flexDirection: "column", gap: 24, width: '100%', maxWidth: '1000px', margin: '0 auto' }}>
           <div style={{ paddingBottom: 12, textAlign: 'center', borderBottom: '1px solid #e5e7eb', marginBottom: 20, paddingTop: 4 }}>
-            <ResponsiveText type="label-large" weight="bold" color="#111827" mb={1}>Business Permits</ResponsiveText>
-            <ResponsiveText type="body-extra-small" color="#6b7280">Upload your business permits and documents</ResponsiveText>
+            <Typography.Label size="lg" sx={{ color: "#111827", mb: 1 }}>Business Permits</Typography.Label>
+            <Typography.Body size="xs" sx={{ color: "#6b7280" }}>Upload your business permits and documents</Typography.Body>
           </div>
 
           <div style={{ paddingRight: 6 }}>
@@ -121,8 +121,8 @@ const StepPermits: React.FC<Props> = ({ data, permitData, setPermitData }) => {
                         <DocumentScannerOutlined sx={{ color: '#6b7280', fontSize: 18 }} />
                       </div>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                        <ResponsiveText type="body-small" weight="bold" color="#374151">Mayor's Permit</ResponsiveText>
-                        <ResponsiveText type="body-extra-small" color="#6b7280">Local city or municipal permit</ResponsiveText>
+                        <Typography.Body size="sm" weight="bold" sx={{ color: "#374151" }}>Mayor's Permit</Typography.Body>
+                        <Typography.Body size="xs" sx={{ color: "#6b7280" }}>Local city or municipal permit</Typography.Body>
                         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                           <Input
                             size="sm"
@@ -171,8 +171,8 @@ const StepPermits: React.FC<Props> = ({ data, permitData, setPermitData }) => {
                         <DocumentScannerOutlined sx={{ color: '#6b7280', fontSize: 18 }} />
                       </div>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                        <ResponsiveText type="body-small" weight="bold" color="#374151">Business Permit</ResponsiveText>
-                        <ResponsiveText type="body-extra-small" color="#6b7280">DTI/SEC certificate or business registration</ResponsiveText>
+                        <Typography.Body size="sm" weight="bold" sx={{ color: "#374151" }}>Business Permit</Typography.Body>
+                        <Typography.Body size="xs" sx={{ color: "#6b7280" }}>DTI/SEC certificate or business registration</Typography.Body>
                         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                           <Input
                             size="sm"
@@ -200,12 +200,12 @@ const StepPermits: React.FC<Props> = ({ data, permitData, setPermitData }) => {
             <Sheet color="warning" variant="soft" sx={{ p: 1.5, borderRadius: 10, backgroundColor: '#fef3c7', border: '1px solid #f59e0b', margin: '12px 8px 0' }}>
               <Label>
                 <FileCopy color="warning" fontSize="small" />
-                <ResponsiveText type="body-small" weight="bold" color="#92400e">File Requirements</ResponsiveText>
+                <Typography.Body size="sm" weight="bold" sx={{ color: "#92400e" }}>File Requirements</Typography.Body>
               </Label>
               <ul className="req-grid" style={{ display: 'grid', columnGap: 12, rowGap: 4, marginTop: 6, paddingLeft: 16 }}>
                 {requirements.map((req, idx) => (
                   <li key={idx} style={{ lineHeight: 1.3 }}>
-                    <ResponsiveText type="body-extra-small" color="#92400e">{req}</ResponsiveText>
+                    <Typography.Body size="xs" sx={{ color: "#92400e" }}>{req}</Typography.Body>
                   </li>
                 ))}
               </ul>
