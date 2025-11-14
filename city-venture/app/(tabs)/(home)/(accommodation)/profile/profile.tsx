@@ -28,8 +28,9 @@ import Rooms from './rooms';
 import placeholder from '@/assets/images/placeholder.png';
 import Button from '@/components/Button';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import AddReview from '@/components/reviews/Addeview';
+import AddReview from '@/components/reviews/AddReview';
 import FeedbackService from '@/services/FeedbackService';
+import Chip from '@/components/Chip';
 
 const { width, height } = Dimensions.get('window');
 
@@ -43,7 +44,8 @@ const AccommodationProfile = () => {
     refreshAccommodation,
     refreshAllAccommodations,
   } = useAccommodation();
-
+  const actionLabel = activeTab === 'ratings' ? 'Write a Review' : 'Book Now';
+  const primaryIcon = activeTab === 'ratings' ? 'comment' : 'calendar-check';
   // Refresh & scroll state
   const [refreshing, setRefreshing] = useState(false);
   const lastOffset = useRef(0);
@@ -158,9 +160,15 @@ const AccommodationProfile = () => {
                 justify="space-between"
               >
                 <View>
-                  <ThemedText type="card-title-medium" weight="bold">
-                    {accommodationDetails?.business_name}
-                  </ThemedText>
+                  <Container
+                    direction="row"
+                    backgroundColor="transparent"
+                    padding={0}
+                  >
+                    <ThemedText type="card-title-medium" weight="bold">
+                      {accommodationDetails?.business_name}{' '}
+                    </ThemedText>
+                  </Container>
                   <ThemedText type="body-small">
                     <MaterialCommunityIcons
                       name="map-marker"
@@ -168,14 +176,19 @@ const AccommodationProfile = () => {
                       color="#FFB007"
                     />
                     {accommodationDetails?.address},{' '}
-                    {accommodationDetails?.barangay_name},{' '}
-                    {accommodationDetails?.municipality_name}
+                    {/* {accommodationDetails?.barangay_name},{' '}
+                    {accommodationDetails?.municipality_name} */}
                   </ThemedText>
-
-                  <ThemedText type="body-medium" style={{ marginTop: 4 }}>
-                    {accommodationDetails?.category}
-                  </ThemedText>
+                  <Chip
+                    size="small"
+                    variant="soft"
+                    color="secondary"
+                    style={{ marginTop: 8, alignItems: 'flex-start' }}
+                    label={accommodationDetails?.category}
+                    padding={0}
+                  />
                 </View>
+
                 <View>
                   <ThemedText type="body-small">
                     <MaterialCommunityIcons
@@ -194,73 +207,58 @@ const AccommodationProfile = () => {
             <View style={styles.tabContent}>
               {activeTab === 'details' && <Details />}
               {activeTab === 'rooms' && <Rooms />}
-              {activeTab === 'ratings' && <Ratings />}
+              {activeTab === 'ratings' && <Ratings key={ratingsRefreshKey} />}
             </View>
           </>
         }
       />
-      {!modalVisible && (() => {
-        const baseBottom = Platform.OS === 'ios' ? 60 : 80;
-        return (
-          <View
-            style={[
-              styles.fabBar,
-              { paddingBottom: baseBottom + insets.bottom },
-            ]}
-          >
-            {activeTab === 'ratings' && user?.role_name?.toLowerCase() === 'tourist' && (
+      {!modalVisible &&
+        (() => {
+          const baseBottom = Platform.OS === 'ios' ? 60 : 80;
+          // Only show "Write a Review" button if user is logged in and on ratings tab
+          if (activeTab === 'ratings' && !user) {
+            return null;
+          }
+          return (
+            <View
+              style={[
+                styles.fabBar,
+                { paddingBottom: baseBottom + insets.bottom },
+              ]}
+            >
               <Button
-                label={'Leave a Review'}
+                label={actionLabel}
                 fullWidth
-                startIcon={'comment'}
+                startIcon={primaryIcon}
                 color="primary"
                 variant="solid"
-                onPress={() => {
-                  setReviewError(null);
-                  setModalVisible(true);
-                }}
+                onPress={() => setModalVisible(true)}
                 elevation={3}
                 style={{ flex: 1 }}
               />
-            )}
-          </View>
-        );
-      })()}
+            </View>
+          );
+        })()}
 
-      {/* AddReview modal */}
-      <AddReview
-        visible={modalVisible}
-        onClose={() => setModalVisible(false)}
-        submitting={reviewSubmitting}
-        error={reviewError}
-        title="Write a review"
-        onSubmit={async ({ rating, message }) => {
-          if (!accommodationDetails?.id) {
-            setReviewError('Missing accommodation ID.');
-            return;
-          }
-          if (user?.role_name?.toLowerCase() !== 'tourist') {
-            setReviewError('Only tourists can write reviews.');
-            return;
-          }
-          try {
-            setReviewSubmitting(true);
-            await FeedbackService.createReview({
-              review_type: 'Accommodation',
-              review_type_id: String(accommodationDetails.id),
-              rating,
-              message,
-              tourist_id: String(user.id || ''),
-            });
-            setReviewSubmitting(false);
-            setModalVisible(false);
-            setRatingsRefreshKey((k) => k + 1);
-          } catch (e) {
-            setReviewSubmitting(false);
-            setReviewError('Failed to submit review. Please try again.');
-          }
-        }}
-      />
+      {user && (
+        <AddReview
+          visible={modalVisible}
+          onClose={() => setModalVisible(false)}
+          onSubmit={async (payload) => {
+            try {
+              await FeedbackService.createReview(payload);
+              setModalVisible(false);
+              setRatingsRefreshKey((prev) => prev + 1);
+            } catch (error) {
+              console.error('Error submitting review:', error);
+              throw error;
+            }
+          }}
+          touristId={user.id || ''}
+          reviewType="accommodation"
+          reviewTypeId={accommodationDetails?.id || ''}
+        />
+      )}
     </View>
   );
 };

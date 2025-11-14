@@ -1,6 +1,7 @@
 import Button from '@/components/Button';
 import { useRef, useState } from 'react';
-import { Dimensions, ScrollView, StyleSheet, View } from 'react-native';
+import { Dimensions, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
+import { scaled } from '@/utils/responsive';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -29,7 +30,12 @@ const SIZE_MAP: Record<TabSize, { buttonSize: 'small' | 'medium' | 'large'; padd
 const Tabs = ({ tabs, onTabChange, initialIndex = 0, size = 'medium', fullWidth = true }: Props) => {
   const [tabIndex, setTabIndex] = useState(initialIndex);
   const scrollRef = useRef<ScrollView>(null);
+  const { width } = useWindowDimensions();
   const sizing = SIZE_MAP[size];
+
+  const responsiveGap = scaled(8, { min: 6, max: 12, width });
+  const responsivePadding = scaled(sizing.padding, { min: sizing.padding * 0.8, max: sizing.padding * 1.2, width });
+  const responsiveIconSize = scaled(sizing.iconSize, { min: sizing.iconSize * 0.85, max: sizing.iconSize * 1.15, width });
 
   const onTabPress = (index: number) => {
     setTabIndex(index);
@@ -38,7 +44,7 @@ const Tabs = ({ tabs, onTabChange, initialIndex = 0, size = 'medium', fullWidth 
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { gap: responsiveGap }]}>
       {tabs.map((t, i) => (
         <Button
           elevation={2}
@@ -48,8 +54,8 @@ const Tabs = ({ tabs, onTabChange, initialIndex = 0, size = 'medium', fullWidth 
           onPress={() => onTabPress(i)}
           label={t.label}
           size={sizing.buttonSize}
-          padding={sizing.padding}
-          iconSize={sizing.iconSize}
+          padding={responsivePadding}
+          iconSize={responsiveIconSize}
           variant={tabIndex === i ? 'solid' : 'solid'}
           color={tabIndex === i ? 'primary' : 'white'}
         />
@@ -62,7 +68,6 @@ export default Tabs;
 
 const styles = StyleSheet.create({
   container: {
-    gap: 8,
     maxWidth: '100%',
     justifyContent: 'space-between',
     alignItems: 'center',

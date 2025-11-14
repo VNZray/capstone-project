@@ -4,13 +4,14 @@ import type {
   ReviewAndRating,
   ReviewAndRatings,
   ReviewType,
+  ReviewPhoto,
+  ReviewPhotos,
   Reply,
   Replies,
   CreateReviewPayload,
   UpdateReviewPayload,
   CreateReplyPayload,
   UpdateReplyPayload,
-  ReviewPhotos,
   ReviewWithAuthor,
 } from '@/types/Feedback';
 import type { Tourist } from '@/types/Tourist';
@@ -26,14 +27,55 @@ function unwrap<T>(res: any): T {
 }
 
 // Some backend routes (via stored procedures) return nested arrays like [ [ rows ] ]
+// or objects with numbered keys like { "0": {...}, "1": {...} }
 function normalizeList<T>(raw: any): T[] {
   const src = unwrap<any>(raw);
+  
   if (Array.isArray(src)) {
+    // Handle nested arrays
     if (src.length > 0 && Array.isArray(src[0])) {
       return src[0] as T[];
     }
+    
+    // Handle array of objects where first item has numbered keys
+    if (src.length > 0 && typeof src[0] === 'object' && src[0] !== null) {
+      // Check if it's an object with numeric string keys (0, 1, 2, etc.)
+      const keys = Object.keys(src[0]);
+      const numericKeys = keys.filter(k => /^\d+$/.test(k));
+      
+      if (numericKeys.length > 0) {
+        // Extract values from numeric keys and flatten
+        const extracted: T[] = [];
+        numericKeys.forEach(key => {
+          const item = src[0][key];
+          if (item && typeof item === 'object' && 'id' in item) {
+            extracted.push(item as T);
+          }
+        });
+        return extracted;
+      }
+    }
+    
     return src as T[];
   }
+  
+  // Handle single object with numeric keys
+  if (typeof src === 'object' && src !== null) {
+    const keys = Object.keys(src);
+    const numericKeys = keys.filter(k => /^\d+$/.test(k));
+    
+    if (numericKeys.length > 0) {
+      const extracted: T[] = [];
+      numericKeys.forEach(key => {
+        const item = src[key];
+        if (item && typeof item === 'object' && 'id' in item) {
+          extracted.push(item as T);
+        }
+      });
+      return extracted;
+    }
+  }
+  
   return [src as T];
 }
 
@@ -41,12 +83,12 @@ function normalizeList<T>(raw: any): T[] {
 
 export async function getAllReviews(): Promise<ReviewAndRatings> {
   const { data } = await axios.get(`${api}/reviews`);
-  return unwrap<ReviewAndRatings>(data);
+  return normalizeList<ReviewAndRating>(data);
 }
 
 export async function getReviewById(id: string): Promise<ReviewAndRating> {
   const { data } = await axios.get(`${api}/reviews/${id}`);
-  return data;
+  return unwrap<ReviewAndRating>(data);
 }
 
 export async function getReviewsByTypeAndEntityId(
@@ -64,12 +106,19 @@ export async function getBusinessReviews(
   business_type: string
 ): Promise<ReviewWithAuthor[]> {
   // Fetch base reviews for this business/type
-  const reviews = await getReviewsByTypeAndEntityId(
+  const rawReviews = await getReviewsByTypeAndEntityId(
     business_type as ReviewType,
     businessId
   );
 
-  if (!reviews || reviews.length === 0) return [];
+  if (!rawReviews || rawReviews.length === 0) return [];
+
+  // Filter out invalid entries (like the OkPacket objects)
+  const reviews = rawReviews.filter(r => 
+    r && typeof r === 'object' && 'id' in r && 'rating' in r
+  );
+
+  if (reviews.length === 0) return [];
 
   // Collect unique reviewer (tourist) IDs
   const touristIds = Array.from(
@@ -111,11 +160,44 @@ export async function getBusinessReviews(
     );
   }
 
-  // Merge review with its author details
+  // Fetch photos and replies for each review
+  const photosMap = new Map<string, ReviewPhotos>();
+  const repliesMap = new Map<string, Replies>();
+  
+  await Promise.all(
+    reviews.map(async (r) => {
+      try {
+        const photos = await getReviewPhotos(r.id);
+        photosMap.set(r.id, photos);
+      } catch (error) {
+        console.error(`Error fetching photos for review ${r.id}:`, error);
+        photosMap.set(r.id, []);
+      }
+      
+      try {
+        const replies = await getRepliesByReviewId(r.id);
+        repliesMap.set(r.id, replies);
+      } catch (error) {
+        console.error(`Error fetching replies for review ${r.id}:`, error);
+        repliesMap.set(r.id, []);
+      }
+    })
+  );
+
+  // Merge review with its author details, photos, and replies
   const enriched: ReviewWithAuthor[] = reviews.map((r) => {
     const tourist = touristMap.get(String(r.tourist_id)) ?? null;
     const user = tourist?.user_id ? userMap.get(String(tourist.user_id)) ?? null : null;
-    return { ...r, tourist, user };
+    const photos = photosMap.get(r.id) || [];
+    const replies = repliesMap.get(r.id) || [];
+    
+    return { 
+      ...r, 
+      tourist, 
+      user,
+      photos,
+      replies
+    };
   });
 
   return enriched;
@@ -143,7 +225,7 @@ export async function deleteReview(id: string): Promise<{ message: string }> {
 
 export async function getAllReplies(): Promise<Replies> {
   const { data } = await axios.get(`${api}/replies`);
-  return unwrap<Replies>(data);
+  return normalizeList<Reply>(data);
 }
 
 export async function getReplyById(id: string): Promise<Reply> {
@@ -153,7 +235,7 @@ export async function getReplyById(id: string): Promise<Reply> {
 
 export async function getRepliesByReviewId(reviewId: string): Promise<Replies> {
   const { data } = await axios.get(`${api}/replies/review/${reviewId}`);
-  return unwrap<Replies>(data);
+  return normalizeList<Reply>(data);
 }
 
 export async function createReply(payload: CreateReplyPayload): Promise<Reply> {
@@ -174,18 +256,18 @@ export async function deleteReply(id: string): Promise<{ message: string }> {
 // ===== Review Photos =====
 
 export async function getReviewPhotos(reviewId: string): Promise<ReviewPhotos> {
-  const { data } = await axios.get(`${api}/reviews/${reviewId}/photos`);
-  return unwrap<ReviewPhotos>(data);
+  const { data } = await axios.get(`${api}/review-photos/reviews/${reviewId}/photos`);
+  return normalizeList<ReviewPhoto>(data);
 }
 
 export async function addReviewPhotos(reviewId: string, photos: string[]): Promise<ReviewPhotos> {
-  const { data } = await axios.post(`${api}/reviews/${reviewId}/photos`, { photos });
+  const { data } = await axios.post(`${api}/review-photos/reviews/${reviewId}/photos`, { photos });
   // Endpoint returns { message, data }
   return unwrap<ReviewPhotos>(data);
 }
 
 export async function deleteReviewPhoto(photoId: string): Promise<{ message: string }> {
-  const { data } = await axios.delete(`${api}/reviews/photos/${photoId}`);
+  const { data } = await axios.delete(`${api}/review-photos/reviews/photos/${photoId}`);
   return data;
 }
 
