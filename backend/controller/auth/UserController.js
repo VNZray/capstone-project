@@ -19,14 +19,22 @@ export async function loginUser(req, res) {
     if (!isMatch) {
       return res.status(401).json({ message: "Incorrect password" });
     }
+    // Generate unique session ID to prevent multiple logins
+    const sessionId = uuidv4();
+    
     const token = jwt.sign(
       {
         id: user.id,
         user_role_id: user.user_role_id,
         email: user.email,
+        phone_number: user.phone_number,
+        is_verified: user.is_verified,
+        is_active: user.is_active,
+        sessionId: sessionId,
+        // NEVER include password in token for security
       },
       process.env.JWT_SECRET,
-      { expiresIn: "1h" }
+      { expiresIn: "2d" }
     );
     res.json({
       message: "Login successful",
