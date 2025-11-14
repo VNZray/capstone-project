@@ -18,6 +18,8 @@ import { useBusiness } from "@/src/context/BusinessContext";
 export interface ChangeProfileProps {
   open: boolean;
   onClose: () => void;
+  onSuccess?: (message: string) => void;
+  onError?: (error: string) => void;
 }
 
 /**
@@ -27,6 +29,8 @@ export interface ChangeProfileProps {
 const ChangeProfile: React.FC<ChangeProfileProps> = ({
   open,
   onClose,
+  onSuccess,
+  onError,
 }) => {
   const { roomDetails } = useRoom();
   const { businessDetails } = useBusiness();
@@ -36,7 +40,9 @@ const ChangeProfile: React.FC<ChangeProfileProps> = ({
   const handleUploadComplete = async (publicUrl: string) => {
     try {
       if (!roomDetails?.id) {
-        setError("Room ID not found");
+        const errorMsg = "Room ID not found";
+        setError(errorMsg);
+        if (onError) onError(errorMsg);
         return;
       }
 
@@ -50,11 +56,22 @@ const ChangeProfile: React.FC<ChangeProfileProps> = ({
         "room"
       );
 
+      // Trigger success callback
+      if (onSuccess) {
+        onSuccess(`Room ${roomDetails.room_number} profile image updated successfully!`);
+      }
+
+      // Close modal
+      onClose();
+
       // Reload page to reflect changes
-      window.location.reload();
+      setTimeout(() => {
+        window.location.reload();
+      }, 1500);
     } catch (err: any) {
       const errorMessage = err?.message || "Failed to update room profile";
       setError(errorMessage);
+      if (onError) onError(errorMessage);
       console.error("Profile update error:", err);
     } finally {
       setIsUploading(false);
@@ -63,6 +80,7 @@ const ChangeProfile: React.FC<ChangeProfileProps> = ({
 
   const handleError = (errorMsg: string) => {
     setError(errorMsg);
+    if (onError) onError(errorMsg);
   };
 
   return (

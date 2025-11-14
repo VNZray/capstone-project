@@ -28,6 +28,7 @@ import HotelIcon from "@mui/icons-material/Hotel";
 import BuildIcon from "@mui/icons-material/Build";
 import ChangeProfile from "./components/ChangeProfile";
 import Typography from "@/src/components/Typography";
+import Alert from "@/src/components/Alert";
 const RoomProfile = () => {
   const { roomDetails } = useRoom();
   const navigate = useNavigate();
@@ -36,6 +37,18 @@ const RoomProfile = () => {
   );
   const [isDeleting, setIsDeleting] = useState(false);
   const [isEditingProfile, setIsEditingProfile] = useState(false);
+  const [alertConfig, setAlertConfig] = useState<{
+    open: boolean;
+    type: "success" | "error" | "warning" | "info";
+    title: string;
+    message: string;
+    onConfirm?: () => void;
+  }>({
+    open: false,
+    type: "info",
+    title: "",
+    message: "",
+  });
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -67,23 +80,38 @@ const RoomProfile = () => {
     }
   };
 
-  const deleteRoom = async () => {
-    if (
-      !confirm(
-        "Are you sure you want to delete this room? This action cannot be undone."
-      )
-    ) {
-      return;
-    }
+  const handleDeleteClick = () => {
+    setAlertConfig({
+      open: true,
+      type: "warning",
+      title: "Delete Room",
+      message: `Are you sure you want to delete Room ${roomDetails?.room_number}? This action cannot be undone and all associated data will be permanently removed.`,
+      onConfirm: confirmDeleteRoom,
+    });
+  };
 
+  const confirmDeleteRoom = async () => {
     try {
       if (!roomDetails?.id) return;
       setIsDeleting(true);
       await deleteData(roomDetails.id as string, "room");
-      navigate("/business/rooms");
+      
+      setAlertConfig({
+        open: true,
+        type: "success",
+        title: "Room Deleted",
+        message: `Room ${roomDetails?.room_number} has been successfully deleted.`,
+        onConfirm: () => navigate("/business/rooms"),
+      });
     } catch (err) {
       console.error("Failed to delete room:", err);
       setIsDeleting(false);
+      setAlertConfig({
+        open: true,
+        type: "error",
+        title: "Delete Failed",
+        message: `Failed to delete Room ${roomDetails?.room_number}. ${err instanceof Error ? err.message : "Please try again."}`,
+      });
     }
   };
 
@@ -206,7 +234,7 @@ const RoomProfile = () => {
 
               {/* Delete Room */}
               <MenuItem
-                onClick={deleteRoom}
+                onClick={handleDeleteClick}
                 disabled={isDeleting}
                 sx={{
                   display: "flex",
@@ -244,6 +272,34 @@ const RoomProfile = () => {
       <ChangeProfile
         open={isEditingProfile}
         onClose={() => setIsEditingProfile(false)}
+        onSuccess={(message) => {
+          setAlertConfig({
+            open: true,
+            type: "success",
+            title: "Profile Updated",
+            message: message || "Room profile has been successfully updated.",
+          });
+        }}
+        onError={(error) => {
+          setAlertConfig({
+            open: true,
+            type: "error",
+            title: "Update Failed",
+            message: error || "Failed to update room profile. Please try again.",
+          });
+        }}
+      />
+
+      {/* Alert Dialog */}
+      <Alert
+        open={alertConfig.open}
+        onClose={() => setAlertConfig((prev) => ({ ...prev, open: false }))}
+        onConfirm={alertConfig.onConfirm || (() => setAlertConfig((prev) => ({ ...prev, open: false })))}
+        type={alertConfig.type}
+        title={alertConfig.title}
+        message={alertConfig.message}
+        confirmText={alertConfig.type === "warning" ? "Delete" : "OK"}
+        showCancel={alertConfig.type === "warning"}
       />
     </PageContainer>
   );

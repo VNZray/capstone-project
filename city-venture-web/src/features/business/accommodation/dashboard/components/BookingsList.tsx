@@ -15,6 +15,7 @@ interface Booking {
   status: "Pending" | "Reserved" | "Checked-in" | "Checked-out" | "Canceled";
   amount: number;
   touristId?: string;
+  createdAt?: string;
 }
 
 interface BookingsListProps {
@@ -74,6 +75,29 @@ const BookingsList: React.FC<BookingsListProps> = ({ bookings, title }) => {
       month: "short",
       day: "numeric",
     });
+  };
+
+  const formatDaysAgo = (dateString: string | undefined) => {
+    if (!dateString) return "Recently";
+    
+    const now = new Date();
+    const bookingDate = new Date(dateString);
+    const diffTime = Math.abs(now.getTime() - bookingDate.getTime());
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+    
+    if (diffDays === 0) return "Today";
+    if (diffDays === 1) return "Yesterday";
+    if (diffDays < 7) return `${diffDays} days ago`;
+    if (diffDays < 30) {
+      const weeks = Math.floor(diffDays / 7);
+      return weeks === 1 ? "1 week ago" : `${weeks} weeks ago`;
+    }
+    if (diffDays < 365) {
+      const months = Math.floor(diffDays / 30);
+      return months === 1 ? "1 month ago" : `${months} months ago`;
+    }
+    const years = Math.floor(diffDays / 365);
+    return years === 1 ? "1 year ago" : `${years} years ago`;
   };
 
   const getTouristName = (booking: Booking) => {
@@ -234,6 +258,9 @@ const BookingsList: React.FC<BookingsListProps> = ({ bookings, title }) => {
                       </Typography>
                       <Typography level="body-xs" sx={{ color: "text.tertiary" }}>
                         Room {booking.roomNumber} {booking.roomType && `• ${booking.roomType}`}
+                      </Typography>
+                      <Typography level="body-xs" sx={{ color: "text.tertiary", mt: 0.25 }}>
+                        Booked {formatDaysAgo(booking.createdAt)}
                       </Typography>
                     </Box>
                   </Box>

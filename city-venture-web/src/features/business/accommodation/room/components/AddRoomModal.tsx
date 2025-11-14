@@ -12,7 +12,7 @@ import {
   Grid,
   Autocomplete,
   FormHelperText,
-  Alert,
+  Alert as JoyAlert,
 } from "@mui/joy";
 import type { Room } from "@/src/types/Business";
 import { useBusiness } from "@/src/context/BusinessContext";
@@ -21,6 +21,7 @@ import type { Amenity } from "@/src/types/Amenity";
 import { useEffect } from "react";
 import Typography from "@/src/components/Typography";
 import ImageUpload from "@/src/components/ImageUpload";
+import Alert from "@/src/components/Alert";
 interface AddRoomModalProps {
   business_name?: string;
   open: boolean;
@@ -43,6 +44,17 @@ export default function AddRoomModal({
     string[]
   >([]);
   const [error, setError] = React.useState("");
+  const [alertConfig, setAlertConfig] = React.useState<{
+    open: boolean;
+    type: "success" | "error" | "warning" | "info";
+    title: string;
+    message: string;
+  }>({
+    open: false,
+    type: "info",
+    title: "",
+    message: "",
+  });
 
   // Predefined room types
   const roomTypeOptions = [
@@ -129,61 +141,92 @@ export default function AddRoomModal({
       business_id: businessDetails?.id ?? null, // ensure valid FK
     };
 
-    const response = await insertData(payload, "room");
-    if (response.error) {
-      // Check if it's a unique constraint violation
-      if (
-        response.error.includes("Duplicate entry") ||
-        response.error.includes("UNIQUE")
-      ) {
-        setError(
-          `Room number "${roomData.room_number}" already exists for this business`
-        );
-      } else {
-        setError(response.error);
+    try {
+      const response = await insertData(payload, "room");
+      if (response.error) {
+        // Check if it's a unique constraint violation
+        if (
+          response.error.includes("Duplicate entry") ||
+          response.error.includes("UNIQUE")
+        ) {
+          setAlertConfig({
+            open: true,
+            type: "error",
+            title: "Duplicate Room Number",
+            message: `Room number "${roomData.room_number}" already exists for this business. Please use a different room number.`,
+          });
+        } else {
+          setAlertConfig({
+            open: true,
+            type: "error",
+            title: "Failed to Add Room",
+            message: `An error occurred while adding the room: ${response.error}`,
+          });
+        }
+        return;
       }
-      return;
+
+      const addAmenityPromises = selectedAmenities.map((amenity) => {
+        return insertData(
+          { room_id: response.id, amenity_id: amenity.id },
+          "room-amenities"
+        );
+      });
+
+      await Promise.all(addAmenityPromises);
+
+      // Show success alert
+      setAlertConfig({
+        open: true,
+        type: "success",
+        title: "Room Added Successfully",
+        message: `Room ${roomData.room_number} has been added successfully with ${selectedAmenities.length} amenities.`,
+      });
+
+      // Reset form
+      setRoomData({
+        id: "",
+        room_number: "",
+        room_type: "",
+        capacity: "",
+        room_price: "",
+        description: "",
+        business_id: businessDetails?.id ?? "", // keep it
+        status: "Available",
+        room_image: "",
+        floor: "",
+        room_size: "",
+      });
+      setSelectedAmenities([]);
+      setError("");
+
+      if (onRoomAdded) onRoomAdded();
+      
+      // Close modal after a short delay to show success message
+      setTimeout(() => {
+        onClose();
+      }, 1500);
+    } catch (error) {
+      setAlertConfig({
+        open: true,
+        type: "error",
+        title: "Failed to Add Room",
+        message: `An unexpected error occurred: ${error instanceof Error ? error.message : "Unknown error"}`,
+      });
     }
-
-    const addAmenityPromises = selectedAmenities.map((amenity) => {
-      return insertData(
-        { room_id: response.id, amenity_id: amenity.id },
-        "room-amenities"
-      );
-    });
-
-    await Promise.all(addAmenityPromises);
-
-    // Reset form
-    setRoomData({
-      id: "",
-      room_number: "",
-      room_type: "",
-      capacity: "",
-      room_price: "",
-      description: "",
-      business_id: businessDetails?.id ?? "", // keep it
-      status: "Available",
-      room_image: "",
-      floor: "",
-      room_size: "",
-    });
-    setError("");
-
-    if (onRoomAdded) onRoomAdded();
-    onClose();
   };
 
   return (
-    <Modal open={open} onClose={onClose}>
-      <ModalDialog
-        size="md"
-        minWidth={600}
-        maxWidth={600}
-        variant="outlined"
-        role="dialog"
-      >
-        <Typography.CardTitle>Add New Room</Typography.CardTitle>
+    <>
+      <Modal open={open} onClose={onClose}>
+        <ModalDialog
+          size="md"
+          minWidth={600}
+          maxWidth={600}
+          variant="outlined"
+          role="dialog"
+        >
+          <Typography.CardTitle>Add New Room</Typography.CardTitle>
 
         <form
           onSubmit={(e) => {
@@ -193,9 +236,9 @@ export default function AddRoomModal({
         >
           <Stack spacing={2}>
             {error && (
-              <Alert color="danger" variant="soft">
+              <JoyAlert color="danger" variant="soft">
                 {error}
-              </Alert>
+              </JoyAlert>
             )}
 
             <Grid container spacing={2}>
@@ -429,5 +472,18 @@ export default function AddRoomModal({
         </form>
       </ModalDialog>
     </Modal>
+
+      {/* Alert Dialog */}
+      <Alert
+        open={alertConfig.open}
+        onClose={() => setAlertConfig((prev) => ({ ...prev, open: false }))}
+        onConfirm={() => setAlertConfig((prev) => ({ ...prev, open: false }))}
+        type={alertConfig.type}
+        title={alertConfig.title}
+        message={alertConfig.message}
+        confirmText="OK"
+        showCancel={false}
+      />
+    </>
   );
 }
