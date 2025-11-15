@@ -19,6 +19,8 @@ expo-env.d.ts
 *.mobileprovision
 .env.local
 .env
+compononents/examples/
+docs
 
 # Metro
 .metro-health-check*

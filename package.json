@@ -12,5 +12,9 @@
     "concurrently": "^8.2.2",
     "metro-minify-terser": "^0.83.1",
     "metro-runtime": "^0.83.1"
+  },
+  "dependencies": {
+    "@legendapp/motion": "^2.4.0",
+    "lucide-react-native": "^0.510.0"
   }
 }

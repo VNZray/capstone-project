@@ -178,7 +178,7 @@ const LoginPage = () => {
 
             {/* Footer */}
             <View style={styles.footer}>
-              <ThemedText type="body-medium">Don't have an account?</ThemedText>
+              <ThemedText.Body>Don't have an account?</ThemedText.Body>
               <Link href={'./Register'}>
                 <ThemedText type="link-medium">Sign Up</ThemedText>
               </Link>

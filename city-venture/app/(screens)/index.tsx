@@ -1,4 +1,4 @@
-import Button from '@/components/Button';
+import { Button } from '@/components/custom-ui/Button';
 import Container from '@/components/Container';
 import FormLogo from '@/components/FormLogo';
 import PageContainer from '@/components/PageContainer';
@@ -135,19 +135,23 @@ const LoginPage = () => {
               </Container>
             ) : null}
 
-            {/* Login Button */}
-            <Button
-              fullWidth
-              size="large"
-              label={isLoading ? 'Signing In...' : 'Sign In'}
-              color="primary"
-              variant="solid"
-              onPress={isLoading ? undefined : handleLogin}
-            />
+            <Button.Group flexDirection="column" space="sm">
+              <Button
+                variant="solid"
+                action="primary"
+                onPress={isLoading ? undefined : handleLogin}
+              >
+                <ThemedText.Body size="md" align="center" bold>
+                  {isLoading ? 'Signing In...' : 'Sign In'}
+                </ThemedText.Body>
+              </Button>
+            </Button.Group>
 
             {/* Footer */}
             <View style={styles.footer}>
-              <ThemedText type="body-medium">Don't have an account?</ThemedText>
+              <ThemedText type="body-medium">
+                `Don ${'&apos'}t have an account?`
+              </ThemedText>
               <Link href={'./Register'}>
                 <ThemedText type="link-medium">Sign Up</ThemedText>
               </Link>

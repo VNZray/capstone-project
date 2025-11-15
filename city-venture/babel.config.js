@@ -1,17 +1,22 @@
-export default function (api) {
+module.exports = function (api) {
   api.cache(true);
+
   return {
-    presets: ['babel-preset-expo'],
+    presets: [['babel-preset-expo'], 'nativewind/babel'],
+
     plugins: [
       [
         'module-resolver',
         {
+          root: ['./'],
+
           alias: {
-            '@': './', // This makes `@` point to the root directory
+            '@': './',
+            'tailwind.config': './tailwind.config.js',
           },
         },
       ],
-      'react-native-reanimated/plugin', // Keep this last in the list
+      'react-native-worklets/plugin',
     ],
   };
 };

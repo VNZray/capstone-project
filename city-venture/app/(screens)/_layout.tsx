@@ -12,41 +12,39 @@ const Screens = () => {
   const color = colorScheme === 'light' ? '#000' : '#fff';
 
   return (
-      <ThemeProvider value={colorScheme === 'light' ? DefaultTheme : DarkTheme}>
-      <Stack>
-        <Stack.Screen name="index" options={{ headerShown: false }} />
-        <Stack.Screen
-          name="Login"
-          options={{
-            headerBackTitle: 'Back',
-            headerTitle: 'Login',
-            headerTintColor: color,
-            headerShown: true,
-            title: 'Login',
-            // Prevent iOS back-swipe and back button after successful login
-            gestureEnabled: false,
-          }}
-        />
-        <Stack.Screen
-          name="Register"
-          options={{
-            headerBackTitle: 'Back',
-            headerTintColor: color,
-            headerShown: true,
-            title: 'Sign Up',
-          }}
-        />
-        <Stack.Screen
-          name="ForgotPassword"
-          options={{
-            headerBackTitle: 'Back',
-            headerTintColor: color,
-            headerShown: true,
-            title: 'Forgot Password',
-          }}
-        />
-      </Stack>
-    </ThemeProvider>
+    <Stack>
+      <Stack.Screen name="index" options={{ headerShown: false }} />
+      <Stack.Screen
+        name="Login"
+        options={{
+          headerBackTitle: 'Back',
+          headerTitle: 'Login',
+          headerTintColor: color,
+          headerShown: true,
+          title: 'Login',
+          // Prevent iOS back-swipe and back button after successful login
+          gestureEnabled: false,
+        }}
+      />
+      <Stack.Screen
+        name="Register"
+        options={{
+          headerBackTitle: 'Back',
+          headerTintColor: color,
+          headerShown: true,
+          title: 'Sign Up',
+        }}
+      />
+      <Stack.Screen
+        name="ForgotPassword"
+        options={{
+          headerBackTitle: 'Back',
+          headerTintColor: color,
+          headerShown: true,
+          title: 'Forgot Password',
+        }}
+      />
+    </Stack>
   );
 };
 

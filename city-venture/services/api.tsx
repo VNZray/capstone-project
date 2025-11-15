@@ -25,6 +25,6 @@ function deriveApiFromDevHost(): string | undefined {
   return undefined;
 }
 
-const api = 'http://192.168.1.9:3000/api';
+const api = 'http://192.168.1.11:3000/api';
 
 export default api;

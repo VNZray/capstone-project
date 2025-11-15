@@ -1,10 +1,52 @@
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { useFonts } from 'expo-font';
 import React from 'react';
-import { Platform, StyleSheet, Text, View, type TextProps, useWindowDimensions } from 'react-native';
-import { scaled } from '@/utils/responsive';
+import {
+  Platform,
+  View,
+  type TextProps,
+} from 'react-native';
+import { Text } from './ui/text';
+import { Heading } from './ui/heading';
 
-export type TypographyType =
+export type HeadingSize = '5xl' | '4xl' | '3xl' | '2xl' | 'xl' | 'lg' | 'md' | 'sm' | 'xs';
+export type TextSize = '2xs' | 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl' | '4xl' | '5xl' | '6xl';
+
+export type TextAlign = 'left' | 'center' | 'right' | 'justify';
+
+export type ThemedTextBaseProps = Omit<TextProps, 'style'> & {
+  lightColor?: string;
+  darkColor?: string;
+  align?: TextAlign;
+  children?: React.ReactNode;
+  bold?: boolean;
+  italic?: boolean;
+  underline?: boolean;
+  strikeThrough?: boolean;
+  isTruncated?: boolean;
+  className?: string;
+  style?: any;
+
+  // icons
+  startIcon?: React.ReactNode;
+  endIcon?: React.ReactNode;
+  topIcon?: React.ReactNode;
+  bottomIcon?: React.ReactNode;
+};
+
+export type ThemedHeadingProps = ThemedTextBaseProps & {
+  size?: HeadingSize;
+};
+
+export type ThemedBodyProps = ThemedTextBaseProps & {
+  size?: TextSize;
+};
+
+// Map old font weights to bold prop
+type LegacyFontWeight = 'normal' | 'medium' | 'semi-bold' | 'bold' | 'bolder' | 'extra-bold' | 'black';
+
+// Legacy typography types for backward compatibility
+type LegacyTypographyType =
   | `title-${'extra-small' | 'small' | 'medium' | 'large'}`
   | `header-${'extra-small' | 'small' | 'medium' | 'large'}`
   | `sub-title-${'extra-small' | 'small' | 'medium' | 'large'}`
@@ -14,223 +56,263 @@ export type TypographyType =
   | `label-${'extra-small' | 'small' | 'medium' | 'large'}`
   | `link-${'extra-small' | 'small' | 'medium' | 'large'}`;
 
-export type FontWeight =
-  | 'normal'
-  | 'medium'
-  | 'semi-bold'
-  | 'bold'
-  | 'bolder'
-  | 'extra-bold'
-  | 'black';
-
-export type TextAlign = 'left' | 'center' | 'right' | 'justify';
-
-export type ThemedTextProps = TextProps & {
-  lightColor?: string;
-  darkColor?: string;
-  type?: TypographyType;
-  weight?: FontWeight;
-  align?: TextAlign;
-  children?: React.ReactNode;
-
-  // spacing props
-  pt?: number;
-  pr?: number;
-  pb?: number;
-  pl?: number;
-  mt?: number;
-  mr?: number;
-  mb?: number;
-  ml?: number;
-
-  // icons
-  startIcon?: React.ReactNode;
-  endIcon?: React.ReactNode;
-  topIcon?: React.ReactNode;
-  bottomIcon?: React.ReactNode;
+// Legacy props for backward compatibility
+export type LegacyThemedTextProps = ThemedTextBaseProps & {
+  type?: LegacyTypographyType;
+  weight?: LegacyFontWeight;
 };
 
-export function ThemedText({
-  style,
-  lightColor,
-  darkColor,
-  type = 'body-medium',
-  weight = 'normal',
-  align = 'left',
+// Helper to map legacy types to new sizes
+function mapLegacyTypeToSize(type?: LegacyTypographyType): { isHeading: boolean; size: TextSize | HeadingSize } {
+  if (!type) return { isHeading: false, size: 'md' };
 
-  // spacing defaults
-  pt = 0,
-  pr = 0,
-  pb = 0,
-  pl = 0,
-  mt = 0,
-  mr = 0,
-  mb = 0,
-  ml = 0,
+  // Check if it's a heading type
+  const isHeading = type.startsWith('title-') || type.startsWith('header-') || type.startsWith('sub-title-');
 
-  // icons
-  startIcon,
-  endIcon,
-  topIcon,
-  bottomIcon,
+  // Map sizes
+  if (type.includes('large')) return { isHeading, size: 'xl' };
+  if (type.includes('medium')) return { isHeading, size: 'lg' };
+  if (type.includes('small') && !type.includes('extra')) return { isHeading, size: 'md' };
+  if (type.includes('extra-small')) return { isHeading, size: 'sm' };
 
-  children,
+  return { isHeading, size: 'md' };
+}
 
-  ...rest
-}: ThemedTextProps) {
-  const isLink = type.startsWith('link-');
-  const defaultColor = isLink
-    ? '#1e90ff'
-    : useThemeColor({ light: lightColor, dark: darkColor }, 'text');
+// Helper to map legacy weight to bold prop
+function mapLegacyWeightToBold(weight?: LegacyFontWeight): boolean {
+  if (!weight || weight === 'normal') return false;
+  return true; // medium, semi-bold, bold, etc. all map to bold
+}
 
-  const { width } = useWindowDimensions();
-
-  const [fontsLoaded] = useFonts({
-    'Poppins-Regular': require('@/assets/fonts/Poppins/Poppins-Regular.ttf'),
-    'Poppins-Medium': require('@/assets/fonts/Poppins/Poppins-Medium.ttf'),
-    'Poppins-SemiBold': require('@/assets/fonts/Poppins/Poppins-SemiBold.ttf'),
-    'Poppins-Bold': require('@/assets/fonts/Poppins/Poppins-Bold.ttf'),
-    'Poppins-ExtraBold': require('@/assets/fonts/Poppins/Poppins-ExtraBold.ttf'),
-    'Poppins-Black': require('@/assets/fonts/Poppins/Poppins-Black.ttf'),
-  });
-
-  if (!fontsLoaded) {
-    return null;
-  }
-
-  const responsiveSpacing = {
-    pt: scaled(pt, { min: 0, max: pt * 1.5, width }),
-    pr: scaled(pr, { min: 0, max: pr * 1.5, width }),
-    pb: scaled(pb, { min: 0, max: pb * 1.5, width }),
-    pl: scaled(pl, { min: 0, max: pl * 1.5, width }),
-    mt: scaled(mt, { min: 0, max: mt * 1.5, width }),
-    mr: scaled(mr, { min: 0, max: mr * 1.5, width }),
-    mb: scaled(mb, { min: 0, max: mb * 1.5, width }),
-    ml: scaled(ml, { min: 0, max: ml * 1.5, width }),
-  };
-
-  const textElement = (
-    <Text
-      style={[
-        {
-          color: defaultColor,
-          textAlign: align,
-          paddingTop: responsiveSpacing.pt,
-          paddingRight: responsiveSpacing.pr,
-          paddingBottom: responsiveSpacing.pb,
-          paddingLeft: responsiveSpacing.pl,
-          marginTop: responsiveSpacing.mt,
-          marginRight: responsiveSpacing.mr,
-          marginBottom: responsiveSpacing.mb,
-          marginLeft: responsiveSpacing.ml,
-        },
-        getResponsiveStyle(type, width),
-        getFontWeightStyle(weight),
-        // Android-specific text improvements
-        Platform.OS === 'android' && {
-          textAlignVertical: 'center',
-          includeFontPadding: false,
-        },
-        style,
-      ]}
-      {...rest}
-    >
-      {children}
-    </Text>
-  );
-
-  // If top/bottom icon → vertical layout
-  if (topIcon || bottomIcon) {
-    return (
-      <View style={{ alignItems: 'center' }}>
-        {topIcon ? <View style={{ marginBottom: 4 }}>{topIcon}</View> : null}
-        {textElement}
-        {bottomIcon ? <View style={{ marginTop: 4 }}>{bottomIcon}</View> : null}
-      </View>
+// Heading component
+const ThemedHeading = React.forwardRef<any, ThemedHeadingProps>(
+  function ThemedHeading(
+    {
+      lightColor,
+      darkColor,
+      size = 'lg',
+      align = 'left',
+      bold = true,
+      italic = false,
+      underline = false,
+      strikeThrough = false,
+      isTruncated = false,
+      className,
+      startIcon,
+      endIcon,
+      topIcon,
+      bottomIcon,
+      children,
+      ...rest
+    },
+    ref
+  ) {
+    const themeColor = useThemeColor(
+      { light: lightColor, dark: darkColor },
+      'text'
     );
+
+    const [fontsLoaded] = useFonts({
+      'Poppins-Regular': require('@/assets/fonts/Poppins/Poppins-Regular.ttf'),
+      'Poppins-Medium': require('@/assets/fonts/Poppins/Poppins-Medium.ttf'),
+      'Poppins-SemiBold': require('@/assets/fonts/Poppins/Poppins-SemiBold.ttf'),
+      'Poppins-Bold': require('@/assets/fonts/Poppins/Poppins-Bold.ttf'),
+      'Poppins-ExtraBold': require('@/assets/fonts/Poppins/Poppins-ExtraBold.ttf'),
+      'Poppins-Black': require('@/assets/fonts/Poppins/Poppins-Black.ttf'),
+    });
+
+    if (!fontsLoaded) {
+      return null;
+    }
+
+    const headingElement = (
+      <Heading
+        ref={ref}
+        size={size}
+        bold={bold}
+        italic={italic}
+        underline={underline}
+        strikeThrough={strikeThrough}
+        isTruncated={isTruncated}
+        className={className}
+        style={[
+          {
+            color: themeColor,
+            textAlign: align,
+            fontFamily: bold ? 'Poppins-Bold' : 'Poppins-SemiBold',
+          },
+          Platform.OS === 'android' && {
+            textAlignVertical: 'center',
+            includeFontPadding: false,
+          },
+        ]}
+        {...rest}
+      >
+        {children}
+      </Heading>
+    );
+
+    // If top/bottom icon → vertical layout
+    if (topIcon || bottomIcon) {
+      return (
+        <View style={{ alignItems: 'center' }}>
+          {topIcon ? <View style={{ marginBottom: 4 }}>{topIcon}</View> : null}
+          {headingElement}
+          {bottomIcon ? <View style={{ marginTop: 4 }}>{bottomIcon}</View> : null}
+        </View>
+      );
+    }
+
+    // If start/end icon → horizontal layout
+    if (startIcon || endIcon) {
+      return (
+        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+          {startIcon ? <View style={{ marginRight: 6 }}>{startIcon}</View> : null}
+          {headingElement}
+          {endIcon ? <View style={{ marginLeft: 6 }}>{endIcon}</View> : null}
+        </View>
+      );
+    }
+
+    return headingElement;
   }
+);
 
-  // If start/end icon → horizontal layout
-  return (
-    <View style={{ flexDirection: 'row', alignItems: 'center' , }}>
-      {startIcon ? <View style={{ marginRight: 6 }}>{startIcon}</View> : null}
-      {textElement}
-      {endIcon ? <View style={{ marginLeft: 6 }}>{endIcon}</View> : null}
-    </View>
-  );
-}
+// Body component (default Text)
+const ThemedBody = React.forwardRef<any, ThemedBodyProps>(
+  function ThemedBody(
+    {
+      lightColor,
+      darkColor,
+      size = 'md',
+      align = 'left',
+      bold = false,
+      italic = false,
+      underline = false,
+      strikeThrough = false,
+      isTruncated = false,
+      className,
+      startIcon,
+      endIcon,
+      topIcon,
+      bottomIcon,
+      children,
+      ...rest
+    },
+    ref
+  ) {
+    const themeColor = useThemeColor(
+      { light: lightColor, dark: darkColor },
+      'text'
+    );
 
-function getFontWeightStyle(weight: FontWeight) {
-  switch (weight) {
-    case 'medium':
-      return { fontFamily: 'Poppins-Medium' };
-    case 'semi-bold':
-      return { fontFamily: 'Poppins-SemiBold' };
-    case 'bold':
-      return { fontFamily: 'Poppins-Bold' };
-    case 'bolder':
-      return { fontFamily: 'Poppins-Bold', fontWeight: '900' as const }; // fallback
-    case 'extra-bold':
-      return { fontFamily: 'Poppins-ExtraBold' };
-    case 'black':
-      return { fontFamily: 'Poppins-Black' };
-    default:
-      return { fontFamily: 'Poppins-Regular' };
+    const [fontsLoaded] = useFonts({
+      'Poppins-Regular': require('@/assets/fonts/Poppins/Poppins-Regular.ttf'),
+      'Poppins-Medium': require('@/assets/fonts/Poppins/Poppins-Medium.ttf'),
+      'Poppins-SemiBold': require('@/assets/fonts/Poppins/Poppins-SemiBold.ttf'),
+      'Poppins-Bold': require('@/assets/fonts/Poppins/Poppins-Bold.ttf'),
+      'Poppins-ExtraBold': require('@/assets/fonts/Poppins/Poppins-ExtraBold.ttf'),
+      'Poppins-Black': require('@/assets/fonts/Poppins/Poppins-Black.ttf'),
+    });
+
+    if (!fontsLoaded) {
+      return null;
+    }
+
+    const textElement = (
+      <Text
+        ref={ref}
+        size={size}
+        bold={bold}
+        italic={italic}
+        underline={underline}
+        strikeThrough={strikeThrough}
+        isTruncated={isTruncated}
+        className={className}
+        style={[
+          {
+            color: themeColor,
+            textAlign: align,
+            fontFamily: bold ? 'Poppins-Bold' : 'Poppins-Regular',
+          },
+          Platform.OS === 'android' && {
+            textAlignVertical: 'center',
+            includeFontPadding: false,
+          },
+        ]}
+        {...rest}
+      >
+        {children}
+      </Text>
+    );
+
+    // If top/bottom icon → vertical layout
+    if (topIcon || bottomIcon) {
+      return (
+        <View style={{ alignItems: 'center' }}>
+          {topIcon ? <View style={{ marginBottom: 4 }}>{topIcon}</View> : null}
+          {textElement}
+          {bottomIcon ? <View style={{ marginTop: 4 }}>{bottomIcon}</View> : null}
+        </View>
+      );
+    }
+
+    // If start/end icon → horizontal layout
+    if (startIcon || endIcon) {
+      return (
+        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+          {startIcon ? <View style={{ marginRight: 6 }}>{startIcon}</View> : null}
+          {textElement}
+          {endIcon ? <View style={{ marginLeft: 6 }}>{endIcon}</View> : null}
+        </View>
+      );
+    }
+
+    return textElement;
   }
-}
+);
 
-const fontSizeMap: Record<TypographyType, { base: number; min: number; max: number }> = {
-  // Titles
-  'title-large': { base: 32, min: 24, max: 40 },
-  'title-medium': { base: 28, min: 22, max: 34 },
-  'title-small': { base: 24, min: 20, max: 28 },
-  'title-extra-small': { base: 20, min: 18, max: 24 },
+// Main ThemedText export with compound components
+export const ThemedText = Object.assign(
+  React.forwardRef<any, ThemedBodyProps | LegacyThemedTextProps>(
+    function ThemedText(props: ThemedBodyProps | LegacyThemedTextProps, ref) {
+      // Check if using legacy API
+      const legacyProps = props as LegacyThemedTextProps;
+      if (legacyProps.type || legacyProps.weight) {
+        const { type, weight, ...restProps } = legacyProps;
+        const { isHeading, size } = mapLegacyTypeToSize(type);
+        const bold = mapLegacyWeightToBold(weight);
 
-  // Headers
-  'header-large': { base: 32, min: 24, max: 40 },
-  'header-medium': { base: 28, min: 22, max: 34 },
-  'header-small': { base: 24, min: 20, max: 28 },
-  'header-extra-small': { base: 20, min: 18, max: 24 },
+        if (isHeading) {
+          return (
+            <ThemedHeading
+              ref={ref}
+              size={size as HeadingSize}
+              bold={bold}
+              {...restProps}
+            />
+          );
+        }
 
-  // Sub Titles
-  'sub-title-large': { base: 22, min: 18, max: 26 },
-  'sub-title-medium': { base: 20, min: 17, max: 24 },
-  'sub-title-small': { base: 18, min: 16, max: 22 },
-  'sub-title-extra-small': { base: 16, min: 14, max: 18 },
+        return (
+          <ThemedBody
+            ref={ref}
+            size={size as TextSize}
+            bold={bold}
+            {...restProps}
+          />
+        );
+      }
 
-  // Body
-  'body-large': { base: 18, min: 16, max: 20 },
-  'body-medium': { base: 16, min: 14, max: 18 },
-  'body-small': { base: 14, min: 12, max: 16 },
-  'body-extra-small': { base: 12, min: 10, max: 14 },
+      // Use new API
+      return <ThemedBody ref={ref} {...(props as ThemedBodyProps)} />;
+    }
+  ),
+  {
+    Heading: ThemedHeading,
+    Body: ThemedBody,
+  }
+);
 
-  // Card Titles
-  'card-title-large': { base: 20, min: 18, max: 24 },
-  'card-title-medium': { base: 18, min: 16, max: 20 },
-  'card-title-small': { base: 16, min: 14, max: 18 },
-  'card-title-extra-small': { base: 14, min: 12, max: 16 },
-
-  // Card Sub Titles
-  'card-sub-title-large': { base: 16, min: 14, max: 18 },
-  'card-sub-title-medium': { base: 14, min: 12, max: 16 },
-  'card-sub-title-small': { base: 12, min: 11, max: 14 },
-  'card-sub-title-extra-small': { base: 10, min: 9, max: 12 },
-
-  // Labels
-  'label-large': { base: 16, min: 14, max: 18 },
-  'label-medium': { base: 14, min: 12, max: 16 },
-  'label-small': { base: 12, min: 11, max: 14 },
-  'label-extra-small': { base: 10, min: 9, max: 12 },
-
-  // Links
-  'link-large': { base: 18, min: 16, max: 20 },
-  'link-medium': { base: 16, min: 14, max: 18 },
-  'link-small': { base: 14, min: 12, max: 16 },
-  'link-extra-small': { base: 12, min: 10, max: 14 },
-};
-
-function getResponsiveStyle(type: TypographyType, width: number) {
-  const config = fontSizeMap[type];
-  const fontSize = scaled(config.base, { min: config.min, max: config.max, factor: 0.5, width });
-  return { fontSize };
-}
+// Default export
+export default ThemedText;
