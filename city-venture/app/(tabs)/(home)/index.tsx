@@ -2,6 +2,11 @@ import Header, { HEADER_BASE_HEIGHT } from '@/components/home/Header';
 import HeroSection from '@/components/home/HeroSection';
 import MainContentCard from '@/components/home/MainContentCard';
 import WelcomeSection from '@/components/home/WelcomeSection';
+import SectionContainer from '@/components/home/SectionContainer';
+import TouristSpotCard from '@/components/home/TouristSpotCard';
+import BusinessCard from '@/components/home/BusinessCard';
+import EventListCard from '@/components/home/EventListCard';
+import NewsCard from '@/components/home/NewsCard';
 import { ThemedText } from '@/components/themed-text';
 import { useAuth } from '@/context/AuthContext';
 import { navigateToAccommodationHome } from '@/routes/accommodationRoutes';
@@ -10,10 +15,20 @@ import { navigateToShopHome } from '@/routes/shopRoutes';
 import {
   navigateToTouristSpotHome,
 } from '@/routes/touristSpotRoutes';
+import {
+  fetchHighlightedSpots,
+  fetchPartnerBusinesses,
+  fetchUpcomingEvents,
+  fetchNewsArticles,
+  type HighlightedTouristSpot,
+  type PartnerBusiness,
+  type HomeEvent,
+  type NewsArticle,
+} from '@/services/HomeContentService';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Dimensions,
   Pressable,
@@ -22,6 +37,8 @@ import {
   View,
   ViewStyle,
   StyleProp,
+  FlatList,
+  RefreshControl,
 } from 'react-native';
 import Animated, {
   useAnimatedScrollHandler,
@@ -114,6 +131,30 @@ const HomeScreen = () => {
   const { bottom } = useSafeAreaInsets();
   const didRedirect = useRef(false);
   const [searchValue, setSearchValue] = useState('');
+  const [refreshing, setRefreshing] = useState(false);
+
+  type SectionState<T> = {
+    data: T[];
+    loading: boolean;
+    error?: string;
+  };
+
+  const [spotState, setSpotState] = useState<SectionState<HighlightedTouristSpot>>({
+    data: [],
+    loading: true,
+  });
+  const [businessState, setBusinessState] = useState<SectionState<PartnerBusiness>>({
+    data: [],
+    loading: true,
+  });
+  const [eventState, setEventState] = useState<SectionState<HomeEvent>>({
+    data: [],
+    loading: true,
+  });
+  const [newsState, setNewsState] = useState<SectionState<NewsArticle>>({
+    data: [],
+    loading: true,
+  });
 
   useEffect(() => {
     if (!user && !didRedirect.current) {
@@ -123,6 +164,47 @@ const HomeScreen = () => {
   }, [user]);
 
   const displayName = user?.first_name ?? user?.last_name ?? 'Friend';
+
+  const loadHomeContent = useCallback(async (isRefresh = false) => {
+    if (isRefresh) {
+      setRefreshing(true);
+    } else {
+      setSpotState((prev) => ({ ...prev, loading: true }));
+      setBusinessState((prev) => ({ ...prev, loading: true }));
+      setEventState((prev) => ({ ...prev, loading: true }));
+      setNewsState((prev) => ({ ...prev, loading: true }));
+    }
+
+    try {
+      const [spots, businesses, events, news] = await Promise.all([
+        fetchHighlightedSpots(),
+        fetchPartnerBusinesses(),
+        fetchUpcomingEvents(),
+        fetchNewsArticles(),
+      ]);
+      setSpotState({ data: spots ?? [], loading: false });
+      setBusinessState({ data: businesses ?? [], loading: false });
+      setEventState({ data: events ?? [], loading: false });
+      setNewsState({ data: news ?? [], loading: false });
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : 'Unable to load content';
+      setSpotState((prev) => ({ ...prev, loading: false, error: message }));
+      setBusinessState((prev) => ({ ...prev, loading: false, error: message }));
+      setEventState((prev) => ({ ...prev, loading: false, error: message }));
+      setNewsState((prev) => ({ ...prev, loading: false, error: message }));
+    } finally {
+      setRefreshing(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadHomeContent();
+  }, [loadHomeContent]);
+
+  const handleRefresh = useCallback(() => {
+    loadHomeContent(true);
+  }, [loadHomeContent]);
 
   const handleScroll = useAnimatedScrollHandler((event) => {
     scrollY.value = event.contentOffset.y;
@@ -147,6 +229,138 @@ const HomeScreen = () => {
     }
   };
 
+  const handleSpotPress = useCallback((spot: HighlightedTouristSpot) => {
+    router.push({
+      pathname: '/(tabs)/(home)/(spot)/profile/profile',
+      params: { spotId: spot.id },
+    });
+  }, []);
+
+  const handleBusinessPress = useCallback((business: PartnerBusiness) => {
+    router.push({
+      pathname: '/(tabs)/(home)/(shop)',
+      params: { businessId: business.id },
+    });
+  }, []);
+
+  const handleEventPress = useCallback((event: HomeEvent) => {
+    router.push({
+      pathname: '/(tabs)/(home)/(event)',
+      params: { eventId: event.id },
+    });
+  }, []);
+
+  const handleNewsPress = useCallback((article: NewsArticle) => {
+    router.push({
+      pathname: '/(tabs)/(home)',
+      params: { newsId: article.id },
+    });
+  }, []);
+
+  const renderSpotSection = () => {
+    if (spotState.loading && spotState.data.length === 0) {
+      return <SpotsSkeleton />;
+    }
+    if (!spotState.loading && spotState.data.length === 0) {
+      return <EmptyState icon="map-marker-off" message="No highlighted spots yet." />;
+    }
+
+    return (
+      <>
+        {spotState.error ? <SectionError message={spotState.error} /> : null}
+        <FlatList
+          horizontal
+          data={spotState.data}
+          keyExtractor={(item) => item.id}
+          renderItem={({ item }) => (
+            <TouristSpotCard spot={item} onPress={handleSpotPress} />
+          )}
+          contentContainerStyle={styles.horizontalList}
+          showsHorizontalScrollIndicator={false}
+          getItemLayout={(_, index) => ({
+            length: 316,
+            offset: 316 * index,
+            index,
+          })}
+        />
+      </>
+    );
+  };
+
+  const renderBusinessSection = () => {
+    if (businessState.loading && businessState.data.length === 0) {
+      return <BusinessSkeleton />;
+    }
+    if (!businessState.loading && businessState.data.length === 0) {
+      return <EmptyState icon="store-off" message="No partnered businesses yet." />;
+    }
+
+    return (
+      <>
+        {businessState.error ? <SectionError message={businessState.error} /> : null}
+        <FlatList
+          horizontal
+          data={businessState.data}
+          keyExtractor={(item) => item.id}
+          renderItem={({ item }) => (
+            <BusinessCard business={item} onPress={handleBusinessPress} />
+          )}
+          contentContainerStyle={styles.horizontalList}
+          showsHorizontalScrollIndicator={false}
+          getItemLayout={(_, index) => ({
+            length: 216,
+            offset: 216 * index,
+            index,
+          })}
+        />
+      </>
+    );
+  };
+
+  const renderEventSection = () => {
+    if (eventState.loading && eventState.data.length === 0) {
+      return <EventSkeleton />;
+    }
+    if (!eventState.loading && eventState.data.length === 0) {
+      return <EmptyState icon="calendar-blank" message="No upcoming events available." />;
+    }
+
+    return (
+      <>
+        {eventState.error ? <SectionError message={eventState.error} /> : null}
+        {eventState.data.map((event) => (
+          <EventListCard
+            key={event.id}
+            event={event}
+            onPress={handleEventPress}
+          />
+        ))}
+      </>
+    );
+  };
+
+  const renderNewsSection = () => {
+    if (newsState.loading && newsState.data.length === 0) {
+      return <NewsSkeleton />;
+    }
+    if (!newsState.loading && newsState.data.length === 0) {
+      return <EmptyState icon="newspaper-remove" message="No news articles yet." />;
+    }
+
+    return (
+      <>
+        {newsState.error ? <SectionError message={newsState.error} /> : null}
+        {newsState.data.map((article) => (
+          <NewsCard
+            key={article.id}
+            article={article}
+            onPress={handleNewsPress}
+          />
+        ))}
+      </>
+    );
+  };
+
   if (!user) return null;
 
   return (
@@ -164,6 +378,13 @@ const HomeScreen = () => {
         contentContainerStyle={{
           paddingBottom: bottom + 32,
         }}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            tintColor="#fff"
+          />
+        }
         onScroll={handleScroll}
         scrollEventThrottle={16}
         showsVerticalScrollIndicator={false}
@@ -178,6 +399,31 @@ const HomeScreen = () => {
 
         <MainContentCard style={styles.mainCard}>
           <ActionGrid items={ACTIONS} onPressItem={handleActionPress} />
+
+          <SectionContainer
+            title="Highlighted Tourist Spots"
+            onPressViewAll={navigateToTouristSpotHome}
+          >
+            {renderSpotSection()}
+          </SectionContainer>
+
+          <SectionContainer
+            title="Partnered Businesses"
+            onPressViewAll={navigateToShopHome}
+          >
+            {renderBusinessSection()}
+          </SectionContainer>
+
+          <SectionContainer
+            title="Upcoming Events"
+            onPressViewAll={navigateToEventHome}
+          >
+            {renderEventSection()}
+          </SectionContainer>
+
+          <SectionContainer title="News & Updates">
+            {renderNewsSection()}
+          </SectionContainer>
 
           <PromoCard content={PROMO_CARD} style={styles.promoCard} />
 
@@ -321,21 +567,80 @@ const QuickLinkRow: React.FC<QuickLinkRowProps> = ({ link, onPress }) => (
   </Pressable>
 );
 
+const SectionError = ({ message }: { message?: string }) =>
+  message ? (
+    <ThemedText type="label-small" lightColor="#FFB4A2">
+      {message}
+    </ThemedText>
+  ) : null;
+
+const EmptyState = ({
+  icon,
+  message,
+}: {
+  icon: React.ComponentProps<typeof MaterialCommunityIcons>['name'];
+  message: string;
+}) => (
+  <View style={styles.emptyState}>
+    <MaterialCommunityIcons
+      name={icon}
+      size={22}
+      color="rgba(255,255,255,0.6)"
+      style={styles.emptyIcon}
+    />
+    <ThemedText type="label-small" lightColor="rgba(255,255,255,0.7)">
+      {message}
+    </ThemedText>
+  </View>
+);
+
+const SpotsSkeleton = () => (
+  <View style={[styles.horizontalList, { flexDirection: 'row' }]}>
+    {Array.from({ length: 3 }).map((_, index) => (
+      <View key={`spot-skeleton-${index}`} style={styles.spotSkeleton} />
+    ))}
+  </View>
+);
+
+const BusinessSkeleton = () => (
+  <View style={[styles.horizontalList, { flexDirection: 'row' }]}>
+    {Array.from({ length: 3 }).map((_, index) => (
+      <View key={`business-skeleton-${index}`} style={styles.businessSkeleton} />
+    ))}
+  </View>
+);
+
+const EventSkeleton = () => (
+  <>
+    {Array.from({ length: 3 }).map((_, index) => (
+      <View key={`event-skeleton-${index}`} style={styles.eventSkeleton} />
+    ))}
+  </>
+);
+
+const NewsSkeleton = () => (
+  <>
+    {Array.from({ length: 2 }).map((_, index) => (
+      <View key={`news-skeleton-${index}`} style={styles.newsSkeleton} />
+    ))}
+  </>
+);
+
 const styles = StyleSheet.create({
   root: {
     flex: 1,
     backgroundColor: '#05050A',
   },
   heroSpacer: {
-    minHeight: HERO_HEIGHT + HEADER_BASE_HEIGHT * 0.1,
+    minHeight: HERO_HEIGHT + HEADER_BASE_HEIGHT * 0.05,
     justifyContent: 'flex-end',
     paddingHorizontal: 20,
-    paddingTop: HEADER_BASE_HEIGHT + 8,
-    paddingBottom: 32,
+    paddingTop: HEADER_BASE_HEIGHT - 6,
+    paddingBottom: 24,
   },
   mainCard: {
     marginTop: -16,
-    gap: 24,
+    gap: 28,
   },
   sectionHeading: {
     marginBottom: 20,
@@ -416,6 +721,46 @@ const styles = StyleSheet.create({
   quickLinkContent: {
     flex: 1,
   },
+  horizontalList: {
+    paddingRight: 8,
+  },
+  spotSkeleton: {
+    width: 300,
+    height: 210,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    marginRight: 16,
+  },
+  businessSkeleton: {
+    width: 200,
+    height: 220,
+    borderRadius: 18,
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    marginRight: 16,
+  },
+  eventSkeleton: {
+    height: 96,
+    borderRadius: 16,
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    marginBottom: 12,
+  },
+  newsSkeleton: {
+    height: 200,
+    borderRadius: 18,
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    marginBottom: 14,
+  },
+  emptyState: {
+    padding: 16,
+    borderRadius: 16,
+    backgroundColor: '#151426',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  emptyIcon: {
+    marginBottom: 4,
+  },
   header: {
     position: 'absolute',
     top: 0,
@@ -426,4 +771,3 @@ const styles = StyleSheet.create({
 });
 
 export default HomeScreen;
-
