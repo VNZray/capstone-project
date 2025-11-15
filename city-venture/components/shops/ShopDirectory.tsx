@@ -348,25 +348,23 @@ const ShopDirectory = () => {
 
   return (
     <PageContainer padding={0} gap={0} style={{ backgroundColor: bg }}>
-      {/* Search Bar at Top */}
-      <Container gap={0} paddingBottom={12} backgroundColor="transparent">
-        <SearchBar
-          shape="square"
-          containerStyle={{ flex: 1 }}
-          value={search}
-          onChangeText={(text) => setSearch(text)}
-          onSearch={() => {}}
-          placeholder="Search shops or location..."
-        />
-      </Container>
-
-      {/* Main Scrollable Content */}
+      {/* Main Scrollable Content (SearchBar moved into header to avoid overlap) */}
       <FlatList
         data={discoverMoreShops}
         renderItem={renderDiscoverMoreItem}
         keyExtractor={(item) => item.id || ''}
         ListHeaderComponent={
           <>
+            <Container gap={0} paddingHorizontal={16} paddingTop={12} paddingBottom={8} backgroundColor="transparent">
+              <SearchBar
+                shape="square"
+                containerStyle={{ flex: 1 }}
+                value={search}
+                onChangeText={(text) => setSearch(text)}
+                onSearch={() => {}}
+                placeholder="Search shops or location..."
+              />
+            </Container>
             {renderFeaturedSection()}
             {renderSpecialOffersSection()}
             {renderCategoriesSection()}
@@ -397,6 +395,7 @@ const ShopDirectory = () => {
 const styles = StyleSheet.create({
   listContent: {
     paddingHorizontal: 16,
+    paddingTop: 8,
     paddingBottom: 100,
     gap: 0,
   },
