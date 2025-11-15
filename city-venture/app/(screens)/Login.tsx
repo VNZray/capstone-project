@@ -9,7 +9,7 @@ import { useAuth } from '@/context/AuthContext';
 import { navigateToHome } from '@/routes/mainRoutes';
 import Entypo from '@expo/vector-icons/Entypo';
 import { Link, router } from 'expo-router';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -21,77 +21,91 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { validateLoginForm } from '@/utils/validation';
+import { formatErrorMessage } from '@/utils/networkHandler';
+import debugLogger from '@/utils/debugLogger';
 
 const LoginPage = () => {
-  const [email, setEmail] = useState('rayven.clores@unc.edu.ph');
-  const [password, setPassword] = useState('123456');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const { login, user } = useAuth();
+  const { login, user, isAuthenticated } = useAuth();
   const [loginError, setLoginError] = useState('');
-  const timeoutRef = useRef<number | null>(null);
+  const [emailError, setEmailError] = useState('');
+  const [passwordError, setPasswordError] = useState('');
 
-  // Cleanup timeout on component unmount
+  // Auto-navigate if already authenticated
   useEffect(() => {
-    return () => {
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-        timeoutRef.current = null;
-      }
-    };
-  }, []);
+    if (isAuthenticated && user) {
+      debugLogger({
+        title: 'Login: User already authenticated, redirecting',
+        data: { role: user.role_name }
+      });
+      navigateToHome();
+    }
+  }, [isAuthenticated, user]);
+
+  // Clear field-specific errors when user types
+  useEffect(() => {
+    if (emailError) setEmailError('');
+  }, [email]);
+
+  useEffect(() => {
+    if (passwordError) setPasswordError('');
+  }, [password]);
 
   const handleLogin = async () => {
     // Prevent multiple simultaneous login attempts
     if (isLoading) return;
-    
-    if (!email || !password) {
-      setLoginError('Email and password are required.');
+
+    // Clear previous errors
+    setLoginError('');
+    setEmailError('');
+    setPasswordError('');
+
+    // Client-side validation
+    const validation = validateLoginForm(email.trim(), password);
+    if (!validation.isValid) {
+      // Determine which field has the error
+      if (!email || email.trim().length === 0) {
+        setEmailError('Email is required');
+      } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        setEmailError('Please enter a valid email address');
+      } else if (!password || password.length === 0) {
+        setPasswordError('Password is required');
+      } else if (password.length < 6) {
+        setPasswordError('Password must be at least 6 characters');
+      }
       return;
     }
 
-    // Clear any existing timeout
-    if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current);
-      timeoutRef.current = null;
-    }
-
     setIsLoading(true);
-    setLoginError(''); // Clear previous errors
-
-    // Set timeout to refresh page after 5 seconds
-    timeoutRef.current = setTimeout(() => {
-      setIsLoading(false);
-      timeoutRef.current = null;
-      // Refresh the page by navigating to the same route
-      router.replace('/Login');
-    }, 5000);
 
     try {
-      await login(email, password);
-      // Clear timeout on success
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-        timeoutRef.current = null;
-      }
-      setIsLoading(false);
+      debugLogger({
+        title: 'Login: Attempting login',
+        data: { email: email.trim() }
+      });
+
+      await login(email.trim(), password);
+      
+      debugLogger({
+        title: 'Login: ✅ Login successful',
+      });
+
       // Navigate to home on success
-      if (user?.user_role_id === 2 || user?.user_role_id === 3) {
-        navigateToHome();
-      }
+      navigateToHome();
     } catch (error: any) {
-      // Clear timeout and close loading on error
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-        timeoutRef.current = null;
-      }
+      debugLogger({
+        title: 'Login: ❌ Login failed',
+        error: error?.message || String(error),
+      });
+
+      const errorMessage = formatErrorMessage(error);
+      setLoginError(errorMessage);
+    } finally {
       setIsLoading(false);
-      console.error('Login error:', error);
-      setLoginError(
-        error?.message ||
-          error?.error_description ||
-          'Incorrect email or password.'
-      );
     }
   };
 
@@ -130,6 +144,7 @@ const LoginPage = () => {
                 onChangeText={setEmail}
                 variant="outlined"
                 required
+                errorText={emailError}
               />
               <FormTextInput
                 label="Password"
@@ -142,6 +157,7 @@ const LoginPage = () => {
                 rightIcon={showPassword ? 'eye-slash' : 'eye'}
                 onPressRightIcon={() => setShowPassword((p) => !p)}
                 required
+                errorText={passwordError}
               />
             </View>
 
@@ -170,10 +186,11 @@ const LoginPage = () => {
             <Button
               fullWidth
               size="large"
-              label="Sign In"
+              label={isLoading ? "Signing In..." : "Sign In"}
               color="primary"
               variant="solid"
-              onPress={isLoading ? undefined : handleLogin}
+              onPress={handleLogin}
+              disabled={isLoading}
             />
 
             {/* Footer */}
