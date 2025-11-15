@@ -1,44 +1,119 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
-import Button from '@/components/Button';
-import Container from '@/components/Container';
+import Header, { HEADER_BASE_HEIGHT } from '@/components/home/Header';
+import HeroSection from '@/components/home/HeroSection';
+import MainContentCard from '@/components/home/MainContentCard';
+import WelcomeSection from '@/components/home/WelcomeSection';
 import { ThemedText } from '@/components/themed-text';
-import { colors } from '@/constants/color';
-import { useColorScheme } from '@/hooks/use-color-scheme';
-import { FeaturedLocation } from '@/query/HomeData';
-import { FontAwesome5 } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
-import { router } from 'expo-router';
-import React, { useEffect, useMemo, useRef } from 'react';
-import {
-  Dimensions,
-  FlatList,
-  Image,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  View,
-} from 'react-native';
-import { useSharedValue } from 'react-native-reanimated';
-import Carousel from 'react-native-reanimated-carousel';
-import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
-
 import { useAuth } from '@/context/AuthContext';
 import { navigateToAccommodationHome } from '@/routes/accommodationRoutes';
+import { navigateToEventHome } from '@/routes/eventRoutes';
 import { navigateToShopHome } from '@/routes/shopRoutes';
+import {
+  navigateToTouristSpotHome,
+} from '@/routes/touristSpotRoutes';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
+import { router } from 'expo-router';
+import React, { useEffect, useRef, useState } from 'react';
+import {
+  Dimensions,
+  Pressable,
+  StatusBar,
+  StyleSheet,
+  View,
+  ViewStyle,
+  StyleProp,
+} from 'react-native';
+import Animated, {
+  useAnimatedScrollHandler,
+  useSharedValue,
+} from 'react-native-reanimated';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-const width = Dimensions.get('screen').width;
+const HERO_HEIGHT = 260;
+const SCREEN_WIDTH = Dimensions.get('window').width;
+const GRID_ITEM_WIDTH = (SCREEN_WIDTH - 64) / 4;
+
+type ActionItem = {
+  id: 'accommodation' | 'shops' | 'spots' | 'events';
+  label: string;
+  icon: React.ComponentProps<typeof MaterialCommunityIcons>['name'];
+  colors: [string, string];
+};
+
+type PromoCardContent = {
+  id: string;
+  title: string;
+  description: string;
+  primaryCta: string;
+  secondaryCta: string;
+};
+
+type QuickLink = {
+  id: string;
+  title: string;
+  description: string;
+  icon: React.ComponentProps<typeof MaterialCommunityIcons>['name'];
+};
+
+const ACTIONS: ActionItem[] = [
+  {
+    id: 'accommodation',
+    label: 'Accommodation',
+    icon: 'bed-queen-outline',
+    colors: ['#FF9D6C', '#FF6B4F'],
+  },
+  {
+    id: 'shops',
+    label: 'Shops',
+    icon: 'storefront-outline',
+    colors: ['#FDBA74', '#FF8F5E'],
+  },
+  {
+    id: 'spots',
+    label: 'Tourist Spots',
+    icon: 'map-marker-radius-outline',
+    colors: ['#FFB5C3', '#F16CA4'],
+  },
+  {
+    id: 'events',
+    label: 'Events',
+    icon: 'calendar-star',
+    colors: ['#B7A2FF', '#8B6CFF'],
+  },
+];
+
+const PROMO_CARD: PromoCardContent = {
+  id: 'report',
+  title: 'Help us improve our city',
+  description:
+    'Create an account to report local issues and keep Naga thriving.',
+  primaryCta: 'View Reports',
+  secondaryCta: 'Report an issue',
+};
+
+const QUICK_LINKS: QuickLink[] = [
+  {
+    id: 'updates',
+    title: 'City Updates',
+    description: 'Latest advisories, announcements, and emergency bulletins.',
+    icon: 'newspaper-variant-outline',
+  },
+  {
+    id: 'explore',
+    title: 'Explore Naga',
+    description: 'Curated guides, upcoming events, and nearby gems.',
+    icon: 'map-marker-radius',
+  },
+];
+
+const AnimatedScrollView = Animated.ScrollView;
 
 const HomeScreen = () => {
-  const scheme = useColorScheme();
-  const bg = scheme === 'dark' ? '#0F1222' : '#FFFFFF';
-  const altBg = scheme === 'dark' ? '#0B0E1B' : '#F6F7FA';
-  const card = scheme === 'dark' ? '#161A2E' : '#FFFFFF';
-  const textMuted = scheme === 'dark' ? '#A9B2D0' : '#6A768E';
-
   const { user } = useAuth();
+  const scrollY = useSharedValue(0);
+  const { bottom } = useSafeAreaInsets();
   const didRedirect = useRef(false);
-  const ref = useRef<any>(null);
-  const progress = useSharedValue(0);
+  const [searchValue, setSearchValue] = useState('');
 
   useEffect(() => {
     if (!user && !didRedirect.current) {
@@ -47,530 +122,308 @@ const HomeScreen = () => {
     }
   }, [user]);
 
+  const displayName = user?.first_name ?? user?.last_name ?? 'Friend';
+
+  const handleScroll = useAnimatedScrollHandler((event) => {
+    scrollY.value = event.contentOffset.y;
+  });
+
+  const handleActionPress = (id: ActionItem['id']) => {
+    switch (id) {
+      case 'accommodation':
+        navigateToAccommodationHome();
+        break;
+      case 'shops':
+        navigateToShopHome();
+        break;
+      case 'spots':
+        navigateToTouristSpotHome();
+        break;
+      case 'events':
+        navigateToEventHome();
+        break;
+      default:
+        break;
+    }
+  };
+
   if (!user) return null;
 
-  // Sample highlight data
-  const spots = useMemo(
-    () => [
-      {
-        id: 's1',
-        name: 'Basilica Minore',
-        tag: 'A Spiritual Journey in Naga',
-        img: 'https://i0.wp.com/nagayon.com/wp-content/uploads/2024/05/Cathedral-Exterior_1-scaled.jpg?resize=768%2C576&ssl=1',
-      },
-      {
-        id: 's2',
-        name: 'Peñafrancia Shrine',
-        tag: 'Historic devotion site',
-        img: 'https://i0.wp.com/nagayon.com/wp-content/uploads/2024/05/Porta-mariae-e1717984426731.jpg?resize=768%2C506&ssl=1',
-      },
-      {
-        id: 's3',
-        name: 'JMR Coliseum',
-        tag: 'Events and sports hub',
-        img: 'https://i0.wp.com/nagayon.com/wp-content/uploads/2024/09/jmr-coliseum-scaled.jpg?resize=768%2C576&ssl=1',
-      },
-    ],
-    []
-  );
-
-  const partners = useMemo(
-    () => [
-      {
-        id: 'p1',
-        name: 'UMA Residence',
-        tag: 'Accommodation',
-        img: require('@/assets/images/android-icon-foreground.png'),
-      },
-      {
-        id: 'p2',
-        name: 'Local Cafe',
-        tag: 'Shop',
-        img: require('@/assets/images/partial-react-logo.png'),
-      },
-      {
-        id: 'p3',
-        name: 'Travel Co',
-        tag: 'Partner',
-        img: require('@/assets/images/react-logo.png'),
-      },
-    ],
-    []
-  );
-
-  const events = useMemo(
-    () => [
-      {
-        id: 'e1',
-        name: 'Peñafrancia Festival',
-        date: 'Sep 12-20',
-        img: require('@/assets/images/react-logo.png'),
-        desc: 'Cultural parade and celebration',
-      },
-      {
-        id: 'e2',
-        name: 'City Music Night',
-        date: 'Oct 05',
-        img: require('@/assets/images/react-logo.png'),
-        desc: 'Live performances in the plaza',
-      },
-    ],
-    []
-  );
-
-  const news = useMemo(
-    () => [
-      {
-        id: 'n1',
-        title: 'Naga City Festival Set to Welcome Thousands of Visitors',
-        img: require('@/assets/images/android-icon-background.png'),
-      },
-      {
-        id: 'n2',
-        title: 'New Walking Tours Launched in Downtown',
-        img: require('@/assets/images/android-icon-monochrome.png'),
-      },
-    ],
-    []
-  );
-
   return (
-    <SafeAreaProvider>
-      <SafeAreaView style={{ flex: 1, backgroundColor: bg }}>
-        <ScrollView showsVerticalScrollIndicator={false}>
-          {/* Hero Section (white) */}
-          <View style={{ backgroundColor: bg }}>
-            <View style={{ width: '100%' }}>
-              <Carousel
-                ref={ref}
-                width={width}
-                height={360}
-                data={FeaturedLocation}
-                onProgressChange={progress}
-                renderItem={({ item }) => (
-                  <View style={styles.carouselItem}>
-                    <Image
-                      source={{ uri: item.uri }}
-                      style={styles.image}
-                      resizeMode="cover"
-                    />
-                    <LinearGradient
-                      colors={['rgba(0,0,0,0.0)', 'rgba(0,0,0,0.6)']}
-                      style={styles.overlay}
-                    />
-                    <View style={styles.overlayContent}>
-                      <ThemedText
-                        type="title-small"
-                        weight="bold"
-                        style={{ color: '#fff' }}
-                      >
-                        Discover Naga’s Hidden Gems
-                      </ThemedText>
-                      <Button
-                        label="Start Exploring"
-                        variant="soft"
-                        color="info"
-                        startIcon="compass"
-                        elevation={2}
-                        radius={14}
-                        onPress={() =>
-                          router.push('/(tabs)/(home)/(spot)' as any)
-                        }
-                      />
-                    </View>
-                  </View>
-                )}
-              />
-            </View>
-          </View>
+    <View style={styles.root}>
+      <StatusBar
+        translucent
+        backgroundColor="transparent"
+        barStyle="light-content"
+      />
 
-          {/* Quick Navigation (light gray) */}
-          <View style={{ backgroundColor: altBg, padding: 16 }}>
-            <Container
-              elevation={2}
-              padding={16}
-              direction="row"
-              justify="space-between"
-              align="center"
-              radius={14}
+      <HeroSection scrollY={scrollY} heroHeight={HERO_HEIGHT} />
+
+      <AnimatedScrollView
+        style={StyleSheet.absoluteFill}
+        contentContainerStyle={{
+          paddingBottom: bottom + 32,
+        }}
+        onScroll={handleScroll}
+        scrollEventThrottle={16}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.heroSpacer}>
+          <WelcomeSection
+            scrollY={scrollY}
+            name={displayName}
+            subtitle="Stay connected with city life, follow events, and access the services you need every day."
+          />
+        </View>
+
+        <MainContentCard style={styles.mainCard}>
+          <ActionGrid items={ACTIONS} onPressItem={handleActionPress} />
+
+          <PromoCard content={PROMO_CARD} style={styles.promoCard} />
+
+          <View style={styles.quickLinksCard}>
+            <ThemedText
+              type="sub-title-small"
+              weight="bold"
+              lightColor="#F8F8FF"
             >
-              <Button
-                label="Place to stay"
-                color="white"
-                topIcon="hotel"
-                iconSize={24}
-                textSize={10}
-                onPress={() => navigateToAccommodationHome()}
-              />
-
-              <Button
-                label="Shops"
-                color="white"
-                topIcon="shopping-bag"
-                iconSize={24}
-                textSize={10}
-                onPress={() => navigateToShopHome()}
-              />
-
-              <Button
-                label="Tourist Spots"
-                color="white"
-                topIcon="map-marker"
-                iconSize={24}
-                textSize={10}
-                onPress={() => router.push('/(tabs)/(home)/(spot)')}
-              />
-
-              <Button
-                label="Events"
-                color="white"
-                topIcon="calendar"
-                iconSize={24}
-                textSize={10}
-                onPress={() => router.push('/(tabs)/(home)/(event)')}
-              />
-            </Container>
-          </View>
-
-          {/* Highlighted Tourist Spots (white) */}
-          <SectionHeader
-            title="Highlighted Tourist Spots"
-            subtitle="Don’t miss these popular places"
-            bg={bg}
-          />
-          <FlatList
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            data={spots}
-            keyExtractor={(i) => i.id}
-            contentContainerStyle={{
-              paddingHorizontal: 16,
-              paddingBottom: 10,
-              gap: 12,
-            }}
-            renderItem={({ item }) => (
-              <View
-                style={[styles.spotCard, { backgroundColor: card }, shadow(2)]}
-              >
-                <Image source={{ uri: item.img }} style={styles.spotImg} />
-                <View style={{ padding: 10 }}>
-                  <ThemedText type="body-medium" weight="semi-bold">
-                    {item.name}
-                  </ThemedText>
-                  <ThemedText type="label-small" style={{ color: textMuted }}>
-                    {item.tag}
-                  </ThemedText>
-                </View>
-                <FontAwesome5
-                  name="map-marker-alt"
-                  size={16}
-                  color={colors.secondary}
-                  style={{ position: 'absolute', right: 10, top: 10 }}
-                />
-              </View>
-            )}
-          />
-
-          {/* Partners (light gray) */}
-          <SectionHeader
-            title="Partnered Businesses"
-            subtitle="Trusted Partners of City Venture"
-            bg={altBg}
-          />
-          <View style={{ backgroundColor: altBg, paddingBottom: 10 }}>
-            <FlatList
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              data={partners}
-              keyExtractor={(i) => i.id}
-              contentContainerStyle={{ paddingHorizontal: 16, gap: 12 }}
-              renderItem={({ item }) => (
-                <View
-                  style={[
-                    styles.partnerCard,
-                    { backgroundColor: card },
-                    shadow(1),
-                  ]}
-                >
-                  <Image source={item.img} style={styles.partnerImg} />
-                  <View style={{ marginTop: 6 }}>
-                    <ThemedText type="label-medium" weight="semi-bold">
-                      {item.name}
-                    </ThemedText>
-                    <ThemedText type="label-small" style={{ color: textMuted }}>
-                      {item.tag}
-                    </ThemedText>
-                  </View>
-                </View>
-              )}
-            />
-          </View>
-
-          {/* Upcoming Events (white) */}
-          <SectionHeader
-            title="Upcoming Events"
-            subtitle="Mark your calendars"
-            bg={bg}
-            actionLabel="See All"
-            onAction={() => router.push('/(tabs)/(home)/(event)' as any)}
-          />
-          <View style={{ backgroundColor: bg }}>
-            {events.map((e) => (
-              <View
-                key={e.id}
-                style={[styles.eventCard, { backgroundColor: card }, shadow(1)]}
-              >
-                <Image source={e.img} style={styles.eventImg} />
-                <View style={{ flex: 1, marginLeft: 10 }}>
-                  <ThemedText type="body-medium" weight="semi-bold">
-                    {e.name}
-                  </ThemedText>
-                  <ThemedText type="label-small" style={{ color: textMuted }}>
-                    {e.date} • {e.desc}
-                  </ThemedText>
-                </View>
-                <FontAwesome5 name="chevron-right" size={12} color="#9AA4B2" />
-              </View>
+              Explore Naga
+            </ThemedText>
+            <View style={styles.quickLinkDivider} />
+            {QUICK_LINKS.map((link) => (
+              <QuickLinkRow key={link.id} link={link} />
             ))}
           </View>
+        </MainContentCard>
+      </AnimatedScrollView>
 
-          {/* News & Articles (light gray) */}
-          <SectionHeader
-            title="News & Articles"
-            subtitle="What’s new in Naga"
-            bg={altBg}
-          />
-          <View
-            style={{
-              backgroundColor: altBg,
-              paddingHorizontal: 16,
-              paddingBottom: 16,
-              gap: 10,
-            }}
-          >
-            {news.map((n) => (
-              <View
-                key={n.id}
-                style={[styles.newsCard, { backgroundColor: card }, shadow(1)]}
-              >
-                <Image source={n.img} style={styles.newsThumb} />
-                <ThemedText
-                  type="body-small"
-                  weight="semi-bold"
-                  style={{ flex: 1 }}
-                  numberOfLines={2}
-                >
-                  {n.title}
-                </ThemedText>
-                <FontAwesome5
-                  name="arrow-right"
-                  size={12}
-                  color={colors.secondary}
-                />
-              </View>
-            ))}
-          </View>
-
-          {/* About City Venture (white) */}
-          <View style={{ backgroundColor: bg, padding: 16 }}>
-            <Container elevation={2} padding={16} backgroundColor={card}>
-              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                <Image
-                  source={require('@/assets/logo/logo.png')}
-                  style={{
-                    width: 48,
-                    height: 48,
-                    borderRadius: 12,
-                    marginRight: 12,
-                  }}
-                />
-                <View style={{ flex: 1 }}>
-                  <ThemedText type="sub-title-small" weight="bold">
-                    About City Venture
-                  </ThemedText>
-                  <ThemedText type="label-small" style={{ color: textMuted }}>
-                    City Venture is your trusted companion for exploring Naga
-                    City—connecting you with accommodations, shops, events, and
-                    tourist spots.
-                  </ThemedText>
-                </View>
-              </View>
-              <View style={{ marginTop: 12 }}>
-                <Button
-                  label="Learn More"
-                  variant="soft"
-                  color="primary"
-                  startIcon="info-circle"
-                  radius={12}
-                  onPress={() => router.push('/' as any)}
-                />
-              </View>
-            </Container>
-          </View>
-
-          {/* Footer (light gray) */}
-          <View style={{ backgroundColor: altBg, padding: 16 }}>
-            <Container elevation={1} padding={16} backgroundColor={altBg}>
-              <View
-                style={{
-                  flexDirection: 'row',
-                  justifyContent: 'space-between',
-                }}
-              >
-                <FooterLink label="Contact" />
-                <FooterLink label="Terms" />
-                <FooterLink label="Privacy" />
-                <View style={{ flexDirection: 'row', gap: 12 }}>
-                  <FontAwesome5 name="facebook" size={14} color={textMuted} />
-                  <FontAwesome5 name="twitter" size={14} color={textMuted} />
-                  <FontAwesome5 name="instagram" size={14} color={textMuted} />
-                </View>
-              </View>
-            </Container>
-          </View>
-          <View style={{ height: 70 }} />
-        </ScrollView>
-      </SafeAreaView>
-    </SafeAreaProvider>
+      <Header
+        scrollY={scrollY}
+        heroHeight={HERO_HEIGHT}
+        searchValue={searchValue}
+        onChangeSearch={setSearchValue}
+        style={styles.header}
+        onPressBell={() => {}}
+        onPressCart={() => navigateToShopHome()}
+      />
+    </View>
   );
 };
 
-export default HomeScreen;
+type ActionGridProps = {
+  items: ActionItem[];
+  onPressItem: (id: ActionItem['id']) => void;
+};
 
-const SectionHeader = ({
-  title,
-  subtitle,
-  bg,
-  actionLabel,
-  onAction,
-}: {
-  title: string;
-  subtitle?: string;
-  bg: string;
-  actionLabel?: string;
-  onAction?: () => void;
-}) => (
-  <View
-    style={{
-      backgroundColor: bg,
-      paddingHorizontal: 16,
-      paddingTop: 18,
-      paddingBottom: 6,
-    }}
-  >
-    <View
-      style={{
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-      }}
-    >
-      <View>
-        <ThemedText type="sub-title-medium" weight="bold">
-          {title}
+const ActionGrid: React.FC<ActionGridProps> = ({ items, onPressItem }) => (
+  <View style={styles.actionGrid}>
+    {items.map((item) => (
+      <Pressable
+        key={item.id}
+        style={styles.actionItem}
+        onPress={() => onPressItem(item.id)}
+      >
+        <LinearGradient
+          colors={item.colors}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.actionIcon}
+        >
+          <MaterialCommunityIcons name={item.icon} size={22} color="#fff" />
+        </LinearGradient>
+        <ThemedText
+          type="label-small"
+          align="center"
+          lightColor="#E8E9F4"
+          style={styles.actionLabel}
+        >
+          {item.label}
         </ThemedText>
-        {subtitle ? (
-          <ThemedText type="label-small" style={{ color: '#6A768E' }}>
-            {subtitle}
-          </ThemedText>
-        ) : null}
-      </View>
-      {onAction ? (
-        <Pressable onPress={onAction}>
-          <ThemedText type="link-small">{actionLabel ?? 'See All'}</ThemedText>
-        </Pressable>
-      ) : null}
-    </View>
+      </Pressable>
+    ))}
   </View>
 );
 
-const FooterLink = ({ label }: { label: string }) => (
-  <Pressable>
-    <ThemedText type="label-small" style={{ color: '#6A768E' }}>
-      {label}
+type PromoCardProps = {
+  content: PromoCardContent;
+  style?: StyleProp<ViewStyle>;
+  onPrimaryPress?: () => void;
+  onSecondaryPress?: () => void;
+};
+
+const PromoCard: React.FC<PromoCardProps> = ({
+  content,
+  style,
+  onPrimaryPress,
+  onSecondaryPress,
+}) => (
+  <LinearGradient
+    colors={['#6A3DFB', '#9D4EDD']}
+    start={{ x: 0, y: 0 }}
+    end={{ x: 1, y: 1 }}
+    style={[styles.promoBase, style]}
+  >
+    <ThemedText type="sub-title-small" weight="bold" lightColor="#FFFFFF">
+      {content.title}
+    </ThemedText>
+    <ThemedText
+      type="body-small"
+      lightColor="rgba(255,255,255,0.9)"
+      style={styles.promoDescription}
+    >
+      {content.description}
+    </ThemedText>
+    <View style={styles.promoActions}>
+      <Pressable
+        style={[styles.ctaButton, styles.ctaSecondary]}
+        onPress={onPrimaryPress}
+      >
+        <ThemedText type="label-small" weight="semi-bold" lightColor="#20123A">
+          {content.primaryCta}
+        </ThemedText>
+      </Pressable>
+      <Pressable
+        style={[styles.ctaButton, styles.ctaPrimary]}
+        onPress={onSecondaryPress}
+      >
+        <ThemedText type="label-small" weight="semi-bold" lightColor="#fff">
+          {content.secondaryCta}
+        </ThemedText>
+      </Pressable>
+    </View>
+  </LinearGradient>
+);
+
+type QuickLinkRowProps = {
+  link: QuickLink;
+  onPress?: (link: QuickLink) => void;
+};
+
+const QuickLinkRow: React.FC<QuickLinkRowProps> = ({ link, onPress }) => (
+  <Pressable style={styles.quickLinkRow} onPress={() => onPress?.(link)}>
+    <View style={styles.quickLinkIconContainer}>
+      <MaterialCommunityIcons name={link.icon} size={22} color="#F86B4F" />
+    </View>
+    <View style={styles.quickLinkContent}>
+      <ThemedText type="body-medium" weight="semi-bold" lightColor="#FCFCFC">
+        {link.title}
+      </ThemedText>
+      <ThemedText
+        type="body-extra-small"
+        lightColor="rgba(255,255,255,0.78)"
+      >
+        {link.description}
+      </ThemedText>
+    </View>
+    <ThemedText type="body-medium" lightColor="rgba(255,255,255,0.5)">
+      {'>'}
     </ThemedText>
   </Pressable>
 );
 
 const styles = StyleSheet.create({
-  carouselItem: { flex: 1, overflow: 'hidden', padding: 0 },
-  image: { width: '100%', height: '100%', borderRadius: 0 },
-  overlay: { position: 'absolute', left: 0, right: 0, bottom: 0, height: 120 },
-  overlayContent: {
-    position: 'absolute',
-    left: 16,
-    right: 16,
-    bottom: 16,
+  root: {
+    flex: 1,
+    backgroundColor: '#05050A',
+  },
+  heroSpacer: {
+    minHeight: HERO_HEIGHT + HEADER_BASE_HEIGHT * 0.1,
+    justifyContent: 'flex-end',
+    paddingHorizontal: 20,
+    paddingTop: HEADER_BASE_HEIGHT + 8,
+    paddingBottom: 32,
+  },
+  mainCard: {
+    marginTop: -16,
+    gap: 24,
+  },
+  sectionHeading: {
+    marginBottom: 20,
+  },
+  actionGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+  },
+  actionItem: {
+    width: GRID_ITEM_WIDTH,
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  actionIcon: {
+    width: 64,
+    height: 64,
+    borderRadius: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  actionLabel: {
+    marginTop: 8,
+  },
+  promoBase: {
+    borderRadius: 28,
+    padding: 24,
+    gap: 10,
+  },
+  promoCard: {
+    marginTop: 4,
+  },
+  promoDescription: {
+    lineHeight: 20,
+  },
+  promoActions: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 10,
+  },
+  ctaButton: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 999,
+    alignItems: 'center',
+  },
+  ctaSecondary: {
+    backgroundColor: '#fff',
+  },
+  ctaPrimary: {
+    backgroundColor: 'rgba(255,255,255,0.2)',
+  },
+  quickLinksCard: {
+    backgroundColor: '#151426',
+    borderRadius: 24,
+    padding: 20,
     gap: 8,
   },
-  spotCard: { width: 220, borderRadius: 16, overflow: 'hidden' },
-  spotImg: { width: '100%', height: 120 },
-  partnerCard: {
-    width: 140,
+  quickLinkDivider: {
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    marginVertical: 16,
+  },
+  quickLinkRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    gap: 14,
+  },
+  quickLinkIconContainer: {
+    width: 48,
+    height: 48,
     borderRadius: 16,
+    backgroundColor: 'rgba(248,107,79,0.18)',
     alignItems: 'center',
-    padding: 10,
+    justifyContent: 'center',
   },
-  partnerImg: {
-    width: '100%',
-    height: 100,
-    borderRadius: 12,
-    backgroundColor: '#EAEFF7',
+  quickLinkContent: {
+    flex: 1,
   },
-  eventCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginHorizontal: 16,
-    marginBottom: 10,
-    borderRadius: 14,
-    padding: 10,
-  },
-  eventImg: {
-    width: 72,
-    height: 72,
-    borderRadius: 12,
-    backgroundColor: '#EAEFF7',
-  },
-  newsCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    borderRadius: 14,
-    padding: 10,
-  },
-  newsThumb: {
-    width: 54,
-    height: 54,
-    borderRadius: 10,
-    backgroundColor: '#EAEFF7',
+  header: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 10,
   },
 });
 
-function shadow(level: 1 | 2 | 3) {
-  switch (level) {
-    case 1:
-      return {
-        shadowColor: '#1e1e1e',
-        shadowOpacity: 0.08,
-        shadowRadius: 2,
-        shadowOffset: { width: 0, height: 1 },
-        elevation: 1,
-      } as const;
-    case 2:
-      return {
-        shadowColor: '#1e1e1e',
-        shadowOpacity: 0.12,
-        shadowRadius: 3,
-        shadowOffset: { width: 0, height: 2 },
-        elevation: 2,
-      } as const;
-    default:
-      return {
-        shadowColor: '#1e1e1e',
-        shadowOpacity: 0.16,
-        shadowRadius: 4,
-        shadowOffset: { width: 0, height: 3 },
-        elevation: 3,
-      } as const;
-  }
-}
+export default HomeScreen;
+
