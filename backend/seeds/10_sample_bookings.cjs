@@ -1,4 +1,6 @@
+//10_sample_booking.cjs
 const { v4: uuidv4 } = require("uuid");
+const bcrypt = require('bcrypt');
 
 /**
  * @param { import("knex").Knex } knex
@@ -36,33 +38,30 @@ exports.seed = async function (knex) {
         id: uuidv4(),
         email: "tourist1@gmail.com",
         phone_number: "+639171234567",
-        password:
-          "$2b$10$abcdefghijklmnopqrstuvwxyz1234567890", // hashed password
+        password: await bcrypt.hash('tourist123', 10),
         is_verified: true,
         is_active: true,
-        user_role_id: 5, // Tourist role
+        user_role_id: 9, // Tourist role (corrected from 5)
         barangay_id: 1,
       },
       {
         id: uuidv4(),
         email: "tourist2@gmail.com",
         phone_number: "+639181234567",
-        password:
-          "$2b$10$abcdefghijklmnopqrstuvwxyz1234567890",
+        password: await bcrypt.hash('tourist123', 10),
         is_verified: true,
         is_active: true,
-        user_role_id: 5,
+        user_role_id: 9,
         barangay_id: 2,
       },
       {
         id: uuidv4(),
         email: "tourist3@gmail.com",
         phone_number: "+639191234567",
-        password:
-          "$2b$10$abcdefghijklmnopqrstuvwxyz1234567890",
+        password: await bcrypt.hash('tourist123', 10),
         is_verified: true,
         is_active: true,
-        user_role_id: 5,
+        user_role_id: 9,
         barangay_id: 3,
       },
     ];
