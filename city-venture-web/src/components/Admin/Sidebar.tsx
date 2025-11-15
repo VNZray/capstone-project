@@ -123,7 +123,7 @@ export default function Sidebar({ isOpen = false, onClose }: SidebarProps): Reac
         </div>
         <div>
           <NavItem
-            to={`tourism/login`}
+            to="/tourism/login"
             label="Log Out"
             icon={<LogOut size={18} />}
             onClick={onClose}

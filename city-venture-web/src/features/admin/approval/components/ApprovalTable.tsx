@@ -30,16 +30,16 @@ const ApprovalTable: React.FC<ApprovalTableProps> = ({
   if (items.length === 0) {
     return (
       <Sheet
-        variant="soft"
+        variant="outlined"
         sx={{
           p: 4,
           textAlign: "center",
-          borderRadius: 12,
-          color: "neutral.600",
+          borderRadius: 8,
+          borderStyle: "dashed",
         }}
         aria-live="polite"
       >
-        <Typography level="body-lg">
+        <Typography level="body-md">
           No pending {contentType.toLowerCase()} found
         </Typography>
       </Sheet>

@@ -88,6 +88,15 @@ const TouristSpotTable: React.FC<TouristSpotTableProps> = ({
           </Grid>
         </Sheet>
       ))}
+
+      {filteredSpots.length === 0 && (
+        <Sheet
+          variant="outlined"
+          sx={{ p: 4, textAlign: "center", borderRadius: 8, borderStyle: "dashed" }}
+        >
+          <Typography level="body-md">No tourist spots found</Typography>
+        </Sheet>
+      )}
     </div>
   );
 };

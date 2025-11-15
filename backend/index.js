@@ -204,6 +204,11 @@ app.listen(PORT, "0.0.0.0", () => {
   console.log(colorServer("✅ Connected to MariaDB (Promise Pool)"));
   console.log(colorServer("✅ API is ready to use\n"));
 
+  // Quick access to Tourism Admin Login
+  const frontendBase = process.env.FRONTEND_URL || process.env.WEB_URL || "http://localhost:5173";
+  const tourismLogin = `${frontendBase.replace(/\/$/, "")}/tourism/login`;
+  console.log(`${COLORS.bold}🔗 Tourism Admin Login:${COLORS.reset} ${colorUrl(tourismLogin)}\n`);
+
   // Grouped endpoint logging
   console.log(
     `${COLORS.bold}📌 Available API Endpoints (Grouped):${COLORS.reset}`
