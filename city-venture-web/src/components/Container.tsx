@@ -29,6 +29,7 @@ interface ContainerProps {
   background?: string;
   direction?: "row" | "column";
   opacity?: number;
+  flex?: number;
 
   // Hover effects
   hover?: boolean;
@@ -53,6 +54,7 @@ interface ContainerProps {
   // Interaction
   cursor?: "pointer" | "default" | "grab" | "text";
   disabled?: boolean;
+  position?: "relative" | "absolute" | "fixed" | "sticky";
   onClick?: (event: React.MouseEvent<HTMLDivElement>) => void;
   onDoubleClick?: (event: React.MouseEvent<HTMLDivElement>) => void;
   onContextMenu?: (event: React.MouseEvent<HTMLDivElement>) => void;
@@ -92,6 +94,8 @@ const Container: React.FC<ContainerProps> = ({
   onMouseEnterProp,
   onMouseLeaveProp,
   onKeyDown,
+  position = "relative",
+  flex,
 }) => {
   const [isHovered, setIsHovered] = React.useState(false);
 
@@ -152,6 +156,7 @@ const Container: React.FC<ContainerProps> = ({
     width,
     height,
     padding,
+    flex,
     borderRadius: radius,
     gap,
     backgroundColor: background,
@@ -160,6 +165,7 @@ const Container: React.FC<ContainerProps> = ({
     alignItems: align,
     justifyContent: justify,
     opacity,
+    position,
     cursor: disabled ? "not-allowed" : cursor,
     ...(hover &&
       !isHovered && { transition: `all ${hoverDuration}ms ease-in-out` }),

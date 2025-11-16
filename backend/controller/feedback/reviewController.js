@@ -37,12 +37,33 @@ export async function getReviewById(req, res) {
   }
 }
 
-// Get reviews by type and entity id
+// Get reviews by type and entity id with photos and replies
 export async function getReviewsByTypeAndEntityId(req, res) {
   const { review_type, review_type_id } = req.params;
   try {
-    const [data] = await db.query("CALL GetReviewsByTypeAndEntityId(?, ?)", [review_type, review_type_id]);
-    res.json(data);
+    const [reviews] = await db.query("CALL GetReviewsByTypeAndEntityId(?, ?)", [review_type, review_type_id]);
+    
+    // Fetch photos and replies for each review
+    const enrichedReviews = await Promise.all(
+      (reviews || []).map(async (review) => {
+        let photos = [];
+        let replies = [];
+        
+        try {
+          const [p] = await db.query("CALL GetReviewPhotosByReviewId(?)", [review.id]);
+          photos = Array.isArray(p) ? p : [];
+        } catch (_) {}
+        
+        try {
+          const [r] = await db.query("CALL GetRepliesByReviewId(?)", [review.id]);
+          replies = Array.isArray(r) ? r : [];
+        } catch (_) {}
+        
+        return { ...review, photos, replies };
+      })
+    );
+    
+    res.json(enrichedReviews);
   } catch (error) {
     return handleDbError(error, res);
   }
@@ -58,15 +79,17 @@ export async function insertReview(req, res) {
     if (!review_type || !review_type_id || !rating || !message || !tourist_id) {
       return res.status(400).json({ message: "review_type, review_type_id, rating, message, and tourist_id are required" });
     }
-    if (Number.isFinite(rating) && (rating < 1 || rating > 5)) {
-      return res.status(400).json({ message: "Rating must be between 1 and 5" });
+    
+    const numRating = Number(rating);
+    if (!Number.isFinite(numRating) || numRating < 1 || numRating > 5) {
+      return res.status(400).json({ message: "Rating must be a number between 1 and 5" });
     }
 
     const [data] = await db.query("CALL InsertReview(?, ?, ?, ?, ?, ?)", [
       id,
       review_type,
       review_type_id,
-      rating,
+      numRating,
       message,
       tourist_id,
     ]);

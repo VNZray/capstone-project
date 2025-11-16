@@ -1,6 +1,7 @@
 import Button from '@/components/Button';
 import { useEffect, useRef, useState } from 'react';
-import { Dimensions, ScrollView, StyleSheet } from 'react-native';
+import { Dimensions, ScrollView, StyleSheet, useWindowDimensions } from 'react-native';
+import { scaled } from '@/utils/responsive';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -12,9 +13,9 @@ type Tab = {
 
 type Props = {
   tabs: Tab[];
-  onTabChange?: (tab: Tab, index: number) => void; // ✅ callback
-  initialIndex?: number; // ✅ optional initial tab
-  activeKey?: string; // ✅ controlled active tab (optional)
+  onTabChange?: (tab: Tab, index: number) => void; // callback
+  initialIndex?: number; // optional initial tab
+  activeKey?: string; // controlled active tab (optional)
   variant?: 'solid' | 'outlined' | 'soft' ;
 };
 
@@ -27,11 +28,17 @@ const ScrollableTab = ({
 }: Props) => {
   const [tabIndex, setTabIndex] = useState(initialIndex);
   const scrollRef = useRef<ScrollView>(null);
+  const { width } = useWindowDimensions();
+
+  const responsiveGap = scaled(8, { min: 6, max: 12, width });
+  const responsivePadding = scaled(11, { min: 9, max: 13, width });
+  const responsiveIconSize = scaled(16, { min: 14, max: 18, width });
+  const responsiveVerticalPadding = scaled(16, { min: 12, max: 20, width });
 
   const onTabPress = (index: number) => {
     setTabIndex(index);
     scrollRef.current?.scrollTo({ x: SCREEN_WIDTH * index, animated: false });
-    if (onTabChange) onTabChange(tabs[index], index); // ✅ notify parent
+    if (onTabChange) onTabChange(tabs[index], index); // notify parent
   };
 
   // Sync internal tabIndex with external activeKey when provided
@@ -47,7 +54,7 @@ const ScrollableTab = ({
     <ScrollView
       horizontal
       showsHorizontalScrollIndicator={false}
-      contentContainerStyle={styles.container}
+      contentContainerStyle={[styles.container, { gap: responsiveGap, paddingVertical: responsiveVerticalPadding }]}
     >
       {tabs.map((t, i) => (
         <Button
@@ -57,8 +64,8 @@ const ScrollableTab = ({
           onPress={() => onTabPress(i)}
           label={t.label}
           size="medium"
-          padding={11}
-          iconSize={16}
+          padding={responsivePadding}
+          iconSize={responsiveIconSize}
           variant={tabIndex === i ? 'solid' : variant}
           color={tabIndex === i ? 'primary' : 'white'}
         />
@@ -72,8 +79,6 @@ export default ScrollableTab;
 const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
-    gap: 8,
-    paddingVertical: 16,
     overflow: 'visible',
   },
 });

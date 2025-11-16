@@ -1,6 +1,7 @@
 import * as React from "react";
-import { Box, Typography } from "@mui/joy";
+import { Box, Divider } from "@mui/joy";
 import Container from "@/src/components/Container";
+import Typography from "@/src/components/Typography";
 
 interface StatCardProps {
   icon: React.ReactNode;
@@ -77,17 +78,9 @@ export const StatCard: React.FC<StatCardProps> = ({
   const colorHex = getColorHex(color);
 
   return (
-    <Container
-      elevation={2}
-      style={{
-        flex: 1,
-        display: "flex",
-        flexDirection: "column",
-        height: "100%",
-      }}
-    >
+    <Container hover elevation={2} direction="column">
       {/* Header Section */}
-      <Box sx={{ display: "flex", alignItems: "flex-start", gap: 1.5, mb: 2 }}>
+      <Container padding="0" direction="row">
         <Box
           sx={{
             display: "flex",
@@ -103,73 +96,56 @@ export const StatCard: React.FC<StatCardProps> = ({
         >
           {icon}
         </Box>
-        <Box sx={{ flex: 1, minWidth: 0 }}>
-          <Typography level="body-xs" sx={{ opacity: 0.7, mb: 0.5 }}>
+        <Container padding="0" gap="0">
+          <Typography.Label size="xs" sx={{ opacity: 0.5, mb: 0.5 }}>
             {label}
-          </Typography>
-          <Typography level="h2" sx={{ fontWeight: 700, fontSize: 32 }}>
+          </Typography.Label>
+          <Typography.CardSubTitle size="lg" weight="bold">
             {value}
-          </Typography>
-        </Box>
-      </Box>
+          </Typography.CardSubTitle>
+        </Container>
+      </Container>
 
       {/* Pie Chart Section */}
       {showProgress && percentage !== undefined && (
-        <>
-          <Box
-            sx={{
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-              position: "relative",
-              my: 2,
-            }}
+        <Container padding="0">
+          <Container
+            padding="0"
+            align="center"
+            justify="center"
+            style={{ position: "relative" }}
           >
             <PieChart percentage={percentage} color={colorHex} size={140} />
-            <Box
-              sx={{
-                position: "absolute",
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
+            <Container
+              style={{ position: "absolute" }}
+              padding="0"
+              align="center"
+              justify="center"
+              gap="0"
             >
-              <Typography
-                level="h1"
-                sx={{ fontWeight: 800, fontSize: 36, lineHeight: 1 }}
-              >
-                {percentage}%
-              </Typography>
-              <Typography level="body-xs" sx={{ opacity: 0.6, mt: 0.5 }}>
+              <Typography.Title weight="bold">{percentage}%</Typography.Title>
+              <Typography.Body sx={{ opacity: 0.6, mt: 0.5 }}>
                 of total
-              </Typography>
-            </Box>
-          </Box>
+              </Typography.Body>
+            </Container>
+          </Container>
+
+          <Divider></Divider>
 
           {/* Details Section */}
-          <Box
-            sx={{
-              mt: "auto",
-              pt: 2,
-              borderTop: "1px solid",
-              borderColor: "divider",
-            }}
-          >
+          <Container padding="0">
             {total !== undefined && (
-              <Box
-                sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}
-              >
-                <Typography level="body-sm" sx={{ opacity: 0.7 }}>
+              <Box sx={{ display: "flex", justifyContent: "space-between" }}>
+                <Typography.Body size="xs" sx={{ opacity: 0.7 }}>
                   Total Reviews
-                </Typography>
-                <Typography level="body-sm" sx={{ fontWeight: 600 }}>
+                </Typography.Body>
+                <Typography.Body size="xs" weight="bold">
                   {total}
-                </Typography>
+                </Typography.Body>
               </Box>
             )}
-          </Box>
-        </>
+          </Container>
+        </Container>
       )}
     </Container>
   );

@@ -110,6 +110,7 @@ const Navbar: React.FC<NavbarProps> = ({
             onClick={(e) => {
               e.preventDefault();
               scrollTo("hero");
+              navigate("/");
             }}
           >
             Home
