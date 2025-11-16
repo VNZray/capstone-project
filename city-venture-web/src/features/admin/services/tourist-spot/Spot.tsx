@@ -2,17 +2,19 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { IoAdd } from "react-icons/io5";
 import Typography from "@/src/components/Typography";
+import Button from "@/src/components/Button";
+import ResponsiveText from "@/src/components/ResponsiveText";
 import SearchBar from "@/src/components/SearchBar";
-import CategoryFilter from "@/src/components/Admin/touristSpot/CategoryFilter";
-import Pagination from "@/src/components/Admin/touristSpot/Pagination";
-import TouristSpotTable from "@/src/components/Admin/touristSpot/TouristSpotTable";
-import TouristSpotForm from "@/src/components/Admin/touristSpot/TouristSpotForm";
+import CategoryFilter from "@/src/features/admin/services/tourist-spot/components/CategoryFilter";
+import Pagination from "@/src/features/admin/services/tourist-spot/components/Pagination";
+import TouristSpotTable from "@/src/features/admin/services/tourist-spot/components/TouristSpotTable";
+import TouristSpotForm from "@/src/features/admin/services/tourist-spot/components/TouristSpotForm";
 import type { TouristSpot } from "@/src/types/TouristSpot";
 import { apiService } from "@/src/utils/api";
 import "./Spot.css";
 import Container from "@/src/components/Container";
 import { colors } from "@/src/utils/Colors";
-import FeaturedSpotsModal from "@/src/components/Admin/touristSpot/FeaturedSpotsModal";
+import FeaturedSpotsModal from "@/src/features/admin/services/tourist-spot/components/FeaturedSpotsModal";
 
 const Spot = () => {
   const [currentPage, setCurrentPage] = useState(1);
@@ -148,68 +150,76 @@ const Spot = () => {
   return (
     <>
       <Container background={colors.background} elevation={2} className="spot-container">
-          <div className="filter-and-search-container">
-            <div className="filter">
-              <CategoryFilter
-                selectedCategory={selectedType}
-                onCategorySelect={handleTypeChange}
-                categories={typeFilters}
+        <div className="filter-and-search-container">
+          <div className="filter">
+            <CategoryFilter
+              selectedCategory={selectedType}
+              onCategorySelect={handleTypeChange}
+              categories={typeFilters}
+            />
+          </div>
+          <div className="search-and-add">
+            <div className="search">
+              <SearchBar
+                value={searchQuery}
+                onChangeText={handleSearch}
+                onSearch={() => console.log("Performing search for:", searchQuery)}
+                placeholder="Search tourist spots..."
+                containerStyle={{ flex: 1, maxWidth: 300 }}
               />
             </div>
-            <div className="search-and-add">
-              <div className="search">
-                <SearchBar
-                  value={searchQuery}
-                  onChangeText={handleSearch}
-                  onSearch={() => console.log("Performing search for:", searchQuery)}
-                  placeholder="Search tourist spots..."
-                  containerStyle={{ flex: 1, maxWidth: 300 }}
-                />
-              </div>
-              <div className="actions-inline">
-                <div className="add">
-                  <button
-                    className="add-button"
-                    onClick={() => setAddSpotModalVisible(true)}
-                  >
-                    <IoAdd size={20} color="#FFF" />
-                    <Typography.Body size="sm" weight="semibold" sx={{ color: "white", marginLeft: "8px" }}>
-                      Add Tourist Spot
-                    </Typography.Body>
-                  </button>
-                </div>
-                <div className="add">
-                  <button
-                    className="add-button"
-                    onClick={() => setFeaturedModalOpen(true)}
-                  >
-                    <Typography.Body size="sm" weight="semibold" sx={{ color: "white" }}>
-                      Manage Featured
-                    </Typography.Body>
-                  </button>
-                </div>
-              </div>
+            <div className="actions-inline">
+              <Button
+                onClick={() => setAddSpotModalVisible(true)}
+                startDecorator={<IoAdd size={20} />}
+                colorScheme="primary"
+                variant="solid"
+                size="md"
+              >
+                Add Tourist Spot
+              </Button>
+              <Button
+                onClick={() => setFeaturedModalOpen(true)}
+                colorScheme="primary"
+                variant="solid"
+                size="md"
+              >
+                Manage Featured
+              </Button>
             </div>
           </div>
+        </div>
 
-          {loading ? (
-            <div className="loading-container">
-              <div className="loading-spinner"></div>
-              <Typography.Body size="md" sx={{ color: "#666" }}>Loading tourist spots...</Typography.Body>
-            </div>
-          ) : error ? (
-            <div className="error-container">
-              <Typography.Body size="md" sx={{ color: "#ff4d4d" }}>Error: {error}</Typography.Body>
-            </div>
-          ) : (
-            <div className="content">
-              <TouristSpotTable spots={paginatedSpots} onViewDetails={handleViewDetails} onEdit={handleEditSpot} />
-              {totalPages > 1 && (
-                <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={handlePageChange} />
-              )}
-            </div>
-          )}
-        </Container>
+        {loading ? (
+          <div className="loading-container">
+            <div className="loading-spinner" />
+            <ResponsiveText type="body-medium" color="#666">
+              Loading tourist spots...
+            </ResponsiveText>
+          </div>
+        ) : error ? (
+          <div className="error-container">
+            <ResponsiveText type="body-medium" color="#ff4d4d">
+              Error: {error}
+            </ResponsiveText>
+          </div>
+        ) : (
+          <div className="content">
+            <TouristSpotTable
+              spots={paginatedSpots}
+              onViewDetails={handleViewDetails}
+              onEdit={handleEditSpot}
+            />
+            {totalPages > 1 && (
+              <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={handlePageChange}
+              />
+            )}
+          </div>
+        )}
+      </Container>
 
       <TouristSpotForm
         isVisible={isAddSpotModalVisible}
@@ -227,7 +237,10 @@ const Spot = () => {
         mode="edit"
       />
 
-      <FeaturedSpotsModal open={isFeaturedModalOpen} onClose={() => setFeaturedModalOpen(false)} />
+      <FeaturedSpotsModal
+        open={isFeaturedModalOpen}
+        onClose={() => setFeaturedModalOpen(false)}
+      />
     </>
   );
 };
