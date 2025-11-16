@@ -3,7 +3,6 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { IoAdd } from "react-icons/io5";
 import Typography from "@/src/components/Typography";
 import Button from "@/src/components/Button";
-import ResponsiveText from "@/src/components/ResponsiveText";
 import SearchBar from "@/src/components/SearchBar";
 import CategoryFilter from "@/src/features/admin/services/tourist-spot/components/CategoryFilter";
 import Pagination from "@/src/features/admin/services/tourist-spot/components/Pagination";
@@ -193,15 +192,15 @@ const Spot = () => {
         {loading ? (
           <div className="loading-container">
             <div className="loading-spinner" />
-            <ResponsiveText type="body-medium" color="#666">
+            <Typography.Body size="normal" sx={{ color: "#666" }}>
               Loading tourist spots...
-            </ResponsiveText>
+            </Typography.Body>
           </div>
         ) : error ? (
           <div className="error-container">
-            <ResponsiveText type="body-medium" color="#ff4d4d">
+            <Typography.Body size="normal" sx={{ color: "#ff4d4d" }}>
               Error: {error}
-            </ResponsiveText>
+            </Typography.Body>
           </div>
         ) : (
           <div className="content">
