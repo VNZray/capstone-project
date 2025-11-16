@@ -4,6 +4,7 @@ import TouristSpotDetails from "@/src/features/admin/services/tourist-spot/compo
 import TouristSpotForm from "@/src/features/admin/services/tourist-spot/components/TouristSpotForm";
 import { apiService } from "@/src/utils/api";
 import type { TouristSpot } from "@/src/types/TouristSpot";
+import PageContainer from "@/src/components/PageContainer";
 
 const TouristSpotDetailsScreen: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -32,7 +33,7 @@ const TouristSpotDetailsScreen: React.FC = () => {
   };
 
   return (
-    <>
+    <PageContainer padding={20}>
       <TouristSpotDetails
         key={`${id}-${refreshTick}`}
         spotId={id}
@@ -50,7 +51,7 @@ const TouristSpotDetailsScreen: React.FC = () => {
         initialData={editSpotData}
         initialStep={editStep}
       />
-    </>
+    </PageContainer>
   );
 };
 

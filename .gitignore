@@ -10,3 +10,6 @@ node_modules/
 capstone-project/city-venture/.env
 capstone-project/city-venture-web/.env
 city-venture-web/.env
+city-venture-web/src/services/api.tsx
+city-venture/.env
+city-venture/services/api.tsx

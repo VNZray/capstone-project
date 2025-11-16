@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { NavLink } from "react-router-dom";
+import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard,
   CheckCircle,
@@ -22,14 +22,22 @@ import Typography from "@/src/components/Typography";
 import { colors } from "@/src/utils/Colors";
 import Container from "../Container";
 import useRBAC from "@/src/hooks/useRBAC";
+import { useAuth } from "@/src/context/AuthContext";
 
 interface SidebarProps {
   isOpen?: boolean;
   onClose?: () => void;
 }
 
-export default function Sidebar({ isOpen = false, onClose }: SidebarProps): React.ReactElement {
-  const { canAny } = useRBAC();
+export default function Sidebar({
+  isOpen = false,
+  onClose,
+}: SidebarProps): React.ReactElement {
+  const { logout } = useAuth();
+  const { hasRole, canAny } = useRBAC();
+  const navigate = useNavigate();
+  const route = "/tourism";
+
   return (
     <aside className={`sidebar ${isOpen ? "open" : ""}`}>
       {/* Mobile close button */}
@@ -37,28 +45,30 @@ export default function Sidebar({ isOpen = false, onClose }: SidebarProps): Reac
         className="sidebar-close"
         onClick={onClose}
         aria-label="Close sidebar"
+        style={{
+          position: "absolute",
+          top: 0,
+          right: 0,
+          zIndex: 2,
+        }}
       >
         <X size={20} />
       </button>
-      <Container background="transparent" direction="row" align="center">
-        <Typography.Title
-          size="sm"
-          color="default"
-          sx={{
-            color: colors.white,
-            display: "flex",
-            alignItems: "center",
-            gap: 1.5,
-          }}
-        >
-          <img
-            src={logo}
-            alt="Logo"
-            style={{ width: "40px", height: "40px" }}
-          />
-          City Venture
-        </Typography.Title>
-      </Container>
+      <div
+        className="sidebar-brand"
+        onClick={() => {
+          navigate(route + "/dashboard");
+          onClose?.();
+        }}
+        style={{ cursor: "pointer" }}
+      >
+        <img src={logo} alt="City Ventures" className="sidebar-brand-icon" />
+        <div className="sidebar-brand-text">
+          <div className="sidebar-brand-title">CITY VENTURES</div>
+          <div className="sidebar-brand-subtitle">Tourism</div>
+        </div>
+      </div>
+
       <nav className="admin-sidebar-nav">
         <div
           style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}
@@ -66,70 +76,75 @@ export default function Sidebar({ isOpen = false, onClose }: SidebarProps): Reac
           <NavItem
             to="/tourism/dashboard"
             label="Dashboard"
-            icon={<LayoutDashboard size={18} />}
+            icon={<LayoutDashboard size={24} />}
             onClick={onClose}
           />
-          {canAny('approve_business','approve_event','approve_tourist_spot','approve_shop') && (
+          {canAny(
+            "approve_business",
+            "approve_event",
+            "approve_tourist_spot",
+            "approve_shop"
+          ) && (
             <NavItem
               to="/tourism/approval"
               label="Approval"
-              icon={<CheckCircle size={18} />}
+              icon={<CheckCircle size={24} />}
               onClick={onClose}
             />
           )}
           {/* Dropdown for Services */}
-          <DropdownNavItem label="Services" icon={<Briefcase size={18} />}>
+          <DropdownNavItem label="Services" icon={<Briefcase size={24} />}>
             <NavItem
               to="/tourism/services/tourist-spot"
               label="Tourist Spot"
-              icon={<MapPin size={18} />}
+              icon={<MapPin size={24} />}
               onClick={onClose}
             />
             <NavItem
               to="/tourism/services/event"
               label="Event"
-              icon={<Calendar size={18} />}
+              icon={<Calendar size={24} />}
               onClick={onClose}
             />
             <NavItem
               to="/tourism/services/accommodation"
               label="Accommodation"
-              icon={<BedDouble size={18} />}
+              icon={<BedDouble size={24} />}
               onClick={onClose}
             />
             <NavItem
               to="/tourism/services/shop"
               label="Shop"
-              icon={<Store size={18} />}
+              icon={<Store size={24} />}
               onClick={onClose}
             />
           </DropdownNavItem>
           <NavItem
             to="/tourism/reports"
             label="Reports"
-            icon={<BarChart size={18} />}
+            icon={<BarChart size={24} />}
             onClick={onClose}
           />
-          {canAny('manage_users', 'manage_tourism_staff') && (
+          {canAny("manage_users", "manage_tourism_staff") && (
             <NavItem
               to="/tourism/staff"
               label="Manage Tourism Staff"
-              icon={<Users size={18} />}
+              icon={<Users size={24} />}
               onClick={onClose}
             />
           )}
           <NavItem
             to="/tourism/profile"
             label="Profile"
-            icon={<User size={18} />}
+            icon={<User size={24} />}
             onClick={onClose}
           />
         </div>
         <div>
           <NavItem
-            to="/tourism/login"
+            to="/login"
             label="Log Out"
-            icon={<LogOut size={18} />}
+            icon={<LogOut size={24} />}
             onClick={onClose}
           />
         </div>
@@ -145,7 +160,12 @@ interface NavItemProps {
   onClick?: () => void;
 }
 
-function NavItem({ to, label, icon, onClick }: NavItemProps): React.ReactElement {
+function NavItem({
+  to,
+  label,
+  icon,
+  onClick,
+}: NavItemProps): React.ReactElement {
   return (
     <NavLink
       to={to}

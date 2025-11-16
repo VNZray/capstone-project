@@ -1,34 +1,32 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Grid, Box, Stack, Sheet, Typography } from "@mui/joy";
+import { Input } from "@mui/joy";
 import Container from "@/src/components/Container";
-import SearchBar from "@/src/components/SearchBar";
-import Pagination from "@/src/features/admin/services/tourist-spot/components/Pagination";
-import StaffFilters from "@/src/features/admin/tourism-staff/components/StaffFilters";
+import PageContainer from "@/src/components/PageContainer";
+import Typography from "@/src/components/Typography";
 import TourismStaffTable from "@/src/features/admin/tourism-staff/components/TourismStaffTable";
 import TourismStaffCards from "@/src/features/admin/tourism-staff/components/TourismStaffCards";
 import type { TourismStaff } from "@/src/types/TourismStaff";
 import { apiService } from "@/src/utils/api";
-import { colors } from "@/src/utils/Colors";
 import ResetPasswordModal from "@/src/features/admin/tourism-staff/components/ResetPasswordModal";
 import EditStaffModal from "@/src/features/admin/tourism-staff/components/EditStaffModal";
 import type { UserRoles } from "@/src/types/User";
 import StaffSkeleton from "@/src/features/admin/tourism-staff/components/StaffSkeleton";
 import Button from "@/src/components/Button";
-import { Table as TableIcon, LayoutGrid } from "lucide-react";
+import IconButton from "@/src/components/IconButton";
+import NoDataFound from "@/src/components/NoDataFound";
+import DynamicTab from "@/src/components/ui/DynamicTab";
+import { Table as TableIcon, LayoutGrid, Search, ListChecks, CheckCircle, XCircle, UserCheck, UserX } from "lucide-react";
 import { IoAdd } from "react-icons/io5";
 
 type DisplayMode = 'table' | 'cards';
 
 const TourismStaffManagement: React.FC = () => {
-  const [currentPage, setCurrentPage] = useState(1);
-  const [selectedStatus, setSelectedStatus] = useState("All");
-  const [selectedRole, setSelectedRole] = useState("All");
+  const [selectedStatus, setSelectedStatus] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [staff, setStaff] = useState<TourismStaff[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [display, setDisplay] = useState<DisplayMode>('table');
-  const perPage = 12;
+  const [display, setDisplay] = useState<DisplayMode>('cards');
   const [roles, setRoles] = useState<UserRoles[]>([]);
 
   // Modals state
@@ -81,14 +79,21 @@ const TourismStaffManagement: React.FC = () => {
     fetchRoles();
   }, [fetchStaff, fetchRoles]);
 
-  const handlePageChange = (page: number) => setCurrentPage(page);
-  const handleStatusChange = (status: string) => { setSelectedStatus(status); setCurrentPage(1); };
-  const handleRoleChange = (role: string) => { setSelectedRole(role); setCurrentPage(1); };
-  const handleSearch = (q: string) => { setSearchQuery(q); setCurrentPage(1); };
+  const tabs = [
+    { id: "all", label: "All", icon: <ListChecks size={16} /> },
+    { id: "active", label: "Active", icon: <CheckCircle size={16} /> },
+    { id: "inactive", label: "Inactive", icon: <XCircle size={16} /> },
+    { id: "verified", label: "Verified", icon: <UserCheck size={16} /> },
+    { id: "unverified", label: "Unverified", icon: <UserX size={16} /> },
+  ];
+
+  const handleSearch = (q: string) => { 
+    setSearchQuery(q);
+  };
 
   const filtered = useMemo(() => {
     let rows = staff;
-    if (selectedStatus !== 'All') {
+    if (selectedStatus !== 'all') {
       rows = rows.filter((s) => {
         if (selectedStatus === 'active') return !!s.is_active;
         if (selectedStatus === 'inactive') return !s.is_active;
@@ -96,9 +101,6 @@ const TourismStaffManagement: React.FC = () => {
         if (selectedStatus === 'unverified') return !s.is_verified;
         return true;
       });
-    }
-    if (selectedRole !== 'All') {
-      rows = rows.filter((s) => (s.role_name || '').toLowerCase() === selectedRole.toLowerCase());
     }
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
@@ -114,13 +116,7 @@ const TourismStaffManagement: React.FC = () => {
       const bn = `${b.last_name}, ${b.first_name}`.toLowerCase();
       return an.localeCompare(bn);
     });
-  }, [staff, selectedStatus, selectedRole, searchQuery]);
-
-  const totalPages = Math.ceil(filtered.length / perPage) || 1;
-  const pageRows = useMemo(() => {
-    const start = (currentPage - 1) * perPage;
-    return filtered.slice(start, start + perPage);
-  }, [filtered, currentPage]);
+  }, [staff, selectedStatus, searchQuery]);
 
   // Action handlers
   const handleEdit = (s: TourismStaff) => {
@@ -208,133 +204,184 @@ const TourismStaffManagement: React.FC = () => {
   };
 
   return (
-    <>
-    <Container background={colors.background} elevation={2}>
-      <Stack spacing={2} sx={{ p: 2 }}>
-        {/* Filters, Search, and Display toggle */}
-        <Grid container spacing={2} justifyContent="space-between" alignItems="center" sx={{ width: '99%' }}>
-          <Grid xs={12} sm={6} md={5}>
-            <StaffFilters
-              selectedStatus={selectedStatus}
-              selectedRole={selectedRole}
-              onStatusChange={handleStatusChange}
-              onRoleChange={handleRoleChange}
-              onRefresh={fetchStaff}
-              roleOptions={roles.map(r => r.role_name)}
-            />
-          </Grid>
-          <Grid xs={12} sm={6} md={7} sx={{ display: 'flex', alignItems: 'center', justifyContent: { xs: 'flex-start', md: 'flex-end' } }}>
-            <Box sx={{ flex: 1, maxWidth: 300, mr: { xs: 1, sm: 2, md: 3 } }}>
-              <SearchBar
-                value={searchQuery}
-                onChangeText={handleSearch}
-                onSearch={() => {}}
-                placeholder="Search by name, email, or position..."
-                containerStyle={{ width: '100%' }}
-              />
-            </Box>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <Button variant="solid" colorScheme="primary" size="sm" onClick={handleCreate} startDecorator={<IoAdd size={18} />}>Add Staff</Button>
-              <Box sx={{ display: 'inline-flex', borderRadius: '8px', overflow: 'hidden', border: '1px solid', borderColor: display === 'table' || display === 'cards' ? 'primary.500' : 'neutral.outlinedBorder' }}>
-              <Button
-                size="sm"
-                variant={display === 'table' ? 'solid' : 'plain'}
-                colorScheme="primary"
-                aria-label="Table view"
-                title="Table view"
-                onClick={() => setDisplay('table')}
-                sx={{
-                  borderRadius: 0,
-                  minWidth: 36,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  px: 1.2,
-                  ...(display !== 'table' && { background: 'transparent' }),
-                }}
-              >
-                <TableIcon size={16} />
-              </Button>
-              <Button
-                size="sm"
-                variant={display === 'cards' ? 'solid' : 'plain'}
-                colorScheme="primary"
-                aria-label="Cards view"
-                title="Cards view"
-                onClick={() => setDisplay('cards')}
-                sx={{
-                  borderRadius: 0,
-                  minWidth: 36,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  px: 1.2,
-                  ...(display !== 'cards' && { background: 'transparent' }),
-                  borderLeft: '1px solid',
-                  borderColor: 'neutral.outlinedBorder',
-                }}
-              >
-                <LayoutGrid size={16} />
-              </Button>
-              </Box>
-            </Box>
-          </Grid>
-        </Grid>
+    <PageContainer>
+      {/* Header */}
+      <Container gap="0" padding="0" elevation={3}>
+        <Container
+          direction="row"
+          justify="space-between"
+          align="center"
+          padding="16px 16px 0 16px"
+        >
+          <Typography.Header>Tourism Staff Management</Typography.Header>
+          
+          <IconButton
+            onClick={handleCreate}
+            size="lg"
+            floating
+            floatPosition="bottom-right"
+            hoverEffect="rotate"
+          >
+            <IoAdd />
+          </IconButton>
+        </Container>
 
-        {/* Loading/Error/Content */}
+        {/* Search + View Toggle */}
+        <Container
+          padding="20px 20px 0 20px"
+          direction="row"
+          justify="space-between"
+          align="center"
+          gap="16px"
+        >
+          <Input
+            startDecorator={<Search />}
+            placeholder="Search by name, email, or position..."
+            size="lg"
+            fullWidth
+            value={searchQuery}
+            onChange={(e) => handleSearch(e.target.value)}
+          />
+          
+          <div style={{ display: 'inline-flex', borderRadius: '8px', overflow: 'hidden', border: '1px solid #0A1B47' }}>
+            <Button
+              size="sm"
+              variant={display === 'table' ? 'solid' : 'plain'}
+              colorScheme="primary"
+              aria-label="Table view"
+              title="Table view"
+              onClick={() => setDisplay('table')}
+              sx={{
+                borderRadius: 0,
+                minWidth: 36,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                px: 1.2,
+                ...(display !== 'table' && { background: 'transparent' }),
+              }}
+            >
+              <TableIcon size={16} />
+            </Button>
+            <Button
+              size="sm"
+              variant={display === 'cards' ? 'solid' : 'plain'}
+              colorScheme="primary"
+              aria-label="Cards view"
+              title="Cards view"
+              onClick={() => setDisplay('cards')}
+              sx={{
+                borderRadius: 0,
+                minWidth: 36,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                px: 1.2,
+                ...(display !== 'cards' && { background: 'transparent' }),
+                borderLeft: '1px solid #E5E7EB',
+              }}
+            >
+              <LayoutGrid size={16} />
+            </Button>
+          </div>
+        </Container>
+
+        {/* Tabs */}
+        <DynamicTab
+          tabs={tabs}
+          activeTabId={selectedStatus}
+          onChange={(tabId) => {
+            setSelectedStatus(String(tabId));
+          }}
+        />
+      </Container>
+
+      {/* Error State */}
+      {error && (
+        <Container padding="16px" elevation={2}>
+          <Typography.Body size="sm" sx={{ color: "danger.500" }}>
+            Error: {error}
+          </Typography.Body>
+        </Container>
+      )}
+
+      {/* Staff List */}
+      <Container padding="0 16px 16px 16px">
+        <Typography.Header size="sm" weight="semibold">
+          Staff Members
+        </Typography.Header>
         {loading ? (
           <StaffSkeleton variant={display} />
-        ) : error ? (
-          <Sheet variant="outlined" sx={{ p: 4, textAlign: 'center', borderRadius: 8, borderColor: 'danger.500' }}>
-            <Typography level="body-md" sx={{ color: 'danger.500' }}>
-              Error: {error}
-            </Typography>
-          </Sheet>
+        ) : staff.length === 0 ? (
+          <NoDataFound
+            icon="database"
+            title="No Staff Yet"
+            message="No tourism staff members yet. Add your first team member above."
+          >
+            <Button
+              startDecorator={<IoAdd />}
+              size="lg"
+              onClick={handleCreate}
+              colorScheme="primary"
+              variant="solid"
+            >
+              Add Staff
+            </Button>
+          </NoDataFound>
+        ) : filtered.length === 0 ? (
+          <NoDataFound
+            icon="search"
+            title="No Results Found"
+            message={`No staff members match your search criteria. Try adjusting your filters.`}
+          />
         ) : (
-          <Stack spacing={2}>
+          <div
+            style={{
+              display: display === 'cards' ? "grid" : "block",
+              gridTemplateColumns: display === 'cards' ? "repeat(auto-fill,minmax(280px,1fr))" : undefined,
+              gap: display === 'cards' ? 20 : undefined,
+            }}
+          >
             {display === 'table' ? (
               <TourismStaffTable
-                staff={pageRows}
-                onEdit={handleEdit}
-                onResetPassword={handleResetPassword}
-              />)
-              : (
-              <TourismStaffCards
-                staff={pageRows}
+                staff={filtered}
                 onEdit={handleEdit}
                 onResetPassword={handleResetPassword}
               />
+            ) : (
+              filtered.map((s) => (
+                <TourismStaffCards
+                  key={s.tourism_id}
+                  staff={[s]}
+                  onEdit={handleEdit}
+                  onResetPassword={handleResetPassword}
+                />
+              ))
             )}
-            {totalPages > 1 && (
-              <Box sx={{ display: 'flex', justifyContent: 'center' }}>
-                <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={handlePageChange} />
-              </Box>
-            )}
-          </Stack>
+          </div>
         )}
-      </Stack>
-  </Container>
+      </Container>
 
-    {/* Reset password */}
-    <ResetPasswordModal
-      open={showReset}
-      email={resetEmail || selected?.email}
-      temporaryPassword={resetTempPassword}
-      loading={resetLoading}
-      onClose={() => { setShowReset(false); setSelected(null); setResetTempPassword(undefined); setResetEmail(undefined); }}
-      onConfirm={doResetPassword}
-    />
+      {/* Reset password */}
+      <ResetPasswordModal
+        open={showReset}
+        email={resetEmail || selected?.email}
+        temporaryPassword={resetTempPassword}
+        loading={resetLoading}
+        onClose={() => { setShowReset(false); setSelected(null); setResetTempPassword(undefined); setResetEmail(undefined); }}
+        onConfirm={doResetPassword}
+      />
 
-    {/* Create/Edit */}
-  <EditStaffModal
-      open={showEdit}
-      mode={editMode}
-      staff={selected}
-      roles={roles.map(r => ({ id: r.id as number, name: r.role_name }))}
-      onClose={() => setShowEdit(false)}
-      onSubmit={submitStaff}
-    />
-    </>
+      {/* Create/Edit */}
+      <EditStaffModal
+        open={showEdit}
+        mode={editMode}
+        staff={selected}
+        roles={roles.map(r => ({ id: r.id as number, name: r.role_name }))}
+        onClose={() => setShowEdit(false)}
+        onSubmit={submitStaff}
+      />
+    </PageContainer>
   );
 };
 
