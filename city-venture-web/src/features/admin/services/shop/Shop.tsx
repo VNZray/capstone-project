@@ -1,9 +1,9 @@
-import Text from "@/src/components/Text";
+import Typography from "@/src/components/Typography";
 
 const Shop: React.FC = () => {
   return (
     <>
-      <Text variant="title">Shop</Text>
+      <Typography.Title size="lg">Shop</Typography.Title>
     </>
   );
 };

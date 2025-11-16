@@ -10,11 +10,11 @@ import {
   Tab,
   TabList,
   Tabs,
-  Typography,
   IconButton,
   Alert,
   Card,
 } from "@mui/joy";
+import Typography from "@/src/components/Typography";
 import Visibility from "@mui/icons-material/Visibility";
 import VisibilityOff from "@mui/icons-material/VisibilityOff";
 import EmailRounded from "@mui/icons-material/EmailRounded";
@@ -22,7 +22,7 @@ import LockRounded from "@mui/icons-material/LockRounded";
 import GoogleIcon from "@mui/icons-material/Google";
 import Divider from "@mui/joy/Divider";
 import Checkbox from "@mui/joy/Checkbox";
-import "./LoginUnified.css";
+import "./styles/LoginUnified.css";
 
 type Role = "Tourist" | "Owner" | "Admin";
 
@@ -37,8 +37,8 @@ export default function UnifiedLogin() {
   const { login } = useAuth();
 
   const [role, setRole] = useState<Role>("Tourist");
-  const [email, setEmail] = useState("rayvenclores@gmail.com");
-  const [password, setPassword] = useState("123456");
+  const [email, setEmail] = useState("owner1@gmail.com");
+  const [password, setPassword] = useState("owner123");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string>("");
   const [loading, setLoading] = useState(false);
@@ -59,8 +59,19 @@ export default function UnifiedLogin() {
         await login(email, password);
         navigate("/");
       } else if (role === "Owner") {
-        await login(email, password);
-        navigate("/business");
+        const loggedInUser = await login(email, password);
+        
+        // Check if user is staff (not Business Owner) and redirect to dashboard
+        const staffRoles = ["Manager", "Room Manager", "Receptionist", "Sales Associate"];
+        const userRole = loggedInUser.role_name || "";
+        
+        if (staffRoles.includes(userRole)) {
+          // Staff members go directly to business dashboard
+          navigate("/business/dashboard");
+        } else {
+          // Business Owners go to business listing page
+          navigate("/business");
+        }
       } else {
         await login(email, password);
         navigate("/tourism/dashboard");
@@ -84,12 +95,12 @@ export default function UnifiedLogin() {
         <div className="ul-hero-overlay" />
         <div className="ul-hero-content">
           <img src={logo} alt="City Venture" className="ul-logo" />
-          <Typography level="h2" sx={{ color: "#fff", fontWeight: 800 }}>
+          <Typography.Header size="lg" sx={{ color: "#fff" }}>
             City Venture
-          </Typography>
-          <Typography level="body-lg" sx={{ color: "#E5E7EB" }}>
+          </Typography.Header>
+          <Typography.Body size="lg" sx={{ color: "#E5E7EB" }}>
             Navigate with Ease — Your Ultimate City Directory
-          </Typography>
+          </Typography.Body>
         </div>
       </div>
 
@@ -111,12 +122,12 @@ export default function UnifiedLogin() {
               style={{ borderRadius: 8 }}
             />
             <div>
-              <Typography level="h4" fontWeight={800}>
+              <Typography.Header size="md">
                 Nice to see you again
-              </Typography>
-              <Typography level="body-sm" sx={{ color: "#6B7280" }}>
+              </Typography.Header>
+              <Typography.Body size="sm" sx={{ color: "#6B7280" }}>
                 Sign in to continue your journey
-              </Typography>
+              </Typography.Body>
             </div>
           </div>
 
@@ -135,13 +146,10 @@ export default function UnifiedLogin() {
               }}
             >
               <Tab value="Tourist" sx={{ borderRadius: 10, flex: 1 }}>
-                <Typography level="body-sm">Tourist</Typography>
+                <Typography.Body size="sm">Tourist</Typography.Body>
               </Tab>
               <Tab value="Owner" sx={{ borderRadius: 10, flex: 1 }}>
-                <Typography level="body-sm">Business Owner</Typography>
-              </Tab>
-              <Tab value="Admin" sx={{ borderRadius: 10, flex: 1 }}>
-                <Typography level="body-sm">Admin</Typography>
+                <Typography.Body size="sm">Business</Typography.Body>
               </Tab>
             </TabList>
           </Tabs>
@@ -244,28 +252,28 @@ export default function UnifiedLogin() {
 
           <div className="ul-footer">
             {role === "Owner" && (
-              <Typography textAlign="center" level="body-sm">
+              <Typography.Body size="sm" sx={{ textAlign: "center" }}>
                 New to City Venture?{" "}
                 <Link to="/business/signup" className="ul-link">
                   Register your business
                 </Link>
-              </Typography>
+              </Typography.Body>
             )}
             {role === "Admin" && (
-              <Typography textAlign="center" level="body-sm">
+              <Typography.Body size="sm" sx={{ textAlign: "center" }}>
                 No admin account yet?{" "}
                 <Link to="/tourism/signup" className="ul-link">
                   Request access
                 </Link>
-              </Typography>
+              </Typography.Body>
             )}
             {role === "Tourist" && (
-              <Typography textAlign="center" level="body-sm">
-                Don’t have an account?{" "}
+              <Typography.Body size="sm" sx={{ textAlign: "center" }}>
+                Don't have an account?{" "}
                 <Link to="/signup" className="ul-link">
                   Sign up now
                 </Link>
-              </Typography>
+              </Typography.Body>
             )}
           </div>
         </Card>

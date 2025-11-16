@@ -1,9 +1,9 @@
-import Text from "@/src/components/Text";
+import Typography from "@/src/components/Typography";
 
 const Accommodation: React.FC = () => {
   return (
     <>
-      <Text variant="title">Accommodation</Text>
+      <Typography.Title size="lg">Accommodation</Typography.Title>
     </>
   );
 };

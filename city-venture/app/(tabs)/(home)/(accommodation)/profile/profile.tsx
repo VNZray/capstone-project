@@ -1,7 +1,17 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNavigation } from 'expo-router';
 import { useEffect, useState, useCallback, useRef } from 'react';
-import { Dimensions, FlatList, Image, StyleSheet, View, RefreshControl, NativeSyntheticEvent, NativeScrollEvent } from 'react-native';
+import {
+  Dimensions,
+  FlatList,
+  Image,
+  StyleSheet,
+  View,
+  RefreshControl,
+  NativeSyntheticEvent,
+  NativeScrollEvent,
+  Platform,
+} from 'react-native';
 
 import Tabs from '@/components/Tabs';
 import { ThemedText } from '@/components/themed-text';
@@ -16,6 +26,11 @@ import Details from './details';
 import Ratings from './ratings';
 import Rooms from './rooms';
 import placeholder from '@/assets/images/placeholder.png';
+import Button from '@/components/Button';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import AddReview from '@/components/reviews/AddReview';
+import FeedbackService from '@/services/FeedbackService';
+import Chip from '@/components/Chip';
 
 const { width, height } = Dimensions.get('window');
 
@@ -24,8 +39,13 @@ const AccommodationProfile = () => {
   const [activeTab, setActiveTab] = useState<string>('details');
   const colorScheme = useColorScheme();
   const { user } = useAuth();
-  const { accommodationDetails, refreshAccommodation, refreshAllAccommodations } = useAccommodation();
-
+  const {
+    accommodationDetails,
+    refreshAccommodation,
+    refreshAllAccommodations,
+  } = useAccommodation();
+  const actionLabel = activeTab === 'ratings' ? 'Write a Review' : 'Book Now';
+  const primaryIcon = activeTab === 'ratings' ? 'comment' : 'calendar-check';
   // Refresh & scroll state
   const [refreshing, setRefreshing] = useState(false);
   const lastOffset = useRef(0);
@@ -45,28 +65,29 @@ const AccommodationProfile = () => {
     }
   }, [refreshAccommodation, refreshAllAccommodations]);
 
-  const handleScroll = useCallback((e: NativeSyntheticEvent<NativeScrollEvent>) => {
-    const y = e.nativeEvent.contentOffset.y;
-    const prev = lastOffset.current;
-    wasScrollingUpRef.current = y < prev;
-    atTopRef.current = y <= 0; // treat <=0 as top
-    lastOffset.current = y;
-  }, []);
+  const handleScroll = useCallback(
+    (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+      const y = e.nativeEvent.contentOffset.y;
+      const prev = lastOffset.current;
+      wasScrollingUpRef.current = y < prev;
+      atTopRef.current = y <= 0; // treat <=0 as top
+      lastOffset.current = y;
+    },
+    []
+  );
 
   const handleScrollEndDrag = useCallback(() => {
     if (atTopRef.current && wasScrollingUpRef.current && !refreshing) {
       onRefresh();
     }
   }, [onRefresh, refreshing]);
+  const insets = useSafeAreaInsets();
 
   const [loading, setLoading] = useState(true);
-  const [newReview, setNewReview] = useState('');
-  const [rating, setRating] = useState(5);
   const [modalVisible, setModalVisible] = useState(false);
-  const [feedbackMessage, setFeedbackMessage] = useState('');
-  const [feedbackType, setFeedbackType] = useState<'success' | 'error' | ''>(
-    ''
-  );
+  const [reviewSubmitting, setReviewSubmitting] = useState(false);
+  const [reviewError, setReviewError] = useState<string | null>(null);
+  const [ratingsRefreshKey, setRatingsRefreshKey] = useState(0);
   const bg = colorScheme === 'dark' ? background.dark : background.light;
 
   useEffect(() => {
@@ -113,7 +134,9 @@ const AccommodationProfile = () => {
         keyExtractor={() => 'header'}
         renderItem={() => null}
         contentContainerStyle={{ paddingBottom: 80 }}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
         onScroll={handleScroll}
         onScrollEndDrag={handleScrollEndDrag}
         scrollEventThrottle={32}
@@ -137,22 +160,35 @@ const AccommodationProfile = () => {
                 justify="space-between"
               >
                 <View>
-                  <ThemedText type="card-title-medium" weight="bold">
-                    {accommodationDetails?.business_name}
-                  </ThemedText>
+                  <Container
+                    direction="row"
+                    backgroundColor="transparent"
+                    padding={0}
+                  >
+                    <ThemedText type="card-title-medium" weight="bold">
+                      {accommodationDetails?.business_name}{' '}
+                    </ThemedText>
+                  </Container>
                   <ThemedText type="body-small">
                     <MaterialCommunityIcons
                       name="map-marker"
                       size={16}
                       color="#FFB007"
                     />
-                    {accommodationDetails?.address}, {accommodationDetails?.barangay_name}, {accommodationDetails?.municipality_name}
+                    {accommodationDetails?.address},{' '}
+                    {/* {accommodationDetails?.barangay_name},{' '}
+                    {accommodationDetails?.municipality_name} */}
                   </ThemedText>
-
-                  <ThemedText type="body-medium" style={{ marginTop: 4 }}>
-                    {accommodationDetails?.category}
-                  </ThemedText>
+                  <Chip
+                    size="small"
+                    variant="soft"
+                    color="secondary"
+                    style={{ marginTop: 8, alignItems: 'flex-start' }}
+                    label={accommodationDetails?.category}
+                    padding={0}
+                  />
                 </View>
+
                 <View>
                   <ThemedText type="body-small">
                     <MaterialCommunityIcons
@@ -171,11 +207,58 @@ const AccommodationProfile = () => {
             <View style={styles.tabContent}>
               {activeTab === 'details' && <Details />}
               {activeTab === 'rooms' && <Rooms />}
-              {activeTab === 'ratings' && <Ratings />}
+              {activeTab === 'ratings' && <Ratings key={ratingsRefreshKey} />}
             </View>
           </>
         }
       />
+      {!modalVisible &&
+        (() => {
+          const baseBottom = Platform.OS === 'ios' ? 60 : 80;
+          // Only show "Write a Review" button if user is logged in and on ratings tab
+          if (activeTab === 'ratings' && !user) {
+            return null;
+          }
+          return (
+            <View
+              style={[
+                styles.fabBar,
+                { paddingBottom: baseBottom + insets.bottom },
+              ]}
+            >
+              <Button
+                label={actionLabel}
+                fullWidth
+                startIcon={primaryIcon}
+                color="primary"
+                variant="solid"
+                onPress={() => setModalVisible(true)}
+                elevation={3}
+                style={{ flex: 1 }}
+              />
+            </View>
+          );
+        })()}
+
+      {user && (
+        <AddReview
+          visible={modalVisible}
+          onClose={() => setModalVisible(false)}
+          onSubmit={async (payload) => {
+            try {
+              await FeedbackService.createReview(payload);
+              setModalVisible(false);
+              setRatingsRefreshKey((prev) => prev + 1);
+            } catch (error) {
+              console.error('Error submitting review:', error);
+              throw error;
+            }
+          }}
+          touristId={user.id || ''}
+          reviewType="accommodation"
+          reviewTypeId={accommodationDetails?.id || ''}
+        />
+      )}
     </View>
   );
 };
@@ -211,6 +294,16 @@ const styles = StyleSheet.create({
     padding: 16,
     backgroundColor: 'transparent',
     marginBottom: 80,
+  },
+  fabBar: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    paddingHorizontal: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
   },
 });
 

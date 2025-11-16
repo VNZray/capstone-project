@@ -1,7 +1,7 @@
 import Container from "@/src/components/Container";
 import MapInput from "@/src/components/MapInput";
 import PageContainer from "@/src/components/PageContainer";
-import ResponsiveText from "@/src/components/ResponsiveText";
+import Typography from "@/src/components/Typography";
 import api from "@/src/services/api";
 import type {
   Address,
@@ -15,7 +15,6 @@ import {
   Button,
   FormControl,
   FormLabel,
-  Input,
   Option,
   Select,
 } from "@mui/joy";
@@ -129,12 +128,12 @@ const Step3: React.FC<Props> = ({
   return (
     <PageContainer gap={0} padding={0}>
       <Container gap="0">
-        <ResponsiveText type="title-small" weight="medium">
+        <Typography.CardTitle>
           Business Address
-        </ResponsiveText>
-        <ResponsiveText type="body-medium">
+        </Typography.CardTitle>
+        <Typography.CardSubTitle>
           Please provide your business information.
-        </ResponsiveText>
+        </Typography.CardSubTitle>
       </Container>
 
       <Container>

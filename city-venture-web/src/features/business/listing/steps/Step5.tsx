@@ -1,4 +1,4 @@
-import Text from "@/src/components/Text";
+import CustomTypography from "@/src/components/Typography";
 import React from "react";
 import type { Business } from "@/src/types/Business";
 import { useAddress } from "@/src/hooks/useAddress";
@@ -42,12 +42,12 @@ const Step7: React.FC<Props> = ({
     value?: string | number;
   }) => (
     <div style={{ display: "flex", justifyContent: "space-between" }}>
-      <Text variant="medium" color="dark">
+      <CustomTypography.Label size="sm" weight="semibold">
         {label}:
-      </Text>
-      <Text variant="normal" color="dark">
+      </CustomTypography.Label>
+      <CustomTypography.Body size="xs">
         {value || "-"}
-      </Text>
+      </CustomTypography.Body>
     </div>
   );
 
@@ -104,27 +104,12 @@ const Step7: React.FC<Props> = ({
             marginBottom: 12,
             paddingTop: 4
           }}>
-            <Text variant="label" color="gray" style={{
-              fontSize: 20,
-              fontWeight: 700,
-              lineHeight: 1.3,
-              display: 'block',
-              marginBottom: 6,
-              color: '#111827'
-            }}>
+            <CustomTypography.Label size="lg" sx={{ color: "#111827", mb: 0.75 }}>
               Review & Submit
-            </Text>
-            <Text color="gray" style={{
-              fontSize: 15,
-              fontWeight: 400,
-              opacity: 0.75,
-              display: 'block',
-              maxWidth: '500px',
-              margin: '0 auto',
-              color: '#6b7280'
-            }}>
+            </CustomTypography.Label>
+            <CustomTypography.Body size="xs" sx={{ color: "#6b7280" }}>
               Review your information before submitting
-            </Text>
+            </CustomTypography.Body>
           </div>
           <div style={{ paddingRight: 6 }}>
           <div style={{ display: "flex", flexDirection: "column", gap: 12, padding: '0 8px' }}>
@@ -229,9 +214,9 @@ const Step7: React.FC<Props> = ({
               title="Business Description"
               icon={<DescriptionOutlined color="primary" />}
             >
-              <Text variant="normal" color="dark">
+              <CustomTypography.Body size="sm">
                 {data.description || "-"}
-              </Text>
+              </CustomTypography.Body>
             </Section>
 
             {/* PERMITS */}
@@ -250,9 +235,9 @@ const Step7: React.FC<Props> = ({
                       borderBottom: '1px solid #f3f4f6'
                     }}
                   >
-                    <Text variant="medium" color="dark">
+                    <CustomTypography.Body size="sm" weight="semibold">
                       {permit.permit_type.replace("_", " ")}
-                    </Text>
+                    </CustomTypography.Body>
                     <a
                       href={permit.file_url}
                       target="_blank"
@@ -268,9 +253,9 @@ const Step7: React.FC<Props> = ({
                   </div>
                 ))
               ) : (
-                <Text variant="normal" color="dark">
+                <CustomTypography.Body size="sm">
                   No permits uploaded yet.
-                </Text>
+                </CustomTypography.Body>
               )}
             </Section>
           </div>

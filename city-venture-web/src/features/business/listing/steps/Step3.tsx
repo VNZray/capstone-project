@@ -3,7 +3,7 @@ import type { Business } from "@/src/types/Business";
 import axios from "axios";
 import { Button, FormControl, FormLabel } from "@mui/joy";
 import { Select, Option } from "@mui/joy";
-import Text from "@/src/components/Text";
+import Typography from "@/src/components/Typography";
 import { Add } from "@mui/icons-material";
 import MapInput from "@/src/components/MapInput";
 import type {
@@ -178,34 +178,12 @@ const Step3: React.FC<Props> = ({
               paddingTop: 4,
             }}
           >
-            <Text
-              variant="label"
-              color="gray"
-              style={{
-                fontSize: 20,
-                fontWeight: 700,
-                lineHeight: 1.3,
-                display: "block",
-                marginBottom: 8,
-                color: "#111827",
-              }}
-            >
+            <Typography.Label size="lg" sx={{ mb: 1, color: "#111827" }}>
               Business Address and Location
-            </Text>
-            <Text
-              color="gray"
-              style={{
-                fontSize: 15,
-                fontWeight: 400,
-                opacity: 0.75,
-                display: "block",
-                maxWidth: "500px",
-                margin: "0 auto",
-                color: "#6b7280",
-              }}
-            >
+            </Typography.Label>
+            <Typography.Body size="xs" sx={{ color: "#6b7280" }}>
               Where is your business located?
-            </Text>
+            </Typography.Body>
           </div>
 
           <div className="twoCol">

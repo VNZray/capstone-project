@@ -1,264 +1,317 @@
-import Container from '@/components/Container';
 import PageContainer from '@/components/PageContainer';
-import RatingSummary from '@/components/RatingSummary';
-import ReviewCard from '@/components/ReviewCard';
 import { ThemedText } from '@/components/themed-text';
-import { card, colors } from '@/constants/color';
+import AddReview from '@/components/reviews/AddReview';
+import RatingStatsCard from '@/components/reviews/RatingStatsCard';
+import ReviewCard from '@/components/reviews/ReviewCard';
+import { colors } from '@/constants/color';
+import { useAuth } from '@/context/AuthContext';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import React, { useMemo, useState } from 'react';
-import { FlatList, Pressable, StyleSheet, View } from 'react-native';
+import FeedbackService from '@/services/FeedbackService';
+import type { CreateReviewPayload, ReviewWithAuthor } from '@/types/Feedback';
+import { Ionicons } from '@expo/vector-icons';
+import { useLocalSearchParams } from 'expo-router';
+import debugLogger from '@/utils/debugLogger';
+import { useAccommodation } from '@/context/AccommodationContext';
+import React, { useCallback, useEffect, useState } from 'react';
+import {
+  ActivityIndicator,
+  Alert,
+  FlatList,
+  Pressable,
+  RefreshControl,
+  StyleSheet,
+  View,
+} from 'react-native';
+import { useRoom } from '@/context/RoomContext';
 
-type Review = {
-  id: string;
-  user: {
-    name: string;
-    avatar?: string;
-    isVerified?: boolean; // guest who actually stayed
-    role?: 'tourist' | 'owner';
-    isCurrentUser?: boolean; // if this review is by the current user
-  };
-  rating: number; // 1-5
-  comment: string;
-  images?: string[]; // array of image URLs uploaded by user
-  createdAt: string; // ISO date
-  likes: number;
-  dislikes: number;
-  youLiked?: boolean;
-  youDisliked?: boolean;
-  replies?: Array<{
-    id: string;
-    user: { name: string; role?: 'tourist' | 'owner' };
-    comment: string;
-    createdAt: string;
-  }>;
+type RatingBreakdown = {
+  5: number;
+  4: number;
+  3: number;
+  2: number;
+  1: number;
 };
-
-const SAMPLE_REVIEWS: Review[] = [
-  {
-    id: '1',
-    user: {
-      name: 'Jane D.',
-      avatar: undefined,
-      isVerified: true,
-      role: 'tourist',
-      isCurrentUser: true,
-    },
-    rating: 5,
-    comment:
-      'Amazing stay! The room was spotless and the location perfect for exploring nearby attractions. Highly recommended for families and solo travelers alike. Will definitely come back again because it felt like home away from home.',
-    images: [
-      'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=400',
-      'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=400',
-      'https://images.unsplash.com/photo-1595576508898-0ad5c879a061?w=400',
-    ],
-    createdAt: '2025-09-15T10:00:00Z',
-    likes: 12,
-    dislikes: 0,
-    replies: [
-      {
-        id: 'r1',
-        user: { name: 'Host Admin', role: 'owner' },
-        comment: 'Thank you so much Jane! Glad you enjoyed your stay.',
-        createdAt: '2025-09-16T09:30:00Z',
-      },
-    ],
-  },
-  {
-    id: '2',
-    user: { name: 'Carlos M.', isVerified: true, role: 'tourist', isCurrentUser: true },
-    rating: 4,
-    comment:
-      'Great value overall, though Wi-Fi was a bit inconsistent in the evenings.',
-    images: ['https://images.unsplash.com/photo-1618773928121-c32242e63f39?w=400'],
-    createdAt: '2025-09-14T12:20:00Z',
-    likes: 4,
-    dislikes: 1,
-  },
-  {
-    id: '3',
-    user: { name: 'Lina P.', role: 'tourist' },
-    rating: 3,
-    comment: 'Average experience. Clean room but a bit noisy at night.',
-    createdAt: '2025-09-10T08:15:00Z',
-    likes: 1,
-    dislikes: 0,
-  },
-];
-
-const ratingTabs = ['All', '5', '4', '3', '2', '1'] as const;
 
 const Ratings = () => {
   const scheme = useColorScheme();
   const isDark = scheme === 'dark';
-  const [activeFilter, setActiveFilter] =
-    useState<(typeof ratingTabs)[number]>('All');
-  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
-  const [reviewState, setReviewState] = useState(SAMPLE_REVIEWS);
+  const { user } = useAuth();
+  const params = useLocalSearchParams();
+  const { accommodationDetails } = useAccommodation();
+  const { roomDetails } = useRoom();
 
-  const avgRating = useMemo(() => {
-    if (!reviewState.length) return 0;
+  debugLogger({
+    title: 'Ratings Component Mounted',
+    data: {
+      params,
+      userId: user?.id,
+      accommodationId: accommodationDetails?.id,
+    },
+  });
+
+  console.log('Current User Info:', {
+    userId: user?.id,
+    user: user,
+  });
+
+  // Get accommodation/room ID from params or context
+  const businessId =
+    (params.businessId as string) || accommodationDetails?.id || '';
+  const roomId = (params.roomId as string) || roomDetails?.id || '';
+  const reviewTypeId = roomId; // Prefer room, fallback to business
+
+  debugLogger({
+    title: 'Review Type IDs',
+    data: { businessId, roomId, reviewTypeId },
+  });
+
+  const [reviews, setReviews] = useState<ReviewWithAuthor[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [showAddReview, setShowAddReview] = useState(false);
+  const [editingReview, setEditingReview] = useState<ReviewWithAuthor | null>(
+    null
+  );
+
+  // Calculate statistics
+  const averageRating =
+    reviews.length > 0
+      ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length
+      : 0;
+
+  const breakdown: RatingBreakdown = {
+    5: reviews.filter((r) => r.rating === 5).length,
+    4: reviews.filter((r) => r.rating === 4).length,
+    3: reviews.filter((r) => r.rating === 3).length,
+    2: reviews.filter((r) => r.rating === 2).length,
+    1: reviews.filter((r) => r.rating === 1).length,
+  };
+
+  const fetchReviews = useCallback(async () => {
+    if (!reviewTypeId) {
+      debugLogger({
+        title: 'Fetch Reviews Skipped',
+        error: 'No reviewTypeId available',
+      });
+      setLoading(false);
+      return;
+    }
+
+    debugLogger({
+      title: 'Fetching Reviews',
+      data: { reviewTypeId, reviewType: 'accommodation' },
+    });
+
+    try {
+      const data = await FeedbackService.getBusinessReviews(
+        reviewTypeId,
+        'room'
+      );
+
+      debugLogger({
+        title: 'Reviews Fetched Successfully',
+        data: {
+          count: data.length,
+          dataType: typeof data,
+          isArray: Array.isArray(data),
+          firstReview: data[0]
+            ? {
+                id: data[0].id,
+                rating: data[0].rating,
+                message: data[0].message?.substring(0, 50),
+                tourist_id: data[0].tourist_id,
+                created_at: data[0].created_at,
+                hasTourist: !!data[0].tourist,
+                hasUser: !!data[0].user,
+              }
+            : null,
+        },
+      });
+
+      console.log('Full reviews data:', JSON.stringify(data, null, 2));
+      setReviews(data);
+    } catch (error) {
+      console.error('Full error:', error);
+      debugLogger({
+        title: 'Error Fetching Reviews',
+        error: error instanceof Error ? error.message : String(error),
+      });
+      console.error('Error fetching reviews:', error);
+      Alert.alert('Error', 'Failed to load reviews');
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, [reviewTypeId]);
+
+  useEffect(() => {
+    fetchReviews();
+  }, [fetchReviews]);
+
+  const handleRefresh = () => {
+    setRefreshing(true);
+    fetchReviews();
+  };
+
+  const handleAddReview = () => {
+    setEditingReview(null);
+    setShowAddReview(true);
+  };
+
+  const handleEditReview = (review: ReviewWithAuthor) => {
+    setEditingReview(review);
+    setShowAddReview(true);
+  };
+
+  const handleSubmitReview = async (payload: CreateReviewPayload) => {
+    try {
+      if (editingReview) {
+        // Update existing review
+        await FeedbackService.updateReview(editingReview.id, {
+          rating: payload.rating,
+          message: payload.message,
+        });
+        Alert.alert('Success', 'Review updated successfully');
+      } else {
+        // Create new review
+        await FeedbackService.createReview(payload);
+        Alert.alert('Success', 'Review submitted successfully');
+      }
+
+      setShowAddReview(false);
+      setEditingReview(null);
+      fetchReviews();
+    } catch (error) {
+      console.error('Error submitting review:', error);
+      throw error;
+    }
+  };
+
+  const handleDeleteReview = async (reviewId: string) => {
+    try {
+      await FeedbackService.deleteReview(reviewId);
+      Alert.alert('Success', 'Review deleted successfully');
+      fetchReviews();
+    } catch (error) {
+      console.error('Error deleting review:', error);
+      Alert.alert('Error', 'Failed to delete review');
+    }
+  };
+
+  const renderHeader = () => (
+    <View style={styles.header}>
+      {reviews.length > 0 && (
+        <RatingStatsCard
+          averageRating={averageRating}
+          totalReviews={reviews.length}
+          breakdown={breakdown}
+        />
+      )}
+    </View>
+  );
+
+  const renderEmptyState = () => (
+    <View style={styles.emptyState}>
+      <Ionicons
+        name="chatbubbles-outline"
+        size={64}
+        color={colors.placeholder}
+      />
+      <ThemedText type="body-large" style={styles.emptyText}>
+        No reviews yet
+      </ThemedText>
+      <ThemedText type="body-medium" style={styles.emptySubtext}>
+        Be the first to share your experience
+      </ThemedText>
+    </View>
+  );
+
+  if (loading) {
     return (
-      reviewState.reduce((sum, r) => sum + r.rating, 0) / reviewState.length
+      <PageContainer style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color={colors.primary} />
+      </PageContainer>
     );
-  }, [reviewState]);
-
-  const distribution = useMemo(() => {
-    const dist: Record<number, number> = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
-    reviewState.forEach((r) => (dist[r.rating] = (dist[r.rating] || 0) + 1));
-    const total = reviewState.length || 1;
-    const order = [5, 4, 3, 2, 1];
-    return order.map((k) => ({
-      stars: k,
-      count: dist[k],
-      pct: (dist[k] / total) * 100,
-    }));
-  }, [reviewState]);
-
-  const filteredReviews = useMemo(() => {
-    if (activeFilter === 'All') return reviewState;
-    const star = Number(activeFilter);
-    return reviewState.filter((r) => r.rating === star);
-  }, [activeFilter, reviewState]);
-
-  const toggleLike = (id: string, type: 'like' | 'dislike') => {
-    setReviewState((prev) =>
-      prev.map((r) => {
-        if (r.id !== id) return r;
-        let { likes, dislikes, youLiked, youDisliked } = r;
-        if (type === 'like') {
-          if (youLiked) {
-            likes -= 1;
-            youLiked = false;
-          } else {
-            likes += 1;
-            youLiked = true;
-            if (youDisliked) {
-              dislikes -= 1;
-              youDisliked = false;
-            }
-          }
-        } else {
-          if (youDisliked) {
-            dislikes -= 1;
-            youDisliked = false;
-          } else {
-            dislikes += 1;
-            youDisliked = true;
-            if (youLiked) {
-              likes -= 1;
-              youLiked = false;
-            }
-          }
-        }
-        return { ...r, likes, dislikes, youLiked, youDisliked };
-      })
-    );
-  };
-
-  const toggleExpand = (id: string) => {
-    setExpanded((e) => ({ ...e, [id]: !e[id] }));
-  };
-
-  const canReply = (
-    from: Review['user']['role'],
-    to?: Review['user']['role']
-  ) => {
-    if (!from || !to) return false;
-    if (from === to) return false; // tourist->tourist disabled, owner->owner disabled
-    return true; // tourist <-> owner only
-  };
+  }
 
   return (
-    <PageContainer style={{ paddingTop: 0 }}>
-      {/* Summary */}
-      <RatingSummary 
-        avgRating={avgRating}
-        totalReviews={reviewState.length}
-        distribution={distribution}
-      />
+    <>
+      <PageContainer style={{ paddingTop: 0, marginBottom: 40 }}>
+        <FlatList
+          data={reviews}
+          keyExtractor={(item) => item.id}
+          ListHeaderComponent={renderHeader}
+          ListEmptyComponent={renderEmptyState}
+          renderItem={({ item }) => (
+            <ReviewCard
+              review={item}
+              currentUserId={user?.id}
+              onEdit={handleEditReview}
+              onDelete={handleDeleteReview}
+            />
+          )}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+          }
+          showsVerticalScrollIndicator={false}
+        />
+      </PageContainer>
 
-      {/* Filter Tabs */}
-      <View style={styles.filterTabs}>
-        {ratingTabs.map((tab) => {
-          const active = tab === activeFilter;
-          return (
-            <Pressable
-              key={tab}
-              onPress={() => setActiveFilter(tab)}
-              style={[
-                styles.filterTab,
-                active &&
-                  (isDark
-                    ? styles.filterTabActiveDark
-                    : styles.filterTabActiveLight),
-              ]}
-            >
-              <ThemedText
-                type="label-small"
-                weight={active ? 'bold' : 'medium'}
-                style={{
-                  color: active ? '#fff' : isDark ? '#CBD5E1' : colors.primary,
-                }}
-              >
-                {tab}
-              </ThemedText>
-            </Pressable>
-          );
-        })}
-      </View>
-
-      {/* Reviews List */}
-      <FlatList
-        data={filteredReviews}
-        keyExtractor={(i) => i.id}
-        ItemSeparatorComponent={() => <View style={{ height: 14 }} />}
-        renderItem={({ item }) => (
-          <ReviewCard
-            item={item}
-            expanded={expanded[item.id] || false}
-            onToggleExpand={() => toggleExpand(item.id)}
-            onToggleLike={(type) => toggleLike(item.id, type)}
-            canReply={canReply('owner', item.user.role)}
-            onReply={() => console.log('Reply to', item.id)}
-            onShare={() => console.log('Share review', item.id)}
-          />
-        )}
-        contentContainerStyle={{ paddingVertical: 16, paddingBottom: 40 }}
-        ListEmptyComponent={
-          <Container
-            padding={20}
-            backgroundColor={isDark ? card.dark : card.light}
-          >
-            <ThemedText type="body-small">No reviews yet.</ThemedText>
-          </Container>
-        }
-      />
-    </PageContainer>
+      {user && (
+        <AddReview
+          visible={showAddReview}
+          onClose={() => {
+            setShowAddReview(false);
+            setEditingReview(null);
+          }}
+          onSubmit={handleSubmitReview}
+          editReview={editingReview}
+          touristId={user.id || ''}
+          reviewType="room"
+          reviewTypeId={reviewTypeId}
+        />
+      )}
+    </>
   );
 };
 
 export default Ratings;
 
 const styles = StyleSheet.create({
-  filterTabs: {
+  header: {
+    marginBottom: 12,
+  },
+  addButton: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
+    alignItems: 'center',
+    justifyContent: 'center',
     gap: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    marginTop: 12,
+    marginBottom: 12,
   },
-  filterTab: {
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: colors.primary,
-    backgroundColor: 'transparent',
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  filterTabActiveLight: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
+  emptyState: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 48,
+    paddingHorizontal: 20,
+    minHeight: 300,
   },
-  filterTabActiveDark: {
-    backgroundColor: colors.secondary,
-    borderColor: colors.secondary,
+  emptyText: {
+    marginTop: 16,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  emptySubtext: {
+    marginTop: 8,
+    opacity: 0.6,
+    textAlign: 'center',
   },
 });

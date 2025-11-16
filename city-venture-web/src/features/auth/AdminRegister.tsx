@@ -19,7 +19,7 @@ import PersonRounded from "@mui/icons-material/PersonRounded";
 import LockRounded from "@mui/icons-material/LockRounded";
 import Visibility from "@mui/icons-material/Visibility";
 import VisibilityOff from "@mui/icons-material/VisibilityOff";
-import "./LoginUnified.css";
+import "./styles/LoginUnified.css";
 import axios from "axios";
 import type { Tourism } from "@/src/types/Tourism";
 import type { User } from "@/src/types/User";

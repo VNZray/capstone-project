@@ -1,20 +1,29 @@
-import React, { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import logo from "@/src/assets/images/logo.png";
-import "./LoginStyle.css";
-import Text from "../../components/Text";
-import ResponsiveText from "../../components/ResponsiveText";
-import Container from "../../components/Container";
-import { useAuth } from "@/src/context/AuthContext"; // adjust path if needed
-import { Input, Button } from "@mui/joy";
-import { colors } from "../../utils/Colors";
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/src/context/AuthContext";
+import LoginForm from "./components/LoginForm";
+import PageContainer from "@/src/components/PageContainer";
+import "./styles/LoginStyle.css";
 
 const Login: React.FC = () => {
-  const [email, setEmail] = useState("rayvenclores@gmail.com");
-  const [password, setPassword] = useState("123456");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [rememberMe, setRememberMe] = useState(false);
   const [loginError, setLoginError] = useState("");
   const navigate = useNavigate();
-  const { login, user } = useAuth(); // from AuthProvider
+  const { login, user } = useAuth();
+  const [loading, setLoading] = useState(false);
+
+  // Load saved credentials on mount
+  useEffect(() => {
+    const savedEmail = localStorage.getItem("rememberedEmail");
+    const savedPassword = localStorage.getItem("rememberedPassword");
+    if (savedEmail && savedPassword) {
+      setEmail(savedEmail);
+      setPassword(savedPassword);
+      setRememberMe(true);
+    }
+  }, []);
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -25,10 +34,22 @@ const Login: React.FC = () => {
     try {
       setLoginError("");
 
-      await login(email, password);
+      await login(email, password, rememberMe);
+      setLoading(true);
+
+      // Save credentials if remember me is checked
+      if (rememberMe) {
+        localStorage.setItem("rememberedEmail", email);
+        localStorage.setItem("rememberedPassword", password);
+      } else {
+        localStorage.removeItem("rememberedEmail");
+        localStorage.removeItem("rememberedPassword");
+      }
 
       if (user?.role_name === "Admin") {
-        navigate("/admin/dashboard");
+        navigate("/tourism/dashboard");
+      } else {
+        setLoginError("Unauthorized Access")
       }
     } catch (error: any) {
       setLoginError(
@@ -38,108 +59,65 @@ const Login: React.FC = () => {
   };
 
   return (
-    <div className="login-container">
-      {/* Left Background Image */}
-      <div className="left-container">
-        <img
-          src="https://i0.wp.com/nagayon.com/wp-content/uploads/2024/08/oragon-monument-by-colline.jpg"
-          alt="Background"
-          className="background-image"
-        />
-      </div>
-
-      {/* Right Login Form */}
-      <div className="right-container">
-        <Container elevation={3} padding="40px" radius="0.5rem" width="450px">
-          <div className="logo-container">
-            <img src={logo} alt="Logo" className="logo" />
-            <ResponsiveText type="title-small" weight="bold">
-              City Venture
-            </ResponsiveText>
-          </div>
-
-          {/* Title and Subtitle */}
-          <div
+    <PageContainer padding={0} style={{ height: "100%", overflow: "hidden" }}>
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "row",
+          flex: 1,
+        }}
+      >
+        {/* Left Background Image - Hidden on mobile */}
+        <div
+          style={{
+            flex: 1,
+            display: "block",
+          }}
+          className="login-left-container"
+        >
+          <img
+            src="https://www2.naga.gov.ph/wp-content/uploads/2021/10/Aerial-View-Naga-City-ScubaFlyer-PH.jpg"
+            width={"100%"}
+            height={"100%"}
             style={{
-              display: "flex",
-              flexDirection: "column",
+              objectFit: "cover",
             }}
-          >
-            <Text variant="title" color="dark" style={{ marginBottom: 6 }}>
-              Sign In
-            </Text>
-            <Text variant="paragraph" color="dark" style={{ marginBottom: 24 }}>
-              Navigate with Ease - Your Ultimate City Directory
-            </Text>
-          </div>
+            alt="Naga City Background"
+          />
+        </div>
 
-          {/* Form Fields */}
-          <div className="form-fields">
-            <Input
-              variant="soft"
-              type="email"
-              placeholder="Enter your email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              size="lg"
-            />
-
-            <Input
-              type="password"
-              variant="soft"
-              placeholder="Enter your password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              size="lg"
-            />
-
-            <Link to="/TouristApp/(screens)/ForgotPassword" className="link">
-              <Text variant="normal" color="secondary-color">
-                Forgot Password?
-              </Text>
-            </Link>
-          </div>
-
-          {/* Login Button */}
-          <div
-            style={{
-              marginTop: 20,
-              width: "100%",
-              display: "flex",
-              flexDirection: "column",
-            }}
-          >
-            <Button
-              color="primary"
-              onClick={handleLogin}
-              size="lg"
-              variant="solid"
-              style={{ flex: 1, minHeight: "50px" }}
-            >
-              Sign In
-            </Button>
-
-            {loginError && (
-              <Text variant="paragraph" color={colors.error}>
-                {loginError}
-              </Text>
-            )}
-          </div>
-
-          {/* Sign Up Link */}
-          <div className="signup-row">
-            <Text variant="normal" color="dark">
-              Don't Have an Account?
-            </Text>
-            <Link to="/tourism/signup" className="link">
-              <Text variant="medium" color="secondary-color">
-                Sign Up
-              </Text>
-            </Link>
-          </div>
-        </Container>
+        {/* Right Login Form */}
+        <div
+          className="login-right-container"
+          style={{
+            flex: 1,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <LoginForm
+            email={email}
+            password={password}
+            rememberMe={rememberMe}
+            onEmailChange={setEmail}
+            onPasswordChange={setPassword}
+            onRememberMeChange={setRememberMe}
+            onLogin={handleLogin}
+            error={loginError}
+            forgotPasswordLink="/TouristApp/(screens)/ForgotPassword"
+            signUpLink="/tourism/signup"
+            size="large"
+            title="Sign In"
+            subtitle="Navigate with Ease - Your Ultimate City Directory"
+            signUpPromptText="Don't Have an Account?"
+            signUpLinkText="Sign Up"
+            showRememberMe={true}
+            loading={loading}
+          />
+        </div>
       </div>
-    </div>
+    </PageContainer>
   );
 };
 

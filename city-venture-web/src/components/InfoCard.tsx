@@ -1,7 +1,7 @@
 import React from "react";
 import { Stack } from "@mui/material";
-import Text from "@/src/components/Text";
 import Container from "@/src/components/Container";
+import Typography from "@/src/components/Typography";
 
 type InfoCardProps = {
   icon?: React.ReactNode;
@@ -17,7 +17,7 @@ export default function InfoCard({
   color,
 }: InfoCardProps) {
   return (
-    <Container elevation={2}>
+    <Container hover elevation={2}>
       <Stack gap={0.5} alignItems="center" textAlign="center">
         {/* Icon */}
         {icon && (
@@ -34,10 +34,12 @@ export default function InfoCard({
         )}
 
         {/* Title */}
-        <Text variant="card-title">{title}</Text>
+        <Typography.CardTitle size="sm">{title}</Typography.CardTitle>
 
         {/* Subtitle */}
-        {subtitle && <Text variant="card-sub-title">{subtitle}</Text>}
+        {subtitle && (
+          <Typography.CardSubTitle size="sm">{subtitle}</Typography.CardSubTitle>
+        )}
       </Stack>
     </Container>
   );

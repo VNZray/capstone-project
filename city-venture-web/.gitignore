@@ -13,6 +13,9 @@ dist-ssr
 *.local
 .env.local
 .env
+.env.*
+docs
+services/api.tsx
 
 # Editor directories and files
 .vscode/*

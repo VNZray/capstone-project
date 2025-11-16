@@ -7,3 +7,10 @@ node_modules/
 .Hans-AI-Doc-Lib/
 .github/
 .vscode/
+city-venture/.env
+city-venture-web/.env
+city-venture-web/src/services/api.tsx
+city-venture/services/api.tsx
+.gitignore
+city-venture-web/src/services/email/email-template.html
+city-venture-web/src/services/email/README.md

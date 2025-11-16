@@ -1,70 +1,37 @@
-import React from "react";
-import * as FaIcons from "react-icons/fa";
-import "./styles/Buttons.css";
+import { Button as JoyButton } from '@mui/joy';
+import type { ButtonProps as JoyButtonProps } from '@mui/joy';
+import type { CSSProperties } from 'react';
+import { colors } from '../utils/Colors';
+import { getColorStyles } from '../utils/buttonColorStyles';
 
-type ButtonProps = {
-  direction?: "row" | "column";
-  variant?:
-    | "primary"
-    | "secondary"
-    | "tertiary"
-    | "quartary"
-    | "default"
-    | "yellow"
-    | "orange"
-    | "cancel";
-  gap?: number;
-  color?: string;
-  width?: string | number;
-  height?: string | number;
-  children?: React.ReactNode; // use children instead of Title prop
-  iconName?: keyof typeof FaIcons;
-  iconSize?: number;
-  fontSize?: number | string;
-  onClick?: () => void;
-  disabled?: boolean;
-  style?: React.CSSProperties;
-  padding?: string | number;
-  icon?: React.ReactNode;
-};
+type ColorScheme = keyof typeof colors;
 
-const Button: React.FC<ButtonProps> = ({
+interface CustomButtonProps extends Omit<JoyButtonProps, 'color' | 'variant'> {
+  variant?: 'solid' | 'outlined' | 'soft' | 'plain';
+  colorScheme?: ColorScheme;
+  children: React.ReactNode;
+}
+
+const Button = ({
+  variant = 'solid',
+  colorScheme = 'primary',
   children,
-  color,
-  direction = "row",
-  variant = "default",
-  gap = 5,
-  width,
-  height,
-  fontSize = 10,
-  onClick,
-  padding,
-  disabled = false,
-  icon,
-  style,
-}) => {
+  sx,
+  ...props
+}: CustomButtonProps) => {
+  const buttonStyles = getColorStyles(colorScheme, variant);
 
   return (
-    <button
-      onClick={disabled ? undefined : onClick}
-      disabled={disabled}
-      className={`pressable-button ${variant} ${disabled ? "disabled" : ""}`}
-      style={{
-        flexDirection: direction,
-        gap,
-        width,
-        height,
-        padding,
-
-        color: disabled ? "#ccc" : color,
-        fontSize:
-          typeof fontSize === "string" ? parseFloat(fontSize) : fontSize,
-        ...style,
-      }}
+    <JoyButton
+      variant={variant === 'solid' ? 'solid' : variant === 'outlined' ? 'outlined' : 'soft'}
+      sx={{
+        ...buttonStyles,
+        ...sx,
+      } as CSSProperties}
+      {...props}
     >
-      {icon && <span className="sidebar-icon">{icon}</span>}
-      {children && <span className="button-text">{children}</span>}
-    </button>
+      {children}
+    </JoyButton>
   );
 };
 

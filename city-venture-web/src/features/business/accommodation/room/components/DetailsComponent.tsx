@@ -1,9 +1,8 @@
 import Paper from "@mui/material/Paper";
-import { Button, Chip, Grid, Typography } from "@mui/joy";
+import { Button, Chip, Grid } from "@mui/joy";
 import { useRoom } from "@/src/context/RoomContext";
 import Container from "@/src/components/Container";
-import { Bed, Users, ListChecks, PhilippinePeso } from "lucide-react";
-import HeightIcon from "@mui/icons-material/Height";
+import { Users, ListChecks, PhilippinePeso } from "lucide-react";
 import type { Amenity } from "@/src/types/Amenity";
 import { getData } from "@/src/services/Service";
 import React, { useState } from "react";
@@ -11,13 +10,14 @@ import EditIcon from "@mui/icons-material/Edit";
 import EditBasicInfo from "./EditBasicInfo";
 import EditAmenitiesModal from "./EditAmenitiesModal";
 import EditDescriptionModal from "./EditDescription";
-
+import Typography from "@/src/components/Typography";
 const DetailsComponent = () => {
   const { roomDetails } = useRoom();
   const [amenities, setAmenities] = React.useState<Amenity[]>([]);
   const [editBasicInfoModalOpen, setEditBasicInfoModalOpen] = useState(false);
   const [editAmenitiesModalOpen, setEditAmenitiesModalOpen] = useState(false);
-  const [editDescriptionModalOpen, setEditDescriptionModalOpen] = useState(false);
+  const [editDescriptionModalOpen, setEditDescriptionModalOpen] =
+    useState(false);
 
   const fetchRoomAmenities = async () => {
     if (!roomDetails?.id) return;
@@ -65,13 +65,7 @@ const DetailsComponent = () => {
             align="center"
             justify="space-between"
           >
-            <Typography
-              fontFamily={"poppins"}
-              level="title-lg"
-              fontWeight={600}
-            >
-              Basic Information
-            </Typography>
+            <Typography.CardTitle>Basic Information</Typography.CardTitle>
 
             <Button
               color="primary"
@@ -94,104 +88,35 @@ const DetailsComponent = () => {
               style={{ flex: 1 }}
             >
               <div>
-                <Typography
-                  fontFamily={"poppins"}
-                  level="title-md"
-                  fontWeight={500}
-                >
-                  Room Number
-                </Typography>
-                <Typography
-                  startDecorator={<Bed size={18} />}
-                  fontFamily={"poppins"}
-                  level="body-md"
-                >
-                  {roomDetails?.room_number || "-"}
-                </Typography>
+                <Typography.Label>Room Type</Typography.Label>
+                <Typography.Body startDecorator={<ListChecks size={18} />}>
+                  {roomDetails?.room_type || "-"}
+                </Typography.Body>
               </div>
-
               <div>
-                <Typography
-                  fontFamily={"poppins"}
-                  level="title-md"
-                  fontWeight={500}
-                >
-                  Floor
-                </Typography>
-                <Typography
-                  startDecorator={<HeightIcon fontSize="small" />}
-                  fontFamily={"poppins"}
-                  level="body-md"
-                >
-                  {roomDetails?.floor || "-"}
-                </Typography>
-              </div>
-
-              <div>
-                <Typography
-                  fontFamily={"poppins"}
-                  level="title-md"
-                  fontWeight={500}
-                >
-                  Price
-                </Typography>
-                <Typography
-                  startDecorator={<PhilippinePeso size={18} />}
-                  fontFamily={"poppins"}
-                  level="body-md"
-                >
-                  {roomDetails?.room_price?.toLocaleString() || "-"}
-                </Typography>
+                <Typography.Label>Room Size sqm(㎡)</Typography.Label>
+                <Typography.Body startDecorator={<ListChecks size={18} />}>
+                  {roomDetails?.room_size || "-"}
+                </Typography.Body>
               </div>
             </Container>
             <Container padding="0" direction="column" style={{ flex: 1 }}>
               <div>
-                <Typography
-                  fontFamily={"poppins"}
-                  level="title-md"
-                  fontWeight={500}
-                >
-                  Room Type
-                </Typography>
-                <Typography
-                  startDecorator={<ListChecks size={18} />}
-                  fontFamily={"poppins"}
-                  level="body-md"
-                >
-                  {roomDetails?.room_type || "-"}
-                </Typography>
+                <Typography.Label fontFamily={"poppins"}>
+                  Price
+                </Typography.Label>
+                <Typography.Body startDecorator={<PhilippinePeso size={18} />}>
+                  {roomDetails?.room_price?.toLocaleString() || "-"}
+                </Typography.Body>
               </div>
-                            <div>
-                <Typography
-                  fontFamily={"poppins"}
-                  level="title-md"
-                  fontWeight={500}
-                >
-                  Room Size sqm(㎡)
-                </Typography>
-                <Typography
-                  startDecorator={<ListChecks size={18} />}
-                  fontFamily={"poppins"}
-                  level="body-md"
-                >
-                  {roomDetails?.room_size || "-"}
-                </Typography>
-              </div>
+
               <div>
-                <Typography
-                  fontFamily={"poppins"}
-                  level="title-md"
-                  fontWeight={500}
-                >
+                <Typography.Label fontFamily={"poppins"}>
                   Capacity
-                </Typography>
-                <Typography
-                  startDecorator={<Users size={18} />}
-                  fontFamily={"poppins"}
-                  level="body-md"
-                >
+                </Typography.Label>
+                <Typography.Body startDecorator={<Users size={18} />}>
                   {roomDetails?.capacity || "-"}
-                </Typography>
+                </Typography.Body>
               </div>
             </Container>
           </Paper>
@@ -202,13 +127,9 @@ const DetailsComponent = () => {
             align="center"
             justify="space-between"
           >
-            <Typography
-              fontFamily={"poppins"}
-              level="title-lg"
-              fontWeight={600}
-            >
+            <Typography.CardTitle fontFamily={"poppins"}>
               Amenities
-            </Typography>
+            </Typography.CardTitle>
 
             <Button
               color="primary"
@@ -242,13 +163,9 @@ const DetailsComponent = () => {
             align="center"
             justify="space-between"
           >
-            <Typography
-              fontFamily={"poppins"}
-              level="title-lg"
-              fontWeight={600}
-            >
+            <Typography.CardTitle fontFamily={"poppins"}>
               Description
-            </Typography>
+            </Typography.CardTitle>
 
             <Button
               color="primary"
@@ -261,9 +178,7 @@ const DetailsComponent = () => {
             </Button>
           </Container>
           <Paper variant="outlined" sx={{ p: 2, flex: 1 }}>
-            <Typography fontFamily={"poppins"} level="body-md">
-              {roomDetails?.description || "-"}
-            </Typography>
+            <Typography.Body>{roomDetails?.description || "-"}</Typography.Body>
           </Paper>
         </Grid>
       </Grid>
@@ -282,6 +197,7 @@ const DetailsComponent = () => {
         initialFloor={roomDetails?.floor}
         initialCapacity={roomDetails?.capacity}
         initialPrice={roomDetails?.room_price}
+        initialStatus={roomDetails?.status}
         roomId={roomDetails?.id}
         onClose={() => setEditBasicInfoModalOpen(false)}
         onSave={() => {

@@ -17,6 +17,7 @@ import axios from "axios";
 import api from "../services/api";
 import type { Owner } from "../types/Owner";
 import type { User } from "../types/User";
+import { initializeEmailJS, sendAccountCredentials } from "../services/email/EmailService";
 
 const steps = [
   "Business Information",
@@ -61,7 +62,7 @@ const BusinessRegistration = () => {
     phone_number: "9380410303",
     password: "123456",
     barangay_id: 3,
-    user_role_id: 3,
+    user_role_id: 4,
   });
 
   const [ownerData, setOwnerData] = useState<Owner>({
@@ -162,6 +163,11 @@ const BusinessRegistration = () => {
     },
   ]);
 
+  // Initialize EmailJS
+  useEffect(() => {
+    initializeEmailJS();
+  }, []);
+
   if (!formData) return null;
   const handleNext = () => {
     if (submitting) return; // avoid double submit
@@ -176,7 +182,7 @@ const BusinessRegistration = () => {
     if (activeStep > 0) {
       setActiveStep((prev) => prev - 1);
     } else {
-      navigate("/business"); // Go back to business list if on first step
+      navigate("/"); // Go back to business list if on first step
     }
   };
 
@@ -189,12 +195,19 @@ const BusinessRegistration = () => {
       if (!effectiveUserId) {
         const userRes = await axios.post(`${api}/users`, {
           ...userData,
-          user_role_id: 3,
         });
         effectiveUserId = userRes?.data?.id;
         if (!effectiveUserId) throw new Error("User creation failed");
         // keep state in sync for any subsequent steps
         setUserData((prev) => ({ ...prev, id: effectiveUserId! }));
+
+        // Send account credentials via email
+        await sendAccountCredentials(
+          userData.email,
+          `${ownerData.first_name} ${ownerData.last_name}`,
+          userData.email,
+          userData.password || "owner123"
+        );
       }
 
       // If no owner created yet, create it now from Step 2 data

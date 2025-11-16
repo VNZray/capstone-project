@@ -24,7 +24,9 @@ import reportRoutes from "./routes/report.js";
 import roomAmenityRoutes from "./routes/room_amenities.js";
 import businessAmenityRoutes from "./routes/business_amenities.js";
 import bookingRoutes from "./routes/booking.js";
-import paymentRoutes from "./routes/paymentRoutes.js";
+import paymentRoutes from "./routes/payment.js";
+import staffRoutes from "./routes/staff.js";
+import permissionRoutes from "./routes/permission.js";
 
 // New Product/Service Management Routes
 import productRoutes from "./routes/products.js";
@@ -37,6 +39,11 @@ import productReviewRoutes from "./routes/product-reviews.js";
 import notificationRoutes from "./routes/notifications.js";
 import businessSettingsRoutes from "./routes/business-settings.js";
 import shopCategoryRoutes from "./routes/shop-categories.js";
+import feedbackReviewRoutes from "./routes/feedback-reviews.js";
+import feedbackReplyRoutes from "./routes/feedback-replies.js";
+import feedbackReviewPhotoRoutes from "./routes/feedback-review-photos.js";
+import roomPhotosRoutes from "./routes/room-photos.js";
+import tourismStaffManagementRoutes from "./routes/tourism_staff_management.js";
 
 const app = express();
 const PORT = 3000;
@@ -68,7 +75,11 @@ const routeSections = [
       { path: "/api/users", handler: userRoutes, label: "Users" },
       { path: "/api/owner", handler: ownerRoutes, label: "Owners" },
       { path: "/api/tourism", handler: tourismRoutes, label: "Tourism" },
+      { path: "/api/tourism-staff", handler: tourismStaffManagementRoutes, label: "Tourism Staff (Admin)" },
       { path: "/api/tourist", handler: touristRoutes, label: "Tourists" },
+      { path: "/api/staff", handler: staffRoutes, label: "Staff" },
+  { path: "/api/permissions", handler: permissionRoutes, label: "Permissions & Role Permissions" },
+
     ],
   },
   {
@@ -102,6 +113,11 @@ const routeSections = [
         path: "/api/room-amenities",
         handler: roomAmenityRoutes,
         label: "Room Amenities",
+      },
+      {
+        path: "/api/room-photos",
+        handler: roomPhotosRoutes,
+        label: "Room Photos",
       },
       { path: "/api/permit", handler: permitRoutes, label: "Permits" },
     ],
@@ -165,6 +181,14 @@ const routeSections = [
       },
     ],
   },
+  {
+    section: "Feedback & Reviews",
+    routes: [
+      { path: "/api/reviews", handler: feedbackReviewRoutes, label: "Reviews (Generic)" },
+      { path: "/api/replies", handler: feedbackReplyRoutes, label: "Replies" },
+      { path: "/api/review-photos", handler: feedbackReviewPhotoRoutes, label: "Review Photos" },
+    ],
+  },
 ];
 
 // Flattened list for registration
@@ -185,6 +209,11 @@ app.listen(PORT, "0.0.0.0", () => {
   );
   console.log(colorServer("✅ Connected to MariaDB (Promise Pool)"));
   console.log(colorServer("✅ API is ready to use\n"));
+
+  // Quick access to Tourism Admin Login
+  const frontendBase = process.env.FRONTEND_URL || process.env.WEB_URL || "http://localhost:5173";
+  const tourismLogin = `${frontendBase.replace(/\/$/, "")}/tourism/login`;
+  console.log(`${COLORS.bold}🔗 Tourism Admin Login:${COLORS.reset} ${colorUrl(tourismLogin)}\n`);
 
   // Grouped endpoint logging
   console.log(

@@ -1,7 +1,8 @@
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { useFonts } from 'expo-font';
 import React from 'react';
-import { Platform, StyleSheet, Text, View, type TextProps } from 'react-native';
+import { Platform, StyleSheet, Text, View, type TextProps, useWindowDimensions } from 'react-native';
+import { scaled } from '@/utils/responsive';
 
 export type TypographyType =
   | `title-${'extra-small' | 'small' | 'medium' | 'large'}`
@@ -82,6 +83,8 @@ export function ThemedText({
     ? '#1e90ff'
     : useThemeColor({ light: lightColor, dark: darkColor }, 'text');
 
+  const { width } = useWindowDimensions();
+
   const [fontsLoaded] = useFonts({
     'Poppins-Regular': require('@/assets/fonts/Poppins/Poppins-Regular.ttf'),
     'Poppins-Medium': require('@/assets/fonts/Poppins/Poppins-Medium.ttf'),
@@ -95,23 +98,33 @@ export function ThemedText({
     return null;
   }
 
+  const responsiveSpacing = {
+    pt: scaled(pt, { min: 0, max: pt * 1.5, width }),
+    pr: scaled(pr, { min: 0, max: pr * 1.5, width }),
+    pb: scaled(pb, { min: 0, max: pb * 1.5, width }),
+    pl: scaled(pl, { min: 0, max: pl * 1.5, width }),
+    mt: scaled(mt, { min: 0, max: mt * 1.5, width }),
+    mr: scaled(mr, { min: 0, max: mr * 1.5, width }),
+    mb: scaled(mb, { min: 0, max: mb * 1.5, width }),
+    ml: scaled(ml, { min: 0, max: ml * 1.5, width }),
+  };
+
   const textElement = (
     <Text
       style={[
         {
           color: defaultColor,
           textAlign: align,
-          paddingTop: pt,
-          paddingRight: pr,
-          paddingBottom: pb,
-          paddingLeft: pl,
-          marginTop: mt,
-          marginRight: mr,
-          marginBottom: mb,
-          marginLeft: ml,
+          paddingTop: responsiveSpacing.pt,
+          paddingRight: responsiveSpacing.pr,
+          paddingBottom: responsiveSpacing.pb,
+          paddingLeft: responsiveSpacing.pl,
+          marginTop: responsiveSpacing.mt,
+          marginRight: responsiveSpacing.mr,
+          marginBottom: responsiveSpacing.mb,
+          marginLeft: responsiveSpacing.ml,
         },
-        styles[type],
-        isLink,
+        getResponsiveStyle(type, width),
         getFontWeightStyle(weight),
         // Android-specific text improvements
         Platform.OS === 'android' && {
@@ -156,7 +169,7 @@ function getFontWeightStyle(weight: FontWeight) {
     case 'bold':
       return { fontFamily: 'Poppins-Bold' };
     case 'bolder':
-      return { fontFamily: 'Poppins-Bold', fontWeight: '900' }; // fallback
+      return { fontFamily: 'Poppins-Bold', fontWeight: '900' as const }; // fallback
     case 'extra-bold':
       return { fontFamily: 'Poppins-ExtraBold' };
     case 'black':
@@ -166,57 +179,58 @@ function getFontWeightStyle(weight: FontWeight) {
   }
 }
 
-const styles = StyleSheet.create<Record<TypographyType, any>>({
+const fontSizeMap: Record<TypographyType, { base: number; min: number; max: number }> = {
   // Titles
-  'title-large': { fontSize: 32 },
-  'title-medium': { fontSize: 28 },
-  'title-small': { fontSize: 24 },
-  'title-extra-small': { fontSize: 20 },
+  'title-large': { base: 32, min: 24, max: 40 },
+  'title-medium': { base: 28, min: 22, max: 34 },
+  'title-small': { base: 24, min: 20, max: 28 },
+  'title-extra-small': { base: 20, min: 18, max: 24 },
 
   // Headers
-  'header-large': { fontSize: 32 },
-  'header-medium': { fontSize: 28 },
-  'header-small': { fontSize: 24 },
-  'header-extra-small': { fontSize: 20 },
+  'header-large': { base: 32, min: 24, max: 40 },
+  'header-medium': { base: 28, min: 22, max: 34 },
+  'header-small': { base: 24, min: 20, max: 28 },
+  'header-extra-small': { base: 20, min: 18, max: 24 },
 
   // Sub Titles
-  'sub-title-large': { fontSize: 22 },
-  'sub-title-medium': { fontSize: 20 },
-  'sub-title-small': { fontSize: 18 },
-  'sub-title-extra-small': { fontSize: 16 },
+  'sub-title-large': { base: 22, min: 18, max: 26 },
+  'sub-title-medium': { base: 20, min: 17, max: 24 },
+  'sub-title-small': { base: 18, min: 16, max: 22 },
+  'sub-title-extra-small': { base: 16, min: 14, max: 18 },
 
   // Body
-  'body-large': { fontSize: 18 },
-  'body-medium': { fontSize: 16 },
-  'body-small': { fontSize: 14 },
-  'body-extra-small': { fontSize: 12 },
+  'body-large': { base: 18, min: 16, max: 20 },
+  'body-medium': { base: 16, min: 14, max: 18 },
+  'body-small': { base: 14, min: 12, max: 16 },
+  'body-extra-small': { base: 12, min: 10, max: 14 },
 
   // Card Titles
-  'card-title-large': { fontSize: 20 },
-  'card-title-medium': { fontSize: 18 },
-  'card-title-small': { fontSize: 16 },
-  'card-title-extra-small': { fontSize: 14 },
+  'card-title-large': { base: 20, min: 18, max: 24 },
+  'card-title-medium': { base: 18, min: 16, max: 20 },
+  'card-title-small': { base: 16, min: 14, max: 18 },
+  'card-title-extra-small': { base: 14, min: 12, max: 16 },
 
   // Card Sub Titles
-  'card-sub-title-large': { fontSize: 16 },
-  'card-sub-title-medium': { fontSize: 14 },
-  'card-sub-title-small': { fontSize: 12 },
-  'card-sub-title-extra-small': { fontSize: 10 },
+  'card-sub-title-large': { base: 16, min: 14, max: 18 },
+  'card-sub-title-medium': { base: 14, min: 12, max: 16 },
+  'card-sub-title-small': { base: 12, min: 11, max: 14 },
+  'card-sub-title-extra-small': { base: 10, min: 9, max: 12 },
 
   // Labels
-  'label-large': { fontSize: 16 },
-  'label-medium': { fontSize: 14 },
-  'label-small': { fontSize: 12 },
-  'label-extra-small': { fontSize: 10 },
+  'label-large': { base: 16, min: 14, max: 18 },
+  'label-medium': { base: 14, min: 12, max: 16 },
+  'label-small': { base: 12, min: 11, max: 14 },
+  'label-extra-small': { base: 10, min: 9, max: 12 },
 
   // Links
-  'link-large': { fontSize: 18 },
-  'link-medium': { fontSize: 16 },
-  'link-small': { fontSize: 14 },
-  'link-extra-small': { fontSize: 12 },
+  'link-large': { base: 18, min: 16, max: 20 },
+  'link-medium': { base: 16, min: 14, max: 18 },
+  'link-small': { base: 14, min: 12, max: 16 },
+  'link-extra-small': { base: 12, min: 10, max: 14 },
+};
 
-  // Base link styling
-  linkBase: {
-    textDecorationLine: 'underline',
-  },
-});
+function getResponsiveStyle(type: TypographyType, width: number) {
+  const config = fontSizeMap[type];
+  const fontSize = scaled(config.base, { min: config.min, max: config.max, factor: 0.5, width });
+  return { fontSize };
+}

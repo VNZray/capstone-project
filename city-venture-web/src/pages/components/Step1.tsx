@@ -1,6 +1,6 @@
 import Container from "@/src/components/Container";
 import PageContainer from "@/src/components/PageContainer";
-import ResponsiveText from "@/src/components/ResponsiveText";
+import Typography from "@/src/components/Typography";
 import { useBusinessBasics } from "@/src/hooks/useBusiness";
 import api from "@/src/services/api";
 import type { BusinessAmenity } from "@/src/types/Amenity";
@@ -30,12 +30,10 @@ const Step1: React.FC<Props> = ({ data, setData, setBusinessAmenities }) => {
   return (
     <PageContainer gap={0} padding={0}>
       <Container gap="0">
-        <ResponsiveText type="title-small" weight="medium">
-          Business Information
-        </ResponsiveText>
-        <ResponsiveText type="body-medium">
+        <Typography.CardTitle>Business Information</Typography.CardTitle>
+        <Typography.CardSubTitle>
           Please provide your business information.
-        </ResponsiveText>
+        </Typography.CardSubTitle>
       </Container>
 
       <Container>
@@ -171,9 +169,9 @@ const Step1: React.FC<Props> = ({ data, setData, setBusinessAmenities }) => {
                 {type.type.toLowerCase() === "shop" && (
                   <StoreIcon fontSize="small" />
                 )}
-                <ResponsiveText type="label-medium" weight="medium">
+                <Typography.Body>
                   {type.type}
-                </ResponsiveText>
+                </Typography.Body>
               </ToggleButton>
             ))}
           </ToggleButtonGroup>

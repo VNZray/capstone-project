@@ -1,9 +1,9 @@
-import Text from "@/src/components/Text";
+import Typography from "@/src/components/Typography";
 
 const ManageBusiness = () => {
   return (
     <>
-      <Text variant="title">Manage Shop</Text>
+      <Typography.Title size="lg" weight="bold">Manage Shop</Typography.Title>
     </>
   );
 };

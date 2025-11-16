@@ -1,9 +1,9 @@
-import Text from "@/src/components/Text";
+import Typography from "@/src/components/Typography";
 
 const Event: React.FC = () => {
   return (
     <>
-      <Text variant="title">Event</Text>
+      <Typography.Title size="lg">Event</Typography.Title>
     </>
   );
 };

@@ -1,16 +1,21 @@
 import Container from "@/src/components/Container";
 import PageContainer from "@/src/components/PageContainer";
 import {
-  Button,
   Input,
   Modal,
   ModalDialog,
   DialogTitle,
   DialogActions,
 } from "@mui/joy";
-import { Calendar, Search } from "lucide-react";
+import {
+  Calendar,
+  ListChecks,
+  PauseCircle,
+  PlayCircle,
+  Search,
+  TimerOff,
+} from "lucide-react";
 import { Add } from "@mui/icons-material";
-import StatusFilter from "./components/StatusFilter";
 import { useEffect, useState } from "react";
 import AddRoomModal from "./components/AddRoomModal";
 import RoomCard from "./components/RoomCard";
@@ -24,8 +29,12 @@ import { useNavigate } from "react-router-dom";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { DateCalendar } from "@mui/x-date-pickers/DateCalendar";
-import CardHeader from "@/src/components/CardHeader";
-import ResponsiveText from "@/src/components/ResponsiveText";
+
+import NoDataFound from "@/src/components/NoDataFound";
+import Button from "@/src/components/Button";
+import IconButton from "@/src/components/IconButton";
+import DynamicTab from "@/src/components/ui/DynamicTab";
+import Typography from "@/src/components/Typography";
 
 const RoomPage = () => {
   const navigate = useNavigate();
@@ -43,7 +52,14 @@ const RoomPage = () => {
   const [search, setSearch] = useState("");
   const { setRoomId } = useRoom();
   const [rooms, setRooms] = useState<Room[]>([]);
+  const [activeTab, setActiveTab] = useState("all");
 
+  const tabs = [
+    { id: "all", label: "All", icon: <ListChecks size={16} /> },
+    { id: "available", label: "Available", icon: <PlayCircle size={16} /> },
+    { id: "occupied", label: "Occupied", icon: <PauseCircle size={16} /> },
+    { id: "maintenance", label: "Maintenance", icon: <TimerOff size={16} /> },
+  ];
   // Filter and sort rooms dynamically
   const filteredRooms = rooms
     .filter((room) => {
@@ -116,31 +132,32 @@ const RoomPage = () => {
               minWidth: 240,
             }}
           >
-            <ResponsiveText type="title-small" weight="bold">Room Management</ResponsiveText>
+            <Typography.Header>
+              Room Management
+            </Typography.Header>
             <Button
               startDecorator={<Calendar />}
-              size="lg"
-              color="primary"
-              variant="soft"
+              colorScheme="secondary"
+              variant="solid"
               onClick={() => setCalendarOpen(true)}
-              sx={{ width: { xs: "100%", sm: "auto" } }}
             >
               Calendar
             </Button>
           </div>
 
-          <Button
-            startDecorator={<Add />}
-            size="lg"
-            color="primary"
+          <IconButton
             onClick={() => setOpenModal(true)}
-            sx={{ width: { xs: "100%", sm: "auto" } }}
+            size="lg"
+            floating
+            floatPosition="bottom-right"
+            hoverEffect="rotate"
           >
-            Add Room
-          </Button>
+            <Add />
+          </IconButton>
 
           {/* Add Room Modal */}
           <AddRoomModal
+            business_name={businessDetails?.business_name}
             open={openModal}
             onClose={() => setOpenModal(false)}
             onRoomAdded={fetchRooms}
@@ -159,7 +176,7 @@ const RoomPage = () => {
               size="lg"
               variant="outlined"
             >
-              <CardHeader title="Calendar" color="white" />
+              <Typography.CardTitle>Calendar</Typography.CardTitle>
               <DialogTitle></DialogTitle>
               <LocalizationProvider dateAdapter={AdapterDayjs}>
                 <DateCalendar sx={{ width: "100%" }} />
@@ -167,17 +184,13 @@ const RoomPage = () => {
               <DialogActions>
                 <Button
                   fullWidth
-                  color="neutral"
+                  colorScheme="secondary"
                   variant="plain"
                   onClick={() => setCalendarOpen(false)}
                 >
                   Close
                 </Button>
-                <Button
-                  fullWidth
-                  color="primary"
-                  onClick={() => setCalendarOpen(false)}
-                >
+                <Button fullWidth onClick={() => setCalendarOpen(false)}>
                   Confirm
                 </Button>
               </DialogActions>
@@ -201,43 +214,82 @@ const RoomPage = () => {
           />
         </Container>
 
-        {/* Tabs Placeholder */}
-        <StatusFilter active={status} onChange={setStatus} />
+        {/* Tabs */}
+        <DynamicTab
+          tabs={tabs}
+          activeTabId={activeTab}
+          onChange={(tabId) => {
+            setActiveTab(String(tabId));
+            setStatus(
+              tabId === "all"
+                ? "All"
+                : tabId === "available"
+                ? "Available"
+                : tabId === "occupied"
+                ? "Occupied"
+                : tabId === "maintenance"
+                ? "Maintenance"
+                : "All"
+            );
+          }}
+        />
       </Container>
 
       <Container background="transparent" padding="0">
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fill,minmax(280px,1fr))",
-            gap: "1rem",
-          }}
-        >
-          {filteredRooms.map((room) => (
-            <RoomCard
-              roomType={room.room_type!}
-              capacity={room.capacity}
-              onDeleted={() => fetchRooms()}
-              id={room.id}
-              key={room.id}
-              image={room.room_image || placeholderImage}
-              status={room.status!}
-              floor={room.floor!}
-              roomNumber={room.room_number!}
-              type={room.room_type!}
-              price={room.room_price!}
-              guests={2}
-              amenities={[]}
-              onUpdate={() => {
-                fetchRooms();
-              }}
-              onClick={async () => {
-                setRoomId(room.id); // ensure stored
-                navigate("/business/room-profile");
-              }}
-            />
-          ))}
-        </div>
+        {rooms.length === 0 ? (
+          <NoDataFound
+            icon="database"
+            title="No Room Listed"
+            message="No rooms yet. Add your first room above."
+          >
+            <Button
+              startDecorator={<Add />}
+              size="lg"
+              onClick={() => setOpenModal(true)}
+            >
+              Add Room
+            </Button>
+          </NoDataFound>
+        ) : filteredRooms.length === 0 && search.trim() !== "" ? (
+          <NoDataFound
+            icon="search"
+            title="No Results Found"
+            message={`No rooms match "${search}". Try a different search term.`}
+          />
+        ) : (
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fill,minmax(280px,1fr))",
+              gap: "1rem",
+            }}
+          >
+            {filteredRooms.map((room) => (
+              <RoomCard
+                roomType={room.room_type!}
+                capacity={room.capacity}
+                onDeleted={() => fetchRooms()}
+                id={room.id}
+                key={room.id}
+                image={room.room_image || placeholderImage}
+                status={room.status!}
+                floor={room.floor!}
+                roomNumber={room.room_number!}
+                type={room.room_type!}
+                price={room.room_price!}
+                room_size={room.room_size!}
+                amenities={[]}
+                onUpdate={() => {
+                  fetchRooms();
+                }}
+                onClick={async () => {
+                  setRoomId(room.id); // ensure stored
+                  navigate("/business/room-profile");
+                }}
+              />
+            ))}
+          </div>
+        )}
       </Container>
     </PageContainer>
   );

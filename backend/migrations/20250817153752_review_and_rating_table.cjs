@@ -1,6 +1,17 @@
 // migrations/20250817124500_create_review_and_reply.js
-exports.up = function (knex) {
-  return knex.schema
+
+const {
+  createReviewAndRatingTable,
+  dropReviewAndRatingTable,
+} = require("../procedures/feedback/reviewAndRatingsProcedures");
+
+const {
+  createReplyProcedures,
+  dropReplyProcedures,
+} = require("../procedures/feedback/replyProcedures"); 
+
+exports.up = async function (knex) {
+  await knex.schema
     .createTable("review_and_rating", (table) => {
       table.uuid("id").primary().defaultTo(knex.raw("(UUID())"));
       table
@@ -30,12 +41,19 @@ exports.up = function (knex) {
         .inTable("review_and_rating")
         .onDelete("CASCADE");
       table.text("message").notNullable();
+      table.uuid("responder_id").notNullable();
       table.timestamp("created_at").defaultTo(knex.fn.now()).notNullable();
     });
+
+      await createReviewAndRatingTable(knex);
+      await createReplyProcedures(knex);
+
 };
 
-exports.down = function (knex) {
-  return knex.schema
+exports.down = async function (knex) {
+  await knex.schema
     .dropTableIfExists("reply")
     .dropTableIfExists("review_and_rating");
+  await dropReviewAndRatingTable(knex);
+  await dropReplyProcedures(knex);
 };

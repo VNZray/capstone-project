@@ -2,7 +2,7 @@ import React from "react";
 import { FormControl, FormLabel, Button } from "@mui/joy";
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import { UploadIcon } from "lucide-react";
-import Text from "@/src/components/Text";
+import Typography from "@/src/components/Typography";
 import type { Business } from "@/src/types/Business";
 import { supabase } from "@/src/lib/supabase";
 
@@ -96,27 +96,12 @@ const Step4ImageUpload: React.FC<Props> = ({ data, setData }) => {
             marginBottom: 20,
             paddingTop: 4
           }}>
-            <Text variant="label" color="gray" style={{
-              fontSize: 20,
-              fontWeight: 700,
-              lineHeight: 1.3,
-              display: 'block',
-              marginBottom: 8,
-              color: '#111827'
-            }}>
+            <Typography.Label size="lg" sx={{ color: "#111827", mb: 1 }}>
               Photos
-            </Text>
-            <Text color="gray" style={{
-              fontSize: 15,
-              fontWeight: 400,
-              opacity: 0.75,
-              display: 'block',
-              maxWidth: '500px',
-              margin: '0 auto',
-              color: '#6b7280'
-            }}>
+            </Typography.Label>
+            <Typography.Body size="xs" sx={{ color: "#6b7280" }}>
               Upload a photo of your business
-            </Text>
+            </Typography.Body>
           </div>
           <div style={{ display: 'flex', justifyContent: 'center' }}>
             <div style={{ width: '100%', maxWidth: '520px', padding: '0 8px', display: 'flex', flexDirection: 'column', gap: 12 }}>

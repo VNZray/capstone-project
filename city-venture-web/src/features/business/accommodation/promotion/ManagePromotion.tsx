@@ -1,15 +1,24 @@
 import Container from "@/src/components/Container";
 import PageContainer from "@/src/components/PageContainer";
-import Text from "@/src/components/Text";
+// Removed unused import 'Text'
+import NoDataFound from "@/src/components/NoDataFound";
 import { Add } from "@mui/icons-material";
-import { Button, Input } from "@mui/joy";
-import { Search } from "lucide-react";
-import StatusFilter from "./components/StatusFilter";
+import { Input } from "@mui/joy";
+import {
+  ListChecks,
+  PauseCircle,
+  PlayCircle,
+  Search,
+  TimerOff,
+} from "lucide-react";
 import PromoCard from "./components/PromoCard";
 import type { PromoStatus } from "./components/PromoCard";
-import AddPromoModal from "./components/AddPromoModal";
+// import AddPromoModal from "./components/AddPromoModal"; // disabled: use full Promotion Form page instead
 import { useMemo, useState } from "react";
-import ResponsiveText from "@/src/components/ResponsiveText";
+import Typography from "@/src/components/Typography";
+import { useNavigate } from "react-router-dom";
+import DynamicTab from "@/src/components/ui/DynamicTab";
+import IconButton from "@/src/components/IconButton";
 
 type Status = "All" | "Active" | "Paused" | "Expired";
 
@@ -78,7 +87,8 @@ const initialPromos: StaticPromo[] = [
   {
     id: "promo_4",
     title: "Trial Access Lounge",
-    description: "Get free trial access to premium lounge for first-time guests.",
+    description:
+      "Get free trial access to premium lounge for first-time guests.",
     startDate: new Date(Date.now() - 1000 * 60 * 60 * 24 * 1).toISOString(),
     endDate: new Date(Date.now() + 1000 * 60 * 60 * 24 * 5).toISOString(),
     promoType: "FREE_TRIAL",
@@ -93,30 +103,38 @@ const initialPromos: StaticPromo[] = [
 const ManagePromotion = () => {
   const [status, setStatus] = useState<Status>("All");
   const [query, setQuery] = useState("");
-  const [promos, setPromos] = useState<StaticPromo[]>(initialPromos);
-  const [addOpen, setAddOpen] = useState(false);
+  const [promos] = useState<StaticPromo[]>(initialPromos);
+  const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState("all");
 
-  const handlePromoAdded = () => {
-    // For demonstration append a synthetic promo (would replace with API response)
-    setPromos((prev) => [
-      {
-        id: `promo_${Date.now()}`,
-        title: "New Promotion",
-        description: "Recently added promotion placeholder.",
-        startDate: new Date().toISOString().slice(0,10),
-        endDate: new Date(Date.now()+ 1000*60*60*24*7).toISOString().slice(0,10),
-        promoType: "DISCOUNT",
-        discountValue: 10,
-        status: "ACTIVE",
-        usageLimit: 100,
-        usedCount: 0,
-        appliesToAll: false,
-        roomIds: ["room_5", "room_1"],
-      },
-      ...prev,
-    ]);
-    setAddOpen(false);
-  };
+  const tabs = [
+    { id: "all", label: "All", icon: <ListChecks size={16} /> },
+    { id: "active", label: "Active", icon: <PlayCircle size={16} /> },
+    { id: "paused", label: "Paused", icon: <PauseCircle size={16} /> },
+    { id: "expired", label: "Expired", icon: <TimerOff size={16} /> },
+  ];
+  // const [addOpen, setAddOpen] = useState(false);
+  // const handlePromoAdded = () => {
+  //   // For demonstration append a synthetic promo (would replace with API response)
+  //   setPromos((prev) => [
+  //     {
+  //       id: `promo_${Date.now()}`,
+  //       title: "New Promotion",
+  //       description: "Recently added promotion placeholder.",
+  //       startDate: new Date().toISOString().slice(0,10),
+  //       endDate: new Date(Date.now()+ 1000*60*60*24*7).toISOString().slice(0,10),
+  //       promoType: "DISCOUNT",
+  //       discountValue: 10,
+  //       status: "ACTIVE",
+  //       usageLimit: 100,
+  //       usedCount: 0,
+  //       appliesToAll: false,
+  //       roomIds: ["room_5", "room_1"],
+  //     },
+  //     ...prev,
+  //   ]);
+  //   setAddOpen(false);
+  // };
 
   const filteredPromos = useMemo(() => {
     return promos.filter((p) => {
@@ -125,7 +143,8 @@ const ManagePromotion = () => {
         if (status === "Paused" && p.status !== "PAUSED") return false;
         if (status === "Expired" && p.status !== "EXPIRED") return false;
       }
-      if (query && !p.title.toLowerCase().includes(query.toLowerCase())) return false;
+      if (query && !p.title.toLowerCase().includes(query.toLowerCase()))
+        return false;
       return true;
     });
   }, [status, query, promos]);
@@ -149,18 +168,20 @@ const ManagePromotion = () => {
               minWidth: 240,
             }}
           >
-            <ResponsiveText type="title-small" weight="bold">Manage Promotion</ResponsiveText>
+            <Typography.Header>
+              Manage Promotion
+            </Typography.Header>
           </div>
 
-          <Button
-            startDecorator={<Add />}
+          <IconButton
+            onClick={() => navigate("/business/create-promotion")}
             size="lg"
-            color="primary"
-            onClick={() => setAddOpen(true)}
-            sx={{ width: { xs: "100%", sm: "auto" } }}
+            floating
+            floatPosition="bottom-right"
+            hoverEffect="rotate"
           >
-            Create Promo
-          </Button>
+            <Add />
+          </IconButton>
         </Container>
 
         {/* Search + Filter */}
@@ -180,11 +201,41 @@ const ManagePromotion = () => {
           />
         </Container>
 
-        <StatusFilter active={status} onChange={setStatus} />
+        {/* Tabs */}
+        <DynamicTab
+          tabs={tabs}
+          activeTabId={activeTab}
+          onChange={(tabId) => {
+            setActiveTab(String(tabId));
+            setStatus(
+              tabId === "all"
+                ? "All"
+                : tabId === "active"
+                ? "Active"
+                : tabId === "paused"
+                ? "Paused"
+                : tabId === "expired"
+                ? "Expired"
+                : "All"
+            );
+          }}
+        />
       </Container>
 
-      
-        {/* Promo cards grid */}
+      {/* No Data / No Search Results / Promo Cards */}
+      {promos.length === 0 ? (
+        <NoDataFound
+          icon={"database"}
+          title={"No Promotions"}
+          message={"No promotions found. Create your first promotion to attract more guests."}
+        />
+      ) : filteredPromos.length === 0 ? (
+        <NoDataFound
+          icon={"search"}
+          title={"No Search Results"}
+          message={`No promotions match "${query}". Try a different search term or filter.`}
+        />
+      ) : (
         <div
           style={{
             display: "grid",
@@ -211,21 +262,22 @@ const ManagePromotion = () => {
               roomCount={p.appliesToAll ? undefined : p.roomIds?.length || 0}
               onEdit={(id) => console.log("Edit", id)}
               onDelete={(id) => console.log("Delete", id)}
-              onStatusChange={(id, next) => console.log("Status change", id, next)}
+              onStatusChange={(id, next) =>
+                console.log("Status change", id, next)
+              }
               onClick={(id) => console.log("Open details", id)}
             />
           ))}
-          {filteredPromos.length === 0 && (
-            <Text variant="paragraph" style={{ opacity: 0.6 }}>
-              No promotions match your filters.
-            </Text>
-          )}
         </div>
+      )}
+      {/** AddPromoModal removed in favor of full Promotion Form navigation */}
+      {/**
       <AddPromoModal
         open={addOpen}
         onClose={() => setAddOpen(false)}
         onAdded={handlePromoAdded}
       />
+      */}
     </PageContainer>
   );
 };

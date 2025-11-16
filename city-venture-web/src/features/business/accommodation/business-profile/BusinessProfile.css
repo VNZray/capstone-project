@@ -302,6 +302,8 @@
   border-radius: 16px;
   overflow: hidden;
   isolation: isolate;
+    background-color: #000;
+
 }
 
 .bp-hero__bg {

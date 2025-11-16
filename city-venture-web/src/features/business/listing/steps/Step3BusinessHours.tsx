@@ -1,7 +1,7 @@
 import React from "react";
-import { FormControl, FormLabel, Input, Typography } from "@mui/joy";
+import { FormControl, FormLabel, Input } from "@mui/joy";
 import { Switch } from "@mui/material";
-import Text from "@/src/components/Text";
+import Typography from "@/src/components/Typography";
 import type { Business, BusinessHours } from "@/src/types/Business";
 
 type Props = {
@@ -61,27 +61,12 @@ const Step3BusinessHours: React.FC<Props> = ({ businessHours, setBusinessHours }
             marginBottom: 20,
             paddingTop: 4
           }}>
-            <Text variant="label" color="gray" style={{
-              fontSize: 20,
-              fontWeight: 700,
-              lineHeight: 1.3,
-              display: 'block',
-              marginBottom: 8,
-              color: '#111827'
-            }}>
+            <Typography.Label size="lg" sx={{ mb: 1, color: "#111827" }}>
               Business Hours
-            </Text>
-            <Text color="gray" style={{
-              fontSize: 15,
-              fontWeight: 400,
-              opacity: 0.75,
-              display: 'block',
-              maxWidth: '500px',
-              margin: '0 auto',
-              color: '#6b7280'
-            }}>
+            </Typography.Label>
+            <Typography.Body size="xs" sx={{ color: "#6b7280" }}>
               When is your business open for customers?
-            </Text>
+            </Typography.Body>
           </div>
 
           <div style={{ display: "flex", flexDirection: "column", gap: 12, padding: '0 8px' }}>
@@ -90,7 +75,7 @@ const Step3BusinessHours: React.FC<Props> = ({ businessHours, setBusinessHours }
               <div className="hoursGrid">
                 {businessHours.map((hour, index) => (
                   <div key={`${hour.day_of_week}-${index}`} className="hoursItem">
-                    <Typography level="body-sm" className="hoursDay">{hour.day_of_week}</Typography>
+                    <Typography.Label size="sm" className="hoursDay">{hour.day_of_week}</Typography.Label>
                     <Input
                       size="sm"
                       type="time"
@@ -112,7 +97,7 @@ const Step3BusinessHours: React.FC<Props> = ({ businessHours, setBusinessHours }
                         '&:focus-within': hour.is_open ? { backgroundColor: '#ffffff', borderColor: 'var(--joy-palette-primary-500)', boxShadow: '0 0 0 3px rgba(25, 118, 210, 0.1)' } : {},
                       }}
                     />
-                    <Typography level="body-sm" className="hoursSep">to</Typography>
+                    <Typography.Body size="sm" className="hoursSep">to</Typography.Body>
                     <Input
                       size="sm"
                       type="time"
@@ -135,9 +120,12 @@ const Step3BusinessHours: React.FC<Props> = ({ businessHours, setBusinessHours }
                       }}
                     />
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6, justifyContent: 'flex-end' }}>
-                      <Typography level="body-sm" sx={{ fontSize: 12, color: hour.is_open ? '#22c55e' : '#ef4444', fontWeight: 600 }}>
+                      <Typography.Label 
+                        size="xs" 
+                        sx={{ color: hour.is_open ? '#22c55e' : '#ef4444' }}
+                      >
                         {hour.is_open ? 'Open' : 'Closed'}
-                      </Typography>
+                      </Typography.Label>
                       <Switch
                         size="small"
                         checked={hour.is_open}

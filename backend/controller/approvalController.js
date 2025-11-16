@@ -28,13 +28,25 @@ export const getPendingTouristSpots = async (req, res) => {
     const [data] = await db.query("CALL GetPendingTouristSpots()");
     const rows = data[0] || [];
     const cats = data[1] || [];
+    const scheds = data[2] || [];
     const catMap = new Map();
     for (const c of cats) {
       if (!catMap.has(c.tourist_spot_id)) catMap.set(c.tourist_spot_id, []);
       catMap.get(c.tourist_spot_id).push({ id: c.id, category: c.category, type_id: c.type_id });
     }
+    const schedMap = new Map();
+    for (const s of scheds) {
+      if (!schedMap.has(s.tourist_spot_id)) schedMap.set(s.tourist_spot_id, []);
+      schedMap.get(s.tourist_spot_id).push({
+        day_of_week: Number(s.day_of_week),
+        is_closed: Boolean(s.is_closed),
+        open_time: s.open_time,
+        close_time: s.close_time,
+      });
+    }
     for (const row of rows) {
       row.categories = catMap.get(row.id) || [];
+      row.schedules = schedMap.get(row.id) || [];
     }
     res.json({ success: true, data: rows, message: "Pending tourist spots retrieved successfully" });
   } catch (error) {

@@ -1,11 +1,16 @@
-import Text from "@/src/components/Text";
+import PageContainer from "@/src/components/PageContainer";
+import Typography from "@/src/components/Typography";
+import { useAuth } from "@/src/context/AuthContext";
 
-const Profile = () => {
+const OwnerProfile = () => {
+  const { user } = useAuth();
   return (
-    <>
-      <Text variant="title">Profile Page</Text>
-    </>
+    <PageContainer>
+      <Typography.Header>
+        {user?.first_name} {user?.last_name}
+      </Typography.Header>
+    </PageContainer>
   );
 };
 
-export default Profile;
+export default OwnerProfile;

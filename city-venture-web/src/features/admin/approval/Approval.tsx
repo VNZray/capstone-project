@@ -1,11 +1,531 @@
-import ApprovalDashboard from "@/src/components/Admin/approval/ApprovalDashboard";
+import React, { useEffect, useMemo, useState } from "react";
+import { apiService } from "@/src/utils/api";
+import ApprovalTable from "./components/ApprovalTable";
+import OverviewCard from "./components/OverviewCard";
+import ViewModal from "./components/ViewModal";
+import NavCard from "./components/NavCard";
+import { Box, Divider, Grid, IconButton, CircularProgress } from "@mui/joy";
+import RefreshRoundedIcon from "@mui/icons-material/RefreshRounded";
+import PlaceRoundedIcon from "@mui/icons-material/PlaceRounded";
+import EventRoundedIcon from "@mui/icons-material/EventRounded";
+import BusinessRoundedIcon from "@mui/icons-material/BusinessRounded";
+import HotelRoundedIcon from "@mui/icons-material/HotelRounded";
+import DashboardRoundedIcon from "@mui/icons-material/DashboardRounded";
 
-const Approval: React.FC = () => {
+import type { EntityType } from "@/src/types/approval";
+import Container from "@/src/components/Container";
+import PageContainer from "@/src/components/PageContainer";
+import Typography from "@/src/components/Typography";
+import SearchBar from "@/src/components/SearchBar";
+import { colors } from "@/src/utils/Colors";
+
+interface PendingItem {
+  id: string;
+  name: string;
+  description?: string | null;
+  type?: string | null;
+  created_at?: string | null;
+  province?: string | null;
+  municipality?: string | null;
+  barangay?: string | null;
+  contact_phone?: string | null;
+  website?: string | null;
+  entry_fee?: number | null;
+  action_type: "new" | "edit";
+  entityType?: EntityType;
+  [k: string]: unknown;
+}
+
+interface PendingEdit extends PendingItem {
+  tourist_spot_id?: string | number;
+  submitted_at?: string | null;
+  original_name?: string | null;
+  original_description?: string | null;
+  original_type?: string | null;
+  original_province?: string | null;
+  original_municipality?: string | null;
+  original_barangay?: string | null;
+  original_contact_phone?: string | null;
+  original_website?: string | null;
+  original_entry_fee?: number | null;
+  existingSpot?: Record<string, unknown> | null;
+}
+
+type TabType = EntityType | "overview";
+
+const makeMock = (prefix: string) => [
+  {
+    id: "1",
+    name: `${prefix} A`,
+    action_type: "new" as const,
+    submitted_at: "2024-01-15",
+    entityType: prefix.toLowerCase().includes("event")
+      ? ("events" as const)
+      : prefix.toLowerCase().includes("business")
+      ? ("businesses" as const)
+      : ("accommodations" as const),
+  },
+];
+
+const ApprovalDashboard: React.FC = () => {
+  const [pendingSpots, setPendingSpots] = useState<PendingItem[]>([]);
+  const [pendingEdits, setPendingEdits] = useState<PendingEdit[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<TabType>("overview");
+  const [selectedItem, setSelectedItem] = useState<Record<
+    string,
+    unknown
+  > | null>(null);
+  const [processingId, setProcessingId] = useState<string | null>(null);
+  const [query, setQuery] = useState("");
+
+  useEffect(() => {
+    (async () => {
+      setLoading(true);
+      try {
+        const [spotsData, editsData] = await Promise.all([
+          apiService.getPendingItems("tourist_spots"),
+          apiService.getPendingEditsByEntity("tourist_spots"),
+        ]);
+
+        const spots = (spotsData as unknown[] | null) || [];
+        const edits = (editsData as unknown[] | null) || [];
+
+        const transformedSpots: PendingItem[] = spots.map((s) => {
+          const rec = (s as Record<string, unknown>) || {};
+          return {
+            ...rec,
+            id: String(rec["id"] ?? ""),
+            name: String(rec["name"] ?? rec["title"] ?? ""),
+            description: (rec["description"] as string) ?? null,
+            action_type: "new",
+            entityType: "tourist_spots",
+          } as PendingItem;
+        });
+
+        const transformedEditsBase = edits.map((e) => {
+          const rec = (e as Record<string, unknown>) || {};
+          return {
+            ...rec,
+            id: String(rec["id"] ?? rec["request_id"] ?? ""),
+            tourist_spot_id: rec["tourist_spot_id"] ?? rec["spot_id"] ?? null,
+            name: String(rec["name"] ?? rec["new_name"] ?? ""),
+            description: (rec["description"] as string) ?? null,
+            province_id: rec["province_id"] ?? null,
+            municipality_id: rec["municipality_id"] ?? null,
+            barangay_id: rec["barangay_id"] ?? null,
+            contact_phone: (rec["contact_phone"] as string) ?? null,
+            website: (rec["website"] as string) ?? null,
+            entry_fee: (rec["entry_fee"] as number) ?? null,
+            submitted_at: (rec["submitted_at"] as string) ?? null,
+            action_type: "edit",
+            entityType: "tourist_spots",
+          } as Record<string, unknown>;
+        });
+
+        setPendingSpots(transformedSpots);
+
+        const spotById = new Map<string, Record<string, unknown>>();
+        for (const s of transformedSpots)
+          if (s && s.id)
+            spotById.set(String(s.id), s as Record<string, unknown>);
+
+        const enriched: PendingEdit[] = transformedEditsBase.map((edRec) => {
+          const ed = edRec as Record<string, unknown>;
+          const tourist_spot_id = ed["tourist_spot_id"] ?? ed["spot_id"];
+          const existing = tourist_spot_id
+            ? spotById.get(String(tourist_spot_id))
+            : undefined;
+
+          const fallbackExisting: Record<string, unknown> = {
+            name: ed["original_name"] ?? null,
+            description: ed["original_description"] ?? null,
+            type: ed["original_type"] ?? null,
+            province: ed["original_province"] ?? null,
+            municipality: ed["original_municipality"] ?? null,
+            barangay: ed["original_barangay"] ?? null,
+            contact_phone: ed["original_contact_phone"] ?? null,
+            website: ed["original_website"] ?? null,
+            entry_fee: ed["original_entry_fee"] ?? null,
+          };
+
+          const existingSpot = (existing ?? fallbackExisting) as Record<
+            string,
+            unknown
+          > | null;
+          const original_name = (existingSpot?.["name"] ?? null) as
+            | string
+            | null;
+          const original_description = (existingSpot?.["description"] ??
+            null) as string | null;
+          const original_type = (existingSpot?.["type"] ?? null) as
+            | string
+            | null;
+
+          return {
+            ...(ed as Record<string, unknown>),
+            id: String(ed["id"] ?? ed["request_id"] ?? ""),
+            name: String(
+              ed["name"] ?? original_name ?? existingSpot?.["name"] ?? ""
+            ),
+            original_name,
+            original_description,
+            original_type,
+            original_province: (ed["original_province"] ??
+              existingSpot?.["province"] ??
+              null) as string | null,
+            original_municipality: (ed["original_municipality"] ??
+              existingSpot?.["municipality"] ??
+              null) as string | null,
+            original_barangay: (ed["original_barangay"] ??
+              existingSpot?.["barangay"] ??
+              null) as string | null,
+            original_contact_phone: (ed["original_contact_phone"] ??
+              existingSpot?.["contact_phone"] ??
+              null) as string | null,
+            original_website: (ed["original_website"] ??
+              existingSpot?.["website"] ??
+              null) as string | null,
+            original_entry_fee: (ed["original_entry_fee"] ??
+              existingSpot?.["entry_fee"] ??
+              null) as number | null,
+            existingSpot: existingSpot ?? null,
+            action_type: "edit",
+            entityType: "tourist_spots",
+          } as PendingEdit;
+        });
+
+        setPendingEdits(enriched);
+      } catch (err) {
+        console.error("Error loading approval data:", err);
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, []);
+
+  const refresh = async () => {
+    setLoading(true);
+    try {
+      const [spotsData, editsData] = await Promise.all([
+        apiService.getPendingItems("tourist_spots"),
+        apiService.getPendingEditsByEntity("tourist_spots"),
+      ]);
+      const spotsArr = (spotsData as unknown[] | null) || [];
+      setPendingSpots(
+        spotsArr.map((s) => {
+          const rec = (s as Record<string, unknown>) || {};
+          return {
+            ...rec,
+            id: String(rec["id"] ?? ""),
+            name: String(rec["name"] ?? rec["title"] ?? ""),
+            description: (rec["description"] as string) ?? null,
+            action_type: "new",
+            entityType: "tourist_spots",
+          } as PendingItem;
+        })
+      );
+
+      const editsArr = (editsData as unknown[] | null) || [];
+      setPendingEdits(
+        editsArr.map((e) => {
+          const rec = (e as Record<string, unknown>) || {};
+          return {
+            ...rec,
+            id: String(rec["id"] ?? rec["request_id"] ?? ""),
+            name: String(rec["name"] ?? ""),
+            action_type: "edit",
+            entityType: "tourist_spots",
+          } as PendingEdit;
+        })
+      );
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAction = async (
+    id: string,
+    action: "approve" | "reject",
+    reason?: string
+  ) => {
+    setProcessingId(id);
+    try {
+      const items = [...pendingSpots, ...pendingEdits];
+      const item = items.find((i) => String(i.id) === String(id));
+      if (!item) return;
+
+      const entity =
+        ((item as Record<string, unknown>).entityType as
+          | EntityType
+          | undefined) || "tourist_spots";
+      if (item.action_type === "new") {
+        if (action === "approve") await apiService.approveNewEntity(entity, id);
+        else await apiService.rejectNewEntity(entity, id, reason ?? "");
+      } else {
+        if (action === "approve")
+          await apiService.approveEditEntity(entity, id);
+        else await apiService.rejectEditEntity(entity, id, reason ?? "");
+      }
+
+      window.alert(
+        `${action === "approve" ? "Approved" : "Rejected"} successfully!`
+      );
+      await refresh();
+    } catch (err) {
+      console.error(err);
+      window.alert(`Error performing ${action}. Please try again.`);
+    } finally {
+      setProcessingId(null);
+    }
+  };
+
+  const handleApprove = (id: string) => handleAction(id, "approve");
+  const handleReject = (id: string) => {
+    const r = window.prompt("Please provide a reason for rejection:");
+    if (r === null) return;
+    return handleAction(id, "reject", r || "");
+  };
+
+  const handleView = (item: Record<string, unknown>) => setSelectedItem(item);
+  const closeModal = () => setSelectedItem(null);
+
+  const mockEvents = makeMock("Event");
+  const mockBusinesses = makeMock("Business");
+  const mockAccommodations = makeMock("Accommodation");
+
+  const allPendingItems = [...pendingSpots, ...pendingEdits];
+  const allItems: PendingItem[] = allPendingItems as PendingItem[];
+
+  const filteredItems = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return allItems;
+    return allItems.filter((i) =>
+      String(i.name ?? "")
+        .toLowerCase()
+        .includes(q)
+    );
+  }, [allItems, query]);
+
+  if (loading)
+    return (
+      <PageContainer padding={20}>
+        <Container
+          align="center"
+          justify="center"
+          padding="4rem"
+          style={{ minHeight: "60vh" }}
+        >
+          <CircularProgress size="lg" />
+          <Typography.Body size="sm" sx={{ marginTop: "1rem" }}>
+            Loading approval data...
+          </Typography.Body>
+        </Container>
+      </PageContainer>
+    );
+
   return (
-    <>
-      <ApprovalDashboard />
-    </>
+    <PageContainer padding={20} style={{ height: "100vh" }}>
+      {/* Header Section */}
+      <Container
+        direction="row"
+        justify="space-between"
+        align="center"
+        padding="0"
+        gap="1rem"
+        style={{ marginBottom: "2rem" }}
+      >
+        <Container padding="0" gap="0.5rem">
+          <Typography.Header size="lg" color="primary">
+            Content Approvals
+          </Typography.Header>
+          <Typography.Body size="sm" color="default">
+            Review and manage submissions from the public and partners
+          </Typography.Body>
+        </Container>
+        <IconButton
+          size="sm"
+          variant="soft"
+          color="neutral"
+          onClick={refresh}
+          aria-label="Refresh"
+          sx={{
+            "&:hover": {
+              backgroundColor: colors.primary + "20",
+            },
+          }}
+        >
+          <RefreshRoundedIcon />
+        </IconButton>
+      </Container>
+
+      {/* Navigation Cards */}
+      <Grid container spacing={2}>
+        {(
+          [
+            {
+              key: "overview",
+              label: "Overview",
+              count: allItems.length,
+              icon: <DashboardRoundedIcon />,
+              tab: "overview" as TabType,
+            },
+            {
+              key: "tourist_spots",
+              label: "Tourist Spots",
+              count: allItems.length,
+              icon: <PlaceRoundedIcon />,
+              tab: "tourist_spots" as TabType,
+            },
+            {
+              key: "events",
+              label: "Events",
+              count: mockEvents.length,
+              icon: <EventRoundedIcon />,
+              tab: "events" as TabType,
+            },
+            {
+              key: "businesses",
+              label: "Businesses",
+              count: mockBusinesses.length,
+              icon: <BusinessRoundedIcon />,
+              tab: "businesses" as TabType,
+            },
+            {
+              key: "accommodations",
+              label: "Accommodations",
+              count: mockAccommodations.length,
+              icon: <HotelRoundedIcon />,
+              tab: "accommodations" as TabType,
+            },
+          ] as const
+        ).map((n) => (
+          <Grid key={n.key} xs={12} sm={6} md={6} lg={6} xl={2.4}>
+            <NavCard
+              label={n.label}
+              count={n.count}
+              icon={n.icon}
+              active={activeTab === n.tab}
+              onClick={() => setActiveTab(n.tab)}
+            />
+          </Grid>
+        ))}
+      </Grid>
+
+      <Divider />
+
+      {/* Content Sections */}
+      {activeTab === "overview" && (
+        <Grid container spacing={2}>
+          <Grid xs={12} md={6} lg={3}>
+            <OverviewCard
+              title="Tourist Spots"
+              count={allItems.length}
+              icon="📍"
+              items={allItems}
+              onApprove={handleApprove}
+              onView={handleView}
+            />
+          </Grid>
+          <Grid xs={12} md={6} lg={3}>
+            <OverviewCard
+              title="Events"
+              count={mockEvents.length}
+              icon="📅"
+              items={mockEvents}
+            />
+          </Grid>
+          <Grid xs={12} md={6} lg={3}>
+            <OverviewCard
+              title="Businesses"
+              count={mockBusinesses.length}
+              icon="🏢"
+              items={mockBusinesses}
+            />
+          </Grid>
+          <Grid xs={12} md={6} lg={3}>
+            <OverviewCard
+              title="Accommodations"
+              count={mockAccommodations.length}
+              icon="🛏️"
+              items={mockAccommodations}
+            />
+          </Grid>
+        </Grid>
+      )}
+
+      {activeTab === "tourist_spots" && (
+        <>
+          <Container
+            padding="0"
+            style={{ marginBottom: "1.5rem", maxWidth: "500px" }}
+          >
+            <SearchBar
+              value={query}
+              onChangeText={setQuery}
+              onSearch={() => {}}
+              placeholder="Search tourist spots..."
+            />
+          </Container>
+          <ApprovalTable
+            items={filteredItems.map((i) => ({
+              ...i,
+              entityType: "tourist_spots",
+            }))}
+            contentType="tourist spots"
+            onView={handleView}
+            onApprove={handleApprove}
+            onReject={handleReject}
+            processingId={processingId}
+          />
+        </>
+      )}
+
+      {activeTab === "events" && (
+        <ApprovalTable
+          items={mockEvents}
+          contentType="events"
+          onView={handleView}
+          onApprove={() => alert("Events approval not yet implemented")}
+          onReject={() => alert("Events rejection not yet implemented")}
+          processingId={processingId}
+        />
+      )}
+
+      {activeTab === "businesses" && (
+        <ApprovalTable
+          items={mockBusinesses}
+          contentType="businesses"
+          onView={handleView}
+          onApprove={() => alert("Businesses approval not yet implemented")}
+          onReject={() => alert("Businesses rejection not yet implemented")}
+          processingId={processingId}
+        />
+      )}
+
+      {activeTab === "accommodations" && (
+        <ApprovalTable
+          items={mockAccommodations}
+          contentType="accommodations"
+          onView={handleView}
+          onApprove={() => alert("Accommodations approval not yet implemented")}
+          onReject={() => alert("Accommodations rejection not yet implemented")}
+          processingId={processingId}
+        />
+      )}
+
+      <ViewModal
+        isOpen={!!selectedItem}
+        onClose={closeModal}
+        item={selectedItem ?? {}}
+        onApprove={handleApprove}
+        onReject={handleReject}
+        processingId={processingId}
+      />
+    </PageContainer>
   );
 };
 
-export default Approval;
+export default ApprovalDashboard;
