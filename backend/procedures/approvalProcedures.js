@@ -79,6 +79,18 @@ export async function createTouristSpotApprovalProcedures(knex) {
         SELECT id FROM tourist_spots WHERE spot_status = 'pending'
       )
       ORDER BY c.category ASC;
+
+      SELECT 
+        s.tourist_spot_id,
+        s.day_of_week,
+        s.open_time,
+        s.close_time,
+        s.is_closed
+      FROM tourist_spot_schedules s
+      WHERE s.tourist_spot_id IN (
+        SELECT id FROM tourist_spots WHERE spot_status = 'pending'
+      )
+      ORDER BY s.tourist_spot_id, s.day_of_week ASC;
     END;
   `);
   await knex.raw(`

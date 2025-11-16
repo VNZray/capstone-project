@@ -2,21 +2,19 @@ import React, { useState } from "react";
 import { NavLink } from "react-router-dom";
 import {
   LayoutDashboard,
-  CheckCircle2,
+  CheckCircle,
   BedDouble,
-  CalendarDays,
+  Calendar,
   Store,
   MapPin,
   Briefcase,
-  BarChart2,
-  User2,
-  Users2,
-  Settings2,
+  BarChart,
+  User,
   ChevronDown,
   ChevronRight,
   LogOut,
   X,
-  Settings,
+  Users,
 } from "lucide-react";
 import "@/src/components/Admin/Sidebar.css";
 import logo from "@/src/assets/images/light-logo.png";
@@ -30,10 +28,7 @@ interface SidebarProps {
   onClose?: () => void;
 }
 
-export default function Sidebar({
-  isOpen = false,
-  onClose,
-}: SidebarProps): React.ReactElement {
+export default function Sidebar({ isOpen = false, onClose }: SidebarProps): React.ReactElement {
   const { canAny } = useRBAC();
   return (
     <aside className={`sidebar ${isOpen ? "open" : ""}`}>
@@ -68,86 +63,71 @@ export default function Sidebar({
         <div
           style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}
         >
-          {canAny("view_reports") && (
-            <NavItem
-              to="/tourism/dashboard"
-              label="Dashboard"
-              icon={<LayoutDashboard size={18} />} // Dashboard icon
-              onClick={onClose}
-            />
-          )}
-          {canAny(
-            "approve_tourist_spot",
-            "approve_business",
-            "approve_event",
-            "approve_shop"
-          ) && (
+          <NavItem
+            to="/tourism/dashboard"
+            label="Dashboard"
+            icon={<LayoutDashboard size={18} />}
+            onClick={onClose}
+          />
+          {canAny('approve_business','approve_event','approve_tourist_spot','approve_shop') && (
             <NavItem
               to="/tourism/approval"
               label="Approval"
-              icon={<CheckCircle2 size={18} />} // Approval icon
+              icon={<CheckCircle size={18} />}
               onClick={onClose}
             />
           )}
           {/* Dropdown for Services */}
-          {canAny("manage_services", "view_all_profiles") && (
-            <DropdownNavItem label="Services" icon={<Briefcase size={18} />}>
-              <NavItem
-                to="/tourism/services/tourist-spot"
-                label="Tourist Spot"
-                icon={<MapPin size={18} />} // MapPin for Tourist Spot
-                onClick={onClose}
-              />
-              <NavItem
-                to="/tourism/services/event"
-                label="Event"
-                icon={<CalendarDays size={18} />} // CalendarDays for Event
-                onClick={onClose}
-              />
-              <NavItem
-                to="/tourism/services/accommodation"
-                label="Accommodation"
-                icon={<BedDouble size={18} />} // BedDouble for Accommodation
-                onClick={onClose}
-              />
-              <NavItem
-                to="/tourism/services/shop"
-                label="Shop"
-                icon={<Store size={18} />} // Store for Shop
-                onClick={onClose}
-              />
-            </DropdownNavItem>
-          )}
-          {canAny("view_reports") && (
+          <DropdownNavItem label="Services" icon={<Briefcase size={18} />}>
             <NavItem
-              to="/tourism/reports"
-              label="Reports"
-              icon={<BarChart2 size={18} />} // BarChart2 for Reports
+              to="/tourism/services/tourist-spot"
+              label="Tourist Spot"
+              icon={<MapPin size={18} />}
+              onClick={onClose}
+            />
+            <NavItem
+              to="/tourism/services/event"
+              label="Event"
+              icon={<Calendar size={18} />}
+              onClick={onClose}
+            />
+            <NavItem
+              to="/tourism/services/accommodation"
+              label="Accommodation"
+              icon={<BedDouble size={18} />}
+              onClick={onClose}
+            />
+            <NavItem
+              to="/tourism/services/shop"
+              label="Shop"
+              icon={<Store size={18} />}
+              onClick={onClose}
+            />
+          </DropdownNavItem>
+          <NavItem
+            to="/tourism/reports"
+            label="Reports"
+            icon={<BarChart size={18} />}
+            onClick={onClose}
+          />
+          {canAny('manage_users', 'manage_tourism_staff') && (
+            <NavItem
+              to="/tourism/staff"
+              label="Manage Tourism Staff"
+              icon={<Users size={18} />}
               onClick={onClose}
             />
           )}
           <NavItem
             to="/tourism/profile"
             label="Profile"
-            icon={<User2 size={18} />} // User2 for Profile
-            onClick={onClose}
-          />
-          <NavItem
-            to="/tourism/users"
-            label="User Management"
-            icon={<Users2 size={18} />} // Users2 for User Management
-            onClick={onClose}
-          />
-          <NavItem
-            to="/tourism/settings"
-            label="Settings"
-            icon={<Settings size={18} />} // Settings2 for Settings
+            icon={<User size={18} />}
             onClick={onClose}
           />
         </div>
         <div>
           <NavItem
-            to={`tourism/login`}
+            to="/tourism/login"
             label="Log Out"
             icon={<LogOut size={18} />}
             onClick={onClose}
@@ -165,12 +145,7 @@ interface NavItemProps {
   onClick?: () => void;
 }
 
-function NavItem({
-  to,
-  label,
-  icon,
-  onClick,
-}: NavItemProps): React.ReactElement {
+function NavItem({ to, label, icon, onClick }: NavItemProps): React.ReactElement {
   return (
     <NavLink
       to={to}

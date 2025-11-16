@@ -59,6 +59,7 @@ import { BusinessProvider } from "../context/BusinessContext";
 import ReportDetailsScreen from "@/src/features/admin/report/ReportDetailsScreen";
 import AccommodationSubscription from "@/src/features/business/accommodation/subscription/Subscription";
 import ShopSubscription from "@/src/features/business/shop/subscription/Subscription";
+import TourismStaffManagement from "@/src/features/admin/tourism-staff/TourismStaffManagement";
 
 import Notification from "../features/business/accommodation/notfication/Notification";
 import AccommodationStaff from "../features/business/accommodation/Staff/ManageStaff";
@@ -76,7 +77,7 @@ export default function AppRoutes() {
   const business_type = "Accommodation";
 
   // Normalized role names as produced by AuthService
-  const TOURISM_ROLES = ["Admin", "Tourism Officer"];
+  const TOURISM_ROLES = ["Admin", "Tourism Officer"]; // Officer has restricted pages handled per-route
   const BUSINESS_ROLES = [
     "Business Owner",
     "Manager",
@@ -404,10 +405,11 @@ export default function AppRoutes() {
               </ProtectedRoute>
             }
           />
+          {/* Approval: Admin only */}
           <Route
             path={`${tourism}/approval`}
             element={
-              <ProtectedRoute requiredRoles={TOURISM_ROLES}>
+              <ProtectedRoute requiredRoles={["Admin"]}>
                 <Approval />
               </ProtectedRoute>
             }
@@ -417,6 +419,15 @@ export default function AppRoutes() {
             element={
               <ProtectedRoute requiredRoles={TOURISM_ROLES}>
                 <Report />
+              </ProtectedRoute>
+            }
+          />
+          {/* Manage Tourism Staff: Admin only */}
+          <Route
+            path={`${tourism}/staff`}
+            element={
+              <ProtectedRoute requiredRoles={["Admin"]}>
+                <TourismStaffManagement />
               </ProtectedRoute>
             }
           />

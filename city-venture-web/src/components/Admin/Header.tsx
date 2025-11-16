@@ -5,6 +5,8 @@ import { useNavigate, Link } from "react-router-dom";
 import Typography from "@/src/components/Typography";
 import { useAuth } from "@/src/context/AuthContext";
 import Button from "../Button";
+import ResponsiveText from "@/src/components/ResponsiveText";
+
 
 export default function Header(): React.JSX.Element {
   const location = useLocation();
@@ -48,6 +50,7 @@ export default function Header(): React.JSX.Element {
         </Link>
         <Button 
           variant="solid" 
+          colorScheme="primary"
           onClick={handleLogout}
           size="sm"
         >
