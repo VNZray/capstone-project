@@ -1,5 +1,10 @@
-exports.up = function (knex) {
-  return knex.schema.createTable("report", function (table) {
+const { 
+  createReportProcedures, 
+  dropReportProcedures 
+} = require("../procedures/reportProcedures");
+
+exports.up = async function (knex) {
+  await knex.schema.createTable("report", function (table) {
     table.uuid("id").primary().defaultTo(knex.raw("(UUID())")); // MariaDB's UUID()
     
     // Reporter information
@@ -23,8 +28,29 @@ exports.up = function (knex) {
     
     table.timestamps(true, true); // created_at, updated_at
   });
+
+  // Create stored procedures
+  console.log("Creating report stored procedures...");
+  try {
+    await createReportProcedures(knex);
+    console.log("✅ Report stored procedures created successfully");
+  } catch (error) {
+    console.error("❌ Error creating report stored procedures:", error);
+    throw error;
+  }
 };
 
-exports.down = function (knex) {
-  return knex.schema.dropTable("report");
+exports.down = async function (knex) {
+  // Drop stored procedures first
+  console.log("Dropping report stored procedures...");
+  try {
+    await dropReportProcedures(knex);
+    console.log("✅ Report stored procedures dropped successfully");
+  } catch (error) {
+    console.error("❌ Error dropping report stored procedures:", error);
+    throw error;
+  }
+
+  // Drop tables
+  await knex.schema.dropTable("report");
 };

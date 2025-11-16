@@ -32,6 +32,35 @@ export const validateUUID = (fieldName) => {
   };
 };
 
+export const validateUUIDArray = (fieldName, { minLength = 0 } = {}) => {
+  return (req, res, next) => {
+    const values = req.body[fieldName];
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+    if (!Array.isArray(values)) {
+      return res.status(400).json({
+        message: `${fieldName} must be an array`
+      });
+    }
+
+    if (values.length < minLength) {
+      return res.status(400).json({
+        message: `${fieldName} must contain at least ${minLength} item${minLength === 1 ? '' : 's'}`
+      });
+    }
+
+    const invalidIds = values.filter((value) => !uuidRegex.test(value));
+    if (invalidIds.length > 0) {
+      return res.status(400).json({
+        message: `Invalid UUID format in ${fieldName}`,
+        invalid: invalidIds
+      });
+    }
+
+    next();
+  };
+};
+
 export const validateRating = (req, res, next) => {
   const { rating } = req.body;
   
@@ -128,14 +157,15 @@ export const productCategoryValidation = [
 ];
 
 export const productValidation = [
-  validateRequiredFields(['business_id', 'product_category_id', 'name', 'price']),
+  validateRequiredFields(['business_id', 'category_ids', 'name', 'price']),
   validateUUID('business_id'),
-  validateUUID('product_category_id'),
+  validateUUIDArray('category_ids', { minLength: 1 }),
   validatePrice
 ];
 
+// Simplified discount validation (removed discount_type requirement)
 export const discountValidation = [
-  validateRequiredFields(['business_id', 'name', 'discount_type', 'discount_value', 'start_datetime']),
+  validateRequiredFields(['business_id', 'name', 'discount_value', 'start_datetime']),
   validateUUID('business_id'),
   validatePrice,
   validateDateRange,

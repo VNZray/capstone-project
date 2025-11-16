@@ -6,7 +6,8 @@
     "backend"
   ],
   "scripts": {
-    "start": "concurrently \"npm run dev -w city-venture-web\" \"npm run dev -w backend\""
+    "start": "concurrently \"npm run dev -w city-venture-web\" \"npm run dev -w backend\"",
+    "build": "npm run build -w city-venture-web && npm run build -w backend"
   },
   "devDependencies": {
     "concurrently": "^8.2.2",
