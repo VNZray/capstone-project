@@ -400,17 +400,19 @@ const OwnerProfile = () => {
                   onChange={handleProfileDataChange}
                 />
 
-                <Permits
-                  businesses={businesses}
-                  permits={permits}
-                  loadingPermits={loadingPermits}
-                  loadingBusinesses={loadingBusinesses}
-                  onUploadClick={handleUploadClick}
-                  onEditPermit={openEditPermit}
-                  onDeletePermit={handleDeletePermit}
-                  isPermitExpired={isPermitExpired}
-                  getPermitStatusColor={getPermitStatusColor}
-                />
+                {(user?.role_name === "Owner" || user?.role_name === 'Business Owner') && (
+                  <Permits
+                    businesses={businesses}
+                    permits={permits}
+                    loadingPermits={loadingPermits}
+                    loadingBusinesses={loadingBusinesses}
+                    onUploadClick={handleUploadClick}
+                    onEditPermit={openEditPermit}
+                    onDeletePermit={handleDeletePermit}
+                    isPermitExpired={isPermitExpired}
+                    getPermitStatusColor={getPermitStatusColor}
+                  />
+                )}
               </Stack>
             </Container>
           </Grid>
@@ -446,6 +448,7 @@ const OwnerProfile = () => {
         />
 
         {/* Permit Upload Modal */}
+
         <PermitModal
           open={showPermitModal}
           onClose={() => {
@@ -464,7 +467,11 @@ const OwnerProfile = () => {
             setPermitForm({ ...permitForm, [field]: value })
           }
           onFileUpload={(url, fileName) =>
-            setPermitForm({ ...permitForm, file_url: url, file_name: fileName })
+            setPermitForm({
+              ...permitForm,
+              file_url: url,
+              file_name: fileName,
+            })
           }
           onSubmit={handlePermitUpload}
         />

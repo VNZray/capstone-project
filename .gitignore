@@ -7,3 +7,6 @@ node_modules/
 .Hans-AI-Doc-Lib/
 .github/
 .vscode/
+capstone-project/city-venture/.env
+capstone-project/city-venture-web/.env
+city-venture-web/.env

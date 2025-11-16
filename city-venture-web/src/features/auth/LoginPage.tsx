@@ -1,20 +1,33 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import logo from "@/src/assets/images/logo.png";
 import "./styles/LoginStyle.css";
 import { useAuth } from "@/src/context/AuthContext"; // adjust path if needed
 import PageContainer from "@/src/components/PageContainer";
 import LoginForm from "./components/LoginForm";
 import { Divider } from "@mui/joy";
 import Typography from "@/src/components/Typography";
+type Role = "Tourist" | "Owner" | "Admin";
 
 const Login: React.FC = () => {
   const [email, setEmail] = useState("owner1@gmail.com");
   const [password, setPassword] = useState("owner123");
   const [loginError, setLoginError] = useState("");
   const navigate = useNavigate();
-  const { login, logout } = useAuth(); // from AuthProvider
+  const { login, user } = useAuth(); // from AuthProvider
   const [rememberMe, setRememberMe] = useState(false);
   const [loading, setLoading] = useState(false);
+
+  // Load saved credentials on mount
+  useEffect(() => {
+    const savedEmail = localStorage.getItem("rememberedEmail");
+    const savedPassword = localStorage.getItem("rememberedPassword");
+    if (savedEmail && savedPassword) {
+      setEmail(savedEmail);
+      setPassword(savedPassword);
+      setRememberMe(true);
+    }
+  }, []);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -27,6 +40,15 @@ const Login: React.FC = () => {
 
     try {
       const loggedInUser = await login(email, password, rememberMe);
+
+      // Save credentials if remember me is checked
+      if (rememberMe) {
+        localStorage.setItem("rememberedEmail", email);
+        localStorage.setItem("rememberedPassword", password);
+      } else {
+        localStorage.removeItem("rememberedEmail");
+        localStorage.removeItem("rememberedPassword");
+      }
 
       // Check if user is staff (not Business Owner) and redirect to dashboard
       const staffRoles = [
@@ -56,7 +78,6 @@ const Login: React.FC = () => {
         navigate("/business");
       } else {
         setLoginError("Access Denied");
-        logout();
       }
     } catch (err: unknown) {
       const anyErr = err as {
