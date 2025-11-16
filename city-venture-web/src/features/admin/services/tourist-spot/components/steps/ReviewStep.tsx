@@ -1,7 +1,7 @@
 import React from "react";
 import {
   Stack,
-  Typography,
+  Typography as JoyTypography,
   FormControl,
   FormLabel,
   Select,
@@ -10,7 +10,7 @@ import {
   Card,
   CardContent,
 } from "@mui/joy";
-import ResponsiveText from "@/src/components/ResponsiveText";
+import AppTypography from "@/src/components/Typography";
 import type { FormOption, TouristSpotFormData, DaySchedule } from "@/src/types/TouristSpot";
 
 interface ReviewStepProps {
@@ -38,7 +38,7 @@ const ReviewStep: React.FC<ReviewStepProps> = ({
 }) => {
   return (
     <Stack spacing={2}>
-      <ResponsiveText type="title-small" weight="semi-bold" color="#0A1B47">Review & Submit</ResponsiveText>
+      <AppTypography.Header size="sm" weight="semibold" sx={{ color: "#0A1B47" }}>Review & Submit</AppTypography.Header>
       {mode === "edit" && (
         <FormControl>
           <FormLabel>Status</FormLabel>
@@ -69,14 +69,14 @@ const ReviewStep: React.FC<ReviewStepProps> = ({
             <Card variant="outlined">
               <CardContent>
                 <Stack spacing={2}>
-                  <ResponsiveText type="label-medium" weight="semi-bold" color="#0A1B47">Basic Information</ResponsiveText>
-                  <Typography level="body-sm"><strong>Name:</strong> {formData.name}</Typography>
-                  <Typography level="body-sm"><strong>Description:</strong> {formData.description}</Typography>
-                  <Typography level="body-sm">
+                  <AppTypography.Label size="normal" weight="semibold" sx={{ color: "#0A1B47" }}>Basic Information</AppTypography.Label>
+                  <JoyTypography level="body-sm"><strong>Name:</strong> {formData.name}</JoyTypography>
+                  <JoyTypography level="body-sm"><strong>Description:</strong> {formData.description}</JoyTypography>
+                  <JoyTypography level="body-sm">
                     <strong>Categories:</strong> {selectedCategories.map(c => c.label).join(', ') || 'None selected'}
-                  </Typography>
+                  </JoyTypography>
                   {formData.entry_fee && (
-                    <Typography level="body-sm"><strong>Entry Fee:</strong> ₱{formData.entry_fee}</Typography>
+                    <JoyTypography level="body-sm"><strong>Entry Fee:</strong> ₱{formData.entry_fee}</JoyTypography>
                   )}
                 </Stack>
               </CardContent>
@@ -85,14 +85,14 @@ const ReviewStep: React.FC<ReviewStepProps> = ({
             <Card variant="outlined">
               <CardContent>
                 <Stack spacing={2}>
-                  <ResponsiveText type="label-medium" weight="semi-bold" color="#0A1B47">Location</ResponsiveText>
-                  <Typography level="body-sm">
+                  <AppTypography.Label size="normal" weight="semibold" sx={{ color: "#0A1B47" }}>Location</AppTypography.Label>
+                  <JoyTypography level="body-sm">
                     <strong>Address:</strong> {selectedBarangay?.label}, {selectedMunicipality?.label}, {selectedProvince?.label}
-                  </Typography>
+                  </JoyTypography>
                   {(formData.latitude && formData.longitude) && (
-                    <Typography level="body-sm">
+                    <JoyTypography level="body-sm">
                       <strong>Coordinates:</strong> {formData.latitude}, {formData.longitude}
-                    </Typography>
+                    </JoyTypography>
                   )}
                 </Stack>
               </CardContent>
@@ -106,20 +106,20 @@ const ReviewStep: React.FC<ReviewStepProps> = ({
             <Card variant="outlined">
               <CardContent>
                 <Stack spacing={2}>
-                  <ResponsiveText type="label-medium" weight="semi-bold" color="#0A1B47">Contact Information</ResponsiveText>
+                  <AppTypography.Label size="normal" weight="semibold" sx={{ color: "#0A1B47" }}>Contact Information</AppTypography.Label>
                   {formData.contact_phone && (
-                    <Typography level="body-sm"><strong>Phone:</strong> {formData.contact_phone}</Typography>
+                    <JoyTypography level="body-sm"><strong>Phone:</strong> {formData.contact_phone}</JoyTypography>
                   )}
                   {formData.contact_email && (
-                    <Typography level="body-sm"><strong>Email:</strong> {formData.contact_email}</Typography>
+                    <JoyTypography level="body-sm"><strong>Email:</strong> {formData.contact_email}</JoyTypography>
                   )}
                   {formData.website && (
-                    <Typography level="body-sm"><strong>Website:</strong> {formData.website}</Typography>
+                    <JoyTypography level="body-sm"><strong>Website:</strong> {formData.website}</JoyTypography>
                   )}
                   {!formData.contact_phone && !formData.contact_email && !formData.website && (
-                    <Typography level="body-sm" sx={{ color: 'text.tertiary' }}>
+                    <JoyTypography level="body-sm" sx={{ color: 'text.tertiary' }}>
                       No contact information provided
-                    </Typography>
+                    </JoyTypography>
                   )}
                 </Stack>
               </CardContent>
@@ -128,17 +128,17 @@ const ReviewStep: React.FC<ReviewStepProps> = ({
             <Card variant="outlined">
               <CardContent>
                 <Stack spacing={2}>
-                  <ResponsiveText type="label-medium" weight="semi-bold" color="#0A1B47">Operating Hours</ResponsiveText>
+                  <AppTypography.Label size="normal" weight="semibold" sx={{ color: "#0A1B47" }}>Operating Hours</AppTypography.Label>
                   {schedules.filter(s => !s.is_closed).length > 0 ? (
                     schedules.filter(s => !s.is_closed).map(sched => (
-                      <Typography level="body-sm" key={sched.dayIndex}>
+                      <JoyTypography level="body-sm" key={sched.dayIndex}>
                         <strong>{daysOfWeek[sched.dayIndex]}:</strong> {sched.open_time} - {sched.close_time}
-                      </Typography>
+                      </JoyTypography>
                     ))
                   ) : (
-                    <Typography level="body-sm" sx={{ color: 'text.tertiary' }}>
+                    <JoyTypography level="body-sm" sx={{ color: 'text.tertiary' }}>
                       No operating hours set
-                    </Typography>
+                    </JoyTypography>
                   )}
                 </Stack>
               </CardContent>
