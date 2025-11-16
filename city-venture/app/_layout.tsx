@@ -8,6 +8,7 @@ import { Stack } from 'expo-router';
 import 'react-native-reanimated';
 
 import { AuthProvider } from '@/context/AuthContext';
+import { CartProvider } from '@/context/CartContext';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 
 export default function RootLayout() {
@@ -22,14 +23,16 @@ export default function RootLayout() {
 
   return (
     <AuthProvider>
-      <ThemeProvider value={colorScheme === 'light' ? DefaultTheme : DarkTheme}>
-        <Stack>
-          <Stack.Screen name="(screens)" options={{ headerShown: false }} />
-          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-          <Stack.Screen name="index" options={{ headerShown: false }} />
-          <Stack.Screen name="+not-found" />
-        </Stack>
-      </ThemeProvider>
+      <CartProvider>
+        <ThemeProvider value={colorScheme === 'light' ? DefaultTheme : DarkTheme}>
+          <Stack>
+            <Stack.Screen name="(screens)" options={{ headerShown: false }} />
+            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+            <Stack.Screen name="index" options={{ headerShown: false }} />
+            <Stack.Screen name="+not-found" />
+          </Stack>
+        </ThemeProvider>
+      </CartProvider>
     </AuthProvider>
   );
 }

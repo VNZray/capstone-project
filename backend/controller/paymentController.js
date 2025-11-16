@@ -682,6 +682,8 @@ async function processWebhookEvent(eventType, eventData, webhook_id) {
       }
     }
 
+  }
+
   // Handle payment.failed event
   else if (eventType === 'payment.failed') {
     if (!order_id) {

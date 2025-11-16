@@ -29,6 +29,26 @@ const ShopLayout = () => {
             headerBackTitle: "Back",
           }}
         />
+        <Stack.Screen
+          name="cart"
+          options={{
+            headerShown: true,
+            animation: "slide_from_right",
+            headerTitleAlign: "center",
+            headerTitle: "Shopping Cart",
+            headerBackTitle: "Back",
+          }}
+        />
+        <Stack.Screen
+          name="product-details"
+          options={{
+            headerShown: true,
+            animation: "slide_from_right",
+            headerTitleAlign: "center",
+            headerTitle: "Product Details",
+            headerBackTitle: "Back",
+          }}
+        />
       </Stack>
     </ShopProvider>
   );

@@ -11,7 +11,7 @@ import { ThemedText } from '@/components/themed-text';
 import { useAuth } from '@/context/AuthContext';
 import { navigateToAccommodationHome } from '@/routes/accommodationRoutes';
 import { navigateToEventHome } from '@/routes/eventRoutes';
-import { navigateToShopHome } from '@/routes/shopRoutes';
+import { navigateToShopHome, navigateToCart } from '@/routes/shopRoutes';
 import {
   navigateToTouristSpotHome,
 } from '@/routes/touristSpotRoutes';
@@ -450,7 +450,7 @@ const HomeScreen = () => {
         onChangeSearch={setSearchValue}
         style={styles.header}
         onPressBell={() => {}}
-        onPressCart={() => navigateToShopHome()}
+        onPressCart={() => navigateToCart()}
       />
     </View>
   );

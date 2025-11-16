@@ -9,7 +9,7 @@ import {
   Pressable,
   RefreshControl,
 } from 'react-native';
-import { useLocalSearchParams, Stack } from 'expo-router';
+import { useLocalSearchParams, Stack, router } from 'expo-router';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { colors } from '@/constants/color';
 import { useTypography } from '@/constants/typography';
@@ -17,6 +17,8 @@ import PageContainer from '@/components/PageContainer';
 import { fetchProductsByBusinessId } from '@/services/ProductService';
 import { fetchServicesByBusinessId } from '@/services/ServiceService';
 import { fetchBusinessDetails } from '@/services/BusinessService';
+import { useCart } from '@/context/CartContext';
+import { Ionicons } from '@expo/vector-icons';
 import type { Product } from '@/types/Product';
 import type { Service } from '@/types/Service';
 import type { Business } from '@/types/Business';
@@ -26,6 +28,7 @@ const BusinessDetails = () => {
   const scheme = useColorScheme();
   const isDark = scheme === 'dark';
   const type = useTypography();
+  const { getTotalItems } = useCart();
 
   const [business, setBusiness] = useState<Business | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
@@ -138,7 +141,13 @@ const BusinessDetails = () => {
     <Pressable
       key={product.id}
       style={[styles.itemCard, { backgroundColor: palette.card, borderColor: palette.border }]}
-      onPress={() => console.log('Product pressed:', product.id)}
+      onPress={() => {
+        // Navigate to product details screen with product data
+        router.push({
+          pathname: '/(tabs)/(home)/(shop)/product-details',
+          params: { productId: product.id.toString() },
+        });
+      }}
     >
       <Image
         source={
@@ -256,9 +265,28 @@ const BusinessDetails = () => {
   const hasServices = services.length > 0;
   const showTabs = hasProducts && hasServices;
 
+  const cartItemCount = getTotalItems();
+
   return (
     <>
-      <Stack.Screen options={{ title: business.business_name }} />
+      <Stack.Screen 
+        options={{ 
+          title: business.business_name,
+          headerRight: () => (
+            cartItemCount > 0 ? (
+              <Pressable
+                onPress={() => router.push('/(tabs)/(home)/(shop)/cart')}
+                style={{ marginRight: 16, position: 'relative' }}
+              >
+                <Ionicons name="cart-outline" size={28} color={palette.text} />
+                <View style={styles.cartBadge}>
+                  <Text style={styles.cartBadgeText}>{cartItemCount}</Text>
+                </View>
+              </Pressable>
+            ) : null
+          ),
+        }} 
+      />
       <PageContainer>
         <ScrollView
           refreshControl={
@@ -449,5 +477,22 @@ const styles = StyleSheet.create({
   emptyState: {
     padding: 32,
     alignItems: 'center',
+  },
+  cartBadge: {
+    position: 'absolute',
+    top: -6,
+    right: -6,
+    backgroundColor: colors.primary,
+    borderRadius: 10,
+    minWidth: 20,
+    height: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 4,
+  },
+  cartBadgeText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '700',
   },
 });
