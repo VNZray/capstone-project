@@ -452,7 +452,7 @@ const FormTextInput = React.forwardRef<FormTextInputRef, FormTextInputProps>(
               disabled={!onPressRightIcon}
               onPress={onPressRightIcon}
               hitSlop={10}
-              style={{ marginLeft: 8, paddingTop: multiline ? 4 : 0 }}
+              style={{ marginLeft: 8, marginRight: 12, paddingTop: multiline ? 4 : 0 }}
             >
               <FontAwesome5
                 name={rightIcon}

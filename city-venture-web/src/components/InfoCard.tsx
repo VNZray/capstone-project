@@ -17,7 +17,7 @@ export default function InfoCard({
   color,
 }: InfoCardProps) {
   return (
-    <Container elevation={2}>
+    <Container hover elevation={2}>
       <Stack gap={0.5} alignItems="center" textAlign="center">
         {/* Icon */}
         {icon && (
