@@ -1,5 +1,5 @@
 import axios from 'axios';
-import api from '@/services/api';
+import api from '@/src/services/api';
 import type {
   ReviewAndRating,
   ReviewAndRatings,
@@ -13,9 +13,9 @@ import type {
   CreateReplyPayload,
   UpdateReplyPayload,
   ReviewWithAuthor,
-} from '@/types/Feedback';
-import type { Tourist } from '@/types/Tourist';
-import type { User } from '@/types/User';
+} from '@/src/types/Feedback';
+import type { Tourist } from '@/src/types/Tourist';
+import type { User } from '@/src/types/User';
 
 // Small helper to unwrap controller responses that may return either
 // an array/row directly or an object like { message, data }

@@ -1,7 +1,8 @@
 import * as React from "react";
-import { Box, Typography, LinearProgress } from "@mui/joy";
+import { Box, LinearProgress, Divider } from "@mui/joy";
 import StarIcon from "@mui/icons-material/Star";
 import Container from "@/src/components/Container";
+import Typography from "@/src/components/Typography";
 
 interface RatingsOverviewProps {
   average: number;
@@ -21,35 +22,12 @@ const RatingsOverview: React.FC<RatingsOverviewProps> = ({
   const hasHalfStar = average % 1 >= 0.5;
 
   return (
-    <Container elevation={2} style={{ width: '35%' }}>
+    <Container elevation={2} hover>
       {/* Top: Average Rating - Centered */}
-      <Box
-        sx={{
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          justifyContent: "center",
-          textAlign: "center",
-          pb: 2,
-          mb: 2,
-          borderBottom: '1px solid',
-          borderColor: 'divider',
-        }}
-      >
-        <Typography
-          level="h1"
-          sx={{
-            fontSize: 48,
-            fontWeight: 700,
-            lineHeight: 1,
-            mb: 1.5,
-            color: "text.primary",
-          }}
-        >
-          {average.toFixed(1)}
-        </Typography>
+      <Container padding="0" align="center" justify="center" gap="4px">
+        <Typography.Title>{average.toFixed(1)}</Typography.Title>
 
-        <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, mb: 1 }}>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
           {Array.from({ length: 5 }).map((_, i) => (
             <StarIcon
               key={i}
@@ -66,14 +44,12 @@ const RatingsOverview: React.FC<RatingsOverviewProps> = ({
           ))}
         </Box>
 
-        <Typography
-          level="body-sm"
-          sx={{ color: "text.tertiary", fontWeight: 500 }}
-        >
+        <Typography.Body>
           {totalReviews} review{totalReviews !== 1 ? "s" : ""}
-        </Typography>
-      </Box>
+        </Typography.Body>
+      </Container>
 
+      <Divider></Divider>
       {/* Bottom: Distribution Bars */}
       <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
         {barOrder.map((star) => {
@@ -91,44 +67,35 @@ const RatingsOverview: React.FC<RatingsOverviewProps> = ({
                   display: "flex",
                   alignItems: "center",
                   gap: 0.5,
-                  minWidth: 40,
                 }}
               >
-                <Typography
-                  level="body-sm"
-                  sx={{ fontWeight: 600, color: "text.secondary" }}
+                <Typography.Body
+                  endDecorator={
+                    <StarIcon sx={{ fontSize: 14, color: "#FFA726" }} />
+                  }
                 >
                   {star}
-                </Typography>
-                <StarIcon sx={{ fontSize: 14, color: "#FFA726" }} />
+                </Typography.Body>
               </Box>
 
-              <Box sx={{ flex: 1, minWidth: 100 }}>
+              <Box sx={{ flex: 1 }}>
                 <LinearProgress
                   determinate
                   value={pct}
-                  color={star >= 4 ? 'success' : star === 3 ? 'warning' : 'danger'}
+                  color={
+                    star >= 4 ? "success" : star === 3 ? "warning" : "danger"
+                  }
                   sx={{
                     height: 8,
                     borderRadius: 4,
-                    '--LinearProgress-radius': '4px',
-                    '--LinearProgress-thickness': '8px',
+                    "--LinearProgress-radius": "4px",
+                    "--LinearProgress-thickness": "8px",
                   }}
                   aria-label={`${star} star bar`}
                 />
               </Box>
 
-              <Typography
-                level="body-xs"
-                sx={{
-                  minWidth: 28,
-                  textAlign: "right",
-                  fontWeight: 600,
-                  color: "text.tertiary",
-                }}
-              >
-                {count}
-              </Typography>
+              <Typography.Body>{count}</Typography.Body>
             </Box>
           );
         })}

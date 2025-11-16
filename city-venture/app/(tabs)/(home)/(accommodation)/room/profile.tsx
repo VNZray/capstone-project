@@ -1,7 +1,14 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNavigation, useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
-import { Dimensions, FlatList, Image, Platform, StyleSheet, View } from 'react-native';
+import {
+  Dimensions,
+  FlatList,
+  Image,
+  Platform,
+  StyleSheet,
+  View,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import Button from '@/components/Button';
@@ -21,7 +28,7 @@ import Details from './details';
 import Photos from './photos';
 import Ratings from './ratings';
 import placeholder from '@/assets/images/room-placeholder.png';
-import AddReview from '@/components/reviews/Addeview';
+import AddReview from '@/components/reviews/AddReview';
 import FeedbackService from '@/services/FeedbackService';
 
 const { width, height } = Dimensions.get('window');
@@ -92,8 +99,6 @@ const AccommodationProfile = () => {
   const primaryIcon = activeTab === 'ratings' ? 'comment' : 'calendar-check';
   const handlePrimaryAction = () => {
     if (activeTab === 'ratings') {
-      if (user?.role_name?.toLowerCase() !== 'tourist') return;
-      setReviewError(null);
       setModalVisible(true);
       return;
     }
@@ -162,6 +167,7 @@ const AccommodationProfile = () => {
                     {formattedPrice}
                   </ThemedText>
                 </View>
+                
                 <View>
                   <ThemedText type="body-medium">
                     <MaterialCommunityIcons
@@ -180,72 +186,63 @@ const AccommodationProfile = () => {
             <View style={styles.tabContent}>
               {activeTab === 'details' && <Details />}
               {activeTab === 'photos' && <Photos />}
-              {activeTab === 'ratings' && (
-                <Ratings />
-              )}
+              {activeTab === 'ratings' && <Ratings key={ratingsRefreshKey} />}
             </View>
           </>
         }
       />
-      {!modalVisible && (() => {
-        const baseBottom = Platform.OS === 'ios' ? 60 : 80;
-        return (
-          <View style={[styles.fabBar, { paddingBottom: baseBottom + insets.bottom }]}>
-            {activeTab !== 'ratings' && (
+      {!modalVisible &&
+        (() => {
+          const baseBottom = Platform.OS === 'ios' ? 60 : 80;
+          return (
+            <View
+              style={[
+                styles.fabBar,
+                { paddingBottom: baseBottom + insets.bottom },
+              ]}
+            >
+              {activeTab !== 'ratings' &&
+                user?.role_name?.toLowerCase() === 'tourist' && (
+                  <Button
+                    icon
+                    variant={isFavorite ? 'soft' : 'soft'}
+                    color={isFavorite ? 'error' : 'secondary'}
+                    startIcon={isFavorite ? 'heart' : 'heart'}
+                    onPress={() => setIsFavorite((f) => !f)}
+                  />
+                )}
               <Button
-                icon
-                variant={isFavorite ? 'soft' : 'soft'}
-                color={isFavorite ? 'error' : 'secondary'}
-                startIcon={isFavorite ? 'heart' : 'heart'}
-                onPress={() => setIsFavorite((f) => !f)}
+                label={actionLabel}
+                fullWidth
+                startIcon={primaryIcon}
+                color="primary"
+                variant="solid"
+                onPress={handlePrimaryAction}
+                elevation={3}
+                style={{ flex: 1 }}
               />
-            )}
-            <Button
-              label={actionLabel}
-              fullWidth
-              startIcon={primaryIcon}
-              color="primary"
-              variant="solid"
-              onPress={handlePrimaryAction}
-              elevation={3}
-              style={{ flex: 1 }}
-            />
-          </View>
-        );
-      })()}
-      <AddReview
-        visible={modalVisible}
-        onClose={() => setModalVisible(false)}
-        submitting={reviewSubmitting}
-        error={reviewError}
-        title="Write a review"
-        onSubmit={async ({ rating, message }) => {
-          if (!roomDetails?.id) {
-            setReviewError('Missing room ID.');
-            return;
-          }
-          if (user?.role_name?.toLowerCase() !== 'tourist') {
-            setReviewError('Only tourists can write reviews.');
-            return;
-          }
-          try {
-            setReviewSubmitting(true);
-            await FeedbackService.createReview({
-              review_type: 'Room',
-              review_type_id: String(roomDetails.id),
-              rating,
-              message,
-              tourist_id: String(user?.id ?? ''),
-            });
-            setReviewSubmitting(false);
-            setModalVisible(false);
-            setRatingsRefreshKey((k) => k + 1);
-          } catch (e) {
-            setReviewSubmitting(false);
-            setReviewError('Failed to submit review. Please try again.');
-          }
-        }}
-      />
+            </View>
+          );
+        })()}
+      {user && (
+        <AddReview
+          visible={modalVisible}
+          onClose={() => setModalVisible(false)}
+          onSubmit={async (payload) => {
+            try {
+              await FeedbackService.createReview(payload);
+              setModalVisible(false);
+              setRatingsRefreshKey((prev) => prev + 1);
+            } catch (error) {
+              console.error('Error submitting review:', error);
+              throw error;
+            }
+          }}
+          touristId={user.id || ''}
+          reviewType="room"
+          reviewTypeId={roomDetails?.id || ''}
+        />
+      )}
     </PageContainer>
   );
 };
