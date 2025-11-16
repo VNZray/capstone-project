@@ -1,8 +1,11 @@
 import React from "react";
-import { Box, Card, CardContent, Chip, Grid, Stack, Typography, Sheet } from "@mui/joy";
-// action icons moved into ActionButtons
+import { Box, Chip, Grid } from "@mui/joy";
 import AddressContact from "./AddressContact";
 import ActionButtons from "./ActionButtons";
+import Container from "@/src/components/Container";
+import Typography from "@/src/components/Typography";
+import NoDataFound from "@/src/components/NoDataFound";
+import { colors } from "@/src/utils/Colors";
 
 // Safe extractor for string-like fields coming from loosely-typed API items
 const getStr = (v: unknown): string | undefined =>
@@ -29,20 +32,12 @@ const ApprovalTable: React.FC<ApprovalTableProps> = ({
 }) => {
   if (items.length === 0) {
     return (
-      <Sheet
-        variant="outlined"
-        sx={{
-          p: 4,
-          textAlign: "center",
-          borderRadius: 8,
-          borderStyle: "dashed",
-        }}
-        aria-live="polite"
-      >
-        <Typography level="body-md">
-          No pending {contentType.toLowerCase()} found
-        </Typography>
-      </Sheet>
+      <NoDataFound
+        title="No pending items"
+        message={`No pending ${contentType.toLowerCase()} found. New submissions will appear here.`}
+        icon="inbox"
+        size="medium"
+      />
     );
   }
 
@@ -89,68 +84,60 @@ const ApprovalTable: React.FC<ApprovalTableProps> = ({
 
           return (
             <Grid key={key} xs={12} sm={6} md={4} lg={3} xl={3}>
-              <div className="card-wrapper">
-              <Card
-                variant="outlined"
-                sx={{
+              <Container
+                hover
+                hoverEffect="lift"
+                padding="1.5rem"
+                radius="12px"
+                background={colors.background}
+                gap="1rem"
+                style={{
                   height: "100%",
-                  display: "flex",
-                  flexDirection: "column",
-                  transition: "all 0.18s ease-in-out",
-                  width: "100%",
-                  boxSizing: "border-box",
-                  overflow: "hidden",
-                  "&:hover": {
-                    transform: "translateY(-3px)",
-                    boxShadow: 4,
-                  },
+                  border: `1px solid #e0e0e0`,
+                  cursor: "pointer",
                 }}
               >
-                <CardContent>
-                  <Stack
-                    direction="row"
-                    spacing={1}
-                    alignItems="center"
-                    justifyContent="space-between"
+                {/* Header with name and status chip */}
+                <Container
+                  direction="row"
+                  justify="space-between"
+                  align="flex-start"
+                  padding="0"
+                  gap="0.75rem"
+                >
+                  <Container padding="0" gap="0.25rem" flex={1}>
+                    <Typography.CardTitle size="sm">
+                      {String(item.name ?? "-")}
+                    </Typography.CardTitle>
+                    <Typography.Body size="xs" color="default">
+                      Submitted: {submitted}
+                    </Typography.Body>
+                  </Container>
+                  <Chip
+                    size="sm"
+                    color={
+                      String(item.action_type) === "new"
+                        ? "success"
+                        : "primary"
+                    }
+                    variant="solid"
                   >
-                    <Stack spacing={0.5}>
-                      <Typography level="title-md">
-                        {String(item.name ?? "-")}
-                      </Typography>
-                      <Typography
-                        level="body-sm"
-                        sx={{ color: "text.secondary" }}
-                      >
-                        Submitted: {submitted}
-                      </Typography>
-                    </Stack>
-                    <Chip
-                      size="sm"
-                      color={
-                        String(item.action_type) === "new"
-                          ? "success"
-                          : "primary"
-                      }
-                      variant="solid"
-                    >
-                      {String(item.action_type) === "new" ? "New" : "Edit"}
-                    </Chip>
-                  </Stack>
+                    {String(item.action_type) === "new" ? "New" : "Edit"}
+                  </Chip>
+                </Container>
 
-                  {description && (
-                    <Typography
-                      level="body-sm"
-                      sx={{ mt: 1.5, color: "text.tertiary" }}
-                    >
-                      {description.slice(0, 180)}
-                      {description.length > 180 ? "…" : ""}
-                    </Typography>
-                  )}
+                {/* Description */}
+                {description && (
+                  <Typography.Body size="xs" color="default">
+                    {description.slice(0, 180)}
+                    {description.length > 180 ? "…" : ""}
+                  </Typography.Body>
+                )}
 
-                  <AddressContact address={address} contact={contactNo} />
-                </CardContent>
+                <AddressContact address={address} contact={contactNo} />
 
-                <Box sx={{ mt: "auto", px: 2, pb: 2 }}>
+                {/* Action Buttons */}
+                <Box sx={{ mt: "auto", pt: 1 }}>
                   <ActionButtons
                     item={item}
                     onView={onView}
@@ -159,8 +146,7 @@ const ApprovalTable: React.FC<ApprovalTableProps> = ({
                     isProcessing={isProcessing}
                   />
                 </Box>
-              </Card>
-              </div>
+              </Container>
             </Grid>
           );
         })}

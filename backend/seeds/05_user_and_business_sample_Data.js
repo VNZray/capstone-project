@@ -24,13 +24,13 @@ const RESTAURANT_BUSINESS_ID = '66666666-6666-6666-6666-666666666666';
 
 /** @param { import('knex').Knex } knex */
 export async function seed(knex) {
-  // Clean dependent tables in proper order to respect foreign key constraints
-  // Delete from most dependent to least dependent tables
-  await knex('business').del();           // References: owner, address, etc.
-  await knex('owner').del();              // References: user, address
-  await knex('tourism').del();            // References: user
-  await knex('tourist').del();            // References: user, address
-  await knex('user').del();               // References: user_role
+  // // Clean dependent tables in proper order to respect foreign key constraints
+  // // Delete from most dependent to least dependent tables
+  // await knex('business').del();           // References: owner, address, etc.
+  // await knex('owner').del();              // References: user, address
+  // await knex('tourism').del();            // References: user
+  // await knex('tourist').del();            // References: user, address
+  // await knex('user').del();               // References: user_role
 function randomPhone() {
   // Generates a random PH mobile number: +639XXXXXXXXX
   return '+639' + Math.floor(100000000 + Math.random() * 900000000);

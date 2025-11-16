@@ -108,7 +108,7 @@ const GuestAvatar: React.FC<GuestAvatarProps> = ({ guest, size = 40 }) => {
 
       {/* Name */}
       <Box>
-        <Typography.Body size="xs" weight="semibold">
+        <Typography.Body weight="semibold">
           {fullName || "Unknown"}
         </Typography.Body>
       </Box>
@@ -268,7 +268,7 @@ function Table<T extends Record<string, any>>({
                   colSpan={columns.length}
                   style={{ padding: "40px", textAlign: "center" }}
                 >
-                  <Typography.Body size="xs">Loading...</Typography.Body>
+                  <Typography.Body>Loading...</Typography.Body>
                 </td>
               </tr>
             ) : paginatedData.length === 0 ? (
@@ -277,7 +277,7 @@ function Table<T extends Record<string, any>>({
                   colSpan={columns.length}
                   style={{ padding: "40px", textAlign: "center" }}
                 >
-                  <Typography.Body size="xs">{emptyMessage}</Typography.Body>
+                  <Typography.Body>{emptyMessage}</Typography.Body>
                 </td>
               </tr>
             ) : (
@@ -314,7 +314,7 @@ function Table<T extends Record<string, any>>({
                           borderBottom: "1px solid #E5E7EB",
                         }}
                       >
-                        <Typography.Body size="xs">
+                        <Typography.Body >
                           {renderCell(column, row)}
                         </Typography.Body>
                       </td>
@@ -337,7 +337,7 @@ function Table<T extends Record<string, any>>({
           gap="16px"
           style={{ borderTop: "1px solid #E5E7EB" }}
         >
-          <Typography.Body size="xs">
+          <Typography.Body>
             Showing {page * rowsPerPage + 1} to{" "}
             {Math.min((page + 1) * rowsPerPage, data.length)} of {data.length}{" "}
             entries
@@ -361,7 +361,7 @@ function Table<T extends Record<string, any>>({
               Previous
             </Button>
 
-            <Typography.Label size="xs">
+            <Typography.Label margin={0}>
               Page {page + 1} of {totalPages}
             </Typography.Label>
 
@@ -371,8 +371,7 @@ function Table<T extends Record<string, any>>({
               onClick={handleNextPage}
               disabled={page >= totalPages - 1}
               endDecorator={<ChevronRight size={16} />}
-                            size="sm"
-
+              size="sm"
             >
               Next
             </Button>

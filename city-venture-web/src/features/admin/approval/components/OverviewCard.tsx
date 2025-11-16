@@ -1,14 +1,10 @@
 import React from "react";
-import {
-  Card,
-  CardContent,
-  Typography,
-  Stack,
-  Chip,
-  Divider,
-} from "@mui/joy";
+import { Chip, Divider } from "@mui/joy";
+import Container from "@/src/components/Container";
+import Typography from "@/src/components/Typography";
 import Button from "@/src/components/Button";
-import "./OverviewCard.css";
+import { colors } from "@/src/utils/Colors";
+import "../styles/overviewCard.css";
 
 interface OverviewCardProps {
   title: string;
@@ -35,73 +31,90 @@ const OverviewCard: React.FC<OverviewCardProps> = ({
   onApprove,
   onView,
 }) => {
-
   void onApprove;
 
   return (
-    <Card variant="outlined" sx={{ height: "100%" }}>
-      <CardContent>
-        <Stack
-          direction="row"
-          alignItems="center"
-          justifyContent="space-between"
-          sx={{ mb: 1 }}
-        >
-          <Stack direction="row" spacing={1} alignItems="center">
-            <span className="overview-icon" aria-hidden>
-              {icon}
-            </span>
-            <Typography level="title-md">{title}</Typography>
-          </Stack>
-          <Chip variant="solid" color="primary" size="sm">
-            {count}
-          </Chip>
-        </Stack>
-        <Divider />
-        {count > 0 ? (
-          <Stack spacing={1.25} sx={{ mt: 1 }}>
-            {items.slice(0, 3).map((item) => (
-              <Stack
-                key={item.id}
+    <Container
+      padding="1.5rem"
+      radius="12px"
+      background={colors.background}
+      gap="1rem"
+      elevation={2}
+      hover
+    >
+      {/* Header */}
+      <Container
+        direction="row"
+        justify="space-between"
+        align="center"
+        padding="0"
+        gap="0.75rem"
+      >
+        <Container direction="row" padding="0" gap="0.5rem" align="center">
+          <span className="overview-icon" aria-hidden>
+            {icon}
+          </span>
+          <Typography.CardTitle size="sm">{title}</Typography.CardTitle>
+        </Container>
+        <Chip variant="solid" color="primary" size="sm">
+          {count}
+        </Chip>
+      </Container>
+
+      <Divider />
+
+      {/* Items List */}
+      {count > 0 ? (
+        <Container padding="0" gap="1rem">
+          {items.slice(0, 3).map((item) => (
+            <Container
+              key={item.id}
+              direction="row"
+              justify="space-between"
+              align="center"
+              padding="0"
+              gap="0.75rem"
+            >
+              <Container
                 direction="row"
-                alignItems="center"
-                justifyContent="space-between"
+                padding="0"
+                gap="0.5rem"
+                align="center"
+                flex={1}
               >
-                <Stack direction="row" spacing={1} alignItems="center">
-                  <Chip
-                    size="sm"
-                    variant="soft"
-                    color={item.action_type === "new" ? "success" : "primary"}
-                  >
-                    {item.action_type === "new" ? "New" : "Edit"}
-                  </Chip>
-                  <Typography level="body-md">{item.name}</Typography>
-                </Stack>
-                {onView && (
-                  <Button
-                    size="sm"
-                    variant="soft"
-                    colorScheme="primary"
-                    onClick={() => onView(item)}
-                  >
-                    View
-                  </Button>
-                )}
-              </Stack>
-            ))}
-            {count > 3 && (
-              <Typography level="body-sm" sx={{ color: "text.tertiary" }}>
-                +{count - 3} more items
-              </Typography>
-            )}
-          </Stack>
-        ) : (
-          <Typography level="body-sm" sx={{ mt: 1.5, color: "text.tertiary" }}>
-            No pending items
-          </Typography>
-        )}
-      </CardContent>
-    </Card>
+                <Chip
+                  size="sm"
+                  variant="soft"
+                  color={item.action_type === "new" ? "success" : "primary"}
+                >
+                  {item.action_type === "new" ? "New" : "Edit"}
+                </Chip>
+                <Typography.Body size="sm">{item.name}</Typography.Body>
+              </Container>
+              {onView && (
+                <Button
+                  size="sm"
+                  variant="soft"
+                  colorScheme="primary"
+                  onClick={() => onView(item)}
+                >
+                  View
+                </Button>
+              )}
+            </Container>
+          ))}
+          {count > 3 && (
+            <Typography.Body size="xs" color="default">
+              +{count - 3} more items
+            </Typography.Body>
+          )}
+        </Container>
+      ) : (
+        <Typography.Body size="sm" color="default">
+          No pending items
+        </Typography.Body>
+      )}
+    </Container>
   );
 };
 
