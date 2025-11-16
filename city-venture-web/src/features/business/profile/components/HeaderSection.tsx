@@ -1,11 +1,4 @@
-import {
-  Box,
-  Avatar,
-  Stack,
-  Chip,
-  IconButton,
-  Tooltip,
-} from "@mui/joy";
+import { Box, Avatar, Stack, Chip, IconButton, Tooltip } from "@mui/joy";
 import {
   CheckCircle,
   Clock,
@@ -23,6 +16,7 @@ import Button from "@/src/components/Button";
 import Container from "@/src/components/Container";
 import ImageUpload from "@/src/components/ImageUpload";
 import { colors } from "@/src/utils/Colors";
+import type { UserDetails } from "@/src/types/User";
 
 interface HeaderSectionProps {
   profileData: {
@@ -33,7 +27,7 @@ interface HeaderSectionProps {
     phone_number: string;
     user_profile: string;
   };
-  user: any;
+  user: UserDetails | null;
   editMode: boolean;
   onEditToggle: () => void;
   onSave: () => void;
@@ -142,8 +136,8 @@ const HeaderSection = ({
                 },
               }}
             >
-              {profileData.first_name} {profileData.middle_name}{" "}
-              {profileData.last_name}
+              {user?.first_name} {profileData.middle_name}{" "}
+              {profileData?.last_name}
             </Typography.Header>
             <Stack
               direction="row"
@@ -167,34 +161,31 @@ const HeaderSection = ({
               >
                 {user?.is_verified ? "Verified" : "Pending Verification"}
               </Chip>
-              <Chip
-                size="sm"
-                color="primary"
-                startDecorator={<Building2 size={14} />}
-              >
-                Business Owner
-              </Chip>
-              <Chip size="sm" variant="soft" color="neutral">
+              <Chip size="sm" variant="soft" color="primary">
                 {user?.role_name || "Owner"}
               </Chip>
             </Stack>
             <Stack
               direction="row"
               spacing={2}
-              sx={{ mt: 2, flexWrap: "wrap", gap: 1 }}
+              sx={{ mt: 2, flexWrap: "wrap", gap: 0 }}
             >
               <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-                <Mail size={16} color={colors.text} />
-                <Typography.Body size="sm" color="default">
+                <Typography.Body
+                  startDecorator={<Mail size={16} />}
+                  size="sm"
+                  color="default"
+                >
                   {profileData.email}
                 </Typography.Body>
               </Box>
               {profileData.phone_number && (
-                <Box
-                  sx={{ display: "flex", alignItems: "center", gap: 0.5 }}
-                >
-                  <Phone size={16} />
-                  <Typography.Body size="sm" color="default">
+                <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                  <Typography.Body
+                    startDecorator={<Phone size={16} />}
+                    size="sm"
+                    color="default"
+                  >
                     {profileData.phone_number}
                   </Typography.Body>
                 </Box>

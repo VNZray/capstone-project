@@ -9,12 +9,6 @@ function randomPhone() {
 
 /** @param { import('knex').Knex } knex */
 module.exports.seed = async function (knex) {
-  await knex('business').del();           // References: owner, address, etc.
-  await knex('owner').del();              // References: user, address
-  await knex('tourism').del();            // References: user
-  await knex('tourist').del();            // References: user, address
-  await knex('user').del();               // References: user_role
-
   const plainUsers = [
     { id: uuidv4(), email: 'owner1@gmail.com',   phone_number: randomPhone(), password: 'owner123',   user_role_id: 4, barangay_id: 1 },
     { id: uuidv4(), email: 'owner2@gmail.com',   phone_number: randomPhone(), password: 'owner123',   user_role_id: 4, barangay_id: 2 },
