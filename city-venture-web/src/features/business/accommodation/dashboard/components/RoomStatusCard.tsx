@@ -1,5 +1,5 @@
 import React from "react";
-import { Card, Typography, Box, Stack, LinearProgress } from "@mui/joy";
+import { Typography, Box, Stack, LinearProgress } from "@mui/joy";
 import Container from "@/src/components/Container";
 
 interface RoomStatusCardProps {

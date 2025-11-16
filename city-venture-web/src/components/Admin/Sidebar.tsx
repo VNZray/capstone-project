@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { NavLink, useLocation, useNavigate } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard,
   CheckCircle,
@@ -19,8 +19,6 @@ import {
 import "@/src/components/Admin/Sidebar.css";
 import logo from "@/src/assets/images/light-logo.png";
 import Typography from "@/src/components/Typography";
-import { colors } from "@/src/utils/Colors";
-import Container from "../Container";
 import useRBAC from "@/src/hooks/useRBAC";
 import { useAuth } from "@/src/context/AuthContext";
 
@@ -34,7 +32,7 @@ export default function Sidebar({
   onClose,
 }: SidebarProps): React.ReactElement {
   const { logout } = useAuth();
-  const { hasRole, canAny } = useRBAC();
+  const { canAny } = useRBAC();
   const navigate = useNavigate();
   const route = "/tourism";
 

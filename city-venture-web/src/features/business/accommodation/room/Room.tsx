@@ -42,11 +42,6 @@ const RoomPage = () => {
   const [openModal, setOpenModal] = useState(false);
   const [calendarOpen, setCalendarOpen] = useState(false);
 
-  const [roomCount, setRoomCount] = useState(0);
-  const [availableCount, setAvailableCount] = useState(0);
-  const [occupiedCount, setOccupiedCount] = useState(0);
-  const [maintenanceCount, setMaintenanceCount] = useState(0);
-
   const { businessDetails } = useBusiness();
 
   const [search, setSearch] = useState("");
@@ -90,27 +85,11 @@ const RoomPage = () => {
     setRooms(filtered);
   };
 
-  // Prevent division by zero
-  const calcPercentage = (count: number) => {
-    return roomCount > 0 ? (count / roomCount) * 100 : 0;
-  };
-
   useEffect(() => {
     if (businessDetails?.id) {
       fetchRooms();
     }
   }, [businessDetails?.id]);
-
-  useEffect(() => {
-    setRoomCount(rooms.length);
-    setAvailableCount(
-      rooms.filter((room) => room.status === "Available").length
-    );
-    setOccupiedCount(rooms.filter((room) => room.status === "Occupied").length);
-    setMaintenanceCount(
-      rooms.filter((room) => room.status === "Maintenance").length
-    );
-  }, [rooms]);
 
   return (
     <PageContainer>
@@ -132,9 +111,7 @@ const RoomPage = () => {
               minWidth: 240,
             }}
           >
-            <Typography.Header>
-              Room Management
-            </Typography.Header>
+            <Typography.Header>Room Management</Typography.Header>
             <Button
               startDecorator={<Calendar />}
               colorScheme="secondary"
@@ -269,7 +246,6 @@ const RoomPage = () => {
                 roomType={room.room_type!}
                 capacity={room.capacity}
                 onDeleted={() => fetchRooms()}
-                id={room.id}
                 key={room.id}
                 image={room.room_image || placeholderImage}
                 status={room.status!}

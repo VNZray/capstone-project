@@ -64,12 +64,15 @@ const Step4: React.FC<Props> = ({ data, setData: _setData, permitData, setPermit
     setPermitData((prev) => [
       ...prev.filter((p) => p.permit_type !== permitType),
       {
+        id: crypto.randomUUID(),
         business_id: data.id ?? "",
         permit_type: permitType,
         file_url: publicUrlData.publicUrl,
         file_format: ext!,
         file_size: file.size,
-        status: "Pending",
+        status: "pending",
+        expiration_date: "",
+        submitted_at: new Date().toISOString(),
       },
     ]);
     setUploading((u) => ({ ...u, [permitType]: false }));

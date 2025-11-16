@@ -1,5 +1,4 @@
 import * as React from "react";
-import Card from "@mui/joy/Card";
 import CardContent from "@mui/joy/CardContent";
 import CardActions from "@mui/joy/CardActions";
 import Typography from "@mui/joy/Typography";

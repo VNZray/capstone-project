@@ -7,7 +7,7 @@ import { colors } from "@/src/utils/Colors";
 import { Button, Chip, Grid, Sheet, Divider, IconButton } from "@mui/joy";
 import BusinessMap from "./components/businessMap"; // <-- new import
 import "./BusinessProfile.css";
-import { LucidePhone, PhilippinePeso, Globe, TimerIcon } from "lucide-react";
+import { LucidePhone, PhilippinePeso, TimerIcon } from "lucide-react";
 import Container from "@/src/components/Container";
 import { MdEmail, MdFacebook } from "react-icons/md";
 import { HomeWork, LocationCity, Place, Public } from "@mui/icons-material";
@@ -21,9 +21,7 @@ import EditAddressModal from "./components/EditAddressModal";
 import EditMapCoordinatesModal from "./components/EditMapCoordinatesModal";
 import EditBusinessModal from "./components/EditBusinessModal";
 import { FaInstagram } from "react-icons/fa";
-import { getData, updateData } from "@/src/services/Service";
-import type { ExternalBooking } from "@/src/types/ExternalBooking";
-import { bookingLogos } from "@/src/types/BookingLogos";
+import { getData } from "@/src/services/Service";
 import EditBusinessHoursModal from "./components/EditBusinessHoursModal";
 import type { Amenity } from "@/src/types/Amenity";
 import EditAmenitiesModal from "./components/EditAmenitiesModal";
@@ -40,7 +38,6 @@ const BusinessProfile = () => {
   const [editMapCoordinatesOpen, setEditMapCoordinatesOpen] = useState(false);
   const [editBusinessHoursOpen, setEditBusinessHoursOpen] = useState(false);
   const [editAmenitiesOpen, setEditAmenitiesOpen] = useState(false);
-  const [externalBooking, setExternalBooking] = useState<ExternalBooking[]>([]);
 
   const [businessHours, setBusinessHours] = useState<BusinessHours[]>([]);
   const [amenities, setAmenities] = React.useState<Amenity[]>([]);
@@ -88,21 +85,11 @@ const BusinessProfile = () => {
     return `${formattedHour}:${minute} ${ampm}`;
   };
 
-  const fetchExternalBookings = useCallback(async () => {
-    if (!businessDetails?.id) return;
-    const response = await getData("external-booking");
-    const filtered = Array.isArray(response)
-      ? response.filter((booking) => booking.business_id === businessDetails.id)
-      : [];
-    setExternalBooking(filtered);
-  }, [businessDetails?.id]);
-
   useEffect(() => {
     if (businessDetails?.id) {
-      fetchExternalBookings();
       getBusinessHours();
     }
-  }, [businessDetails?.id, fetchExternalBookings, getBusinessHours]);
+  }, [businessDetails?.id, getBusinessHours]);
 
   const [businessData, setBusinessData] = React.useState<Business>({
     id: businessDetails?.id || "",
@@ -171,7 +158,6 @@ const BusinessProfile = () => {
   const handleSaveSocialMedia = (
     fbLink: string,
     igLink: string,
-    ttLink: string
   ) => {
     setBusinessData({
       ...businessData,
@@ -215,10 +201,6 @@ const BusinessProfile = () => {
     });
   };
 
-  const activateBooking = async (businessId: string, hasBooking: boolean) => {
-    await updateData(businessId, { hasBooking }, "business");
-    window.location.reload();
-  };
 
   return (
     <PageContainer
@@ -828,7 +810,6 @@ const BusinessProfile = () => {
 
       <EditAddressModal
         open={editAddressOpen && Boolean(businessDetails?.id)}
-        addressId={businessDetails?.barangay_id}
         initialProvince={address?.province_id}
         initialMunicipality={address?.municipality_id}
         initialBarangay={address?.barangay_id}

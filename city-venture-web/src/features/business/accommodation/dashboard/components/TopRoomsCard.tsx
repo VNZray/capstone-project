@@ -1,7 +1,7 @@
 import React from "react";
 import { Box, Typography, Stack } from "@mui/joy";
 import Container from "@/src/components/Container";
-import { Trophy, TrendingUp } from "lucide-react";
+import { Trophy } from "lucide-react";
 import { colors } from "@/src/utils/Colors";
 
 interface Room {
@@ -18,7 +18,7 @@ interface TopRoomsCardProps {
   type: "bookings" | "revenue";
 }
 
-const TopRoomsCard: React.FC<TopRoomsCardProps> = ({ rooms, title, type }) => {
+const TopRoomsCard: React.FC<TopRoomsCardProps> = ({ rooms, title }) => {
   const getMedalColor = (rank: number) => {
     switch (rank) {
       case 1:
@@ -69,7 +69,7 @@ const TopRoomsCard: React.FC<TopRoomsCardProps> = ({ rooms, title, type }) => {
         <Stack spacing={2.5}>
           {topThree.map((room, index) => (
             <Box
-              key={room.roomNumber}
+              key={index}
               sx={{
                 position: "relative",
                 p: 2.5,
