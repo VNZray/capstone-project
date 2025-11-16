@@ -54,6 +54,7 @@ import Shop from "@/src/features/admin/services/shop/Shop";
 import Event from "@/src/features/admin/services/event/Event";
 import Spot from "@/src/features/admin/services/tourist-spot/Spot";
 import TouristSpotDetailsScreen from "@/src/features/admin/services/tourist-spot/TouristSpotDetailsScreen";
+import TouristSpotReviews from "@/src/features/admin/services/tourist-spot/reviews/Reviews";
 import { BusinessProvider } from "../context/BusinessContext";
 import ReportDetailsScreen from "@/src/features/admin/report/ReportDetailsScreen";
 import AccommodationSubscription from "@/src/features/business/accommodation/subscription/Subscription";
@@ -475,6 +476,14 @@ export default function AppRoutes() {
             element={
               <ProtectedRoute requiredRoles={TOURISM_ROLES}>
                 <TouristSpotDetailsScreen />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path={`${tourism}/services/tourist-spot/:id/reviews`}
+            element={
+              <ProtectedRoute requiredRoles={TOURISM_ROLES}>
+                <TouristSpotReviews />
               </ProtectedRoute>
             }
           />

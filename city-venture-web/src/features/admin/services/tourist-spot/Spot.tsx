@@ -63,6 +63,10 @@ const Spot = () => {
     navigate(`/tourism/services/tourist-spot/${spot.id}`);
   };
 
+  const handleViewReviews = (spot: TouristSpot) => {
+    navigate(`/tourism/services/tourist-spot/${spot.id}/reviews`);
+  };
+
   const handleEditSpot = (spot: TouristSpot) => {
     setSelectedSpotForEdit(spot);
     setEditSpotModalVisible(true);
@@ -190,6 +194,17 @@ const Spot = () => {
             }}
           >
             Edit
+          </Button>
+          <Button
+            variant="outlined"
+            colorScheme="primary"
+            size="sm"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleViewReviews(row);
+            }}
+          >
+            Reviews
           </Button>
         </Stack>
       ),
