@@ -9,7 +9,7 @@ async function createExternalBookingProcedures(knex) {
 
   // Get external booking by business ID
   await knex.raw(`
-    CREATE PROCEDURE GetExternalBookingsByBusinessId(IN p_business_id CHAR(36))
+    CREATE PROCEDURE GetExternalBookingsByBusinessId(IN p_business_id CHAR(64))
     BEGIN
       SELECT * FROM external_booking WHERE business_id = p_business_id;
     END;
@@ -28,7 +28,7 @@ async function createExternalBookingProcedures(knex) {
     CREATE PROCEDURE InsertExternalBooking(
       IN p_name VARCHAR(40),
       IN p_link VARCHAR(255),
-      IN p_business_id CHAR(36)
+      IN p_business_id CHAR(64)
     )
     BEGIN
       INSERT INTO external_booking (name, link, business_id)
@@ -43,7 +43,7 @@ async function createExternalBookingProcedures(knex) {
       IN p_id INT,
       IN p_name VARCHAR(40),
       IN p_link VARCHAR(255),
-      IN p_business_id CHAR(36)
+      IN p_business_id CHAR(64)
     )
     BEGIN
       UPDATE external_booking

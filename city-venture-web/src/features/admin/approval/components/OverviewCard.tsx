@@ -4,7 +4,7 @@ import Container from "@/src/components/Container";
 import Typography from "@/src/components/Typography";
 import Button from "@/src/components/Button";
 import { colors } from "@/src/utils/Colors";
-import "../styles/overviewCard.css";
+import "../styles/OverviewCard.css";
 
 interface OverviewCardProps {
   title: string;

@@ -1,6 +1,10 @@
-// migrations/20250818120000_create_permit_table.js
-exports.up = function (knex) {
-  return knex.schema.createTable("room_photos", (table) => {
+const {
+  createRoomPhotosProcedures,
+  dropRoomPhotosProcedures,
+} = require("../procedures/accommodation/roomPhotosProcedures").default;
+
+exports.up = async function (knex) {
+  await knex.schema.createTable("room_photos", (table) => {
     table.uuid("id").primary().defaultTo(knex.raw("(UUID())"));
     table
       .uuid("room_id")
@@ -13,8 +17,11 @@ exports.up = function (knex) {
     table.bigInteger("file_size"); // in bytes
     table.timestamp("uploaded_at").defaultTo(knex.fn.now());
   });
+
+  await createRoomPhotosProcedures(knex);
 };
 
-exports.down = function (knex) {
-  return knex.schema.dropTableIfExists("room_photos");
+exports.down = async function (knex) {
+  await dropRoomPhotosProcedures(knex);
+  await knex.schema.dropTableIfExists("room_photos");
 };
