@@ -4,7 +4,7 @@ import ApprovalTable from "./components/ApprovalTable";
 import OverviewCard from "./components/OverviewCard";
 import ViewModal from "./components/ViewModal";
 import NavCard from "./components/NavCard";
-import { Box, Divider, Grid, IconButton, CircularProgress } from "@mui/joy";
+import { Divider, Grid, IconButton, CircularProgress } from "@mui/joy";
 import RefreshRoundedIcon from "@mui/icons-material/RefreshRounded";
 import PlaceRoundedIcon from "@mui/icons-material/PlaceRounded";
 import EventRoundedIcon from "@mui/icons-material/EventRounded";

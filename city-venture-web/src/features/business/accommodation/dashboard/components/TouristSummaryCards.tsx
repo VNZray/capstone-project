@@ -1,5 +1,5 @@
 import React from "react";
-import { Box, Grid } from "@mui/joy";
+import { Grid } from "@mui/joy";
 import StatCard from "./StatCard";
 import { Users, MapPin, Globe, Plane } from "lucide-react";
 
@@ -9,7 +9,6 @@ interface TouristSummaryCardsProps {
   foreign: number;
   overseas: number;
   total: number;
-  period?: string | undefined;
 }
 
 const TouristSummaryCards: React.FC<TouristSummaryCardsProps> = ({
@@ -18,10 +17,7 @@ const TouristSummaryCards: React.FC<TouristSummaryCardsProps> = ({
   foreign,
   overseas,
   total,
-  period,
 }) => {
-  const totalNonZero = total || 1; // Avoid division by zero
-
   return (
     <Grid container spacing={2.5}>
       {/* Total Card - Full Width */}

@@ -1,20 +1,18 @@
 import React, { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import logo from "@/src/assets/images/logo.png";
 import "./styles/LoginStyle.css";
 import { useAuth } from "@/src/context/AuthContext"; // adjust path if needed
 import PageContainer from "@/src/components/PageContainer";
 import LoginForm from "./components/LoginForm";
 import { Divider } from "@mui/joy";
 import Typography from "@/src/components/Typography";
-type Role = "Tourist" | "Owner" | "Admin";
 
 const Login: React.FC = () => {
   const [email, setEmail] = useState("owner1@gmail.com");
   const [password, setPassword] = useState("owner123");
   const [loginError, setLoginError] = useState("");
   const navigate = useNavigate();
-  const { login, user } = useAuth(); // from AuthProvider
+  const { login } = useAuth(); // from AuthProvider
   const [rememberMe, setRememberMe] = useState(false);
   const [loading, setLoading] = useState(false);
 

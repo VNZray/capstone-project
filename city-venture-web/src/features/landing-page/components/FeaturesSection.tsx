@@ -5,7 +5,6 @@ import Typography from "@/src/components/Typography";
 import Button from "@/src/components/Button";
 import { FaMobileAlt, FaCheckCircle } from "react-icons/fa";
 import { AspectRatio, Grid } from "@mui/joy";
-import placeholder from "@/src/assets/images/placeholder-image.png";
 import dashboard_preview from "@/src/assets/images/dashboard_preview.png";
 
 interface FeaturesSectionProps {
