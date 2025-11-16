@@ -1,0 +1,47 @@
+.category-filter-container {
+  display: flex;
+  align-items: center;
+}
+
+.categories-scroll {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 4px 2px 8px 2px;
+  scrollbar-width: thin;
+}
+
+.categories-scroll::-webkit-scrollbar { height: 4px; }
+
+.categories-scroll::-webkit-scrollbar-track { background: transparent; }
+
+.categories-scroll::-webkit-scrollbar-thumb {
+  background: #c8ced8;
+  border-radius: 2px;
+}
+
+/* Deprecated legacy per-button classes retained in case of leftover DOM; can remove later */
+.category-button { display: none; }
+
+.category-button {
+  background-color: #e0e0e0;
+  padding: 8px 15px;
+  border-radius: 20px;
+  border: none;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+  font-size: 14px;
+}
+
+.category-button:hover {
+  background-color: #d0d0d0;
+}
+
+.category-button.active {
+  background-color: #007bff;
+}
+
+.category-button.active:hover {
+  background-color: #0056b3;
+}

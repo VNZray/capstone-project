@@ -10,11 +10,11 @@ import {
 } from "@mui/joy";
 import Container from "@/src/components/Container";
 import SearchBar from "@/src/components/SearchBar";
-import Pagination from "@/src/components/Admin/touristSpot/Pagination";
-import ReportTable from "@/src/components/Admin/report/ReportTable";
-import ReportFilters from "@/src/components/Admin/report/ReportFilters";
+import Pagination from "@/src/features/admin/services/tourist-spot/components/Pagination";
+import ReportTable from "@/src/features/admin/report/components/ReportTable";
+import ReportFilters from "@/src/features/admin/report/components/ReportFilters";
 import { useNavigate } from "react-router-dom";
-import UpdateStatusModal from "@/src/components/Admin/report/UpdateStatusModal";
+import UpdateStatusModal from "@/src/features/admin/report/components/UpdateStatusModal";
 import type { Report } from "@/src/types/Report";
 import { apiService } from "@/src/utils/api";
 import { colors } from "@/src/utils/Colors";

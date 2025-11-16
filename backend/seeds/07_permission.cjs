@@ -73,6 +73,9 @@ exports.seed = async function (knex) {
 		{ name: 'manage_users', description: 'Manage user accounts and roles' },
 		{ name: 'manage_services', description: 'Manage service categories and modules' },
 		{ name: 'view_all_profiles', description: 'View all business and tourist profiles' },
+
+		// Tourism-specific admin controls
+		{ name: 'manage_tourism_staff', description: 'Create, update, deactivate tourism staff accounts' },
 	]);
 };
 
