@@ -291,7 +291,7 @@ export default function Sidebar({
             icon={<LogOut size={ICON_SIZE} />}
             onClick={() => {
               logout();
-              navigate("/login");
+              navigate("/");
               onClose?.();
             }}
           />

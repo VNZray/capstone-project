@@ -17,6 +17,7 @@ import axios from "axios";
 import api from "../services/api";
 import type { Owner } from "../types/Owner";
 import type { User } from "../types/User";
+import { initializeEmailJS, sendAccountCredentials } from "../services/email/EmailService";
 
 const steps = [
   "Business Information",
@@ -162,6 +163,11 @@ const BusinessRegistration = () => {
     },
   ]);
 
+  // Initialize EmailJS
+  useEffect(() => {
+    initializeEmailJS();
+  }, []);
+
   if (!formData) return null;
   const handleNext = () => {
     if (submitting) return; // avoid double submit
@@ -194,6 +200,14 @@ const BusinessRegistration = () => {
         if (!effectiveUserId) throw new Error("User creation failed");
         // keep state in sync for any subsequent steps
         setUserData((prev) => ({ ...prev, id: effectiveUserId! }));
+
+        // Send account credentials via email
+        await sendAccountCredentials(
+          userData.email,
+          `${ownerData.first_name} ${ownerData.last_name}`,
+          userData.email,
+          userData.password || "owner123"
+        );
       }
 
       // If no owner created yet, create it now from Step 2 data

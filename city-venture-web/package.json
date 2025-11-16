@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@date-io/date-fns": "^3.2.1",
+    "@emailjs/browser": "^4.4.1",
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
     "@fontsource/poppins": "^5.2.6",
@@ -29,6 +30,7 @@
     "axios": "^1.11.0",
     "classnames": "^2.5.1",
     "dayjs": "^1.11.18",
+    "emailjs-com": "^3.2.0",
     "leaflet": "^1.9.4",
     "lucide-react": "^0.541.0",
     "nativewind": "^4.1.23",

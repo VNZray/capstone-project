@@ -21,6 +21,7 @@ import {
   toggleStaffActive,
   type StaffMember,
 } from "@/src/services/manage-staff/StaffService";
+import { initializeEmailJS, sendStaffCredentials } from "@/src/services/email/EmailService";
 
 type Staff = StaffMember;
 
@@ -40,6 +41,11 @@ const ManageStaff = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Initialize EmailJS
+  useEffect(() => {
+    initializeEmailJS();
+  }, []);
 
   // Fetch staff on mount and when business changes
   useEffect(() => {
@@ -108,6 +114,13 @@ const ManageStaff = () => {
         user_id: userId,
         business_id: businessDetails?.id || "",
       };
+
+      // Send account credentials via email
+      await sendStaffCredentials(
+        data.email,
+        `${data.first_name} ${data.last_name || ''}`.trim(),
+        "staff123"
+      );
 
       setStaff((prev) => [newStaff, ...prev]);
       setAddOpen(false);

@@ -142,10 +142,13 @@ export default function Sidebar({
         </div>
         <div>
           <NavItem
-            to="/login"
+            to="/"
             label="Log Out"
             icon={<LogOut size={24} />}
-            onClick={onClose}
+            onClick={() => {
+              logout();
+              onClose?.();
+            }}
           />
         </div>
       </nav>
