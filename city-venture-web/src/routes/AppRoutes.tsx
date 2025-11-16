@@ -6,15 +6,15 @@ import NotFound from "../pages/NotFound";
 // Layouts
 import MainLayout from "../layout/MainLayout";
 
-import LandingPage from "@/src/pages/LandingPage";
+import LandingPage from "@/src/features/landing-page/LandingPage";
 import About from "../pages/About";
 import Registration from "../pages/BusinessRegistration";
 
-import BusinessPortalLogin from "../features/auth/BusinessPortalLogin";
-import BusinessPortalRegister from "../features/auth/BusinessPortalRegister";
+import BusinessPortalLogin from "../features/auth/LoginPage";
 import AdminLogin from "../features/auth/AdminLogin";
 import AdminRegister from "../features/auth/AdminRegister";
 import UnifiedLogin from "@/src/features/auth/UnifiedLogin";
+import Unauthorized from "@/src/pages/Unauthorized";
 import BusinessLayout from "../layout/BusinessLayout";
 import MyBusiness from "../features/business/listing/MyBusiness";
 import { AuthProvider } from "../context/AuthContext";
@@ -57,6 +57,8 @@ import Spot from "@/src/features/admin/services/tourist-spot/Spot";
 import TouristSpotDetailsScreen from "@/src/features/admin/services/tourist-spot/TouristSpotDetailsScreen";
 import { BusinessProvider } from "../context/BusinessContext";
 import ReportDetailsScreen from "@/src/features/admin/report/ReportDetailsScreen";
+import AccommodationSubscription from "@/src/features/business/accommodation/subscription/Subscription";
+import ShopSubscription from "@/src/features/business/shop/subscription/Subscription";
 import TourismStaffManagement from "@/src/features/admin/tourism-staff/TourismStaffManagement";
 
 import Notification from "../features/business/accommodation/notfication/Notification";
@@ -64,6 +66,9 @@ import AccommodationStaff from "../features/business/accommodation/Staff/ManageS
 import ShopStaff from "../features/business/shop/Staff/ManageStaff";
 import Test from "../pages/Test";
 import TestButton from "../pages/TestButton";
+import OwnerProfile from "../features/business/profile/Profile";
+import TourismProfile from "../features/admin/profile/Profile";
+import TouristRegister from "../features/auth/TouristRegister";
 
 export default function AppRoutes() {
   const user = "/";
@@ -72,7 +77,6 @@ export default function AppRoutes() {
   const business_type = "Accommodation";
 
   // Normalized role names as produced by AuthService
-  // Tourism roles allowed for most admin pages
   const TOURISM_ROLES = ["Admin", "Tourism Officer"]; // Officer has restricted pages handled per-route
   const BUSINESS_ROLES = [
     "Business Owner",
@@ -98,17 +102,15 @@ export default function AppRoutes() {
           <Route path={`${user}`} element={<LandingPage />} />
           <Route path={`${user}about`} element={<About />} />
         </Route>
-        <Route path={`/login`} element={<UnifiedLogin />} />
-        <Route path={`${business}/login`} element={<BusinessPortalLogin />} />
+        <Route path={`/unauthorized`} element={<Unauthorized />} />
+        {/* <Route path={`/login`} element={<UnifiedLogin />} /> */}
+        <Route path={`/login`} element={<BusinessPortalLogin />} />
         <Route path={`business-registration`} element={<Registration />} />
         <Route path={`/test`} element={<Test />} />
         <Route path={`/test-button`} element={<TestButton />} />
-
-        <Route
-          path={`${business}/signup`}
-          element={<BusinessPortalRegister />}
-        />
-
+        <Route path={`user/profile`} element={<OwnerProfile />} />
+        <Route path={`tourism/profile`} element={<TourismProfile />} />
+        <Route path={`/register`} element={<TouristRegister />} />
         <Route path={`${tourism}/login`} element={<AdminLogin />} />
         <Route path={`${tourism}/signup`} element={<AdminRegister />} />
         <Route
@@ -122,7 +124,7 @@ export default function AppRoutes() {
             <Route
               path={`${business}`}
               element={
-                <ProtectedRoute requiredRoles={BUSINESS_ROLES}>
+                <ProtectedRoute requiredRoles={["Business Owner"]}>
                   <MyBusiness />
                 </ProtectedRoute>
               }
@@ -131,7 +133,7 @@ export default function AppRoutes() {
             <Route
               path={`${business}/register`}
               element={
-                <ProtectedRoute requiredRoles={BUSINESS_ROLES}>
+                <ProtectedRoute requiredRoles={["Business Owner"]}>
                   <BusinessRegistration />
                 </ProtectedRoute>
               }
@@ -176,8 +178,16 @@ export default function AppRoutes() {
                 <Route
                   path={`${business}/manage-staff`}
                   element={
-                    <ProtectedRoute requiredRoles={BUSINESS_ROLES}>
+                    <ProtectedRoute requiredRoles={["Business Owner"]}>
                       <AccommodationStaff />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path={`${business}/subscription`}
+                  element={
+                    <ProtectedRoute requiredRoles={["Business Owner"]}>
+                      <AccommodationSubscription />
                     </ProtectedRoute>
                   }
                 />
@@ -197,6 +207,14 @@ export default function AppRoutes() {
                   element={
                     <ProtectedRoute requiredRoles={BUSINESS_ROLES}>
                       <ShopDashboard />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path={`${business}/subscription`}
+                  element={
+                    <ProtectedRoute requiredRoles={["Business Owner"]}>
+                      <ShopSubscription />
                     </ProtectedRoute>
                   }
                 />
@@ -328,7 +346,7 @@ export default function AppRoutes() {
             <Route
               path={`${business}/settings`}
               element={
-                <ProtectedRoute requiredRoles={BUSINESS_ROLES}>
+                <ProtectedRoute requiredRoles={["Business Owner"]}>
                   <Settings />
                 </ProtectedRoute>
               }

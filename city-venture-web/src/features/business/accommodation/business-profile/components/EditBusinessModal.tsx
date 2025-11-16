@@ -112,8 +112,8 @@ const EditBusinessModal: React.FC<EditBusinessModalProps> = ({
             Business Profile
           </label>
           <ImageUpload
-            folderName="business-profile"
-            uploadTo="business-profile"
+            folderName={`${business_name}/profile`}
+            uploadTo={`business-profile`}
             placeholder="Click to upload business image"
             maxSizeMB={5}
             storeLocally={true}

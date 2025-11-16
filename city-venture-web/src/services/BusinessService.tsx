@@ -92,7 +92,6 @@ export const fetchBusinessData = async (
     address: business.address ?? '',
     description: business.description ?? '',
     instagram_url: business.instagram_url ?? '',
-    x_url: business.x_url ?? '',
     website_url: business.website_url ?? '',
     facebook_url: business.facebook_url ?? '',
     latitude: business.latitude ?? '',

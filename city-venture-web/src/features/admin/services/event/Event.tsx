@@ -1,9 +1,9 @@
-import ResponsiveText from "@/src/components/ResponsiveText";
+import Typography from "@/src/components/Typography";
 
 const Event: React.FC = () => {
   return (
     <>
-      <ResponsiveText type="title-large" weight="bold">Event</ResponsiveText>
+      <Typography.Title size="lg">Event</Typography.Title>
     </>
   );
 };

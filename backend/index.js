@@ -42,6 +42,7 @@ import shopCategoryRoutes from "./routes/shop-categories.js";
 import feedbackReviewRoutes from "./routes/feedback-reviews.js";
 import feedbackReplyRoutes from "./routes/feedback-replies.js";
 import feedbackReviewPhotoRoutes from "./routes/feedback-review-photos.js";
+import roomPhotosRoutes from "./routes/room-photos.js";
 import tourismStaffManagementRoutes from "./routes/tourism_staff_management.js";
 
 const app = express();
@@ -112,6 +113,11 @@ const routeSections = [
         path: "/api/room-amenities",
         handler: roomAmenityRoutes,
         label: "Room Amenities",
+      },
+      {
+        path: "/api/room-photos",
+        handler: roomPhotosRoutes,
+        label: "Room Photos",
       },
       { path: "/api/permit", handler: permitRoutes, label: "Permits" },
     ],

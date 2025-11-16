@@ -48,6 +48,23 @@ exports.seed = async function (knex) {
 		{ name: 'edit_staff', description: 'Edit staff roles or information' },
 		{ name: 'remove_staff', description: 'Remove staff from the business' },
 
+		// Shop Management
+		{ name: 'view_shop', description: 'View shop details and products' },
+		{ name: 'manage_shop', description: 'Add, edit, or remove shop products' },
+		{ name: 'view_orders', description: 'View customer orders in the shop' },
+		{ name: 'manage_orders', description: 'Process and update order statuses' },
+
+		// Event Management
+		{ name: 'view_events', description: 'View event listings' },
+		{ name: 'manage_events', description: 'Create, update, or delete events' },
+
+		// Tourist Spot Management
+		{ name: 'view_tourist_spots', description: 'View tourist spot listings' },
+		{ name: 'manage_tourist_spots', description: 'Add, edit, or remove tourist spots' },
+
+		// Settings
+		{ name: 'manage_settings', description: 'Access and modify application settings' },
+
 		// Tourism Officer / Admin
 		{ name: 'approve_business', description: 'Approve or reject new business registrations' },
 		{ name: 'approve_event', description: 'Approve or reject submitted events' },

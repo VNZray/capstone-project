@@ -1,7 +1,7 @@
 import Container from "@/src/components/Container";
 import { AspectRatio, Divider, IconButton } from "@mui/joy";
 import placeholder from "@/src/assets/images/placeholder-image.png";
-import ResponsiveText from "@/src/components/ResponsiveText";
+import Typography from "@/src/components/Typography";
 import { Email, Lock } from "@mui/icons-material";
 import { Edit, Trash2, Ban } from "lucide-react";
 import Button from "@/src/components/Button";
@@ -45,12 +45,12 @@ const StaffCard: React.FC<StaffProps> = ({
 
       {/* Name and Role */}
       <Container gap="0" padding="0" align="center">
-        <ResponsiveText type="label-medium" weight="bold">
+        <Typography.Label size="md">
           {first_name} {last_name}
-        </ResponsiveText>
-        <ResponsiveText type="label-small" weight="semi-bold">
+        </Typography.Label>
+        <Typography.Label size="sm" weight="semibold">
           {role}
-        </ResponsiveText>
+        </Typography.Label>
       </Container>
 
       <Divider sx={{ my: 1, width: "100%" }} />

@@ -1,7 +1,7 @@
 import { FormControl, FormLabel, Input } from "@mui/joy";
 import React from "react";
 import type { Business } from "@/src/types/Business";
-import ResponsiveText from "@/src/components/ResponsiveText";
+import Typography from "@/src/components/Typography";
 import { EmailOutlined, Phone } from "@mui/icons-material";
 
 type Props = {
@@ -59,12 +59,12 @@ const Step2: React.FC<Props> = ({ data, setData }) => {
             marginBottom: 20,
             paddingTop: 4
           }}>
-            <ResponsiveText type="label-large" weight="bold" color="#111827" mb={1}>
+            <Typography.Label size="lg" sx={{ mb: 1, color: "#111827" }}>
               Contact Information
-            </ResponsiveText>
-            <ResponsiveText type="body-extra-small" color="#6b7280">
+            </Typography.Label>
+            <Typography.Body size="xs" sx={{ color: "#6b7280" }}>
               How can customers reach your business?
-            </ResponsiveText>
+            </Typography.Body>
           </div>
 
           <div style={{ display: 'flex', justifyContent: 'center' }}>

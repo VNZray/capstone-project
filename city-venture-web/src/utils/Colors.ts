@@ -6,10 +6,10 @@ export const colors = {
   tertiary: "#DEE3F2",
   background: "#ffffff", // from --white
   white: "#ffffff", // from --white
-  error: "#ff4d4d",
+  error: "#c70030	",
   success: "#28a745",
   warningBackground: "#ffc107",
-  warning: "#ffc107",
+  warning: "#ff4545",
   dark: "#1a1a1a", // replaced with CSS var value
   black: "#111111",
   text: "#1a1a1a", // --text-color
@@ -25,4 +25,5 @@ export const colors = {
   warningLabel: "#ed6c02",
   info: "#5bc0de",
   purple: "#f2d1f2",
+  odd: "#F3F4F6",
 };

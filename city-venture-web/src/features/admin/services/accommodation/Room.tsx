@@ -1,9 +1,9 @@
-import ResponsiveText from "@/src/components/ResponsiveText";
+import Typography from "@/src/components/Typography";
 
 const Room: React.FC = () => {
   return (
     <>
-      <ResponsiveText type="title-large" weight="bold">Room</ResponsiveText>
+      <Typography.Title size="lg">Room</Typography.Title>
     </>
   );
 };

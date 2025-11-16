@@ -12,10 +12,11 @@ import {
   Option,
   Autocomplete,
   FormHelperText,
-  Alert,
+  Alert as JoyAlert,
 } from "@mui/joy";
 import { updateData, getData } from "@/src/services/Service";
-import ResponsiveText from "@/src/components/ResponsiveText";
+import Typography from "@/src/components/Typography";
+import Alert from "@/src/components/Alert";
 import type { Room } from "@/src/types/Business";
 
 interface EditDescriptionModalProps {
@@ -65,6 +66,17 @@ const EditBasicInfo: React.FC<EditDescriptionModalProps> = ({
   const [existingRoomNumbers, setExistingRoomNumbers] = React.useState<
     string[]
   >([]);
+  const [alertConfig, setAlertConfig] = React.useState<{
+    open: boolean;
+    type: "success" | "error" | "warning" | "info";
+    title: string;
+    message: string;
+  }>({
+    open: false,
+    type: "info",
+    title: "",
+    message: "",
+  });
 
   // Predefined room types
   const roomTypeOptions = [
@@ -149,41 +161,63 @@ const EditBasicInfo: React.FC<EditDescriptionModalProps> = ({
           status,
         };
         await updateData(roomId, updatePayload, "room");
+        
+        // Show success alert
+        setAlertConfig({
+          open: true,
+          type: "success",
+          title: "Room Updated",
+          message: `Room ${room_number} has been successfully updated with new information.`,
+        });
+        
+        setError("");
         onSave(room_number, room_type, floor, capacity, room_price, status);
+        
+        // Close modal and reload after showing success
+        setTimeout(() => {
+          onClose();
+          if (onUpdate) onUpdate();
+        }, 1500);
+        
       } catch (err) {
         const errorMessage =
           err instanceof Error ? err.message : "Failed to update room";
+        
+        let alertMessage = errorMessage;
         if (
           errorMessage.includes("Duplicate entry") ||
           errorMessage.includes("UNIQUE")
         ) {
-          setError(
-            `Room number "${room_number}" already exists for this business`
-          );
-        } else {
-          setError(errorMessage);
+          alertMessage = `Room number "${room_number}" already exists for this business. Please use a different room number.`;
         }
+        
+        setAlertConfig({
+          open: true,
+          type: "error",
+          title: "Update Failed",
+          message: alertMessage,
+        });
+        
+        setError(alertMessage);
         return;
       }
     } else {
       onSave(room_number, room_type, floor, capacity, room_price, status);
+      onClose();
     }
-
-    setError("");
-    if (onUpdate) onUpdate();
-    onClose();
   };
 
   return (
-    <Modal open={open} onClose={onClose}>
-      <ModalDialog size="lg" variant="outlined" maxWidth={500} minWidth={500}>
-        <ResponsiveText type="title-small">Edit Basic Information</ResponsiveText>
-        <DialogContent>
-          {error && (
-            <Alert color="danger" variant="soft">
-              {error}
-            </Alert>
-          )}
+    <>
+      <Modal open={open} onClose={onClose}>
+        <ModalDialog size="lg" variant="outlined" maxWidth={500} minWidth={500}>
+          <Typography.CardTitle>Edit Basic Information</Typography.CardTitle>
+          <DialogContent>
+            {error && (
+              <JoyAlert color="danger" variant="soft">
+                {error}
+              </JoyAlert>
+            )}
           <FormControl error={!!error && error.includes("Room number")}>
             <FormLabel>Room Number</FormLabel>
             <Input
@@ -258,6 +292,18 @@ const EditBasicInfo: React.FC<EditDescriptionModalProps> = ({
         </DialogActions>
       </ModalDialog>
     </Modal>
+    
+    <Alert
+      open={alertConfig.open}
+      onClose={() => setAlertConfig((prev) => ({ ...prev, open: false }))}
+      onConfirm={() => setAlertConfig((prev) => ({ ...prev, open: false }))}
+      type={alertConfig.type}
+      title={alertConfig.title}
+      message={alertConfig.message}
+      confirmText="OK"
+      showCancel={false}
+    />
+    </>
   );
 };
 

@@ -17,10 +17,23 @@
 1. Use global components for consistent and unified UI
     - PageContainer.tsx
     - Container.tsx
-    - ResponsiveText.tsx
+    - Typography.tsx
+        - Sample Use:
+            - [ ] <Typography.Title></Typography.Title>
+            - [ ] <Typography.Header></Typography.Header>
+            - [ ] <Typography.CardTitle></Typography.CardTitle>
+            - [ ] <Typography.CardSubTitle></Typography.CardSubTitle>
+            - [ ] <Typography.Label></Typography.Label>
+            - [ ] <Typography.Body></Typography.Body>
     - Button.tsx
     - IconButton.tsx
     - SearchBar.tsx
+    - DynamicTab.tsx
+    - NoDataFound.tsx
+    - PermissionGuard.tsx
+        - For specific component rendering based on roles and permissions
+    - ProtectedRoute.tsx
+        - For specific pages rendering based on roles and permissions
 2. Use utils/Colors.ts for consistent color
 3. Configure the IP Address in api.tsx to run the app locally
 4. Use clean architecture
@@ -29,6 +42,24 @@
 
     http://localhost:5173/test
 
+## For Business
+
+    http://localhost:5173/login
+
 ## For Admin
 
     http://localhost:5173/tourism/login
+
+## Test Account
+
+1. Business Portal
+    - email: `owner@gmail.com` | `owner1@gmail.com` | `owner2@gmail.com`
+    - password: owner123
+
+2. Admin Portal
+    - email: `admin@gmail.com`
+    - password: admin123
+
+3. Tourist
+    - email: `tourist@gmail.com`
+    - password: tourist123

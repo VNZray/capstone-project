@@ -13,19 +13,17 @@ import {
   Textarea,
   Grid,
   Switch,
-  Typography,
   Autocomplete,
   Radio,
   RadioGroup,
   Box,
 } from "@mui/joy";
-import CardHeader from "@/src/components/CardHeader";
 import { supabase } from "@/src/lib/supabase";
 import { UploadIcon } from "lucide-react";
 import placeholderImage from "@/src/assets/images/placeholder-image.png";
 import { insertData } from "@/src/services/Service";
 import { useBusiness } from "@/src/context/BusinessContext";
-
+import Typography from "@/src/components/Typography";
 interface AddPromoModalProps {
   open: boolean;
   onClose: () => void;
@@ -213,7 +211,9 @@ const AddPromoModal: React.FC<AddPromoModalProps> = ({
         role="dialog"
         aria-labelledby="add-promo-title"
       >
-        <CardHeader title="Create Promotion" color="white" />
+        <Typography.CardTitle>
+          Create Promotion
+        </Typography.CardTitle>
         <Box sx={{ flex: 1, minHeight: 0, overflowY: "auto", pr: 1 }}>
           <form
             onSubmit={(e) => {
@@ -223,9 +223,9 @@ const AddPromoModal: React.FC<AddPromoModalProps> = ({
           >
             <Stack spacing={2}>
               {errorMsg && (
-                <Typography level="body-sm" color="danger" sx={{ mt: 1 }}>
+                <Typography.Body color="error" sx={{ mt: 1 }}>
                   {errorMsg}
-                </Typography>
+                </Typography.Body>
               )}
               <Grid container spacing={2}>
                 <Grid xs={8} sx={{ pl: 0 }}>
@@ -398,9 +398,7 @@ const AddPromoModal: React.FC<AddPromoModalProps> = ({
                         )
                       }
                     />
-                    <Typography
-                      level="body-xs"
-                      color="neutral"
+                    <Typography.Body
                       sx={{ mt: 0.5 }}
                     >
                       {draft.room_ids.length === 0
@@ -408,7 +406,7 @@ const AddPromoModal: React.FC<AddPromoModalProps> = ({
                         : `${draft.room_ids.length} room${
                             draft.room_ids.length === 1 ? "" : "s"
                           } selected`}
-                    </Typography>
+                    </Typography.Body>
                   </FormControl>
                 )}
               </Stack>

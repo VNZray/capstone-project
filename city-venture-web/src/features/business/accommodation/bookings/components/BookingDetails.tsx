@@ -4,7 +4,6 @@ import {
   ModalClose,
   Sheet,
   Typography,
-  Button,
   Divider,
   Chip,
   Avatar,
@@ -23,6 +22,9 @@ import type { Booking } from "@/src/types/Booking";
 import { fetchTourist } from "@/src/services/BookingService";
 import { fetchUserData } from "@/src/services/auth/AuthService";
 import api from "@/src/services/api";
+import { colors } from "@/src/utils/Colors";
+import Button from "@/src/components/Button";
+import Alert from "@/src/components/Alert";
 
 interface BookingDetailsProps {
   open: boolean;
@@ -37,17 +39,80 @@ const getStatusColor = (status: string) => {
     case "Pending":
       return "neutral";
     case "Reserved":
-      return "success";
+      return "primary";
     case "Checked-in":
       return "warning";
     case "Checked-out":
-      return "primary";
+      return "success";
     case "Canceled":
       return "danger";
     default:
       return "neutral";
   }
 };
+
+// Helper Components
+const SectionTitle: React.FC<{ icon: React.ReactNode; title: string }> = ({
+  icon,
+  title,
+}) => (
+  <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 2 }}>
+    <Box sx={{ color: "primary.500" }}>{icon}</Box>
+    <Typography
+      level="title-sm"
+      sx={{ fontWeight: 700, color: "text.primary" }}
+    >
+      {title}
+    </Typography>
+  </Box>
+);
+
+const InfoCard: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+  <Box
+    sx={{
+      bgcolor: "background.level1",
+      borderRadius: "12px",
+      p: 2.5,
+      border: "1px solid",
+      borderColor: "divider",
+      transition: "all 0.2s ease",
+      "&:hover": {
+        borderColor: "primary.300",
+        boxShadow: "0 2px 8px rgba(0, 0, 0, 0.1)",
+      },
+    }}
+  >
+    {children}
+  </Box>
+);
+
+const InfoRow: React.FC<{
+  icon: React.ReactNode;
+  label: string;
+  value: string;
+}> = ({ icon, label, value }) => (
+  <Box
+    sx={{
+      display: "flex",
+      justifyContent: "space-between",
+      alignItems: "flex-start",
+      gap: 2,
+    }}
+  >
+    <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+      <Box sx={{ color: "primary.400", display: "flex" }}>{icon}</Box>
+      <Typography
+        level="body-sm"
+        sx={{ color: "text.secondary", fontWeight: 500 }}
+      >
+        {label}
+      </Typography>
+    </Box>
+    <Typography level="body-sm" sx={{ fontWeight: 600, textAlign: "right" }}>
+      {value}
+    </Typography>
+  </Box>
+);
 
 const BookingDetails: React.FC<BookingDetailsProps> = ({
   open,
@@ -63,8 +128,20 @@ const BookingDetails: React.FC<BookingDetailsProps> = ({
     user_profile?: string;
   } | null>(null);
   const [imageError, setImageError] = useState(false);
+  const [alertConfig, setAlertConfig] = useState<{
+    open: boolean;
+    type: "success" | "error" | "warning" | "info";
+    title: string;
+    message: string;
+    onConfirm: () => void;
+  }>({
+    open: false,
+    type: "info",
+    title: "",
+    message: "",
+    onConfirm: () => {},
+  });
 
-  // Fetch guest info
   useEffect(() => {
     const loadGuestInfo = async () => {
       if (!booking?.tourist_id) return;
@@ -93,7 +170,6 @@ const BookingDetails: React.FC<BookingDetailsProps> = ({
     }
   }, [booking?.tourist_id, open]);
 
-  // Resolve avatar image URL
   const avatarSrc = useMemo(() => {
     const raw = (guestInfo?.user_profile ?? "").toString().trim();
     if (!raw) return undefined;
@@ -103,7 +179,6 @@ const BookingDetails: React.FC<BookingDetailsProps> = ({
     return `${base}${path}`;
   }, [guestInfo?.user_profile]);
 
-  // Get initials for avatar fallback
   const initials = useMemo(() => {
     if (!guestInfo?.name) return "?";
     const parts = guestInfo.name.split(" ").filter(Boolean);
@@ -131,7 +206,65 @@ const BookingDetails: React.FC<BookingDetailsProps> = ({
     onClose();
   };
 
-  // Normalize status for consistent comparison
+  const handleActionClick = (action: string) => {
+    const balance = booking?.balance ?? 0;
+
+    switch (action) {
+      case "Canceled":
+        setAlertConfig({
+          open: true,
+          type: "warning",
+          title: "Cancel Booking",
+          message: `Are you sure you want to cancel this booking for ${guestInfo?.name || "this guest"}? This action cannot be undone.`,
+          onConfirm: () => handleStatusUpdate(action),
+        });
+        break;
+
+      case "Checked-in":
+        setAlertConfig({
+          open: true,
+          type: "info",
+          title: "Check-in Guest",
+          message: `Confirm check-in for ${guestInfo?.name || "this guest"}? Please ensure all booking details are verified.`,
+          onConfirm: () => handleStatusUpdate(action),
+        });
+        break;
+
+      case "Checked-out":
+        if (balance > 0) {
+          setAlertConfig({
+            open: true,
+            type: "error",
+            title: "Outstanding Balance",
+            message: `Cannot check out. ${guestInfo?.name || "The guest"} has an unpaid balance of ₱${balance.toLocaleString()}. Please collect the payment before proceeding with check-out.`,
+            onConfirm: () => setAlertConfig((prev) => ({ ...prev, open: false })),
+          });
+        } else {
+          setAlertConfig({
+            open: true,
+            type: "success",
+            title: "Check-out Guest",
+            message: `Confirm check-out for ${guestInfo?.name || "this guest"}? All payments have been settled.`,
+            onConfirm: () => handleStatusUpdate(action),
+          });
+        }
+        break;
+
+      case "Reserved":
+        setAlertConfig({
+          open: true,
+          type: "success",
+          title: "Confirm Booking",
+          message: `Confirm reservation for ${guestInfo?.name || "this guest"}? The booking will be marked as confirmed.`,
+          onConfirm: () => handleStatusUpdate(action),
+        });
+        break;
+
+      default:
+        handleStatusUpdate(action);
+    }
+  };
+
   const normalizeStatus = (status?: string) => {
     if (!status) return "Pending";
     const lower = status.toLowerCase();
@@ -141,25 +274,24 @@ const BookingDetails: React.FC<BookingDetailsProps> = ({
     return status.charAt(0).toUpperCase() + status.slice(1);
   };
 
-  // Determine available actions based on current status
   const getStatusActions = () => {
     const status = normalizeStatus(booking?.booking_status);
     type Action = {
       label: string;
       action: string;
-      color: "success" | "danger" | "warning" | "primary";
+      color: "success" | "error" | "warning" | "primary";
       disabled?: boolean;
     };
     switch (status) {
       case "Pending":
         return [
           { label: "Confirm", action: "Reserved", color: "success" },
-          { label: "Cancel", action: "Canceled", color: "danger" },
+          { label: "Cancel", action: "Canceled", color: "error" },
         ] as Action[];
       case "Reserved":
         return [
           { label: "Check-in", action: "Checked-in", color: "warning" },
-          { label: "Cancel", action: "Canceled", color: "danger" },
+          { label: "Cancel", action: "Canceled", color: "error" },
         ] as Action[];
       case "Checked-in":
         return [
@@ -172,7 +304,7 @@ const BookingDetails: React.FC<BookingDetailsProps> = ({
         ] as Action[];
       case "Checked-out":
       case "Canceled":
-        return [] as Action[]; // No actions for final states
+        return [] as Action[];
       default:
         return [] as Action[];
     }
@@ -181,308 +313,543 @@ const BookingDetails: React.FC<BookingDetailsProps> = ({
   if (!booking) return null;
 
   return (
-    <Modal
-      open={open}
-      onClose={onClose}
-      sx={{
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
-      }}
-    >
-      <Sheet
-        variant="outlined"
+    <>
+      <Modal
+        open={open}
+        onClose={onClose}
         sx={{
-          width: "90%",
-          maxWidth: 600,
-          borderRadius: "md",
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
           p: 2,
-          boxShadow: "lg",
-          overflowY: "auto",
         }}
       >
-        <ModalClose variant="plain" sx={{ m: 1 }} />
-
-        {/* Guest Profile Section */}
-        <Box
+        <Sheet
+          variant="outlined"
           sx={{
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            mb: 3,
+            width: "100%",
+            maxWidth: 680,
+            maxHeight: "90vh",
+            borderRadius: "16px",
+            overflow: "hidden",
+            boxShadow: "0 8px 32px rgba(0, 0, 0, 0.12)",
           }}
         >
-          {avatarSrc && !imageError ? (
+        <ModalClose
+          variant="plain"
+          sx={{
+            m: 1.5,
+            zIndex: 2,
+            "&:hover": {
+              backgroundColor: "rgba(255, 255, 255, 0.2)",
+            },
+          }}
+        />
+
+        <Box sx={{ overflowY: "auto", maxHeight: "90vh" }}>
+          {/* Header with Gradient */}
+          <Box
+            sx={{
+              background: `linear-gradient(135deg, #667eea 0%, ${colors.primary} 100%)`,
+              color: "white",
+              p: 4,
+              pb: 5,
+            }}
+          >
             <Box
-              component="img"
-              src={avatarSrc}
-              alt={guestInfo?.name}
-              onError={() => setImageError(true)}
               sx={{
-                width: 100,
-                height: 100,
-                borderRadius: "50%",
-                objectFit: "cover",
-                mb: 2,
-              }}
-            />
-          ) : (
-            <Avatar
-              sx={{
-                width: 100,
-                height: 100,
-                mb: 2,
-                fontSize: "2rem",
-                bgcolor: "primary.500",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                gap: 2,
               }}
             >
-              {initials}
-            </Avatar>
-          )}
-          <Typography level="title-lg" sx={{ fontWeight: 600 }}>
-            {guestInfo?.name || "Loading..."}
-          </Typography>
-          {guestInfo?.email && (
-            <Typography level="body-sm" sx={{ color: "text.secondary" }}>
-              {guestInfo.email}
-            </Typography>
-          )}
-        </Box>
-
-        <Divider sx={{ my: 2 }} />
-
-        {/* Booking Information Grid */}
-        <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-          {/* Guest Details */}
-          {guestInfo?.phone && (
-            <InfoRow
-              icon={<User size={18} />}
-              label="Phone"
-              value={guestInfo.phone}
-            />
-          )}
-
-          {/* Booking Dates */}
-          <InfoRow
-            icon={<Calendar size={18} />}
-            label="Check-in Date"
-            value={formatDate(booking.check_in_date)}
-          />
-          <InfoRow
-            icon={<Calendar size={18} />}
-            label="Check-out Date"
-            value={formatDate(booking.check_out_date)}
-          />
-
-          {/* Guests Count */}
-          {booking.pax > 0 && (
-            <InfoRow
-              icon={<Users size={18} />}
-              label="Total Guests (Pax)"
-              value={String(booking.pax)}
-            />
-          )}
-          {(booking.num_adults ||
-            booking.num_children ||
-            booking.num_infants) && (
-            <Box
-              sx={{ pl: 4, display: "flex", flexDirection: "column", gap: 0.5 }}
-            >
-              {(booking.num_adults ?? 0) > 0 && (
-                <Typography level="body-sm" sx={{ color: "text.secondary" }}>
-                  Adults: {booking.num_adults}
-                </Typography>
+              {avatarSrc && !imageError ? (
+                <Box
+                  component="img"
+                  src={avatarSrc}
+                  alt={guestInfo?.name}
+                  onError={() => setImageError(true)}
+                  sx={{
+                    width: 100,
+                    height: 100,
+                    borderRadius: "50%",
+                    objectFit: "cover",
+                    border: "4px solid white",
+                    boxShadow: "0 4px 12px rgba(0, 0, 0, 0.15)",
+                  }}
+                />
+              ) : (
+                <Avatar
+                  sx={{
+                    width: 100,
+                    height: 100,
+                    fontSize: "2rem",
+                    bgcolor: "rgba(255, 255, 255, 0.2)",
+                    color: "white",
+                    border: "4px solid white",
+                    boxShadow: "0 4px 12px rgba(0, 0, 0, 0.15)",
+                  }}
+                >
+                  {initials}
+                </Avatar>
               )}
-              {(booking.num_children ?? 0) > 0 && (
-                <Typography level="body-sm" sx={{ color: "text.secondary" }}>
-                  Children: {booking.num_children}
+              <Box sx={{ textAlign: "center" }}>
+                <Typography
+                  level="h4"
+                  sx={{ fontWeight: 700, color: "white", mb: 0.5 }}
+                >
+                  {guestInfo?.name || "Loading..."}
                 </Typography>
-              )}
-              {(booking.num_infants ?? 0) > 0 && (
-                <Typography level="body-sm" sx={{ color: "text.secondary" }}>
-                  Infants: {booking.num_infants}
-                </Typography>
-              )}
-            </Box>
-          )}
-
-          {/* Guest Type Breakdown */}
-          {(booking.foreign_counts ||
-            booking.domestic_counts ||
-            booking.overseas_counts ||
-            booking.local_counts) && (
-            <>
-              <InfoRow
-                icon={<MapPin size={18} />}
-                label="Guest Origin"
-                value=""
-              />
-              <Box
-                sx={{
-                  pl: 4,
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: 0.5,
-                }}
-              >
-                {(booking.foreign_counts ?? 0) > 0 && (
-                  <Typography level="body-sm" sx={{ color: "text.secondary" }}>
-                    Foreign: {booking.foreign_counts}
-                  </Typography>
-                )}
-                {(booking.domestic_counts ?? 0) > 0 && (
-                  <Typography level="body-sm" sx={{ color: "text.secondary" }}>
-                    Domestic: {booking.domestic_counts}
-                  </Typography>
-                )}
-                {(booking.overseas_counts ?? 0) > 0 && (
-                  <Typography level="body-sm" sx={{ color: "text.secondary" }}>
-                    Overseas: {booking.overseas_counts}
-                  </Typography>
-                )}
-                {(booking.local_counts ?? 0) > 0 && (
-                  <Typography level="body-sm" sx={{ color: "text.secondary" }}>
-                    Local: {booking.local_counts}
+                {guestInfo?.email && (
+                  <Typography
+                    level="body-sm"
+                    sx={{ color: "rgba(255, 255, 255, 0.9)" }}
+                  >
+                    {guestInfo.email}
                   </Typography>
                 )}
               </Box>
-            </>
-          )}
+            </Box>
+          </Box>
 
-          {/* Trip Purpose */}
-          {booking.trip_purpose && booking.trip_purpose !== "—" && (
-            <InfoRow
-              icon={<FileText size={18} />}
-              label="Trip Purpose"
-              value={booking.trip_purpose}
-            />
-          )}
-
-          {/* Pricing */}
-          {(booking.total_price ?? 0) > 0 && (
-            <InfoRow
-              icon={<DollarSign size={18} />}
-              label="Total Price"
-              value={`₱${(booking.total_price ?? 0).toLocaleString()}`}
-            />
-          )}
-          {(booking.balance ?? 0) > 0 && (
-            <InfoRow
-              icon={<DollarSign size={18} />}
-              label="Balance"
-              value={`₱${(booking.balance ?? 0).toLocaleString()}`}
-            />
-          )}
-
-          {/* Timestamps */}
-          {booking.created_at && (
-            <InfoRow
-              icon={<Clock size={18} />}
-              label="Booked On"
-              value={formatDate(booking.created_at)}
-            />
-          )}
-        </Box>
-
-        <Divider sx={{ my: 3 }} />
-
-        {/* Status Section */}
-        <Box sx={{ mb: 3 }}>
+          {/* Status Badge - Overlapping */}
           <Box
             sx={{
               display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
+              justifyContent: "center",
+              mt: -3,
+              mb: 3,
+              position: "relative",
+              zIndex: 1,
             }}
           >
-            <Typography level="body-sm" sx={{ fontWeight: 600 }}>
-              Booking Status
-            </Typography>
             <Chip
-              color={getStatusColor(booking.booking_status || "Pending")}
-              size="lg"
+              size="md"
+              color={getStatusColor(normalizeStatus(booking?.booking_status))}
               variant="soft"
+              sx={{
+                fontWeight: 700,
+                fontSize: "0.875rem",
+                px: 3,
+                py: 1.5,
+                boxShadow: "0 4px 12px rgba(0, 0, 0, 0.15)",
+              }}
             >
-              {booking.booking_status}
+              {normalizeStatus(booking?.booking_status)}
             </Chip>
           </Box>
-        </Box>
 
-        {/* Action Buttons Based on Status */}
-        {getStatusActions().length > 0 && (
-          <>
-            <Divider sx={{ my: 2 }} />
-            <Box sx={{ mb: 3 }}>
-              <Typography level="body-sm" sx={{ mb: 2,fontWeight: 600 }}>
-                Update Booking Status
-              </Typography>
+          {/* Content */}
+          <Box sx={{ px: 4, pb: 4 }}>
+            {/* Contact Information */}
+            {guestInfo?.phone && (
+              <Box sx={{ mb: 4 }}>
+                <SectionTitle
+                  icon={<User size={18} />}
+                  title="Contact Information"
+                />
+                <InfoCard>
+                  <InfoRow
+                    icon={<User size={18} />}
+                    label="Phone Number"
+                    value={guestInfo.phone}
+                  />
+                </InfoCard>
+              </Box>
+            )}
 
-              {/* Banner for outstanding balance */}
-              {(booking?.balance ?? 0) > 0 && (
-                <Box
-                  sx={{
-                    mb: 2,
-                    py: 1.5,
-                    borderRadius: 2,
-                    display: "flex",
-                    alignItems: "center",
-                    fontWeight: 500,
-                  }}
-                >
-                  <DollarSign size={20} style={{ marginRight: 8 }} />
-                  The guest still has an outstanding balance of{" "}
-                  <b>₱{booking.balance?.toLocaleString()}</b>.
-                </Box>
-              )}
+            {/* Booking Details */}
+            <Box sx={{ mb: 4 }}>
+              <SectionTitle
+                icon={<Calendar size={18} />}
+                title="Booking Details"
+              />
+              <InfoCard>
+                <InfoRow
+                  icon={<Calendar size={18} />}
+                  label="Check-in"
+                  value={formatDate(booking.check_in_date)}
+                />
+                <Divider sx={{ my: 1.5 }} />
+                <InfoRow
+                  icon={<Calendar size={18} />}
+                  label="Check-out"
+                  value={formatDate(booking.check_out_date)}
+                />
+                {booking.created_at && (
+                  <>
+                    <Divider sx={{ my: 1.5 }} />
+                    <InfoRow
+                      icon={<Clock size={18} />}
+                      label="Booked On"
+                      value={formatDate(booking.created_at)}
+                    />
+                  </>
+                )}
+              </InfoCard>
+            </Box>
 
+            {/* Guest Information */}
+            {booking.pax > 0 && (
+              <Box sx={{ mb: 4 }}>
+                <SectionTitle
+                  icon={<Users size={18} />}
+                  title="Guest Information"
+                />
+                <InfoCard>
+                  <InfoRow
+                    icon={<Users size={18} />}
+                    label="Total Guests"
+                    value={String(booking.pax)}
+                  />
+                  {(booking.num_adults ||
+                    booking.num_children ||
+                    booking.num_infants) && (
+                    <>
+                      <Divider sx={{ my: 1.5 }} />
+                      <Box
+                        sx={{
+                          pl: 4,
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: 1,
+                        }}
+                      >
+                        {(booking.num_adults ?? 0) > 0 && (
+                          <Box
+                            sx={{
+                              display: "flex",
+                              justifyContent: "space-between",
+                            }}
+                          >
+                            <Typography
+                              level="body-sm"
+                              sx={{ color: "text.secondary" }}
+                            >
+                              Adults
+                            </Typography>
+                            <Typography
+                              level="body-sm"
+                              sx={{ fontWeight: 600 }}
+                            >
+                              {booking.num_adults}
+                            </Typography>
+                          </Box>
+                        )}
+                        {(booking.num_children ?? 0) > 0 && (
+                          <Box
+                            sx={{
+                              display: "flex",
+                              justifyContent: "space-between",
+                            }}
+                          >
+                            <Typography
+                              level="body-sm"
+                              sx={{ color: "text.secondary" }}
+                            >
+                              Children
+                            </Typography>
+                            <Typography
+                              level="body-sm"
+                              sx={{ fontWeight: 600 }}
+                            >
+                              {booking.num_children}
+                            </Typography>
+                          </Box>
+                        )}
+                        {(booking.num_infants ?? 0) > 0 && (
+                          <Box
+                            sx={{
+                              display: "flex",
+                              justifyContent: "space-between",
+                            }}
+                          >
+                            <Typography
+                              level="body-sm"
+                              sx={{ color: "text.secondary" }}
+                            >
+                              Infants
+                            </Typography>
+                            <Typography
+                              level="body-sm"
+                              sx={{ fontWeight: 600 }}
+                            >
+                              {booking.num_infants}
+                            </Typography>
+                          </Box>
+                        )}
+                      </Box>
+                    </>
+                  )}
+                </InfoCard>
+              </Box>
+            )}
+
+            {/* Tourist Origin */}
+            {(booking.foreign_counts ||
+              booking.domestic_counts ||
+              booking.overseas_counts ||
+              booking.local_counts) && (
+              <Box sx={{ mb: 4 }}>
+                <SectionTitle
+                  icon={<MapPin size={18} />}
+                  title="Tourist Origin"
+                />
+                <InfoCard>
+                  <Box
+                    sx={{ display: "flex", flexDirection: "column", gap: 1 }}
+                  >
+                    {(booking.local_counts ?? 0) > 0 && (
+                      <Box
+                        sx={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "center",
+                        }}
+                      >
+                        <Box
+                          sx={{ display: "flex", alignItems: "center", gap: 1 }}
+                        >
+                          <Box
+                            sx={{
+                              width: 8,
+                              height: 8,
+                              borderRadius: "50%",
+                              bgcolor: "primary.500",
+                            }}
+                          />
+                          <Typography
+                            level="body-sm"
+                            sx={{ color: "text.secondary" }}
+                          >
+                            Local
+                          </Typography>
+                        </Box>
+                        <Chip size="sm" variant="soft" color="primary">
+                          {booking.local_counts}
+                        </Chip>
+                      </Box>
+                    )}
+                    {(booking.domestic_counts ?? 0) > 0 && (
+                      <Box
+                        sx={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "center",
+                        }}
+                      >
+                        <Box
+                          sx={{ display: "flex", alignItems: "center", gap: 1 }}
+                        >
+                          <Box
+                            sx={{
+                              width: 8,
+                              height: 8,
+                              borderRadius: "50%",
+                              bgcolor: "success.500",
+                            }}
+                          />
+                          <Typography
+                            level="body-sm"
+                            sx={{ color: "text.secondary" }}
+                          >
+                            Domestic
+                          </Typography>
+                        </Box>
+                        <Chip size="sm" variant="soft" color="success">
+                          {booking.domestic_counts}
+                        </Chip>
+                      </Box>
+                    )}
+                    {(booking.foreign_counts ?? 0) > 0 && (
+                      <Box
+                        sx={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "center",
+                        }}
+                      >
+                        <Box
+                          sx={{ display: "flex", alignItems: "center", gap: 1 }}
+                        >
+                          <Box
+                            sx={{
+                              width: 8,
+                              height: 8,
+                              borderRadius: "50%",
+                              bgcolor: "warning.500",
+                            }}
+                          />
+                          <Typography
+                            level="body-sm"
+                            sx={{ color: "text.secondary" }}
+                          >
+                            Foreign
+                          </Typography>
+                        </Box>
+                        <Chip size="sm" variant="soft" color="warning">
+                          {booking.foreign_counts}
+                        </Chip>
+                      </Box>
+                    )}
+                    {(booking.overseas_counts ?? 0) > 0 && (
+                      <Box
+                        sx={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "center",
+                        }}
+                      >
+                        <Box
+                          sx={{ display: "flex", alignItems: "center", gap: 1 }}
+                        >
+                          <Box
+                            sx={{
+                              width: 8,
+                              height: 8,
+                              borderRadius: "50%",
+                              bgcolor: "danger.500",
+                            }}
+                          />
+                          <Typography
+                            level="body-sm"
+                            sx={{ color: "text.secondary" }}
+                          >
+                            Overseas
+                          </Typography>
+                        </Box>
+                        <Chip size="sm" variant="soft" color="danger">
+                          {booking.overseas_counts}
+                        </Chip>
+                      </Box>
+                    )}
+                  </Box>
+                </InfoCard>
+              </Box>
+            )}
+
+            {/* Trip Purpose */}
+            {booking.trip_purpose && booking.trip_purpose !== "—" && (
+              <Box sx={{ mb: 4 }}>
+                <SectionTitle
+                  icon={<FileText size={18} />}
+                  title="Trip Purpose"
+                />
+                <InfoCard>
+                  <Typography level="body-md" sx={{ fontWeight: 500 }}>
+                    {booking.trip_purpose}
+                  </Typography>
+                </InfoCard>
+              </Box>
+            )}
+
+            {/* Payment Information */}
+            {((booking.total_price ?? 0) > 0 || (booking.balance ?? 0) > 0) && (
+              <Box sx={{ mb: 4 }}>
+                <SectionTitle
+                  icon={<DollarSign size={18} />}
+                  title="Payment Information"
+                />
+                <InfoCard>
+                  {(booking.total_price ?? 0) > 0 && (
+                    <>
+                      <Box
+                        sx={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "center",
+                        }}
+                      >
+                        <Typography
+                          level="body-sm"
+                          sx={{ color: "text.secondary" }}
+                        >
+                          Total Amount
+                        </Typography>
+                        <Typography
+                          level="h4"
+                          sx={{ fontWeight: 700, color: "success.600" }}
+                        >
+                          ₱{(booking.total_price ?? 0).toLocaleString()}
+                        </Typography>
+                      </Box>
+                      {(booking.balance ?? 0) > 0 && (
+                        <>
+                          <Divider sx={{ my: 1.5 }} />
+                          <Box
+                            sx={{
+                              display: "flex",
+                              justifyContent: "space-between",
+                              alignItems: "center",
+                            }}
+                          >
+                            <Typography
+                              level="body-sm"
+                              sx={{ color: "text.secondary" }}
+                            >
+                              Remaining Balance
+                            </Typography>
+                            <Typography
+                              level="title-lg"
+                              sx={{ fontWeight: 600, color: "warning.600" }}
+                            >
+                              ₱{(booking.balance ?? 0).toLocaleString()}
+                            </Typography>
+                          </Box>
+                        </>
+                      )}
+                    </>
+                  )}
+                </InfoCard>
+              </Box>
+            )}
+
+            {/* Action Buttons */}
+            {getStatusActions().length > 0 && (
               <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap" }}>
                 {getStatusActions().map((action) => (
                   <Button
                     key={action.action}
-                    variant="solid"
-                    color={action.color}
-                    onClick={() => handleStatusUpdate(action.action)}
-                    sx={{ flex: 1, minWidth: 120 }}
+                    variant={action.color === "error" ? "outlined" : "solid"}
+                    colorScheme={action.color}
                     disabled={action.disabled}
+                    onClick={() => handleActionClick(action.action)}
+                    sx={{
+                      flex: 1,
+                      minWidth: 120,
+                      py: 1.5,
+                      fontWeight: 600,
+                      transition: "all 0.2s",
+                      "&:hover:not(:disabled)": {
+                        transform: "translateY(-2px)",
+                        boxShadow: "0 4px 12px rgba(0, 0, 0, 0.15)",
+                      },
+                    }}
                   >
                     {action.label}
                   </Button>
                 ))}
               </Box>
-            </Box>
-          </>
-        )}
+            )}
+          </Box>
+        </Box>
       </Sheet>
-    </Modal>
+      </Modal>
+
+      {/* Alert Dialog */}
+      <Alert
+        open={alertConfig.open}
+        onClose={() => setAlertConfig((prev) => ({ ...prev, open: false }))}
+        onConfirm={alertConfig.onConfirm}
+        type={alertConfig.type}
+        title={alertConfig.title}
+        message={alertConfig.message}
+        confirmText={alertConfig.type === "error" ? "Okay" : "Confirm"}
+        showCancel={alertConfig.type !== "error"}
+      />
+    </>
   );
 };
-
-// Info Row Component
-interface InfoRowProps {
-  icon: React.ReactNode;
-  label: string;
-  value: string;
-}
-
-const InfoRow: React.FC<InfoRowProps> = ({ icon, label, value }) => (
-  <Box
-    sx={{
-      display: "flex",
-      alignItems: "flex-start",
-      gap: 2,
-    }}
-  >
-    <Box sx={{ color: "primary.500", mt: 0.5 }}>{icon}</Box>
-    <Box sx={{ flex: 1 }}>
-      <Typography level="body-sm" sx={{ fontWeight: 500, mb: 0.5 }}>
-        {label}
-        {": "}
-        <Typography level="body-sm" sx={{ fontWeight: 500 }}>
-          {value}
-        </Typography>
-      </Typography>
-    </Box>
-  </Box>
-);
 
 export default BookingDetails;
