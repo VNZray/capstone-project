@@ -2,7 +2,7 @@ import React from "react";
 import { Box, Stack, Divider } from "@mui/joy";
 import { User, MapPin, Share2, Clock, ImageIcon, CheckCircle, Check, X } from "lucide-react";
 import Button from "@/src/components/Button";
-import ResponsiveText from "@/src/components/ResponsiveText";
+import Typography from "@/src/components/Typography";
 import type { TouristSpotFormData } from "@/src/types/TouristSpot";
 
 export interface TouristSpotStepperProps {
@@ -90,9 +90,9 @@ const TouristSpotStepper: React.FC<TouristSpotStepperProps> = ({
         >
           {isCompleted ? <Check size={20} /> : <Icon size={20} />}
         </Box>
-        <ResponsiveText type="label-small" weight={isActive ? "semi-bold" : "normal"} color={isCompleted || isActive ? "#0A1B47" : "#64748b"}>
+        <Typography.Label size="sm" weight={isActive ? "semibold" : "normal"} sx={{ color: isCompleted || isActive ? "#0A1B47" : "#64748b" }}>
           {label}
-        </ResponsiveText>
+        </Typography.Label>
         {step < stepData.length - 1 && (
           <Box
             sx={{
@@ -115,12 +115,12 @@ const TouristSpotStepper: React.FC<TouristSpotStepperProps> = ({
       {/* Header */}
       <Box sx={{ mb: 4 }}>
         <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 3 }}>
-          <ResponsiveText type="title-medium" weight="semi-bold" color="#0A1B47">
+          <Typography.Header size="normal" weight="semibold" sx={{ color: "#0A1B47" }}>
             {mode === "edit" ? "Edit Tourist Spot" : "Add Tourist Spot"}
-          </ResponsiveText>
-          <ResponsiveText type="label-small" color="#64748b">
+          </Typography.Header>
+          <Typography.Label size="sm" sx={{ color: "#64748b" }}>
             Step {currentStep + 1} of {stepData.length}
-          </ResponsiveText>
+          </Typography.Label>
         </Stack>
         <Stack direction="row" spacing={0} sx={{ position: "relative", mb: 3 }}>
           {stepData.map((s, i) => (
