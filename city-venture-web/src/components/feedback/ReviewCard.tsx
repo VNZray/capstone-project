@@ -4,10 +4,6 @@ import MoreVertIcon from '@mui/icons-material/MoreVert';
 import StarIcon from '@mui/icons-material/Star';
 import VerifiedIcon from '@mui/icons-material/Verified';
 import ReplyIcon from '@mui/icons-material/Reply';
-import ThumbUpOutlinedIcon from '@mui/icons-material/ThumbUpOutlined';
-import ThumbUpIcon from '@mui/icons-material/ThumbUp';
-import ThumbDownOffAltOutlinedIcon from '@mui/icons-material/ThumbDownOffAltOutlined';
-import ShareOutlinedIcon from '@mui/icons-material/ShareOutlined';
 import Container from '@/src/components/Container';
 
 export interface Review {
@@ -17,22 +13,18 @@ export interface Review {
   createdAt: string; // ISO
   text: string;
   images?: string[];
-  liked?: boolean; // host 'liked'
-  likes?: number; // aggregate count
-  dislikes?: number; // aggregate count
   reply?: { text: string; updatedAt: string };
 }
 
 interface ReviewCardProps {
   review: Review;
-  onToggleLike?: () => void;
   onSaveReply?: (text: string) => void;
   onDeleteReply?: () => void;
 }
 
 const formatDate = (iso: string) => new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
 
-const ReviewCard: React.FC<ReviewCardProps> = ({ review, onToggleLike, onSaveReply, onDeleteReply }) => {
+const ReviewCard: React.FC<ReviewCardProps> = ({ review, onSaveReply, onDeleteReply }) => {
   const [expanded, setExpanded] = React.useState(false);
   const [editingReply, setEditingReply] = React.useState(false);
   const [draftReply, setDraftReply] = React.useState(review.reply?.text || '');
@@ -48,7 +40,7 @@ const ReviewCard: React.FC<ReviewCardProps> = ({ review, onToggleLike, onSaveRep
   };
 
   return (
-    <Container elevation={2}>
+    <Container elevation={2} hover style={{ flex: 1}}>
       <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'flex-start' }}>
         <Avatar src={review.user.avatar} alt={review.user.name} size="lg" />
         <Box sx={{ flex: 1, minWidth: 0 }}>
@@ -165,7 +157,7 @@ const ReviewCard: React.FC<ReviewCardProps> = ({ review, onToggleLike, onSaveRep
                       </Dropdown>
                     </Box>
                     <Typography level="body-xs" sx={{ mt: 0.5, opacity: 0.6 }}>
-                      Updated {review.reply?.updatedAt && new Date(review.reply.updatedAt).toLocaleString()}
+                      Replied {review.reply?.updatedAt && new Date(review.reply.updatedAt).toLocaleString()}
                     </Typography>
                   </Sheet>
                 )}
@@ -187,21 +179,6 @@ const ReviewCard: React.FC<ReviewCardProps> = ({ review, onToggleLike, onSaveRep
             </Menu>
           </Dropdown>
         </Box>
-      </Box>
-      {/* Unified action bar below review content */}
-      <Box sx={{ mt: 1.5, display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap', pl: { xs: 0, sm: 7 } }}>
-        <Button size="sm" variant="plain" startDecorator={review.liked ? <ThumbUpIcon fontSize="small" /> : <ThumbUpOutlinedIcon fontSize="small" />} onClick={onToggleLike} sx={{ px: 1 }}>
-          <Typography level="body-xs" sx={{ fontWeight: 600 }}>{review.likes ?? 0}</Typography>
-        </Button>
-        <Button size="sm" variant="plain" startDecorator={<ThumbDownOffAltOutlinedIcon fontSize="small" />} sx={{ px: 1 }}>
-          <Typography level="body-xs" sx={{ fontWeight: 600 }}>{review.dislikes ?? 0}</Typography>
-        </Button>
-        <Button size="sm" variant="plain" startDecorator={<ShareOutlinedIcon fontSize="small" />} sx={{ px: 1 }}>
-          <Typography level="body-xs" sx={{ fontWeight: 600 }}>Share</Typography>
-        </Button>
-        <Button size="sm" variant="plain" startDecorator={<ReplyIcon fontSize="small" />} onClick={() => { if (!review.reply) setEditingReply(true); else setEditingReply(true); }} sx={{ px: 1 }}>
-          <Typography level="body-xs" sx={{ fontWeight: 600 }}>{review.reply ? 'Edit Reply' : 'Reply'}</Typography>
-        </Button>
       </Box>
     </Container>
   );

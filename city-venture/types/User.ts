@@ -1,7 +1,9 @@
 export type UserRoles = {
   id: number | null;
   role_name: string;
-  description: string;
+  // Some APIs may return `role_description`; keep both for compatibility
+  description?: string;
+  role_description?: string;
   created_at?: string;
 };
 
@@ -9,16 +11,16 @@ export type User = {
   id?: string | "";
   email: string;
   phone_number?: string | "";
-  password: string | "";
+  password?: string | "";
   user_profile?: string | "";
   otp?: number | null;
-  is_active: boolean;
-  is_verified: boolean;
-  created_at: string;
-  updated_at: string;
+  is_active?: boolean;
+  is_verified?: boolean;
+  created_at?: string;
+  updated_at?: string;
   last_login?: string | "";
   user_role_id: number;
-  barangay_id?: number | null | undefined;
+  barangay_id?: number | undefined | null;
 };
 
 export type UserDetails = {
@@ -32,7 +34,6 @@ export type UserDetails = {
   password: string | "";
   phone_number?: string | "";
   gender?: string | "";
-  age?: number | null;
   birthdate?: string | "";
   nationality?: string | "";
   ethnicity?: string | "";
@@ -44,17 +45,20 @@ export type UserDetails = {
   updated_at: string;
   last_login?: string | "";
   user_role_id: number;
-  barangay_id?: number | null | undefined;
+  barangay_id?: number | "";
   address?: string | "";
   user_id?: string | "";
   province_name?: string | "";
   municipality_name?: string | "";
   barangay_name?: string | "";
+  // RBAC: permissions from backend
+  permissions?: string[];
+  business_id?: string;
 };
 
 export type TokenPayload = {
   id: string;
-  user_role_id: string;
+  user_role_id: number;
   exp?: number;
   iat?: number;
 };
