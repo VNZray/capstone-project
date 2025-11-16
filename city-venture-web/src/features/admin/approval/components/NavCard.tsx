@@ -1,5 +1,8 @@
 import React from "react";
-import { Card, CardContent, Stack, Typography } from "@mui/joy";
+import Container from "@/src/components/Container";
+
+import { colors } from "@/src/utils/Colors";
+import { Typography } from "@mui/joy";
 
 interface NavCardProps {
   label: string;
@@ -9,29 +12,61 @@ interface NavCardProps {
   onClick?: () => void;
 }
 
-const NavCard: React.FC<NavCardProps> = ({ label, count, icon, active, onClick }) => {
+const NavCard: React.FC<NavCardProps> = ({
+  label,
+  count,
+  icon,
+  active,
+  onClick,
+}) => {
   return (
-    <Card
-      variant="soft"
-      color={active ? "primary" : "neutral"}
-      sx={{
-        cursor: "pointer",
-        transition: "all 0.2s ease",
-        "&:hover": { transform: "translateY(-2px)" },
-        backgroundColor: active ? "#93c5fd" : undefined,
-      }}
+    <Container
+      hover
+      hoverEffect="lift"
+      cursor="pointer"
       onClick={onClick}
+      padding="1.25rem"
+      elevation={2}
+      radius="12px"
+      hoverDuration={200}
+      background={active ? colors.primary : colors.white}
     >
-      <CardContent>
-        <Stack direction="row" spacing={1} alignItems="center" justifyContent="space-between">
-          <Stack>
-            <Typography level="body-sm" sx={{ color: "text.tertiary" }}>{label}</Typography>
-            <Typography level="h4">{typeof count === "number" ? count : "-"}</Typography>
-          </Stack>
-          {icon}
-        </Stack>
-      </CardContent>
-    </Card>
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "row",
+          alignItems: "center",
+          justifyContent: "space-between",
+        }}
+      >
+        <div>
+          {active ? (
+            <div>
+              <Typography level="body-md" sx={{ color: colors.white }}>
+                {label}
+              </Typography>
+              <Typography level="h4" sx={{ color: colors.white }}>
+                {typeof count === "number" ? count : "-"}
+              </Typography>
+            </div>
+          ) : (
+            <div>
+              <Typography level="body-md" sx={{ color: colors.black }}>
+                {label}
+              </Typography>
+              <Typography level="h4" sx={{ color: colors.black }}>
+                {typeof count === "number" ? count : "-"}
+              </Typography>
+            </div>
+          )}
+        </div>
+        {active ? (
+          <div style={{ color: colors.white }}>{icon}</div>
+        ) : (
+          <div style={{ color: colors.black }}>{icon}</div>
+        )}
+      </div>
+    </Container>
   );
 };
 

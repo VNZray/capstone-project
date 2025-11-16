@@ -266,7 +266,8 @@ const useParentBackgroundColor = (
           bgColor !== "transparent" &&
           bgColor !== "rgba(0, 0, 0, 0)"
         ) {
-          setIsParentDark(isDarkColor(bgColor));
+          const isDark = isDarkColor(bgColor);
+          setIsParentDark(isDark);
           return;
         }
 
@@ -277,15 +278,52 @@ const useParentBackgroundColor = (
       setIsParentDark(false);
     };
 
+    // Initial detection
     detectParentBackground();
 
-    // Optional: Re-detect on window resize or theme changes
-    window.addEventListener("resize", detectParentBackground);
+    // Use MutationObserver to detect style changes in real-time
+    const observer = new MutationObserver(() => {
+      // Use requestAnimationFrame for immediate visual updates
+      requestAnimationFrame(() => {
+        detectParentBackground();
+      });
+    });
+
+    // Observe the entire document body for any changes
+    if (document.body) {
+      observer.observe(document.body, {
+        attributes: true,
+        attributeFilter: ['style', 'class'],
+        subtree: true, // Watch all descendants
+        childList: false,
+      });
+    }
+
+    // Also observe direct parent chain for faster response
+    let element = elementRef.current?.parentElement;
+    while (element && element !== document.body) {
+      observer.observe(element, {
+        attributes: true,
+        attributeFilter: ['style', 'class'],
+        subtree: false,
+      });
+      element = element.parentElement;
+    }
+
+    // Listen for CSS transitions/animations completing
+    const handleTransitionEnd = () => {
+      requestAnimationFrame(detectParentBackground);
+    };
+
+    elementRef.current?.parentElement?.addEventListener('transitionend', handleTransitionEnd);
+    elementRef.current?.parentElement?.addEventListener('animationend', handleTransitionEnd);
 
     return () => {
-      window.removeEventListener("resize", detectParentBackground);
+      observer.disconnect();
+      elementRef.current?.parentElement?.removeEventListener('transitionend', handleTransitionEnd);
+      elementRef.current?.parentElement?.removeEventListener('animationend', handleTransitionEnd);
     };
-  }, [elementRef]);
+  }, []);
 
   return isParentDark;
 };

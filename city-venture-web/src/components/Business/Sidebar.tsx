@@ -22,7 +22,7 @@ import {
 } from "lucide-react";
 
 // Compact icon size
-const ICON_SIZE = 16;
+const ICON_SIZE = 24;
 import logo from "@/src/assets/logo/city-ventures-main.png";
 import "./Sidebar.css";
 import { useBusiness } from "../../context/BusinessContext";
