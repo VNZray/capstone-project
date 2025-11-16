@@ -1,0 +1,227 @@
+
+import { Server } from 'socket.io';
+import jwt from 'jsonwebtoken';
+
+let io = null;
+
+/**
+ * Initialize Socket.IO server
+ * @param {Object} httpServer - HTTP server instance
+ */
+export function initializeSocket(httpServer) {
+  io = new Server(httpServer, {
+    cors: {
+      origin: process.env.CORS_ORIGIN?.split(',') || ['http://localhost:5173', 'http://localhost:8081'],
+      credentials: true
+    },
+    transports: ['websocket', 'polling']
+  });
+
+  // JWT Authentication middleware
+  io.use((socket, next) => {
+    const token = socket.handshake.auth.token || socket.handshake.headers.authorization?.replace('Bearer ', '');
+    
+    if (!token) {
+      return next(new Error('Authentication required'));
+    }
+
+    try {
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      socket.userId = decoded.id;
+      socket.userRole = decoded.role;
+      socket.businessId = decoded.business_id; // For owners/staff
+      next();
+    } catch (error) {
+      next(new Error('Invalid token'));
+    }
+  });
+
+  // Connection handler
+  io.on('connection', (socket) => {
+    console.log(`Socket connected: ${socket.id} (User: ${socket.userId}, Role: ${socket.userRole})`);
+
+    // Join user-specific room
+    socket.join(`user:${socket.userId}`);
+    console.log(`User ${socket.userId} joined room: user:${socket.userId}`);
+
+    // Join business room if owner/staff
+    if (['Owner', 'Staff'].includes(socket.userRole) && socket.businessId) {
+      socket.join(`business:${socket.businessId}`);
+      console.log(`User ${socket.userId} joined business room: business:${socket.businessId}`);
+    }
+
+    // Handle custom room subscriptions
+    socket.on('order:subscribe', (data) => {
+      const { orderId } = data;
+      
+      // Validate user can subscribe to this order
+      // In production, query DB to verify ownership
+      socket.join(`order:${orderId}`);
+      console.log(`User ${socket.userId} subscribed to order:${orderId}`);
+    });
+
+    socket.on('order:unsubscribe', (data) => {
+      const { orderId } = data;
+      socket.leave(`order:${orderId}`);
+      console.log(`User ${socket.userId} unsubscribed from order:${orderId}`);
+    });
+
+    // Disconnect handler
+    socket.on('disconnect', () => {
+      console.log(`Socket disconnected: ${socket.id}`);
+    });
+  });
+
+  console.log('✅ Socket.IO initialized with JWT authentication');
+  return io;
+}
+
+/**
+ * Get Socket.IO instance
+ * @returns {Object} Socket.IO instance
+ */
+export function getIO() {
+  if (!io) {
+    throw new Error('Socket.IO not initialized. Call initializeSocket() first.');
+  }
+  return io;
+}
+
+/**
+ * Emit event to user room
+ * @param {string} userId - User ID
+ * @param {string} event - Event name
+ * @param {Object} data - Event data
+ */
+export function emitToUser(userId, event, data) {
+  if (!io) {
+    console.warn('Socket.IO not initialized, skipping emit');
+    return;
+  }
+  
+  io.to(`user:${userId}`).emit(event, data);
+  console.log(`Emitted ${event} to user:${userId}`);
+}
+
+/**
+ * Emit event to business room
+ * @param {string} businessId - Business ID
+ * @param {string} event - Event name
+ * @param {Object} data - Event data
+ */
+export function emitToBusiness(businessId, event, data) {
+  if (!io) {
+    console.warn('Socket.IO not initialized, skipping emit');
+    return;
+  }
+  
+  io.to(`business:${businessId}`).emit(event, data);
+  console.log(`Emitted ${event} to business:${businessId}`);
+}
+
+/**
+ * Emit event to specific order room
+ * @param {string} orderId - Order ID
+ * @param {string} event - Event name
+ * @param {Object} data - Event data
+ */
+export function emitToOrder(orderId, event, data) {
+  if (!io) {
+    console.warn('Socket.IO not initialized, skipping emit');
+    return;
+  }
+  
+  io.to(`order:${orderId}`).emit(event, data);
+  console.log(`Emitted ${event} to order:${orderId}`);
+}
+
+/**
+ * Emit new order event to business and user
+ * @param {Object} order - Order object with business_id, user_id, order data
+ */
+export function emitNewOrder(order) {
+  const eventData = {
+    order_id: order.id || order.order_id,
+    order_number: order.order_number,
+    business_id: order.business_id,
+    user_id: order.user_id,
+    status: order.status,
+    payment_status: order.payment_status,
+    total_amount: order.total_amount,
+    created_at: order.created_at || new Date(),
+    timestamp: new Date()
+  };
+
+  // Emit to business (for owner/staff)
+  emitToBusiness(order.business_id, 'order:new', eventData);
+  
+  // Emit to user (tourist who placed order)
+  emitToUser(order.user_id, 'order:created', eventData);
+}
+
+/**
+ * Emit order status update event
+ * @param {Object} order - Updated order object
+ * @param {string} previousStatus - Previous status for context
+ */
+export function emitOrderUpdated(order, previousStatus = null) {
+  const eventData = {
+    order_id: order.id || order.order_id,
+    order_number: order.order_number,
+    business_id: order.business_id,
+    user_id: order.user_id,
+    status: order.status,
+    previous_status: previousStatus,
+    payment_status: order.payment_status,
+    updated_at: order.updated_at || new Date(),
+    timestamp: new Date()
+  };
+
+  // Emit to business
+  emitToBusiness(order.business_id, 'order:updated', eventData);
+  
+  // Emit to user
+  emitToUser(order.user_id, 'order:updated', eventData);
+  
+  // Emit to order-specific room if anyone subscribed
+  emitToOrder(order.id || order.order_id, 'order:updated', eventData);
+}
+
+/**
+ * Emit payment status update event
+ * @param {Object} payment - Payment object
+ * @param {Object} order - Related order object
+ */
+export function emitPaymentUpdated(payment, order = null) {
+  const eventData = {
+    payment_id: payment.id || payment.payment_id,
+    order_id: payment.payment_for_id,
+    status: payment.status,
+    payment_method: payment.payment_method,
+    amount: payment.amount,
+    updated_at: payment.updated_at || new Date(),
+    timestamp: new Date()
+  };
+
+  if (order) {
+    // Emit to business
+    emitToBusiness(order.business_id, 'payment:updated', eventData);
+    
+    // Emit to user
+    emitToUser(order.user_id, 'payment:updated', eventData);
+  } else if (payment.payer_id) {
+    // Fallback: emit to payer only
+    emitToUser(payment.payer_id, 'payment:updated', eventData);
+  }
+}
+
+export default {
+  initializeSocket,
+  getIO,
+  emitToUser,
+  emitToBusiness,
+  emitToOrder,
+  emitNewOrder,
+  emitOrderUpdated,
+  emitPaymentUpdated
+};

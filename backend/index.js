@@ -1,6 +1,8 @@
 import express from "express";
 import cors from "cors";
 import "dotenv/config";
+import { createServer } from "http";
+import { initializeSocket } from "./services/socketService.js";
 
 import userRoutes from "./routes/users.js";
 import userRoleRoutes from "./routes/users_role.js";
@@ -47,6 +49,15 @@ import tourismStaffManagementRoutes from "./routes/tourism_staff_management.js";
 
 const app = express();
 const PORT = 3000;
+
+// Create HTTP server for Socket.IO
+const httpServer = createServer(app);
+
+// Initialize Socket.IO
+const io = initializeSocket(httpServer);
+
+// Make io available to routes via app.locals
+app.locals.io = io;
 
 // Simple ANSI color helpers (no external dependency needed)
 const COLORS = {
@@ -195,6 +206,14 @@ const routeSections = [
 const routes = routeSections.flatMap((s) => s.routes);
 
 app.use(cors());
+
+// Raw body parser for webhook signature verification
+// Must come BEFORE express.json() to capture raw body
+app.use("/api/payment/webhook", express.raw({ type: "application/json" }), (req, res, next) => {
+  req.rawBody = req.body.toString('utf8');
+  next();
+});
+
 app.use(express.json());
 
 // Register routes dynamically
@@ -202,7 +221,8 @@ routes.forEach((route) => {
   app.use(route.path, route.handler);
 });
 
-app.listen(PORT, "0.0.0.0", () => {
+// Start server with Socket.IO
+httpServer.listen(PORT, "0.0.0.0", () => {
   console.log(colorServer(`🚀 Server running at http://localhost:${PORT}`));
   console.log(
     colorServer(`🌐 Also accessible at http://192.168.111.111:${PORT}`)
