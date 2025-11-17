@@ -54,6 +54,7 @@ export type UserDetails = {
   // RBAC: permissions from backend
   permissions?: string[];
   business_id?: string;
+  age?: number | null;
 };
 
 export type TokenPayload = {

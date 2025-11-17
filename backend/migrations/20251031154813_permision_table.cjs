@@ -11,6 +11,8 @@ exports.up = async function(knex) {
 
   // Create CRUD stored procedures for permissions
   await createPermissionProcedures(knex);
+
+  console.log('Permissions table and procedures created.');
 };
 
 exports.down = async function(knex) {

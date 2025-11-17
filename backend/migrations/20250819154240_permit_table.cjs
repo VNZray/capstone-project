@@ -24,6 +24,8 @@ exports.up = async function (knex) {
     table.timestamp("approved_at").nullable().defaultTo(null);
   });
   await createPermitProcedures(knex);
+
+  console.log("Permit table and procedures created.");
 };
 
 exports.down = async function (knex) {

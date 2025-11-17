@@ -9,20 +9,47 @@ import type {
   Municipality,
   Province,
 } from "../types/Address";
-import type { Owner } from "../types/Owner";
 import type { Tourist } from "../types/Tourist";
 import type { TokenPayload, User, UserDetails, UserRoles } from "../types/User";
-import { Bookings } from '@/types/Booking';
+
 interface LoginResponse {
   token: string;
 }
 
-/** LOGIN */
+/**
+ * ENCRYPTION UTILITIES
+ * Simple encryption for user data in AsyncStorage
+ * Using btoa/atob for React Native compatibility
+ */
+const encryptUserData = (data: UserDetails): string => {
+  const jsonStr = JSON.stringify(data);
+  // Double encode for simple obfuscation
+  return btoa(btoa(jsonStr));
+};
+
+const decryptUserData = (encrypted: string): UserDetails | null => {
+  try {
+    // Double decode
+    const decoded = atob(atob(encrypted));
+    return JSON.parse(decoded);
+  } catch (error) {
+    console.error('[AuthService] Failed to decrypt user data:', error);
+    return null;
+  }
+};
+
+/**
+ * LOGIN USER
+ * Authenticates user credentials and retrieves complete user profile
+ * based on their role (Tourist, Owner, Tourism Officer, Staff)
+ */
 export const loginUser = async (
   email: string,
   password: string
-): Promise<User> => {
-  // Step 1: Login request
+): Promise<UserDetails> => {
+  // ============================================
+  // STEP 1: Authenticate User & Get Token
+  // ============================================
   debugLogger({
     title: 'AuthService: POST /users/login',
     data: { email }
@@ -51,7 +78,12 @@ export const loginUser = async (
     data: token ? '<redacted>' : null
   });
 
-  // Step 2: Decode token safely
+  // Set Authorization header for subsequent requests (required for RBAC)
+  axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+
+  // ============================================
+  // STEP 2: Decode & Validate Token
+  // ============================================
   let payload: TokenPayload;
   try {
     payload = JSON.parse(atob(token.split(".")[1]));
@@ -66,7 +98,9 @@ export const loginUser = async (
   const user_id = payload.id;
   if (!user_id) throw new Error("User ID not found in token");
 
-  // Step 3: Fetch user details
+  // ============================================
+  // STEP 3: Fetch Core User Data
+  // ============================================
   debugLogger({
     title: 'AuthService: GET /users/:id',
     data: user_id
@@ -91,6 +125,9 @@ export const loginUser = async (
     data: userData
   });
 
+  // ============================================
+  // STEP 4: Fetch User Role & Permissions
+  // ============================================
   debugLogger({
     title: 'AuthService: GET /user-roles/:id',
     data: userData.user_role_id
@@ -115,256 +152,209 @@ export const loginUser = async (
     data: userRole
   });
 
-  // Step 4: Fetch user details
+  // Fetch user permissions for RBAC (Role-Based Access Control)
   debugLogger({
-    title: 'AuthService: GET /owner/user/:user_id',
-    data: user_id
+    title: 'AuthService: GET /permissions/me'
   });
-  const ownerResp = await axios
-    .get<Owner>(`${api}/owner/user/${user_id}`)
+  const myPermissions: string[] = await axios
+    .get<{ permissions: string[] }>(`${api}/permissions/me`)
+    .then((r) => r.data?.permissions || [])
     .catch((err) => {
       debugLogger({
-        title: 'AuthService: Owner by user lookup failed',
-        error: {
-          user_id,
-          message: err?.message,
-          status: err?.response?.status,
-          data: err?.response?.data,
-        },
-        errorCode: err?.response?.status
+        title: 'AuthService: Permissions fetch failed',
+        error: err?.response?.status
       });
-      return { data: {} as Owner };
+      return [];
     });
-  const ownerData = ownerResp.data as Partial<Owner> as Owner;
-  debugLogger({
-    title: 'AuthService: ownerData',
-    data: ownerData
-  });
 
-  let ownerAddressData: Address | null = null;
-  if (ownerData && (ownerData as any).barangay_id) {
+  // Normalize role name for consistent UI usage
+  const rawRoleName = (userRole?.role_name ?? "").toString();
+  const normalizedRoleName = (() => {
+    const lower = rawRoleName.toLowerCase();
+    if (lower === "tourist") return "Tourist";
+    return rawRoleName;
+  })();
+
+  // ============================================
+  // STEP 5: Validate Role & Fetch Tourist Data
+  // ============================================
+  // Mobile app only supports Tourist role
+  if (normalizedRoleName !== "Tourist") {
     debugLogger({
-      title: 'AuthService: GET /address/:id',
-      data: (ownerData as any).barangay_id
+      title: 'AuthService: Access Denied',
+      error: `Role "${normalizedRoleName}" is not allowed in mobile app`
     });
-    ownerAddressData = await axios
-      .get<Address>(`${api}/address/${(ownerData as any).barangay_id}`)
-      .then((r) => r.data)
-      .catch((err) => {
-        debugLogger({
-          title: 'AuthService: Owner address fetch failed',
-          error: {
-            barangay_id: (ownerData as any).barangay_id,
-            message: err?.message,
-            status: err?.response?.status,
-            data: err?.response?.data,
-          },
-          errorCode: err?.response?.status
-        });
-        return null;
-      });
+    throw new Error("Access Denied: This app is only for tourists.");
   }
 
-  const ownerBarangay = ownerAddressData
-    ? await axios
-        .get<Barangay>(`${api}/barangay/${ownerAddressData.barangay_id}`)
-        .then((r) => r.data)
-        .catch((err) => {
-          debugLogger({
-            title: 'AuthService: Owner barangay fetch failed',
-            error: err?.response?.status
-          });
-          return { barangay: "" } as Barangay;
-        })
-    : ({} as Barangay);
-
-  const ownerMunicipality = ownerAddressData
-    ? await axios
-        .get<Municipality>(
-          `${api}/municipality/${ownerAddressData.municipality_id}`
-        )
-        .then((r) => r.data)
-        .catch((err) => {
-          debugLogger({
-            title: 'AuthService: Owner municipality fetch failed',
-            error: err?.response?.status
-          });
-          return { municipality: "" } as Municipality;
-        })
-    : ({} as Municipality);
-
-  const ownerProvince = ownerAddressData
-    ? await axios
-        .get<Province>(`${api}/province/${ownerAddressData.province_id}`)
-        .then((r) => r.data)
-        .catch((err) => {
-          debugLogger({
-            title: 'AuthService: Owner province fetch failed',
-            error: err?.response?.status
-          });
-          return { province: "" } as Province;
-        })
-    : ({} as Province);
-
+  // Fetch tourist data
   debugLogger({
     title: 'AuthService: GET /tourist/user/:user_id',
     data: user_id
   });
-  const touristResp = await axios
+  const touristData = await axios
     .get<Tourist>(`${api}/tourist/user/${user_id}`)
+    .then((r) => r.data)
     .catch((err) => {
       debugLogger({
-        title: 'AuthService: Tourist by user lookup failed',
-        error: {
-          user_id,
-          message: err?.message,
-          status: err?.response?.status,
-          data: err?.response?.data,
-        },
-        errorCode: err?.response?.status
+        title: 'AuthService: Tourist fetch failed',
+        error: err?.response?.status
       });
-      return { data: {} as Tourist };
+      throw new Error("Failed to fetch tourist profile");
     });
-  const touristData = touristResp.data as Partial<Tourist> as Tourist;
-  debugLogger({
-    title: 'AuthService: touristData',
-    data: touristData
-  });
 
-  const touristAddressData: Address | null = (touristData as any).barangay_id
-    ? await axios
-        .get<Address>(`${api}/address/${(touristData as any).barangay_id}`)
-        .then((r) => r.data)
-        .catch((err) => {
-          debugLogger({
-            title: 'AuthService: Tourist address fetch failed',
-            error: err?.response?.status
-          });
-          return null;
-        })
-    : null;
+  // ============================================
+  // STEP 6: Fetch Address Details
+  // ============================================
+  let addressData: Address | null = null;
+  let barangay: Partial<Barangay> = {};
+  let municipality: Partial<Municipality> = {};
+  let province: Partial<Province> = {};
 
-  const touristBarangay = touristAddressData
-    ? await axios
-        .get<Barangay>(`${api}/barangay/${touristAddressData.barangay_id}`)
-        .then((r) => r.data)
-        .catch(() => {
-          debugLogger({
-            title: 'AuthService: Tourist barangay fetch failed',
-            error: 'No barangay found'
-          });
-          return { barangay: "" } as Barangay;
-        })
-    : ({} as Barangay);
-  const touristMunicipality = touristAddressData
-    ? await axios
-        .get<Municipality>(
-          `${api}/municipality/${touristAddressData.municipality_id}`
-        )
-        .then((r) => r.data)
-        .catch(() => {
-          debugLogger({
-            title: 'AuthService: Tourist municipality fetch failed',
-            error: 'No municipality found'
-          });
-          return { municipality: "" } as Municipality;
-        })
-    : ({} as Municipality);
-  const touristProvince = touristAddressData
-    ? await axios
-        .get<Province>(`${api}/province/${touristAddressData.province_id}`)
-        .then((r) => r.data)
-        .catch(() => {
-          debugLogger({
-            title: 'AuthService: Tourist province fetch failed',
-            error: 'No province found'
-          });
-          return { province: "" } as Province;
-        })
-    : ({} as Province);
+  if (userData?.barangay_id != null) {
+    debugLogger({
+      title: 'AuthService: GET /address/:id',
+      data: userData.barangay_id
+    });
+    addressData = await axios
+      .get<Address>(`${api}/address/${userData.barangay_id}`)
+      .then((r) => r.data)
+      .catch((err) => {
+        debugLogger({
+          title: 'AuthService: Address fetch failed',
+          error: err?.response?.status
+        });
+        return null;
+      });
 
-  // Step 4: Build user object
+    if (addressData) {
+      barangay = await axios
+        .get<Barangay>(`${api}/barangay/${addressData.barangay_id}`)
+        .then((r) => r.data)
+        .catch(() => ({ barangay: "" } as Barangay));
+
+      municipality = await axios
+        .get<Municipality>(`${api}/municipality/${addressData.municipality_id}`)
+        .then((r) => r.data)
+        .catch(() => ({ municipality: "" } as Municipality));
+
+      province = await axios
+        .get<Province>(`${api}/province/${addressData.province_id}`)
+        .then((r) => r.data)
+        .catch(() => ({ province: "" } as Province));
+    }
+  }
+
+  // ============================================
+  // STEP 7: Build Tourist User Details Object
+  // ============================================
   const loggedInUser: UserDetails = {
-    id:
-      ownerData.id ||
-      touristData.id,
+    // IDs
+    id: touristData?.id || userData.id,
+    user_id: userData.id || "",
     email,
     password,
-    age: (touristData as any).age || ownerData.age || null,
     phone_number: userData.phone_number,
-    role_name: (userRole as any)?.role_name,
-    first_name:
-      (ownerData as any).first_name ||
-      (touristData as any).first_name ||
-      "",
-    middle_name:
-      (ownerData as any).middle_name ||
-      (touristData as any).middle_name ||
-      "",
-    last_name:
-      (ownerData as any).last_name ||
-      (touristData as any).last_name ||
-      "",
-    gender:
-      (ownerData as any).gender ||
-      (touristData as any).gender ||
-      "",
-    birthdate:
-      (ownerData as any).birthdate ||
-      (touristData as any).birthdate ||
-      "",
-    nationality: (touristData as any).nationality || "",
-    ethnicity: (touristData as any).ethnicity || "",
-    category: (touristData as any).category || "",
-    user_profile: userData.user_profile,
-    is_active: userData.is_active,
-    is_verified: userData.is_verified,
-    created_at: userData.created_at,
-    updated_at: userData.updated_at,
-    last_login: userData.last_login,
     user_role_id: userData.user_role_id,
-    description: (userRole as any)?.description,
-    barangay_id:
-      (ownerData as any).barangay_id ||
-      (touristData as any).barangay_id ||
-      "",
-    municipality_name:
-      (ownerMunicipality as any).municipality ||
-      (touristMunicipality as any).municipality ||
-      "",
-    barangay_name:
-      (ownerBarangay as any).barangay ||
-      (touristBarangay as any).barangay ||
-      "",
-    province_name:
-      (ownerProvince as any).province ||
-      (touristProvince as any).province ||
-      "",
-    user_id: userData.id || "",
+    role_name: normalizedRoleName,
+    description: userRole?.description || "",
+    permissions: myPermissions,
+    // Personal Info
+    first_name: touristData?.first_name || "",
+    middle_name: touristData?.middle_name || "",
+    last_name: touristData?.last_name || "",
+    gender: touristData?.gender || "",
+    birthdate: touristData?.birthdate || "",
+    age: (touristData as any)?.age || null,
+    // Tourist-specific
+    nationality: touristData?.nationality || "",
+    ethnicity: touristData?.ethnicity || "",
+    category: (touristData as any)?.category || "",
+    // Staff-specific (not used in mobile)
+    business_id: "",
+    // Address
+    barangay_id: userData?.barangay_id ?? "",
+    barangay_name: barangay?.barangay || "",
+    municipality_name: municipality?.municipality || "",
+    province_name: province?.province || "",
+    // Account Status
+    user_profile: userData.user_profile,
+    is_active: Boolean(userData.is_active),
+    is_verified: Boolean(userData.is_verified),
+    created_at: userData.created_at || "",
+    updated_at: userData.updated_at || "",
+    last_login: userData.last_login || "",
   };
 
-  // Save to AsyncStorage
-      await AsyncStorage.setItem('token', token);
-      await AsyncStorage.setItem('user', JSON.stringify(loggedInUser));
+  // ============================================
+  // STEP 8: Store Auth Data (Encrypted)
+  // ============================================
+  await AsyncStorage.setItem('token', token);
+  
+  // Encrypt user data before storing
+  const encryptedUser = encryptUserData(loggedInUser);
+  await AsyncStorage.setItem('user', encryptedUser);
+
+  debugLogger({
+    title: 'AuthService: Login successful',
+    data: { user_id: loggedInUser.user_id, role: loggedInUser.role_name }
+  });
 
   return loggedInUser;
 };
 
-
-
-/** LOGOUT */
+/**
+ * LOGOUT USER
+ * Clears all authentication data from AsyncStorage
+ */
 export const logoutUser = async () => {
   await AsyncStorage.removeItem('token');
   await AsyncStorage.removeItem('user');
+  
+  // Clear Authorization header
+  delete axios.defaults.headers.common["Authorization"];
+  
+  debugLogger({
+    title: 'AuthService: Logout successful'
+  });
 };
 
-/** Get Stored User */
-export const getStoredUser = async (): Promise<User | null> => {
-  const storedUser = await AsyncStorage.getItem('user');
-  return storedUser ? JSON.parse(storedUser) : null;
+/**
+ * GET STORED USER
+ * Retrieves and decrypts cached user details from AsyncStorage
+ */
+export const getStoredUser = async (): Promise<UserDetails | null> => {
+  const encryptedUser = await AsyncStorage.getItem('user');
+  if (!encryptedUser) return null;
+  
+  // Try to decrypt user data
+  const user = decryptUserData(encryptedUser);
+  if (!user) {
+    // If decryption fails, try parsing as plain JSON (backward compatibility)
+    try {
+      return JSON.parse(encryptedUser);
+    } catch {
+      return null;
+    }
+  }
+  
+  return user;
 };
 
-/** Get Stored Token */
+/**
+ * GET STORED TOKEN
+ * Retrieves cached authentication token from AsyncStorage
+ */
 export const getToken = async (): Promise<string | null> => {
   return await AsyncStorage.getItem('token');
+};
+
+/**
+ * FETCH USER DATA
+ * Retrieves basic user data by user ID
+ * Used for profile updates and data refresh
+ */
+export const fetchUserData = async (user_id: string): Promise<User> => {
+  const { data } = await axios.get<User>(`${api}/users/${user_id}`);
+  return data;
 };

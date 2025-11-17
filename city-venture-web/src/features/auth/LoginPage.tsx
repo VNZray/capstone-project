@@ -6,6 +6,7 @@ import PageContainer from "@/src/components/PageContainer";
 import LoginForm from "./components/LoginForm";
 import { Divider } from "@mui/joy";
 import Typography from "@/src/components/Typography";
+import Loading from "@/src/components/ui/Loading";
 
 const Login: React.FC = () => {
   const [email, setEmail] = useState("owner1@gmail.com");
@@ -15,6 +16,7 @@ const Login: React.FC = () => {
   const { login, logout } = useAuth(); // from AuthProvider
   const [rememberMe, setRememberMe] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [showLoadingScreen, setShowLoadingScreen] = useState(false);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -28,6 +30,12 @@ const Login: React.FC = () => {
     try {
       const loggedInUser = await login(email, password, rememberMe);
 
+      // Show loading screen before redirect
+      setShowLoadingScreen(true);
+
+      // Delay to show loading animation
+      await new Promise((resolve) => setTimeout(resolve, 4500));
+
       // Check if user is staff (not Business Owner) and redirect to dashboard
       const staffRoles = [
         "Manager",
@@ -35,8 +43,7 @@ const Login: React.FC = () => {
         "Receptionist",
         "Sales Associate",
       ];
-
-      const tourism = ["Admin", "Tourism Office"];
+      const tourism = ["Admin", "Tourism Officer"];
       const tourist = "Tourist";
       const owner = "Business Owner";
 
@@ -70,6 +77,17 @@ const Login: React.FC = () => {
       setLoading(false);
     }
   };
+
+  if (showLoadingScreen) {
+    return (
+      <Loading
+        variant="splash"
+        showProgress
+        message="Welcome to City Venture!"
+        subtitle="Welcome to City Venture!"
+      />
+    );
+  }
 
   return (
     <PageContainer padding={0} style={{ height: "100%", overflow: "hidden" }}>

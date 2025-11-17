@@ -19,3 +19,5 @@ backend/dist/*
 backend/dist/**
 backend/dist
 backend/controller/PermitController.js
+city-venture-web/src/assets/images/rotunda.jpg
+city-venture-web/.env

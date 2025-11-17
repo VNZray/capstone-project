@@ -19,6 +19,8 @@ exports.up = async function (knex) {
   });
 
   await createRoomPhotosProcedures(knex);
+
+  console.log("Room photos table and procedures created.");
 };
 
 exports.down = async function (knex) {

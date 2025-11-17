@@ -208,8 +208,8 @@ function Table<T extends Record<string, any>>({
       return column.format(value);
     }
 
-    // Default rendering
-    return value ?? "—";
+    // Default rendering - wrap in Typography only for primitive values
+    return <Typography.Body>{value ?? "—"}</Typography.Body>;
   };
 
   return (
@@ -314,7 +314,7 @@ function Table<T extends Record<string, any>>({
                           borderBottom: "1px solid #E5E7EB",
                         }}
                       >
-                        <Typography.Body >
+                        <Typography.Body>
                           {renderCell(column, row)}
                         </Typography.Body>
                       </td>

@@ -23,8 +23,8 @@ import {
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 const LoginPage = () => {
-  const [email, setEmail] = useState('rayven.clores@unc.edu.ph');
-  const [password, setPassword] = useState('123456');
+  const [email, setEmail] = useState('tourist@gmail.com');
+  const [password, setPassword] = useState('tourist123');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const { login, user } = useAuth();
@@ -68,17 +68,16 @@ const LoginPage = () => {
     }, 5000);
 
     try {
-      await login(email, password);
+      const loggedInUser = await login(email, password);
       // Clear timeout on success
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current);
         timeoutRef.current = null;
       }
       setIsLoading(false);
-      // Navigate to home on success
-      if (user?.user_role_id === 2 || user?.user_role_id === 3) {
-        navigateToHome();
-      }
+      
+      // Navigate to home (only tourists allowed)
+      navigateToHome();
     } catch (error: any) {
       // Clear timeout and close loading on error
       if (timeoutRef.current) {

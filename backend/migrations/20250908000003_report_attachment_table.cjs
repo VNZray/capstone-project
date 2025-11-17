@@ -1,5 +1,5 @@
-exports.up = function (knex) {
-  return knex.schema.createTable("report_attachment", function (table) {
+exports.up = async function (knex) {
+  await knex.schema.createTable("report_attachment", function (table) {
     table.uuid("id").primary().defaultTo(knex.raw("(UUID())")); // MariaDB's UUID()
     
     // Report reference
@@ -19,8 +19,10 @@ exports.up = function (knex) {
     // Timestamp
     table.timestamp("uploaded_at").defaultTo(knex.fn.now());
   });
+
+  console.log("Report attachment table created.");
 };
 
-exports.down = function (knex) {
-  return knex.schema.dropTable("report_attachment");
+exports.down = async function (knex) {
+  await knex.schema.dropTable("report_attachment");
 };
