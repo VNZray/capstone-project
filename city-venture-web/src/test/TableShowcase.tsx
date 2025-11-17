@@ -1,4 +1,3 @@
-import React from "react";
 import Table, { GuestAvatar, StatusChip } from "@/src/components/ui/Table";
 import type { TableColumn, GuestInfo } from "@/src/components/ui/Table";
 import Typography from "../components/Typography";

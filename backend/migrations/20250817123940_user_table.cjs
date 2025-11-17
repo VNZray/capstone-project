@@ -42,6 +42,8 @@ exports.up = async function (knex) {
         .onUpdate("CASCADE");
   });
   await createUserProcedures(knex);
+
+  console.log("User tables and procedures created.");
 };
 
 exports.down = async function (knex) {

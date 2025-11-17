@@ -22,6 +22,8 @@ exports.up = async function(knex) {
 
   // Create procedures for role-permission assignments
   await createRolePermissionProcedures(knex);
+
+  console.log('Role-Permission table and procedures created.');
 };
 
 exports.down = async function(knex) {

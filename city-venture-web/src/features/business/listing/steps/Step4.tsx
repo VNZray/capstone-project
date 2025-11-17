@@ -51,26 +51,36 @@ const StepPermits: React.FC<Props> = ({ data, permitData, setPermitData }) => {
     }
 
     const ext = file.name.split(".").pop();
-    const filePath = `${permitType}/${data.business_name.replace(/\s+/g, "_")}.${ext}`;
+    const filePath = `${permitType}/${data.business_name.replace(
+      /\s+/g,
+      "_"
+    )}.${ext}`;
 
-    const { error } = await supabase.storage.from("permits").upload(filePath, file, { upsert: true });
+    const { error } = await supabase.storage
+      .from("permits")
+      .upload(filePath, file, { upsert: true });
     if (error) {
       console.error("❌ Upload failed:", error.message);
       alert("Upload failed. Please try again.");
       return;
     }
 
-    const { data: publicUrlData } = supabase.storage.from("permits").getPublicUrl(filePath);
+    const { data: publicUrlData } = supabase.storage
+      .from("permits")
+      .getPublicUrl(filePath);
 
     setPermitData((prev) => [
       ...prev.filter((p) => p.permit_type !== permitType),
       {
+        id: crypto.randomUUID(),
         business_id: data.id ?? "",
         permit_type: permitType,
         file_url: publicUrlData.publicUrl,
         file_format: ext!,
         file_size: file.size,
-        status: "Pending",
+        status: "pending",
+        expiration_date: "",
+        submitted_at: new Date().toISOString(),
       },
     ]);
   };
@@ -86,59 +96,179 @@ const StepPermits: React.FC<Props> = ({ data, permitData, setPermitData }) => {
           .twoCol .col { padding: 0 8px; }
         `}
       </style>
-      <div className="stepperContent" style={{ overflow: 'visible', padding: '16px 16px 24px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-start', width: '100%', boxSizing: 'border-box' }}>
-        <div style={{ display: "flex", flexDirection: "column", gap: 24, width: '100%', maxWidth: '1000px', margin: '0 auto' }}>
-          <div style={{ paddingBottom: 12, textAlign: 'center', borderBottom: '1px solid #e5e7eb', marginBottom: 20, paddingTop: 4 }}>
-            <Typography.Label size="lg" sx={{ color: "#111827", mb: 1 }}>Business Permits</Typography.Label>
-            <Typography.Body size="xs" sx={{ color: "#6b7280" }}>Upload your business permits and documents</Typography.Body>
+      <div
+        className="stepperContent"
+        style={{
+          overflow: "visible",
+          padding: "16px 16px 24px",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "flex-start",
+          width: "100%",
+          boxSizing: "border-box",
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            gap: 24,
+            width: "100%",
+            maxWidth: "1000px",
+            margin: "0 auto",
+          }}
+        >
+          <div
+            style={{
+              paddingBottom: 12,
+              textAlign: "center",
+              borderBottom: "1px solid #e5e7eb",
+              marginBottom: 20,
+              paddingTop: 4,
+            }}
+          >
+            <Typography.Label size="lg" sx={{ color: "#111827", mb: 1 }}>
+              Business Permits
+            </Typography.Label>
+            <Typography.Body size="xs" sx={{ color: "#6b7280" }}>
+              Upload your business permits and documents
+            </Typography.Body>
           </div>
 
           <div style={{ paddingRight: 6 }}>
             <div className="twoCol">
               {/* Mayor's Permit */}
               <div className="col">
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                <div
+                  style={{ display: "flex", flexDirection: "column", gap: 12 }}
+                >
                   <FormControl>
-                    <FormLabel sx={{ mb: 0.75, fontSize: '0.875rem', fontWeight: 600, color: '#374151' }}>Mayor's Permit</FormLabel>
+                    <FormLabel
+                      sx={{
+                        mb: 0.75,
+                        fontSize: "0.875rem",
+                        fontWeight: 600,
+                        color: "#374151",
+                      }}
+                    >
+                      Mayor's Permit
+                    </FormLabel>
                     <div
                       style={{
-                        width: '100%',
+                        width: "100%",
                         borderWidth: 2,
-                        borderStyle: 'dashed',
-                        borderColor: '#e5e7eb',
+                        borderStyle: "dashed",
+                        borderColor: "#e5e7eb",
                         borderRadius: 10,
-                        backgroundColor: '#fff',
+                        backgroundColor: "#fff",
                         padding: 12,
-                        display: 'grid',
-                        gridTemplateColumns: 'auto 1fr auto',
+                        display: "grid",
+                        gridTemplateColumns: "auto 1fr auto",
                         gap: 12,
-                        alignItems: 'center',
-                        cursor: 'pointer',
+                        alignItems: "center",
+                        cursor: "pointer",
                       }}
                       onClick={() => mayorsPermitInputRef.current?.click()}
                     >
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 28, height: 28, borderRadius: 6, background: '#f3f4f6' }}>
-                        <DocumentScannerOutlined sx={{ color: '#6b7280', fontSize: 18 }} />
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          width: 28,
+                          height: 28,
+                          borderRadius: 6,
+                          background: "#f3f4f6",
+                        }}
+                      >
+                        <DocumentScannerOutlined
+                          sx={{ color: "#6b7280", fontSize: 18 }}
+                        />
                       </div>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                        <Typography.Body size="sm" weight="bold" sx={{ color: "#374151" }}>Mayor's Permit</Typography.Body>
-                        <Typography.Body size="xs" sx={{ color: "#6b7280" }}>Local city or municipal permit</Typography.Body>
-                        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                      <div
+                        style={{
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: 4,
+                        }}
+                      >
+                        <Typography.Body
+                          size="sm"
+                          weight="bold"
+                          sx={{ color: "#374151" }}
+                        >
+                          Mayor's Permit
+                        </Typography.Body>
+                        <Typography.Body size="xs" sx={{ color: "#6b7280" }}>
+                          Local city or municipal permit
+                        </Typography.Body>
+                        <div
+                          style={{
+                            display: "flex",
+                            gap: 8,
+                            alignItems: "center",
+                          }}
+                        >
                           <Input
                             size="sm"
                             readOnly
-                            value={permitData.find((p) => p.permit_type === 'mayors_permit')?.file_url || ''}
+                            value={
+                              permitData.find(
+                                (p) => p.permit_type === "mayors_permit"
+                              )?.file_url || ""
+                            }
                             placeholder="No file selected"
-                            sx={{ backgroundColor: '#ffffff', border: '1px solid #e0e0e0', borderRadius: '6px' }}
+                            sx={{
+                              backgroundColor: "#ffffff",
+                              border: "1px solid #e0e0e0",
+                              borderRadius: "6px",
+                            }}
                           />
-                          {permitData.find((p) => p.permit_type === 'mayors_permit')?.file_url ? (
-                            <a href={permitData.find((p) => p.permit_type === 'mayors_permit')?.file_url} target="_blank" rel="noopener noreferrer" style={{ fontSize: 12, color: '#1976d2', textDecoration: 'underline', whiteSpace: 'nowrap' }}>View</a>
+                          {permitData.find(
+                            (p) => p.permit_type === "mayors_permit"
+                          )?.file_url ? (
+                            <a
+                              href={
+                                permitData.find(
+                                  (p) => p.permit_type === "mayors_permit"
+                                )?.file_url
+                              }
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              style={{
+                                fontSize: 12,
+                                color: "#1976d2",
+                                textDecoration: "underline",
+                                whiteSpace: "nowrap",
+                              }}
+                            >
+                              View
+                            </a>
                           ) : null}
                         </div>
                       </div>
                       <div>
-                        <Button size="sm" startDecorator={<Upload />} variant="soft" color="primary" onClick={(e) => { e.stopPropagation(); mayorsPermitInputRef.current?.click(); }} sx={{ borderRadius: '8px', fontWeight: 500 }}>Choose</Button>
-                        <input type="file" ref={mayorsPermitInputRef} style={{ display: 'none' }} accept=".pdf,.jpg,.jpeg,.png" onChange={(e) => handleUpload(e, 'mayors_permit')} />
+                        <Button
+                          size="sm"
+                          startDecorator={<Upload />}
+                          variant="soft"
+                          color="primary"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            mayorsPermitInputRef.current?.click();
+                          }}
+                          sx={{ borderRadius: "8px", fontWeight: 500 }}
+                        >
+                          Choose
+                        </Button>
+                        <input
+                          type="file"
+                          ref={mayorsPermitInputRef}
+                          style={{ display: "none" }}
+                          accept=".pdf,.jpg,.jpeg,.png"
+                          onChange={(e) => handleUpload(e, "mayors_permit")}
+                        />
                       </div>
                     </div>
                   </FormControl>
@@ -147,48 +277,135 @@ const StepPermits: React.FC<Props> = ({ data, permitData, setPermitData }) => {
 
               {/* Business Permit */}
               <div className="col">
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                <div
+                  style={{ display: "flex", flexDirection: "column", gap: 12 }}
+                >
                   <FormControl required>
-                    <FormLabel sx={{ mb: 0.75, fontSize: '0.875rem', fontWeight: 600, color: '#374151' }}>Business Permit</FormLabel>
+                    <FormLabel
+                      sx={{
+                        mb: 0.75,
+                        fontSize: "0.875rem",
+                        fontWeight: 600,
+                        color: "#374151",
+                      }}
+                    >
+                      Business Permit
+                    </FormLabel>
                     <div
                       style={{
-                        width: '100%',
+                        width: "100%",
                         borderWidth: 2,
-                        borderStyle: 'dashed',
-                        borderColor: '#e5e7eb',
+                        borderStyle: "dashed",
+                        borderColor: "#e5e7eb",
                         borderRadius: 10,
-                        backgroundColor: '#fff',
+                        backgroundColor: "#fff",
                         padding: 12,
-                        display: 'grid',
-                        gridTemplateColumns: 'auto 1fr auto',
+                        display: "grid",
+                        gridTemplateColumns: "auto 1fr auto",
                         gap: 12,
-                        alignItems: 'center',
-                        cursor: 'pointer',
+                        alignItems: "center",
+                        cursor: "pointer",
                       }}
                       onClick={() => businessPermitInputRef.current?.click()}
                     >
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 28, height: 28, borderRadius: 6, background: '#f3f4f6' }}>
-                        <DocumentScannerOutlined sx={{ color: '#6b7280', fontSize: 18 }} />
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          width: 28,
+                          height: 28,
+                          borderRadius: 6,
+                          background: "#f3f4f6",
+                        }}
+                      >
+                        <DocumentScannerOutlined
+                          sx={{ color: "#6b7280", fontSize: 18 }}
+                        />
                       </div>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                        <Typography.Body size="sm" weight="bold" sx={{ color: "#374151" }}>Business Permit</Typography.Body>
-                        <Typography.Body size="xs" sx={{ color: "#6b7280" }}>DTI/SEC certificate or business registration</Typography.Body>
-                        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                      <div
+                        style={{
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: 4,
+                        }}
+                      >
+                        <Typography.Body
+                          size="sm"
+                          weight="bold"
+                          sx={{ color: "#374151" }}
+                        >
+                          Business Permit
+                        </Typography.Body>
+                        <Typography.Body size="xs" sx={{ color: "#6b7280" }}>
+                          DTI/SEC certificate or business registration
+                        </Typography.Body>
+                        <div
+                          style={{
+                            display: "flex",
+                            gap: 8,
+                            alignItems: "center",
+                          }}
+                        >
                           <Input
                             size="sm"
                             readOnly
-                            value={permitData.find((p) => p.permit_type === 'business_permit')?.file_url || ''}
+                            value={
+                              permitData.find(
+                                (p) => p.permit_type === "business_permit"
+                              )?.file_url || ""
+                            }
                             placeholder="No file selected"
-                            sx={{ backgroundColor: '#ffffff', border: '1px solid #e0e0e0', borderRadius: '6px' }}
+                            sx={{
+                              backgroundColor: "#ffffff",
+                              border: "1px solid #e0e0e0",
+                              borderRadius: "6px",
+                            }}
                           />
-                          {permitData.find((p) => p.permit_type === 'business_permit')?.file_url ? (
-                            <a href={permitData.find((p) => p.permit_type === 'business_permit')?.file_url} target="_blank" rel="noopener noreferrer" style={{ fontSize: 12, color: '#1976d2', textDecoration: 'underline', whiteSpace: 'nowrap' }}>View</a>
+                          {permitData.find(
+                            (p) => p.permit_type === "business_permit"
+                          )?.file_url ? (
+                            <a
+                              href={
+                                permitData.find(
+                                  (p) => p.permit_type === "business_permit"
+                                )?.file_url
+                              }
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              style={{
+                                fontSize: 12,
+                                color: "#1976d2",
+                                textDecoration: "underline",
+                                whiteSpace: "nowrap",
+                              }}
+                            >
+                              View
+                            </a>
                           ) : null}
                         </div>
                       </div>
                       <div>
-                        <Button size="sm" startDecorator={<Upload />} variant="soft" color="primary" onClick={(e) => { e.stopPropagation(); businessPermitInputRef.current?.click(); }} sx={{ borderRadius: '8px', fontWeight: 500 }}>Choose</Button>
-                        <input type="file" ref={businessPermitInputRef} style={{ display: 'none' }} accept=".pdf,.jpg,.jpeg,.png" onChange={(e) => handleUpload(e, 'business_permit')} />
+                        <Button
+                          size="sm"
+                          startDecorator={<Upload />}
+                          variant="soft"
+                          color="primary"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            businessPermitInputRef.current?.click();
+                          }}
+                          sx={{ borderRadius: "8px", fontWeight: 500 }}
+                        >
+                          Choose
+                        </Button>
+                        <input
+                          type="file"
+                          ref={businessPermitInputRef}
+                          style={{ display: "none" }}
+                          accept=".pdf,.jpg,.jpeg,.png"
+                          onChange={(e) => handleUpload(e, "business_permit")}
+                        />
                       </div>
                     </div>
                   </FormControl>
@@ -197,23 +414,49 @@ const StepPermits: React.FC<Props> = ({ data, permitData, setPermitData }) => {
             </div>
 
             {/* Requirements Info */}
-            <Sheet color="warning" variant="soft" sx={{ p: 1.5, borderRadius: 10, backgroundColor: '#fef3c7', border: '1px solid #f59e0b', margin: '12px 8px 0' }}>
+            <Sheet
+              color="warning"
+              variant="soft"
+              sx={{
+                p: 1.5,
+                borderRadius: 10,
+                backgroundColor: "#fef3c7",
+                border: "1px solid #f59e0b",
+                margin: "12px 8px 0",
+              }}
+            >
               <Label>
                 <FileCopy color="warning" fontSize="small" />
-                <Typography.Body size="sm" weight="bold" sx={{ color: "#92400e" }}>File Requirements</Typography.Body>
+                <Typography.Body
+                  size="sm"
+                  weight="bold"
+                  sx={{ color: "#92400e" }}
+                >
+                  File Requirements
+                </Typography.Body>
               </Label>
-              <ul className="req-grid" style={{ display: 'grid', columnGap: 12, rowGap: 4, marginTop: 6, paddingLeft: 16 }}>
+              <ul
+                className="req-grid"
+                style={{
+                  display: "grid",
+                  columnGap: 12,
+                  rowGap: 4,
+                  marginTop: 6,
+                  paddingLeft: 16,
+                }}
+              >
                 {requirements.map((req, idx) => (
                   <li key={idx} style={{ lineHeight: 1.3 }}>
-                    <Typography.Body size="xs" sx={{ color: "#92400e" }}>{req}</Typography.Body>
+                    <Typography.Body size="xs" sx={{ color: "#92400e" }}>
+                      {req}
+                    </Typography.Body>
                   </li>
                 ))}
               </ul>
               <style>{`.req-grid { display: grid; grid-template-columns: 1fr; } @media (min-width: 640px) { .req-grid { grid-template-columns: 1fr 1fr; } }`}</style>
             </Sheet>
-
           </div>
-          </div>
+        </div>
       </div>
     </>
   );

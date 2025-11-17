@@ -3,20 +3,29 @@ import db from "../db.js";
 import { handleDbError } from "../utils/errorHandler.js";
 import { v4 as uuidv4 } from "uuid";
 
+const PERMIT_FIELDS = [
+  "business_id",
+  "permit_type",
+  "file_url",
+  "file_format",
+  "file_size",
+  "status",
+  `expiration_date`,
+];
+
+const makePlaceholders = (n) => Array(n).fill("?").join(",");
+const buildPermitParams = (id, body) => [
+  id,
+  ...PERMIT_FIELDS.map((f) => body?.[f] ?? null),
+];
+
 // Insert a new permit record into the database using stored procedure
 export async function UploadPermit(request, response) {
   try {
     const id = uuidv4();
-    const params = [
-      id,
-      request.body.business_id ?? null,
-      request.body.permit_type ?? null,
-      request.body.file_url ?? null,
-      request.body.file_format ?? null,
-      request.body.file_size ?? null,
-      request.body.status ?? null,
-    ];
-    const [rows] = await db.query("CALL InsertPermit(?,?,?,?,?,?,?)", params);
+    const params = buildPermitParams(id, request.body);
+    const placeholders = makePlaceholders(params.length);
+    const [rows] = await db.query(`CALL InsertPermit(${placeholders})`, params);
     if (!rows[0] || rows[0].length === 0) {
       return response.status(404).json({ error: "Inserted row not found" });
     }
@@ -70,16 +79,9 @@ export async function deletePermit(request, response) {
 export async function updatePermit(request, response) {
   const { id } = request.params;
   try {
-    const params = [
-      id,
-      request.body.business_id ?? null,
-      request.body.permit_type ?? null,
-      request.body.file_url ?? null,
-      request.body.file_format ?? null,
-      request.body.file_size ?? null,
-      request.body.status ?? null,
-    ];
-    const [rows] = await db.query("CALL UpdatePermit(?,?,?,?,?,?,?)", params);
+    const params = buildPermitParams(id, request.body);
+    const placeholders = makePlaceholders(params.length);
+    const [rows] = await db.query(`CALL UpdatePermit(${placeholders})`, params);
     if (!rows[0] || rows[0].length === 0) {
       return response.status(404).json({ message: "Permit not found" });
     }

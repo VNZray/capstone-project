@@ -1,7 +1,7 @@
 import * as React from "react";
 import BaseEditModal from '@/src/components/BaseEditModal';
 import { updateData } from "@/src/services/Service";
-import { Facebook, Instagram, Globe, X } from 'lucide-react';
+import { Facebook, Instagram, Globe } from 'lucide-react';
 
 interface EditDescriptionModalProps {
   open: boolean;

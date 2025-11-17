@@ -14,3 +14,10 @@ city-venture/services/api.tsx
 .gitignore
 city-venture-web/src/services/email/email-template.html
 city-venture-web/src/services/email/README.md
+backend/dist/
+backend/dist/*
+backend/dist/**
+backend/dist
+backend/controller/PermitController.js
+city-venture-web/src/assets/images/rotunda.jpg
+city-venture-web/.env

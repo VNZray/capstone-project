@@ -137,11 +137,17 @@ export async function insertOrder(req, res) {
     const timestamp = Date.now().toString().slice(-8);
     const orderNumber = `ORD-${timestamp}`;
 
+    // Generate 6-digit arrival code
+    const arrivalCode = Math.floor(100000 + Math.random() * 900000).toString();
+
     // Insert order using stored procedure
     const [orderResult] = await connection.query("CALL InsertOrder(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", [
       orderId, business_id, user_id, orderNumber, subtotal, discountAmount, taxAmount, totalAmount,
       discount_id || null, pickup_datetime, special_instructions || null, payment_method || 'cash_on_pickup'
     ]);
+
+    // Update arrival code
+    await connection.query("UPDATE `order` SET arrival_code = ? WHERE id = ?", [arrivalCode, orderId]);
 
     // Insert order items and update stock
     for (const item of orderItems) {
@@ -269,6 +275,84 @@ export async function getOrderStatsByBusiness(req, res) {
       overview: overview,
       daily_stats: daily_stats,
       popular_products: popular_products
+    });
+  } catch (error) {
+    return handleDbError(error, res);
+  }
+}
+
+// Verify arrival code
+export async function verifyArrivalCode(req, res) {
+  const { businessId } = req.params;
+  const { arrival_code } = req.body;
+  
+  try {
+    const [data] = await db.query("CALL VerifyArrivalCode(?, ?)", [businessId, arrival_code]);
+
+    if (!data || data.length === 0) {
+      return res.status(404).json({ message: "Invalid arrival code or order not found" });
+    }
+
+    res.json(data[0]);
+  } catch (error) {
+    return handleDbError(error, res);
+  }
+}
+
+// Mark customer as arrived for order
+export async function markCustomerArrivedForOrder(req, res) {
+  const { id } = req.params;
+  
+  try {
+    const [data] = await db.query("CALL MarkCustomerArrivedForOrder(?)", [id]);
+
+    if (!data || data.length === 0) {
+      return res.status(404).json({ message: "Order not found" });
+    }
+
+    res.json({
+      message: "Customer arrival recorded successfully",
+      data: data[0]
+    });
+  } catch (error) {
+    return handleDbError(error, res);
+  }
+}
+
+// Mark order as ready for pickup
+export async function markOrderAsReady(req, res) {
+  const { id } = req.params;
+  
+  try {
+    const [data] = await db.query("CALL MarkOrderAsReady(?)", [id]);
+
+    if (!data || data.length === 0) {
+      return res.status(404).json({ message: "Order not found" });
+    }
+
+    res.json({
+      message: "Order marked as ready for pickup",
+      data: data[0]
+    });
+  } catch (error) {
+    return handleDbError(error, res);
+  }
+}
+
+// Mark order as picked up
+export async function markOrderAsPickedUp(req, res) {
+  const { id } = req.params;
+  
+  try {
+    const [data] = await db.query("CALL MarkOrderAsPickedUp(?)", [id]);
+
+    if (!data || data.length === 0) {
+      return res.status(404).json({ message: "Order not found" });
+    }
+
+    res.json({
+      message: "Order marked as picked up and completed",
+      data: data[0]
     });
   } catch (error) {
     return handleDbError(error, res);

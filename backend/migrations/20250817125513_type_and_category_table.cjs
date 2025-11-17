@@ -24,6 +24,8 @@ exports.up = async function (knex) {
   });
 
   await createTypesAndCategoryProcedures(knex);
+
+  console.log("Type and Category tables and procedures created.");
 };
 
 exports.down = async function (knex) {

@@ -20,6 +20,8 @@ exports.up = async function (knex) {
 
     await createProcedures(knex);
 
+  console.log("Review photos table and procedures created.");
+
 };
 
 exports.down = async function (knex) {

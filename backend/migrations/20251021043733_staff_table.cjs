@@ -24,6 +24,8 @@ exports.up = async function (knex) {
   });
 
   await createProcedures(knex);
+
+  console.log("Staff table and procedures created.");
 };
 
 exports.down = async function (knex) {

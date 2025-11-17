@@ -30,4 +30,28 @@ export const fetchRoomsByBusinessId = async (
   return Array.isArray(data) ? data : [data]; // ensure it's always an array
 };
 
+/** Batch fetch room numbers by IDs */
+export const fetchRoomNumbersByIds = async (
+  roomIds: string[]
+): Promise<Record<string, string>> => {
+  const results = await Promise.allSettled(
+    roomIds.map(async (roomId) => {
+      try {
+        const room = await fetchRoomDetails(roomId);
+        return { id: roomId, room_number: room?.room_number || "—" };
+      } catch {
+        return { id: roomId, room_number: "—" };
+      }
+    })
+  );
+
+  const roomMap: Record<string, string> = {};
+  results.forEach((res) => {
+    if (res.status === "fulfilled") {
+      roomMap[res.value.id] = res.value.room_number;
+    }
+  });
+  return roomMap;
+};
+
 export { api };

@@ -1,7 +1,7 @@
 const {
   createProcedures,
   dropProcedures,
-} = require("../procedures/bookingProcedures");
+} = require("../procedures/accommodation/bookingProcedures");
 
 exports.up = async function (knex) {
   await knex.schema.createTable("booking", function (table) {
@@ -35,6 +35,12 @@ exports.up = async function (knex) {
       .notNullable()
       .references("id")
       .inTable("room")
+      .onDelete("CASCADE");
+    table
+      .uuid("business_id")
+      .notNullable()
+      .references("id")
+      .inTable("business")
       .onDelete("CASCADE");
     table
       .uuid("tourist_id")

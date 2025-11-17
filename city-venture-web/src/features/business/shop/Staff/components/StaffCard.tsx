@@ -2,7 +2,6 @@ import Container from "@/src/components/Container";
 import { AspectRatio, Divider, IconButton } from "@mui/joy";
 import placeholder from "@/src/assets/images/placeholder-image.png";
 import Typography from "@/src/components/Typography";
-import { Email, Lock } from "@mui/icons-material";
 import { Edit, Trash2, Ban } from "lucide-react";
 import Button from "@/src/components/Button";
 

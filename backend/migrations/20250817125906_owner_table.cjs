@@ -22,6 +22,8 @@ exports.up = async function (knex) {
   });
 
   await createOwnerProcedures(knex);
+
+  console.log("Owner tables and procedures created.");
 };
 
 exports.down = async function (knex) {

@@ -1,11 +1,11 @@
 const {
   createUserProcedures,
   dropUserProcedures,
-} = require("../procedures/userProcedures");
+} = require("../procedures/auth/userProcedures");
 
 exports.up = async function (knex) {
   await knex.schema.createTable("user_role", (table) => {
-    table.increments("id").primary(); // default auto-incrementing integer
+    table.increments("id").primary();
     table.string("role_name", 20).notNullable();
     table.text("description").nullable();
     table.timestamp("created_at").defaultTo(knex.fn.now());
@@ -31,6 +31,15 @@ exports.up = async function (knex) {
       .inTable("user_role")
       .onDelete("CASCADE")
       .onUpdate("CASCADE");
+
+      table
+        .integer("barangay_id")
+        .unsigned()
+        .nullable()
+        .references("id")
+        .inTable("barangay")
+        .onDelete("CASCADE")
+        .onUpdate("CASCADE");
   });
   await createUserProcedures(knex);
 };

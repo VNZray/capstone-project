@@ -24,6 +24,8 @@ exports.up = async function (knex) {
   });
 
   await createPaymentProcedures(knex);
+
+  console.log("Payment table and procedures created.");
 };
 
 exports.down = async function (knex) {

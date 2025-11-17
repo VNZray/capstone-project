@@ -41,6 +41,8 @@ exports.up = async function (knex) {
       .inTable("amenity")
       .onDelete("CASCADE");
   });
+
+  console.log("Amenity tables created.");
 };
 
 exports.down = async function (knex) {
