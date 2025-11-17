@@ -58,7 +58,7 @@ const Login: React.FC = () => {
         "Sales Associate",
       ];
 
-      const tourism = ["Admin", "Tourism Office"];
+      const tourism = ["Admin", "Tourism Officer"];
       const tourist = "Tourist";
       const owner = "Business Owner";
 
