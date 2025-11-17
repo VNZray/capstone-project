@@ -31,8 +31,8 @@ const SESSION_TIMEOUT_MS = 30 * 60 * 1000;
 export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [user, setUser] = useState<UserDetails | null>(null);
   const [loading, setLoading] = useState(true);
-  const sessionCheckInterval = useRef<NodeJS.Timeout | null>(null);
-  const tokenRefreshInterval = useRef<NodeJS.Timeout | null>(null);
+  const sessionCheckInterval = useRef<ReturnType<typeof setInterval> | null>(null);
+  const tokenRefreshInterval = useRef<ReturnType<typeof setInterval> | null>(null);
 
   /** Load user from secure storage and check session validity */
   useEffect(() => {

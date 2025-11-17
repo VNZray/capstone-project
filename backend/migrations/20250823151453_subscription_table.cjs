@@ -1,5 +1,5 @@
-exports.up = function(knex) {
-  return knex.schema.createTable("subscription", function(table) {
+exports.up = async function(knex) {
+  await knex.schema.createTable("subscription", function(table) {
     table.uuid("id").primary().defaultTo(knex.raw("(UUID())"));
     table.uuid("business_id").notNullable()
       .references("id").inTable("business").onDelete("CASCADE");
@@ -15,8 +15,10 @@ exports.up = function(knex) {
     table.timestamp("created_at").defaultTo(knex.fn.now());
     table.timestamp("updated_at").defaultTo(knex.fn.now());
   });
+
+  console.log("Subscription table created.");
 };
 
-exports.down = function(knex) {
-  return knex.schema.dropTableIfExists("subscription");
+exports.down = async function(knex) {
+  await knex.schema.dropTableIfExists("subscription");
 };

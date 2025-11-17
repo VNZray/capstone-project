@@ -9,6 +9,8 @@ exports.up = async function(knex) {
     table.timestamp('decided_at').defaultTo(knex.fn.now());
     table.text('remarks').nullable();
   });
+
+  console.log('Approval records table created.');
 };
 
 exports.down = async function(knex) {

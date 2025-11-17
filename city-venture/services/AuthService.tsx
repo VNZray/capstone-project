@@ -144,7 +144,7 @@ export const ensureValidToken = async (): Promise<string | null> => {
 export const loginUser = async (
   email: string,
   password: string
-): Promise<User> => {
+): Promise<UserDetails> => {
   try {
     // Step 1: Login request
     debugLogger({
@@ -312,17 +312,21 @@ export const loginUser = async (
       if (ownerAddressData) {
         // Address endpoint returns full data already
         ownerBarangay = { 
+          id: ownerAddressData.barangay_id,
           barangay_id: ownerAddressData.barangay_id,
+          municipality_id: ownerAddressData.municipality_id,
           barangay: ownerAddressData.barangay_name || ''
         } as Barangay;
         
         ownerMunicipality = { 
+          id: ownerAddressData.municipality_id,
           municipality_id: ownerAddressData.municipality_id,
+          province_id: ownerAddressData.province_id,
           municipality: ownerAddressData.municipality_name || ''
         } as Municipality;
         
         ownerProvince = { 
-          province_id: ownerAddressData.province_id,
+          id: ownerAddressData.province_id,
           province: ownerAddressData.province_name || ''
         } as Province;
 
@@ -392,17 +396,21 @@ export const loginUser = async (
       if (touristAddressData) {
         // Address endpoint returns full data already
         touristBarangay = { 
+          id: touristAddressData.barangay_id,
           barangay_id: touristAddressData.barangay_id,
+          municipality_id: touristAddressData.municipality_id,
           barangay: touristAddressData.barangay_name || ''
         } as Barangay;
         
         touristMunicipality = { 
+          id: touristAddressData.municipality_id,
           municipality_id: touristAddressData.municipality_id,
+          province_id: touristAddressData.province_id,
           municipality: touristAddressData.municipality_name || ''
         } as Municipality;
         
         touristProvince = { 
-          province_id: touristAddressData.province_id,
+          id: touristAddressData.province_id,
           province: touristAddressData.province_name || ''
         } as Province;
 
@@ -461,10 +469,10 @@ export const loginUser = async (
     ethnicity: (touristData as any).ethnicity || "",
     category: (touristData as any).category || "",
     user_profile: userData.user_profile,
-    is_active: userData.is_active,
-    is_verified: userData.is_verified,
-    created_at: userData.created_at,
-    updated_at: userData.updated_at,
+    is_active: userData.is_active!,
+    is_verified: userData.is_verified!,
+    created_at: userData.created_at!,
+    updated_at: userData.updated_at!,
     last_login: userData.last_login,
     user_role_id: userData.user_role_id,
     description: (userRole as any)?.description,
@@ -531,7 +539,7 @@ export const logoutUser = async (): Promise<void> => {
 };
 
 /** Get Stored User */
-export const getStoredUser = async (): Promise<User | null> => {
+export const getStoredUser = async (): Promise<UserDetails | null> => {
   try {
     const storedUserData = await getUserData();
     if (!storedUserData) {

@@ -60,3 +60,40 @@ export const fetchTourist = async (tourist_id: string) => {
   const { data } = await axios.get(`${api}/tourist/${tourist_id}`);
   return data;
 };
+
+/** Batch fetch guest info (name and profile) by tourist IDs */
+export const fetchGuestInfoByIds = async (
+  touristIds: string[]
+): Promise<Record<string, { name: string; user_profile?: string }>> => {
+  const results = await Promise.allSettled(
+    touristIds.map(async (id) => {
+      try {
+        const tourist = await fetchTourist(id);
+        let userData = undefined;
+        if (tourist?.user_id) {
+          const userRes = await axios.get(`${api}/users/${tourist.user_id}`);
+          userData = userRes.data;
+        }
+        return {
+          id,
+          name:
+            [tourist?.first_name, tourist?.last_name]
+              .filter(Boolean)
+              .join(" ") || "—",
+          user_profile: userData?.user_profile,
+        };
+      } catch {
+        return { id, name: "—" };
+      }
+    })
+  );
+
+  const guestMap: Record<string, { name: string; user_profile?: string }> = {};
+  results.forEach((res) => {
+    if (res.status === "fulfilled") {
+      const { id, ...info } = res.value;
+      guestMap[id] = info;
+    }
+  });
+  return guestMap;
+};

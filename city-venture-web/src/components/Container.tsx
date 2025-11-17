@@ -74,7 +74,7 @@ const Container: React.FC<ContainerProps> = ({
   style,
   gap = "clamp(0.5rem, 1.5vw + 0.25rem, 1rem)",
   direction = "column",
-  background,
+  background = 'transparent',
   opacity = 1,
   align,
   justify,
@@ -138,8 +138,7 @@ const Container: React.FC<ContainerProps> = ({
       case "highlight":
         return {
           ...baseHoverStyles,
-          backgroundColor: hoverBackground || "rgba(59, 130, 246, 0.1)",
-          borderColor: "rgba(59, 130, 246, 0.5)",
+          backgroundColor: hoverBackground,
         };
       case "shadow-expand":
         return {
