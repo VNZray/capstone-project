@@ -7,6 +7,7 @@ import {
   TextStyle,
   View,
   ViewStyle,
+  useColorScheme,
 } from 'react-native';
 import Animated, {
   Extrapolate,
@@ -18,8 +19,9 @@ import Animated, {
 } from 'react-native-reanimated';
 import { Feather } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { colors } from '@/constants/color';
 
-export const HEADER_BASE_HEIGHT = 92;
+export const HEADER_BASE_HEIGHT = 88;
 
 export type HeaderProps = {
   scrollY: SharedValue<number>;
@@ -43,18 +45,29 @@ const Header: React.FC<HeaderProps> = ({
   placeholder = 'Search services, guides...',
   onPressBell,
   onPressCart,
-  backgroundColor = '#F86B4F',
-  translucentColor = 'rgba(16,16,24,0)',
-  iconBackground = 'rgba(0,0,0,0.4)',
+  backgroundColor,
+  translucentColor,
+  iconBackground,
   style,
 }) => {
   const { top } = useSafeAreaInsets();
+  const scheme = useColorScheme() ?? 'light';
+  const isDark = scheme === 'dark';
+
+  const resolvedBackground = backgroundColor ?? (isDark ? '#0C1024' : colors.primary);
+  const resolvedTranslucent = translucentColor ?? (isDark ? 'rgba(12,16,36,0)' : 'rgba(10,27,71,0)');
+  const resolvedIconBackground = iconBackground ?? (isDark ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.16)');
+  const strokeColor = isDark ? 'rgba(255,255,255,0.18)' : 'rgba(255,255,255,0.28)';
+  const searchBackground = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.14)';
+  const inputColor = isDark ? '#EEF2FF' : '#F6F8FF';
+  const placeholderColor = isDark ? 'rgba(238,242,255,0.65)' : 'rgba(246,248,255,0.78)';
+  const iconColor = isDark ? '#F2F3F8' : '#FDFDFE';
 
   const backgroundColorTransition = useDerivedValue(() =>
     interpolateColor(
       scrollY.value,
       [0, heroHeight * 0.6],
-      [translucentColor, backgroundColor]
+      [resolvedTranslucent, resolvedBackground]
     )
   );
 
@@ -77,7 +90,7 @@ const Header: React.FC<HeaderProps> = ({
       elevation: 12 * shadowProgress,
       borderBottomWidth:
         shadowProgress > 0 ? StyleSheet.hairlineWidth : 0,
-      borderBottomColor: 'rgba(255,255,255,0.2)',
+      borderBottomColor: isDark ? 'rgba(255,255,255,0.12)' : 'rgba(10,27,71,0.08)',
     };
   });
 
@@ -95,28 +108,40 @@ const Header: React.FC<HeaderProps> = ({
       ]}
     >
       <View style={styles.row}>
-        <View style={styles.searchField}>
-          <Feather name="search" size={18} color="#F2F3F8" />
+        <View
+          style={[
+            styles.searchField,
+            {
+              backgroundColor: searchBackground,
+              borderColor: strokeColor,
+            },
+          ]}
+        >
+          <Feather name="search" size={18} color={iconColor} />
           <TextInput
             value={searchValue}
             placeholder={placeholder}
-            placeholderTextColor="rgba(242,243,248,0.6)"
+            placeholderTextColor={placeholderColor}
             onChangeText={onChangeSearch}
             autoCapitalize="none"
             autoCorrect={false}
-            style={styles.searchInput as TextStyle}
+            style={[styles.searchInput as TextStyle, { color: inputColor }]}
           />
         </View>
         <View style={styles.iconStack}>
           <CircleButton
             icon="bell"
             onPress={onPressBell}
-            backgroundColor={iconBackground}
+            backgroundColor={resolvedIconBackground}
+            borderColor={strokeColor}
+            iconColor={iconColor}
           />
           <CircleButton
             icon="shopping-bag"
             onPress={onPressCart}
-            backgroundColor={iconBackground}
+            backgroundColor={resolvedIconBackground}
+            borderColor={strokeColor}
+            iconColor={iconColor}
           />
         </View>
       </View>
@@ -129,20 +154,24 @@ const CircleButton = memo(
     icon,
     onPress,
     backgroundColor,
+    borderColor,
+    iconColor,
   }: {
     icon: React.ComponentProps<typeof Feather>['name'];
     onPress?: () => void;
     backgroundColor: string;
+    borderColor: string;
+    iconColor: string;
   }) => (
     <Pressable
       accessibilityRole="button"
       onPress={onPress}
       style={[
         styles.iconButton,
-        { backgroundColor, borderColor: 'rgba(255,255,255,0.3)' },
+        { backgroundColor, borderColor },
       ]}
     >
-      <Feather name={icon} size={18} color="#fff" />
+      <Feather name={icon} size={18} color={iconColor} />
     </Pressable>
   )
 );
@@ -166,16 +195,17 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(11,13,20,0.9)',
-    borderRadius: 28,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    borderRadius: 18,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderWidth: StyleSheet.hairlineWidth,
+    gap: 10,
   },
   searchInput: {
     flex: 1,
-    fontSize: 15,
-    color: '#fff',
-    marginLeft: 8,
+    fontSize: 14,
+    fontWeight: '500',
+    letterSpacing: 0.1,
   },
   iconStack: {
     flexDirection: 'row',
@@ -183,9 +213,9 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   iconButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 42,
+    height: 42,
+    borderRadius: 21,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: StyleSheet.hairlineWidth,
