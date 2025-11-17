@@ -103,7 +103,17 @@ export default function AppRoutes() {
         </Route>
         <Route path={`/unauthorized`} element={<Unauthorized />} />
         {/* <Route path={`/login`} element={<UnifiedLogin />} /> */}
-        <Route path={`/login`} element={<BusinessPortalLogin />} />
+
+        <Route
+          element={
+            <BusinessProvider>
+              <Outlet />
+            </BusinessProvider>
+          }
+        >
+          <Route path={`/login`} element={<BusinessPortalLogin />} />
+        </Route>
+
         <Route path={`business-registration`} element={<Registration />} />
         <Route path={`/test`} element={<Test />} />
         <Route path={`/test-button`} element={<TestButton />} />

@@ -28,7 +28,7 @@ const Main = () => {
         source={{ uri: imageBackground }}
         resizeMode="cover"
         style={{ flex: 1 }}
-      >
+      >        
         <LinearGradient
           colors={[
             'rgba(255, 255, 255, 0.0)', // Top (transparent)

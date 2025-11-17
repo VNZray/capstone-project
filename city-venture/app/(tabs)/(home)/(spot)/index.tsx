@@ -90,7 +90,7 @@ const TouristSpotScreen = () => {
   };
 
   return (
-    <PageContainer>
+    <>
       {loading && safeSpots.length === 0 ? (
         <View style={styles.center}> 
           <Loading />
@@ -227,7 +227,7 @@ const TouristSpotScreen = () => {
         </View>
       </ScrollView>
       )}
-    </PageContainer>
+    </>
   );
 };
 
@@ -235,7 +235,7 @@ export default TouristSpotScreen;
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  content: { paddingBottom: 60 },
+  content: { paddingBottom:100, paddingHorizontal: 16, paddingTop: 16 },
   screenTitle: { marginTop: 8, fontSize: 22, fontWeight: '800' },
   sectionTitle: { fontSize: 16, fontWeight: '700' },
   emptyText: { marginTop: 16, textAlign: 'center', fontSize: 13, opacity: 0.7 },

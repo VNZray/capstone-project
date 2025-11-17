@@ -20,13 +20,13 @@ import {
   StyleSheet,
   View,
 } from 'react-native';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { validateLoginForm } from '@/utils/validation';
 import { formatErrorMessage } from '@/utils/networkHandler';
 import debugLogger from '@/utils/debugLogger';
 
 const LoginPage = () => {
-  const [email, setEmail] = useState('tourist1@gmail.com');
+  const [email, setEmail] = useState('tourist@gmail.com');
   const [password, setPassword] = useState('tourist123');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -99,7 +99,7 @@ const LoginPage = () => {
   };
 
   return (
-    <SafeAreaProvider>
+    <SafeAreaView>
       <StatusBar />
       <PageContainer padding={0}>
         <KeyboardAvoidingView
@@ -208,7 +208,7 @@ const LoginPage = () => {
           </View>
         </Modal>
       </PageContainer>
-    </SafeAreaProvider>
+    </SafeAreaView>
   );
 };
 

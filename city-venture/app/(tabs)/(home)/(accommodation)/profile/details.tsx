@@ -5,7 +5,6 @@ import { ThemedText } from '@/components/themed-text';
 import { useAccommodation } from '@/context/AccommodationContext';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { fetchBusinessAmenities } from '@/services/AmenityService';
-import { fetchBusinessHoursByBusinessId } from '@/services/BusinessHoursService';
 import type { BusinessSchedule } from '@/types/Business';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { Link } from 'expo-router';
@@ -17,7 +16,7 @@ import {
   Platform,
   Pressable,
   StyleSheet,
-  View
+  View,
 } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
 
@@ -99,27 +98,27 @@ const Details = () => {
     };
   }, [accommodationDetails?.id]);
 
-  // Load business hours for this business
-  useEffect(() => {
-    let isMounted = true;
-    (async () => {
-      if (!accommodationDetails?.id) return;
-      try {
-        setLoadingHours(true);
-        const data = await fetchBusinessHoursByBusinessId(
-          accommodationDetails.id
-        );
-        if (isMounted) setHours(data);
-      } catch (e) {
-        console.error('[Details] Failed to load business hours:', e);
-      } finally {
-        if (isMounted) setLoadingHours(false);
-      }
-    })();
-    return () => {
-      isMounted = false;
-    };
-  }, [accommodationDetails?.id]);
+  // // Load business hours for this business
+  // useEffect(() => {
+  //   let isMounted = true;
+  //   (async () => {
+  //     if (!accommodationDetails?.id) return;
+  //     try {
+  //       setLoadingHours(true);
+  //       const data = await fetchBusinessHoursByBusinessId(
+  //         accommodationDetails.id
+  //       );
+  //       if (isMounted) setHours(data);
+  //     } catch (e) {
+  //       console.error('[Details] Failed to load business hours:', e);
+  //     } finally {
+  //       if (isMounted) setLoadingHours(false);
+  //     }
+  //   })();
+  //   return () => {
+  //     isMounted = false;
+  //   };
+  // }, [accommodationDetails?.id]);
 
   return (
     <PageContainer style={{ paddingTop: 0, paddingBottom: 100 }}>
@@ -239,69 +238,76 @@ const Details = () => {
         </View>
       </View>
 
-      <View style={androidStyles.sectionContainer}>
-        <ThemedText type="card-title-small" weight="medium">
-          Business Hours
-        </ThemedText>
-        <View
-          style={[
-            {
-              flexDirection: 'column',
-              gap: 6,
-              paddingTop: 10,
-            },
-            androidStyles.hoursContainer,
-          ]}
-        >
-          {loadingHours ? (
-            <ThemedText type="body-small">Loading hours…</ThemedText>
-          ) : hours.length > 0 ? (
-            [...hours]
-              .sort(
-                (a, b) =>
-                  dayOrder.indexOf(a.day_of_week || '') -
-                  dayOrder.indexOf(b.day_of_week || '')
-              )
-              .map((h, idx) => {
-                const isOpen = !!h.is_open;
-                const openStr = `${formatTime(h.open_time)} - ${formatTime(
-                  h.close_time
-                )}`;
-                const text = isOpen
-                  ? `${h.day_of_week}: ${openStr} - Open`
-                  : `${h.day_of_week} - Closed`;
-                const color = isOpen ? '#16A34A' : '#DC2626';
-                const bg = colorScheme === 'dark' ? '#0B1220' : '#F9FAFF';
-                return (
-                  <View
-                    key={`${h.day_of_week}-${idx}`}
-                    style={[
-                      {
-                        paddingVertical: 8,
-                      },
-                      androidStyles.hoursItem,
-                    ]}
-                  >
-                    <ThemedText type="body-small" style={{ color }}>
-                      {text}
-                    </ThemedText>
-                  </View>
-                );
-              })
-          ) : (
-            <ThemedText type="body-small" style={{ color: '#6A768E' }}>
-              No Business Hours listed.
-            </ThemedText>
-          )}
+      {hours.length > 0 && (
+        <View style={androidStyles.sectionContainer}>
+          <ThemedText type="card-title-small" weight="medium">
+            Business Hours
+          </ThemedText>
+          <View
+            style={[
+              {
+                flexDirection: 'column',
+                gap: 6,
+                paddingTop: 10,
+              },
+              androidStyles.hoursContainer,
+            ]}
+          >
+            {loadingHours ? (
+              <ThemedText type="body-small">Loading hours…</ThemedText>
+            ) : hours.length > 0 ? (
+              [...hours]
+                .sort(
+                  (a, b) =>
+                    dayOrder.indexOf(a.day_of_week || '') -
+                    dayOrder.indexOf(b.day_of_week || '')
+                )
+                .map((h, idx) => {
+                  const isOpen = !!h.is_open;
+                  const openStr = `${formatTime(h.open_time)} - ${formatTime(
+                    h.close_time
+                  )}`;
+                  const text = isOpen
+                    ? `${h.day_of_week}: ${openStr} - Open`
+                    : `${h.day_of_week} - Closed`;
+                  const color = isOpen ? '#16A34A' : '#DC2626';
+                  const bg = colorScheme === 'dark' ? '#0B1220' : '#F9FAFF';
+                  return (
+                    <View
+                      key={`${h.day_of_week}-${idx}`}
+                      style={[
+                        {
+                          paddingVertical: 8,
+                        },
+                        androidStyles.hoursItem,
+                      ]}
+                    >
+                      <ThemedText type="body-small" style={{ color }}>
+                        {text}
+                      </ThemedText>
+                    </View>
+                  );
+                })
+            ) : (
+              <ThemedText type="body-small" style={{ color: '#6A768E' }}>
+                No Business Hours listed.
+              </ThemedText>
+            )}
+          </View>
         </View>
-      </View>
+      )}
 
       {/* Contact Section */}
       <View style={androidStyles.sectionContainer}>
         <ThemedText type="card-title-small" weight="medium">
           Contact
         </ThemedText>
-        <View style={[{ flexDirection: 'column', gap: 8, paddingTop: 8 }, androidStyles.contactContainer]}>
+        <View
+          style={[
+            { flexDirection: 'column', gap: 8, paddingTop: 8 },
+            androidStyles.contactContainer,
+          ]}
+        >
           {!accommodationDetails.email &&
           !accommodationDetails.phone_number &&
           !accommodationDetails.website_url ? (
@@ -471,7 +477,11 @@ const Details = () => {
               );
             }
             return present.map((s, idx) => (
-              <Chip key={`${s.icon}-${idx}`} size='large' startIconName={s.icon as any} />
+              <Chip
+                key={`${s.icon}-${idx}`}
+                size="large"
+                startIconName={s.icon as any}
+              />
             ));
           })()}
         </View>

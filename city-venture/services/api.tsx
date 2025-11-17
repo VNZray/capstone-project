@@ -25,10 +25,6 @@ function deriveApiFromDevHost(): string | undefined {
   return undefined;
 }
 
-const api =
-	// process.env.EXPO_PUBLIC_API_URL ||
-	// deriveApiFromDevHost() ||
-	// "http://localhost:3000/api" ||
-	 "http://10.242.184.237:3000/api";
+const api = 'http://192.168.1.9:3000/api';
 
 export default api;

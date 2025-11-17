@@ -20,3 +20,4 @@ backend/dist/**
 backend/dist
 backend/controller/PermitController.js
 docs/
+city-venture-web/.env

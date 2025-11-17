@@ -75,7 +75,7 @@ type QuickLink = {
 const ACTIONS: ActionItem[] = [
   {
     id: 'accommodation',
-    label: 'Accommodation',
+    label: 'Place to Stay',
     icon: 'bed-queen-outline',
     colors: ['#FF9D6C', '#FF6B4F'],
   },
@@ -159,7 +159,7 @@ const HomeScreen = () => {
   useEffect(() => {
     if (!user && !didRedirect.current) {
       didRedirect.current = true;
-      router.replace('/(screens)/Login');
+      router.replace('/(screens)');
     }
   }, [user]);
 
