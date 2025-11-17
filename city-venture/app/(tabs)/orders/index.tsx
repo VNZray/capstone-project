@@ -192,7 +192,7 @@ const MyOrdersScreen = () => {
                     </View>
                     <View style={[styles.statusBadge, { backgroundColor: `${getStatusColor(order.status)}20` }]}>
                       <Text style={[{ fontSize: bodySmall }, { color: getStatusColor(order.status) }]}>
-                        {order.status.replace(/_/g, ' ')}
+                        {order.status ? order.status.replace(/_/g, ' ') : 'Unknown'}
                       </Text>
                     </View>
                   </View>
@@ -213,7 +213,7 @@ const MyOrdersScreen = () => {
                     <View style={styles.infoRow}>
                       <Ionicons name="cash-outline" size={16} color={palette.subText} />
                       <Text style={[{ fontSize: bodySmall }, { color: palette.subText, marginLeft: 8 }]}>
-                        {order.payment_method.replace(/_/g, ' ').toUpperCase()} • {order.payment_status}
+                        {order.payment_method ? order.payment_method.replace(/_/g, ' ').toUpperCase() : 'N/A'} • {order.payment_status || 'Unknown'}
                       </Text>
                     </View>
 
@@ -230,8 +230,8 @@ const MyOrdersScreen = () => {
                   {/* Order Total */}
                   <View style={styles.orderFooter}>
                     <Text style={[{ fontSize: body }, { color: palette.subText }]}>Total</Text>
-                    <Text style={[{ fontSize: h4 }, { color: colors.primary }]}>
-                      ₱{order.total_amount.toFixed(2)}
+                    <Text style={[{ fontSize: h4 }, { color: colors.primary }]}>>
+                      ₱{(order.total_amount || 0).toFixed(2)}
                     </Text>
                   </View>
 

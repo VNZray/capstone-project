@@ -65,12 +65,13 @@ export interface CreateOrderPayload {
   payment_method_type?: 'gcash' | 'card' | 'paymaya' | 'grab_pay' | 'qrph';
 }
 
-// Response from POST /api/orders
+// Response from POST /api/orders (spec.md §7)
 export interface CreateOrderResponse {
-  order: Order;
   order_id: string;
   order_number: string;
   arrival_code: string;
-  status: OrderStatus;
-  checkout_url?: string; // For PayMongo flow (Phase 2)
+  status: string;
+  payment_status: string;
+  total_amount: number;
+  checkout_url?: string; // PayMongo checkout URL (when payment_method=paymongo)
 }

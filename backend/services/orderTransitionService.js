@@ -8,25 +8,26 @@
 /**
  * Allowed transitions map
  * Key: current status, Value: { nextStates: [], requiredRoles: [] }
+ * Note: Role names are lowercase to match normalized actorRole in canTransition()
  */
 const TRANSITION_RULES = {
   pending: {
-    accepted: ['owner', 'staff', 'admin'],
-    cancelled_by_business: ['owner', 'staff', 'admin'],
+    accepted: ['business owner', 'staff', 'admin'],
+    cancelled_by_business: ['business owner', 'staff', 'admin'],
     cancelled_by_user: ['tourist', 'admin'],
     failed_payment: ['system', 'admin']
   },
   accepted: {
-    preparing: ['owner', 'staff', 'admin'],
-    cancelled_by_business: ['owner', 'staff', 'admin']
+    preparing: ['business owner', 'staff', 'admin'],
+    cancelled_by_business: ['business owner', 'staff', 'admin']
   },
   preparing: {
-    ready_for_pickup: ['owner', 'staff', 'admin'],
-    cancelled_by_business: ['owner', 'staff', 'admin']
+    ready_for_pickup: ['business owner', 'staff', 'admin'],
+    cancelled_by_business: ['business owner', 'staff', 'admin']
   },
   ready_for_pickup: {
-    picked_up: ['owner', 'staff', 'admin'],
-    cancelled_by_business: ['owner', 'staff', 'admin']
+    picked_up: ['business owner', 'staff', 'admin'],
+    cancelled_by_business: ['business owner', 'staff', 'admin']
   },
   picked_up: {
     // Terminal state - no transitions allowed
@@ -68,14 +69,16 @@ export function canTransition(currentStatus, newStatus, actorRole, order = null)
   // Check if new status is in allowed transitions from current
   const allowedTransitions = TRANSITION_RULES[currentStatus];
   if (!allowedTransitions[newStatus]) {
+    const validNextStates = Object.keys(allowedTransitions);
     return {
       allowed: false,
-      reason: `Cannot transition from ${currentStatus} to ${newStatus}. This transition is not allowed.`
+      reason: `Cannot transition from ${currentStatus} to ${newStatus}. Valid next states: ${validNextStates.join(', ') || 'none (terminal state)'}`
     };
   }
   
   // Check if actor role is authorized for this transition
   const requiredRoles = allowedTransitions[newStatus];
+  
   if (!requiredRoles.includes(actorRole)) {
     return {
       allowed: false,
@@ -165,15 +168,15 @@ export function canCancelWithinGrace(orderCreatedAt, graceSeconds = 10) {
  * @returns {string} 'user' | 'business' | 'system'
  */
 export function getCancelledByActor(actorRole, currentStatus) {
-  actorRole = actorRole?.toLowerCase();
+  const roleLower = actorRole?.toLowerCase();
   
-  if (actorRole === 'tourist') {
+  if (roleLower === 'tourist') {
     return 'user';
-  } else if (['owner', 'staff'].includes(actorRole)) {
+  } else if (actorRole === 'Business Owner' || roleLower === 'business owner' || roleLower === 'staff') {
     return 'business';
-  } else if (actorRole === 'system' || currentStatus === 'failed_payment') {
+  } else if (roleLower === 'system' || currentStatus === 'failed_payment') {
     return 'system';
-  } else if (actorRole === 'admin') {
+  } else if (roleLower === 'admin') {
     // Admin can cancel on behalf of either party - need context
     // Default to system for admin-initiated cancellations
     return 'system';
@@ -191,7 +194,7 @@ export function getCancelledByActor(actorRole, currentStatus) {
  */
 export function validateCancellation(order, actorRole, graceSeconds = 10) {
   const currentStatus = order.status?.toLowerCase();
-  actorRole = actorRole?.toLowerCase();
+  const roleLower = actorRole?.toLowerCase();
   
   // Cannot cancel terminal states
   if (['picked_up', 'cancelled_by_user', 'cancelled_by_business', 'failed_payment'].includes(currentStatus)) {
@@ -203,7 +206,7 @@ export function validateCancellation(order, actorRole, graceSeconds = 10) {
   }
   
   // Tourist cancellation rules
-  if (actorRole === 'tourist') {
+  if (roleLower === 'tourist') {
     if (currentStatus !== 'pending') {
       return {
         allowed: false,
@@ -229,8 +232,8 @@ export function validateCancellation(order, actorRole, graceSeconds = 10) {
     };
   }
   
-  // Business (owner/staff) cancellation rules
-  if (['owner', 'staff'].includes(actorRole)) {
+  // Business (Business Owner/staff) cancellation rules
+  if (actorRole === 'Business Owner' || roleLower === 'business owner' || roleLower === 'staff') {
     // Business can cancel before picked_up
     if (currentStatus === 'picked_up') {
       return {

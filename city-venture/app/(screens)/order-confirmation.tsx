@@ -15,6 +15,7 @@ import { colors } from '@/constants/color';
 import { useTypography } from '@/constants/typography';
 import PageContainer from '@/components/PageContainer';
 import { cancelOrder } from '@/services/OrderService';
+import { initiatePayment, openPayMongoCheckout } from '@/services/PaymentService';
 import { Ionicons } from '@expo/vector-icons';
 
 const OrderConfirmationScreen = () => {
@@ -23,6 +24,8 @@ const OrderConfirmationScreen = () => {
     orderNumber: string;
     arrivalCode: string;
     total: string;
+    paymentMethod?: string; // 'cash_on_pickup' or 'paymongo'
+    hasCheckoutUrl?: string; // 'true' if checkout was already opened
   }>();
 
   const scheme = useColorScheme();
@@ -32,6 +35,7 @@ const OrderConfirmationScreen = () => {
 
   const [graceTimeRemaining, setGraceTimeRemaining] = useState(10); // 10 seconds grace period
   const [cancelling, setCancelling] = useState(false);
+  const [initiatingPayment, setInitiatingPayment] = useState(false);
 
   const palette = {
     bg: isDark ? '#0D1B2A' : '#F8F9FA',
@@ -116,6 +120,40 @@ const OrderConfirmationScreen = () => {
     router.replace('/(tabs)/(home)' as never);
   };
 
+  const handleCompletePayment = async () => {
+    try {
+      setInitiatingPayment(true);
+
+      // Initiate payment through backend
+      const response = await initiatePayment({
+        order_id: params.orderId,
+        use_checkout_session: true,
+      });
+
+      if (!response.success || !response.data.checkout_url) {
+        throw new Error(response.message || 'Failed to initiate payment');
+      }
+
+      // Open PayMongo checkout in browser
+      await openPayMongoCheckout(response.data.checkout_url);
+
+      // Note: When user completes payment or cancels,
+      // PayMongo will redirect to our deep link URLs:
+      // Success: cityventure://orders/{orderId}/payment-success
+      // Cancel: cityventure://orders/{orderId}/payment-cancel
+      // These are handled by payment-success.tsx and payment-cancel.tsx screens
+
+    } catch (error: any) {
+      console.error('[OrderConfirmation] Payment initiation failed:', error);
+      Alert.alert(
+        'Payment Error',
+        error.response?.data?.message || error.message || 'Failed to start payment process'
+      );
+    } finally {
+      setInitiatingPayment(false);
+    }
+  };
+
   return (
     <>
       <Stack.Screen
@@ -179,6 +217,14 @@ const OrderConfirmationScreen = () => {
                 <Text style={[{ fontSize: bodySmall }, { color: colors.warning }]}>PENDING</Text>
               </View>
             </View>
+
+            {/* Payment Method */}
+            <View style={styles.detailRow}>
+              <Text style={[{ fontSize: body }, { color: palette.subText }]}>Payment Method</Text>
+              <Text style={[{ fontSize: body }, { color: palette.text }]}>
+                {params.paymentMethod === 'paymongo' ? 'Online Payment' : 'Cash on Pickup'}
+              </Text>
+            </View>
           </View>
 
           {/* Grace Period Warning */}
@@ -193,6 +239,25 @@ const OrderConfirmationScreen = () => {
 
           {/* Action Buttons */}
           <View style={styles.buttonContainer}>
+            {/* Complete Payment Button - Only for PayMongo orders that haven't opened checkout yet */}
+            {params.paymentMethod === 'paymongo' && params.hasCheckoutUrl !== 'true' && (
+              <Pressable
+                style={[styles.button, { backgroundColor: colors.success }]}
+                onPress={handleCompletePayment}
+                disabled={initiatingPayment}
+              >
+                <Ionicons 
+                  name={initiatingPayment ? "hourglass-outline" : "card-outline"} 
+                  size={20} 
+                  color="#FFF" 
+                  style={{ marginRight: 8 }} 
+                />
+                <Text style={[{ fontSize: body, fontWeight: '600' }, { color: '#FFF' }]}>
+                  {initiatingPayment ? 'Opening Payment...' : 'Complete Payment'}
+                </Text>
+              </Pressable>
+            )}
+
             {graceTimeRemaining > 0 && (
               <Pressable
                 style={[
@@ -287,6 +352,8 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     alignItems: 'center',
     marginBottom: 12,
+    flexDirection: 'row',
+    justifyContent: 'center',
   },
   cancelButton: {
     borderWidth: 2,

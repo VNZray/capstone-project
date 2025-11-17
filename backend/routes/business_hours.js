@@ -5,6 +5,7 @@ const router = express.Router();
 
 router.post("/", businessController.insertBusinessHours);
 router.get("/", businessController.getBusinessHours);
+router.get("/:businessId", businessController.getBusinessHoursByBusinessId);
 router.put("/:id", businessController.updateBusinessHours);
 
 export default router;

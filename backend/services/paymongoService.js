@@ -22,7 +22,14 @@ const PAYMONGO_API_URL = 'https://api.paymongo.com/v1';
 function getSecretKey() {
   const key = process.env.PAYMONGO_SECRET_KEY;
   if (!key) {
-    throw new Error('PAYMONGO_SECRET_KEY not configured in environment');
+    const error = new Error('PAYMONGO_SECRET_KEY not configured in environment');
+    error.code = 'PAYMONGO_NOT_CONFIGURED';
+    throw error;
+  }
+  if (!key.startsWith('sk_')) {
+    const error = new Error('Invalid PAYMONGO_SECRET_KEY format (should start with sk_test_ or sk_live_)');
+    error.code = 'PAYMONGO_INVALID_KEY';
+    throw error;
   }
   return key;
 }
@@ -35,7 +42,9 @@ function getSecretKey() {
 function getWebhookSecret() {
   const secret = process.env.PAYMONGO_WEBHOOK_SECRET;
   if (!secret) {
-    throw new Error('PAYMONGO_WEBHOOK_SECRET not configured in environment');
+    const error = new Error('PAYMONGO_WEBHOOK_SECRET not configured in environment');
+    error.code = 'PAYMONGO_NOT_CONFIGURED';
+    throw error;
   }
   return secret;
 }
@@ -80,38 +89,149 @@ async function makePayMongoRequest(endpoint, options = {}) {
 }
 
 /**
- * Create PayMongo Payment Intent for order
+ * Create PayMongo Checkout Session for order (RECOMMENDED for most use cases)
+ * This provides a hosted checkout page with all payment methods
+ * @param {Object} params
+ * @param {string} params.orderId - Order UUID
+ * @param {string} params.orderNumber - Human-readable order number
+ * @param {number} params.amount - Amount in centavos (PHP cents)
+ * @param {Array<Object>} params.lineItems - Line items for the checkout
+ * @param {string} params.successUrl - URL to redirect on success
+ * @param {string} params.cancelUrl - URL to redirect on cancellation
+ * @param {string} params.description - Payment description
+ * @param {Object} params.metadata - Additional metadata
+ * @returns {Promise<Object>} Checkout Session data with checkout_url
+ */
+export async function createCheckoutSession({ 
+  orderId, 
+  orderNumber, 
+  amount, 
+  lineItems = [], 
+  successUrl, 
+  cancelUrl, 
+  description, 
+  metadata = {} 
+}) {
+  // Validate amount (must be at least 100 centavos = 1 PHP)
+  if (!amount || amount < 100) {
+    throw new Error('Invalid amount: minimum 100 centavos (1 PHP)');
+  }
+
+  const sanitizedLineItems = (lineItems.length > 0 ? lineItems : [{
+    currency: 'PHP',
+    amount: Math.round(amount),
+    name: description || `Order #${orderNumber}`,
+    quantity: 1
+  }]).map(item => {
+    const cleanItem = { ...item };
+    if (Array.isArray(cleanItem.images) && cleanItem.images.length === 0) {
+      delete cleanItem.images;
+    }
+    return cleanItem;
+  });
+
+  const metadataPayload = {
+    order_id: orderId,
+    order_number: orderNumber,
+    ...metadata
+  };
+
+  Object.keys(metadataPayload).forEach((key) => {
+    if (metadataPayload[key] === undefined || metadataPayload[key] === null || metadataPayload[key] === '') {
+      delete metadataPayload[key];
+    }
+  });
+
+  const attributes = {
+    line_items: sanitizedLineItems,
+    payment_method_types: ['card', 'gcash', 'paymaya', 'grab_pay'],
+    success_url: successUrl,
+    cancel_url: cancelUrl,
+    description: description || `Payment for Order #${orderNumber}`
+  };
+
+  if (Object.keys(metadataPayload).length > 0) {
+    attributes.metadata = metadataPayload;
+  }
+
+  const data = await makePayMongoRequest('/checkout_sessions', {
+    method: 'POST',
+    body: JSON.stringify({
+      data: {
+        attributes
+      }
+    })
+  });
+
+  return data.data;
+}
+
+/**
+ * Retrieve Checkout Session by ID
+ * @param {string} checkoutSessionId 
+ * @returns {Promise<Object>}
+ */
+export async function getCheckoutSession(checkoutSessionId) {
+  const data = await makePayMongoRequest(`/checkout_sessions/${checkoutSessionId}`);
+  return data.data;
+}
+
+/**
+ * Create PayMongo Payment Intent for order (for advanced use cases)
+ * Use createCheckoutSession for simpler integration
  * @param {Object} params
  * @param {string} params.orderId - Order UUID
  * @param {number} params.amount - Amount in centavos (PHP cents)
  * @param {string} params.description - Payment description
+ * @param {Array<string>} params.paymentMethodAllowed - Allowed payment methods
  * @param {Object} params.metadata - Additional metadata
  * @returns {Promise<Object>} Payment Intent data
  */
-export async function createPaymentIntent({ orderId, amount, description, metadata = {} }) {
+export async function createPaymentIntent({ 
+  orderId, 
+  amount, 
+  description, 
+  paymentMethodAllowed = ['card', 'paymaya', 'gcash', 'grab_pay'],
+  metadata = {},
+  currency = 'PHP',
+  statementDescriptor = 'NAGA VENTURE'
+}) {
   // Validate amount (must be at least 100 centavos = 1 PHP)
   if (!amount || amount < 100) {
     throw new Error('Invalid amount: minimum 100 centavos (1 PHP)');
+  }
+
+  const metadataPayload = {
+    order_id: orderId,
+    ...metadata
+  };
+
+  Object.keys(metadataPayload).forEach((key) => {
+    if (metadataPayload[key] === undefined || metadataPayload[key] === null || metadataPayload[key] === '') {
+      delete metadataPayload[key];
+    }
+  });
+
+  const attributes = {
+    amount: Math.round(amount), // Ensure integer centavos
+    payment_method_allowed: paymentMethodAllowed,
+    payment_method_options: {
+      card: { request_three_d_secure: 'any' }
+    },
+    currency,
+    description: description || `Order #${orderId}`,
+    statement_descriptor: statementDescriptor
+  };
+
+  if (Object.keys(metadataPayload).length > 0) {
+    attributes.metadata = metadataPayload;
   }
 
   const data = await makePayMongoRequest('/payment_intents', {
     method: 'POST',
     body: JSON.stringify({
       data: {
-        attributes: {
-          amount: Math.round(amount), // Ensure integer centavos
-          payment_method_allowed: ['card', 'paymaya', 'gcash', 'grab_pay'],
-          payment_method_options: {
-            card: { request_three_d_secure: 'any' }
-          },
-          currency: 'PHP',
-          description: description || `Order #${orderId}`,
-          statement_descriptor: 'NAGA VENTURE',
-          metadata: {
-            order_id: orderId,
-            ...metadata
-          }
-        }
+        attributes
       }
     })
   });
@@ -128,7 +248,7 @@ export async function createPaymentIntent({ orderId, amount, description, metada
  * @param {string} params.redirectUrl - Success/failed redirect URL
  * @returns {Promise<Object>} Source data with checkout_url
  */
-export async function createSource({ type, amount, orderId, redirectUrl }) {
+export async function createSource({ type, amount, orderId, redirectUrl, redirect, metadata = {}, currency = 'PHP' }) {
   const validTypes = ['gcash', 'grab_pay', 'paymaya'];
   if (!validTypes.includes(type)) {
     throw new Error(`Invalid source type. Must be one of: ${validTypes.join(', ')}`);
@@ -138,22 +258,40 @@ export async function createSource({ type, amount, orderId, redirectUrl }) {
     throw new Error('Invalid amount: minimum 100 centavos (1 PHP)');
   }
 
+  const metadataPayload = {
+    order_id: orderId,
+    ...metadata
+  };
+
+  Object.keys(metadataPayload).forEach((key) => {
+    if (metadataPayload[key] === undefined || metadataPayload[key] === null || metadataPayload[key] === '') {
+      delete metadataPayload[key];
+    }
+  });
+
+  const baseUrl = process.env.FRONTEND_URL || process.env.FRONTEND_BASE_URL || 'http://localhost:5173';
+
+  const redirectConfig = redirect || {
+    success: redirectUrl || `${baseUrl}/orders/${orderId}/payment/success`,
+    failed: redirectUrl || `${baseUrl}/orders/${orderId}/payment/failed`
+  };
+
+  const attributes = {
+    type,
+    amount: Math.round(amount),
+    currency,
+    redirect: redirectConfig
+  };
+
+  if (Object.keys(metadataPayload).length > 0) {
+    attributes.metadata = metadataPayload;
+  }
+
   const data = await makePayMongoRequest('/sources', {
     method: 'POST',
     body: JSON.stringify({
       data: {
-        attributes: {
-          type,
-          amount: Math.round(amount),
-          currency: 'PHP',
-          redirect: {
-            success: redirectUrl || `${process.env.FRONTEND_URL}/orders/${orderId}/payment/success`,
-            failed: redirectUrl || `${process.env.FRONTEND_URL}/orders/${orderId}/payment/failed`
-          },
-          metadata: {
-            order_id: orderId
-          }
-        }
+        attributes
       }
     })
   });
@@ -230,27 +368,43 @@ export async function getSource(sourceId) {
 }
 
 /**
+ * Retrieve Payment by ID
+ * @param {string} paymentId 
+ * @returns {Promise<Object>}
+ */
+export async function getPayment(paymentId) {
+  const data = await makePayMongoRequest(`/payments/${paymentId}`);
+  return data.data;
+}
+
+/**
  * Create Refund for Payment
  * @param {Object} params
- * @param {string} params.paymentId - PayMongo payment ID
+ * @param {string} params.paymentId - PayMongo payment ID (NOT payment intent ID)
  * @param {number} params.amount - Amount to refund in centavos (optional, full refund if omitted)
- * @param {string} params.reason - Refund reason
+ * @param {string} params.reason - Refund reason (duplicate, fraudulent, requested_by_customer, others)
+ * @param {string} params.notes - Additional notes
  * @param {Object} params.metadata - Additional metadata
  * @returns {Promise<Object>} Refund data
  */
-export async function createRefund({ paymentId, amount, reason, metadata = {} }) {
+export async function createRefund({ paymentId, amount, reason, notes, metadata = {} }) {
   if (!paymentId) {
     throw new Error('Payment ID is required for refund');
   }
 
+  const validReasons = ['duplicate', 'fraudulent', 'requested_by_customer', 'others'];
+  const refundReason = validReasons.includes(reason) ? reason : 'requested_by_customer';
+
   const body = {
     data: {
       attributes: {
-        reason: reason || 'requested_by_customer',
-        notes: metadata.notes || `Order cancellation: ${metadata.order_id || 'N/A'}`,
+        payment_id: paymentId,
+        reason: refundReason,
+        notes: notes || `Order cancellation: ${metadata.order_id || 'N/A'}`,
         metadata: {
           order_id: metadata.order_id,
-          cancelled_by: metadata.cancelled_by
+          cancelled_by: metadata.cancelled_by,
+          ...metadata
         }
       }
     }
@@ -266,6 +420,16 @@ export async function createRefund({ paymentId, amount, reason, metadata = {} })
     body: JSON.stringify(body)
   });
 
+  return data.data;
+}
+
+/**
+ * Retrieve Refund by ID
+ * @param {string} refundId 
+ * @returns {Promise<Object>}
+ */
+export async function getRefund(refundId) {
+  const data = await makePayMongoRequest(`/refunds/${refundId}`);
   return data.data;
 }
 
@@ -286,14 +450,24 @@ export function verifyWebhookSignature(payload, signature) {
   try {
     const webhookSecret = getWebhookSecret();
     
+    console.log('[PayMongo Webhook] 🔍 Verifying signature...');
+    console.log('[PayMongo Webhook] 📋 Signature header:', signature);
+    console.log('[PayMongo Webhook] 🔑 Webhook secret configured:', webhookSecret ? 'YES' : 'NO');
+    
     // Extract timestamp and signatures from header
-    // Format: t={timestamp},s1={signature1},s2={signature2},...
+    // PayMongo format: t={timestamp},te={signature},li=
     const parts = signature.split(',');
     const timestamp = parts.find(p => p.startsWith('t='))?.split('=')[1];
-    const signatures = parts.filter(p => p.startsWith('s')).map(p => p.split('=')[1]);
+    
+    // PayMongo uses 'te=' for the test signature (not 's1=')
+    const signaturePart = parts.find(p => p.startsWith('te='))?.split('=')[1];
+    const signatures = signaturePart ? [signaturePart] : [];
+
+    console.log('[PayMongo Webhook] 📅 Extracted timestamp:', timestamp);
+    console.log('[PayMongo Webhook] 📝 Extracted signatures:', signatures);
 
     if (!timestamp || signatures.length === 0) {
-      console.warn('[PayMongo Webhook] Invalid signature format');
+      console.warn('[PayMongo Webhook] Invalid signature format - missing timestamp or signature parts');
       return false;
     }
 
@@ -308,11 +482,16 @@ export function verifyWebhookSignature(payload, signature) {
     // Construct signed payload
     const signedPayload = `${timestamp}.${payload}`;
     
+    console.log('[PayMongo Webhook] 🔨 Signed payload:', signedPayload.substring(0, 100) + '...');
+    
     // Compute expected signature
     const expectedSignature = crypto
       .createHmac('sha256', webhookSecret)
       .update(signedPayload)
       .digest('hex');
+
+    console.log('[PayMongo Webhook] 🎯 Expected signature:', expectedSignature);
+    console.log('[PayMongo Webhook] 📨 Received signatures:', signatures);
 
     // Use timing-safe comparison to prevent timing attacks
     for (const sig of signatures) {
@@ -320,21 +499,26 @@ export function verifyWebhookSignature(payload, signature) {
         const expectedBuffer = Buffer.from(expectedSignature);
         const actualBuffer = Buffer.from(sig);
         
+        console.log('[PayMongo Webhook] 🔍 Comparing signature:', sig.substring(0, 20) + '...');
+        
         // Ensure buffers are same length before comparison
         if (expectedBuffer.length !== actualBuffer.length) {
+          console.log('[PayMongo Webhook] ⚠️ Length mismatch:', expectedBuffer.length, 'vs', actualBuffer.length);
           continue;
         }
         
         if (crypto.timingSafeEqual(expectedBuffer, actualBuffer)) {
+          console.log('[PayMongo Webhook] ✅ Signature verification PASSED');
           return true;
         }
       } catch (err) {
         // Invalid signature format, continue to next
+        console.log('[PayMongo Webhook] ❌ Comparison error:', err.message);
         continue;
       }
     }
 
-    console.warn('[PayMongo Webhook] Signature verification failed');
+    console.warn('[PayMongo Webhook] ❌ Signature verification FAILED - no matching signature');
     return false;
   } catch (error) {
     console.error('[PayMongo Webhook] Signature verification error:', error.message);
@@ -370,13 +554,17 @@ export function parseWebhookEvent(event) {
 }
 
 export default {
+  createCheckoutSession,
+  getCheckoutSession,
   createPaymentIntent,
   createSource,
   createPaymentMethod,
   attachPaymentIntent,
   getPaymentIntent,
   getSource,
+  getPayment,
   createRefund,
+  getRefund,
   verifyWebhookSignature,
   parseWebhookEvent
 };

@@ -51,7 +51,26 @@ export const getUserOrders = async (userId: string): Promise<Order[]> => {
     const { data } = await authAxios.get<Order[]>(
       `${api}/orders/user/${userId}`
     );
-    return data;
+    
+    // Ensure data is an array and normalize any missing fields
+    if (!Array.isArray(data)) {
+      console.warn('[OrderService] getUserOrders returned non-array:', data);
+      return [];
+    }
+    
+    // Normalize each order to ensure required fields exist
+    return data.map(order => ({
+      ...order,
+      status: order.status || 'PENDING',
+      payment_status: order.payment_status || 'PENDING',
+      payment_method: order.payment_method || 'cash_on_pickup',
+      order_number: order.order_number || 'N/A',
+      items: order.items || [],
+      total_amount: typeof order.total_amount === 'number' ? order.total_amount : parseFloat(order.total_amount) || 0,
+      subtotal: typeof order.subtotal === 'number' ? order.subtotal : parseFloat(order.subtotal) || 0,
+      discount_amount: typeof order.discount_amount === 'number' ? order.discount_amount : parseFloat(order.discount_amount) || 0,
+      tax_amount: typeof order.tax_amount === 'number' ? order.tax_amount : parseFloat(order.tax_amount) || 0,
+    }));
   } catch (error) {
     console.error('[OrderService] getUserOrders error:', error);
     throw error;

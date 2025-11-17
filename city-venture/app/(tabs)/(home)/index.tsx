@@ -238,7 +238,7 @@ const HomeScreen = () => {
 
   const handleBusinessPress = useCallback((business: PartnerBusiness) => {
     router.push({
-      pathname: '/(tabs)/(home)/(shop)',
+      pathname: '/(tabs)/(home)/(shop)/business-profile',
       params: { businessId: business.id },
     });
   }, []);

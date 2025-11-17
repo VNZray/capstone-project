@@ -7,5 +7,7 @@ dist/*
 dist
 .env
 .env.local
+.env.example
 .md
 scripts/
+dist/

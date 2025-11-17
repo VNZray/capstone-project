@@ -326,7 +326,7 @@ const OrderDetailScreen = () => {
                   )}
                 </View>
                 <Text style={[{ fontSize: body }, { color: palette.text }]}>
-                  ₱{item.total_price.toFixed(2)}
+                  ₱{(item.total_price || 0).toFixed(2)}
                 </Text>
               </View>
             ))}
@@ -336,20 +336,20 @@ const OrderDetailScreen = () => {
           <View style={[styles.section, { backgroundColor: palette.card }]}>
             <View style={styles.summaryRow}>
               <Text style={[{ fontSize: body }, { color: palette.subText }]}>Subtotal</Text>
-              <Text style={[{ fontSize: body }, { color: palette.text }]}>₱{order.subtotal.toFixed(2)}</Text>
+              <Text style={[{ fontSize: body }, { color: palette.text }]}>₱{(order.subtotal || 0).toFixed(2)}</Text>
             </View>
             <View style={styles.summaryRow}>
               <Text style={[{ fontSize: body }, { color: palette.subText }]}>Discount</Text>
-              <Text style={[{ fontSize: body }, { color: palette.text }]}>-₱{order.discount_amount.toFixed(2)}</Text>
+              <Text style={[{ fontSize: body }, { color: palette.text }]}>-₱{(order.discount_amount || 0).toFixed(2)}</Text>
             </View>
             <View style={styles.summaryRow}>
               <Text style={[{ fontSize: body }, { color: palette.subText }]}>Tax</Text>
-              <Text style={[{ fontSize: body }, { color: palette.text }]}>₱{order.tax_amount.toFixed(2)}</Text>
+              <Text style={[{ fontSize: body }, { color: palette.text }]}>₱{(order.tax_amount || 0).toFixed(2)}</Text>
             </View>
             <View style={[styles.divider, { backgroundColor: palette.border }]} />
             <View style={styles.summaryRow}>
               <Text style={[{ fontSize: h4 }, { color: palette.text }]}>Total</Text>
-              <Text style={[{ fontSize: h4 }, { color: colors.primary }]}>₱{order.total_amount.toFixed(2)}</Text>
+              <Text style={[{ fontSize: h4 }, { color: colors.primary }]}>₱{(order.total_amount || 0).toFixed(2)}</Text>
             </View>
           </View>
 

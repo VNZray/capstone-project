@@ -146,7 +146,7 @@ const ShopDirectory = () => {
 
   const handleShopPress = (business: Business) => {
     router.push(
-      `/(tabs)/(home)/(shop)/business-details?businessId=${business.id}`
+      `/(tabs)/(home)/(shop)/business-profile?businessId=${business.id}`
     );
   };
 

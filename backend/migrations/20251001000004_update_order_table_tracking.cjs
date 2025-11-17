@@ -6,8 +6,9 @@ exports.up = async function (knex) {
     table.timestamp("customer_arrived_at").nullable();
     
     // PayMongo reference fields
-    table.string("paymongo_checkout_id", 100).nullable();
-    table.string("paymongo_source_id", 100).nullable();
+    table.string("paymongo_checkout_id", 100).nullable(); // Checkout session or payment intent ID
+    table.string("paymongo_source_id", 100).nullable(); // Source ID for e-wallets
+    table.string("paymongo_payment_id", 100).nullable(); // Actual payment ID once payment is completed
     
     // Order lifecycle tracking
     table.timestamp("confirmed_at").nullable();
@@ -33,6 +34,7 @@ exports.down = async function (knex) {
     table.dropColumn("customer_arrived_at");
     table.dropColumn("paymongo_checkout_id");
     table.dropColumn("paymongo_source_id");
+    table.dropColumn("paymongo_payment_id");
     table.dropColumn("confirmed_at");
     table.dropColumn("preparation_started_at");
     table.dropColumn("ready_at");

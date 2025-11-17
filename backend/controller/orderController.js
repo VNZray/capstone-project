@@ -8,6 +8,7 @@ import {
   generateOrderNumber,
   validateStatus
 } from "../utils/orderValidation.js";
+import { ensureUserRole, hasBusinessAccess } from "../utils/authHelpers.js";
 import orderTransitionService from "../services/orderTransitionService.js";
 import * as paymongoService from "../services/paymongoService.js";
 import * as socketService from "../services/socketService.js";
@@ -32,8 +33,33 @@ export async function getAllOrders(req, res) {
 export async function getOrdersByBusinessId(req, res) {
   const { businessId } = req.params;
   try {
+    const userRole = await ensureUserRole(req);
+    const allowed = await hasBusinessAccess(businessId, req.user, userRole);
+    
+    if (!allowed) {
+      return res.status(403).json({
+        message: "Forbidden: you do not have access to this business",
+      });
+    }
+
     const [data] = await db.query("CALL GetOrdersByBusinessId(?)", [businessId]);
-    res.json(data);
+    
+    // Normalize status casing and amounts for frontend
+    // Stored procedures return array of result sets, get first one
+    const rows = Array.isArray(data) && Array.isArray(data[0]) ? data[0] : (Array.isArray(data) ? data : []);
+    const normalized = rows.map((row) => ({
+      ...row,
+      status: row.status || 'pending',
+      payment_status: row.payment_status || 'pending',
+      payment_method: row.payment_method || 'cash_on_pickup',
+      order_number: row.order_number || 'N/A',
+      total_amount: typeof row.total_amount === 'number' ? row.total_amount : parseFloat(row.total_amount) || 0,
+      subtotal: typeof row.subtotal === 'number' ? row.subtotal : parseFloat(row.subtotal) || 0,
+      discount_amount: typeof row.discount_amount === 'number' ? row.discount_amount : parseFloat(row.discount_amount) || 0,
+      tax_amount: typeof row.tax_amount === 'number' ? row.tax_amount : parseFloat(row.tax_amount) || 0,
+    }));
+
+    res.json(normalized);
   } catch (error) {
     return handleDbError(error, res);
   }
@@ -43,18 +69,34 @@ export async function getOrdersByBusinessId(req, res) {
 export async function getOrdersByUserId(req, res) {
   const { userId } = req.params;
   const requestingUserId = req.user?.id;
-  const userRole = req.user?.role;
-  
-  // Authorization: user can only view own orders unless admin
-  if (userRole !== 'Admin' && userId !== requestingUserId) {
-    return res.status(403).json({ 
-      message: "Forbidden: you can only view your own orders" 
-    });
+  if (!requestingUserId) {
+    return res.status(401).json({ message: "Not authenticated" });
   }
+
+  const userRole = await ensureUserRole(req);
+
+  // Only admins may request arbitrary user IDs; everyone else is forced to their own ID
+  const effectiveUserId = userRole === 'Admin' ? userId : requestingUserId;
   
   try {
-    const [data] = await db.query("CALL GetOrdersByUserId(?)", [userId]);
-    res.json(data);
+    const [data] = await db.query("CALL GetOrdersByUserId(?)", [effectiveUserId]);
+
+    // Normalize status casing for frontend (expects UPPER_SNAKE)
+    // Stored procedures return array of result sets, get first one
+    const rows = Array.isArray(data) && Array.isArray(data[0]) ? data[0] : (Array.isArray(data) ? data : []);
+    const normalized = rows.map((row) => ({
+      ...row,
+      status: (row.status || 'pending').toString().toUpperCase(),
+      payment_status: (row.payment_status || 'pending').toString().toUpperCase(),
+      payment_method: row.payment_method || 'cash_on_pickup',
+      order_number: row.order_number || 'N/A',
+      total_amount: typeof row.total_amount === 'number' ? row.total_amount : parseFloat(row.total_amount) || 0,
+      subtotal: typeof row.subtotal === 'number' ? row.subtotal : parseFloat(row.subtotal) || 0,
+      discount_amount: typeof row.discount_amount === 'number' ? row.discount_amount : parseFloat(row.discount_amount) || 0,
+      tax_amount: typeof row.tax_amount === 'number' ? row.tax_amount : parseFloat(row.tax_amount) || 0,
+    }));
+
+    res.json(normalized);
   } catch (error) {
     return handleDbError(error, res);
   }
@@ -64,7 +106,7 @@ export async function getOrdersByUserId(req, res) {
 export async function getOrderById(req, res) {
   const { id } = req.params;
   const userId = req.user?.id;
-  const userRole = req.user?.role;
+  const userRole = await ensureUserRole(req);
   
   try {
     const [results] = await db.query("CALL GetOrderById(?)", [id]);
@@ -79,34 +121,34 @@ export async function getOrderById(req, res) {
     // Authorization check: user must own the order or be business owner/staff/admin
     if (userRole !== 'Admin') {
       const isTouristOwner = userRole === 'Tourist' && orderData.user_id === userId;
-      
-      // For business owners/staff, check if they own the business
-      const isBusinessOwner = ['Owner', 'Staff'].includes(userRole) && orderData.business_id;
-      
-      if (!isTouristOwner && !isBusinessOwner) {
-        // Additional check: verify business ownership
-        if (isBusinessOwner) {
-          const [businessCheck] = await db.query(
-            "SELECT id FROM business WHERE id = ? AND owner_id = ?",
-            [orderData.business_id, userId]
-          );
-          
-          if (!businessCheck || businessCheck.length === 0) {
-            return res.status(403).json({ 
-              message: "Forbidden: you do not have access to this order" 
-            });
-          }
-        } else {
-          return res.status(403).json({ 
-            message: "Forbidden: you do not have access to this order" 
-          });
-        }
+      const isBusinessMember = await hasBusinessAccess(orderData.business_id, req.user, userRole);
+
+      if (!isTouristOwner && !isBusinessMember) {
+        return res.status(403).json({ 
+          message: "Forbidden: you do not have access to this order" 
+        });
       }
     }
 
-    const result = {
+    // Normalize amounts for frontend (MySQL DECIMAL returns as string)
+    const normalizedOrder = {
       ...orderData,
-      items: items
+      total_amount: typeof orderData.total_amount === 'number' ? orderData.total_amount : parseFloat(orderData.total_amount) || 0,
+      subtotal: typeof orderData.subtotal === 'number' ? orderData.subtotal : parseFloat(orderData.subtotal) || 0,
+      discount_amount: typeof orderData.discount_amount === 'number' ? orderData.discount_amount : parseFloat(orderData.discount_amount) || 0,
+      tax_amount: typeof orderData.tax_amount === 'number' ? orderData.tax_amount : parseFloat(orderData.tax_amount) || 0,
+    };
+
+    // Normalize item amounts
+    const normalizedItems = items.map((item) => ({
+      ...item,
+      unit_price: typeof item.unit_price === 'number' ? item.unit_price : parseFloat(item.unit_price) || 0,
+      total_price: typeof item.total_price === 'number' ? item.total_price : parseFloat(item.total_price) || 0,
+    }));
+
+    const result = {
+      ...normalizedOrder,
+      items: normalizedItems
     };
 
     res.json(result);
@@ -158,7 +200,7 @@ export async function insertOrder(req, res) {
     const orderItems = [];
     
     for (const item of items) {
-      const [product] = await connection.query("SELECT price, is_unavailable FROM product WHERE id = ?", [item.product_id]);
+      const [product] = await connection.query("SELECT price, status FROM product WHERE id = ?", [item.product_id]);
       if (!product || product.length === 0) {
         await connection.rollback();
         return res.status(400).json({ 
@@ -167,7 +209,9 @@ export async function insertOrder(req, res) {
       }
       
       // Check if product is temporarily unavailable
-      if (product[0].is_unavailable) {
+      const productStatus = product[0].status;
+      const isUnavailable = product[0].is_unavailable || ['inactive', 'out_of_stock'].includes((productStatus || '').toLowerCase());
+      if (isUnavailable) {
         await connection.rollback();
         return res.status(400).json({ 
           message: `Product is currently unavailable and cannot be ordered`,
@@ -222,6 +266,15 @@ export async function insertOrder(req, res) {
     const taxAmount = 0; // Tax calculation can be implemented here
     const totalAmount = subtotal - discountAmount + taxAmount;
 
+    // Normalize pickup datetime to Date object for MySQL
+    const pickupDateObj = new Date(pickup_datetime);
+    if (isNaN(pickupDateObj.getTime())) {
+      await connection.rollback();
+      return res.status(400).json({ 
+        message: "Invalid pickup datetime format" 
+      });
+    }
+
     // Generate order number and arrival code
     const orderNumber = generateOrderNumber();
     const arrivalCode = generateArrivalCode();
@@ -239,7 +292,7 @@ export async function insertOrder(req, res) {
         taxAmount, 
         totalAmount,
         finalDiscountId, 
-        pickup_datetime, 
+        pickupDateObj, 
         sanitizedInstructions, 
         payment_method || 'cash_on_pickup',
         payment_method_type || null,
@@ -279,91 +332,70 @@ export async function insertOrder(req, res) {
     await connection.commit();
     
     // ========== PayMongo Integration ==========
-    // If payment method is PayMongo, initiate payment
-    let paymentData = null;
+    // If payment method is PayMongo, create checkout session immediately
+    let checkout_url = null;
     
-    if (payment_method === 'paymongo' && payment_method_type) {
+    console.log(`[insertOrder] Order ${orderNumber} created, payment_method: ${payment_method}`);
+    
+    if (payment_method === 'paymongo') {
       try {
-        const amountInCentavos = Math.round(totalAmount * 100);
-        
-        if (amountInCentavos < 100) {
-          return res.status(400).json({ 
-            success: false, 
-            message: "Order amount too low for PayMongo (minimum 1.00 PHP)" 
-          });
+        // Prepare line items for checkout
+        const lineItems = orderItems.map((item) => ({
+          currency: 'PHP',
+          amount: Math.round(item.unit_price * 100),
+          name: item.product_name || `Product ${item.product_id}`,
+          quantity: item.quantity,
+        }));
+
+        // Get product names for line items (orderItems don't have names yet)
+        for (let i = 0; i < orderItems.length; i++) {
+          const [productData] = await connection.query(
+            "SELECT name, image_url FROM product WHERE id = ?",
+            [orderItems[i].product_id]
+          );
+          if (productData && productData.length > 0) {
+            lineItems[i].name = productData[0].name;
+            if (productData[0].image_url) {
+              lineItems[i].images = [productData[0].image_url];
+            }
+          }
         }
 
-        const metadata = {
-          order_id: orderId,
-          order_number: orderNumber,
-          business_id: business_id,
-          user_id: user_id
-        };
+        // Prepare redirect URLs (these are HTTP URLs for PayMongo API)
+        const redirectBase = process.env.PAYMONGO_REDIRECT_BASE || process.env.FRONTEND_BASE_URL || "http://localhost:5173";
+        const successUrl = `${redirectBase}/orders/${orderId}/payment-success`;
+        const cancelUrl = `${redirectBase}/orders/${orderId}/payment-cancel`;
 
-        const successUrl = `${FRONTEND_BASE_URL}/orders/${orderId}/payment-success`;
-        const failedUrl = `${FRONTEND_BASE_URL}/orders/${orderId}/payment-failed`;
+        // Create PayMongo checkout session
+        const checkoutSession = await paymongoService.createCheckoutSession({
+          orderId,
+          orderNumber,
+          amount: Math.round(totalAmount * 100), // Convert to centavos
+          lineItems,
+          successUrl,
+          cancelUrl,
+          description: `Order ${orderNumber}`,
+          metadata: {
+            order_id: orderId,
+            order_number: orderNumber,
+            business_id: business_id,
+            user_id: user_id,
+            total_amount: totalAmount.toString(),
+          }
+        });
 
-        let paymongoResponse;
-        let provider_reference;
-        let checkout_url = null;
-        let payment_intent_id = null;
-
-        // Create source for e-wallets or payment intent for cards
-        if (['gcash', 'grab_pay', 'paymaya'].includes(payment_method_type)) {
-          paymongoResponse = await paymongoService.createSource({
-            amount: amountInCentavos,
-            type: payment_method_type,
-            currency: 'PHP',
-            redirect: {
-              success: successUrl,
-              failed: failedUrl
-            },
-            metadata
-          });
-
-          provider_reference = paymongoResponse.data.id;
-          checkout_url = paymongoResponse.data.attributes.redirect?.checkout_url;
-
-          // Update order with source ID
-          await db.query(
-            `UPDATE \`order\` SET paymongo_source_id = ? WHERE id = ?`,
-            [provider_reference, orderId]
-          );
-
-        } else if (payment_method_type === 'card') {
-          paymongoResponse = await paymongoService.createPaymentIntent({
-            amount: amountInCentavos,
-            currency: 'PHP',
-            description: `Payment for order ${orderNumber}`,
-            statement_descriptor: `Order ${orderNumber}`,
-            metadata
-          });
-
-          provider_reference = paymongoResponse.data.id;
-          payment_intent_id = provider_reference;
-
-          // Update order with checkout ID
-          await db.query(
-            `UPDATE \`order\` SET paymongo_checkout_id = ? WHERE id = ?`,
-            [provider_reference, orderId]
-          );
-
-        } else {
-          return res.status(400).json({ 
-            success: false, 
-            message: `Unsupported payment method type: ${payment_method_type}` 
-          });
-        }
+        checkout_url = checkoutSession.attributes.checkout_url;
+        const provider_reference = checkoutSession.id;
 
         // Create payment record
         const payment_id = uuidv4();
-        await db.query(
+        await connection.query(
           `CALL InsertPayment(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
           [
             payment_id,
             'Tourist',
             'online',
-            payment_method_type,
+            payment_method_type || 'paymongo',
             totalAmount,
             'pending',
             'order',
@@ -374,35 +406,25 @@ export async function insertOrder(req, res) {
         );
 
         // Store provider reference
-        await db.query(
+        await connection.query(
           `UPDATE payment 
-           SET provider_reference = ?, 
-               currency = 'PHP', 
-               metadata = ?
+           SET provider_reference = ?, currency = 'PHP' 
            WHERE id = ?`,
-          [provider_reference, JSON.stringify(metadata), payment_id]
+          [provider_reference, payment_id]
         );
 
-        paymentData = {
-          payment_id,
-          provider_reference,
-          checkout_url,
-          payment_intent_id,
-          payment_method_type
-        };
+        console.log(`[insertOrder] ✅ PayMongo checkout created for order ${orderNumber}`);
+        console.log(`[insertOrder] 🔗 Checkout URL: ${checkout_url}`);
+        console.log(`[insertOrder] 📝 Provider reference (checkout session ID): ${provider_reference}`);
 
-      } catch (paymentError) {
-        console.error("PayMongo payment initiation failed:", paymentError);
-        
-        // Don't fail the order, but return warning
-        paymentData = {
-          error: true,
-          message: "Payment initiation failed. Please complete payment manually."
-        };
+      } catch (paymongoError) {
+        console.error(`[insertOrder] ❌ PayMongo checkout creation failed for order ${orderNumber}:`, paymongoError.message);
+        // Don't fail the order, but log the error
+        // checkout_url will remain null and frontend can handle retry via /payments/initiate
       }
     }
     
-    // Return spec-compliant response with optional payment data
+    // Return spec-compliant response (spec.md §7)
     const response = {
       order_id: orderId,
       order_number: orderNumber,
@@ -412,32 +434,72 @@ export async function insertOrder(req, res) {
       total_amount: totalAmount
     };
 
-    if (paymentData) {
-      response.payment = paymentData;
+    // Add checkout_url for PayMongo orders
+    if (checkout_url) {
+      response.checkout_url = checkout_url;
     }
 
-    // ========== Socket.IO Event (Phase 5) ==========
-    // Emit new order event to business and user
-    try {
-      const orderData = {
-        id: orderId,
-        order_number: orderNumber,
-        business_id: business_id,
-        user_id: user_id,
-        status: 'pending',
-        payment_status: 'pending',
-        total_amount: totalAmount,
-        arrival_code: arrivalCode,
-        created_at: new Date()
-      };
+    // ========== Real-time Notifications ==========
+    // For PayMongo orders: SKIP notifications until payment is confirmed via webhook
+    // For COP orders: Emit immediately since no payment confirmation needed
+    if (payment_method === 'cash_on_pickup') {
+      console.log(`[insertOrder] 📢 Emitting notifications for COP order ${orderNumber}`);
       
-      socketService.emitNewOrder(orderData);
-      
-      // Trigger notifications (push + email + DB)
-      await notificationHelper.triggerNewOrderNotifications(orderData);
-    } catch (socketError) {
-      console.error('Failed to emit new order event:', socketError);
-      // Don't fail the request, just log
+      try {
+        const [userEmailResult] = await db.query(
+          "SELECT email FROM user WHERE id = ?",
+          [user_id]
+        );
+        const userEmail = userEmailResult?.[0]?.email || 'unknown@email.com';
+
+        // Fetch all order items
+        const [itemsResult] = await db.query(
+          "SELECT * FROM order_item WHERE order_id = ?",
+          [orderId]
+        );
+        const itemsData = itemsResult || [];
+
+        // Fetch discount name if discount was applied
+        let discountName = null;
+        if (finalDiscountId) {
+          const [discountResult] = await db.query(
+            "SELECT discount_name FROM discount WHERE id = ?",
+            [finalDiscountId]
+          );
+          discountName = discountResult?.[0]?.discount_name;
+        }
+
+        const completeOrderData = {
+          id: orderId,
+          order_number: orderNumber,
+          business_id: business_id,
+          user_id: user_id,
+          user_email: userEmail,
+          status: 'pending',
+          payment_status: 'pending',
+          payment_method: payment_method,
+          subtotal: subtotal,
+          discount_amount: discountAmount,
+          tax_amount: taxAmount,
+          total_amount: totalAmount,
+          pickup_datetime: pickup_datetime,
+          special_instructions: sanitizedInstructions,
+          arrival_code: arrivalCode,
+          discount_name: discountName,
+          item_count: itemsData.length,
+          items: itemsData,
+          created_at: new Date()
+        };
+
+        socketService.emitNewOrder(completeOrderData);
+        await notificationHelper.triggerNewOrderNotifications(completeOrderData);
+        
+        console.log(`[insertOrder] ✅ COP order notifications sent`);
+      } catch (socketError) {
+        console.error(`[insertOrder] ❌ Failed to emit notifications:`, socketError);
+      }
+    } else {
+      console.log(`[insertOrder] ⏳ PayMongo order ${orderNumber} - notifications deferred until payment confirmation`);
     }
 
     res.status(201).json(response);
@@ -455,6 +517,8 @@ export async function updateOrderStatus(req, res) {
   const { status } = req.body;
   
   try {
+    const userRole = await ensureUserRole(req);
+
     // Validate status format
     const statusValidation = validateStatus(status);
     if (!statusValidation.valid) {
@@ -463,7 +527,7 @@ export async function updateOrderStatus(req, res) {
     
     // Get current order with payment info for validation (Phase 4)
     const [currentOrder] = await db.query(
-      "SELECT status, payment_method, payment_status FROM `order` WHERE id = ?", 
+      "SELECT * FROM `order` WHERE id = ?", 
       [id]
     );
     
@@ -473,9 +537,18 @@ export async function updateOrderStatus(req, res) {
     
     const order = currentOrder[0];
     const currentStatus = order.status;
+
+    if (userRole !== 'Admin') {
+      const allowed = await hasBusinessAccess(order.business_id, req.user, userRole);
+      if (!allowed) {
+        return res.status(403).json({
+          message: "Forbidden: you do not manage this business",
+        });
+      }
+    }
     
     // Get actor role from authenticated user
-    const actorRole = req.user?.role || 'tourist';
+    const actorRole = userRole || 'tourist';
     
     // Check if transition is allowed (with payment validation)
     const transitionCheck = orderTransitionService.canTransition(
@@ -503,23 +576,61 @@ export async function updateOrderStatus(req, res) {
 
     const updatedOrder = data[0];
 
-    // ========== Socket.IO Event (Phase 5) ==========
-    // Emit order updated event
+    // ========== Fetch Complete Order for Socket Emission ==========
+    // Get user email and all order details for socket event
     try {
-      const orderData = {
-        id: id,
-        order_number: updatedOrder.order_number || order.order_number,
-        business_id: updatedOrder.business_id || order.business_id,
-        user_id: updatedOrder.user_id || order.user_id,
-        status: status,
-        payment_status: updatedOrder.payment_status || order.payment_status,
-        updated_at: new Date()
+      const [userEmailResult] = await db.query(
+        "SELECT email FROM user WHERE id = ?",
+        [updatedOrder.user_id]
+      );
+      const userEmail = userEmailResult?.[0]?.email || 'unknown@email.com';
+
+      // Fetch all order items
+      const [itemsResult] = await db.query(
+        "SELECT * FROM order_item WHERE order_id = ?",
+        [id]
+      );
+      const itemsData = itemsResult || [];
+
+      // Fetch discount name if exists
+      let discountName = null;
+      if (updatedOrder.discount_id) {
+        const [discountResult] = await db.query(
+          "SELECT discount_name FROM discount WHERE id = ?",
+          [updatedOrder.discount_id]
+        );
+        discountName = discountResult?.[0]?.discount_name;
+      }
+
+      // Send complete order data through socket
+      const completeOrderData = {
+        id: updatedOrder.id,
+        order_number: updatedOrder.order_number,
+        business_id: updatedOrder.business_id,
+        user_id: updatedOrder.user_id,
+        user_email: userEmail,
+        status: updatedOrder.status,
+        payment_status: updatedOrder.payment_status,
+        payment_method: updatedOrder.payment_method || 'cash_on_pickup',
+        subtotal: updatedOrder.subtotal,
+        discount_amount: updatedOrder.discount_amount || 0,
+        tax_amount: updatedOrder.tax_amount || 0,
+        total_amount: updatedOrder.total_amount,
+        pickup_datetime: updatedOrder.pickup_datetime,
+        special_instructions: updatedOrder.special_instructions,
+        arrival_code: updatedOrder.arrival_code,
+        discount_name: discountName,
+        item_count: itemsData.length,
+        items: itemsData,
+        ready_at: updatedOrder.ready_at,
+        picked_up_at: updatedOrder.picked_up_at,
+        updated_at: updatedOrder.updated_at || new Date()
       };
-      
-      socketService.emitOrderUpdated(orderData, currentStatus);
+
+      socketService.emitOrderUpdated(completeOrderData, currentStatus);
       
       // Trigger notifications
-      await notificationHelper.triggerOrderUpdateNotifications(orderData, currentStatus);
+      await notificationHelper.triggerOrderUpdateNotifications(completeOrderData, currentStatus);
     } catch (socketError) {
       console.error('Failed to emit order updated event:', socketError);
     }
@@ -560,9 +671,12 @@ export async function cancelOrder(req, res) {
   const { cancellation_reason } = req.body;
   
   try {
+    const userRole = await ensureUserRole(req);
+
     // Get current order details including payment info
     const [orderData] = await db.query(
       `SELECT o.status, o.created_at, o.payment_status, o.payment_method, o.total_amount,
+              o.business_id, o.user_id, o.order_number,
               p.id as payment_id, p.provider_reference, p.status as payment_db_status
        FROM \`order\` o
        LEFT JOIN payment p ON p.payment_for = 'order' AND p.payment_for_id = o.id
@@ -575,7 +689,23 @@ export async function cancelOrder(req, res) {
     }
     
     const order = orderData[0];
-    const actorRole = req.user?.role || 'tourist';
+    const actorRole = userRole || 'tourist';
+
+    // Ownership checks
+    if (userRole === 'Tourist' && order.user_id !== req.user?.id) {
+      return res.status(403).json({
+        message: "Forbidden: you can only cancel your own orders"
+      });
+    }
+    
+    if (['Business Owner', 'Staff'].includes(userRole)) {
+      const allowed = await hasBusinessAccess(order.business_id, req.user, userRole);
+      if (!allowed) {
+        return res.status(403).json({
+          message: "Forbidden: you do not manage this business"
+        });
+      }
+    }
     
     // Get grace period from environment (default 10 seconds)
     const graceSeconds = parseInt(process.env.ORDER_GRACE_SECONDS || '10', 10);
@@ -680,25 +810,61 @@ export async function cancelOrder(req, res) {
       response.refund = refundData;
     }
 
-    // ========== Socket.IO Event (Phase 5) ==========
-    // Emit order cancelled event
+    // ========== Fetch Complete Order for Socket Emission ==========
+    // Get user email and all order details for cancellation event
     try {
+      const [userEmailResult] = await db.query(
+        "SELECT email FROM user WHERE id = ?",
+        [order.user_id]
+      );
+      const userEmail = userEmailResult?.[0]?.email || 'unknown@email.com';
+
+      // Fetch all order items
+      const [itemsResult] = await db.query(
+        "SELECT * FROM order_item WHERE order_id = ?",
+        [id]
+      );
+      const itemsData = itemsResult || [];
+
+      // Fetch discount name if exists
+      let discountName = null;
+      if (order.discount_id) {
+        const [discountResult] = await db.query(
+          "SELECT discount_name FROM discount WHERE id = ?",
+          [order.discount_id]
+        );
+        discountName = discountResult?.[0]?.discount_name;
+      }
+
       const cancelledStatus = cancellationCheck.cancelled_by === 'user' ? 'cancelled_by_user' : 'cancelled_by_business';
-      
-      const orderData = {
+
+      // Send complete order data through socket
+      const completeOrderData = {
         id: id,
         order_number: data[0].order_number || order.order_number,
         business_id: order.business_id,
         user_id: order.user_id,
+        user_email: userEmail,
         status: cancelledStatus,
         payment_status: refundData ? 'refunded' : order.payment_status,
+        payment_method: order.payment_method || 'cash_on_pickup',
+        subtotal: order.subtotal,
+        discount_amount: order.discount_amount || 0,
+        tax_amount: order.tax_amount || 0,
+        total_amount: order.total_amount,
+        pickup_datetime: order.pickup_datetime,
+        special_instructions: order.special_instructions,
+        arrival_code: order.arrival_code,
+        discount_name: discountName,
+        item_count: itemsData.length,
+        items: itemsData,
         updated_at: new Date()
       };
-      
-      socketService.emitOrderUpdated(orderData, order.status);
+
+      socketService.emitOrderUpdated(completeOrderData, order.status);
       
       // Trigger notifications
-      await notificationHelper.triggerOrderUpdateNotifications(orderData, order.status);
+      await notificationHelper.triggerOrderUpdateNotifications(completeOrderData, order.status);
     } catch (socketError) {
       console.error('Failed to emit order cancelled event:', socketError);
     }
@@ -715,6 +881,14 @@ export async function getOrderStatsByBusiness(req, res) {
   const { period = '30' } = req.query; // days
   
   try {
+    const userRole = await ensureUserRole(req);
+    const allowed = await hasBusinessAccess(businessId, req.user, userRole);
+    if (!allowed) {
+      return res.status(403).json({
+        message: "Forbidden: you do not have access to this business"
+      });
+    }
+
     const [results] = await db.query("CALL GetOrderStatsByBusiness(?, ?)", [businessId, parseInt(period)]);
     
     if (!results || results.length < 3) {
@@ -741,6 +915,14 @@ export async function verifyArrivalCode(req, res) {
   const { arrival_code } = req.body;
   
   try {
+    const userRole = await ensureUserRole(req);
+    const allowed = await hasBusinessAccess(businessId, req.user, userRole);
+    if (!allowed) {
+      return res.status(403).json({
+        message: "Forbidden: you do not have access to this business"
+      });
+    }
+
     const [data] = await db.query("CALL VerifyArrivalCode(?, ?)", [businessId, arrival_code]);
 
     if (!data || data.length === 0) {
@@ -758,6 +940,28 @@ export async function markCustomerArrivedForOrder(req, res) {
   const { id } = req.params;
   
   try {
+    const userRole = await ensureUserRole(req);
+
+    const [orderRows] = await db.query(
+      "SELECT id, business_id, user_id FROM `order` WHERE id = ?",
+      [id]
+    );
+
+    if (!orderRows || orderRows.length === 0) {
+      return res.status(404).json({ message: "Order not found" });
+    }
+
+    const order = orderRows[0];
+
+    if (userRole !== 'Admin') {
+      const allowed = await hasBusinessAccess(order.business_id, req.user, userRole);
+      if (!allowed) {
+        return res.status(403).json({
+          message: "Forbidden: you do not manage this business"
+        });
+      }
+    }
+
     const [data] = await db.query("CALL MarkCustomerArrivedForOrder(?)", [id]);
 
     if (!data || data.length === 0) {
@@ -778,15 +982,107 @@ export async function markOrderAsReady(req, res) {
   const { id } = req.params;
   
   try {
+    const userRole = await ensureUserRole(req);
+
+    const [orderRows] = await db.query(
+      "SELECT id, order_number, status, payment_method, payment_status, business_id, user_id FROM `order` WHERE id = ?",
+      [id]
+    );
+
+    if (!orderRows || orderRows.length === 0) {
+      return res.status(404).json({ message: "Order not found" });
+    }
+
+    const order = orderRows[0];
+
+    if (userRole !== 'Admin') {
+      const allowed = await hasBusinessAccess(order.business_id, req.user, userRole);
+      if (!allowed) {
+        return res.status(403).json({
+          message: "Forbidden: you do not manage this business"
+        });
+      }
+    }
+
+    const transitionCheck = orderTransitionService.canTransition(
+      order.status,
+      'ready_for_pickup',
+      userRole || 'tourist',
+      order
+    );
+
+    if (!transitionCheck.allowed) {
+      return res.status(403).json({
+        message: "Status transition not allowed",
+        reason: transitionCheck.reason,
+        current_status: order.status,
+        requested_status: 'ready_for_pickup'
+      });
+    }
+
     const [data] = await db.query("CALL MarkOrderAsReady(?)", [id]);
 
     if (!data || data.length === 0) {
       return res.status(404).json({ message: "Order not found" });
     }
 
+    const updatedOrder = data[0];
+
+    // ========== Fetch Complete Order for Socket Emission ==========
+    try {
+      const [userEmailResult] = await db.query(
+        "SELECT email FROM user WHERE id = ?",
+        [order.user_id]
+      );
+      const userEmail = userEmailResult?.[0]?.email || 'unknown@email.com';
+
+      const [itemsResult] = await db.query(
+        "SELECT * FROM order_item WHERE order_id = ?",
+        [id]
+      );
+      const itemsData = itemsResult || [];
+
+      let discountName = null;
+      if (updatedOrder.discount_id) {
+        const [discountResult] = await db.query(
+          "SELECT discount_name FROM discount WHERE id = ?",
+          [updatedOrder.discount_id]
+        );
+        discountName = discountResult?.[0]?.discount_name;
+      }
+
+      const completeOrderData = {
+        id,
+        order_number: updatedOrder.order_number || order.order_number,
+        business_id: order.business_id,
+        user_id: order.user_id,
+        user_email: userEmail,
+        status: 'ready_for_pickup',
+        payment_status: updatedOrder.payment_status || order.payment_status,
+        payment_method: updatedOrder.payment_method || 'cash_on_pickup',
+        subtotal: updatedOrder.subtotal,
+        discount_amount: updatedOrder.discount_amount || 0,
+        tax_amount: updatedOrder.tax_amount || 0,
+        total_amount: updatedOrder.total_amount,
+        pickup_datetime: updatedOrder.pickup_datetime,
+        special_instructions: updatedOrder.special_instructions,
+        arrival_code: updatedOrder.arrival_code,
+        discount_name: discountName,
+        item_count: itemsData.length,
+        items: itemsData,
+        ready_at: updatedOrder.ready_at,
+        updated_at: new Date()
+      };
+
+      socketService.emitOrderUpdated(completeOrderData, order.status);
+      await notificationHelper.triggerOrderUpdateNotifications(completeOrderData, order.status);
+    } catch (socketError) {
+      console.error('Failed to emit order ready event:', socketError);
+    }
+
     res.json({
       message: "Order marked as ready for pickup",
-      data: data[0]
+      data: updatedOrder
     });
   } catch (error) {
     return handleDbError(error, res);
@@ -798,17 +1094,110 @@ export async function markOrderAsPickedUp(req, res) {
   const { id } = req.params;
   
   try {
+    const userRole = await ensureUserRole(req);
+
+    const [orderRows] = await db.query(
+      "SELECT * FROM `order` WHERE id = ?",
+      [id]
+    );
+
+    if (!orderRows || orderRows.length === 0) {
+      return res.status(404).json({ message: "Order not found" });
+    }
+
+    const order = orderRows[0];
+
+    if (userRole !== 'Admin') {
+      const allowed = await hasBusinessAccess(order.business_id, req.user, userRole);
+      if (!allowed) {
+        return res.status(403).json({
+          message: "Forbidden: you do not manage this business"
+        });
+      }
+    }
+
+    const transitionCheck = orderTransitionService.canTransition(
+      order.status,
+      'picked_up',
+      userRole || 'tourist',
+      order
+    );
+
+    if (!transitionCheck.allowed) {
+      return res.status(403).json({
+        message: "Status transition not allowed",
+        reason: transitionCheck.reason,
+        current_status: order.status,
+        requested_status: 'picked_up'
+      });
+    }
+
     const [data] = await db.query("CALL MarkOrderAsPickedUp(?)", [id]);
 
     if (!data || data.length === 0) {
       return res.status(404).json({ message: "Order not found" });
     }
 
+    const updatedOrder = data[0];
+
+    // ========== Fetch Complete Order for Socket Emission ==========
+    try {
+      const [userEmailResult] = await db.query(
+        "SELECT email FROM user WHERE id = ?",
+        [order.user_id]
+      );
+      const userEmail = userEmailResult?.[0]?.email || 'unknown@email.com';
+
+      const [itemsResult] = await db.query(
+        "SELECT * FROM order_item WHERE order_id = ?",
+        [id]
+      );
+      const itemsData = itemsResult || [];
+
+      let discountName = null;
+      if (updatedOrder.discount_id) {
+        const [discountResult] = await db.query(
+          "SELECT discount_name FROM discount WHERE id = ?",
+          [updatedOrder.discount_id]
+        );
+        discountName = discountResult?.[0]?.discount_name;
+      }
+
+      const completeOrderData = {
+        id,
+        order_number: updatedOrder.order_number || order.order_number,
+        business_id: order.business_id,
+        user_id: order.user_id,
+        user_email: userEmail,
+        status: 'picked_up',
+        payment_status: updatedOrder.payment_status || order.payment_status,
+        payment_method: updatedOrder.payment_method || 'cash_on_pickup',
+        subtotal: updatedOrder.subtotal,
+        discount_amount: updatedOrder.discount_amount || 0,
+        tax_amount: updatedOrder.tax_amount || 0,
+        total_amount: updatedOrder.total_amount,
+        pickup_datetime: updatedOrder.pickup_datetime,
+        special_instructions: updatedOrder.special_instructions,
+        arrival_code: updatedOrder.arrival_code,
+        discount_name: discountName,
+        item_count: itemsData.length,
+        items: itemsData,
+        picked_up_at: updatedOrder.picked_up_at,
+        updated_at: new Date()
+      };
+
+      socketService.emitOrderUpdated(completeOrderData, order.status);
+      await notificationHelper.triggerOrderUpdateNotifications(completeOrderData, order.status);
+    } catch (socketError) {
+      console.error('Failed to emit order picked up event:', socketError);
+    }
+
     res.json({
       message: "Order marked as picked up and completed",
-      data: data[0]
+      data: updatedOrder
     });
   } catch (error) {
     return handleDbError(error, res);
   }
 }
+

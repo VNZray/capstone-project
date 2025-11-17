@@ -11,7 +11,12 @@ let io = null;
 export function initializeSocket(httpServer) {
   io = new Server(httpServer, {
     cors: {
-      origin: process.env.CORS_ORIGIN?.split(',') || ['http://localhost:5173', 'http://localhost:8081'],
+      origin: process.env.CORS_ORIGIN?.split(',') || [
+        'http://localhost:5173',
+        'http://localhost:8081',
+        'http://10.242.184.237:5173',
+        'http://10.242.184.237:8081'
+      ],
       credentials: true
     },
     transports: ['websocket', 'polling']
@@ -44,11 +49,45 @@ export function initializeSocket(httpServer) {
     socket.join(`user:${socket.userId}`);
     console.log(`User ${socket.userId} joined room: user:${socket.userId}`);
 
-    // Join business room if owner/staff
-    if (['Owner', 'Staff'].includes(socket.userRole) && socket.businessId) {
+    // Join business room if Business Owner/staff
+    if (['Business Owner', 'Staff'].includes(socket.userRole) && socket.businessId) {
       socket.join(`business:${socket.businessId}`);
       console.log(`User ${socket.userId} joined business room: business:${socket.businessId}`);
     }
+
+    // Handle business room join/leave (for web CMS)
+    socket.on('join:business', (data) => {
+      const { businessId } = data;
+      if (businessId) {
+        socket.join(`business:${businessId}`);
+        console.log(`Socket ${socket.id} joined business room: business:${businessId}`);
+      }
+    });
+
+    socket.on('leave:business', (data) => {
+      const { businessId } = data;
+      if (businessId) {
+        socket.leave(`business:${businessId}`);
+        console.log(`Socket ${socket.id} left business room: business:${businessId}`);
+      }
+    });
+
+    // Handle user room join/leave (for mobile)
+    socket.on('join:user', (data) => {
+      const { userId } = data;
+      if (userId) {
+        socket.join(`user:${userId}`);
+        console.log(`Socket ${socket.id} joined user room: user:${userId}`);
+      }
+    });
+
+    socket.on('leave:user', (data) => {
+      const { userId } = data;
+      if (userId) {
+        socket.leave(`user:${userId}`);
+        console.log(`Socket ${socket.id} left user room: user:${userId}`);
+      }
+    });
 
     // Handle custom room subscriptions
     socket.on('order:subscribe', (data) => {
@@ -140,16 +179,27 @@ export function emitToOrder(orderId, event, data) {
  * @param {Object} order - Order object with business_id, user_id, order data
  */
 export function emitNewOrder(order) {
+  // Send complete order data for display in UI
   const eventData = {
-    order_id: order.id || order.order_id,
+    id: order.id || order.order_id,
     order_number: order.order_number,
     business_id: order.business_id,
     user_id: order.user_id,
+    user_email: order.user_email,
     status: order.status,
     payment_status: order.payment_status,
+    payment_method: order.payment_method,
+    subtotal: order.subtotal,
+    discount_amount: order.discount_amount || 0,
+    tax_amount: order.tax_amount || 0,
     total_amount: order.total_amount,
+    pickup_datetime: order.pickup_datetime,
+    special_instructions: order.special_instructions,
+    arrival_code: order.arrival_code,
+    discount_name: order.discount_name,
+    item_count: order.item_count || (order.items ? order.items.length : 0),
     created_at: order.created_at || new Date(),
-    timestamp: new Date()
+    updated_at: order.updated_at || new Date(),
   };
 
   // Emit to business (for owner/staff)
@@ -165,16 +215,29 @@ export function emitNewOrder(order) {
  * @param {string} previousStatus - Previous status for context
  */
 export function emitOrderUpdated(order, previousStatus = null) {
+  // Send complete order data for display in UI
   const eventData = {
-    order_id: order.id || order.order_id,
+    id: order.id || order.order_id,
     order_number: order.order_number,
     business_id: order.business_id,
     user_id: order.user_id,
+    user_email: order.user_email,
     status: order.status,
     previous_status: previousStatus,
     payment_status: order.payment_status,
+    payment_method: order.payment_method,
+    subtotal: order.subtotal,
+    discount_amount: order.discount_amount || 0,
+    tax_amount: order.tax_amount || 0,
+    total_amount: order.total_amount,
+    pickup_datetime: order.pickup_datetime,
+    special_instructions: order.special_instructions,
+    arrival_code: order.arrival_code,
+    discount_name: order.discount_name,
+    item_count: order.item_count || (order.items ? order.items.length : 0),
+    ready_at: order.ready_at,
+    picked_up_at: order.picked_up_at,
     updated_at: order.updated_at || new Date(),
-    timestamp: new Date()
   };
 
   // Emit to business

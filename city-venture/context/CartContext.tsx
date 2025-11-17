@@ -91,6 +91,12 @@ export const CartProvider = ({ children }: CartProviderProps) => {
         return updated;
       } else {
         // Add new item
+        const isTemporarilyUnavailable = Boolean(
+          typeof product.is_unavailable === 'string'
+            ? product.is_unavailable === '1'
+            : product.is_unavailable
+        );
+
         const newItem: CartItem = {
           product_id: product.id,
           product_name: product.name,
@@ -100,7 +106,7 @@ export const CartProvider = ({ children }: CartProviderProps) => {
           quantity,
           special_requests: notes,
           stock: currentStock,
-          is_unavailable: product.status === 'out_of_stock' || product.status === 'inactive',
+          is_unavailable: isTemporarilyUnavailable || product.status === 'out_of_stock' || product.status === 'inactive',
           image_url: product.image_url || undefined,
         };
         return [...prevItems, newItem];

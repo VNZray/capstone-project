@@ -20,6 +20,7 @@ import PageContainer from '@/components/PageContainer';
 import { useCart } from '@/context/CartContext';
 import { useAuth } from '@/context/AuthContext';
 import { createOrder } from '@/services/OrderService';
+import { openPayMongoCheckout } from '@/services/PaymentService';
 import type { CreateOrderPayload } from '@/types/Order';
 import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
@@ -37,6 +38,7 @@ const CheckoutScreen = () => {
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [specialInstructions, setSpecialInstructions] = useState('');
   const [paymentMethod, setPaymentMethod] = useState<'cash_on_pickup' | 'paymongo'>('cash_on_pickup');
+  const [paymentMethodType, setPaymentMethodType] = useState<'gcash' | 'card' | 'paymaya' | 'grab_pay'>('gcash');
   const [loading, setLoading] = useState(false);
 
   const palette = {
@@ -83,8 +85,23 @@ const CheckoutScreen = () => {
     }
 
     // Validate pickup datetime is in the future
-    if (pickupDate <= new Date()) {
+    const now = new Date();
+    const maxPickupTime = new Date(now.getTime() + 3 * 60 * 60 * 1000); // 3 hours from now
+    
+    if (pickupDate <= now) {
       Alert.alert('Invalid Date', 'Pickup time must be in the future');
+      return;
+    }
+    
+    if (pickupDate > maxPickupTime) {
+      Alert.alert('Invalid Time', 'Pickup time cannot be more than 3 hours from now');
+      return;
+    }
+    
+    // Validate pickup date is within 2 days
+    const maxPickupDate = new Date(now.getTime() + 2 * 24 * 60 * 60 * 1000);
+    if (pickupDate > maxPickupDate) {
+      Alert.alert('Invalid Date', 'Pickup date cannot be more than 2 days from today');
       return;
     }
 
@@ -92,9 +109,10 @@ const CheckoutScreen = () => {
       setLoading(true);
 
       // Build order payload per spec.md §7 Create Order Request
+      // Note: user_id is NOT included - backend extracts it from JWT token (req.user.id)
       const orderPayload: CreateOrderPayload = {
         business_id: businessId,
-        user_id: user.id,
+        user_id: user.id, // Still needed for type compatibility, backend will use req.user.id
         items: items.map((item) => ({
           product_id: item.product_id,
           quantity: item.quantity,
@@ -104,40 +122,154 @@ const CheckoutScreen = () => {
         pickup_datetime: pickupDate.toISOString(),
         special_instructions: specialInstructions || undefined,
         payment_method: paymentMethod,
+        payment_method_type: paymentMethod === 'paymongo' ? paymentMethodType : undefined,
       };
 
       console.log('[Checkout] Creating order:', orderPayload);
 
       // Call backend to create order
-      const response = await createOrder(orderPayload);
+      const orderResponse = await createOrder(orderPayload);
 
-      console.log('[Checkout] Order created:', response);
+      console.log('[Checkout] Order created:', orderResponse);
 
       // Clear cart after successful order
       clearCart();
 
-      // Navigate to confirmation screen with order data
+      const checkoutUrl = orderResponse.checkout_url;
+
+      // Per spec.md §4 & §7: PayMongo flow - redirect to checkout immediately
+      if (paymentMethod === 'paymongo') {
+        if (checkoutUrl) {
+          console.log('[Checkout] Opening PayMongo checkout:', checkoutUrl);
+
+          try {
+            // Open PayMongo checkout - user will be redirected back via deep link
+            // Success: cityventure://orders/{orderId}/payment-success
+            // Cancel: cityventure://orders/{orderId}/payment-cancel
+            await openPayMongoCheckout(checkoutUrl);
+            
+            // Navigate to payment-cancel screen as default
+            // This handles the case where user presses back without completing payment
+            // If payment succeeds, the deep link will override this and go to payment-success
+            router.replace({
+              pathname: '/(screens)/payment-cancel',
+              params: {
+                orderId: orderResponse.order_id,
+              },
+            } as never);
+            return;
+          } catch (checkoutError: any) {
+            console.error('[Checkout] Failed to open PayMongo checkout:', checkoutError);
+            Alert.alert(
+              'Payment Error',
+              'Failed to open payment page. You can retry payment from your orders.',
+              [
+                {
+                  text: 'View Orders',
+                  onPress: () => {
+                    router.replace('/(tabs)/orders' as never);
+                  },
+                },
+                {
+                  text: 'OK',
+                  style: 'cancel',
+                },
+              ]
+            );
+            return;
+          }
+        } else {
+          // No checkout URL - allow user to retry via initiatePayment
+          Alert.alert(
+            'Payment Warning',
+            'Payment checkout not ready. You can complete payment from the order confirmation screen.',
+            [
+              {
+                text: 'OK',
+                onPress: () => {
+                  router.replace({
+                    pathname: '/(screens)/order-confirmation',
+                    params: {
+                      orderId: orderResponse.order_id,
+                      orderNumber: orderResponse.order_number,
+                      arrivalCode: orderResponse.arrival_code,
+                      total: total.toString(),
+                      paymentMethod: paymentMethod,
+                    },
+                  } as never);
+                },
+              },
+            ]
+          );
+          return;
+        }
+      }
+
+      // Cash on Pickup flow or PayMongo fallback without checkout URL
       router.replace({
         pathname: '/(screens)/order-confirmation',
         params: {
-          orderId: response.order?.id || response.order_id,
-          orderNumber: response.order_number,
-          arrivalCode: response.arrival_code,
+          orderId: orderResponse.order_id,
+          orderNumber: orderResponse.order_number,
+          arrivalCode: orderResponse.arrival_code,
           total: total.toString(),
+          paymentMethod: paymentMethod,
         },
       } as never);
     } catch (error: any) {
       console.error('[Checkout] Order creation failed:', error);
       
+      let errorTitle = 'Order Failed';
       let errorMessage = 'Failed to create order. Please try again.';
+      let showRetry = true;
       
+      // Parse specific error types for better user guidance
       if (error.response?.data?.message) {
-        errorMessage = error.response.data.message;
+        const msg = error.response.data.message;
+        errorMessage = msg;
+        
+        // Stock validation errors
+        if (msg.includes('out of stock') || msg.includes('insufficient stock')) {
+          errorTitle = 'Stock Issue';
+          errorMessage = msg + '\n\nSome items are out of stock. Please review your cart and try again.';
+          showRetry = false; // User needs to fix cart first
+        }
+        
+        // Product unavailable errors
+        if (msg.includes('unavailable') || msg.includes('not available')) {
+          errorTitle = 'Product Unavailable';
+          errorMessage = msg + '\n\nSome products are temporarily unavailable. Please remove them from your cart.';
+          showRetry = false;
+        }
+        
+        // Payment-related errors
+        if (msg.includes('payment') && msg.includes('failed')) {
+          errorTitle = 'Payment Error';
+          errorMessage = 'Payment processing failed. You can retry payment from the order details screen.';
+        }
+        
+        // Network or timeout errors
+        if (error.code === 'ECONNABORTED' || msg.includes('timeout')) {
+          errorTitle = 'Connection Timeout';
+          errorMessage = 'Request timed out. Please check your internet connection and try again.';
+        }
       } else if (error.message) {
         errorMessage = error.message;
       }
 
-      Alert.alert('Order Failed', errorMessage);
+      Alert.alert(
+        errorTitle,
+        errorMessage,
+        [
+          { text: 'OK', style: 'cancel' },
+          ...(showRetry ? [
+            {
+              text: 'Retry',
+              onPress: () => handlePlaceOrder(),
+            }
+          ] : []),
+        ]
+      );
     } finally {
       setLoading(false);
     }
@@ -205,6 +337,7 @@ const CheckoutScreen = () => {
                 mode="date"
                 display="default"
                 minimumDate={new Date()}
+                maximumDate={new Date(Date.now() + 2 * 24 * 60 * 60 * 1000)} // Today + 2 days
                 onChange={handleDateChange}
               />
             )}
@@ -214,6 +347,7 @@ const CheckoutScreen = () => {
                 value={pickupDate}
                 mode="time"
                 display="default"
+                minimumDate={new Date()} // Can't pick time earlier than now
                 onChange={handleTimeChange}
               />
             )}
@@ -274,29 +408,125 @@ const CheckoutScreen = () => {
               <Ionicons name="cash-outline" size={24} color={colors.primary} />
             </Pressable>
 
-            {/* PayMongo option - disabled for Phase 1 */}
+            {/* PayMongo online payment option */}
             <Pressable
               style={[
                 styles.paymentOption,
                 {
-                  borderColor: palette.border,
-                  backgroundColor: palette.bg,
-                  opacity: 0.5,
+                  borderColor: paymentMethod === 'paymongo' ? colors.primary : palette.border,
+                  backgroundColor: paymentMethod === 'paymongo' ? `${colors.primary}10` : palette.bg,
                 },
               ]}
-              disabled
+              onPress={() => setPaymentMethod('paymongo')}
             >
-              <Ionicons name="radio-button-off" size={24} color={palette.subText} />
+              <Ionicons 
+                name={paymentMethod === 'paymongo' ? 'radio-button-on' : 'radio-button-off'} 
+                size={24} 
+                color={paymentMethod === 'paymongo' ? colors.primary : palette.subText} 
+              />
               <View style={{ marginLeft: 12, flex: 1 }}>
-                <Text style={[{ fontSize: h4 }, { color: palette.subText }]}>
+                <Text style={[{ fontSize: h4 }, { color: palette.text }]}>
                   Online Payment
                 </Text>
                 <Text style={[{ fontSize: bodySmall }, { color: palette.subText }]}>
-                  Coming soon (Phase 2)
+                  GCash, Card, PayMaya, GrabPay
                 </Text>
               </View>
-              <Ionicons name="card-outline" size={24} color={palette.subText} />
+              <Ionicons name="card-outline" size={24} color={colors.primary} />
             </Pressable>
+
+            {/* Payment Method Type Selection - Only show when PayMongo is selected */}
+            {paymentMethod === 'paymongo' && (
+              <View style={{ marginTop: 12, paddingLeft: 12 }}>
+                <Text style={[{ fontSize: body }, { color: palette.subText, marginBottom: 8 }]}>
+                  Select Payment Method
+                </Text>
+                
+                {/* GCash */}
+                <Pressable
+                  style={[
+                    styles.paymentMethodType,
+                    {
+                      borderColor: paymentMethodType === 'gcash' ? colors.primary : palette.border,
+                      backgroundColor: paymentMethodType === 'gcash' ? `${colors.primary}05` : 'transparent',
+                    },
+                  ]}
+                  onPress={() => setPaymentMethodType('gcash')}
+                >
+                  <Ionicons
+                    name={paymentMethodType === 'gcash' ? 'checkmark-circle' : 'ellipse-outline'}
+                    size={20}
+                    color={paymentMethodType === 'gcash' ? colors.primary : palette.subText}
+                  />
+                  <Text style={[{ fontSize: body }, { color: palette.text, marginLeft: 8 }]}>
+                    GCash
+                  </Text>
+                </Pressable>
+
+                {/* Card */}
+                <Pressable
+                  style={[
+                    styles.paymentMethodType,
+                    {
+                      borderColor: paymentMethodType === 'card' ? colors.primary : palette.border,
+                      backgroundColor: paymentMethodType === 'card' ? `${colors.primary}05` : 'transparent',
+                    },
+                  ]}
+                  onPress={() => setPaymentMethodType('card')}
+                >
+                  <Ionicons
+                    name={paymentMethodType === 'card' ? 'checkmark-circle' : 'ellipse-outline'}
+                    size={20}
+                    color={paymentMethodType === 'card' ? colors.primary : palette.subText}
+                  />
+                  <Text style={[{ fontSize: body }, { color: palette.text, marginLeft: 8 }]}>
+                    Credit/Debit Card
+                  </Text>
+                </Pressable>
+
+                {/* PayMaya */}
+                <Pressable
+                  style={[
+                    styles.paymentMethodType,
+                    {
+                      borderColor: paymentMethodType === 'paymaya' ? colors.primary : palette.border,
+                      backgroundColor: paymentMethodType === 'paymaya' ? `${colors.primary}05` : 'transparent',
+                    },
+                  ]}
+                  onPress={() => setPaymentMethodType('paymaya')}
+                >
+                  <Ionicons
+                    name={paymentMethodType === 'paymaya' ? 'checkmark-circle' : 'ellipse-outline'}
+                    size={20}
+                    color={paymentMethodType === 'paymaya' ? colors.primary : palette.subText}
+                  />
+                  <Text style={[{ fontSize: body }, { color: palette.text, marginLeft: 8 }]}>
+                    PayMaya
+                  </Text>
+                </Pressable>
+
+                {/* GrabPay */}
+                <Pressable
+                  style={[
+                    styles.paymentMethodType,
+                    {
+                      borderColor: paymentMethodType === 'grab_pay' ? colors.primary : palette.border,
+                      backgroundColor: paymentMethodType === 'grab_pay' ? `${colors.primary}05` : 'transparent',
+                    },
+                  ]}
+                  onPress={() => setPaymentMethodType('grab_pay')}
+                >
+                  <Ionicons
+                    name={paymentMethodType === 'grab_pay' ? 'checkmark-circle' : 'ellipse-outline'}
+                    size={20}
+                    color={paymentMethodType === 'grab_pay' ? colors.primary : palette.subText}
+                  />
+                  <Text style={[{ fontSize: body }, { color: palette.text, marginLeft: 8 }]}>
+                    GrabPay
+                  </Text>
+                </Pressable>
+              </View>
+            )}
           </View>
 
           {/* Total Summary */}
@@ -384,6 +614,14 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderRadius: 12,
     marginBottom: 12,
+  },
+  paymentMethodType: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    borderWidth: 1,
+    borderRadius: 8,
+    marginBottom: 8,
   },
   summaryRow: {
     flexDirection: 'row',

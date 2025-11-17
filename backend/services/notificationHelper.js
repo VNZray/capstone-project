@@ -53,15 +53,15 @@ export async function notifyBusinessNewOrder(order) {
   try {
     // Get business owner and staff
     const [businessUsers] = await db.query(
-      `SELECT u.id, u.email, u.name 
+      `SELECT u.id, u.email, u.email AS name 
        FROM business b
        JOIN user u ON u.id = b.owner_id
        WHERE b.id = ?
        UNION
-       SELECT u.id, u.email, u.name
+       SELECT u.id, u.email, u.email AS name
        FROM staff s
        JOIN user u ON u.id = s.user_id
-       WHERE s.business_id = ? AND s.status = 'active'`,
+       WHERE s.business_id = ?`,
       [order.business_id, order.business_id]
     );
 

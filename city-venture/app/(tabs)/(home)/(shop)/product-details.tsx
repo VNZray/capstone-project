@@ -67,7 +67,10 @@ const ProductDetails = () => {
     ? parseInt(product.current_stock)
     : (product.current_stock || 0);
 
-  const isAvailable = product.status === 'active' && currentStock > 0;
+  // Check availability: active status, in stock, and NOT marked unavailable
+  const isAvailable = product.status === 'active' && 
+                      currentStock > 0 && 
+                      !product.is_unavailable;
 
   const handleQuantityChange = (delta: number) => {
     const newQuantity = quantity + delta;
@@ -78,7 +81,10 @@ const ProductDetails = () => {
 
   const handleAddToCart = async () => {
     if (!isAvailable) {
-      Alert.alert('Unavailable', 'This product is currently out of stock');
+      const reason = product.is_unavailable 
+        ? 'This product is temporarily unavailable' 
+        : 'This product is currently out of stock';
+      Alert.alert('Unavailable', reason);
       return;
     }
 
@@ -150,9 +156,18 @@ const ProductDetails = () => {
               <Text style={[{ fontSize: body }, { color: palette.subText }]}>
                 Stock: {currentStock} {product.stock_unit || 'units'}
               </Text>
-              {!isAvailable && (
+              {product.is_unavailable && (
+                <View style={[styles.badge, { backgroundColor: colors.warning }]}>
+                  <Text style={[{ fontSize: bodySmall }, { color: '#FFF', fontWeight: '600' }]}>
+                    Temporarily Unavailable
+                  </Text>
+                </View>
+              )}
+              {!product.is_unavailable && currentStock === 0 && (
                 <View style={[styles.badge, { backgroundColor: colors.error }]}>
-                  <Text style={[{ fontSize: bodySmall }, { color: '#FFF' }]}>Out of Stock</Text>
+                  <Text style={[{ fontSize: bodySmall }, { color: '#FFF', fontWeight: '600' }]}>
+                    Out of Stock
+                  </Text>
                 </View>
               )}
             </View>

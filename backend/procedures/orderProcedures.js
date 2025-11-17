@@ -15,6 +15,7 @@ async function createOrderProcedures(knex) {
   `);
 
   // Get orders by business ID
+  // NOTE: Filters out unpaid PayMongo orders (only show after payment confirmation)
   await knex.raw(`
     CREATE PROCEDURE GetOrdersByBusinessId(IN p_businessId CHAR(64))
     BEGIN
@@ -25,6 +26,8 @@ async function createOrderProcedures(knex) {
       LEFT JOIN discount d ON o.discount_id = d.id 
       LEFT JOIN order_item oi ON o.id = oi.order_id
       WHERE o.business_id = p_businessId
+        -- Hide PayMongo orders until payment is confirmed
+        AND (o.payment_method = 'cash_on_pickup' OR o.payment_status = 'paid')
       GROUP BY o.id
       ORDER BY o.created_at DESC;
     END;
