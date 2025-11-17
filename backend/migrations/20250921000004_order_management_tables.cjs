@@ -23,9 +23,19 @@ exports.up = async function (knex) {
       .onDelete("SET NULL");
     table.timestamp("pickup_datetime").notNullable();
     table.text("special_instructions").nullable();
-    table.enu("status", ["pending", "confirmed", "preparing", "ready", "completed", "cancelled"]).defaultTo("pending");
+    table.enu("status", [
+      "pending", 
+      "accepted", 
+      "preparing", 
+      "ready_for_pickup", 
+      "picked_up", 
+      "cancelled_by_user", 
+      "cancelled_by_business", 
+      "failed_payment"
+    ]).defaultTo("pending");
     table.enu("payment_status", ["pending", "paid", "failed", "refunded"]).defaultTo("pending");
-    table.enu("payment_method", ["cash_on_pickup", "card", "digital_wallet"]).defaultTo("cash_on_pickup");
+    table.enu("payment_method", ["cash_on_pickup", "paymongo"]).defaultTo("cash_on_pickup");
+    table.string("payment_method_type", 50).nullable(); // gcash, card, paymaya, grab_pay, qrph when paymongo
     table.timestamp("created_at").defaultTo(knex.fn.now());
     table.timestamp("updated_at").defaultTo(knex.fn.now());
     
@@ -34,6 +44,11 @@ exports.up = async function (knex) {
     table.index("status", "idx_order_status");
     table.index("pickup_datetime", "idx_order_pickup");
     table.index("order_number", "idx_order_number");
+    // Performance indices for queries with time filtering
+    table.index(["business_id", "created_at"], "idx_order_business_created");
+    table.index(["user_id", "created_at"], "idx_order_user_created");
+    table.index("payment_method", "idx_order_payment_method");
+    table.index("payment_status", "idx_order_payment_status");
   });
 
   // Create order_item table

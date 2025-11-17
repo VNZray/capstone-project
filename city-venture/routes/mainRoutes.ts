@@ -13,12 +13,12 @@ export const navigateToLogin = () => {
 
 // navigate to register
 export const navigateToRegister = () => {
-    router.replace('/Register');
+    router.replace('/(screens)/Register');
 };
 
 // navigate to forgot password
 export const navigateToForgotPassword = () => {
-    router.navigate('/ForgotPassword');
+    router.navigate('/(screens)/ForgotPassword');
 };
 
 // navigate to home
