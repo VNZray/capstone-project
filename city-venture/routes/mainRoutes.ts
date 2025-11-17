@@ -8,7 +8,7 @@ export const navigateToRoot = () => {
 
 // navigate to login
 export const navigateToLogin = () => {
-    router.replace('/Login');
+    router.replace('/(screens)');
 };
 
 // navigate to register
