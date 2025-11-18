@@ -1,19 +1,16 @@
-import React, { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import "./styles/LoginStyle.css";
-import { useAuth } from "@/src/context/AuthContext"; // adjust path if needed
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/src/context/AuthContext";
+import LoginForm from "../components/LoginForm";
 import PageContainer from "@/src/components/PageContainer";
-import LoginForm from "./components/LoginForm";
-import { Divider } from "@mui/joy";
-import Typography from "@/src/components/Typography";
 
 const Login: React.FC = () => {
-  const [email, setEmail] = useState("owner1@gmail.com");
-  const [password, setPassword] = useState("owner123");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [rememberMe, setRememberMe] = useState(false);
   const [loginError, setLoginError] = useState("");
   const navigate = useNavigate();
-  const { login } = useAuth(); // from AuthProvider
-  const [rememberMe, setRememberMe] = useState(false);
+  const { login, user } = useAuth();
   const [loading, setLoading] = useState(false);
 
   // Load saved credentials on mount
@@ -27,17 +24,17 @@ const Login: React.FC = () => {
     }
   }, []);
 
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoginError("");
+  const handleLogin = async () => {
     if (!email || !password) {
-      setLoginError("Email and password are required");
+      setLoginError("Email and password are required.");
       return;
     }
-    setLoading(true);
 
     try {
-      const loggedInUser = await login(email, password, rememberMe);
+      setLoginError("");
+
+      await login(email, password, rememberMe);
+      setLoading(true);
 
       // Save credentials if remember me is checked
       if (rememberMe) {
@@ -48,45 +45,15 @@ const Login: React.FC = () => {
         localStorage.removeItem("rememberedPassword");
       }
 
-      // Check if user is staff (not Business Owner) and redirect to dashboard
-      const staffRoles = [
-        "Manager",
-        "Room Manager",
-        "Receptionist",
-        "Sales Associate",
-      ];
-
-      const tourism = ["Admin", "Tourism Office"];
-      const tourist = "Tourist";
-      const owner = "Business Owner";
-
-      const userRole = loggedInUser.role_name || "";
-
-      if (staffRoles.includes(userRole)) {
-        // Staff members go directly to business dashboard
-        navigate("/business/dashboard");
-      } else if (userRole === tourist) {
-        // Tourist to landing page
-        navigate("/");
-      } else if (tourism.includes(userRole)) {
-        // Tourism
+      if (user?.role_name === "Admin") {
         navigate("/tourism/dashboard");
-      } else if (userRole === owner) {
-        // Business Owners go to business listing page
-        navigate("/business");
       } else {
-        setLoginError("Access Denied");
+        setLoginError("Unauthorized Access")
       }
-    } catch (err: unknown) {
-      const anyErr = err as {
-        response?: { data?: { message?: string } };
-        message?: string;
-      };
-      const msg =
-        anyErr?.response?.data?.message || anyErr?.message || "Login failed.";
-      setLoginError(msg);
-    } finally {
-      setLoading(false);
+    } catch (error: any) {
+      setLoginError(
+        error?.response?.data?.message || error?.message || "Login failed."
+      );
     }
   };
 
@@ -138,30 +105,15 @@ const Login: React.FC = () => {
             onLogin={handleLogin}
             error={loginError}
             forgotPasswordLink="/TouristApp/(screens)/ForgotPassword"
-            signUpLink="/business-registration"
+            signUpLink="/tourism/signup"
             size="large"
             title="Sign In"
             subtitle="Navigate with Ease - Your Ultimate City Directory"
-            signUpPromptText="Want to register your business?"
-            signUpLinkText="Click here"
+            signUpPromptText="Don't Have an Account?"
+            signUpLinkText="Sign Up"
             showRememberMe={true}
             loading={loading}
-          >
-            <Divider>Or</Divider>
-
-            <Typography.Body align="center" size={"sm"}>
-              Create tourist account
-              <Link to={"/tourist/login"} style={{ textDecoration: "none" }}>
-                <Typography.Body
-                  size={"sm"}
-                  startDecorator
-                  sx={{ color: "#0077B6" }}
-                >
-                  Sign Up
-                </Typography.Body>
-              </Link>
-            </Typography.Body>
-          </LoginForm>
+          />
         </div>
       </div>
     </PageContainer>

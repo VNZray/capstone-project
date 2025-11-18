@@ -24,11 +24,10 @@ export default function LandingPage() {
   }, []);
 
   if (loading) {
-    return <Loading variant="splash" showProgress />;
+    return <Loading variant="default" showProgress />;
   }
 
   const logoImage = new URL("../assets/images/logo.png", import.meta.url).href;
-
 
   const gridItems = [
     {
@@ -59,14 +58,12 @@ export default function LandingPage() {
   ];
 
   return (
-    <PageContainer padding={0}>
-      <main className="landing-zoom" id="top">
-        <HeroSection gridItems={gridItems} />
-        <ValuePropositionSection />
-        <BenefitsSection />
-        <FeaturesSection />
-        <HowItWorksSection />
-      </main>
+    <PageContainer padding={0} id="top">
+      <HeroSection gridItems={gridItems} />
+      <ValuePropositionSection />
+      <BenefitsSection />
+      <FeaturesSection />
+      <HowItWorksSection />
       <FooterSection logoImage={logoImage} />
     </PageContainer>
   );

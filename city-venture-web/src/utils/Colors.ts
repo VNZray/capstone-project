@@ -27,3 +27,10 @@ export const colors = {
   purple: "#f2d1f2",
   odd: "#F3F4F6",
 };
+
+export const section = {
+  bg1: "#ececec",
+  bg2: "#f6f6f6",
+  bg3: "#f8f8f8",
+  bg4: "#faf9f9",
+}

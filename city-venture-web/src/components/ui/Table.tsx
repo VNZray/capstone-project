@@ -213,7 +213,13 @@ function Table<T extends Record<string, any>>({
   };
 
   return (
-    <Container gap="0" padding="0" elevation={2}>
+    <Container
+      gap="0"
+      padding="0"
+      elevation={2}
+      radius="8px"
+      style={{ overflow: "hidden" }}
+    >
       {/* Table Container */}
       <Box
         sx={{
