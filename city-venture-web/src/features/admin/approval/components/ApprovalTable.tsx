@@ -107,11 +107,47 @@ const ApprovalTable: React.FC<ApprovalTableProps> = ({
                 >
                   <Container padding="0" gap="0.25rem" flex={1}>
                     <Typography.CardTitle size="sm">
-                      {String(item.name ?? "-")}
+                      {String(
+                        (item.name as string) ||
+                          (item.business_name as string) ||
+                          "-"
+                      )}
                     </Typography.CardTitle>
                     <Typography.Body size="xs" color="default">
                       Submitted: {submitted}
                     </Typography.Body>
+                    {/* Business Type & Category chips (if available) */}
+                    <Container
+                      direction="row"
+                      gap="0.25rem"
+                      padding="0"
+                      style={{ flexWrap: "wrap" }}
+                    >
+                      {(() => {
+                        const businessTypeName =
+                          (item as any).business_type_name ||
+                          (item as any).type ||
+                          (item as any).type_name;
+                        const businessCategoryName =
+                          (item as any).business_category_name ||
+                          (item as any).category ||
+                          (item as any).category_name;
+                        return (
+                          <>
+                            {businessTypeName && (
+                              <Chip size="sm" color="neutral" variant="soft">
+                                {String(businessTypeName)}
+                              </Chip>
+                            )}
+                            {businessCategoryName && (
+                              <Chip size="sm" color="warning" variant="soft">
+                                {String(businessCategoryName)}
+                              </Chip>
+                            )}
+                          </>
+                        );
+                      })()}
+                    </Container>
                   </Container>
                   <Chip
                     size="sm"

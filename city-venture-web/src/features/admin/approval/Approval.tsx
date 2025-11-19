@@ -4,12 +4,11 @@ import ApprovalTable from "./components/ApprovalTable";
 import OverviewCard from "./components/OverviewCard";
 import ViewModal from "./components/ViewModal";
 import NavCard from "./components/NavCard";
-import { Box, Divider, Grid, IconButton, CircularProgress } from "@mui/joy";
+import { Divider, Grid, IconButton, CircularProgress } from "@mui/joy";
 import RefreshRoundedIcon from "@mui/icons-material/RefreshRounded";
 import PlaceRoundedIcon from "@mui/icons-material/PlaceRounded";
 import EventRoundedIcon from "@mui/icons-material/EventRounded";
 import BusinessRoundedIcon from "@mui/icons-material/BusinessRounded";
-import HotelRoundedIcon from "@mui/icons-material/HotelRounded";
 import DashboardRoundedIcon from "@mui/icons-material/DashboardRounded";
 
 import type { EntityType } from "@/src/types/approval";
@@ -70,6 +69,7 @@ const makeMock = (prefix: string) => [
 const ApprovalDashboard: React.FC = () => {
   const [pendingSpots, setPendingSpots] = useState<PendingItem[]>([]);
   const [pendingEdits, setPendingEdits] = useState<PendingEdit[]>([]);
+  const [pendingBusinesses, setPendingBusinesses] = useState<PendingItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<TabType>("overview");
   const [selectedItem, setSelectedItem] = useState<Record<
@@ -83,13 +83,15 @@ const ApprovalDashboard: React.FC = () => {
     (async () => {
       setLoading(true);
       try {
-        const [spotsData, editsData] = await Promise.all([
+        const [spotsData, editsData, businessesData] = await Promise.all([
           apiService.getPendingItems("tourist_spots"),
           apiService.getPendingEditsByEntity("tourist_spots"),
+          apiService.getPendingItems("businesses"),
         ]);
 
         const spots = (spotsData as unknown[] | null) || [];
         const edits = (editsData as unknown[] | null) || [];
+        const businesses = (businessesData as unknown[] | null) || [];
 
         const transformedSpots: PendingItem[] = spots.map((s) => {
           const rec = (s as Record<string, unknown>) || {};
@@ -196,6 +198,21 @@ const ApprovalDashboard: React.FC = () => {
         });
 
         setPendingEdits(enriched);
+
+        // Businesses mapping
+        const transformedBusinesses: PendingItem[] = businesses.map((b) => {
+          const rec = (b as Record<string, unknown>) || {};
+          return {
+            ...rec,
+            id: String(rec["id"] ?? ""),
+            name: String(rec["business_name"] ?? rec["name"] ?? ""),
+            description: (rec["description"] as string) ?? null,
+            created_at: (rec["created_at"] as string) ?? null,
+            action_type: "new",
+            entityType: "businesses",
+          } as PendingItem;
+        });
+        setPendingBusinesses(transformedBusinesses);
       } catch (err) {
         console.error("Error loading approval data:", err);
       } finally {
@@ -207,9 +224,10 @@ const ApprovalDashboard: React.FC = () => {
   const refresh = async () => {
     setLoading(true);
     try {
-      const [spotsData, editsData] = await Promise.all([
+      const [spotsData, editsData, businessesData] = await Promise.all([
         apiService.getPendingItems("tourist_spots"),
         apiService.getPendingEditsByEntity("tourist_spots"),
+        apiService.getPendingItems("businesses"),
       ]);
       const spotsArr = (spotsData as unknown[] | null) || [];
       setPendingSpots(
@@ -239,6 +257,22 @@ const ApprovalDashboard: React.FC = () => {
           } as PendingEdit;
         })
       );
+
+      const businessesArr = (businessesData as unknown[] | null) || [];
+      setPendingBusinesses(
+        businessesArr.map((b) => {
+          const rec = (b as Record<string, unknown>) || {};
+          return {
+            ...rec,
+            id: String(rec["id"] ?? ""),
+            name: String(rec["business_name"] ?? rec["name"] ?? ""),
+            description: (rec["description"] as string) ?? null,
+            created_at: (rec["created_at"] as string) ?? null,
+            action_type: "new",
+            entityType: "businesses",
+          } as PendingItem;
+        })
+      );
     } catch (err) {
       console.error(err);
     } finally {
@@ -253,7 +287,7 @@ const ApprovalDashboard: React.FC = () => {
   ) => {
     setProcessingId(id);
     try {
-      const items = [...pendingSpots, ...pendingEdits];
+      const items = [...pendingSpots, ...pendingEdits, ...pendingBusinesses];
       const item = items.find((i) => String(i.id) === String(id));
       if (!item) return;
 
@@ -293,21 +327,16 @@ const ApprovalDashboard: React.FC = () => {
   const closeModal = () => setSelectedItem(null);
 
   const mockEvents = makeMock("Event");
-  const mockBusinesses = makeMock("Business");
-  const mockAccommodations = makeMock("Accommodation");
 
-  const allPendingItems = [...pendingSpots, ...pendingEdits];
+  const allPendingItems = [...pendingSpots, ...pendingEdits, ...pendingBusinesses];
   const allItems: PendingItem[] = allPendingItems as PendingItem[];
 
-  const filteredItems = useMemo(() => {
+  const filteredTouristSpots = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return allItems;
-    return allItems.filter((i) =>
-      String(i.name ?? "")
-        .toLowerCase()
-        .includes(q)
+    return pendingSpots.filter((i) =>
+      !q || String(i.name ?? "").toLowerCase().includes(q)
     );
-  }, [allItems, query]);
+  }, [pendingSpots, query]);
 
   if (loading)
     return (
@@ -375,7 +404,7 @@ const ApprovalDashboard: React.FC = () => {
             {
               key: "tourist_spots",
               label: "Tourist Spots",
-              count: allItems.length,
+              count: pendingSpots.length + pendingEdits.length,
               icon: <PlaceRoundedIcon />,
               tab: "tourist_spots" as TabType,
             },
@@ -389,16 +418,9 @@ const ApprovalDashboard: React.FC = () => {
             {
               key: "businesses",
               label: "Businesses",
-              count: mockBusinesses.length,
+              count: pendingBusinesses.length,
               icon: <BusinessRoundedIcon />,
               tab: "businesses" as TabType,
-            },
-            {
-              key: "accommodations",
-              label: "Accommodations",
-              count: mockAccommodations.length,
-              icon: <HotelRoundedIcon />,
-              tab: "accommodations" as TabType,
             },
           ] as const
         ).map((n) => (
@@ -422,9 +444,9 @@ const ApprovalDashboard: React.FC = () => {
           <Grid xs={12} md={6} lg={3}>
             <OverviewCard
               title="Tourist Spots"
-              count={allItems.length}
+              count={pendingSpots.length + pendingEdits.length}
               icon="📍"
-              items={allItems}
+              items={[...pendingSpots, ...pendingEdits]}
               onApprove={handleApprove}
               onView={handleView}
             />
@@ -440,17 +462,9 @@ const ApprovalDashboard: React.FC = () => {
           <Grid xs={12} md={6} lg={3}>
             <OverviewCard
               title="Businesses"
-              count={mockBusinesses.length}
+              count={pendingBusinesses.length}
               icon="🏢"
-              items={mockBusinesses}
-            />
-          </Grid>
-          <Grid xs={12} md={6} lg={3}>
-            <OverviewCard
-              title="Accommodations"
-              count={mockAccommodations.length}
-              icon="🛏️"
-              items={mockAccommodations}
+              items={pendingBusinesses}
             />
           </Grid>
         </Grid>
@@ -470,10 +484,7 @@ const ApprovalDashboard: React.FC = () => {
             />
           </Container>
           <ApprovalTable
-            items={filteredItems.map((i) => ({
-              ...i,
-              entityType: "tourist_spots",
-            }))}
+            items={filteredTouristSpots.map((i) => ({ ...i, entityType: "tourist_spots" }))}
             contentType="tourist spots"
             onView={handleView}
             onApprove={handleApprove}
@@ -496,25 +507,15 @@ const ApprovalDashboard: React.FC = () => {
 
       {activeTab === "businesses" && (
         <ApprovalTable
-          items={mockBusinesses}
+          items={pendingBusinesses}
           contentType="businesses"
           onView={handleView}
-          onApprove={() => alert("Businesses approval not yet implemented")}
-          onReject={() => alert("Businesses rejection not yet implemented")}
+          onApprove={handleApprove}
+          onReject={handleReject}
           processingId={processingId}
         />
       )}
 
-      {activeTab === "accommodations" && (
-        <ApprovalTable
-          items={mockAccommodations}
-          contentType="accommodations"
-          onView={handleView}
-          onApprove={() => alert("Accommodations approval not yet implemented")}
-          onReject={() => alert("Accommodations rejection not yet implemented")}
-          processingId={processingId}
-        />
-      )}
 
       <ViewModal
         isOpen={!!selectedItem}

@@ -1,8 +1,7 @@
 export type EntityType =
   | "tourist_spots"
   | "events"
-  | "businesses"
-  | "accommodations";
+  | "businesses";
 
 export type ApprovalTableItem = Record<string, unknown> & {
   id: string;
