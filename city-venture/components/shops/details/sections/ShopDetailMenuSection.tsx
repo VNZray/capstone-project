@@ -1,8 +1,7 @@
-import { ShopDetailMenuItemCard } from '@/components/shops/details/elements';
 import type { BusinessProfileMenuItem, BusinessProfileView } from '@/components/shops/details/types';
 import { ShopColors } from '@/constants/ShopColors';
-import React, { useMemo, useState } from 'react';
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import React, { useMemo } from 'react';
+import { Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 interface ShopDetailMenuSectionProps {
   shop: BusinessProfileView;
@@ -14,60 +13,150 @@ const ShopDetailMenuSection: React.FC<ShopDetailMenuSectionProps> = ({
   onMenuItemPress,
 }) => {
   const menuCategories = useMemo(() => shop.menu ?? [], [shop.menu]);
-  const [selectedCategoryIndex, setSelectedCategoryIndex] = useState(0);
-  const selectedCategory = menuCategories[selectedCategoryIndex];
-  const menuItems = selectedCategory?.items ?? [];
+
+  const allMenuItems = useMemo(() => {
+    return menuCategories.flatMap((category) => category.items ?? []);
+  }, [menuCategories]);
+
+  const featuredOffers = useMemo(() => {
+    if (!allMenuItems.length) return [];
+
+    const popular = allMenuItems.filter((item) => item.isPopular);
+    if (popular.length >= 3) return popular.slice(0, 3);
+
+    return allMenuItems.slice(0, 3);
+  }, [allMenuItems]);
 
   return (
     <View style={styles.sectionContainer}>
       <View style={styles.sectionHeader}>
         <View>
-          <Text style={styles.sectionTitle}>Menu</Text>
-          <Text style={styles.sectionSubtitle}>{shop.tagline || 'Popular picks and best sellers'}</Text>
+          <Text style={styles.sectionTitle}>Featured Offers</Text>
+          <Text style={styles.sectionSubtitle}>
+            Curated highlights from this shop
+          </Text>
         </View>
-        {shop.menu?.length ? (
-          <Text style={styles.menuCategoryCount}>{shop.menu.length} categories</Text>
-        ) : null}
+        {!!featuredOffers.length && (
+          <Text style={styles.menuCategoryCount}>{featuredOffers.length} picks</Text>
+        )}
       </View>
 
-      {menuCategories.length > 0 ? (
-        <>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.categoryTabs}
-          >
-            {menuCategories.map((category, index) => (
-              <TouchableOpacity
-                key={category.category}
-                style={[
-                  styles.categoryTab,
-                  selectedCategoryIndex === index && styles.categoryTabActive,
-                ]}
-                onPress={() => setSelectedCategoryIndex(index)}
-              >
-                <Text
-                  style={[
-                    styles.categoryTabText,
-                    selectedCategoryIndex === index && styles.categoryTabTextActive,
-                  ]}
-                >
-                  {category.category}
+      {featuredOffers.length ? (
+        <ScrollView
+          style={styles.featuredScroll}
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.featuredList}
+        >
+          {featuredOffers.map((item) => (
+            <TouchableOpacity
+              key={item.id}
+              style={styles.featuredCard}
+              activeOpacity={0.9}
+              onPress={() => onMenuItemPress?.(item)}
+            >
+              <View style={styles.featuredImageWrapper}>
+                <Image
+                  source={
+                    item.image
+                      ? { uri: item.image }
+                      : require('@/assets/images/placeholder.png')
+                  }
+                  style={styles.featuredImage}
+                />
+                <View style={styles.featuredPriceBadge}>
+                  <Text style={styles.featuredPriceText}>{item.price}</Text>
+                </View>
+              </View>
+              <View style={styles.featuredContent}>
+                <Text style={styles.featuredName} numberOfLines={2}>
+                  {item.item}
                 </Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
+                {item.description ? (
+                  <Text style={styles.featuredDescription} numberOfLines={1}>
+                    {item.description}
+                  </Text>
+                ) : null}
+                <View style={styles.featuredFooter}>
+                  <Text style={styles.featuredTag}>Special</Text>
+                  <TouchableOpacity
+                    style={styles.featuredAction}
+                    onPress={() => onMenuItemPress?.(item)}
+                  >
+                    <Text style={styles.featuredActionText}>Add</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      ) : (
+        <View style={styles.emptyState}>
+          <Text style={styles.emptyStateText}>No featured offers yet</Text>
+        </View>
+      )}
 
-          <View style={styles.menuItemsContainer}>
-            {menuItems.map((item) => (
-              <ShopDetailMenuItemCard
+      <View style={[styles.sectionHeader, styles.sectionSpacer]}>
+        <View>
+          <Text style={styles.sectionTitle}>All Menu Items</Text>
+          <Text style={styles.sectionSubtitle}>Everything available right now</Text>
+        </View>
+        {!!allMenuItems.length && (
+          <Text style={styles.menuCategoryCount}>{allMenuItems.length} items</Text>
+        )}
+      </View>
+
+      {allMenuItems.length ? (
+        <View style={styles.menuGrid}>
+          {allMenuItems.map((item) => {
+            const isUnavailable = !item.isAvailable || item.productData?.is_unavailable;
+            return (
+              <TouchableOpacity
                 key={item.id}
-                item={item}
+                style={[
+                  styles.menuCard,
+                  isUnavailable && styles.menuCardDisabled,
+                ]}
+                activeOpacity={0.9}
                 onPress={() => onMenuItemPress?.(item)}
-              />
-            ))}
-          </View>
-        </>
+              >
+                <View style={styles.menuImageWrapper}>
+                  <Image
+                    source={
+                      item.image
+                        ? { uri: item.image }
+                        : require('@/assets/images/placeholder.png')
+                    }
+                    style={styles.menuImage}
+                  />
+                </View>
+                <Text style={styles.menuName} numberOfLines={2}>
+                  {item.item}
+                </Text>
+                {item.description ? (
+                  <Text style={styles.menuDescription} numberOfLines={2}>
+                    {item.description}
+                  </Text>
+                ) : null}
+                <View style={styles.menuFooter}>
+                  <Text style={styles.menuPrice}>{item.price}</Text>
+                  <TouchableOpacity
+                    style={[
+                      styles.menuAddButton,
+                      isUnavailable && styles.menuAddButtonDisabled,
+                    ]}
+                    disabled={isUnavailable}
+                    onPress={() => onMenuItemPress?.(item)}
+                  >
+                    <Text style={styles.menuAddText}>
+                      {isUnavailable ? 'Sold out' : 'Add'}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
       ) : (
         <View style={styles.emptyState}>
           <Text style={styles.emptyStateText}>Menu coming soon</Text>
@@ -79,23 +168,20 @@ const ShopDetailMenuSection: React.FC<ShopDetailMenuSectionProps> = ({
 
 const styles = StyleSheet.create({
   sectionContainer: {
-    backgroundColor: ShopColors.cardBackground,
-    margin: 16,
-    borderRadius: 20,
-    padding: 20,
-    shadowColor: '#000000',
-    shadowOpacity: 0.05,
-    shadowRadius: 10,
-    elevation: 1,
+    backgroundColor: ShopColors.background,
+    marginHorizontal: 12,
+    marginVertical: 12,
+    borderRadius: 16,
+    padding: 12,
   },
   sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 16,
+    alignItems: 'center',
+    marginBottom: 12,
   },
   sectionTitle: {
-    fontSize: 20,
+    fontSize: 18,
     fontFamily: 'Poppins-Bold',
     color: ShopColors.textPrimary,
   },
@@ -110,33 +196,163 @@ const styles = StyleSheet.create({
     fontFamily: 'Poppins-Medium',
     color: ShopColors.textSecondary,
   },
-  categoryTabs: {
-    flexGrow: 1,
-    paddingBottom: 12,
+  sectionSpacer: {
+    marginTop: 16,
   },
-  categoryTab: {
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    borderRadius: 20,
+  featuredScroll: {
+    marginRight: -12,
+    paddingRight: 12,
+  },
+  featuredList: {
+    paddingVertical: 4,
+    paddingLeft: 4,
+  },
+  featuredCard: {
+    width: 220,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    overflow: 'hidden',
     borderWidth: 1,
     borderColor: ShopColors.border,
-    marginRight: 10,
-    backgroundColor: '#FFFFFF',
+    marginRight: 12,
+    shadowColor: '#40506A',
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 4,
   },
-  categoryTabActive: {
-    backgroundColor: ShopColors.accent,
-    borderColor: ShopColors.accent,
+  featuredImageWrapper: {
+    position: 'relative',
+    height: 130,
+    backgroundColor: ShopColors.cardBackground,
   },
-  categoryTabText: {
+  featuredImage: {
+    width: '100%',
+    height: '100%',
+    resizeMode: 'cover',
+  },
+  featuredPriceBadge: {
+    position: 'absolute',
+    top: 10,
+    left: 10,
+    backgroundColor: '#2BA245',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 12,
+  },
+  featuredPriceText: {
     fontSize: 14,
-    fontFamily: 'Poppins-Medium',
-    color: ShopColors.textSecondary,
-  },
-  categoryTabTextActive: {
+    fontFamily: 'Poppins-Bold',
     color: '#FFFFFF',
   },
-  menuItemsContainer: {
-    rowGap: 12,
+  featuredContent: {
+    padding: 12,
+  },
+  featuredName: {
+    fontSize: 16,
+    fontFamily: 'Poppins-Bold',
+    color: ShopColors.textPrimary,
+  },
+  featuredDescription: {
+    fontSize: 13,
+    fontFamily: 'Poppins-Regular',
+    color: ShopColors.textSecondary,
+    marginTop: 2,
+  },
+  featuredFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  featuredTag: {
+    fontSize: 12,
+    fontFamily: 'Poppins-Medium',
+    color: ShopColors.accent,
+    backgroundColor: ShopColors.highlight,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 12,
+  },
+  featuredAction: {
+    backgroundColor: '#E0ECFF',
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 12,
+  },
+  featuredActionText: {
+    fontSize: 13,
+    fontFamily: 'Poppins-Bold',
+    color: ShopColors.accent,
+  },
+  menuGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+  },
+  menuCard: {
+    width: '48%',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: ShopColors.border,
+    marginBottom: 12,
+    shadowColor: '#40506A',
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 2,
+  },
+  menuCardDisabled: {
+    opacity: 0.6,
+  },
+  menuImageWrapper: {
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  menuImage: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    resizeMode: 'cover',
+  },
+  menuName: {
+    fontSize: 15,
+    fontFamily: 'Poppins-Bold',
+    color: ShopColors.textPrimary,
+  },
+  menuDescription: {
+    fontSize: 12,
+    fontFamily: 'Poppins-Regular',
+    color: ShopColors.textSecondary,
+    marginTop: 4,
+    minHeight: 34,
+  },
+  menuFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 10,
+  },
+  menuPrice: {
+    fontSize: 16,
+    fontFamily: 'Poppins-Bold',
+    color: ShopColors.textPrimary,
+  },
+  menuAddButton: {
+    backgroundColor: ShopColors.accent,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 10,
+  },
+  menuAddButtonDisabled: {
+    backgroundColor: ShopColors.disabled,
+  },
+  menuAddText: {
+    fontSize: 13,
+    fontFamily: 'Poppins-Bold',
+    color: '#FFFFFF',
   },
   emptyState: {
     paddingVertical: 24,
