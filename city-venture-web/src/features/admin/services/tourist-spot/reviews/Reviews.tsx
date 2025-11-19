@@ -14,6 +14,7 @@ import ReviewCard, { type Review } from "@/src/components/feedback/ReviewCard";
 import DynamicTab from "@/src/components/ui/DynamicTab";
 import { ListChecks, Star } from "lucide-react";
 import FeedbackServices from "@/src/services/feedback/FeedbackServices";
+import { useTouristSpot } from "@/src/context/TouristSpotContext";
 
 const transformReview = (apiReview: any): Review => {
   const fullName = apiReview.tourist
@@ -29,7 +30,7 @@ const transformReview = (apiReview: any): Review => {
     },
     rating: apiReview.rating as 1 | 2 | 3 | 4 | 5,
     createdAt: apiReview.created_at,
-    text: apiReview.message,
+    text: apiReview.message || "",
     images: apiReview.photos?.map((p: any) => p.photo_url) || [],
     reply: apiReview.replies?.[0]
       ? {
@@ -42,6 +43,8 @@ const transformReview = (apiReview: any): Review => {
 
 const TouristSpotReviews: React.FC = () => {
   const { id } = useParams<{ id: string }>();
+  const { selectedTouristSpotId } = useTouristSpot();
+  const spotId = selectedTouristSpotId || id;
   const [reviews, setReviews] = React.useState<Review[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
@@ -49,18 +52,15 @@ const TouristSpotReviews: React.FC = () => {
 
   React.useEffect(() => {
     const fetchReviews = async () => {
-      if (!id) {
-        setError("No tourist spot id provided");
+      if (!spotId) {
+        setError("No tourist spot ID provided");
         setLoading(false);
         return;
       }
       try {
         setLoading(true);
         setError(null);
-        const apiReviews = await FeedbackServices.getReviewsByTypeAndEntityId(
-          "tourist_spot",
-          id
-        );
+        const apiReviews = await FeedbackServices.getReviewsByTypeAndEntityId("tourist_spot", spotId);
         const transformed = apiReviews.map(transformReview);
         setReviews(transformed);
       } catch (err) {
@@ -71,7 +71,7 @@ const TouristSpotReviews: React.FC = () => {
       }
     };
     fetchReviews();
-  }, [id]);
+  }, [spotId]);
 
   const tabs = [
     { id: "all", label: "All", icon: <ListChecks size={16} /> },
@@ -201,9 +201,9 @@ const TouristSpotReviews: React.FC = () => {
               {filtered.length === 0 && (
                 <NoDataFound icon="database" title="No Reviews Yet" message="Once guests start leaving feedback, you can view & respond here." />
               )}
-              {filtered.map((rev) => (
+              {filtered.map((rev, idx) => (
                 <ReviewCard
-                  key={rev.id}
+                  key={rev.id || idx}
                   review={rev}
                   onSaveReply={(text: string) => handleSaveReply(rev.id, text)}
                   onDeleteReply={() => handleDeleteReply(rev.id)}

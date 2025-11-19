@@ -55,6 +55,7 @@ import Event from "@/src/features/admin/services/event/Event";
 import Spot from "@/src/features/admin/services/tourist-spot/Spot";
 import TouristSpotDetailsScreen from "@/src/features/admin/services/tourist-spot/TouristSpotDetailsScreen";
 import TouristSpotReviews from "@/src/features/admin/services/tourist-spot/reviews/Reviews";
+import { TouristSpotProvider } from "@/src/context/TouristSpotContext";
 import { BusinessProvider } from "../context/BusinessContext";
 import ReportDetailsScreen from "@/src/features/admin/report/ReportDetailsScreen";
 import AccommodationSubscription from "@/src/features/business/accommodation/subscription/Subscription";
@@ -463,30 +464,33 @@ export default function AppRoutes() {
               </ProtectedRoute>
             }
           />
-          <Route
-            path={`${tourism}/services/tourist-spot`}
-            element={
-              <ProtectedRoute requiredRoles={TOURISM_ROLES}>
-                <Spot />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path={`${tourism}/services/tourist-spot/:id`}
-            element={
-              <ProtectedRoute requiredRoles={TOURISM_ROLES}>
-                <TouristSpotDetailsScreen />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path={`${tourism}/services/tourist-spot/:id/reviews`}
-            element={
-              <ProtectedRoute requiredRoles={TOURISM_ROLES}>
-                <TouristSpotReviews />
-              </ProtectedRoute>
-            }
-          />
+          {/* Tourist Spot routes wrapped with TouristSpotProvider */}
+          <Route element={<TouristSpotProvider><Outlet /></TouristSpotProvider>}>
+            <Route
+              path={`${tourism}/services/tourist-spot`}
+              element={
+                <ProtectedRoute requiredRoles={TOURISM_ROLES}>
+                  <Spot />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path={`${tourism}/services/tourist-spot/:id`}
+              element={
+                <ProtectedRoute requiredRoles={TOURISM_ROLES}>
+                  <TouristSpotDetailsScreen />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path={`${tourism}/services/tourist-spot/:id/reviews`}
+              element={
+                <ProtectedRoute requiredRoles={TOURISM_ROLES}>
+                  <TouristSpotReviews />
+                </ProtectedRoute>
+              }
+            />
+          </Route>
           <Route
             path={`${tourism}/room/:id`}
             element={
