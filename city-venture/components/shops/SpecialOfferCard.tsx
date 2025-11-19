@@ -1,12 +1,13 @@
+import { ShopColors } from '@/constants/ShopColors';
 import { moderateScale } from '@/utils/responsive';
 import React from 'react';
 import {
   Image,
   ImageSourcePropType,
-  Platform,
   Pressable,
   StyleProp,
   StyleSheet,
+  Text,
   View,
   ViewStyle,
   useWindowDimensions,
@@ -14,127 +15,118 @@ import {
 
 export type SpecialOfferCardProps = {
   image: string | ImageSourcePropType;
+  discount?: string;
+  title?: string;
   onPress?: () => void;
   style?: StyleProp<ViewStyle>;
 };
 
 const SpecialOfferCard: React.FC<SpecialOfferCardProps> = ({
   image,
+  discount = '20% OFF',
+  title = 'Limited Time Offer',
   onPress,
   style,
 }) => {
   const { width } = useWindowDimensions();
 
-  const RADIUS = moderateScale(14, 0.55, width);
-  const CARD_WIDTH = moderateScale(140, 0.55, width);
-  const CARD_HEIGHT = moderateScale(200, 0.55, width);
+  const RADIUS = 16;
+  const CARD_WIDTH = moderateScale(160, 0.55, width);
+  const CARD_HEIGHT = moderateScale(220, 0.55, width);
 
   const imageSource = typeof image === 'string' ? { uri: image } : image;
 
   return (
     <Pressable
       onPress={onPress}
-      accessibilityRole="button"
       style={({ pressed }) => [
-        styles.wrapper,
-        getElevation(2),
-        { borderRadius: RADIUS },
-        pressed && { opacity: 0.85 },
+        styles.container,
+        {
+          width: CARD_WIDTH,
+          height: CARD_HEIGHT,
+          borderRadius: RADIUS,
+        },
+        pressed && styles.pressed,
         style,
       ]}
     >
-      <View
-        style={[
-          styles.container,
-          {
-            borderRadius: RADIUS,
-            width: CARD_WIDTH,
-            height: CARD_HEIGHT,
-            overflow: 'hidden',
-          },
-        ]}
-      >
-        {/* Image */}
-        <Image
-          source={imageSource}
-          style={{
-            width: '100%',
-            height: '100%',
-          }}
-          resizeMode="cover"
-        />
+      <View style={styles.imageContainer}>
+        <Image source={imageSource} style={styles.image} resizeMode="cover" />
+        <View style={styles.overlay} />
+        
+        <View style={styles.discountBadge}>
+          <Text style={styles.discountText}>{discount}</Text>
+        </View>
+      </View>
 
-        {/* Subtle Overlay for better touch affordance */}
-        <View
-          style={[
-            styles.overlay,
-            {
-              backgroundColor: 'rgba(0, 0, 0, 0.08)',
-            },
-          ]}
-        />
+      <View style={styles.contentContainer}>
+        <Text style={styles.title} numberOfLines={2}>
+          {title}
+        </Text>
+        <Text style={styles.actionText}>Claim Offer →</Text>
       </View>
     </Pressable>
   );
 };
 
-function getElevation(level: number): ViewStyle | undefined {
-  if (!level) return undefined;
-  if (Platform.OS === 'android') return { elevation: level } as ViewStyle;
-  const map: Record<number, ViewStyle> = {
-    1: {
-      shadowColor: '#000',
-      shadowOpacity: 0.08,
-      shadowRadius: 2,
-      shadowOffset: { width: 0, height: 1 },
-    },
-    2: {
-      shadowColor: '#000',
-      shadowOpacity: 0.1,
-      shadowRadius: 3,
-      shadowOffset: { width: 0, height: 2 },
-    },
-    3: {
-      shadowColor: '#000',
-      shadowOpacity: 0.12,
-      shadowRadius: 4,
-      shadowOffset: { width: 0, height: 3 },
-    },
-    4: {
-      shadowColor: '#000',
-      shadowOpacity: 0.14,
-      shadowRadius: 5,
-      shadowOffset: { width: 0, height: 4 },
-    },
-    5: {
-      shadowColor: '#000',
-      shadowOpacity: 0.16,
-      shadowRadius: 6,
-      shadowOffset: { width: 0, height: 5 },
-    },
-    6: {
-      shadowColor: '#000',
-      shadowOpacity: 0.18,
-      shadowRadius: 7,
-      shadowOffset: { width: 0, height: 6 },
-    },
-  };
-  return map[level];
-}
-
 const styles = StyleSheet.create({
-  wrapper: {
-    overflow: 'visible',
-  },
   container: {
-    borderWidth: 0,
+    backgroundColor: ShopColors.cardBackground,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 3,
+    marginRight: 12,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: ShopColors.border,
+  },
+  pressed: {
+    opacity: 0.9,
+    transform: [{ scale: 0.98 }],
+  },
+  imageContainer: {
+    flex: 3,
+    position: 'relative',
+  },
+  image: {
+    width: '100%',
+    height: '100%',
   },
   overlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.1)',
+  },
+  discountBadge: {
     position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
+    top: 12,
+    left: 12,
+    backgroundColor: ShopColors.warning,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+  },
+  discountText: {
+    color: '#FFFFFF',
+    fontSize: 10,
+    fontFamily: 'Poppins-Bold',
+  },
+  contentContainer: {
+    flex: 2,
+    padding: 10,
+    justifyContent: 'space-between',
+  },
+  title: {
+    fontSize: 12,
+    fontFamily: 'Poppins-SemiBold',
+    color: ShopColors.textPrimary,
+    lineHeight: 18,
+  },
+  actionText: {
+    fontSize: 10,
+    fontFamily: 'Poppins-Medium',
+    color: ShopColors.accent,
   },
 });
 
