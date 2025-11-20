@@ -14,3 +14,4 @@ city-venture/services/api.tsx
 .gitignore
 city-venture-web/src/services/email/email-template.html
 city-venture-web/src/services/email/README.md
+docs/
