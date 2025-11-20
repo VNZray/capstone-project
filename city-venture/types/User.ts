@@ -45,7 +45,7 @@ export type UserDetails = {
   updated_at: string;
   last_login?: string | "";
   user_role_id: number;
-  barangay_id?: number | "";
+  barangay_id?: number | undefined;
   address?: string | "";
   user_id?: string | "";
   province_name?: string | "";
@@ -54,6 +54,7 @@ export type UserDetails = {
   // RBAC: permissions from backend
   permissions?: string[];
   business_id?: string;
+  age?: number | null;
 };
 
 export type TokenPayload = {

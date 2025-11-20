@@ -11,8 +11,8 @@ import About from "../pages/About";
 import Registration from "../pages/BusinessRegistration";
 
 import BusinessPortalLogin from "../features/auth/LoginPage";
-import AdminLogin from "../features/auth/AdminLogin";
-import AdminRegister from "../features/auth/AdminRegister";
+import AdminLogin from "../features/auth/old-page/AdminLogin";
+import AdminRegister from "../features/auth/old-page/AdminRegister";
 import Unauthorized from "@/src/pages/Unauthorized";
 import BusinessLayout from "../layout/BusinessLayout";
 import MyBusiness from "../features/business/listing/MyBusiness";
@@ -54,6 +54,8 @@ import Shop from "@/src/features/admin/services/shop/Shop";
 import Event from "@/src/features/admin/services/event/Event";
 import Spot from "@/src/features/admin/services/tourist-spot/Spot";
 import TouristSpotDetailsScreen from "@/src/features/admin/services/tourist-spot/TouristSpotDetailsScreen";
+import TouristSpotReviews from "@/src/features/admin/services/tourist-spot/reviews/Reviews";
+import { TouristSpotProvider } from "@/src/context/TouristSpotContext";
 import { BusinessProvider } from "../context/BusinessContext";
 import ReportDetailsScreen from "@/src/features/admin/report/ReportDetailsScreen";
 import AccommodationSubscription from "@/src/features/business/accommodation/subscription/Subscription";
@@ -68,12 +70,36 @@ import TestButton from "../pages/TestButton";
 import OwnerProfile from "../features/business/profile/Profile";
 import TourismProfile from "../features/admin/profile/Profile";
 import TouristRegister from "../features/auth/TouristRegister";
+import axios from "axios";
+import { api } from "../services/RoomService";
+import type { User } from "../types/User";
+import { useEffect, useState } from "react";
+import ServerDown from "../pages/ServerDown";
+import Loading from "../components/ui/Loading";
+import ForgetPassword from "../features/auth/ForgetPassword";
 
 export default function AppRoutes() {
-  const user = "/";
+  const home = "/";
   const business = "/business";
   const tourism = "/tourism";
   const business_type = "Accommodation";
+  const [isServerUp, setIsServerUp] = useState<boolean | null>(null);
+
+  const checkServerStatus = async () => {
+    try {
+      const { data } = await axios.get<User[]>(`${api}/users`, {
+        timeout: 5000,
+      });
+      setIsServerUp(Array.isArray(data));
+    } catch (error) {
+      console.error("Server status check failed:", error);
+      setIsServerUp(false);
+    }
+  };
+
+  useEffect(() => {
+    checkServerStatus();
+  }, []);
 
   // Normalized role names as produced by AuthService
   const TOURISM_ROLES = ["Admin", "Tourism Officer"]; // Officer has restricted pages handled per-route
@@ -85,6 +111,15 @@ export default function AppRoutes() {
     "Sales Associate",
   ];
 
+  // Show loading or server down while checking
+  if (isServerUp === null) {
+    return <Loading variant="default" showProgress />;
+  }
+
+  if (isServerUp === false) {
+    return <ServerDown />;
+  }
+
   return (
     <Routes>
       <Route
@@ -94,16 +129,23 @@ export default function AppRoutes() {
           </AuthProvider>
         }
       >
-        {/* Auth routes */}
-
         <Route element={<MainLayout />}>
           <Route index element={<LandingPage />} />
-          <Route path={`${user}`} element={<LandingPage />} />
-          <Route path={`${user}about`} element={<About />} />
+          <Route path={`${home}`} element={<LandingPage />} />
+          <Route path={`${home}about`} element={<About />} />
+          <Route path={`${home}forget-password`} element={<ForgetPassword />} />
         </Route>
         <Route path={`/unauthorized`} element={<Unauthorized />} />
         {/* <Route path={`/login`} element={<UnifiedLogin />} /> */}
-        <Route path={`/login`} element={<BusinessPortalLogin />} />
+        <Route
+          element={
+            <BusinessProvider>
+              <Outlet />
+            </BusinessProvider>
+          }
+        >
+          <Route path={`/login`} element={<BusinessPortalLogin />} />
+        </Route>
         <Route path={`business-registration`} element={<Registration />} />
         <Route path={`/test`} element={<Test />} />
         <Route path={`/test-button`} element={<TestButton />} />
@@ -462,22 +504,33 @@ export default function AppRoutes() {
               </ProtectedRoute>
             }
           />
-          <Route
-            path={`${tourism}/services/tourist-spot`}
-            element={
-              <ProtectedRoute requiredRoles={TOURISM_ROLES}>
-                <Spot />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path={`${tourism}/services/tourist-spot/:id`}
-            element={
-              <ProtectedRoute requiredRoles={TOURISM_ROLES}>
-                <TouristSpotDetailsScreen />
-              </ProtectedRoute>
-            }
-          />
+          {/* Tourist Spot routes wrapped with TouristSpotProvider */}
+          <Route element={<TouristSpotProvider><Outlet /></TouristSpotProvider>}>
+            <Route
+              path={`${tourism}/services/tourist-spot`}
+              element={
+                <ProtectedRoute requiredRoles={TOURISM_ROLES}>
+                  <Spot />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path={`${tourism}/services/tourist-spot/:id`}
+              element={
+                <ProtectedRoute requiredRoles={TOURISM_ROLES}>
+                  <TouristSpotDetailsScreen />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path={`${tourism}/services/tourist-spot/:id/reviews`}
+              element={
+                <ProtectedRoute requiredRoles={TOURISM_ROLES}>
+                  <TouristSpotReviews />
+                </ProtectedRoute>
+              }
+            />
+          </Route>
           <Route
             path={`${tourism}/room/:id`}
             element={
@@ -498,7 +551,6 @@ export default function AppRoutes() {
           {/* Admin offer pages removed */}
         </Route>
       </Route>
-
       {/* 404 */}
       <Route path="*" element={<NotFound />} />
     </Routes>

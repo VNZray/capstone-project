@@ -31,6 +31,8 @@ exports.up = async function (knex) {
   });
 
   await createProcedures(knex);
+
+  console.log("Tourist tables and procedures created.");
 };
 
 /**

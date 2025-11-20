@@ -42,6 +42,7 @@ export interface TableProps<T = any> {
   oddRowColor?: string;
   evenRowColor?: string;
   hoverColor?: string;
+  radius?: string;
 }
 
 // Guest Avatar Component
@@ -159,6 +160,7 @@ function Table<T extends Record<string, any>>({
   oddRowColor = "#F9FAFB",
   evenRowColor = "#FFFFFF",
   hoverColor = "#E5E7EB",
+  radius = "12px",
 }: TableProps<T>) {
   const [page, setPage] = useState(0);
 
@@ -208,12 +210,18 @@ function Table<T extends Record<string, any>>({
       return column.format(value);
     }
 
-    // Default rendering
-    return value ?? "—";
+    // Default rendering - wrap in Typography only for primitive values
+    return <Typography.Body>{value ?? "—"}</Typography.Body>;
   };
 
   return (
-    <Container gap="0" padding="0" elevation={2}>
+    <Container
+      gap="0"
+      padding="0"
+      elevation={2}
+      radius="8px"
+      style={{ overflow: "hidden" }}
+    >
       {/* Table Container */}
       <Box
         sx={{
@@ -314,7 +322,7 @@ function Table<T extends Record<string, any>>({
                           borderBottom: "1px solid #E5E7EB",
                         }}
                       >
-                        <Typography.Body >
+                        <Typography.Body>
                           {renderCell(column, row)}
                         </Typography.Body>
                       </td>

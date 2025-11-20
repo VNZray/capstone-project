@@ -15,6 +15,7 @@ async function createOrderProcedures(knex) {
   `);
 
   // Get orders by business ID
+  // NOTE: Filters out unpaid PayMongo orders (only show after payment confirmation)
   await knex.raw(`
     CREATE PROCEDURE GetOrdersByBusinessId(IN p_businessId CHAR(64))
     BEGIN
@@ -25,6 +26,8 @@ async function createOrderProcedures(knex) {
       LEFT JOIN discount d ON o.discount_id = d.id 
       LEFT JOIN order_item oi ON o.id = oi.order_id
       WHERE o.business_id = p_businessId
+        -- Hide PayMongo orders until payment is confirmed
+        AND (o.payment_method = 'cash_on_pickup' OR o.payment_status = 'paid')
       GROUP BY o.id
       ORDER BY o.created_at DESC;
     END;
@@ -80,16 +83,19 @@ async function createOrderProcedures(knex) {
       IN p_discount_id CHAR(64),
       IN p_pickup_datetime TIMESTAMP,
       IN p_special_instructions TEXT,
-      IN p_payment_method ENUM('cash_on_pickup', 'card', 'digital_wallet')
+      IN p_payment_method ENUM('cash_on_pickup', 'paymongo'),
+      IN p_payment_method_type VARCHAR(50),
+      IN p_arrival_code VARCHAR(10)
     )
     BEGIN
       INSERT INTO \`order\` (
         id, business_id, user_id, order_number, subtotal, discount_amount, tax_amount, 
-        total_amount, discount_id, pickup_datetime, special_instructions, payment_method
+        total_amount, discount_id, pickup_datetime, special_instructions, payment_method,
+        payment_method_type, arrival_code
       ) VALUES (
         p_id, p_business_id, p_user_id, p_order_number, p_subtotal, p_discount_amount, 
         p_tax_amount, p_total_amount, p_discount_id, p_pickup_datetime, p_special_instructions, 
-        IFNULL(p_payment_method, 'cash_on_pickup')
+        IFNULL(p_payment_method, 'cash_on_pickup'), p_payment_method_type, p_arrival_code
       );
       
       SELECT o.*, b.business_name, u.email as user_email, d.name as discount_name
@@ -157,10 +163,18 @@ async function createOrderProcedures(knex) {
   await knex.raw(`
     CREATE PROCEDURE UpdateOrderStatus(
       IN p_orderId CHAR(64),
-      IN p_status ENUM('pending', 'confirmed', 'preparing', 'ready', 'completed', 'cancelled')
+      IN p_status ENUM('pending', 'accepted', 'preparing', 'ready_for_pickup', 'picked_up', 'cancelled_by_user', 'cancelled_by_business', 'failed_payment')
     )
     BEGIN
-      UPDATE \`order\` SET status = p_status, updated_at = NOW() WHERE id = p_orderId;
+      UPDATE \`order\` SET 
+        status = p_status, 
+        updated_at = NOW(),
+        confirmed_at = CASE WHEN p_status = 'accepted' THEN NOW() ELSE confirmed_at END,
+        preparation_started_at = CASE WHEN p_status = 'preparing' THEN NOW() ELSE preparation_started_at END,
+        ready_at = CASE WHEN p_status = 'ready_for_pickup' THEN NOW() ELSE ready_at END,
+        picked_up_at = CASE WHEN p_status = 'picked_up' THEN NOW() ELSE picked_up_at END,
+        cancelled_at = CASE WHEN p_status IN ('cancelled_by_user', 'cancelled_by_business') THEN NOW() ELSE cancelled_at END
+      WHERE id = p_orderId;
       
       SELECT o.*, b.business_name, u.email as user_email
       FROM \`order\` o 
@@ -191,14 +205,15 @@ async function createOrderProcedures(knex) {
   await knex.raw(`
     CREATE PROCEDURE CancelOrder(
       IN p_orderId CHAR(64),
-      IN p_cancellation_reason TEXT
+      IN p_cancellation_reason TEXT,
+      IN p_cancelled_by ENUM('user', 'business', 'system')
     )
     BEGIN
       DECLARE done INT DEFAULT FALSE;
       DECLARE v_product_id CHAR(64);
       DECLARE v_quantity INT;
       DECLARE v_order_number VARCHAR(50);
-      DECLARE order_status VARCHAR(20);
+      DECLARE order_status VARCHAR(30);
       
       DECLARE order_items_cursor CURSOR FOR 
         SELECT oi.product_id, oi.quantity, o.order_number 
@@ -211,10 +226,10 @@ async function createOrderProcedures(knex) {
       -- Check if order can be cancelled
       SELECT status INTO order_status FROM \`order\` WHERE id = p_orderId;
       
-      IF order_status = 'cancelled' THEN
+      IF order_status LIKE 'cancelled%' THEN
         SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Order is already cancelled';
-      ELSEIF order_status = 'completed' THEN
-        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Cannot cancel completed order';
+      ELSEIF order_status = 'picked_up' THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Cannot cancel picked up order';
       END IF;
       
       -- Restore stock for each item
@@ -239,8 +254,18 @@ async function createOrderProcedures(knex) {
       SET d.current_usage_count = GREATEST(0, d.current_usage_count - 1)
       WHERE o.id = p_orderId AND o.discount_amount > 0;
       
-      -- Update order status
-      UPDATE \`order\` SET status = 'cancelled', updated_at = NOW() WHERE id = p_orderId;
+      -- Update order with cancellation details
+      UPDATE \`order\` SET 
+        status = CASE 
+          WHEN p_cancelled_by = 'user' THEN 'cancelled_by_user'
+          WHEN p_cancelled_by = 'business' THEN 'cancelled_by_business'
+          ELSE 'failed_payment'
+        END,
+        cancelled_at = NOW(),
+        cancelled_by = p_cancelled_by,
+        cancellation_reason = p_cancellation_reason,
+        updated_at = NOW() 
+      WHERE id = p_orderId;
       
       SELECT o.*, b.business_name, u.email as user_email
       FROM \`order\` o 
@@ -261,11 +286,11 @@ async function createOrderProcedures(knex) {
       SELECT 
         COUNT(*) as total_orders,
         COUNT(CASE WHEN status = 'pending' THEN 1 END) as pending_orders,
-        COUNT(CASE WHEN status = 'confirmed' THEN 1 END) as confirmed_orders,
+        COUNT(CASE WHEN status = 'accepted' THEN 1 END) as accepted_orders,
         COUNT(CASE WHEN status = 'preparing' THEN 1 END) as preparing_orders,
-        COUNT(CASE WHEN status = 'ready' THEN 1 END) as ready_orders,
-        COUNT(CASE WHEN status = 'completed' THEN 1 END) as completed_orders,
-        COUNT(CASE WHEN status = 'cancelled' THEN 1 END) as cancelled_orders,
+        COUNT(CASE WHEN status = 'ready_for_pickup' THEN 1 END) as ready_orders,
+        COUNT(CASE WHEN status = 'picked_up' THEN 1 END) as completed_orders,
+        COUNT(CASE WHEN status LIKE 'cancelled%' THEN 1 END) as cancelled_orders,
         SUM(total_amount) as total_revenue,
         AVG(total_amount) as average_order_value,
         SUM(discount_amount) as total_discounts_given
@@ -295,7 +320,7 @@ async function createOrderProcedures(knex) {
       JOIN \`order\` o ON oi.order_id = o.id
       WHERE o.business_id = p_businessId 
         AND o.created_at >= DATE_SUB(NOW(), INTERVAL p_period DAY)
-        AND o.status != 'cancelled'
+        AND o.status NOT LIKE 'cancelled%'
       GROUP BY p.id, p.name
       ORDER BY total_quantity DESC
       LIMIT 10;
@@ -314,7 +339,7 @@ async function createOrderProcedures(knex) {
       LEFT JOIN user u ON o.user_id = u.id
       WHERE o.business_id = p_businessId 
         AND o.arrival_code = p_arrivalCode
-        AND o.status IN ('confirmed', 'preparing', 'ready');
+        AND o.status IN ('accepted', 'preparing', 'ready_for_pickup');
     END;
   `);
 
@@ -340,7 +365,7 @@ async function createOrderProcedures(knex) {
     CREATE PROCEDURE MarkOrderAsReady(IN p_orderId CHAR(36))
     BEGIN
       UPDATE \`order\` 
-      SET status = 'ready',
+      SET status = 'ready_for_pickup',
           ready_at = NOW(),
           updated_at = NOW()
       WHERE id = p_orderId;
@@ -358,7 +383,7 @@ async function createOrderProcedures(knex) {
     CREATE PROCEDURE MarkOrderAsPickedUp(IN p_orderId CHAR(36))
     BEGIN
       UPDATE \`order\` 
-      SET status = 'completed',
+      SET status = 'picked_up',
           picked_up_at = NOW(),
           updated_at = NOW()
       WHERE id = p_orderId;

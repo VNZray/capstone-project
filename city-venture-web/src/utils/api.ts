@@ -15,14 +15,18 @@ const api = axios.create({
   },
 });
 
-// Attach Authorization header from sessionStorage token if present
+// Attach Authorization header from storage token if present (supports remember-me)
 api.interceptors.request.use((config) => {
   try {
-    const token = sessionStorage.getItem('token');
+    const token = localStorage.getItem('token') || sessionStorage.getItem('token');
     if (token) {
       (config.headers as any).Authorization = `Bearer ${token}`;
+    } else if ((config.headers as any).Authorization) {
+      // If another place already set Authorization, keep it
+    } else if ((axios.defaults.headers as any)?.common?.Authorization) {
+      (config.headers as any).Authorization = (axios.defaults.headers as any).common.Authorization;
     } else {
-      console.warn('[apiService] No auth token found in sessionStorage for request', config.url);
+      console.warn('[apiService] No auth token found in storage for request', config.url);
     }
   } catch (e) {
     console.error('[apiService] Interceptor error reading token', e);
@@ -169,9 +173,16 @@ class ApiService {
           rejectNew: (id: string) => `/approval/reject-spot/${id}`,
           rejectEdit: (id: string) => `/approval/reject-edit/${id}`,
         } as const;
-      case 'events':
       case 'businesses':
-      case 'accommodations':
+        return {
+          pendingNew: '/approval/pending-businesses',
+          pendingEdits: '/approval/businesses/pending-edits',
+          approveNew: (id: string) => `/approval/approve-business/${id}`,
+          approveEdit: (id: string) => `/approval/businesses/approve-edit/${id}`,
+          rejectNew: (id: string) => `/approval/reject-business/${id}`,
+          rejectEdit: (id: string) => `/approval/businesses/reject-edit/${id}`,
+        } as const;
+      case 'events':
       default:
         return {
           pendingNew: `/approval/${entity}/pending`,

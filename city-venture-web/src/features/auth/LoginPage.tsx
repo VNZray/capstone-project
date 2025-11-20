@@ -2,10 +2,12 @@ import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import "./styles/LoginStyle.css";
 import { useAuth } from "@/src/context/AuthContext"; // adjust path if needed
+import { useBusiness } from "@/src/context/BusinessContext"; // Import Business Context
 import PageContainer from "@/src/components/PageContainer";
 import LoginForm from "./components/LoginForm";
 import { Divider } from "@mui/joy";
 import Typography from "@/src/components/Typography";
+import Loading from "@/src/components/ui/Loading";
 
 const Login: React.FC = () => {
   const [email, setEmail] = useState("owner1@gmail.com");
@@ -13,8 +15,10 @@ const Login: React.FC = () => {
   const [loginError, setLoginError] = useState("");
   const navigate = useNavigate();
   const { login, logout } = useAuth(); // from AuthProvider
+  const { setBusinessId } = useBusiness(); // from BusinessProvider
   const [rememberMe, setRememberMe] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [showLoadingScreen, setShowLoadingScreen] = useState(false);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -28,6 +32,12 @@ const Login: React.FC = () => {
     try {
       const loggedInUser = await login(email, password, rememberMe);
 
+      // Show loading screen before redirect
+      setShowLoadingScreen(true);
+
+      // Delay to show loading animation
+      await new Promise((resolve) => setTimeout(resolve, 4500));
+
       // Check if user is staff (not Business Owner) and redirect to dashboard
       const staffRoles = [
         "Manager",
@@ -35,15 +45,17 @@ const Login: React.FC = () => {
         "Receptionist",
         "Sales Associate",
       ];
-
-      const tourism = ["Admin", "Tourism Office"];
+      const tourism = ["Admin", "Tourism Officer"];
       const tourist = "Tourist";
       const owner = "Business Owner";
 
       const userRole = loggedInUser.role_name || "";
 
       if (staffRoles.includes(userRole)) {
-        // Staff members go directly to business dashboard
+        // Staff members: Set their assigned business_id and go to dashboard
+        if (loggedInUser.business_id) {
+          setBusinessId(loggedInUser.business_id);
+        }
         navigate("/business/dashboard");
       } else if (userRole === tourist) {
         // Tourist to landing page
@@ -70,6 +82,17 @@ const Login: React.FC = () => {
       setLoading(false);
     }
   };
+
+  if (showLoadingScreen) {
+    return (
+      <Loading
+        variant="splash"
+        showProgress
+        message="Welcome to City Venture!"
+        subtitle="Welcome to City Venture!"
+      />
+    );
+  }
 
   return (
     <PageContainer padding={0} style={{ height: "100%", overflow: "hidden" }}>
@@ -118,7 +141,7 @@ const Login: React.FC = () => {
             onRememberMeChange={setRememberMe}
             onLogin={handleLogin}
             error={loginError}
-            forgotPasswordLink="/TouristApp/(screens)/ForgotPassword"
+            forgotPasswordLink="/forget-password"
             signUpLink="/business-registration"
             size="large"
             title="Sign In"

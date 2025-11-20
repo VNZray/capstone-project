@@ -5,7 +5,6 @@ import Typography from "@/src/components/Typography";
 import Button from "@/src/components/Button";
 import { FaMobileAlt, FaCheckCircle } from "react-icons/fa";
 import { AspectRatio, Grid } from "@mui/joy";
-import placeholder from "@/src/assets/images/placeholder-image.png";
 import dashboard_preview from "@/src/assets/images/dashboard_preview.png";
 
 interface FeaturesSectionProps {
@@ -37,7 +36,6 @@ const FeaturesSection: React.FC<FeaturesSectionProps> = ({
         align="center"
         padding="0"
         gap="80px"
-        style={{ margin: "0 0 60px 0" }}
       >
         <Grid xs={12} sm={11} md={11} lg={9} container spacing={4}>
           <Grid xs={12} sm={12} md={12} lg={6}>

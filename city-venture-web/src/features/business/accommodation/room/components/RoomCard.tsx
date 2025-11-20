@@ -1,28 +1,14 @@
 import * as React from "react";
-import Card from "@mui/joy/Card";
 import CardContent from "@mui/joy/CardContent";
-import CardActions from "@mui/joy/CardActions";
 import Typography from "@mui/joy/Typography";
 import Chip from "@mui/joy/Chip";
 import Box from "@mui/joy/Box";
-// import IconButton from "@mui/joy/IconButton";
-import EditIcon from "@mui/icons-material/Edit";
-import DeleteIcon from "@mui/icons-material/Delete";
-import HotelIcon from "@mui/icons-material/Hotel"; // Occupied
-import BuildIcon from "@mui/icons-material/Build"; // Maintenance
-import CheckCircleIcon from "@mui/icons-material/CheckCircle"; // Available
-import EventSeatIcon from "@mui/icons-material/EventSeat"; // Reserved
-import { Grid, Dropdown, Menu, MenuButton, MenuItem } from "@mui/joy";
+import { Grid } from "@mui/joy";
 import { colors } from "@/src/utils/Colors";
-import { deleteData, updateData } from "@/src/services/Service";
-import { FormatSize, Height, PeopleAltTwoTone, WidthFull, WidthWide } from "@mui/icons-material";
+import { PeopleAltTwoTone, WidthWide } from "@mui/icons-material";
 import Container from "@/src/components/Container";
-import IconButton from "@/src/components/IconButton";
-import { Delete, Trash } from "lucide-react";
-import Button from "@/src/components/Button";
 
 interface RoomCardProps {
-  id: string;
   image: string;
   status: string;
   floor: string;
@@ -40,7 +26,6 @@ interface RoomCardProps {
 }
 
 const RoomCard: React.FC<RoomCardProps> = ({
-  id,
   image,
   status,
   floor,
@@ -50,53 +35,21 @@ const RoomCard: React.FC<RoomCardProps> = ({
   capacity,
   room_size,
   amenities,
-  onDeleted,
+
   onClick,
-  onStatusUpdate,
-  onUpdate,
 }) => {
   // local state (initialize with prop)
-  const [room_status, setRoomStatus] = React.useState(status);
-
-  const deleteRoom = async () => {
-    try {
-      await deleteData(id, "room");
-      onDeleted();
-    } catch (err) {
-      console.error("Failed to delete room:", err);
-    }
-  };
-
-  const updateRoomStatus = async (newStatus: string) => {
-    try {
-      await updateData(id, { status: newStatus }, "room");
-      setRoomStatus(newStatus); // update UI immediately
-      onStatusUpdate?.(id, newStatus);
-      if (onUpdate) onUpdate();
-    } catch (err) {
-      console.error("Failed to update room status:", err);
-    }
-  };
-
-  const getStatusIcon = (s: string) => {
-    switch (s) {
-      case "Available":
-        return <CheckCircleIcon />;
-      case "Reserved":
-        return <EventSeatIcon />;
-      case "Occupied":
-        return <HotelIcon />;
-      case "Maintenance":
-        return <BuildIcon />;
-      default:
-        return <EditIcon />;
-    }
-  };
-
-  const statuses = ["Available", "Reserved", "Occupied", "Maintenance"];
+  const [room_status] = React.useState(status);
 
   return (
-    <Container onClick={onClick} elevation={2} hover hoverEffect="lift" hoverDuration={50} cursor="pointer">
+    <Container
+      onClick={onClick}
+      elevation={2}
+      hover
+      hoverEffect="lift"
+      hoverDuration={50}
+      cursor="pointer"
+    >
       <Box sx={{ position: "relative" }}>
         <img
           src={image}

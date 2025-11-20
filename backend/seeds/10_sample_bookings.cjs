@@ -1,4 +1,6 @@
+//10_sample_booking.cjs
 const { v4: uuidv4 } = require("uuid");
+const bcrypt = require('bcrypt');
 
 /**
  * @param { import("knex").Knex } knex
@@ -36,33 +38,30 @@ exports.seed = async function (knex) {
         id: uuidv4(),
         email: "tourist1@gmail.com",
         phone_number: "+639171234567",
-        password:
-          "$2b$10$abcdefghijklmnopqrstuvwxyz1234567890", // hashed password
+        password: await bcrypt.hash('tourist123', 10),
         is_verified: true,
         is_active: true,
-        user_role_id: 5, // Tourist role
+        user_role_id: 9, // Tourist role (corrected from 5)
         barangay_id: 1,
       },
       {
         id: uuidv4(),
         email: "tourist2@gmail.com",
         phone_number: "+639181234567",
-        password:
-          "$2b$10$abcdefghijklmnopqrstuvwxyz1234567890",
+        password: await bcrypt.hash('tourist123', 10),
         is_verified: true,
         is_active: true,
-        user_role_id: 5,
+        user_role_id: 9,
         barangay_id: 2,
       },
       {
         id: uuidv4(),
         email: "tourist3@gmail.com",
         phone_number: "+639191234567",
-        password:
-          "$2b$10$abcdefghijklmnopqrstuvwxyz1234567890",
+        password: await bcrypt.hash('tourist123', 10),
         is_verified: true,
         is_active: true,
-        user_role_id: 5,
+        user_role_id: 9,
         barangay_id: 3,
       },
     ];
@@ -92,11 +91,18 @@ exports.seed = async function (knex) {
   const currentDate = new Date();
 
   // Helper function to generate random date within the last 6 months
-  const getRandomDate = (monthsAgo) => {
+  const getRandomPastDate = (monthsAgo) => {
     const date = new Date();
     date.setMonth(date.getMonth() - monthsAgo);
     const variance = Math.random() * 30; // Random day within the month
     date.setDate(Math.floor(variance));
+    return date.toISOString().split("T")[0];
+  };
+
+  // Helper function to generate random future date
+  const getRandomFutureDate = (daysAhead) => {
+    const date = new Date();
+    date.setDate(date.getDate() + daysAhead + Math.floor(Math.random() * 30));
     return date.toISOString().split("T")[0];
   };
 
@@ -134,14 +140,17 @@ exports.seed = async function (knex) {
 
     if (businessRooms.length === 0) continue;
 
-    // Create 25-30 bookings per business across different months
+    // Create 50-55 bookings per business: 60% past, 40% future
     const bookingCount = Math.floor(Math.random() * 6) + 50; // 50-55 bookings
+    const pastBookingsCount = Math.floor(bookingCount * 0.6); // 60% past bookings
+    const futureBookingsCount = bookingCount - pastBookingsCount; // 40% future bookings
 
-    for (let i = 0; i < bookingCount; i++) {
+    // Create past bookings
+    for (let i = 0; i < pastBookingsCount; i++) {
       const room = businessRooms[Math.floor(Math.random() * businessRooms.length)];
       const tourist = tourists[Math.floor(Math.random() * tourists.length)];
       const monthsAgo = Math.floor(Math.random() * 6); // Last 6 months
-      const checkInDate = getRandomDate(monthsAgo);
+      const checkInDate = getRandomPastDate(monthsAgo);
       const checkOutDate = new Date(checkInDate);
       checkOutDate.setDate(checkOutDate.getDate() + Math.floor(Math.random() * 4) + 1); // 1-4 nights
 
@@ -183,12 +192,69 @@ exports.seed = async function (knex) {
         created_at: knex.fn.now(),
       });
     }
+
+    // Create future bookings
+    for (let i = 0; i < futureBookingsCount; i++) {
+      const room = businessRooms[Math.floor(Math.random() * businessRooms.length)];
+      const tourist = tourists[Math.floor(Math.random() * tourists.length)];
+      const daysAhead = Math.floor(Math.random() * 60) + 1; // 1-90 days ahead
+      const checkInDate = getRandomFutureDate(daysAhead);
+      const checkOutDate = new Date(checkInDate);
+      checkOutDate.setDate(checkOutDate.getDate() + Math.floor(Math.random() * 4) + 1); // 1-4 nights
+
+      const numberOfNights = Math.floor(
+        (checkOutDate - new Date(checkInDate)) / (1000 * 60 * 60 * 24)
+      );
+      const totalPrice = room.room_price * numberOfNights;
+
+      const touristCounts = getRandomTouristCounts();
+
+      // Future bookings are mostly Pending or Reserved
+      const futureStatuses = ["Pending", "Pending", "Reserved", "Reserved", "Reserved"];
+      const status = futureStatuses[Math.floor(Math.random() * futureStatuses.length)];
+
+      // Calculate pax (total tourists)
+      const pax = touristCounts.local + touristCounts.domestic + touristCounts.foreign + touristCounts.overseas;
+      const numAdults = Math.floor(pax * 0.7);
+      const numChildren = Math.floor(pax * 0.2);
+      const numInfants = pax - numAdults - numChildren;
+
+      bookings.push({
+        id: uuidv4(),
+        tourist_id: tourist.id,
+        business_id: business.id,
+        room_id: room.id,
+        check_in_date: checkInDate,
+        check_out_date: checkOutDate.toISOString().split("T")[0],
+        booking_status: status,
+        total_price: totalPrice,
+        pax: pax,
+        num_adults: numAdults,
+        num_children: numChildren,
+        num_infants: numInfants,
+        trip_purpose: "Leisure",
+        local_counts: touristCounts.local,
+        domestic_counts: touristCounts.domestic,
+        foreign_counts: touristCounts.foreign,
+        overseas_counts: touristCounts.overseas,
+        balance: totalPrice * 0.5, // 50% balance remaining for future bookings
+        created_at: knex.fn.now(),
+      });
+    }
   }
 
   // Insert all bookings
   if (bookings.length > 0) {
     await knex("booking").insert(bookings);
+    
+    // Separate past and future bookings for statistics
+    const now = new Date();
+    const pastBookings = bookings.filter(b => new Date(b.check_in_date) < now);
+    const futureBookings = bookings.filter(b => new Date(b.check_in_date) >= now);
+    
     console.log(`✅ Successfully created ${bookings.length} sample bookings with tourist data`);
+    console.log(`   - Past bookings: ${pastBookings.length}`);
+    console.log(`   - Future bookings: ${futureBookings.length}`);
     
     // Summary statistics
     const totalLocal = bookings.reduce((sum, b) => sum + b.local_counts, 0);

@@ -2,7 +2,6 @@ import { Box, Avatar, Stack, Chip, IconButton, Tooltip } from "@mui/joy";
 import {
   CheckCircle,
   Clock,
-  Building2,
   Mail,
   Phone,
   Edit2,

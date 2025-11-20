@@ -1,6 +1,8 @@
 import express from "express";
 import cors from "cors";
 import "dotenv/config";
+import { createServer } from "http";
+import { initializeSocket } from "./services/socketService.js";
 
 import userRoutes from "./routes/users.js";
 import userRoleRoutes from "./routes/users_role.js";
@@ -47,6 +49,19 @@ import tourismStaffManagementRoutes from "./routes/tourism_staff_management.js";
 
 const app = express();
 const PORT = 3000;
+
+// Create HTTP server for Socket.IO
+const httpServer = createServer(app);
+
+// Initialize Socket.IO
+const io = initializeSocket(httpServer);
+
+// Make io available to routes via app.locals
+app.locals.io = io;
+
+// Redirect bases for PayMongo payment return URLs
+const FRONTEND_BASE_URL = (process.env.FRONTEND_BASE_URL || "http://localhost:5173").replace(/\/$/, "");
+const MOBILE_DEEP_LINK_BASE = (process.env.MOBILE_DEEP_LINK_BASE || "cityventure://orders").replace(/\/$/, "");
 
 // Simple ANSI color helpers (no external dependency needed)
 const COLORS = {
@@ -148,6 +163,7 @@ const routeSections = [
         label: "External Booking",
       },
       { path: "/api/payment", handler: paymentRoutes, label: "Payments" },
+      { path: "/api/payments", handler: paymentRoutes, label: "Payments (alias)" },
     ],
   },
   {
@@ -195,6 +211,16 @@ const routeSections = [
 const routes = routeSections.flatMap((s) => s.routes);
 
 app.use(cors());
+
+// Raw body parser for webhook signature verification
+// Must come BEFORE express.json() to capture raw body
+["/api/payment/webhook", "/api/payments/webhook"].forEach((path) => {
+  app.use(path, express.raw({ type: "application/json" }), (req, res, next) => {
+    req.rawBody = req.body.toString("utf8");
+    next();
+  });
+});
+
 app.use(express.json());
 
 // Register routes dynamically
@@ -202,12 +228,136 @@ routes.forEach((route) => {
   app.use(route.path, route.handler);
 });
 
-app.listen(PORT, "0.0.0.0", () => {
+// PayMongo redirect bridge:
+// PayMongo requires http/https URLs, but the mobile app expects a custom scheme (cityventure://orders/...).
+// These handlers take the web redirect and bounce users back into the app, with a web fallback.
+const sendPaymongoRedirect = (res, orderId, status) => {
+  // Support both Expo Go (exp://) and production builds (cityventure://)
+  const isExpoDev = process.env.EXPO_DEV === 'true';
+  const expoHost = process.env.EXPO_DEV_HOST || '192.168.1.1:8081';
+  
+  const appUrl = isExpoDev 
+    ? `exp://${expoHost}/--/payment-${status}?orderId=${orderId}`
+    : `${MOBILE_DEEP_LINK_BASE}/${orderId}/payment-${status}`;
+  
+  const webFallback = `${FRONTEND_BASE_URL}/orders/${orderId}/payment-${status}`;
+
+  // Prevent caching to avoid redirect loops
+  res.set({
+    'Content-Type': 'text/html',
+    'Cache-Control': 'no-store, no-cache, must-revalidate, private',
+    'Pragma': 'no-cache',
+    'Expires': '0'
+  });
+
+  res.send(`<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Payment ${status === 'success' ? 'Successful' : 'Cancelled'}</title>
+  </head>
+  <body style="font-family: sans-serif; text-align: center; padding: 24px;">
+    <h1>Payment ${status === 'success' ? 'Successful! ✅' : 'Cancelled ❌'}</h1>
+    <p>Redirecting to app...</p>
+    <p><a href="${appUrl}">Click here if not redirected automatically</a></p>
+    <script>
+      // Redirect ONCE using sessionStorage to prevent loops
+      if (!sessionStorage.getItem('payment_redirected_${orderId}')) {
+        sessionStorage.setItem('payment_redirected_${orderId}', 'true');
+        window.location.replace('${appUrl}');
+        
+        // Fallback to web after 2 seconds if app doesn't open
+        setTimeout(function() {
+          if (document.visibilityState === 'visible') {
+            window.location.replace('${webFallback}');
+          }
+        }, 2000);
+      }
+    </script>
+  </body>
+</html>`);
+};
+
+app.get("/orders/:orderId/payment-success", (req, res) => {
+  const orderId = req.params.orderId || req.query.order_id;
+  if (!orderId) {
+    return res.status(400).send("Missing orderId");
+  }
+  sendPaymongoRedirect(res, orderId, "success");
+});
+
+app.get("/orders/:orderId/payment-cancel", (req, res) => {
+  const orderId = req.params.orderId || req.query.order_id;
+  if (!orderId) {
+    return res.status(400).send("Missing orderId");
+  }
+  sendPaymongoRedirect(res, orderId, "cancel");
+});
+
+// ========== ENVIRONMENT VALIDATION ==========
+// Validate critical environment variables on startup
+function validateEnvironment() {
+  const required = {
+    'JWT_SECRET': process.env.JWT_SECRET,
+    'DB_HOST': process.env.DB_HOST,
+    'DB_USER': process.env.DB_USER,
+    'DB_NAME': process.env.DB_NAME,
+  };
+
+  const optional = {
+    'PAYMONGO_SECRET_KEY': process.env.PAYMONGO_SECRET_KEY,
+    'PAYMONGO_PUBLIC_KEY': process.env.PAYMONGO_PUBLIC_KEY,
+    'PAYMONGO_WEBHOOK_SECRET': process.env.PAYMONGO_WEBHOOK_SECRET,
+    'FRONTEND_BASE_URL': process.env.FRONTEND_BASE_URL,
+  };
+
+  const missing = [];
+  const warnings = [];
+
+  // Check required variables
+  Object.entries(required).forEach(([key, value]) => {
+    if (!value) {
+      missing.push(key);
+    }
+  });
+
+  // Check optional but important variables
+  Object.entries(optional).forEach(([key, value]) => {
+    if (!value) {
+      warnings.push(key);
+    }
+  });
+
+  if (missing.length > 0) {
+    console.error(`${COLORS.bold}❌ CRITICAL: Missing required environment variables:${COLORS.reset}`);
+    missing.forEach(key => console.error(`   - ${key}`));
+    console.error(`\nPlease configure these in your .env file before starting the server.\n`);
+    process.exit(1);
+  }
+
+  if (warnings.length > 0) {
+    console.warn(`${COLORS.yellow}⚠️  Warning: Missing optional environment variables:${COLORS.reset}`);
+    warnings.forEach(key => {
+      console.warn(`   - ${key}`);
+      if (key.includes('PAYMONGO')) {
+        console.warn(`     (PayMongo payments will not work without this)`);
+      }
+    });
+    console.warn('');
+  }
+}
+
+// Validate environment before starting server
+validateEnvironment();
+
+// Start server with Socket.IO
+httpServer.listen(PORT, "0.0.0.0", () => {
   console.log(colorServer(`🚀 Server running at http://localhost:${PORT}`));
   console.log(
     colorServer(`🌐 Also accessible at http://192.168.111.111:${PORT}`)
   );
   console.log(colorServer("✅ Connected to MariaDB (Promise Pool)"));
+  console.log(colorServer("✅ Environment validated"));
   console.log(colorServer("✅ API is ready to use\n"));
 
   // Quick access to Tourism Admin Login

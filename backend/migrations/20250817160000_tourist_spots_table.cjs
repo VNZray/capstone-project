@@ -1,5 +1,5 @@
-exports.up = function(knex) {
-  return knex.schema.createTable('tourist_spots', function(table) {
+exports.up = async function(knex) {
+  await knex.schema.createTable('tourist_spots', function(table) {
     table.uuid('id').primary().defaultTo(knex.raw('UUID()'));
     table.string('name', 255).notNullable();
     table.text('description').notNullable();
@@ -20,8 +20,11 @@ exports.up = function(knex) {
     table.index('type_id', 'idx_type');
     table.index('barangay_id', 'idx_barangay');
   });
+
+  console.log("Tourist spots table created.");
+
 };
 
-exports.down = function(knex) {
-  return knex.schema.dropTableIfExists('tourist_spots');
+exports.down = async function(knex) {
+  await knex.schema.dropTableIfExists('tourist_spots');
 };

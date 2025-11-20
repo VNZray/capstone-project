@@ -179,7 +179,28 @@ export async function insertBusinessHours(req, res) {
 export async function getBusinessHours(req, res) {
   try {
     const [data] = await db.query("CALL GetAllBusinessHours()");
-    res.json(data[0]);
+    // Return empty array if no data found, instead of 404
+    const result = data?.[0] || [];
+    res.json(result);
+  } catch (error) {
+    return handleDbError(error, res);
+  }
+}
+
+// Get business hours by business ID
+export async function getBusinessHoursByBusinessId(req, res) {
+  const { businessId } = req.params;
+
+  if (!businessId) {
+    return res.status(400).json({ message: "Business ID is required" });
+  }
+
+  try {
+    const [data] = await db.query("CALL GetBusinessHoursByBusinessId(?)", [businessId]);
+    const result = data?.[0] || [];
+
+    // Return empty array if no hours found (valid state - business has no hours configured)
+    res.json(result);
   } catch (error) {
     return handleDbError(error, res);
   }

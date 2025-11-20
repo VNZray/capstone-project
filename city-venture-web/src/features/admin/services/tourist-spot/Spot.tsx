@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { IoAdd } from "react-icons/io5";
-import { ListChecks, MapPin, Mountain, Star, Search } from "lucide-react";
+import { Star, Search } from "lucide-react";
 import Typography from "@/src/components/Typography";
 import Button from "@/src/components/Button";
 import TouristSpotForm from "@/src/features/admin/services/tourist-spot/components/TouristSpotForm";
@@ -27,7 +27,8 @@ const Spot = () => {
   const [spots, setSpots] = useState<TouristSpot[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState("all");
+  const [categoryTab, setCategoryTab] = useState<string>("All");
+  const [categoryTabs, setCategoryTabs] = useState<Array<{ id: string; label: string }>>([{ id: "All", label: "All" }]);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -37,6 +38,18 @@ const Spot = () => {
     try {
       const spotsData = await apiService.getTouristSpots();
       setSpots(spotsData);
+      // Build category tabs from API categories (fallback to computing from spots)
+      try {
+        const { categories } = await apiService.getCategoriesAndTypes();
+        const list = ["All", ...Array.from(new Set(categories.map((c: any) => c.category).filter(Boolean)))];
+        setCategoryTabs(list.map((c) => ({ id: c, label: c })));
+      } catch {
+        const fromSpots = Array.from(new Set(
+          spotsData.flatMap((s) => Array.isArray(s.categories) ? s.categories.map((c: any) => c.category || String(c)) : [])
+        ));
+        const list = ["All", ...fromSpots];
+        setCategoryTabs(list.map((c) => ({ id: c, label: c })));
+      }
     } catch (error) {
       console.error("Error:", error);
       setError("An unexpected error occurred");
@@ -49,18 +62,15 @@ const Spot = () => {
     fetchSpotsAndCategories();
   }, [fetchSpotsAndCategories]);
 
-  const tabs = [
-    { id: "all", label: "All", icon: <ListChecks size={16} /> },
-    { id: "active", label: "Active", icon: <MapPin size={16} /> },
-    { id: "inactive", label: "Inactive", icon: <Mountain size={16} /> },
-    { id: "featured", label: "Featured", icon: <Star size={16} /> },
-  ];
-
   const handleSearch = (query: string) => {
     setSearchQuery(query);
   };
   const handleViewDetails = (spot: TouristSpot) => {
     navigate(`/tourism/services/tourist-spot/${spot.id}`);
+  };
+
+  const handleViewReviews = (spot: TouristSpot) => {
+    navigate(`/tourism/services/tourist-spot/${spot.id}/reviews`);
   };
 
   const handleEditSpot = (spot: TouristSpot) => {
@@ -84,13 +94,13 @@ const Spot = () => {
   const filteredSpots = useMemo(() => {
     let filtered = spots;
 
-    // Filter by tab status
-    if (activeTab === "active") {
-      filtered = filtered.filter((spot) => spot.spot_status === "active");
-    } else if (activeTab === "inactive") {
-      filtered = filtered.filter((spot) => spot.spot_status === "inactive");
-    } else if (activeTab === "featured") {
-      filtered = filtered.filter((spot) => spot.is_featured === true);
+    // Filter by category tab
+    if (categoryTab && categoryTab !== "All") {
+      filtered = filtered.filter((spot) =>
+        Array.isArray(spot.categories)
+          ? spot.categories.some((cat: any) => (cat.category || String(cat)) === categoryTab)
+          : false
+      );
     }
 
     // Filter by search query
@@ -102,7 +112,7 @@ const Spot = () => {
     }
 
     return filtered;
-  }, [spots, searchQuery, activeTab]);
+  }, [spots, searchQuery, categoryTab]);
 
   const [selectedEditStep, setSelectedEditStep] = useState<number>(0);
 
@@ -190,6 +200,17 @@ const Spot = () => {
             }}
           >
             Edit
+          </Button>
+          <Button
+            variant="outlined"
+            colorScheme="primary"
+            size="sm"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleViewReviews(row);
+            }}
+          >
+            Reviews
           </Button>
         </Stack>
       ),
@@ -288,13 +309,12 @@ const Spot = () => {
           />
         </Container>
 
-        {/* Tabs */}
+        {/* Category filter tabs (replaces chip pills) */}
         <DynamicTab
-          tabs={tabs}
-          activeTabId={activeTab}
-          onChange={(tabId) => {
-            setActiveTab(String(tabId));
-          }}
+          padding="12px 20px 0 20px"
+          tabs={categoryTabs}
+          activeTabId={categoryTab}
+          onChange={(tabId) => setCategoryTab(String(tabId))}
         />
       </Container>
 

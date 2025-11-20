@@ -2,95 +2,35 @@ import db from "../db.js";
 import { v4 as uuidv4 } from "uuid";
 import { handleDbError } from "../utils/errorHandler.js";
 
-// ==================== PRODUCT CATEGORIES ====================
-
-// Get all product categories
-export async function getAllProductCategories(req, res) {
-  try {
-    const [data] = await db.query("CALL GetAllProductCategories()");
-    res.json(data);
-  } catch (error) {
-    return handleDbError(error, res);
+const extractRows = (result) => {
+  if (!Array.isArray(result)) return [];
+  const [first] = result;
+  if (Array.isArray(first)) {
+    return first;
   }
-}
+  return result;
+};
 
-// Get product categories by business ID
-export async function getProductCategoriesByBusinessId(req, res) {
-  const { businessId } = req.params;
+const parseCategories = (categories) => {
+  if (!categories) return [];
+  if (Array.isArray(categories)) return categories;
   try {
-    const [data] = await db.query("CALL GetProductCategoriesByBusinessId(?)", [businessId]);
-    res.json(data);
+    const parsed = JSON.parse(categories);
+    return Array.isArray(parsed) ? parsed : [];
   } catch (error) {
-    return handleDbError(error, res);
+    return [];
   }
-}
+};
 
-// Get product category by ID
-export async function getProductCategoryById(req, res) {
-  const { id } = req.params;
-  try {
-    const [data] = await db.query("CALL GetProductCategoryById(?)", [id]);
-    if (!data || data.length === 0) {
-      return res.status(404).json({ message: "Product category not found" });
-    }
-    res.json(data[0]);
-  } catch (error) {
-    return handleDbError(error, res);
-  }
-}
+const mapProductRow = (row) => {
+  if (!row) return row;
+  return {
+    ...row,
+    categories: parseCategories(row.categories)
+  };
+};
 
-// Insert a new product category
-export async function insertProductCategory(req, res) {
-  try {
-    const id = uuidv4();
-    const { business_id, name, description, display_order, status } = req.body;
-
-    const [data] = await db.query("CALL InsertProductCategory(?, ?, ?, ?, ?, ?)", [
-      id, business_id, name, description || null, display_order || 0, status || 'active'
-    ]);
-    
-    res.status(201).json({
-      message: "Product category created successfully",
-      data: data[0]
-    });
-  } catch (error) {
-    return handleDbError(error, res);
-  }
-}
-
-// Update product category
-export async function updateProductCategory(req, res) {
-  const { id } = req.params;
-  try {
-    const { name, description, display_order, status } = req.body;
-
-    const [data] = await db.query("CALL UpdateProductCategory(?, ?, ?, ?, ?)", [
-      id, name, description, display_order, status
-    ]);
-
-    if (!data || data.length === 0) {
-      return res.status(404).json({ message: "Product category not found" });
-    }
-
-    res.json({
-      message: "Product category updated successfully",
-      data: data[0]
-    });
-  } catch (error) {
-    return handleDbError(error, res);
-  }
-}
-
-// Delete product category
-export async function deleteProductCategory(req, res) {
-  const { id } = req.params;
-  try {
-    await db.query("CALL DeleteProductCategory(?)", [id]);
-    res.json({ message: "Product category deleted successfully" });
-  } catch (error) {
-    return handleDbError(error, res);
-  }
-}
+const mapProductRows = (rows = []) => rows.map(mapProductRow);
 
 // ==================== PRODUCTS ====================
 
@@ -98,7 +38,8 @@ export async function deleteProductCategory(req, res) {
 export async function getAllProducts(req, res) {
   try {
     const [data] = await db.query("CALL GetAllProducts()");
-    res.json(data);
+    const rows = extractRows(data);
+    res.json(mapProductRows(rows));
   } catch (error) {
     return handleDbError(error, res);
   }
@@ -109,7 +50,8 @@ export async function getProductsByBusinessId(req, res) {
   const { businessId } = req.params;
   try {
     const [data] = await db.query("CALL GetProductsByBusinessId(?)", [businessId]);
-    res.json(data);
+    const rows = extractRows(data);
+    res.json(mapProductRows(rows));
   } catch (error) {
     return handleDbError(error, res);
   }
@@ -120,7 +62,8 @@ export async function getProductsByCategoryId(req, res) {
   const { categoryId } = req.params;
   try {
     const [data] = await db.query("CALL GetProductsByCategoryId(?)", [categoryId]);
-    res.json(data);
+    const rows = extractRows(data);
+    res.json(mapProductRows(rows));
   } catch (error) {
     return handleDbError(error, res);
   }
@@ -131,11 +74,13 @@ export async function getProductById(req, res) {
   const { id } = req.params;
   try {
     const [data] = await db.query("CALL GetProductById(?)", [id]);
-    
-    if (!data || data.length === 0) {
+
+    const rows = extractRows(data);
+
+    if (!rows || rows.length === 0) {
       return res.status(404).json({ message: "Product not found" });
     }
-    res.json(data[0]);
+    res.json(mapProductRow(rows[0]));
   } catch (error) {
     return handleDbError(error, res);
   }
@@ -146,17 +91,59 @@ export async function insertProduct(req, res) {
   try {
     const productId = uuidv4();
     const stockId = uuidv4();
-    const { business_id, product_category_id, name, description, price, image_url, status } = req.body;
+    const { business_id, category_ids = [], name, description, price, image_url, status } = req.body;
 
-    const [data] = await db.query("CALL InsertProduct(?, ?, ?, ?, ?, ?, ?, ?, ?)", [
-      productId, business_id, product_category_id, name, description || null, 
-      price, image_url || null, status || 'active', stockId
-    ]);
-    
-    res.status(201).json({
-      message: "Product created successfully",
-      data: data[0]
-    });
+    if (!Array.isArray(category_ids) || category_ids.length === 0) {
+      return res.status(400).json({ message: "At least one category must be provided" });
+    }
+
+    const connection = await db.getConnection();
+
+    try {
+      await connection.beginTransaction();
+
+      const primaryCategoryId = category_ids[0];
+
+      await connection.query("CALL InsertProduct(?, ?, ?, ?, ?, ?, ?, ?, ?)", [
+        productId,
+        business_id,
+        primaryCategoryId,
+        name,
+        description || null,
+        price,
+        image_url || null,
+        status || "active",
+        stockId
+      ]);
+
+      const insertMappingQuery = "INSERT INTO product_category_map (id, product_id, category_id, is_primary) VALUES (?, ?, ?, ?)";
+      const seen = new Set();
+      for (let i = 0; i < category_ids.length; i++) {
+        const categoryId = category_ids[i];
+        if (seen.has(categoryId)) continue;
+        seen.add(categoryId);
+        await connection.query(insertMappingQuery, [uuidv4(), productId, categoryId, i === 0 ? 1 : 0]);
+      }
+
+      // Update the shop_category_id field with the primary category
+      await connection.query("UPDATE product SET shop_category_id = ? WHERE id = ?", [primaryCategoryId, productId]);
+
+      await connection.commit();
+      connection.release();
+
+  const [productRows] = await db.query("CALL GetProductById(?)", [productId]);
+  const rows = extractRows(productRows);
+  const product = rows && rows[0] ? mapProductRow(rows[0]) : null;
+
+      res.status(201).json({
+        message: "Product created successfully",
+        data: product
+      });
+    } catch (error) {
+      await connection.rollback();
+      connection.release();
+      throw error;
+    }
   } catch (error) {
     return handleDbError(error, res);
   }
@@ -166,20 +153,66 @@ export async function insertProduct(req, res) {
 export async function updateProduct(req, res) {
   const { id } = req.params;
   try {
-    const { product_category_id, name, description, price, image_url, status } = req.body;
+    const { category_ids = [], name, description, price, image_url, status } = req.body;
 
-    const [data] = await db.query("CALL UpdateProduct(?, ?, ?, ?, ?, ?, ?)", [
-      id, product_category_id, name, description, price, image_url, status
-    ]);
-
-    if (!data || data.length === 0) {
-      return res.status(404).json({ message: "Product not found" });
+    if (!Array.isArray(category_ids) || category_ids.length === 0) {
+      return res.status(400).json({ message: "At least one category must be provided" });
     }
 
-    res.json({
-      message: "Product updated successfully",
-      data: data[0]
-    });
+    const connection = await db.getConnection();
+
+    try {
+      await connection.beginTransaction();
+
+      const primaryCategoryId = category_ids[0];
+
+      const [updateResult] = await connection.query("CALL UpdateProduct(?, ?, ?, ?, ?, ?, ?)", [
+        id,
+        primaryCategoryId,
+        name,
+        description,
+        price,
+        image_url,
+        status
+      ]);
+
+      const updatedRows = extractRows(updateResult);
+      if (!updatedRows || updatedRows.length === 0) {
+        await connection.rollback();
+        connection.release();
+        return res.status(404).json({ message: "Product not found" });
+      }
+
+      await connection.query("DELETE FROM product_category_map WHERE product_id = ?", [id]);
+
+      const insertMappingQuery = "INSERT INTO product_category_map (id, product_id, category_id, is_primary) VALUES (?, ?, ?, ?)";
+      const seen = new Set();
+      for (let i = 0; i < category_ids.length; i++) {
+        const categoryId = category_ids[i];
+        if (seen.has(categoryId)) continue;
+        seen.add(categoryId);
+        await connection.query(insertMappingQuery, [uuidv4(), id, categoryId, i === 0 ? 1 : 0]);
+      }
+
+      // Update the shop_category_id field with the primary category
+      await connection.query("UPDATE product SET shop_category_id = ? WHERE id = ?", [primaryCategoryId, id]);
+
+      await connection.commit();
+      connection.release();
+
+  const [productRows] = await db.query("CALL GetProductById(?)", [id]);
+  const rows = extractRows(productRows);
+  const product = rows && rows[0] ? mapProductRow(rows[0]) : null;
+
+      res.json({
+        message: "Product updated successfully",
+        data: product
+      });
+    } catch (error) {
+      await connection.rollback();
+      connection.release();
+      throw error;
+    }
   } catch (error) {
     return handleDbError(error, res);
   }

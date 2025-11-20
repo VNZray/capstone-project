@@ -42,12 +42,12 @@ export const getData = async (table: string) => {
   }
 };
 
-export const getJoinedData = async (directory: string, table: string) => {
+export const getArrayData = async (table: string) => {
   try {
-    const response = await axios.get(`{${directory}}/${api}/${table}`);
-    return response.data;
+    const response = await axios.get(`${api}/${table}`);
+    return response.data.data || [];
   } catch (error) {
-    console.error("Get all failed:", error);
+    console.error("Get array data failed:", error);
     throw error;
   }
 };
@@ -62,12 +62,22 @@ export const getDataById = async (table: string, id: string | number) => {
   }
 };
 
-export const getDataByForeignId = async (table: string, id: string | number) => {
+export const getDataByForeignId = async (table: string, foreignId: string | number) => {
   try {
-    const response = await axios.get(`${api}/${table}/${id}`);
+    const response = await axios.get(`${api}/${table}/${foreignId}`);
     return response.data;
   } catch (error) {
-    console.error("Get by ID failed:", error);
+    console.error("Get by foreign ID failed:", error);
+    throw error;
+  }
+};
+
+export const getArrayDataByForeignId = async (table: string, foreignId: string | number) => {
+  try {
+    const response = await axios.get(`${api}/${table}/${foreignId}`);
+    return response.data.data || [];
+  } catch (error) {
+    console.error("Get array data by foreign ID failed:", error);
     throw error;
   }
 };

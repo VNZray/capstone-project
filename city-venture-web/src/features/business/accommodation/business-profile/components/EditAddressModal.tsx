@@ -12,7 +12,6 @@ interface EditDescriptionModalProps {
   initialBarangay?: number;
   initialAddress?: string;
   businessId?: string;
-  addressId?: number;
   onClose: () => void;
   onSave: (
     province_id: number,
@@ -30,7 +29,6 @@ const EditAddressModal: React.FC<EditDescriptionModalProps> = ({
   initialBarangay = 0,
   initialAddress = "",
   businessId,
-  addressId,
   onClose,
   onSave,
   onUpdate,
