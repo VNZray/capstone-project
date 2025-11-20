@@ -183,8 +183,6 @@ export async function revokeUserRefreshTokens(userId) {
 export async function logout(incomingRefreshToken) {
     if (!incomingRefreshToken) return;
     const tokenHash = hashToken(incomingRefreshToken);
-    // We can just delete it or revoke it.
-    // Plan said "DeleteRefreshToken".
     await db.query('CALL DeleteRefreshToken(?)', [tokenHash]);
 }
 

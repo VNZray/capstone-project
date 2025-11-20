@@ -13,7 +13,7 @@ const cookieOptions = {
 
 export async function login(req, res) {
   try {
-    const { email, password, client } = req.body;
+    const { email, password, client } = req.body || {};
     
     if (!email || !password) {
       return res.status(400).json({ message: 'Email and password are required' });
@@ -59,7 +59,7 @@ export async function login(req, res) {
 export async function refresh(req, res) {
   try {
     // Try getting token from Cookie (Web) or Body (Mobile)
-    const refreshToken = req.cookies?.[COOKIE_NAME] || req.body.refreshToken;
+    const refreshToken = req.cookies?.[COOKIE_NAME] || req.body?.refreshToken;
 
     if (!refreshToken) {
       return res.status(401).json({ message: 'Refresh token required' });
@@ -86,7 +86,7 @@ export async function refresh(req, res) {
 
 export async function logout(req, res) {
   try {
-    const refreshToken = req.cookies?.[COOKIE_NAME] || req.body.refreshToken;
+    const refreshToken = req.cookies?.[COOKIE_NAME] || req.body?.refreshToken;
     
     await authService.logout(refreshToken);
     

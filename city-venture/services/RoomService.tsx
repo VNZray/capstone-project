@@ -1,7 +1,7 @@
-import api from '@/services/api';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import apiClient from '@/services/apiClient';
 import type { Room } from '../types/Business';
+
 
 /** Get stored Room ID */
 export const getStoredRoomId = async (): Promise<string | null> => {
@@ -41,6 +41,3 @@ export async function fetchRoomsByBusinessId(
   });
   return Array.isArray(data) ? data : [data];
 }
-
-export { api };
-

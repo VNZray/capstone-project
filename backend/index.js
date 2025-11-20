@@ -238,6 +238,7 @@ app.use(cors({
   credentials: true, // Allow cookies to be sent/received
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
+  exposedHeaders: ['Set-Cookie'], // Expose Set-Cookie header for cross-origin
 }));
 app.use(cookieParser());
 
