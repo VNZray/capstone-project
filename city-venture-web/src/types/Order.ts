@@ -1,10 +1,12 @@
 export type OrderStatus =
   | "pending"
-  | "confirmed"
+  | "accepted"
   | "preparing"
-  | "ready"
-  | "completed"
-  | "cancelled";
+  | "ready_for_pickup"
+  | "picked_up"
+  | "cancelled_by_user"
+  | "cancelled_by_business"
+  | "failed_payment";
 
 export type PaymentStatus = "pending" | "paid" | "failed" | "refunded";
 

@@ -10,7 +10,7 @@ const PERMIT_FIELDS = [
   "file_format",
   "file_size",
   "status",
-  `expiration_date`,
+  "expiration_date",
 ];
 
 const makePlaceholders = (n) => Array(n).fill("?").join(",");

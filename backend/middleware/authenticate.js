@@ -14,6 +14,8 @@ export function authenticate(req, res, next) {
       id: payload.id,
       user_role_id: payload.user_role_id ?? null,
       email: payload.email ?? null,
+      // Some clients embed role/role_name directly in the token; pass through if present
+      role: payload.role || payload.role_name || null,
     };
     return next();
   } catch (err) {

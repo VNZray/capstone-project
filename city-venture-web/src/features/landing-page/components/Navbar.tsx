@@ -71,7 +71,7 @@ const Navbar: React.FC<NavbarProps> = ({
     if (!id) return;
     const el = document.getElementById(id);
     if (el) {
-      el.scrollIntoView({ behavior: "smooth", block: "center" });
+      el.scrollIntoView({ behavior: "smooth", block: "start" });
       setOpen(false);
     }
   };
