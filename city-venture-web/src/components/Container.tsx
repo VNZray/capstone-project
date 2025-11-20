@@ -61,9 +61,11 @@ interface ContainerProps {
   onMouseEnterProp?: (event: React.MouseEvent<HTMLDivElement>) => void;
   onMouseLeaveProp?: (event: React.MouseEvent<HTMLDivElement>) => void;
   onKeyDown?: (event: React.KeyboardEvent<HTMLDivElement>) => void;
+  id?: string;
 }
 
 const Container: React.FC<ContainerProps> = ({
+  id,
   children,
   elevation = 0,
   className = "",
@@ -74,7 +76,7 @@ const Container: React.FC<ContainerProps> = ({
   style,
   gap = "clamp(0.5rem, 1.5vw + 0.25rem, 1rem)",
   direction = "column",
-  background,
+  background = "transparent",
   opacity = 1,
   align,
   justify,
@@ -138,8 +140,7 @@ const Container: React.FC<ContainerProps> = ({
       case "highlight":
         return {
           ...baseHoverStyles,
-          backgroundColor: hoverBackground || "rgba(59, 130, 246, 0.1)",
-          borderColor: "rgba(59, 130, 246, 0.5)",
+          backgroundColor: hoverBackground,
         };
       case "shadow-expand":
         return {
@@ -251,6 +252,7 @@ const Container: React.FC<ContainerProps> = ({
       `}</style>
 
       <div
+        id={id}
         className={`container elevation-${elevation} ${className}`.trim()}
         style={containerStyle}
         onMouseEnter={(e) => {

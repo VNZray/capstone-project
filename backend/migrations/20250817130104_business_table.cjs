@@ -44,6 +44,8 @@ exports.up = async function (knex) {
   });
 
   await createBusinessProcedures(knex);
+
+  console.log("Business table and procedures created.");
 };
 
 exports.down = async function (knex) {

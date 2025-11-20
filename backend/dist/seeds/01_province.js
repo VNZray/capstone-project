@@ -88,5 +88,7 @@ export async function seed(knex) {
     { id: 80, province: "Zamboanga del Sur" },
     { id: 81, province: "Zamboanga Sibugay" },
     { id: 82, province: "Davao de Oro" },
-  ]);
+  ])
+  .onConflict('id')
+  .merge(['province']);
 }

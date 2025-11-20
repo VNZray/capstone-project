@@ -40,5 +40,7 @@ export async function seed(knex) {
     { id: 31, barangay: "Terogo", municipality_id: 20 },
     { id: 32, barangay: "Ilawod", municipality_id: 20 },
     { id: 33, barangay: "Lubas", municipality_id: 20 },
-  ]);
+  ])
+  .onConflict('id')
+  .merge(['barangay', 'municipality_id']);
 }

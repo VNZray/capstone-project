@@ -19,6 +19,7 @@ exports.up = async function (knex) {
       .onUpdate("CASCADE");
   });
   await createTourismProcedures(knex);
+  console.log("Tourism tables and procedures created.");
 };
 
 exports.down = async function (knex) {

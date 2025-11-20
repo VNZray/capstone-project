@@ -18,10 +18,10 @@ import { Select, Option } from "@mui/joy";
 import { useBusiness } from "@/src/context/BusinessContext";
 import {
   fetchBookingsByBusinessId,
-  fetchTourist,
   updateBookingStatus,
+  fetchGuestInfoByIds,
 } from "@/src/services/BookingService";
-import { fetchUserData } from "@/src/services/auth/AuthService";
+import { fetchRoomNumbersByIds } from "@/src/services/RoomService";
 import type { Booking } from "@/src/types/Booking";
 import DynamicTab from "@/src/components/ui/DynamicTab";
 import Table, {
@@ -31,9 +31,10 @@ import Table, {
   type GuestInfo,
 } from "@/src/components/ui/Table";
 
-// Extend Booking type to include guest info
+// Extend Booking type to include guest info and room info
 interface BookingRow extends Booking {
   guest?: GuestInfo;
+  room_name?: string;
 }
 
 // Local helper to normalize status casing differences from backend
@@ -73,63 +74,47 @@ const Bookings = () => {
     null
   );
 
-  // removed unused booking counters to satisfy lint
-  // Prefetch guest info (name and user_profile) for all visible bookings
+  const [roomInfoById, setRoomInfoById] = useState<Record<string, string>>({});
   const [guestInfoById, setGuestInfoById] = useState<
     Record<string, { name: string; user_profile?: string }>
   >({});
+
+  // Fetch room and guest info for all bookings
   useEffect(() => {
-    const loadGuests = async () => {
-      const uniqueIds = Array.from(
+    const loadRoomsAndGuests = async () => {
+      if (bookings.length === 0) return;
+
+      const uniqueRoomIds = Array.from(
+        new Set(
+          bookings
+            .map((b) => b.room_id)
+            .filter((id): id is string => typeof id === "string" && id.length > 0)
+        )
+      ).filter((id) => !roomInfoById[id]);
+
+      const uniqueTouristIds = Array.from(
         new Set(
           bookings
             .map((b) => b.tourist_id)
-            .filter(
-              (id): id is string => typeof id === "string" && id.length > 0
-            )
+            .filter((id): id is string => typeof id === "string" && id.length > 0)
         )
-      );
-      if (uniqueIds.length === 0) return;
-      // Avoid refetching already known info
-      const toFetch = uniqueIds.filter((id) => !guestInfoById[id]);
-      if (toFetch.length === 0) return;
-      const results = await Promise.allSettled(
-        toFetch.map(async (id) => {
-          try {
-            const tourist = await fetchTourist(id);
-            // fetchUserData expects user_id, which is tourist.user_id
-            let userData = undefined;
-            if (tourist?.user_id) {
-              userData = await fetchUserData(tourist.user_id);
-            }
-            return {
-              name:
-                [tourist?.first_name, tourist?.last_name]
-                  .filter(Boolean)
-                  .join(" ") || "—",
-              user_profile: userData?.user_profile,
-            };
-          } catch {
-            return { name: "—" };
-          }
-        })
-      );
-      const mapUpdates: Record<
-        string,
-        { name: string; user_profile?: string }
-      > = {};
-      results.forEach((res, idx) => {
-        const id = toFetch[idx];
-        if (res.status === "fulfilled" && res.value) {
-          mapUpdates[id] = res.value;
-        } else {
-          mapUpdates[id] = { name: "—" };
-        }
-      });
-      setGuestInfoById((prev) => ({ ...prev, ...mapUpdates }));
+      ).filter((id) => !guestInfoById[id]);
+
+      const [roomsData, guestsData] = await Promise.all([
+        uniqueRoomIds.length > 0 ? fetchRoomNumbersByIds(uniqueRoomIds) : {},
+        uniqueTouristIds.length > 0 ? fetchGuestInfoByIds(uniqueTouristIds) : {},
+      ]);
+
+      if (Object.keys(roomsData).length > 0) {
+        setRoomInfoById((prev) => ({ ...prev, ...roomsData }));
+      }
+      if (Object.keys(guestsData).length > 0) {
+        setGuestInfoById((prev) => ({ ...prev, ...guestsData }));
+      }
     };
-    loadGuests();
-  }, [bookings]);
+
+    loadRoomsAndGuests();
+  }, [bookings, roomInfoById, guestInfoById]);
 
   // Fetch bookings for selected business
   useEffect(() => {
@@ -309,6 +294,16 @@ const Bookings = () => {
           };
 
           return <GuestAvatar guest={guest} size={32} />;
+        },
+      },
+      {
+        id: "room",
+        label: "Room",
+        minWidth: 180,
+        render: (row) => {
+          const roomNumber = roomInfoById[row.room_id as string];
+          
+          return roomNumber || "—";
         },
       },
       {

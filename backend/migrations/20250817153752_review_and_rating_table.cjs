@@ -48,6 +48,8 @@ exports.up = async function (knex) {
       await createReviewAndRatingTable(knex);
       await createReplyProcedures(knex);
 
+      console.log("Review and Rating table and Reply procedures created.");
+
 };
 
 exports.down = async function (knex) {

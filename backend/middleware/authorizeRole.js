@@ -1,5 +1,7 @@
 import db from '../db.js';
 
+const normalizeRole = (role) => (role || '').toLowerCase();
+
 /**
  * Middleware: Require user to have one of the specified roles
  * @param {...string} allowedRoles - Role names that are allowed
@@ -25,19 +27,22 @@ export function authorizeRole(...allowedRoles) {
         return res.status(403).json({ message: 'User role not found' });
       }
 
-      const userRole = rows[0].role_name;
+      const userRoleRaw = rows[0].role_name;
+      const userRole = normalizeRole(userRoleRaw);
+      const allowed = allowedRoles.map(normalizeRole);
 
       // Check if user's role is in the allowed list
-      if (!allowedRoles.includes(userRole)) {
+      if (!allowed.includes(userRole)) {
         return res.status(403).json({ 
           message: 'Forbidden: insufficient role permissions',
           required: allowedRoles,
-          current: userRole
+          current: userRoleRaw
         });
       }
 
       // Attach role to request for downstream use
-      req.user.role = userRole;
+      req.user.role = userRoleRaw;
+      req.user.roleNormalized = userRole;
       return next();
     } catch (err) {
       console.error('[authorizeRole] Error:', err);
@@ -75,10 +80,12 @@ export function authorizeRoleOrPermission({ roles = [], permissions = [] }) {
       }
 
       const userRole = roleRows[0].role_name;
+      const userRoleNorm = normalizeRole(userRole);
 
       // Check role first (fastest)
-      if (roles.length > 0 && roles.includes(userRole)) {
+      if (roles.length > 0 && roles.map(normalizeRole).includes(userRoleNorm)) {
         req.user.role = userRole;
+        req.user.roleNormalized = userRoleNorm;
         return next();
       }
 
@@ -98,6 +105,7 @@ export function authorizeRoleOrPermission({ roles = [], permissions = [] }) {
 
         if (hasPermission) {
           req.user.role = userRole;
+          req.user.roleNormalized = userRoleNorm;
           req.user.matchedPermissions = permissions.filter((p) => userPerms.has(p));
           return next();
         }

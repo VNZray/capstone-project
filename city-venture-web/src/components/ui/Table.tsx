@@ -210,12 +210,18 @@ function Table<T extends Record<string, any>>({
       return column.format(value);
     }
 
-    // Default rendering
-    return value ?? "—";
+    // Default rendering - wrap in Typography only for primitive values
+    return <Typography.Body>{value ?? "—"}</Typography.Body>;
   };
 
   return (
-    <Container gap="0" padding="0" elevation={2} radius={radius}>
+    <Container
+      gap="0"
+      padding="0"
+      elevation={2}
+      radius="8px"
+      style={{ overflow: "hidden" }}
+    >
       {/* Table Container */}
       <Box
         sx={{
@@ -316,7 +322,7 @@ function Table<T extends Record<string, any>>({
                           borderBottom: "1px solid #E5E7EB",
                         }}
                       >
-                        <Typography.Body >
+                        <Typography.Body>
                           {renderCell(column, row)}
                         </Typography.Body>
                       </td>

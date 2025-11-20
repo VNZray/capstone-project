@@ -11,9 +11,11 @@ import EditBasicInfo from "./EditBasicInfo";
 import EditAmenitiesModal from "./EditAmenitiesModal";
 import EditDescriptionModal from "./EditDescription";
 import Typography from "@/src/components/Typography";
+import Calendar from "@/src/components/ui/Calendar";
 const DetailsComponent = () => {
   const { roomDetails } = useRoom();
   const [amenities, setAmenities] = React.useState<Amenity[]>([]);
+  const [bookings, setBookings] = React.useState<any[]>([]);
   const [editBasicInfoModalOpen, setEditBasicInfoModalOpen] = useState(false);
   const [editAmenitiesModalOpen, setEditAmenitiesModalOpen] = useState(false);
   const [editDescriptionModalOpen, setEditDescriptionModalOpen] =
@@ -39,8 +41,22 @@ const DetailsComponent = () => {
     setAmenities(filtered);
   };
 
+  const fetchRoomBookings = async () => {
+    if (!roomDetails?.id) return;
+
+    try {
+      const bookingResponse = await getData(`booking/room/${roomDetails.id}`);
+      console.log("Fetched bookings:", bookingResponse);
+      setBookings(Array.isArray(bookingResponse) ? bookingResponse : []);
+    } catch (error) {
+      console.error("Failed to fetch bookings:", error);
+      setBookings([]);
+    }
+  };
+
   React.useEffect(() => {
     fetchRoomAmenities();
+    fetchRoomBookings();
   }, [roomDetails?.id]);
 
   return (
@@ -56,7 +72,11 @@ const DetailsComponent = () => {
     >
       <Grid container spacing={2}>
         <Grid
-          xs={6}
+          xs={12}
+          sm={12}
+          md={6}
+          lg={6}
+          xl={6}
           sx={{ display: "flex", flexDirection: "column", gap: "16px" }}
         >
           <Container
@@ -151,12 +171,7 @@ const DetailsComponent = () => {
               ))}
             </div>
           </Paper>
-        </Grid>
 
-        <Grid
-          xs={6}
-          sx={{ display: "flex", flexDirection: "column", gap: "16px" }}
-        >
           <Container
             padding="0"
             direction="row"
@@ -179,6 +194,66 @@ const DetailsComponent = () => {
           </Container>
           <Paper variant="outlined" sx={{ p: 2, flex: 1 }}>
             <Typography.Body>{roomDetails?.description || "-"}</Typography.Body>
+          </Paper>
+        </Grid>
+
+        <Grid
+          xs={12}
+          sm={12}
+          md={6}
+          lg={6}
+          xl={6}
+          sx={{ display: "flex", flexDirection: "column", gap: "16px" }}
+        >
+          <Paper variant="outlined" sx={{ p: 0, overflow: "hidden" }}>
+            <Calendar
+              events={(() => {
+                const calendarEvents = bookings.flatMap((booking) => {
+                  const checkIn = new Date(booking.check_in_date);
+                  const checkOut = new Date(booking.check_out_date);
+                  const dates = [];
+
+                  console.log("Processing booking:", {
+                    checkIn: checkIn.toISOString(),
+                    checkOut: checkOut.toISOString(),
+                    status: booking.booking_status,
+                  });
+
+                  // Generate all dates between check-in and check-out (inclusive of check-in, exclusive of check-out)
+                  const currentDate = new Date(checkIn);
+                  while (currentDate < checkOut) {
+                    let status:
+                      | "Available"
+                      | "Reserved"
+                      | "Occupied"
+                      | "Maintenance" = "Available";
+
+                    // Map booking status to calendar status
+                    if (
+                      booking.booking_status === "Reserved" ||
+                      booking.booking_status === "Pending"
+                    ) {
+                      status = "Reserved";
+                    } else if (booking.booking_status === "Checked-In") {
+                      status = "Occupied";
+                    } else if (booking.booking_status === "Checked-Out") {
+                      status = "Available";
+                    } else if (booking.booking_status === "Canceled") {
+                      status = "Available";
+                    }
+
+                    dates.push({
+                      date: new Date(currentDate),
+                      status: status,
+                    });
+                    currentDate.setDate(currentDate.getDate() + 1);
+                  }
+                  return dates;
+                });
+                console.log("Calendar events generated:", calendarEvents);
+                return calendarEvents;
+              })()}
+            />
           </Paper>
         </Grid>
       </Grid>

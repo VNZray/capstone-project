@@ -12,7 +12,6 @@ import {
   Option,
   Textarea,
   FormLabel,
-  Autocomplete,
 } from "@mui/joy";
 import { ToggleButton, ToggleButtonGroup } from "@mui/material";
 import { HotelIcon, StoreIcon } from "lucide-react";
@@ -24,7 +23,7 @@ type Props = {
   setBusinessAmenities: React.Dispatch<React.SetStateAction<BusinessAmenity[]>>;
 };
 
-const Step1: React.FC<Props> = ({ data, setData, setBusinessAmenities }) => {
+const Step1: React.FC<Props> = ({ data, setData }) => {
   const { businessCategories, businessTypes, setSelectedType } =
     useBusinessBasics(api, data, setData);
   return (

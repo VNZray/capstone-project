@@ -71,6 +71,8 @@ exports.up = async function (knex) {
   });
 
   await createAddressProcedures(knex);
+
+  console.log("Address tables and procedures created.");
 };
 
 /**

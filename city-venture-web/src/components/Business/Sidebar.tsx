@@ -95,6 +95,7 @@ export default function Sidebar({
             icon={<LayoutDashboard size={ICON_SIZE} />}
             onClick={onClose}
           />
+          
           {businessDetails?.business_type_id === 1 ? (
             <>
               {(hasRole("Business Owner", "Manager") ||
@@ -291,7 +292,7 @@ export default function Sidebar({
             icon={<LogOut size={ICON_SIZE} />}
             onClick={() => {
               logout();
-              navigate("/login");
+              navigate("/");
               onClose?.();
             }}
           />

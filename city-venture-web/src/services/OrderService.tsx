@@ -2,6 +2,17 @@ import axios from "axios";
 import api from "@/src/services/api";
 import type { Order, OrderDetails, OrderStats, OrderStatus, PaymentStatus } from "@/src/types/Order";
 
+// Configure axios to include Authorization header
+axios.interceptors.request.use((config) => {
+  const token = localStorage.getItem("token");
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+}, (error) => {
+  return Promise.reject(error);
+});
+
 interface OrderResponse<T = Order | null> {
   message?: string;
   data?: T | T[] | null;
@@ -164,7 +175,7 @@ export const updateOrderStatus = async (
   orderId: string,
   status: OrderStatus
 ): Promise<Order | null> => {
-  const { data } = await axios.put<OrderResponse>(`${api}/orders/${orderId}/status`, {
+  const { data } = await axios.patch<OrderResponse>(`${api}/orders/${orderId}/status`, {
     status,
   });
   return unwrapOrder(data);
@@ -174,7 +185,7 @@ export const updatePaymentStatus = async (
   orderId: string,
   payment_status: PaymentStatus
 ): Promise<Order | null> => {
-  const { data } = await axios.put<OrderResponse>(`${api}/orders/${orderId}/payment`, {
+  const { data } = await axios.patch<OrderResponse>(`${api}/orders/${orderId}/payment-status`, {
     payment_status,
   });
   return unwrapOrder(data);
@@ -184,19 +195,19 @@ export const cancelOrder = async (
   orderId: string,
   cancellation_reason?: string
 ): Promise<Order | null> => {
-  const { data } = await axios.put<OrderResponse>(`${api}/orders/${orderId}/cancel`, {
+  const { data } = await axios.post<OrderResponse>(`${api}/orders/${orderId}/cancel`, {
     cancellation_reason,
   });
   return unwrapOrder(data);
 };
 
 export const markOrderAsReady = async (orderId: string): Promise<Order | null> => {
-  const { data } = await axios.put<OrderResponse>(`${api}/orders/${orderId}/ready`, {});
+  const { data } = await axios.post<OrderResponse>(`${api}/orders/${orderId}/mark-ready`, {});
   return unwrapOrder(data);
 };
 
 export const markOrderAsPickedUp = async (orderId: string): Promise<Order | null> => {
-  const { data } = await axios.put<OrderResponse>(`${api}/orders/${orderId}/picked-up`, {});
+  const { data } = await axios.post<OrderResponse>(`${api}/orders/${orderId}/mark-picked-up`, {});
   return unwrapOrder(data);
 };
 

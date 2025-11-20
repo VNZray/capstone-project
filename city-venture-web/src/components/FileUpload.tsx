@@ -43,7 +43,6 @@ const FileUpload: React.FC<FileUploadProps> = ({
   };
 
   const {
-    previewUrl,
     isUploading,
     uploadProgress,
     error,

@@ -13,7 +13,7 @@ import {
 } from "@mui/joy";
 import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
 import CheckRoundedIcon from "@mui/icons-material/CheckRounded";
-import "../styles/ViewModal.css";
+import "@/src/features/admin/approval/styles/ViewModal.css";
 import Button from "@/src/components/Button";
 import Typography from "@/src/components/Typography";
 import { getPermitsByBusiness } from "@/src/services/approval/PermitService";

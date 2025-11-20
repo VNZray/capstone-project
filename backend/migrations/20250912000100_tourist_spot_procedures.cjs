@@ -15,6 +15,8 @@ exports.up = async function(knex) {
   await createScheduleProcedures(knex);
   await createTouristSpotProcedures(knex);
   await createApprovalRecordProcedures(knex);
+
+  console.log("Tourist spot and approval procedures created.");
 };
 
 exports.down = async function(knex) {
