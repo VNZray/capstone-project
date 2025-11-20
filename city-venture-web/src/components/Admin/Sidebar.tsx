@@ -15,6 +15,7 @@ import {
   LogOut,
   X,
   Users,
+  BriefcaseBusiness,
 } from "lucide-react";
 import "@/src/components/Admin/Sidebar.css";
 import logo from "@/src/assets/images/light-logo.png";
@@ -91,7 +92,7 @@ export default function Sidebar({
             />
           )}
           {/* Dropdown for Services */}
-          <DropdownNavItem label="Services" icon={<Briefcase size={24} />}>
+          <DropdownNavItem label="Services" icon={<BriefcaseBusiness color="white" size={24} />}>
             <NavItem
               to="/tourism/services/tourist-spot"
               label="Tourist Spot"
