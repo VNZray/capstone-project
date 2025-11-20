@@ -5,7 +5,6 @@ const {createImageProcedures,dropImageProcedures} = require('../procedures/touri
 const {createLocationProcedures,dropLocationProcedures} = require('../procedures/touristSpot/locationProcedures');
 const {createScheduleProcedures,dropScheduleProcedures} = require('../procedures/touristSpot/scheduleProcedures');
 const {createTouristSpotProcedures,dropTouristSpotProcedures} = require('../procedures/touristSpot/touristSpotProcedures');
-const {createTouristSpotApprovalProcedures,dropTouristSpotApprovalProcedures} = require('../procedures/approvalProcedures');
 const {createApprovalRecordProcedures,dropApprovalRecordProcedures} = require('../procedures/approvalRecordProcedures');
 
 exports.up = async function(knex) {
@@ -15,7 +14,6 @@ exports.up = async function(knex) {
   await createLocationProcedures(knex);
   await createScheduleProcedures(knex);
   await createTouristSpotProcedures(knex);
-  await createTouristSpotApprovalProcedures(knex);
   await createApprovalRecordProcedures(knex);
 };
 
@@ -26,6 +24,5 @@ exports.down = async function(knex) {
   await dropLocationProcedures(knex);
   await dropScheduleProcedures(knex);
   await dropTouristSpotProcedures(knex);
-  await dropTouristSpotApprovalProcedures(knex);
   await dropApprovalRecordProcedures(knex);
 };
