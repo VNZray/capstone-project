@@ -16,3 +16,16 @@ export const insertTourism = async (
   const { data } = await axios.post<Tourism>(`${api}/tourism`, tourism);
   return data;
 };
+
+/** Local storage helpers for selected tourism context */
+export const getStoredTourismId = async (): Promise<string | null> => {
+  return localStorage.getItem("selectedTourismId");
+};
+
+export const setStoredTourismId = async (id: string) => {
+  localStorage.setItem("selectedTourismId", id);
+};
+
+export const clearStoredTourismId = async () => {
+  localStorage.removeItem("selectedTourismId");
+};
