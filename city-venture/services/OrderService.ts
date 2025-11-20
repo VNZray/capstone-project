@@ -4,9 +4,7 @@
  * Integrates with PayMongo for online payments
  */
 
-import axios from 'axios';
-import api from './api';
-import { ensureValidToken } from './AuthService';
+import apiClient from '@/services/apiClient';
 
 export interface OrderItem {
   product_id: string;
@@ -84,22 +82,9 @@ export interface OrderItemDetail {
  */
 export async function createOrder(orderData: CreateOrderRequest): Promise<OrderCreationResponse> {
   try {
-    // Ensure token is valid and refresh if needed
-    const token = await ensureValidToken();
-    
-    if (!token) {
-      throw new Error('Authentication required. Please log in again.');
-    }
-    
-    const response = await axios.post<OrderCreationResponse>(
-      `${api}/orders`,
-      orderData,
-      {
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-      }
+    const response = await apiClient.post<OrderCreationResponse>(
+      `/orders`,
+      orderData
     );
 
     return response.data;
@@ -116,19 +101,8 @@ export async function createOrder(orderData: CreateOrderRequest): Promise<OrderC
  */
 export async function getOrderById(orderId: string): Promise<Order> {
   try {
-    const token = await ensureValidToken();
-    
-    if (!token) {
-      throw new Error('Authentication required. Please log in again.');
-    }
-
-    const response = await axios.get<Order>(
-      `${api}/orders/${orderId}`,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      }
+    const response = await apiClient.get<Order>(
+      `/orders/${orderId}`
     );
 
     return response.data;
@@ -143,19 +117,8 @@ export async function getOrderById(orderId: string): Promise<Order> {
  */
 export async function getUserOrders(userId: string): Promise<Order[]> {
   try {
-    const token = await ensureValidToken();
-    
-    if (!token) {
-      throw new Error('Authentication required. Please log in again.');
-    }
-    
-    const response = await axios.get<Order[]>(
-      `${api}/orders/user/${userId}`,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      }
+    const response = await apiClient.get<Order[]>(
+      `/orders/user/${userId}`
     );
 
     return response.data;
@@ -172,20 +135,9 @@ export async function getUserOrders(userId: string): Promise<Order[]> {
  */
 export async function cancelOrder(orderId: string): Promise<{ success: boolean; message: string }> {
   try {
-    const token = await ensureValidToken();
-    
-    if (!token) {
-      throw new Error('Authentication required. Please log in again.');
-    }
-    
-    const response = await axios.post<{ success: boolean; message: string }>(
-      `${api}/orders/${orderId}/cancel`,
-      {},
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      }
+    const response = await apiClient.post<{ success: boolean; message: string }>(
+      `/orders/${orderId}/cancel`,
+      {}
     );
 
     return response.data;

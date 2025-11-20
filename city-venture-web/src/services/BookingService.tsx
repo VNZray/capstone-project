@@ -1,13 +1,13 @@
-import axios from "axios";
+import apiClient from "./apiClient";
 import type { Bookings } from "../types/Booking";
 import type { Room } from "@/src/types/Business";
-import api from "@/src/services/api";
+import type { User } from "@/src/types/User";
 
 export const fetchBookingsByRoomId = async (
   room_id: string
 ): Promise<Bookings[]> => {
-  const { data } = await axios.get<Bookings[]>(
-    `${api}/booking/room/${room_id}`
+  const { data } = await apiClient.get<Bookings[]>(
+    `/booking/room/${room_id}`
   );
   return Array.isArray(data) ? data : [data]; // ensure it's always an array
 };
@@ -20,8 +20,8 @@ export const fetchBookingsByBusinessId = async (
 ): Promise<Bookings> => {
   if (!business_id) return [];
   // Get rooms for the business
-  const { data: roomsData } = await axios.get<Room[] | Room>(
-    `${api}/room/${business_id}`
+  const { data: roomsData } = await apiClient.get<Room[] | Room>(
+    `/room/${business_id}`
   );
   const rooms: Room[] = Array.isArray(roomsData) ? roomsData : [roomsData];
   if (rooms.length === 0) return [];
@@ -30,8 +30,8 @@ export const fetchBookingsByBusinessId = async (
   const bookingResults = await Promise.all(
     rooms.map(
       (room) =>
-        axios
-          .get<Bookings | Bookings[number]>(`${api}/booking/room/${room.id}`)
+        apiClient
+          .get<Bookings | Bookings[number]>(`/booking/room/${room.id}`)
           .then((res) => (Array.isArray(res.data) ? res.data : [res.data]))
           .catch(() => []) // fail-soft per room
     )
@@ -42,7 +42,7 @@ export const fetchBookingsByBusinessId = async (
 
 /** Update booking status */
 export const updateBookingStatus = async (id: string, status: string) => {
-  const { data } = await axios.put(`${api}/booking/${id}`, {
+  const { data } = await apiClient.put(`/booking/${id}`, {
     booking_status: status,
   });
   return data;
@@ -52,12 +52,12 @@ export const updateBookingStatus = async (id: string, status: string) => {
 export const fetchBookingById = async (
   id: string
 ): Promise<Bookings[number]> => {
-  const { data } = await axios.get<Bookings[number]>(`${api}/booking/${id}`);
+  const { data } = await apiClient.get<Bookings[number]>(`/booking/${id}`);
   return data;
 };
 
 export const fetchTourist = async (tourist_id: string) => {
-  const { data } = await axios.get(`${api}/tourist/${tourist_id}`);
+  const { data } = await apiClient.get(`/tourist/${tourist_id}`);
   return data;
 };
 
@@ -71,7 +71,7 @@ export const fetchGuestInfoByIds = async (
         const tourist = await fetchTourist(id);
         let userData = undefined;
         if (tourist?.user_id) {
-          const userRes = await axios.get(`${api}/users/${tourist.user_id}`);
+          const userRes = await apiClient.get(`/users/${tourist.user_id}`);
           userData = userRes.data;
         }
         return {
@@ -96,4 +96,13 @@ export const fetchGuestInfoByIds = async (
     }
   });
   return guestMap;
+};
+
+/**
+ * Fetch user data by user_id
+ * Uses apiClient for proper authentication with new token system
+ */
+export const fetchUserData = async (userId: string): Promise<User> => {
+  const { data } = await apiClient.get<User>(`/users/${userId}`);
+  return data;
 };

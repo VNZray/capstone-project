@@ -1,24 +1,35 @@
 import jwt from 'jsonwebtoken';
 
-// Authentication middleware: verifies JWT and attaches req.user
+const JWT_ACCESS_SECRET = process.env.JWT_ACCESS_SECRET || 'access_secret_fallback';
+
 export function authenticate(req, res, next) {
+  const authHeader = req.headers['authorization'];
+  
+  if (!authHeader) {
+    return res.status(401).json({ message: 'Authorization header required' });
+  }
+
+  if (!authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({ message: 'Invalid token format (Bearer required)' });
+  }
+
+  const token = authHeader.split(' ')[1];
+
   try {
-    const auth = req.headers['authorization'] || '';
-    const token = auth.startsWith('Bearer ') ? auth.slice(7) : null;
-    if (!token) {
-      return res.status(401).json({ message: 'Missing Bearer token' });
-    }
-    const payload = jwt.verify(token, process.env.JWT_SECRET);
-    // Attach minimal user context
+    const payload = jwt.verify(token, JWT_ACCESS_SECRET);
+    
     req.user = {
       id: payload.id,
-      user_role_id: payload.user_role_id ?? null,
-      email: payload.email ?? null,
-      // Some clients embed role/role_name directly in the token; pass through if present
-      role: payload.role || payload.role_name || null,
+      email: payload.email,
+      user_role_id: payload.role, // Mapped from 'role' in token
+      role: payload.role, 
     };
-    return next();
+
+    next();
   } catch (err) {
-    return res.status(401).json({ message: 'Invalid or expired token' });
+    if (err.name === 'TokenExpiredError') {
+      return res.status(401).json({ message: 'Token expired' });
+    }
+    return res.status(403).json({ message: 'Invalid token' });
   }
 }

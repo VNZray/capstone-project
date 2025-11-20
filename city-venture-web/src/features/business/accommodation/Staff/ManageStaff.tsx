@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import axios from "axios";
+import apiClient from "@/src/services/apiClient";
 import Container from "@/src/components/Container";
 import PageContainer from "@/src/components/PageContainer";
 import Typography from "@/src/components/Typography";
@@ -14,7 +14,6 @@ import Button from "@/src/components/Button";
 import IconButton from "@/src/components/IconButton";
 import { Add } from "@mui/icons-material";
 import { useBusiness } from "@/src/context/BusinessContext";
-import api from "@/src/services/api";
 import {
   fetchStaffByBusinessId,
   deleteStaffById,
@@ -83,7 +82,7 @@ const ManageStaff = () => {
       const userRoleId = ROLE_TO_USER_ROLE_ID[data.role];
 
       // Step 1: Create User Account
-      const userRes = await axios.post(`${api}/users`, {
+      const userRes = await apiClient.post(`/users`, {
         email: data.email,
         phone_number: data.phone_number || "",
         password: "staff123", // Default temporary password
@@ -95,7 +94,7 @@ const ManageStaff = () => {
       if (!userId) throw new Error("Failed to create user account");
 
       // Step 2: Create Staff Record
-      const staffRes = await axios.post(`${api}/staff`, {
+      const staffRes = await apiClient.post(`/staff`, {
         first_name: data.first_name,
         last_name: data.last_name,
         user_id: userId,

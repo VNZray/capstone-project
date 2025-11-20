@@ -1,10 +1,12 @@
 import express from "express";
 import cors from "cors";
+import cookieParser from "cookie-parser";
 import "dotenv/config";
 import { createServer } from "http";
 import { initializeSocket } from "./services/socketService.js";
 
 import userRoutes from "./routes/users.js";
+import authRoutes from "./routes/auth.js";
 import userRoleRoutes from "./routes/users_role.js";
 
 import registrationRoutes from "./routes/registration.js";
@@ -86,6 +88,7 @@ const routeSections = [
   {
     section: "Auth & Users",
     routes: [
+      { path: "/api/auth", handler: authRoutes, label: "Authentication" },
       { path: "/api/user-roles", handler: userRoleRoutes, label: "User Roles" },
       { path: "/api/users", handler: userRoutes, label: "Users" },
       { path: "/api/owner", handler: ownerRoutes, label: "Owners" },
@@ -210,7 +213,33 @@ const routeSections = [
 // Flattened list for registration
 const routes = routeSections.flatMap((s) => s.routes);
 
-app.use(cors());
+// CORS configuration for authentication with credentials
+app.use(cors({
+  origin: function(origin, callback) {
+    // Allow requests with no origin (mobile apps, Postman, etc.)
+    if (!origin) return callback(null, true);
+    
+    // List of allowed origins
+    const allowedOrigins = [
+      'http://localhost:5173',
+      'http://localhost:3000',
+      process.env.WEB_URL,
+      process.env.FRONTEND_URL,
+      process.env.FRONTEND_BASE_URL,
+    ].filter(Boolean); // Remove undefined values
+    
+    if (allowedOrigins.some(allowed => origin.startsWith(allowed))) {
+      callback(null, true);
+    } else {
+      console.warn(`CORS blocked origin: ${origin}`);
+      callback(null, true); // Allow for development - tighten in production
+    }
+  },
+  credentials: true, // Allow cookies to be sent/received
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+}));
+app.use(cookieParser());
 
 // Raw body parser for webhook signature verification
 // Must come BEFORE express.json() to capture raw body

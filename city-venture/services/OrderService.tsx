@@ -1,23 +1,11 @@
 // See spec.md §7 - API / Backend Endpoints
 
-import axios from 'axios';
-import api from '@/services/api';
-import { getToken } from '@/utils/secureStorage';
+import apiClient from '@/services/apiClient';
 import type { 
   Order, 
   CreateOrderPayload, 
   CreateOrderResponse 
 } from '@/types/Order';
-
-/**
- * Helper function to get authorized axios instance
- */
-const getAuthAxios = async () => {
-  const token = await getToken();
-  return axios.create({
-    headers: token ? { Authorization: `Bearer ${token}` } : {},
-  });
-};
 
 /**
  * Create a new order (Tourist only)
@@ -28,9 +16,8 @@ export const createOrder = async (
   payload: CreateOrderPayload
 ): Promise<CreateOrderResponse> => {
   try {
-    const authAxios = await getAuthAxios();
-    const { data } = await authAxios.post<CreateOrderResponse>(
-      `${api}/orders`, 
+    const { data } = await apiClient.post<CreateOrderResponse>(
+      `/orders`, 
       payload
     );
     return data;
@@ -47,9 +34,8 @@ export const createOrder = async (
  */
 export const getUserOrders = async (userId: string): Promise<Order[]> => {
   try {
-    const authAxios = await getAuthAxios();
-    const { data } = await authAxios.get<Order[]>(
-      `${api}/orders/user/${userId}`
+    const { data } = await apiClient.get<Order[]>(
+      `/orders/user/${userId}`
     );
     
     // Ensure data is an array and normalize any missing fields
@@ -84,9 +70,8 @@ export const getUserOrders = async (userId: string): Promise<Order[]> => {
  */
 export const getOrderById = async (orderId: string): Promise<Order> => {
   try {
-    const authAxios = await getAuthAxios();
-    const { data } = await authAxios.get<Order>(
-      `${api}/orders/${orderId}`
+    const { data } = await apiClient.get<Order>(
+      `/orders/${orderId}`
     );
     return data;
   } catch (error) {
@@ -102,8 +87,7 @@ export const getOrderById = async (orderId: string): Promise<Order> => {
  */
 export const cancelOrder = async (orderId: string): Promise<void> => {
   try {
-    const authAxios = await getAuthAxios();
-    await authAxios.post(`${api}/orders/${orderId}/cancel`);
+    await apiClient.post(`/orders/${orderId}/cancel`);
   } catch (error) {
     console.error('[OrderService] cancelOrder error:', error);
     throw error;
