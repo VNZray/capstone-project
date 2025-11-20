@@ -15,11 +15,21 @@ function hashToken(token) {
 }
 
 export async function generateTokens(user) {
+  // Fetch role name from user_role table
+  let roleName = user.role_name; // Use if already provided
+  if (!roleName && user.user_role_id) {
+    const [roleRows] = await db.query(
+      'SELECT role_name FROM user_role WHERE id = ?',
+      [user.user_role_id]
+    );
+    roleName = roleRows && roleRows.length > 0 ? roleRows[0].role_name : null;
+  }
+
   const accessToken = jwt.sign(
     {
       id: user.id,
       email: user.email,
-      role: user.user_role_id, // Or map to role name if needed
+      role: roleName, // Use role name instead of ID
     },
     JWT_ACCESS_SECRET,
     { expiresIn: ACCESS_TOKEN_EXPIRY }
@@ -49,6 +59,17 @@ export async function loginUser(email, password) {
   }
   
   const user = users[0];
+  
+  // Fetch role name
+  if (user.user_role_id && !user.role_name) {
+    const [roleRows] = await db.query(
+      'SELECT role_name FROM user_role WHERE id = ?',
+      [user.user_role_id]
+    );
+    if (roleRows && roleRows.length > 0) {
+      user.role_name = roleRows[0].role_name;
+    }
+  }
   const isMatch = await bcrypt.compare(password, user.password);
   
   if (!isMatch) {
@@ -141,12 +162,22 @@ export async function refreshAccessToken(incomingRefreshToken) {
       throw new Error('User not found during refresh');
   }
 
+  // Fetch role name
+  let roleName = user.role_name;
+  if (!roleName && user.user_role_id) {
+    const [roleRows] = await db.query(
+      'SELECT role_name FROM user_role WHERE id = ?',
+      [user.user_role_id]
+    );
+    roleName = roleRows && roleRows.length > 0 ? roleRows[0].role_name : null;
+  }
+
   // Re-sign access token with fresh user data
   const freshAccessToken = jwt.sign(
     {
       id: user.id,
       email: user.email,
-      role: user.user_role_id,
+      role: roleName, // Use role name instead of ID
     },
     JWT_ACCESS_SECRET,
     { expiresIn: ACCESS_TOKEN_EXPIRY }

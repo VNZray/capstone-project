@@ -266,8 +266,9 @@ const sendPaymongoRedirect = (res, orderId, status) => {
   const isExpoDev = process.env.EXPO_DEV === 'true';
   const expoHost = process.env.EXPO_DEV_HOST || '192.168.1.1:8081';
   
+  // Use Expo Go universal link format: exp://HOST:PORT/--/(screens)/payment-success
   const appUrl = isExpoDev 
-    ? `exp://${expoHost}/--/payment-${status}?orderId=${orderId}`
+    ? `exp://${expoHost}/--/(screens)/payment-${status}?orderId=${orderId}`
     : `${MOBILE_DEEP_LINK_BASE}/${orderId}/payment-${status}`;
   
   const webFallback = `${FRONTEND_BASE_URL}/orders/${orderId}/payment-${status}`;
