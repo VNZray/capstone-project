@@ -196,22 +196,56 @@ export async function createTouristSpotApprovalProcedures(knex) {
   await knex.raw(`
     CREATE PROCEDURE ApproveBusiness(IN p_id CHAR(64))
     BEGIN
-      UPDATE business SET status='Active' WHERE id = p_id AND status='Pending';
+      -- Set business Active only if currently Pending
+      UPDATE business 
+      SET status='Active'
+      WHERE id = p_id AND status='Pending';
+
       IF ROW_COUNT() > 0 THEN
+        -- Cascade approve related registration (if pending)
+        UPDATE registration 
+        SET status = 'Approved', approved_at = CURRENT_TIMESTAMP
+        WHERE business_id = p_id AND status = 'Pending';
+
+        -- Cascade approve related permits (if pending)
+        UPDATE permit 
+        SET status = 'approved', approved_at = CURRENT_TIMESTAMP
+        WHERE business_id = p_id AND status = 'pending';
+
+        -- Log business approval
         CALL LogApprovalRecord('new', 'business', p_id, 'approved', NULL, NULL);
+        SELECT 1 AS success;
+      ELSE
+        SELECT 0 AS success; -- Not found or not pending
       END IF;
-      SELECT ROW_COUNT() AS affected_rows;
     END;
   `);
 
   await knex.raw(`
     CREATE PROCEDURE RejectBusiness(IN p_id CHAR(64))
     BEGIN
-      UPDATE business SET status='Inactive' WHERE id = p_id AND status='Pending';
+      -- Set business Inactive only if currently Pending
+      UPDATE business 
+      SET status='Inactive'
+      WHERE id = p_id AND status='Pending';
+
       IF ROW_COUNT() > 0 THEN
+        -- Cascade reject related registration (if pending)
+        UPDATE registration 
+        SET status = 'Rejected'
+        WHERE business_id = p_id AND status = 'Pending';
+
+        -- Cascade reject related permits (if pending)
+        UPDATE permit 
+        SET status = 'rejected'
+        WHERE business_id = p_id AND status = 'pending';
+
+        -- Log business rejection
         CALL LogApprovalRecord('new', 'business', p_id, 'rejected', NULL, NULL);
+        SELECT 1 AS success;
+      ELSE
+        SELECT 0 AS success; -- Not found or not pending
       END IF;
-      SELECT ROW_COUNT() AS affected_rows;
     END;
   `);
 }
