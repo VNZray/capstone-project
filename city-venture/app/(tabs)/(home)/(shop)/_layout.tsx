@@ -46,6 +46,16 @@ const ShopLayout = () => {
             headerBackTitle: "Back",
           }}
         />
+        <Stack.Screen
+          name="categories"
+          options={{
+            headerShown: true,
+            animation: "slide_from_right",
+            headerTitleAlign: "center",
+            headerTitle: "Categories",
+            headerBackTitle: "Back",
+          }}
+        />
       </Stack>
     </ShopProvider>
   );

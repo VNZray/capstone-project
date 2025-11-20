@@ -5,51 +5,60 @@ import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 
 interface ShopDetailPhotoGalleryProps {
   gallery: BusinessProfileGalleryItem[];
-  onImagePress?: (imageUrl: string) => void;
+  onImagePress?: (imageUrl: string, index: number) => void;
 }
 
 const ShopDetailPhotoGallery: React.FC<ShopDetailPhotoGalleryProps> = ({ gallery, onImagePress }) => (
-  <View style={styles.card}>
-    <Text style={styles.cardTitle}>Photo Gallery</Text>
-
+  <View style={styles.container}>
     {gallery.length ? (
       <View style={styles.grid}>
-        {gallery.slice(0, 6).map((item) => (
-          <Pressable key={item.id} onPress={() => onImagePress?.(item.url)}>
+        {gallery.map((item, index) => (
+          <Pressable 
+            key={item.id} 
+            style={styles.imageContainer}
+            onPress={() => onImagePress?.(item.url, index)}
+          >
             <Image source={{ uri: item.url }} style={styles.image} />
           </Pressable>
         ))}
       </View>
     ) : (
-      <Text style={styles.emptyText}>Photos coming soon</Text>
+      <View style={styles.emptyContainer}>
+         <Text style={styles.emptyText}>No photos available in this category</Text>
+      </View>
     )}
   </View>
 );
 
 const styles = StyleSheet.create({
-  card: {
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: ShopColors.border,
-    backgroundColor: '#FFFFFF',
-    padding: 16,
-  },
-  cardTitle: {
-    fontSize: 18,
-    fontFamily: 'Poppins-Bold',
-    color: ShopColors.textPrimary,
-    marginBottom: 12,
+  container: {
+    marginTop: 8,
   },
   grid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    justifyContent: 'space-between',
+    gap: 12,
+  },
+  imageContainer: {
+    width: '48%',
+    aspectRatio: 1,
+    borderRadius: 16,
+    overflow: 'hidden',
+    backgroundColor: '#F0F0F0',
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 1,
   },
   image: {
-    width: '32%',
-    aspectRatio: 1,
-    borderRadius: 12,
-    marginBottom: 8,
+    width: '100%',
+    height: '100%',
+  },
+  emptyContainer: {
+    padding: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   emptyText: {
     fontSize: 14,
