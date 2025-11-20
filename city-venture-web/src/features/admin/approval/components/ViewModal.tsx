@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   Modal,
   ModalDialog,
@@ -16,6 +16,8 @@ import CheckRoundedIcon from "@mui/icons-material/CheckRounded";
 import "@/src/features/admin/approval/styles/ViewModal.css";
 import Button from "@/src/components/Button";
 import Typography from "@/src/components/Typography";
+import { getPermitsByBusiness } from "@/src/services/approval/PermitService";
+import type { Permit } from "@/src/types/Permit";
 
 interface ViewModalProps {
   isOpen: boolean;
@@ -35,6 +37,8 @@ const ViewModal: React.FC<ViewModalProps> = ({
   processingId,
 }) => {
   const modalRef = useRef<HTMLDivElement | null>(null);
+  const [permits, setPermits] = useState<Permit[] | null>(null);
+  const [loadingPermits, setLoadingPermits] = useState(false);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -45,6 +49,26 @@ const ViewModal: React.FC<ViewModalProps> = ({
     setTimeout(() => modalRef.current?.focus(), 0);
     return () => document.removeEventListener("keydown", onKey);
   }, [isOpen, onClose]);
+
+  useEffect(() => {
+    const entityType = String((item as any)?.entityType || "").toLowerCase();
+    const businessId = String((item as any)?.id || "");
+    if (!isOpen || !item || entityType !== "businesses" || !businessId) {
+      setPermits(null);
+      return;
+    }
+    (async () => {
+      try {
+        setLoadingPermits(true);
+        const data = await getPermitsByBusiness(businessId);
+        setPermits(data || []);
+      } catch (e) {
+        setPermits([]);
+      } finally {
+        setLoadingPermits(false);
+      }
+    })();
+  }, [isOpen, item]);
 
   if (!isOpen || !item) return null;
 
@@ -183,14 +207,27 @@ const ViewModal: React.FC<ViewModalProps> = ({
             }}
           >
             <Stack spacing={0.5}>
-              <Typography.Header size="md" color="primary">
-                {isEdit
-                  ? `Edit Request: ${String(item.name ?? "")}`
-                  : String(item.name ?? "")}
-              </Typography.Header>
-              <Typography.Body size="xs" color="default">
-                {isEdit ? "Review proposed changes" : "Tourist spot details"}
-              </Typography.Body>
+              {(() => {
+                const entityType = String(item.entityType || "").toLowerCase();
+                const baseName = String(item.name ?? item.business_name ?? "");
+                const labelMap: Record<string, string> = {
+                  tourist_spots: "Tourist Spot Details",
+                  businesses: "Business Details",
+                  events: "Event Details",
+                };
+                return (
+                  <>
+                    <Typography.Header size="md" color="primary">
+                      {isEdit ? `Edit Request: ${baseName}` : baseName}
+                    </Typography.Header>
+                    <Typography.Body size="xs" color="default">
+                      {isEdit
+                        ? "Review proposed changes"
+                        : labelMap[entityType] || "Submission Details"}
+                    </Typography.Body>
+                  </>
+                );
+              })()}
             </Stack>
             <IconButton
               variant="soft"
@@ -565,247 +602,203 @@ const ViewModal: React.FC<ViewModalProps> = ({
               </Stack>
             </Sheet>
           ) : (
-            <Sheet variant="plain" sx={{ p: 3, borderRadius: "lg" }}>
-              <Stack spacing={2}>
-                <Stack direction="row" alignItems="center" spacing={1}>
-                  <Typography.CardTitle size="md" color="primary">
-                    Tourist Spot Details
-                  </Typography.CardTitle>
-                  <Typography.Body
-                    size="xs"
-                    sx={{
-                      backgroundColor: "primary.100",
-                      color: "primary.700",
-                      px: 1.5,
-                      py: 0.5,
-                      borderRadius: "sm",
-                      fontWeight: 500,
-                    }}
-                  >
-                    New Submission
-                  </Typography.Body>
-                </Stack>
-                <Divider />
-                {/* Sectioned layout mirroring the Review step */}
-                <Stack direction={{ xs: "column", md: "row" }} spacing={2}>
-                  {/* Left Column */}
-                  <Box sx={{ flex: 1, minWidth: 0 }}>
-                    <Stack spacing={2}>
-                      <Sheet
-                        variant="outlined"
-                        sx={{ p: 2, borderRadius: "md" }}
+            (() => {
+              const entityType = String(item.entityType || "").toLowerCase();
+              const isBusiness = entityType === "businesses";
+              return (
+                <Sheet variant="plain" sx={{ p: 3, borderRadius: "lg" }}>
+                  <Stack spacing={2}>
+                    <Stack direction="row" alignItems="center" spacing={1}>
+                      <Typography.CardTitle size="md" color="primary">
+                        {isBusiness ? "Business Details" : "Tourist Spot Details"}
+                      </Typography.CardTitle>
+                      <Typography.Body
+                        size="xs"
+                        sx={{
+                          backgroundColor: "primary.100",
+                          color: "primary.700",
+                          px: 1.5,
+                          py: 0.5,
+                          borderRadius: "sm",
+                          fontWeight: 500,
+                        }}
                       >
-                        <Typography.CardTitle size="sm" sx={{ mb: 1 }}>
-                          Basic Information
-                        </Typography.CardTitle>
-                        <Typography.Body size="sm">
-                          <strong>Name:</strong>{" "}
-                          {formatValue(
-                            "name",
-                            getProposed("name") ?? getCurrent("name")
-                          )}
-                        </Typography.Body>
-                        <Typography.Body size="sm">
-                          <strong>Description:</strong>{" "}
-                          {formatValue(
-                            "description",
-                            getProposed("description") ??
-                              getCurrent("description")
-                          )}
-                        </Typography.Body>
-                        {(() => {
-                          const cats = (item.categories as any[]) || [];
-                          const catText = cats.length
-                            ? cats
-                                .map(
-                                  (c: any) => c?.category || c?.label || c?.name
+                        New Submission
+                      </Typography.Body>
+                    </Stack>
+                    <Divider />
+                    <Stack direction={{ xs: "column", md: "row" }} spacing={2}>
+                      <Box sx={{ flex: 1, minWidth: 0 }}>
+                        <Stack spacing={2}>
+                          <Sheet variant="outlined" sx={{ p: 2, borderRadius: "md" }}>
+                            <Typography.CardTitle size="sm" sx={{ mb: 1 }}>
+                              Basic Information
+                            </Typography.CardTitle>
+                            <Typography.Body size="sm">
+                              <strong>Name:</strong> {formatValue("name", getProposed("name") ?? getCurrent("name") ?? (item.business_name as any))}
+                            </Typography.Body>
+                            <Typography.Body size="sm">
+                              <strong>Description:</strong> {formatValue("description", getProposed("description") ?? getCurrent("description"))}
+                            </Typography.Body>
+                            {isBusiness ? (
+                              <>
+                                <Typography.Body size="sm">
+                                  <strong>Type:</strong> {formatValue("business_type_name", (item as any).business_type_name)}
+                                </Typography.Body>
+                                <Typography.Body size="sm">
+                                  <strong>Category:</strong> {formatValue("business_category_name", (item as any).business_category_name)}
+                                </Typography.Body>
+                                <Typography.Body size="sm">
+                                  <strong>Price Range:</strong> {(() => {
+                                    const min = (item as any).min_price;
+                                    const max = (item as any).max_price;
+                                    if (min == null && max == null) return "-";
+                                    if (min != null && max != null) return `₱${min} - ₱${max}`;
+                                    return `₱${min ?? max}`;
+                                  })()}
+                                </Typography.Body>
+                              </>
+                            ) : (
+                              <>
+                                {(() => {
+                                  const cats = (item.categories as any[]) || [];
+                                  const catText = cats.length
+                                    ? cats
+                                        .map((c: any) => c?.category || c?.label || c?.name)
+                                        .filter(Boolean)
+                                        .join(", ")
+                                    : "-";
+                                  return (
+                                    <Typography.Body size="sm">
+                                      <strong>Categories:</strong> {catText}
+                                    </Typography.Body>
+                                  );
+                                })()}
+                                <Typography.Body size="sm">
+                                  <strong>Entry Fee:</strong> {formatValue("entry_fee", getProposed("entry_fee") ?? getCurrent("entry_fee"))}
+                                </Typography.Body>
+                              </>
+                            )}
+                          </Sheet>
+                          <Sheet variant="outlined" sx={{ p: 2, borderRadius: "md" }}>
+                            <Typography.CardTitle size="sm" sx={{ mb: 1 }}>
+                              Location
+                            </Typography.CardTitle>
+                            {isBusiness ? (
+                              <Typography.Body size="sm">
+                                <strong>Address:</strong> {formatValue("address", (item as any).address) || `${formatValue("barangay", getProposed("barangay") ?? getCurrent("barangay"))}, ${formatValue("municipality", getProposed("municipality") ?? getCurrent("municipality"))}, ${formatValue("province", getProposed("province") ?? getCurrent("province"))}`}
+                              </Typography.Body>
+                            ) : (
+                              <Typography.Body size="sm">
+                                <strong>Address:</strong> {formatValue("barangay", getProposed("barangay") ?? getCurrent("barangay"))}, {formatValue("municipality", getProposed("municipality") ?? getCurrent("municipality"))}, {formatValue("province", getProposed("province") ?? getCurrent("province"))}
+                              </Typography.Body>
+                            )}
+                            <Typography.Body size="sm">
+                              <strong>Coordinates:</strong> {formatValue("latitude", getProposed("latitude") ?? getCurrent("latitude"))}{getProposed("latitude") ?? getCurrent("latitude") ? ", " : ""}{formatValue("longitude", getProposed("longitude") ?? getCurrent("longitude"))}
+                            </Typography.Body>
+                          </Sheet>
+                        </Stack>
+                      </Box>
+                      <Box sx={{ flex: 1, minWidth: 0 }}>
+                        <Stack spacing={2}>
+                          <Sheet variant="outlined" sx={{ p: 2, borderRadius: "md" }}>
+                            <Typography.CardTitle size="sm" sx={{ fontWeight: 600, color: "#0A1B47", mb: 1 }}>
+                              Contact Information
+                            </Typography.CardTitle>
+                            {(() => {
+                              const v = (item as any).phone_number ?? getProposed("contact_phone") ?? getCurrent("contact_phone");
+                              return v ? (
+                                <Typography.Body size="sm">
+                                  <strong>Phone:</strong> {formatValue("contact_phone", v)}
+                                </Typography.Body>
+                              ) : null;
+                            })()}
+                            {(() => {
+                              const v = (item as any).email ?? getProposed("contact_email") ?? getCurrent("contact_email");
+                              return v ? (
+                                <Typography.Body size="sm">
+                                  <strong>Email:</strong> {formatValue("contact_email", v)}
+                                </Typography.Body>
+                              ) : null;
+                            })()}
+                            {(() => {
+                              const v = (item as any).website_url ?? getProposed("website") ?? getCurrent("website");
+                              return v ? (
+                                <Typography.Body size="sm">
+                                  <strong>Website:</strong> {formatValue("website", v)}
+                                </Typography.Body>
+                              ) : (
+                                !( (item as any).phone_number || (item as any).email ) && !(getProposed("contact_phone") ?? getCurrent("contact_phone")) && !(getProposed("contact_email") ?? getCurrent("contact_email")) && (
+                                  <Typography.Body sx={{ color: "text.tertiary" }}>No contact information provided</Typography.Body>
                                 )
-                                .filter(Boolean)
-                                .join(", ")
-                            : "-";
-                          return (
-                            <Typography.Body size="sm">
-                              <strong>Categories:</strong> {catText}
-                            </Typography.Body>
-                          );
-                        })()}
-                        <Typography.Body size="sm">
-                          <strong>Entry Fee:</strong>{" "}
-                          {formatValue(
-                            "entry_fee",
-                            getProposed("entry_fee") ?? getCurrent("entry_fee")
+                              );
+                            })()}
+                          </Sheet>
+                              {!isBusiness && (
+                            <Sheet variant="outlined" sx={{ p: 2, borderRadius: "md" }}>
+                              <Typography.CardTitle size="sm" sx={{ mb: 1 }}>
+                                Operating Hours
+                              </Typography.CardTitle>
+                              {(() => {
+                                const schedules = (item.schedules as any[]) || [];
+                                const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+                                const openDays = schedules.filter((s: any) => !s.is_closed);
+                                if (!schedules.length) return <Typography.Body sx={{ color: "text.tertiary" }}>No operating hours available</Typography.Body>;
+                                if (!openDays.length) return <Typography.Body sx={{ color: "text.tertiary" }}>Closed all week</Typography.Body>;
+                                return (
+                                  <>
+                                    {openDays.map((s: any) => (
+                                      <Typography.Body key={s.day_of_week}>
+                                        <strong>{days[s.day_of_week] || `Day ${s.day_of_week}`}:</strong> {String(s.open_time).slice(0,5)} - {String(s.close_time).slice(0,5)}
+                                      </Typography.Body>
+                                    ))}
+                                  </>
+                                );
+                              })()}
+                            </Sheet>
                           )}
-                        </Typography.Body>
-                      </Sheet>
-
-                      <Sheet
-                        variant="outlined"
-                        sx={{ p: 2, borderRadius: "md" }}
-                      >
-                        <Typography.CardTitle size="sm" sx={{ mb: 1 }}>
-                          Location
-                        </Typography.CardTitle>
-                        <Typography.Body size="sm">
-                          <strong>Address:</strong>{" "}
-                          {formatValue(
-                            "barangay",
-                            getProposed("barangay") ?? getCurrent("barangay")
-                          )}
-                          ,{" "}
-                          {formatValue(
-                            "municipality",
-                            getProposed("municipality") ??
-                              getCurrent("municipality")
-                          )}
-                          ,{" "}
-                          {formatValue(
-                            "province",
-                            getProposed("province") ?? getCurrent("province")
-                          )}
-                        </Typography.Body>
-                        <Typography.Body size="sm">
-                          <strong>Coordinates:</strong>{" "}
-                          {formatValue(
-                            "latitude",
-                            getProposed("latitude") ?? getCurrent("latitude")
-                          )}
-                          {getProposed("latitude") ?? getCurrent("latitude")
-                            ? ", "
-                            : ""}
-                          {formatValue(
-                            "longitude",
-                            getProposed("longitude") ?? getCurrent("longitude")
-                          )}
-                        </Typography.Body>
-                      </Sheet>
-                    </Stack>
-                  </Box>
-
-                  {/* Right Column */}
-                  <Box sx={{ flex: 1, minWidth: 0 }}>
-                    <Stack spacing={2}>
-                      <Sheet
-                        variant="outlined"
-                        sx={{ p: 2, borderRadius: "md" }}
-                      >
-                        <Typography.CardTitle size="sm"
-                          sx={{ fontWeight: 600, color: "#0A1B47", mb: 1 }}
-                        >
-                          Contact Information
-                        </Typography.CardTitle>
-                        {(() => {
-                          const v =
-                            getProposed("contact_phone") ??
-                            getCurrent("contact_phone");
-                          return v ? (
-                            <Typography.Body size="sm">
-                              <strong>Phone:</strong>{" "}
-                              {formatValue("contact_phone", v)}
-                            </Typography.Body>
-                          ) : null;
-                        })()}
-                        {(() => {
-                          const v =
-                            getProposed("contact_email") ??
-                            getCurrent("contact_email");
-                          return v ? (
-                            <Typography.Body size="sm">
-                              <strong>Email:</strong>{" "}
-                              {formatValue("contact_email", v)}
-                            </Typography.Body>
-                          ) : null;
-                        })()}
-                        {(() => {
-                          const v =
-                            getProposed("website") ?? getCurrent("website");
-                          return v ? (
-                            <Typography.Body size="sm">
-                              <strong>Website:</strong>{" "}
-                              {formatValue("website", v)}
-                            </Typography.Body>
-                          ) : (
-                            !(
-                              getProposed("contact_phone") ??
-                              getCurrent("contact_phone")
-                            ) &&
-                              !(
-                                getProposed("contact_email") ??
-                                getCurrent("contact_email")
-                              ) && (
-                                <Typography.Body
-                                  
-                                  sx={{ color: "text.tertiary" }}
-                                >
-                                  No contact information provided
+                          {isBusiness && (
+                            <Sheet variant="outlined" sx={{ p: 2, borderRadius: "md" }}>
+                              <Typography.CardTitle size="sm" sx={{ mb: 1 }}>
+                                Permits
+                              </Typography.CardTitle>
+                              {loadingPermits ? (
+                                <Typography.Body size="sm" sx={{ color: "text.tertiary" }}>
+                                  Loading permits...
                                 </Typography.Body>
-                              )
-                          );
-                        })()}
-                      </Sheet>
-
-                      <Sheet
-                        variant="outlined"
-                        sx={{ p: 2, borderRadius: "md" }}
-                      >
-                        <Typography.CardTitle size="sm" sx={{ mb: 1 }}>
-                          Operating Hours
-                        </Typography.CardTitle>
-                        {(() => {
-                          const schedules = (item.schedules as any[]) || [];
-                          const days = [
-                            "Monday",
-                            "Tuesday",
-                            "Wednesday",
-                            "Thursday",
-                            "Friday",
-                            "Saturday",
-                            "Sunday",
-                          ];
-                          const openDays = schedules.filter(
-                            (s: any) => !s.is_closed
-                          );
-                          if (!schedules.length) {
-                            return (
-                              <Typography.Body
-                                
-                                sx={{ color: "text.tertiary" }}
-                              >
-                                No operating hours available
-                              </Typography.Body>
-                            );
-                          }
-                          if (!openDays.length) {
-                            return (
-                              <Typography.Body
-                                
-                                sx={{ color: "text.tertiary" }}
-                              >
-                                Closed all week
-                              </Typography.Body>
-                            );
-                          }
-                          return (
-                            <>
-                              {openDays.map((s: any) => (
-                                <Typography.Body key={s.day_of_week}>
-                                  <strong>
-                                    {days[s.day_of_week] ||
-                                      `Day ${s.day_of_week}`}
-                                    :
-                                  </strong>{" "}
-                                  {String(s.open_time).slice(0, 5)} -{" "}
-                                  {String(s.close_time).slice(0, 5)}
+                              ) : !permits || permits.length === 0 ? (
+                                <Typography.Body size="sm" sx={{ color: "text.tertiary" }}>
+                                  No permits uploaded
                                 </Typography.Body>
-                              ))}
-                            </>
-                          );
-                        })()}
-                      </Sheet>
+                              ) : (
+                                <>
+                                  {permits.map((p) => (
+                                    <Box key={p.id} sx={{ mb: 1 }}>
+                                      <Typography.Body size="sm">
+                                        <strong>{p.permit_type}</strong>{" "}
+                                        <span style={{ opacity: 0.8 }}>({p.status})</span>
+                                      </Typography.Body>
+                                      <Typography.Body size="xs" sx={{ color: "text.tertiary" }}>
+                                        {p.expiration_date ? `Expires: ${p.expiration_date}` : "No expiration set"}
+                                      </Typography.Body>
+                                      <Typography.Body size="xs">
+                                        <a href={p.file_url} target="_blank" rel="noreferrer">
+                                          View file ({p.file_format.toUpperCase()})
+                                        </a>
+                                      </Typography.Body>
+                                    </Box>
+                                  ))}
+                                </>
+                              )}
+                            </Sheet>
+                          )}
+                        </Stack>
+                      </Box>
                     </Stack>
-                  </Box>
-                </Stack>
-              </Stack>
-            </Sheet>
+                  </Stack>
+                </Sheet>
+              );
+            })()
           )}
         </DialogContent>
         <Box
