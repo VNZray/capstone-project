@@ -41,7 +41,6 @@ import AccommodationDashboard from "../features/business/accommodation/dashboard
 import ShopDashboard from "../features/business/shop/dashboard/Dashboard";
 import ManageShop from "../features/business/shop/manage-business/ManageBusiness";
 import AdminLayout from "../layout/AdminLayout";
-import Room from "../features/admin/services/accommodation/Room";
 import Reviews from "../features/business/accommodation/reviews/Reviews";
 import Settings from "../features/business/settings/Settings";
 import AccommodationPromotionForm from "../features/business/accommodation/promotion/components/PromotionForm";
@@ -61,17 +60,17 @@ import ReportDetailsScreen from "@/src/features/admin/report/ReportDetailsScreen
 import AccommodationSubscription from "@/src/features/business/accommodation/subscription/Subscription";
 import ShopSubscription from "@/src/features/business/shop/subscription/Subscription";
 import TourismStaffManagement from "@/src/features/admin/tourism-staff/TourismStaffManagement";
+import TourismSettings from "../features/admin/settings/Settings";
 
 import Notification from "../features/business/accommodation/notfication/Notification";
 import AccommodationStaff from "../features/business/accommodation/Staff/ManageStaff";
 import ShopStaff from "../features/business/shop/Staff/ManageStaff";
 import Test from "../pages/Test";
-import TestButton from "../pages/TestButton";
 import OwnerProfile from "../features/business/profile/Profile";
 import TourismProfile from "../features/admin/profile/Profile";
 import TouristRegister from "../features/auth/TouristRegister";
 import axios from "axios";
-import { api } from "../services/RoomService";
+import api from "../services/api";
 import type { User } from "../types/User";
 import { useEffect, useState } from "react";
 import ServerDown from "../pages/ServerDown";
@@ -148,9 +147,7 @@ export default function AppRoutes() {
         </Route>
         <Route path={`business-registration`} element={<Registration />} />
         <Route path={`/test`} element={<Test />} />
-        <Route path={`/test-button`} element={<TestButton />} />
         <Route path={`user/profile`} element={<OwnerProfile />} />
-        <Route path={`tourism/profile`} element={<TourismProfile />} />
         <Route path={`/register`} element={<TouristRegister />} />
         <Route path={`${tourism}/login`} element={<AdminLogin />} />
         <Route path={`${tourism}/signup`} element={<AdminRegister />} />
@@ -273,6 +270,14 @@ export default function AppRoutes() {
             />
             <Route
               path={`${business}/create-promotion`}
+              element={
+                <ProtectedRoute requiredRoles={BUSINESS_ROLES}>
+                  <AccommodationPromotionForm />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path={`${business}/edit-promotion/:id`}
               element={
                 <ProtectedRoute requiredRoles={BUSINESS_ROLES}>
                   <AccommodationPromotionForm />
@@ -489,6 +494,15 @@ export default function AppRoutes() {
             }
           />
           <Route
+            path={`tourism/profile`}
+            element={
+              <ProtectedRoute requiredRoles={TOURISM_ROLES}>
+                <TourismProfile />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
             path={`${tourism}/services/shop`}
             element={
               <ProtectedRoute requiredRoles={TOURISM_ROLES}>
@@ -505,7 +519,13 @@ export default function AppRoutes() {
             }
           />
           {/* Tourist Spot routes wrapped with TouristSpotProvider */}
-          <Route element={<TouristSpotProvider><Outlet /></TouristSpotProvider>}>
+          <Route
+            element={
+              <TouristSpotProvider>
+                <Outlet />
+              </TouristSpotProvider>
+            }
+          >
             <Route
               path={`${tourism}/services/tourist-spot`}
               element={
@@ -531,20 +551,13 @@ export default function AppRoutes() {
               }
             />
           </Route>
-          <Route
-            path={`${tourism}/room/:id`}
-            element={
-              <ProtectedRoute requiredRoles={TOURISM_ROLES}>
-                <Room />
-              </ProtectedRoute>
-            }
-          />
+
           {/* Public offer pages removed */}
           <Route
             path={`${tourism}/settings`}
             element={
               <ProtectedRoute requiredRoles={TOURISM_ROLES}>
-                <Settings />
+                <TourismSettings />
               </ProtectedRoute>
             }
           />

@@ -1,6 +1,6 @@
-import axios from "axios";
-import api from "@/src/services/api";
+import apiClient from "./apiClient";
 import type { Room } from "../types/Business";
+import * as PromotionService from "./PromotionService";
 /** Get stored Room ID */
 export const getStoredRoomId = (): string | null => {
   return localStorage.getItem("selectedRoomId");
@@ -18,7 +18,7 @@ export const clearStoredRoomId = () => {
 
 /** Fetch Room Details from API */
 export const fetchRoomDetails = async (room_id: string): Promise<Room> => {
-  const { data } = await axios.get<Room>(`${api}/room/profile/${room_id}`);
+  const { data } = await apiClient.get<Room>(`/room/profile/${room_id}`);
   return data;
 };
 
@@ -26,7 +26,7 @@ export const fetchRoomDetails = async (room_id: string): Promise<Room> => {
 export const fetchRoomsByBusinessId = async (
   business_id: string
 ): Promise<Room[]> => {
-  const { data } = await axios.get(`${api}/room/${business_id}`);
+  const { data } = await apiClient.get(`/room/${business_id}`);
   return Array.isArray(data) ? data : [data]; // ensure it's always an array
 };
 
@@ -54,4 +54,32 @@ export const fetchRoomNumbersByIds = async (
   return roomMap;
 };
 
-export { api };
+/** Get active room discount for a business */
+export const getActiveRoomDiscount = async (
+  businessId: string
+): Promise<number | null> => {
+  try {
+    const activePromotions = await PromotionService.fetchActivePromotionsByBusinessId(
+      businessId
+    );
+    
+    // Find the first active room_discount promotion (promo_type = 2 based on migration)
+    const roomDiscount = activePromotions.find(
+      (promo) => promo.promo_name === "room_discount" && promo.discount_percentage
+    );
+    
+    return roomDiscount?.discount_percentage || null;
+  } catch (error) {
+    console.error("Error fetching room discount:", error);
+    return null;
+  }
+};
+
+/** Calculate discounted price */
+export const calculateDiscountedPrice = (
+  originalPrice: number,
+  discountPercentage: number | null
+): number => {
+  if (!discountPercentage || discountPercentage <= 0) return originalPrice;
+  return originalPrice * (1 - discountPercentage / 100);
+};

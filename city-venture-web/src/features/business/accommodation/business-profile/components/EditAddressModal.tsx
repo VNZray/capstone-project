@@ -1,8 +1,7 @@
 import * as React from "react";
 import { FormControl, FormLabel, Option, Select, Input } from "@mui/joy";
 import { updateData } from "@/src/services/Service";
-import { api } from "@/src/services/BusinessService";
-import axios from "axios";
+import { AddressService } from "@/src/services/AddressService";
 import BaseEditModal from "@/src/components/BaseEditModal";
 
 interface EditDescriptionModalProps {
@@ -51,9 +50,9 @@ const EditAddressModal: React.FC<EditDescriptionModalProps> = ({
 
   const fetchProvince = async () => {
     try {
-      const response = await axios.get(`${api}/address/provinces`);
-      if (Array.isArray(response.data)) {
-        setProvince(response.data);
+      const data = await AddressService.getProvinces();
+      if (Array.isArray(data)) {
+        setProvince(data);
       }
     } catch (error) {
       console.error("Error fetching provinces:", error);
@@ -62,11 +61,9 @@ const EditAddressModal: React.FC<EditDescriptionModalProps> = ({
 
   const fetchMunicipality = async (provinceId: number) => {
     try {
-      const response = await axios.get(
-        `${api}/address/municipalities/${provinceId}`
-      );
-      if (Array.isArray(response.data)) {
-        setMunicipality(response.data);
+      const data = await AddressService.getMunicipalities(provinceId);
+      if (Array.isArray(data)) {
+        setMunicipality(data);
       }
     } catch (error) {
       console.error("Error fetching municipalities:", error);
@@ -75,11 +72,9 @@ const EditAddressModal: React.FC<EditDescriptionModalProps> = ({
 
   const fetchBarangay = async (municipalityId: number) => {
     try {
-      const response = await axios.get(
-        `${api}/address/barangays/${municipalityId}`
-      );
-      if (Array.isArray(response.data)) {
-        setBarangay(response.data);
+      const data = await AddressService.getBarangays(municipalityId);
+      if (Array.isArray(data)) {
+        setBarangay(data);
       }
     } catch (error) {
       console.error("Error fetching barangays:", error);

@@ -1,5 +1,4 @@
-import axios from "axios";
-import api from "@/src/services/api";
+import apiClient from "../apiClient";
 
 export interface StaffMember {
   id: string;
@@ -25,8 +24,8 @@ export const fetchStaffByBusinessId = async (
   if (!business_id) return [];
 
   try {
-    const { data } = await axios.get<StaffMember[]>(
-      `${api}/staff/business/${business_id}`
+    const { data } = await apiClient.get<StaffMember[]>(
+      `/staff/business/${business_id}`
     );
     return Array.isArray(data) ? data : [];
   } catch (error) {
@@ -45,7 +44,7 @@ export const insertStaff = async (staffData: {
   user_id: string;
   business_id: string;
 }) => {
-  const { data } = await axios.post(`${api}/staff`, staffData);
+  const { data } = await apiClient.post(`/staff`, staffData);
   return data;
 };
 
@@ -56,7 +55,7 @@ export const updateStaffById = async (
   id: string,
   staffData: Partial<StaffMember>
 ) => {
-  const { data } = await axios.put(`${api}/staff/${id}`, staffData);
+  const { data } = await apiClient.put(`/staff/${id}`, staffData);
   return data;
 };
 
@@ -64,7 +63,7 @@ export const updateStaffById = async (
  * Delete staff member by ID
  */
 export const deleteStaffById = async (id: string) => {
-  const { data } = await axios.delete(`${api}/staff/${id}`);
+  const { data } = await apiClient.delete(`/staff/${id}`);
   return data;
 };
 

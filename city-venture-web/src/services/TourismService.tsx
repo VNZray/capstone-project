@@ -1,11 +1,10 @@
 // ownerService.tsx
 
-import axios from "axios";
-import api from "@/src/services/api";
+import apiClient from "./apiClient";
 import type { Tourism } from "@/src/types/Tourism";
 /** Fetch Tourism Details */
 export const fetchTourismDetails = async (tourism_id: string) => {
-  const { data } = await axios.get(`${api}/tourism/${tourism_id}`);
+  const { data } = await apiClient.get(`/tourism/${tourism_id}`);
   return data; // { id, first_name, last_name, ... }
 };
 
@@ -13,7 +12,7 @@ export const fetchTourismDetails = async (tourism_id: string) => {
 export const insertTourism = async (
   tourism: Omit<Tourism, "id"> // exclude id because backend generates it
 ): Promise<Tourism> => {
-  const { data } = await axios.post<Tourism>(`${api}/tourism`, tourism);
+  const { data } = await apiClient.post<Tourism>(`/tourism`, tourism);
   return data;
 };
 

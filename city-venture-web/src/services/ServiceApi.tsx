@@ -1,5 +1,4 @@
-import axios from "axios";
-import api from "@/src/services/api";
+import apiClient from "./apiClient";
 import type {
   Service,
   CreateServicePayload,
@@ -31,13 +30,13 @@ function normalizeArrayResponse<T>(payload: unknown): T[] {
 }
 
 function isNotFound(error: unknown): boolean {
-  return axios.isAxiosError(error) && error.response?.status === 404;
+  return (error as any)?.response?.status === 404;
 }
 
 // Service APIs
 export const fetchServicesByBusinessId = async (businessId: string): Promise<Service[]> => {
   try {
-    const { data } = await axios.get<Service[]>(`${api}/services/business/${businessId}`);
+    const { data } = await apiClient.get<Service[]>(`/services/business/${businessId}`);
     return normalizeArrayResponse<Service>(data);
   } catch (error) {
     if (isNotFound(error)) {
@@ -48,12 +47,12 @@ export const fetchServicesByBusinessId = async (businessId: string): Promise<Ser
 };
 
 export const fetchServiceById = async (id: string): Promise<Service> => {
-  const { data } = await axios.get<Service>(`${api}/services/${id}`);
+  const { data } = await apiClient.get<Service>(`/services/${id}`);
   return data;
 };
 
 export const createService = async (payload: CreateServicePayload): Promise<Service> => {
-  const { data } = await axios.post<Service>(`${api}/services`, payload);
+  const { data } = await apiClient.post<Service>(`/services`, payload);
   return data;
 };
 
@@ -61,10 +60,10 @@ export const updateService = async (
   id: string,
   payload: UpdateServicePayload
 ): Promise<Service> => {
-  const { data } = await axios.put<Service>(`${api}/services/${id}`, payload);
+  const { data } = await apiClient.put<Service>(`/services/${id}`, payload);
   return data;
 };
 
 export const deleteService = async (id: string): Promise<void> => {
-  await axios.delete(`${api}/services/${id}`);
+  await apiClient.delete(`/services/${id}`);
 };

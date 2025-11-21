@@ -2,12 +2,125 @@
 const { v4: uuidv4 } = require("uuid");
 const bcrypt = require('bcrypt');
 
+// Helper functions
+const randomPhone = () => {
+  const prefix = ['0917', '0918', '0919', '0920', '0921', '0922', '0923', '0924', '0925', '0926', '0927', '0928', '0929'];
+  const randomPrefix = prefix[Math.floor(Math.random() * prefix.length)];
+  const randomNum = Math.floor(Math.random() * 10000000).toString().padStart(7, '0');
+  return randomPrefix + randomNum;
+};
+
+const firstNames = [
+  'Juan', 'Maria', 'Jose', 'Ana', 'Pedro', 'Sofia', 'Miguel', 'Carmen', 'Luis', 'Isabel',
+  'Carlos', 'Elena', 'Antonio', 'Rosa', 'Manuel', 'Lucia', 'Francisco', 'Teresa', 'Jorge', 'Pilar',
+  'John', 'Emily', 'Michael', 'Sarah', 'David', 'Emma', 'James', 'Olivia', 'Robert', 'Sophia',
+  'Chen', 'Yuki', 'Raj', 'Priya', 'Ahmed', 'Fatima', 'Mohammed', 'Aisha', 'Wei', 'Min',
+  'Marco', 'Giulia', 'Pierre', 'Marie', 'Hans', 'Anna', 'Ivan', 'Olga', 'Kim', 'Park'
+];
+
+const lastNames = [
+  'Santos', 'Reyes', 'Cruz', 'Bautista', 'Garcia', 'Mendoza', 'Torres', 'Rivera', 'Flores', 'Ramos',
+  'Gonzalez', 'Rodriguez', 'Martinez', 'Hernandez', 'Lopez', 'Perez', 'Sanchez', 'Ramirez', 'Diaz', 'Morales',
+  'Smith', 'Johnson', 'Williams', 'Brown', 'Jones', 'Garcia', 'Miller', 'Davis', 'Rodriguez', 'Martinez',
+  'Wang', 'Li', 'Zhang', 'Liu', 'Chen', 'Yang', 'Huang', 'Zhao', 'Wu', 'Zhou',
+  'Kumar', 'Singh', 'Patel', 'Khan', 'Ali', 'Hassan', 'Ahmed', 'Mohammed', 'Tanaka', 'Sato'
+];
+
+const nationalities = [
+  'Filipino', 'Filipino', 'Filipino', 'Filipino', 'Filipino', // More Filipinos
+  'American', 'American', 'British', 'Australian', 'Canadian',
+  'Chinese', 'Japanese', 'Korean', 'Indian', 'Malaysian',
+  'Singaporean', 'Thai', 'Vietnamese', 'Indonesian', 'German',
+  'French', 'Spanish', 'Italian', 'Dutch', 'Swedish'
+];
+
+const genders = ['Male', 'Female', 'Male', 'Female']; // Equal distribution
+
+const getRandomBirthdate = (minAge = 18, maxAge = 70) => {
+  const today = new Date();
+  const age = Math.floor(Math.random() * (maxAge - minAge + 1)) + minAge;
+  const birthYear = today.getFullYear() - age;
+  const birthMonth = Math.floor(Math.random() * 12);
+  const birthDay = Math.floor(Math.random() * 28) + 1; // Keep it simple, max 28 days
+  const birthdate = new Date(birthYear, birthMonth, birthDay);
+  return {
+    birthdate: birthdate.toISOString().split('T')[0],
+    age: age
+  };
+};
+
+const getRandomName = () => {
+  return firstNames[Math.floor(Math.random() * firstNames.length)];
+};
+
+const getRandomLastName = () => {
+  return lastNames[Math.floor(Math.random() * lastNames.length)];
+};
+
+const getRandomGender = () => {
+  return genders[Math.floor(Math.random() * genders.length)];
+};
+
+const getRandomNationality = () => {
+  return nationalities[Math.floor(Math.random() * nationalities.length)];
+};
+
 /**
  * @param { import("knex").Knex } knex
  * @returns { Promise<void> }
  */
 exports.seed = async function (knex) {
   // Don't delete existing bookings, just add sample data if none exist
+  const plainUsers = [];
+  for (let i = 1; i <= 100; i++) {
+    plainUsers.push({
+      id: uuidv4(),
+      email: `tourist${i}@gmail.com`,
+      phone_number: randomPhone(),
+      password: '123456',
+      user_role_id: 9,
+      barangay_id: Math.floor(Math.random() * 5) + 1 // Random barangay 1-5
+    });
+  }
+  
+  const users = [];
+  for (const u of plainUsers) {
+    const hashed = await bcrypt.hash(u.password, 10);
+    users.push({
+      id: u.id,
+      email: u.email,
+      phone_number: u.phone_number,
+      password: hashed,
+      is_verified: true,
+      is_active: true,
+      user_role_id: u.user_role_id,
+      barangay_id: u.barangay_id
+    });
+  }
+  
+  await knex('user').insert(users);
+  
+  // ---------------------------------------------------------------------------
+  // Tourist
+  // ---------------------------------------------------------------------------
+  const generateTourists = plainUsers.map((user) => {
+    const birthInfo = getRandomBirthdate(18, 70);
+    const gender = getRandomGender();
+    return {
+      id: uuidv4(),
+      first_name: getRandomName(),
+      middle_name: Math.random() > 0.5 ? getRandomName() : null,
+      last_name: getRandomLastName(),
+      age: birthInfo.age,
+      birthdate: birthInfo.birthdate,
+      gender: gender,
+      nationality: getRandomNationality(),
+      user_id: user.id,
+    };
+  });
+  await knex("tourist").insert(generateTourists);
+
+
   const existingBookings = await knex("booking").select("id").limit(1);
 
   if (existingBookings.length > 0) {
@@ -27,62 +140,6 @@ exports.seed = async function (knex) {
 
   // Get existing tourists
   let tourists = await knex("tourist").select("id", "user_id");
-
-  // If no tourists exist, create sample tourists
-  if (tourists.length === 0) {
-    console.log("Creating sample tourists...");
-
-    // Create sample users for tourists
-    const sampleUsers = [
-      {
-        id: uuidv4(),
-        email: "tourist1@gmail.com",
-        phone_number: "+639171234567",
-        password: await bcrypt.hash('tourist123', 10),
-        is_verified: true,
-        is_active: true,
-        user_role_id: 9, // Tourist role (corrected from 5)
-        barangay_id: 1,
-      },
-      {
-        id: uuidv4(),
-        email: "tourist2@gmail.com",
-        phone_number: "+639181234567",
-        password: await bcrypt.hash('tourist123', 10),
-        is_verified: true,
-        is_active: true,
-        user_role_id: 9,
-        barangay_id: 2,
-      },
-      {
-        id: uuidv4(),
-        email: "tourist3@gmail.com",
-        phone_number: "+639191234567",
-        password: await bcrypt.hash('tourist123', 10),
-        is_verified: true,
-        is_active: true,
-        user_role_id: 9,
-        barangay_id: 3,
-      },
-    ];
-
-    await knex("user").insert(sampleUsers);
-
-    const sampleTourists = sampleUsers.map((user) => ({
-      id: uuidv4(),
-      first_name: `Tourist`,
-      middle_name: null,
-      last_name: `User`,
-      age: 25,
-      birthdate: "1999-01-01",
-      gender: "Male",
-      nationality: "Filipino",
-      user_id: user.id,
-    }));
-
-    await knex("tourist").insert(sampleTourists);
-    tourists = await knex("tourist").select("id", "user_id");
-  }
 
   // Get rooms for each business
   const allRooms = await knex("room").select("id", "business_id", "room_price");

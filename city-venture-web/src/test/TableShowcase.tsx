@@ -3,6 +3,7 @@ import type { TableColumn, GuestInfo } from "@/src/components/ui/Table";
 import Typography from "../components/Typography";
 import { colors } from "../utils/Colors";
 import PageContainer from "../components/PageContainer";
+import { Box } from "@mui/joy";
 // Example: Booking data structure
 interface BookingData {
   id: string;
@@ -142,24 +143,32 @@ const TableShowcase = () => {
   };
 
   return (
-    <PageContainer style={{ padding: "24px" }}>
+    <PageContainer
+      style={{
+        padding: "clamp(12px, 3vw, 24px)",
+        maxWidth: "100%",
+        overflow: "hidden",
+      }}
+    >
       <Typography.Title weight="bold" color="primary" marginBottom={2}>
-        Card Component Showcase
+        Table Component Showcase
       </Typography.Title>
-      <Table
-        columns={columns}
-        data={bookings}
-        rowsPerPage={10}
-        onRowClick={handleRowClick}
-        rowKey="id"
-        emptyMessage="No bookings found"
-        loading={false}
-        stickyHeader={true}
-        maxHeight="600px"
-        oddRowColor={colors.odd}
-        evenRowColor="#FFFFFF"
-        hoverColor="#E5E7EB"
-      />
+      <Box sx={{ overflowX: "auto", width: "100%" }}>
+        <Table
+          columns={columns}
+          data={bookings}
+          rowsPerPage={10}
+          onRowClick={handleRowClick}
+          rowKey="id"
+          emptyMessage="No bookings found"
+          loading={false}
+          stickyHeader={true}
+          maxHeight="600px"
+          oddRowColor={colors.odd}
+          evenRowColor="#FFFFFF"
+          hoverColor="#E5E7EB"
+        />
+      </Box>
     </PageContainer>
   );
 };

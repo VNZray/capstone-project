@@ -1,18 +1,6 @@
 
-import axios from 'axios';
-import api from '@/services/api';
-import { getToken } from '@/utils/secureStorage';
+import apiClient from '@/services/apiClient';
 import type { Review, ReviewFormData, ReviewSummary } from '@/types/Review';
-
-/**
- * Helper function to get authorized axios instance
- */
-const getAuthAxios = async () => {
-  const token = await getToken();
-  return axios.create({
-    headers: token ? { Authorization: `Bearer ${token}` } : {},
-  });
-};
 
 /**
  * Fetch all reviews for a specific business
@@ -20,9 +8,8 @@ const getAuthAxios = async () => {
  */
 export const fetchReviewsByBusinessId = async (businessId: string): Promise<Review[]> => {
   try {
-    const authAxios = await getAuthAxios();
-    const { data } = await authAxios.get<Review[]>(
-      `${api}/reviews/business/${businessId}`
+    const { data } = await apiClient.get<Review[]>(
+      `/reviews/business/${businessId}`
     );
     
     // Sort by date DESC (newest first)
@@ -41,9 +28,8 @@ export const fetchReviewsByBusinessId = async (businessId: string): Promise<Revi
  */
 export const fetchReviewSummary = async (businessId: string): Promise<ReviewSummary> => {
   try {
-    const authAxios = await getAuthAxios();
-    const { data } = await authAxios.get<ReviewSummary>(
-      `${api}/reviews/business/${businessId}/summary`
+    const { data } = await apiClient.get<ReviewSummary>(
+      `/reviews/business/${businessId}/summary`
     );
     return data;
   } catch (error) {
@@ -69,9 +55,8 @@ export const fetchReviewSummary = async (businessId: string): Promise<ReviewSumm
  */
 export const createReview = async (reviewData: ReviewFormData): Promise<Review> => {
   try {
-    const authAxios = await getAuthAxios();
-    const { data } = await authAxios.post<Review>(
-      `${api}/reviews`,
+    const { data } = await apiClient.post<Review>(
+      `/reviews`,
       reviewData
     );
     return data;
@@ -87,8 +72,7 @@ export const createReview = async (reviewData: ReviewFormData): Promise<Review> 
  */
 export const markReviewHelpful = async (reviewId: string): Promise<void> => {
   try {
-    const authAxios = await getAuthAxios();
-    await authAxios.post(`${api}/reviews/${reviewId}/helpful`);
+    await apiClient.post(`/reviews/${reviewId}/helpful`);
   } catch (error) {
     console.error('[ReviewService] markReviewHelpful error:', error);
     throw error;

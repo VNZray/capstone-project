@@ -11,7 +11,7 @@ import Grid4 from "@/src/assets/gridimages/grid4.jpg";
 import Grid5 from "@/src/assets/gridimages/grid5.jpg";
 import Section from "@/src/components/ui/Section";
 import { section } from "@/src/utils/Colors";
-
+import placeholder from "@/src/assets/images/placeholder-image.png";
 interface GridItem {
   src: string;
   title: string;
@@ -157,7 +157,7 @@ const HeroSection: React.FC<HeroSectionProps> = ({ gridItems }) => {
                     overflow: "hidden",
                   }}
                 >
-                  <img src={item.src} alt={item.title} />
+                  <img src={placeholder} alt={item.title} />
                 </AspectRatio>
                 <div className="tile-label" aria-hidden>
                   <div className="tile-title">{item.title}</div>

@@ -1,12 +1,10 @@
-import axios from "axios";
+import apiClient from "./apiClient";
 import type {
   ShopCategory,
   CreateShopCategoryPayload,
   UpdateShopCategoryPayload,
   ShopCategoryStats,
 } from "@/src/types/ShopCategory";
-
-const api = import.meta.env.VITE_API_URL || "http://localhost:3000/api";
 
 // Utility to normalize array responses
 const normalizeArrayResponse = <T,>(data: T[] | T[][] | any): T[] => {
@@ -28,7 +26,7 @@ const normalizeArrayResponse = <T,>(data: T[] | T[][] | any): T[] => {
  */
 export const fetchAllShopCategories = async (): Promise<ShopCategory[]> => {
   try {
-    const { data } = await axios.get<ShopCategory[]>(`${api}/shop-categories`);
+    const { data } = await apiClient.get<ShopCategory[]>(`/shop-categories`);
     return normalizeArrayResponse<ShopCategory>(data);
   } catch (error) {
     console.error("Error fetching all shop categories:", error);
@@ -43,8 +41,8 @@ export const fetchShopCategoriesByBusinessId = async (
   businessId: string
 ): Promise<ShopCategory[]> => {
   try {
-    const { data } = await axios.get<ShopCategory[]>(
-      `${api}/shop-categories/business/${businessId}`
+    const { data } = await apiClient.get<ShopCategory[]>(
+      `/shop-categories/business/${businessId}`
     );
     return normalizeArrayResponse<ShopCategory>(data);
   } catch (error) {
@@ -63,8 +61,8 @@ export const fetchShopCategoriesByBusinessIdAndType = async (
   type: 'product' | 'service' | 'both'
 ): Promise<ShopCategory[]> => {
   try {
-    const { data } = await axios.get<ShopCategory[]>(
-      `${api}/shop-categories/business/${businessId}/filter?type=${type}`
+    const { data } = await apiClient.get<ShopCategory[]>(
+      `/shop-categories/business/${businessId}/filter?type=${type}`
     );
     return normalizeArrayResponse<ShopCategory>(data);
   } catch (error) {
@@ -78,7 +76,7 @@ export const fetchShopCategoriesByBusinessIdAndType = async (
  */
 export const fetchShopCategoryById = async (id: string): Promise<ShopCategory> => {
   try {
-    const { data } = await axios.get<ShopCategory>(`${api}/shop-categories/${id}`);
+    const { data } = await apiClient.get<ShopCategory>(`/shop-categories/${id}`);
     return data;
   } catch (error) {
     console.error("Error fetching shop category by ID:", error);
@@ -93,8 +91,8 @@ export const createShopCategory = async (
   payload: CreateShopCategoryPayload
 ): Promise<ShopCategory> => {
   try {
-    const { data } = await axios.post<{ data: ShopCategory }>(
-      `${api}/shop-categories`,
+    const { data } = await apiClient.post<{ data: ShopCategory }>(
+      `/shop-categories`,
       payload
     );
     return data.data;
@@ -112,8 +110,8 @@ export const updateShopCategory = async (
   payload: UpdateShopCategoryPayload
 ): Promise<ShopCategory> => {
   try {
-    const { data } = await axios.put<{ data: ShopCategory }>(
-      `${api}/shop-categories/${id}`,
+    const { data } = await apiClient.put<{ data: ShopCategory }>(
+      `/shop-categories/${id}`,
       payload
     );
     return data.data;
@@ -128,7 +126,7 @@ export const updateShopCategory = async (
  */
 export const deleteShopCategory = async (id: string): Promise<void> => {
   try {
-    await axios.delete(`${api}/shop-categories/${id}`);
+    await apiClient.delete(`/shop-categories/${id}`);
   } catch (error) {
     console.error("Error deleting shop category:", error);
     throw error;
@@ -143,8 +141,8 @@ export const fetchShopCategoryStats = async (
   businessId: string
 ): Promise<ShopCategoryStats[]> => {
   try {
-    const { data } = await axios.get<ShopCategoryStats[]>(
-      `${api}/shop-categories/business/${businessId}/stats`
+    const { data } = await apiClient.get<ShopCategoryStats[]>(
+      `/shop-categories/business/${businessId}/stats`
     );
     return normalizeArrayResponse<ShopCategoryStats>(data);
   } catch (error) {
