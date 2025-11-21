@@ -4,56 +4,8 @@ import jwt from "jsonwebtoken";
 import { handleDbError } from "../../utils/errorHandler.js";
 import { v4 as uuidv4 } from "uuid";
 
-// Login user (direct table access, not via procedure)
-export async function loginUser(req, res) {
-  const { email, password } = req.body;
-  try {
-    const [rows] = await db.query("SELECT * FROM user WHERE email = ?", [
-      email,
-    ]);
-    if (rows.length === 0) {
-      return res.status(404).json({ message: "User not found" });
-    }
-    const user = rows[0];
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) {
-      return res.status(401).json({ message: "Incorrect password" });
-    }
-    // Generate unique session ID to prevent multiple logins
-    const sessionId = uuidv4();
-    
-    const token = jwt.sign(
-      {
-        id: user.id,
-        user_role_id: user.user_role_id,
-        email: user.email,
-        phone_number: user.phone_number,
-        is_verified: user.is_verified,
-        is_active: user.is_active,
-        sessionId: sessionId,
-        // NEVER include password in token for security
-      },
-      process.env.JWT_SECRET,
-      { expiresIn: "2d" }
-    );
-    res.json({
-      message: "Login successful",
-      token,
-      user: {
-        id: user.id,
-        user_role_id: user.user_role_id,
-        email: user.email,
-        phone_number: user.phone_number,
-        user_profile: user.user_profile,
-        is_verified: user.is_verified,
-        is_active: user.is_active,
-        last_login: user.last_login,
-      },
-    });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-}
+// Login user (Moved to authController.js)
+// export async function loginUser(req, res) { ... }
 
 // Get all users
 // Calls the GetAllUsers stored procedure

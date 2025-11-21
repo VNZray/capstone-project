@@ -1,18 +1,6 @@
 
-import axios from 'axios';
-import api from '@/services/api';
-import { getToken } from '@/utils/secureStorage';
+import apiClient from '@/services/apiClient';
 import type { BusinessHours, BusinessHoursDisplay, BusinessOperatingStatus, DayOfWeek } from '@/types/BusinessHours';
-
-/**
- * Helper function to get authorized axios instance
- */
-const getAuthAxios = async () => {
-  const token = await getToken();
-  return axios.create({
-    headers: token ? { Authorization: `Bearer ${token}` } : {},
-  });
-};
 
 /**
  * Fetch business hours for a specific business
@@ -20,9 +8,8 @@ const getAuthAxios = async () => {
  */
 export const fetchBusinessHours = async (businessId: string): Promise<BusinessHours[]> => {
   try {
-    const authAxios = await getAuthAxios();
-    const { data } = await authAxios.get<BusinessHours[]>(
-      `${api}/business-hours/${businessId}`
+    const { data } = await apiClient.get<BusinessHours[]>(
+      `/business-hours/${businessId}`
     );
     return data;
   } catch (error) {

@@ -1,5 +1,4 @@
-import axios from "axios";
-import api from "@/src/services/api";
+import apiClient from "./apiClient";
 import type { Room } from "../types/Business";
 /** Get stored Room ID */
 export const getStoredRoomId = (): string | null => {
@@ -18,7 +17,7 @@ export const clearStoredRoomId = () => {
 
 /** Fetch Room Details from API */
 export const fetchRoomDetails = async (room_id: string): Promise<Room> => {
-  const { data } = await axios.get<Room>(`${api}/room/profile/${room_id}`);
+  const { data } = await apiClient.get<Room>(`/room/profile/${room_id}`);
   return data;
 };
 
@@ -26,7 +25,7 @@ export const fetchRoomDetails = async (room_id: string): Promise<Room> => {
 export const fetchRoomsByBusinessId = async (
   business_id: string
 ): Promise<Room[]> => {
-  const { data } = await axios.get(`${api}/room/${business_id}`);
+  const { data } = await apiClient.get(`/room/${business_id}`);
   return Array.isArray(data) ? data : [data]; // ensure it's always an array
 };
 
@@ -53,5 +52,3 @@ export const fetchRoomNumbersByIds = async (
   });
   return roomMap;
 };
-
-export { api };

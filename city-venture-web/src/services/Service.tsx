@@ -1,10 +1,9 @@
-import axios from "axios";
-import api from "@/src/services/api";
+import apiClient from "./apiClient";
 import { supabase } from "@/src/lib/supabase";
 
 export const insertData = async (data: any, table: string) => {
   try {
-    const response = await axios.post(`${api}/${table}`, data);
+    const response = await apiClient.post(`/${table}`, data);
     return response.data;
   } catch (error) {
     console.error("Insert failed:", error);
@@ -14,7 +13,7 @@ export const insertData = async (data: any, table: string) => {
 
 export const updateData = async (id: string | number, data: any, table: string) => {
   try {
-    const response = await axios.put(`${api}/${table}/${id}`, data);
+    const response = await apiClient.put(`/${table}/${id}`, data);
     return response.data;
   } catch (error) {
     console.error("Update failed:", error);
@@ -24,7 +23,7 @@ export const updateData = async (id: string | number, data: any, table: string) 
 
 export const deleteData = async (id: string | number, table: string) => {
   try {
-    const response = await axios.delete(`${api}/${table}/${id}`);
+    const response = await apiClient.delete(`/${table}/${id}`);
     return response.data;
   } catch (error) {
     console.error("Delete failed:", error);
@@ -34,7 +33,7 @@ export const deleteData = async (id: string | number, table: string) => {
 
 export const getData = async (table: string) => {
   try {
-    const response = await axios.get(`${api}/${table}`);
+    const response = await apiClient.get(`/${table}`);
     return response.data;
   } catch (error) {
     console.error("Get all failed:", error);
@@ -44,7 +43,7 @@ export const getData = async (table: string) => {
 
 export const getArrayData = async (table: string) => {
   try {
-    const response = await axios.get(`${api}/${table}`);
+    const response = await apiClient.get(`/${table}`);
     return response.data.data || [];
   } catch (error) {
     console.error("Get array data failed:", error);
@@ -54,7 +53,7 @@ export const getArrayData = async (table: string) => {
 
 export const getDataById = async (table: string, id: string | number) => {
   try {
-    const response = await axios.get(`${api}/${table}/${id}`);
+    const response = await apiClient.get(`/${table}/${id}`);
     return response.data;
   } catch (error) {
     console.error("Get by ID failed:", error);
@@ -64,7 +63,7 @@ export const getDataById = async (table: string, id: string | number) => {
 
 export const getDataByForeignId = async (table: string, foreignId: string | number) => {
   try {
-    const response = await axios.get(`${api}/${table}/${foreignId}`);
+    const response = await apiClient.get(`/${table}/${foreignId}`);
     return response.data;
   } catch (error) {
     console.error("Get by foreign ID failed:", error);
@@ -74,7 +73,7 @@ export const getDataByForeignId = async (table: string, foreignId: string | numb
 
 export const getArrayDataByForeignId = async (table: string, foreignId: string | number) => {
   try {
-    const response = await axios.get(`${api}/${table}/${foreignId}`);
+    const response = await apiClient.get(`/${table}/${foreignId}`);
     return response.data.data || [];
   } catch (error) {
     console.error("Get array data by foreign ID failed:", error);
@@ -134,7 +133,7 @@ export const uploadTouristSpotImage = async (
       alt_text: altText || null,
     };
 
-    const response = await axios.post(`${api}/tourist-spots/${touristSpotId}/images`, imageData);
+    const response = await apiClient.post(`/tourist-spots/${touristSpotId}/images`, imageData);
     return response.data;
 
   } catch (error) {
@@ -146,7 +145,7 @@ export const uploadTouristSpotImage = async (
 // Get all images for a tourist spot
 export const getTouristSpotImages = async (touristSpotId: string) => {
   try {
-    const response = await axios.get(`${api}/tourist-spots/${touristSpotId}/images`);
+    const response = await apiClient.get(`/tourist-spots/${touristSpotId}/images`);
     return response.data.data || [];
   } catch (error) {
     console.error("Get tourist spot images failed:", error);
@@ -157,7 +156,7 @@ export const getTouristSpotImages = async (touristSpotId: string) => {
 export const deleteTouristSpotImage = async (touristSpotId: string, imageId: string, fileUrl: string) => {
   try {
     // Delete from database
-    await axios.delete(`${api}/tourist-spots/${touristSpotId}/images/${imageId}`);
+    await apiClient.delete(`/tourist-spots/${touristSpotId}/images/${imageId}`);
 
     // Extract file path from URL and delete from Supabase
     const urlParts = fileUrl.split('/');
@@ -191,7 +190,7 @@ export const deleteTouristSpotImage = async (touristSpotId: string, imageId: str
 // Set primary image for a tourist spot
 export const setPrimaryTouristSpotImage = async (touristSpotId: string, imageId: string) => {
   try {
-    const response = await axios.put(`${api}/tourist-spots/${touristSpotId}/images/${imageId}/set-primary`);
+    const response = await apiClient.put(`/tourist-spots/${touristSpotId}/images/${imageId}/set-primary`);
     return response.data;
   } catch (error) {
     console.error("Set primary image failed:", error);
@@ -206,7 +205,7 @@ export const updateTouristSpotImage = async (
   updateData: { is_primary?: boolean; alt_text?: string }
 ) => {
   try {
-    const response = await axios.put(`${api}/tourist-spots/${touristSpotId}/images/${imageId}`, updateData);
+    const response = await apiClient.put(`/tourist-spots/${touristSpotId}/images/${imageId}`, updateData);
     return response.data;
   } catch (error) {
     console.error("Update tourist spot image failed:", error);
@@ -219,7 +218,7 @@ export const updateTouristSpotImage = async (
 // Get categories for a tourist spot
 export const getTouristSpotCategories = async (touristSpotId: string) => {
   try {
-    const response = await axios.get(`${api}/tourist-spots/${touristSpotId}/categories`);
+    const response = await apiClient.get(`/tourist-spots/${touristSpotId}/categories`);
     return response.data.data || [];
   } catch (error) {
     console.error("Get tourist spot categories failed:", error);
@@ -230,7 +229,7 @@ export const getTouristSpotCategories = async (touristSpotId: string) => {
 // Update categories for a tourist spot
 export const updateTouristSpotCategories = async (touristSpotId: string, categoryIds: number[]) => {
   try {
-    const response = await axios.put(`${api}/tourist-spots/${touristSpotId}/categories`, {
+    const response = await apiClient.put(`/tourist-spots/${touristSpotId}/categories`, {
       category_ids: categoryIds
     });
     return response.data;

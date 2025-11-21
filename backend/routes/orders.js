@@ -1,5 +1,5 @@
 import express from "express";
-import * as orderController from "../controller/orderController.js";
+import * as orderController from "../controller/order/index.js";
 import { authenticate } from "../middleware/authenticate.js";
 import { authorizeRole } from "../middleware/authorizeRole.js";
 
