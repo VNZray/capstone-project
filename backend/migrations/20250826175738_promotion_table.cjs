@@ -1,6 +1,19 @@
 const { createPromotionProcedures, dropPromotionProcedures } = require("../procedures/promotionProcedures.js");
 
 exports.up = async function (knex) {
+  // Create promo_type table
+  await knex.schema.createTable("promo_type", (table) => {
+    table.increments("id").primary();
+    table.enum("promo_name", ["discount_coupon", "promo_code", "room_discount"]).notNullable().unique();
+  });
+
+  // Seed promo_type table
+  await knex("promo_type").insert([
+    { promo_name: "discount_coupon" },
+    { promo_name: "room_discount" },
+    { promo_name: "promo_code" }
+  ]);
+
   // Create promotion table
   await knex.schema.createTable("promotion", (table) => {
     table.uuid("id").primary().defaultTo(knex.raw("(UUID())"));
@@ -16,16 +29,28 @@ exports.up = async function (knex) {
     table.text("description").nullable();
     table.string("image_url", 500).nullable();
     table.string("external_link", 500).nullable();
-    
-    table.timestamp("start_date").notNullable().defaultTo(knex.fn.now());
+    table.string("promo_code", 50).nullable();
+    table.integer("discount_percentage").nullable();
+    table.decimal("fixed_discount_amount", 10, 2).nullable();
+    table.integer("usage_limit").nullable();
+    table.integer("used_count").defaultTo(0);
+    table.timestamp("start_date").notNullable();
     table.timestamp("end_date").nullable();
     table.boolean("is_active").defaultTo(true);
     table.timestamp("created_at").defaultTo(knex.fn.now());
     table.timestamp("updated_at").defaultTo(knex.fn.now());
 
+    table.integer("promo_type")
+      .unsigned()
+      .notNullable()
+      .references("id")
+      .inTable("promo_type")
+      .onDelete("RESTRICT");
+
     table.index("business_id", "idx_promotion_business");
     table.index(["start_date", "end_date"], "idx_promotion_dates");
     table.index("is_active", "idx_promotion_active");
+    table.index("promo_type", "idx_promotion_type");
   });
 
   // Create stored procedures
@@ -50,6 +75,7 @@ exports.down = async function (knex) {
     throw error;
   }
 
-  // Drop table
+  // Drop tables
   await knex.schema.dropTableIfExists("promotion");
+  await knex.schema.dropTableIfExists("promo_type");
 };

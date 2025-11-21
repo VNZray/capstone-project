@@ -1,5 +1,5 @@
-import apiClient from '@/services/apiClient';
-import type { BusinessHours, BusinessSchedule } from '@/types/Business';
+import apiClient from '../services/apiClient';
+import type { BusinessHours, BusinessSchedule } from '../types/Business';
 
 // Fetch all business hours
 export const fetchAllBusinessHours = async (): Promise<BusinessSchedule> => {

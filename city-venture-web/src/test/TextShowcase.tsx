@@ -4,7 +4,8 @@ import Typography from "../components/Typography";
 
 const TextShowcase = () => {
   return (
-    <Container padding="40px">
+    <Box sx={{ p: 4, maxWidth: 1000, mx: "auto" }}>
+
       <Typography.Title weight="bold" color="primary">
         City Venture Typography System
       </Typography.Title>
@@ -264,7 +265,7 @@ const TextShowcase = () => {
           </Box>
         </Box>
       </Stack>
-    </Container>
+    </Box>
   );
 };
 

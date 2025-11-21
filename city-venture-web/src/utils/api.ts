@@ -384,6 +384,22 @@ class ApiService {
     }
   }
 
+  // ===== BUSINESS MANAGEMENT =====
+  async getBusinesses(): Promise<any[]> {
+    try {
+      console.debug('[apiService] GET /business');
+      const response: AxiosResponse<ApiResponse<any[]>> = await api.get('/business');
+      return (response.data as any).data ?? (response.data as any);
+    } catch (err: any) {
+      console.error('[apiService] Failed GET /business', {
+        message: err?.message,
+        status: err?.response?.status,
+        data: err?.response?.data,
+      });
+      throw err;
+    }
+  }
+
   // ===== ROLES =====
   async getUserRoles(): Promise<UserRoles[]> {
     try {

@@ -1,6 +1,8 @@
-import { apiService } from "@/src/utils/api";
+import axios from "axios";
 import type { BusinessRegistration } from "@/src/features/admin/dashboard/components/NewRegistrationsTable";
 import type { SubscriptionPayment } from "@/src/features/admin/dashboard/components/SubscriptionPaymentsTable";
+
+const API_BASE_URL = 'http://localhost:3000/api';
 
 export interface TourismDashboardData {
   businesses: any[];
@@ -8,6 +10,7 @@ export interface TourismDashboardData {
   payments: SubscriptionPayment[];
   tourists: any[];
   touristSpots: any[];
+  bookings: any[];
 }
 
 export interface BusinessStats {
@@ -16,6 +19,8 @@ export interface BusinessStats {
   shops: number;
   active: number;
   pending: number;
+  freeSubscriptions: number;
+  premiumSubscriptions: number;
 }
 
 export interface TouristStats {
@@ -32,41 +37,156 @@ export interface FilterPeriod {
   year?: number;
 }
 
-// Fetch all dashboard data
+// ===== FETCHING FUNCTIONS =====
+
+/**
+ * Fetch all tourist spots
+ */
+export const fetchAllTouristSpots = async (): Promise<any[]> => {
+  try {
+    const response = await axios.get(`${API_BASE_URL}/tourist-spots`);
+    return response.data?.data || response.data || [];
+  } catch (error) {
+    console.error("Failed to fetch tourist spots:", error);
+    return [];
+  }
+};
+
+/**
+ * Fetch all businesses
+ */
+export const fetchAllBusinesses = async (): Promise<any[]> => {
+  try {
+    const response = await axios.get(`${API_BASE_URL}/business`);
+    return response.data?.data || response.data || [];
+  } catch (error) {
+    console.error("Failed to fetch businesses:", error);
+    return [];
+  }
+};
+
+/**
+ * Fetch all accommodations (business_type_id === 1)
+ */
+export const fetchAllAccommodations = async (): Promise<any[]> => {
+  try {
+    const businesses = await fetchAllBusinesses();
+    return businesses.filter((b) => b.business_type_id === 1);
+  } catch (error) {
+    console.error("Failed to fetch accommodations:", error);
+    return [];
+  }
+};
+
+/**
+ * Fetch all shops (business_type_id === 2)
+ */
+export const fetchAllShops = async (): Promise<any[]> => {
+  try {
+    const businesses = await fetchAllBusinesses();
+    return businesses.filter((b) => b.business_type_id === 2);
+  } catch (error) {
+    console.error("Failed to fetch shops:", error);
+    return [];
+  }
+};
+
+/**
+ * Fetch all bookings from all businesses
+ */
+export const fetchAllBookings = async (): Promise<any[]> => {
+  try {
+    const response = await axios.get(`${API_BASE_URL}/booking`);
+    return response.data?.data || response.data || [];
+  } catch (error) {
+    console.error("Failed to fetch bookings:", error);
+    return [];
+  }
+};
+
+/**
+ * Get tourist demographics from all business bookings
+ * Aggregates local_counts, domestic_counts, foreign_counts, overseas_counts
+ */
+export const fetchTouristDemographics = async (): Promise<TouristStats> => {
+  try {
+    const bookings = await fetchAllBookings();
+    
+    const stats: TouristStats = {
+      total: 0,
+      local: 0,
+      domestic: 0,
+      foreign: 0,
+      overseas: 0,
+    };
+
+    bookings.forEach((booking) => {
+      const local = Number(booking.local_counts) || 0;
+      const domestic = Number(booking.domestic_counts) || 0;
+      const foreign = Number(booking.foreign_counts) || 0;
+      const overseas = Number(booking.overseas_counts) || 0;
+
+      stats.local += local;
+      stats.domestic += domestic;
+      stats.foreign += foreign;
+      stats.overseas += overseas;
+      stats.total += local + domestic + foreign + overseas;
+    });
+
+    return stats;
+  } catch (error) {
+    console.error("Failed to fetch tourist demographics:", error);
+    return {
+      total: 0,
+      local: 0,
+      domestic: 0,
+      foreign: 0,
+      overseas: 0,
+    };
+  }
+};
+
+// ===== DASHBOARD DATA AGGREGATION =====
+
+/**
+ * Fetch all dashboard data
+ */
 export const fetchTourismDashboardData = async (): Promise<TourismDashboardData> => {
   try {
-    // Fetch available data from API
-    const [touristSpots] = await Promise.all([
-      apiService.getTouristSpots(),
+    // Fetch all data in parallel
+    const [touristSpots, businesses, bookings] = await Promise.all([
+      fetchAllTouristSpots(),
+      fetchAllBusinesses(),
+      fetchAllBookings(),
     ]);
-
-    // Mock businesses data - TODO: Replace with actual API call when available
-    const businesses: any[] = [];
 
     // Mock tourists data - TODO: Replace with actual API call when available
     const tourists: any[] = [];
 
-    // Generate mock registrations from mock businesses
+    // Generate registrations from businesses
     const registrations: BusinessRegistration[] = businesses.slice(0, 10).map((business: any, index) => ({
       id: business.id || `business-${index}`,
       businessName: business.business_name || `Business ${index + 1}`,
-      businessType: business.business_type === "accommodation" ? "accommodation" : "shop",
+      businessType: business.business_type_id === 1 ? "accommodation" : "shop",
       ownerName: `${business.owner_first_name || ""} ${business.owner_last_name || ""}`.trim() || "Business Owner",
       email: business.email || `owner${index}@example.com`,
       registeredAt: business.created_at || new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000).toISOString(),
-      status: business.is_approved ? "approved" : Math.random() > 0.7 ? "pending" : "approved",
+      status: business.status === "active" ? "approved" : Math.random() > 0.7 ? "pending" : "approved",
     }));
 
-    // Generate mock payments
-    const payments: SubscriptionPayment[] = businesses.slice(0, 8).map((business: any, index) => ({
-      id: `payment-${business.id || index}`,
-      businessName: business.business_name || `Business ${index + 1}`,
-      amount: [499, 999, 1499][Math.floor(Math.random() * 3)],
-      paymentMethod: ["Credit Card", "PayPal", "Bank Transfer"][Math.floor(Math.random() * 3)],
-      status: Math.random() > 0.1 ? "completed" : Math.random() > 0.5 ? "pending" : "failed",
-      paidAt: business.created_at || new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000).toISOString(),
-      subscriptionPlan: ["Basic", "Premium", "Enterprise"][Math.floor(Math.random() * 3)],
-    }));
+    // Generate payments based on business subscriptions
+    const payments: SubscriptionPayment[] = businesses
+      .filter((b: any) => b.subscription_plan) // Only businesses with subscriptions
+      .slice(0, 8)
+      .map((business: any, index) => ({
+        id: `payment-${business.id || index}`,
+        businessName: business.business_name || `Business ${index + 1}`,
+        amount: business.subscription_plan === "premium" ? 999 : 0,
+        paymentMethod: business.subscription_plan === "premium" ? ["Credit Card", "PayPal", "Bank Transfer"][Math.floor(Math.random() * 3)] : "Free",
+        status: "completed",
+        paidAt: business.subscription_start_date || business.created_at || new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000).toISOString(),
+        subscriptionPlan: business.subscription_plan === "premium" ? "Premium" : "Basic",
+      }));
 
     return {
       businesses,
@@ -74,6 +194,7 @@ export const fetchTourismDashboardData = async (): Promise<TourismDashboardData>
       payments,
       tourists,
       touristSpots,
+      bookings,
     };
   } catch (error) {
     console.error("Failed to fetch tourism dashboard data:", error);
@@ -84,6 +205,7 @@ export const fetchTourismDashboardData = async (): Promise<TourismDashboardData>
       payments: [],
       tourists: [],
       touristSpots: [],
+      bookings: [],
     };
   }
 };
@@ -96,36 +218,47 @@ export const calculateBusinessStats = (businesses: any[]): BusinessStats => {
     shops: 0,
     active: 0,
     pending: 0,
+    freeSubscriptions: 0,
+    premiumSubscriptions: 0,
   };
 
   businesses.forEach((business) => {
-    if (business.business_type === "accommodation") {
+    // Count by type
+    if (business.business_type_id === 1) {
       stats.accommodations++;
-    } else if (business.business_type === "shop") {
+    } else if (business.business_type_id === 2) {
       stats.shops++;
     }
 
-    if (business.is_approved) {
+    // Count by status
+    if (business.status === "active") {
       stats.active++;
     } else {
       stats.pending++;
+    }
+
+    // Count by subscription
+    if (business.subscription_plan === "premium") {
+      stats.premiumSubscriptions++;
+    } else {
+      stats.freeSubscriptions++;
     }
   });
 
   return stats;
 };
 
-// Calculate tourist statistics
-export const calculateTouristStats = (
-  tourists: any[],
+// Calculate tourist statistics from bookings
+export const calculateTouristStatsFromBookings = (
+  bookings: any[],
   filter?: FilterPeriod
 ): TouristStats => {
-  let filteredTourists = tourists;
+  let filteredBookings = bookings;
 
   // Apply filter if provided
   if (filter && filter.period !== "all") {
-    filteredTourists = tourists.filter((tourist) => {
-      const createdDate = new Date(tourist.created_at);
+    filteredBookings = bookings.filter((booking) => {
+      const createdDate = new Date(booking.check_in_date || booking.created_at);
       const now = new Date();
 
       switch (filter.period) {
@@ -152,29 +285,24 @@ export const calculateTouristStats = (
   }
 
   const stats: TouristStats = {
-    total: filteredTourists.length,
+    total: 0,
     local: 0,
     domestic: 0,
     foreign: 0,
     overseas: 0,
   };
 
-  filteredTourists.forEach((tourist) => {
-    const type = tourist.tourist_type?.toLowerCase() || "";
-    switch (type) {
-      case "local":
-        stats.local++;
-        break;
-      case "domestic":
-        stats.domestic++;
-        break;
-      case "foreign":
-        stats.foreign++;
-        break;
-      case "overseas":
-        stats.overseas++;
-        break;
-    }
+  filteredBookings.forEach((booking) => {
+    const local = Number(booking.local_counts) || 0;
+    const domestic = Number(booking.domestic_counts) || 0;
+    const foreign = Number(booking.foreign_counts) || 0;
+    const overseas = Number(booking.overseas_counts) || 0;
+
+    stats.local += local;
+    stats.domestic += domestic;
+    stats.foreign += foreign;
+    stats.overseas += overseas;
+    stats.total += local + domestic + foreign + overseas;
   });
 
   return stats;
