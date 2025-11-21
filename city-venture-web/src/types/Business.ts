@@ -20,6 +20,7 @@ export type Business = {
   business_image?: string | "";
   hasBooking?: boolean;
   barangay_id: number;
+  subscription_plan?: string;
 };
 
 export type BusinessType = {

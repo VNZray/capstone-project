@@ -19,6 +19,7 @@ interface RoomCardProps {
   room_size: number | string;
   capacity?: string;
   amenities: string[];
+  discountPercentage?: number | null;
   onDeleted: () => void;
   onClick: () => void;
   onStatusUpdate?: (id: string, newStatus: string) => void;
@@ -35,11 +36,18 @@ const RoomCard: React.FC<RoomCardProps> = ({
   capacity,
   room_size,
   amenities,
-
+  discountPercentage,
   onClick,
 }) => {
   // local state (initialize with prop)
   const [room_status] = React.useState(status);
+  
+  // Calculate discounted price if discount exists
+  const originalPrice = parseFloat(price.toString().replace(/,/g, ""));
+  const hasDiscount = discountPercentage && discountPercentage > 0;
+  const discountedPrice = hasDiscount
+    ? originalPrice * (1 - discountPercentage / 100)
+    : originalPrice;
 
   return (
     <Container
@@ -115,6 +123,18 @@ const RoomCard: React.FC<RoomCardProps> = ({
         >
           Floor {floor}
         </Chip>
+        
+        {/* Discount Badge */}
+        {hasDiscount && (
+          <Chip
+            color="warning"
+            variant="soft"
+            size="md"
+            sx={{ position: "absolute", bottom: 12, right: 12 }}
+          >
+            {discountPercentage}% OFF
+          </Chip>
+        )}
       </Box>
 
       <CardContent>
@@ -126,13 +146,35 @@ const RoomCard: React.FC<RoomCardProps> = ({
             </Typography>
           </Grid>
           <Grid xs={12} md={6}>
-            <Typography
-              sx={{ color: colors.yellow }}
-              level="h4"
-              textAlign={{ xs: "left", md: "right" } as any}
-            >
-              ₱{price.toLocaleString()}
-            </Typography>
+            {hasDiscount ? (
+              <Box>
+                <Typography
+                  level="body-sm"
+                  sx={{
+                    textDecoration: "line-through",
+                    color: "neutral.500",
+                  }}
+                  textAlign={{ xs: "left", md: "right" } as any}
+                >
+                  ₱{originalPrice.toLocaleString()}
+                </Typography>
+                <Typography
+                  sx={{ color: colors.yellow }}
+                  level="h4"
+                  textAlign={{ xs: "left", md: "right" } as any}
+                >
+                  ₱{Math.round(discountedPrice).toLocaleString()}
+                </Typography>
+              </Box>
+            ) : (
+              <Typography
+                sx={{ color: colors.yellow }}
+                level="h4"
+                textAlign={{ xs: "left", md: "right" } as any}
+              >
+                ₱{originalPrice.toLocaleString()}
+              </Typography>
+            )}
             <Typography
               level="body-xs"
               color="neutral"

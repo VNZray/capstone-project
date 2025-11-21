@@ -18,12 +18,14 @@ import {
   TrendingUp,
   BarChart3,
   Users,
+  Crown,
+  UserCheck,
 } from "lucide-react";
 import { colors } from "@/src/utils/Colors";
 import {
   fetchTourismDashboardData,
   calculateBusinessStats,
-  calculateTouristStats,
+  calculateTouristStatsFromBookings,
   getRecentRegistrations,
   getRecentPayments,
   calculateRevenueStats,
@@ -39,6 +41,7 @@ const Dashboard: React.FC = () => {
     payments: [],
     tourists: [],
     touristSpots: [],
+    bookings: [],
   });
   const [loading, setLoading] = useState(true);
 
@@ -85,8 +88,8 @@ const Dashboard: React.FC = () => {
   );
 
   const touristStats = useMemo(
-    () => calculateTouristStats(data.tourists, touristFilter),
-    [data.tourists, touristFilter]
+    () => calculateTouristStatsFromBookings(data.bookings, touristFilter),
+    [data.bookings, touristFilter]
   );
 
   const recentRegistrations = useMemo(
@@ -205,6 +208,45 @@ const Dashboard: React.FC = () => {
             label="Pending Approvals"
             value={businessStats.pending}
             color="warning"
+          />
+        </Grid>
+      </Grid>
+
+      {/* Subscription Stats */}
+      <Box
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          gap: 1,
+          mb: 2,
+        }}
+      >
+        <Crown size={24} style={{ color: colors.primary }} />
+        <Typography.CardTitle>Subscription Overview</Typography.CardTitle>
+      </Box>
+      <Grid container spacing={2.5} sx={{ mb: 3 }}>
+        <Grid xs={12} sm={6} md={4}>
+          <StatCard
+            icon={<UserCheck size={20} />}
+            label="Free Subscriptions"
+            value={businessStats.freeSubscriptions}
+            color="primary"
+          />
+        </Grid>
+        <Grid xs={12} sm={6} md={4}>
+          <StatCard
+            icon={<Crown size={20} />}
+            label="Premium Subscriptions"
+            value={businessStats.premiumSubscriptions}
+            color="warning"
+          />
+        </Grid>
+        <Grid xs={12} sm={6} md={4}>
+          <StatCard
+            icon={<TrendingUp size={20} />}
+            label="Premium Rate"
+            value={`${businessStats.total > 0 ? ((businessStats.premiumSubscriptions / businessStats.total) * 100).toFixed(1) : 0}%`}
+            color="success"
           />
         </Grid>
       </Grid>

@@ -337,7 +337,7 @@ const ShopDirectory = () => {
           <>
             <Container gap={0} paddingHorizontal={16} paddingTop={16} paddingBottom={8} backgroundColor="transparent">
               <SearchBar
-                shape="round"
+                shape="rounded"
                 containerStyle={{ 
                   flex: 1, 
                   backgroundColor: '#FFFFFF', 
