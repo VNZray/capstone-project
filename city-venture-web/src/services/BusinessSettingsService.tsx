@@ -1,5 +1,4 @@
-import axios from "axios";
-import api from "@/src/services/api";
+import apiClient from "./apiClient";
 import type {
 	BusinessSettings,
 	UpsertBusinessSettingsPayload,
@@ -64,7 +63,7 @@ function mergeWithDefaults(
 export const fetchBusinessSettings = async (
 	businessId: string
 ): Promise<BusinessSettings> => {
-	const { data } = await axios.get(`${api}/business-settings/${businessId}`);
+	const { data } = await apiClient.get(`/business-settings/${businessId}`);
 	const normalized = normalizeBusinessSettingsResponse(data);
 	return mergeWithDefaults(businessId, normalized);
 };
@@ -73,7 +72,7 @@ export const upsertBusinessSettings = async (
 	businessId: string,
 	payload: UpsertBusinessSettingsPayload
 ): Promise<BusinessSettings> => {
-	const { data } = await axios.put(`${api}/business-settings/${businessId}`, payload);
+	const { data } = await apiClient.put(`/business-settings/${businessId}`, payload);
 	const responsePayload =
 		typeof data === "object" && data !== null && "data" in (data as UnknownRecord)
 			? (data as UnknownRecord).data

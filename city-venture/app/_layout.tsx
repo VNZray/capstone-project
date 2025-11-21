@@ -8,6 +8,7 @@ import { Stack } from 'expo-router';
 import * as Linking from 'expo-linking';
 import { useEffect } from 'react';
 import { Alert } from 'react-native';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import 'react-native-reanimated';
 
 import { AuthProvider } from '@/context/AuthContext';
@@ -17,7 +18,12 @@ import { useColorScheme } from '@/hooks/use-color-scheme';
 export default function RootLayout() {
   const colorScheme = useColorScheme();
   const [loaded] = useFonts({
-    PoppinsRegular: require('@/assets/fonts/Poppins/Poppins-Medium.ttf'),
+    'Poppins-Regular': require('@/assets/fonts/Poppins/Poppins-Regular.ttf'),
+    'Poppins-Medium': require('@/assets/fonts/Poppins/Poppins-Medium.ttf'),
+    'Poppins-SemiBold': require('@/assets/fonts/Poppins/Poppins-SemiBold.ttf'),
+    'Poppins-Bold': require('@/assets/fonts/Poppins/Poppins-Bold.ttf'),
+    'Poppins-ExtraBold': require('@/assets/fonts/Poppins/Poppins-ExtraBold.ttf'),
+    'Poppins-Black': require('@/assets/fonts/Poppins/Poppins-Black.ttf'),
   });
 
   // Handle deep links for payment redirects
@@ -43,8 +49,7 @@ export default function RootLayout() {
     console.log('[Deep Link] Received:', url);
     
     try {
-      const parsed = Linking.parse(url);
-      const { hostname, path, queryParams } = parsed;
+      const { path } = Linking.parse(url);
 
       // Handle payment success: cityventure://orders/{orderId}/payment-success
       if (path?.includes('payment-success')) {
@@ -90,17 +95,19 @@ export default function RootLayout() {
   }
 
   return (
-    <AuthProvider>
-      <CartProvider>
-        <ThemeProvider value={colorScheme === 'light' ? DefaultTheme : DarkTheme}>
-          <Stack>
-            <Stack.Screen name="(screens)" options={{ headerShown: false }} />
-            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-            <Stack.Screen name="index" options={{ headerShown: false }} />
-            <Stack.Screen name="+not-found" />
-          </Stack>
-        </ThemeProvider>
-      </CartProvider>
-    </AuthProvider>
+    <SafeAreaProvider>
+      <AuthProvider>
+        <CartProvider>
+          <ThemeProvider value={colorScheme === 'light' ? DefaultTheme : DarkTheme}>
+            <Stack>
+              <Stack.Screen name="(screens)" options={{ headerShown: false }} />
+              <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+              <Stack.Screen name="index" options={{ headerShown: false }} />
+              <Stack.Screen name="+not-found" />
+            </Stack>
+          </ThemeProvider>
+        </CartProvider>
+      </AuthProvider>
+    </SafeAreaProvider>
   );
 }

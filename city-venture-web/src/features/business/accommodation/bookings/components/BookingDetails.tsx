@@ -21,8 +21,7 @@ import {
   Bed,
 } from "lucide-react";
 import type { Booking } from "@/src/types/Booking";
-import { fetchTourist } from "@/src/services/BookingService";
-import { fetchUserData } from "@/src/services/auth/AuthService";
+import { fetchTourist, fetchUserData } from "@/src/services/BookingService";
 import api from "@/src/services/api";
 import { colors } from "@/src/utils/Colors";
 import Button from "@/src/components/Button";

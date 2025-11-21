@@ -1,5 +1,4 @@
 import { useThemeColor } from '@/hooks/use-theme-color';
-import { useFonts } from 'expo-font';
 import React from 'react';
 import { Platform, StyleSheet, Text, View, type TextProps, useWindowDimensions } from 'react-native';
 import { scaled } from '@/utils/responsive';
@@ -84,19 +83,6 @@ export function ThemedText({
     : useThemeColor({ light: lightColor, dark: darkColor }, 'text');
 
   const { width } = useWindowDimensions();
-
-  const [fontsLoaded] = useFonts({
-    'Poppins-Regular': require('@/assets/fonts/Poppins/Poppins-Regular.ttf'),
-    'Poppins-Medium': require('@/assets/fonts/Poppins/Poppins-Medium.ttf'),
-    'Poppins-SemiBold': require('@/assets/fonts/Poppins/Poppins-SemiBold.ttf'),
-    'Poppins-Bold': require('@/assets/fonts/Poppins/Poppins-Bold.ttf'),
-    'Poppins-ExtraBold': require('@/assets/fonts/Poppins/Poppins-ExtraBold.ttf'),
-    'Poppins-Black': require('@/assets/fonts/Poppins/Poppins-Black.ttf'),
-  });
-
-  if (!fontsLoaded) {
-    return null;
-  }
 
   const responsiveSpacing = {
     pt: scaled(pt, { min: 0, max: pt * 1.5, width }),

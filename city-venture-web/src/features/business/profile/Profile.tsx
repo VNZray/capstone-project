@@ -4,11 +4,10 @@ import Container from "@/src/components/Container";
 import { useAuth } from "@/src/context/AuthContext";
 import Header from "../../landing-page/components/Header";
 import { useState, useEffect } from "react";
-import axios from "axios";
-import api from "@/src/services/api";
+import apiClient from "@/src/services/apiClient";
 import { Grid, Stack } from "@mui/joy";
 import type { Permit } from "@/src/types/Permit";
-import { getPermitsByBusiness } from "@/src/services/approval/PermitService";
+import { getPermitsByBusiness, updatePermit, insertPermit, deletePermit } from "@/src/services/approval/PermitService";
 
 // Import components
 import HeaderSection from "./components/HeaderSection";
@@ -161,7 +160,7 @@ const OwnerProfile = () => {
 
     try {
       setLoadingBusinesses(true);
-      const { data } = await axios.get(`${api}/business/owner/${user.id}`);
+      const { data } = await apiClient.get(`/business/owner/${user.id}`);
       const businessList = Array.isArray(data) ? data : [data];
       setBusinesses(businessList);
       if (businessList.length > 0) {
@@ -247,14 +246,14 @@ const OwnerProfile = () => {
       };
 
       if (selectedPermit) {
-        await axios.put(`${api}/permit/${selectedPermit.id}`, payload);
+        await updatePermit(selectedPermit.id as string, payload);
         setAlertConfig({
           type: "success",
           title: "Permit Updated",
           message: `${permitForm.permit_type} has been updated successfully.`,
         });
       } else {
-        await axios.post(`${api}/permit`, payload);
+        await insertPermit(payload);
         setAlertConfig({
           type: "success",
           title: "Permit Uploaded",
@@ -282,7 +281,7 @@ const OwnerProfile = () => {
     }
 
     try {
-      await axios.delete(`${api}/permit/${permitId}`);
+      await deletePermit(permitId);
       setAlertConfig({
         type: "success",
         title: "Permit Deleted",

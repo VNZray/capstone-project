@@ -1,18 +1,6 @@
 
-import axios from 'axios';
-import api from '@/services/api';
-import { getToken } from '@/utils/secureStorage';
+import apiClient from '@/services/apiClient';
 import type { Promotion } from '@/types/Promotion';
-
-/**
- * Helper function to get authorized axios instance
- */
-const getAuthAxios = async () => {
-  const token = await getToken();
-  return axios.create({
-    headers: token ? { Authorization: `Bearer ${token}` } : {},
-  });
-};
 
 /**
  * Fetch all active promotions for a specific business
@@ -20,9 +8,8 @@ const getAuthAxios = async () => {
  */
 export const fetchPromotionsByBusinessId = async (businessId: string): Promise<Promotion[]> => {
   try {
-    const authAxios = await getAuthAxios();
-    const { data } = await authAxios.get<Promotion[]>(
-      `${api}/promotions/business/${businessId}`
+    const { data } = await apiClient.get<Promotion[]>(
+      `/promotions/business/${businessId}`
     );
     
     // Filter only active promotions
@@ -52,9 +39,8 @@ export const fetchPromotionsByBusinessId = async (businessId: string): Promise<P
  */
 export const fetchPromotionById = async (promotionId: string): Promise<Promotion> => {
   try {
-    const authAxios = await getAuthAxios();
-    const { data } = await authAxios.get<Promotion>(
-      `${api}/promotions/${promotionId}`
+    const { data } = await apiClient.get<Promotion>(
+      `/promotions/${promotionId}`
     );
     return data;
   } catch (error) {

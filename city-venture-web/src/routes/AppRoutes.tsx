@@ -70,7 +70,7 @@ import OwnerProfile from "../features/business/profile/Profile";
 import TourismProfile from "../features/admin/profile/Profile";
 import TouristRegister from "../features/auth/TouristRegister";
 import axios from "axios";
-import { api } from "../services/RoomService";
+import api from "../services/api";
 import type { User } from "../types/User";
 import { useEffect, useState } from "react";
 import ServerDown from "../pages/ServerDown";

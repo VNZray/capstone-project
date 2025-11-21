@@ -1,6 +1,6 @@
 import React from "react";
 import type { Business } from "@/src/types/Business";
-import axios from "axios";
+import { AddressService } from "@/src/services/AddressService";
 import { Button, FormControl, FormLabel } from "@mui/joy";
 import { Select, Option } from "@mui/joy";
 import Typography from "@/src/components/Typography";
@@ -18,11 +18,9 @@ type Props = {
   setData: React.Dispatch<React.SetStateAction<Business>>;
   addressData: Address;
   setAddressData: React.Dispatch<React.SetStateAction<Address>>;
-  api: string;
 };
 
 const Step3: React.FC<Props> = ({
-  api,
   data,
   setData,
   addressData,
@@ -34,43 +32,37 @@ const Step3: React.FC<Props> = ({
 
   const fetchProvince = async () => {
     try {
-      const response = await axios.get(`${api}/address/provinces`);
-      if (Array.isArray(response.data)) {
-        setProvince(response.data);
-        console.log(response.data);
+      const data = await AddressService.getProvinces();
+      if (Array.isArray(data)) {
+        setProvince(data);
+        console.log(data);
       }
     } catch (error) {
-      console.error("Error fetching business categories:", error);
+      console.error("Error fetching provinces:", error);
     }
   };
 
   const fetchMunicipality = async (provinceId: number) => {
     try {
-      const response = await axios.get(
-        `${api}/address/municipalities/${provinceId}`
-      );
-
-      if (Array.isArray(response.data)) {
-        setMunicipality(response.data);
-        console.log(response.data);
+      const data = await AddressService.getMunicipalities(provinceId);
+      if (Array.isArray(data)) {
+        setMunicipality(data);
+        console.log(data);
       }
     } catch (error) {
-      console.error("Error fetching business types:", error);
+      console.error("Error fetching municipalities:", error);
     }
   };
 
   const fetchBarangay = async (municipalityId: number) => {
     try {
-      const response = await axios.get(
-        `${api}/address/barangays/${municipalityId}`
-      );
-
-      if (Array.isArray(response.data)) {
-        setBarangay(response.data);
-        console.log(response.data);
+      const data = await AddressService.getBarangays(municipalityId);
+      if (Array.isArray(data)) {
+        setBarangay(data);
+        console.log(data);
       }
     } catch (error) {
-      console.error("Error fetching business types:", error);
+      console.error("Error fetching barangays:", error);
     }
   };
 
