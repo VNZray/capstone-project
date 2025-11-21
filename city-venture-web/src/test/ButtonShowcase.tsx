@@ -16,20 +16,20 @@ import Typography from "../components/Typography";
 
 const ButtonShowcase = () => {
   return (
-    <Container padding="40px">
+    <Box sx={{ p: 4, maxWidth: 1000, mx: "auto" }}>
       <Typography.Title weight="bold" color="primary">
         Custom City Venture UI Button & IconButton Showcase
       </Typography.Title>
-      <Divider sx={{ my: 3 }} />
+      <Divider sx={{ my: { xs: 2, sm: 3 } }} />
 
       {/* ============== SOLID VARIANT ============== */}
-      <Box sx={{ marginBottom: "60px" }}>
+      <Box sx={{ marginBottom: { xs: "40px", md: "60px" } }}>
         <Typography.Header color="secondary" weight="bold">
           Solid Variant
         </Typography.Header>
 
         {/* All Colors */}
-        <Box sx={{ marginBottom: "30px" }}>
+        <Box sx={{ marginBottom: { xs: "20px", md: "30px" } }}>
           <Typography.Body sx={{ marginBottom: "12px" }}>
             All Color Schemes
           </Typography.Body>
@@ -772,7 +772,7 @@ const ButtonShowcase = () => {
           </IconButton>
         </Box>
       </Box>
-    </Container>
+    </Box>
   );
 };
 

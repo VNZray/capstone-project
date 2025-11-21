@@ -135,6 +135,15 @@ const Navbar: React.FC<NavbarProps> = ({
           >
             Services
           </a>
+          <a
+            className="nav-link"
+            href="#features"
+            onClick={(e) => {
+              navigate("/test");
+            }}
+          >
+            Components
+          </a>
         </div>
 
         {/* Actions (desktop) */}

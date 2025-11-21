@@ -66,7 +66,6 @@ import Notification from "../features/business/accommodation/notfication/Notific
 import AccommodationStaff from "../features/business/accommodation/Staff/ManageStaff";
 import ShopStaff from "../features/business/shop/Staff/ManageStaff";
 import Test from "../pages/Test";
-import TestButton from "../pages/TestButton";
 import OwnerProfile from "../features/business/profile/Profile";
 import TourismProfile from "../features/admin/profile/Profile";
 import TouristRegister from "../features/auth/TouristRegister";
@@ -148,7 +147,6 @@ export default function AppRoutes() {
         </Route>
         <Route path={`business-registration`} element={<Registration />} />
         <Route path={`/test`} element={<Test />} />
-        <Route path={`/test-button`} element={<TestButton />} />
         <Route path={`user/profile`} element={<OwnerProfile />} />
         <Route path={`tourism/profile`} element={<TourismProfile />} />
         <Route path={`/register`} element={<TouristRegister />} />
