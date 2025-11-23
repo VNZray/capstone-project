@@ -1,6 +1,6 @@
 import PageContainer from '@/components/PageContainer';
 import ShopCategoryTile from '@/components/shops/ShopCategoryTile';
-import { ShopColors } from '@/constants/ShopColors';
+import { ShopColors } from '@/constants/color';
 import { SHOP_CATEGORIES } from '@/constants/ShopCategories';
 import { useRouter } from 'expo-router';
 import React from 'react';

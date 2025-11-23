@@ -7,7 +7,7 @@ import ShopListCard from '@/components/shops/ShopListCard';
 import SpecialOfferCard from '@/components/shops/SpecialOfferCard';
 import { ThemedText } from '@/components/themed-text';
 import { SHOP_CATEGORIES } from '@/constants/ShopCategories';
-import { ShopColors } from '@/constants/ShopColors';
+import { ShopColors } from '@/constants/color';
 import { fetchAllBusinessDetails } from '@/services/BusinessService';
 import type { Business } from '@/types/Business';
 import { FontAwesome5 } from '@expo/vector-icons';

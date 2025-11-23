@@ -1,4 +1,4 @@
-import { ShopColors } from '@/constants/ShopColors';
+import { ShopColors } from '@/constants/color';
 import type { BusinessProfileMenuItem, BusinessProfileView } from '@/components/shops/details/types';
 import {
   ShopDetailInfoSection,

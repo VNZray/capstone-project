@@ -1,4 +1,4 @@
-import { useThemeColor } from '@/hooks/use-theme-color';
+import { useTheme } from '@/context/ThemeContext';
 import React from 'react';
 import { Platform, StyleSheet, Text, View, type TextProps, useWindowDimensions } from 'react-native';
 import { scaled } from '@/utils/responsive';
@@ -77,10 +77,17 @@ export function ThemedText({
 
   ...rest
 }: ThemedTextProps) {
+  const { colors, colorScheme } = useTheme();
   const isLink = type.startsWith('link-');
-  const defaultColor = isLink
-    ? '#1e90ff'
-    : useThemeColor({ light: lightColor, dark: darkColor }, 'text');
+  
+  // Use semantic color tokens
+  const defaultColor = lightColor && darkColor
+    ? (colorScheme === 'light' ? lightColor : darkColor)
+    : lightColor || darkColor
+    ? (lightColor || darkColor)
+    : isLink
+    ? colors.textLink
+    : colors.text;
 
   const { width } = useWindowDimensions();
 

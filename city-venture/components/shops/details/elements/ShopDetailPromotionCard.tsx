@@ -1,5 +1,5 @@
 import type { BusinessProfilePromotion } from '@/components/shops/details/types';
-import { ShopColors } from '@/constants/ShopColors';
+import { ShopColors } from '@/constants/color';
 import React from 'react';
 import { Image, StyleSheet, Text, View } from 'react-native';
 
