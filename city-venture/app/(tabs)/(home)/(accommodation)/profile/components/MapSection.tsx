@@ -4,7 +4,7 @@ import { ThemedText } from '@/components/themed-text';
 import Container from '@/components/Container';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import MapView, { Marker } from 'react-native-maps';
+import { MapView, Marker } from '@/components/map/MapWrapper';
 import Divider from '@/components/Divider';
 
 interface MapSectionProps {
@@ -79,26 +79,7 @@ export default function MapSection({
           padding: 0,
         }}
       >
-        {Platform.OS === 'web' ? (
-          <View
-            style={{
-              flex: 1,
-              justifyContent: 'center',
-              alignItems: 'center',
-              backgroundColor: colorScheme === 'dark' ? '#1F2937' : '#F3F4F6',
-            }}
-          >
-            <FontAwesome5
-              name="map"
-              size={32}
-              color="#9CA3AF"
-              style={{ marginBottom: 8 }}
-            />
-            <ThemedText type="body-small" style={{ color: '#6B7280' }}>
-              Map view is not supported on web.
-            </ThemedText>
-          </View>
-        ) : hasCoordinates ? (
+        {hasCoordinates ? (
           <MapView
             style={{ flex: 1 }}
             initialRegion={{

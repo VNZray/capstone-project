@@ -10,8 +10,7 @@ import EventRoundedIcon from "@mui/icons-material/EventRounded";
 import BusinessRoundedIcon from "@mui/icons-material/BusinessRounded";
 import DashboardRoundedIcon from "@mui/icons-material/DashboardRounded";
 import TableRowsRoundedIcon from "@mui/icons-material/TableRowsRounded";
-import UnifiedApprovalCard from "./components/UnifiedApprovalCard";
-
+import UnifiedApprovalCard from "./components/UnifiedApprovalCard"
 import type { EntityType } from "@/src/types/approval";
 import Container from "@/src/components/Container";
 import PageContainer from "@/src/components/PageContainer";

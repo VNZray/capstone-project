@@ -137,7 +137,15 @@ export const rejectEditRequest = async (req, res) => {
 export const getPendingBusinesses = async (req, res) => {
   try {
     const [data] = await db.query("CALL GetPendingBusinesses()");
-    const rows = data[0] || [];
+    const raw = data[0] || [];
+    const rows = raw.map((r) => {
+      const row = { ...r };
+      // Normalize names for frontend
+      row.name = row.name || row.business_name || row.businessName || null;
+      row.business_type_name = row.business_type_name || row.type || row.business_type || null;
+      row.business_category_name = row.business_category_name || row.category || row.business_category || null;
+      return row;
+    });
     res.json({ success: true, data: rows, message: 'Pending businesses retrieved successfully' });
   } catch (error) {
     console.error('Error fetching pending businesses:', error);
@@ -150,8 +158,21 @@ export const approveBusiness = async (req, res) => {
   try {
     const { id } = req.params;
     const [result] = await db.query("CALL ApproveBusiness(?)", [id]);
-    const affected = result?.[0]?.affected_rows ?? 0;
-    if (affected === 0) return res.status(400).json({ success: false, message: 'Business not found or not pending' });
+    const row = result?.[0];
+    const successFlag = row?.success === 1;
+    if (!successFlag) {
+      // Idempotent fallback: if already Active, return success
+      try {
+        const [checkSets] = await db.query("CALL GetBusinessById(?)", [id]);
+        const businessRow = checkSets?.[0]?.[0];
+        if (businessRow && String(businessRow.status).toLowerCase() === 'active') {
+          return res.json({ success: true, message: 'Business already active' });
+        }
+      } catch (e) {
+        // ignore and fall through
+      }
+      return res.status(400).json({ success: false, message: 'Business not found or not pending' });
+    }
     res.json({ success: true, message: 'Business approved successfully' });
   } catch (error) {
     console.error('Error approving business:', error);
@@ -164,8 +185,21 @@ export const rejectBusiness = async (req, res) => {
   try {
     const { id } = req.params;
     const [result] = await db.query("CALL RejectBusiness(?)", [id]);
-    const affected = result?.[0]?.affected_rows ?? 0;
-    if (affected === 0) return res.status(400).json({ success: false, message: 'Business not found or not pending' });
+    const row = result?.[0];
+    const successFlag = row?.success === 1;
+    if (!successFlag) {
+      // Idempotent fallback: if already Inactive, return success
+      try {
+        const [checkSets] = await db.query("CALL GetBusinessById(?)", [id]);
+        const businessRow = checkSets?.[0]?.[0];
+        if (businessRow && String(businessRow.status).toLowerCase() === 'inactive') {
+          return res.json({ success: true, message: 'Business already inactive' });
+        }
+      } catch (e) {
+        // ignore and fall through
+      }
+      return res.status(400).json({ success: false, message: 'Business not found or not pending' });
+    }
     res.json({ success: true, message: 'Business rejected successfully' });
   } catch (error) {
     console.error('Error rejecting business:', error);

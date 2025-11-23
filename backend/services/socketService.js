@@ -31,7 +31,7 @@ export function initializeSocket(httpServer) {
     }
 
     try {
-      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      const decoded = jwt.verify(token, process.env.JWT_ACCESS_SECRET);
       socket.userId = decoded.id;
       socket.userRole = decoded.role;
       socket.businessId = decoded.business_id; // For owners/staff
