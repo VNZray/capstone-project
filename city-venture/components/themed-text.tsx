@@ -216,7 +216,7 @@ const fontSizeMap: Record<TypographyType, { base: number; min: number; max: numb
 };
 
 function getResponsiveStyle(type: TypographyType, width: number) {
-  const config = fontSizeMap[type];
+  const config = fontSizeMap[type] ?? fontSizeMap['body-medium'];
   const fontSize = scaled(config.base, { min: config.min, max: config.max, factor: 0.5, width });
   return { fontSize };
 }

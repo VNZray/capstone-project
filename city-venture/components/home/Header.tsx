@@ -107,42 +107,44 @@ const Header: React.FC<HeaderProps> = ({
         backgroundStyle,
       ]}
     >
-      <View style={styles.row}>
-        <View
-          style={[
-            styles.searchField,
-            {
-              backgroundColor: searchBackground,
-              borderColor: strokeColor,
-            },
-          ]}
-        >
-          <Feather name="search" size={18} color={iconColor} />
-          <TextInput
-            value={searchValue}
-            placeholder={placeholder}
-            placeholderTextColor={placeholderColor}
-            onChangeText={onChangeSearch}
-            autoCapitalize="none"
-            autoCorrect={false}
-            style={[styles.searchInput as TextStyle, { color: inputColor }]}
-          />
-        </View>
-        <View style={styles.iconStack}>
-          <CircleButton
-            icon="bell"
-            onPress={onPressBell}
-            backgroundColor={resolvedIconBackground}
-            borderColor={strokeColor}
-            iconColor={iconColor}
-          />
-          <CircleButton
-            icon="shopping-bag"
-            onPress={onPressCart}
-            backgroundColor={resolvedIconBackground}
-            borderColor={strokeColor}
-            iconColor={iconColor}
-          />
+      <View style={styles.contentContainer}>
+        <View style={styles.row}>
+          <View
+            style={[
+              styles.searchField,
+              {
+                backgroundColor: searchBackground,
+                borderColor: strokeColor,
+              },
+            ]}
+          >
+            <Feather name="search" size={18} color={iconColor} />
+            <TextInput
+              value={searchValue}
+              placeholder={placeholder}
+              placeholderTextColor={placeholderColor}
+              onChangeText={onChangeSearch}
+              autoCapitalize="none"
+              autoCorrect={false}
+              style={[styles.searchInput as TextStyle, { color: inputColor }]}
+            />
+          </View>
+          <View style={styles.iconStack}>
+            <CircleButton
+              icon="bell"
+              onPress={onPressBell}
+              backgroundColor={resolvedIconBackground}
+              borderColor={strokeColor}
+              iconColor={iconColor}
+            />
+            <CircleButton
+              icon="shopping-bag"
+              onPress={onPressCart}
+              backgroundColor={resolvedIconBackground}
+              borderColor={strokeColor}
+              iconColor={iconColor}
+            />
+          </View>
         </View>
       </View>
     </Animated.View>
@@ -185,6 +187,11 @@ const styles = StyleSheet.create({
     top: 0,
     left: 0,
     right: 0,
+  },
+  contentContainer: {
+    width: '100%',
+    maxWidth: 1200,
+    alignSelf: 'center',
   },
   row: {
     flexDirection: 'row',

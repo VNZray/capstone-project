@@ -8,6 +8,8 @@ import BusinessCard from '@/components/home/BusinessCard';
 import EventListCard from '@/components/home/EventListCard';
 import NewsCard from '@/components/home/NewsCard';
 import { ThemedText } from '@/components/themed-text';
+import { ResponsiveContainer } from '@/components/layout/ResponsiveContainer';
+import { WebLayout } from '@/components/layout/WebLayout';
 import { useAuth } from '@/context/AuthContext';
 import { Colors } from '@/constants/color';
 import { navigateToAccommodationHome } from '@/routes/accommodationRoutes';
@@ -50,7 +52,6 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const HERO_HEIGHT = 260;
 const SCREEN_WIDTH = Dimensions.get('window').width;
-const GRID_ITEM_WIDTH = (SCREEN_WIDTH - 64) / 4;
 
 type ActionItem = {
   id: 'accommodation' | 'shops' | 'spots' | 'events';
@@ -489,7 +490,8 @@ const HomeScreen = () => {
   if (!user) return null;
 
   return (
-    <View style={[styles.root, { backgroundColor: palette.background }]}>
+    <WebLayout>
+      <View style={[styles.root, { backgroundColor: palette.background }]}>
       <StatusBar
         translucent
         backgroundColor="transparent"
@@ -514,57 +516,59 @@ const HomeScreen = () => {
         scrollEventThrottle={16}
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.heroSpacer}>
-          <WelcomeSection
-            scrollY={scrollY}
-            name={displayName}
-            subtitle="Stay connected with city life, follow events, and access the services you need every day."
-          />
-        </View>
+        <ResponsiveContainer>
+          <View style={styles.heroSpacer}>
+            <WelcomeSection
+              scrollY={scrollY}
+              name={displayName}
+              subtitle="Stay connected with city life, follow events, and access the services you need every day."
+            />
+          </View>
 
-        <MainContentCard
-          style={[
-            styles.mainCard,
-            {
-              shadowColor: isDarkMode ? '#000' : '#0A1B47',
-              shadowOpacity: isDarkMode ? 0.18 : 0.08,
-              shadowRadius: 18,
-              shadowOffset: { width: 0, height: 10 },
-              elevation: 8,
-              borderWidth: isDarkMode ? 0 : StyleSheet.hairlineWidth,
-              borderColor: 'rgba(10,27,71,0.08)',
-            },
-          ]}
-        >
-          <ActionGrid items={ACTIONS} onPressItem={handleActionPress} />
-
-          <SectionContainer
-            title="Highlighted Tourist Spots"
-            onPressViewAll={navigateToTouristSpotHome}
+          <MainContentCard
+            style={[
+              styles.mainCard,
+              {
+                shadowColor: isDarkMode ? '#000' : '#0A1B47',
+                shadowOpacity: isDarkMode ? 0.18 : 0.08,
+                shadowRadius: 18,
+                shadowOffset: { width: 0, height: 10 },
+                elevation: 8,
+                borderWidth: isDarkMode ? 0 : StyleSheet.hairlineWidth,
+                borderColor: 'rgba(10,27,71,0.08)',
+              },
+            ]}
           >
-              {renderSpotSection()}
-          </SectionContainer>
+            <ActionGrid items={ACTIONS} onPressItem={handleActionPress} />
 
-          <SectionContainer
-            title="Partnered Businesses"
-            onPressViewAll={navigateToShopHome}
-          >
-              {renderBusinessSection()}
-          </SectionContainer>
+            <SectionContainer
+              title="Highlighted Tourist Spots"
+              onPressViewAll={navigateToTouristSpotHome}
+            >
+                {renderSpotSection()}
+            </SectionContainer>
 
-          <SectionContainer
-            title="Upcoming Events"
-            onPressViewAll={navigateToEventHome}
-          >
-            {renderEventSection()}
-          </SectionContainer>
+            <SectionContainer
+              title="Partnered Businesses"
+              onPressViewAll={navigateToShopHome}
+            >
+                {renderBusinessSection()}
+            </SectionContainer>
 
-          <SectionContainer title="News & Updates">
-            {renderNewsSection()}
-          </SectionContainer>
+            <SectionContainer
+              title="Upcoming Events"
+              onPressViewAll={navigateToEventHome}
+            >
+              {renderEventSection()}
+            </SectionContainer>
 
-          <PromoCard content={PROMO_CARD} style={styles.promoCard} />
-        </MainContentCard>
+            <SectionContainer title="News & Updates">
+              {renderNewsSection()}
+            </SectionContainer>
+
+            <PromoCard content={PROMO_CARD} style={styles.promoCard} />
+          </MainContentCard>
+        </ResponsiveContainer>
       </AnimatedScrollView>
 
       <Header
@@ -576,7 +580,8 @@ const HomeScreen = () => {
         onPressBell={() => {}}
         onPressCart={() => navigateToCart()}
       />
-    </View>
+      </View>
+    </WebLayout>
   );
 };
 
@@ -594,7 +599,7 @@ const ActionGrid: React.FC<ActionGridProps> = ({ items, onPressItem }) => {
     {items.map((item) => (
       <Pressable
         key={item.id}
-        style={styles.actionItem}
+        style={[styles.actionItem, { width: '23%', minWidth: 70 }]}
         onPress={() => onPressItem(item.id)}
       >
         <LinearGradient
@@ -804,7 +809,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   actionItem: {
-    width: GRID_ITEM_WIDTH,
+    width: '23%',
+    minWidth: 70,
     alignItems: 'center',
     marginBottom: 24,
   },
@@ -828,23 +834,6 @@ const styles = StyleSheet.create({
   },
   promoDescription: {
     lineHeight: 20,
-  },
-  promoActions: {
-    flexDirection: 'row',
-    gap: 12,
-    marginTop: 10,
-  },
-  ctaButton: {
-    flex: 1,
-    paddingVertical: 12,
-    borderRadius: 999,
-    alignItems: 'center',
-  },
-  ctaSecondary: {
-    backgroundColor: '#fff',
-  },
-  ctaPrimary: {
-    backgroundColor: 'rgba(255,255,255,0.2)',
   },
   horizontalList: {
     paddingRight: 0,
