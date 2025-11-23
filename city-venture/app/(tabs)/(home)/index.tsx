@@ -525,17 +525,18 @@ const HomeScreen = () => {
             />
           </View>
 
-          <MainContentCard
+            <MainContentCard
             style={[
               styles.mainCard,
               {
-                shadowColor: isDarkMode ? '#000' : '#0A1B47',
-                shadowOpacity: isDarkMode ? 0.18 : 0.08,
-                shadowRadius: 18,
-                shadowOffset: { width: 0, height: 10 },
+                backgroundColor: palette.surface,
+                shadowColor: palette.shadow,
+                shadowOpacity: isDarkMode ? 0.3 : 0.1,
+                shadowRadius: 20,
+                shadowOffset: { width: 0, height: 8 },
                 elevation: 8,
-                borderWidth: isDarkMode ? 0 : StyleSheet.hairlineWidth,
-                borderColor: 'rgba(10,27,71,0.08)',
+                borderWidth: isDarkMode ? 1 : StyleSheet.hairlineWidth,
+                borderColor: palette.border,
               },
             ]}
           >
@@ -593,6 +594,7 @@ type ActionGridProps = {
 const ActionGrid: React.FC<ActionGridProps> = ({ items, onPressItem }) => {
   const scheme = useColorScheme() ?? 'light';
   const isDark = scheme === 'dark';
+  const colors = Colors[scheme];
 
   return (
   <View style={styles.actionGrid}>
@@ -613,9 +615,10 @@ const ActionGrid: React.FC<ActionGridProps> = ({ items, onPressItem }) => {
         <ThemedText
           type="label-small"
           align="center"
-          lightColor="#E8E9F4"
-            style={styles.actionLabel}
-          >
+          style={styles.actionLabel}
+          lightColor={colors.textSecondary}
+          darkColor={colors.textSecondary}
+        >
             {item.label}
           </ThemedText>
         </Pressable>
@@ -636,43 +639,49 @@ const PromoCard: React.FC<PromoCardProps> = ({
   style,
   onPrimaryPress,
   onSecondaryPress,
-}) => (
+}) => {
+  const colorScheme = useColorScheme() ?? 'light';
+  const colors = Colors[colorScheme];
+
+  return (
   <LinearGradient
-    colors={['#6A3DFB', '#9D4EDD']}
+    colors={[colors.primary, colors.accent]}
     start={{ x: 0, y: 0 }}
     end={{ x: 1, y: 1 }}
     style={[styles.promoBase, style]}
   >
-    <ThemedText type="sub-title-small" weight="bold" lightColor="#FFFFFF">
+    <ThemedText type="sub-title-small" weight="bold" lightColor={colors.textInverse} darkColor={colors.textInverse}>
       {content.title}
     </ThemedText>
     <ThemedText
       type="body-small"
-      lightColor="rgba(255,255,255,0.9)"
-      style={styles.promoDescription}
+      lightColor={colors.textInverse}
+      darkColor={colors.textInverse}
+      style={[styles.promoDescription, { opacity: 0.9 }]}
     >
       {content.description}
     </ThemedText>
     <View style={styles.promoActions}>
       <Pressable
-        style={[styles.ctaButton, styles.ctaSecondary]}
+        style={[styles.ctaButton, styles.ctaSecondary, { backgroundColor: colors.surface }]}
         onPress={onPrimaryPress}
       >
-        <ThemedText type="label-small" weight="semi-bold" lightColor="#20123A">
+        <ThemedText type="label-small" weight="semi-bold" lightColor={colors.primary} darkColor={colors.primary}>
           {content.primaryCta}
         </ThemedText>
       </Pressable>
       <Pressable
-        style={[styles.ctaButton, styles.ctaPrimary]}
+        style={[styles.ctaButton, styles.ctaPrimary, { backgroundColor: 'rgba(255,255,255,0.2)' }]}
         onPress={onSecondaryPress}
       >
-        <ThemedText type="label-small" weight="semi-bold" lightColor="#fff">
+        <ThemedText type="label-small" weight="semi-bold" lightColor={colors.textInverse} darkColor={colors.textInverse}>
           {content.secondaryCta}
         </ThemedText>
       </Pressable>
     </View>
   </LinearGradient>
-);
+  );
+};
 
 const SectionError = ({ message }: { message?: string }) =>
   message ? (
@@ -695,21 +704,22 @@ const EmptyState = ({
       style={[
         styles.emptyState,
         {
-          backgroundColor: isDark ? '#151426' : 'rgba(10,27,71,0.06)',
-          borderWidth: isDark ? 0 : StyleSheet.hairlineWidth,
-          borderColor: 'rgba(10,27,71,0.08)',
+          backgroundColor: Colors[scheme].surfaceOverlay,
+          borderWidth: StyleSheet.hairlineWidth,
+          borderColor: Colors[scheme].border,
         },
       ]}
     >
       <MaterialCommunityIcons
         name={icon}
         size={22}
-        color={isDark ? 'rgba(255,255,255,0.7)' : '#0A1B47'}
+        color={Colors[scheme].icon}
         style={styles.emptyIcon}
       />
       <ThemedText
         type="label-small"
-        lightColor={isDark ? 'rgba(255,255,255,0.7)' : '#0A1B47'}
+        lightColor={Colors[scheme].textSecondary}
+        darkColor={Colors[scheme].textSecondary}
       >
         {message}
       </ThemedText>
@@ -719,9 +729,7 @@ const EmptyState = ({
 
 const SpotsSkeleton = () => {
   const scheme = useColorScheme() ?? 'light';
-  const placeholderColor = scheme === 'dark'
-    ? 'rgba(255,255,255,0.08)'
-    : 'rgba(10,27,71,0.08)';
+  const placeholderColor = Colors[scheme].highlight;
   return (
     <View style={[styles.horizontalList, { flexDirection: 'row' }]}>
       {Array.from({ length: 3 }).map((_, index) => (
@@ -736,9 +744,7 @@ const SpotsSkeleton = () => {
 
 const BusinessSkeleton = () => {
   const scheme = useColorScheme() ?? 'light';
-  const placeholderColor = scheme === 'dark'
-    ? 'rgba(255,255,255,0.08)'
-    : 'rgba(10,27,71,0.08)';
+  const placeholderColor = Colors[scheme].highlight;
   return (
     <View style={[styles.horizontalList, { flexDirection: 'row' }]}>
       {Array.from({ length: 3 }).map((_, index) => (
@@ -753,9 +759,7 @@ const BusinessSkeleton = () => {
 
 const EventSkeleton = () => {
   const scheme = useColorScheme() ?? 'light';
-  const placeholderColor = scheme === 'dark'
-    ? 'rgba(255,255,255,0.08)'
-    : 'rgba(10,27,71,0.08)';
+  const placeholderColor = Colors[scheme].highlight;
   return (
     <>
       {Array.from({ length: 3 }).map((_, index) => (
@@ -770,9 +774,7 @@ const EventSkeleton = () => {
 
 const NewsSkeleton = () => {
   const scheme = useColorScheme() ?? 'light';
-  const placeholderColor = scheme === 'dark'
-    ? 'rgba(255,255,255,0.08)'
-    : 'rgba(10,27,71,0.08)';
+  const placeholderColor = Colors[scheme].highlight;
   return (
     <>
       {Array.from({ length: 2 }).map((_, index) => (
@@ -835,6 +837,21 @@ const styles = StyleSheet.create({
   promoDescription: {
     lineHeight: 20,
   },
+  promoActions: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 8,
+  },
+  ctaButton: {
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flex: 1,
+  },
+  ctaSecondary: {},
+  ctaPrimary: {},
   horizontalList: {
     paddingRight: 0,
     paddingLeft: 0,

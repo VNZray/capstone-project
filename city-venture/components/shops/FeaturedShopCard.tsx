@@ -1,7 +1,6 @@
 import { ShopColors } from '@/constants/color';
 import { moderateScale } from '@/utils/responsive';
 import { FontAwesome5 } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import React from 'react';
 import {
   Image,
@@ -41,9 +40,9 @@ const FeaturedShopCard: React.FC<FeaturedShopCardProps> = ({
 }) => {
   const { width } = useWindowDimensions();
 
-  const RADIUS = 20;
-  const CARD_HEIGHT = moderateScale(240, 0.55, width);
-  const CARD_WIDTH = width * 0.85;
+  const RADIUS = 16;
+  const CARD_WIDTH = width * 0.75;
+  const IMAGE_HEIGHT = moderateScale(160, 0.55, width);
 
   const imageSource = typeof image === 'string' ? { uri: image } : image;
 
@@ -52,47 +51,40 @@ const FeaturedShopCard: React.FC<FeaturedShopCardProps> = ({
       onPress={onPress}
       style={({ pressed }) => [
         styles.container,
-        {
-          width: CARD_WIDTH,
-          height: CARD_HEIGHT,
-          borderRadius: RADIUS,
-        },
+        { width: CARD_WIDTH },
         pressed && styles.pressed,
         style,
       ]}
     >
-      <Image source={imageSource} style={styles.image} resizeMode="cover" />
-      
-      <LinearGradient
-        colors={['transparent', 'rgba(0,0,0,0.8)']}
-        style={styles.gradientOverlay}
-      />
-
-      {featured && (
-        <View style={styles.badgeContainer}>
-          <View style={styles.badge}>
-            <Text style={styles.badgeText}>FEATURED</Text>
+      <View style={[styles.imageContainer, { height: IMAGE_HEIGHT, borderRadius: RADIUS }]}>
+        <Image source={imageSource} style={styles.image} resizeMode="cover" />
+        {featured && (
+          <View style={styles.badgeContainer}>
+            <View style={styles.badge}>
+              <Text style={styles.badgeText}>FEATURED</Text>
+            </View>
           </View>
-        </View>
-      )}
+        )}
+      </View>
 
       <View style={styles.contentContainer}>
+        <View style={styles.headerRow}>
+          <Text style={[styles.name, nameStyle]} numberOfLines={1}>
+            {name}
+          </Text>
+          <View style={styles.ratingRow}>
+            <FontAwesome5 name="star" size={12} color="#FFD700" solid />
+            <Text style={styles.ratingText}>
+              {rating.toFixed(1)} ({reviews})
+            </Text>
+          </View>
+        </View>
+
         {category && (
           <Text style={styles.category} numberOfLines={1}>
             {category}
           </Text>
         )}
-        
-        <Text style={[styles.name, nameStyle]} numberOfLines={2}>
-          {name}
-        </Text>
-
-        <View style={styles.ratingRow}>
-          <FontAwesome5 name="star" size={12} color="#FFD700" solid />
-          <Text style={styles.ratingText}>
-            {rating.toFixed(1)} ({reviews})
-          </Text>
-        </View>
       </View>
     </Pressable>
   );
@@ -100,80 +92,78 @@ const FeaturedShopCard: React.FC<FeaturedShopCardProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    overflow: 'hidden',
-    backgroundColor: ShopColors.cardBackground,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    elevation: 5,
     marginRight: 16,
+    backgroundColor: 'transparent',
   },
   pressed: {
     opacity: 0.95,
     transform: [{ scale: 0.99 }],
   },
+  imageContainer: {
+    width: '100%',
+    overflow: 'hidden',
+    marginBottom: 12,
+    backgroundColor: ShopColors.cardBackground,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
+  },
   image: {
     width: '100%',
     height: '100%',
   },
-  gradientOverlay: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 0,
-    height: '50%',
-  },
   badgeContainer: {
     position: 'absolute',
-    top: 16,
-    left: 16,
+    top: 12,
+    left: 12,
     zIndex: 10,
   },
   badge: {
-    backgroundColor: ShopColors.accent,
-    paddingHorizontal: 10,
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    paddingHorizontal: 8,
     paddingVertical: 4,
-    borderRadius: 8,
+    borderRadius: 6,
   },
   badgeText: {
-    color: '#FFFFFF',
+    color: ShopColors.textPrimary,
     fontSize: 9,
     fontFamily: 'Poppins-Bold',
     letterSpacing: 0.5,
   },
   contentContainer: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    padding: 16,
-    zIndex: 10,
+    paddingHorizontal: 4,
   },
-  category: {
-    color: 'rgba(255, 255, 255, 0.9)',
-    fontSize: 10,
-    fontFamily: 'Poppins-Medium',
-    marginBottom: 2,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
+  headerRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 4,
   },
   name: {
-    color: '#FFFFFF',
-    fontSize: 18,
-    fontFamily: 'Poppins-Bold',
-    marginBottom: 6,
-    textShadowColor: 'rgba(0,0,0,0.3)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 4,
+    color: ShopColors.textPrimary,
+    fontSize: 16,
+    fontFamily: 'Poppins-SemiBold',
+    flex: 1,
+    marginRight: 8,
+  },
+  category: {
+    color: ShopColors.textSecondary,
+    fontSize: 12,
+    fontFamily: 'Poppins-Regular',
   },
   ratingRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 4,
+    backgroundColor: ShopColors.cardBackground,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
   },
   ratingText: {
-    color: '#FFFFFF',
+    color: ShopColors.textPrimary,
     fontSize: 11,
     fontFamily: 'Poppins-Medium',
   },

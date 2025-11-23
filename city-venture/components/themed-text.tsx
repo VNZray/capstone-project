@@ -1,6 +1,6 @@
-import { useTheme } from '@/context/ThemeContext';
+import { Colors } from '@/constants/color';
 import React from 'react';
-import { Platform, StyleSheet, Text, View, type TextProps, useWindowDimensions } from 'react-native';
+import { Platform, StyleSheet, Text, View, type TextProps, useWindowDimensions, useColorScheme } from 'react-native';
 import { scaled } from '@/utils/responsive';
 
 export type TypographyType =
@@ -77,7 +77,8 @@ export function ThemedText({
 
   ...rest
 }: ThemedTextProps) {
-  const { colors, colorScheme } = useTheme();
+  const colorScheme = useColorScheme() ?? 'light';
+  const colors = Colors[colorScheme];
   const isLink = type.startsWith('link-');
   
   // Use semantic color tokens
@@ -87,6 +88,8 @@ export function ThemedText({
     ? (lightColor || darkColor)
     : isLink
     ? colors.textLink
+    : type === 'label-small' || type === 'label-extra-small'
+    ? colors.textSecondary
     : colors.text;
 
   const { width } = useWindowDimensions();
