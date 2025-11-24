@@ -1,11 +1,17 @@
 import Button from '@/components/Button';
 import { ThemedText } from '@/components/themed-text';
 import { navigateToLogin, navigateToRegister } from '@/routes/mainRoutes';
+import { useAuth } from '@/context/AuthContext';
 import { useFonts } from 'expo-font';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import React, { useEffect } from 'react';
-import { ImageBackground, View, Platform, useWindowDimensions } from 'react-native';
+import {
+  ImageBackground,
+  View,
+  Platform,
+  useWindowDimensions,
+} from 'react-native';
 import 'react-native-url-polyfill/auto';
 
 const Main = () => {
@@ -27,6 +33,14 @@ const Main = () => {
     }
   }, [fontsLoaded, isWeb, isDesktop]);
 
+  const { user, loading } = useAuth();
+
+  useEffect(() => {
+    if (!loading && user) {
+      router.replace('/(tabs)/(home)');
+    }
+  }, [user, loading]);
+
   if (!fontsLoaded) {
     return null;
   }
@@ -41,7 +55,7 @@ const Main = () => {
         source={{ uri: imageBackground }}
         resizeMode="cover"
         style={{ flex: 1 }}
-      >        
+      >
         <LinearGradient
           colors={[
             'rgba(255, 255, 255, 0.0)', // Top (transparent)

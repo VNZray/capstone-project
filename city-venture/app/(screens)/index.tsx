@@ -33,10 +33,16 @@ const LoginPage = () => {
   const [password, setPassword] = useState('tourist123');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const { login } = useAuth();
+  const [passwordError, setPasswordError] = useState('');
   const [loginError, setLoginError] = useState('');
   const [emailError, setEmailError] = useState('');
-  const [passwordError, setPasswordError] = useState('');
+  const { login, user } = useAuth();
+
+  useEffect(() => {
+    if (user) {
+      navigateToHome();
+    }
+  }, [user]);
 
   // Clear field-specific errors when user types
   useEffect(() => {
@@ -77,11 +83,11 @@ const LoginPage = () => {
     try {
       debugLogger({
         title: 'Login: Attempting login',
-        data: { email: email.trim() }
+        data: { email: email.trim() },
       });
 
       await login(email.trim(), password);
-      
+
       debugLogger({
         title: 'Login: ✅ Login successful',
       });
@@ -112,7 +118,9 @@ const LoginPage = () => {
         {Platform.OS === 'web' && (
           <View style={styles.webImageContainer}>
             <ImageBackground
-              source={{ uri: 'https://i0.wp.com/nagayon.com/wp-content/uploads/2024/08/oragon-monument-by-colline.jpg' }}
+              source={{
+                uri: 'https://i0.wp.com/nagayon.com/wp-content/uploads/2024/08/oragon-monument-by-colline.jpg',
+              }}
               style={styles.webImage}
               resizeMode="cover"
             >
@@ -121,11 +129,19 @@ const LoginPage = () => {
                 style={styles.webImageOverlay}
               >
                 <View style={styles.webHeroContent}>
-                  <ThemedText type="title-large" weight="extra-bold" style={{ color: 'white', fontSize: 48 }}>
+                  <ThemedText
+                    type="title-large"
+                    weight="extra-bold"
+                    style={{ color: 'white', fontSize: 48 }}
+                  >
                     Welcome Back
                   </ThemedText>
-                  <ThemedText type="body-large" style={{ color: 'white', marginTop: 16, maxWidth: 400 }}>
-                    Continue your journey in the heart of Naga. Discover new places, events, and experiences.
+                  <ThemedText
+                    type="body-large"
+                    style={{ color: 'white', marginTop: 16, maxWidth: 400 }}
+                  >
+                    Continue your journey in the heart of Naga. Discover new
+                    places, events, and experiences.
                   </ThemedText>
                 </View>
               </LinearGradient>
@@ -135,7 +151,14 @@ const LoginPage = () => {
 
         {/* Right Side Form */}
         <View style={styles.formContainer}>
-          <PageContainer padding={0} style={{ maxWidth: Platform.OS === 'web' ? 480 : '100%', width: '100%', alignSelf: 'center' }}>
+          <PageContainer
+            padding={0}
+            style={{
+              maxWidth: Platform.OS === 'web' ? 480 : '100%',
+              width: '100%',
+              alignSelf: 'center',
+            }}
+          >
             <KeyboardAvoidingView
               style={{ flex: 1 }}
               behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -148,15 +171,25 @@ const LoginPage = () => {
               >
                 {/* Logo */}
                 <View style={{ alignItems: 'center', marginBottom: 20 }}>
-                   <FormLogo />
+                  <FormLogo />
                 </View>
-                
+
                 {/* Headline */}
                 <View style={{ marginBottom: 10 }}>
-                  <ThemedText type="title-medium" weight="bold" style={{ textAlign: Platform.OS === 'web' ? 'left' : 'left' }}>
+                  <ThemedText
+                    type="title-medium"
+                    weight="bold"
+                    style={{
+                      textAlign: Platform.OS === 'web' ? 'left' : 'left',
+                    }}
+                  >
                     Sign In
                   </ThemedText>
-                  <ThemedText type="sub-title-small" weight="medium" style={{ color: '#666', marginTop: 8 }}>
+                  <ThemedText
+                    type="sub-title-small"
+                    weight="medium"
+                    style={{ color: '#666', marginTop: 8 }}
+                  >
                     Navigate with Ease - Your Ultimate City Directory
                   </ThemedText>
                 </View>
@@ -190,9 +223,9 @@ const LoginPage = () => {
                 </View>
 
                 <View style={{ alignItems: 'flex-end' }}>
-                    <Link href="./(screens)/ForgotPassword">
+                  <Link href="./(screens)/ForgotPassword">
                     <ThemedText type="link-medium">Forgot Password?</ThemedText>
-                    </Link>
+                  </Link>
                 </View>
 
                 {/* Error Message */}
@@ -203,7 +236,9 @@ const LoginPage = () => {
                     backgroundColor={colors.error}
                   >
                     <ThemedText
-                      startIcon={<Entypo name="warning" size={18} color="#fff" />}
+                      startIcon={
+                        <Entypo name="warning" size={18} color="#fff" />
+                      }
                       lightColor="#fff"
                       type="body-medium"
                     >
@@ -216,7 +251,7 @@ const LoginPage = () => {
                 <Button
                   fullWidth
                   size="large"
-                  label={isLoading ? "Signing In..." : "Sign In"}
+                  label={isLoading ? 'Signing In...' : 'Sign In'}
                   color="primary"
                   variant="solid"
                   onPress={handleLogin}
@@ -226,7 +261,9 @@ const LoginPage = () => {
 
                 {/* Footer */}
                 <View style={styles.footer}>
-                  <ThemedText type="body-medium">Don&apos;t have an account?</ThemedText>
+                  <ThemedText type="body-medium">
+                    Don&apos;t have an account?
+                  </ThemedText>
                   <Link href={'./Register'}>
                     <ThemedText type="link-medium">Sign Up</ThemedText>
                   </Link>
@@ -235,11 +272,7 @@ const LoginPage = () => {
             </KeyboardAvoidingView>
 
             {/* Loading Modal */}
-            <Modal
-              visible={isLoading}
-              transparent={true}
-              animationType="fade"
-            >
+            <Modal visible={isLoading} transparent={true} animationType="fade">
               <View style={styles.modalOverlay}>
                 <View style={styles.loadingContainer}>
                   <ActivityIndicator size="large" color={colors.primary} />

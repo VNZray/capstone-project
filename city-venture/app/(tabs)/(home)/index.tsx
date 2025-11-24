@@ -381,7 +381,7 @@ const ActionGrid: React.FC<ActionGridProps> = ({ items, onPressItem }) => {
                 <View
                   style={[
                     styles.actionIcon,
-                    { backgroundColor: colors.highlight },
+                    { backgroundColor: '#FEF3C7' },
                   ]}
                 >
                   <MaterialCommunityIcons
@@ -554,7 +554,7 @@ const EmptyState = ({
 
 const EventSkeleton = () => {
   const scheme = useColorScheme() ?? 'light';
-  const placeholderColor = Colors[scheme].highlight;
+  const placeholderColor = Colors[scheme].accent;
   return (
     <>
       {Array.from({ length: 3 }).map((_, index) => (
@@ -569,7 +569,7 @@ const EventSkeleton = () => {
 
 const NewsSkeleton = () => {
   const scheme = useColorScheme() ?? 'light';
-  const placeholderColor = Colors[scheme].highlight;
+  const placeholderColor = Colors[scheme].accent;
   return (
     <>
       {Array.from({ length: 2 }).map((_, index) => (
