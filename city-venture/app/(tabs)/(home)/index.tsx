@@ -3,12 +3,14 @@ import HeroSection from '@/components/home/HeroSection';
 import MainContentCard from '@/components/home/MainContentCard';
 import WelcomeSection from '@/components/home/WelcomeSection';
 import SectionContainer from '@/components/home/SectionContainer';
-import TouristSpotCard from '@/components/home/TouristSpotCard';
-import BusinessCard from '@/components/home/BusinessCard';
+
 import EventListCard from '@/components/home/EventListCard';
 import NewsCard from '@/components/home/NewsCard';
 import { ThemedText } from '@/components/themed-text';
 import CityListSection from '@/components/home/CityListSection';
+import PersonalRecommendationSection from '@/components/home/PersonalRecommendationSection';
+import SpecialOffersSection from '@/components/home/SpecialOffersSection';
+import FeaturedPartnersSection from '@/components/home/FeaturedPartnersSection';
 import { ResponsiveContainer } from '@/components/layout/ResponsiveContainer';
 import { WebLayout } from '@/components/layout/WebLayout';
 import { useAuth } from '@/context/AuthContext';
@@ -18,12 +20,6 @@ import { navigateToEventHome } from '@/routes/eventRoutes';
 import { navigateToShopHome, navigateToCart } from '@/routes/shopRoutes';
 import { navigateToTouristSpotHome } from '@/routes/touristSpotRoutes';
 import {
-  fetchHighlightedSpots,
-  fetchPartnerBusinesses,
-  fetchUpcomingEvents,
-  fetchNewsArticles,
-  type HighlightedTouristSpot,
-  type PartnerBusiness,
   type HomeEvent,
   type NewsArticle,
 } from '@/services/HomeContentService';
@@ -39,7 +35,6 @@ import {
   View,
   ViewStyle,
   StyleProp,
-  FlatList,
   RefreshControl,
   useColorScheme,
 } from 'react-native';
@@ -49,220 +44,17 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import {
+  ACTIONS,
+  PROMO_CARD,
+  PLACEHOLDER_EVENTS,
+  PLACEHOLDER_NEWS,
+  type ActionItem,
+  type PromoCardContent,
+} from '@/components/home/data';
+
 const HERO_HEIGHT = 260;
 const SCREEN_WIDTH = Dimensions.get('window').width;
-
-type ActionItem = {
-  id: string;
-  label: string;
-  icon: React.ComponentProps<typeof MaterialCommunityIcons>['name'];
-};
-
-type PromoCardContent = {
-  id: string;
-  title: string;
-  description: string;
-  primaryCta: string;
-  secondaryCta: string;
-};
-
-const ACTIONS: ActionItem[] = [
-  {
-    id: 'accommodation',
-    label: 'Hotels',
-    icon: 'bed',
-  },
-  {
-    id: 'food',
-    label: 'Food',
-    icon: 'silverware-fork-knife',
-  },
-  {
-    id: 'transport',
-    label: 'Transport',
-    icon: 'bus',
-  },
-  {
-    id: 'map',
-    label: 'Map',
-    icon: 'map-outline',
-  },
-  {
-    id: 'tours',
-    label: 'Tours',
-    icon: 'island',
-  },
-  {
-    id: 'tickets',
-    label: 'Tickets',
-    icon: 'ticket-confirmation-outline',
-  },
-  {
-    id: 'guides',
-    label: 'Guides',
-    icon: 'account-tie',
-  },
-  {
-    id: 'saved',
-    label: 'Saved',
-    icon: 'bookmark',
-  },
-  {
-    id: 'cleaning',
-    label: 'Cleaning',
-    icon: 'broom',
-  },
-  {
-    id: 'repair',
-    label: 'Repair',
-    icon: 'hammer-wrench',
-  },
-  {
-    id: 'delivery',
-    label: 'Delivery',
-    icon: 'truck-delivery',
-  },
-  {
-    id: 'laundry',
-    label: 'Laundry',
-    icon: 'washing-machine',
-  },
-  {
-    id: 'massage',
-    label: 'Massage',
-    icon: 'spa',
-  },
-  {
-    id: 'salon',
-    label: 'Salon',
-    icon: 'hair-dryer',
-  },
-  {
-    id: 'fitness',
-    label: 'Fitness',
-    icon: 'dumbbell',
-  },
-  {
-    id: 'more',
-    label: 'More',
-    icon: 'dots-horizontal',
-  },
-];
-
-const PROMO_CARD: PromoCardContent = {
-  id: 'report',
-  title: 'See something that needs attention?',
-  description:
-    'Report issues around the city and track ongoing fixes in one place.',
-  primaryCta: 'View reports',
-  secondaryCta: 'Report an issue',
-};
-
-const PLACEHOLDER_SPOTS: HighlightedTouristSpot[] = [
-  {
-    id: 'spot-aurora',
-    name: 'Aurora Park Skyline',
-    image:
-      'https://images.unsplash.com/photo-1505761671935-60b3a7427bad?auto=format&fit=crop&w=900&q=80',
-    barangay: 'Centro',
-    rating: 4.8,
-    reviews: 412,
-  },
-  {
-    id: 'spot-river',
-    name: 'Naga River Walk',
-    image:
-      'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=900&q=80',
-    barangay: 'Penafrancia',
-    rating: 4.6,
-    reviews: 289,
-  },
-  {
-    id: 'spot-hill',
-    name: 'Panoramic Hill Deck',
-    image:
-      'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=900&q=80',
-    barangay: 'Cararayan',
-    rating: 4.9,
-    reviews: 512,
-  },
-];
-
-const PLACEHOLDER_BUSINESSES: PartnerBusiness[] = [
-  {
-    id: 'biz-cafe',
-    name: 'Habitat Coffee & Co.',
-    image:
-      'https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=700&q=80',
-    category: 'Cafe',
-    isVerified: true,
-  },
-  {
-    id: 'biz-bistro',
-    name: 'Riverstone Bistro',
-    image:
-      'https://images.unsplash.com/photo-1499028344343-cd173ffc68a9?auto=format&fit=crop&w=700&q=80',
-    category: 'Dining',
-  },
-  {
-    id: 'biz-gear',
-    name: 'Trail & Tide Outfitters',
-    image:
-      'https://images.unsplash.com/photo-1469474968028-56623f02e42e?auto=format&fit=crop&w=700&q=80',
-    category: 'Outdoor',
-    isVerified: true,
-  },
-];
-
-const PLACEHOLDER_EVENTS: HomeEvent[] = [
-  {
-    id: 'event-festival',
-    name: 'City Lights Music Fest',
-    date: 'Nov 24, 7:00 PM',
-    location: 'Plaza Quezon',
-    image:
-      'https://images.unsplash.com/photo-1506157786151-b8491531f063?auto=format&fit=crop&w=700&q=80',
-  },
-  {
-    id: 'event-ride',
-    name: 'Sunrise Fun Ride',
-    date: 'Nov 27, 5:30 AM',
-    location: 'Naga River Park',
-    image:
-      'https://images.unsplash.com/photo-1452626038306-9aae5e071dd3?auto=format&fit=crop&w=700&q=80',
-  },
-  {
-    id: 'event-market',
-    name: 'Magsaysay Night Market',
-    date: 'Dec 02, 6:00 PM',
-    location: 'Magsaysay Ave.',
-    image:
-      'https://images.unsplash.com/photo-1492724441997-5dc865305da7?auto=format&fit=crop&w=700&q=80',
-  },
-];
-
-const PLACEHOLDER_NEWS: NewsArticle[] = [
-  {
-    id: 'news-hub',
-    title: 'New transport hub streamlines downtown commute',
-    excerpt:
-      'The integrated terminal opens this week, promising smoother rides and safer waiting areas for daily commuters.',
-    category: 'Updates',
-    image:
-      'https://images.unsplash.com/photo-1505663912202-ac22d4cb370b?auto=format&fit=crop&w=900&q=80',
-    publishedAt: 'Today',
-  },
-  {
-    id: 'news-green',
-    title: 'Green corridors add 200 new trees across barangays',
-    excerpt:
-      'Local volunteers and partners joined forces to expand shaded walkways that connect parks and bike lanes.',
-    category: 'Community',
-    image:
-      'https://images.unsplash.com/photo-1501785888041-af3ef285b470?auto=format&fit=crop&w=900&q=80',
-    publishedAt: 'Yesterday',
-  },
-];
 
 const AnimatedScrollView = Animated.ScrollView;
 
@@ -283,18 +75,6 @@ const HomeScreen = () => {
     error?: string;
   };
 
-  const [spotState, setSpotState] = useState<
-    SectionState<HighlightedTouristSpot>
-  >({
-    data: [],
-    loading: true,
-  });
-  const [businessState, setBusinessState] = useState<
-    SectionState<PartnerBusiness>
-  >({
-    data: [],
-    loading: true,
-  });
   const [eventState, setEventState] = useState<SectionState<HomeEvent>>({
     data: [],
     loading: true,
@@ -303,11 +83,6 @@ const HomeScreen = () => {
     data: [],
     loading: true,
   });
-
-  const resolveSectionData = useCallback(<T,>(data: T[], fallback: T[]) => {
-    if (data && data.length > 0) return data;
-    return fallback;
-  }, []);
 
   useEffect(() => {
     if (!user && !didRedirect.current) {
@@ -318,69 +93,27 @@ const HomeScreen = () => {
 
   const displayName = user?.first_name ?? user?.last_name ?? 'Friend';
 
-  const loadHomeContent = useCallback(
-    async (isRefresh = false) => {
-      if (isRefresh) {
-        setRefreshing(true);
-      } else {
-        setSpotState((prev) => ({ ...prev, loading: true }));
-        setBusinessState((prev) => ({ ...prev, loading: true }));
-        setEventState((prev) => ({ ...prev, loading: true }));
-        setNewsState((prev) => ({ ...prev, loading: true }));
-      }
+  const loadHomeContent = useCallback(async (isRefresh = false) => {
+    if (isRefresh) {
+      setRefreshing(true);
+    } else {
+      setEventState((prev) => ({ ...prev, loading: true }));
+      setNewsState((prev) => ({ ...prev, loading: true }));
+    }
 
-      try {
-        const [spots, businesses, events, news] = await Promise.all([
-          fetchHighlightedSpots(),
-          fetchPartnerBusinesses(),
-          fetchUpcomingEvents(),
-          fetchNewsArticles(),
-        ]);
-        setSpotState({
-          data: resolveSectionData(spots ?? [], PLACEHOLDER_SPOTS),
-          loading: false,
-        });
-        setBusinessState({
-          data: resolveSectionData(businesses ?? [], PLACEHOLDER_BUSINESSES),
-          loading: false,
-        });
-        setEventState({
-          data: resolveSectionData(events ?? [], PLACEHOLDER_EVENTS),
-          loading: false,
-        });
-        setNewsState({
-          data: resolveSectionData(news ?? [], PLACEHOLDER_NEWS),
-          loading: false,
-        });
-      } catch (error) {
-        const message =
-          error instanceof Error ? error.message : 'Unable to load content';
-        setSpotState({
-          data: PLACEHOLDER_SPOTS,
-          loading: false,
-          error: message,
-        });
-        setBusinessState({
-          data: PLACEHOLDER_BUSINESSES,
-          loading: false,
-          error: message,
-        });
-        setEventState({
-          data: PLACEHOLDER_EVENTS,
-          loading: false,
-          error: message,
-        });
-        setNewsState({
-          data: PLACEHOLDER_NEWS,
-          loading: false,
-          error: message,
-        });
-      } finally {
-        setRefreshing(false);
-      }
-    },
-    [resolveSectionData]
-  );
+    // Simulate network delay for better UX
+    await new Promise((resolve) => setTimeout(resolve, 500));
+
+    setEventState({
+      data: PLACEHOLDER_EVENTS,
+      loading: false,
+    });
+    setNewsState({
+      data: PLACEHOLDER_NEWS,
+      loading: false,
+    });
+    setRefreshing(false);
+  }, []);
 
   useEffect(() => {
     loadHomeContent();
@@ -425,20 +158,6 @@ const HomeScreen = () => {
     }
   };
 
-  const handleSpotPress = useCallback((spot: HighlightedTouristSpot) => {
-    router.push({
-      pathname: '/(tabs)/(home)/(spot)/profile/profile',
-      params: { spotId: spot.id },
-    });
-  }, []);
-
-  const handleBusinessPress = useCallback((business: PartnerBusiness) => {
-    router.push({
-      pathname: '/(tabs)/(home)/(shop)/business-profile',
-      params: { businessId: business.id },
-    });
-  }, []);
-
   const handleEventPress = useCallback((event: HomeEvent) => {
     router.push({
       pathname: '/(tabs)/(home)/(event)',
@@ -452,74 +171,6 @@ const HomeScreen = () => {
       params: { newsId: article.id },
     });
   }, []);
-
-  const renderSpotSection = () => {
-    if (spotState.loading && spotState.data.length === 0) {
-      return <SpotsSkeleton />;
-    }
-    if (!spotState.loading && spotState.data.length === 0) {
-      return (
-        <EmptyState icon="map-marker-off" message="No highlighted spots yet." />
-      );
-    }
-
-    return (
-      <>
-        {spotState.error ? <SectionError message={spotState.error} /> : null}
-        <FlatList
-          horizontal
-          data={spotState.data}
-          keyExtractor={(item) => item.id}
-          renderItem={({ item }) => (
-            <TouristSpotCard spot={item} onPress={handleSpotPress} />
-          )}
-          style={{ marginRight: -24 }}
-          ItemSeparatorComponent={() => <View style={{ width: 16 }} />}
-          showsHorizontalScrollIndicator={false}
-          getItemLayout={(_, index) => ({
-            length: 316,
-            offset: 316 * index,
-            index,
-          })}
-        />
-      </>
-    );
-  };
-
-  const renderBusinessSection = () => {
-    if (businessState.loading && businessState.data.length === 0) {
-      return <BusinessSkeleton />;
-    }
-    if (!businessState.loading && businessState.data.length === 0) {
-      return (
-        <EmptyState icon="store-off" message="No partnered businesses yet." />
-      );
-    }
-
-    return (
-      <>
-        {businessState.error ? (
-          <SectionError message={businessState.error} />
-        ) : null}
-        <FlatList
-          horizontal
-          data={businessState.data}
-          keyExtractor={(item) => item.id}
-          renderItem={({ item }) => (
-            <BusinessCard business={item} onPress={handleBusinessPress} />
-          )}
-          style={{ marginRight: -24 }}
-          ItemSeparatorComponent={() => <View style={{ width: 16 }} />}
-          showsHorizontalScrollIndicator={false}
-          getItemLayout={(_, index) => ({
-            length: 216,
-            offset: 216 * index,
-            index,
-          })}
-        />
-      </>
-    );
-  };
 
   const renderEventSection = () => {
     if (eventState.loading && eventState.data.length === 0) {
@@ -627,21 +278,22 @@ const HomeScreen = () => {
             >
               <ActionGrid items={ACTIONS} onPressItem={handleActionPress} />
 
-              <CityListSection onPressCity={(city) => console.log(city.name)} />
+              <CityListSection
+                onPressCity={(city) => console.log(city.name)}
+                onPressViewMore={() => console.log('View more cities')}
+              />
 
-              <SectionContainer
-                title="Highlighted Tourist Spots"
-                onPressViewAll={navigateToTouristSpotHome}
-              >
-                {renderSpotSection()}
-              </SectionContainer>
+              <PersonalRecommendationSection
+                onPressItem={(item) => console.log(item.title)}
+              />
 
-              <SectionContainer
-                title="Partnered Businesses"
-                onPressViewAll={navigateToShopHome}
-              >
-                {renderBusinessSection()}
-              </SectionContainer>
+              <SpecialOffersSection
+                onPressOffer={(offer) => console.log(offer.title)}
+              />
+
+              <FeaturedPartnersSection
+                onPressPartner={(partner) => console.log(partner.name)}
+              />
 
               <SectionContainer
                 title="Upcoming Events"
@@ -871,7 +523,7 @@ const EmptyState = ({
   message: string;
 }) => {
   const scheme = useColorScheme() ?? 'light';
-  const isDark = scheme === 'dark';
+
   return (
     <View
       style={[
@@ -896,39 +548,6 @@ const EmptyState = ({
       >
         {message}
       </ThemedText>
-    </View>
-  );
-};
-
-const SpotsSkeleton = () => {
-  const scheme = useColorScheme() ?? 'light';
-  const placeholderColor = Colors[scheme].highlight;
-  return (
-    <View style={[styles.horizontalList, { flexDirection: 'row' }]}>
-      {Array.from({ length: 3 }).map((_, index) => (
-        <View
-          key={`spot-skeleton-${index}`}
-          style={[styles.spotSkeleton, { backgroundColor: placeholderColor }]}
-        />
-      ))}
-    </View>
-  );
-};
-
-const BusinessSkeleton = () => {
-  const scheme = useColorScheme() ?? 'light';
-  const placeholderColor = Colors[scheme].highlight;
-  return (
-    <View style={[styles.horizontalList, { flexDirection: 'row' }]}>
-      {Array.from({ length: 3 }).map((_, index) => (
-        <View
-          key={`business-skeleton-${index}`}
-          style={[
-            styles.businessSkeleton,
-            { backgroundColor: placeholderColor },
-          ]}
-        />
-      ))}
     </View>
   );
 };
@@ -976,7 +595,7 @@ const styles = StyleSheet.create({
   },
   mainCard: {
     marginTop: -16,
-    gap: 28,
+    gap: 20,
   },
   sectionHeading: {
     marginBottom: 20,
@@ -996,6 +615,7 @@ const styles = StyleSheet.create({
     borderRadius: 22,
     alignItems: 'center',
     justifyContent: 'center',
+    overflow: 'hidden', // Ensure rounded corners are respected
   },
   actionLabel: {
     marginTop: 8,
@@ -1030,20 +650,7 @@ const styles = StyleSheet.create({
     paddingRight: 0,
     paddingLeft: 0,
   },
-  spotSkeleton: {
-    width: 300,
-    height: 210,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255,255,255,0.08)',
-    marginRight: 16,
-  },
-  businessSkeleton: {
-    width: 200,
-    height: 220,
-    borderRadius: 18,
-    backgroundColor: 'rgba(255,255,255,0.08)',
-    marginRight: 16,
-  },
+
   eventSkeleton: {
     height: 96,
     borderRadius: 16,

@@ -5,9 +5,12 @@ import {
   StyleSheet,
   View,
   Pressable,
+  useColorScheme,
 } from 'react-native';
 import { ThemedText } from '@/components/themed-text';
 import { LinearGradient } from 'expo-linear-gradient';
+import { Feather } from '@expo/vector-icons';
+import { Colors } from '@/constants/color';
 
 type City = {
   id: string;
@@ -50,19 +53,27 @@ const PLACEHOLDER_CITIES: City[] = [
 
 type CityListSectionProps = {
   onPressCity?: (city: City) => void;
+  onPressViewMore?: () => void;
 };
 
-const CityListSection: React.FC<CityListSectionProps> = ({ onPressCity }) => {
+const CityListSection: React.FC<CityListSectionProps> = ({
+  onPressCity,
+  onPressViewMore,
+}) => {
+  const scheme = useColorScheme() ?? 'light';
+  const colors = Colors[scheme];
+
   return (
     <View style={styles.container}>
       <ThemedText type="sub-title-small" weight="bold" style={styles.heading}>
-        Sort by City
+        Explore by Cities
       </ThemedText>
       <FlatList
         horizontal
         data={PLACEHOLDER_CITIES}
         keyExtractor={(item) => item.id}
         showsHorizontalScrollIndicator={false}
+        ItemSeparatorComponent={() => <View style={{ width: 16 }} />}
         contentContainerStyle={styles.listContent}
         renderItem={({ item }) => (
           <Pressable
@@ -90,6 +101,27 @@ const CityListSection: React.FC<CityListSectionProps> = ({ onPressCity }) => {
             </ImageBackground>
           </Pressable>
         )}
+        ListFooterComponent={
+          <Pressable
+            style={[
+              styles.viewMoreCard,
+              {
+                backgroundColor: colors.surface,
+              },
+            ]}
+            onPress={onPressViewMore}
+          >
+            <Feather name="arrow-right" size={32} color={colors.accent} />
+            <ThemedText
+              type="label-small"
+              lightColor={colors.accent}
+              darkColor={colors.accent}
+              style={styles.viewMoreText}
+            >
+              View More
+            </ThemedText>
+          </Pressable>
+        }
       />
     </View>
   );
@@ -97,20 +129,20 @@ const CityListSection: React.FC<CityListSectionProps> = ({ onPressCity }) => {
 
 const styles = StyleSheet.create({
   container: {
-    marginTop: 8,
-    marginBottom: 24,
+    marginRight: -24,
+    marginLeft: -24,
   },
   heading: {
     marginBottom: 16,
-    paddingHorizontal: 4,
+    paddingLeft: 24,
   },
   listContent: {
-    paddingRight: 20,
+    paddingRight: 24,
+    paddingLeft: 24,
   },
   cardContainer: {
     width: 140,
     height: 180,
-    marginRight: 16,
     borderRadius: 20,
     overflow: 'hidden',
   },
@@ -131,6 +163,17 @@ const styles = StyleSheet.create({
   cityName: {
     fontSize: 16,
     fontWeight: '700',
+  },
+  viewMoreCard: {
+    width: 140,
+    height: 180,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 8,
+  },
+  viewMoreText: {
+    fontWeight: '600',
   },
 });
 
