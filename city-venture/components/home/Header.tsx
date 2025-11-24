@@ -54,14 +54,17 @@ const Header: React.FC<HeaderProps> = ({
   const scheme = useColorScheme() ?? 'light';
   const isDark = scheme === 'dark';
 
-  const resolvedBackground = backgroundColor ?? (isDark ? '#0C1024' : colors.primary);
-  const resolvedTranslucent = translucentColor ?? (isDark ? 'rgba(12,16,36,0)' : 'rgba(10,27,71,0)');
-  const resolvedIconBackground = iconBackground ?? (isDark ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.16)');
-  const strokeColor = isDark ? 'rgba(255,255,255,0.18)' : 'rgba(255,255,255,0.28)';
-  const searchBackground = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.14)';
-  const inputColor = isDark ? '#EEF2FF' : '#F6F8FF';
-  const placeholderColor = isDark ? 'rgba(238,242,255,0.65)' : 'rgba(246,248,255,0.78)';
-  const iconColor = isDark ? '#F2F3F8' : '#FDFDFE';
+  const resolvedBackground =
+    backgroundColor ?? (isDark ? '#0C1024' : colors.primary);
+  const resolvedTranslucent = translucentColor ?? 'rgba(0,0,0,0)';
+
+  // Glassmorphism colors - more translucent and subtle
+  const resolvedIconBackground = iconBackground ?? 'rgba(255,255,255,0.2)';
+  const strokeColor = 'rgba(255,255,255,0.1)'; // Very subtle border
+  const searchBackground = 'rgba(255,255,255,0.2)'; // Glassy background
+  const inputColor = '#FFFFFF';
+  const placeholderColor = 'rgba(255,255,255,0.8)';
+  const iconColor = '#FFFFFF';
 
   const backgroundColorTransition = useDerivedValue(() =>
     interpolateColor(
@@ -88,9 +91,10 @@ const Header: React.FC<HeaderProps> = ({
         height: 6 * shadowProgress,
       },
       elevation: 12 * shadowProgress,
-      borderBottomWidth:
-        shadowProgress > 0 ? StyleSheet.hairlineWidth : 0,
-      borderBottomColor: isDark ? 'rgba(255,255,255,0.12)' : 'rgba(10,27,71,0.08)',
+      borderBottomWidth: shadowProgress > 0 ? StyleSheet.hairlineWidth : 0,
+      borderBottomColor: isDark
+        ? 'rgba(255,255,255,0.12)'
+        : 'rgba(10,27,71,0.08)',
     };
   });
 
@@ -168,10 +172,7 @@ const CircleButton = memo(
     <Pressable
       accessibilityRole="button"
       onPress={onPress}
-      style={[
-        styles.iconButton,
-        { backgroundColor, borderColor },
-      ]}
+      style={[styles.iconButton, { backgroundColor, borderColor }]}
     >
       <Feather name={icon} size={18} color={iconColor} />
     </Pressable>
@@ -202,17 +203,17 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    borderRadius: 18,
+    borderRadius: 20, // Adjusted for smaller height
     paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderWidth: StyleSheet.hairlineWidth,
+    paddingVertical: 8, // Reduced for thinner look
+    borderWidth: 0,
     gap: 10,
   },
   searchInput: {
     flex: 1,
-    fontSize: 14,
+    fontSize: 14, // Slightly smaller font
     fontWeight: '500',
-    letterSpacing: 0.1,
+    letterSpacing: 0.2,
   },
   iconStack: {
     flexDirection: 'row',
@@ -220,12 +221,12 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   iconButton: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
+    width: 40, // Smaller buttons
+    height: 40,
+    borderRadius: 20, // Perfectly circular
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: StyleSheet.hairlineWidth,
+    borderWidth: 0,
   },
 });
 

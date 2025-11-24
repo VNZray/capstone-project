@@ -131,18 +131,6 @@ const darkColors = {
   // Semantic colors (adjusted for dark mode, WCAG compliant)
   success: '#34D399',        // Lighter green - 4.5:1 on dark
   successLight: 'rgba(52, 211, 153, 0.15)',
-  warning: '#FBBF24',        // Lighter orange - 4.5:1 on dark
-  warningLight: 'rgba(251, 191, 36, 0.15)',
-  error: '#F87171',          // Lighter red - 4.5:1 on dark
-  errorLight: 'rgba(248, 113, 113, 0.15)',
-  info: '#22D3EE',           // Lighter cyan - 4.5:1 on dark
-  infoLight: 'rgba(34, 211, 238, 0.15)',
-  highlight: 'rgba(251, 191, 36, 0.2)',
-
-  // States
-  disabled: '#4A4A4A',
-  hover: 'rgba(107, 159, 232, 0.12)',
-  pressed: 'rgba(107, 159, 232, 0.18)',
   focus: 'rgba(107, 159, 232, 0.18)',
 
   // Icons
