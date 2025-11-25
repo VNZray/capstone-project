@@ -74,7 +74,7 @@ export async function loginUser(email, password) {
   
   if (!users || users.length === 0) {
     // Perform dummy bcrypt comparison to prevent timing attacks
-    await bcrypt.compare(password, '$2b$10$dummyhashfortimingattak');
+    await bcrypt.compare(password, '$2b$10$dummyhashfortimingattack');
     throw new Error(GENERIC_AUTH_ERROR);
   }
   
