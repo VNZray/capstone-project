@@ -1,13 +1,19 @@
-import { createContext, useContext, useEffect, useState, useCallback } from "react";
-import type { ReactNode } from "react";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  useCallback,
+} from 'react';
+import type { ReactNode } from 'react';
 import {
   loginUser,
   logoutUser,
   getStoredUser,
   initializeAuth,
-} from "@/services/AuthService";
-import type { UserDetails } from "../types/User";
-import debugLogger from "@/utils/debugLogger";
+} from '@/services/AuthService';
+import type { UserDetails } from '../types/User';
+import debugLogger from '@/utils/debugLogger';
 
 interface AuthContextType {
   user: UserDetails | null;
@@ -37,19 +43,19 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
         // Attempt to restore session via refresh token
         const success = await initializeAuth();
-        
+
         if (success) {
           const storedUser = await getStoredUser();
           if (storedUser) {
             debugLogger({
               title: 'AuthContext: User restored',
-              data: { user_id: storedUser.user_id }
+              data: { user_id: storedUser.user_id },
             });
             setUser(storedUser);
           } else {
-             // If we have token but no user data, maybe fetch /auth/me? 
-             // For now, simpler to require login if data missing.
-             // Or await fetchMe();
+            // If we have token but no user data, maybe fetch /auth/me?
+            // For now, simpler to require login if data missing.
+            // Or await fetchMe();
           }
         } else {
           debugLogger({
@@ -73,7 +79,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     try {
       debugLogger({
         title: 'AuthContext: Login started',
-        data: { email }
+        data: { email },
       });
 
       const loggedInUser = await loginUser(email, password);
@@ -84,7 +90,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         data: {
           user_id: loggedInUser.user_id,
           role: loggedInUser.role_name,
-        }
+        },
       });
     } catch (error) {
       debugLogger({
@@ -117,13 +123,15 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const isAuthenticated = !!user;
 
   return (
-    <AuthContext.Provider value={{ 
-      user, 
-      loading, 
-      isAuthenticated, 
-      login, 
-      logout,
-    }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        loading,
+        isAuthenticated,
+        login,
+        logout,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );
@@ -132,6 +140,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 // eslint-disable-next-line react-refresh/only-export-components
 export const useAuth = (): AuthContextType => {
   const context = useContext(AuthContext);
-  if (!context) throw new Error("useAuth must be used within an AuthProvider");
+  if (!context) throw new Error('useAuth must be used within an AuthProvider');
   return context;
 };

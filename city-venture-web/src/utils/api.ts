@@ -7,19 +7,13 @@ import type { UserRoles } from '@/src/types/User';
 import type { TourismStaff, CreateTourismStaffRequest, UpdateTourismStaffRequest } from '@/src/types/TourismStaff';
 import type { EntityType } from '../types/approval';
 
-// Create axios instance with default config
-const api = axios.create({
-  baseURL: API_BASE_URL,
-  headers: {
-    'Content-Type': 'application/json',
-  },
-});
+import apiClient from '@/src/services/apiClient';
 
-// NOTE: This file uses a standalone axios instance for backward compatibility.
-// New code should use apiClient from @/src/services/apiClient which supports
-// the new authentication system with refresh tokens and HttpOnly cookies.
-// This interceptor is kept for legacy endpoints that haven't migrated yet.
-// TODO: Gradually migrate all endpoints to use apiClient and remove this file.
+// Use apiClient instead of creating a new axios instance
+const api = apiClient;
+
+// NOTE: This file is kept for backward compatibility.
+// New code should use apiClient directly.
 
 // Define types for tourist spot images
 export interface TouristSpotImage {
