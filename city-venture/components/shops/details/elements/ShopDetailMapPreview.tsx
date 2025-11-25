@@ -1,6 +1,6 @@
 import type { BusinessProfileView } from '@/components/shops/details/types';
 import { MapView, Marker } from '@/components/map/MapWrapper';
-import { ShopColors } from '@/constants/ShopColors';
+import { ShopColors } from '@/constants/color';
 import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';

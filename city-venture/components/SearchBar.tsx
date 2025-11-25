@@ -183,7 +183,7 @@ const SearchBar: React.FC<SearchBarProps> = ({
           name="search"
           size={18}
           color={palette.placeholder}
-          style={{ marginLeft: 8, marginRight: 6 }}
+          style={{ marginLeft: 12, marginRight: 4 }}
         />
       )}
       <TextInput
@@ -211,6 +211,11 @@ const SearchBar: React.FC<SearchBarProps> = ({
         >
           <Ionicons name="close" size={16} color={palette.placeholder} />
         </TouchableOpacity>
+      )}
+      {variant === 'plain' && rightIcon && (
+         <View style={{ marginRight: 12 }}>
+            {rightIcon}
+         </View>
       )}
       {loading && variant === 'plain' && (
         <ActivityIndicator style={{ marginRight: 8 }} size="small" color={palette.iconOnBg} />

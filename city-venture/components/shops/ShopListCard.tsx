@@ -1,4 +1,4 @@
-import { ShopColors } from '@/constants/ShopColors';
+import { ShopColors } from '@/constants/color';
 import { moderateScale } from '@/utils/responsive';
 import { FontAwesome5 } from '@expo/vector-icons';
 import React from 'react';
@@ -44,8 +44,8 @@ const ShopListCard: React.FC<ShopListCardProps> = ({
 }) => {
   const { width } = useWindowDimensions();
 
-  const RADIUS = 16;
-  const IMAGE_SIZE = moderateScale(100, 0.55, width);
+  const RADIUS = 12;
+  const IMAGE_SIZE = moderateScale(80, 0.55, width);
 
   const imageSource = typeof image === 'string' ? { uri: image } : image;
 
@@ -58,44 +58,37 @@ const ShopListCard: React.FC<ShopListCardProps> = ({
         style,
       ]}
     >
-      <Image source={imageSource} style={[styles.image, { width: IMAGE_SIZE, height: IMAGE_SIZE }]} resizeMode="cover" />
+      <Image source={imageSource} style={[styles.image, { width: IMAGE_SIZE, height: IMAGE_SIZE, borderRadius: RADIUS }]} resizeMode="cover" />
 
       <View style={styles.content}>
-        <View>
-          <View style={styles.headerRow}>
-            <Text style={[styles.name, nameStyle]} numberOfLines={1}>
-              {name}
-            </Text>
-            {distance !== undefined && (
-              <View style={styles.distanceBadge}>
-                <FontAwesome5 name="map-marker-alt" size={10} color={ShopColors.accent} />
-                <Text style={styles.distanceText}>{distance.toFixed(1)} km</Text>
-              </View>
-            )}
-          </View>
-
-          <Text style={styles.category} numberOfLines={1}>
-            {category}
+        <View style={styles.topRow}>
+          <Text style={[styles.name, nameStyle]} numberOfLines={1}>
+            {name}
           </Text>
+          {distance !== undefined && (
+            <Text style={styles.distanceText}>{distance.toFixed(1)} km</Text>
+          )}
+        </View>
 
+        <Text style={styles.category} numberOfLines={1}>
+          {category}
+        </Text>
+
+        <View style={styles.footerRow}>
           <View style={styles.ratingRow}>
-            <FontAwesome5 name="star" size={12} color="#FFD700" solid />
+            <FontAwesome5 name="star" size={10} color="#FFD700" solid />
             <Text style={styles.ratingText}>
               {rating.toFixed(1)} <Text style={styles.reviewsText}>({reviews})</Text>
             </Text>
           </View>
-        </View>
-
-        <View style={styles.footer}>
-          {tags.slice(0, 2).map((tag, index) => (
-            <View key={index} style={styles.tag}>
-              <Text style={styles.tagText}>{tag}</Text>
-            </View>
-          ))}
+          
           {location && (
-            <Text style={styles.location} numberOfLines={1}>
-              {location}
-            </Text>
+            <View style={styles.locationContainer}>
+              <FontAwesome5 name="map-marker-alt" size={10} color={ShopColors.textSecondary} />
+              <Text style={styles.location} numberOfLines={1}>
+                {location}
+              </Text>
+            </View>
           )}
         </View>
       </View>
@@ -109,99 +102,83 @@ const styles = StyleSheet.create({
     backgroundColor: ShopColors.cardBackground,
     borderRadius: 16,
     padding: 12,
-    marginBottom: 16,
+    marginBottom: 12,
+    // Soft shadow
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
+    shadowOpacity: 0.03,
     shadowRadius: 8,
-    elevation: 2,
-    borderWidth: 1,
-    borderColor: ShopColors.border,
+    elevation: 1,
   },
   pressed: {
-    opacity: 0.9,
-    backgroundColor: '#FAFAFA',
+    opacity: 0.7,
   },
   image: {
-    borderRadius: 12,
     marginRight: 16,
+    backgroundColor: '#f0f0f0',
   },
   content: {
     flex: 1,
-    justifyContent: 'space-between',
-    paddingVertical: 4,
+    justifyContent: 'center',
   },
-  headerRow: {
+  topRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 4,
   },
   name: {
-    fontSize: 14,
-    fontFamily: 'Poppins-Bold',
+    fontSize: 15,
+    fontFamily: 'Poppins-SemiBold',
     color: ShopColors.textPrimary,
     flex: 1,
     marginRight: 8,
   },
-  distanceBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    backgroundColor: '#F0F7FF',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 6,
-  },
   distanceText: {
-    fontSize: 10,
+    fontSize: 11,
     fontFamily: 'Poppins-Medium',
-    color: ShopColors.accent,
+    color: ShopColors.textSecondary,
   },
   category: {
-    fontSize: 11,
+    fontSize: 12,
     fontFamily: 'Poppins-Regular',
     color: ShopColors.textSecondary,
-    marginBottom: 4,
+    marginBottom: 8,
+  },
+  footerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
   ratingRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
+    backgroundColor: '#FAFAFA',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
   },
   ratingText: {
     fontSize: 11,
-    fontFamily: 'Poppins-SemiBold',
+    fontFamily: 'Poppins-Medium',
     color: ShopColors.textPrimary,
   },
   reviewsText: {
-    fontFamily: 'Poppins-Regular',
     color: ShopColors.textSecondary,
   },
-  footer: {
+  locationContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    marginTop: 6,
-  },
-  tag: {
-    borderWidth: 1,
-    borderColor: ShopColors.border,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 6,
-  },
-  tagText: {
-    fontSize: 9,
-    fontFamily: 'Poppins-Medium',
-    color: ShopColors.textSecondary,
+    gap: 4,
+    flex: 1,
+    justifyContent: 'flex-end',
+    marginLeft: 8,
   },
   location: {
-    flex: 1,
-    fontSize: 10,
+    fontSize: 11,
     fontFamily: 'Poppins-Regular',
     color: ShopColors.textSecondary,
-    textAlign: 'right',
   },
 });
 

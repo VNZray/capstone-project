@@ -1,5 +1,5 @@
 import type { BusinessProfileMenuItem, BusinessProfileView } from '@/components/shops/details/types';
-import { ShopColors } from '@/constants/ShopColors';
+import { ShopColors } from '@/constants/color';
 import React, { useMemo } from 'react';
 import { Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 

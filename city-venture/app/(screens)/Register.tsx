@@ -14,10 +14,11 @@ import api from '@/services/api';
 import { Tourist } from '@/types/Tourist';
 import { User } from '@/types/User';
 import axios from 'axios';
+import { LinearGradient } from 'expo-linear-gradient';
 import { StatusBar } from 'expo-status-bar';
 import React, { useEffect, useState } from 'react';
-import { ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { ScrollView, StyleSheet, TouchableOpacity, View, Platform, ImageBackground } from 'react-native';
+import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 
 const RegistrationPage = () => {
   const colorScheme = useColorScheme();
@@ -198,10 +199,43 @@ const RegistrationPage = () => {
 
   return (
     <SafeAreaProvider>
-      <StatusBar />
+      <SafeAreaView style={{ flex: 1, backgroundColor: '#fff' }}>
+        <StatusBar />
+        
+        {/* Web Split Screen Wrapper */}
+        <View style={styles.container}>
+          {/* Left Side Image (Web Only) */}
+          {Platform.OS === 'web' && (
+            <View style={styles.webImageContainer}>
+              <ImageBackground
+                source={{ uri: 'https://i0.wp.com/nagayon.com/wp-content/uploads/2024/08/oragon-monument-by-colline.jpg' }}
+                style={styles.webImage}
+                resizeMode="cover"
+              >
+                <LinearGradient
+                  colors={['rgba(10, 27, 71, 0.4)', 'rgba(10, 27, 71, 0.8)']}
+                  style={styles.webImageOverlay}
+                >
+                  <View style={styles.webHeroContent}>
+                    <ThemedText type="title-large" weight="extra-bold" style={{ color: 'white', fontSize: 48 }}>
+                      Join City Venture
+                    </ThemedText>
+                    <ThemedText type="body-large" style={{ color: 'white', marginTop: 16, maxWidth: 400 }}>
+                      Create your account and start exploring the vibrant city of Naga. Connect with local businesses and discover amazing experiences.
+                    </ThemedText>
+                  </View>
+                </LinearGradient>
+              </ImageBackground>
+            </View>
+          )}
 
-      <ScrollView>
-        <PageContainer gap={16}>
+          {/* Right Side Form */}
+          <View style={styles.formContainer}>
+            <ScrollView 
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={styles.scrollContent}
+            >
+              <PageContainer gap={16} style={{ maxWidth: Platform.OS === 'web' ? 480 : '100%', width: '100%', alignSelf: 'center' }}>
           <FormLogo />
 
           <View style={styles.heading}>
@@ -487,9 +521,12 @@ const RegistrationPage = () => {
             </ThemedText>
           </View>
 
-          {/* Legacy picker modals removed in favor of Dropdown component */}
-        </PageContainer>
-      </ScrollView>
+                {/* Legacy picker modals removed in favor of Dropdown component */}
+              </PageContainer>
+            </ScrollView>
+          </View>
+        </View>
+      </SafeAreaView>
     </SafeAreaProvider>
   );
 };
@@ -499,8 +536,32 @@ export default RegistrationPage;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingHorizontal: 16,
-    paddingTop: 40,
+    flexDirection: Platform.OS === 'web' ? 'row' : 'column',
+  },
+  webImageContainer: {
+    flex: 1,
+    backgroundColor: '#0A1B47',
+  },
+  webImage: {
+    flex: 1,
+    width: '100%',
+    height: '100%',
+  },
+  webImageOverlay: {
+    flex: 1,
+    justifyContent: 'center',
+    padding: 60,
+  },
+  webHeroContent: {
+    maxWidth: 600,
+  },
+  formContainer: {
+    flex: Platform.OS === 'web' ? 1 : 1,
+    backgroundColor: '#fff',
+    maxWidth: Platform.OS === 'web' ? 800 : '100%',
+  },
+  scrollContent: {
+    padding: Platform.OS === 'web' ? 40 : 16,
   },
   card: {
     borderRadius: 16,

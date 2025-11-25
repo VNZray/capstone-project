@@ -1,5 +1,5 @@
 import type { BusinessProfileGalleryItem } from '@/components/shops/details/types';
-import { ShopColors } from '@/constants/ShopColors';
+import { ShopColors } from '@/constants/color';
 import React from 'react';
 import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 
