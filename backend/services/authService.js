@@ -62,8 +62,14 @@ export async function loginUser(email, password) {
   const [rows] = await db.query('CALL GetUserByEmail(?)', [email]);
   const users = rows[0]; // SP returns [[user], ...]
   
+  // SECURITY: Use generic error message to prevent user enumeration attacks
+  // Do NOT reveal whether the email exists or the password was wrong
+  const GENERIC_AUTH_ERROR = 'Invalid email or password';
+  
   if (!users || users.length === 0) {
-    throw new Error('User not found');
+    // Perform dummy bcrypt comparison to prevent timing attacks
+    await bcrypt.compare(password, '$2b$10$dummyhashfortimingattak');
+    throw new Error(GENERIC_AUTH_ERROR);
   }
   
   const user = users[0];
@@ -81,7 +87,7 @@ export async function loginUser(email, password) {
   const isMatch = await bcrypt.compare(password, user.password);
   
   if (!isMatch) {
-    throw new Error('Invalid credentials');
+    throw new Error(GENERIC_AUTH_ERROR);
   }
 
   // 2. Generate tokens

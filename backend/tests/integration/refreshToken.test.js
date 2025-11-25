@@ -136,7 +136,7 @@ describe('Token Refresh Flow Integration Tests', () => {
       mockQuery.mockResolvedValueOnce([[[]]]); // Empty user array
 
       await expect(authService.loginUser('nonexistent@example.com', 'password'))
-        .rejects.toThrow('User not found');
+        .rejects.toThrow('Invalid email or password');
     });
 
     test('should throw error for invalid password', async () => {
@@ -145,7 +145,7 @@ describe('Token Refresh Flow Integration Tests', () => {
       mockBcryptCompare.mockResolvedValue(false);
 
       await expect(authService.loginUser(testUser.email, 'wrongpassword'))
-        .rejects.toThrow('Invalid credentials');
+        .rejects.toThrow('Invalid email or password');
     });
   });
 

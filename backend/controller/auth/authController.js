@@ -51,8 +51,12 @@ export async function login(req, res) {
 
   } catch (error) {
     console.error('Login error:', error);
-    const status = error.message === 'User not found' || error.message === 'Invalid credentials' ? 401 : 500;
-    return res.status(status).json({ message: error.message });
+    // SECURITY: Always return 401 for auth failures with generic message
+    // Do not reveal whether email exists or password was wrong
+    const isAuthError = error.message === 'Invalid email or password';
+    const status = isAuthError ? 401 : 500;
+    const message = isAuthError ? error.message : 'Authentication failed';
+    return res.status(status).json({ message });
   }
 }
 
