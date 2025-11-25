@@ -1,6 +1,6 @@
 // migrations/20250829160000_tourist_spot_images_table.cjs
-exports.up = function (knex) {
-  return knex.schema.createTable("tourist_spot_images", (table) => {
+exports.up = async function (knex) {
+  await knex.schema.createTable("tourist_spot_images", (table) => {
     table.uuid("id").primary().defaultTo(knex.raw("(UUID())"));
     table
       .uuid("tourist_spot_id")
@@ -20,8 +20,10 @@ exports.up = function (knex) {
     table.index("tourist_spot_id", "idx_tourist_spot_images_spot_id");
     table.index("is_primary", "idx_tourist_spot_images_primary");
   });
+
+  console.log("Tourist spot images table created.");
 };
 
-exports.down = function (knex) {
-  return knex.schema.dropTableIfExists("tourist_spot_images");
+exports.down = async function (knex) {
+  await knex.schema.dropTableIfExists("tourist_spot_images");
 };

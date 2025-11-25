@@ -1,3 +1,5 @@
+const { createProductReviewProcedures, dropProductReviewProcedures } = require("../procedures/productReviewProcedures.js");
+
 exports.up = async function (knex) {
   // Create product_review table (separate from existing review_and_rating table)
   // This provides more specific product review functionality alongside the existing polymorphic review system
@@ -31,8 +33,29 @@ exports.up = async function (knex) {
     table.index("rating", "idx_product_review_rating");
     table.index("status", "idx_product_review_status");
   });
+
+  // Create stored procedures
+  console.log("Creating product review stored procedures...");
+  try {
+    await createProductReviewProcedures(knex);
+    console.log("✅ Product review stored procedures created successfully");
+  } catch (error) {
+    console.error("❌ Error creating product review stored procedures:", error);
+    throw error;
+  }
 };
 
 exports.down = async function (knex) {
+  // Drop stored procedures first
+  console.log("Dropping product review stored procedures...");
+  try {
+    await dropProductReviewProcedures(knex);
+    console.log("✅ Product review stored procedures dropped successfully");
+  } catch (error) {
+    console.error("❌ Error dropping product review stored procedures:", error);
+    throw error;
+  }
+
+  // Drop tables
   await knex.schema.dropTableIfExists("product_review");
 };

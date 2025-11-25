@@ -8,7 +8,8 @@ import {
   Textarea,
 } from "@mui/joy";
 import { updateData } from "@/src/services/Service";
-import CardHeader from "@/src/components/CardHeader";
+import Typography from "@/src/components/Typography";
+import Alert from "@/src/components/Alert";
 
 interface EditDescriptionModalProps {
   open: boolean;
@@ -28,6 +29,17 @@ const EditDescriptionModal: React.FC<EditDescriptionModalProps> = ({
   onUpdate,
 }) => {
   const [description, setDescription] = React.useState(initialDescription);
+  const [alertConfig, setAlertConfig] = React.useState<{
+    open: boolean;
+    type: "success" | "error" | "warning" | "info";
+    title: string;
+    message: string;
+  }>({
+    open: false,
+    type: "info",
+    title: "",
+    message: "",
+  });
 
   React.useEffect(() => {
     setDescription(initialDescription);
@@ -37,23 +49,44 @@ const EditDescriptionModal: React.FC<EditDescriptionModalProps> = ({
     if (roomId) {
       try {
         await updateData(roomId, { description }, "room");
+        
+        setAlertConfig({
+          open: true,
+          type: "success",
+          title: "Description Updated",
+          message: "Room description has been successfully updated.",
+        });
+        
         onSave(description);
+        
+        setTimeout(() => {
+          onClose();
+          if (onUpdate) onUpdate();
+        }, 1500);
+        
       } catch (err) {
-        // Optionally handle error
+        const errorMessage = err instanceof Error ? err.message : "Failed to update description";
+        
+        setAlertConfig({
+          open: true,
+          type: "error",
+          title: "Update Failed",
+          message: errorMessage,
+        });
+        
         console.error("Failed to update room description", err);
       }
     } else {
       onSave(description);
+      onClose();
     }
-    if (onUpdate) onUpdate();
-
-    onClose();
   };
 
   return (
-    <Modal open={open} onClose={onClose}>
+    <>
+      <Modal open={open} onClose={onClose}>
       <ModalDialog size="lg" variant="outlined" maxWidth={600} minWidth={600}>
-        <CardHeader title="Edit Description" color="white" />
+        <Typography.CardTitle>Edit Room Description</Typography.CardTitle>
         <DialogContent>
           <Textarea
             minRows={4}
@@ -73,6 +106,18 @@ const EditDescriptionModal: React.FC<EditDescriptionModalProps> = ({
         </DialogActions>
       </ModalDialog>
     </Modal>
+    
+    <Alert
+      open={alertConfig.open}
+      onClose={() => setAlertConfig((prev) => ({ ...prev, open: false }))}
+      onConfirm={() => setAlertConfig((prev) => ({ ...prev, open: false }))}
+      type={alertConfig.type}
+      title={alertConfig.title}
+      message={alertConfig.message}
+      confirmText="OK"
+      showCancel={false}
+    />
+    </>
   );
 };
 

@@ -1,7 +1,8 @@
 import React from "react";
-import { Button } from "@mui/joy";
+
 import Container from "@/src/components/Container";
 import { Star, ListChecks, Image } from "lucide-react";
+import Button from "./Button";
 
 type tabs = "Details" | "Photos" | "Reviews";
 
@@ -25,6 +26,7 @@ export default function Tabs({ active, onChange }: tabsFilter) {
       {tabs.map((tab) => (
         <Button
           key={tab.label}
+          colorScheme="primary"
           size="md"
           variant={active === tab.label ? "solid" : "outlined"}
           startDecorator={tab.icon}

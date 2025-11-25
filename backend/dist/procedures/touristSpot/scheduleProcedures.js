@@ -1,17 +1,23 @@
-// Schedule-related procedures
+// Procedures for managing schedules for tourist spots.
+
 export async function createScheduleProcedures(knex) {
+  // Retrieves all schedules for a given tourist spot ID.
   await knex.raw(`
     CREATE PROCEDURE GetTouristSpotSchedules(IN p_id CHAR(36))
     BEGIN
       SELECT * FROM tourist_spot_schedules WHERE tourist_spot_id = p_id ORDER BY day_of_week ASC;
     END;
   `);
+
+  // Deletes all schedules for a given tourist spot ID.
   await knex.raw(`
     CREATE PROCEDURE DeleteSchedulesByTouristSpot(IN p_id CHAR(36))
     BEGIN
       DELETE FROM tourist_spot_schedules WHERE tourist_spot_id = p_id;
     END;
   `);
+
+  // Inserts a new schedule for a tourist spot.
   await knex.raw(`
     CREATE PROCEDURE InsertTouristSpotSchedule(
       IN p_tourist_spot_id CHAR(36),

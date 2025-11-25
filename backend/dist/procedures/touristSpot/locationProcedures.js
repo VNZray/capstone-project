@@ -1,5 +1,7 @@
-// Location-related procedures
+// Procedures for managing location data for tourist spots.
+
 export async function createLocationProcedures(knex) {
+  // Retrieves all provinces, municipalities, and barangays.
   await knex.raw(`
     CREATE PROCEDURE GetLocationData()
     BEGIN
@@ -8,12 +10,16 @@ export async function createLocationProcedures(knex) {
       SELECT * FROM barangay ORDER BY barangay ASC;
     END;
   `);
+
+  // Retrieves all municipalities for a given province ID.
   await knex.raw(`
     CREATE PROCEDURE GetMunicipalitiesByProvince(IN p_province_id INT)
     BEGIN
       SELECT * FROM municipality WHERE province_id = p_province_id ORDER BY municipality ASC;
     END;
   `);
+
+  // Retrieves all barangays for a given municipality ID.
   await knex.raw(`
     CREATE PROCEDURE GetBarangaysByMunicipality(IN p_municipality_id INT)
     BEGIN

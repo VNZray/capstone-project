@@ -15,6 +15,7 @@ export interface Product {
   price: number | string; // Can be string from DB (decimal type)
   image_url: string | null;
   status: 'active' | 'inactive' | 'out_of_stock';
+  is_unavailable?: boolean | 0 | 1;
   created_at: string;
   updated_at: string;
   category_name?: string;

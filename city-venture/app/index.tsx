@@ -1,10 +1,17 @@
 import Button from '@/components/Button';
 import { ThemedText } from '@/components/themed-text';
 import { navigateToLogin, navigateToRegister } from '@/routes/mainRoutes';
+import { useAuth } from '@/context/AuthContext';
 import { useFonts } from 'expo-font';
 import { LinearGradient } from 'expo-linear-gradient';
-import React from 'react';
-import { ImageBackground, View } from 'react-native';
+import { router } from 'expo-router';
+import React, { useEffect } from 'react';
+import {
+  ImageBackground,
+  View,
+  Platform,
+  useWindowDimensions,
+} from 'react-native';
 import 'react-native-url-polyfill/auto';
 
 const Main = () => {
@@ -15,10 +22,30 @@ const Main = () => {
     'Poppins-Bold': require('@/assets/fonts/Poppins/Poppins-Bold.ttf'),
   });
 
+  const { width } = useWindowDimensions();
+  const isWeb = Platform.OS === 'web';
+  const isDesktop = width >= 768;
+
+  // Redirect to landing page for web/desktop users
+  useEffect(() => {
+    if (fontsLoaded && isWeb && isDesktop) {
+      router.replace('/landing');
+    }
+  }, [fontsLoaded, isWeb, isDesktop]);
+
+  const { user, loading } = useAuth();
+
+  useEffect(() => {
+    if (!loading && user) {
+      router.replace('/(tabs)/(home)');
+    }
+  }, [user, loading]);
+
   if (!fontsLoaded) {
     return null;
   }
 
+  // Show mobile welcome screen for mobile users
   const imageBackground =
     'https://i0.wp.com/nagayon.com/wp-content/uploads/2024/08/oragon-monument-by-colline.jpg';
 

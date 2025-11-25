@@ -1,5 +1,5 @@
-exports.up = function (knex) {
-  return knex.schema.createTable("report_status_history", function (table) {
+exports.up = async function (knex) {
+  await knex.schema.createTable("report_status_history", function (table) {
     table.uuid("id").primary().defaultTo(knex.raw("(UUID())")); // MariaDB's UUID()
     
     // Report reference
@@ -32,8 +32,10 @@ exports.up = function (knex) {
     // Timestamp for this status change
     table.timestamp("updated_at").defaultTo(knex.fn.now());
   });
+
+  console.log("Report status history table created.");
 };
 
-exports.down = function (knex) {
-  return knex.schema.dropTable("report_status_history");
+exports.down = async function (knex) {
+  await knex.schema.dropTable("report_status_history");
 };

@@ -8,17 +8,17 @@ export const navigateToRoot = () => {
 
 // navigate to login
 export const navigateToLogin = () => {
-    router.replace('/Login');
+    router.replace('/(screens)');
 };
 
 // navigate to register
 export const navigateToRegister = () => {
-    router.replace('/Register');
+    router.replace('/(screens)/Register');
 };
 
 // navigate to forgot password
 export const navigateToForgotPassword = () => {
-    router.navigate('/ForgotPassword');
+    router.navigate('/(screens)/ForgotPassword');
 };
 
 // navigate to home

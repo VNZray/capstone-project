@@ -14,7 +14,7 @@ import PageContainer from '@/components/PageContainer';
 import Container from '@/components/Container';
 import Chip from '@/components/Chip';
 import { useTouristSpot } from '@/context/TouristSpotContext';
-import MapView, { Marker } from 'react-native-maps';
+import { MapView, Marker } from '@/components/map/MapWrapper';
 
 const dayNames = [
   'Sunday',

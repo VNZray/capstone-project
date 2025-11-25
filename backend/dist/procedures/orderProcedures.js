@@ -16,7 +16,7 @@ async function createOrderProcedures(knex) {
 
   // Get orders by business ID
   await knex.raw(`
-    CREATE PROCEDURE GetOrdersByBusinessId(IN p_businessId CHAR(36))
+    CREATE PROCEDURE GetOrdersByBusinessId(IN p_businessId CHAR(64))
     BEGIN
       SELECT o.*, u.email as user_email, d.name as discount_name,
         COUNT(oi.id) as item_count
@@ -32,7 +32,7 @@ async function createOrderProcedures(knex) {
 
   // Get orders by user ID
   await knex.raw(`
-    CREATE PROCEDURE GetOrdersByUserId(IN p_userId CHAR(36))
+    CREATE PROCEDURE GetOrdersByUserId(IN p_userId CHAR(64))
     BEGIN
       SELECT o.*, b.business_name, d.name as discount_name,
         COUNT(oi.id) as item_count
@@ -48,7 +48,7 @@ async function createOrderProcedures(knex) {
 
   // Get order by ID with details
   await knex.raw(`
-    CREATE PROCEDURE GetOrderById(IN p_orderId CHAR(36))
+    CREATE PROCEDURE GetOrderById(IN p_orderId CHAR(64))
     BEGIN
       -- Get order details
       SELECT o.*, b.business_name, b.phone_number as business_phone, u.email as user_email, d.name as discount_name
@@ -69,15 +69,15 @@ async function createOrderProcedures(knex) {
   // Insert order with items (complex transaction)
   await knex.raw(`
     CREATE PROCEDURE InsertOrder(
-      IN p_id CHAR(36),
-      IN p_business_id CHAR(36),
-      IN p_user_id CHAR(36),
+      IN p_id CHAR(64),
+      IN p_business_id CHAR(64),
+      IN p_user_id CHAR(64),
       IN p_order_number VARCHAR(50),
       IN p_subtotal DECIMAL(10,2),
       IN p_discount_amount DECIMAL(10,2),
       IN p_tax_amount DECIMAL(10,2),
       IN p_total_amount DECIMAL(10,2),
-      IN p_discount_id CHAR(36),
+      IN p_discount_id CHAR(64),
       IN p_pickup_datetime TIMESTAMP,
       IN p_special_instructions TEXT,
       IN p_payment_method ENUM('cash_on_pickup', 'card', 'digital_wallet')
@@ -104,9 +104,9 @@ async function createOrderProcedures(knex) {
   // Insert order item
   await knex.raw(`
     CREATE PROCEDURE InsertOrderItem(
-      IN p_id CHAR(36),
-      IN p_order_id CHAR(36),
-      IN p_product_id CHAR(36),
+      IN p_id CHAR(64),
+      IN p_order_id CHAR(64),
+      IN p_product_id CHAR(64),
       IN p_quantity INT,
       IN p_unit_price DECIMAL(10,2),
       IN p_total_price DECIMAL(10,2),
@@ -124,11 +124,11 @@ async function createOrderProcedures(knex) {
   // Update stock for order item
   await knex.raw(`
     CREATE PROCEDURE UpdateStockForOrder(
-      IN p_product_id CHAR(36),
+      IN p_product_id CHAR(64),
       IN p_quantity INT,
       IN p_order_number VARCHAR(50),
-      IN p_user_id CHAR(36),
-      IN p_history_id CHAR(36)
+      IN p_user_id CHAR(64),
+      IN p_history_id CHAR(64)
     )
     BEGIN
       DECLARE current_stock_val INT DEFAULT 0;
@@ -156,7 +156,7 @@ async function createOrderProcedures(knex) {
   // Update order status
   await knex.raw(`
     CREATE PROCEDURE UpdateOrderStatus(
-      IN p_orderId CHAR(36),
+      IN p_orderId CHAR(64),
       IN p_status ENUM('pending', 'confirmed', 'preparing', 'ready', 'completed', 'cancelled')
     )
     BEGIN
@@ -173,7 +173,7 @@ async function createOrderProcedures(knex) {
   // Update payment status
   await knex.raw(`
     CREATE PROCEDURE UpdatePaymentStatus(
-      IN p_orderId CHAR(36),
+      IN p_orderId CHAR(64),
       IN p_payment_status ENUM('pending', 'paid', 'failed', 'refunded')
     )
     BEGIN
@@ -190,12 +190,12 @@ async function createOrderProcedures(knex) {
   // Cancel order with stock restoration
   await knex.raw(`
     CREATE PROCEDURE CancelOrder(
-      IN p_orderId CHAR(36),
+      IN p_orderId CHAR(64),
       IN p_cancellation_reason TEXT
     )
     BEGIN
       DECLARE done INT DEFAULT FALSE;
-      DECLARE v_product_id CHAR(36);
+      DECLARE v_product_id CHAR(64);
       DECLARE v_quantity INT;
       DECLARE v_order_number VARCHAR(50);
       DECLARE order_status VARCHAR(20);
@@ -253,7 +253,7 @@ async function createOrderProcedures(knex) {
   // Get order statistics for business
   await knex.raw(`
     CREATE PROCEDURE GetOrderStatsByBusiness(
-      IN p_businessId CHAR(36),
+      IN p_businessId CHAR(64),
       IN p_period INT
     )
     BEGIN
@@ -301,6 +301,75 @@ async function createOrderProcedures(knex) {
       LIMIT 10;
     END;
   `);
+
+  // Verify arrival code
+  await knex.raw(`
+    CREATE PROCEDURE VerifyArrivalCode(
+      IN p_businessId CHAR(36),
+      IN p_arrivalCode VARCHAR(10)
+    )
+    BEGIN
+      SELECT o.*, u.first_name, u.last_name, u.phone_number as user_phone
+      FROM \`order\` o
+      LEFT JOIN user u ON o.user_id = u.id
+      WHERE o.business_id = p_businessId 
+        AND o.arrival_code = p_arrivalCode
+        AND o.status IN ('confirmed', 'preparing', 'ready');
+    END;
+  `);
+
+  // Mark customer as arrived
+  await knex.raw(`
+    CREATE PROCEDURE MarkCustomerArrivedForOrder(IN p_orderId CHAR(36))
+    BEGIN
+      UPDATE \`order\` 
+      SET customer_arrived_at = NOW(),
+          updated_at = NOW()
+      WHERE id = p_orderId;
+      
+      SELECT o.*, b.business_name, u.email as user_email
+      FROM \`order\` o 
+      LEFT JOIN business b ON o.business_id = b.id 
+      LEFT JOIN user u ON o.user_id = u.id 
+      WHERE o.id = p_orderId;
+    END;
+  `);
+
+  // Mark order as ready
+  await knex.raw(`
+    CREATE PROCEDURE MarkOrderAsReady(IN p_orderId CHAR(36))
+    BEGIN
+      UPDATE \`order\` 
+      SET status = 'ready',
+          ready_at = NOW(),
+          updated_at = NOW()
+      WHERE id = p_orderId;
+      
+      SELECT o.*, b.business_name, u.email as user_email
+      FROM \`order\` o 
+      LEFT JOIN business b ON o.business_id = b.id 
+      LEFT JOIN user u ON o.user_id = u.id 
+      WHERE o.id = p_orderId;
+    END;
+  `);
+
+  // Mark order as picked up
+  await knex.raw(`
+    CREATE PROCEDURE MarkOrderAsPickedUp(IN p_orderId CHAR(36))
+    BEGIN
+      UPDATE \`order\` 
+      SET status = 'completed',
+          picked_up_at = NOW(),
+          updated_at = NOW()
+      WHERE id = p_orderId;
+      
+      SELECT o.*, b.business_name, u.email as user_email
+      FROM \`order\` o 
+      LEFT JOIN business b ON o.business_id = b.id 
+      LEFT JOIN user u ON o.user_id = u.id 
+      WHERE o.id = p_orderId;
+    END;
+  `);
 }
 
 async function dropOrderProcedures(knex) {
@@ -315,6 +384,10 @@ async function dropOrderProcedures(knex) {
   await knex.raw("DROP PROCEDURE IF EXISTS UpdatePaymentStatus;");
   await knex.raw("DROP PROCEDURE IF EXISTS CancelOrder;");
   await knex.raw("DROP PROCEDURE IF EXISTS GetOrderStatsByBusiness;");
+  await knex.raw("DROP PROCEDURE IF EXISTS VerifyArrivalCode;");
+  await knex.raw("DROP PROCEDURE IF EXISTS MarkCustomerArrivedForOrder;");
+  await knex.raw("DROP PROCEDURE IF EXISTS MarkOrderAsReady;");
+  await knex.raw("DROP PROCEDURE IF EXISTS MarkOrderAsPickedUp;");
 }
 
 export { createOrderProcedures, dropOrderProcedures };

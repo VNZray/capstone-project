@@ -1,14 +1,5 @@
 // Simplified API service that follows the team's pattern
-import axios from "axios";
-import api from "@/src/services/api";
-
-// Create axios instance with default config
-const apiClient = axios.create({
-  baseURL: api,
-  headers: {
-    'Content-Type': 'application/json',
-  },
-});
+import apiClient from "@/src/services/apiClient";
 
 // Generic CRUD operations
 export const apiService = {

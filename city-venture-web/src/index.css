@@ -16,7 +16,6 @@
   --off-white: #f7f9fc;
   --off-white-2: #f7f9fc;
   --off-white-3: #f7f9fc;
-  color: rgba(255, 255, 255, 0.87);
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -27,6 +26,7 @@
 html, body, #root {
   margin: 0;
   padding: 0;
+  height: 100%;
 }
 
 body {

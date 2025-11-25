@@ -1,6 +1,6 @@
 import React from "react";
 import "./Card.css";
-import Text from "@/src/components/Text";
+import Typography from "@/src/components/Typography";
 import Container from "@/src/components/Container";
 
 import { Star } from "@mui/icons-material";
@@ -49,11 +49,8 @@ const Card: React.FC<CardProps> = ({
         borderRadius: compact ? 10 : 16,
         overflow: 'hidden',
         boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
-        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-        border: '1px solid rgba(0,0,0,0.06)',
       }} 
       elevation={elevation}
-      className="business-card"
     >
       <div style={{ display: "flex", flexDirection: "row", gap: compact ? 12 : 20, padding: compact ? 12 : 16 }}>
         <div 
@@ -80,29 +77,25 @@ const Card: React.FC<CardProps> = ({
           <Container elevation={0} padding="0">
             <Grid container spacing={2} columns={12}>
               <Grid xs={8}>
-                <Text 
-                  variant="card-title" 
-                  style={{ 
-                    fontSize: compact ? '1.05rem' : '1.3rem', 
-                    fontWeight: 700, 
-                    color: '#1f2937',
-                    marginBottom: compact ? 4 : 8,
-                    lineHeight: 1.3
+                <Typography.CardTitle 
+                  size="lg"
+                  sx={{
+                    color: "#1f2937",
+                    mb: compact ? 0.5 : 1
                   }}
                 >
                   {title}
-                </Text>
-                <Text 
-                  variant="card-sub-title" 
-                  style={{ 
-                    fontSize: compact ? '0.85rem' : '0.95rem', 
-                    color: '#6b7280',
-                    marginBottom: compact ? 8 : 12,
-                    fontWeight: 500
+                </Typography.CardTitle>
+                <Typography.Body 
+                  size="xs"
+                  weight="semibold"
+                  sx={{
+                    color: "#6b7280",
+                    mb: compact ? 0 : 1.5
                   }}
                 >
                   {subtitle}
-                </Text>
+                </Typography.Body>
                 {/* Status Chip */}
                 {status && (
                   <Chip

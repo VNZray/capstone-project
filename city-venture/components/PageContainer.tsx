@@ -1,6 +1,7 @@
 import { background } from '@/constants/color';
 import React, { ReactNode } from 'react';
-import { Platform, StyleSheet, useColorScheme, View, ViewStyle } from 'react-native';
+import { Platform, StyleSheet, useColorScheme, View, ViewStyle, useWindowDimensions } from 'react-native';
+import { scaled } from '@/utils/responsive';
 
 type PageContainerProps = {
   children: ReactNode;
@@ -31,8 +32,14 @@ const PageContainer = ({
   height = '100%',
   padding = 16,
 }: PageContainerProps) => {
+    console.log('[PageContainer] Rendering');
     const colorScheme = useColorScheme();
     const bg = colorScheme === 'dark' ? background.dark : background.light;
+    const windowDimensions = useWindowDimensions();
+
+    const responsiveGap = scaled(gap, { min: gap * 0.7, max: gap * 1.3, width: windowDimensions.width });
+    const responsivePadding = scaled(padding, { min: padding * 0.7, max: padding * 1.3, width: windowDimensions.width });
+
   return (
     <View
       style={[
@@ -42,7 +49,7 @@ const PageContainer = ({
           flexDirection: direction,
           alignItems: align,
           justifyContent: justify,
-          gap,
+          gap: responsiveGap,
           width:
             typeof width === 'number'
               ? width
@@ -55,7 +62,7 @@ const PageContainer = ({
               : height && typeof height === 'string' && height.endsWith('%')
               ? (height as `${number}%`)
               : undefined,
-          padding,
+          padding: responsivePadding,
         },
         style,
       ]}
@@ -70,10 +77,8 @@ export default PageContainer;
 const styles = StyleSheet.create({
   container: {
     flexDirection: 'column',
-    padding: 20,
     height: '100%',
     width: '100%',
-    gap: 20,
     ...Platform.select({
       android: {
         // Android-specific improvements for better scrolling and performance

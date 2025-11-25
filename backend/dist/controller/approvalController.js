@@ -22,19 +22,31 @@ export const getPendingEditRequests = async (req, res) => {
   }
 };
 
-// Get all pending tourist spots
+// Get all pending tourist spots (will be generalized later)
 export const getPendingTouristSpots = async (req, res) => {
   try {
     const [data] = await db.query("CALL GetPendingTouristSpots()");
     const rows = data[0] || [];
     const cats = data[1] || [];
+    const scheds = data[2] || [];
     const catMap = new Map();
     for (const c of cats) {
       if (!catMap.has(c.tourist_spot_id)) catMap.set(c.tourist_spot_id, []);
       catMap.get(c.tourist_spot_id).push({ id: c.id, category: c.category, type_id: c.type_id });
     }
+    const schedMap = new Map();
+    for (const s of scheds) {
+      if (!schedMap.has(s.tourist_spot_id)) schedMap.set(s.tourist_spot_id, []);
+      schedMap.get(s.tourist_spot_id).push({
+        day_of_week: Number(s.day_of_week),
+        is_closed: Boolean(s.is_closed),
+        open_time: s.open_time,
+        close_time: s.close_time,
+      });
+    }
     for (const row of rows) {
       row.categories = catMap.get(row.id) || [];
+      row.schedules = schedMap.get(row.id) || [];
     }
     res.json({ success: true, data: rows, message: "Pending tourist spots retrieved successfully" });
   } catch (error) {
@@ -43,7 +55,7 @@ export const getPendingTouristSpots = async (req, res) => {
   }
 };
 
-// Change status from pending to active
+// Change status from pending to active (will be generalized later)
 export const approveTouristSpot = async (req, res) => {
   try {
     const { id } = req.params;
@@ -69,7 +81,21 @@ export const approveTouristSpot = async (req, res) => {
   }
 };
 
-// Approve an edit request for tourist spots
+// Reject a tourist spot (change status from pending to rejected)
+export const rejectTouristSpot = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const [data] = await db.query("CALL RejectTouristSpot(?)", [id]);
+    const affected = data[0]?.[0]?.affected_rows ?? 0;
+    if (affected === 0) return res.status(400).json({ success: false, message: "Tourist spot not found or not pending" });
+    res.json({ success: true, message: "Tourist spot rejected successfully" });
+  } catch (error) {
+    console.error("Error rejecting tourist spot:", error);
+    return handleDbError(error, res);
+  }
+};
+
+// Approve an edit request for tourist spots (will be generalized later)
 export const approveEditRequest = async (req, res) => {
   try {
     const { id } = req.params;
@@ -84,7 +110,7 @@ export const approveEditRequest = async (req, res) => {
   }
 };
 
-// Reject an edit request for tourist spots
+// Reject an edit request for tourist spots (will be generalized later)
 export const rejectEditRequest = async (req, res) => {
   try {
     const { id } = req.params;
@@ -95,20 +121,6 @@ export const rejectEditRequest = async (req, res) => {
     res.json({ success: true, message: "Edit request rejected successfully", data: updated });
   } catch (error) {
     console.error("Error rejecting edit request:", error);
-    return handleDbError(error, res);
-  }
-};
-
-// Reject a tourist spot (change status from pending to rejected)
-export const rejectTouristSpot = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const [data] = await db.query("CALL RejectTouristSpot(?)", [id]);
-    const affected = data[0]?.[0]?.affected_rows ?? 0;
-    if (affected === 0) return res.status(400).json({ success: false, message: "Tourist spot not found or not pending" });
-    res.json({ success: true, message: "Tourist spot rejected successfully" });
-  } catch (error) {
-    console.error("Error rejecting tourist spot:", error);
     return handleDbError(error, res);
   }
 };

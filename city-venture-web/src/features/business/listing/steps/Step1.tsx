@@ -14,7 +14,7 @@ import { ToggleButton, ToggleButtonGroup } from "@mui/material";
 import { Chip } from "@mui/joy";
 import HotelIcon from "@mui/icons-material/Hotel";
 import StoreIcon from "@mui/icons-material/Store";
-import Text from "@/src/components/Text";
+import Typography from "@/src/components/Typography";
 import type { Amenity, BusinessAmenity } from "@/src/types/Amenity";
 import { getData, insertData } from "@/src/services/Service";
 type Props = {
@@ -125,27 +125,12 @@ const Step1: React.FC<Props> = ({
           marginBottom: 20,
           paddingTop: 4
         }}>
-          <Text variant="label" color="gray" style={{ 
-            fontSize: 20, 
-            fontWeight: 700, 
-            lineHeight: 1.3,
-            display: 'block',
-            marginBottom: 8,
-            color: '#111827'
-          }}>
+          <Typography.Label size="lg" sx={{ mb: 1, color: "#111827" }}>
             Basic information
-          </Text>
-          <Text color="gray" style={{ 
-            fontSize: 15, 
-            fontWeight: 400, 
-            opacity: 0.75, 
-            display: 'block',
-            maxWidth: '500px',
-            margin: '0 auto',
-            color: '#6b7280'
-          }}>
+          </Typography.Label>
+          <Typography.Body size="xs" sx={{ color: "#6b7280" }}>
             Tell us about your business to get started
-          </Text>
+          </Typography.Body>
         </div>
         <div className="twoCol">
           <div className="col">
@@ -244,7 +229,7 @@ const Step1: React.FC<Props> = ({
                     >
                       {type.type.toLowerCase() === "accommodation" && <HotelIcon fontSize="small" />}
                       {type.type.toLowerCase() === "shop" && <StoreIcon fontSize="small" />}
-                      <Text style={{ fontSize: '0.875rem', fontWeight: 500 }}>{type.type}</Text>
+                      <Typography.Body size="sm" weight="semibold">{type.type}</Typography.Body>
                     </ToggleButton>
                   ))}
                 </ToggleButtonGroup>

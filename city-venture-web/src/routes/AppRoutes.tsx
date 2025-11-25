@@ -6,15 +6,14 @@ import NotFound from "../pages/NotFound";
 // Layouts
 import MainLayout from "../layout/MainLayout";
 
-import LandingPage from "@/src/pages/LandingPage";
+import LandingPage from "@/src/features/landing-page/LandingPage";
 import About from "../pages/About";
 import Registration from "../pages/BusinessRegistration";
 
-import BusinessPortalLogin from "../features/auth/BusinessPortalLogin";
-import BusinessPortalRegister from "../features/auth/BusinessPortalRegister";
-import AdminLogin from "../features/auth/AdminLogin";
-import AdminRegister from "../features/auth/AdminRegister";
-import UnifiedLogin from "@/src/features/auth/UnifiedLogin";
+import BusinessPortalLogin from "../features/auth/LoginPage";
+import AdminLogin from "../features/auth/old-page/AdminLogin";
+import AdminRegister from "../features/auth/old-page/AdminRegister";
+import Unauthorized from "@/src/pages/Unauthorized";
 import BusinessLayout from "../layout/BusinessLayout";
 import MyBusiness from "../features/business/listing/MyBusiness";
 import { AuthProvider } from "../context/AuthContext";
@@ -42,10 +41,9 @@ import AccommodationDashboard from "../features/business/accommodation/dashboard
 import ShopDashboard from "../features/business/shop/dashboard/Dashboard";
 import ManageShop from "../features/business/shop/manage-business/ManageBusiness";
 import AdminLayout from "../layout/AdminLayout";
-import Room from "../features/admin/services/accommodation/Room";
 import Reviews from "../features/business/accommodation/reviews/Reviews";
 import Settings from "../features/business/settings/Settings";
-
+import AccommodationPromotionForm from "../features/business/accommodation/promotion/components/PromotionForm";
 // Tourism
 import Dashboard from "@/src/features/admin/dashboard/Dashboard";
 import Approval from "@/src/features/admin/approval/Approval";
@@ -55,18 +53,71 @@ import Shop from "@/src/features/admin/services/shop/Shop";
 import Event from "@/src/features/admin/services/event/Event";
 import Spot from "@/src/features/admin/services/tourist-spot/Spot";
 import TouristSpotDetailsScreen from "@/src/features/admin/services/tourist-spot/TouristSpotDetailsScreen";
+import TouristSpotReviews from "@/src/features/admin/services/tourist-spot/reviews/Reviews";
+import { TouristSpotProvider } from "@/src/context/TouristSpotContext";
 import { BusinessProvider } from "../context/BusinessContext";
 import ReportDetailsScreen from "@/src/features/admin/report/ReportDetailsScreen";
+import AccommodationSubscription from "@/src/features/business/accommodation/subscription/Subscription";
+import ShopSubscription from "@/src/features/business/shop/subscription/Subscription";
+import TourismStaffManagement from "@/src/features/admin/tourism-staff/TourismStaffManagement";
+import TourismSettings from "../features/admin/settings/Settings";
 
 import Notification from "../features/business/accommodation/notfication/Notification";
 import AccommodationStaff from "../features/business/accommodation/Staff/ManageStaff";
 import ShopStaff from "../features/business/shop/Staff/ManageStaff";
+import Test from "../pages/Test";
+import OwnerProfile from "../features/business/profile/Profile";
+import TourismProfile from "../features/admin/profile/Profile";
+import TouristRegister from "../features/auth/TouristRegister";
+import axios from "axios";
+import api from "../services/api";
+import type { User } from "../types/User";
+import { useEffect, useState } from "react";
+import ServerDown from "../pages/ServerDown";
+import Loading from "../components/ui/Loading";
+import ForgetPassword from "../features/auth/ForgetPassword";
 
 export default function AppRoutes() {
-  const user = "/";
+  const home = "/";
   const business = "/business";
   const tourism = "/tourism";
   const business_type = "Accommodation";
+  const [isServerUp, setIsServerUp] = useState<boolean | null>(null);
+
+  const checkServerStatus = async () => {
+    try {
+      const { data } = await axios.get<User[]>(`${api}/users`, {
+        timeout: 5000,
+      });
+      setIsServerUp(Array.isArray(data));
+    } catch (error) {
+      console.error("Server status check failed:", error);
+      setIsServerUp(false);
+    }
+  };
+
+  useEffect(() => {
+    checkServerStatus();
+  }, []);
+
+  // Normalized role names as produced by AuthService
+  const TOURISM_ROLES = ["Admin", "Tourism Officer"]; // Officer has restricted pages handled per-route
+  const BUSINESS_ROLES = [
+    "Business Owner",
+    "Manager",
+    "Room Manager",
+    "Receptionist",
+    "Sales Associate",
+  ];
+
+  // Show loading or server down while checking
+  if (isServerUp === null) {
+    return <Loading variant="default" showProgress />;
+  }
+
+  if (isServerUp === false) {
+    return <ServerDown />;
+  }
 
   return (
     <Routes>
@@ -77,21 +128,27 @@ export default function AppRoutes() {
           </AuthProvider>
         }
       >
-        {/* Auth routes */}
         <Route element={<MainLayout />}>
           <Route index element={<LandingPage />} />
-          <Route path={`${user}`} element={<LandingPage />} />
-          <Route path={`${user}about`} element={<About />} />
+          <Route path={`${home}`} element={<LandingPage />} />
+          <Route path={`${home}about`} element={<About />} />
+          <Route path={`${home}forget-password`} element={<ForgetPassword />} />
         </Route>
-        <Route path={`/login`} element={<UnifiedLogin />} />
-        <Route path={`${business}/login`} element={<BusinessPortalLogin />} />
-        <Route path={`business-registration`} element={<Registration />} />
-
+        <Route path={`/unauthorized`} element={<Unauthorized />} />
+        {/* <Route path={`/login`} element={<UnifiedLogin />} /> */}
         <Route
-          path={`${business}/signup`}
-          element={<BusinessPortalRegister />}
-        />
-
+          element={
+            <BusinessProvider>
+              <Outlet />
+            </BusinessProvider>
+          }
+        >
+          <Route path={`/login`} element={<BusinessPortalLogin />} />
+        </Route>
+        <Route path={`business-registration`} element={<Registration />} />
+        <Route path={`/test`} element={<Test />} />
+        <Route path={`user/profile`} element={<OwnerProfile />} />
+        <Route path={`/register`} element={<TouristRegister />} />
         <Route path={`${tourism}/login`} element={<AdminLogin />} />
         <Route path={`${tourism}/signup`} element={<AdminRegister />} />
         <Route
@@ -105,7 +162,7 @@ export default function AppRoutes() {
             <Route
               path={`${business}`}
               element={
-                <ProtectedRoute>
+                <ProtectedRoute requiredRoles={["Business Owner"]}>
                   <MyBusiness />
                 </ProtectedRoute>
               }
@@ -114,7 +171,7 @@ export default function AppRoutes() {
             <Route
               path={`${business}/register`}
               element={
-                <ProtectedRoute>
+                <ProtectedRoute requiredRoles={["Business Owner"]}>
                   <BusinessRegistration />
                 </ProtectedRoute>
               }
@@ -124,7 +181,7 @@ export default function AppRoutes() {
             <Route
               path={`${business}/transactions`}
               element={
-                <ProtectedRoute>
+                <ProtectedRoute requiredRoles={BUSINESS_ROLES}>
                   <Transactions />
                 </ProtectedRoute>
               }
@@ -132,7 +189,7 @@ export default function AppRoutes() {
             <Route
               path={`${business}/bookings`}
               element={
-                <ProtectedRoute>
+                <ProtectedRoute requiredRoles={BUSINESS_ROLES}>
                   <Bookings />
                 </ProtectedRoute>
               }
@@ -143,7 +200,7 @@ export default function AppRoutes() {
                 <Route
                   path={`${business}/business-profile`}
                   element={
-                    <ProtectedRoute>
+                    <ProtectedRoute requiredRoles={BUSINESS_ROLES}>
                       <BusinessProfile />
                     </ProtectedRoute>
                   }
@@ -151,7 +208,7 @@ export default function AppRoutes() {
                 <Route
                   path={`${business}/dashboard`}
                   element={
-                    <ProtectedRoute>
+                    <ProtectedRoute requiredRoles={BUSINESS_ROLES}>
                       <AccommodationDashboard />
                     </ProtectedRoute>
                   }
@@ -159,8 +216,16 @@ export default function AppRoutes() {
                 <Route
                   path={`${business}/manage-staff`}
                   element={
-                    <ProtectedRoute>
+                    <ProtectedRoute requiredRoles={["Business Owner"]}>
                       <AccommodationStaff />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path={`${business}/subscription`}
+                  element={
+                    <ProtectedRoute requiredRoles={["Business Owner"]}>
+                      <AccommodationSubscription />
                     </ProtectedRoute>
                   }
                 />
@@ -170,7 +235,7 @@ export default function AppRoutes() {
                 <Route
                   path={`${business}/manage-business`}
                   element={
-                    <ProtectedRoute>
+                    <ProtectedRoute requiredRoles={BUSINESS_ROLES}>
                       <ManageShop />
                     </ProtectedRoute>
                   }
@@ -178,8 +243,16 @@ export default function AppRoutes() {
                 <Route
                   path={`${business}/dashboard`}
                   element={
-                    <ProtectedRoute>
+                    <ProtectedRoute requiredRoles={BUSINESS_ROLES}>
                       <ShopDashboard />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path={`${business}/subscription`}
+                  element={
+                    <ProtectedRoute requiredRoles={["Business Owner"]}>
+                      <ShopSubscription />
                     </ProtectedRoute>
                   }
                 />
@@ -190,15 +263,31 @@ export default function AppRoutes() {
             <Route
               path={`${business}/manage-promotion`}
               element={
-                <ProtectedRoute>
+                <ProtectedRoute requiredRoles={BUSINESS_ROLES}>
                   <ManagePromotion />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path={`${business}/create-promotion`}
+              element={
+                <ProtectedRoute requiredRoles={BUSINESS_ROLES}>
+                  <AccommodationPromotionForm />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path={`${business}/edit-promotion/:id`}
+              element={
+                <ProtectedRoute requiredRoles={BUSINESS_ROLES}>
+                  <AccommodationPromotionForm />
                 </ProtectedRoute>
               }
             />
             <Route
               path={`${business}/reviews`}
               element={
-                <ProtectedRoute>
+                <ProtectedRoute requiredRoles={BUSINESS_ROLES}>
                   <Reviews />
                 </ProtectedRoute>
               }
@@ -207,7 +296,7 @@ export default function AppRoutes() {
             <Route
               path={`${business}/store/products`}
               element={
-                <ProtectedRoute>
+                <ProtectedRoute requiredRoles={BUSINESS_ROLES}>
                   <Products />
                 </ProtectedRoute>
               }
@@ -215,7 +304,7 @@ export default function AppRoutes() {
             <Route
               path={`${business}/store/categories`}
               element={
-                <ProtectedRoute>
+                <ProtectedRoute requiredRoles={BUSINESS_ROLES}>
                   <Categories />
                 </ProtectedRoute>
               }
@@ -223,7 +312,7 @@ export default function AppRoutes() {
             <Route
               path={`${business}/store/services`}
               element={
-                <ProtectedRoute>
+                <ProtectedRoute requiredRoles={BUSINESS_ROLES}>
                   <Services />
                 </ProtectedRoute>
               }
@@ -231,7 +320,7 @@ export default function AppRoutes() {
             <Route
               path={`${business}/store/orders`}
               element={
-                <ProtectedRoute>
+                <ProtectedRoute requiredRoles={BUSINESS_ROLES}>
                   <Orders />
                 </ProtectedRoute>
               }
@@ -239,7 +328,7 @@ export default function AppRoutes() {
             <Route
               path={`${business}/store/discount`}
               element={
-                <ProtectedRoute>
+                <ProtectedRoute requiredRoles={BUSINESS_ROLES}>
                   <Discount />
                 </ProtectedRoute>
               }
@@ -247,7 +336,7 @@ export default function AppRoutes() {
             <Route
               path={`${business}/store/discount/create`}
               element={
-                <ProtectedRoute>
+                <ProtectedRoute requiredRoles={BUSINESS_ROLES}>
                   <DiscountForm />
                 </ProtectedRoute>
               }
@@ -255,7 +344,7 @@ export default function AppRoutes() {
             <Route
               path={`${business}/store/discount/:id/edit`}
               element={
-                <ProtectedRoute>
+                <ProtectedRoute requiredRoles={BUSINESS_ROLES}>
                   <DiscountForm />
                 </ProtectedRoute>
               }
@@ -263,7 +352,7 @@ export default function AppRoutes() {
             <Route
               path={`${business}/promotion`}
               element={
-                <ProtectedRoute>
+                <ProtectedRoute requiredRoles={BUSINESS_ROLES}>
                   <ManageShopPromotion />
                 </ProtectedRoute>
               }
@@ -271,7 +360,7 @@ export default function AppRoutes() {
             <Route
               path={`${business}/promotion/create`}
               element={
-                <ProtectedRoute>
+                <ProtectedRoute requiredRoles={BUSINESS_ROLES}>
                   <PromotionForm />
                 </ProtectedRoute>
               }
@@ -279,7 +368,7 @@ export default function AppRoutes() {
             <Route
               path={`${business}/promotion/:id/edit`}
               element={
-                <ProtectedRoute>
+                <ProtectedRoute requiredRoles={BUSINESS_ROLES}>
                   <PromotionForm />
                 </ProtectedRoute>
               }
@@ -287,7 +376,7 @@ export default function AppRoutes() {
             <Route
               path={`${business}/store/settings`}
               element={
-                <ProtectedRoute>
+                <ProtectedRoute requiredRoles={BUSINESS_ROLES}>
                   <ShopSettings />
                 </ProtectedRoute>
               }
@@ -295,7 +384,7 @@ export default function AppRoutes() {
             <Route
               path={`${business}/store/manage-staff`}
               element={
-                <ProtectedRoute>
+                <ProtectedRoute requiredRoles={BUSINESS_ROLES}>
                   <ShopStaff />
                 </ProtectedRoute>
               }
@@ -303,7 +392,7 @@ export default function AppRoutes() {
             <Route
               path={`${business}/settings`}
               element={
-                <ProtectedRoute>
+                <ProtectedRoute requiredRoles={["Business Owner"]}>
                   <Settings />
                 </ProtectedRoute>
               }
@@ -320,7 +409,7 @@ export default function AppRoutes() {
               <Route
                 path={`${business}/rooms`}
                 element={
-                  <ProtectedRoute>
+                  <ProtectedRoute requiredRoles={BUSINESS_ROLES}>
                     <RoomPage />
                   </ProtectedRoute>
                 }
@@ -328,7 +417,7 @@ export default function AppRoutes() {
               <Route
                 path={`${business}/room-profile`}
                 element={
-                  <ProtectedRoute>
+                  <ProtectedRoute requiredRoles={BUSINESS_ROLES}>
                     <RoomProfile />
                   </ProtectedRoute>
                 }
@@ -345,7 +434,7 @@ export default function AppRoutes() {
               <Route
                 path={`${business}/notification`}
                 element={
-                  <ProtectedRoute>
+                  <ProtectedRoute requiredRoles={BUSINESS_ROLES}>
                     <Notification />
                   </ProtectedRoute>
                 }
@@ -357,15 +446,16 @@ export default function AppRoutes() {
           <Route
             path={`${tourism}/dashboard`}
             element={
-              <ProtectedRoute>
+              <ProtectedRoute requiredRoles={TOURISM_ROLES}>
                 <Dashboard />
               </ProtectedRoute>
             }
           />
+          {/* Approval: Admin only */}
           <Route
             path={`${tourism}/approval`}
             element={
-              <ProtectedRoute>
+              <ProtectedRoute requiredRoles={["Admin"]}>
                 <Approval />
               </ProtectedRoute>
             }
@@ -373,15 +463,24 @@ export default function AppRoutes() {
           <Route
             path={`${tourism}/reports`}
             element={
-              <ProtectedRoute>
+              <ProtectedRoute requiredRoles={TOURISM_ROLES}>
                 <Report />
+              </ProtectedRoute>
+            }
+          />
+          {/* Manage Tourism Staff: Admin only */}
+          <Route
+            path={`${tourism}/staff`}
+            element={
+              <ProtectedRoute requiredRoles={["Admin"]}>
+                <TourismStaffManagement />
               </ProtectedRoute>
             }
           />
           <Route
             path={`${tourism}/reports/:id`}
             element={
-              <ProtectedRoute>
+              <ProtectedRoute requiredRoles={TOURISM_ROLES}>
                 <ReportDetailsScreen />
               </ProtectedRoute>
             }
@@ -389,15 +488,24 @@ export default function AppRoutes() {
           <Route
             path={`${tourism}/services/accommodation`}
             element={
-              <ProtectedRoute>
+              <ProtectedRoute requiredRoles={TOURISM_ROLES}>
                 <Accommodation />
               </ProtectedRoute>
             }
           />
           <Route
+            path={`tourism/profile`}
+            element={
+              <ProtectedRoute requiredRoles={TOURISM_ROLES}>
+                <TourismProfile />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
             path={`${tourism}/services/shop`}
             element={
-              <ProtectedRoute>
+              <ProtectedRoute requiredRoles={TOURISM_ROLES}>
                 <Shop />
               </ProtectedRoute>
             }
@@ -405,48 +513,57 @@ export default function AppRoutes() {
           <Route
             path={`${tourism}/services/event`}
             element={
-              <ProtectedRoute>
+              <ProtectedRoute requiredRoles={TOURISM_ROLES}>
                 <Event />
               </ProtectedRoute>
             }
           />
+          {/* Tourist Spot routes wrapped with TouristSpotProvider */}
           <Route
-            path={`${tourism}/services/tourist-spot`}
             element={
-              <ProtectedRoute>
-                <Spot />
-              </ProtectedRoute>
+              <TouristSpotProvider>
+                <Outlet />
+              </TouristSpotProvider>
             }
-          />
-          <Route
-            path={`${tourism}/services/tourist-spot/:id`}
-            element={
-              <ProtectedRoute>
-                <TouristSpotDetailsScreen />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path={`${tourism}/room/:id`}
-            element={
-              <ProtectedRoute>
-                <Room />
-              </ProtectedRoute>
-            }
-          />
+          >
+            <Route
+              path={`${tourism}/services/tourist-spot`}
+              element={
+                <ProtectedRoute requiredRoles={TOURISM_ROLES}>
+                  <Spot />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path={`${tourism}/services/tourist-spot/:id`}
+              element={
+                <ProtectedRoute requiredRoles={TOURISM_ROLES}>
+                  <TouristSpotDetailsScreen />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path={`${tourism}/services/tourist-spot/:id/reviews`}
+              element={
+                <ProtectedRoute requiredRoles={TOURISM_ROLES}>
+                  <TouristSpotReviews />
+                </ProtectedRoute>
+              }
+            />
+          </Route>
+
           {/* Public offer pages removed */}
           <Route
             path={`${tourism}/settings`}
             element={
-              <ProtectedRoute>
-                <Settings />
+              <ProtectedRoute requiredRoles={TOURISM_ROLES}>
+                <TourismSettings />
               </ProtectedRoute>
             }
           />
           {/* Admin offer pages removed */}
         </Route>
       </Route>
-
       {/* 404 */}
       <Route path="*" element={<NotFound />} />
     </Routes>

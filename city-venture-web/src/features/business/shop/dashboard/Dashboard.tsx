@@ -1,9 +1,9 @@
-import Text from "@/src/components/Text";
+import Typography from "@/src/components/Typography";
 
 const Dashboard = () => {
   return (
     <>
-      <Text variant="title">Shop Dashboard</Text>
+      <Typography.Title size="lg" weight="bold">Shop Dashboard</Typography.Title>
     </>
   );
 };

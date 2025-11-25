@@ -80,7 +80,7 @@ export const submitEditRequest = async (req, res) => {
     if (changed.address) {
       barangay_id_to_use = barangay_id;
     }
-    await db.query("CALL SubmitTouristSpotEditRequest(?,?,?,?,?,?,?,?,?,?,?,?)", [
+    await db.query("CALL SubmitTouristSpotEditRequest(?,?,?,?,?,?,?,?,?,?,?,?,?)", [
       id,
       name,
       description,

@@ -2,11 +2,12 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/src/context/AuthContext";
 import { useBusiness } from "@/src/context/BusinessContext";
-import Card from "./components/Card";
+import Card from "@/src/components/Card";
 import placeholderImage from "@/src/assets/images/placeholder-image.png";
 import type { Business } from "@/src/types/Business";
 import { fetchBusinessesByOwner } from "@/src/services/BusinessService";
 import { colors } from "@/src/utils/Colors";
+import { useMediaQuery } from "@mui/system";
 import {
   Button,
   Typography,
@@ -25,7 +26,8 @@ import {
 } from "@mui/joy";
 import { Add, HourglassEmpty, Cancel, CheckCircle } from "@mui/icons-material";
 import logo from "@/src/assets/images/logo.png";
-import "./MyBusiness.css";
+import { RoleGuard } from "@/src/components/PermissionGuard";
+import "./styles/MyBusiness.css";
 
 const MyBusiness = () => {
   const navigate = useNavigate();
@@ -35,9 +37,15 @@ const MyBusiness = () => {
   const [activeTab, setActiveTab] = useState<number>(0);
   const ownerId = user?.id;
 
+  // Responsive breakpoint - switch to grid variant on small screens
+  const isSmallDevice = useMediaQuery("(max-width: 768px)");
+
   // Filter businesses by status
   const approvedBusinesses = businesses.filter(
-    (business) => business.status === "Approved" || business.status === "Active" || business.status === "Inactive"
+    (business) =>
+      business.status === "Approved" ||
+      business.status === "Active" ||
+      business.status === "Inactive"
   );
   const pendingBusinesses = businesses.filter(
     (business) => business.status === "Pending"
@@ -142,7 +150,7 @@ const MyBusiness = () => {
                 </MenuItem>
                 <ListDivider />
                 <MenuItem
-                  onClick={() => navigate("/business/profile")}
+                  onClick={() => navigate("/user/profile")}
                   sx={{ fontWeight: 600 }}
                 >
                   Profile
@@ -185,36 +193,38 @@ const MyBusiness = () => {
           >
             My Businesses
           </Typography>
-          <Button
-            variant="solid"
-            size="md"
-            startDecorator={<Add />}
-            onClick={() => navigate("/business/register")}
-            sx={{
-              background: `linear-gradient(135deg, ${colors.primary} 0%, #0a1a3d 100%)`,
-              borderRadius: 10,
-              px: 2,
-              py: 1,
-              fontWeight: 600,
-              fontSize: ".95rem",
-              boxShadow: "0 4px 16px rgba(0,0,0,0.15)",
-              transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
-              border: `2px solid ${colors.primary}`,
-              "&:hover": {
-                background: `linear-gradient(135deg, #0a1a3d 0%, ${colors.primary} 100%)`,
-                boxShadow: "0 8px 25px rgba(0,0,0,0.2)",
-                "& .MuiSvgIcon-root": {
-                  transform: "rotate(90deg)",
+          <RoleGuard role="Business Owner">
+            <Button
+              variant="solid"
+              size="md"
+              startDecorator={<Add />}
+              onClick={() => navigate("/business/register")}
+              sx={{
+                background: `linear-gradient(135deg, ${colors.primary} 0%, #0a1a3d 100%)`,
+                borderRadius: 10,
+                px: 2,
+                py: 1,
+                fontWeight: 600,
+                fontSize: ".95rem",
+                boxShadow: "0 4px 16px rgba(0,0,0,0.15)",
+                transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+                border: `2px solid ${colors.primary}`,
+                "&:hover": {
+                  background: `linear-gradient(135deg, #0a1a3d 0%, ${colors.primary} 100%)`,
+                  boxShadow: "0 8px 25px rgba(0,0,0,0.2)",
+                  "& .MuiSvgIcon-root": {
+                    transform: "rotate(90deg)",
+                  },
                 },
-              },
-              "&:active": {
-                transform: "translateY(0) scale(1)",
-                transition: "all 0.1s ease",
-              },
-            }}
-          >
-            Register Business
-          </Button>
+                "&:active": {
+                  transform: "translateY(0) scale(1)",
+                  transition: "all 0.1s ease",
+                },
+              }}
+            >
+              Register Business
+            </Button>
+          </RoleGuard>
         </div>
 
         {/* Tabs Section */}
@@ -293,36 +303,45 @@ const MyBusiness = () => {
                   {approvedBusinesses.length === 1 ? "listing" : "listings"}
                 </Typography>
 
-                <div className="myb-list">
+                <Box
+                  sx={{
+                    display: "grid",
+                    gridTemplateColumns: isSmallDevice
+                      ? "1fr"
+                      : "repeat(auto-fill, minmax(1fr, 1fr))",
+                    gap: 2,
+                  }}
+                >
                   {approvedBusinesses.map((business) => (
-                    <div key={business.id} className="myb-list-item">
-                      <Card
-                        elevation={1}
-                        image={business.business_image || placeholderImage}
-                        title={business.business_name}
-                        subtitle={
-                          business.business_type_id === 1
-                            ? "Accommodation"
-                            : "Shop"
-                        }
-                        rating={5}
-                        status={business.status}
-                        compact
+                    <Card
+                      key={business.id}
+                      size={isSmallDevice ? "default" : "sm"}
+                      variant={"list"}
+                      image={business.business_image || placeholderImage}
+                      aspectRatio="1/1"
+                      title={business.business_name}
+                      subtitle={
+                        business.business_type_id === 1
+                          ? "Accommodation"
+                          : "Shop"
+                      }
+                      elevation={2}
+                      onClick={() => {
+                        setBusinessId(business.id!);
+                        navigate(`/business/dashboard`);
+                      }}
+                    >
+                      <Chip
+                        size="sm"
+                        color="success"
+                        variant="soft"
+                        sx={{ fontWeight: 600 }}
                       >
-                        <Button
-                          onClick={() => {
-                            setBusinessId(business.id!);
-                            navigate(`/business/dashboard`);
-                          }}
-                          fullWidth
-                          size="sm"
-                        >
-                          Manage Business
-                        </Button>
-                      </Card>
-                    </div>
+                        {business.status}
+                      </Chip>
+                    </Card>
                   ))}
-                </div>
+                </Box>
               </Box>
             ) : (
               <Box
@@ -355,35 +374,42 @@ const MyBusiness = () => {
                   awaiting approval
                 </Typography>
 
-                <div className="myb-list">
+                <Box
+                  sx={{
+                    display: "grid",
+                    gridTemplateColumns: isSmallDevice
+                      ? "1fr"
+                      : "repeat(auto-fill, minmax(350px, 1fr))",
+                    gap: 2,
+                  }}
+                >
                   {pendingBusinesses.map((business) => (
-                    <div key={business.id} className="myb-list-item">
-                      <Card
-                        elevation={1}
-                        image={business.business_image || placeholderImage}
-                        title={business.business_name}
-                        subtitle={
-                          business.business_type_id === 1
-                            ? "Accommodation"
-                            : "Shop"
-                        }
-                        rating={0}
-                        status={business.status}
-                        compact
+                    <Card
+                      key={business.id}
+                      size={isSmallDevice ? "default" : "md"}
+                      variant={isSmallDevice ? "grid" : "list"}
+                      image={business.business_image || placeholderImage}
+                      aspectRatio="16/9"
+                      title={business.business_name}
+                      subtitle={
+                        business.business_type_id === 1
+                          ? "Accommodation"
+                          : "Shop"
+                      }
+                      elevation={2}
+                    >
+                      <Chip
+                        color="warning"
+                        variant="soft"
+                        size="sm"
+                        startDecorator={<HourglassEmpty />}
+                        sx={{ fontWeight: 600 }}
                       >
-                        <Chip
-                          color="warning"
-                          variant="soft"
-                          size="sm"
-                          startDecorator={<HourglassEmpty />}
-                          sx={{ fontWeight: 600 }}
-                        >
-                          Under Review
-                        </Chip>
-                      </Card>
-                    </div>
+                        Under Review
+                      </Chip>
+                    </Card>
                   ))}
-                </div>
+                </Box>
               </Box>
             ) : (
               <Box
@@ -413,55 +439,54 @@ const MyBusiness = () => {
                   denied
                 </Typography>
 
-                <div className="myb-list">
+                <Box
+                  sx={{
+                    display: "grid",
+                    gridTemplateColumns: isSmallDevice
+                      ? "1fr"
+                      : "repeat(auto-fill, minmax(350px, 1fr))",
+                    gap: 2,
+                  }}
+                >
                   {rejectedBusinesses.map((business) => (
-                    <div key={business.id} className="myb-list-item">
-                      <Card
-                        elevation={1}
-                        image={business.business_image || placeholderImage}
-                        title={business.business_name}
-                        subtitle={
-                          business.business_type_id === 1
-                            ? "Accommodation"
-                            : "Shop"
-                        }
-                        rating={0}
-                        status={business.status}
-                        compact
+                    <Card
+                      key={business.id}
+                      size={isSmallDevice ? "default" : "md"}
+                      variant={isSmallDevice ? "grid" : "list"}
+                      image={business.business_image || placeholderImage}
+                      aspectRatio="16/9"
+                      title={business.business_name}
+                      subtitle={
+                        business.business_type_id === 1
+                          ? "Accommodation"
+                          : "Shop"
+                      }
+                      elevation={2}
+                      hoverEffect="lift"
+                      actions={[
+                        {
+                          label: "Resubmit Application",
+                          onClick: () => {
+                            setBusinessId(business.id!);
+                            navigate(`/business/register?edit=${business.id}`);
+                          },
+                          variant: "outlined",
+                          colorScheme: "primary",
+                        },
+                      ]}
+                    >
+                      <Chip
+                        color="danger"
+                        variant="soft"
+                        size="sm"
+                        startDecorator={<Cancel />}
+                        sx={{ fontWeight: 600 }}
                       >
-                        <Box
-                          sx={{
-                            display: "flex",
-                            flexDirection: "column",
-                            gap: 1,
-                          }}
-                        >
-                          <Chip
-                            color="danger"
-                            variant="soft"
-                            size="sm"
-                            startDecorator={<Cancel />}
-                            sx={{ fontWeight: 600 }}
-                          >
-                            Registration Denied
-                          </Chip>
-                          <Button
-                            onClick={() => {
-                              setBusinessId(business.id!);
-                              navigate(`/business/register?edit=${business.id}`);
-                            }}
-                            fullWidth
-                            size="sm"
-                            variant="outlined"
-                            color="primary"
-                          >
-                            Resubmit Application
-                          </Button>
-                        </Box>
-                      </Card>
-                    </div>
+                        Denied
+                      </Chip>
+                    </Card>
                   ))}
-                </div>
+                </Box>
               </Box>
             ) : (
               <Box

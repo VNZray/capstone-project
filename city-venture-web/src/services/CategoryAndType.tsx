@@ -1,9 +1,6 @@
-import api from "@/src/services/api";
-
-// src/services/AddressService.ts
-import axios from "axios";
+import apiClient from "./apiClient";
 
 export async function fetchCategoryAndType(id: number) {
-  const response = await axios.get(`${api}/category-and-type/${id}`);
+  const response = await apiClient.get(`/category-and-type/${id}`);
   return response.data;
 }

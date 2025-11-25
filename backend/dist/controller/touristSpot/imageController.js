@@ -32,7 +32,10 @@ export const addTouristSpotImage = async (request, response) => {
       });
     }
 
-    if (spotCheck.length === 0) {
+    // Verify tourist spot exists before inserting image
+    const [spotCheck] = await db.query("CALL GetTouristSpotById(?)", [tourist_spot_id]);
+    const spotData = spotCheck?.[0] || [];
+    if (!spotData.length) {
       return response.status(404).json({
         success: false,
         message: "Tourist spot not found",

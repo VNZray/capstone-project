@@ -1,5 +1,5 @@
 // city-venture/services/AmenityService.tsx
-import axios from 'axios';
+import apiClient from '@/services/apiClient';
 import type {
   Amenity,
   BusinessAmenities,
@@ -8,23 +8,21 @@ import type {
   RoomAmenity,
 } from '@/types/Business';
 
-import api from '@/services/api';
-
 // Fetch all amenities
 export const fetchAmenities = async (): Promise<Amenity[]> => {
-  const { data } = await axios.get<Amenity[]>(`${api}/amenities`);
+  const { data } = await apiClient.get<Amenity[]>(`/amenities`);
   return Array.isArray(data) ? data : [];
 };
 
 // Fetch all business_amenities join rows
 export const fetchAllBusinessAmenityLinks = async (): Promise<BusinessAmenity[]> => {
-  const { data } = await axios.get<BusinessAmenity[]>(`${api}/business-amenities`);
+  const { data } = await apiClient.get<BusinessAmenity[]>(`/business-amenities`);
   return Array.isArray(data) ? data : [];
 };
 
 // Fetch all room_amenities join rows
 export const fetchAllRoomAmenityLinks = async (): Promise<RoomAmenity[]> => {
-  const { data } = await axios.get<RoomAmenity[]>(`${api}/room-amenities`);
+  const { data } = await apiClient.get<RoomAmenity[]>(`/room-amenities`);
   return Array.isArray(data) ? data : [];
 };
 

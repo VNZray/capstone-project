@@ -26,7 +26,7 @@ const ROLE_OPTIONS: { label: string; value: StaffRole }[] = [
   { label: "Staff", value: "Staff" },
 ];
 
-export default function StaffAddModal({ open, onClose, onSave }: StaffAddModalProps) {
+const StaffAddModal: React.FC<StaffAddModalProps> = ({ open, onClose, onSave }) => {
   const [firstName, setFirstName] = React.useState("");
   const [lastName, setLastName] = React.useState("");
   const [email, setEmail] = React.useState("");
@@ -140,3 +140,5 @@ export default function StaffAddModal({ open, onClose, onSave }: StaffAddModalPr
     </BaseEditModal>
   );
 }
+
+export default StaffAddModal;

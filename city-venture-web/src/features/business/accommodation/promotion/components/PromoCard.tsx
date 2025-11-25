@@ -1,5 +1,4 @@
 import * as React from "react";
-import Card from "@mui/joy/Card";
 import CardContent from "@mui/joy/CardContent";
 import CardActions from "@mui/joy/CardActions";
 import Typography from "@mui/joy/Typography";
@@ -13,6 +12,7 @@ import LocalOfferIcon from "@mui/icons-material/LocalOffer"; // promo type / cod
 import DiscountIcon from "@mui/icons-material/Discount"; // discount marker (available in MUI v5 icons set)
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import { Button, Divider, LinearProgress } from "@mui/joy";
+import Container from "@/src/components/Container";
 
 // Status types (can be expanded)
 export type PromoStatus = "ACTIVE" | "SCHEDULED" | "EXPIRED" | "PAUSED";
@@ -25,7 +25,7 @@ export interface PromoCardProps {
   startDate: string; // ISO
   endDate: string; // ISO
   promoCode?: string; // for CODE type or vouchers
-  promoType: "DISCOUNT" | "CODE" | "BOGO" | "FREE_TRIAL"; // flexible
+  promoType: "discount_coupon" | "promo_code" | "room_discount"; // flexible
   discountValue?: number; // percentage if DISCOUNT
   status: PromoStatus;
   // NEW: usage limiting (either code redemptions or discount applications)
@@ -55,10 +55,9 @@ const statusLabel: Record<PromoStatus, string> = {
 };
 
 const typeLabel: Record<PromoCardProps["promoType"], string> = {
-  DISCOUNT: "Discount",
-  CODE: "Promo Code",
-  BOGO: "BOGO",
-  FREE_TRIAL: "Free Trial",
+  discount_coupon: "Discount Coupon",
+  promo_code: "Promo Code",
+  room_discount: "Room Discount",
 };
 
 const PromoCard: React.FC<PromoCardProps> = ({
@@ -130,15 +129,11 @@ const PromoCard: React.FC<PromoCardProps> = ({
   }, [isExpired]);
 
   return (
-    <Card
-      variant="outlined"
-      sx={{
-        maxWidth: "100%",
-        borderRadius: 8,
-        display: "flex",
-        flexDirection: "column",
-      }}
-      aria-label={`Promotion card ${title}`}
+    <Container
+      elevation={2}
+      hoverEffect="lift"
+      hoverDuration={300}
+      hover
     >
       {/* IMAGE + STATUS & TYPE CHIPS */}
       <Box
@@ -211,7 +206,7 @@ const PromoCard: React.FC<PromoCardProps> = ({
           variant="soft"
           size="md"
           startDecorator={
-            promoType === "DISCOUNT" ? (
+            promoType === "discount_coupon" ? (
               <DiscountIcon fontSize="small" />
             ) : (
               <LocalOfferIcon fontSize="small" />
@@ -229,7 +224,7 @@ const PromoCard: React.FC<PromoCardProps> = ({
           sx={{ display: "flex", alignItems: "center", gap: 1 }}
         >
           {title}
-          {promoType === "DISCOUNT" && typeof discountValue === "number" && (
+          {promoType === "room_discount" && typeof discountValue === "number" && (
             <Chip color="warning" variant="soft" size="sm">
               {discountValue}% OFF
             </Chip>
@@ -372,7 +367,7 @@ const PromoCard: React.FC<PromoCardProps> = ({
           <DeleteIcon />
         </IconButton>
       </CardActions>
-    </Card>
+    </Container>
   );
 };
 

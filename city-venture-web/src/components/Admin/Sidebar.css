@@ -67,6 +67,7 @@
   align-items: center;
   justify-content: space-between;
   cursor: pointer;
+  font: inherit;
 
 }
 

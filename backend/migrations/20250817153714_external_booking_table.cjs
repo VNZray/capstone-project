@@ -17,6 +17,8 @@ exports.up = async function (knex) {
   });
 
   await createExternalBookingProcedures(knex);
+
+  console.log("External Booking table and procedures created.");
 };
 
 exports.down = async function (knex) {

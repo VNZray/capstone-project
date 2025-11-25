@@ -41,5 +41,7 @@ export async function seed (knex) {
     { id: 35, municipality: "Siruma", province_id: 20 },
     { id: 36, municipality: "Tigaon", province_id: 20 },
     { id: 37, municipality: "Tinambac", province_id: 20 },
-  ]);
+  ])
+  .onConflict('id')
+  .merge(['municipality', 'province_id']);
 }

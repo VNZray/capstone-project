@@ -23,11 +23,17 @@ export const upsertTouristSpotSchedules = async (req, res) => {
 
   await db.query("CALL DeleteSchedulesByTouristSpot(?)", [id]);
 
-    // Insert new schedules
+    // Insert new schedules using procedure
     for (const sched of schedules) {
       await db.query(
-        `INSERT INTO tourist_spot_schedules (id, tourist_spot_id, day_of_week, open_time, close_time, is_closed) VALUES (UUID(), ?, ?, ?, ?, ?)`,
-        [id, sched.day_of_week, sched.open_time || null, sched.close_time || null, !!sched.is_closed]
+        "CALL InsertTouristSpotSchedule(?,?,?,?,?)",
+        [
+          id,
+          sched.day_of_week,
+          sched.open_time || null,
+          sched.close_time || null,
+          !!sched.is_closed
+        ]
       );
     }
     res.json({ success: true, message: "Schedules updated successfully!" });

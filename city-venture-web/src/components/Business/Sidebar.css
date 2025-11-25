@@ -1,22 +1,23 @@
 .sidebar {
-  width: 260px;
   background-color: var(--primary-color);
   display: flex;
   flex-direction: column;
   height: 100vh;
+  width: clamp(200px, 20vw, 280px);
+  max-width: none;
 }
 
 .sidebar-logo {
-  padding: 0 1.5rem 0 1.5rem;
+  padding: 0 clamp(0.75rem, 2vw, 1.5rem);
   font-weight: bold;
-  font-size: 1.2rem;
+  font-size: clamp(1rem, 1.5vw + 0.5rem, 1.2rem);
 }
 
 .sidebar-nav {
   flex: 1;
   display: flex;
   flex-direction: column;
-  padding: 0.75rem;
+  padding: clamp(0.5rem, 1vw + 0.25rem, 0.75rem);
   padding-top: 0;
   justify-content: space-between;
 }
@@ -25,15 +26,16 @@
 .sidebar-brand {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 10px 12px 6px 12px;
-  margin-top: 8px;
-  margin-bottom: 16px;
+  gap: clamp(8px, 1vw + 4px, 12px);
+  padding: clamp(8px, 1vw + 4px, 12px);
+  padding-bottom: clamp(4px, 0.5vw + 2px, 6px);
+  margin-top: clamp(6px, 1vw, 8px);
+  margin-bottom: clamp(12px, 2vw, 16px);
 }
 
 .sidebar-brand-icon {
-  width: 32px;
-  height: 32px;
+  width: clamp(28px, 4vw, 36px);
+  height: clamp(28px, 4vw, 36px);
   border-radius: 6px;
 }
 
@@ -45,29 +47,29 @@
 
 .sidebar-brand-title {
   color: var(--white);
-  font-size: 0.8rem;
+  font-size: clamp(0.7rem, 1vw + 0.3rem, 0.85rem);
   font-weight: 700;
   letter-spacing: 0.08em;
 }
 
 .sidebar-brand-subtitle {
   color: rgba(255, 255, 255, 0.8);
-  font-size: 0.7rem;
+  font-size: clamp(0.625rem, 0.8vw + 0.25rem, 0.75rem);
   font-weight: 500;
 }
 
 .business-sidebar .sidebar-link {
   display: flex;
   align-items: center;
-  gap: 0.625rem;
-  padding: 0.5rem 0.625rem;
+  gap: clamp(0.5rem, 1vw, 0.75rem);
+  padding: clamp(0.4rem, 0.8vw + 0.2rem, 0.6rem) clamp(0.5rem, 1vw, 0.75rem);
   width: 100%;
   box-sizing: border-box;
   border-radius: 4px;
   text-decoration: none;
   color: var(--white);
   transition: background 0.2s ease;
-  font-size: 0.875rem;
+  font-size: clamp(0.8rem, 1.2vw + 0.3rem, 0.9rem);
 }
 
 .business-sidebar .sidebar-link:hover {
@@ -82,7 +84,7 @@
 /* Logout section UI improvements */
 .business-sidebar .sidebar-logout {
   margin-top: auto;
-  padding-top: 8px;
+  padding-top: clamp(6px, 1vw, 8px);
   border-top: 1px solid rgba(255, 255, 255, 0.08);
 }
 
@@ -93,7 +95,7 @@
   background: transparent;
   border: none;
   text-align: left;
-  padding: 0.5rem 0.625rem;
+  padding: clamp(0.4rem, 0.8vw + 0.2rem, 0.6rem) clamp(0.5rem, 1vw, 0.75rem);
   cursor: pointer;
 }
 
@@ -109,14 +111,14 @@
 .sidebar-icon {
   display: flex;
   align-items: center;
-  width: 18px;
+  width: clamp(16px, 2vw, 20px);
   justify-content: center;
   flex-shrink: 0;
 }
 
 /* Nested store section */
 .sidebar-section {
-  margin-top: 0.125rem;
+  margin-top: clamp(0.125rem, 0.3vw, 0.25rem);
 }
 
 .sidebar-section-header {
@@ -128,10 +130,10 @@
   background-color: transparent !important;
   border: none;
   cursor: pointer;
-  font-size: 0.875rem;
+  font-size: clamp(0.8rem, 1.2vw + 0.3rem, 0.9rem);
   color: var(--white);
-  padding: 0.5rem 0.625rem;
-  gap: 0.625rem;
+  padding: clamp(0.4rem, 0.8vw + 0.2rem, 0.6rem) clamp(0.5rem, 1vw, 0.75rem);
+  gap: clamp(0.5rem, 1vw, 0.75rem);
   border-radius: 4px;
   transition: background 0.2s ease;
 }
@@ -154,8 +156,8 @@
 .sidebar-subnav {
   display: flex;
   flex-direction: column;
-  margin-top: 0.25rem;
-  gap: 0.125rem;
+  margin-top: clamp(0.125rem, 0.3vw, 0.25rem);
+  gap: clamp(0.0625rem, 0.2vw, 0.125rem);
   overflow: hidden;
   transition: max-height 0.3s ease, opacity 0.3s ease;
 }
@@ -173,8 +175,8 @@
 
 /* Make nested links full width and indent via padding so hover/active bg spans full width */
 .sidebar-subnav .sidebar-link {
-  padding-left: 2.25rem;
-  font-size: 0.8125rem;
+  padding-left: clamp(1.75rem, 3vw, 2.5rem);
+  font-size: clamp(0.75rem, 1vw + 0.3rem, 0.85rem);
 }
 
 /* Subtle hover for Store header - no persistent highlight */
@@ -203,6 +205,7 @@
     left: 0;
     top: 0;
     bottom: 0;
+    width: clamp(240px, 70vw, 320px);
     transform: translateX(-100%);
     transition: transform 0.25s ease-in-out;
     z-index: 1301;
@@ -217,12 +220,29 @@
     align-items: center;
     justify-content: center;
     border: none;
-    width: 36px;
-    height: 36px;
-    margin: 8px 8px 0 auto;
+    width: clamp(32px, 5vw, 40px);
+    height: clamp(32px, 5vw, 40px);
+    margin: clamp(6px, 1vw, 8px) clamp(6px, 1vw, 8px) 0 auto;
     background: transparent;
     color: var(--white);
     cursor: pointer;
+    border-radius: 4px;
+    transition: background 0.2s ease;
+  }
+
+  .sidebar-close:hover {
+    background: rgba(255, 255, 255, 0.1);
+  }
+
+  .sidebar-close:active {
+    background: rgba(255, 255, 255, 0.15);
+  }
+}
+
+/* Tablet adjustments */
+@media (min-width: 768px) and (max-width: 1024px) {
+  .sidebar {
+    width: clamp(220px, 30vw, 280px);
   }
 }
 

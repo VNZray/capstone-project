@@ -266,7 +266,7 @@ export default function Settings(): React.ReactElement {
                       <FormLabel>Minimum Preparation Time (minutes)</FormLabel>
                       <Input
                         type="number"
-                        min={0}
+                        slotProps={{ input: { min: 0 } }}
                         value={settings.minimum_preparation_time_minutes}
                         onChange={(event) => updateNumericSetting("minimum_preparation_time_minutes", event.target.value)}
                       />
@@ -280,7 +280,7 @@ export default function Settings(): React.ReactElement {
                       <FormLabel>Advance Notice for Orders (hours)</FormLabel>
                       <Input
                         type="number"
-                        min={0}
+                        slotProps={{ input: { min: 0 } }}
                         value={settings.order_advance_notice_hours}
                         onChange={(event) => updateNumericSetting("order_advance_notice_hours", event.target.value)}
                       />
@@ -315,7 +315,7 @@ export default function Settings(): React.ReactElement {
                       <FormLabel>Cancellation Deadline (hours)</FormLabel>
                       <Input
                         type="number"
-                        min={0}
+                        slotProps={{ input: { min: 0 } }}
                         placeholder="No deadline"
                         value={settings.cancellation_deadline_hours ?? ""}
                         onChange={(event) => updateNumericSetting("cancellation_deadline_hours", event.target.value)}
@@ -330,9 +330,7 @@ export default function Settings(): React.ReactElement {
                       <FormLabel>Penalty Percentage (%)</FormLabel>
                       <Input
                         type="number"
-                        min={0}
-                        max={100}
-                        step={0.5}
+                        slotProps={{ input: { min: 0, max: 100, step: 0.5 } }}
                         value={settings.cancellation_penalty_percentage}
                         onChange={(event) => updateNumericSetting("cancellation_penalty_percentage", event.target.value)}
                       />
@@ -346,8 +344,7 @@ export default function Settings(): React.ReactElement {
                       <FormLabel>Penalty Fixed Amount</FormLabel>
                       <Input
                         type="number"
-                        min={0}
-                        step={0.01}
+                        slotProps={{ input: { min: 0, step: 0.01 } }}
                         value={settings.cancellation_penalty_fixed}
                         onChange={(event) => updateNumericSetting("cancellation_penalty_fixed", event.target.value)}
                       />
@@ -357,6 +354,7 @@ export default function Settings(): React.ReactElement {
                     </FormControl>
                   </Grid>
                 </Grid>
+                <Divider />
                 <Switch
                   checked={settings.allow_customer_cancellation}
                   onChange={(event) => updateBooleanSetting("allow_customer_cancellation", event.target.checked)}
@@ -374,7 +372,7 @@ export default function Settings(): React.ReactElement {
                       <FormLabel>Advance Notice for Bookings (hours)</FormLabel>
                       <Input
                         type="number"
-                        min={0}
+                        slotProps={{ input: { min: 0 } }}
                         value={settings.service_booking_advance_notice_hours}
                         onChange={(event) => updateNumericSetting("service_booking_advance_notice_hours", event.target.value)}
                       />
@@ -388,8 +386,7 @@ export default function Settings(): React.ReactElement {
                       <FormLabel>Default Service Duration (minutes)</FormLabel>
                       <Input
                         type="number"
-                        min={15}
-                        step={15}
+                        slotProps={{ input: { min: 15, step: 15 } }}
                         value={settings.service_default_duration_minutes}
                         onChange={(event) => updateNumericSetting("service_default_duration_minutes", event.target.value)}
                       />

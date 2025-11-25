@@ -1,0 +1,231 @@
+.navbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  background: rgba(255,255,255,var(--nav-bg, 0.02)); /* controlled via CSS var */
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  transition: background 220ms ease, box-shadow 220ms ease, border-color 220ms ease, transform 220ms ease;
+}
+
+.nav-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 180px;
+  margin: 0 auto;
+  gap: 12px;
+  height: 76px;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+  z-index: 1001;
+}
+
+.brand:hover {
+  transform: scale(1.02);
+}
+
+.brand img {
+  height: 50px;
+  transition: height 0.2s ease;
+}
+
+.nav-links {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-left: auto; /* push links to the right, closer to actions */
+}
+
+.nav-link {
+  color: #0D1B2A; /* dark, minimal text */
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 500; /* softer */
+  opacity: 0.95;
+  padding: 2px 4px; /* reduced padding for better alignment */
+  border-radius: 6px;
+  position: relative;
+  line-height: 1.4; /* consistent line height */
+  transition: opacity 0.12s ease, transform 0.12s ease;
+}
+
+/* underline animation */
+.nav-link::after {
+  content: '';
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: -2px;
+  height: 2px;
+  background: transparent;
+  transform-origin: left;
+  transform: scaleX(0);
+  transition: transform 0.18s cubic-bezier(.2,.8,.2,1), background 0.18s;
+  border-radius: 2px;
+}
+
+.nav-link:hover::after {
+  transform: scaleX(1);
+  background: currentColor; /* match font color */
+}
+
+.nav-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border-left: 1px solid rgba(13,27,42,0.15); /* subtle separator */
+  padding-left: 16px;
+}
+
+.menu-btn {
+  display: none;
+  background: rgba(255,255,255,0.9);
+  border: 1px solid rgba(13,27,42,0.2);
+  cursor: pointer;
+  padding: 8px;
+  transition: all 0.2s ease;
+  z-index: 1001;
+}
+
+.menu-btn:hover {
+  transform: scale(1.05);
+  background: rgba(255,255,255,1);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.menu-btn:active {
+  transform: scale(0.98);
+}
+
+.mobile-menu {
+  position: fixed;
+  top: 76px;
+  left: 0;
+  right: 0;
+  background: rgba(255,255,255,0.98);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+  padding: 20px;
+  z-index: 999;
+  max-height: calc(100vh - 76px);
+  overflow-y: auto;
+  animation: slideDown 0.3s ease;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.mobile-menu-inner {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-width: 500px;
+  margin: 0 auto;
+}
+
+/* Tablet and Mobile breakpoints */
+@media (max-width: 900px) {
+  .nav-links,
+  .nav-actions {
+    display: none;
+  }
+  
+  .menu-btn {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 4px;
+  }
+}
+
+/* Mobile specific adjustments */
+@media (max-width: 640px) {
+  .nav-inner {
+    padding: 12px 16px;
+    height: 64px;
+  }
+
+  .brand img {
+    height: 40px;
+  }
+
+  .mobile-menu {
+    top: 64px;
+    padding: 16px;
+    max-height: calc(100vh - 64px);
+  }
+
+  .mobile-menu-inner {
+    gap: 12px;
+  }
+
+  .mobile-menu .nav-link {
+    font-size: 16px;
+    padding: 12px 8px;
+  }
+
+}
+
+/* Small mobile adjustments */
+@media (max-width: 480px) {
+  .nav-inner {
+    padding: 10px 12px;
+    height: 60px;
+  }
+
+  .brand img {
+    height: 36px;
+  }
+
+  .menu-btn {
+    width: 36px;
+    height: 36px;
+    padding: 6px;
+  }
+
+  .mobile-menu {
+    top: 60px;
+    padding: 12px;
+    max-height: calc(100vh - 60px);
+  }
+
+  .mobile-menu-inner {
+    gap: 10px;
+  }
+
+}
+
+/* Elevated when scrolled */
+.navbar.scrolled {
+  box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+  border-bottom: 1px solid rgba(13,27,42,0.08);
+  background: rgba(255,255,255,0.98);
+  transform: translateY(0);
+}
+
+
+
+@media (max-width: 900px) {
+  .main-hero {
+    padding-top: 90px;
+  }
+}

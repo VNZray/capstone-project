@@ -40,6 +40,33 @@ export async function getPaymentById(req, res) {
   }
 }
 
+// Get payments by payment_for_id (booking id reference or subscription id reference)
+export async function getPaymentByPaymentForId(req, res) {
+  const { payment_for_id } = req.params;
+  try {
+    const [data] = await db.query("CALL GetPaymentByPaymentForId(?)", [payment_for_id]);
+    if (!data[0] || data[0].length === 0) {
+      return res.status(404).json({ message: "No payments found" });
+    }
+    res.json(data[0]);
+  } catch (error) {
+    return handleDbError(error, res);
+  }
+}
+
+// Get payments by business ID
+export async function getPaymentByBusinessId(req, res) {
+  try {
+    const { business_id } = req.params;
+    const [rows] = await db.query("CALL GetPaymentsByBusinessId(?)", [
+      business_id,
+    ]);
+    res.json(rows[0]);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+}
+
 // Insert a new payment
 export async function insertPayment(req, res) {
   try {

@@ -30,6 +30,8 @@ exports.up = async function (knex) {
     table.index(["tourism_id"], "idx_tourism");
   });
 
+  console.log("Registration table created.");
+
 };
 
 exports.down = async function (knex) {

@@ -3,7 +3,7 @@ import PageContainer from "@/src/components/PageContainer";
 import Container from "@/src/components/Container";
 import { Button, LinearProgress, IconButton, Box, Stack } from "@mui/joy";
 import { ArrowBackRounded } from "@mui/icons-material";
-import Text from "@/src/components/Text";
+import Typography from "@/src/components/Typography";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/src/context/AuthContext";
 import { colors } from "@/src/utils/Colors";
@@ -22,12 +22,10 @@ import type {
   BusinessHours,
   Registration,
 } from "@/src/types/Business";
-import axios from "axios";
+import apiClient from "@/src/services/apiClient";
 import type { Permit } from "@/src/types/Permit";
 import type { BusinessAmenity } from "@/src/types/Amenity";
 import type { Address } from "@/src/types/Address";
-import api from "@/src/services/api";
-import type { Owner } from "@/src/types/Owner";
 // steps definition
 const steps = [
   "Basic",
@@ -40,7 +38,6 @@ const steps = [
 ];
 
 interface CommonProps {
-  api: string;
   data: Business;
   addressData: Address;
   setAddressData: React.Dispatch<React.SetStateAction<Address>>;
@@ -198,7 +195,6 @@ const BusinessRegistration: React.FC = () => {
   if (!formData) return null;
 
   const commonProps = {
-    api,
     data: formData,
     addressData,
     setAddressData,
@@ -244,7 +240,7 @@ const BusinessRegistration: React.FC = () => {
       }
 
       // 1️⃣ Insert Business
-      const res = await axios.post(`${api}/business`, {
+      const res = await apiClient.post(`/business`, {
         ...formData,
         barangay_id: addressData.barangay_id,
       });
@@ -258,7 +254,7 @@ const BusinessRegistration: React.FC = () => {
           externalBookings.map((site) => {
             if (!site.name || !site.link) return null; // skip empty
 
-            return axios.post(`${api}/external-booking`, {
+            return apiClient.post(`/external-booking`, {
               business_id: businessId,
               name: site.name,
               link: site.link,
@@ -270,7 +266,7 @@ const BusinessRegistration: React.FC = () => {
       if (businessHours.length > 0) {
         await Promise.all(
           businessHours.map((hours) =>
-            axios.post(`${api}/business-hours`, {
+            apiClient.post(`/business-hours`, {
               business_id: businessId,
               day_of_week: hours.day_of_week,
               open_time: hours.open_time,
@@ -284,7 +280,7 @@ const BusinessRegistration: React.FC = () => {
       if (businessAmenities.length > 0) {
         await Promise.all(
           businessAmenities.map((amenity) =>
-            axios.post(`${api}/business-amenities`, {
+            apiClient.post(`/business-amenities`, {
               business_id: businessId,
               amenity_id: amenity.amenity_id,
             })
@@ -295,7 +291,7 @@ const BusinessRegistration: React.FC = () => {
       if (permitData.length > 0) {
         await Promise.all(
           permitData.map((permit) =>
-            axios.post(`${api}/permit`, {
+            apiClient.post(`/permit`, {
               business_id: businessId,
               permit_type: permit.permit_type,
               file_url: permit.file_url,
@@ -308,7 +304,7 @@ const BusinessRegistration: React.FC = () => {
       }
 
       // 1️⃣ Insert Business Registration
-      const registration = await axios.post(`${api}/registration`, {
+      const registration = await apiClient.post(`/registration`, {
         ...registrationData,
         business_id: businessId,
       });
@@ -405,35 +401,21 @@ const BusinessRegistration: React.FC = () => {
                 }}
               >
                 <div>
-                  <Text
-                    variant="title"
-                    style={{
-                      display: "block",
-                      fontSize: 18,
-                      fontWeight: 600,
-                      lineHeight: 1.2,
-                    }}
-                  >
-                    Register your business
-                  </Text>
-                  <Text
-                    variant="label"
-                    color={colors.gray}
-                    style={{ fontSize: 12 }}
-                  >
+                  <div style={{ marginBottom: 8 }}>
+                    <Typography.Title size="normal">
+                      Register your business
+                    </Typography.Title>
+                  </div>
+                  <Typography.Body size="xs" sx={{ color: colors.gray }}>
                     A simple, step-by-step flow to get you listed.
-                  </Text>
+                  </Typography.Body>
                 </div>
               </div>
 
               <Stack alignItems="flex-end" gap={0.5}>
-                <Text
-                  variant="label"
-                  color={colors.gray}
-                  style={{ fontSize: 12 }}
-                >
+                <Typography.Body size="sm" sx={{ color: colors.gray }}>
                   Step {activeStep + 1} of {steps.length}
-                </Text>
+                </Typography.Body>
                 <Box sx={{ width: 160, "--LinearProgress-thickness": "4px" }}>
                   <LinearProgress
                     determinate

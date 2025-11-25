@@ -9,7 +9,7 @@ async function createPaymentProcedures(knex) {
 
   // Get payment by ID
   await knex.raw(`
-    CREATE PROCEDURE GetPaymentById(IN p_id CHAR(36))
+    CREATE PROCEDURE GetPaymentById(IN p_id CHAR(64))
     BEGIN
       SELECT * FROM payment WHERE id = p_id;
     END;
@@ -18,15 +18,15 @@ async function createPaymentProcedures(knex) {
   // Insert payment
   await knex.raw(`
     CREATE PROCEDURE InsertPayment(
-      IN p_id CHAR(36),
+      IN p_id CHAR(64),
       IN p_payer_type ENUM('Tourist','Owner'),
       IN p_payment_type ENUM('Full Payment','Partial Payment'),
       IN p_payment_method ENUM('Gcash','Paymaya','Credit Card','Cash'),
       IN p_amount FLOAT,
       IN p_status ENUM('Paid','Pending Balance'),
       IN p_payment_for ENUM('Reservation','Pending Balance','Subscription'),
-      IN p_payer_id CHAR(36),
-      IN p_payment_for_id CHAR(36),
+      IN p_payer_id CHAR(64),
+      IN p_payment_for_id CHAR(64),
       IN p_created_at TIMESTAMP
     )
     BEGIN
@@ -42,15 +42,15 @@ async function createPaymentProcedures(knex) {
   // Update payment (all fields optional except id)
   await knex.raw(`
     CREATE PROCEDURE UpdatePayment(
-      IN p_id CHAR(36),
+      IN p_id CHAR(64),
       IN p_payer_type ENUM('Tourist','Owner'),
       IN p_payment_type ENUM('Full Payment','Partial Payment'),
       IN p_payment_method ENUM('Gcash','Paymaya','Credit Card','Cash'),
       IN p_amount FLOAT,
       IN p_status ENUM('Paid','Pending Balance'),
       IN p_payment_for ENUM('Reservation','Pending Balance','Subscription'),
-      IN p_payer_id CHAR(36),
-      IN p_payment_for_id CHAR(36)
+      IN p_payer_id CHAR(64),
+      IN p_payment_for_id CHAR(64)
     )
     BEGIN
       UPDATE payment
@@ -70,7 +70,7 @@ async function createPaymentProcedures(knex) {
 
   // Delete payment
   await knex.raw(`
-    CREATE PROCEDURE DeletePayment(IN p_id CHAR(36))
+    CREATE PROCEDURE DeletePayment(IN p_id CHAR(64))
     BEGIN
       DELETE FROM payment WHERE id = p_id;
     END;
@@ -78,7 +78,7 @@ async function createPaymentProcedures(knex) {
 
   // Get payment by payer ID
   await knex.raw(`
-    CREATE PROCEDURE GetPaymentByPayerId(IN p_payer_id CHAR(36))
+    CREATE PROCEDURE GetPaymentByPayerId(IN p_payer_id CHAR(64))
     BEGIN
       SELECT * FROM payment WHERE payer_id = p_payer_id;
     END;
@@ -86,11 +86,36 @@ async function createPaymentProcedures(knex) {
 
   // Get payment by payment_for_id
   await knex.raw(`
-    CREATE PROCEDURE GetPaymentByPaymentForId(IN p_payment_for_id CHAR(36))
+    CREATE PROCEDURE GetPaymentByPaymentForId(IN p_payment_for_id CHAR(64))
     BEGIN
       SELECT * FROM payment WHERE payment_for_id = p_payment_for_id;
     END;
   `);
+  await knex.raw(`
+  CREATE PROCEDURE GetPaymentsByBusinessId(IN p_business_id CHAR(64))
+  BEGIN
+    SELECT 
+      p.id AS payment_id,
+      p.payer_id,
+      p.payer_type,
+      p.payment_type,
+      p.payment_method,
+      p.amount,
+      p.status,
+      p.payment_for,
+      p.created_at,
+      b.id AS booking_id,
+      b.check_in_date,
+      b.check_out_date,
+      b.total_price,
+      t.first_name,
+      t.last_name
+    FROM payment p
+    INNER JOIN booking b ON p.payment_for_id = b.id
+    INNER JOIN tourist t ON b.tourist_id = t.id
+    WHERE b.business_id = p_business_id;
+  END;
+`);
 }
 
 async function dropPaymentProcedures(knex) {
@@ -101,6 +126,7 @@ async function dropPaymentProcedures(knex) {
   await knex.raw("DROP PROCEDURE IF EXISTS DeletePayment;");
   await knex.raw("DROP PROCEDURE IF EXISTS GetPaymentByPayerId;");
   await knex.raw("DROP PROCEDURE IF EXISTS GetPaymentByPaymentForId;");
+  await knex.raw("DROP PROCEDURE IF EXISTS GetPaymentsByBusinessId;");
 }
 
 export { createPaymentProcedures, dropPaymentProcedures };

@@ -63,60 +63,19 @@ async function createAddressProcedures(knex) {
     END;
   `);
 
-  // Get all addresses
+  // Join barangay, municipality, province tables to get full address by barangay_id
   await knex.raw(`
-    CREATE PROCEDURE GetAllAddresses()
-    BEGIN
-      SELECT * FROM address ORDER BY id ASC;
-    END;
-  `);
-
-  // Insert address
-  await knex.raw(`
-    CREATE PROCEDURE InsertAddress(
-      IN p_province_id INT,
-      IN p_municipality_id INT,
-      IN p_barangay_id INT
-    )
-    BEGIN
-      INSERT INTO address (province_id, municipality_id, barangay_id)
-      VALUES (p_province_id, p_municipality_id, p_barangay_id);
-      SELECT * FROM address WHERE id = LAST_INSERT_ID();
-    END;
-  `);
-
-  // Update address
-  await knex.raw(`
-    CREATE PROCEDURE UpdateAddress(
-      IN p_id INT,
-      IN p_province_id INT,
-      IN p_municipality_id INT,
-      IN p_barangay_id INT
-    )
-    BEGIN
-      UPDATE address
-      SET province_id = IFNULL(p_province_id, province_id),
-          municipality_id = IFNULL(p_municipality_id, municipality_id),
-          barangay_id = IFNULL(p_barangay_id, barangay_id)
-      WHERE id = p_id;
-      SELECT * FROM address WHERE id = p_id;
-    END;
-  `);
-
-  // Get address details by ID (join)
-  await knex.raw(`
-    CREATE PROCEDURE GetAddressDetailsById(IN p_id INT)
-    BEGIN
-      SELECT 
-        p.id AS province_id, p.province AS province_name,
-        m.id AS municipality_id, m.municipality AS municipality_name,
-        b.id AS barangay_id, b.barangay AS barangay_name
-      FROM address a
-      LEFT JOIN barangay b ON a.barangay_id = b.id
-      LEFT JOIN municipality m ON b.municipality_id = m.id
-      LEFT JOIN province p ON m.province_id = p.id
-      WHERE a.id = p_id;
-    END;
+CREATE PROCEDURE GetFullAddressByBarangayId(IN p_barangay_id INT)
+BEGIN
+  SELECT 
+    b.id AS barangay_id, b.barangay AS barangay_name,
+    m.id AS municipality_id, m.municipality AS municipality_name,
+    p.id AS province_id, p.province AS province_name
+  FROM barangay b
+  LEFT JOIN municipality m ON b.municipality_id = m.id
+  LEFT JOIN province p ON m.province_id = p.id
+  WHERE b.id = p_barangay_id;
+END;
   `);
 }
 
@@ -129,10 +88,7 @@ async function dropAddressProcedures(knex) {
   await knex.raw("DROP PROCEDURE IF EXISTS GetAllBarangays;");
   await knex.raw("DROP PROCEDURE IF EXISTS GetBarangayById;");
   await knex.raw("DROP PROCEDURE IF EXISTS GetBarangaysByMunicipalityId;");
-  await knex.raw("DROP PROCEDURE IF EXISTS GetAllAddresses;");
-  await knex.raw("DROP PROCEDURE IF EXISTS InsertAddress;");
-  await knex.raw("DROP PROCEDURE IF EXISTS UpdateAddress;");
-  await knex.raw("DROP PROCEDURE IF EXISTS GetAddressDetailsById;");
+  await knex.raw("DROP PROCEDURE IF EXISTS GetFullAddressByBarangayId;");
 }
 
 export { createAddressProcedures, dropAddressProcedures };

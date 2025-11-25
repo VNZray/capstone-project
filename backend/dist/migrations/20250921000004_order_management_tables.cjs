@@ -1,3 +1,5 @@
+const { createOrderProcedures, dropOrderProcedures } = require("../procedures/orderProcedures.js");
+
 exports.up = async function (knex) {
   // Create order table
   await knex.schema.createTable("order", (table) => {
@@ -53,9 +55,30 @@ exports.up = async function (knex) {
     table.index("order_id", "idx_order_items_order");
     table.index("product_id", "idx_order_items_product");
   });
+
+  // Create stored procedures
+  console.log("Creating order stored procedures...");
+  try {
+    await createOrderProcedures(knex);
+    console.log("✅ Order stored procedures created successfully");
+  } catch (error) {
+    console.error("❌ Error creating order stored procedures:", error);
+    throw error;
+  }
 };
 
 exports.down = async function (knex) {
+  // Drop stored procedures first
+  console.log("Dropping order stored procedures...");
+  try {
+    await dropOrderProcedures(knex);
+    console.log("✅ Order stored procedures dropped successfully");
+  } catch (error) {
+    console.error("❌ Error dropping order stored procedures:", error);
+    throw error;
+  }
+
+  // Drop tables
   await knex.schema.dropTableIfExists("order_item");
   await knex.schema.dropTableIfExists("order");
 };

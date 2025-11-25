@@ -1,12 +1,11 @@
-import axios from 'axios';
-import api from '@/services/api';
+import apiClient from '@/services/apiClient';
 import type { Service, ServiceCategory } from '@/types/Service';
 
 /** Fetch Services by Business ID */
 export const fetchServicesByBusinessId = async (
   businessId: string
 ): Promise<Service[]> => {
-  const { data } = await axios.get<Service[]>(`${api}/services/business/${businessId}`);
+  const { data } = await apiClient.get<Service[]>(`/services/business/${businessId}`);
   return data;
 };
 
@@ -14,14 +13,14 @@ export const fetchServicesByBusinessId = async (
 export const fetchServiceCategoriesByBusinessId = async (
   businessId: string
 ): Promise<ServiceCategory[]> => {
-  const { data } = await axios.get<ServiceCategory[]>(
-    `${api}/service-categories/business/${businessId}`
+  const { data } = await apiClient.get<ServiceCategory[]>(
+    `/service-categories/business/${businessId}`
   );
   return data;
 };
 
 /** Fetch Single Service */
 export const fetchServiceById = async (serviceId: string): Promise<Service> => {
-  const { data } = await axios.get<Service>(`${api}/services/${serviceId}`);
+  const { data } = await apiClient.get<Service>(`/services/${serviceId}`);
   return data;
 };

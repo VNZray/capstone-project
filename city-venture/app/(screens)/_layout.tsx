@@ -16,18 +16,6 @@ const Screens = () => {
       <Stack>
         <Stack.Screen name="index" options={{ headerShown: false }} />
         <Stack.Screen
-          name="Login"
-          options={{
-            headerBackTitle: 'Back',
-            headerTitle: 'Login',
-            headerTintColor: color,
-            headerShown: true,
-            title: 'Login',
-            // Prevent iOS back-swipe and back button after successful login
-            gestureEnabled: false,
-          }}
-        />
-        <Stack.Screen
           name="Register"
           options={{
             headerBackTitle: 'Back',

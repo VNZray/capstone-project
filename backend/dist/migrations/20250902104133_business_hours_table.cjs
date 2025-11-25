@@ -7,7 +7,17 @@ exports.up = function (knex) {
       .references("id")
       .inTable("business")
       .onDelete("CASCADE");
-    table.text("day_of_week").notNullable();
+    table
+      .enu("day_of_week", [
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday",
+        "Friday",
+        "Saturday",
+        "Sunday",
+      ])
+      .notNullable();
     table.time("open_time").nullable();
     table.time("close_time").nullable();
     table.boolean("is_open").defaultTo(true);

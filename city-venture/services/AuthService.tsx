@@ -1,370 +1,353 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import axios from "axios";
-
-import api from "@/services/api";
+import apiClient, { setAccessToken } from './apiClient';
 import debugLogger from '@/utils/debugLogger';
 import type {
   Address,
   Barangay,
   Municipality,
   Province,
-} from "../types/Address";
-import type { Owner } from "../types/Owner";
-import type { Tourist } from "../types/Tourist";
-import type { TokenPayload, User, UserDetails, UserRoles } from "../types/User";
-import { Bookings } from '@/types/Booking';
+} from '../types/Address';
+import type { Owner } from '../types/Owner';
+import type { Tourist } from '../types/Tourist';
+import type { TokenPayload, User, UserDetails, UserRoles } from '../types/User';
+import {
+  saveRefreshToken,
+  getRefreshToken,
+  saveUserData,
+  getUserData,
+  clearAllAuthData,
+  saveLastLogin,
+  getLastLogin,
+} from '@/utils/secureStorage';
+import { handleNetworkError } from '@/utils/networkHandler';
+
 interface LoginResponse {
-  token: string;
+  message: string;
+  accessToken: string;
+  refreshToken: string;
+  user: any; // minimal user from login
 }
+
+/**
+ * Decode JWT token safely
+ */
+const decodeToken = (token: string): TokenPayload | null => {
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    return payload;
+  } catch (error) {
+    console.error('[AuthService] Failed to decode token:', error);
+    return null;
+  }
+};
 
 /** LOGIN */
 export const loginUser = async (
   email: string,
   password: string
-): Promise<User> => {
-  // Step 1: Login request
-  debugLogger({
-    title: 'AuthService: POST /users/login',
-    data: { email }
-  });
-  const { data } = await axios
-    .post<LoginResponse>(`${api}/users/login`, {
-      email,
-      password,
-    })
-    .catch((err) => {
-      debugLogger({
-        title: 'AuthService: Login request failed',
-        error: {
-          message: err?.message,
-          status: err?.response?.status,
-          data: err?.response?.data,
-        },
-        errorCode: err?.response?.status
-      });
-      throw err;
-    });
-
-  const { token } = data;
-  debugLogger({
-    title: 'AuthService: Received token',
-    data: token ? '<redacted>' : null
-  });
-
-  // Step 2: Decode token safely
-  let payload: TokenPayload;
+): Promise<UserDetails> => {
   try {
-    payload = JSON.parse(atob(token.split(".")[1]));
+    // Step 1: Login request
     debugLogger({
-      title: 'AuthService: Decoded token payload',
-      data: payload
+      title: 'AuthService: POST /auth/login',
+      data: { email, client: 'mobile' },
     });
-  } catch {
-    throw new Error("Invalid authentication token");
-  }
 
-  const user_id = payload.id;
-  if (!user_id) throw new Error("User ID not found in token");
-
-  // Step 3: Fetch user details
-  debugLogger({
-    title: 'AuthService: GET /users/:id',
-    data: user_id
-  });
-  const { data: userData } = await axios
-    .get<User>(`${api}/users/${user_id}`)
-    .catch((err) => {
-      debugLogger({
-        title: 'AuthService: Fetch user failed',
-        error: {
-          user_id,
-          message: err?.message,
-          status: err?.response?.status,
-          data: err?.response?.data,
-        },
-        errorCode: err?.response?.status
-      });
-      throw err;
-    });
-  debugLogger({
-    title: 'AuthService: userData',
-    data: userData
-  });
-
-  debugLogger({
-    title: 'AuthService: GET /user-roles/:id',
-    data: userData.user_role_id
-  });
-  const { data: userRole } = await axios
-    .get<UserRoles>(`${api}/user-roles/${userData.user_role_id}`)
-    .catch((err) => {
-      debugLogger({
-        title: 'AuthService: Fetch role by id failed',
-        error: {
-          user_role_id: userData.user_role_id,
-          message: err?.message,
-          status: err?.response?.status,
-          data: err?.response?.data,
-        },
-        errorCode: err?.response?.status
-      });
-      throw err;
-    });
-  debugLogger({
-    title: 'AuthService: userRole',
-    data: userRole
-  });
-
-  // Step 4: Fetch user details
-  debugLogger({
-    title: 'AuthService: GET /owner/user/:user_id',
-    data: user_id
-  });
-  const ownerResp = await axios
-    .get<Owner>(`${api}/owner/user/${user_id}`)
-    .catch((err) => {
-      debugLogger({
-        title: 'AuthService: Owner by user lookup failed',
-        error: {
-          user_id,
-          message: err?.message,
-          status: err?.response?.status,
-          data: err?.response?.data,
-        },
-        errorCode: err?.response?.status
-      });
-      return { data: {} as Owner };
-    });
-  const ownerData = ownerResp.data as Partial<Owner> as Owner;
-  debugLogger({
-    title: 'AuthService: ownerData',
-    data: ownerData
-  });
-
-  let ownerAddressData: Address | null = null;
-  if (ownerData && (ownerData as any).barangay_id) {
-    debugLogger({
-      title: 'AuthService: GET /address/:id',
-      data: (ownerData as any).barangay_id
-    });
-    ownerAddressData = await axios
-      .get<Address>(`${api}/address/${(ownerData as any).barangay_id}`)
-      .then((r) => r.data)
+    const { data } = await apiClient
+      .post<LoginResponse>(`/auth/login`, {
+        email,
+        password,
+        client: 'mobile',
+      })
       .catch((err) => {
         debugLogger({
-          title: 'AuthService: Owner address fetch failed',
+          title: 'AuthService: Login request failed',
           error: {
-            barangay_id: (ownerData as any).barangay_id,
             message: err?.message,
             status: err?.response?.status,
             data: err?.response?.data,
           },
-          errorCode: err?.response?.status
+          errorCode: err?.response?.status,
         });
-        return null;
+
+        const formattedError = handleNetworkError(err);
+        const error = new Error(formattedError.message);
+        (error as any).code = formattedError.code;
+        (error as any).status = formattedError.status;
+        throw error;
       });
-  }
 
-  const ownerBarangay = ownerAddressData
-    ? await axios
-        .get<Barangay>(`${api}/barangay/${ownerAddressData.barangay_id}`)
-        .then((r) => r.data)
-        .catch((err) => {
-          debugLogger({
-            title: 'AuthService: Owner barangay fetch failed',
-            error: err?.response?.status
-          });
-          return { barangay: "" } as Barangay;
-        })
-    : ({} as Barangay);
+    const { accessToken, refreshToken, user: loginUserSummary } = data;
 
-  const ownerMunicipality = ownerAddressData
-    ? await axios
-        .get<Municipality>(
-          `${api}/municipality/${ownerAddressData.municipality_id}`
-        )
-        .then((r) => r.data)
-        .catch((err) => {
-          debugLogger({
-            title: 'AuthService: Owner municipality fetch failed',
-            error: err?.response?.status
-          });
-          return { municipality: "" } as Municipality;
-        })
-    : ({} as Municipality);
-
-  const ownerProvince = ownerAddressData
-    ? await axios
-        .get<Province>(`${api}/province/${ownerAddressData.province_id}`)
-        .then((r) => r.data)
-        .catch((err) => {
-          debugLogger({
-            title: 'AuthService: Owner province fetch failed',
-            error: err?.response?.status
-          });
-          return { province: "" } as Province;
-        })
-    : ({} as Province);
-
-  debugLogger({
-    title: 'AuthService: GET /tourist/user/:user_id',
-    data: user_id
-  });
-  const touristResp = await axios
-    .get<Tourist>(`${api}/tourist/user/${user_id}`)
-    .catch((err) => {
-      debugLogger({
-        title: 'AuthService: Tourist by user lookup failed',
-        error: {
-          user_id,
-          message: err?.message,
-          status: err?.response?.status,
-          data: err?.response?.data,
-        },
-        errorCode: err?.response?.status
-      });
-      return { data: {} as Tourist };
+    debugLogger({
+      title: 'AuthService: Received tokens',
+      data: {
+        accessToken: accessToken ? 'present' : 'missing',
+        refreshToken: refreshToken ? 'present' : 'missing',
+      },
     });
-  const touristData = touristResp.data as Partial<Tourist> as Tourist;
-  debugLogger({
-    title: 'AuthService: touristData',
-    data: touristData
-  });
 
-  const touristAddressData: Address | null = (touristData as any).barangay_id
-    ? await axios
-        .get<Address>(`${api}/address/${(touristData as any).barangay_id}`)
-        .then((r) => r.data)
-        .catch((err) => {
-          debugLogger({
-            title: 'AuthService: Tourist address fetch failed',
-            error: err?.response?.status
-          });
-          return null;
-        })
-    : null;
+    // Store tokens
+    setAccessToken(accessToken);
+    await saveRefreshToken(refreshToken);
 
-  const touristBarangay = touristAddressData
-    ? await axios
-        .get<Barangay>(`${api}/barangay/${touristAddressData.barangay_id}`)
-        .then((r) => r.data)
-        .catch(() => {
-          debugLogger({
-            title: 'AuthService: Tourist barangay fetch failed',
-            error: 'No barangay found'
-          });
-          return { barangay: "" } as Barangay;
-        })
-    : ({} as Barangay);
-  const touristMunicipality = touristAddressData
-    ? await axios
-        .get<Municipality>(
-          `${api}/municipality/${touristAddressData.municipality_id}`
-        )
-        .then((r) => r.data)
-        .catch(() => {
-          debugLogger({
-            title: 'AuthService: Tourist municipality fetch failed',
-            error: 'No municipality found'
-          });
-          return { municipality: "" } as Municipality;
-        })
-    : ({} as Municipality);
-  const touristProvince = touristAddressData
-    ? await axios
-        .get<Province>(`${api}/province/${touristAddressData.province_id}`)
-        .then((r) => r.data)
-        .catch(() => {
-          debugLogger({
-            title: 'AuthService: Tourist province fetch failed',
-            error: 'No province found'
-          });
-          return { province: "" } as Province;
-        })
-    : ({} as Province);
+    const user_id = loginUserSummary.id;
 
-  // Step 4: Build user object
-  const loggedInUser: UserDetails = {
-    id:
-      ownerData.id ||
-      touristData.id,
-    email,
-    password,
-    age: (touristData as any).age || ownerData.age || null,
-    phone_number: userData.phone_number,
-    role_name: (userRole as any)?.role_name,
-    first_name:
-      (ownerData as any).first_name ||
-      (touristData as any).first_name ||
-      "",
-    middle_name:
-      (ownerData as any).middle_name ||
-      (touristData as any).middle_name ||
-      "",
-    last_name:
-      (ownerData as any).last_name ||
-      (touristData as any).last_name ||
-      "",
-    gender:
-      (ownerData as any).gender ||
-      (touristData as any).gender ||
-      "",
-    birthdate:
-      (ownerData as any).birthdate ||
-      (touristData as any).birthdate ||
-      "",
-    nationality: (touristData as any).nationality || "",
-    ethnicity: (touristData as any).ethnicity || "",
-    category: (touristData as any).category || "",
-    user_profile: userData.user_profile,
-    is_active: userData.is_active,
-    is_verified: userData.is_verified,
-    created_at: userData.created_at,
-    updated_at: userData.updated_at,
-    last_login: userData.last_login,
-    user_role_id: userData.user_role_id,
-    description: (userRole as any)?.description,
-    barangay_id:
-      (ownerData as any).barangay_id ||
-      (touristData as any).barangay_id ||
-      "",
-    municipality_name:
-      (ownerMunicipality as any).municipality ||
-      (touristMunicipality as any).municipality ||
-      "",
-    barangay_name:
-      (ownerBarangay as any).barangay ||
-      (touristBarangay as any).barangay ||
-      "",
-    province_name:
-      (ownerProvince as any).province ||
-      (touristProvince as any).province ||
-      "",
-    user_id: userData.id || "",
-  };
+    // Step 3: Fetch user details
+    debugLogger({
+      title: 'AuthService: GET /users/:id',
+      data: user_id,
+    });
+    const { data: userData } = await apiClient
+      .get<User>(`/users/${user_id}`)
+      .catch((err) => {
+        debugLogger({
+          title: 'AuthService: Fetch user failed',
+          error: {
+            user_id,
+            message: err?.message,
+            status: err?.response?.status,
+          },
+          errorCode: err?.response?.status,
+        });
+        throw err;
+      });
 
-  // Save to AsyncStorage
-      await AsyncStorage.setItem('token', token);
-      await AsyncStorage.setItem('user', JSON.stringify(loggedInUser));
+    const { data: userRole } = await apiClient.get<UserRoles>(
+      `/user-roles/${userData.user_role_id}`
+    );
 
-  return loggedInUser;
+    // Step 4: Fetch role-specific user details
+    const isTourist = userRole.role_name === 'Tourist';
+    const isOwner =
+      userRole.role_name === 'Owner' || userRole.role_name === 'Business Owner';
+
+    let ownerData: Partial<Owner> = {};
+    let ownerBarangay: Partial<Barangay> = {};
+    let ownerMunicipality: Partial<Municipality> = {};
+    let ownerProvince: Partial<Province> = {};
+
+    let touristData: Partial<Tourist> = {};
+    let touristBarangay: Partial<Barangay> = {};
+    let touristMunicipality: Partial<Municipality> = {};
+    let touristProvince: Partial<Province> = {};
+
+    // Only fetch Owner data if user is an Owner
+    if (isOwner) {
+      const ownerResp = await apiClient
+        .get<Owner>(`/owner/user/${user_id}`)
+        .catch(() => ({ data: {} as Owner }));
+      ownerData = ownerResp.data;
+
+      if ((ownerData as any).barangay_id) {
+        const ownerAddressData = await apiClient
+          .get<Address>(`/address/${(ownerData as any).barangay_id}`)
+          .then((r) => r.data)
+          .catch(() => null);
+
+        if (ownerAddressData) {
+          ownerBarangay = {
+            id: ownerAddressData.barangay_id,
+            barangay_id: ownerAddressData.barangay_id,
+            municipality_id: ownerAddressData.municipality_id,
+            barangay: ownerAddressData.barangay_name || '',
+          } as Barangay;
+
+          ownerMunicipality = {
+            id: ownerAddressData.municipality_id,
+            municipality_id: ownerAddressData.municipality_id,
+            province_id: ownerAddressData.province_id,
+            municipality: ownerAddressData.municipality_name || '',
+          } as Municipality;
+
+          ownerProvince = {
+            id: ownerAddressData.province_id,
+            province: ownerAddressData.province_name || '',
+          } as Province;
+        }
+      }
+    }
+
+    // Only fetch Tourist data if user is a Tourist
+    if (isTourist) {
+      const touristResp = await apiClient
+        .get<Tourist>(`/tourist/user/${user_id}`)
+        .catch(() => ({ data: {} as Tourist }));
+      touristData = touristResp.data;
+
+      const touristBarangayId =
+        userData.barangay_id || (touristData as any).barangay_id;
+      if (touristBarangayId) {
+        const touristAddressData = await apiClient
+          .get<Address>(`/address/${touristBarangayId}`)
+          .then((r) => r.data)
+          .catch(() => null);
+
+        if (touristAddressData) {
+          touristBarangay = {
+            id: touristAddressData.barangay_id,
+            barangay_id: touristAddressData.barangay_id,
+            municipality_id: touristAddressData.municipality_id,
+            barangay: touristAddressData.barangay_name || '',
+          } as Barangay;
+
+          touristMunicipality = {
+            id: touristAddressData.municipality_id,
+            municipality_id: touristAddressData.municipality_id,
+            province_id: touristAddressData.province_id,
+            municipality: touristAddressData.municipality_name || '',
+          } as Municipality;
+
+          touristProvince = {
+            id: touristAddressData.province_id,
+            province: touristAddressData.province_name || '',
+          } as Province;
+        }
+      }
+    }
+
+    // Step 4: Build user object
+    const loggedInUser: UserDetails = {
+      id: ownerData.id || touristData.id,
+      email,
+      password,
+      age: (touristData as any).age || ownerData.age || null,
+      phone_number: userData.phone_number,
+      role_name: (userRole as any)?.role_name,
+      first_name:
+        (ownerData as any).first_name || (touristData as any).first_name || '',
+      middle_name:
+        (ownerData as any).middle_name ||
+        (touristData as any).middle_name ||
+        '',
+      last_name:
+        (ownerData as any).last_name || (touristData as any).last_name || '',
+      gender: (ownerData as any).gender || (touristData as any).gender || '',
+      birthdate:
+        (ownerData as any).birthdate || (touristData as any).birthdate || '',
+      nationality: (touristData as any).nationality || '',
+      ethnicity: (touristData as any).ethnicity || '',
+      category: (touristData as any).category || '',
+      user_profile: userData.user_profile,
+      is_active: userData.is_active!,
+      is_verified: userData.is_verified!,
+      created_at: userData.created_at!,
+      updated_at: userData.updated_at!,
+      last_login: userData.last_login,
+      user_role_id: userData.user_role_id,
+      description: (userRole as any)?.description,
+      barangay_id:
+        (ownerData as any).barangay_id ||
+        (touristData as any).barangay_id ||
+        '',
+      municipality_name:
+        (ownerMunicipality as any).municipality ||
+        (touristMunicipality as any).municipality ||
+        '',
+      barangay_name:
+        (ownerBarangay as any).barangay ||
+        (touristBarangay as any).barangay ||
+        '',
+      province_name:
+        (ownerProvince as any).province ||
+        (touristProvince as any).province ||
+        '',
+      user_id: userData.id || '',
+    };
+
+    // Save to Secure Storage
+    await saveUserData(JSON.stringify(loggedInUser));
+    await saveLastLogin();
+
+    return loggedInUser;
+  } catch (error) {
+    debugLogger({
+      title: 'AuthService: ❌ Login failed',
+      error: error instanceof Error ? error.message : String(error),
+    });
+    throw error;
+  }
 };
 
-
-
 /** LOGOUT */
-export const logoutUser = async () => {
-  await AsyncStorage.removeItem('token');
-  await AsyncStorage.removeItem('user');
+export const logoutUser = async (): Promise<void> => {
+  try {
+    const refreshToken = await getRefreshToken();
+    if (refreshToken) {
+      // Attempt server-side logout
+      await apiClient.post('/auth/logout', { refreshToken }).catch(() => {});
+    }
+
+    setAccessToken(null);
+    await clearAllAuthData();
+
+    debugLogger({
+      title: 'AuthService: ✅ Logout successful',
+    });
+  } catch (error) {
+    console.error('[AuthService] Logout error:', error);
+    await clearAllAuthData();
+  }
 };
 
 /** Get Stored User */
-export const getStoredUser = async (): Promise<User | null> => {
-  const storedUser = await AsyncStorage.getItem('user');
-  return storedUser ? JSON.parse(storedUser) : null;
+export const getStoredUser = async (): Promise<UserDetails | null> => {
+  try {
+    const storedUserData = await getUserData();
+    if (!storedUserData) {
+      return null;
+    }
+    return JSON.parse(storedUserData);
+  } catch (error) {
+    console.error('[AuthService] Failed to get stored user:', error);
+    return null;
+  }
 };
 
-/** Get Stored Token */
-export const getToken = async (): Promise<string | null> => {
-  return await AsyncStorage.getItem('token');
+/** Check session validity */
+export const isSessionValid = async (): Promise<boolean> => {
+  // Simplified check - if we have refresh token, we assume valid until proven otherwise
+  // Actual validity is enforced by apiClient interceptors
+  const refreshToken = await getRefreshToken();
+  return !!refreshToken;
+};
+
+// Singleton promise to prevent concurrent initializeAuth calls
+let initPromise: Promise<boolean> | null = null;
+
+// Export helper for initialization
+export const initializeAuth = async (): Promise<boolean> => {
+  // If initialization is already in progress, return the existing promise
+  if (initPromise) {
+    return initPromise;
+  }
+
+  initPromise = (async () => {
+    try {
+      const refreshToken = await getRefreshToken();
+      if (!refreshToken) {
+        return false;
+      }
+
+      // Optimistically try to refresh access token on startup
+      const res = await apiClient.post(`/auth/refresh`, { refreshToken });
+
+      setAccessToken(res.data.accessToken);
+
+      if (res.data.refreshToken) {
+        await saveRefreshToken(res.data.refreshToken);
+      }
+
+      return true;
+    } catch (e) {
+      // Failed to refresh -> logged out
+      return false;
+    }
+  })();
+
+  try {
+    return await initPromise;
+  } finally {
+    // Clear the promise so subsequent calls (e.g. after manual logout/login) can run fresh
+    initPromise = null;
+  }
 };

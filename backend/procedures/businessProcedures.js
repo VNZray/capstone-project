@@ -42,7 +42,6 @@ async function createBusinessProcedures(knex) {
       IN p_business_image TEXT,
       IN p_latitude VARCHAR(30),
       IN p_longitude VARCHAR(30),
-      IN p_x_url TEXT,
       IN p_website_url TEXT,
       IN p_facebook_url TEXT,
       IN p_instagram_url TEXT,
@@ -53,13 +52,13 @@ async function createBusinessProcedures(knex) {
         id, business_name, description, min_price, max_price, email, phone_number,
         business_category_id, business_type_id, barangay_id,
         address, owner_id, status, business_image, latitude, longitude,
-        x_url, website_url, facebook_url, instagram_url, hasBooking
+        website_url, facebook_url, instagram_url, hasBooking
       )
       VALUES (
         p_id, p_business_name, p_description, p_min_price, p_max_price, p_email, p_phone_number,
         p_business_category_id, p_business_type_id, p_barangay_id,
         p_address, p_owner_id, p_status, p_business_image, p_latitude, p_longitude,
-        p_x_url, p_website_url, p_facebook_url, p_instagram_url, p_hasBooking
+        p_website_url, p_facebook_url, p_instagram_url, p_hasBooking
       );
 
       SELECT * FROM business WHERE id = p_id;
@@ -85,7 +84,6 @@ async function createBusinessProcedures(knex) {
       IN p_business_image TEXT,
       IN p_latitude VARCHAR(30),
       IN p_longitude VARCHAR(30),
-      IN p_x_url TEXT,
       IN p_website_url TEXT,
       IN p_facebook_url TEXT,
       IN p_instagram_url TEXT,
@@ -108,7 +106,6 @@ async function createBusinessProcedures(knex) {
         business_image = IFNULL(p_business_image, business_image),
         latitude = IFNULL(p_latitude, latitude),
         longitude = IFNULL(p_longitude, longitude),
-        x_url = IFNULL(p_x_url, x_url),
         website_url = IFNULL(p_website_url, website_url),
         facebook_url = IFNULL(p_facebook_url, facebook_url),
         instagram_url = IFNULL(p_instagram_url, instagram_url),

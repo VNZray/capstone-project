@@ -1,7 +1,7 @@
 import { background } from '@/constants/color';
 import { useAuth } from '@/context/AuthContext';
 import { useRoom } from '@/context/RoomContext';
-import { createFullBooking } from '@/query/accommodationQuery';
+import { bookRoom, payBooking } from '@/query/accommodationQuery';
 import { Booking, BookingPayment, Guests } from '@/types/Booking';
 import debugLogger from '@/utils/debugLogger';
 import { notifyPayment } from '@/utils/paymentBus';
@@ -81,27 +81,40 @@ const OnlinePayment = () => {
     if (!roomDetails?.id || !user?.id) return;
     try {
       setCreating(true);
-        const total = Number((parsed.b as Booking)?.total_price) || 0;
-        const paid = Number((parsed.p as BookingPayment)?.amount) || 0;
-        const bookingPayload: Booking = {
-          ...(parsed.b as Booking),
-          room_id: roomDetails.id,
-          tourist_id: user.id,
-          // Online payments reserve the booking immediately
-          booking_status: 'Reserved',
-          balance: Math.max(total - paid, 0),
-        } as Booking;
-      const guestsPayload = (parsed.g || []).map((g: any) => ({
-        ...g,
-        name: g.name,
-        gender: g.gender,
-        age: g.age,
-      }));
+      const total = Number((parsed.b as Booking)?.total_price) || 0;
+      const paid = Number((parsed.p as BookingPayment)?.amount) || 0;
+      
+      // Step 1: Create the booking first
+      const bookingPayload: Booking = {
+        ...(parsed.b as Booking),
+        room_id: roomDetails.id,
+        tourist_id: user.id,
+        booking_status: 'Reserved',
+        balance: Math.max(total - paid, 0),
+      } as Booking;
+
+      debugLogger({
+        title: 'OnlinePayment: Creating booking',
+        data: { bookingPayload },
+      });
+      
+      const createdBooking = await bookRoom(bookingPayload);
+      
+      if (!createdBooking?.id) {
+        throw new Error('Booking ID not returned after creation');
+      }
+
+      debugLogger({
+        title: 'OnlinePayment: Booking created successfully',
+        data: createdBooking,
+      });
+
+      // Step 2: Create the payment record with the booking ID
       const paymentPayload: BookingPayment = {
         ...(parsed.p as BookingPayment),
         payer_type: 'Tourist',
         payer_id: user.id,
-        payment_for_id: bookingPayload.room_id,
+        payment_for_id: createdBooking.id,
         payment_for: 'Reservation',
         status:
           parsed.p?.payment_type === 'Full Payment'
@@ -110,14 +123,16 @@ const OnlinePayment = () => {
       } as BookingPayment;
 
       debugLogger({
-        title: 'OnlinePayment: Auto submit booking (payloads)',
-        data: { bookingPayload, guestsPayload, paymentPayload },
+        title: 'OnlinePayment: Creating payment',
+        data: { paymentPayload },
       });
-      const created = await createFullBooking(bookingPayload, paymentPayload);
+
+      await payBooking(createdBooking.id, paymentPayload, total);
+
       debugLogger({
-        title: 'OnlinePayment: Booking created after payment success',
-        data: created,
-        successMessage: 'Booking successfully created.',
+        title: 'OnlinePayment: Full booking process completed',
+        data: createdBooking,
+        successMessage: 'Booking and payment successfully created.',
       });
     } catch (e: any) {
       debugLogger({

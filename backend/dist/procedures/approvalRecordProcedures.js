@@ -5,9 +5,9 @@ export async function createApprovalRecordProcedures(knex) {
     CREATE PROCEDURE LogApprovalRecord(
       IN p_approval_type VARCHAR(16),
       IN p_subject_type VARCHAR(32),
-      IN p_subject_id CHAR(36),
+      IN p_subject_id CHAR(64),
       IN p_decision VARCHAR(16),
-      IN p_decided_by CHAR(36),
+      IN p_decided_by CHAR(64),
       IN p_remarks TEXT
     )
     BEGIN

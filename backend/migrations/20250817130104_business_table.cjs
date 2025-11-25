@@ -26,7 +26,6 @@ exports.up = async function (knex) {
     table.text("business_image").nullable();
     table.string("latitude", 30).notNullable();
     table.string("longitude", 30).notNullable();
-    table.text("x_url").nullable();
     table.text("website_url").nullable();
     table.text("facebook_url").nullable();
     table.text("instagram_url").nullable();
@@ -45,6 +44,8 @@ exports.up = async function (knex) {
   });
 
   await createBusinessProcedures(knex);
+
+  console.log("Business table and procedures created.");
 };
 
 exports.down = async function (knex) {

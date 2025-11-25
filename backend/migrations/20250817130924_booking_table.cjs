@@ -1,7 +1,7 @@
 const {
   createProcedures,
   dropProcedures,
-} = require("../procedures/bookingProcedures");
+} = require("../procedures/accommodation/bookingProcedures");
 
 exports.up = async function (knex) {
   await knex.schema.createTable("booking", function (table) {
@@ -54,6 +54,8 @@ exports.up = async function (knex) {
   });
 
   await createProcedures(knex);
+
+  console.log("Booking table and procedures created.");
 };
 
 exports.down = async function (knex) {

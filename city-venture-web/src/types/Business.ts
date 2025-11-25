@@ -9,7 +9,6 @@ export type Business = {
   address?: string | "";
   description?: string | "";
   instagram_url?: string | "";
-  x_url?: string | "";
   website_url?: string | "";
   facebook_url?: string | "";
   latitude?: string | "";
@@ -21,6 +20,7 @@ export type Business = {
   business_image?: string | "";
   hasBooking?: boolean;
   barangay_id: number;
+  subscription_plan?: string;
 };
 
 export type BusinessType = {

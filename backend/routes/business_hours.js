@@ -1,10 +1,11 @@
 import express from "express";
-import * as businessController from "../controller/businessController.js"; // Add `.js` extension
+import * as businessController from "../controller/BusinessController.js"; // Add `.js` extension
 
 const router = express.Router();
 
 router.post("/", businessController.insertBusinessHours);
 router.get("/", businessController.getBusinessHours);
+router.get("/:businessId", businessController.getBusinessHoursByBusinessId);
 router.put("/:id", businessController.updateBusinessHours);
 
 export default router;

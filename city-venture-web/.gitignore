@@ -9,10 +9,13 @@ lerna-debug.log*
 
 node_modules
 dist
+dist/
 dist-ssr
 *.local
 .env.local
 .env
+docs
+services/api.tsx
 
 # Editor directories and files
 .vscode/*

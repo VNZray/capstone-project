@@ -97,6 +97,7 @@ const TouristSpotProfile = () => {
           </>
         }
       />
+      
     </View>
   );
 };

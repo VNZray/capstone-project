@@ -1,7 +1,7 @@
 const {
   createTourismProcedures,
   dropTourismProcedures,
-} = require("../procedures/tourismProcedures");
+} = require("../procedures/auth/tourismProcedures");
 
 exports.up = async function (knex) {
   await knex.schema.createTable("tourism", (table) => {
@@ -19,6 +19,7 @@ exports.up = async function (knex) {
       .onUpdate("CASCADE");
   });
   await createTourismProcedures(knex);
+  console.log("Tourism tables and procedures created.");
 };
 
 exports.down = async function (knex) {

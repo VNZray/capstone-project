@@ -3,15 +3,17 @@ const API_BASE_URL = 'http://localhost:3000/api';
 
 import axios, { type AxiosResponse } from 'axios';
 import type { ApiResponse, TouristSpot, Province, Municipality, Barangay, Category, Type, TouristSpotSchedule, Report, ReportUpdateRequest } from '../types';
+import type { UserRoles } from '@/src/types/User';
+import type { TourismStaff, CreateTourismStaffRequest, UpdateTourismStaffRequest } from '@/src/types/TourismStaff';
 import type { EntityType } from '../types/approval';
 
-// Create axios instance with default config
-const api = axios.create({
-  baseURL: API_BASE_URL,
-  headers: {
-    'Content-Type': 'application/json',
-  },
-});
+import apiClient from '@/src/services/apiClient';
+
+// Use apiClient instead of creating a new axios instance
+const api = apiClient;
+
+// NOTE: This file is kept for backward compatibility.
+// New code should use apiClient directly.
 
 // Define types for tourist spot images
 export interface TouristSpotImage {
@@ -152,9 +154,16 @@ class ApiService {
           rejectNew: (id: string) => `/approval/reject-spot/${id}`,
           rejectEdit: (id: string) => `/approval/reject-edit/${id}`,
         } as const;
-      case 'events':
       case 'businesses':
-      case 'accommodations':
+        return {
+          pendingNew: '/approval/pending-businesses',
+          pendingEdits: '/approval/businesses/pending-edits',
+          approveNew: (id: string) => `/approval/approve-business/${id}`,
+          approveEdit: (id: string) => `/approval/businesses/approve-edit/${id}`,
+          rejectNew: (id: string) => `/approval/reject-business/${id}`,
+          rejectEdit: (id: string) => `/approval/businesses/reject-edit/${id}`,
+        } as const;
+      case 'events':
       default:
         return {
           pendingNew: `/approval/${entity}/pending`,
@@ -266,6 +275,138 @@ class ApiService {
       }
     } catch {
       return { name: `${targetType} ${targetId}`, type: targetType };
+    }
+  }
+
+  // ===== TOURISM STAFF MANAGEMENT (Admin) =====
+  async getTourismStaff(): Promise<TourismStaff[]> {
+    try {
+      console.debug('[apiService] GET /tourism-staff');
+      const response: AxiosResponse<ApiResponse<TourismStaff[]>> = await api.get('/tourism-staff');
+      return (response.data as any).data ?? (response.data as any);
+    } catch (err: any) {
+      console.error('[apiService] Failed GET /tourism-staff', {
+        message: err?.message,
+        status: err?.response?.status,
+        data: err?.response?.data,
+        headers: err?.response?.config?.headers,
+      });
+      throw err;
+    }
+  }
+
+  async getTourismStaffById(id: string): Promise<TourismStaff> {
+    try {
+      console.debug('[apiService] GET /tourism-staff/:id', id);
+      const response: AxiosResponse<ApiResponse<TourismStaff>> = await api.get(`/tourism-staff/${id}`);
+      return (response.data as any).data ?? (response.data as any);
+    } catch (err: any) {
+      console.error('[apiService] Failed GET /tourism-staff/:id', {
+        id,
+        message: err?.message,
+        status: err?.response?.status,
+        data: err?.response?.data,
+      });
+      throw err;
+    }
+  }
+
+  async createTourismStaff(payload: CreateTourismStaffRequest): Promise<ApiResponse<any>> {
+    try {
+      console.debug('[apiService] POST /tourism-staff', payload);
+      const response: AxiosResponse<ApiResponse<any>> = await api.post('/tourism-staff', payload);
+      return response.data;
+    } catch (err: any) {
+      console.error('[apiService] Failed POST /tourism-staff', {
+        payload,
+        message: err?.message,
+        status: err?.response?.status,
+        data: err?.response?.data,
+        headers: err?.response?.config?.headers,
+      });
+      throw err;
+    }
+  }
+
+  async updateTourismStaff(id: string, payload: UpdateTourismStaffRequest): Promise<ApiResponse<any>> {
+    try {
+      console.debug('[apiService] PUT /tourism-staff/:id', { id, payload });
+      const response: AxiosResponse<ApiResponse<any>> = await api.put(`/tourism-staff/${id}`, payload);
+      return response.data;
+    } catch (err: any) {
+      console.error('[apiService] Failed PUT /tourism-staff/:id', {
+        id,
+        payload,
+        message: err?.message,
+        status: err?.response?.status,
+        data: err?.response?.data,
+      });
+      throw err;
+    }
+  }
+
+  async setTourismStaffStatus(id: string, status: { is_active?: boolean; is_verified?: boolean }): Promise<ApiResponse<any>> {
+    try {
+      console.debug('[apiService] PATCH /tourism-staff/:id/status', { id, status });
+      const response: AxiosResponse<ApiResponse<any>> = await api.patch(`/tourism-staff/${id}/status`, status);
+      return response.data;
+    } catch (err: any) {
+      console.error('[apiService] Failed PATCH /tourism-staff/:id/status', {
+        id,
+        status,
+        message: err?.message,
+        statusCode: err?.response?.status,
+        data: err?.response?.data,
+      });
+      throw err;
+    }
+  }
+
+  async resetTourismStaffPassword(id: string): Promise<ApiResponse<{ credentials: { temporary_password: string } }>> {
+    try {
+      console.debug('[apiService] POST /tourism-staff/:id/reset-password', id);
+      const response: AxiosResponse<ApiResponse<{ credentials: { temporary_password: string } }>> = await api.post(`/tourism-staff/${id}/reset-password`);
+      return response.data;
+    } catch (err: any) {
+      console.error('[apiService] Failed POST /tourism-staff/:id/reset-password', {
+        id,
+        message: err?.message,
+        status: err?.response?.status,
+        data: err?.response?.data,
+      });
+      throw err;
+    }
+  }
+
+  // ===== BUSINESS MANAGEMENT =====
+  async getBusinesses(): Promise<any[]> {
+    try {
+      console.debug('[apiService] GET /business');
+      const response: AxiosResponse<ApiResponse<any[]>> = await api.get('/business');
+      return (response.data as any).data ?? (response.data as any);
+    } catch (err: any) {
+      console.error('[apiService] Failed GET /business', {
+        message: err?.message,
+        status: err?.response?.status,
+        data: err?.response?.data,
+      });
+      throw err;
+    }
+  }
+
+  // ===== ROLES =====
+  async getUserRoles(): Promise<UserRoles[]> {
+    try {
+      console.debug('[apiService] GET /user-roles');
+      const response: AxiosResponse<ApiResponse<UserRoles[]>> = await api.get('/user-roles');
+      return (response.data as any).data ?? (response.data as any);
+    } catch (err: any) {
+      console.error('[apiService] Failed GET /user-roles', {
+        message: err?.message,
+        status: err?.response?.status,
+        data: err?.response?.data,
+      });
+      throw err;
     }
   }
 }

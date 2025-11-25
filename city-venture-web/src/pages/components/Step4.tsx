@@ -1,6 +1,6 @@
 import PageContainer from "@/src/components/PageContainer";
 import Container from "@/src/components/Container";
-import ResponsiveText from "@/src/components/ResponsiveText";
+import Typography from "@/src/components/Typography";
 import { LinearProgress, Sheet } from "@mui/joy";
 import { supabase } from "@/src/lib/supabase";
 import type { Business } from "@/src/types/Business";
@@ -64,12 +64,15 @@ const Step4: React.FC<Props> = ({ data, setData: _setData, permitData, setPermit
     setPermitData((prev) => [
       ...prev.filter((p) => p.permit_type !== permitType),
       {
+        id: crypto.randomUUID(),
         business_id: data.id ?? "",
         permit_type: permitType,
         file_url: publicUrlData.publicUrl,
         file_format: ext!,
         file_size: file.size,
-        status: "Pending",
+        status: "pending",
+        expiration_date: "",
+        submitted_at: new Date().toISOString(),
       },
     ]);
     setUploading((u) => ({ ...u, [permitType]: false }));
@@ -116,12 +119,12 @@ const Step4: React.FC<Props> = ({ data, setData: _setData, permitData, setPermit
   return (
     <PageContainer gap={0} padding={0}>
       <Container gap="0">
-        <ResponsiveText type="title-small" weight="medium">
+        <Typography.CardTitle>
           Business Permits
-        </ResponsiveText>
-        <ResponsiveText type="body-medium">
+        </Typography.CardTitle>
+        <Typography.CardSubTitle>
           Upload your latest permits (PDF or Image up to 10MB).
-        </ResponsiveText>
+        </Typography.CardSubTitle>
       </Container>
 
       <Container>
@@ -146,9 +149,9 @@ const Step4: React.FC<Props> = ({ data, setData: _setData, permitData, setPermit
           {/* Business Permit */}
           <Sheet variant="outlined" sx={{ borderRadius: "10px", borderStyle: "solid", borderColor: "#e5e7eb" }}>
             <div style={{ padding: "12px 12px 8px" }}>
-              <ResponsiveText type="label-medium" weight="medium">
+              <Typography.Label size="md">
                 Upload Business Permit
-              </ResponsiveText>
+              </Typography.Label>
             </div>
             <div
               onDragOver={onDragOver}
@@ -169,12 +172,12 @@ const Step4: React.FC<Props> = ({ data, setData: _setData, permitData, setPermit
               }}
             >
               <CloudUploadOutlinedIcon style={{ color: "#6b7280" }} />
-              <ResponsiveText type="body-medium" weight="medium">
+              <Typography.Body>
                 Click to upload or drag and drop
-              </ResponsiveText>
-              <ResponsiveText type="body-small" style={{ color: "#6b7280" }}>
+              </Typography.Body>
+              <Typography.Body>
                 Upload .pdf, .png, .jpg (MAX. 10MB)
-              </ResponsiveText>
+              </Typography.Body>
             </div>
 
             {/* Status Row */}
@@ -184,12 +187,12 @@ const Step4: React.FC<Props> = ({ data, setData: _setData, permitData, setPermit
               )}
               {!uploading["business_permit"] && businessPermit && (
                 <div style={{ display: "flex", alignItems: "center", gap: 8, justifyContent: "space-between" }}>
-                  <ResponsiveText type="body-medium">
+                  <Typography.Body>
                     {lastFileName["business_permit"] || `${data.business_name.replace(/\s+/g, "_")}.${businessPermit.file_format}`}
-                  </ResponsiveText>
+                  </Typography.Body>
                   <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                     <a href={businessPermit.file_url} target="_blank" rel="noreferrer">
-                      <ResponsiveText type="label-small" weight="medium">View</ResponsiveText>
+                      <Typography.Body>View</Typography.Body>
                     </a>
                     <button
                       aria-label="Remove business permit"
@@ -207,9 +210,9 @@ const Step4: React.FC<Props> = ({ data, setData: _setData, permitData, setPermit
           {/* Mayor's Permit */}
           <Sheet variant="outlined" sx={{ borderRadius: "10px", borderStyle: "solid", borderColor: "#e5e7eb" }}>
             <div style={{ padding: "12px 12px 8px" }}>
-              <ResponsiveText type="label-medium" weight="medium">
+              <Typography.Label size="md">
                 Upload Mayor's Permit
-              </ResponsiveText>
+              </Typography.Label>
             </div>
             <div
               onDragOver={onDragOver}
@@ -230,12 +233,12 @@ const Step4: React.FC<Props> = ({ data, setData: _setData, permitData, setPermit
               }}
             >
               <CloudUploadOutlinedIcon style={{ color: "#6b7280" }} />
-              <ResponsiveText type="body-medium" weight="medium">
+              <Typography.Body>
                 Click to upload or drag and drop
-              </ResponsiveText>
-              <ResponsiveText type="body-small" style={{ color: "#6b7280" }}>
+              </Typography.Body>
+              <Typography.Body>
                 Upload .pdf, .png, .jpg (MAX. 10MB)
-              </ResponsiveText>
+              </Typography.Body>
             </div>
 
             {/* Status Row */}
@@ -245,12 +248,12 @@ const Step4: React.FC<Props> = ({ data, setData: _setData, permitData, setPermit
               )}
               {!uploading["mayors_permit"] && mayorsPermit && (
                 <div style={{ display: "flex", alignItems: "center", gap: 8, justifyContent: "space-between" }}>
-                  <ResponsiveText type="body-medium">
+                  <Typography.Body>
                     {lastFileName["mayors_permit"] || `${data.business_name.replace(/\s+/g, "_")}.${mayorsPermit.file_format}`}
-                  </ResponsiveText>
+                  </Typography.Body>
                   <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                     <a href={mayorsPermit.file_url} target="_blank" rel="noreferrer">
-                      <ResponsiveText type="label-small" weight="medium">View</ResponsiveText>
+                      <Typography.Body>View</Typography.Body>
                     </a>
                     <button
                       aria-label="Remove mayor's permit"

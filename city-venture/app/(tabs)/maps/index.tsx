@@ -8,7 +8,7 @@ import {
   Text,
   View,
 } from 'react-native';
-import MapView, { Callout, Marker } from 'react-native-maps';
+import { MapView, Callout, Marker } from '@/components/map/MapWrapper';
 import placeholder from '@/assets/images/placeholder.png';
 
 import { ThemedText } from '@/components/themed-text';
@@ -157,13 +157,7 @@ const Maps = () => {
 
   return (
     <View style={{ flex: 1 }}>
-      {Platform.OS === 'web' ? (
-        <View style={[{ width: '100%', height: '100%' }]}>
-          <Text style={{ textAlign: 'center', marginTop: 20 }}>
-            Map view is not supported on the web.
-          </Text>
-        </View>
-      ) : permissionStatus === 'checking' ? (
+      {permissionStatus === 'checking' ? (
         <View
           style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}
         >
@@ -328,8 +322,7 @@ const Maps = () => {
       )}
 
       {/* Floating Search Bar and Tabs */}
-      {Platform.OS !== 'web' && (
-        <View style={styles.searchContainer}>
+      <View style={styles.searchContainer}>
           <Container
             gap={0}
             paddingBottom={0}
@@ -351,7 +344,6 @@ const Maps = () => {
             />
           </Container>
         </View>
-      )}
 
       <Text
         style={{ position: 'absolute', bottom: 10, alignSelf: 'center', color }}

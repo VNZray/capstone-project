@@ -32,13 +32,14 @@ async function createPermitProcedures(knex) {
       IN p_file_url TEXT,
       IN p_file_format VARCHAR(10),
       IN p_file_size BIGINT,
-      IN p_status VARCHAR(50)
+      IN p_status VARCHAR(50),
+      IN p_expiration_date DATE
     )
     BEGIN
       INSERT INTO permit (
-        id, business_id, permit_type, file_url, file_format, file_size, status
+        id, business_id, permit_type, file_url, file_format, file_size, status, expiration_date
       ) VALUES (
-        p_id, p_business_id, p_permit_type, p_file_url, p_file_format, p_file_size, p_status
+        p_id, p_business_id, p_permit_type, p_file_url, p_file_format, p_file_size, p_status, p_expiration_date
       );
       SELECT * FROM permit WHERE id = p_id;
     END;
@@ -53,7 +54,8 @@ async function createPermitProcedures(knex) {
       IN p_file_url TEXT,
       IN p_file_format VARCHAR(10),
       IN p_file_size BIGINT,
-      IN p_status VARCHAR(50)
+      IN p_status VARCHAR(50),
+      IN p_expiration_date DATE
     )
     BEGIN
       UPDATE permit SET
@@ -62,7 +64,8 @@ async function createPermitProcedures(knex) {
         file_url = IFNULL(p_file_url, file_url),
         file_format = IFNULL(p_file_format, file_format),
         file_size = IFNULL(p_file_size, file_size),
-        status = IFNULL(p_status, status)
+        status = IFNULL(p_status, status),
+        expiration_date = IFNULL(p_expiration_date, expiration_date)
       WHERE id = p_id;
       SELECT * FROM permit WHERE id = p_id;
     END;

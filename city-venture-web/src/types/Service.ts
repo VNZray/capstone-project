@@ -1,4 +1,4 @@
-import type { ShopCategory, ShopCategoryAssignment } from "@/src/types/ShopCategory";
+import type { ShopCategoryAssignment } from "@/src/types/ShopCategory";
 
 // Contact method type for services
 export interface ContactMethod {

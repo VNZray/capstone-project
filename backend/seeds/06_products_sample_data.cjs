@@ -7,6 +7,10 @@
  * 
  * Run: npx knex seed:run --specific=06_products_sample_data.cjs
  */
+const { v4: uuidv4 } = require("uuid");
+
+// Fixed UUID matching the restaurant business in 05_user_and_business_sample_Data.js
+const RESTAURANT_BUSINESS_ID = '66666666-6666-6666-6666-666666666666';
 
 exports.seed = async function (knex) {
   // Delete existing products and their stock records to ensure clean seed
@@ -15,15 +19,18 @@ exports.seed = async function (knex) {
   await knex('product').del();
   
   // Delete existing shop categories for our restaurant
-  await knex('shop_category').where('business_id', '66666666-6666-6666-6666-666666666666').del();
+  await knex('shop_category').del();
 
   // Reference to existing business from seed 05
-  const RESTAURANT_BUSINESS_ID = '66666666-6666-6666-6666-666666666666'; // Sample Restaurant
 
-  // Create shop categories for the restaurant
+  // Create shop categories for the restaurant with fixed IDs
+  const FOOD_CATEGORY_ID = 'cat-food-1111-1111-1111-111111111111';
+  const BEVERAGE_CATEGORY_ID = 'cat-beve-2222-2222-2222-222222222222';
+  const DESSERT_CATEGORY_ID = 'cat-dess-3333-3333-3333-333333333333';
+
   const categories = [
     {
-      id: 'cat-food-1111-1111-1111-111111111111',
+      id: FOOD_CATEGORY_ID,
       business_id: RESTAURANT_BUSINESS_ID,
       name: 'Food',
       description: 'Main dishes and meals',
@@ -32,7 +39,7 @@ exports.seed = async function (knex) {
       status: 'active'
     },
     {
-      id: 'cat-beve-2222-2222-2222-222222222222',
+      id: BEVERAGE_CATEGORY_ID,
       business_id: RESTAURANT_BUSINESS_ID,
       name: 'Beverage',
       description: 'Drinks and beverages',
@@ -41,7 +48,7 @@ exports.seed = async function (knex) {
       status: 'active'
     },
     {
-      id: 'cat-dess-3333-3333-3333-333333333333',
+      id: DESSERT_CATEGORY_ID,
       business_id: RESTAURANT_BUSINESS_ID,
       name: 'Dessert',
       description: 'Sweet treats and desserts',
@@ -60,7 +67,7 @@ exports.seed = async function (knex) {
     {
       id: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
       business_id: RESTAURANT_BUSINESS_ID,
-      shop_category_id: 'cat-food-1111-1111-1111-111111111111',
+      shop_category_id: FOOD_CATEGORY_ID,
       name: 'Bicol Express',
       description: 'Spicy Bicol Express - traditional Filipino dish',
       price: 1000.00,
@@ -69,7 +76,7 @@ exports.seed = async function (knex) {
     {
       id: 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb',
       business_id: RESTAURANT_BUSINESS_ID,
-      shop_category_id: 'cat-food-1111-1111-1111-111111111111',
+      shop_category_id: FOOD_CATEGORY_ID,
       name: 'Adobo Special',
       description: 'Chicken Adobo with special sauce',
       price: 850.00,
@@ -78,7 +85,7 @@ exports.seed = async function (knex) {
     {
       id: 'cccccccc-cccc-cccc-cccc-cccccccccccc',
       business_id: RESTAURANT_BUSINESS_ID,
-      shop_category_id: 'cat-food-1111-1111-1111-111111111111',
+      shop_category_id: FOOD_CATEGORY_ID,
       name: 'Lumpia Shanghai',
       description: 'Crispy spring rolls - 5 pieces',
       price: 450.00,
@@ -88,7 +95,7 @@ exports.seed = async function (knex) {
     {
       id: 'dddddddd-dddd-dddd-dddd-dddddddddddd',
       business_id: RESTAURANT_BUSINESS_ID,
-      shop_category_id: 'cat-beve-2222-2222-2222-222222222222',
+      shop_category_id: BEVERAGE_CATEGORY_ID,
       name: 'Iced Tea',
       description: 'Fresh iced tea - 1 liter',
       price: 150.00,
@@ -97,7 +104,7 @@ exports.seed = async function (knex) {
     {
       id: 'eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee',
       business_id: RESTAURANT_BUSINESS_ID,
-      shop_category_id: 'cat-beve-2222-2222-2222-222222222222',
+      shop_category_id: BEVERAGE_CATEGORY_ID,
       name: 'Mango Shake',
       description: 'Fresh mango shake with ice cream',
       price: 280.00,
@@ -107,7 +114,7 @@ exports.seed = async function (knex) {
     {
       id: 'ffffffff-ffff-ffff-ffff-ffffffffffff',
       business_id: RESTAURANT_BUSINESS_ID,
-      shop_category_id: 'cat-dess-3333-3333-3333-333333333333',
+      shop_category_id: DESSERT_CATEGORY_ID,
       name: 'Leche Flan',
       description: 'Traditional Filipino caramel custard',
       price: 350.00,
@@ -116,7 +123,7 @@ exports.seed = async function (knex) {
     {
       id: '11111111-aaaa-aaaa-aaaa-111111111111',
       business_id: RESTAURANT_BUSINESS_ID,
-      shop_category_id: 'cat-dess-3333-3333-3333-333333333333',
+      shop_category_id: DESSERT_CATEGORY_ID,
       name: 'Halo-Halo',
       description: 'Popular Filipino shaved ice dessert',
       price: 200.00,
@@ -125,7 +132,7 @@ exports.seed = async function (knex) {
     {
       id: '22222222-bbbb-bbbb-bbbb-222222222222',
       business_id: RESTAURANT_BUSINESS_ID,
-      shop_category_id: 'cat-dess-3333-3333-3333-333333333333',
+      shop_category_id: DESSERT_CATEGORY_ID,
       name: 'Ube Cake',
       description: 'Purple yam cake - whole',
       price: 1500.00,

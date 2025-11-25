@@ -18,6 +18,12 @@ router.get('/municipalities/:province_id', touristSpotController.getMunicipaliti
 // Get barangays by municipality
 router.get('/barangays/:municipality_id', touristSpotController.getBarangaysByMunicipality);
 
+// Featured management
+router.get('/featured/list', touristSpotController.getFeaturedTouristSpots);
+router.get('/featured/non-featured', touristSpotController.getNonFeaturedTouristSpots);
+router.put('/featured/:id', touristSpotController.featureTouristSpot);
+router.delete('/featured/:id', touristSpotController.unfeatureTouristSpot);
+
 // Get tourist spot by ID
 router.get('/:id', touristSpotController.getTouristSpotById);
 

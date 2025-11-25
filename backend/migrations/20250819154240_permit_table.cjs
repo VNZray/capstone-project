@@ -19,10 +19,13 @@ exports.up = async function (knex) {
     table.bigInteger("file_size"); // in bytes
     table.string("status", 50).defaultTo("pending"); // pending, approved, rejected
     table.timestamp("submitted_at").defaultTo(knex.fn.now());
+    table.date("expiration_date").nullable();
     // approved_at starts NULL and is set only upon approval
     table.timestamp("approved_at").nullable().defaultTo(null);
   });
   await createPermitProcedures(knex);
+
+  console.log("Permit table and procedures created.");
 };
 
 exports.down = async function (knex) {

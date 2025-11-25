@@ -1,6 +1,6 @@
 import React from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import ReportDetails from "@/src/components/Admin/report/ReportDetails";
+import ReportDetails from "@/src/features/admin/report/components/ReportDetails";
 
 const ReportDetailsScreen: React.FC = () => {
   const { id } = useParams<{ id: string }>();

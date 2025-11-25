@@ -34,7 +34,7 @@ import {
 import PageContainer from "@/src/components/PageContainer";
 import { useBusiness } from "@/src/context/BusinessContext";
 import * as DiscountService from "@/src/services/DiscountService";
-import DiscountStatsModal from "./components/DiscountStatsModal";
+// import DiscountStatsModal from "./components/DiscountStatsModal";
 import type { Discount } from "@/src/types/Discount";
 
 type DiscountFilter = "all" | "ongoing" | "scheduled" | "expired" | "inactive";
@@ -48,8 +48,8 @@ export default function DiscountManagement(): React.ReactElement {
   const [searchQuery, setSearchQuery] = useState("");
   
   // Modal states
-  const [statsModalOpen, setStatsModalOpen] = useState(false);
-  const [selectedDiscountId, setSelectedDiscountId] = useState<string>("");
+  // const [statsModalOpen, setStatsModalOpen] = useState(false);
+  // const [selectedDiscountId, setSelectedDiscountId] = useState<string>("");
   
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -203,10 +203,10 @@ export default function DiscountManagement(): React.ReactElement {
   };
 
   // Handle open stats modal
-  const handleViewStats = (discount: Discount) => {
-    setSelectedDiscountId(discount.id);
-    setStatsModalOpen(true);
-  };
+  // const handleViewStats = (discount: Discount) => {
+  //   setSelectedDiscountId(discount.id);
+  //   setStatsModalOpen(true);
+  // };
 
   // Handle open create page
   const handleCreate = () => {
@@ -480,7 +480,7 @@ export default function DiscountManagement(): React.ReactElement {
                               size="sm"
                               variant="plain"
                               color="primary"
-                              onClick={() => handleViewStats(discount)}
+                              // onClick={() => handleViewStats(discount)}
                             >
                               <FiBarChart2 />
                             </IconButton>
@@ -538,7 +538,7 @@ export default function DiscountManagement(): React.ReactElement {
         )}
       </Stack>
 
-      {/* Modals */}
+      {/* Modals
       <DiscountStatsModal
         open={statsModalOpen}
         onClose={() => {
@@ -547,7 +547,7 @@ export default function DiscountManagement(): React.ReactElement {
         }}
         discountId={selectedDiscountId}
         discountName={discounts.find(d => d.id === selectedDiscountId)?.name || ""}
-      />
+      /> */}
 
       {/* Notifications */}
       <Snackbar

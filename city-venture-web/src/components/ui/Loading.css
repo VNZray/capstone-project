@@ -1,0 +1,373 @@
+/* ===========================
+   SPLASH SCREEN (Full Page)
+   =========================== */
+.loading-splash {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: linear-gradient(135deg, #0077B6 0%,  #0A1B47  100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  overflow: hidden;
+}
+
+.loading-splash-content {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(1.5rem, 3vw, 2.5rem);
+  padding: 2rem;
+  animation: fadeInUp 0.8s ease-out;
+}
+
+/* ===========================
+   LOGO ANIMATION (Buildings)
+   =========================== */
+.loading-logo-container {
+  perspective: 1000px;
+}
+
+.loading-logo {
+  position: relative;
+  width: clamp(80px, 15vw, 120px);
+  height: clamp(80px, 15vw, 120px);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: clamp(6px, 1.5vw, 10px);
+  animation: float 3s ease-in-out infinite;
+}
+
+.building {
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.9) 0%,
+    rgba(255, 255, 255, 0.7) 100%
+  );
+  border-radius: clamp(4px, 1vw, 8px) clamp(4px, 1vw, 8px) 0 0;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+  position: relative;
+  transform-origin: bottom center;
+}
+
+.building-left {
+  width: clamp(20px, 4vw, 30px);
+  height: clamp(50px, 10vw, 70px);
+  animation: buildingGrow 1.2s ease-out 0s forwards,
+    buildingPulse 2s ease-in-out 1.2s infinite;
+}
+
+.building-center {
+  width: clamp(25px, 5vw, 35px);
+  height: clamp(70px, 14vw, 95px);
+  animation: buildingGrow 1.2s ease-out 0.2s forwards,
+    buildingPulse 2s ease-in-out 1.4s infinite;
+}
+
+.building-right {
+  width: clamp(20px, 4vw, 30px);
+  height: clamp(55px, 11vw, 75px);
+  animation: buildingGrow 1.2s ease-out 0.4s forwards,
+    buildingPulse 2s ease-in-out 1.6s infinite;
+}
+
+.building-base {
+  position: absolute;
+  bottom: -5px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  height: clamp(8px, 1.5vw, 12px);
+  background: rgba(255, 255, 255, 0.5);
+  border-radius: 50%;
+  filter: blur(4px);
+  animation: baseGlow 2s ease-in-out infinite;
+}
+
+/* ===========================
+   BRAND TEXT
+   =========================== */
+.loading-brand {
+  text-align: center;
+  animation: fadeInUp 0.8s ease-out 0.3s backwards;
+}
+
+.loading-title {
+  font-size: clamp(2rem, 5vw, 3rem);
+  font-weight: 700;
+  color: #ffffff;
+  margin: 0 0 clamp(0.5rem, 1vw, 0.75rem);
+  letter-spacing: -0.02em;
+  text-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.loading-subtitle {
+  font-size: clamp(0.875rem, 2vw, 1rem);
+  color: rgba(255, 255, 255, 0.9);
+  margin: 0;
+  font-weight: 400;
+}
+
+/* ===========================
+   ANIMATED DOTS
+   =========================== */
+.loading-dots {
+  display: flex;
+  gap: clamp(8px, 1.5vw, 12px);
+  animation: fadeInUp 0.8s ease-out 0.5s backwards;
+}
+
+.loading-dots span {
+  width: clamp(8px, 1.5vw, 12px);
+  height: clamp(8px, 1.5vw, 12px);
+  background-color: rgba(255, 255, 255, 0.8);
+  border-radius: 50%;
+  animation: dotBounce 1.4s ease-in-out infinite;
+}
+
+.loading-dots span:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.loading-dots span:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+/* ===========================
+   PROGRESS BAR
+   =========================== */
+.loading-progress-container {
+  width: clamp(200px, 50vw, 300px);
+  height: clamp(4px, 0.5vw, 6px);
+  background-color: rgba(255, 255, 255, 0.2);
+  border-radius: 100px;
+  overflow: hidden;
+  animation: fadeInUp 0.8s ease-out 0.7s backwards;
+}
+
+.loading-progress-bar {
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.8) 0%,
+    rgba(255, 255, 255, 1) 100%
+  );
+  border-radius: 100px;
+  transition: width 0.3s ease-out;
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+}
+
+/* ===========================
+   BACKGROUND WAVES
+   =========================== */
+.loading-bg-animation {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  z-index: 1;
+}
+
+.wave {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 200%;
+  height: 100%;
+  background: radial-gradient(
+    ellipse at center,
+    rgba(255, 255, 255, 0.1) 0%,
+    transparent 70%
+  );
+  animation: waveMove 8s linear infinite;
+}
+
+.wave1 {
+  animation-duration: 8s;
+  opacity: 0.4;
+}
+
+.wave2 {
+  animation-duration: 12s;
+  opacity: 0.3;
+}
+
+.wave3 {
+  animation-duration: 16s;
+  opacity: 0.2;
+}
+
+/* ===========================
+   DEFAULT INLINE LOADING
+   =========================== */
+.loading-default {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  padding: 2rem;
+  min-height: 200px;
+}
+
+.loading-spinner {
+  width: clamp(40px, 8vw, 60px);
+  height: clamp(40px, 8vw, 60px);
+  border: clamp(3px, 0.5vw, 4px) solid rgba(102, 126, 234, 0.2);
+  border-top-color: #667eea;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+.loading-message {
+  font-size: clamp(0.875rem, 2vw, 1rem);
+  color: #4a5568;
+  margin: 0;
+  font-weight: 500;
+}
+
+/* ===========================
+   ANIMATIONS
+   =========================== */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0px) scale(1);
+  }
+  50% {
+    transform: translateY(-10px) scale(1.02);
+  }
+}
+
+@keyframes buildingGrow {
+  from {
+    transform: scaleY(0);
+    opacity: 0;
+  }
+  to {
+    transform: scaleY(1);
+    opacity: 1;
+  }
+}
+
+@keyframes buildingPulse {
+  0%,
+  100% {
+    transform: scaleY(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scaleY(0.95);
+    opacity: 0.8;
+  }
+}
+
+@keyframes baseGlow {
+  0%,
+  100% {
+    opacity: 0.5;
+    transform: translateX(-50%) scale(1);
+  }
+  50% {
+    opacity: 0.8;
+    transform: translateX(-50%) scale(1.1);
+  }
+}
+
+@keyframes dotBounce {
+  0%,
+  80%,
+  100% {
+    transform: scale(0.8);
+    opacity: 0.5;
+  }
+  40% {
+    transform: scale(1.2);
+    opacity: 1;
+  }
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes waveMove {
+  0% {
+    transform: translateX(0) translateY(0);
+  }
+  100% {
+    transform: translateX(-50%) translateY(-10%);
+  }
+}
+
+/* ===========================
+   MOBILE RESPONSIVE
+   =========================== */
+@media (max-width: 768px) {
+  .loading-splash-content {
+    padding: 1.5rem;
+  }
+
+  .loading-title {
+    font-size: 2rem;
+  }
+
+  .loading-subtitle {
+    font-size: 0.875rem;
+  }
+
+  .loading-logo {
+    width: 80px;
+    height: 80px;
+  }
+}
+
+@media (max-width: 480px) {
+  .loading-title {
+    font-size: 1.75rem;
+  }
+
+  .loading-subtitle {
+    font-size: 0.8rem;
+  }
+}
+
+/* ===========================
+   ACCESSIBILITY
+   =========================== */
+@media (prefers-reduced-motion: reduce) {
+  .loading-splash-content,
+  .loading-logo,
+  .building,
+  .building-base,
+  .loading-dots span,
+  .wave,
+  .loading-spinner {
+    animation: none;
+  }
+
+  .loading-progress-bar {
+    transition: none;
+  }
+}

@@ -1,5 +1,5 @@
-exports.up = function(knex) {
-  return knex.schema.createTable('tourist_spot_schedules', function(table) {
+exports.up = async function(knex) {
+  await knex.schema.createTable('tourist_spot_schedules', function(table) {
     table.uuid('id').primary().defaultTo(knex.raw('UUID()'));
     table.uuid('tourist_spot_id').notNullable().references('id').inTable('tourist_spots').onDelete('CASCADE');
     table.integer('day_of_week').notNullable();
@@ -12,8 +12,10 @@ exports.up = function(knex) {
     // indexes
     table.index('tourist_spot_id', 'idx_tourist_spot');
   });
+
+  console.log("Tourist spot schedules table created.");
 };
 
-exports.down = function(knex) {
-  return knex.schema.dropTableIfExists('tourist_spot_schedules');
+exports.down = async function(knex) {
+  await knex.schema.dropTableIfExists('tourist_spot_schedules');
 };

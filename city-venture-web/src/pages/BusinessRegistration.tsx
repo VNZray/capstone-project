@@ -13,10 +13,10 @@ import type { Business, BusinessHours, Registration } from "../types/Business";
 import type { Address } from "../types/Address";
 import type { Permit } from "../types/Permit";
 import type { BusinessAmenity } from "../types/Amenity";
-import axios from "axios";
-import api from "../services/api";
+import apiClient from "../services/apiClient";
 import type { Owner } from "../types/Owner";
 import type { User } from "../types/User";
+import { initializeEmailJS, sendAccountCredentials } from "../services/email/EmailService";
 
 const steps = [
   "Business Information",
@@ -61,7 +61,7 @@ const BusinessRegistration = () => {
     phone_number: "9380410303",
     password: "123456",
     barangay_id: 3,
-    user_role_id: 3,
+    user_role_id: 4,
   });
 
   const [ownerData, setOwnerData] = useState<Owner>({
@@ -162,6 +162,11 @@ const BusinessRegistration = () => {
     },
   ]);
 
+  // Initialize EmailJS
+  useEffect(() => {
+    initializeEmailJS();
+  }, []);
+
   if (!formData) return null;
   const handleNext = () => {
     if (submitting) return; // avoid double submit
@@ -176,7 +181,7 @@ const BusinessRegistration = () => {
     if (activeStep > 0) {
       setActiveStep((prev) => prev - 1);
     } else {
-      navigate("/business"); // Go back to business list if on first step
+      navigate("/"); // Go back to business list if on first step
     }
   };
 
@@ -187,20 +192,27 @@ const BusinessRegistration = () => {
       // Create User first if needed (endpoint: /api/users)
       let effectiveUserId = userData.id;
       if (!effectiveUserId) {
-        const userRes = await axios.post(`${api}/users`, {
+        const userRes = await apiClient.post(`/users`, {
           ...userData,
-          user_role_id: 3,
         });
         effectiveUserId = userRes?.data?.id;
         if (!effectiveUserId) throw new Error("User creation failed");
         // keep state in sync for any subsequent steps
         setUserData((prev) => ({ ...prev, id: effectiveUserId! }));
+
+        // Send account credentials via email
+        await sendAccountCredentials(
+          userData.email,
+          `${ownerData.first_name} ${ownerData.last_name}`,
+          userData.email,
+          userData.password || "owner123"
+        );
       }
 
       // If no owner created yet, create it now from Step 2 data
       let effectiveOwnerId = formData.owner_id;
       if (!effectiveOwnerId) {
-        const ownerRes = await axios.post(`${api}/owner`, {
+        const ownerRes = await apiClient.post(`/owner`, {
           ...ownerData,
           user_id: effectiveUserId,
         });
@@ -212,7 +224,7 @@ const BusinessRegistration = () => {
       }
 
       // Insert Business
-      const res = await axios.post(`${api}/business`, {
+      const res = await apiClient.post(`/business`, {
         ...formData,
         owner_id: effectiveOwnerId,
         barangay_id: addressData.barangay_id || formData.barangay_id,
@@ -227,7 +239,7 @@ const BusinessRegistration = () => {
           externalBookings.map((site) => {
             if (!site.name || !site.link) return null; // skip empty
 
-            return axios.post(`${api}/external-booking`, {
+            return apiClient.post(`/external-booking`, {
               business_id: businessId,
               name: site.name,
               link: site.link,
@@ -239,7 +251,7 @@ const BusinessRegistration = () => {
       if (businessHours.length > 0) {
         await Promise.all(
           businessHours.map((hours) =>
-            axios.post(`${api}/business-hours`, {
+            apiClient.post(`/business-hours`, {
               business_id: businessId,
               day_of_week: hours.day_of_week,
               open_time: hours.open_time,
@@ -253,7 +265,7 @@ const BusinessRegistration = () => {
       if (businessAmenities.length > 0) {
         await Promise.all(
           businessAmenities.map((amenity) =>
-            axios.post(`${api}/business-amenities`, {
+            apiClient.post(`/business-amenities`, {
               business_id: businessId,
               amenity_id: amenity.amenity_id,
             })
@@ -264,7 +276,7 @@ const BusinessRegistration = () => {
       if (permitData.length > 0) {
         await Promise.all(
           permitData.map((permit) =>
-            axios.post(`${api}/permit`, {
+            apiClient.post(`/permit`, {
               business_id: businessId,
               permit_type: permit.permit_type,
               file_url: permit.file_url,
@@ -277,7 +289,7 @@ const BusinessRegistration = () => {
       }
 
       // Insert Business Registration
-      const registration = await axios.post(`${api}/registration`, {
+      const registration = await apiClient.post(`/registration`, {
         ...registrationData,
         business_id: businessId,
       });

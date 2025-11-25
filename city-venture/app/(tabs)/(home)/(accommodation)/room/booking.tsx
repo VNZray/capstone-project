@@ -39,7 +39,6 @@ const booking = () => {
     business_id: roomDetails?.business_id,
   });
 
-  // Removed guestList state
   const [paymentData, setPaymentData] = React.useState<BookingPayment>({
     payment_type: 'Full Payment',
     amount: 0,

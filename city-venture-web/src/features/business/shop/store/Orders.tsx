@@ -15,6 +15,13 @@ import {
   Tabs,
   TabList,
   Tab,
+  Modal,
+  ModalDialog,
+  ModalClose,
+  DialogTitle,
+  DialogContent,
+  FormControl,
+  FormLabel,
 } from "@mui/joy";
 import {
   FiPackage,
@@ -26,19 +33,22 @@ import {
   FiSearch,
   FiTruck,
   FiCreditCard,
+  FiKey,
 } from "react-icons/fi";
 import PageContainer from "@/src/components/PageContainer";
 import { useBusiness } from "@/src/context/BusinessContext";
 import * as OrderService from "@/src/services/OrderService";
 import type { Order, OrderStatus, PaymentStatus } from "@/src/types/Order";
+import { useOrderSocket } from "@/src/hooks/useOrderSocket";
 
 const orderStatuses: OrderStatus[] = [
   "pending",
-  "confirmed",
+  "accepted",
   "preparing",
-  "ready",
-  "completed",
-  "cancelled",
+  "ready_for_pickup",
+  "picked_up",
+  "cancelled_by_user",
+  "cancelled_by_business",
 ];
 
 const paymentStatuses: PaymentStatus[] = ["pending", "paid", "failed", "refunded"];
@@ -57,6 +67,27 @@ export default function Orders(): React.ReactElement {
   const [searchQuery, setSearchQuery] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  
+  // Arrival code verification modal
+  const [verifyModalOpen, setVerifyModalOpen] = useState(false);
+  const [arrivalCodeInput, setArrivalCodeInput] = useState("");
+  const [verifying, setVerifying] = useState(false);
+
+  // Real-time socket connection for order updates
+  useOrderSocket(businessDetails?.id || null, {
+    onNewOrder: (order) => {
+      console.log('[Orders] New order received via socket:', order);
+      setOrders((prevOrders) => [order, ...prevOrders]);
+      setSuccess(`New order received: ${order.order_number}`);
+      setTimeout(() => setSuccess(null), 5000);
+    },
+    onOrderUpdated: (order) => {
+      console.log('[Orders] Order updated via socket:', order);
+      setOrders((prevOrders) =>
+        prevOrders.map((o) => (o.id === order.id ? order : o))
+      );
+    },
+  });
 
   const fetchOrders = useCallback(async () => {
     if (!businessDetails?.id) {
@@ -71,9 +102,18 @@ export default function Orders(): React.ReactElement {
     try {
       const data = await OrderService.fetchOrdersByBusinessId(businessDetails.id);
       setOrders(Array.isArray(data) ? data : []);
-    } catch (err) {
-      console.error("Error fetching orders:", err);
-      setError("Failed to load orders.");
+    } catch (err: any) {
+      console.error('[Orders] Error fetching orders:', err);
+      
+      const errorMessage = err.response?.data?.message || err.message || "Failed to load orders.";
+      const errorDetails = err.response?.data;
+      
+      if (err.response?.status === 403) {
+        setError(`Access denied: ${errorMessage}${errorDetails?.required ? ` (Required: ${errorDetails.required.join(', ')}, Current: ${errorDetails.current})` : ''}`);
+      } else {
+        setError(errorMessage);
+      }
+      
       setOrders([]);
     } finally {
       setLoading(false);
@@ -110,6 +150,42 @@ export default function Orders(): React.ReactElement {
     }
   };
 
+  const handleVerifyArrivalCode = async () => {
+    if (!businessDetails?.id || !arrivalCodeInput.trim()) {
+      setError("Please enter an arrival code.");
+      return;
+    }
+
+    setVerifying(true);
+    setError(null);
+
+    try {
+      const result = await OrderService.verifyArrivalCode(
+        businessDetails.id,
+        arrivalCodeInput.trim()
+      );
+      
+      if (result.found && result.order) {
+        // Automatically mark as picked up
+        await OrderService.updateOrderStatus(result.order.id, "picked_up");
+        setSuccess(`Order ${result.order.order_number} marked as picked up!`);
+        setVerifyModalOpen(false);
+        setArrivalCodeInput("");
+        await fetchOrders();
+        setTimeout(() => setSuccess(null), 5000);
+      } else {
+        setError("Invalid arrival code. Please check and try again.");
+        setTimeout(() => setError(null), 5000);
+      }
+    } catch (err: any) {
+      console.error("Error verifying arrival code:", err);
+      setError(err.response?.data?.message || "Failed to verify arrival code.");
+      setTimeout(() => setError(null), 5000);
+    } finally {
+      setVerifying(false);
+    }
+  };
+
   const formatCurrency = (value: number | string | undefined): string => {
     const amount = typeof value === "string" ? parseFloat(value) : value ?? 0;
     return `₱${amount.toFixed(2)}`;
@@ -136,21 +212,157 @@ export default function Orders(): React.ReactElement {
     });
   };
 
+  const formatStatusLabel = (status: string): string => {
+    return status
+      .split("_")
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(" ");
+  };
+
+  // Get action buttons based on order status (state machine)
+  const getOrderActions = (order: Order) => {
+    switch (order.status) {
+      case "pending":
+        return (
+          <Stack direction="row" spacing={1}>
+            <Button
+              size="sm"
+              color="success"
+              onClick={() => handleStatusChange(order.id, "accepted")}
+            >
+              Accept Order
+            </Button>
+            <Button
+              size="sm"
+              variant="outlined"
+              color="danger"
+              onClick={() => handleStatusChange(order.id, "cancelled_by_business")}
+            >
+              Reject
+            </Button>
+          </Stack>
+        );
+      
+      case "accepted":
+        return (
+          <Stack direction="row" spacing={1}>
+            <Button
+              size="sm"
+              color="primary"
+              onClick={() => handleStatusChange(order.id, "preparing")}
+            >
+              Start Preparing
+            </Button>
+            <Button
+              size="sm"
+              variant="outlined"
+              color="danger"
+              onClick={() => handleStatusChange(order.id, "cancelled_by_business")}
+            >
+              Cancel
+            </Button>
+          </Stack>
+        );
+      
+      case "preparing":
+        return (
+          <Stack direction="row" spacing={1}>
+            <Button
+              size="sm"
+              color="success"
+              onClick={() => handleStatusChange(order.id, "ready_for_pickup")}
+            >
+              Mark Ready
+            </Button>
+            <Button
+              size="sm"
+              variant="outlined"
+              color="danger"
+              onClick={() => handleStatusChange(order.id, "cancelled_by_business")}
+            >
+              Cancel
+            </Button>
+          </Stack>
+        );
+      
+      case "ready_for_pickup":
+        return (
+          <Stack direction="row" spacing={1}>
+            <Button
+              size="sm"
+              color="success"
+              onClick={() => handleStatusChange(order.id, "picked_up")}
+            >
+              Mark Picked Up
+            </Button>
+            <Button
+              size="sm"
+              variant="outlined"
+              color="danger"
+              onClick={() => handleStatusChange(order.id, "cancelled_by_business")}
+            >
+              Cancel
+            </Button>
+          </Stack>
+        );
+      
+      case "picked_up":
+      case "cancelled_by_user":
+      case "cancelled_by_business":
+      case "failed_payment":
+        // Terminal states - no actions
+        return (
+          <Chip
+            size="sm"
+            variant="soft"
+            color={getStatusChipColor(order.status)}
+          >
+            {formatStatusLabel(order.status)}
+          </Chip>
+        );
+      
+      default:
+        return <Typography level="body-sm">{formatStatusLabel(order.status)}</Typography>;
+    }
+  };
+
   const getStatusIcon = (status: string | undefined) => {
     switch (status) {
-      case "confirmed":
-      case "completed":
+      case "accepted":
+      case "picked_up":
         return <FiCheckCircle />;
       case "preparing":
         return <FiPackage />;
-      case "ready":
+      case "ready_for_pickup":
         return <FiTruck />;
       case "pending":
         return <FiClock />;
-      case "cancelled":
+      case "cancelled_by_user":
+      case "cancelled_by_business":
+      case "failed_payment":
         return <FiXCircle />;
       default:
         return undefined;
+    }
+  };
+
+  const getStatusChipColor = (status: string | undefined) => {
+    switch (status) {
+      case "pending":
+        return "warning" as const;
+      case "accepted":
+      case "preparing":
+        return "primary" as const;
+      case "ready_for_pickup":
+        return "success" as const;
+      case "picked_up":
+        return "success" as const;
+      case "cancelled_by_user":
+      case "cancelled_by_business":
+      case "failed_payment":
+        return "danger" as const;
+      default:
+        return "neutral" as const;
     }
   };
 
@@ -170,11 +382,11 @@ export default function Orders(): React.ReactElement {
     () => ({
       all: orders.length,
       pending: orders.filter((order) => order.status === "pending").length,
-      confirmed: orders.filter((order) => order.status === "confirmed").length,
+      accepted: orders.filter((order) => order.status === "accepted").length,
       preparing: orders.filter((order) => order.status === "preparing").length,
-      ready: orders.filter((order) => order.status === "ready").length,
-      completed: orders.filter((order) => order.status === "completed").length,
-      cancelled: orders.filter((order) => order.status === "cancelled").length,
+      ready_for_pickup: orders.filter((order) => order.status === "ready_for_pickup").length,
+      picked_up: orders.filter((order) => order.status === "picked_up").length,
+      cancelled: orders.filter((order) => order.status.startsWith("cancelled_") || order.status === "failed_payment").length,
     }),
     [orders]
   );
@@ -183,7 +395,12 @@ export default function Orders(): React.ReactElement {
     const trimmedQuery = searchQuery.trim().toLowerCase();
 
     return orders.filter((order) => {
-      const matchesStatus = selectedStatus === "all" || order.status === selectedStatus;
+      let matchesStatus = selectedStatus === "all" || order.status === selectedStatus;
+      
+      // Handle "cancelled" tab matching any cancelled variant
+      if (selectedStatus === "cancelled") {
+        matchesStatus = order.status.startsWith("cancelled_") || order.status === "failed_payment";
+      }
 
       if (!trimmedQuery) {
         return matchesStatus;
@@ -234,16 +451,25 @@ export default function Orders(): React.ReactElement {
               Manage your product orders, payments, and pickup statuses
             </Typography>
           </Box>
+          
+          <Button
+            startDecorator={<FiKey />}
+            onClick={() => setVerifyModalOpen(true)}
+            variant="solid"
+            color="primary"
+          >
+            Verify Arrival Code
+          </Button>
         </Stack>
 
         <Tabs value={selectedStatus} onChange={(_, value) => setSelectedStatus(value as string)}>
           <TabList>
             <Tab value="all">All ({statusCounts.all})</Tab>
             <Tab value="pending">Pending ({statusCounts.pending})</Tab>
-            <Tab value="confirmed">Confirmed ({statusCounts.confirmed})</Tab>
+            <Tab value="accepted">Accepted ({statusCounts.accepted})</Tab>
             <Tab value="preparing">Preparing ({statusCounts.preparing})</Tab>
-            <Tab value="ready">Ready ({statusCounts.ready})</Tab>
-            <Tab value="completed">Completed ({statusCounts.completed})</Tab>
+            <Tab value="ready_for_pickup">Ready ({statusCounts.ready_for_pickup})</Tab>
+            <Tab value="picked_up">Picked Up ({statusCounts.picked_up})</Tab>
             <Tab value="cancelled">Cancelled ({statusCounts.cancelled})</Tab>
           </TabList>
         </Tabs>
@@ -381,22 +607,7 @@ export default function Orders(): React.ReactElement {
                       </Stack>
                     </td>
                     <td>
-                      <Select
-                        size="sm"
-                        value={order.status}
-                        onChange={(_, value) => {
-                          if (value) {
-                            handleStatusChange(order.id, value);
-                          }
-                        }}
-                        indicator={getStatusIcon(order.status)}
-                      >
-                        {orderStatuses.map((status) => (
-                          <Option key={status} value={status}>
-                            {status.charAt(0).toUpperCase() + status.slice(1)}
-                          </Option>
-                        ))}
-                      </Select>
+                      {getOrderActions(order)}
                     </td>
                   </tr>
                 ))}
@@ -464,6 +675,70 @@ export default function Orders(): React.ReactElement {
       >
         {error}
       </Snackbar>
+
+      {/* Arrival Code Verification Modal */}
+      <Modal open={verifyModalOpen} onClose={() => setVerifyModalOpen(false)}>
+        <ModalDialog>
+          <ModalClose />
+          <DialogTitle>
+            <Stack direction="row" spacing={1} alignItems="center">
+              <FiKey size={20} />
+              <span>Verify Arrival Code</span>
+            </Stack>
+          </DialogTitle>
+          <DialogContent>
+            <Typography level="body-sm" mb={2}>
+              Enter the 6-digit arrival code shown by the customer
+            </Typography>
+            <FormControl>
+              <FormLabel>Arrival Code</FormLabel>
+              <Input
+                placeholder="Enter 6-digit code"
+                value={arrivalCodeInput}
+                onChange={(e) => setArrivalCodeInput(e.target.value.toUpperCase())}
+                slotProps={{
+                  input: {
+                    maxLength: 6,
+                    style: {
+                      letterSpacing: '8px',
+                      fontSize: '24px',
+                      textAlign: 'center',
+                      fontWeight: 600,
+                    }
+                  }
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    handleVerifyArrivalCode();
+                  }
+                }}
+                autoFocus
+              />
+            </FormControl>
+            <Stack direction="row" spacing={2} mt={3}>
+              <Button
+                fullWidth
+                variant="outlined"
+                onClick={() => {
+                  setVerifyModalOpen(false);
+                  setArrivalCodeInput("");
+                }}
+                disabled={verifying}
+              >
+                Cancel
+              </Button>
+              <Button
+                fullWidth
+                onClick={handleVerifyArrivalCode}
+                loading={verifying}
+                disabled={arrivalCodeInput.length !== 6}
+              >
+                Verify & Mark Picked Up
+              </Button>
+            </Stack>
+          </DialogContent>
+        </ModalDialog>
+      </Modal>
     </PageContainer>
   );
 }

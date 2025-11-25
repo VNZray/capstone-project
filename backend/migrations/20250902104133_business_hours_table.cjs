@@ -1,5 +1,5 @@
-exports.up = function (knex) {
-  return knex.schema.createTable("business_hours", function (table) {
+exports.up = async function (knex) {
+  await knex.schema.createTable("business_hours", function (table) {
     table.increments("id").primary();
     table
       .uuid("business_id")
@@ -29,8 +29,10 @@ exports.up = function (knex) {
     // indexes
     table.index("business_id", "idx_business");
   });
+
+  console.log("Business hours table created.");
 };
 
-exports.down = function (knex) {
-  return knex.schema.dropTableIfExists("business_hours");
+exports.down = async function (knex) {
+  await knex.schema.dropTableIfExists("business_hours");
 };

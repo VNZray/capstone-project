@@ -86,7 +86,7 @@ export async function createReport(request, response) {
 // Update report status (for tourism staff)
 export async function updateReportStatus(request, response) {
   const { id } = request.params;
-  const { status, remarks, updated_by } = request.body;
+  let { status, remarks, updated_by } = request.body;
   try {
     const validStatuses = ["submitted", "under_review", "in_progress", "resolved", "rejected"];
     if (!validStatuses.includes(status)) {
@@ -95,7 +95,30 @@ export async function updateReportStatus(request, response) {
       });
     }
 
-    const [result] = await db.query("CALL UpdateReportStatus(?,?,?,?)", [id, status, remarks || null, updated_by || null]);
+    // Set default remarks if blank
+    if (!remarks || remarks.trim() === "") {
+      switch (status) {
+        case "submitted":
+          remarks = "Report submitted.";
+          break;
+        case "under_review":
+          remarks = "Report is now under review.";
+          break;
+        case "in_progress":
+          remarks = "Report is being processed.";
+          break;
+        case "resolved":
+          remarks = "Report has been resolved.";
+          break;
+        case "rejected":
+          remarks = "Report has been rejected.";
+          break;
+        default:
+          remarks = null;
+      }
+    }
+
+    const [result] = await db.query("CALL UpdateReportStatus(?,?,?,?)", [id, status, remarks, updated_by || null]);
     const updatedRow = result[0] ? result[0][0] : null;
     if (!updatedRow) {
       return response.status(404).json({ message: "Report not found" });
@@ -138,6 +161,52 @@ export async function getReportsByStatus(request, response) {
   try {
     const [data] = await db.query("CALL GetReportsByStatus(?)", [status]);
     response.json(data[0]);
+  } catch (error) {
+    handleDbError(error, response);
+  }
+}
+
+// Add a single attachment to a report
+export async function addReportAttachment(request, response) {
+  const { id } = request.params; // report id
+  const { file_url, file_name, file_type, file_size } = request.body;
+  try {
+    if (!file_url || !file_name) {
+      return response.status(400).json({ message: "file_url and file_name are required" });
+    }
+    const attachmentId = uuidv4();
+    const params = [attachmentId, id, file_url, file_name, file_type || null, file_size || null];
+    const placeholders = params.map(() => "?").join(",");
+    const [result] = await db.query(`CALL InsertReportAttachment(${placeholders})`, params);
+    const row = result[0] ? result[0][0] : null;
+    response.status(201).json({ message: "Attachment added", attachment: row });
+  } catch (error) {
+    handleDbError(error, response);
+  }
+}
+
+// Bulk add attachments (expects array attachments in body)
+export async function bulkAddReportAttachments(request, response) {
+  const { id } = request.params; // report id
+  const { attachments } = request.body;
+  try {
+    if (!Array.isArray(attachments) || attachments.length === 0) {
+      return response.status(400).json({ message: "attachments must be a non-empty array" });
+    }
+    // Validate minimal fields
+    for (const a of attachments) {
+      if (!a.file_url || !a.file_name) {
+        return response.status(400).json({ message: "Each attachment needs file_url and file_name" });
+      }
+    }
+    const json = JSON.stringify(attachments.map(a => ({
+      file_url: a.file_url,
+      file_name: a.file_name,
+      file_type: a.file_type || null,
+      file_size: a.file_size || null,
+    })));
+    const [data] = await db.query("CALL BulkInsertReportAttachments(?, ?)", [id, json]);
+    response.status(201).json({ message: "Attachments added", attachments: data[0] });
   } catch (error) {
     handleDbError(error, response);
   }
