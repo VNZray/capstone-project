@@ -143,7 +143,6 @@ const EditAddressModal: React.FC<EditDescriptionModalProps> = ({
       onClose={onClose}
       title="Edit Location"
       description="Update your business address and administrative divisions"
-      maxWidth={600}
       actions={[
         { label: "Cancel", onClick: onClose },
         { label: "Save Changes", onClick: handleSave, variant: "primary" },

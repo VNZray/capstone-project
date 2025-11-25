@@ -1,14 +1,7 @@
 import * as React from "react";
-import {
-  Modal,
-  ModalDialog,
-  DialogContent,
-  DialogActions,
-  Button,
-  Textarea,
-} from "@mui/joy";
+import { Textarea } from "@mui/joy";
 import { updateData } from "@/src/services/Service";
-import Typography from "@/src/components/Typography";
+import BaseEditModal from "@/src/components/BaseEditModal";
 import Alert from "@/src/components/Alert";
 
 interface EditDescriptionModalProps {
@@ -84,28 +77,25 @@ const EditDescriptionModal: React.FC<EditDescriptionModalProps> = ({
 
   return (
     <>
-      <Modal open={open} onClose={onClose}>
-      <ModalDialog size="lg" variant="outlined" maxWidth={600} minWidth={600}>
-        <Typography.CardTitle>Edit Room Description</Typography.CardTitle>
-        <DialogContent>
-          <Textarea
-            minRows={4}
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            placeholder="Enter room description..."
-            size="md"
-          />
-        </DialogContent>
-        <DialogActions>
-          <Button fullWidth variant="plain" color="neutral" onClick={onClose}>
-            Cancel
-          </Button>
-          <Button fullWidth color="primary" onClick={handleSave}>
-            Save
-          </Button>
-        </DialogActions>
-      </ModalDialog>
-    </Modal>
+      <BaseEditModal
+        open={open}
+        onClose={onClose}
+        title="Edit Room Description"
+        description="Update the room description to provide guests with detailed information"
+        maxWidth={600}
+        actions={[
+          { label: "Cancel", onClick: onClose, variant: "secondary" },
+          { label: "Save Changes", onClick: handleSave, variant: "primary" },
+        ]}
+      >
+        <Textarea
+          minRows={4}
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          placeholder="Enter room description..."
+          size="md"
+        />
+      </BaseEditModal>
     
     <Alert
       open={alertConfig.open}

@@ -136,9 +136,10 @@ export async function insertUserRole(req, res) {
   try {
     const params = [
       req.body.role_name ?? null,
-      req.body.role_description ?? null,
+      req.body.description ?? req.body.role_description ?? null,
+      req.body.role_for ?? null, // Default to Business if not specified
     ];
-    const [data] = await db.query("CALL InsertUserRole(?, ?)", params);
+    const [data] = await db.query("CALL InsertUserRole(?, ?, ?)", params);
     if (!data[0] || data[0].length === 0) {
       return res.status(404).json({ error: "Inserted user role not found" });
     }
@@ -174,8 +175,8 @@ export async function updateUserRoleByName(req, res) {
   try {
     const params = [
       req.body.role_name ?? null,
-      req.body.new_role_name ?? null,
       req.body.role_description ?? null,
+      req.body.role_for ?? null
     ];
     const [data] = await db.query("CALL UpdateUserRoleByName(?, ?, ?)", params);
     if (!data[0] || data[0].length === 0) {
@@ -198,16 +199,26 @@ export async function getAllUserRoles(req, res) {
   }
 }
 
-// Get user role by ID
-// Calls the GetUserRoleById stored procedure
-export async function getUserRoleById(req, res) {
-  const { id } = req.params;
+// Get user roles by role_for (Business or Tourism)
+// Calls the GetUserRolesByRoleFor stored procedure
+export async function getRolesByRoleFor(req, res) {
+  const { role_for } = req.params;
   try {
-    const [data] = await db.query("CALL GetUserRoleById(?)", [id]);
-    if (!data[0] || data[0].length === 0) {
-      return res.status(404).json({ message: "User role not found" });
-    }
+    const [data] = await db.query("CALL GetUserRolesByRoleFor(?)", [role_for]);
     res.json(data[0][0]);
+  } catch (error) {
+    return handleDbError(error, res);
+  }
+}
+
+
+// Get custom roles by business_id (retrieves roles that have permissions tied to this business)
+// Calls the GetUserRolesByBusinessId stored procedure
+export async function getRolesByBusinessId(req, res) {
+  const { business_id } = req.params;
+  try {
+    const [data] = await db.query("CALL GetUserRolesByBusinessId(?)", [business_id]);
+    res.json(data[0] || []);
   } catch (error) {
     return handleDbError(error, res);
   }

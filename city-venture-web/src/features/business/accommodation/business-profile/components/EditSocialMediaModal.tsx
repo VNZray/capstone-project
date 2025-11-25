@@ -59,7 +59,6 @@ const EditSocialMediaModal: React.FC<EditDescriptionModalProps> = ({
       onClose={onClose}
       title="Edit Links"
       description="Update social media and website links"
-      maxWidth={640}
       actions={[
         { label: 'Cancel', onClick: onClose },
         { label: 'Save', onClick: handleSave, variant: 'primary' },

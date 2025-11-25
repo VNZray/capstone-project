@@ -5,8 +5,10 @@ const router = express.Router();
 
 // User role management
 router.get("/", userController.getAllUserRoles);
-router.get("/:id", userController.getUserRoleById);
+router.get("/role-for/:role_for", userController.getRolesByRoleFor);
+router.get("/business/:business_id", userController.getRolesByBusinessId);
 router.get("/users/:user_role_id", userController.getUsersByRoleId);
+// router.get("/:id", userController.getUserRoleById);
 router.post("/", userController.insertUserRole);
 router.put("/:id", userController.updateUserRole);
 router.put("/role", userController.updateUserRoleByName);
