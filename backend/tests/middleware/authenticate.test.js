@@ -1,6 +1,6 @@
 /**
  * Unit Tests for Authentication Middleware
- * Tests JWT validation, token expiry handling, and error cases
+ * Tests JWT validation, token expiry handling, algorithm enforcement, and error cases
  * 
  * @module tests/middleware/authenticate.test
  */
@@ -77,7 +77,7 @@ describe('authenticate middleware', () => {
         email: 'test@example.com',
         role: 'Admin',
       };
-      const token = jwt.sign(payload, JWT_SECRET, { expiresIn: '15m' });
+      const token = jwt.sign(payload, JWT_SECRET, { expiresIn: '15m', algorithm: 'HS256' });
       mockReq.headers['authorization'] = `Bearer ${token}`;
 
       authenticate(mockReq, mockRes, nextFunction);
@@ -98,7 +98,7 @@ describe('authenticate middleware', () => {
         role: 'Admin',
       };
       // Create an already-expired token
-      const token = jwt.sign(payload, JWT_SECRET, { expiresIn: '-1s' });
+      const token = jwt.sign(payload, JWT_SECRET, { expiresIn: '-1s', algorithm: 'HS256' });
       mockReq.headers['authorization'] = `Bearer ${token}`;
 
       authenticate(mockReq, mockRes, nextFunction);
@@ -116,7 +116,7 @@ describe('authenticate middleware', () => {
         email: 'test@example.com',
         role: 'Admin',
       };
-      const token = jwt.sign(payload, 'wrong_secret', { expiresIn: '15m' });
+      const token = jwt.sign(payload, 'wrong_secret', { expiresIn: '15m', algorithm: 'HS256' });
       mockReq.headers['authorization'] = `Bearer ${token}`;
 
       authenticate(mockReq, mockRes, nextFunction);
@@ -146,7 +146,7 @@ describe('authenticate middleware', () => {
         email: 'test@example.com',
         role: 'Admin',
       };
-      const token = jwt.sign(payload, JWT_SECRET, { expiresIn: '15m' });
+      const token = jwt.sign(payload, JWT_SECRET, { expiresIn: '15m', algorithm: 'HS256' });
       
       // Tamper with the payload portion of the token
       const parts = token.split('.');
@@ -176,7 +176,7 @@ describe('authenticate middleware', () => {
         email: 'manager@example.com',
         role: 'Business Owner',
       };
-      const token = jwt.sign(payload, JWT_SECRET, { expiresIn: '15m' });
+      const token = jwt.sign(payload, JWT_SECRET, { expiresIn: '15m', algorithm: 'HS256' });
       mockReq.headers['authorization'] = `Bearer ${token}`;
 
       authenticate(mockReq, mockRes, nextFunction);
@@ -197,7 +197,7 @@ describe('authenticate middleware', () => {
         iat: Math.floor(Date.now() / 1000),
         customClaim: 'some value',
       };
-      const token = jwt.sign(payload, JWT_SECRET, { expiresIn: '15m' });
+      const token = jwt.sign(payload, JWT_SECRET, { expiresIn: '15m', algorithm: 'HS256' });
       mockReq.headers['authorization'] = `Bearer ${token}`;
 
       authenticate(mockReq, mockRes, nextFunction);
@@ -212,7 +212,7 @@ describe('authenticate middleware', () => {
     test('should handle token with minimal payload', () => {
       // Token with just id (edge case - email and role might be missing)
       const payload = { id: 'user-minimal' };
-      const token = jwt.sign(payload, JWT_SECRET, { expiresIn: '15m' });
+      const token = jwt.sign(payload, JWT_SECRET, { expiresIn: '15m', algorithm: 'HS256' });
       mockReq.headers['authorization'] = `Bearer ${token}`;
 
       authenticate(mockReq, mockRes, nextFunction);
@@ -229,7 +229,7 @@ describe('authenticate middleware', () => {
         email: 'test@example.com',
         role: 'Admin',
       };
-      const token = jwt.sign(payload, JWT_SECRET, { expiresIn: '15m' });
+      const token = jwt.sign(payload, JWT_SECRET, { expiresIn: '15m', algorithm: 'HS256' });
       mockReq.headers['authorization'] = `bearer ${token}`;
 
       authenticate(mockReq, mockRes, nextFunction);
@@ -247,13 +247,81 @@ describe('authenticate middleware', () => {
         email: 'test@example.com',
         role: 'Admin',
       };
-      const token = jwt.sign(payload, JWT_SECRET, { expiresIn: '15m' });
+      const token = jwt.sign(payload, JWT_SECRET, { expiresIn: '15m', algorithm: 'HS256' });
       mockReq.headers['authorization'] = `Bearer  ${token}`; // Two spaces
 
       authenticate(mockReq, mockRes, nextFunction);
 
       // Token will have leading space, causing validation failure
       expect(mockRes.status).toHaveBeenCalledWith(403);
+    });
+  });
+
+  describe('Algorithm Enforcement (Security)', () => {
+    test('should reject tokens signed with none algorithm', () => {
+      // Attempt to create a token with 'none' algorithm (algorithm confusion attack)
+      const payload = {
+        id: 'attacker-123',
+        email: 'attacker@evil.com',
+        role: 'Admin',
+      };
+      // Manually construct a token with 'none' algorithm
+      const header = Buffer.from(JSON.stringify({ alg: 'none', typ: 'JWT' })).toString('base64url');
+      const payloadB64 = Buffer.from(JSON.stringify(payload)).toString('base64url');
+      const noneToken = `${header}.${payloadB64}.`;
+      
+      mockReq.headers['authorization'] = `Bearer ${noneToken}`;
+
+      authenticate(mockReq, mockRes, nextFunction);
+
+      expect(mockRes.status).toHaveBeenCalledWith(403);
+      expect(mockRes.json).toHaveBeenCalledWith({
+        message: 'Invalid token',
+      });
+      expect(nextFunction).not.toHaveBeenCalled();
+    });
+
+    test('should reject tokens signed with RS256 when HS256 is expected', () => {
+      // This tests algorithm confusion - trying to use asymmetric algorithm
+      // The middleware pins to HS256, so RS256 should be rejected
+      const payload = {
+        id: 'user-123',
+        email: 'test@example.com',
+        role: 'Admin',
+      };
+      
+      // Create a fake RS256 header but sign with the secret as if it were a public key
+      // This is a common attack vector when algorithm isn't pinned
+      const header = Buffer.from(JSON.stringify({ alg: 'RS256', typ: 'JWT' })).toString('base64url');
+      const payloadB64 = Buffer.from(JSON.stringify(payload)).toString('base64url');
+      const fakeSignature = Buffer.from('fake-signature').toString('base64url');
+      const rs256Token = `${header}.${payloadB64}.${fakeSignature}`;
+      
+      mockReq.headers['authorization'] = `Bearer ${rs256Token}`;
+
+      authenticate(mockReq, mockRes, nextFunction);
+
+      expect(mockRes.status).toHaveBeenCalledWith(403);
+      expect(mockRes.json).toHaveBeenCalledWith({
+        message: 'Invalid token',
+      });
+      expect(nextFunction).not.toHaveBeenCalled();
+    });
+
+    test('should accept tokens signed with HS256 algorithm', () => {
+      const payload = {
+        id: 'user-123',
+        email: 'test@example.com',
+        role: 'Admin',
+      };
+      // Explicitly use HS256 (which is what the middleware expects)
+      const token = jwt.sign(payload, JWT_SECRET, { expiresIn: '15m', algorithm: 'HS256' });
+      mockReq.headers['authorization'] = `Bearer ${token}`;
+
+      authenticate(mockReq, mockRes, nextFunction);
+
+      expect(nextFunction).toHaveBeenCalled();
+      expect(mockReq.user.id).toBe('user-123');
     });
   });
 });

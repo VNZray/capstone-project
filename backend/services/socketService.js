@@ -1,8 +1,49 @@
 
 import { Server } from 'socket.io';
 import jwt from 'jsonwebtoken';
+import db from '../db.js';
 
 let io = null;
+
+/**
+ * Verify if a user has access to a business
+ * @param {string} userId - User ID
+ * @param {string} businessId - Business ID to check access for
+ * @returns {Promise<boolean>} True if user has access
+ */
+async function verifyBusinessAccess(userId, businessId) {
+  try {
+    // Check if user is the business owner
+    const [ownerRows] = await db.query(
+      `SELECT b.id FROM business b
+       JOIN owner o ON o.id = b.owner_id
+       WHERE b.id = ? AND o.user_id = ?`,
+      [businessId, userId]
+    );
+    if (ownerRows && ownerRows.length > 0) return true;
+
+    // Check if user is staff at the business
+    const [staffRows] = await db.query(
+      `SELECT id FROM staff WHERE business_id = ? AND user_id = ?`,
+      [businessId, userId]
+    );
+    if (staffRows && staffRows.length > 0) return true;
+
+    // Check if user is Admin
+    const [adminRows] = await db.query(
+      `SELECT u.id FROM user u
+       JOIN user_role ur ON ur.id = u.user_role_id
+       WHERE u.id = ? AND ur.role_name = 'Admin'`,
+      [userId]
+    );
+    if (adminRows && adminRows.length > 0) return true;
+
+    return false;
+  } catch (error) {
+    console.error('[Socket] Error verifying business access:', error);
+    return false;
+  }
+}
 
 /**
  * Initialize Socket.IO server
@@ -31,7 +72,10 @@ export function initializeSocket(httpServer) {
     }
 
     try {
-      const decoded = jwt.verify(token, process.env.JWT_ACCESS_SECRET);
+      // SECURITY: Explicitly pin algorithm to prevent algorithm confusion attacks
+      const decoded = jwt.verify(token, process.env.JWT_ACCESS_SECRET, {
+        algorithms: ['HS256'],
+      });
       socket.userId = decoded.id;
       socket.userRole = decoded.role;
       socket.businessId = decoded.business_id; // For owners/staff
@@ -56,12 +100,24 @@ export function initializeSocket(httpServer) {
     }
 
     // Handle business room join/leave (for web CMS)
-    socket.on('join:business', (data) => {
+    // SECURITY: Verify user has access to the business before joining
+    socket.on('join:business', async (data) => {
       const { businessId } = data;
-      if (businessId) {
-        socket.join(`business:${businessId}`);
-        console.log(`Socket ${socket.id} joined business room: business:${businessId}`);
+      if (!businessId) return;
+
+      // Verify access before allowing join
+      const hasAccess = await verifyBusinessAccess(socket.userId, businessId);
+      if (!hasAccess) {
+        socket.emit('error', { 
+          message: 'Access denied: You do not have permission to access this business',
+          code: 'BUSINESS_ACCESS_DENIED'
+        });
+        console.warn(`[Socket] Access denied: User ${socket.userId} tried to join business:${businessId}`);
+        return;
       }
+
+      socket.join(`business:${businessId}`);
+      console.log(`Socket ${socket.id} joined business room: business:${businessId}`);
     });
 
     socket.on('leave:business', (data) => {
@@ -73,12 +129,23 @@ export function initializeSocket(httpServer) {
     });
 
     // Handle user room join/leave (for mobile)
+    // SECURITY: Users can only join their own room
     socket.on('join:user', (data) => {
       const { userId } = data;
-      if (userId) {
-        socket.join(`user:${userId}`);
-        console.log(`Socket ${socket.id} joined user room: user:${userId}`);
+      if (!userId) return;
+      
+      // Verify user is joining their own room
+      if (userId !== socket.userId) {
+        socket.emit('error', {
+          message: 'Access denied: You can only join your own user room',
+          code: 'USER_ROOM_ACCESS_DENIED'
+        });
+        console.warn(`[Socket] Access denied: User ${socket.userId} tried to join user:${userId}`);
+        return;
       }
+      
+      socket.join(`user:${userId}`);
+      console.log(`Socket ${socket.id} joined user room: user:${userId}`);
     });
 
     socket.on('leave:user', (data) => {

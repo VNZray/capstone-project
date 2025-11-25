@@ -13,12 +13,63 @@ const apiClient = axios.create({
 // In-memory access token
 let accessToken: string | null = null;
 
+// Refresh lock to prevent concurrent refresh attempts (race condition fix)
+let isRefreshing = false;
+let refreshPromise: Promise<string | null> | null = null;
+
 // Function to set access token
 export const setAccessToken = (token: string | null) => {
   accessToken = token;
 };
 
 export const getAccessToken = () => accessToken;
+
+/**
+ * Centralized token refresh function with lock.
+ * Ensures only ONE refresh request is made even if called multiple times.
+ * All callers wait for the same promise.
+ */
+export const refreshTokens = async (): Promise<string | null> => {
+  // If already refreshing, return the existing promise
+  if (isRefreshing && refreshPromise) {
+    return refreshPromise;
+  }
+
+  isRefreshing = true;
+  refreshPromise = (async () => {
+    try {
+      const refreshToken = await getRefreshToken();
+      if (!refreshToken) {
+        return null;
+      }
+
+      // Call refresh endpoint (using a separate axios instance to avoid loop)
+      const response = await axios.post(`${api}/auth/refresh`, {
+        refreshToken,
+      });
+
+      const { accessToken: newAccessToken, refreshToken: newRefreshToken } = response.data;
+
+      // Update state and storage
+      setAccessToken(newAccessToken);
+      if (newRefreshToken) {
+        await saveRefreshToken(newRefreshToken);
+      }
+
+      return newAccessToken;
+    } catch {
+      // Refresh failed - clear auth data
+      setAccessToken(null);
+      await clearAllAuthData();
+      return null;
+    } finally {
+      isRefreshing = false;
+      refreshPromise = null;
+    }
+  })();
+
+  return refreshPromise;
+};
 
 // Request Interceptor
 apiClient.interceptors.request.use(
@@ -42,23 +93,12 @@ apiClient.interceptors.response.use(
       originalRequest._retry = true;
 
       try {
-        // Attempt refresh
-        const refreshToken = await getRefreshToken();
-        if (!refreshToken) {
-          throw new Error('No refresh token available');
-        }
-
-        // Call refresh endpoint (using a separate axios instance to avoid loop)
-        const response = await axios.post(`${api}/auth/refresh`, {
-          refreshToken,
-        });
-
-        const { accessToken: newAccessToken, refreshToken: newRefreshToken } = response.data;
-
-        // Update state and storage
-        setAccessToken(newAccessToken);
-        if (newRefreshToken) {
-          await saveRefreshToken(newRefreshToken);
+        // Use centralized refresh with lock to prevent race conditions
+        const newAccessToken = await refreshTokens();
+        
+        if (!newAccessToken) {
+          // Refresh failed - reject with original error
+          return Promise.reject(error);
         }
 
         // Retry original request with new token
@@ -66,11 +106,7 @@ apiClient.interceptors.response.use(
         return apiClient(originalRequest);
 
       } catch (refreshError) {
-        // Refresh failed - Logout
-        setAccessToken(null);
-        await clearAllAuthData();
-        // Redirect to login or emit event? 
-        // In React Native, context usually handles the redirect based on user state.
+        // Refresh failed - already handled in refreshTokens
         return Promise.reject(refreshError);
       }
     }

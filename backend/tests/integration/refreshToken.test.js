@@ -1,6 +1,7 @@
 /**
  * Integration Tests for Token Refresh Flow
- * Tests the complete refresh token lifecycle including rotation, reuse detection, and expiry
+ * Tests the complete refresh token lifecycle including rotation, reuse detection, expiry,
+ * and algorithm enforcement (HS256 pinning)
  * 
  * NOTE: These tests mock the database layer. For full end-to-end tests,
  * run against a test database.
@@ -157,7 +158,7 @@ describe('Token Refresh Flow Integration Tests', () => {
         familyId: 'family-123',
         version: 0,
       };
-      const refreshToken = jwt.sign(refreshPayload, JWT_REFRESH_SECRET, { expiresIn: '7d' });
+      const refreshToken = jwt.sign(refreshPayload, JWT_REFRESH_SECRET, { expiresIn: '7d', algorithm: 'HS256' });
       const tokenHash = crypto.createHash('sha256').update(refreshToken).digest('hex');
 
       // Mock GetRefreshToken - stored procedure returns [[[token]], metadata]
@@ -201,7 +202,7 @@ describe('Token Refresh Flow Integration Tests', () => {
         familyId: 'family-456',
         version: 0,
       };
-      const refreshToken = jwt.sign(refreshPayload, JWT_REFRESH_SECRET, { expiresIn: '7d' });
+      const refreshToken = jwt.sign(refreshPayload, JWT_REFRESH_SECRET, { expiresIn: '7d', algorithm: 'HS256' });
       const tokenHash = crypto.createHash('sha256').update(refreshToken).digest('hex');
 
       // Mock GetRefreshToken - token is REVOKED (reuse attempt!)
@@ -233,7 +234,7 @@ describe('Token Refresh Flow Integration Tests', () => {
         familyId: 'family-789',
         version: 0,
       };
-      const refreshToken = jwt.sign(refreshPayload, JWT_REFRESH_SECRET, { expiresIn: '7d' });
+      const refreshToken = jwt.sign(refreshPayload, JWT_REFRESH_SECRET, { expiresIn: '7d', algorithm: 'HS256' });
 
       // Mock GetRefreshToken - returns empty (token not in DB)
       // Stored procedure returns [[[]], metadata] when not found
@@ -250,7 +251,7 @@ describe('Token Refresh Flow Integration Tests', () => {
         version: 0,
       };
       // Create already expired token
-      const refreshToken = jwt.sign(refreshPayload, JWT_REFRESH_SECRET, { expiresIn: '-1s' });
+      const refreshToken = jwt.sign(refreshPayload, JWT_REFRESH_SECRET, { expiresIn: '-1s', algorithm: 'HS256' });
 
       await expect(authService.refreshAccessToken(refreshToken))
         .rejects.toThrow('Invalid refresh token');
@@ -262,7 +263,7 @@ describe('Token Refresh Flow Integration Tests', () => {
         familyId: 'family-wrong-secret',
         version: 0,
       };
-      const refreshToken = jwt.sign(refreshPayload, 'wrong_secret', { expiresIn: '7d' });
+      const refreshToken = jwt.sign(refreshPayload, 'wrong_secret', { expiresIn: '7d', algorithm: 'HS256' });
 
       await expect(authService.refreshAccessToken(refreshToken))
         .rejects.toThrow('Invalid refresh token');
@@ -274,7 +275,7 @@ describe('Token Refresh Flow Integration Tests', () => {
         familyId: 'family-version-test',
         version: 5, // Starting version
       };
-      const refreshToken = jwt.sign(refreshPayload, JWT_REFRESH_SECRET, { expiresIn: '7d' });
+      const refreshToken = jwt.sign(refreshPayload, JWT_REFRESH_SECRET, { expiresIn: '7d', algorithm: 'HS256' });
       const tokenHash = crypto.createHash('sha256').update(refreshToken).digest('hex');
 
       // Stored procedure returns [[[token]], metadata]
@@ -306,7 +307,7 @@ describe('Token Refresh Flow Integration Tests', () => {
         familyId: 'family-logout',
         version: 0,
       };
-      const refreshToken = jwt.sign(refreshPayload, JWT_REFRESH_SECRET, { expiresIn: '7d' });
+      const refreshToken = jwt.sign(refreshPayload, JWT_REFRESH_SECRET, { expiresIn: '7d', algorithm: 'HS256' });
 
       // Mock DeleteRefreshToken
       mockQuery.mockResolvedValueOnce([{ affectedRows: 1 }]);
@@ -357,7 +358,7 @@ describe('Token Refresh Concurrent Request Handling', () => {
       familyId: 'race-family',
       version: 0,
     };
-    const refreshToken = jwt.sign(refreshPayload, JWT_REFRESH_SECRET, { expiresIn: '7d' });
+    const refreshToken = jwt.sign(refreshPayload, JWT_REFRESH_SECRET, { expiresIn: '7d', algorithm: 'HS256' });
     const tokenHash = crypto.createHash('sha256').update(refreshToken).digest('hex');
 
     const raceUser = { 
@@ -399,5 +400,95 @@ describe('Token Refresh Concurrent Request Handling', () => {
     // Second refresh with same token should be detected as reuse
     await expect(authService.refreshAccessToken(refreshToken))
       .rejects.toThrow('Refresh token reuse detected');
+  });
+});
+
+describe('Token Algorithm Enforcement (Security)', () => {
+  const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET;
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockQuery.mockReset();
+  });
+
+  test('should reject refresh tokens signed with none algorithm', async () => {
+    // Attempt algorithm confusion attack with 'none' algorithm
+    const payload = {
+      id: 'attacker-123',
+      familyId: 'attack-family',
+      version: 0,
+    };
+    
+    // Manually construct a token with 'none' algorithm
+    const header = Buffer.from(JSON.stringify({ alg: 'none', typ: 'JWT' })).toString('base64url');
+    const payloadB64 = Buffer.from(JSON.stringify(payload)).toString('base64url');
+    const noneToken = `${header}.${payloadB64}.`;
+
+    await expect(authService.refreshAccessToken(noneToken))
+      .rejects.toThrow('Invalid refresh token');
+  });
+
+  test('should reject refresh tokens with algorithm mismatch in header', async () => {
+    // Create a token that claims to be RS256 but uses the secret
+    const payload = {
+      id: 'user-123',
+      familyId: 'family-123',
+      version: 0,
+    };
+    
+    // Manually construct with RS256 header
+    const header = Buffer.from(JSON.stringify({ alg: 'RS256', typ: 'JWT' })).toString('base64url');
+    const payloadB64 = Buffer.from(JSON.stringify(payload)).toString('base64url');
+    const fakeSignature = Buffer.from('fake-rs256-signature').toString('base64url');
+    const rs256Token = `${header}.${payloadB64}.${fakeSignature}`;
+
+    await expect(authService.refreshAccessToken(rs256Token))
+      .rejects.toThrow('Invalid refresh token');
+  });
+
+  test('should accept valid refresh tokens signed with HS256', async () => {
+    const refreshPayload = {
+      id: 'valid-user',
+      familyId: 'valid-family',
+      version: 0,
+    };
+    const refreshToken = jwt.sign(refreshPayload, JWT_REFRESH_SECRET, { 
+      expiresIn: '7d', 
+      algorithm: 'HS256' 
+    });
+    const tokenHash = crypto.createHash('sha256').update(refreshToken).digest('hex');
+
+    const testUser = {
+      id: 'valid-user',
+      email: 'valid@test.com',
+      user_role_id: 2,
+      role_name: 'Tourist',
+    };
+
+    // Setup mocks for successful refresh
+    mockQuery
+      .mockResolvedValueOnce([[[{
+        token_hash: tokenHash,
+        user_id: 'valid-user',
+        family_id: 'valid-family',
+        revoked: false,
+        expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+      }]]])
+      .mockResolvedValueOnce([{ affectedRows: 1 }]) // UPDATE revoke
+      .mockResolvedValueOnce([[[testUser]]]) // GetUserById
+      .mockResolvedValueOnce([{ affectedRows: 1 }]); // InsertRefreshToken
+
+    const result = await authService.refreshAccessToken(refreshToken);
+    
+    expect(result.accessToken).toBeDefined();
+    expect(result.refreshToken).toBeDefined();
+    
+    // Verify the new access token is valid and uses HS256
+    const decodedAccess = jwt.decode(result.accessToken, { complete: true });
+    expect(decodedAccess.header.alg).toBe('HS256');
+    
+    // Verify the new refresh token uses HS256
+    const decodedRefresh = jwt.decode(result.refreshToken, { complete: true });
+    expect(decodedRefresh.header.alg).toBe('HS256');
   });
 });

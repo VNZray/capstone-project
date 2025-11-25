@@ -475,7 +475,6 @@ export const fetchCurrentUser = async (): Promise<UserDetails> => {
     id: roleData?.id || userData.id,
     user_id: userData.id || "",
     email: userData.email || "",
-    password: "",
     phone_number: userData.phone_number,
     user_role_id: userData.user_role_id,
     role_name: normalizedRoleName,

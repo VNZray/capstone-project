@@ -1,5 +1,7 @@
 import express from "express";
 import * as roomController from "../controller/accommodation/roomController.js"; // Add `.js` extension
+import { authenticate } from "../middleware/authenticate.js";
+import { authorizeRole } from "../middleware/authorizeRole.js";
 
 const router = express.Router();
 

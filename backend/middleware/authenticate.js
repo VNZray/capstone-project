@@ -22,7 +22,10 @@ export function authenticate(req, res, next) {
   const token = authHeader.split(' ')[1];
 
   try {
-    const payload = jwt.verify(token, JWT_ACCESS_SECRET);
+    // SECURITY: Explicitly pin algorithm to prevent algorithm confusion attacks
+    const payload = jwt.verify(token, JWT_ACCESS_SECRET, {
+      algorithms: ['HS256'],
+    });
     
     console.log('[authenticate] Token verified for user:', payload.id, 'role:', payload.role);
     

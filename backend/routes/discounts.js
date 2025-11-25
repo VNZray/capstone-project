@@ -1,5 +1,7 @@
 import express from "express";
 import * as discountController from "../controller/discountController.js";
+import { authenticate } from "../middleware/authenticate.js";
+import { authorizeRole } from "../middleware/authorizeRole.js";
 
 const router = express.Router();
 
@@ -7,13 +9,13 @@ const router = express.Router();
 
 // Discounts
 router.get("/", discountController.getAllDiscounts);
-router.post("/", discountController.insertDiscount);
+router.post("/", authenticate, authorizeRole("Business Owner", "Staff", "Admin"), discountController.insertDiscount);
 router.get("/business/:businessId", discountController.getDiscountsByBusinessId);
 router.get("/business/:businessId/active", discountController.getActiveDiscountsByBusinessId);
-router.post("/maintenance/update-expired", discountController.updateExpiredDiscounts);
+router.post("/maintenance/update-expired", authenticate, authorizeRole("Admin"), discountController.updateExpiredDiscounts);
 router.get("/:id", discountController.getDiscountById);
-router.put("/:id", discountController.updateDiscount);
-router.delete("/:id", discountController.deleteDiscount);
+router.put("/:id", authenticate, authorizeRole("Business Owner", "Staff", "Admin"), discountController.updateDiscount);
+router.delete("/:id", authenticate, authorizeRole("Business Owner", "Staff", "Admin"), discountController.deleteDiscount);
 
 // ==================== DISCOUNT VALIDATION & USAGE ROUTES ====================
 

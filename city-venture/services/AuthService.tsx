@@ -209,7 +209,7 @@ export const loginUser = async (
     const loggedInUser: UserDetails = {
       id: ownerData.id || touristData.id,
       email,
-      password,
+      // SECURITY: password intentionally omitted - never store passwords in client state
       age: (touristData as any).age || ownerData.age || null,
       phone_number: userData.phone_number,
       role_name: (userRole as any)?.role_name,

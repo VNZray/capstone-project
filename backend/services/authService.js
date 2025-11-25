@@ -40,7 +40,10 @@ export async function generateTokens(user) {
       role: roleName, // Use role name instead of ID
     },
     JWT_ACCESS_SECRET,
-    { expiresIn: ACCESS_TOKEN_EXPIRY }
+    { 
+      expiresIn: ACCESS_TOKEN_EXPIRY,
+      algorithm: 'HS256' // SECURITY: Explicitly pin algorithm
+    }
   );
 
   const refreshToken = jwt.sign(
@@ -50,7 +53,10 @@ export async function generateTokens(user) {
       version: 0,
     },
     JWT_REFRESH_SECRET,
-    { expiresIn: '7d' }
+    { 
+      expiresIn: '7d',
+      algorithm: 'HS256' // SECURITY: Explicitly pin algorithm
+    }
   );
 
   return { accessToken, refreshToken };
@@ -112,7 +118,10 @@ export async function loginUser(email, password) {
 export async function refreshAccessToken(incomingRefreshToken) {
   let payload;
   try {
-    payload = jwt.verify(incomingRefreshToken, JWT_REFRESH_SECRET);
+    // SECURITY: Explicitly pin algorithm to prevent algorithm confusion attacks
+    payload = jwt.verify(incomingRefreshToken, JWT_REFRESH_SECRET, {
+      algorithms: ['HS256'],
+    });
   } catch (err) {
     throw new Error('Invalid refresh token');
   }
@@ -194,7 +203,10 @@ export async function refreshAccessToken(incomingRefreshToken) {
       role: roleName, // Use role name instead of ID
     },
     JWT_ACCESS_SECRET,
-    { expiresIn: ACCESS_TOKEN_EXPIRY }
+    { 
+      expiresIn: ACCESS_TOKEN_EXPIRY,
+      algorithm: 'HS256' // SECURITY: Explicitly pin algorithm
+    }
   );
 
   const newRefreshToken = jwt.sign(
@@ -204,7 +216,10 @@ export async function refreshAccessToken(incomingRefreshToken) {
       version: (payload.version || 0) + 1,
     },
     JWT_REFRESH_SECRET,
-    { expiresIn: '7d' }
+    { 
+      expiresIn: '7d',
+      algorithm: 'HS256' // SECURITY: Explicitly pin algorithm
+    }
   );
 
   // Store new refresh token
