@@ -5,13 +5,12 @@ import PageContainer from '@/components/PageContainer';
 import ScrollableTab from '@/components/ScrollableTab';
 import SearchBar from '@/components/SearchBar';
 import { ThemedText } from '@/components/themed-text';
-import { background } from '@/constants/color';
+import { useTheme } from '@/context/ThemeContext';
 import { useAccommodation } from '@/context/AccommodationContext';
-import { useColorScheme } from '@/hooks/use-color-scheme';
 import { navigateToAccommodationProfile } from '@/routes/accommodationRoutes';
 import { fetchAddress } from '@/services/AccommodationService';
 import type { Business } from '@/types/Business';
-import { Tab } from '@/types/Tab';
+import type { Tab } from '@/types/Tab';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { useCallback, useEffect, useRef, useState, useMemo } from 'react';
 import {
@@ -85,8 +84,8 @@ const getCategoryKey = (b: Business) =>
   b.business_category_id != null ? CATEGORY_ID_TO_KEY[b.business_category_id] : undefined;
 
 const AccommodationDirectory = () => {
-  const colorScheme = useColorScheme();
-  const bg = colorScheme === 'dark' ? background.dark : background.light;
+  const { colors } = useTheme();
+  const bg = colors.background;
 
   const {
     loading,

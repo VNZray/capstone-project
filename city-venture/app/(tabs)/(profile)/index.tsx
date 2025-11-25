@@ -1,39 +1,67 @@
 import Button from '@/components/Button';
-import StatCard from '@/components/StatCard';
 import { ThemedText } from '@/components/themed-text';
 import { colors } from '@/constants/color';
 import { useAuth } from '@/context/AuthContext';
-import { useColorScheme } from '@/hooks/use-color-scheme';
-import { FontAwesome5 } from '@expo/vector-icons';
+import { useTheme } from '@/context/ThemeContext';
+import { FontAwesome5, Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import React, { useMemo } from 'react';
 import { Image, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const Profile = () => {
   const { user, logout } = useAuth();
-  const scheme = useColorScheme();
-  const mode: 'light' | 'dark' = scheme === 'dark' ? 'dark' : 'light';
-  const bg = scheme === 'dark' ? '#0F1222' : '#F5F7FB';
-  const card = scheme === 'dark' ? '#161A2E' : '#FFFFFF';
-  const textMuted = scheme === 'dark' ? '#A9B2D0' : '#6A768E';
+  const { themeMode, setThemeMode, isDark } = useTheme();
+  const insets = useSafeAreaInsets();
+
+  // Colors
+  const bg = isDark ? '#0F1222' : '#F8F9FC';
+  const card = isDark ? '#1A1F36' : '#FFFFFF';
+  const textPrimary = isDark ? '#FFFFFF' : '#1A1F36';
+  const textSecondary = isDark ? '#A0AEC0' : '#718096';
+  const border = isDark ? '#2D3748' : '#EDF2F7';
 
   const fullName = `${user?.first_name ?? 'Traveler'} ${
     user?.last_name ?? ''
   }`.trim();
+
   const handle = useMemo(
     () => (user?.email ? user.email.split('@')[0] : 'wanderer'),
     [user?.email]
   );
 
   if (!user) {
-    // Lightweight unauthenticated fallback to avoid white screen
     return (
-      <View style={[styles.screen, { alignItems: 'center', justifyContent: 'center' }]}> 
-        <ThemedText type="sub-title-medium" weight="bold">You're not signed in</ThemedText>
-        <ThemedText type="label-medium" style={{ color: '#6A768E', marginTop: 6 }}>Please sign in to view your profile.</ThemedText>
-        <View style={{ marginTop: 14, width: '60%' }}>
-          <Button label="Go to Home" variant="solid" color="primary" size="large" fullWidth radius={14} onPress={() => router.replace('/(tabs)/(home)')} />
+      <View
+        style={[
+          styles.screen,
+          {
+            alignItems: 'center',
+            justifyContent: 'center',
+            backgroundColor: bg,
+          },
+        ]}
+      >
+        <ThemedText type="sub-title-medium" weight="bold">
+          You're not signed in
+        </ThemedText>
+        <ThemedText
+          type="label-medium"
+          style={{ color: textSecondary, marginTop: 6 }}
+        >
+          Please sign in to view your profile.
+        </ThemedText>
+        <View style={{ marginTop: 24, width: '60%' }}>
+          <Button
+            label="Go to Home"
+            variant="solid"
+            color="primary"
+            size="large"
+            fullWidth
+            radius={16}
+            onPress={() => router.replace('/(tabs)/(home)')}
+          />
         </View>
       </View>
     );
@@ -44,186 +72,267 @@ const Profile = () => {
   const onBookings = () => router.push('/(tabs)/(profile)/(bookings)');
   const onReports = () => router.push('/(tabs)/(profile)/(reports)');
 
-  const activities = [
-    {
-      id: '1',
-      title: 'Naga City Tour',
-      subtitle: 'Saved • 2d ago',
-      image: require('@/assets/images/partial-react-logo.png'),
-    },
-    {
-      id: '2',
-      title: 'Uma Hotel Residences',
-      subtitle: 'Booked • last week',
-      image: require('@/assets/images/android-icon-foreground.png'),
-    },
-    {
-      id: '3',
-      title: 'Plaza Quince Martires',
-      subtitle: 'Reviewed • 3w ago',
-      image: require('@/assets/images/react-logo.png'),
-    },
-  ];
-
   return (
     <View style={[styles.screen, { backgroundColor: bg }]}>
       <ScrollView
         contentContainerStyle={{ paddingBottom: 100 }}
         showsVerticalScrollIndicator={false}
       >
-        {/* Header Banner */}
-        <View style={styles.bannerWrap}>
+        {/* Header Section with Gradient */}
+        <View style={styles.headerContainer}>
           <LinearGradient
-            colors={[
-              scheme === 'dark' ? '#0D1B3D' : '#9BC9FF',
-              scheme === 'dark' ? '#1A2F5E' : '#EAF4FF',
-            ]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={styles.banner}
+            colors={isDark ? ['#1A2F5E', '#0F1222'] : ['#EAF4FF', '#F8F9FC']}
+            style={[styles.headerGradient, { paddingTop: insets.top + 12 }]}
           >
-            {/* Decorative icons */}
-            <FontAwesome5
-              name="plane-departure"
-              size={18}
-              color="rgba(255,255,255,0.7)"
-              style={{ position: 'absolute', top: 16, left: 16 }}
-            />
-            <FontAwesome5
-              name="water"
-              size={16}
-              color="rgba(255,255,255,0.6)"
-              style={{ position: 'absolute', bottom: 16, right: 24 }}
-            />
+            <View style={styles.headerTop}>
+              <ThemedText type="title-small" weight="bold">
+                Profile
+              </ThemedText>
+              <Pressable
+                onPress={onSettings}
+                style={({ pressed }) => [
+                  styles.iconBtn,
+                  {
+                    opacity: pressed ? 0.7 : 1,
+                    backgroundColor: isDark ? '#2D3748' : '#FFFFFF',
+                  },
+                ]}
+              >
+                <Ionicons
+                  name="settings-outline"
+                  size={20}
+                  color={textPrimary}
+                />
+              </Pressable>
+            </View>
 
-            {/* Edit button */}
-            <Pressable
-              onPress={onEdit}
-              style={styles.editBtn}
-              accessibilityRole="button"
-              accessibilityLabel="Edit profile"
-            >
-              <FontAwesome5 name="pen" size={14} color="#0A1B47" />
-            </Pressable>
-          </LinearGradient>
+            <View style={styles.profileInfo}>
+              <View style={styles.avatarContainer}>
+                <Image
+                  source={
+                    user.user_profile
+                      ? { uri: user.user_profile }
+                      : require('@/assets/images/react-logo.png')
+                  }
+                  style={styles.avatar}
+                  resizeMode="cover"
+                />
+                <Pressable style={styles.editBadge} onPress={onEdit}>
+                  <FontAwesome5 name="pen" size={10} color="#fff" />
+                </Pressable>
+              </View>
 
-          {/* Avatar */}
-          <View style={styles.avatarRingOuter}>
-            <View style={[styles.avatarRingInner, { backgroundColor: card }]}>
-              <Image
-                source={user.user_profile ? { uri: user.user_profile } : require('@/assets/images/react-logo.png')}
-                style={styles.avatar}
-                resizeMode="cover"
-              />
-              <View style={styles.cameraBadge}>
-                <FontAwesome5 name="camera" size={12} color="#fff" />
+              <View style={{ gap: 4, alignItems: 'center' }}>
+                <ThemedText
+                  type="title-medium"
+                  weight="bold"
+                  style={{ fontSize: 24 }}
+                >
+                  {fullName}
+                </ThemedText>
+                <ThemedText type="body-small" style={{ color: textSecondary }}>
+                  @{handle}
+                </ThemedText>
               </View>
             </View>
-          </View>
+
+            {/* Minimal Stats */}
+            <View style={styles.statsRow}>
+              <StatItem label="Trips" value="12" isDark={isDark} />
+              <View style={[styles.statDivider, { backgroundColor: border }]} />
+              <StatItem label="Reviews" value="15" isDark={isDark} />
+              <View style={[styles.statDivider, { backgroundColor: border }]} />
+              <StatItem label="Points" value="2.4k" isDark={isDark} />
+            </View>
+          </LinearGradient>
         </View>
 
-        {/* Identity */}
-        <View style={{ alignItems: 'center', marginTop: 44 }}>
-          <ThemedText type="title-medium" weight="bold" align="center">
-            {fullName}
-          </ThemedText>
+        {/* Menu Sections */}
+        <View style={styles.menuContainer}>
+          {/* Appearance Section */}
           <ThemedText
-            type="body-small"
-            align="center"
-            style={{ color: textMuted }}
+            type="label-small"
+            weight="bold"
+            style={{
+              color: textSecondary,
+              marginLeft: 20,
+              marginBottom: 8,
+              marginTop: 24,
+              textTransform: 'uppercase',
+              letterSpacing: 0.5,
+            }}
           >
-            @{handle} • Traveler | Explorer | Foodie
+            Appearance
           </ThemedText>
-        </View>
+          <View
+            style={[
+              styles.menuGroup,
+              { backgroundColor: card, padding: 4, flexDirection: 'row' },
+            ]}
+          >
+            {['system', 'light', 'dark'].map((mode) => (
+              <Pressable
+                key={mode}
+                onPress={() => setThemeMode(mode as any)}
+                style={[
+                  styles.themeOption,
+                  themeMode === mode && {
+                    backgroundColor: isDark ? '#2D3748' : '#EDF2F7',
+                  },
+                ]}
+              >
+                <Ionicons
+                  name={
+                    mode === 'system'
+                      ? 'phone-portrait-outline'
+                      : mode === 'light'
+                      ? 'sunny-outline'
+                      : 'moon-outline'
+                  }
+                  size={18}
+                  color={themeMode === mode ? textPrimary : textSecondary}
+                />
+                <ThemedText
+                  type="label-small"
+                  weight="semi-bold"
+                  style={{
+                    color: themeMode === mode ? textPrimary : textSecondary,
+                    textTransform: 'capitalize',
+                    marginLeft: 6,
+                  }}
+                >
+                  {mode}
+                </ThemedText>
+              </Pressable>
+            ))}
+          </View>
 
-        {/* Stats */}
-        <View style={styles.sectionPad}>
-          <View style={styles.statsRow}>
-            <StatCard
-              icon="suitcase-rolling"
-              label="Trips"
-              value={12}
-              card={card}
-              scheme={mode}
+          <ThemedText
+            type="label-small"
+            weight="bold"
+            style={{
+              color: textSecondary,
+              marginLeft: 20,
+              marginBottom: 8,
+              marginTop: 24,
+              textTransform: 'uppercase',
+              letterSpacing: 0.5,
+            }}
+          >
+            My Account
+          </ThemedText>
+          <View style={[styles.menuGroup, { backgroundColor: card }]}>
+            <MenuItem
+              icon="calendar-outline"
+              iconColor="#3B82F6"
+              iconBg="#EBF8FF"
+              label="My Bookings"
+              onPress={onBookings}
+              isDark={isDark}
+              border={border}
             />
-            <StatCard
-              icon="heart"
+            <MenuItem
+              icon="heart-outline"
+              iconColor="#EF4444"
+              iconBg="#FEF2F2"
               label="Favorites"
-              value={8}
-              card={card}
-              scheme={mode}
+              onPress={() => {}}
+              isDark={isDark}
+              border={border}
             />
-            <StatCard
-              icon="star"
-              label="Reviews"
-              value={15}
-              card={card}
-              scheme={mode}
+            <MenuItem
+              icon="person-outline"
+              iconColor="#8B5CF6"
+              iconBg="#F3E8FF"
+              label="Edit Profile"
+              onPress={onEdit}
+              isDark={isDark}
+              last
             />
           </View>
-        </View>
 
-        {/* Personal Info */}
-        <Section title="Personal Info" cardBg={card}>
-          <InfoRow icon="envelope" label="Email" value={user.email ?? '—'} />
-          <InfoRow icon="phone" label="Phone" value={user.phone_number ?? '—'} />
-          <InfoRow icon="flag" label="Nationality" value={user.nationality ?? '—'} />
-          <InfoRow icon="user" label="Age / Gender" value={`${user.age ?? '—'} / ${user.gender ?? '—'}`} last />
-        </Section>
-
-        {/* Activity */}
-        <Section
-          title="Recent Activity"
-          cardBg={card}
-          onActionPress={onBookings}
-          actionLabel="See all"
-        >
-          {activities.map((a, i) => (
-            <ActivityItem
-              key={a.id}
-              image={a.image}
-              title={a.title}
-              subtitle={a.subtitle}
-              last={i === activities.length - 1}
-            />
-          ))}
-        </Section>
-
-        {/* Footer Actions */}
-        <View style={[styles.sectionPad, { gap: 12 }]}>
-          <Button
-            label="Settings"
-            variant="soft"
-            color="info"
-            size="medium"
-            fullWidth
-            radius={14}
-            startIcon="cog"
-            onPress={onSettings}
-          />
-          <Button
-            label="Reports"
-            variant="soft"
-            color="info"
-            size="large"
-            fullWidth
-            radius={14}
-            startIcon="flag"
-            onPress={onReports}
-          />
-          <Button
-            label="Log Out"
-            variant="solid"
-            color="error"
-            size="medium"
-            fullWidth
-            radius={14}
-            startIcon="sign-out-alt"
-            onPress={async () => {
-              logout();
-              router.replace('/');
+          <ThemedText
+            type="label-small"
+            weight="bold"
+            style={{
+              color: textSecondary,
+              marginLeft: 20,
+              marginBottom: 8,
+              marginTop: 24,
+              textTransform: 'uppercase',
+              letterSpacing: 0.5,
             }}
-          />
+          >
+            Support & Other
+          </ThemedText>
+          <View style={[styles.menuGroup, { backgroundColor: card }]}>
+            <MenuItem
+              icon="star-outline"
+              iconColor="#F59E0B"
+              iconBg="#FFFBEB"
+              label="Rate The App"
+              onPress={() => {}}
+              isDark={isDark}
+              border={border}
+            />
+            <MenuItem
+              icon="flag-outline"
+              iconColor="#10B981"
+              iconBg="#ECFDF5"
+              label="Report a Problem"
+              onPress={onReports}
+              isDark={isDark}
+              border={border}
+            />
+            <MenuItem
+              icon="log-out-outline"
+              iconColor="#6B7280"
+              iconBg="#F3F4F6"
+              label="Log Out"
+              onPress={async () => {
+                logout();
+                router.replace('/');
+              }}
+              isDark={isDark}
+              color={colors.error}
+              last
+            />
+          </View>
+
+          <ThemedText
+            type="label-small"
+            weight="bold"
+            style={{
+              color: textSecondary,
+              marginLeft: 20,
+              marginBottom: 8,
+              marginTop: 24,
+              textTransform: 'uppercase',
+              letterSpacing: 0.5,
+            }}
+          >
+            Legal
+          </ThemedText>
+          <View style={[styles.menuGroup, { backgroundColor: card }]}>
+            <MenuItem
+              icon="document-text-outline"
+              iconColor="#6366F1"
+              iconBg="#EEF2FF"
+              label="Terms and Conditions"
+              onPress={() => {}}
+              isDark={isDark}
+              border={border}
+            />
+            <MenuItem
+              icon="shield-checkmark-outline"
+              iconColor="#14B8A6"
+              iconBg="#F0FDFA"
+              label="Privacy Policy"
+              onPress={() => {}}
+              isDark={isDark}
+              last
+            />
+          </View>
         </View>
       </ScrollView>
     </View>
@@ -232,196 +341,196 @@ const Profile = () => {
 
 export default Profile;
 
-type InfoRowProps = { icon: any; label: string; value: string; last?: boolean };
-const InfoRow = ({ icon, label, value, last }: InfoRowProps) => (
-  <View style={[styles.infoRow, !last && styles.infoDivider]}>
-    <View style={styles.infoIconWrap}>
-      <FontAwesome5 name={icon} size={14} color={colors.primary} />
-    </View>
-    <ThemedText type="body-small" weight="semi-bold" style={{ width: 110 }}>
-      {label}
-    </ThemedText>
-    <ThemedText type="body-small" style={{ color: '#6A768E', flex: 1 }}>
+// --- Components ---
+
+const StatItem = ({
+  label,
+  value,
+  isDark,
+}: {
+  label: string;
+  value: string;
+  isDark: boolean;
+}) => (
+  <View style={{ alignItems: 'center', flex: 1 }}>
+    <ThemedText type="title-small" weight="bold">
       {value}
     </ThemedText>
+    <ThemedText
+      type="label-small"
+      style={{ color: isDark ? '#A0AEC0' : '#718096' }}
+    >
+      {label}
+    </ThemedText>
   </View>
 );
 
-type ActivityItemProps = {
-  image: any;
-  title: string;
-  subtitle: string;
+const MenuItem = ({
+  icon,
+  label,
+  onPress,
+  isDark,
+  last,
+  color,
+  border,
+  iconColor,
+  iconBg,
+}: {
+  icon: any;
+  label: string;
+  onPress: () => void;
+  isDark: boolean;
   last?: boolean;
-};
-const ActivityItem = ({ image, title, subtitle, last }: ActivityItemProps) => (
-  <View style={[styles.activityItem, !last && styles.infoDivider]}>
-    <Image source={image} style={styles.activityThumb} />
-    <View style={{ flex: 1, marginLeft: 12 }}>
-      <ThemedText type="body-medium" weight="semi-bold">
-        {title}
-      </ThemedText>
-      <ThemedText type="label-small" style={{ color: '#6A768E' }}>
-        {subtitle}
-      </ThemedText>
-    </View>
-    <FontAwesome5 name="chevron-right" size={12} color="#9AA4B2" />
-  </View>
-);
+  color?: string;
+  border?: string;
+  iconColor?: string;
+  iconBg?: string;
+}) => {
+  const textColor = color || (isDark ? '#FFFFFF' : '#1A1F36');
 
-type SectionProps = {
-  title: string;
-  children: React.ReactNode;
-  cardBg: string;
-  onActionPress?: () => void;
-  actionLabel?: string;
-};
-const Section = ({
-  title,
-  children,
-  cardBg,
-  onActionPress,
-  actionLabel,
-}: SectionProps) => (
-  <View style={styles.sectionPad}>
-    <View style={styles.sectionHeader}>
-      <ThemedText type="sub-title-small" weight="bold">
-        {title}
+  return (
+    <Pressable
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.menuItem,
+        {
+          backgroundColor: pressed
+            ? isDark
+              ? '#2D3748'
+              : '#F7FAFC'
+            : 'transparent',
+          borderBottomWidth: last ? 0 : StyleSheet.hairlineWidth,
+          borderBottomColor: border || '#EDF2F7',
+        },
+      ]}
+    >
+      <View
+        style={[
+          styles.menuIconBox,
+          { backgroundColor: isDark ? '#2D3748' : iconBg || '#F3F4F6' },
+        ]}
+      >
+        <Ionicons
+          name={icon}
+          size={20}
+          color={iconColor || (isDark ? '#A0AEC0' : '#718096')}
+        />
+      </View>
+      <ThemedText
+        type="body-medium"
+        weight="medium"
+        style={{ flex: 1, color: textColor }}
+      >
+        {label}
       </ThemedText>
-      {onActionPress ? (
-        <Pressable onPress={onActionPress}>
-          <ThemedText type="link-small">{actionLabel ?? 'More'}</ThemedText>
-        </Pressable>
-      ) : null}
-    </View>
-    <View style={[styles.card, { backgroundColor: cardBg }, shadow(1)]}>
-      {children}
-    </View>
-  </View>
-);
+      <Ionicons
+        name="chevron-forward"
+        size={18}
+        color={isDark ? '#4A5568' : '#CBD5E0'}
+      />
+    </Pressable>
+  );
+};
 
-// ---------- Styles ----------
 const styles = StyleSheet.create({
   screen: { flex: 1 },
-  bannerWrap: { position: 'relative' },
-  banner: { height: 200 },
-  editBtn: {
-    position: 'absolute',
-    right: 16,
-    top: 50,
-    backgroundColor: '#fff',
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    alignItems: 'center',
-    justifyContent: 'center',
+  headerContainer: {
+    marginBottom: 24,
+    borderBottomLeftRadius: 32,
+    borderBottomRightRadius: 32,
+    overflow: 'hidden',
   },
-  avatarRingOuter: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: -44,
-    alignItems: 'center',
+  headerGradient: {
+    paddingHorizontal: 24,
+    paddingBottom: 32,
   },
-  avatarRingInner: {
-    width: 112,
-    height: 112,
-    borderRadius: 56,
-    padding: 4,
-    borderWidth: 3,
-    borderColor: '#FFFFFFAA',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  avatar: { width: 100, height: 100, borderRadius: 50 },
-  cameraBadge: {
-    position: 'absolute',
-    right: 4,
-    bottom: 4,
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    backgroundColor: colors.secondary,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  sectionPad: { paddingHorizontal: 20, marginTop: 18 },
-  statsRow: { flexDirection: 'row', gap: 12 },
-  statCard: {
-    flex: 1,
-    borderRadius: 16,
-    paddingVertical: 14,
-    alignItems: 'center',
-    justifyContent: 'flex-start',
-    gap: 6,
+  headerTop: {
     flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 24,
   },
-  statIcon: {
+  iconBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  profileInfo: {
+    alignItems: 'center',
+    gap: 16,
+    marginBottom: 32,
+  },
+  avatarContainer: {
+    position: 'relative',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.1,
+    shadowRadius: 20,
+    elevation: 10,
+  },
+  avatar: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+  },
+  editBadge: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    backgroundColor: colors.primary,
     width: 32,
     height: 32,
-    borderRadius: 8,
+    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: 3,
+    borderColor: '#fff',
   },
-  sectionHeader: {
+  statsRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 10,
+    paddingHorizontal: 12,
   },
-  card: { borderRadius: 16, padding: 12 },
-  infoRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12 },
-  infoDivider: {
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#E0E6EF',
+  statDivider: {
+    width: 1,
+    height: 24,
   },
-  infoIconWrap: {
-    width: 32,
-    height: 32,
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#EEF4FF',
-    marginRight: 10,
+  menuContainer: {
+    paddingHorizontal: 20,
   },
-  activityItem: {
+  menuGroup: {
+    borderRadius: 20,
+    overflow: 'hidden',
+    marginBottom: 8,
+  },
+  menuItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
   },
-  activityThumb: {
-    width: 54,
-    height: 54,
-    borderRadius: 12,
-    backgroundColor: '#EAEFF7',
+  menuIconBox: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 14,
+  },
+  themeOption: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 10,
+    borderRadius: 16,
   },
 });
-
-// Soft shadow helper
-function shadow(level: 1 | 2 | 3) {
-  switch (level) {
-    case 1:
-      return {
-        shadowColor: '#1e1e1e',
-        shadowOpacity: 0.08,
-        shadowRadius: 2,
-        shadowOffset: { width: 0, height: 1 },
-        elevation: 1,
-      } as const;
-    case 2:
-      return {
-        shadowColor: '#1e1e1e',
-        shadowOpacity: 0.12,
-        shadowRadius: 3,
-        shadowOffset: { width: 0, height: 2 },
-        elevation: 2,
-      } as const;
-    default:
-      return {
-        shadowColor: '#1e1e1e',
-        shadowOpacity: 0.16,
-        shadowRadius: 4,
-        shadowOffset: { width: 0, height: 3 },
-        elevation: 3,
-      } as const;
-  }
-}

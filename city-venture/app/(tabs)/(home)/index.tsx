@@ -245,7 +245,7 @@ const HomeScreen = () => {
             <RefreshControl
               refreshing={refreshing}
               onRefresh={handleRefresh}
-              tintColor={isDarkMode ? '#fff' : '#0A1B47'}
+              tintColor={palette.primary}
             />
           }
           onScroll={handleScroll}
@@ -381,13 +381,13 @@ const ActionGrid: React.FC<ActionGridProps> = ({ items, onPressItem }) => {
                 <View
                   style={[
                     styles.actionIcon,
-                    { backgroundColor: '#FEF3C7' },
+                    { backgroundColor: colors.highlight },
                   ]}
                 >
                   <MaterialCommunityIcons
                     name={item.icon}
                     size={28}
-                    color={colors.complementary}
+                    color={colors.accent}
                   />
                 </View>
                 <ThemedText

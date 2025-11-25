@@ -8,6 +8,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { ThemedText } from '@/components/themed-text';
+import { useTheme } from '@/context/ThemeContext';
 import SearchBar from '@/components/SearchBar';
 import TouristSpotCard from '@/components/tourist_spots/TouristSpotCard';
 import FeaturedTouristSpotCard from '@/components/tourist_spots/FeaturedTouristSpotCard';
@@ -20,6 +21,7 @@ import Loading from '@/components/Loading';
 
 const TouristSpotScreen = () => {
   const { spots, categoriesAndTypes, loading, setSpotId } = useTouristSpot();
+  const { colors } = useTheme();
   // Defensive fallbacks to avoid runtime errors while data is loading
   const safeSpots = Array.isArray(spots) ? spots : [];
   const categories = Array.isArray(categoriesAndTypes?.categories)
@@ -106,7 +108,7 @@ const TouristSpotScreen = () => {
         </View>
       ) : (
       <ScrollView
-        style={{ flex: 1, backgroundColor: '#F9FAFB' }}
+        style={{ flex: 1, backgroundColor: colors.background }}
         contentContainerStyle={styles.content}
         stickyHeaderIndices={[1]}
       >
@@ -114,7 +116,7 @@ const TouristSpotScreen = () => {
           <ThemedText type="header-large" style={{ fontSize: 32 }}>Tourist Spots</ThemedText>
         </View>
 
-        <View style={styles.SearchContainer}>
+        <View style={[styles.SearchContainer, { backgroundColor: colors.background }]}>
           <SearchBar
             value={query}
             onChangeText={setQuery}
@@ -122,9 +124,9 @@ const TouristSpotScreen = () => {
             placeholder="Explore new adventures..."
             variant="plain"
             size="md"
-            containerStyle={{ flex: 1, backgroundColor: '#E8EBF0', borderRadius: 12, borderWidth: 0 }}
+            containerStyle={{ flex: 1, backgroundColor: colors.inputBackground, borderRadius: 12, borderWidth: 0 }}
             inputStyle={{ fontSize: 15 }}
-            rightIcon={<Ionicons name="options-outline" size={20} color="#007AFF" />}
+            rightIcon={<Ionicons name="options-outline" size={20} color={colors.active} />}
           />
         </View>
 
@@ -247,7 +249,6 @@ const styles = StyleSheet.create({
   sectionTitle: { fontSize: 16, fontWeight: '700' },
   emptyText: { marginTop: 16, textAlign: 'center', fontSize: 13, opacity: 0.7 },
   SearchContainer: {
-    backgroundColor: '#F9FAFB',
     display: 'flex',
     flexDirection: 'row',
     alignItems: 'center',

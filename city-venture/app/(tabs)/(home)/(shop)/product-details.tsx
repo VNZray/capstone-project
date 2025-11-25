@@ -12,8 +12,7 @@ import {
   Alert,
 } from 'react-native';
 import { useLocalSearchParams, Stack, router } from 'expo-router';
-import { useColorScheme } from '@/hooks/use-color-scheme';
-import { colors } from '@/constants/color';
+import { useTheme } from '@/context/ThemeContext';
 import { useTypography } from '@/constants/typography';
 import PageContainer from '@/components/PageContainer';
 import { useCart } from '@/context/CartContext';
@@ -26,8 +25,7 @@ const ProductDetails = () => {
     businessName: string;
   }>();
   
-  const scheme = useColorScheme();
-  const isDark = scheme === 'dark';
+  const { colors, isDark } = useTheme();
   const type = useTypography();
   const { h3, h4, body, bodySmall } = type;
   const { addToCart } = useCart();
@@ -52,11 +50,11 @@ const ProductDetails = () => {
   }
 
   const palette = {
-    bg: isDark ? '#0D1B2A' : '#F8F9FA',
-    card: isDark ? '#1C2833' : '#FFFFFF',
-    text: isDark ? '#ECEDEE' : '#0D1B2A',
-    subText: isDark ? '#9BA1A6' : '#6B7280',
-    border: isDark ? '#2A2F36' : '#E5E8EC',
+    bg: colors.background,
+    card: colors.surface,
+    text: colors.text,
+    subText: colors.textSecondary,
+    border: colors.border,
   };
 
   const price = typeof product.price === 'string' 
@@ -147,7 +145,7 @@ const ProductDetails = () => {
               {product.name}
             </Text>
             
-            <Text style={[{ fontSize: h4 }, { color: colors.primary, marginBottom: 16 }]}>
+            <Text style={[{ fontSize: h4 }, { color: colors.accent, marginBottom: 16 }]}>
               ₱{price.toFixed(2)}
             </Text>
 
@@ -240,15 +238,15 @@ const ProductDetails = () => {
               style={[
                 styles.addButton,
                 {
-                  backgroundColor: isAvailable ? colors.primary : palette.border,
+                  backgroundColor: isAvailable ? colors.buttonPrimaryBg : palette.border,
                   opacity: loading ? 0.6 : 1,
                 },
               ]}
               onPress={handleAddToCart}
               disabled={!isAvailable || loading}
             >
-              <Ionicons name="cart" size={20} color="#FFF" />
-              <Text style={[{ fontSize: body }, { color: '#FFF', marginLeft: 8 }]}>
+              <Ionicons name="cart" size={20} color={colors.buttonPrimaryText} />
+              <Text style={[{ fontSize: body }, { color: colors.buttonPrimaryText, marginLeft: 8 }]}>
                 {loading ? 'Adding...' : 'Add to Cart'}
               </Text>
             </Pressable>

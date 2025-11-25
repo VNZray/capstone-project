@@ -11,26 +11,24 @@ import {
   Alert,
 } from 'react-native';
 import { Stack, router } from 'expo-router';
-import { useColorScheme } from '@/hooks/use-color-scheme';
-import { colors } from '@/constants/color';
+import { useTheme } from '@/context/ThemeContext';
 import { useTypography } from '@/constants/typography';
 import PageContainer from '@/components/PageContainer';
 import { useCart } from '@/context/CartContext';
 import { Ionicons } from '@expo/vector-icons';
 
 const CartScreen = () => {
-  const scheme = useColorScheme();
-  const isDark = scheme === 'dark';
+  const { colors, isDark } = useTheme();
   const type = useTypography();
   const { h4, body, bodySmall } = type;
   const { items, removeFromCart, updateQuantity, clearCart, getSubtotal, getTotalItems } = useCart();
 
   const palette = {
-    bg: isDark ? '#0D1B2A' : '#F8F9FA',
-    card: isDark ? '#1C2833' : '#FFFFFF',
-    text: isDark ? '#ECEDEE' : '#0D1B2A',
-    subText: isDark ? '#9BA1A6' : '#6B7280',
-    border: isDark ? '#2A2F36' : '#E5E8EC',
+    bg: colors.background,
+    card: colors.surface,
+    text: colors.text,
+    subText: colors.textSecondary,
+    border: colors.border,
   };
 
   const handleQuantityChange = (productId: string, currentQty: number, delta: number) => {
@@ -96,7 +94,7 @@ const CartScreen = () => {
           headerRight: () =>
             items.length > 0 ? (
               <Pressable onPress={handleClearCart} style={{ marginRight: 16 }}>
-                <Text style={[{ fontSize: body }, { color: colors.error }]}>Clear</Text>
+                <Text style={[{ fontSize: body }, { color: palette.text }]}>Clear</Text>
               </Pressable>
             ) : null,
         }}
@@ -113,10 +111,10 @@ const CartScreen = () => {
                 Add some products to get started
               </Text>
               <Pressable
-                style={[styles.browseButton, { backgroundColor: colors.primary }]}
+                style={[styles.browseButton, { backgroundColor: colors.buttonPrimaryBg }]}
                 onPress={() => router.back()}
               >
-                <Text style={[{ fontSize: body }, { color: '#FFF' }]}>
+                <Text style={[{ fontSize: body }, { color: colors.buttonPrimaryText }]}>
                   Browse Products
                 </Text>
               </Pressable>
@@ -151,7 +149,7 @@ const CartScreen = () => {
                       <Text style={[{ fontSize: h4 }, { color: palette.text }]} numberOfLines={2}>
                         {item.product_name}
                       </Text>
-                      <Text style={[{ fontSize: body }, { color: colors.primary, marginTop: 4 }]}>
+                      <Text style={[{ fontSize: body }, { color: colors.accent, marginTop: 4 }]}>
                         ₱{item.price.toFixed(2)}
                       </Text>
                       {item.special_requests && (
@@ -213,16 +211,16 @@ const CartScreen = () => {
                   <Text style={[{ fontSize: h4 }, { color: palette.text }]}>
                     Subtotal
                   </Text>
-                  <Text style={[{ fontSize: h4 }, { color: colors.primary }]}>
+                  <Text style={[{ fontSize: h4 }, { color: colors.accent }]}>
                     ₱{subtotal.toFixed(2)}
                   </Text>
                 </View>
 
                 <Pressable
-                  style={[styles.checkoutButton, { backgroundColor: colors.primary }]}
+                  style={[styles.checkoutButton, { backgroundColor: colors.buttonPrimaryBg }]}
                   onPress={handleCheckout}
                 >
-                  <Text style={[{ fontSize: body }, { color: '#FFF' }]}>
+                  <Text style={[{ fontSize: body }, { color: colors.buttonPrimaryText }]}>
                     Proceed to Checkout
                   </Text>
                 </Pressable>
