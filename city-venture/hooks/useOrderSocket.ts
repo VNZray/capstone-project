@@ -3,6 +3,7 @@
 import { useEffect, useRef } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { useAuth } from '@/context/AuthContext';
+import { getAccessToken } from '@/services/apiClient';
 
 /**
  * Hook for Socket.IO connection to receive real-time order updates
@@ -25,10 +26,16 @@ export const useOrderSocket = () => {
 
     console.log('[useOrderSocket] Connecting to Socket.IO:', socketUrl);
 
-    // Initialize socket connection
+    // SECURITY FIX: Use JWT token for socket authentication (not just userId)
+    const token = getAccessToken();
+    if (!token) {
+      console.warn('[useOrderSocket] No access token available, socket connection may fail');
+    }
+
+    // Initialize socket connection with JWT token for authentication
     socketRef.current = io(socketUrl, {
       auth: {
-        userId: user.id,
+        token: token, // JWT token for backend verification
       },
       transports: ['websocket', 'polling'],
       reconnection: true,

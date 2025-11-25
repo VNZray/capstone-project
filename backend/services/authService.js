@@ -4,8 +4,16 @@ import jwt from 'jsonwebtoken';
 import { v4 as uuidv4 } from 'uuid';
 import crypto from 'crypto';
 
-const JWT_ACCESS_SECRET = process.env.JWT_ACCESS_SECRET || 'access_secret_fallback';
-const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || 'refresh_secret_fallback';
+// SECURITY: JWT secrets MUST be set via environment variables. No fallbacks.
+const JWT_ACCESS_SECRET = process.env.JWT_ACCESS_SECRET;
+const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET;
+
+if (!JWT_ACCESS_SECRET) {
+  throw new Error('CRITICAL: JWT_ACCESS_SECRET environment variable is not set.');
+}
+if (!JWT_REFRESH_SECRET) {
+  throw new Error('CRITICAL: JWT_REFRESH_SECRET environment variable is not set.');
+}
 const ACCESS_TOKEN_EXPIRY = process.env.ACCESS_TOKEN_EXPIRY || '15m';
 const REFRESH_TOKEN_EXPIRY_DAYS = 7; // For DB calculation
 

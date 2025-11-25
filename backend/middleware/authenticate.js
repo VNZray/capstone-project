@@ -1,6 +1,10 @@
 import jwt from 'jsonwebtoken';
 
-const JWT_ACCESS_SECRET = process.env.JWT_ACCESS_SECRET || 'access_secret_fallback';
+// SECURITY: JWT secrets MUST be set via environment variables. No fallbacks.
+const JWT_ACCESS_SECRET = process.env.JWT_ACCESS_SECRET;
+if (!JWT_ACCESS_SECRET) {
+  throw new Error('CRITICAL: JWT_ACCESS_SECRET environment variable is not set. Authentication cannot function securely.');
+}
 
 export function authenticate(req, res, next) {
   const authHeader = req.headers['authorization'];
