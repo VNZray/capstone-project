@@ -1,5 +1,5 @@
 import axios from "axios"; // Keep axios for type definitions if needed, but use apiClient for calls
-import apiClient, { setAccessToken } from "../apiClient";
+import apiClient, { setAccessToken, refreshTokens } from "../apiClient";
 
 import type {
   TokenPayload,
@@ -503,16 +503,11 @@ export const fetchCurrentUser = async (): Promise<UserDetails> => {
   };
 };
 
-// Initialize Auth (Try refresh)
+// Initialize Auth (Try refresh) - Uses centralized refresh with lock
 export const initializeAuth = async (): Promise<boolean> => {
   try {
-    const { data } = await apiClient.post(
-      "/auth/refresh",
-      {},
-      { withCredentials: true }
-    );
-    setAccessToken(data.accessToken);
-    return true;
+    const accessToken = await refreshTokens();
+    return accessToken !== null;
   } catch (e) {
     return false;
   }
