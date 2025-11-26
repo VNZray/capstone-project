@@ -1,16 +1,15 @@
-import axios from 'axios';
-import api from './api';
+import apiClient from '@/services/apiClient';
 import { supabase } from '@/utils/supabase';
 
 export interface CreateReportInput { reporter_id:string; target_type:string; target_id:string; title:string; description:string; attachments?: { file_url:string; file_name:string; file_type?:string; file_size?:number }[] }
 
 export async function createReport(data:CreateReportInput){
-  const res = await axios.post(`${api}/reports`, data);
+  const res = await apiClient.post(`/reports`, data);
   return res.data;
 }
 
 export async function bulkAddAttachments(reportId:string, attachments:{ file_url:string; file_name:string; file_type?:string; file_size?:number }[]){
-  const res = await axios.post(`${api}/reports/${reportId}/attachments/bulk`, { attachments });
+  const res = await apiClient.post(`/reports/${reportId}/attachments/bulk`, { attachments });
   return res.data;
 }
 
@@ -24,7 +23,7 @@ export async function createReportWithAttachments(input:CreateReportInput){
 }
 
 export async function getReportsByReporter(reporterId:string){
-  const res = await axios.get(`${api}/reports/reporter/${reporterId}`);
+  const res = await apiClient.get(`/reports/reporter/${reporterId}`);
   const raw = res.data;
   if(Array.isArray(raw)) return raw;
   if(raw && Array.isArray(raw.data)) return raw.data;
@@ -32,7 +31,7 @@ export async function getReportsByReporter(reporterId:string){
 }
 
 export async function getReportById(id:string){
-  const res = await axios.get(`${api}/reports/${id}`);
+  const res = await apiClient.get(`/reports/${id}`);
   return res.data;
 }
 

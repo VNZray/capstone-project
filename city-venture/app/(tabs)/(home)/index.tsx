@@ -9,6 +9,7 @@ import EventListCard from '@/components/home/EventListCard';
 import NewsCard from '@/components/home/NewsCard';
 import { ThemedText } from '@/components/themed-text';
 import { useAuth } from '@/context/AuthContext';
+import { Colors } from '@/constants/color';
 import { navigateToAccommodationHome } from '@/routes/accommodationRoutes';
 import { navigateToEventHome } from '@/routes/eventRoutes';
 import { navigateToShopHome, navigateToCart } from '@/routes/shopRoutes';
@@ -39,6 +40,7 @@ import {
   StyleProp,
   FlatList,
   RefreshControl,
+  useColorScheme,
 } from 'react-native';
 import Animated, {
   useAnimatedScrollHandler,
@@ -55,6 +57,7 @@ type ActionItem = {
   label: string;
   icon: React.ComponentProps<typeof MaterialCommunityIcons>['name'];
   colors: [string, string];
+  colorsDark?: [string, string];
 };
 
 type PromoCardContent = {
@@ -65,61 +68,149 @@ type PromoCardContent = {
   secondaryCta: string;
 };
 
-type QuickLink = {
-  id: string;
-  title: string;
-  description: string;
-  icon: React.ComponentProps<typeof MaterialCommunityIcons>['name'];
-};
-
 const ACTIONS: ActionItem[] = [
   {
     id: 'accommodation',
     label: 'Place to Stay',
     icon: 'bed-queen-outline',
     colors: ['#FF9D6C', '#FF6B4F'],
+    colorsDark: ['#E97847', '#C3552E'],
   },
   {
     id: 'shops',
     label: 'Shops',
     icon: 'storefront-outline',
     colors: ['#FDBA74', '#FF8F5E'],
+    colorsDark: ['#E49A52', '#C86A35'],
   },
   {
     id: 'spots',
     label: 'Tourist Spots',
     icon: 'map-marker-radius-outline',
     colors: ['#FFB5C3', '#F16CA4'],
+    colorsDark: ['#D8899A', '#BE4C7F'],
   },
   {
     id: 'events',
     label: 'Events',
     icon: 'calendar-star',
     colors: ['#B7A2FF', '#8B6CFF'],
+    colorsDark: ['#9B85E6', '#7252D4'],
   },
 ];
 
 const PROMO_CARD: PromoCardContent = {
   id: 'report',
-  title: 'Help us improve our city',
+  title: 'See something that needs attention?',
   description:
-    'Create an account to report local issues and keep Naga thriving.',
-  primaryCta: 'View Reports',
+    'Report issues around the city and track ongoing fixes in one place.',
+  primaryCta: 'View reports',
   secondaryCta: 'Report an issue',
 };
 
-const QUICK_LINKS: QuickLink[] = [
+const PLACEHOLDER_SPOTS: HighlightedTouristSpot[] = [
   {
-    id: 'updates',
-    title: 'City Updates',
-    description: 'Latest advisories, announcements, and emergency bulletins.',
-    icon: 'newspaper-variant-outline',
+    id: 'spot-aurora',
+    name: 'Aurora Park Skyline',
+    image:
+      'https://images.unsplash.com/photo-1505761671935-60b3a7427bad?auto=format&fit=crop&w=900&q=80',
+    barangay: 'Centro',
+    rating: 4.8,
+    reviews: 412,
   },
   {
-    id: 'explore',
-    title: 'Explore Naga',
-    description: 'Curated guides, upcoming events, and nearby gems.',
-    icon: 'map-marker-radius',
+    id: 'spot-river',
+    name: 'Naga River Walk',
+    image:
+      'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=900&q=80',
+    barangay: 'Penafrancia',
+    rating: 4.6,
+    reviews: 289,
+  },
+  {
+    id: 'spot-hill',
+    name: 'Panoramic Hill Deck',
+    image:
+      'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=900&q=80',
+    barangay: 'Cararayan',
+    rating: 4.9,
+    reviews: 512,
+  },
+];
+
+const PLACEHOLDER_BUSINESSES: PartnerBusiness[] = [
+  {
+    id: 'biz-cafe',
+    name: 'Habitat Coffee & Co.',
+    image:
+      'https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=700&q=80',
+    category: 'Cafe',
+    isVerified: true,
+  },
+  {
+    id: 'biz-bistro',
+    name: 'Riverstone Bistro',
+    image:
+      'https://images.unsplash.com/photo-1499028344343-cd173ffc68a9?auto=format&fit=crop&w=700&q=80',
+    category: 'Dining',
+  },
+  {
+    id: 'biz-gear',
+    name: 'Trail & Tide Outfitters',
+    image:
+      'https://images.unsplash.com/photo-1469474968028-56623f02e42e?auto=format&fit=crop&w=700&q=80',
+    category: 'Outdoor',
+    isVerified: true,
+  },
+];
+
+const PLACEHOLDER_EVENTS: HomeEvent[] = [
+  {
+    id: 'event-festival',
+    name: 'City Lights Music Fest',
+    date: 'Nov 24, 7:00 PM',
+    location: 'Plaza Quezon',
+    image:
+      'https://images.unsplash.com/photo-1506157786151-b8491531f063?auto=format&fit=crop&w=700&q=80',
+  },
+  {
+    id: 'event-ride',
+    name: 'Sunrise Fun Ride',
+    date: 'Nov 27, 5:30 AM',
+    location: 'Naga River Park',
+    image:
+      'https://images.unsplash.com/photo-1452626038306-9aae5e071dd3?auto=format&fit=crop&w=700&q=80',
+  },
+  {
+    id: 'event-market',
+    name: 'Magsaysay Night Market',
+    date: 'Dec 02, 6:00 PM',
+    location: 'Magsaysay Ave.',
+    image:
+      'https://images.unsplash.com/photo-1492724441997-5dc865305da7?auto=format&fit=crop&w=700&q=80',
+  },
+];
+
+const PLACEHOLDER_NEWS: NewsArticle[] = [
+  {
+    id: 'news-hub',
+    title: 'New transport hub streamlines downtown commute',
+    excerpt:
+      'The integrated terminal opens this week, promising smoother rides and safer waiting areas for daily commuters.',
+    category: 'Updates',
+    image:
+      'https://images.unsplash.com/photo-1505663912202-ac22d4cb370b?auto=format&fit=crop&w=900&q=80',
+    publishedAt: 'Today',
+  },
+  {
+    id: 'news-green',
+    title: 'Green corridors add 200 new trees across barangays',
+    excerpt:
+      'Local volunteers and partners joined forces to expand shaded walkways that connect parks and bike lanes.',
+    category: 'Community',
+    image:
+      'https://images.unsplash.com/photo-1501785888041-af3ef285b470?auto=format&fit=crop&w=900&q=80',
+    publishedAt: 'Yesterday',
   },
 ];
 
@@ -129,6 +220,9 @@ const HomeScreen = () => {
   const { user } = useAuth();
   const scrollY = useSharedValue(0);
   const { bottom } = useSafeAreaInsets();
+  const colorScheme = useColorScheme() ?? 'light';
+  const isDarkMode = colorScheme === 'dark';
+  const palette = Colors[colorScheme];
   const didRedirect = useRef(false);
   const [searchValue, setSearchValue] = useState('');
   const [refreshing, setRefreshing] = useState(false);
@@ -156,6 +250,11 @@ const HomeScreen = () => {
     loading: true,
   });
 
+  const resolveSectionData = useCallback(<T,>(data: T[], fallback: T[]) => {
+    if (data && data.length > 0) return data;
+    return fallback;
+  }, []);
+
   useEffect(() => {
     if (!user && !didRedirect.current) {
       didRedirect.current = true;
@@ -182,21 +281,45 @@ const HomeScreen = () => {
         fetchUpcomingEvents(),
         fetchNewsArticles(),
       ]);
-      setSpotState({ data: spots ?? [], loading: false });
-      setBusinessState({ data: businesses ?? [], loading: false });
-      setEventState({ data: events ?? [], loading: false });
-      setNewsState({ data: news ?? [], loading: false });
+      setSpotState({
+        data: resolveSectionData(spots ?? [], PLACEHOLDER_SPOTS),
+        loading: false,
+      });
+      setBusinessState({
+        data: resolveSectionData(businesses ?? [], PLACEHOLDER_BUSINESSES),
+        loading: false,
+      });
+      setEventState({
+        data: resolveSectionData(events ?? [], PLACEHOLDER_EVENTS),
+        loading: false,
+      });
+      setNewsState({
+        data: resolveSectionData(news ?? [], PLACEHOLDER_NEWS),
+        loading: false,
+      });
     } catch (error) {
       const message =
         error instanceof Error ? error.message : 'Unable to load content';
-      setSpotState((prev) => ({ ...prev, loading: false, error: message }));
-      setBusinessState((prev) => ({ ...prev, loading: false, error: message }));
-      setEventState((prev) => ({ ...prev, loading: false, error: message }));
-      setNewsState((prev) => ({ ...prev, loading: false, error: message }));
+      setSpotState({ data: PLACEHOLDER_SPOTS, loading: false, error: message });
+      setBusinessState({
+        data: PLACEHOLDER_BUSINESSES,
+        loading: false,
+        error: message,
+      });
+      setEventState({
+        data: PLACEHOLDER_EVENTS,
+        loading: false,
+        error: message,
+      });
+      setNewsState({
+        data: PLACEHOLDER_NEWS,
+        loading: false,
+        error: message,
+      });
     } finally {
       setRefreshing(false);
     }
-  }, []);
+  }, [resolveSectionData]);
 
   useEffect(() => {
     loadHomeContent();
@@ -275,7 +398,8 @@ const HomeScreen = () => {
           renderItem={({ item }) => (
             <TouristSpotCard spot={item} onPress={handleSpotPress} />
           )}
-          contentContainerStyle={styles.horizontalList}
+          style={{ marginRight: -24 }}
+          ItemSeparatorComponent={() => <View style={{ width: 16 }} />}
           showsHorizontalScrollIndicator={false}
           getItemLayout={(_, index) => ({
             length: 316,
@@ -305,7 +429,8 @@ const HomeScreen = () => {
           renderItem={({ item }) => (
             <BusinessCard business={item} onPress={handleBusinessPress} />
           )}
-          contentContainerStyle={styles.horizontalList}
+          style={{ marginRight: -24 }}
+          ItemSeparatorComponent={() => <View style={{ width: 16 }} />}
           showsHorizontalScrollIndicator={false}
           getItemLayout={(_, index) => ({
             length: 216,
@@ -364,7 +489,7 @@ const HomeScreen = () => {
   if (!user) return null;
 
   return (
-    <View style={styles.root}>
+    <View style={[styles.root, { backgroundColor: palette.background }]}>
       <StatusBar
         translucent
         backgroundColor="transparent"
@@ -382,7 +507,7 @@ const HomeScreen = () => {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={handleRefresh}
-            tintColor="#fff"
+            tintColor={isDarkMode ? '#fff' : '#0A1B47'}
           />
         }
         onScroll={handleScroll}
@@ -397,21 +522,34 @@ const HomeScreen = () => {
           />
         </View>
 
-        <MainContentCard style={styles.mainCard}>
+        <MainContentCard
+          style={[
+            styles.mainCard,
+            {
+              shadowColor: isDarkMode ? '#000' : '#0A1B47',
+              shadowOpacity: isDarkMode ? 0.18 : 0.08,
+              shadowRadius: 18,
+              shadowOffset: { width: 0, height: 10 },
+              elevation: 8,
+              borderWidth: isDarkMode ? 0 : StyleSheet.hairlineWidth,
+              borderColor: 'rgba(10,27,71,0.08)',
+            },
+          ]}
+        >
           <ActionGrid items={ACTIONS} onPressItem={handleActionPress} />
 
           <SectionContainer
             title="Highlighted Tourist Spots"
             onPressViewAll={navigateToTouristSpotHome}
           >
-            {renderSpotSection()}
+              {renderSpotSection()}
           </SectionContainer>
 
           <SectionContainer
             title="Partnered Businesses"
             onPressViewAll={navigateToShopHome}
           >
-            {renderBusinessSection()}
+              {renderBusinessSection()}
           </SectionContainer>
 
           <SectionContainer
@@ -426,20 +564,6 @@ const HomeScreen = () => {
           </SectionContainer>
 
           <PromoCard content={PROMO_CARD} style={styles.promoCard} />
-
-          <View style={styles.quickLinksCard}>
-            <ThemedText
-              type="sub-title-small"
-              weight="bold"
-              lightColor="#F8F8FF"
-            >
-              Explore Naga
-            </ThemedText>
-            <View style={styles.quickLinkDivider} />
-            {QUICK_LINKS.map((link) => (
-              <QuickLinkRow key={link.id} link={link} />
-            ))}
-          </View>
         </MainContentCard>
       </AnimatedScrollView>
 
@@ -461,7 +585,11 @@ type ActionGridProps = {
   onPressItem: (id: ActionItem['id']) => void;
 };
 
-const ActionGrid: React.FC<ActionGridProps> = ({ items, onPressItem }) => (
+const ActionGrid: React.FC<ActionGridProps> = ({ items, onPressItem }) => {
+  const scheme = useColorScheme() ?? 'light';
+  const isDark = scheme === 'dark';
+
+  return (
   <View style={styles.actionGrid}>
     {items.map((item) => (
       <Pressable
@@ -470,7 +598,7 @@ const ActionGrid: React.FC<ActionGridProps> = ({ items, onPressItem }) => (
         onPress={() => onPressItem(item.id)}
       >
         <LinearGradient
-          colors={item.colors}
+          colors={isDark && item.colorsDark ? item.colorsDark : item.colors}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={styles.actionIcon}
@@ -481,14 +609,15 @@ const ActionGrid: React.FC<ActionGridProps> = ({ items, onPressItem }) => (
           type="label-small"
           align="center"
           lightColor="#E8E9F4"
-          style={styles.actionLabel}
-        >
-          {item.label}
-        </ThemedText>
-      </Pressable>
-    ))}
+            style={styles.actionLabel}
+          >
+            {item.label}
+          </ThemedText>
+        </Pressable>
+      ))}
   </View>
-);
+  );
+};
 
 type PromoCardProps = {
   content: PromoCardContent;
@@ -540,33 +669,6 @@ const PromoCard: React.FC<PromoCardProps> = ({
   </LinearGradient>
 );
 
-type QuickLinkRowProps = {
-  link: QuickLink;
-  onPress?: (link: QuickLink) => void;
-};
-
-const QuickLinkRow: React.FC<QuickLinkRowProps> = ({ link, onPress }) => (
-  <Pressable style={styles.quickLinkRow} onPress={() => onPress?.(link)}>
-    <View style={styles.quickLinkIconContainer}>
-      <MaterialCommunityIcons name={link.icon} size={22} color="#F86B4F" />
-    </View>
-    <View style={styles.quickLinkContent}>
-      <ThemedText type="body-medium" weight="semi-bold" lightColor="#FCFCFC">
-        {link.title}
-      </ThemedText>
-      <ThemedText
-        type="body-extra-small"
-        lightColor="rgba(255,255,255,0.78)"
-      >
-        {link.description}
-      </ThemedText>
-    </View>
-    <ThemedText type="body-medium" lightColor="rgba(255,255,255,0.5)">
-      {'>'}
-    </ThemedText>
-  </Pressable>
-);
-
 const SectionError = ({ message }: { message?: string }) =>
   message ? (
     <ThemedText type="label-small" lightColor="#FFB4A2">
@@ -580,56 +682,107 @@ const EmptyState = ({
 }: {
   icon: React.ComponentProps<typeof MaterialCommunityIcons>['name'];
   message: string;
-}) => (
-  <View style={styles.emptyState}>
-    <MaterialCommunityIcons
-      name={icon}
-      size={22}
-      color="rgba(255,255,255,0.6)"
-      style={styles.emptyIcon}
-    />
-    <ThemedText type="label-small" lightColor="rgba(255,255,255,0.7)">
-      {message}
-    </ThemedText>
-  </View>
-);
+}) => {
+  const scheme = useColorScheme() ?? 'light';
+  const isDark = scheme === 'dark';
+  return (
+    <View
+      style={[
+        styles.emptyState,
+        {
+          backgroundColor: isDark ? '#151426' : 'rgba(10,27,71,0.06)',
+          borderWidth: isDark ? 0 : StyleSheet.hairlineWidth,
+          borderColor: 'rgba(10,27,71,0.08)',
+        },
+      ]}
+    >
+      <MaterialCommunityIcons
+        name={icon}
+        size={22}
+        color={isDark ? 'rgba(255,255,255,0.7)' : '#0A1B47'}
+        style={styles.emptyIcon}
+      />
+      <ThemedText
+        type="label-small"
+        lightColor={isDark ? 'rgba(255,255,255,0.7)' : '#0A1B47'}
+      >
+        {message}
+      </ThemedText>
+    </View>
+  );
+};
 
-const SpotsSkeleton = () => (
-  <View style={[styles.horizontalList, { flexDirection: 'row' }]}>
-    {Array.from({ length: 3 }).map((_, index) => (
-      <View key={`spot-skeleton-${index}`} style={styles.spotSkeleton} />
-    ))}
-  </View>
-);
+const SpotsSkeleton = () => {
+  const scheme = useColorScheme() ?? 'light';
+  const placeholderColor = scheme === 'dark'
+    ? 'rgba(255,255,255,0.08)'
+    : 'rgba(10,27,71,0.08)';
+  return (
+    <View style={[styles.horizontalList, { flexDirection: 'row' }]}>
+      {Array.from({ length: 3 }).map((_, index) => (
+        <View
+          key={`spot-skeleton-${index}`}
+          style={[styles.spotSkeleton, { backgroundColor: placeholderColor }]}
+        />
+      ))}
+    </View>
+  );
+};
 
-const BusinessSkeleton = () => (
-  <View style={[styles.horizontalList, { flexDirection: 'row' }]}>
-    {Array.from({ length: 3 }).map((_, index) => (
-      <View key={`business-skeleton-${index}`} style={styles.businessSkeleton} />
-    ))}
-  </View>
-);
+const BusinessSkeleton = () => {
+  const scheme = useColorScheme() ?? 'light';
+  const placeholderColor = scheme === 'dark'
+    ? 'rgba(255,255,255,0.08)'
+    : 'rgba(10,27,71,0.08)';
+  return (
+    <View style={[styles.horizontalList, { flexDirection: 'row' }]}>
+      {Array.from({ length: 3 }).map((_, index) => (
+        <View
+          key={`business-skeleton-${index}`}
+          style={[styles.businessSkeleton, { backgroundColor: placeholderColor }]}
+        />
+      ))}
+    </View>
+  );
+};
 
-const EventSkeleton = () => (
-  <>
-    {Array.from({ length: 3 }).map((_, index) => (
-      <View key={`event-skeleton-${index}`} style={styles.eventSkeleton} />
-    ))}
-  </>
-);
+const EventSkeleton = () => {
+  const scheme = useColorScheme() ?? 'light';
+  const placeholderColor = scheme === 'dark'
+    ? 'rgba(255,255,255,0.08)'
+    : 'rgba(10,27,71,0.08)';
+  return (
+    <>
+      {Array.from({ length: 3 }).map((_, index) => (
+        <View
+          key={`event-skeleton-${index}`}
+          style={[styles.eventSkeleton, { backgroundColor: placeholderColor }]}
+        />
+      ))}
+    </>
+  );
+};
 
-const NewsSkeleton = () => (
-  <>
-    {Array.from({ length: 2 }).map((_, index) => (
-      <View key={`news-skeleton-${index}`} style={styles.newsSkeleton} />
-    ))}
-  </>
-);
+const NewsSkeleton = () => {
+  const scheme = useColorScheme() ?? 'light';
+  const placeholderColor = scheme === 'dark'
+    ? 'rgba(255,255,255,0.08)'
+    : 'rgba(10,27,71,0.08)';
+  return (
+    <>
+      {Array.from({ length: 2 }).map((_, index) => (
+        <View
+          key={`news-skeleton-${index}`}
+          style={[styles.newsSkeleton, { backgroundColor: placeholderColor }]}
+        />
+      ))}
+    </>
+  );
+};
 
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: '#05050A',
   },
   heroSpacer: {
     minHeight: HERO_HEIGHT + HEADER_BASE_HEIGHT * 0.05,
@@ -693,36 +846,9 @@ const styles = StyleSheet.create({
   ctaPrimary: {
     backgroundColor: 'rgba(255,255,255,0.2)',
   },
-  quickLinksCard: {
-    backgroundColor: '#151426',
-    borderRadius: 24,
-    padding: 20,
-    gap: 8,
-  },
-  quickLinkDivider: {
-    height: StyleSheet.hairlineWidth,
-    backgroundColor: 'rgba(255,255,255,0.08)',
-    marginVertical: 16,
-  },
-  quickLinkRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 12,
-    gap: 14,
-  },
-  quickLinkIconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 16,
-    backgroundColor: 'rgba(248,107,79,0.18)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  quickLinkContent: {
-    flex: 1,
-  },
   horizontalList: {
-    paddingRight: 8,
+    paddingRight: 0,
+    paddingLeft: 0,
   },
   spotSkeleton: {
     width: 300,

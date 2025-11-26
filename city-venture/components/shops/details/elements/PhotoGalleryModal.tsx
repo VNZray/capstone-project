@@ -1,5 +1,17 @@
-import React, { useMemo, useState } from 'react';
-import { Dimensions, Image, Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ShopColors } from '@/constants/ShopColors';
+import { Ionicons } from '@expo/vector-icons';
+import React, { useEffect, useRef, useState } from 'react';
+import {
+  Dimensions,
+  Image,
+  Modal,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+  StatusBar,
+} from 'react-native';
 
 interface PhotoGalleryModalProps {
   visible: boolean;
@@ -8,7 +20,7 @@ interface PhotoGalleryModalProps {
   onClose: () => void;
 }
 
-const { width: screenWidth } = Dimensions.get('window');
+const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
 const PhotoGalleryModal: React.FC<PhotoGalleryModalProps> = ({
   visible,
@@ -16,101 +28,119 @@ const PhotoGalleryModal: React.FC<PhotoGalleryModalProps> = ({
   initialIndex = 0,
   onClose,
 }) => {
-  const clampedIndex = Math.min(Math.max(initialIndex, 0), Math.max(images.length - 1, 0));
-  const [activeIndex, setActiveIndex] = useState(clampedIndex);
+  const [activeIndex, setActiveIndex] = useState(initialIndex);
+  const scrollViewRef = useRef<ScrollView>(null);
 
-  const activeImage = useMemo(() => images[activeIndex], [activeIndex, images]);
+  // Reset active index when modal opens
+  useEffect(() => {
+    if (visible) {
+      setActiveIndex(initialIndex);
+      // Use a slight timeout to ensure layout is ready before scrolling
+      setTimeout(() => {
+        scrollViewRef.current?.scrollTo({
+          x: initialIndex * screenWidth,
+          animated: false,
+        });
+      }, 50);
+    }
+  }, [visible, initialIndex]);
 
-  const goNext = () => {
-    setActiveIndex((prev) => (prev + 1) % images.length);
-  };
-
-  const goPrevious = () => {
-    setActiveIndex((prev) => (prev - 1 + images.length) % images.length);
+  const handleScroll = (event: any) => {
+    const contentOffsetX = event.nativeEvent.contentOffset.x;
+    const index = Math.round(contentOffsetX / screenWidth);
+    setActiveIndex(index);
   };
 
   if (!images.length) return null;
 
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
-      <View style={styles.backdrop}>
-        <TouchableOpacity style={styles.closeButton} onPress={onClose}>
-          <Text style={styles.closeText}>Close</Text>
+    <Modal 
+      visible={visible} 
+      transparent 
+      animationType="fade" 
+      onRequestClose={onClose}
+      statusBarTranslucent
+    >
+      <View style={styles.container}>
+        <StatusBar barStyle="light-content" backgroundColor="rgba(0,0,0,0.95)" />
+        
+        <TouchableOpacity style={styles.closeButton} onPress={onClose} hitSlop={{top: 20, bottom: 20, left: 20, right: 20}}>
+          <Ionicons name="close" size={28} color="#FFFFFF" />
         </TouchableOpacity>
 
-        <View style={styles.imageWrapper}>
-          <Image source={{ uri: activeImage }} style={styles.image} resizeMode="contain" />
-        </View>
+        <ScrollView
+          ref={scrollViewRef}
+          horizontal
+          pagingEnabled
+          showsHorizontalScrollIndicator={false}
+          onMomentumScrollEnd={handleScroll}
+          contentContainerStyle={styles.scrollContent}
+        >
+          {images.map((img, index) => (
+            <View key={`${img}-${index}`} style={styles.imageContainer}>
+              <Image
+                source={{ uri: img }}
+                style={styles.image}
+                resizeMode="contain"
+              />
+            </View>
+          ))}
+        </ScrollView>
 
-        {images.length > 1 && (
-          <View style={styles.controls}>
-            <TouchableOpacity style={styles.navButton} onPress={goPrevious}>
-              <Text style={styles.navText}>{'<'}</Text>
-            </TouchableOpacity>
-            <Text style={styles.counter}>
-              {activeIndex + 1}/{images.length}
-            </Text>
-            <TouchableOpacity style={styles.navButton} onPress={goNext}>
-              <Text style={styles.navText}>{'>'}</Text>
-            </TouchableOpacity>
-          </View>
-        )}
+        <View style={styles.footer}>
+          <Text style={styles.counter}>
+            {activeIndex + 1} / {images.length}
+          </Text>
+        </View>
       </View>
     </Modal>
   );
 };
 
 const styles = StyleSheet.create({
-  backdrop: {
+  container: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.95)',
     justifyContent: 'center',
-    alignItems: 'center',
-    padding: 16,
   },
   closeButton: {
     position: 'absolute',
-    top: 40,
+    top: 50,
     right: 20,
+    zIndex: 10,
     padding: 8,
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    borderRadius: 20,
   },
-  closeText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontFamily: 'Poppins-SemiBold',
+  scrollContent: {
+    alignItems: 'center',
   },
-  imageWrapper: {
-    width: screenWidth - 40,
-    height: screenWidth - 40,
+  imageContainer: {
+    width: screenWidth,
+    height: screenHeight,
     justifyContent: 'center',
     alignItems: 'center',
   },
   image: {
-    width: '100%',
-    height: '100%',
+    width: screenWidth,
+    height: '80%',
   },
-  controls: {
-    flexDirection: 'row',
+  footer: {
+    position: 'absolute',
+    bottom: 40,
+    left: 0,
+    right: 0,
     alignItems: 'center',
-    marginTop: 16,
-  },
-  navButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#FFFFFF',
-    marginHorizontal: 12,
-  },
-  navText: {
-    color: '#FFFFFF',
-    fontSize: 18,
-    fontFamily: 'Poppins-Bold',
   },
   counter: {
     color: '#FFFFFF',
-    fontSize: 14,
+    fontSize: 16,
     fontFamily: 'Poppins-Medium',
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    paddingHorizontal: 16,
+    paddingVertical: 6,
+    borderRadius: 16,
+    overflow: 'hidden',
   },
 });
 

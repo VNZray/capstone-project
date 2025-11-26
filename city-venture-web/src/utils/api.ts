@@ -15,24 +15,11 @@ const api = axios.create({
   },
 });
 
-// Attach Authorization header from storage token if present (supports remember-me)
-api.interceptors.request.use((config) => {
-  try {
-    const token = localStorage.getItem('token') || sessionStorage.getItem('token');
-    if (token) {
-      (config.headers as any).Authorization = `Bearer ${token}`;
-    } else if ((config.headers as any).Authorization) {
-      // If another place already set Authorization, keep it
-    } else if ((axios.defaults.headers as any)?.common?.Authorization) {
-      (config.headers as any).Authorization = (axios.defaults.headers as any).common.Authorization;
-    } else {
-      console.warn('[apiService] No auth token found in storage for request', config.url);
-    }
-  } catch (e) {
-    console.error('[apiService] Interceptor error reading token', e);
-  }
-  return config;
-});
+// NOTE: This file uses a standalone axios instance for backward compatibility.
+// New code should use apiClient from @/src/services/apiClient which supports
+// the new authentication system with refresh tokens and HttpOnly cookies.
+// This interceptor is kept for legacy endpoints that haven't migrated yet.
+// TODO: Gradually migrate all endpoints to use apiClient and remove this file.
 
 // Define types for tourist spot images
 export interface TouristSpotImage {
@@ -389,6 +376,22 @@ class ApiService {
     } catch (err: any) {
       console.error('[apiService] Failed POST /tourism-staff/:id/reset-password', {
         id,
+        message: err?.message,
+        status: err?.response?.status,
+        data: err?.response?.data,
+      });
+      throw err;
+    }
+  }
+
+  // ===== BUSINESS MANAGEMENT =====
+  async getBusinesses(): Promise<any[]> {
+    try {
+      console.debug('[apiService] GET /business');
+      const response: AxiosResponse<ApiResponse<any[]>> = await api.get('/business');
+      return (response.data as any).data ?? (response.data as any);
+    } catch (err: any) {
+      console.error('[apiService] Failed GET /business', {
         message: err?.message,
         status: err?.response?.status,
         data: err?.response?.data,

@@ -6,6 +6,8 @@ import {
   ModalDialog,
   DialogTitle,
   DialogActions,
+  Breadcrumbs,
+  Link,
 } from "@mui/joy";
 import {
   Calendar,
@@ -29,6 +31,7 @@ import { useNavigate } from "react-router-dom";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { DateCalendar } from "@mui/x-date-pickers/DateCalendar";
+import * as RoomService from "@/src/services/RoomService";
 
 import NoDataFound from "@/src/components/NoDataFound";
 import Button from "@/src/components/Button";
@@ -48,6 +51,7 @@ const RoomPage = () => {
   const { setRoomId } = useRoom();
   const [rooms, setRooms] = useState<Room[]>([]);
   const [activeTab, setActiveTab] = useState("all");
+  const [roomDiscount, setRoomDiscount] = useState<number | null>(null);
 
   const tabs = [
     { id: "all", label: "All", icon: <ListChecks size={16} /> },
@@ -83,6 +87,12 @@ const RoomPage = () => {
       ? response.filter((room) => room.business_id === businessDetails.id)
       : [];
     setRooms(filtered);
+
+    // Fetch active room discount
+    const discount = await RoomService.getActiveRoomDiscount(
+      businessDetails.id
+    );
+    setRoomDiscount(discount);
   };
 
   useEffect(() => {
@@ -94,7 +104,9 @@ const RoomPage = () => {
   return (
     <PageContainer>
       {/* Room Management */}
+
       <Container gap="0" padding="0" elevation={3}>
+
         <Container
           direction="row"
           justify="space-between"
@@ -253,6 +265,7 @@ const RoomPage = () => {
                 roomNumber={room.room_number!}
                 type={room.room_type!}
                 price={room.room_price!}
+                discountPercentage={roomDiscount}
                 room_size={room.room_size!}
                 amenities={[]}
                 onUpdate={() => {

@@ -27,14 +27,29 @@ const ShopDetailReviewCard: React.FC<ShopDetailReviewCardProps> = ({
         )}
         <View>
           <Text style={styles.userName}>{review.userName}</Text>
-          <Text style={styles.reviewDate}>{review.date}</Text>
+          <View style={styles.metaRow}>
+            <View style={styles.ratingContainer}>
+               {[1, 2, 3, 4, 5].map((star) => (
+                <Ionicons
+                  key={star}
+                  name={star <= Math.round(review.rating) ? 'star' : 'star-outline'}
+                  size={10}
+                  color={ShopColors.warning}
+                />
+              ))}
+            </View>
+            <Text style={styles.separator}>•</Text>
+            <Text style={styles.reviewDate}>{review.date}</Text>
+          </View>
         </View>
       </View>
-
-      <View style={styles.ratingBadge}>
-        <Ionicons name="star" size={14} color={ShopColors.warning} />
-        <Text style={styles.ratingValue}>{review.rating.toFixed(1)}</Text>
-      </View>
+      
+      {review.isVerifiedPurchase && (
+        <View style={styles.verifiedBadge}>
+           <Ionicons name="checkmark-circle" size={12} color={ShopColors.accent} />
+           <Text style={styles.verifiedText}>Verified</Text>
+        </View>
+      )}
     </View>
 
     <Text style={styles.comment}>{review.comment}</Text>
@@ -54,24 +69,19 @@ const ShopDetailReviewCard: React.FC<ShopDetailReviewCardProps> = ({
         style={styles.helpfulButton}
         onPress={() => onHelpfulPress?.(review.id)}
       >
-        <Ionicons name="thumbs-up-outline" size={16} color={ShopColors.textSecondary} />
+        <Ionicons name="thumbs-up-outline" size={14} color={ShopColors.textSecondary} />
         <Text style={styles.helpfulText}>
           Helpful ({review.helpfulCount ?? 0})
         </Text>
       </TouchableOpacity>
-
-      {review.isVerifiedPurchase && (
-        <View style={styles.verifiedBadge}>
-          <Ionicons name="checkmark-circle" size={14} color={ShopColors.accent} />
-          <Text style={styles.verifiedText}>Verified Visit</Text>
-        </View>
-      )}
     </View>
 
     {review.response && (
       <View style={styles.responseContainer}>
-        <Text style={styles.responseLabel}>Owner Response</Text>
-        <Text style={styles.responseDate}>{review.response.date}</Text>
+        <View style={styles.responseHeader}>
+          <Text style={styles.responseLabel}>Owner Response</Text>
+          <Text style={styles.responseDate}>{review.response.date}</Text>
+        </View>
         <Text style={styles.responseMessage}>{review.response.message}</Text>
       </View>
     )}
@@ -80,16 +90,20 @@ const ShopDetailReviewCard: React.FC<ShopDetailReviewCardProps> = ({
 
 const styles = StyleSheet.create({
   card: {
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: ShopColors.border,
+    borderRadius: 20,
     backgroundColor: '#FFFFFF',
-    padding: 16,
+    padding: 20,
     marginBottom: 16,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    elevation: 1,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    alignItems: 'flex-start',
     marginBottom: 12,
   },
   userInfo: {
@@ -97,51 +111,65 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   avatar: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    marginRight: 10,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    marginRight: 12,
   },
   avatarPlaceholder: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: ShopColors.background,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#F0F7FF',
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 10,
+    marginRight: 12,
   },
   avatarInitial: {
-    fontSize: 18,
+    fontSize: 16,
     fontFamily: 'Poppins-Bold',
-    color: ShopColors.textPrimary,
+    color: ShopColors.accent,
   },
   userName: {
-    fontSize: 16,
+    fontSize: 15,
     fontFamily: 'Poppins-SemiBold',
     color: ShopColors.textPrimary,
+  },
+  metaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 2,
+  },
+  ratingContainer: {
+    flexDirection: 'row',
+    gap: 1,
+  },
+  separator: {
+    marginHorizontal: 6,
+    color: ShopColors.disabled,
+    fontSize: 12,
   },
   reviewDate: {
     fontSize: 12,
     fontFamily: 'Poppins-Regular',
     color: ShopColors.textSecondary,
   },
-  ratingBadge: {
+  verifiedBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 10,
+    backgroundColor: '#ECFDF5',
+    borderRadius: 10,
+    paddingHorizontal: 8,
     paddingVertical: 4,
-    borderRadius: 12,
-    backgroundColor: ShopColors.background,
+    gap: 4,
   },
-  ratingValue: {
-    marginLeft: 4,
-    fontSize: 14,
-    fontFamily: 'Poppins-Bold',
-    color: ShopColors.textPrimary,
+  verifiedText: {
+    fontSize: 10,
+    fontFamily: 'Poppins-SemiBold',
+    color: ShopColors.accent,
   },
   comment: {
-    fontSize: 15,
+    fontSize: 14,
     fontFamily: 'Poppins-Regular',
     color: ShopColors.textPrimary,
     lineHeight: 22,
@@ -154,60 +182,49 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   reviewImage: {
-    width: 90,
-    height: 90,
+    width: 80,
+    height: 80,
     borderRadius: 12,
     margin: 4,
   },
   footer: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
   },
   helpfulButton: {
     flexDirection: 'row',
     alignItems: 'center',
+    paddingVertical: 4,
   },
   helpfulText: {
     marginLeft: 6,
-    fontSize: 14,
+    fontSize: 13,
     fontFamily: 'Poppins-Medium',
     color: ShopColors.textSecondary,
   },
-  verifiedBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: ShopColors.highlight,
-    borderRadius: 12,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-  },
-  verifiedText: {
-    marginLeft: 4,
-    fontSize: 12,
-    fontFamily: 'Poppins-SemiBold',
-    color: ShopColors.accent,
-  },
   responseContainer: {
     marginTop: 16,
-    padding: 12,
+    padding: 16,
     borderRadius: 12,
-    backgroundColor: ShopColors.background,
+    backgroundColor: '#F8F9FA',
+  },
+  responseHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 8,
   },
   responseLabel: {
     fontSize: 12,
     fontFamily: 'Poppins-SemiBold',
     color: ShopColors.textPrimary,
-    marginBottom: 4,
   },
   responseDate: {
-    fontSize: 10,
+    fontSize: 11,
     fontFamily: 'Poppins-Regular',
     color: ShopColors.textSecondary,
-    marginBottom: 8,
   },
   responseMessage: {
-    fontSize: 14,
+    fontSize: 13,
     fontFamily: 'Poppins-Regular',
     color: ShopColors.textSecondary,
     lineHeight: 20,

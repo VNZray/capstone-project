@@ -26,6 +26,7 @@ import { formatErrorMessage } from '@/utils/networkHandler';
 import debugLogger from '@/utils/debugLogger';
 
 const LoginPage = () => {
+  console.log('[LoginPage] Rendering');
   const [email, setEmail] = useState('tourist@gmail.com');
   const [password, setPassword] = useState('tourist123');
   const [showPassword, setShowPassword] = useState(false);
@@ -98,8 +99,10 @@ const LoginPage = () => {
     }
   };
 
+  console.log('[LoginPage] About to render JSX');
+
   return (
-    <SafeAreaView>
+    <SafeAreaView style={{ flex: 1 }}>
       <StatusBar />
       <PageContainer padding={0}>
         <KeyboardAvoidingView

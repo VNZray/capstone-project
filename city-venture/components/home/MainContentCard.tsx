@@ -1,5 +1,6 @@
 import React, { ReactNode } from 'react';
-import { StyleProp, StyleSheet, View, ViewStyle } from 'react-native';
+import { StyleProp, StyleSheet, View, ViewStyle, useColorScheme } from 'react-native';
+import { card } from '@/constants/color';
 
 type MainContentCardProps = {
   children: ReactNode;
@@ -7,8 +8,21 @@ type MainContentCardProps = {
 };
 
 const MainContentCard: React.FC<MainContentCardProps> = ({ children, style }) => {
+  const colorScheme = useColorScheme() ?? 'light';
+  const surface = colorScheme === 'dark' ? card.dark : card.light;
+
   return (
-    <View style={[styles.container, style]}>
+    <View
+      style={[
+        styles.container,
+        {
+          backgroundColor: surface,
+          borderTopLeftRadius: 32,
+          borderTopRightRadius: 32,
+        },
+        style,
+      ]}
+    >
       {children}
     </View>
   );
@@ -16,9 +30,6 @@ const MainContentCard: React.FC<MainContentCardProps> = ({ children, style }) =>
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#0F0E1F',
-    borderTopLeftRadius: 32,
-    borderTopRightRadius: 32,
     paddingHorizontal: 24,
     paddingTop: 28,
     paddingBottom: 32,

@@ -7,7 +7,6 @@ import {
   Calendar,
   Store,
   MapPin,
-  Briefcase,
   BarChart,
   User,
   ChevronDown,
@@ -15,6 +14,8 @@ import {
   LogOut,
   X,
   Users,
+  BriefcaseBusiness,
+  Settings,
 } from "lucide-react";
 import "@/src/components/Admin/Sidebar.css";
 import logo from "@/src/assets/images/light-logo.png";
@@ -91,7 +92,10 @@ export default function Sidebar({
             />
           )}
           {/* Dropdown for Services */}
-          <DropdownNavItem label="Services" icon={<Briefcase size={24} />}>
+          <DropdownNavItem
+            label="Services"
+            icon={<BriefcaseBusiness color="white" size={24} />}
+          >
             <NavItem
               to="/tourism/services/tourist-spot"
               label="Tourist Spot"
@@ -135,6 +139,12 @@ export default function Sidebar({
             to="/tourism/profile"
             label="Profile"
             icon={<User size={24} />}
+            onClick={onClose}
+          />
+          <NavItem
+            to="/tourism/settings"
+            label="Settings"
+            icon={<Settings size={24} />}
             onClick={onClose}
           />
         </div>
@@ -202,7 +212,11 @@ function DropdownNavItem({
         <div className="nav-label">
           <Typography.Body size="sm">{label}</Typography.Body>
         </div>
-        {open ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+        {open ? (
+          <ChevronDown color="white" size={24} />
+        ) : (
+          <ChevronRight color="white" size={24} />
+        )}
       </button>
 
       {open && <div className="dropdown-children">{children}</div>}
