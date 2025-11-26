@@ -20,6 +20,7 @@ import { useAuth } from '@/context/AuthContext';
 import { getUserOrders } from '@/services/OrderService';
 import type { Order, OrderStatus } from '@/types/Order';
 import { Ionicons } from '@expo/vector-icons';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 
 // See spec.md §5 - Status badge colors
 const getStatusColor = (status: OrderStatus): string => {
@@ -41,6 +42,12 @@ const getStatusColor = (status: OrderStatus): string => {
   }
 };
 
+const getStatusLabel = (status: OrderStatus): string => {
+  return status.replace(/_/g, ' ');
+};
+
+type TabType = 'active' | 'completed' | 'cancelled';
+
 const MyOrdersScreen = () => {
   const scheme = useColorScheme();
   const isDark = scheme === 'dark';
@@ -52,6 +59,7 @@ const MyOrdersScreen = () => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<TabType>('active');
 
   const palette = {
     bg: isDark ? '#0D1B2A' : '#F8F9FA',
@@ -59,37 +67,41 @@ const MyOrdersScreen = () => {
     text: isDark ? '#ECEDEE' : '#0D1B2A',
     subText: isDark ? '#9BA1A6' : '#6B7280',
     border: isDark ? '#2A2F36' : '#E5E8EC',
+    primary: colors.primary,
   };
 
-  const loadOrders = useCallback(async (isRefresh = false) => {
-    if (!user?.id) {
-      setLoading(false);
-      setError('Please log in to view orders');
-      return;
-    }
-
-    try {
-      setError(null);
-      const fetchedOrders = await getUserOrders(user.id);
-      
-      // Sort by created_at DESC
-      const sortedOrders = fetchedOrders.sort(
-        (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-      );
-      
-      setOrders(sortedOrders);
-      console.log('[MyOrders] Loaded orders:', sortedOrders.length);
-    } catch (error: any) {
-      console.error('[MyOrders] Load failed:', error);
-      setError(error.message || 'Failed to load orders');
-    } finally {
-      if (isRefresh) {
-        setRefreshing(false);
-      } else {
+  const loadOrders = useCallback(
+    async (isRefresh = false) => {
+      if (!user?.id) {
         setLoading(false);
+        setError('Please log in to view orders');
+        return;
       }
-    }
-  }, [user?.id]);
+
+      try {
+        setError(null);
+        const fetchedOrders = await getUserOrders(user.id);
+
+        // Sort by created_at DESC
+        const sortedOrders = fetchedOrders.sort(
+          (a, b) =>
+            new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        );
+
+        setOrders(sortedOrders);
+      } catch (error: any) {
+        console.error('[MyOrders] Load failed:', error);
+        setError(error.message || 'Failed to load orders');
+      } finally {
+        if (isRefresh) {
+          setRefreshing(false);
+        } else {
+          setLoading(false);
+        }
+      }
+    },
+    [user?.id]
+  );
 
   useEffect(() => {
     loadOrders();
@@ -107,6 +119,52 @@ const MyOrdersScreen = () => {
     } as never);
   };
 
+  const filterOrders = (tab: TabType) => {
+    return orders.filter((order) => {
+      const status = order.status;
+      if (tab === 'active') {
+        return [
+          'PENDING',
+          'ACCEPTED',
+          'PREPARING',
+          'READY_FOR_PICKUP',
+        ].includes(status);
+      } else if (tab === 'completed') {
+        return ['PICKED_UP', 'COMPLETED'].includes(status);
+      } else {
+        return [
+          'CANCELLED_BY_USER',
+          'CANCELLED_BY_BUSINESS',
+          'FAILED_PAYMENT',
+        ].includes(status);
+      }
+    });
+  };
+
+  const filteredOrders = filterOrders(activeTab);
+
+  const renderTab = (tab: TabType, label: string) => (
+    <Pressable
+      style={[
+        styles.tab,
+        activeTab === tab && {
+          borderBottomColor: colors.primary,
+          borderBottomWidth: 2,
+        },
+      ]}
+      onPress={() => setActiveTab(tab)}
+    >
+      <Text
+        style={[
+          { fontSize: body, fontWeight: '600' },
+          { color: activeTab === tab ? colors.primary : palette.subText },
+        ]}
+      >
+        {label}
+      </Text>
+    </Pressable>
+  );
+
   if (loading) {
     return (
       <>
@@ -115,10 +173,13 @@ const MyOrdersScreen = () => {
             title: 'My Orders',
             headerStyle: { backgroundColor: palette.card },
             headerTintColor: palette.text,
+            headerShadowVisible: false,
           }}
         />
         <PageContainer>
-          <View style={[styles.centerContainer, { backgroundColor: palette.bg }]}>
+          <View
+            style={[styles.centerContainer, { backgroundColor: palette.bg }]}
+          >
             <ActivityIndicator size="large" color={colors.primary} />
           </View>
         </PageContainer>
@@ -133,37 +194,127 @@ const MyOrdersScreen = () => {
           title: 'My Orders',
           headerStyle: { backgroundColor: palette.card },
           headerTintColor: palette.text,
+          headerShadowVisible: false,
         }}
       />
       <PageContainer>
         <View style={[styles.container, { backgroundColor: palette.bg }]}>
+          {/* Tabs */}
+          <View
+            style={[
+              styles.tabsContainer,
+              {
+                backgroundColor: palette.card,
+                borderBottomColor: palette.border,
+              },
+            ]}
+          >
+            {renderTab('active', 'Active')}
+            {renderTab('completed', 'Completed')}
+            {renderTab('cancelled', 'Cancelled')}
+          </View>
+
           {error ? (
             <View style={styles.centerContainer}>
-              <Ionicons name="alert-circle-outline" size={64} color={colors.error} />
-              <Text style={[{ fontSize: h4 }, { color: palette.text, marginTop: 16, textAlign: 'center' }]}>
+              <Ionicons
+                name="alert-circle-outline"
+                size={64}
+                color={colors.error}
+              />
+              <Text
+                style={[
+                  { fontSize: h4 },
+                  { color: palette.text, marginTop: 16, textAlign: 'center' },
+                ]}
+              >
                 {error}
               </Text>
               <Pressable
-                style={[styles.retryButton, { backgroundColor: colors.primary }]}
+                style={[
+                  styles.retryButton,
+                  { backgroundColor: colors.primary },
+                ]}
                 onPress={() => loadOrders()}
               >
-                <Text style={[{ fontSize: body, fontWeight: '600' }, { color: '#FFF' }]}>Retry</Text>
+                <Text
+                  style={[
+                    { fontSize: body, fontWeight: '600' },
+                    { color: '#FFF' },
+                  ]}
+                >
+                  Retry
+                </Text>
               </Pressable>
             </View>
-          ) : orders.length === 0 ? (
+          ) : filteredOrders.length === 0 ? (
             <View style={styles.centerContainer}>
-              <Ionicons name="receipt-outline" size={80} color={palette.subText} />
-              <Text style={[{ fontSize: h4 }, { color: palette.text, marginTop: 16 }]}>
-                No orders yet
+              <View
+                style={[
+                  styles.emptyIconContainer,
+                  { backgroundColor: isDark ? '#1C2833' : '#F3F4F6' },
+                ]}
+              >
+                <Ionicons
+                  name={
+                    activeTab === 'active'
+                      ? 'fast-food-outline'
+                      : activeTab === 'completed'
+                      ? 'receipt-outline'
+                      : 'close-circle-outline'
+                  }
+                  size={64}
+                  color={palette.subText}
+                />
+              </View>
+              <Text
+                style={[
+                  { fontSize: h4 },
+                  { color: palette.text, marginTop: 24 },
+                ]}
+              >
+                No {activeTab} orders
               </Text>
-              <Text style={[{ fontSize: body }, { color: palette.subText, marginTop: 8, textAlign: 'center' }]}>
-                Your orders will appear here once you place them
+              <Text
+                style={[
+                  { fontSize: body },
+                  {
+                    color: palette.subText,
+                    marginTop: 8,
+                    textAlign: 'center',
+                    maxWidth: 250,
+                  },
+                ]}
+              >
+                {activeTab === 'active'
+                  ? "You don't have any active orders right now."
+                  : activeTab === 'completed'
+                  ? 'Your past orders will show up here.'
+                  : 'Cancelled orders will appear here.'}
               </Text>
+              {activeTab === 'active' && (
+                <Pressable
+                  style={[
+                    styles.retryButton,
+                    { backgroundColor: colors.primary, marginTop: 24 },
+                  ]}
+                  onPress={() => router.push('/(tabs)/(home)' as never)}
+                >
+                  <Text
+                    style={[
+                      { fontSize: body, fontWeight: '600' },
+                      { color: '#FFF' },
+                    ]}
+                  >
+                    Browse Food
+                  </Text>
+                </Pressable>
+              )}
             </View>
           ) : (
             <ScrollView
               style={styles.scrollView}
               showsVerticalScrollIndicator={false}
+              contentContainerStyle={{ paddingBottom: 20 }}
               refreshControl={
                 <RefreshControl
                   refreshing={refreshing}
@@ -172,74 +323,203 @@ const MyOrdersScreen = () => {
                 />
               }
             >
-              {orders.map((order) => (
-                <Pressable
+              {filteredOrders.map((order, index) => (
+                <Animated.View
                   key={order.id}
-                  style={[styles.orderCard, { backgroundColor: palette.card, borderColor: palette.border }]}
-                  onPress={() => handleOrderPress(order.id)}
+                  entering={FadeInDown.delay(index * 100).springify()}
                 >
-                  {/* Order Header */}
-                  <View style={styles.orderHeader}>
-                    <View style={{ flex: 1 }}>
-                      <Text style={[{ fontSize: h4 }, { color: palette.text, fontWeight: '600' }]}>
-                        {order.order_number}
-                      </Text>
-                      {order.business_name && (
-                        <Text style={[{ fontSize: bodySmall }, { color: palette.subText, marginTop: 2 }]}>
-                          {order.business_name}
-                        </Text>
-                      )}
-                    </View>
-                    <View style={[styles.statusBadge, { backgroundColor: `${getStatusColor(order.status)}20` }]}>
-                      <Text style={[{ fontSize: bodySmall }, { color: getStatusColor(order.status) }]}>
-                        {order.status ? order.status.replace(/_/g, ' ') : 'Unknown'}
-                      </Text>
-                    </View>
-                  </View>
-
-                  {/* Order Info */}
-                  <View style={styles.orderInfo}>
-                    <View style={styles.infoRow}>
-                      <Ionicons name="calendar-outline" size={16} color={palette.subText} />
-                      <Text style={[{ fontSize: bodySmall }, { color: palette.subText, marginLeft: 8 }]}>
-                        {new Date(order.created_at).toLocaleDateString()} at{' '}
-                        {new Date(order.created_at).toLocaleTimeString([], { 
-                          hour: '2-digit', 
-                          minute: '2-digit' 
-                        })}
-                      </Text>
-                    </View>
-
-                    <View style={styles.infoRow}>
-                      <Ionicons name="cash-outline" size={16} color={palette.subText} />
-                      <Text style={[{ fontSize: bodySmall }, { color: palette.subText, marginLeft: 8 }]}>
-                        {order.payment_method ? order.payment_method.replace(/_/g, ' ').toUpperCase() : 'N/A'} • {order.payment_status || 'Unknown'}
-                      </Text>
-                    </View>
-
-                    {order.items && order.items.length > 0 && (
-                      <View style={styles.infoRow}>
-                        <Ionicons name="list-outline" size={16} color={palette.subText} />
-                        <Text style={[{ fontSize: bodySmall }, { color: palette.subText, marginLeft: 8 }]}>
-                          {order.items.length} item{order.items.length > 1 ? 's' : ''}
+                  <Pressable
+                    style={[
+                      styles.orderCard,
+                      {
+                        backgroundColor: palette.card,
+                        borderColor: palette.border,
+                      },
+                    ]}
+                    onPress={() => handleOrderPress(order.id)}
+                  >
+                    <View style={styles.cardHeader}>
+                      <View style={styles.businessInfo}>
+                        <View
+                          style={[
+                            styles.businessIcon,
+                            { backgroundColor: isDark ? '#2A2F36' : '#F3F4F6' },
+                          ]}
+                        >
+                          <Ionicons
+                            name="storefront"
+                            size={20}
+                            color={palette.subText}
+                          />
+                        </View>
+                        <View style={{ flex: 1 }}>
+                          <Text
+                            style={[
+                              {
+                                fontSize: body,
+                                fontWeight: '600',
+                                color: palette.text,
+                              },
+                            ]}
+                            numberOfLines={1}
+                          >
+                            {order.business_name || 'Business Name'}
+                          </Text>
+                          <Text
+                            style={[
+                              { fontSize: bodySmall, color: palette.subText },
+                            ]}
+                          >
+                            {new Date(order.created_at).toLocaleDateString()} •{' '}
+                            {new Date(order.created_at).toLocaleTimeString([], {
+                              hour: '2-digit',
+                              minute: '2-digit',
+                            })}
+                          </Text>
+                        </View>
+                      </View>
+                      <View
+                        style={[
+                          styles.statusBadge,
+                          {
+                            backgroundColor: `${getStatusColor(
+                              order.status
+                            )}15`,
+                          },
+                        ]}
+                      >
+                        <Text
+                          style={[
+                            {
+                              fontSize: bodySmall,
+                              fontWeight: '600',
+                              color: getStatusColor(order.status),
+                            },
+                          ]}
+                        >
+                          {getStatusLabel(order.status)}
                         </Text>
                       </View>
-                    )}
-                  </View>
+                    </View>
 
-                  {/* Order Total */}
-                  <View style={styles.orderFooter}>
-                    <Text style={[{ fontSize: body }, { color: palette.subText }]}>Total</Text>
-                    <Text style={[{ fontSize: h4 }, { color: colors.primary }]}>>
-                      ₱{(order.total_amount || 0).toFixed(2)}
-                    </Text>
-                  </View>
+                    <View
+                      style={[
+                        styles.divider,
+                        { backgroundColor: palette.border },
+                      ]}
+                    />
 
-                  {/* View Details Arrow */}
-                  <View style={styles.arrowContainer}>
-                    <Ionicons name="chevron-forward" size={20} color={palette.subText} />
-                  </View>
-                </Pressable>
+                    <View style={styles.cardContent}>
+                      <View style={styles.itemsSummary}>
+                        <Text
+                          style={[{ fontSize: body, color: palette.text }]}
+                          numberOfLines={1}
+                        >
+                          {order.items
+                            ?.map(
+                              (item) => `${item.quantity}x ${item.product_name}`
+                            )
+                            .join(', ')}
+                        </Text>
+                        <Text
+                          style={[
+                            {
+                              fontSize: bodySmall,
+                              color: palette.subText,
+                              marginTop: 4,
+                            },
+                          ]}
+                        >
+                          {order.items?.length || 0} items
+                        </Text>
+                      </View>
+                      <View style={styles.priceContainer}>
+                        <Text
+                          style={[
+                            {
+                              fontSize: body,
+                              fontWeight: '700',
+                              color: palette.text,
+                            },
+                          ]}
+                        >
+                          ₱{(order.total_amount || 0).toFixed(2)}
+                        </Text>
+                      </View>
+                    </View>
+
+                    <View style={styles.cardActions}>
+                      <Pressable
+                        style={[
+                          styles.actionButton,
+                          { borderColor: palette.border },
+                        ]}
+                        onPress={() => handleOrderPress(order.id)}
+                      >
+                        <Text
+                          style={[
+                            {
+                              fontSize: bodySmall,
+                              fontWeight: '600',
+                              color: palette.text,
+                            },
+                          ]}
+                        >
+                          View Details
+                        </Text>
+                      </Pressable>
+                      {activeTab === 'active' && (
+                        <Pressable
+                          style={[
+                            styles.actionButton,
+                            {
+                              backgroundColor: colors.primary,
+                              borderColor: colors.primary,
+                            },
+                          ]}
+                          onPress={() => handleOrderPress(order.id)}
+                        >
+                          <Text
+                            style={[
+                              {
+                                fontSize: bodySmall,
+                                fontWeight: '600',
+                                color: '#FFF',
+                              },
+                            ]}
+                          >
+                            Track Order
+                          </Text>
+                        </Pressable>
+                      )}
+                      {activeTab === 'completed' && (
+                        <Pressable
+                          style={[
+                            styles.actionButton,
+                            {
+                              backgroundColor: palette.text,
+                              borderColor: palette.text,
+                            },
+                          ]}
+                          // Reorder logic would go here
+                          onPress={() => {}}
+                        >
+                          <Text
+                            style={[
+                              {
+                                fontSize: bodySmall,
+                                fontWeight: '600',
+                                color: palette.bg,
+                              },
+                            ]}
+                          >
+                            Reorder
+                          </Text>
+                        </Pressable>
+                      )}
+                    </View>
+                  </Pressable>
+                </Animated.View>
               ))}
             </ScrollView>
           )}
@@ -259,55 +539,101 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 32,
   },
+  tabsContainer: {
+    flexDirection: 'row',
+    borderBottomWidth: 1,
+  },
+  tab: {
+    flex: 1,
+    paddingVertical: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   scrollView: {
     flex: 1,
+    padding: 16,
   },
   orderCard: {
-    margin: 16,
-    marginBottom: 0,
-    padding: 16,
-    borderRadius: 12,
+    marginBottom: 16,
+    borderRadius: 16,
     borderWidth: 1,
-    position: 'relative',
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
   },
-  orderHeader: {
+  cardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 12,
+    alignItems: 'center',
+    padding: 16,
+  },
+  businessInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    marginRight: 12,
+  },
+  businessIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
   },
   statusBadge: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 12,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
   },
-  orderInfo: {
-    marginBottom: 12,
+  divider: {
+    height: 1,
+    width: '100%',
   },
-  infoRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 6,
-  },
-  orderFooter: {
+  cardContent: {
+    padding: 16,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingTop: 12,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(0,0,0,0.1)',
   },
-  arrowContainer: {
-    position: 'absolute',
-    right: 16,
-    top: '50%',
-    marginTop: -10,
+  itemsSummary: {
+    flex: 1,
+    marginRight: 16,
+  },
+  priceContainer: {
+    alignItems: 'flex-end',
+  },
+  cardActions: {
+    flexDirection: 'row',
+    padding: 16,
+    paddingTop: 0,
+    gap: 12,
+    justifyContent: 'flex-end',
+  },
+  actionButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    borderWidth: 1,
+    minWidth: 100,
+    alignItems: 'center',
   },
   retryButton: {
     paddingVertical: 12,
     paddingHorizontal: 32,
-    borderRadius: 12,
+    borderRadius: 24,
     marginTop: 16,
+  },
+  emptyIconContainer: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 8,
   },
 });
 

@@ -1,4 +1,5 @@
-// See spec.md §4 - Order detail view with status timeline
+// See spec.md §4 - Tourist can track orders
+// See spec.md §5 - Order Status enums
 
 import React, { useState, useEffect, useCallback } from 'react';
 import {
@@ -6,9 +7,10 @@ import {
   Text,
   ScrollView,
   StyleSheet,
-  ActivityIndicator,
   Pressable,
+  ActivityIndicator,
   Alert,
+  Linking,
 } from 'react-native';
 import { useLocalSearchParams, Stack, router } from 'expo-router';
 import { useColorScheme } from '@/hooks/use-color-scheme';
@@ -19,7 +21,6 @@ import { getOrderById, cancelOrder } from '@/services/OrderService';
 import type { Order, OrderStatus } from '@/types/Order';
 import { Ionicons } from '@expo/vector-icons';
 
-// See spec.md §5 - Order State Machine transitions
 const ORDER_TIMELINE: OrderStatus[] = [
   'PENDING',
   'ACCEPTED',
@@ -28,23 +29,8 @@ const ORDER_TIMELINE: OrderStatus[] = [
   'PICKED_UP',
 ];
 
-const getStatusColor = (status: OrderStatus): string => {
-  switch (status) {
-    case 'PENDING':
-      return colors.warning;
-    case 'ACCEPTED':
-    case 'PREPARING':
-      return colors.info;
-    case 'READY_FOR_PICKUP':
-    case 'PICKED_UP':
-      return colors.success;
-    case 'CANCELLED_BY_USER':
-    case 'CANCELLED_BY_BUSINESS':
-    case 'FAILED_PAYMENT':
-      return colors.error;
-    default:
-      return colors.primary;
-  }
+const getStatusLabel = (status: OrderStatus): string => {
+  return status.replace(/_/g, ' ');
 };
 
 const OrderDetailScreen = () => {
@@ -52,7 +38,7 @@ const OrderDetailScreen = () => {
   const scheme = useColorScheme();
   const isDark = scheme === 'dark';
   const type = useTypography();
-  const { h4, h1, body, bodySmall } = type;
+  const { h4, body, bodySmall } = type;
 
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
@@ -65,306 +51,402 @@ const OrderDetailScreen = () => {
     text: isDark ? '#ECEDEE' : '#0D1B2A',
     subText: isDark ? '#9BA1A6' : '#6B7280',
     border: isDark ? '#2A2F36' : '#E5E8EC',
+    primary: colors.primary,
   };
 
-  const loadOrderDetails = useCallback(async () => {
+  const fetchOrder = useCallback(async () => {
     if (!orderId) return;
-
     try {
-      setError(null);
-      const orderData = await getOrderById(orderId);
-      setOrder(orderData);
-      console.log('[OrderDetail] Loaded order:', orderData);
-    } catch (error: any) {
-      console.error('[OrderDetail] Load failed:', error);
-      setError(error.message || 'Failed to load order details');
+      setLoading(true);
+      const data = await getOrderById(orderId);
+      setOrder(data);
+    } catch (err: any) {
+      console.error('[OrderDetail] Fetch error:', err);
+      setError(err.message || 'Failed to load order details');
     } finally {
       setLoading(false);
     }
   }, [orderId]);
 
   useEffect(() => {
-    loadOrderDetails();
-  }, [loadOrderDetails]);
+    fetchOrder();
+  }, [fetchOrder]);
 
   const handleCancelOrder = async () => {
     if (!order) return;
 
-    // Check if order can be cancelled (within grace period & PENDING)
-    if (order.status !== 'PENDING') {
-      Alert.alert(
-        'Cannot Cancel',
-        'This order cannot be cancelled. Please contact the business for assistance.'
+    Alert.alert('Cancel Order', 'Are you sure you want to cancel this order?', [
+      { text: 'No', style: 'cancel' },
+      {
+        text: 'Yes, Cancel',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            setCancelling(true);
+            await cancelOrder(order.id);
+            Alert.alert('Success', 'Order cancelled successfully');
+            fetchOrder();
+          } catch (err: any) {
+            Alert.alert('Error', err.message || 'Failed to cancel order');
+          } finally {
+            setCancelling(false);
+          }
+        },
+      },
+    ]);
+  };
+
+  const handleContactSupport = () => {
+    Linking.openURL('mailto:support@cityventure.com');
+  };
+
+  const renderTimeline = () => {
+    if (!order) return null;
+
+    const currentStatusIndex = ORDER_TIMELINE.indexOf(
+      order.status as OrderStatus
+    );
+    const isCancelled =
+      order.status.includes('CANCELLED') || order.status === 'FAILED_PAYMENT';
+
+    if (isCancelled) {
+      return (
+        <View
+          style={[
+            styles.cancelledBanner,
+            { backgroundColor: colors.error + '15', borderColor: colors.error },
+          ]}
+        >
+          <Ionicons name="alert-circle" size={24} color={colors.error} />
+          <Text
+            style={[
+              styles.cancelledText,
+              { color: colors.error, fontSize: body },
+            ]}
+          >
+            Order {getStatusLabel(order.status)}
+          </Text>
+        </View>
       );
-      return;
     }
 
-    Alert.alert(
-      'Cancel Order',
-      'Are you sure you want to cancel this order?',
-      [
-        { text: 'No', style: 'cancel' },
-        {
-          text: 'Yes, Cancel',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              setCancelling(true);
-              await cancelOrder(order.id);
-              
-              Alert.alert(
-                'Order Cancelled',
-                'Your order has been cancelled successfully.',
-                [
-                  {
-                    text: 'OK',
-                    onPress: () => router.back(),
-                  },
-                ]
-              );
-            } catch (error: any) {
-              console.error('[OrderDetail] Cancel failed:', error);
-              Alert.alert(
-                'Cancellation Failed',
-                error.response?.data?.message || error.message || 'Failed to cancel order'
-              );
-            } finally {
-              setCancelling(false);
-            }
-          },
-        },
-      ]
+    if (currentStatusIndex === -1) return null;
+
+    return (
+      <View style={styles.timelineContainer}>
+        <View style={styles.progressBarContainer}>
+          {ORDER_TIMELINE.map((status, index) => {
+            const isActive = index <= currentStatusIndex;
+            const isCurrent = index === currentStatusIndex;
+
+            let iconName: keyof typeof Ionicons.glyphMap = 'ellipse';
+            if (status === 'PENDING') iconName = 'time';
+            if (status === 'ACCEPTED') iconName = 'checkmark-circle';
+            if (status === 'PREPARING') iconName = 'restaurant';
+            if (status === 'READY_FOR_PICKUP') iconName = 'bag-handle';
+            if (status === 'PICKED_UP') iconName = 'home';
+
+            return (
+              <View key={status} style={styles.progressStep}>
+                <View
+                  style={[
+                    styles.progressIcon,
+                    {
+                      backgroundColor: isActive
+                        ? colors.primary
+                        : palette.border,
+                    },
+                    isCurrent && {
+                      transform: [{ scale: 1.2 }],
+                      borderWidth: 2,
+                      borderColor: palette.bg,
+                    },
+                  ]}
+                >
+                  <Ionicons
+                    name={iconName}
+                    size={14}
+                    color={isActive ? '#FFF' : palette.subText}
+                  />
+                </View>
+                {index < ORDER_TIMELINE.length - 1 && (
+                  <View
+                    style={[
+                      styles.progressLine,
+                      {
+                        backgroundColor:
+                          index < currentStatusIndex
+                            ? colors.primary
+                            : palette.border,
+                      },
+                    ]}
+                  />
+                )}
+                <Text
+                  style={[
+                    styles.progressLabel,
+                    {
+                      color: isActive ? palette.text : palette.subText,
+                      fontSize: 10,
+                      fontWeight: isActive ? '600' : '400',
+                    },
+                  ]}
+                >
+                  {index === currentStatusIndex ? getStatusLabel(status) : ''}
+                </Text>
+              </View>
+            );
+          })}
+        </View>
+      </View>
     );
   };
 
   if (loading) {
     return (
-      <>
-        <Stack.Screen options={{ title: 'Order Details' }} />
-        <PageContainer>
-          <View style={[styles.centerContainer, { backgroundColor: palette.bg }]}>
-            <ActivityIndicator size="large" color={colors.primary} />
-          </View>
-        </PageContainer>
-      </>
+      <PageContainer>
+        <Stack.Screen options={{ headerShown: false }} />
+        <View style={[styles.centerContainer, { backgroundColor: palette.bg }]}>
+          <ActivityIndicator size="large" color={colors.primary} />
+        </View>
+      </PageContainer>
     );
   }
 
   if (error || !order) {
     return (
-      <>
-        <Stack.Screen options={{ title: 'Order Details' }} />
-        <PageContainer>
-          <View style={[styles.centerContainer, { backgroundColor: palette.bg }]}>
-            <Ionicons name="alert-circle-outline" size={64} color={colors.error} />
-            <Text style={[{ fontSize: h4 }, { color: palette.text, marginTop: 16, textAlign: 'center' }]}>
-              {error || 'Order not found'}
-            </Text>
-          </View>
-        </PageContainer>
-      </>
+      <PageContainer>
+        <Stack.Screen options={{ headerShown: false }} />
+        <View style={[styles.centerContainer, { backgroundColor: palette.bg }]}>
+          <Ionicons
+            name="alert-circle-outline"
+            size={64}
+            color={colors.error}
+          />
+          <Text style={[{ fontSize: h4, color: palette.text, marginTop: 16 }]}>
+            {error || 'Order not found'}
+          </Text>
+          <Pressable
+            style={[
+              styles.backButton,
+              { backgroundColor: palette.card, borderColor: palette.border },
+            ]}
+            onPress={() => router.back()}
+          >
+            <Text style={{ color: palette.text }}>Go Back</Text>
+          </Pressable>
+        </View>
+      </PageContainer>
     );
   }
-
-  const currentStatusIndex = ORDER_TIMELINE.indexOf(order.status);
-  const isCancelled = order.status.startsWith('CANCELLED') || order.status === 'FAILED_PAYMENT';
 
   return (
     <>
       <Stack.Screen
         options={{
-          title: order.order_number,
+          title: `Order #${order.order_number}`,
           headerStyle: { backgroundColor: palette.card },
           headerTintColor: palette.text,
+          headerShadowVisible: false,
+          headerLeft: () => (
+            <Pressable
+              onPress={() => router.back()}
+              style={{ paddingRight: 16 }}
+            >
+              <Ionicons name="arrow-back" size={24} color={palette.text} />
+            </Pressable>
+          ),
         }}
       />
       <PageContainer>
         <ScrollView
           style={[styles.container, { backgroundColor: palette.bg }]}
+          contentContainerStyle={{ paddingBottom: 40 }}
           showsVerticalScrollIndicator={false}
         >
-          {/* Status Badge */}
-          <View style={[styles.statusSection, { backgroundColor: palette.card }]}>
-            <View style={[styles.statusBadge, { backgroundColor: `${getStatusColor(order.status)}20` }]}>
-              <Text style={[{ fontSize: h4 }, { color: getStatusColor(order.status) }]}>
-                {order.status.replace(/_/g, ' ')}
-              </Text>
-            </View>
-          </View>
-
-          {/* Arrival Code (if ready for pickup) */}
-          {order.status === 'READY_FOR_PICKUP' && (
-            <View style={[styles.section, { backgroundColor: palette.card }]}>
-              <Text style={[{ fontSize: body }, { color: palette.subText, textAlign: 'center', marginBottom: 12 }]}>
-                Your Arrival Code
-              </Text>
-              <View style={[styles.arrivalCodeBox, { backgroundColor: palette.bg, borderColor: colors.primary }]}>
-                <Text style={[{ fontSize: h1 }, { color: colors.primary, letterSpacing: 8 }]}>
-                  {order.arrival_code}
-                </Text>
-              </View>
-              <Text style={[{ fontSize: bodySmall }, { color: palette.subText, textAlign: 'center', marginTop: 8 }]}>
-                Show this code to staff when picking up
-              </Text>
-            </View>
-          )}
-
-          {/* Timeline (if not cancelled) */}
-          {!isCancelled && (
-            <View style={[styles.section, { backgroundColor: palette.card }]}>
-              <Text style={[{ fontSize: h4 }, { color: palette.text, marginBottom: 16 }]}>
-                Order Progress
-              </Text>
-              {ORDER_TIMELINE.map((status, index) => {
-                const isCompleted = index <= currentStatusIndex;
-                const isCurrent = index === currentStatusIndex;
-                
-                return (
-                  <View key={status} style={styles.timelineItem}>
-                    <View style={styles.timelineIndicator}>
-                      <View
-                        style={[
-                          styles.timelineDot,
-                          {
-                            backgroundColor: isCompleted ? colors.success : palette.border,
-                            borderColor: isCurrent ? colors.success : palette.border,
-                            borderWidth: isCurrent ? 3 : 0,
-                          },
-                        ]}
-                      />
-                      {index < ORDER_TIMELINE.length - 1 && (
-                        <View
-                          style={[
-                            styles.timelineLine,
-                            { backgroundColor: isCompleted ? colors.success : palette.border },
-                          ]}
-                        />
-                      )}
-                    </View>
-                    <Text
-                      style={[
-                        { fontSize: body },
-                        {
-                          color: isCompleted ? palette.text : palette.subText,
-                          fontWeight: isCurrent ? '600' : '400',
-                        },
-                      ]}
-                    >
-                      {status.replace(/_/g, ' ')}
-                    </Text>
-                  </View>
-                );
-              })}
-            </View>
-          )}
-
-          {/* Order Details */}
-          <View style={[styles.section, { backgroundColor: palette.card }]}>
-            <Text style={[{ fontSize: h4 }, { color: palette.text, marginBottom: 16 }]}>
-              Order Information
+          {/* Status & Timeline */}
+          <View
+            style={[
+              styles.section,
+              { backgroundColor: palette.card, marginTop: 16 },
+            ]}
+          >
+            <Text
+              style={[
+                styles.sectionTitle,
+                { fontSize: h4, color: palette.text },
+              ]}
+            >
+              Order Status
             </Text>
-            
-            <View style={styles.detailRow}>
-              <Text style={[{ fontSize: body }, { color: palette.subText }]}>Order Number</Text>
-              <Text style={[{ fontSize: body }, { color: palette.text }]}>{order.order_number}</Text>
-            </View>
-
-            <View style={styles.detailRow}>
-              <Text style={[{ fontSize: body }, { color: palette.subText }]}>Placed On</Text>
-              <Text style={[{ fontSize: body }, { color: palette.text }]}>
-                {new Date(order.created_at).toLocaleDateString()} at{' '}
-                {new Date(order.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-              </Text>
-            </View>
-
-            <View style={styles.detailRow}>
-              <Text style={[{ fontSize: body }, { color: palette.subText }]}>Pickup Time</Text>
-              <Text style={[{ fontSize: body }, { color: palette.text }]}>
-                {new Date(order.pickup_datetime).toLocaleString()}
-              </Text>
-            </View>
-
-            <View style={styles.detailRow}>
-              <Text style={[{ fontSize: body }, { color: palette.subText }]}>Payment Method</Text>
-              <Text style={[{ fontSize: body }, { color: palette.text }]}>
-                {order.payment_method.replace(/_/g, ' ').toUpperCase()}
-              </Text>
-            </View>
-
-            <View style={styles.detailRow}>
-              <Text style={[{ fontSize: body }, { color: palette.subText }]}>Payment Status</Text>
-              <Text style={[{ fontSize: body }, { color: getStatusColor(order.status) }]}>
-                {order.payment_status}
-              </Text>
-            </View>
-
-            {order.special_instructions && (
-              <View style={styles.detailRow}>
-                <Text style={[{ fontSize: body }, { color: palette.subText }]}>Special Instructions</Text>
-                <Text style={[{ fontSize: body }, { color: palette.text, flex: 1, textAlign: 'right' }]}>
-                  {order.special_instructions}
-                </Text>
-              </View>
-            )}
+            {renderTimeline()}
+            <Text
+              style={[
+                styles.estimatedTime,
+                { fontSize: bodySmall, color: palette.subText },
+              ]}
+            >
+              Placed on {new Date(order.created_at).toLocaleString()}
+            </Text>
           </View>
 
-          {/* Order Items */}
+          {/* Business Info */}
           <View style={[styles.section, { backgroundColor: palette.card }]}>
-            <Text style={[{ fontSize: h4 }, { color: palette.text, marginBottom: 16 }]}>
-              Items ({order.items?.length || 0})
+            <View style={styles.businessHeader}>
+              <View
+                style={[
+                  styles.businessIcon,
+                  { backgroundColor: isDark ? '#2A2F36' : '#F3F4F6' },
+                ]}
+              >
+                <Ionicons name="storefront" size={24} color={palette.subText} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text
+                  style={[
+                    { fontSize: body, fontWeight: '700', color: palette.text },
+                  ]}
+                >
+                  {order.business_name || 'Business Name'}
+                </Text>
+                <Text style={[{ fontSize: bodySmall, color: palette.subText }]}>
+                  View Store
+                </Text>
+              </View>
+              <Pressable
+                onPress={handleContactSupport}
+                style={[styles.iconButton, { backgroundColor: palette.bg }]}
+              >
+                <Ionicons
+                  name="chatbubble-ellipses-outline"
+                  size={20}
+                  color={colors.primary}
+                />
+              </Pressable>
+            </View>
+          </View>
+
+          {/* Items */}
+          <View style={[styles.section, { backgroundColor: palette.card }]}>
+            <Text
+              style={[
+                styles.sectionTitle,
+                { fontSize: h4, color: palette.text },
+              ]}
+            >
+              Your Items
             </Text>
             {order.items?.map((item, index) => (
-              <View key={index} style={styles.itemRow}>
-                <View style={{ flex: 1 }}>
-                  <Text style={[{ fontSize: body }, { color: palette.text }]}>
-                    {item.quantity}x {item.product_name || 'Product'}
+              <View
+                key={index}
+                style={[
+                  styles.itemRow,
+                  index < (order.items?.length || 0) - 1 && {
+                    borderBottomWidth: 1,
+                    borderBottomColor: palette.border,
+                  },
+                ]}
+              >
+                <View
+                  style={[styles.itemQuantity, { backgroundColor: palette.bg }]}
+                >
+                  <Text style={{ fontWeight: '600', color: palette.text }}>
+                    {item.quantity}x
                   </Text>
-                  {item.special_requests && (
-                    <Text style={[{ fontSize: bodySmall }, { color: palette.subText, marginTop: 2 }]}>
-                      Note: {item.special_requests}
-                    </Text>
-                  )}
                 </View>
-                <Text style={[{ fontSize: body }, { color: palette.text }]}>
-                  ₱{(item.total_price || 0).toFixed(2)}
+                <View style={styles.itemInfo}>
+                  <Text style={[{ fontSize: body, color: palette.text }]}>
+                    {item.product_name}
+                  </Text>
+                </View>
+                <Text
+                  style={[
+                    { fontSize: body, fontWeight: '600', color: palette.text },
+                  ]}
+                >
+                  ₱{item.total_price.toFixed(2)}
                 </Text>
               </View>
             ))}
           </View>
 
-          {/* Order Summary */}
+          {/* Payment Summary */}
           <View style={[styles.section, { backgroundColor: palette.card }]}>
+            <Text
+              style={[
+                styles.sectionTitle,
+                { fontSize: h4, color: palette.text },
+              ]}
+            >
+              Payment Summary
+            </Text>
             <View style={styles.summaryRow}>
-              <Text style={[{ fontSize: body }, { color: palette.subText }]}>Subtotal</Text>
-              <Text style={[{ fontSize: body }, { color: palette.text }]}>₱{(order.subtotal || 0).toFixed(2)}</Text>
+              <Text style={{ fontSize: body, color: palette.subText }}>
+                Subtotal
+              </Text>
+              <Text style={{ fontSize: body, color: palette.text }}>
+                ₱{(order.total_amount || 0).toFixed(2)}
+              </Text>
             </View>
             <View style={styles.summaryRow}>
-              <Text style={[{ fontSize: body }, { color: palette.subText }]}>Discount</Text>
-              <Text style={[{ fontSize: body }, { color: palette.text }]}>-₱{(order.discount_amount || 0).toFixed(2)}</Text>
+              <Text style={{ fontSize: body, color: palette.subText }}>
+                Delivery Fee
+              </Text>
+              <Text style={{ fontSize: body, color: palette.text }}>₱0.00</Text>
             </View>
+            <View
+              style={[styles.divider, { backgroundColor: palette.border }]}
+            />
             <View style={styles.summaryRow}>
-              <Text style={[{ fontSize: body }, { color: palette.subText }]}>Tax</Text>
-              <Text style={[{ fontSize: body }, { color: palette.text }]}>₱{(order.tax_amount || 0).toFixed(2)}</Text>
+              <Text
+                style={{ fontSize: h4, fontWeight: '700', color: palette.text }}
+              >
+                Total
+              </Text>
+              <Text
+                style={{
+                  fontSize: h4,
+                  fontWeight: '700',
+                  color: colors.primary,
+                }}
+              >
+                ₱{(order.total_amount || 0).toFixed(2)}
+              </Text>
             </View>
-            <View style={[styles.divider, { backgroundColor: palette.border }]} />
-            <View style={styles.summaryRow}>
-              <Text style={[{ fontSize: h4 }, { color: palette.text }]}>Total</Text>
-              <Text style={[{ fontSize: h4 }, { color: colors.primary }]}>₱{(order.total_amount || 0).toFixed(2)}</Text>
+            <View
+              style={[styles.paymentMethod, { backgroundColor: palette.bg }]}
+            >
+              <Ionicons name="card-outline" size={20} color={palette.subText} />
+              <Text style={{ marginLeft: 8, color: palette.subText }}>
+                Paid with {order.payment_method?.replace(/_/g, ' ') || 'Card'}
+              </Text>
             </View>
           </View>
 
-          {/* Cancel Button (if PENDING) */}
+          {/* Actions */}
           {order.status === 'PENDING' && (
             <Pressable
-              style={[styles.cancelButton, { backgroundColor: palette.card, borderColor: colors.error }]}
+              style={[styles.cancelButton, { borderColor: colors.error }]}
               onPress={handleCancelOrder}
               disabled={cancelling}
             >
-              <Text style={[{ fontSize: body, fontWeight: '600' }, { color: colors.error }]}>
-                {cancelling ? 'Cancelling...' : 'Cancel Order'}
-              </Text>
+              {cancelling ? (
+                <ActivityIndicator color={colors.error} />
+              ) : (
+                <Text
+                  style={{
+                    color: colors.error,
+                    fontWeight: '600',
+                    fontSize: body,
+                  }}
+                >
+                  Cancel Order
+                </Text>
+              )}
             </Pressable>
           )}
+
+          <View style={{ height: 20 }} />
         </ScrollView>
       </PageContainer>
     </>
@@ -374,81 +456,144 @@ const OrderDetailScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    padding: 16,
   },
   centerContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  statusSection: {
-    padding: 20,
-    alignItems: 'center',
-  },
-  statusBadge: {
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 20,
+    padding: 24,
   },
   section: {
-    margin: 16,
-    marginTop: 0,
+    borderRadius: 16,
     padding: 16,
-    borderRadius: 12,
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
   },
-  arrivalCodeBox: {
-    padding: 20,
-    borderRadius: 12,
-    borderWidth: 2,
-    alignItems: 'center',
+  sectionTitle: {
+    fontWeight: '700',
+    marginBottom: 16,
   },
-  timelineItem: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    marginBottom: 20,
+  timelineContainer: {
+    marginVertical: 12,
   },
-  timelineIndicator: {
-    alignItems: 'center',
-    marginRight: 16,
-  },
-  timelineDot: {
-    width: 16,
-    height: 16,
-    borderRadius: 8,
-  },
-  timelineLine: {
-    width: 2,
-    height: 30,
-    marginTop: 4,
-  },
-  detailRow: {
+  progressBarContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    paddingHorizontal: 10,
+    height: 60,
+  },
+  progressStep: {
+    alignItems: 'center',
+    width: 60,
+    position: 'relative',
+  },
+  progressIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 2,
+  },
+  progressLine: {
+    position: 'absolute',
+    top: 15,
+    left: 30, // Center of icon
+    width: '100%', // Connect to next
+    height: 2,
+    zIndex: 1,
+  },
+  progressLabel: {
+    marginTop: 4,
+    textAlign: 'center',
+    width: 80,
+  },
+  cancelledBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    borderRadius: 8,
+    borderWidth: 1,
     marginBottom: 12,
+  },
+  cancelledText: {
+    fontWeight: '600',
+    marginLeft: 8,
+  },
+  estimatedTime: {
+    textAlign: 'center',
+    marginTop: 8,
+  },
+  businessHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  businessIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  iconButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   itemRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 12,
-    paddingBottom: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(0,0,0,0.05)',
+    alignItems: 'center',
+    paddingVertical: 12,
+  },
+  itemQuantity: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    marginRight: 12,
+  },
+  itemInfo: {
+    flex: 1,
   },
   summaryRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 12,
+    marginBottom: 8,
   },
   divider: {
     height: 1,
     marginVertical: 12,
   },
-  cancelButton: {
-    margin: 16,
-    marginTop: 0,
-    paddingVertical: 16,
-    borderRadius: 12,
-    borderWidth: 2,
+  paymentMethod: {
+    flexDirection: 'row',
     alignItems: 'center',
+    padding: 12,
+    borderRadius: 8,
+    marginTop: 16,
+  },
+  cancelButton: {
+    width: '100%',
+    padding: 16,
+    borderRadius: 28,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 8,
+  },
+  backButton: {
+    marginTop: 24,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 20,
+    borderWidth: 1,
   },
 });
 

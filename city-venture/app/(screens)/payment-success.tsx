@@ -4,7 +4,7 @@
  * Polls backend to verify payment completion
  */
 
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import {
   View,
   Text,
@@ -22,19 +22,29 @@ import { Ionicons } from '@expo/vector-icons';
 import { io, Socket } from 'socket.io-client';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import API_URL from '@/services/api';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withSpring,
+  withTiming,
+} from 'react-native-reanimated';
+import { LinearGradient } from 'expo-linear-gradient';
 
 const PaymentSuccessScreen = () => {
   const params = useLocalSearchParams<{ orderId: string }>();
   const scheme = useColorScheme();
   const isDark = scheme === 'dark';
   const type = useTypography();
-  const { h2, body, bodySmall } = type;
+  const { h1, h2, h4, body, bodySmall } = type;
 
   const [verifying, setVerifying] = useState(true);
-  const [orderStatus, setOrderStatus] = useState<string | null>(null);
-  const [paymentStatus, setPaymentStatus] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const socketRef = useRef<Socket | null>(null);
+
+  // Animations
+  const scale = useSharedValue(0);
+  const opacity = useSharedValue(0);
+  const translateY = useSharedValue(50);
 
   const palette = {
     bg: isDark ? '#0D1B2A' : '#F8F9FA',
@@ -42,6 +52,8 @@ const PaymentSuccessScreen = () => {
     text: isDark ? '#ECEDEE' : '#0D1B2A',
     subText: isDark ? '#9BA1A6' : '#6B7280',
     border: isDark ? '#2A2F36' : '#E5E8EC',
+    successBg: isDark ? 'rgba(16, 185, 129, 0.1)' : '#ECFDF5',
+    successText: '#10B981',
   };
 
   // Socket listener for real-time payment updates
@@ -49,50 +61,33 @@ const PaymentSuccessScreen = () => {
     const setupSocket = async () => {
       try {
         const token = await AsyncStorage.getItem('authToken');
-        if (!token) {
-          console.log('[PaymentSuccess] No auth token, skipping socket setup');
-          return;
-        }
+        if (!token) return;
 
         const socketUrl = API_URL.replace('/api', '');
-        console.log('[PaymentSuccess] Connecting to socket:', socketUrl);
-
         const socket = io(socketUrl, {
           auth: { token },
-          transports: ['websocket', 'polling']
+          transports: ['websocket', 'polling'],
         });
 
         socketRef.current = socket;
 
-        socket.on('connect', () => {
-          console.log('[PaymentSuccess] Socket connected');
-        });
-
-        // Listen for payment updates
         socket.on('payment:updated', (data: any) => {
-          console.log('[PaymentSuccess] Payment updated via socket:', data);
-          if (data.order_id === params.orderId && data.status?.toLowerCase() === 'paid') {
-            console.log('[PaymentSuccess] Payment confirmed via socket!');
-            setPaymentStatus('paid');
+          if (
+            data.order_id === params.orderId &&
+            data.status?.toLowerCase() === 'paid'
+          ) {
             setVerifying(false);
           }
         });
 
-        // Listen for order updates (payment_status change)
         socket.on('order:updated', (data: any) => {
-          console.log('[PaymentSuccess] Order updated via socket:', data);
-          if (data.id === params.orderId && data.payment_status?.toLowerCase() === 'paid') {
-            console.log('[PaymentSuccess] Payment confirmed via socket (order update)!');
-            setOrderStatus(data.status);
-            setPaymentStatus(data.payment_status);
+          if (
+            data.id === params.orderId &&
+            data.payment_status?.toLowerCase() === 'paid'
+          ) {
             setVerifying(false);
           }
         });
-
-        socket.on('connect_error', (err: any) => {
-          console.error('[PaymentSuccess] Socket connection error:', err);
-        });
-
       } catch (err) {
         console.error('[PaymentSuccess] Socket setup error:', err);
       }
@@ -100,109 +95,92 @@ const PaymentSuccessScreen = () => {
 
     setupSocket();
 
-    // Cleanup
     return () => {
       if (socketRef.current) {
-        console.log('[PaymentSuccess] Disconnecting socket');
         socketRef.current.disconnect();
       }
     };
   }, [params.orderId]);
 
   useEffect(() => {
-    verifyPayment();
-  }, []);
+    if (!verifying && !error) {
+      // Trigger success animations
+      scale.value = withSpring(1, { damping: 12 });
+      opacity.value = withTiming(1, { duration: 800 });
+      translateY.value = withSpring(0, { damping: 15 });
+    }
+  }, [verifying, error]);
 
-  const verifyPayment = async () => {
+  const verifyPayment = useCallback(async () => {
     try {
       setVerifying(true);
       setError(null);
-      
-      console.log('[PaymentSuccess] Starting verification for order:', params.orderId);
-      
-      // Immediate check first (order might already be paid)
+
+      // Immediate check
       try {
         const immediateCheck = await getOrderById(params.orderId);
         if (immediateCheck.payment_status?.toLowerCase() === 'paid') {
-          console.log('[PaymentSuccess] Payment already confirmed (immediate check)');
-          setOrderStatus(immediateCheck.status);
-          setPaymentStatus(immediateCheck.payment_status);
           setVerifying(false);
           return;
         }
-      } catch (err) {
-        console.log('[PaymentSuccess] Immediate check failed, starting polling...');
+      } catch (_) {
+        // Continue to polling
       }
-      
-      // Poll for payment confirmation (max 60 seconds for webhook processing)
+
+      // Poll for payment confirmation
       let attempts = 0;
-      const maxAttempts = 30; // 30 attempts * 2s = 60s
-      
+      const maxAttempts = 30;
+
       while (attempts < maxAttempts) {
         try {
           const order = await getOrderById(params.orderId);
-          
-          // Check if payment is confirmed (case-insensitive)
+
           if (order.payment_status?.toLowerCase() === 'paid') {
-            console.log(`[PaymentSuccess] Payment confirmed after ${attempts + 1} attempts`);
-            setOrderStatus(order.status);
-            setPaymentStatus(order.payment_status);
             setVerifying(false);
             return;
           }
-          
-          // Check if payment failed
+
           if (order.payment_status?.toLowerCase() === 'failed') {
-            console.log('[PaymentSuccess] Payment failed');
-            setError('Payment failed. Please try again or contact support.');
+            setError('Payment failed. Please try again.');
             setVerifying(false);
             return;
           }
-          
-          // Still pending, continue polling
-          console.log(`[PaymentSuccess] Attempt ${attempts + 1}/${maxAttempts}: Payment status = ${order.payment_status}`);
-          
-          await new Promise(resolve => setTimeout(resolve, 2000));
+
+          await new Promise((resolve) => setTimeout(resolve, 2000));
           attempts++;
         } catch (err: any) {
-          console.error('[PaymentSuccess] Polling error:', err);
-          
-          // If 404 or 403, stop polling
           if (err.response?.status === 404 || err.response?.status === 403) {
             setError('Order not found or access denied.');
             setVerifying(false);
             return;
           }
-          
-          await new Promise(resolve => setTimeout(resolve, 2000));
+          await new Promise((resolve) => setTimeout(resolve, 2000));
           attempts++;
         }
       }
-      
-      // Timeout after 60s - check one final time
+
+      // Final check
       try {
         const finalCheck = await getOrderById(params.orderId);
         if (finalCheck.payment_status?.toLowerCase() === 'paid') {
-          console.log('[PaymentSuccess] Payment confirmed on final check');
-          setOrderStatus(finalCheck.status);
-          setPaymentStatus(finalCheck.payment_status);
           setVerifying(false);
           return;
         }
-      } catch (err) {
-        console.error('[PaymentSuccess] Final check failed:', err);
-      }
-      
-      // Still not confirmed - show timeout error
-      console.log('[PaymentSuccess] Verification timeout - payment still pending');
-      setError('Payment verification is taking longer than expected. Please check your order details to confirm payment status.');
+      } catch (_) {}
+
+      setError(
+        'Payment verification timed out. Please check your order history.'
+      );
       setVerifying(false);
     } catch (err: any) {
-      console.error('[PaymentSuccess] Verification failed:', err);
       setError(err.message || 'Failed to verify payment');
       setVerifying(false);
     }
-  };
+  }, [params.orderId]);
+
+  useEffect(() => {
+    verifyPayment();
+  }, [verifyPayment]);
 
   const handleViewOrder = () => {
     router.replace({
@@ -215,135 +193,253 @@ const PaymentSuccessScreen = () => {
     router.replace('/(tabs)/(home)' as never);
   };
 
+  const animatedIconStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+    opacity: opacity.value,
+  }));
+
+  const animatedContentStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: translateY.value }],
+    opacity: opacity.value,
+  }));
+
   return (
     <>
       <Stack.Screen
         options={{
-          title: 'Payment Status',
-          headerStyle: { backgroundColor: palette.card },
-          headerTintColor: palette.text,
-          headerLeft: () => null,
+          headerShown: false,
         }}
       />
       <PageContainer>
         <View style={[styles.container, { backgroundColor: palette.bg }]}>
           {verifying ? (
-            <>
-              {/* Verifying State */}
-              <View style={[styles.iconContainer, { backgroundColor: `${colors.primary}20` }]}>
+            <View style={styles.centerContent}>
+              <View
+                style={[styles.loadingCircle, { borderColor: colors.primary }]}
+              >
                 <ActivityIndicator size="large" color={colors.primary} />
               </View>
-
-              <Text style={[{ fontSize: h2 }, { color: palette.text, textAlign: 'center', marginTop: 24 }]}>
-                Verifying Payment
+              <Text
+                style={[{ fontSize: h4, color: palette.text, marginTop: 24 }]}
+              >
+                Verifying Payment...
               </Text>
-
-              <Text style={[{ fontSize: body }, { color: palette.subText, textAlign: 'center', marginTop: 8 }]}>
-                Please wait while we confirm your payment...
+              <Text
+                style={[
+                  { fontSize: body, color: palette.subText, marginTop: 8 },
+                ]}
+              >
+                Please wait a moment
               </Text>
-            </>
+            </View>
           ) : error ? (
-            <>
-              {/* Error State */}
-              <View style={[styles.iconContainer, { backgroundColor: `${colors.warning}20` }]}>
-                <Ionicons name="time-outline" size={80} color={colors.warning} />
+            <View style={styles.centerContent}>
+              <View
+                style={[
+                  styles.iconContainer,
+                  { backgroundColor: `${colors.error}20` },
+                ]}
+              >
+                <Ionicons name="alert-circle" size={64} color={colors.error} />
               </View>
-
-              <Text style={[{ fontSize: h2 }, { color: palette.text, textAlign: 'center', marginTop: 24 }]}>
-                Verification Pending
+              <Text
+                style={[
+                  {
+                    fontSize: h2,
+                    color: palette.text,
+                    marginTop: 24,
+                    textAlign: 'center',
+                  },
+                ]}
+              >
+                Verification Issue
               </Text>
-
-              <Text style={[{ fontSize: body }, { color: palette.subText, textAlign: 'center', marginTop: 8, paddingHorizontal: 20 }]}>
+              <Text
+                style={[
+                  {
+                    fontSize: body,
+                    color: palette.subText,
+                    textAlign: 'center',
+                    marginTop: 8,
+                    paddingHorizontal: 32,
+                  },
+                ]}
+              >
                 {error}
               </Text>
-
               <View style={styles.buttonContainer}>
                 <Pressable
-                  style={[styles.button, { backgroundColor: colors.primary }]}
+                  style={[
+                    styles.primaryButton,
+                    { backgroundColor: colors.primary },
+                  ]}
                   onPress={verifyPayment}
                 >
-                  <Text style={[{ fontSize: body, fontWeight: '600' }, { color: '#FFF' }]}>
-                    Retry Verification
-                  </Text>
+                  <Text style={styles.buttonText}>Retry Verification</Text>
                 </Pressable>
-
                 <Pressable
-                  style={[styles.button, { backgroundColor: palette.card, borderColor: palette.border, borderWidth: 1 }]}
-                  onPress={handleViewOrder}
-                >
-                  <Text style={[{ fontSize: body, fontWeight: '600' }, { color: palette.text }]}>
-                    View Order Details
-                  </Text>
-                </Pressable>
-
-                <Pressable
-                  style={[styles.button, { backgroundColor: palette.card, borderColor: palette.border, borderWidth: 1 }]}
+                  style={[
+                    styles.secondaryButton,
+                    { borderColor: palette.border },
+                  ]}
                   onPress={handleBackToHome}
                 >
-                  <Text style={[{ fontSize: body, fontWeight: '600' }, { color: palette.text }]}>
+                  <Text
+                    style={[
+                      styles.secondaryButtonText,
+                      { color: palette.text },
+                    ]}
+                  >
                     Back to Home
                   </Text>
                 </Pressable>
               </View>
-            </>
+            </View>
           ) : (
-            <>
-              {/* Success State */}
-              <View style={[styles.iconContainer, { backgroundColor: `${colors.success}20` }]}>
-                <Ionicons name="checkmark-circle" size={80} color={colors.success} />
-              </View>
+            <View style={styles.successContent}>
+              <Animated.View
+                style={[styles.successIconWrapper, animatedIconStyle]}
+              >
+                <LinearGradient
+                  colors={[colors.success, '#34D399']}
+                  style={styles.gradientIcon}
+                >
+                  <Ionicons name="checkmark" size={64} color="#FFF" />
+                </LinearGradient>
+              </Animated.View>
 
-              <Text style={[{ fontSize: h2 }, { color: palette.text, textAlign: 'center', marginTop: 24 }]}>
-                Payment Successful!
-              </Text>
+              <Animated.View
+                style={[styles.contentWrapper, animatedContentStyle]}
+              >
+                <Text
+                  style={[
+                    {
+                      fontSize: h1,
+                      color: palette.text,
+                      textAlign: 'center',
+                      marginBottom: 8,
+                    },
+                  ]}
+                >
+                  Order Placed!
+                </Text>
+                <Text
+                  style={[
+                    {
+                      fontSize: body,
+                      color: palette.subText,
+                      textAlign: 'center',
+                      marginBottom: 32,
+                    },
+                  ]}
+                >
+                  Your order has been successfully placed and is being
+                  processed.
+                </Text>
 
-              <Text style={[{ fontSize: body }, { color: palette.subText, textAlign: 'center', marginTop: 8 }]}>
-                Your payment has been confirmed
-              </Text>
-
-              {/* Payment Info */}
-              <View style={[styles.infoCard, { backgroundColor: palette.card, borderColor: palette.border }]}>
-                <View style={styles.infoRow}>
-                  <Ionicons name="receipt-outline" size={20} color={palette.subText} />
-                  <Text style={[{ fontSize: bodySmall }, { color: palette.subText, marginLeft: 8 }]}>
-                    Order Status
-                  </Text>
-                  <Text style={[{ fontSize: body }, { color: palette.text, fontWeight: '600', marginLeft: 'auto' }]}>
-                    {orderStatus?.toUpperCase()}
-                  </Text>
+                <View
+                  style={[
+                    styles.orderCard,
+                    {
+                      backgroundColor: palette.card,
+                      borderColor: palette.border,
+                    },
+                  ]}
+                >
+                  <View style={styles.cardRow}>
+                    <Text style={[{ fontSize: body, color: palette.subText }]}>
+                      Order ID
+                    </Text>
+                    <Text
+                      style={[
+                        {
+                          fontSize: body,
+                          color: palette.text,
+                          fontWeight: '600',
+                        },
+                      ]}
+                    >
+                      #{params.orderId?.slice(0, 8).toUpperCase()}
+                    </Text>
+                  </View>
+                  <View
+                    style={[
+                      styles.divider,
+                      { backgroundColor: palette.border },
+                    ]}
+                  />
+                  <View style={styles.cardRow}>
+                    <Text style={[{ fontSize: body, color: palette.subText }]}>
+                      Amount Paid
+                    </Text>
+                    <View style={styles.statusBadge}>
+                      <Text
+                        style={[
+                          {
+                            fontSize: bodySmall,
+                            color: colors.success,
+                            fontWeight: '600',
+                          },
+                        ]}
+                      >
+                        PAID
+                      </Text>
+                    </View>
+                  </View>
+                  <View
+                    style={[
+                      styles.divider,
+                      { backgroundColor: palette.border },
+                    ]}
+                  />
+                  <View style={styles.cardRow}>
+                    <Text style={[{ fontSize: body, color: palette.subText }]}>
+                      Estimated Time
+                    </Text>
+                    <Text
+                      style={[
+                        {
+                          fontSize: body,
+                          color: palette.text,
+                          fontWeight: '600',
+                        },
+                      ]}
+                    >
+                      15-20 mins
+                    </Text>
+                  </View>
                 </View>
 
-                <View style={styles.infoRow}>
-                  <Ionicons name="card-outline" size={20} color={palette.subText} />
-                  <Text style={[{ fontSize: bodySmall }, { color: palette.subText, marginLeft: 8 }]}>
-                    Payment Status
-                  </Text>
-                  <Text style={[{ fontSize: body }, { color: colors.success, fontWeight: '600', marginLeft: 'auto' }]}>
-                    {paymentStatus?.toUpperCase()}
-                  </Text>
+                <View style={styles.actionButtons}>
+                  <Pressable
+                    style={[
+                      styles.primaryButton,
+                      { backgroundColor: colors.primary },
+                    ]}
+                    onPress={handleViewOrder}
+                  >
+                    <Text style={styles.buttonText}>Track Order</Text>
+                  </Pressable>
+
+                  <Pressable
+                    style={[
+                      styles.secondaryButton,
+                      { borderColor: palette.border },
+                    ]}
+                    onPress={handleBackToHome}
+                  >
+                    <Text
+                      style={[
+                        styles.secondaryButtonText,
+                        { color: palette.text },
+                      ]}
+                    >
+                      Continue Shopping
+                    </Text>
+                  </Pressable>
                 </View>
-              </View>
-
-              <View style={styles.buttonContainer}>
-                <Pressable
-                  style={[styles.button, { backgroundColor: colors.primary }]}
-                  onPress={handleViewOrder}
-                >
-                  <Text style={[{ fontSize: body, fontWeight: '600' }, { color: '#FFF' }]}>
-                    View Order Details
-                  </Text>
-                </Pressable>
-
-                <Pressable
-                  style={[styles.button, { backgroundColor: palette.card, borderColor: palette.border, borderWidth: 1 }]}
-                  onPress={handleBackToHome}
-                >
-                  <Text style={[{ fontSize: body, fontWeight: '600' }, { color: palette.text }]}>
-                    Back to Home
-                  </Text>
-                </Pressable>
-              </View>
-            </>
+              </Animated.View>
+            </View>
           )}
         </View>
       </PageContainer>
@@ -354,36 +450,119 @@ const PaymentSuccessScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 20,
     justifyContent: 'center',
+    alignItems: 'center',
+  },
+  centerContent: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '100%',
+    paddingHorizontal: 24,
+  },
+  successContent: {
+    alignItems: 'center',
+    width: '100%',
+    paddingHorizontal: 24,
+    marginTop: -40,
+  },
+  loadingCircle: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    borderWidth: 3,
+    justifyContent: 'center',
+    alignItems: 'center',
+    opacity: 0.5,
   },
   iconContainer: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  successIconWrapper: {
+    marginBottom: 24,
+    shadowColor: colors.success,
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.3,
+    shadowRadius: 20,
+    elevation: 10,
+  },
+  gradientIcon: {
     width: 120,
     height: 120,
     borderRadius: 60,
     justifyContent: 'center',
     alignItems: 'center',
-    alignSelf: 'center',
   },
-  infoCard: {
-    marginTop: 32,
-    padding: 20,
-    borderRadius: 12,
-    borderWidth: 1,
-  },
-  infoRow: {
-    flexDirection: 'row',
+  contentWrapper: {
+    width: '100%',
     alignItems: 'center',
-    marginBottom: 16,
+  },
+  orderCard: {
+    width: '100%',
+    padding: 20,
+    borderRadius: 16,
+    borderWidth: 1,
+    marginBottom: 32,
+  },
+  cardRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 8,
+  },
+  divider: {
+    height: 1,
+    width: '100%',
+    marginVertical: 4,
+  },
+  statusBadge: {
+    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  actionButtons: {
+    width: '100%',
+    gap: 12,
   },
   buttonContainer: {
+    width: '100%',
     marginTop: 32,
+    gap: 12,
   },
-  button: {
-    paddingVertical: 16,
-    borderRadius: 12,
+  primaryButton: {
+    width: '100%',
+    height: 56,
+    borderRadius: 28,
+    justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 12,
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  secondaryButton: {
+    width: '100%',
+    height: 56,
+    borderRadius: 28,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    backgroundColor: 'transparent',
+  },
+  buttonText: {
+    color: '#FFF',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  secondaryButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
   },
 });
 
