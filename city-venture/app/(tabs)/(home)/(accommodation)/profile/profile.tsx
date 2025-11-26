@@ -15,8 +15,7 @@ import {
 
 import Tabs from '@/components/Tabs';
 import { ThemedText } from '@/components/themed-text';
-import { useTheme } from '@/context/ThemeContext';
-
+import { Colors } from '@/constants/color';
 import Container from '@/components/Container';
 import { useAccommodation } from '@/context/AccommodationContext';
 import { useAuth } from '@/context/AuthContext';
@@ -28,7 +27,7 @@ import placeholder from '@/assets/images/placeholder.png';
 import Button from '@/components/Button';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AddReview from '@/components/reviews/AddReview';
-import FeedbackService from '@/services/FeedbackService';
+import { createReview } from '@/services/FeedbackService';
 import Chip from '@/components/Chip';
 
 const { width, height } = Dimensions.get('window');
@@ -36,7 +35,7 @@ const { width, height } = Dimensions.get('window');
 const AccommodationProfile = () => {
   const navigation = useNavigation();
   const [activeTab, setActiveTab] = useState<string>('details');
-  const { colors } = useTheme();
+  const colors = Colors.light;
   const { user } = useAuth();
   const {
     accommodationDetails,
@@ -82,10 +81,7 @@ const AccommodationProfile = () => {
   }, [onRefresh, refreshing]);
   const insets = useSafeAreaInsets();
 
-  const [loading, setLoading] = useState(true);
   const [modalVisible, setModalVisible] = useState(false);
-  const [reviewSubmitting, setReviewSubmitting] = useState(false);
-  const [reviewError, setReviewError] = useState<string | null>(null);
   const [ratingsRefreshKey, setRatingsRefreshKey] = useState(0);
   const bg = colors.background;
 
@@ -101,8 +97,7 @@ const AccommodationProfile = () => {
     accommodationDetails?.id,
   ]);
 
-  const [averageAccommodationReviews, setAverageAccommodationReviews] =
-    useState(0);
+  const [averageAccommodationReviews] = useState(0);
 
   const TABS: Tab[] = [
     { key: 'details', label: 'Details', icon: '' },
@@ -245,7 +240,7 @@ const AccommodationProfile = () => {
           onClose={() => setModalVisible(false)}
           onSubmit={async (payload) => {
             try {
-              await FeedbackService.createReview(payload);
+              await createReview(payload);
               setModalVisible(false);
               setRatingsRefreshKey((prev) => prev + 1);
             } catch (error) {

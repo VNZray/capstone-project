@@ -8,10 +8,9 @@ import { IconSymbol } from '@/components/ui/icon-symbol';
 import TabBarBackground from '@/components/ui/TabBarBackground';
 import { Colors } from '@/constants/color';
 import { AccommodationProvider } from '@/context/AccommodationContext';
-import { useColorScheme } from '@/hooks/use-color-scheme';
+
 import { WebLayout } from '@/components/layout/WebLayout';
 export default function TabLayout() {
-  const colorScheme = useColorScheme();
   const pathname = usePathname();
 
   // Determine if current route is within the booking flow; hide tabs if so
@@ -29,7 +28,7 @@ export default function TabLayout() {
       <WebLayout>
         <Tabs
           screenOptions={{
-            tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
+            tabBarActiveTintColor: Colors.light.tint,
             headerShown: false,
             tabBarButton: HapticTab,
             tabBarBackground: TabBarBackground,
@@ -88,23 +87,6 @@ export default function TabLayout() {
               headerTitleAlign: 'center',
               tabBarIcon: ({ color }) => (
                 <IconSymbol size={32} name="heart.fill" color={color} />
-              ),
-            }}
-          />
-
-          <Tabs.Screen
-            name="orders"
-            options={{
-              title: 'Orders',
-              headerShown: false,
-              animation: 'shift',
-              headerTitleAlign: 'center',
-              tabBarIcon: ({ color }) => (
-                <IconSymbol
-                  size={32}
-                  name="list.clipboard.fill"
-                  color={color}
-                />
               ),
             }}
           />

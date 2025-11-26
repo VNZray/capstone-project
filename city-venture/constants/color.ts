@@ -1,4 +1,6 @@
 // constants/color.ts
+import { DefaultTheme } from '@react-navigation/native';
+
 // Single source of truth for all application colors
 // Based on "Midnight & Sunlight" Design System v2.3
 // All colors meet WCAG AA accessibility standards (4.5:1 contrast minimum)
@@ -14,8 +16,9 @@
 // ============================================================================
 const BRAND = {
   deepNavy: '#0A1B47',      // Primary Brand - Headers, Text (Light), Primary Buttons
-  solarGold: '#FFB703',     // Primary Action - CTAs, FABs, Notification Badges
+  solarGold: '#C5A059',     // Primary Action - CTAs, FABs, Notification Badges
   vividBlue: '#3B82F6',     // Interactive - Text links, active states, focus rings
+  secondary: '#E6DDC4',     // Secondary - Warm Beige/Paper
 } as const;
 
 // ============================================================================
@@ -45,9 +48,9 @@ const SEMANTIC = {
   successDarkBg: 'rgba(52, 211, 153, 0.15)',
   
   // Error / History - Rose Red
-  error: '#EF4444',
+  error: '#B91C1C',
   errorLight: '#FEE2E2',
-  errorDark: '#F87171',
+  errorDark: '#B91C1C',
   errorDarkBg: 'rgba(248, 113, 113, 0.15)',
   
   // Warning / Food - Amber Orange
@@ -78,6 +81,7 @@ export const lightColors = {
   primary: BRAND.deepNavy,
   accent: BRAND.solarGold,
   active: BRAND.vividBlue,
+  secondary: BRAND.secondary,
 
   // Backgrounds (Slate Scale)
   background: SLATE[50],
@@ -161,109 +165,10 @@ export const lightColors = {
 } as const;
 
 // ============================================================================
-// DARK MODE - "Midnight" Theme
-// ============================================================================
-/**
- * Dark mode color palette
- * Background: #020617 (Darker Navy) - Preserves brand identity better than black
- * Surface: Slate 900 (#0F172A)
- * Primary Text: Slate 100 (#F1F5F9)
- * Primary Action Button: White or Solar Gold for visibility
- * Contrast Ratios: All meet WCAG AA (4.5:1 minimum)
- */
-export const darkColors = {
-  // Primary Colors (Adjusted for dark mode visibility)
-  primary: BRAND.vividBlue,         // Blue for better visibility on dark
-  accent: BRAND.solarGold,          // Solar Gold remains the same
-  active: '#60A5FA',                // Lighter Blue (Blue 400)
-  complementary: BRAND.solarGold,
-
-  // Backgrounds (Midnight Navy preserves brand identity)
-  background: SLATE[950],           // #020617 - Darker Navy (not pure black)
-  surface: SLATE[900],              // #0F172A
-  surfaceElevated: SLATE[800],      // #1E293B
-  surfaceOverlay: 'rgba(255, 255, 255, 0.05)',
-
-  // Legacy background names (for backward compatibility)
-  cardBackground: SLATE[900],
-  subcategoryCard: SLATE[800],
-
-  // Text Colors
-  text: SLATE[100],                 // #F1F5F9 - High emphasis
-  textPrimary: SLATE[100],
-  textSecondary: SLATE[400],        // #94A3B8
-  textTertiary: SLATE[500],         // #64748B
-  textAccent: '#60A5FA',            // Lighter Blue
-  textDisabled: '#475569',
-  textInverse: BRAND.deepNavy,
-  textLink: '#60A5FA',
-
-  // Borders
-  border: SLATE[800],
-  borderStrong: SLATE[700],
-  borderFocus: BRAND.vividBlue,
-  divider: SLATE[800],
-  subcategoryBorder: SLATE[800],
-
-  // Effects
-  shadow: 'rgba(0, 0, 0, 0.4)',
-  shadowStrong: 'rgba(0, 0, 0, 0.6)',
-  overlay: 'rgba(2, 6, 23, 0.8)',
-
-  // Semantic Colors (Brighter for dark mode visibility)
-  success: SEMANTIC.successDark,
-  successLight: SEMANTIC.successDarkBg,
-  warning: SEMANTIC.warningDark,
-  warningLight: SEMANTIC.warningDarkBg,
-  error: SEMANTIC.errorDark,
-  errorLight: SEMANTIC.errorDarkBg,
-  info: SEMANTIC.infoDark,
-  infoLight: SEMANTIC.infoDarkBg,
-  highlight: 'rgba(255, 183, 3, 0.15)',
-
-  // States
-  disabled: '#475569',
-  hover: 'rgba(59, 130, 246, 0.1)',
-  pressed: 'rgba(59, 130, 246, 0.15)',
-  focus: 'rgba(59, 130, 246, 0.2)',
-
-  // Icons (Brighter for dark mode)
-  icon: SLATE[200],                 // #E2E8F0
-  iconPrimary: SLATE[100],
-  iconSecondary: SLATE[400],
-  iconAccent: '#60A5FA',
-  iconActive: '#60A5FA',
-  iconDisabled: '#475569',
-
-  // Tab Bar (Solar Gold for visibility per design guide)
-  tabIconDefault: SLATE[500],
-  tabIconSelected: BRAND.solarGold,
-  tint: BRAND.solarGold,
-
-  // Input Fields
-  inputBackground: SLATE[900],
-  inputBorder: 'transparent',
-  inputBorderFocus: BRAND.vividBlue,
-  inputPlaceholder: SLATE[500],
-  inputText: SLATE[100],
-
-  // Navigation Bar (Glassmorphism - Dark variant)
-  navbarBackground: 'rgba(15, 23, 42, 0.9)',
-  navbarBorder: SLATE[800],
-
-  // Buttons (White/Gold for visibility per design guide)
-  buttonPrimaryBg: '#FFFFFF',
-  buttonPrimaryText: BRAND.deepNavy,
-  buttonSecondaryBg: 'transparent',
-  buttonSecondaryBorder: SLATE[700],
-  buttonSecondaryText: SLATE[100],
-} as const;
-
-// ============================================================================
 // MAIN THEME EXPORT
 // ============================================================================
 /**
- * Color theme object with light and dark modes
+ * Color theme object with light mode only (Dark mode removed)
  * This is the primary export - use with useTheme() hook
  * @example
  * const { colors } = useTheme();
@@ -271,7 +176,7 @@ export const darkColors = {
  */
 export const Colors = {
   light: lightColors,
-  dark: darkColors,
+  dark: lightColors, // Mapping dark to light to prevent breakage during migration
 } as const;
 
 // ============================================================================
@@ -319,7 +224,7 @@ export const ShopColors = lightColors;
  */
 export const colors = {
   light: Colors.light.background,
-  dark: Colors.dark.background,
+  dark: Colors.light.background, // Mapped to light
   primary: Colors.light.primary,
   secondary: Colors.light.accent,
   tertiary: Colors.light.surface,
@@ -336,7 +241,7 @@ export const colors = {
  */
 export const background = {
   light: Colors.light.background,
-  dark: Colors.dark.background,
+  dark: Colors.light.background, // Mapped to light
 };
 
 /**
@@ -344,7 +249,7 @@ export const background = {
  */
 export const card = {
   light: Colors.light.surface,
-  dark: Colors.dark.surface,
+  dark: Colors.light.surface, // Mapped to light
 };
 
 /**
@@ -352,7 +257,7 @@ export const card = {
  */
 export const text = {
   light: Colors.light.text,
-  dark: Colors.dark.text,
+  dark: Colors.light.text, // Mapped to light
   link: Colors.light.textLink,
   placeholder: Colors.light.inputPlaceholder,
   warning: Colors.light.warning,
@@ -378,3 +283,23 @@ export const Slate = SLATE;
  * Semantic colors for status indicators
  */
 export const Semantic = SEMANTIC;
+
+// ============================================================================
+// NAVIGATION THEME
+// ============================================================================
+/**
+ * Theme for React Navigation
+ * Maps our custom design tokens to React Navigation's required structure
+ */
+export const NavigationTheme = {
+  dark: false,
+  colors: {
+    primary: lightColors.primary,
+    background: lightColors.background,
+    card: lightColors.surface,
+    text: lightColors.text,
+    border: lightColors.border,
+    notification: lightColors.accent,
+  },
+  fonts: DefaultTheme.fonts,
+};

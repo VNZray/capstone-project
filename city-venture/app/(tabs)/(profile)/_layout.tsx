@@ -71,6 +71,13 @@ const ProfileLayout = () => {
           headerBackTitle: 'Back',
         }}
       />
+      <Stack.Screen
+        name="orders"
+        options={{
+          headerShown: false,
+          animation: 'slide_from_right',
+        }}
+      />
     </Stack>
   );
 };

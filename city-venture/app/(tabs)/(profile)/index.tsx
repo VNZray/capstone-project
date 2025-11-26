@@ -1,8 +1,7 @@
 import Button from '@/components/Button';
 import { ThemedText } from '@/components/themed-text';
-import { colors } from '@/constants/color';
+import { colors, Colors } from '@/constants/color';
 import { useAuth } from '@/context/AuthContext';
-import { useTheme } from '@/context/ThemeContext';
 import { FontAwesome5, Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
@@ -12,15 +11,14 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const Profile = () => {
   const { user, logout } = useAuth();
-  const { themeMode, setThemeMode, isDark } = useTheme();
   const insets = useSafeAreaInsets();
 
-  // Colors
-  const bg = isDark ? '#0F1222' : '#F8F9FC';
-  const card = isDark ? '#1A1F36' : '#FFFFFF';
-  const textPrimary = isDark ? '#FFFFFF' : '#1A1F36';
-  const textSecondary = isDark ? '#A0AEC0' : '#718096';
-  const border = isDark ? '#2D3748' : '#EDF2F7';
+  // Colors (Light Mode Only)
+  const bg = Colors.light.background;
+  const card = Colors.light.surface;
+  const textPrimary = Colors.light.text;
+  const textSecondary = Colors.light.textSecondary;
+  const border = Colors.light.border;
 
   const fullName = `${user?.first_name ?? 'Traveler'} ${
     user?.last_name ?? ''
@@ -44,7 +42,7 @@ const Profile = () => {
         ]}
       >
         <ThemedText type="sub-title-medium" weight="bold">
-          You're not signed in
+          You&apos;re not signed in
         </ThemedText>
         <ThemedText
           type="label-medium"
@@ -81,7 +79,7 @@ const Profile = () => {
         {/* Header Section with Gradient */}
         <View style={styles.headerContainer}>
           <LinearGradient
-            colors={isDark ? ['#1A2F5E', '#0F1222'] : ['#EAF4FF', '#F8F9FC']}
+            colors={['#EAF4FF', '#F8F9FC']}
             style={[styles.headerGradient, { paddingTop: insets.top + 12 }]}
           >
             <View style={styles.headerTop}>
@@ -94,7 +92,7 @@ const Profile = () => {
                   styles.iconBtn,
                   {
                     opacity: pressed ? 0.7 : 1,
-                    backgroundColor: isDark ? '#2D3748' : '#FFFFFF',
+                    backgroundColor: '#FFFFFF',
                   },
                 ]}
               >
@@ -138,75 +136,17 @@ const Profile = () => {
 
             {/* Minimal Stats */}
             <View style={styles.statsRow}>
-              <StatItem label="Trips" value="12" isDark={isDark} />
+              <StatItem label="Trips" value="12" />
               <View style={[styles.statDivider, { backgroundColor: border }]} />
-              <StatItem label="Reviews" value="15" isDark={isDark} />
+              <StatItem label="Reviews" value="15" />
               <View style={[styles.statDivider, { backgroundColor: border }]} />
-              <StatItem label="Points" value="2.4k" isDark={isDark} />
+              <StatItem label="Points" value="2.4k" />
             </View>
           </LinearGradient>
         </View>
 
         {/* Menu Sections */}
         <View style={styles.menuContainer}>
-          {/* Appearance Section */}
-          <ThemedText
-            type="label-small"
-            weight="bold"
-            style={{
-              color: textSecondary,
-              marginLeft: 20,
-              marginBottom: 8,
-              marginTop: 24,
-              textTransform: 'uppercase',
-              letterSpacing: 0.5,
-            }}
-          >
-            Appearance
-          </ThemedText>
-          <View
-            style={[
-              styles.menuGroup,
-              { backgroundColor: card, padding: 4, flexDirection: 'row' },
-            ]}
-          >
-            {['system', 'light', 'dark'].map((mode) => (
-              <Pressable
-                key={mode}
-                onPress={() => setThemeMode(mode as any)}
-                style={[
-                  styles.themeOption,
-                  themeMode === mode && {
-                    backgroundColor: isDark ? '#2D3748' : '#EDF2F7',
-                  },
-                ]}
-              >
-                <Ionicons
-                  name={
-                    mode === 'system'
-                      ? 'phone-portrait-outline'
-                      : mode === 'light'
-                      ? 'sunny-outline'
-                      : 'moon-outline'
-                  }
-                  size={18}
-                  color={themeMode === mode ? textPrimary : textSecondary}
-                />
-                <ThemedText
-                  type="label-small"
-                  weight="semi-bold"
-                  style={{
-                    color: themeMode === mode ? textPrimary : textSecondary,
-                    textTransform: 'capitalize',
-                    marginLeft: 6,
-                  }}
-                >
-                  {mode}
-                </ThemedText>
-              </Pressable>
-            ))}
-          </View>
-
           <ThemedText
             type="label-small"
             weight="bold"
@@ -223,12 +163,19 @@ const Profile = () => {
           </ThemedText>
           <View style={[styles.menuGroup, { backgroundColor: card }]}>
             <MenuItem
+              icon="receipt-outline"
+              iconColor="#F59E0B"
+              iconBg="#FFFBEB"
+              label="My Orders"
+              onPress={() => router.push('/(tabs)/(profile)/orders' as any)}
+              border={border}
+            />
+            <MenuItem
               icon="calendar-outline"
               iconColor="#3B82F6"
               iconBg="#EBF8FF"
               label="My Bookings"
               onPress={onBookings}
-              isDark={isDark}
               border={border}
             />
             <MenuItem
@@ -237,7 +184,6 @@ const Profile = () => {
               iconBg="#FEF2F2"
               label="Favorites"
               onPress={() => {}}
-              isDark={isDark}
               border={border}
             />
             <MenuItem
@@ -246,7 +192,6 @@ const Profile = () => {
               iconBg="#F3E8FF"
               label="Edit Profile"
               onPress={onEdit}
-              isDark={isDark}
               last
             />
           </View>
@@ -272,7 +217,6 @@ const Profile = () => {
               iconBg="#FFFBEB"
               label="Rate The App"
               onPress={() => {}}
-              isDark={isDark}
               border={border}
             />
             <MenuItem
@@ -281,7 +225,6 @@ const Profile = () => {
               iconBg="#ECFDF5"
               label="Report a Problem"
               onPress={onReports}
-              isDark={isDark}
               border={border}
             />
             <MenuItem
@@ -293,7 +236,6 @@ const Profile = () => {
                 logout();
                 router.replace('/');
               }}
-              isDark={isDark}
               color={colors.error}
               last
             />
@@ -320,7 +262,6 @@ const Profile = () => {
               iconBg="#EEF2FF"
               label="Terms and Conditions"
               onPress={() => {}}
-              isDark={isDark}
               border={border}
             />
             <MenuItem
@@ -329,7 +270,6 @@ const Profile = () => {
               iconBg="#F0FDFA"
               label="Privacy Policy"
               onPress={() => {}}
-              isDark={isDark}
               last
             />
           </View>
@@ -343,22 +283,14 @@ export default Profile;
 
 // --- Components ---
 
-const StatItem = ({
-  label,
-  value,
-  isDark,
-}: {
-  label: string;
-  value: string;
-  isDark: boolean;
-}) => (
+const StatItem = ({ label, value }: { label: string; value: string }) => (
   <View style={{ alignItems: 'center', flex: 1 }}>
     <ThemedText type="title-small" weight="bold">
       {value}
     </ThemedText>
     <ThemedText
       type="label-small"
-      style={{ color: isDark ? '#A0AEC0' : '#718096' }}
+      style={{ color: Colors.light.textSecondary }}
     >
       {label}
     </ThemedText>
@@ -369,7 +301,6 @@ const MenuItem = ({
   icon,
   label,
   onPress,
-  isDark,
   last,
   color,
   border,
@@ -379,14 +310,13 @@ const MenuItem = ({
   icon: any;
   label: string;
   onPress: () => void;
-  isDark: boolean;
   last?: boolean;
   color?: string;
   border?: string;
   iconColor?: string;
   iconBg?: string;
 }) => {
-  const textColor = color || (isDark ? '#FFFFFF' : '#1A1F36');
+  const textColor = color || Colors.light.text;
 
   return (
     <Pressable
@@ -394,27 +324,16 @@ const MenuItem = ({
       style={({ pressed }) => [
         styles.menuItem,
         {
-          backgroundColor: pressed
-            ? isDark
-              ? '#2D3748'
-              : '#F7FAFC'
-            : 'transparent',
+          backgroundColor: pressed ? '#F7FAFC' : 'transparent',
           borderBottomWidth: last ? 0 : StyleSheet.hairlineWidth,
           borderBottomColor: border || '#EDF2F7',
         },
       ]}
     >
       <View
-        style={[
-          styles.menuIconBox,
-          { backgroundColor: isDark ? '#2D3748' : iconBg || '#F3F4F6' },
-        ]}
+        style={[styles.menuIconBox, { backgroundColor: iconBg || '#F3F4F6' }]}
       >
-        <Ionicons
-          name={icon}
-          size={20}
-          color={iconColor || (isDark ? '#A0AEC0' : '#718096')}
-        />
+        <Ionicons name={icon} size={20} color={iconColor || '#718096'} />
       </View>
       <ThemedText
         type="body-medium"
@@ -423,11 +342,7 @@ const MenuItem = ({
       >
         {label}
       </ThemedText>
-      <Ionicons
-        name="chevron-forward"
-        size={18}
-        color={isDark ? '#4A5568' : '#CBD5E0'}
-      />
+      <Ionicons name="chevron-forward" size={18} color={'#CBD5E0'} />
     </Pressable>
   );
 };

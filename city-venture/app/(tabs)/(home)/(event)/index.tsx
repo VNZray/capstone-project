@@ -1,14 +1,14 @@
-import { StyleSheet, View } from 'react-native';
 import React from 'react';
-import { useTheme } from '@/context/ThemeContext';
+import { StyleSheet, View } from 'react-native';
 import { ThemedText } from '@/components/themed-text';
+import { Colors } from '@/constants/color';
 
 const Event = () => {
-  const { colors } = useTheme();
-  
+  const colors = Colors.light;
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <ThemedText type="title-medium">Events Coming Soon</ThemedText>
+      <ThemedText type="title-medium">Events</ThemedText>
+      <ThemedText>Coming Soon</ThemedText>
     </View>
   );
 };

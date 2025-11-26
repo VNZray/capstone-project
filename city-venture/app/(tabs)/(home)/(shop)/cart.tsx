@@ -13,13 +13,14 @@ import {
 } from 'react-native';
 import { Stack, router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useTheme } from '@/context/ThemeContext';
+import { Colors } from '@/constants/color';
 import { useTypography } from '@/constants/typography';
 import { useCart } from '@/context/CartContext';
 import { Ionicons } from '@expo/vector-icons';
 
 const CartScreen = () => {
-  const { colors, isDark } = useTheme();
+  const colors = Colors.light;
+  const isDark = false;
   const type = useTypography();
   const { h3, h4, body, bodySmall, caption } = type;
   const {

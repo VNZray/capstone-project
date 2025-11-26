@@ -12,7 +12,7 @@ import {
   Alert,
 } from 'react-native';
 import { useLocalSearchParams, Stack, router } from 'expo-router';
-import { useTheme } from '@/context/ThemeContext';
+import { Colors } from '@/constants/color';
 import { useTypography } from '@/constants/typography';
 import PageContainer from '@/components/PageContainer';
 import { useCart } from '@/context/CartContext';
@@ -24,8 +24,8 @@ const ProductDetails = () => {
     product: string; // JSON stringified product
     businessName: string;
   }>();
-  
-  const { colors, isDark } = useTheme();
+
+  const colors = Colors.light;
   const type = useTypography();
   const { h3, h4, body, bodySmall } = type;
   const { addToCart } = useCart();
@@ -35,7 +35,9 @@ const ProductDetails = () => {
   const [loading, setLoading] = useState(false);
 
   // Parse product from params
-  const product: Product = params.product ? JSON.parse(params.product as string) : null;
+  const product: Product = params.product
+    ? JSON.parse(params.product as string)
+    : null;
 
   if (!product) {
     return (
@@ -57,18 +59,19 @@ const ProductDetails = () => {
     border: colors.border,
   };
 
-  const price = typeof product.price === 'string' 
-    ? parseFloat(product.price) 
-    : product.price;
+  const price =
+    typeof product.price === 'string'
+      ? parseFloat(product.price)
+      : product.price;
 
-  const currentStock = typeof product.current_stock === 'string'
-    ? parseInt(product.current_stock)
-    : (product.current_stock || 0);
+  const currentStock =
+    typeof product.current_stock === 'string'
+      ? parseInt(product.current_stock)
+      : product.current_stock || 0;
 
   // Check availability: active status, in stock, and NOT marked unavailable
-  const isAvailable = product.status === 'active' && 
-                      currentStock > 0 && 
-                      !product.is_unavailable;
+  const isAvailable =
+    product.status === 'active' && currentStock > 0 && !product.is_unavailable;
 
   const handleQuantityChange = (delta: number) => {
     const newQuantity = quantity + delta;
@@ -79,8 +82,8 @@ const ProductDetails = () => {
 
   const handleAddToCart = async () => {
     if (!isAvailable) {
-      const reason = product.is_unavailable 
-        ? 'This product is temporarily unavailable' 
+      const reason = product.is_unavailable
+        ? 'This product is temporarily unavailable'
         : 'This product is currently out of stock';
       Alert.alert('Unavailable', reason);
       return;
@@ -89,7 +92,7 @@ const ProductDetails = () => {
     try {
       setLoading(true);
       addToCart(product, quantity, specialRequests || undefined);
-      
+
       Alert.alert(
         'Added to Cart',
         `${quantity}x ${product.name} added to your cart`,
@@ -134,18 +137,38 @@ const ProductDetails = () => {
               resizeMode="cover"
             />
           ) : (
-            <View style={[styles.productImage, styles.placeholderImage, { backgroundColor: palette.border }]}>
-              <Ionicons name="image-outline" size={64} color={palette.subText} />
+            <View
+              style={[
+                styles.productImage,
+                styles.placeholderImage,
+                { backgroundColor: palette.border },
+              ]}
+            >
+              <Ionicons
+                name="image-outline"
+                size={64}
+                color={palette.subText}
+              />
             </View>
           )}
 
           {/* Product Info */}
           <View style={[styles.infoCard, { backgroundColor: palette.card }]}>
-            <Text style={[{ fontSize: h3 }, { color: palette.text, marginBottom: 8 }]}>
+            <Text
+              style={[
+                { fontSize: h3 },
+                { color: palette.text, marginBottom: 8 },
+              ]}
+            >
               {product.name}
             </Text>
-            
-            <Text style={[{ fontSize: h4 }, { color: colors.accent, marginBottom: 16 }]}>
+
+            <Text
+              style={[
+                { fontSize: h4 },
+                { color: colors.accent, marginBottom: 16 },
+              ]}
+            >
               ₱{price.toFixed(2)}
             </Text>
 
@@ -155,15 +178,27 @@ const ProductDetails = () => {
                 Stock: {currentStock} {product.stock_unit || 'units'}
               </Text>
               {product.is_unavailable && (
-                <View style={[styles.badge, { backgroundColor: colors.warning }]}>
-                  <Text style={[{ fontSize: bodySmall }, { color: '#FFF', fontWeight: '600' }]}>
+                <View
+                  style={[styles.badge, { backgroundColor: colors.warning }]}
+                >
+                  <Text
+                    style={[
+                      { fontSize: bodySmall },
+                      { color: '#FFF', fontWeight: '600' },
+                    ]}
+                  >
                     Temporarily Unavailable
                   </Text>
                 </View>
               )}
               {!product.is_unavailable && currentStock === 0 && (
                 <View style={[styles.badge, { backgroundColor: colors.error }]}>
-                  <Text style={[{ fontSize: bodySmall }, { color: '#FFF', fontWeight: '600' }]}>
+                  <Text
+                    style={[
+                      { fontSize: bodySmall },
+                      { color: '#FFF', fontWeight: '600' },
+                    ]}
+                  >
                     Out of Stock
                   </Text>
                 </View>
@@ -173,10 +208,17 @@ const ProductDetails = () => {
             {/* Description */}
             {product.description && (
               <View style={styles.section}>
-                <Text style={[{ fontSize: body }, { color: palette.text, marginBottom: 4 }]}>
+                <Text
+                  style={[
+                    { fontSize: body },
+                    { color: palette.text, marginBottom: 4 },
+                  ]}
+                >
                   Description
                 </Text>
-                <Text style={[{ fontSize: bodySmall }, { color: palette.subText }]}>
+                <Text
+                  style={[{ fontSize: bodySmall }, { color: palette.subText }]}
+                >
                   {product.description}
                 </Text>
               </View>
@@ -184,24 +226,40 @@ const ProductDetails = () => {
 
             {/* Quantity Selector */}
             <View style={styles.section}>
-              <Text style={[{ fontSize: body }, { color: palette.text, marginBottom: 8 }]}>
+              <Text
+                style={[
+                  { fontSize: body },
+                  { color: palette.text, marginBottom: 8 },
+                ]}
+              >
                 Quantity
               </Text>
               <View style={styles.quantityContainer}>
                 <Pressable
-                  style={[styles.quantityButton, { backgroundColor: palette.border }]}
+                  style={[
+                    styles.quantityButton,
+                    { backgroundColor: palette.border },
+                  ]}
                   onPress={() => handleQuantityChange(-1)}
                   disabled={quantity <= 1}
                 >
                   <Ionicons name="remove" size={20} color={palette.text} />
                 </Pressable>
-                
-                <Text style={[{ fontSize: h3 }, { color: palette.text, marginHorizontal: 24 }]}>
+
+                <Text
+                  style={[
+                    { fontSize: h3 },
+                    { color: palette.text, marginHorizontal: 24 },
+                  ]}
+                >
                   {quantity}
                 </Text>
-                
+
                 <Pressable
-                  style={[styles.quantityButton, { backgroundColor: palette.border }]}
+                  style={[
+                    styles.quantityButton,
+                    { backgroundColor: palette.border },
+                  ]}
                   onPress={() => handleQuantityChange(1)}
                   disabled={quantity >= currentStock}
                 >
@@ -212,7 +270,12 @@ const ProductDetails = () => {
 
             {/* Special Requests */}
             <View style={styles.section}>
-              <Text style={[{ fontSize: body }, { color: palette.text, marginBottom: 8 }]}>
+              <Text
+                style={[
+                  { fontSize: body },
+                  { color: palette.text, marginBottom: 8 },
+                ]}
+              >
                 Special Requests (Optional)
               </Text>
               <TextInput
@@ -238,15 +301,26 @@ const ProductDetails = () => {
               style={[
                 styles.addButton,
                 {
-                  backgroundColor: isAvailable ? colors.buttonPrimaryBg : palette.border,
+                  backgroundColor: isAvailable
+                    ? colors.buttonPrimaryBg
+                    : palette.border,
                   opacity: loading ? 0.6 : 1,
                 },
               ]}
               onPress={handleAddToCart}
               disabled={!isAvailable || loading}
             >
-              <Ionicons name="cart" size={20} color={colors.buttonPrimaryText} />
-              <Text style={[{ fontSize: body }, { color: colors.buttonPrimaryText, marginLeft: 8 }]}>
+              <Ionicons
+                name="cart"
+                size={20}
+                color={colors.buttonPrimaryText}
+              />
+              <Text
+                style={[
+                  { fontSize: body },
+                  { color: colors.buttonPrimaryText, marginLeft: 8 },
+                ]}
+              >
                 {loading ? 'Adding...' : 'Add to Cart'}
               </Text>
             </Pressable>

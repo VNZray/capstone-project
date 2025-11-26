@@ -5,7 +5,6 @@ import PageContainer from '@/components/PageContainer';
 import ScrollableTab from '@/components/ScrollableTab';
 import SearchBar from '@/components/SearchBar';
 import { ThemedText } from '@/components/themed-text';
-import { useTheme } from '@/context/ThemeContext';
 import { useAccommodation } from '@/context/AccommodationContext';
 import { navigateToAccommodationProfile } from '@/routes/accommodationRoutes';
 import { fetchAddress } from '@/services/AccommodationService';
@@ -21,6 +20,8 @@ import {
   StyleSheet,
   View,
 } from 'react-native';
+import placeholder from '@/assets/images/placeholder.png';
+import { Colors } from '@/constants/color';
 
 // ---- Category constants and helpers (module scope) ----
 const CATEGORY_ID_TO_KEY: Record<number, string> = {
@@ -77,14 +78,15 @@ const CATEGORY_KEY_TO_ICON: Record<string, string> = {
   eco_resort: 'leaf',
 };
 
-import placeholder from '@/assets/images/placeholder.png';
-
-const toLowerSafe = (v?: string | null) => (typeof v === 'string' ? v.toLowerCase() : '');
+const toLowerSafe = (v?: string | null) =>
+  typeof v === 'string' ? v.toLowerCase() : '';
 const getCategoryKey = (b: Business) =>
-  b.business_category_id != null ? CATEGORY_ID_TO_KEY[b.business_category_id] : undefined;
+  b.business_category_id != null
+    ? CATEGORY_ID_TO_KEY[b.business_category_id]
+    : undefined;
 
 const AccommodationDirectory = () => {
-  const { colors } = useTheme();
+  const colors = Colors.light;
   const bg = colors.background;
 
   const {
@@ -144,7 +146,10 @@ const AccommodationDirectory = () => {
   const dynamicTabs: Tab[] = useMemo(() => {
     const ids = new Set<number>();
     (allAccommodationDetails || []).forEach((b: Business) => {
-      if (b.business_type_id === 1 && typeof b.business_category_id === 'number') {
+      if (
+        b.business_type_id === 1 &&
+        typeof b.business_category_id === 'number'
+      ) {
         ids.add(b.business_category_id);
       }
     });
@@ -152,7 +157,11 @@ const AccommodationDirectory = () => {
       .map((id) => {
         const key = CATEGORY_ID_TO_KEY[id];
         if (!key) return undefined;
-        return { key, label: CATEGORY_KEY_TO_LABEL[key], icon: CATEGORY_KEY_TO_ICON[key] || 'hotel' } as Tab;
+        return {
+          key,
+          label: CATEGORY_KEY_TO_LABEL[key],
+          icon: CATEGORY_KEY_TO_ICON[key] || 'hotel',
+        } as Tab;
       })
       .filter((t): t is Tab => !!t)
       .sort((a, b) => a.label.localeCompare(b.label));
@@ -171,13 +180,18 @@ const AccommodationDirectory = () => {
   };
 
   // Cache of resolved address parts per barangay_id
-  const [addressPartsByBarangay, setAddressPartsByBarangay] = useState<Record<number, string[]>>({});
+  const [addressPartsByBarangay, setAddressPartsByBarangay] = useState<
+    Record<number, string[]>
+  >({});
 
-  const getBarangayName = (barangay_id?: number) => {
-    if (barangay_id == null) return '';
-    const arr = addressPartsByBarangay[barangay_id];
-    return Array.isArray(arr) && arr.length > 0 ? arr[0] : '';
-  };
+  const getBarangayName = useCallback(
+    (barangay_id?: number) => {
+      if (barangay_id == null) return '';
+      const arr = addressPartsByBarangay[barangay_id];
+      return Array.isArray(arr) && arr.length > 0 ? arr[0] : '';
+    },
+    [addressPartsByBarangay]
+  );
 
   const formatSubtitle = (b: Business) => {
     const barangay = getBarangayName(b.barangay_id);
@@ -193,7 +207,11 @@ const AccommodationDirectory = () => {
       const name = toLowerSafe(b.business_name);
       const addr = toLowerSafe(b.address);
       const brgy = toLowerSafe(getBarangayName(b.barangay_id));
-      const matchesSearch = !term || name.includes(term) || addr.includes(term) || brgy.includes(term);
+      const matchesSearch =
+        !term ||
+        name.includes(term) ||
+        addr.includes(term) ||
+        brgy.includes(term);
 
       const categoryKey = getCategoryKey(b);
       const matchesTab = activeTab === 'all' || categoryKey === activeTab;
@@ -203,7 +221,7 @@ const AccommodationDirectory = () => {
 
       return matchesSearch && matchesTab && isVisibleStatus;
     });
-  }, [allAccommodationDetails, search, activeTab, addressPartsByBarangay]);
+  }, [allAccommodationDetails, search, activeTab, getBarangayName]);
 
   // Return array: [barangay_name, municipality_name, province_name]
   const fetchBusinessAddress = async (
@@ -313,7 +331,11 @@ const AccommodationDirectory = () => {
                     ? `${business.min_price} - ${business.max_price}`
                     : 'N/A'
                 }
-                image={business.business_image ? { uri: business.business_image } : placeholder}
+                image={
+                  business.business_image
+                    ? { uri: business.business_image }
+                    : placeholder
+                }
                 ratings={4.5}
                 view={cardView}
                 favorite={false}
