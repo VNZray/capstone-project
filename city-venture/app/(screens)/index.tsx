@@ -9,7 +9,6 @@ import { useAuth } from '@/context/AuthContext';
 import { navigateToHome } from '@/routes/mainRoutes';
 import Entypo from '@expo/vector-icons/Entypo';
 import { Link } from 'expo-router';
-import { LinearGradient } from 'expo-linear-gradient';
 import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
@@ -20,9 +19,8 @@ import {
   StatusBar,
   StyleSheet,
   View,
-  ImageBackground,
 } from 'react-native';
-import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { validateLoginForm } from '@/utils/validation';
 import { formatErrorMessage } from '@/utils/networkHandler';
 import debugLogger from '@/utils/debugLogger';
@@ -112,49 +110,13 @@ const LoginPage = () => {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#fff' }}>
       <StatusBar />
-      {/* Web Split Screen Wrapper */}
+      {/* Mobile Form Container */}
       <View style={styles.container}>
-        {/* Left Side Image (Web Only) */}
-        {Platform.OS === 'web' && (
-          <View style={styles.webImageContainer}>
-            <ImageBackground
-              source={{
-                uri: 'https://i0.wp.com/nagayon.com/wp-content/uploads/2024/08/oragon-monument-by-colline.jpg',
-              }}
-              style={styles.webImage}
-              resizeMode="cover"
-            >
-              <LinearGradient
-                colors={['rgba(10, 27, 71, 0.4)', 'rgba(10, 27, 71, 0.8)']}
-                style={styles.webImageOverlay}
-              >
-                <View style={styles.webHeroContent}>
-                  <ThemedText
-                    type="title-large"
-                    weight="extra-bold"
-                    style={{ color: 'white', fontSize: 48 }}
-                  >
-                    Welcome Back
-                  </ThemedText>
-                  <ThemedText
-                    type="body-large"
-                    style={{ color: 'white', marginTop: 16, maxWidth: 400 }}
-                  >
-                    Continue your journey in the heart of Naga. Discover new
-                    places, events, and experiences.
-                  </ThemedText>
-                </View>
-              </LinearGradient>
-            </ImageBackground>
-          </View>
-        )}
-
         {/* Right Side Form */}
         <View style={styles.formContainer}>
           <PageContainer
             padding={0}
             style={{
-              maxWidth: Platform.OS === 'web' ? 480 : '100%',
               width: '100%',
               alignSelf: 'center',
             }}
@@ -180,7 +142,7 @@ const LoginPage = () => {
                     type="title-medium"
                     weight="bold"
                     style={{
-                      textAlign: Platform.OS === 'web' ? 'left' : 'left',
+                      textAlign: 'left',
                     }}
                   >
                     Sign In
@@ -295,33 +257,16 @@ export default LoginPage;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    flexDirection: Platform.OS === 'web' ? 'row' : 'column',
-  },
-  webImageContainer: {
-    flex: 1,
-    backgroundColor: '#0A1B47',
-  },
-  webImage: {
-    flex: 1,
-    width: '100%',
-    height: '100%',
-  },
-  webImageOverlay: {
-    flex: 1,
-    justifyContent: 'center',
-    padding: 60,
-  },
-  webHeroContent: {
-    maxWidth: 600,
+    flexDirection: 'column',
   },
   formContainer: {
-    flex: Platform.OS === 'web' ? 1 : 1,
+    flex: 1,
     backgroundColor: '#fff',
     justifyContent: 'center',
-    maxWidth: Platform.OS === 'web' ? 800 : '100%',
+    width: '100%',
   },
   scrollContent: {
-    padding: Platform.OS === 'web' ? 40 : 24,
+    padding: 24,
     gap: 20,
     flexGrow: 1,
     justifyContent: 'center',

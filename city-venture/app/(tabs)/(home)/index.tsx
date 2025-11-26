@@ -11,8 +11,7 @@ import PersonalRecommendationSection from '@/components/home/PersonalRecommendat
 import NewsSection from '@/components/home/NewsSection';
 import SpecialOffersSection from '@/components/home/SpecialOffersSection';
 import FeaturedPartnersSection from '@/components/home/FeaturedPartnersSection';
-import { ResponsiveContainer } from '@/components/layout/ResponsiveContainer';
-import { WebLayout } from '@/components/layout/WebLayout';
+
 import { useAuth } from '@/context/AuthContext';
 import { Colors } from '@/constants/color';
 import { navigateToAccommodationHome } from '@/routes/accommodationRoutes';
@@ -202,105 +201,101 @@ const HomeScreen = () => {
   if (!user) return null;
 
   return (
-    <WebLayout>
-      <View style={[styles.root, { backgroundColor: palette.background }]}>
-        <StatusBar
-          translucent
-          backgroundColor="transparent"
-          barStyle="light-content"
-        />
+    <View style={[styles.root, { backgroundColor: palette.background }]}>
+      <StatusBar
+        translucent
+        backgroundColor="transparent"
+        barStyle="light-content"
+      />
 
-        <HeroSection scrollY={scrollY} heroHeight={HERO_HEIGHT} />
+      <HeroSection scrollY={scrollY} heroHeight={HERO_HEIGHT} />
 
-        <AnimatedScrollView
-          style={StyleSheet.absoluteFill}
-          contentContainerStyle={{
-            paddingBottom: bottom + 32,
-          }}
-          refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={handleRefresh}
-              tintColor={palette.primary}
-            />
-          }
-          onScroll={handleScroll}
-          scrollEventThrottle={16}
-          showsVerticalScrollIndicator={false}
+      <AnimatedScrollView
+        style={StyleSheet.absoluteFill}
+        contentContainerStyle={{
+          paddingBottom: bottom + 32,
+        }}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            tintColor={palette.primary}
+          />
+        }
+        onScroll={handleScroll}
+        scrollEventThrottle={16}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.heroSpacer}>
+          <WelcomeSection
+            scrollY={scrollY}
+            name={displayName}
+            subtitle="Stay connected with city life, follow events, and access the services you need every day."
+          />
+        </View>
+
+        <MainContentCard
+          style={[
+            styles.mainCard,
+            {
+              backgroundColor: palette.surface,
+              shadowColor: palette.shadow,
+              shadowOpacity: isDarkMode ? 0.3 : 0.1,
+              shadowRadius: 20,
+              shadowOffset: { width: 0, height: 8 },
+              elevation: 8,
+              borderWidth: isDarkMode ? 1 : StyleSheet.hairlineWidth,
+              borderColor: palette.border,
+            },
+          ]}
         >
-          <ResponsiveContainer>
-            <View style={styles.heroSpacer}>
-              <WelcomeSection
-                scrollY={scrollY}
-                name={displayName}
-                subtitle="Stay connected with city life, follow events, and access the services you need every day."
-              />
-            </View>
+          <ActionGrid items={ACTIONS} onPressItem={handleActionPress} />
 
-            <MainContentCard
-              style={[
-                styles.mainCard,
-                {
-                  backgroundColor: palette.surface,
-                  shadowColor: palette.shadow,
-                  shadowOpacity: isDarkMode ? 0.3 : 0.1,
-                  shadowRadius: 20,
-                  shadowOffset: { width: 0, height: 8 },
-                  elevation: 8,
-                  borderWidth: isDarkMode ? 1 : StyleSheet.hairlineWidth,
-                  borderColor: palette.border,
-                },
-              ]}
-            >
-              <ActionGrid items={ACTIONS} onPressItem={handleActionPress} />
+          <CityListSection
+            onPressCity={(city) => console.log(city.name)}
+            onPressViewMore={() => console.log('View more cities')}
+          />
 
-              <CityListSection
-                onPressCity={(city) => console.log(city.name)}
-                onPressViewMore={() => console.log('View more cities')}
-              />
+          <PersonalRecommendationSection
+            onPressItem={(item) => console.log(item.title)}
+          />
 
-              <PersonalRecommendationSection
-                onPressItem={(item) => console.log(item.title)}
-              />
+          <SpecialOffersSection
+            onPressOffer={(offer) => console.log(offer.title)}
+          />
 
-              <SpecialOffersSection
-                onPressOffer={(offer) => console.log(offer.title)}
-              />
+          <FeaturedPartnersSection
+            onPressPartner={(partner) => console.log(partner.name)}
+          />
 
-              <FeaturedPartnersSection
-                onPressPartner={(partner) => console.log(partner.name)}
-              />
+          <SectionContainer
+            title="Upcoming Events"
+            onPressViewAll={navigateToEventHome}
+          >
+            {renderEventSection()}
+          </SectionContainer>
 
-              <SectionContainer
-                title="Upcoming Events"
-                onPressViewAll={navigateToEventHome}
-              >
-                {renderEventSection()}
-              </SectionContainer>
+          <NewsSection
+            data={newsState.data}
+            loading={newsState.loading}
+            error={newsState.error}
+            onPressArticle={handleNewsPress}
+          />
 
-              <NewsSection
-                data={newsState.data}
-                loading={newsState.loading}
-                error={newsState.error}
-                onPressArticle={handleNewsPress}
-              />
+          <PromoCard content={PROMO_CARD} style={styles.promoCard} />
+        </MainContentCard>
+      </AnimatedScrollView>
 
-              <PromoCard content={PROMO_CARD} style={styles.promoCard} />
-            </MainContentCard>
-          </ResponsiveContainer>
-        </AnimatedScrollView>
-
-        <Header
-          scrollY={scrollY}
-          heroHeight={HERO_HEIGHT}
-          searchValue={searchValue}
-          onChangeSearch={setSearchValue}
-          style={styles.header}
-          onPressBell={() => {}}
-          onPressCart={() => navigateToCart()}
-        />
-      </View>
-    </WebLayout>
+      <Header
+        scrollY={scrollY}
+        heroHeight={HERO_HEIGHT}
+        searchValue={searchValue}
+        onChangeSearch={setSearchValue}
+        style={styles.header}
+        onPressBell={() => {}}
+        onPressCart={() => navigateToCart()}
+      />
+    </View>
   );
 };
 

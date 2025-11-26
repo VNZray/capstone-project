@@ -6,12 +6,7 @@ import { useFonts } from 'expo-font';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import React, { useEffect } from 'react';
-import {
-  ImageBackground,
-  View,
-  Platform,
-  useWindowDimensions,
-} from 'react-native';
+import { ImageBackground, View } from 'react-native';
 import 'react-native-url-polyfill/auto';
 
 const Main = () => {
@@ -21,17 +16,6 @@ const Main = () => {
     'Poppins-SemiBold': require('@/assets/fonts/Poppins/Poppins-SemiBold.ttf'),
     'Poppins-Bold': require('@/assets/fonts/Poppins/Poppins-Bold.ttf'),
   });
-
-  const { width } = useWindowDimensions();
-  const isWeb = Platform.OS === 'web';
-  const isDesktop = width >= 768;
-
-  // Redirect to landing page for web/desktop users
-  useEffect(() => {
-    if (fontsLoaded && isWeb && isDesktop) {
-      router.replace('/landing');
-    }
-  }, [fontsLoaded, isWeb, isDesktop]);
 
   const { user, loading } = useAuth();
 
