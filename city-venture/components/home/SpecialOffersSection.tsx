@@ -35,10 +35,10 @@ const SpecialOffersSection: React.FC<SpecialOffersSectionProps> = ({
         <Pressable>
           <ThemedText
             type="label-small"
-            lightColor={colors.accent}
+            lightColor={colors.primary}
             darkColor={colors.accent}
           >
-            See All
+            View All {'>'}
           </ThemedText>
         </Pressable>
       </View>
@@ -112,7 +112,7 @@ const SpecialOffersSection: React.FC<SpecialOffersSectionProps> = ({
                 <Pressable
                   style={[
                     styles.ctaButton,
-                    { backgroundColor: colors.complementary },
+                    { backgroundColor: colors.accent },
                   ]}
                 >
                   <ThemedText

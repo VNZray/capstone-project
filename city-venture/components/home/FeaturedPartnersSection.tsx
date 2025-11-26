@@ -90,10 +90,10 @@ const FeaturedPartnersSection: React.FC<FeaturedPartnersSectionProps> = ({
         <Pressable>
           <ThemedText
             type="label-small"
-            lightColor={colors.accent}
+            lightColor={colors.primary}
             darkColor={colors.accent}
           >
-            See All
+            View All {'>'}
           </ThemedText>
         </Pressable>
       </View>

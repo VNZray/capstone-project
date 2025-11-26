@@ -65,9 +65,20 @@ const CityListSection: React.FC<CityListSectionProps> = ({
 
   return (
     <View style={styles.container}>
-      <ThemedText type="sub-title-small" weight="bold" style={styles.heading}>
-        Explore by Cities
-      </ThemedText>
+      <View style={styles.header}>
+        <ThemedText type="sub-title-small" weight="bold">
+          Explore by Cities
+        </ThemedText>
+        <Pressable onPress={onPressViewMore}>
+          <ThemedText
+            type="label-small"
+            lightColor={colors.primary}
+            darkColor={colors.accent}
+          >
+            View All {'>'}
+          </ThemedText>
+        </Pressable>
+      </View>
       <FlatList
         horizontal
         data={PLACEHOLDER_CITIES}
@@ -132,9 +143,12 @@ const styles = StyleSheet.create({
     marginRight: -24,
     marginLeft: -24,
   },
-  heading: {
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     marginBottom: 16,
-    paddingLeft: 24,
+    paddingHorizontal: 24,
   },
   listContent: {
     paddingRight: 24,

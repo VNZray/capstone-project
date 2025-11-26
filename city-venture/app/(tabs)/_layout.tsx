@@ -16,7 +16,9 @@ export default function TabLayout() {
 
   // Determine if current route is within the booking flow; hide tabs if so
   const hideTabs = React.useMemo(
-    () => !!pathname && /\/room\/booking/i.test(pathname),
+    () =>
+      !!pathname &&
+      (/\/room\/booking/i.test(pathname) || /\/cart/i.test(pathname)),
     [pathname]
   );
 
@@ -98,7 +100,11 @@ export default function TabLayout() {
               animation: 'shift',
               headerTitleAlign: 'center',
               tabBarIcon: ({ color }) => (
-                <IconSymbol size={32} name="list.clipboard.fill" color={color} />
+                <IconSymbol
+                  size={32}
+                  name="list.clipboard.fill"
+                  color={color}
+                />
               ),
             }}
           />

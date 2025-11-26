@@ -5,10 +5,10 @@ import WelcomeSection from '@/components/home/WelcomeSection';
 import SectionContainer from '@/components/home/SectionContainer';
 
 import EventListCard from '@/components/home/EventListCard';
-import NewsCard from '@/components/home/NewsCard';
 import { ThemedText } from '@/components/themed-text';
 import CityListSection from '@/components/home/CityListSection';
 import PersonalRecommendationSection from '@/components/home/PersonalRecommendationSection';
+import NewsSection from '@/components/home/NewsSection';
 import SpecialOffersSection from '@/components/home/SpecialOffersSection';
 import FeaturedPartnersSection from '@/components/home/FeaturedPartnersSection';
 import { ResponsiveContainer } from '@/components/layout/ResponsiveContainer';
@@ -199,30 +199,6 @@ const HomeScreen = () => {
     );
   };
 
-  const renderNewsSection = () => {
-    if (newsState.loading && newsState.data.length === 0) {
-      return <NewsSkeleton />;
-    }
-    if (!newsState.loading && newsState.data.length === 0) {
-      return (
-        <EmptyState icon="newspaper-remove" message="No news articles yet." />
-      );
-    }
-
-    return (
-      <>
-        {newsState.error ? <SectionError message={newsState.error} /> : null}
-        {newsState.data.map((article) => (
-          <NewsCard
-            key={article.id}
-            article={article}
-            onPress={handleNewsPress}
-          />
-        ))}
-      </>
-    );
-  };
-
   if (!user) return null;
 
   return (
@@ -302,9 +278,12 @@ const HomeScreen = () => {
                 {renderEventSection()}
               </SectionContainer>
 
-              <SectionContainer title="News & Updates">
-                {renderNewsSection()}
-              </SectionContainer>
+              <NewsSection
+                data={newsState.data}
+                loading={newsState.loading}
+                error={newsState.error}
+                onPressArticle={handleNewsPress}
+              />
 
               <PromoCard content={PROMO_CARD} style={styles.promoCard} />
             </MainContentCard>
@@ -372,35 +351,42 @@ const ActionGrid: React.FC<ActionGridProps> = ({ items, onPressItem }) => {
             key={pageIndex}
             style={[styles.actionGridPage, { width: PAGE_WIDTH }]}
           >
-            {page.map((item) => (
-              <Pressable
-                key={item.id}
-                style={[styles.actionItem, { width: '25%' }]}
-                onPress={() => onPressItem(item.id)}
-              >
-                <View
-                  style={[
-                    styles.actionIcon,
-                    { backgroundColor: colors.highlight },
-                  ]}
+            {page.map((item, index) => {
+              const globalIndex = pageIndex * ITEMS_PER_PAGE + index;
+              const palettes = [
+                { bg: colors.infoLight, icon: colors.info },
+                { bg: colors.warningLight, icon: colors.warning },
+                { bg: colors.successLight, icon: colors.success },
+                { bg: colors.errorLight, icon: colors.error },
+                { bg: colors.highlight, icon: colors.accent },
+              ];
+              const { bg, icon } = palettes[globalIndex % palettes.length];
+
+              return (
+                <Pressable
+                  key={item.id}
+                  style={[styles.actionItem, { width: '25%' }]}
+                  onPress={() => onPressItem(item.id)}
                 >
-                  <MaterialCommunityIcons
-                    name={item.icon}
-                    size={28}
-                    color={colors.accent}
-                  />
-                </View>
-                <ThemedText
-                  type="label-small"
-                  align="center"
-                  style={styles.actionLabel}
-                  lightColor={colors.textSecondary}
-                  darkColor={colors.textSecondary}
-                >
-                  {item.label}
-                </ThemedText>
-              </Pressable>
-            ))}
+                  <View style={[styles.actionIcon, { backgroundColor: bg }]}>
+                    <MaterialCommunityIcons
+                      name={item.icon}
+                      size={28}
+                      color={icon}
+                    />
+                  </View>
+                  <ThemedText
+                    type="label-small"
+                    align="center"
+                    style={styles.actionLabel}
+                    lightColor={colors.textSecondary}
+                    darkColor={colors.textSecondary}
+                  >
+                    {item.label}
+                  </ThemedText>
+                </Pressable>
+              );
+            })}
           </View>
         ))}
       </Animated.ScrollView>
@@ -417,7 +403,7 @@ const ActionGrid: React.FC<ActionGridProps> = ({ items, onPressItem }) => {
                 isActive ? styles.paginationDotActive : null,
                 {
                   backgroundColor: isActive
-                    ? colors.complementary
+                    ? colors.primary
                     : colors.borderStrong,
                 },
               ]}
@@ -567,21 +553,6 @@ const EventSkeleton = () => {
   );
 };
 
-const NewsSkeleton = () => {
-  const scheme = useColorScheme() ?? 'light';
-  const placeholderColor = Colors[scheme].accent;
-  return (
-    <>
-      {Array.from({ length: 2 }).map((_, index) => (
-        <View
-          key={`news-skeleton-${index}`}
-          style={[styles.newsSkeleton, { backgroundColor: placeholderColor }]}
-        />
-      ))}
-    </>
-  );
-};
-
 const styles = StyleSheet.create({
   root: {
     flex: 1,
@@ -657,12 +628,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.08)',
     marginBottom: 12,
   },
-  newsSkeleton: {
-    height: 200,
-    borderRadius: 18,
-    backgroundColor: 'rgba(255,255,255,0.08)',
-    marginBottom: 14,
-  },
+
   emptyState: {
     padding: 16,
     borderRadius: 16,
@@ -692,7 +658,7 @@ const styles = StyleSheet.create({
   paginationDot: {
     width: 6,
     height: 6,
-    borderRadius: 3,
+    borderRadius: 4,
   },
   paginationDotActive: {
     width: 24,
