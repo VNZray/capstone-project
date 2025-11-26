@@ -1,4 +1,4 @@
-import { ShopColors } from '@/constants/ShopColors';
+import { ShopColors } from '@/constants/color';
 import React from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 

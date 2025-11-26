@@ -21,7 +21,7 @@ import { getOrderById } from '@/services/OrderService';
 import { Ionicons } from '@expo/vector-icons';
 import { io, Socket } from 'socket.io-client';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { API_URL } from '@/services/api';
+import API_URL from '@/services/api';
 
 const PaymentSuccessScreen = () => {
   const params = useLocalSearchParams<{ orderId: string }>();

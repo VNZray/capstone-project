@@ -3,7 +3,7 @@ import {
   PhotoGalleryModal, 
 } from '@/components/shops/details/elements';
 import type { BusinessProfileView } from '@/components/shops/details/types';
-import { ShopColors } from '@/constants/ShopColors';
+import { ShopColors } from '@/constants/color';
 import React, { useMemo, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 

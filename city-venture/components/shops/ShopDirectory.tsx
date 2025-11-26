@@ -7,7 +7,7 @@ import ShopListCard from '@/components/shops/ShopListCard';
 import SpecialOfferCard from '@/components/shops/SpecialOfferCard';
 import { ThemedText } from '@/components/themed-text';
 import { SHOP_CATEGORIES } from '@/constants/ShopCategories';
-import { ShopColors } from '@/constants/ShopColors';
+import { ShopColors } from '@/constants/color';
 import { fetchAllBusinessDetails } from '@/services/BusinessService';
 import type { Business } from '@/types/Business';
 import { FontAwesome5 } from '@expo/vector-icons';
@@ -207,34 +207,28 @@ const ShopDirectory = () => {
 
   const renderCategoriesSection = () => (
     <View style={styles.section}>
-      <View style={styles.sectionHeader}>
-        <ThemedText type="sub-title-extra-small" weight="bold" style={{ color: ShopColors.textPrimary }}>
-          Categories
-        </ThemedText>
-        <TouchableOpacity onPress={() => router.push('/(tabs)/(home)/(shop)/categories')}>
-          <ThemedText
-            type="body-extra-small"
-            style={{ color: ShopColors.accent, fontWeight: '600' }}
-          >
-            View All →
-          </ThemedText>
-        </TouchableOpacity>
-      </View>
-
-      <View style={styles.categoriesGrid}>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={{ paddingHorizontal: 16 }}
+      >
+        <ShopCategoryTile
+          label="All"
+          active={activeCategory === 'all'}
+          onPress={() => handleCategoryChange('all')}
+        />
         {Object.entries(SHOP_CATEGORIES)
           .slice(0, 8)
           .map(([key, { label, icon }]) => (
-            <View key={key} style={styles.categoryItemWrapper}>
-              <ShopCategoryTile
-                label={label}
-                icon={icon}
-                active={activeCategory === key}
-                onPress={() => handleCategoryChange(key)}
-              />
-            </View>
+            <ShopCategoryTile
+              key={key}
+              label={label}
+              icon={icon}
+              active={activeCategory === key}
+              onPress={() => handleCategoryChange(key)}
+            />
           ))}
-      </View>
+      </ScrollView>
     </View>
   );
 
@@ -335,18 +329,17 @@ const ShopDirectory = () => {
         keyExtractor={(item) => item.id || ''}
         ListHeaderComponent={
           <>
-            <Container gap={0} paddingHorizontal={16} paddingTop={16} paddingBottom={8} backgroundColor="transparent">
+            <Container gap={0} paddingHorizontal={16} paddingTop={16} paddingBottom={16} backgroundColor="transparent">
               <SearchBar
                 shape="rounded"
                 containerStyle={{ 
                   flex: 1, 
                   backgroundColor: '#FFFFFF', 
-                  borderWidth: 1, 
-                  borderColor: ShopColors.border,
+                  borderWidth: 0, 
                   shadowColor: '#000',
                   shadowOffset: { width: 0, height: 2 },
                   shadowOpacity: 0.05,
-                  shadowRadius: 4,
+                  shadowRadius: 8,
                   elevation: 2
                 }}
                 value={search}
@@ -356,9 +349,9 @@ const ShopDirectory = () => {
               />
             </Container>
             
+            {renderCategoriesSection()}
             {renderFeaturedSection()}
             {renderSpecialOffersSection()}
-            {renderCategoriesSection()}
             {renderListHeader()}
           </>
         }
@@ -381,22 +374,13 @@ const styles = StyleSheet.create({
     paddingBottom: 100,
   },
   section: {
-    marginBottom: 32,
+    marginBottom: 24,
   },
   sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 16,
-    marginBottom: 16,
-  },
-  categoriesGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    paddingHorizontal: 16,
-    justifyContent: 'space-between', 
-  },
-  categoryItemWrapper: {
     marginBottom: 12,
   },
   emptyPlaceholder: {

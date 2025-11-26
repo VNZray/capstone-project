@@ -1,4 +1,4 @@
-import { ShopColors } from '@/constants/ShopColors';
+import { ShopColors } from '@/constants/color';
 import { moderateScale } from '@/utils/responsive';
 import React from 'react';
 import {

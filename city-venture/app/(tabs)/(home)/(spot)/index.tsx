@@ -6,6 +6,7 @@ import {
   View,
   Pressable,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { ThemedText } from '@/components/themed-text';
 import SearchBar from '@/components/SearchBar';
 import TouristSpotCard from '@/components/tourist_spots/TouristSpotCard';
@@ -28,7 +29,15 @@ const TouristSpotScreen = () => {
   const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(
     null
   );
-  const [viewMode, setViewMode] = useState<'card' | 'list'>('card');
+  
+  const getCategoryIcon = (name: string) => {
+    const n = name.toLowerCase();
+    if (n.includes('church') || n.includes('cathedral')) return 'church';
+    if (n.includes('history') || n.includes('museum') || n.includes('shrine')) return 'landmark';
+    if (n.includes('nature') || n.includes('volcano') || n.includes('hill')) return 'mountain';
+    if (n.includes('pilgrimage')) return 'praying-hands';
+    return 'map-marker-alt';
+  };
 
   // Small helper to lowercase strings safely
   const toLowerSafe = (v: unknown) => (typeof v === 'string' ? v.toLowerCase() : '');
@@ -84,7 +93,7 @@ const TouristSpotScreen = () => {
           if (item?.id != null) setSpotId(item.id);
           navigateToTouristSpotProfile();
         }}
-        viewMode={viewMode}
+        viewMode="card"
       />
     );
   };
@@ -97,24 +106,25 @@ const TouristSpotScreen = () => {
         </View>
       ) : (
       <ScrollView
+        style={{ flex: 1, backgroundColor: '#F9FAFB' }}
         contentContainerStyle={styles.content}
+        stickyHeaderIndices={[1]}
       >
+        <View style={{ marginTop: 8, marginBottom: 16 }}>
+          <ThemedText type="header-large" style={{ fontSize: 32 }}>Tourist Spots</ThemedText>
+        </View>
+
         <View style={styles.SearchContainer}>
           <SearchBar
             value={query}
             onChangeText={setQuery}
             onSearch={() => {}}
-            placeholder="Search"
-            variant="icon-right"
+            placeholder="Explore new adventures..."
+            variant="plain"
             size="md"
-            containerStyle={{ flex: 1 }}
-          />
-          <Button
-            elevation={2}
-            color="white"
-            startIcon={viewMode === 'card' ? 'list' : 'th-large'}
-            icon
-            onPress={() => setViewMode(viewMode === 'card' ? 'list' : 'card')}
+            containerStyle={{ flex: 1, backgroundColor: '#E8EBF0', borderRadius: 12, borderWidth: 0 }}
+            inputStyle={{ fontSize: 15 }}
+            rightIcon={<Ionicons name="options-outline" size={20} color="#007AFF" />}
           />
         </View>
 
@@ -145,15 +155,15 @@ const TouristSpotScreen = () => {
                       name={(f as any)?.name || 'Untitled'}
                       image={
                         img?.file_url ||
-                        'https://via.placeholder.com/300x200?text=No+Image'
+                        'https://via.placeholder.com/300x400?text=No+Image'
                       }
                       categories={f?.categories?.filter(Boolean)?.map((c: any) => c?.category) || []}
                       onPress={() => {
                         if ((f as any)?.id != null) setSpotId((f as any).id);
                         navigateToTouristSpotProfile();
                       }}
-                      width={260}
-                      height={140}
+                      width={220}
+                      height={320}
                     />
                   </View>
                 );
@@ -191,6 +201,7 @@ const TouristSpotScreen = () => {
                   variant={selectedCategoryId === cat?.id ? 'solid' : 'soft'}
                   onPress={() => setSelectedCategoryId(cat?.id ?? null)}
                   style={{ marginRight: 8 }}
+                  startIconName={getCategoryIcon(cat?.category || '')}
                 />
               ))}
             </ScrollView>
@@ -201,15 +212,11 @@ const TouristSpotScreen = () => {
         <View style={{ marginTop: 12 }}>
           <FlatList
             data={filteredSpots}
-            key={viewMode}
+            key={'card'}
             keyExtractor={(item, index) => String(item?.id ?? index)}
-            numColumns={viewMode === 'card' ? 2 : 1}
+            numColumns={2}
             scrollEnabled={false}
-            columnWrapperStyle={
-              viewMode === 'card'
-                ? { justifyContent: 'space-between' }
-                : undefined
-            }
+            columnWrapperStyle={{ justifyContent: 'space-between' }}
             renderItem={renderSpot}
             style={{ marginTop: 8 }}
             ListEmptyComponent={
@@ -235,17 +242,18 @@ export default TouristSpotScreen;
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  content: { paddingBottom:100, paddingHorizontal: 16, paddingTop: 16 },
+  content: { paddingBottom:100, paddingHorizontal: 16 },
   screenTitle: { marginTop: 8, fontSize: 22, fontWeight: '800' },
   sectionTitle: { fontSize: 16, fontWeight: '700' },
   emptyText: { marginTop: 16, textAlign: 'center', fontSize: 13, opacity: 0.7 },
   SearchContainer: {
-    backgroundColor: 'transparent',
+    backgroundColor: '#F9FAFB',
     display: 'flex',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginTop: 8,
+    paddingTop: 8,
+    paddingBottom: 8,
     gap: 8,
   },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingTop: 40 },

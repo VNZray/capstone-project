@@ -329,7 +329,7 @@ app.get("/orders/:orderId/payment-cancel", (req, res) => {
 // Validate critical environment variables on startup
 function validateEnvironment() {
   const required = {
-    'JWT_SECRET': process.env.JWT_SECRET,
+    'JWT_ACCESS_SECRET': process.env.JWT_ACCESS_SECRET,
     'DB_HOST': process.env.DB_HOST,
     'DB_USER': process.env.DB_USER,
     'DB_NAME': process.env.DB_NAME,
@@ -340,7 +340,7 @@ function validateEnvironment() {
     'PAYMONGO_PUBLIC_KEY': process.env.PAYMONGO_PUBLIC_KEY,
     'PAYMONGO_WEBHOOK_SECRET': process.env.PAYMONGO_WEBHOOK_SECRET,
     'FRONTEND_BASE_URL': process.env.FRONTEND_BASE_URL,
-  };
+           };
 
   const missing = [];
   const warnings = [];

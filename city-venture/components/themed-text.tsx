@@ -1,6 +1,6 @@
-import { useThemeColor } from '@/hooks/use-theme-color';
+import { Colors } from '@/constants/color';
 import React from 'react';
-import { Platform, StyleSheet, Text, View, type TextProps, useWindowDimensions } from 'react-native';
+import { Platform, StyleSheet, Text, View, type TextProps, useWindowDimensions, useColorScheme } from 'react-native';
 import { scaled } from '@/utils/responsive';
 
 export type TypographyType =
@@ -77,10 +77,20 @@ export function ThemedText({
 
   ...rest
 }: ThemedTextProps) {
+  const colorScheme = useColorScheme() ?? 'light';
+  const colors = Colors[colorScheme];
   const isLink = type.startsWith('link-');
-  const defaultColor = isLink
-    ? '#1e90ff'
-    : useThemeColor({ light: lightColor, dark: darkColor }, 'text');
+  
+  // Use semantic color tokens
+  const defaultColor = lightColor && darkColor
+    ? (colorScheme === 'light' ? lightColor : darkColor)
+    : lightColor || darkColor
+    ? (lightColor || darkColor)
+    : isLink
+    ? colors.textLink
+    : type === 'label-small' || type === 'label-extra-small'
+    ? colors.textSecondary
+    : colors.text;
 
   const { width } = useWindowDimensions();
 
@@ -216,7 +226,7 @@ const fontSizeMap: Record<TypographyType, { base: number; min: number; max: numb
 };
 
 function getResponsiveStyle(type: TypographyType, width: number) {
-  const config = fontSizeMap[type];
+  const config = fontSizeMap[type] ?? fontSizeMap['body-medium'];
   const fontSize = scaled(config.base, { min: config.min, max: config.max, factor: 0.5, width });
   return { fontSize };
 }
