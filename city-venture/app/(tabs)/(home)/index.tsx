@@ -1,6 +1,5 @@
 import Header, { HEADER_BASE_HEIGHT } from '@/components/home/Header';
 import HeroSection from '@/components/home/HeroSection';
-import MainContentCard from '@/components/home/MainContentCard';
 import WelcomeSection from '@/components/home/WelcomeSection';
 import SectionContainer from '@/components/home/SectionContainer';
 
@@ -11,6 +10,7 @@ import PersonalRecommendationSection from '@/components/home/PersonalRecommendat
 import NewsSection from '@/components/home/NewsSection';
 import SpecialOffersSection from '@/components/home/SpecialOffersSection';
 import FeaturedPartnersSection from '@/components/home/FeaturedPartnersSection';
+import FeaturedTouristSpotsSection from '@/components/home/FeaturedTouristSpotsSection';
 
 import { useAuth } from '@/context/AuthContext';
 import { Colors } from '@/constants/color';
@@ -62,7 +62,6 @@ const HomeScreen = () => {
   const scrollY = useSharedValue(0);
   const { bottom } = useSafeAreaInsets();
   const colorScheme = useColorScheme() ?? 'light';
-  const isDarkMode = colorScheme === 'dark';
   const palette = Colors[colorScheme];
   const didRedirect = useRef(false);
   const [searchValue, setSearchValue] = useState('');
@@ -234,19 +233,10 @@ const HomeScreen = () => {
           />
         </View>
 
-        <MainContentCard
+        <View
           style={[
-            styles.mainCard,
-            {
-              backgroundColor: palette.surface,
-              shadowColor: palette.shadow,
-              shadowOpacity: isDarkMode ? 0.3 : 0.1,
-              shadowRadius: 20,
-              shadowOffset: { width: 0, height: 8 },
-              elevation: 8,
-              borderWidth: isDarkMode ? 1 : StyleSheet.hairlineWidth,
-              borderColor: palette.border,
-            },
+            styles.contentContainer,
+            { backgroundColor: palette.background },
           ]}
         >
           <ActionGrid items={ACTIONS} onPressItem={handleActionPress} />
@@ -268,6 +258,8 @@ const HomeScreen = () => {
             onPressPartner={(partner) => console.log(partner.name)}
           />
 
+          <FeaturedTouristSpotsSection />
+
           <SectionContainer
             title="Upcoming Events"
             onPressViewAll={navigateToEventHome}
@@ -283,7 +275,7 @@ const HomeScreen = () => {
           />
 
           <PromoCard content={PROMO_CARD} style={styles.promoCard} />
-        </MainContentCard>
+        </View>
       </AnimatedScrollView>
 
       <Header
@@ -331,7 +323,7 @@ const ActionGrid: React.FC<ActionGridProps> = ({ items, onPressItem }) => {
   const PAGE_WIDTH = SCREEN_WIDTH - 40;
 
   return (
-    <View>
+    <View style={styles.actionGridContainer}>
       <Animated.ScrollView
         horizontal
         pagingEnabled
@@ -339,7 +331,8 @@ const ActionGrid: React.FC<ActionGridProps> = ({ items, onPressItem }) => {
         onScroll={handleScroll}
         onMomentumScrollEnd={onMomentumScrollEnd}
         scrollEventThrottle={16}
-        style={{ marginHorizontal: -4 }} // Negative margin to offset padding in items if needed
+        style={{ marginHorizontal: -20 }} // Negative margin to allow full width scrolling
+        contentContainerStyle={{ paddingHorizontal: 16 }}
       >
         {pages.map((page, pageIndex) => (
           <View
@@ -348,12 +341,16 @@ const ActionGrid: React.FC<ActionGridProps> = ({ items, onPressItem }) => {
           >
             {page.map((item, index) => {
               const globalIndex = pageIndex * ITEMS_PER_PAGE + index;
+              // Modern subtle palette
               const palettes = [
-                { bg: colors.infoLight, icon: colors.info },
-                { bg: colors.warningLight, icon: colors.warning },
-                { bg: colors.successLight, icon: colors.success },
-                { bg: colors.errorLight, icon: colors.error },
-                { bg: colors.highlight, icon: colors.accent },
+                { bg: 'rgba(52, 152, 219, 0.1)', icon: '#3498db' }, // Blue
+                { bg: 'rgba(46, 204, 113, 0.1)', icon: '#2ecc71' }, // Green
+                { bg: 'rgba(155, 89, 182, 0.1)', icon: '#9b59b6' }, // Purple
+                { bg: 'rgba(230, 126, 34, 0.1)', icon: '#e67e22' }, // Orange
+                { bg: 'rgba(231, 76, 60, 0.1)', icon: '#e74c3c' }, // Red
+                { bg: 'rgba(26, 188, 156, 0.1)', icon: '#1abc9c' }, // Teal
+                { bg: 'rgba(241, 196, 15, 0.1)', icon: '#f1c40f' }, // Yellow
+                { bg: 'rgba(52, 73, 94, 0.1)', icon: '#34495e' }, // Dark Blue
               ];
               const { bg, icon } = palettes[globalIndex % palettes.length];
 
@@ -366,7 +363,7 @@ const ActionGrid: React.FC<ActionGridProps> = ({ items, onPressItem }) => {
                   <View style={[styles.actionIcon, { backgroundColor: bg }]}>
                     <MaterialCommunityIcons
                       name={item.icon}
-                      size={28}
+                      size={26}
                       color={icon}
                     />
                   </View>
@@ -559,12 +556,19 @@ const styles = StyleSheet.create({
     paddingTop: HEADER_BASE_HEIGHT - 6,
     paddingBottom: 24,
   },
-  mainCard: {
+  contentContainer: {
+    paddingBottom: 24,
+    paddingHorizontal: 20,
+    paddingTop: 24,
+    gap: 24,
     marginTop: -16,
-    gap: 20,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    // backgroundColor set dynamically
   },
-  sectionHeading: {
-    marginBottom: 20,
+  actionGridContainer: {
+    marginBottom: 8,
+    paddingTop: 16,
   },
   actionGridPage: {
     flexDirection: 'row',
@@ -573,18 +577,19 @@ const styles = StyleSheet.create({
   },
   actionItem: {
     alignItems: 'center',
-    marginBottom: 24,
+    marginBottom: 20,
   },
   actionIcon: {
-    width: 64,
-    height: 64,
-    borderRadius: 22,
+    width: 56,
+    height: 56,
+    borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
-    overflow: 'hidden', // Ensure rounded corners are respected
+    marginBottom: 8,
   },
   actionLabel: {
-    marginTop: 8,
+    fontSize: 11,
+    fontWeight: '500',
   },
   promoBase: {
     borderRadius: 28,
