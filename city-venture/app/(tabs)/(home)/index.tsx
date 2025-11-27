@@ -1,6 +1,4 @@
-import Header, { HEADER_BASE_HEIGHT } from '@/components/home/Header';
 import HeroSection from '@/components/home/HeroSection';
-import WelcomeSection from '@/components/home/WelcomeSection';
 
 import NewsAndEventsSection from '@/components/home/NewsAndEventsSection';
 import { ThemedText } from '@/components/themed-text';
@@ -22,8 +20,9 @@ import {
   type HomeEvent,
   type NewsArticle,
 } from '@/services/HomeContentService';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { MaterialCommunityIcons, Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
+import SearchBar from '@/components/SearchBar';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Dimensions,
@@ -37,6 +36,10 @@ import {
 import Animated, {
   useAnimatedScrollHandler,
   useSharedValue,
+  interpolateColor,
+  useAnimatedStyle,
+  interpolate,
+  Extrapolation,
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -55,12 +58,31 @@ const AnimatedScrollView = Animated.ScrollView;
 const HomeScreen = () => {
   const { user } = useAuth();
   const scrollY = useSharedValue(0);
-  const { bottom } = useSafeAreaInsets();
+  const { top: insetsTop, bottom } = useSafeAreaInsets();
   const colorScheme = useColorScheme() ?? 'light';
   const palette = Colors[colorScheme];
   const didRedirect = useRef(false);
   const [searchValue, setSearchValue] = useState('');
   const [refreshing, setRefreshing] = useState(false);
+  const [greeting, setGreeting] = useState('Hello');
+
+  useEffect(() => {
+    const greetings = [
+      'Hello',
+      'Bonjour',
+      'Hola',
+      'Ciao',
+      'Konnichiwa',
+      'Guten Tag',
+      'Namaste',
+    ];
+    let index = 0;
+    const interval = setInterval(() => {
+      index = (index + 1) % greetings.length;
+      setGreeting(greetings[index]);
+    }, 3000);
+    return () => clearInterval(interval);
+  }, []);
 
   type SectionState<T> = {
     data: T[];
@@ -83,8 +105,6 @@ const HomeScreen = () => {
       router.replace('/(screens)');
     }
   }, [user]);
-
-  const displayName = user?.first_name ?? user?.last_name ?? 'Friend';
 
   const loadHomeContent = useCallback(async (isRefresh = false) => {
     if (isRefresh) {
@@ -165,6 +185,50 @@ const HomeScreen = () => {
     });
   }, []);
 
+  // Row 1 (profile + icons) animates up and fades out
+  const topRowAnimatedStyle = useAnimatedStyle(() => {
+    const translateY = interpolate(
+      scrollY.value,
+      [0, 80],
+      [0, -60],
+      Extrapolation.CLAMP
+    );
+    const opacity = interpolate(
+      scrollY.value,
+      [0, 60],
+      [1, 0],
+      Extrapolation.CLAMP
+    );
+    return {
+      transform: [{ translateY }],
+      opacity,
+    };
+  });
+
+  // Search bar container background interpolates from transparent to primary
+  const searchBarContainerStyle = useAnimatedStyle(() => {
+    return {
+      backgroundColor: interpolateColor(
+        scrollY.value,
+        [0, 80],
+        ['transparent', palette.primary]
+      ),
+    };
+  });
+
+  // Search bar moves up as top row collapses
+  const searchBarAnimatedStyle = useAnimatedStyle(() => {
+    const translateY = interpolate(
+      scrollY.value,
+      [0, 80],
+      [0, -56],
+      Extrapolation.CLAMP
+    );
+    return {
+      transform: [{ translateY }],
+    };
+  });
+
   if (!user) return null;
 
   return (
@@ -193,13 +257,8 @@ const HomeScreen = () => {
         scrollEventThrottle={16}
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.heroSpacer}>
-          <WelcomeSection
-            scrollY={scrollY}
-            name={displayName}
-            subtitle="Stay connected with city life, follow events, and access the services you need every day."
-          />
-        </View>
+        {/* Spacer for sticky header */}
+        <View style={{ height: insetsTop + 220 }} />
 
         <View
           style={[
@@ -247,15 +306,66 @@ const HomeScreen = () => {
         </View>
       </AnimatedScrollView>
 
-      <Header
-        scrollY={scrollY}
-        heroHeight={HERO_HEIGHT}
-        searchValue={searchValue}
-        onChangeSearch={setSearchValue}
-        style={styles.header}
-        onPressBell={() => {}}
-        onPressCart={() => navigateToCart()}
-      />
+      {/* Sticky Header */}
+      <View style={[styles.stickyHeader, { paddingTop: insetsTop + 10 }]}>
+        {/* Row 1: Profile + Icons (eases up on scroll) */}
+        <Animated.View style={[styles.topRow, topRowAnimatedStyle]}>
+          <View style={styles.profileSection}>
+            <View style={styles.profileIcon}>
+              <Ionicons name="person" size={20} color="#FFF" />
+            </View>
+            <View>
+              <ThemedText
+                type="label-medium"
+                style={{ color: 'rgba(255,255,255,0.8)' }}
+              >
+                {greeting}
+              </ThemedText>
+              <ThemedText
+                type="body-large"
+                weight="bold"
+                style={{ color: '#FFF' }}
+              >
+                Tourist!
+              </ThemedText>
+            </View>
+          </View>
+
+          <View style={styles.iconRow}>
+            <Pressable onPress={() => {}} style={styles.iconButton}>
+              <Ionicons name="notifications-outline" size={24} color="#FFF" />
+            </Pressable>
+            <Pressable
+              onPress={() => navigateToCart()}
+              style={styles.iconButton}
+            >
+              <Ionicons name="cart-outline" size={24} color="#FFF" />
+            </Pressable>
+          </View>
+        </Animated.View>
+
+        {/* Row 2: Search Bar (stays sticky, bg interpolates) */}
+        <Animated.View
+          style={[styles.searchBarWrapper, searchBarAnimatedStyle]}
+        >
+          <Animated.View
+            style={[styles.searchBarContainer, searchBarContainerStyle]}
+          >
+            <SearchBar
+              value={searchValue}
+              onChangeText={setSearchValue}
+              onSearch={() => {}}
+              placeholder="Where do you want to go?"
+              variant="plain"
+              containerStyle={{
+                backgroundColor: 'rgba(255,255,255,0.95)',
+                borderRadius: 12,
+                borderWidth: 0,
+              }}
+            />
+          </Animated.View>
+        </Animated.View>
+      </View>
     </View>
   );
 };
@@ -381,11 +491,52 @@ const styles = StyleSheet.create({
   root: {
     flex: 1,
   },
+  stickyHeader: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 100,
+  },
+  topRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingBottom: 12,
+  },
+  profileSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  profileIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.3)',
+  },
+  iconRow: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  searchBarWrapper: {
+    paddingHorizontal: 20,
+    paddingBottom: 12,
+  },
+  searchBarContainer: {
+    borderRadius: 12,
+    overflow: 'hidden',
+  },
   heroSpacer: {
-    minHeight: HERO_HEIGHT + HEADER_BASE_HEIGHT * 0.05,
+    minHeight: HERO_HEIGHT + 0 * 0.05, // Adjusted since HEADER_BASE_HEIGHT is removed
     justifyContent: 'flex-end',
     paddingHorizontal: 20,
-    paddingTop: HEADER_BASE_HEIGHT - 6,
+    paddingTop: 0 - 6,
     paddingBottom: 24,
   },
   contentContainer: {
@@ -453,12 +604,15 @@ const styles = StyleSheet.create({
     paddingLeft: 0,
   },
 
-  header: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    zIndex: 10,
+  iconButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
   },
   paginationContainer: {
     flexDirection: 'row',

@@ -53,7 +53,7 @@ const HeroSection: React.FC<HeroSectionProps> = ({
         resizeMode="cover"
       >
         <LinearGradient
-          colors={['rgba(4,4,10,0.1)', 'rgba(10,10,20,0.6)']}
+          colors={['rgba(10, 27, 71, 0.9)', 'rgba(15, 15, 134, 0.6)']}
           start={{ x: 0, y: 0 }}
           end={{ x: 0, y: 1 }}
           style={StyleSheet.absoluteFill}
