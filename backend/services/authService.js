@@ -4,8 +4,16 @@ import jwt from 'jsonwebtoken';
 import { v4 as uuidv4 } from 'uuid';
 import crypto from 'crypto';
 
-const JWT_ACCESS_SECRET = process.env.JWT_ACCESS_SECRET || 'access_secret_fallback';
-const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || 'refresh_secret_fallback';
+// SECURITY: JWT secrets MUST be set via environment variables. No fallbacks.
+const JWT_ACCESS_SECRET = process.env.JWT_ACCESS_SECRET;
+const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET;
+
+if (!JWT_ACCESS_SECRET) {
+  throw new Error('CRITICAL: JWT_ACCESS_SECRET environment variable is not set.');
+}
+if (!JWT_REFRESH_SECRET) {
+  throw new Error('CRITICAL: JWT_REFRESH_SECRET environment variable is not set.');
+}
 const ACCESS_TOKEN_EXPIRY = process.env.ACCESS_TOKEN_EXPIRY || '15m';
 const REFRESH_TOKEN_EXPIRY_DAYS = 7; // For DB calculation
 
@@ -32,7 +40,10 @@ export async function generateTokens(user) {
       role: roleName, // Use role name instead of ID
     },
     JWT_ACCESS_SECRET,
-    { expiresIn: ACCESS_TOKEN_EXPIRY }
+    { 
+      expiresIn: ACCESS_TOKEN_EXPIRY,
+      algorithm: 'HS256' // SECURITY: Explicitly pin algorithm
+    }
   );
 
   const refreshToken = jwt.sign(
@@ -42,7 +53,10 @@ export async function generateTokens(user) {
       version: 0,
     },
     JWT_REFRESH_SECRET,
-    { expiresIn: '7d' }
+    { 
+      expiresIn: '7d',
+      algorithm: 'HS256' // SECURITY: Explicitly pin algorithm
+    }
   );
 
   return { accessToken, refreshToken };
@@ -54,8 +68,14 @@ export async function loginUser(email, password) {
   const [rows] = await db.query('CALL GetUserByEmail(?)', [email]);
   const users = rows[0]; // SP returns [[user], ...]
   
+  // SECURITY: Use generic error message to prevent user enumeration attacks
+  // Do NOT reveal whether the email exists or the password was wrong
+  const GENERIC_AUTH_ERROR = 'Invalid email or password';
+  
   if (!users || users.length === 0) {
-    throw new Error('User not found');
+    // Perform dummy bcrypt comparison to prevent timing attacks
+    await bcrypt.compare(password, '$2b$10$dummyhashfortimingattack');
+    throw new Error(GENERIC_AUTH_ERROR);
   }
   
   const user = users[0];
@@ -73,7 +93,7 @@ export async function loginUser(email, password) {
   const isMatch = await bcrypt.compare(password, user.password);
   
   if (!isMatch) {
-    throw new Error('Invalid credentials');
+    throw new Error(GENERIC_AUTH_ERROR);
   }
 
   // 2. Generate tokens
@@ -98,7 +118,10 @@ export async function loginUser(email, password) {
 export async function refreshAccessToken(incomingRefreshToken) {
   let payload;
   try {
-    payload = jwt.verify(incomingRefreshToken, JWT_REFRESH_SECRET);
+    // SECURITY: Explicitly pin algorithm to prevent algorithm confusion attacks
+    payload = jwt.verify(incomingRefreshToken, JWT_REFRESH_SECRET, {
+      algorithms: ['HS256'],
+    });
   } catch (err) {
     throw new Error('Invalid refresh token');
   }
@@ -180,7 +203,10 @@ export async function refreshAccessToken(incomingRefreshToken) {
       role: roleName, // Use role name instead of ID
     },
     JWT_ACCESS_SECRET,
-    { expiresIn: ACCESS_TOKEN_EXPIRY }
+    { 
+      expiresIn: ACCESS_TOKEN_EXPIRY,
+      algorithm: 'HS256' // SECURITY: Explicitly pin algorithm
+    }
   );
 
   const newRefreshToken = jwt.sign(
@@ -190,7 +216,10 @@ export async function refreshAccessToken(incomingRefreshToken) {
       version: (payload.version || 0) + 1,
     },
     JWT_REFRESH_SECRET,
-    { expiresIn: '7d' }
+    { 
+      expiresIn: '7d',
+      algorithm: 'HS256' // SECURITY: Explicitly pin algorithm
+    }
   );
 
   // Store new refresh token

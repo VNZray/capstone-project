@@ -20,3 +20,4 @@ backend/dist/**
 backend/dist
 docs/
 city-venture-web/.env
+.agent/

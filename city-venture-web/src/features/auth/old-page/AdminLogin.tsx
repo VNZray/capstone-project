@@ -16,10 +16,8 @@ const Login: React.FC = () => {
   // Load saved credentials on mount
   useEffect(() => {
     const savedEmail = localStorage.getItem("rememberedEmail");
-    const savedPassword = localStorage.getItem("rememberedPassword");
-    if (savedEmail && savedPassword) {
+    if (savedEmail) {
       setEmail(savedEmail);
-      setPassword(savedPassword);
       setRememberMe(true);
     }
   }, []);
@@ -39,16 +37,14 @@ const Login: React.FC = () => {
       // Save credentials if remember me is checked
       if (rememberMe) {
         localStorage.setItem("rememberedEmail", email);
-        localStorage.setItem("rememberedPassword", password);
       } else {
         localStorage.removeItem("rememberedEmail");
-        localStorage.removeItem("rememberedPassword");
       }
 
       if (user?.role_name === "Admin") {
         navigate("/tourism/dashboard");
       } else {
-        setLoginError("Unauthorized Access")
+        setLoginError("Unauthorized Access");
       }
     } catch (error: any) {
       setLoginError(

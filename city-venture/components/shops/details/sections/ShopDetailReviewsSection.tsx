@@ -8,7 +8,7 @@ import {
 } from '@/components/shops/details/elements';
 import type { ShopDetailFilterChipsProps } from '@/components/shops/details/elements/ShopDetailFilterChips';
 import type { BusinessProfileView } from '@/components/shops/details/types';
-import { ShopColors } from '@/constants/ShopColors';
+import { ShopColors } from '@/constants/color';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import React, { useCallback, useState, useMemo } from 'react';

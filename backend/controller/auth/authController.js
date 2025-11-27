@@ -51,8 +51,12 @@ export async function login(req, res) {
 
   } catch (error) {
     console.error('Login error:', error);
-    const status = error.message === 'User not found' || error.message === 'Invalid credentials' ? 401 : 500;
-    return res.status(status).json({ message: error.message });
+    // SECURITY: Always return 401 for auth failures with generic message
+    // Do not reveal whether email exists or password was wrong
+    const isAuthError = error.message === 'Invalid email or password';
+    const status = isAuthError ? 401 : 500;
+    const message = isAuthError ? error.message : 'Authentication failed';
+    return res.status(status).json({ message });
   }
 }
 
@@ -61,7 +65,12 @@ export async function refresh(req, res) {
     // Try getting token from Cookie (Web) or Body (Mobile)
     const refreshToken = req.cookies?.[COOKIE_NAME] || req.body?.refreshToken;
 
+    // Debug logging (remove in production)
+    console.log('[Refresh] Cookie present:', !!req.cookies?.[COOKIE_NAME]);
+    console.log('[Refresh] Body token present:', !!req.body?.refreshToken);
+
     if (!refreshToken) {
+      console.log('[Refresh] No token found - returning 401');
       return res.status(401).json({ message: 'Refresh token required' });
     }
 
@@ -69,6 +78,7 @@ export async function refresh(req, res) {
 
     // Web: Update Cookie
     if (req.cookies?.[COOKIE_NAME]) {
+      console.log('[Refresh] Setting new cookie for web client');
       res.cookie(COOKIE_NAME, newRefreshToken, cookieOptions);
       return res.json({ accessToken: newAccessToken });
     }
@@ -77,7 +87,7 @@ export async function refresh(req, res) {
     return res.json({ accessToken: newAccessToken, refreshToken: newRefreshToken });
 
   } catch (error) {
-    console.error('Refresh error:', error);
+    console.error('Refresh error:', error.message);
     // Clear cookie if invalid
     res.clearCookie(COOKIE_NAME);
     return res.status(403).json({ message: error.message || 'Invalid refresh token' });

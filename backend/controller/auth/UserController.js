@@ -3,6 +3,7 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { handleDbError } from "../../utils/errorHandler.js";
 import { v4 as uuidv4 } from "uuid";
+import { validatePasswordStrength } from "../../utils/passwordValidation.js";
 
 // Login user (Moved to authController.js)
 // export async function loginUser(req, res) { ... }
@@ -50,8 +51,20 @@ export async function getUsersByRoleId(req, res) {
 export async function insertUser(req, res) {
   try {
     const id = uuidv4();
-    // Hash password if provided
+    // Validate password strength before registration
     const rawPassword = req.body.password ?? null;
+    
+    if (rawPassword) {
+      const { isValid, errors } = validatePasswordStrength(rawPassword);
+      if (!isValid) {
+        return res.status(400).json({
+          message: 'Password does not meet security requirements',
+          errors,
+        });
+      }
+    }
+    
+    // Hash password if provided
     const hashedPassword = rawPassword ? await bcrypt.hash(rawPassword, 10) : null;
     const params = [
       id,

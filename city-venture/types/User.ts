@@ -31,7 +31,7 @@ export type UserDetails = {
   role_name?: string;
   description?: string;
   email: string;
-  password: string | "";
+  // SECURITY: password removed - never store plaintext passwords in client state
   phone_number?: string | "";
   gender?: string | "";
   birthdate?: string | "";

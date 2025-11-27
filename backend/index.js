@@ -4,6 +4,7 @@ import cookieParser from "cookie-parser";
 import "dotenv/config";
 import { createServer } from "http";
 import { initializeSocket } from "./services/socketService.js";
+import { startTokenCleanupScheduler } from "./services/tokenCleanupService.js";
 
 import userRoutes from "./routes/users.js";
 import authRoutes from "./routes/auth.js";
@@ -214,6 +215,8 @@ const routeSections = [
 const routes = routeSections.flatMap((s) => s.routes);
 
 // CORS configuration for authentication with credentials
+const isProduction = process.env.NODE_ENV === 'production';
+
 app.use(cors({
   origin: function(origin, callback) {
     // Allow requests with no origin (mobile apps, Postman, etc.)
@@ -232,7 +235,13 @@ app.use(cors({
       callback(null, true);
     } else {
       console.warn(`CORS blocked origin: ${origin}`);
-      callback(null, true); // Allow for development - tighten in production
+      // SECURITY: In production, reject unknown origins. In development, allow with warning.
+      if (isProduction) {
+        callback(new Error(`Origin ${origin} not allowed by CORS policy`), false);
+      } else {
+        console.warn('  ⚠️  Allowing for development - this would be blocked in production');
+        callback(null, true);
+      }
     }
   },
   credentials: true, // Allow cookies to be sent/received
@@ -390,6 +399,10 @@ httpServer.listen(PORT, "0.0.0.0", () => {
   console.log(colorServer("✅ Connected to MariaDB (Promise Pool)"));
   console.log(colorServer("✅ Environment validated"));
   console.log(colorServer("✅ API is ready to use\n"));
+
+  // Start token cleanup scheduler (runs every 6 hours)
+  startTokenCleanupScheduler();
+  console.log(colorServer("✅ Token cleanup scheduler started"));
 
   // Quick access to Tourism Admin Login
   const frontendBase = process.env.FRONTEND_URL || process.env.WEB_URL || "http://localhost:5173";

@@ -1,6 +1,6 @@
 import PageContainer from '@/components/PageContainer';
 import ShopCategoryTile from '@/components/shops/ShopCategoryTile';
-import { ShopColors } from '@/constants/ShopColors';
+import { Colors } from '@/constants/color';
 import { SHOP_CATEGORIES } from '@/constants/ShopCategories';
 import { useRouter } from 'expo-router';
 import React from 'react';
@@ -8,10 +8,11 @@ import { ScrollView, StyleSheet, View } from 'react-native';
 
 const ShopCategoriesScreen = () => {
   const router = useRouter();
+  const colors = Colors.light;
   // In a real app, you might want to pass the active category or handle selection
   // For now, we'll just display them and maybe navigate back with a filter?
   // Or just let the user browse.
-  
+
   const handleCategoryPress = (categoryKey: string) => {
     // In the future, this could navigate back to ShopDirectory with the selected category
     // or filter a list on this page.
@@ -22,7 +23,7 @@ const ShopCategoriesScreen = () => {
   };
 
   return (
-    <PageContainer style={{ backgroundColor: ShopColors.background }}>
+    <PageContainer style={{ backgroundColor: colors.background }}>
       <ScrollView
         contentContainerStyle={styles.contentContainer}
         showsVerticalScrollIndicator={false}
@@ -59,4 +60,3 @@ const styles = StyleSheet.create({
 });
 
 export default ShopCategoriesScreen;
-
