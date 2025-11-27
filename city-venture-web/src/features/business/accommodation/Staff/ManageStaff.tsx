@@ -3,8 +3,7 @@ import apiClient from "@/src/services/apiClient";
 import Container from "@/src/components/Container";
 import PageContainer from "@/src/components/PageContainer";
 import Typography from "@/src/components/Typography";
-import StaffAddModal, {
-} from "@/src/features/business/accommodation/Staff/components/StaffAddModal";
+import StaffAddModal from "@/src/features/business/accommodation/Staff/components/StaffAddModal";
 import StaffEditModal, {
   type StaffEditData,
 } from "@/src/features/business/accommodation/Staff/components/StaffEditModal";
@@ -24,13 +23,15 @@ import {
   updateStaffById,
   type StaffMember,
 } from "@/src/services/manage-staff/StaffService";
-import { initializeEmailJS, sendStaffCredentials } from "@/src/services/email/EmailService";
+import {
+  initializeEmailJS,
+  sendStaffCredentials,
+} from "@/src/services/email/EmailService";
 import Table, { type TableColumn, StatusChip } from "@/src/components/ui/Table";
 import { Edit, Trash2 } from "lucide-react";
 import { Box } from "@mui/joy";
 
 type Staff = StaffMember;
-
 
 const ManageStaff = () => {
   const { businessDetails } = useBusiness();
@@ -102,14 +103,31 @@ const ManageStaff = () => {
       const selectedRole = roles.find((r: any) => r.role_name === data.role);
       const userRoleId = selectedRole?.id || 1; // Default to 1 if not found
 
+      console.log(userRoleId);
+      console.log(userRoleId);
+      console.log(userRoleId);
+      console.log(userRoleId);
+      console.log(userRoleId);
+      console.log(userRoleId);
+      console.log(userRoleId);
+      console.log(userRoleId);
+      console.log(userRoleId);
+      console.log(userRoleId);
+      console.log(userRoleId);
+      console.log(userRoleId);
+      console.log(userRoleId);
+      console.log(userRoleId);
+
       // Step 1: Create User Account
       const userRes = await apiClient.post(`/users`, {
         email: data.email,
         phone_number: data.phone_number || "",
         password: "staff123", // Default temporary password
         barangay_id: 20,
-        user_role_id: userRoleId, // Assign role based on staff position
+        user_role_id: userRoleId,
       });
+
+      console.log(userRoleId);
 
       const userId = userRes?.data?.id;
       if (!userId) throw new Error("Failed to create user account");
@@ -138,7 +156,7 @@ const ManageStaff = () => {
       // Send account credentials via email
       await sendStaffCredentials(
         data.email,
-        `${data.first_name} ${data.last_name || ''}`.trim(),
+        `${data.first_name} ${data.last_name || ""}`.trim(),
         "staff123"
       );
 
@@ -221,7 +239,9 @@ const ManageStaff = () => {
           // Send new password via email
           await sendStaffCredentials(
             selectedStaff.email,
-            `${selectedStaff.first_name} ${selectedStaff.last_name || ""}`.trim(),
+            `${selectedStaff.first_name} ${
+              selectedStaff.last_name || ""
+            }`.trim(),
             newPassword
           );
 
@@ -255,8 +275,16 @@ const ManageStaff = () => {
 
     setAlertConfig({
       type: "warning",
-      title: `${action === "deactivate" ? "Deactivate" : "Activate"} Staff Member?`,
-      message: `Are you sure you want to ${action} ${staff_item.first_name} ${staff_item.last_name || ""}? ${action === "deactivate" ? "They will not be able to access their account." : "They will be able to access their account again."}`,
+      title: `${
+        action === "deactivate" ? "Deactivate" : "Activate"
+      } Staff Member?`,
+      message: `Are you sure you want to ${action} ${staff_item.first_name} ${
+        staff_item.last_name || ""
+      }? ${
+        action === "deactivate"
+          ? "They will not be able to access their account."
+          : "They will be able to access their account again."
+      }`,
       showCancel: true,
       onConfirm: async () => {
         try {
@@ -265,7 +293,9 @@ const ManageStaff = () => {
           setAlertConfig({
             type: "success",
             title: "Success",
-            message: `Staff member ${action === "deactivate" ? "deactivated" : "activated"} successfully!`,
+            message: `Staff member ${
+              action === "deactivate" ? "deactivated" : "activated"
+            } successfully!`,
             showCancel: false,
           });
           setAlertOpen(true);
@@ -292,7 +322,9 @@ const ManageStaff = () => {
     setAlertConfig({
       type: "error",
       title: "Delete Staff Member?",
-      message: `Are you sure you want to permanently delete ${staff_item.first_name} ${staff_item.last_name || ""}? This action cannot be undone.`,
+      message: `Are you sure you want to permanently delete ${
+        staff_item.first_name
+      } ${staff_item.last_name || ""}? This action cannot be undone.`,
       showCancel: true,
       onConfirm: async () => {
         try {
@@ -352,7 +384,9 @@ const ManageStaff = () => {
       render: (row) => (
         <Box sx={{ display: "flex", flexDirection: "column", gap: "4px" }}>
           <Typography.Body weight="semibold">
-            {`${row.first_name} ${row.middle_name || ""} ${row.last_name || ""}`.trim()}
+            {`${row.first_name} ${row.middle_name || ""} ${
+              row.last_name || ""
+            }`.trim()}
           </Typography.Body>
         </Box>
       ),
@@ -373,9 +407,7 @@ const ManageStaff = () => {
       label: "Role",
       minWidth: 150,
       align: "center",
-      render: (row) => (
-        <Typography.Body>{row.role || "—"}</Typography.Body>
-      ),
+      render: (row) => <Typography.Body>{row.role || "—"}</Typography.Body>,
     },
     {
       id: "is_active",

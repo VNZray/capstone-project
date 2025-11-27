@@ -6,7 +6,6 @@ exports.up = async function(knex) {
     table.increments('id').primary();
     table.string('name').notNullable(); // manage_bookings, manage_users, manage_rooms, etc.
     table.string('description'); // description of the permission
-    table.uuid('permission_for').notNullable(); // business or tourism
   });
 
   // Create CRUD stored procedures for permissions

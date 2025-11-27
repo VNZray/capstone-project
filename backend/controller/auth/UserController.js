@@ -1,9 +1,7 @@
 import db from "../../db.js";
 import bcrypt from "bcrypt";
-import jwt from "jsonwebtoken";
 import { handleDbError } from "../../utils/errorHandler.js";
 import { v4 as uuidv4 } from "uuid";
-import { validatePasswordStrength } from "../../utils/passwordValidation.js";
 
 // Login user (Moved to authController.js)
 // export async function loginUser(req, res) { ... }
@@ -23,24 +21,13 @@ export async function getAllUsers(req, res) {
 // Calls the GetUserById stored procedure
 export async function getUserById(req, res) {
   const { id } = req.params;
-  
-  // Debug logging for troubleshooting
-  console.log('[getUserById] Request for user ID:', id);
-  console.log('[getUserById] ID type:', typeof id);
-  console.log('[getUserById] ID length:', id ? id.length : 'null');
-  
   try {
     const [data] = await db.query("CALL GetUserById(?)", [id]);
-    
-    console.log('[getUserById] Query result:', data[0] ? `Found ${data[0].length} user(s)` : 'No result');
-    
     if (!data[0] || data[0].length === 0) {
-      console.log('[getUserById] User not found for ID:', id);
       return res.status(404).json({ message: "User not found" });
     }
     res.json(data[0][0]);
   } catch (error) {
-    console.error('[getUserById] Database error:', error.message);
     return handleDbError(error, res);
   }
 }
@@ -62,20 +49,8 @@ export async function getUsersByRoleId(req, res) {
 export async function insertUser(req, res) {
   try {
     const id = uuidv4();
-    // Validate password strength before registration
-    const rawPassword = req.body.password ?? null;
-    
-    if (rawPassword) {
-      const { isValid, errors } = validatePasswordStrength(rawPassword);
-      if (!isValid) {
-        return res.status(400).json({
-          message: 'Password does not meet security requirements',
-          errors,
-        });
-      }
-    }
-    
     // Hash password if provided
+    const rawPassword = req.body.password ?? null;
     const hashedPassword = rawPassword ? await bcrypt.hash(rawPassword, 10) : null;
     const params = [
       id,
@@ -160,10 +135,9 @@ export async function insertUserRole(req, res) {
   try {
     const params = [
       req.body.role_name ?? null,
-      req.body.description ?? req.body.role_description ?? null,
-      req.body.role_for ?? null, // Default to Business if not specified
+      req.body.role_description ?? null,
     ];
-    const [data] = await db.query("CALL InsertUserRole(?, ?, ?)", params);
+    const [data] = await db.query("CALL InsertUserRole(?, ?)", params);
     if (!data[0] || data[0].length === 0) {
       return res.status(404).json({ error: "Inserted user role not found" });
     }
@@ -199,8 +173,8 @@ export async function updateUserRoleByName(req, res) {
   try {
     const params = [
       req.body.role_name ?? null,
+      req.body.new_role_name ?? null,
       req.body.role_description ?? null,
-      req.body.role_for ?? null
     ];
     const [data] = await db.query("CALL UpdateUserRoleByName(?, ?, ?)", params);
     if (!data[0] || data[0].length === 0) {
@@ -233,31 +207,6 @@ export async function getUserRoleById(req, res) {
       return res.status(404).json({ message: "User role not found" });
     }
     res.json(data[0][0]);
-  } catch (error) {
-    return handleDbError(error, res);
-  }
-}
-
-// Get user roles by role_for (Business or Tourism)
-// Calls the GetUserRolesByRoleFor stored procedure
-export async function getRolesByRoleFor(req, res) {
-  const { role_for } = req.params;
-  try {
-    const [data] = await db.query("CALL GetUserRolesByRoleFor(?)", [role_for]);
-    res.json(data[0][0]);
-  } catch (error) {
-    return handleDbError(error, res);
-  }
-}
-
-
-// Get custom roles by business_id (retrieves roles that have permissions tied to this business)
-// Calls the GetUserRolesByBusinessId stored procedure
-export async function getRolesByBusinessId(req, res) {
-  const { business_id } = req.params;
-  try {
-    const [data] = await db.query("CALL GetUserRolesByBusinessId(?)", [business_id]);
-    res.json(data[0] || []);
   } catch (error) {
     return handleDbError(error, res);
   }

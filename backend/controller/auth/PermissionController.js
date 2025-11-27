@@ -6,7 +6,6 @@ import { v4 as uuidv4 } from "uuid";
 const PERMISSION_FIELDS = [
   "name",
   "description",
-  "permission_for",
 ];
 
 
@@ -56,12 +55,11 @@ export async function updatePermissionById(req, res) {
   const { name, description, permission_for } = req.body || {};
   try {
     const [rows] = await db.query(
-      "CALL UpdatePermission(?, ?, ?, ?)",
+      "CALL UpdatePermission(?, ?, ?)",
       [
         id,
         name ?? null,
         description ?? null,
-        permission_for ?? null
       ]
     );
     if (!rows[0] || rows[0].length === 0) return res.status(404).json({ message: "Permission not found" });
