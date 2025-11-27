@@ -32,14 +32,26 @@ const PersonalRecommendationSection: React.FC<
             Recommended for You
           </ThemedText>
         </View>
-        <Pressable>
+        <Pressable
+          style={({ pressed }) => ({
+            opacity: pressed ? 0.7 : 1,
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 4,
+          })}
+        >
           <ThemedText
             type="label-small"
             lightColor={colors.primary}
             darkColor={colors.accent}
           >
-            View All {'>'}
+            View All
           </ThemedText>
+          <MaterialCommunityIcons
+            name="arrow-right"
+            size={16}
+            color={colors.accent}
+          />
         </Pressable>
       </View>
 

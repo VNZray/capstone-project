@@ -4,7 +4,15 @@ import { ThemedText } from '@/components/themed-text';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 
-const VisitorsHandbookSection = () => {
+type Props = {
+  onViewReports?: () => void;
+  onReportIssue?: () => void;
+};
+
+const ReportIssueSection: React.FC<Props> = ({
+  onViewReports,
+  onReportIssue,
+}) => {
   return (
     <View style={styles.container}>
       <LinearGradient
@@ -13,62 +21,69 @@ const VisitorsHandbookSection = () => {
         end={{ x: 1, y: 1 }}
         style={styles.card}
       >
-        {/* Background Pattern/Decoration could go here if needed */}
-
         <View style={styles.content}>
           {/* Badge */}
           <View style={styles.badge}>
             <MaterialCommunityIcons
-              name="compass-outline"
+              name="account-group-outline"
               size={12}
               color="#FFD700"
             />
             <ThemedText type="label-small" style={styles.badgeText}>
-              TRAVEL ESSENTIALS
+              COMMUNITY FEEDBACK
             </ThemedText>
           </View>
 
           {/* Title */}
           <View style={styles.titleContainer}>
             <ThemedText type="sub-title-medium" style={styles.titleWhite}>
-              The Visitor&apos;s
+              Help Us
             </ThemedText>
             <ThemedText type="sub-title-medium" style={styles.titleGold}>
-              Handbook
+              Improve
             </ThemedText>
           </View>
 
           {/* Description */}
           <ThemedText type="body-small" style={styles.description}>
-            Curated itineraries, local transport tips, and hidden gems for the
-            perfect stay.
+            Track ongoing fixes or report a problem to help us build a better
+            experience.
           </ThemedText>
 
-          {/* Button */}
-          <Pressable
-            style={styles.button}
-            onPress={() => console.log('Open Guide')}
-          >
-            <MaterialCommunityIcons
-              name="book-open-page-variant-outline"
-              size={16}
-              color="#0F2043"
-            />
-            <ThemedText
-              type="label-small"
-              weight="bold"
-              style={styles.buttonText}
-            >
-              Open Guide
-            </ThemedText>
-          </Pressable>
+          {/* Actions */}
+          <View style={styles.actionRow}>
+            <Pressable style={styles.button} onPress={onReportIssue}>
+              <MaterialCommunityIcons
+                name="message-alert-outline"
+                size={16}
+                color="#0F2043"
+              />
+              <ThemedText
+                type="label-small"
+                weight="bold"
+                style={styles.buttonText}
+              >
+                Report Issue
+              </ThemedText>
+            </Pressable>
+
+            <Pressable style={styles.secondaryButton} onPress={onViewReports}>
+              <ThemedText
+                type="label-small"
+                weight="semi-bold"
+                style={styles.secondaryButtonText}
+              >
+                View Reports
+              </ThemedText>
+            </Pressable>
+          </View>
         </View>
 
         {/* Right Side Icon */}
         <View style={styles.iconContainer}>
           <View style={styles.iconCircle}>
             <MaterialCommunityIcons
-              name="map-legend"
+              name="heart-pulse"
               size={32}
               color="#D4AF37"
             />
@@ -83,6 +98,7 @@ const styles = StyleSheet.create({
   container: {
     marginRight: -24,
     marginLeft: -24,
+    marginBottom: 24,
   },
   card: {
     padding: 24,
@@ -131,7 +147,7 @@ const styles = StyleSheet.create({
     lineHeight: 28,
     fontStyle: 'italic',
     fontWeight: '700',
-    fontFamily: 'serif', // Try to use serif if available, or rely on style
+    fontFamily: 'serif',
   },
   description: {
     color: 'rgba(255, 255, 255, 0.8)',
@@ -139,19 +155,31 @@ const styles = StyleSheet.create({
     lineHeight: 20,
     maxWidth: '85%',
   },
+  actionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginTop: 8,
+  },
   button: {
     backgroundColor: '#FFFFFF',
     flexDirection: 'row',
     alignItems: 'center',
-    alignSelf: 'flex-start',
     paddingVertical: 10,
     paddingHorizontal: 16,
     borderRadius: 12,
     gap: 8,
-    marginTop: 8,
   },
   buttonText: {
     color: '#0F2043',
+  },
+  secondaryButton: {
+    paddingVertical: 10,
+    paddingHorizontal: 8,
+  },
+  secondaryButtonText: {
+    color: '#D4AF37',
+    textDecorationLine: 'underline',
   },
   iconContainer: {
     position: 'relative',
@@ -175,4 +203,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default VisitorsHandbookSection;
+export default ReportIssueSection;

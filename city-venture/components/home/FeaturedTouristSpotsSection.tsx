@@ -96,11 +96,21 @@ const FeaturedTouristSpotsSection = () => {
         </ThemedText>
         <Pressable
           onPress={() => router.push('/(tabs)/(home)/(spot)')}
-          style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
+          style={({ pressed }) => ({
+            opacity: pressed ? 0.7 : 1,
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 4,
+          })}
         >
           <ThemedText type="label-small" style={{ color: colors.tint }}>
-            View All {'>'}
+            View All
           </ThemedText>
+          <MaterialCommunityIcons
+            name="arrow-right"
+            size={16}
+            color={colors.accent}
+          />
         </Pressable>
       </View>
 
@@ -207,8 +217,7 @@ const SpotCard = ({
 };
 
 const styles = StyleSheet.create({
-  container: {
-  },
+  container: {},
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',

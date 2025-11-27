@@ -10,6 +10,7 @@ import VisitorsHandbookSection from '@/components/home/VisitorsHandbookSection';
 import SpecialOffersSection from '@/components/home/SpecialOffersSection';
 import FeaturedPartnersSection from '@/components/home/FeaturedPartnersSection';
 import FeaturedTouristSpotsSection from '@/components/home/FeaturedTouristSpotsSection';
+import ReportIssueSection from '@/components/home/ReportIssueSection';
 
 import { useAuth } from '@/context/AuthContext';
 import { Colors } from '@/constants/color';
@@ -22,7 +23,6 @@ import {
   type NewsArticle,
 } from '@/services/HomeContentService';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
@@ -31,8 +31,6 @@ import {
   StatusBar,
   StyleSheet,
   View,
-  ViewStyle,
-  StyleProp,
   RefreshControl,
   useColorScheme,
 } from 'react-native';
@@ -44,11 +42,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import {
   ACTIONS,
-  PROMO_CARD,
   PLACEHOLDER_EVENTS,
   PLACEHOLDER_NEWS,
   type ActionItem,
-  type PromoCardContent,
 } from '@/components/home/data';
 
 const HERO_HEIGHT = 260;
@@ -234,6 +230,11 @@ const HomeScreen = () => {
 
           <FeaturedTouristSpotsSection />
 
+          <ReportIssueSection
+            onViewReports={() => console.log('View Reports')}
+            onReportIssue={() => console.log('Report Issue')}
+          />
+
           <NewsAndEventsSection
             newsData={newsState.data}
             eventsData={eventState.data}
@@ -243,8 +244,6 @@ const HomeScreen = () => {
             onPressEvent={handleEventPress}
             onPressViewAllEvents={navigateToEventHome}
           />
-
-          <PromoCard content={PROMO_CARD} style={styles.promoCard} />
         </View>
       </AnimatedScrollView>
 
@@ -375,85 +374,6 @@ const ActionGrid: React.FC<ActionGridProps> = ({ items, onPressItem }) => {
         })}
       </View>
     </View>
-  );
-};
-
-type PromoCardProps = {
-  content: PromoCardContent;
-  style?: StyleProp<ViewStyle>;
-  onPrimaryPress?: () => void;
-  onSecondaryPress?: () => void;
-};
-
-const PromoCard: React.FC<PromoCardProps> = ({
-  content,
-  style,
-  onPrimaryPress,
-  onSecondaryPress,
-}) => {
-  const colorScheme = useColorScheme() ?? 'light';
-  const colors = Colors[colorScheme];
-
-  return (
-    <LinearGradient
-      colors={[colors.primary, colors.accent]}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 1, y: 1 }}
-      style={[styles.promoBase, style]}
-    >
-      <ThemedText
-        type="sub-title-small"
-        weight="bold"
-        lightColor={colors.textInverse}
-        darkColor={colors.textInverse}
-      >
-        {content.title}
-      </ThemedText>
-      <ThemedText
-        type="body-small"
-        lightColor={colors.textInverse}
-        darkColor={colors.textInverse}
-        style={[styles.promoDescription, { opacity: 0.9 }]}
-      >
-        {content.description}
-      </ThemedText>
-      <View style={styles.promoActions}>
-        <Pressable
-          style={[
-            styles.ctaButton,
-            styles.ctaSecondary,
-            { backgroundColor: colors.surface },
-          ]}
-          onPress={onPrimaryPress}
-        >
-          <ThemedText
-            type="label-small"
-            weight="semi-bold"
-            lightColor={colors.primary}
-            darkColor={colors.primary}
-          >
-            {content.primaryCta}
-          </ThemedText>
-        </Pressable>
-        <Pressable
-          style={[
-            styles.ctaButton,
-            styles.ctaPrimary,
-            { backgroundColor: 'rgba(255,255,255,0.2)' },
-          ]}
-          onPress={onSecondaryPress}
-        >
-          <ThemedText
-            type="label-small"
-            weight="semi-bold"
-            lightColor={colors.textInverse}
-            darkColor={colors.textInverse}
-          >
-            {content.secondaryCta}
-          </ThemedText>
-        </Pressable>
-      </View>
-    </LinearGradient>
   );
 };
 

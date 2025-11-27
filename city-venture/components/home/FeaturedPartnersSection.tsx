@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { ThemedText } from '@/components/themed-text';
 import { Colors } from '@/constants/color';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 type FeaturedPartner = {
   id: string;
@@ -79,14 +80,26 @@ const FeaturedPartnersSection: React.FC<FeaturedPartnersSectionProps> = ({
             Featured Partners
           </ThemedText>
         </View>
-        <Pressable>
+        <Pressable
+          style={({ pressed }) => ({
+            opacity: pressed ? 0.7 : 1,
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 4,
+          })}
+        >
           <ThemedText
             type="label-small"
             lightColor={colors.primary}
             darkColor={colors.accent}
           >
-            View All {'>'}
+            View All
           </ThemedText>
+          <MaterialCommunityIcons
+            name="arrow-right"
+            size={16}
+            color={colors.accent}
+          />
         </Pressable>
       </View>
 

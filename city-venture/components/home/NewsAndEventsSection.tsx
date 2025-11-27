@@ -11,6 +11,7 @@ import { Colors } from '@/constants/color';
 import NewsCard from './NewsCard';
 import EventCompactCard from './EventCompactCard';
 import type { HomeEvent, NewsArticle } from '@/services/HomeContentService';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 type Props = {
   newsData: NewsArticle[];
@@ -55,11 +56,21 @@ const NewsAndEventsSection: React.FC<Props> = ({
         </ThemedText>
         <Pressable
           onPress={onPressViewAllEvents}
-          style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
+          style={({ pressed }) => ({
+            opacity: pressed ? 0.7 : 1,
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 4,
+          })}
         >
           <ThemedText type="label-small" style={{ color: colors.tint }}>
             View All
           </ThemedText>
+          <MaterialCommunityIcons
+            name="arrow-right"
+            size={16}
+            color={colors.accent}
+          />
         </Pressable>
       </View>
 

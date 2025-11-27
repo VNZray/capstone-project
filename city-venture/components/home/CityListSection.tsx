@@ -10,6 +10,7 @@ import {
 import { ThemedText } from '@/components/themed-text';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Colors } from '@/constants/color';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 type City = {
   id: string;
@@ -68,14 +69,27 @@ const CityListSection: React.FC<CityListSectionProps> = ({
         <ThemedText type="sub-title-small" weight="bold">
           Explore by Cities
         </ThemedText>
-        <Pressable onPress={onPressViewMore}>
+        <Pressable
+          onPress={onPressViewMore}
+          style={({ pressed }) => ({
+            opacity: pressed ? 0.7 : 1,
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 4,
+          })}
+        >
           <ThemedText
             type="label-small"
             lightColor={colors.primary}
             darkColor={colors.accent}
           >
-            View All {'>'}
+            View All
           </ThemedText>
+          <MaterialCommunityIcons
+            name="arrow-right"
+            size={16}
+            color={colors.accent}
+          />
         </Pressable>
       </View>
       <FlatList

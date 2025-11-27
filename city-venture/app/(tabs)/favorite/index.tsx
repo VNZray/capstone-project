@@ -1,415 +1,703 @@
-import Button from '@/components/Button';
-import SearchBar from '@/components/SearchBar';
-import ScrollableTab from '@/components/ScrollableTab';
-import { ThemedText } from '@/components/themed-text';
-import { background, card, colors } from '@/constants/color';
-import { useColorScheme } from '@/hooks/use-color-scheme';
-import { FontAwesome5 } from '@expo/vector-icons';
-import { router, useNavigation } from 'expo-router';
-import React, { useLayoutEffect, useRef, useState } from 'react';
-import type { Tab } from '@/types/Tab';
+import React, { useState, useMemo } from 'react';
 import {
-  Animated,
-  Dimensions,
+  View,
+  StyleSheet,
   FlatList,
   Image,
   Pressable,
-  RefreshControl,
+  TextInput,
+  Dimensions,
   ScrollView,
-  StyleSheet,
-  View,
+  useColorScheme,
+  Platform,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { ThemedText } from '@/components/themed-text';
+import { Colors } from '@/constants/color';
+import { MaterialCommunityIcons, Ionicons, Feather } from '@expo/vector-icons';
+import { router, Stack } from 'expo-router';
 
-type FavItem = {
+// --- Types ---
+
+type Category = 'All' | 'Stay' | 'Dining' | 'Visit';
+
+type FavoriteItem = {
   id: string;
   title: string;
-  subtitle: string;
-  image: any;
+  location: string;
+  rating: number;
+  reviews?: number;
+  price?: string;
+  category: Exclude<Category, 'All'>;
+  image: string;
 };
 
-const TABS: Tab[] = [
+// --- Mock Data ---
+
+const MOCK_FAVORITES: FavoriteItem[] = [
   {
-    key: 'accommodation',
-    label: 'Accommodation',
-    icon: 'hotel',
+    id: '1',
+    title: 'Aman Tokyo',
+    location: 'Otemachi Tower, Tokyo',
+    rating: 4.9,
+    price: '$1850',
+    category: 'Stay',
+    image:
+      'https://images.unsplash.com/photo-1566073771259-6a8506099945?q=80&w=2070&auto=format&fit=crop',
   },
   {
-    key: 'room',
-    label: 'Room',
-    icon: 'door-open',
+    id: '2',
+    title: 'Hotel de Crillon',
+    location: 'Place de la Concorde, Paris',
+    rating: 4.8,
+    price: '$2100',
+    category: 'Stay',
+    image:
+      'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?q=80&w=2070&auto=format&fit=crop',
   },
   {
-    key: 'spots',
-    label: 'Tourist Spots',
-    icon: 'map-marker-alt',
+    id: '3',
+    title: 'The Brando',
+    location: 'Tetiaroa, French Polynesia',
+    rating: 5.0,
+    price: '$3500',
+    category: 'Stay',
+    image:
+      'https://images.unsplash.com/photo-1590523741831-ab7e8b8f9c7f?q=80&w=1974&auto=format&fit=crop',
   },
   {
-    key: 'shops',
-    label: 'Shops',
-    icon: 'shopping-bag',
+    id: '4',
+    title: "Claridge's",
+    location: 'Mayfair, London',
+    rating: 4.7,
+    price: '$1200',
+    category: 'Stay',
+    image:
+      'https://images.unsplash.com/photo-1590490360182-c33d57733427?q=80&w=1974&auto=format&fit=crop',
   },
   {
-    key: 'events',
-    label: 'Events',
-    icon: 'calendar-alt',
+    id: '5',
+    title: 'Le Bernardin',
+    location: 'New York, USA',
+    rating: 4.9,
+    price: '$450',
+    category: 'Dining',
+    image:
+      'https://images.unsplash.com/photo-1559339352-11d035aa65de?q=80&w=1974&auto=format&fit=crop',
+  },
+  {
+    id: '6',
+    title: 'Louvre Museum',
+    location: 'Paris, France',
+    rating: 4.8,
+    price: '$20',
+    category: 'Visit',
+    image:
+      'https://images.unsplash.com/photo-1499856871940-a09627c6dcf6?q=80&w=2020&auto=format&fit=crop',
   },
 ];
 
-type TabKey = (typeof TABS)[number]['key'];
+const CATEGORIES: Category[] = ['All', 'Stay', 'Dining', 'Visit'];
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
+// --- Components ---
 
-const Favorite = () => {
-  const navigation = useNavigation();
-  const scheme = useColorScheme();
-  const bg = scheme === 'dark' ? background.dark : background.light;
-  const cardBg = scheme === 'dark' ? card.dark : card.light;
-  const textMuted = scheme === 'dark' ? '#A9B2D0' : '#6A768E';
-
-  // Header right: small settings button
-  useLayoutEffect(() => {
-    navigation.setOptions({
-      headerTitle: 'My Favorites',
-      headerRight: () => (
-        <Pressable
-          onPress={() => router.push('/(tabs)/(profile)/(settings)')}
-          style={{ paddingHorizontal: 12 }}
-        >
-          <FontAwesome5
-            name="cog"
-            size={18}
-            color={scheme === 'dark' ? '#fff' : '#1F2A44'}
-          />
-        </Pressable>
-      ),
-    });
-  }, [navigation, scheme]);
-
-  // Search
-  const [query, setQuery] = useState('');
-
-  // Data per tab (seeded with placeholder data for demo)
-  const [favByTab, setFavByTab] = useState<Record<TabKey, FavItem[]>>({
-    accommodation: [
-      {
-        id: 'a1',
-        title: 'Sunrise Beach Resort',
-        subtitle: 'Affordable beachfront stay in Naga City',
-        image: require('@/assets/images/android-icon-foreground.png'),
-      },
-    ],
-    room: [
-      {
-        id: 'r1',
-        title: 'Deluxe Room 101',
-        subtitle: 'Spacious room with city view',
-        image: require('@/assets/images/partial-react-logo.png'),
-      },
-    ],
-    spots: [
-      {
-        id: 's1',
-        title: 'Plaza Quince Martires',
-        subtitle: 'Historic city landmark and plaza',
-        image: require('@/assets/images/partial-react-logo.png'),
-      },
-    ],
-    shops: [
-      {
-        id: 'sh1',
-        title: 'Local Souvenir Shop',
-        subtitle: 'Handcrafted goods and delicacies',
-        image: require('@/assets/images/react-logo.png'),
-      },
-    ],
-    events: [
-      {
-        id: 'e1',
-        title: 'Peñafrancia Festival',
-        subtitle: 'Cultural parade and celebration',
-        image: require('@/assets/images/react-logo.png'),
-      },
-    ],
-  });
-
-  // Swipeable tabs
-  const [tabIndex, setTabIndex] = useState(0);
-  const scrollRef = useRef<ScrollView>(null);
-  const scrollX = useRef(new Animated.Value(0)).current;
-
-  const handleTabChange = (tab: Tab, index: number) => {
-    setTabIndex(index);
-    scrollRef.current?.scrollTo({ x: SCREEN_WIDTH * index, animated: false });
-  };
-
-  // Pull-to-refresh
-  const [refreshing, setRefreshing] = useState(false);
-  const onRefresh = async () => {
-    setRefreshing(true);
-    // Simulate refresh
-    await new Promise((r) => setTimeout(r, 800));
-    setRefreshing(false);
-  };
-
-  // Filtered items by search query for the current tab
-  const filteredFor = (key: TabKey) => {
-    const q = query.trim().toLowerCase();
-    const arr = favByTab[key] ?? [];
-    if (!q) return arr;
-    return arr.filter(
-      (i) =>
-        i.title.toLowerCase().includes(q) ||
-        i.subtitle.toLowerCase().includes(q)
-    );
-  };
-
-  // Remove from favorites with small animation
-  const removeFav = (key: TabKey, id: string) => {
-    setFavByTab((prev) => ({
-      ...prev,
-      [key]: (prev[key] || []).filter((i) => i.id !== id),
-    }));
-  };
-
-  // Animated indicator for tabs
-  const indicatorTranslateX = scrollX.interpolate({
-    inputRange: TABS.map((_, i) => i * SCREEN_WIDTH),
-    outputRange: TABS.map((_, i) => (i * (SCREEN_WIDTH - 40)) / TABS.length),
-    extrapolate: 'clamp',
-  });
-
-  const renderCard = (item: FavItem, key: TabKey) => (
-    <View style={[styles.card, { backgroundColor: cardBg }, shadow(2)]}>
-      <Image source={item.image} style={styles.thumb} />
-      <View style={{ flex: 1, marginHorizontal: 12 }}>
-        <ThemedText type="body-medium" weight="semi-bold" numberOfLines={1}>
-          {item.title}
-        </ThemedText>
-        <ThemedText
-          type="label-small"
-          style={{ color: textMuted }}
-          numberOfLines={2}
-        >
-          {item.subtitle}
-        </ThemedText>
-      </View>
-      <HeartButton onPress={() => removeFav(key, item.id)} />
-    </View>
-  );
-
-  return (
-    <View style={[styles.screen, { backgroundColor: bg }]}>
-      {/* Search */}
-      <View style={{ paddingHorizontal: 20, paddingTop: 10 }}>
-        <SearchBar
-          shape="square"
-          value={query}
-          onChangeText={setQuery}
-          onSearch={() => {}}
-          placeholder="Search favorites…"
-        />
-
-        <ScrollableTab
-          tabs={TABS}
-          onTabChange={handleTabChange}
-          activeKey={TABS[tabIndex].key}
-        />
-      </View>
-      {/* Pages */}
-      <Animated.ScrollView
-        ref={scrollRef}
-        horizontal
-        pagingEnabled
-        showsHorizontalScrollIndicator={false}
-        onScroll={Animated.event(
-          [{ nativeEvent: { contentOffset: { x: scrollX } } }],
-          {
-            listener: (e: {
-              nativeEvent: { contentOffset: { x: number } };
-            }) => {
-              const idx = Math.round(
-                e.nativeEvent.contentOffset.x / SCREEN_WIDTH
-              );
-              if (idx !== tabIndex) setTabIndex(idx);
-            },
-            useNativeDriver: false,
-          }
-        )}
-        scrollEventThrottle={16}
-        style={{ marginTop: 10 }}
-      >
-        {TABS.map((t) => {
-          const key = t.key as TabKey;
-          const data = filteredFor(key);
-          const isEmpty = data.length === 0;
-          return (
-            <View
-              key={t.key}
-              style={{ width: SCREEN_WIDTH, paddingHorizontal: 20 }}
-            >
-              {isEmpty ? (
-                <EmptyState />
-              ) : (
-                <FlatList
-                  data={data}
-                  keyExtractor={(it) => it.id}
-                  renderItem={({ item }) => renderCard(item, key)}
-                  contentContainerStyle={{ paddingVertical: 0, gap: 12 }}
-                  refreshControl={
-                    <RefreshControl
-                      refreshing={refreshing}
-                      onRefresh={onRefresh}
-                    />
-                  }
-                  showsVerticalScrollIndicator={false}
-                />
-              )}
-            </View>
-          );
-        })}
-      </Animated.ScrollView>
-    </View>
-  );
-};
-
-export default Favorite;
-
-// Heart button with tiny pop animation
-const HeartButton = ({ onPress }: { onPress: () => void }) => {
-  const scale = useRef(new Animated.Value(1)).current;
+const GridCard = ({
+  item,
+  colors,
+}: {
+  item: FavoriteItem;
+  colors: typeof Colors.light;
+}) => {
   const handlePress = () => {
-    Animated.sequence([
-      Animated.timing(scale, {
-        toValue: 1.2,
-        duration: 120,
-        useNativeDriver: true,
-      }),
-      Animated.timing(scale, {
-        toValue: 1,
-        duration: 120,
-        useNativeDriver: true,
-      }),
-    ]).start(() => onPress());
+    router.push({
+      pathname: '/(tabs)/(home)/(spot)',
+      params: { spotId: item.id },
+    });
   };
+
   return (
     <Pressable
       onPress={handlePress}
-      accessibilityRole="button"
-      accessibilityLabel="Remove from favorites"
+      style={[styles.gridCard, { backgroundColor: colors.surface }]}
     >
-      <Animated.View style={{ transform: [{ scale }] }}>
-        <FontAwesome5 name="heart" size={32} color={colors.primary} solid />
-      </Animated.View>
+      {/* Image Container */}
+      <View style={styles.gridImageContainer}>
+        <Image source={{ uri: item.image }} style={styles.gridImage} />
+
+        {/* Heart Icon */}
+        <Pressable style={styles.heartButton}>
+          <MaterialCommunityIcons name="heart" size={16} color="#D4AF37" />
+        </Pressable>
+
+        {/* Category Badge */}
+        <View style={styles.categoryBadge}>
+          <ThemedText
+            type="label-extra-small"
+            weight="bold"
+            style={styles.categoryBadgeText}
+          >
+            {item.category.toUpperCase()}
+          </ThemedText>
+        </View>
+      </View>
+
+      {/* Content */}
+      <View style={styles.gridContent}>
+        <View
+          style={{
+            flexDirection: 'row',
+            justifyContent: 'space-between',
+            alignItems: 'flex-start',
+            marginBottom: 4,
+          }}
+        >
+          <ThemedText
+            type="card-title-medium"
+            weight="bold"
+            numberOfLines={1}
+            style={{ flex: 1, marginRight: 8 }}
+          >
+            {item.title}
+          </ThemedText>
+          {item.price && (
+            <ThemedText
+              type="label-small"
+              weight="bold"
+              style={{ color: colors.primary }}
+            >
+              {item.price}
+            </ThemedText>
+          )}
+        </View>
+
+        <View style={styles.ratingRow}>
+          <MaterialCommunityIcons name="star" size={14} color="#D4AF37" />
+          <ThemedText
+            type="label-small"
+            weight="semi-bold"
+            style={{ marginLeft: 4 }}
+          >
+            {item.rating}
+          </ThemedText>
+          <ThemedText
+            type="label-small"
+            style={{ color: colors.textSecondary, marginLeft: 4 }}
+            numberOfLines={1}
+          >
+            • {item.location}
+          </ThemedText>
+        </View>
+
+        {/* Actions */}
+        <View style={styles.actionRow}>
+          <Pressable
+            onPress={handlePress}
+            style={[styles.visitButton, { backgroundColor: colors.background }]}
+          >
+            <ThemedText type="label-small" weight="semi-bold">
+              Visit
+            </ThemedText>
+            <MaterialCommunityIcons
+              name="arrow-right"
+              size={14}
+              color={colors.text}
+            />
+          </Pressable>
+          <Pressable
+            style={[styles.iconButton, { backgroundColor: colors.background }]}
+          >
+            <Feather name="send" size={14} color={colors.text} />
+          </Pressable>
+        </View>
+      </View>
     </Pressable>
   );
 };
 
-// Empty state component
-const EmptyState = () => (
-  <View
-    style={{
-      alignItems: 'center',
-      justifyContent: 'center',
-      paddingVertical: 80,
-      gap: 10,
-    }}
-  >
-    <View style={[styles.illustration, shadow(3)]}>
-      <FontAwesome5 name="map" size={36} color={colors.secondary} />
-      <FontAwesome5
-        name="search-location"
-        size={18}
-        color="#7C89B6"
-        style={{ position: 'absolute', right: 16, bottom: 14 }}
-      />
-    </View>
-    <ThemedText type="sub-title-medium" weight="bold" align="center">
-      No favorites yet
-    </ThemedText>
-    <ThemedText type="label-medium" align="center" style={{ color: '#6A768E' }}>
-      Start exploring and add places you love!
-    </ThemedText>
-    <View style={{ width: '70%', marginTop: 6 }}>
-      <Button
-        label="Explore Now"
-        startIcon="compass"
-        variant="solid"
-        color="primary"
-        size="large"
-        fullWidth
-        radius={14}
-        onPress={() => router.push('/(tabs)/(home)')}
-      />
-    </View>
-  </View>
-);
+const ListCard = ({
+  item,
+  colors,
+}: {
+  item: FavoriteItem;
+  colors: typeof Colors.light;
+}) => {
+  const handlePress = () => {
+    router.push({
+      pathname: '/(tabs)/(home)/(spot)',
+      params: { spotId: item.id },
+    });
+  };
 
-// Styles
+  return (
+    <Pressable
+      onPress={handlePress}
+      style={[styles.listCard, { backgroundColor: colors.surface }]}
+    >
+      {/* Image */}
+      <View style={styles.listImageContainer}>
+        <Image source={{ uri: item.image }} style={styles.listImage} />
+        <Pressable style={styles.listHeartButton}>
+          <MaterialCommunityIcons name="heart" size={14} color="#D4AF37" />
+        </Pressable>
+      </View>
+
+      {/* Content */}
+      <View style={styles.listCardContent}>
+        <View style={styles.listHeader}>
+          <ThemedText
+            type="label-extra-small"
+            weight="bold"
+            style={{ color: '#D4AF37', letterSpacing: 1 }}
+          >
+            {item.category.toUpperCase()}
+          </ThemedText>
+          {item.price && (
+            <ThemedText type="label-small" weight="bold">
+              {item.price}
+            </ThemedText>
+          )}
+        </View>
+
+        <ThemedText
+          type="card-title-medium"
+          weight="bold"
+          style={{ marginTop: 4 }}
+        >
+          {item.title}
+        </ThemedText>
+
+        <View style={styles.ratingRow}>
+          <MaterialCommunityIcons name="star" size={14} color="#D4AF37" />
+          <ThemedText
+            type="label-small"
+            weight="semi-bold"
+            style={{ marginLeft: 4 }}
+          >
+            {item.rating}
+          </ThemedText>
+          <ThemedText
+            type="label-small"
+            style={{ color: colors.textSecondary, marginLeft: 4 }}
+            numberOfLines={1}
+          >
+            • {item.location}
+          </ThemedText>
+        </View>
+
+        <View style={[styles.actionRow, { marginTop: 'auto' }]}>
+          <Pressable
+            onPress={handlePress}
+            style={[
+              styles.visitButton,
+              { backgroundColor: colors.background, flex: 1 },
+            ]}
+          >
+            <ThemedText type="label-small" weight="semi-bold">
+              Visit
+            </ThemedText>
+            <MaterialCommunityIcons
+              name="arrow-right"
+              size={14}
+              color={colors.text}
+            />
+          </Pressable>
+          <Pressable
+            style={[styles.iconButton, { backgroundColor: colors.background }]}
+          >
+            <Feather name="send" size={14} color={colors.text} />
+          </Pressable>
+        </View>
+      </View>
+    </Pressable>
+  );
+};
+
+// --- Main Screen ---
+
+const Favorite = () => {
+  const scheme = useColorScheme() ?? 'light';
+  const colors = Colors[scheme];
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [activeCategory, setActiveCategory] = useState<Category>('All');
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const filteredData = useMemo(() => {
+    return MOCK_FAVORITES.filter((item) => {
+      const matchesCategory =
+        activeCategory === 'All' || item.category === activeCategory;
+      const matchesSearch =
+        item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        item.location.toLowerCase().includes(searchQuery.toLowerCase());
+      return matchesCategory && matchesSearch;
+    });
+  }, [activeCategory, searchQuery]);
+
+  return (
+    <SafeAreaView
+      style={[styles.container, { backgroundColor: colors.background }]}
+      edges={['top']}
+    >
+      <Stack.Screen options={{ headerShown: false }} />
+
+      {/* Header */}
+      <View style={styles.header}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+          {/* Back Button */}
+          <Pressable
+            onPress={() => {
+              if (router.canGoBack()) {
+                router.back();
+              } else {
+                router.push('/(tabs)/(home)');
+              }
+            }}
+            style={({ pressed }) => ({
+              opacity: pressed ? 0.7 : 1,
+              padding: 4,
+            })}
+          >
+            <MaterialCommunityIcons
+              name="arrow-left"
+              size={24}
+              color={colors.text}
+            />
+          </Pressable>
+
+          <View>
+            <ThemedText
+              type="title-medium"
+              weight="bold"
+              style={styles.headerTitle}
+            >
+              My Collection
+            </ThemedText>
+            <ThemedText
+              type="label-medium"
+              style={{ color: colors.textSecondary }}
+            >
+              {MOCK_FAVORITES.length} saved places
+            </ThemedText>
+          </View>
+        </View>
+
+        {/* View Toggle */}
+        <View style={[styles.viewToggle, { backgroundColor: colors.surface }]}>
+          <Pressable
+            onPress={() => setViewMode('grid')}
+            style={[
+              styles.toggleButton,
+              viewMode === 'grid' && { backgroundColor: colors.text },
+            ]}
+          >
+            <MaterialCommunityIcons
+              name="view-grid-outline"
+              size={20}
+              color={
+                viewMode === 'grid' ? colors.background : colors.textSecondary
+              }
+            />
+          </Pressable>
+          <Pressable
+            onPress={() => setViewMode('list')}
+            style={[
+              styles.toggleButton,
+              viewMode === 'list' && { backgroundColor: colors.text },
+            ]}
+          >
+            <MaterialCommunityIcons
+              name="format-list-bulleted"
+              size={20}
+              color={
+                viewMode === 'list' ? colors.background : colors.textSecondary
+              }
+            />
+          </Pressable>
+        </View>
+      </View>
+
+      {/* Search & Filter */}
+      <View style={styles.searchContainer}>
+        <View style={[styles.searchBar, { backgroundColor: colors.surface }]}>
+          <Ionicons
+            name="search-outline"
+            size={20}
+            color={colors.textSecondary}
+          />
+          <TextInput
+            placeholder="Search your collection..."
+            placeholderTextColor={colors.textSecondary}
+            style={[styles.searchInput, { color: colors.text }]}
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+          />
+        </View>
+        <Pressable
+          style={[styles.filterButton, { backgroundColor: colors.surface }]}
+        >
+          <Ionicons name="filter-outline" size={20} color={colors.text} />
+        </Pressable>
+      </View>
+
+      {/* Categories */}
+      <View style={styles.categoriesContainer}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.categoriesContent}
+        >
+          {CATEGORIES.map((cat) => (
+            <Pressable
+              key={cat}
+              onPress={() => setActiveCategory(cat)}
+              style={[
+                styles.categoryPill,
+                activeCategory === cat
+                  ? { backgroundColor: '#0F2043', borderColor: '#0F2043' }
+                  : {
+                      backgroundColor: colors.surface,
+                      borderColor: colors.border,
+                    },
+              ]}
+            >
+              <ThemedText
+                type="label-medium"
+                weight="semi-bold"
+                style={{
+                  color:
+                    activeCategory === cat ? '#FFFFFF' : colors.textSecondary,
+                }}
+              >
+                {cat}
+              </ThemedText>
+            </Pressable>
+          ))}
+        </ScrollView>
+      </View>
+
+      {/* Content */}
+      <FlatList
+        key={viewMode} // Force re-render when switching modes
+        data={filteredData}
+        keyExtractor={(item) => item.id}
+        numColumns={viewMode === 'grid' ? 2 : 1}
+        columnWrapperStyle={
+          viewMode === 'grid' ? styles.columnWrapper : undefined
+        }
+        contentContainerStyle={styles.listContent}
+        showsVerticalScrollIndicator={false}
+        renderItem={({ item }) =>
+          viewMode === 'grid' ? (
+            <GridCard item={item} colors={colors} />
+          ) : (
+            <ListCard item={item} colors={colors} />
+          )
+        }
+        ListEmptyComponent={
+          <View style={styles.emptyState}>
+            <ThemedText
+              type="body-medium"
+              style={{ color: colors.textSecondary }}
+            >
+              No items found
+            </ThemedText>
+          </View>
+        }
+      />
+    </SafeAreaView>
+  );
+};
+
 const styles = StyleSheet.create({
-  screen: { flex: 1 },
-  tabRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  tabBtn: {
+  container: {
     flex: 1,
-    backgroundColor: '#EEF4FF',
-    paddingVertical: 10,
-    borderRadius: 12,
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    justifyContent: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
   },
-  indicatorTrack: {
-    height: 3,
-    backgroundColor: '#E1E8F5',
-    marginTop: 8,
-    borderRadius: 2,
+  headerTitle: {
+    fontSize: 24,
   },
-  indicator: { height: 3, backgroundColor: colors.secondary, borderRadius: 2 },
-  card: {
+  viewToggle: {
+    flexDirection: 'row',
+    borderRadius: 12,
+    padding: 4,
+    gap: 4,
+  },
+  toggleButton: {
+    padding: 8,
+    borderRadius: 8,
+  },
+  searchContainer: {
+    flexDirection: 'row',
+    paddingHorizontal: 20,
+    gap: 12,
+    marginBottom: 16,
+  },
+  searchBar: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
+    paddingHorizontal: 12,
+    height: 48,
+    borderRadius: 12,
+    gap: 8,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 14,
+    fontFamily: 'Poppins-Regular',
+  },
+  filterButton: {
+    width: 48,
+    height: 48,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  categoriesContainer: {
+    marginBottom: 16,
+    height: 40, // Fixed height to prevent layout shifts
+  },
+  categoriesContent: {
+    paddingHorizontal: 20,
+    gap: 8,
+  },
+  categoryPill: {
+    paddingHorizontal: 20,
+    paddingVertical: 8,
+    borderRadius: 24,
+    borderWidth: 1,
+  },
+  listContent: {
+    paddingHorizontal: 20,
+    paddingBottom: 20,
+    gap: 16,
+    flexGrow: 1, // Ensure scrollability
+  },
+  columnWrapper: {
+    gap: 16,
+  },
+  emptyState: {
+    alignItems: 'center',
+    marginTop: 40,
+  },
+
+  // Grid Card Styles
+  gridCard: {
+    flex: 1,
     borderRadius: 16,
+    overflow: 'hidden',
+    // Use width instead of maxWidth to force it to fill the available space
+    // Calculation: (Screen Width - PaddingHorizontal*2 - Gap) / 2
+    width: (Dimensions.get('window').width - 40 - 16) / 2,
+  },
+  gridImageContainer: {
+    height: 180,
+    width: '100%',
+    position: 'relative',
+  },
+  gridImage: {
+    width: '100%',
+    height: '100%',
+    resizeMode: 'cover',
+  },
+  heartButton: {
+    position: 'absolute',
+    top: 12,
+    right: 12,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: '#FFFFFF',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  categoryBadge: {
+    position: 'absolute',
+    bottom: 12,
+    left: 12,
+    backgroundColor: '#0F2043',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 4,
+  },
+  categoryBadgeText: {
+    color: '#FFFFFF',
+    letterSpacing: 0.5,
+  },
+  gridContent: {
     padding: 12,
   },
-  thumb: {
-    width: 64,
-    height: 64,
-    borderRadius: 14,
-    backgroundColor: '#EAEFF7',
+  ratingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 4,
+    marginBottom: 12,
   },
-  illustration: {
-    width: 140,
-    height: 90,
-    borderRadius: 20,
-    backgroundColor: '#FFFFFF',
+  actionRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  visitButton: {
+    flex: 1,
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    paddingVertical: 8,
+    borderRadius: 8,
+    gap: 4,
+  },
+  iconButton: {
+    width: 36,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 8,
+  },
+
+  // List Card Styles
+  listCard: {
+    flexDirection: 'row',
+    padding: 12,
+    borderRadius: 16,
+    gap: 12,
+    height: 140,
+  },
+  listImageContainer: {
+    width: 116,
+    height: '100%',
+    borderRadius: 12,
+    overflow: 'hidden',
+    position: 'relative',
+  },
+  listImage: {
+    width: '100%',
+    height: '100%',
+    resizeMode: 'cover',
+  },
+  listHeartButton: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#FFFFFF',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  listCardContent: {
+    flex: 1,
+    paddingVertical: 4,
+  },
+  listHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
 });
 
-function shadow(level: 1 | 2 | 3) {
-  switch (level) {
-    case 1:
-      return {
-        shadowColor: '#1e1e1e',
-        shadowOpacity: 0.08,
-        shadowRadius: 2,
-        shadowOffset: { width: 0, height: 1 },
-        elevation: 1,
-      } as const;
-    case 2:
-      return {
-        shadowColor: '#1e1e1e',
-        shadowOpacity: 0.12,
-        shadowRadius: 3,
-        shadowOffset: { width: 0, height: 2 },
-        elevation: 2,
-      } as const;
-    default:
-      return {
-        shadowColor: '#1e1e1e',
-        shadowOpacity: 0.16,
-        shadowRadius: 4,
-        shadowOffset: { width: 0, height: 3 },
-        elevation: 3,
-      } as const;
-  }
-}
+export default Favorite;
