@@ -17,7 +17,9 @@ type Props = {
   onPress?: (event: HomeEvent) => void;
 };
 
-const EventListCard: React.FC<Props> = ({ event, onPress }) => {
+const CARD_WIDTH = 160;
+
+const EventCompactCard: React.FC<Props> = ({ event, onPress }) => {
   const scheme = useColorScheme() ?? 'light';
   const colors = Colors[scheme];
 
@@ -25,9 +27,6 @@ const EventListCard: React.FC<Props> = ({ event, onPress }) => {
   const dateParts = event.date.split(' ');
   const month = dateParts[0] || 'NOV';
   const day = dateParts[1]?.replace(',', '') || '01';
-  const time = event.date.includes(',')
-    ? event.date.split(', ')[1]
-    : event.date;
 
   return (
     <Pressable
@@ -37,7 +36,7 @@ const EventListCard: React.FC<Props> = ({ event, onPress }) => {
           backgroundColor: colors.surface,
           borderColor: colors.border,
           opacity: pressed ? 0.9 : 1,
-          transform: [{ scale: pressed ? 0.995 : 1 }],
+          transform: [{ scale: pressed ? 0.98 : 1 }],
         },
       ]}
       onPress={() => onPress?.(event)}
@@ -45,7 +44,6 @@ const EventListCard: React.FC<Props> = ({ event, onPress }) => {
       {/* Image Section */}
       <View style={styles.imageContainer}>
         <Image source={{ uri: event.image }} style={styles.image} />
-        {/* Minimalist Date Badge */}
         <View style={styles.dateBadge}>
           <ThemedText
             type="label-small"
@@ -70,59 +68,31 @@ const EventListCard: React.FC<Props> = ({ event, onPress }) => {
 
       {/* Content Section */}
       <View style={styles.content}>
-        <View style={styles.headerRow}>
+        <ThemedText
+          type="label-medium"
+          weight="semi-bold"
+          numberOfLines={2}
+          style={styles.title}
+        >
+          {event.name}
+        </ThemedText>
+
+        <View style={styles.metaRow}>
+          <MaterialCommunityIcons
+            name="map-marker-outline"
+            size={12}
+            color={colors.textSecondary}
+          />
           <ThemedText
-            type="sub-title-medium"
-            weight="semi-bold"
-            numberOfLines={2}
-            style={styles.title}
+            type="label-small"
+            lightColor={colors.textSecondary}
+            darkColor={colors.textSecondary}
+            numberOfLines={1}
+            style={styles.location}
           >
-            {event.name}
+            {event.location}
           </ThemedText>
         </View>
-
-        <View style={styles.metaContainer}>
-          <View style={styles.metaRow}>
-            <MaterialCommunityIcons
-              name="clock-time-four-outline"
-              size={14}
-              color={colors.textSecondary}
-            />
-            <ThemedText
-              type="label-small"
-              lightColor={colors.textSecondary}
-              darkColor={colors.textSecondary}
-            >
-              {time}
-            </ThemedText>
-          </View>
-
-          <View style={styles.metaRow}>
-            <MaterialCommunityIcons
-              name="map-marker-outline"
-              size={14}
-              color={colors.textSecondary}
-            />
-            <ThemedText
-              type="label-small"
-              lightColor={colors.textSecondary}
-              darkColor={colors.textSecondary}
-              numberOfLines={1}
-              style={{ flex: 1 }}
-            >
-              {event.location}
-            </ThemedText>
-          </View>
-        </View>
-      </View>
-
-      {/* Chevron */}
-      <View style={styles.actionIcon}>
-        <MaterialCommunityIcons
-          name="chevron-right"
-          size={20}
-          color={colors.iconSecondary}
-        />
       </View>
     </Pressable>
   );
@@ -130,12 +100,11 @@ const EventListCard: React.FC<Props> = ({ event, onPress }) => {
 
 const styles = StyleSheet.create({
   container: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 10,
+    width: CARD_WIDTH,
     borderRadius: 16,
+    overflow: 'hidden',
     borderWidth: 1,
-    // Minimalist shadow for depth without clutter
+    marginRight: 12,
     ...Platform.select({
       ios: {
         shadowColor: '#000',
@@ -149,12 +118,10 @@ const styles = StyleSheet.create({
     }),
   },
   imageContainer: {
-    width: 88,
-    height: 88,
-    borderRadius: 12,
-    overflow: 'hidden',
-    position: 'relative',
+    height: 100,
+    width: '100%',
     backgroundColor: '#f0f0f0',
+    position: 'relative',
   },
   image: {
     width: '100%',
@@ -163,8 +130,8 @@ const styles = StyleSheet.create({
   },
   dateBadge: {
     position: 'absolute',
-    top: 6,
-    left: 6,
+    top: 8,
+    right: 8,
     backgroundColor: 'rgba(255, 255, 255, 0.95)',
     borderRadius: 8,
     paddingVertical: 4,
@@ -178,41 +145,33 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
   },
   dateMonth: {
-    fontSize: 9,
+    fontSize: 8,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
     marginBottom: -2,
   },
   dateDay: {
-    fontSize: 15,
+    fontSize: 14,
     lineHeight: 18,
   },
   content: {
-    flex: 1,
-    marginLeft: 14,
-    justifyContent: 'space-between',
-    height: 80, // Match image height roughly for vertical rhythm
-    paddingVertical: 2,
-  },
-  headerRow: {
-    marginBottom: 4,
+    padding: 10,
+    gap: 6,
   },
   title: {
-    fontSize: 15,
-    lineHeight: 20,
-  },
-  metaContainer: {
-    gap: 6,
+    fontSize: 13,
+    lineHeight: 18,
+    height: 36, // Fixed height for 2 lines
   },
   metaRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 4,
   },
-  actionIcon: {
-    paddingLeft: 8,
-    paddingRight: 4,
+  location: {
+    fontSize: 11,
+    flex: 1,
   },
 });
 
-export default EventListCard;
+export default EventCompactCard;

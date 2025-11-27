@@ -2,11 +2,11 @@ import Header, { HEADER_BASE_HEIGHT } from '@/components/home/Header';
 import HeroSection from '@/components/home/HeroSection';
 import WelcomeSection from '@/components/home/WelcomeSection';
 
-import EventsSection from '@/components/home/EventsSection';
+import NewsAndEventsSection from '@/components/home/NewsAndEventsSection';
 import { ThemedText } from '@/components/themed-text';
 import CityListSection from '@/components/home/CityListSection';
 import PersonalRecommendationSection from '@/components/home/PersonalRecommendationSection';
-import NewsSection from '@/components/home/NewsSection';
+import VisitorsHandbookSection from '@/components/home/VisitorsHandbookSection';
 import SpecialOffersSection from '@/components/home/SpecialOffersSection';
 import FeaturedPartnersSection from '@/components/home/FeaturedPartnersSection';
 import FeaturedTouristSpotsSection from '@/components/home/FeaturedTouristSpotsSection';
@@ -222,6 +222,8 @@ const HomeScreen = () => {
             onPressItem={(item) => console.log(item.title)}
           />
 
+          <VisitorsHandbookSection />
+
           <SpecialOffersSection
             onPressOffer={(offer) => console.log(offer.title)}
           />
@@ -232,19 +234,14 @@ const HomeScreen = () => {
 
           <FeaturedTouristSpotsSection />
 
-          <EventsSection
-            data={eventState.data}
-            loading={eventState.loading}
-            error={eventState.error}
-            onPressEvent={handleEventPress}
-            onPressViewAll={navigateToEventHome}
-          />
-
-          <NewsSection
-            data={newsState.data}
-            loading={newsState.loading}
-            error={newsState.error}
+          <NewsAndEventsSection
+            newsData={newsState.data}
+            eventsData={eventState.data}
+            loading={newsState.loading || eventState.loading}
+            error={newsState.error || eventState.error}
             onPressArticle={handleNewsPress}
+            onPressEvent={handleEventPress}
+            onPressViewAllEvents={navigateToEventHome}
           />
 
           <PromoCard content={PROMO_CARD} style={styles.promoCard} />
