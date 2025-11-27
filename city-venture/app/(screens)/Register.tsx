@@ -26,8 +26,8 @@ const RegistrationPage = () => {
   const [middleName, setMiddleName] = useState('');
   const [lastName, setLastName] = useState('Clores');
   const [email, setEmail] = useState('rayven.clores@unc.edu.ph');
-  const [password, setPassword] = useState('123456');
-  const [confirmPassword, setConfirmPassword] = useState('123456');
+  const [password, setPassword] = useState('@Rayven22-17782');
+  const [confirmPassword, setConfirmPassword] = useState('@Rayven22-17782');
   const [birthdate, setBirthdate] = useState(new Date());
   const [ethnicity, setEthnicity] = useState<string>('');
   const [origin, setOrigin] = useState<string>('');
