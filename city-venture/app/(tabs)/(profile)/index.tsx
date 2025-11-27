@@ -79,11 +79,15 @@ const Profile = () => {
         {/* Header Section with Gradient */}
         <View style={styles.headerContainer}>
           <LinearGradient
-            colors={['#EAF4FF', '#F8F9FC']}
+            colors={[Colors.light.primary, '#142860']}
             style={[styles.headerGradient, { paddingTop: insets.top + 12 }]}
           >
             <View style={styles.headerTop}>
-              <ThemedText type="title-small" weight="bold">
+              <ThemedText
+                type="title-small"
+                weight="bold"
+                style={{ color: 'white' }}
+              >
                 Profile
               </ThemedText>
               <Pressable
@@ -124,11 +128,14 @@ const Profile = () => {
                 <ThemedText
                   type="title-medium"
                   weight="bold"
-                  style={{ fontSize: 24 }}
+                  style={{ fontSize: 24, color: 'white' }}
                 >
                   {fullName}
                 </ThemedText>
-                <ThemedText type="body-small" style={{ color: textSecondary }}>
+                <ThemedText
+                  type="body-small"
+                  style={{ color: 'rgba(255,255,255,0.8)' }}
+                >
                   @{handle}
                 </ThemedText>
               </View>
@@ -136,31 +143,28 @@ const Profile = () => {
 
             {/* Minimal Stats */}
             <View style={styles.statsRow}>
-              <StatItem label="Trips" value="12" />
-              <View style={[styles.statDivider, { backgroundColor: border }]} />
-              <StatItem label="Reviews" value="15" />
-              <View style={[styles.statDivider, { backgroundColor: border }]} />
-              <StatItem label="Points" value="2.4k" />
+              <StatItem label="Trips" value="12" color="white" />
+              <View
+                style={[
+                  styles.statDivider,
+                  { backgroundColor: 'rgba(255,255,255,0.2)' },
+                ]}
+              />
+              <StatItem label="Reviews" value="15" color="white" />
+              <View
+                style={[
+                  styles.statDivider,
+                  { backgroundColor: 'rgba(255,255,255,0.2)' },
+                ]}
+              />
+              <StatItem label="Points" value="2.4k" color="white" />
             </View>
           </LinearGradient>
         </View>
 
         {/* Menu Sections */}
         <View style={styles.menuContainer}>
-          <ThemedText
-            type="label-small"
-            weight="bold"
-            style={{
-              color: textSecondary,
-              marginLeft: 20,
-              marginBottom: 8,
-              marginTop: 24,
-              textTransform: 'uppercase',
-              letterSpacing: 0.5,
-            }}
-          >
-            My Account
-          </ThemedText>
+          <SectionHeader title="My Account" />
           <View style={[styles.menuGroup, { backgroundColor: card }]}>
             <MenuItem
               icon="receipt-outline"
@@ -179,6 +183,22 @@ const Profile = () => {
               border={border}
             />
             <MenuItem
+              icon="wallet-outline"
+              iconColor="#10B981"
+              iconBg="#ECFDF5"
+              label="Payment Methods"
+              onPress={() => {}}
+              border={border}
+            />
+            <MenuItem
+              icon="notifications-outline"
+              iconColor="#8B5CF6"
+              iconBg="#F3E8FF"
+              label="Notification Preferences"
+              onPress={() => {}}
+              border={border}
+            />
+            <MenuItem
               icon="heart-outline"
               iconColor="#EF4444"
               iconBg="#FEF2F2"
@@ -188,28 +208,15 @@ const Profile = () => {
             />
             <MenuItem
               icon="person-outline"
-              iconColor="#8B5CF6"
-              iconBg="#F3E8FF"
+              iconColor="#6366F1"
+              iconBg="#EEF2FF"
               label="Edit Profile"
               onPress={onEdit}
               last
             />
           </View>
 
-          <ThemedText
-            type="label-small"
-            weight="bold"
-            style={{
-              color: textSecondary,
-              marginLeft: 20,
-              marginBottom: 8,
-              marginTop: 24,
-              textTransform: 'uppercase',
-              letterSpacing: 0.5,
-            }}
-          >
-            Support & Other
-          </ThemedText>
+          <SectionHeader title="Support & Other" />
           <View style={[styles.menuGroup, { backgroundColor: card }]}>
             <MenuItem
               icon="star-outline"
@@ -221,40 +228,15 @@ const Profile = () => {
             />
             <MenuItem
               icon="flag-outline"
-              iconColor="#10B981"
-              iconBg="#ECFDF5"
+              iconColor="#EF4444"
+              iconBg="#FEF2F2"
               label="Report a Problem"
               onPress={onReports}
-              border={border}
-            />
-            <MenuItem
-              icon="log-out-outline"
-              iconColor="#6B7280"
-              iconBg="#F3F4F6"
-              label="Log Out"
-              onPress={async () => {
-                logout();
-                router.replace('/');
-              }}
-              color={colors.error}
               last
             />
           </View>
 
-          <ThemedText
-            type="label-small"
-            weight="bold"
-            style={{
-              color: textSecondary,
-              marginLeft: 20,
-              marginBottom: 8,
-              marginTop: 24,
-              textTransform: 'uppercase',
-              letterSpacing: 0.5,
-            }}
-          >
-            Legal
-          </ThemedText>
+          <SectionHeader title="Legal" />
           <View style={[styles.menuGroup, { backgroundColor: card }]}>
             <MenuItem
               icon="document-text-outline"
@@ -273,6 +255,21 @@ const Profile = () => {
               last
             />
           </View>
+
+          <View style={{ marginTop: 32, marginBottom: 40 }}>
+            <Button
+              label="Log Out"
+              onPress={async () => {
+                logout();
+                router.replace('/');
+              }}
+              variant="outline"
+              color="error"
+              size="large"
+              fullWidth
+              radius={16}
+            />
+          </View>
         </View>
       </ScrollView>
     </View>
@@ -283,14 +280,33 @@ export default Profile;
 
 // --- Components ---
 
-const StatItem = ({ label, value }: { label: string; value: string }) => (
+const SectionHeader = ({ title }: { title: string }) => (
+  <View style={styles.sectionHeader}>
+    <View style={styles.sectionIndicator} />
+    <ThemedText type="label-small" weight="bold" style={styles.sectionTitle}>
+      {title}
+    </ThemedText>
+  </View>
+);
+
+const StatItem = ({
+  label,
+  value,
+  color,
+}: {
+  label: string;
+  value: string;
+  color?: string;
+}) => (
   <View style={{ alignItems: 'center', flex: 1 }}>
-    <ThemedText type="title-small" weight="bold">
+    <ThemedText type="title-small" weight="bold" style={{ color }}>
       {value}
     </ThemedText>
     <ThemedText
       type="label-small"
-      style={{ color: Colors.light.textSecondary }}
+      style={{
+        color: color ? 'rgba(255,255,255,0.7)' : Colors.light.textSecondary,
+      }}
     >
       {label}
     </ThemedText>
@@ -342,7 +358,7 @@ const MenuItem = ({
       >
         {label}
       </ThemedText>
-      <Ionicons name="chevron-forward" size={18} color={'#CBD5E0'} />
+      <Ionicons name="chevron-forward" size={18} color={Colors.light.accent} />
     </Pressable>
   );
 };
@@ -350,9 +366,6 @@ const MenuItem = ({
 const styles = StyleSheet.create({
   screen: { flex: 1 },
   headerContainer: {
-    marginBottom: 24,
-    borderBottomLeftRadius: 32,
-    borderBottomRightRadius: 32,
     overflow: 'hidden',
   },
   headerGradient: {
@@ -420,6 +433,11 @@ const styles = StyleSheet.create({
   },
   menuContainer: {
     paddingHorizontal: 20,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    marginTop: -24,
+    paddingTop: 32,
+    backgroundColor: Colors.light.background,
   },
   menuGroup: {
     borderRadius: 20,
@@ -447,5 +465,23 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingVertical: 10,
     borderRadius: 16,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+    marginTop: 8,
+  },
+  sectionIndicator: {
+    width: 4,
+    height: 18,
+    backgroundColor: Colors.light.accent,
+    marginRight: 10,
+    borderRadius: 2,
+  },
+  sectionTitle: {
+    color: Colors.light.textSecondary,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
 });
