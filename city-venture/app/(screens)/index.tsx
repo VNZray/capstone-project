@@ -27,8 +27,8 @@ import debugLogger from '@/utils/debugLogger';
 
 const LoginPage = () => {
   console.log('[LoginPage] Rendering');
-  const [email, setEmail] = useState('tourist@gmail.com');
-  const [password, setPassword] = useState('tourist123');
+  const [email, setEmail] = useState('rayven.clores@unc.edu.ph');
+  const [password, setPassword] = useState('@Rayven22-17782');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [passwordError, setPasswordError] = useState('');
