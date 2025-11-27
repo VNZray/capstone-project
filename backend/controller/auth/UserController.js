@@ -23,13 +23,24 @@ export async function getAllUsers(req, res) {
 // Calls the GetUserById stored procedure
 export async function getUserById(req, res) {
   const { id } = req.params;
+  
+  // Debug logging for troubleshooting
+  console.log('[getUserById] Request for user ID:', id);
+  console.log('[getUserById] ID type:', typeof id);
+  console.log('[getUserById] ID length:', id ? id.length : 'null');
+  
   try {
     const [data] = await db.query("CALL GetUserById(?)", [id]);
+    
+    console.log('[getUserById] Query result:', data[0] ? `Found ${data[0].length} user(s)` : 'No result');
+    
     if (!data[0] || data[0].length === 0) {
+      console.log('[getUserById] User not found for ID:', id);
       return res.status(404).json({ message: "User not found" });
     }
     res.json(data[0][0]);
   } catch (error) {
+    console.error('[getUserById] Database error:', error.message);
     return handleDbError(error, res);
   }
 }
@@ -207,6 +218,21 @@ export async function getAllUserRoles(req, res) {
   try {
     const [data] = await db.query("CALL GetAllUserRoles()");
     res.json(data[0]);
+  } catch (error) {
+    return handleDbError(error, res);
+  }
+}
+
+// Get user role by ID
+// Calls the GetUserRoleById stored procedure
+export async function getUserRoleById(req, res) {
+  const { id } = req.params;
+  try {
+    const [data] = await db.query("CALL GetUserRoleById(?)", [id]);
+    if (!data[0] || data[0].length === 0) {
+      return res.status(404).json({ message: "User role not found" });
+    }
+    res.json(data[0][0]);
   } catch (error) {
     return handleDbError(error, res);
   }
