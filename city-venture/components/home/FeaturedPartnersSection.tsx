@@ -78,14 +78,6 @@ const FeaturedPartnersSection: React.FC<FeaturedPartnersSectionProps> = ({
           <ThemedText type="sub-title-small" weight="bold">
             Featured Partners
           </ThemedText>
-          <ThemedText
-            type="label-small"
-            lightColor={colors.textSecondary}
-            darkColor={colors.textSecondary}
-            style={styles.subtitle}
-          >
-            Top rated businesses selected for you
-          </ThemedText>
         </View>
         <Pressable>
           <ThemedText
@@ -151,7 +143,6 @@ const FeaturedPartnersSection: React.FC<FeaturedPartnersSectionProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    marginBottom: 24,
     marginLeft: -24,
     marginRight: -24,
   },
@@ -161,10 +152,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 20,
     paddingHorizontal: 24,
-  },
-  subtitle: {
-    marginTop: 2,
-    opacity: 0.7,
   },
   listContent: {
     paddingHorizontal: 24,
@@ -177,7 +164,7 @@ const styles = StyleSheet.create({
   logoContainer: {
     width: 72,
     height: 72,
-    borderRadius: 36, // Circular
+    borderRadius: 12, // Circular
     overflow: 'hidden',
     borderWidth: StyleSheet.hairlineWidth,
     elevation: 4,

@@ -1,9 +1,8 @@
 import Header, { HEADER_BASE_HEIGHT } from '@/components/home/Header';
 import HeroSection from '@/components/home/HeroSection';
 import WelcomeSection from '@/components/home/WelcomeSection';
-import SectionContainer from '@/components/home/SectionContainer';
 
-import EventListCard from '@/components/home/EventListCard';
+import EventsSection from '@/components/home/EventsSection';
 import { ThemedText } from '@/components/themed-text';
 import CityListSection from '@/components/home/CityListSection';
 import PersonalRecommendationSection from '@/components/home/PersonalRecommendationSection';
@@ -170,33 +169,6 @@ const HomeScreen = () => {
     });
   }, []);
 
-  const renderEventSection = () => {
-    if (eventState.loading && eventState.data.length === 0) {
-      return <EventSkeleton />;
-    }
-    if (!eventState.loading && eventState.data.length === 0) {
-      return (
-        <EmptyState
-          icon="calendar-blank"
-          message="No upcoming events available."
-        />
-      );
-    }
-
-    return (
-      <>
-        {eventState.error ? <SectionError message={eventState.error} /> : null}
-        {eventState.data.map((event) => (
-          <EventListCard
-            key={event.id}
-            event={event}
-            onPress={handleEventPress}
-          />
-        ))}
-      </>
-    );
-  };
-
   if (!user) return null;
 
   return (
@@ -260,12 +232,13 @@ const HomeScreen = () => {
 
           <FeaturedTouristSpotsSection />
 
-          <SectionContainer
-            title="Upcoming Events"
+          <EventsSection
+            data={eventState.data}
+            loading={eventState.loading}
+            error={eventState.error}
+            onPressEvent={handleEventPress}
             onPressViewAll={navigateToEventHome}
-          >
-            {renderEventSection()}
-          </SectionContainer>
+          />
 
           <NewsSection
             data={newsState.data}
@@ -314,13 +287,13 @@ const ActionGrid: React.FC<ActionGridProps> = ({ items, onPressItem }) => {
 
   const onMomentumScrollEnd = (event: any) => {
     const pageIndex = Math.round(
-      event.nativeEvent.contentOffset.x / (SCREEN_WIDTH - 40)
+      event.nativeEvent.contentOffset.x / SCREEN_WIDTH
     );
     setCurrentPage(pageIndex);
   };
 
-  // Calculate width based on screen width minus padding (20px each side)
-  const PAGE_WIDTH = SCREEN_WIDTH - 40;
+  // Use full screen width for pagination to avoid edge bleeding
+  const PAGE_WIDTH = SCREEN_WIDTH;
 
   return (
     <View style={styles.actionGridContainer}>
@@ -332,53 +305,54 @@ const ActionGrid: React.FC<ActionGridProps> = ({ items, onPressItem }) => {
         onMomentumScrollEnd={onMomentumScrollEnd}
         scrollEventThrottle={16}
         style={{ marginHorizontal: -20 }} // Negative margin to allow full width scrolling
-        contentContainerStyle={{ paddingHorizontal: 16 }}
       >
         {pages.map((page, pageIndex) => (
           <View
             key={pageIndex}
-            style={[styles.actionGridPage, { width: PAGE_WIDTH }]}
+            style={{ width: PAGE_WIDTH, paddingHorizontal: 20 }}
           >
-            {page.map((item, index) => {
-              const globalIndex = pageIndex * ITEMS_PER_PAGE + index;
-              // Modern subtle palette
-              const palettes = [
-                { bg: 'rgba(52, 152, 219, 0.1)', icon: '#3498db' }, // Blue
-                { bg: 'rgba(46, 204, 113, 0.1)', icon: '#2ecc71' }, // Green
-                { bg: 'rgba(155, 89, 182, 0.1)', icon: '#9b59b6' }, // Purple
-                { bg: 'rgba(230, 126, 34, 0.1)', icon: '#e67e22' }, // Orange
-                { bg: 'rgba(231, 76, 60, 0.1)', icon: '#e74c3c' }, // Red
-                { bg: 'rgba(26, 188, 156, 0.1)', icon: '#1abc9c' }, // Teal
-                { bg: 'rgba(241, 196, 15, 0.1)', icon: '#f1c40f' }, // Yellow
-                { bg: 'rgba(52, 73, 94, 0.1)', icon: '#34495e' }, // Dark Blue
-              ];
-              const { bg, icon } = palettes[globalIndex % palettes.length];
+            <View style={[styles.actionGridPage, { width: '100%' }]}>
+              {page.map((item, index) => {
+                const globalIndex = pageIndex * ITEMS_PER_PAGE + index;
+                // Modern subtle palette
+                const palettes = [
+                  { bg: 'rgba(52, 152, 219, 0.1)', icon: '#3498db' }, // Blue
+                  { bg: 'rgba(46, 204, 113, 0.1)', icon: '#2ecc71' }, // Green
+                  { bg: 'rgba(155, 89, 182, 0.1)', icon: '#9b59b6' }, // Purple
+                  { bg: 'rgba(230, 126, 34, 0.1)', icon: '#e67e22' }, // Orange
+                  { bg: 'rgba(231, 76, 60, 0.1)', icon: '#e74c3c' }, // Red
+                  { bg: 'rgba(26, 188, 156, 0.1)', icon: '#1abc9c' }, // Teal
+                  { bg: 'rgba(241, 196, 15, 0.1)', icon: '#f1c40f' }, // Yellow
+                  { bg: 'rgba(52, 73, 94, 0.1)', icon: '#34495e' }, // Dark Blue
+                ];
+                const { bg, icon } = palettes[globalIndex % palettes.length];
 
-              return (
-                <Pressable
-                  key={item.id}
-                  style={[styles.actionItem, { width: '25%' }]}
-                  onPress={() => onPressItem(item.id)}
-                >
-                  <View style={[styles.actionIcon, { backgroundColor: bg }]}>
-                    <MaterialCommunityIcons
-                      name={item.icon}
-                      size={26}
-                      color={icon}
-                    />
-                  </View>
-                  <ThemedText
-                    type="label-small"
-                    align="center"
-                    style={styles.actionLabel}
-                    lightColor={colors.textSecondary}
-                    darkColor={colors.textSecondary}
+                return (
+                  <Pressable
+                    key={item.id}
+                    style={[styles.actionItem, { width: '25%' }]}
+                    onPress={() => onPressItem(item.id)}
                   >
-                    {item.label}
-                  </ThemedText>
-                </Pressable>
-              );
-            })}
+                    <View style={[styles.actionIcon, { backgroundColor: bg }]}>
+                      <MaterialCommunityIcons
+                        name={item.icon}
+                        size={26}
+                        color={icon}
+                      />
+                    </View>
+                    <ThemedText
+                      type="label-small"
+                      align="center"
+                      style={styles.actionLabel}
+                      lightColor={colors.textSecondary}
+                      darkColor={colors.textSecondary}
+                    >
+                      {item.label}
+                    </ThemedText>
+                  </Pressable>
+                );
+              })}
+            </View>
           </View>
         ))}
       </Animated.ScrollView>
@@ -486,65 +460,6 @@ const PromoCard: React.FC<PromoCardProps> = ({
   );
 };
 
-const SectionError = ({ message }: { message?: string }) =>
-  message ? (
-    <ThemedText type="label-small" lightColor="#FFB4A2">
-      {message}
-    </ThemedText>
-  ) : null;
-
-const EmptyState = ({
-  icon,
-  message,
-}: {
-  icon: React.ComponentProps<typeof MaterialCommunityIcons>['name'];
-  message: string;
-}) => {
-  const scheme = useColorScheme() ?? 'light';
-
-  return (
-    <View
-      style={[
-        styles.emptyState,
-        {
-          backgroundColor: Colors[scheme].surfaceOverlay,
-          borderWidth: StyleSheet.hairlineWidth,
-          borderColor: Colors[scheme].border,
-        },
-      ]}
-    >
-      <MaterialCommunityIcons
-        name={icon}
-        size={22}
-        color={Colors[scheme].icon}
-        style={styles.emptyIcon}
-      />
-      <ThemedText
-        type="label-small"
-        lightColor={Colors[scheme].textSecondary}
-        darkColor={Colors[scheme].textSecondary}
-      >
-        {message}
-      </ThemedText>
-    </View>
-  );
-};
-
-const EventSkeleton = () => {
-  const scheme = useColorScheme() ?? 'light';
-  const placeholderColor = Colors[scheme].accent;
-  return (
-    <>
-      {Array.from({ length: 3 }).map((_, index) => (
-        <View
-          key={`event-skeleton-${index}`}
-          style={[styles.eventSkeleton, { backgroundColor: placeholderColor }]}
-        />
-      ))}
-    </>
-  );
-};
-
 const styles = StyleSheet.create({
   root: {
     flex: 1,
@@ -560,14 +475,13 @@ const styles = StyleSheet.create({
     paddingBottom: 24,
     paddingHorizontal: 20,
     paddingTop: 24,
-    gap: 24,
+    gap: 30,
     marginTop: -16,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     // backgroundColor set dynamically
   },
   actionGridContainer: {
-    marginBottom: 8,
     paddingTop: 16,
   },
   actionGridPage: {
@@ -622,24 +536,6 @@ const styles = StyleSheet.create({
     paddingLeft: 0,
   },
 
-  eventSkeleton: {
-    height: 96,
-    borderRadius: 16,
-    backgroundColor: 'rgba(255,255,255,0.08)',
-    marginBottom: 12,
-  },
-
-  emptyState: {
-    padding: 16,
-    borderRadius: 16,
-    backgroundColor: '#151426',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-  },
-  emptyIcon: {
-    marginBottom: 4,
-  },
   header: {
     position: 'absolute',
     top: 0,

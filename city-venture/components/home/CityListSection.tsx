@@ -9,7 +9,6 @@ import {
 } from 'react-native';
 import { ThemedText } from '@/components/themed-text';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Feather } from '@expo/vector-icons';
 import { Colors } from '@/constants/color';
 
 type City = {
@@ -47,7 +46,7 @@ const PLACEHOLDER_CITIES: City[] = [
     id: 'dubai',
     name: 'Dubai',
     image:
-      'https://images.unsplash.com/photo-1512453979798-5ea90b2009f4?auto=format&fit=crop&w=600&q=80',
+      'https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?auto=format&fit=crop&w=600&q=80',
   },
 ];
 
@@ -112,27 +111,6 @@ const CityListSection: React.FC<CityListSectionProps> = ({
             </ImageBackground>
           </Pressable>
         )}
-        ListFooterComponent={
-          <Pressable
-            style={[
-              styles.viewMoreCard,
-              {
-                backgroundColor: colors.surface,
-              },
-            ]}
-            onPress={onPressViewMore}
-          >
-            <Feather name="arrow-right" size={32} color={colors.accent} />
-            <ThemedText
-              type="label-small"
-              lightColor={colors.accent}
-              darkColor={colors.accent}
-              style={styles.viewMoreText}
-            >
-              View More
-            </ThemedText>
-          </Pressable>
-        }
       />
     </View>
   );
@@ -177,17 +155,6 @@ const styles = StyleSheet.create({
   cityName: {
     fontSize: 16,
     fontWeight: '700',
-  },
-  viewMoreCard: {
-    width: 140,
-    height: 180,
-    borderRadius: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: 8,
-  },
-  viewMoreText: {
-    fontWeight: '600',
   },
 });
 

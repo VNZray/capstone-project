@@ -5,6 +5,7 @@ import {
   StyleSheet,
   View,
   useColorScheme,
+  Platform,
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { ThemedText } from '@/components/themed-text';
@@ -20,8 +21,7 @@ const EventListCard: React.FC<Props> = ({ event, onPress }) => {
   const scheme = useColorScheme() ?? 'light';
   const colors = Colors[scheme];
 
-  // Simple date parsing for the "MMM DD, TIME" format
-  // Fallback values provided if format doesn't match
+  // Date parsing
   const dateParts = event.date.split(' ');
   const month = dateParts[0] || 'NOV';
   const day = dateParts[1]?.replace(',', '') || '01';
@@ -36,15 +36,16 @@ const EventListCard: React.FC<Props> = ({ event, onPress }) => {
         {
           backgroundColor: colors.surface,
           borderColor: colors.border,
-          transform: [{ scale: pressed ? 0.98 : 1 }],
-          shadowColor: colors.shadow,
+          opacity: pressed ? 0.9 : 1,
+          transform: [{ scale: pressed ? 0.995 : 1 }],
         },
       ]}
       onPress={() => onPress?.(event)}
     >
-      {/* Image Container with Date Badge */}
+      {/* Image Section */}
       <View style={styles.imageContainer}>
         <Image source={{ uri: event.image }} style={styles.image} />
+        {/* Minimalist Date Badge */}
         <View style={styles.dateBadge}>
           <ThemedText
             type="label-small"
@@ -67,16 +68,23 @@ const EventListCard: React.FC<Props> = ({ event, onPress }) => {
         </View>
       </View>
 
-      {/* Content */}
+      {/* Content Section */}
       <View style={styles.content}>
-        <ThemedText type="sub-title-small" weight="bold" numberOfLines={2}>
-          {event.name}
-        </ThemedText>
+        <View style={styles.headerRow}>
+          <ThemedText
+            type="sub-title-medium"
+            weight="semi-bold"
+            numberOfLines={2}
+            style={styles.title}
+          >
+            {event.name}
+          </ThemedText>
+        </View>
 
         <View style={styles.metaContainer}>
           <View style={styles.metaRow}>
             <MaterialCommunityIcons
-              name="clock-outline"
+              name="clock-time-four-outline"
               size={14}
               color={colors.textSecondary}
             />
@@ -108,12 +116,12 @@ const EventListCard: React.FC<Props> = ({ event, onPress }) => {
         </View>
       </View>
 
-      {/* Action Icon */}
+      {/* Chevron */}
       <View style={styles.actionIcon}>
         <MaterialCommunityIcons
-          name="arrow-right"
+          name="chevron-right"
           size={20}
-          color={colors.textSecondary}
+          color={colors.iconSecondary}
         />
       </View>
     </Pressable>
@@ -124,21 +132,29 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 12,
-    borderRadius: 24,
-    marginBottom: 16,
-    borderWidth: StyleSheet.hairlineWidth,
-    elevation: 2,
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 4 },
+    padding: 10,
+    borderRadius: 16,
+    borderWidth: 1,
+    // Minimalist shadow for depth without clutter
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.04,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 1,
+      },
+    }),
   },
   imageContainer: {
-    position: 'relative',
-    width: 100,
-    height: 100,
-    borderRadius: 18,
+    width: 88,
+    height: 88,
+    borderRadius: 12,
     overflow: 'hidden',
+    position: 'relative',
+    backgroundColor: '#f0f0f0',
   },
   image: {
     width: '100%',
@@ -147,33 +163,46 @@ const styles = StyleSheet.create({
   },
   dateBadge: {
     position: 'absolute',
-    top: 8,
-    left: 8,
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
-    borderRadius: 10,
+    top: 6,
+    left: 6,
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    borderRadius: 8,
     paddingVertical: 4,
     paddingHorizontal: 8,
     alignItems: 'center',
     justifyContent: 'center',
-    minWidth: 40,
+    minWidth: 36,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
   },
   dateMonth: {
-    fontSize: 10,
+    fontSize: 9,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
+    marginBottom: -2,
   },
   dateDay: {
-    fontSize: 16,
-    lineHeight: 20,
+    fontSize: 15,
+    lineHeight: 18,
   },
   content: {
     flex: 1,
-    marginLeft: 16,
-    justifyContent: 'center',
-    gap: 8,
+    marginLeft: 14,
+    justifyContent: 'space-between',
+    height: 80, // Match image height roughly for vertical rhythm
+    paddingVertical: 2,
+  },
+  headerRow: {
+    marginBottom: 4,
+  },
+  title: {
+    fontSize: 15,
+    lineHeight: 20,
   },
   metaContainer: {
-    gap: 4,
+    gap: 6,
   },
   metaRow: {
     flexDirection: 'row',
@@ -182,7 +211,7 @@ const styles = StyleSheet.create({
   },
   actionIcon: {
     paddingLeft: 8,
-    justifyContent: 'center',
+    paddingRight: 4,
   },
 });
 

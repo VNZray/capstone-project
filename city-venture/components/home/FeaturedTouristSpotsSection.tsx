@@ -12,10 +12,17 @@ import { ThemedText } from '@/components/themed-text';
 import { Colors } from '@/constants/color';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
+import { LinearGradient } from 'expo-linear-gradient';
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+} from 'react-native-reanimated';
 
 const { width } = Dimensions.get('window');
-const CARD_WIDTH = width * 0.7;
-const SPACING = 20;
+const CARD_WIDTH = width * 0.65;
+const CARD_HEIGHT = CARD_WIDTH * 1.3; // Adjusted aspect ratio
+const SPACING = 16;
 
 type TouristSpot = {
   id: string;
@@ -24,6 +31,7 @@ type TouristSpot = {
   rating: number;
   location: string;
   category: string;
+  price?: string;
 };
 
 const MOCK_SPOTS: TouristSpot[] = [
@@ -35,6 +43,7 @@ const MOCK_SPOTS: TouristSpot[] = [
     rating: 4.8,
     location: 'San Francisco, CA',
     category: 'Landmark',
+    price: 'Free',
   },
   {
     id: '2',
@@ -44,6 +53,7 @@ const MOCK_SPOTS: TouristSpot[] = [
     rating: 4.9,
     location: 'California',
     category: 'Nature',
+    price: '$35/vehicle',
   },
   {
     id: '3',
@@ -53,6 +63,7 @@ const MOCK_SPOTS: TouristSpot[] = [
     rating: 4.9,
     location: 'Arizona',
     category: 'Nature',
+    price: '$30/entry',
   },
   {
     id: '4',
@@ -62,6 +73,7 @@ const MOCK_SPOTS: TouristSpot[] = [
     rating: 4.7,
     location: 'New York, NY',
     category: 'Landmark',
+    price: '$25/tour',
   },
 ];
 
@@ -79,12 +91,15 @@ const FeaturedTouristSpotsSection = () => {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <ThemedText type="sub-title-medium" weight="bold">
+        <ThemedText type="sub-title-small" weight="bold">
           Featured Tourist Spots
         </ThemedText>
-        <Pressable onPress={() => router.push('/(tabs)/(home)/(spot)')}>
-          <ThemedText type="body-small" style={{ color: colors.primary }}>
-            View All
+        <Pressable
+          onPress={() => router.push('/(tabs)/(home)/(spot)')}
+          style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
+        >
+          <ThemedText type="label-small" style={{ color: colors.tint }}>
+            View All {'>'}
           </ThemedText>
         </Pressable>
       </View>
@@ -92,147 +107,177 @@ const FeaturedTouristSpotsSection = () => {
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
+        style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
         decelerationRate="fast"
         snapToInterval={CARD_WIDTH + SPACING}
+        pagingEnabled={false}
       >
         {MOCK_SPOTS.map((spot) => (
-          <Pressable
+          <SpotCard
             key={spot.id}
-            style={[
-              styles.card,
-              { backgroundColor: colors.surface, shadowColor: colors.shadow },
-            ]}
+            spot={spot}
             onPress={() => handlePress(spot.id)}
-          >
-            <View style={styles.imageContainer}>
-              <Image source={{ uri: spot.image }} style={styles.image} />
-              <View style={styles.badge}>
-                <ThemedText type="label-small" style={styles.badgeText}>
-                  {spot.category}
-                </ThemedText>
-              </View>
-            </View>
-            <View style={styles.content}>
-              <View style={styles.row}>
-                <ThemedText
-                  type="body-medium"
-                  weight="semi-bold"
-                  numberOfLines={1}
-                  style={styles.title}
-                >
-                  {spot.name}
-                </ThemedText>
-                <View style={styles.rating}>
-                  <MaterialCommunityIcons
-                    name="star"
-                    size={14}
-                    color="#FFD700"
-                  />
-                  <ThemedText type="label-small" weight="medium">
-                    {spot.rating}
-                  </ThemedText>
-                </View>
-              </View>
-              <View style={styles.locationRow}>
-                <MaterialCommunityIcons
-                  name="map-marker-outline"
-                  size={14}
-                  color={colors.textSecondary}
-                />
-                <ThemedText
-                  type="label-small"
-                  style={{ color: colors.textSecondary }}
-                  numberOfLines={1}
-                >
-                  {spot.location}
-                </ThemedText>
-              </View>
-            </View>
-          </Pressable>
+            colors={colors}
+          />
         ))}
       </ScrollView>
     </View>
   );
 };
 
+const SpotCard = ({
+  spot,
+  onPress,
+  colors,
+}: {
+  spot: TouristSpot;
+  onPress: () => void;
+  colors: typeof Colors.light;
+}) => {
+  const scale = useSharedValue(1);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+  }));
+
+  const handlePressIn = () => {
+    scale.value = withSpring(0.98);
+  };
+
+  const handlePressOut = () => {
+    scale.value = withSpring(1);
+  };
+
+  return (
+    <Pressable
+      onPress={onPress}
+      onPressIn={handlePressIn}
+      onPressOut={handlePressOut}
+    >
+      <Animated.View
+        style={[
+          styles.card,
+          animatedStyle,
+          {
+            backgroundColor: colors.surface,
+            shadowColor: colors.shadow,
+          },
+        ]}
+      >
+        <Image source={{ uri: spot.image }} style={styles.image} />
+
+        {/* Gradient Overlay */}
+        <LinearGradient
+          colors={['transparent', 'rgba(0,0,0,0.1)', 'rgba(0,0,0,0.8)']}
+          style={styles.gradient}
+        />
+
+        {/* Bottom Content */}
+        <View style={styles.content}>
+          <ThemedText
+            type="sub-title-medium"
+            weight="bold"
+            style={styles.title}
+            numberOfLines={2}
+          >
+            {spot.name}
+          </ThemedText>
+
+          <View style={styles.detailsRow}>
+            <View style={styles.locationContainer}>
+              <MaterialCommunityIcons
+                name="map-marker"
+                size={14}
+                color="rgba(255,255,255,0.9)"
+              />
+              <ThemedText
+                type="label-small"
+                style={styles.locationText}
+                numberOfLines={1}
+              >
+                {spot.location}
+              </ThemedText>
+            </View>
+          </View>
+        </View>
+      </Animated.View>
+    </Pressable>
+  );
+};
+
 const styles = StyleSheet.create({
   container: {
-    marginVertical: 24,
-    marginHorizontal: -20, // Break out of parent padding
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    marginBottom: 16,
+    marginBottom: 12,
+  },
+  scrollView: {
+    marginHorizontal: -20, // Break out of parent padding
   },
   scrollContent: {
-    paddingHorizontal: 20,
+    paddingHorizontal: 20, // Add padding back to align first item
     gap: SPACING,
+    paddingBottom: 20,
   },
   card: {
     width: CARD_WIDTH,
-    borderRadius: 16,
+    height: CARD_HEIGHT,
+    borderRadius: 20,
     overflow: 'hidden',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
-    elevation: 5,
-  },
-  imageContainer: {
-    height: 200,
-    width: '100%',
     position: 'relative',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.15,
+    shadowRadius: 16,
+    elevation: 8,
   },
   image: {
     width: '100%',
     height: '100%',
     resizeMode: 'cover',
   },
-  badge: {
+  gradient: {
     position: 'absolute',
-    top: 12,
-    left: 12,
-    backgroundColor: 'rgba(0,0,0,0.6)',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 8,
-  },
-  badgeText: {
-    color: '#fff',
-    fontSize: 10,
-    textTransform: 'uppercase',
-    fontWeight: '700',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: '70%',
   },
   content: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
     padding: 16,
-    gap: 4,
+    paddingBottom: 20,
   },
-  row: {
+  title: {
+    color: '#fff',
+    fontSize: 18,
+    lineHeight: 24,
+    marginBottom: 6,
+    textShadowColor: 'rgba(0,0,0,0.3)',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 4,
+  },
+  detailsRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
-  title: {
+  locationContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
     flex: 1,
     marginRight: 8,
   },
-  rating: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    backgroundColor: 'rgba(255, 215, 0, 0.1)',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 6,
-  },
-  locationRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    marginTop: 4,
+  locationText: {
+    color: 'rgba(255,255,255,0.95)',
+    fontSize: 12,
   },
 });
 

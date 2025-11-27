@@ -94,11 +94,11 @@ export const lightColors = {
   subcategoryCard: SLATE[100],
 
   // Text Colors (Deep Navy replaces black for brand consistency)
-  text: BRAND.deepNavy,
-  textPrimary: BRAND.deepNavy,
+  text: SLATE[950],
+  textPrimary: SLATE[950],
   textSecondary: SLATE[500],
   textTertiary: SLATE[400],
-  textAccent: BRAND.vividBlue,
+  textAccent: BRAND.secondary,
   textDisabled: SLATE[300],
   textInverse: '#FFFFFF',
   textLink: BRAND.vividBlue,
