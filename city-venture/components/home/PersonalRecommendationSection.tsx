@@ -31,23 +31,27 @@ const PersonalRecommendationSection: React.FC<
           <ThemedText type="sub-title-small" weight="bold">
             Recommended for You
           </ThemedText>
-          <ThemedText
-            type="label-small"
-            lightColor={colors.textSecondary}
-            darkColor={colors.textSecondary}
-            style={styles.subtitle}
-          >
-            Curated places based on your interests
-          </ThemedText>
         </View>
-        <Pressable>
+        <Pressable
+          style={({ pressed }) => ({
+            opacity: pressed ? 0.7 : 1,
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 4,
+          })}
+        >
           <ThemedText
             type="label-small"
-            lightColor={colors.accent}
+            lightColor={colors.primary}
             darkColor={colors.accent}
           >
-            See All
+            View All
           </ThemedText>
+          <MaterialCommunityIcons
+            name="arrow-right"
+            size={16}
+            color={colors.accent}
+          />
         </Pressable>
       </View>
 
@@ -63,51 +67,90 @@ const PersonalRecommendationSection: React.FC<
             style={[
               styles.card,
               {
-                backgroundColor: colors.surface,
-                borderColor: colors.border,
-                shadowColor: colors.shadow,
+                backgroundColor: 'transparent',
               },
             ]}
             onPress={() => onPressItem?.(item)}
           >
             <View style={styles.imageContainer}>
               <Image source={{ uri: item.image }} style={styles.image} />
-              <View style={styles.ratingBadge}>
-                <MaterialCommunityIcons name="star" size={12} color="#FFD700" />
-                <ThemedText
-                  type="label-small"
-                  weight="bold"
-                  style={styles.ratingText}
-                  lightColor="#000"
-                  darkColor="#000"
-                >
-                  {item.rating}
-                </ThemedText>
-              </View>
+              <Pressable style={styles.heartButton}>
+                <MaterialCommunityIcons
+                  name="heart-outline"
+                  size={20}
+                  color="#000"
+                />
+              </Pressable>
             </View>
 
             <View style={styles.content}>
+              <View style={styles.ratingRow}>
+                <MaterialCommunityIcons name="star" size={16} color="#00BFA5" />
+                <ThemedText type="label-small" style={styles.ratingText}>
+                  {item.rating}
+                </ThemedText>
+                <ThemedText
+                  type="label-small"
+                  lightColor={colors.textSecondary}
+                  darkColor={colors.textSecondary}
+                >
+                  ({item.reviews})
+                </ThemedText>
+              </View>
+
               <ThemedText
-                type="label-small"
-                lightColor={colors.primary}
-                darkColor={colors.primary}
-                weight="bold"
-                style={styles.category}
+                type="card-title-medium"
+                weight="semi-bold"
+                numberOfLines={2}
+                style={styles.title}
+                lightColor={colors.textPrimary}
+                darkColor={colors.textPrimary}
               >
-                {item.tags[0]}
-              </ThemedText>
-              <ThemedText type="body-small" weight="bold" numberOfLines={1}>
                 {item.title}
               </ThemedText>
-              <ThemedText
-                type="label-small"
-                lightColor={colors.textSecondary}
-                darkColor={colors.textSecondary}
-                numberOfLines={1}
-                style={styles.description}
-              >
-                {item.location}
-              </ThemedText>
+
+              <View style={styles.locationRow}>
+                <MaterialCommunityIcons
+                  name="map-marker-outline"
+                  size={14}
+                  color={colors.textPrimary}
+                />
+                <ThemedText
+                  type="label-small"
+                  lightColor={colors.textPrimary}
+                  darkColor={colors.textPrimary}
+                  numberOfLines={1}
+                >
+                  {item.location}
+                </ThemedText>
+              </View>
+
+              <View style={styles.categoryRow}>
+                <MaterialCommunityIcons
+                  name="tag-outline"
+                  size={14}
+                  color={colors.textPrimary}
+                />
+                <ThemedText
+                  type="label-small"
+                  lightColor={colors.textPrimary}
+                  darkColor={colors.textPrimary}
+                >
+                  {item.tags[0]}
+                </ThemedText>
+              </View>
+
+              <View style={styles.priceRow}>
+                <ThemedText
+                  type="card-title-small"
+                  weight="bold"
+                  // style= {{ color: '#00BFA5'}}
+                  lightColor={colors.textPrimary}
+                  darkColor={colors.textPrimary}
+                >
+                  {item.price}
+                </ThemedText>
+              </View>
             </View>
           </Pressable>
         )}
@@ -137,51 +180,68 @@ const styles = StyleSheet.create({
   },
   card: {
     width: 320,
-    borderRadius: 16,
-    overflow: 'hidden',
-    borderWidth: 1,
-    elevation: 2,
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 4 },
+    borderRadius: 12,
   },
   imageContainer: {
-    height: 120,
+    height: 180,
     width: '100%',
     position: 'relative',
   },
   image: {
     width: '100%',
     height: '100%',
+    borderRadius: 12,
     resizeMode: 'cover',
   },
-  ratingBadge: {
+  heartButton: {
     position: 'absolute',
-    top: 8,
-    right: 8,
-    flexDirection: 'row',
+    top: 10,
+    right: 10,
+    backgroundColor: '#fff',
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 12,
-    gap: 2,
-  },
-  ratingText: {
-    fontSize: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
   },
   content: {
-    padding: 12,
+    backgroundColor: 'transparent',
+    paddingTop: 12,
+  },
+  ratingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    textAlign: 'center',
+    marginBottom: 4,
     gap: 4,
   },
-  category: {
-    fontSize: 10,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
+  ratingText: {
+    fontWeight: 'bold',
   },
-  description: {
-    fontSize: 11,
-    marginTop: 2,
+  title: {
+    marginBottom: 4,
+    lineHeight: 20,
+  },
+  locationRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginBottom: 4,
+  },
+  categoryRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginBottom: 4,
+  },
+  priceRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
   },
 });
 

@@ -15,7 +15,10 @@
     "cleardb": "node scripts/clear-db.js",
     "seed": "knex seed:run --knexfile knexfile.cjs --env development",
     "deletedb": "node scripts/delete-db.js",
-    "resetdb": "node scripts/delete-db.js && node scripts/create-db.js && knex migrate:latest --knexfile knexfile.cjs --env development && knex seed:run --knexfile knexfile.cjs --env development && npm run dev"
+    "resetdb": "node scripts/delete-db.js && node scripts/create-db.js && knex migrate:latest --knexfile knexfile.cjs --env development && knex seed:run --knexfile knexfile.cjs --env development && npm run dev",
+    "test": "node --experimental-vm-modules ../node_modules/jest/bin/jest.js --forceExit",
+    "test:watch": "node --experimental-vm-modules ../node_modules/jest/bin/jest.js --watch",
+    "test:coverage": "node --experimental-vm-modules ../node_modules/jest/bin/jest.js --coverage --forceExit"
   },
   "keywords": [],
   "author": "",
@@ -34,6 +37,7 @@
     "uuid": "^11.1.0"
   },
   "devDependencies": {
+    "jest": "^29.7.0",
     "nodemon": "^3.1.10"
   }
 }

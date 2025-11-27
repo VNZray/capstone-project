@@ -1,8 +1,4 @@
-import {
-  DarkTheme,
-  DefaultTheme,
-  ThemeProvider,
-} from '@react-navigation/native';
+import { ThemeProvider } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import * as Linking from 'expo-linking';
@@ -11,13 +7,12 @@ import { Alert } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import 'react-native-reanimated';
 
+import { getRefreshToken } from '@/utils/secureStorage';
 import { AuthProvider } from '@/context/AuthContext';
 import { CartProvider } from '@/context/CartContext';
-import { ThemeProvider as CustomThemeProvider } from '@/context/ThemeContext';
-import { useColorScheme } from '@/hooks/use-color-scheme';
+import { NavigationTheme } from '@/constants/color';
 
 export default function RootLayout() {
-  const colorScheme = useColorScheme();
   const [loaded] = useFonts({
     'Poppins-Regular': require('@/assets/fonts/Poppins/Poppins-Regular.ttf'),
     'Poppins-Medium': require('@/assets/fonts/Poppins/Poppins-Medium.ttf'),
@@ -46,9 +41,16 @@ export default function RootLayout() {
     };
   }, []);
 
-  const handleDeepLink = (url: string) => {
+  const handleDeepLink = async (url: string) => {
     console.log('[Deep Link] Received:', url);
-    
+
+    // Security Check: Ensure user is authenticated
+    const token = await getRefreshToken();
+    if (!token) {
+      console.warn('[Deep Link] Unauthenticated access attempt blocked.');
+      return;
+    }
+
     try {
       const { path } = Linking.parse(url);
 
@@ -56,33 +58,33 @@ export default function RootLayout() {
       if (path?.includes('payment-success')) {
         const orderIdMatch = path.match(/orders\/([^\/]+)\/payment-success/);
         const orderId = orderIdMatch?.[1];
-        
+
         console.log('[Deep Link] Payment success for order:', orderId);
-        
+
         // Show success message
         Alert.alert(
           'Payment Successful',
           'Your payment has been received. Please wait for the business to confirm your order.',
           [{ text: 'OK' }]
         );
-        
+
         // Navigate to order details (implement navigation logic as needed)
         // router.push(`/(tabs)/(home)/orders/${orderId}`);
       }
-      
+
       // Handle payment cancel: cityventure://orders/{orderId}/payment-cancel
       else if (path?.includes('payment-cancel')) {
         const orderIdMatch = path.match(/orders\/([^\/]+)\/payment-cancel/);
         const orderId = orderIdMatch?.[1];
-        
+
         console.log('[Deep Link] Payment cancelled for order:', orderId);
-        
+
         Alert.alert(
           'Payment Cancelled',
           'Your payment was cancelled. You can try again from your order details.',
           [{ text: 'OK' }]
         );
-        
+
         // Navigate to order details
         // router.push(`/(tabs)/(home)/orders/${orderId}`);
       }
@@ -99,17 +101,15 @@ export default function RootLayout() {
     <SafeAreaProvider>
       <AuthProvider>
         <CartProvider>
-          <CustomThemeProvider>
-            <ThemeProvider value={colorScheme === 'light' ? DefaultTheme : DarkTheme}>
-              <Stack>
-                <Stack.Screen name="(screens)" options={{ headerShown: false }} />
-                <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-                <Stack.Screen name="index" options={{ headerShown: false }} />
-                <Stack.Screen name="landing" options={{ headerShown: false }} />
-                <Stack.Screen name="+not-found" />
-              </Stack>
-            </ThemeProvider>
-          </CustomThemeProvider>
+          <ThemeProvider value={NavigationTheme}>
+            <Stack>
+              <Stack.Screen name="(screens)" options={{ headerShown: false }} />
+              <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+              <Stack.Screen name="index" options={{ headerShown: false }} />
+
+              <Stack.Screen name="+not-found" />
+            </Stack>
+          </ThemeProvider>
         </CartProvider>
       </AuthProvider>
     </SafeAreaProvider>

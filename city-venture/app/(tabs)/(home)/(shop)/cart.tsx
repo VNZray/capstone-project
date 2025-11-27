@@ -9,41 +9,54 @@ import {
   Image,
   Pressable,
   Alert,
+  Platform,
 } from 'react-native';
 import { Stack, router } from 'expo-router';
-import { useColorScheme } from '@/hooks/use-color-scheme';
-import { colors } from '@/constants/color';
+import { LinearGradient } from 'expo-linear-gradient';
+import { Colors } from '@/constants/color';
 import { useTypography } from '@/constants/typography';
-import PageContainer from '@/components/PageContainer';
 import { useCart } from '@/context/CartContext';
 import { Ionicons } from '@expo/vector-icons';
 
 const CartScreen = () => {
-  const scheme = useColorScheme();
-  const isDark = scheme === 'dark';
+  const colors = Colors.light;
+  const isDark = false;
   const type = useTypography();
-  const { h4, body, bodySmall } = type;
-  const { items, removeFromCart, updateQuantity, clearCart, getSubtotal, getTotalItems } = useCart();
+  const { h3, h4, body, bodySmall, caption } = type;
+  const {
+    items,
+    removeFromCart,
+    updateQuantity,
+    clearCart,
+    getSubtotal,
+    getTotalItems,
+  } = useCart();
 
   const palette = {
-    bg: isDark ? '#0D1B2A' : '#F8F9FA',
-    card: isDark ? '#1C2833' : '#FFFFFF',
-    text: isDark ? '#ECEDEE' : '#0D1B2A',
-    subText: isDark ? '#9BA1A6' : '#6B7280',
-    border: isDark ? '#2A2F36' : '#E5E8EC',
+    bg: colors.background,
+    card: colors.surface,
+    text: colors.text,
+    subText: colors.textSecondary,
+    border: colors.border,
+    accent: colors.accent,
+    primary: colors.primary,
   };
 
-  const handleQuantityChange = (productId: string, currentQty: number, delta: number) => {
+  const handleQuantityChange = (
+    productId: string,
+    currentQty: number,
+    delta: number
+  ) => {
     const newQuantity = currentQty + delta;
     if (newQuantity <= 0) {
-      Alert.alert(
-        'Remove Item',
-        'Remove this item from cart?',
-        [
-          { text: 'Cancel', style: 'cancel' },
-          { text: 'Remove', style: 'destructive', onPress: () => removeFromCart(productId) },
-        ]
-      );
+      Alert.alert('Remove Item', 'Remove this item from cart?', [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Remove',
+          style: 'destructive',
+          onPress: () => removeFromCart(productId),
+        },
+      ]);
     } else {
       try {
         updateQuantity(productId, newQuantity);
@@ -54,30 +67,29 @@ const CartScreen = () => {
   };
 
   const handleRemoveItem = (productId: string) => {
-    Alert.alert(
-      'Remove Item',
-      'Remove this item from cart?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Remove', style: 'destructive', onPress: () => removeFromCart(productId) },
-      ]
-    );
+    Alert.alert('Remove Item', 'Remove this item from cart?', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Remove',
+        style: 'destructive',
+        onPress: () => removeFromCart(productId),
+      },
+    ]);
   };
 
   const handleClearCart = () => {
-    Alert.alert(
-      'Clear Cart',
-      'Remove all items from cart?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Clear', style: 'destructive', onPress: clearCart },
-      ]
-    );
+    Alert.alert('Clear Cart', 'Remove all items from cart?', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Clear', style: 'destructive', onPress: clearCart },
+    ]);
   };
 
   const handleCheckout = () => {
     if (items.length === 0) {
-      Alert.alert('Empty Cart', 'Please add items to your cart before checkout');
+      Alert.alert(
+        'Empty Cart',
+        'Please add items to your cart before checkout'
+      );
       return;
     }
     router.push('/(screens)/checkout' as never);
@@ -86,151 +98,338 @@ const CartScreen = () => {
   const subtotal = getSubtotal();
   const totalItems = getTotalItems();
 
+  // Midnight Sunlight Gradients
+  const buttonGradient = ['#FFD700', '#FF8C00'] as const; // Gold to Dark Orange
+  const buttonText = '#0A1B47'; // Dark text on warm button
+
+  const emptyStateGradient = isDark
+    ? (['#1A2B57', '#0A1B47'] as const)
+    : (['#FFF5E1', '#FFFFFF'] as const);
+
   return (
     <>
       <Stack.Screen
         options={{
           title: 'Shopping Cart',
-          headerStyle: { backgroundColor: palette.card },
+          headerStyle: { backgroundColor: palette.bg },
           headerTintColor: palette.text,
+          headerShadowVisible: false,
           headerRight: () =>
             items.length > 0 ? (
-              <Pressable onPress={handleClearCart} style={{ marginRight: 16 }}>
-                <Text style={[{ fontSize: body }, { color: colors.error }]}>Clear</Text>
+              <Pressable
+                onPress={handleClearCart}
+                style={({ pressed }) => ({
+                  marginRight: 16,
+                  opacity: pressed ? 0.7 : 1,
+                })}
+              >
+                <Text
+                  style={[
+                    { fontSize: bodySmall, fontWeight: '600' },
+                    { color: colors.error },
+                  ]}
+                >
+                  Clear All
+                </Text>
               </Pressable>
             ) : null,
         }}
       />
-      <PageContainer>
-        <View style={[styles.container, { backgroundColor: palette.bg }]}>
-          {items.length === 0 ? (
-            <View style={styles.emptyContainer}>
-              <Ionicons name="cart-outline" size={80} color={palette.subText} />
-              <Text style={[{ fontSize: h4 }, { color: palette.text, marginTop: 16 }]}>
-                Your cart is empty
-              </Text>
-              <Text style={[{ fontSize: body }, { color: palette.subText, marginTop: 8 }]}>
-                Add some products to get started
-              </Text>
-              <Pressable
-                style={[styles.browseButton, { backgroundColor: colors.primary }]}
-                onPress={() => router.back()}
+
+      {/* Main Background */}
+      <View style={[styles.container, { backgroundColor: palette.bg }]}>
+        {items.length === 0 ? (
+          <View style={styles.emptyContainer}>
+            <LinearGradient
+              colors={emptyStateGradient}
+              style={styles.emptyIconContainer}
+            >
+              <Ionicons
+                name="cart-outline"
+                size={64}
+                color={isDark ? '#FFD700' : '#FF8C00'}
+              />
+            </LinearGradient>
+            <Text
+              style={[
+                { fontSize: h3, fontWeight: 'bold' },
+                { color: palette.text, marginTop: 24, textAlign: 'center' },
+              ]}
+            >
+              Your Cart is Empty
+            </Text>
+            <Text
+              style={[
+                { fontSize: body },
+                {
+                  color: palette.subText,
+                  marginTop: 12,
+                  textAlign: 'center',
+                  maxWidth: '80%',
+                },
+              ]}
+            >
+              Looks like you haven&apos;t added anything to your cart yet.
+            </Text>
+            <Pressable
+              style={styles.browseButtonWrapper}
+              onPress={() => router.back()}
+            >
+              <LinearGradient
+                colors={buttonGradient}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={styles.browseButton}
               >
-                <Text style={[{ fontSize: body }, { color: '#FFF' }]}>
-                  Browse Products
+                <Text
+                  style={[
+                    { fontSize: body, fontWeight: 'bold' },
+                    { color: buttonText },
+                  ]}
+                >
+                  Start Shopping
                 </Text>
-              </Pressable>
-            </View>
-          ) : (
-            <>
-              <ScrollView
-                style={styles.scrollView}
-                showsVerticalScrollIndicator={false}
-              >
-                {/* Cart Items */}
-                {items.map((item) => (
-                  <View
-                    key={item.product_id}
-                    style={[styles.cartItem, { backgroundColor: palette.card, borderColor: palette.border }]}
-                  >
+              </LinearGradient>
+            </Pressable>
+          </View>
+        ) : (
+          <>
+            <ScrollView
+              style={styles.scrollView}
+              contentContainerStyle={styles.scrollContent}
+              showsVerticalScrollIndicator={false}
+            >
+              {/* Cart Items */}
+              {items.map((item) => (
+                <View
+                  key={item.product_id}
+                  style={[
+                    styles.cartItem,
+                    {
+                      backgroundColor: palette.card,
+                      shadowColor: isDark ? '#000' : '#ccc',
+                      borderColor: isDark
+                        ? 'rgba(255,215,0,0.1)'
+                        : 'transparent', // Subtle gold border in dark mode
+                      borderWidth: isDark ? 1 : 0,
+                    },
+                  ]}
+                >
+                  <View style={styles.itemMainRow}>
                     {/* Product Image */}
-                    {item.image_url ? (
-                      <Image
-                        source={{ uri: item.image_url }}
-                        style={styles.productImage}
-                        resizeMode="cover"
-                      />
-                    ) : (
-                      <View style={[styles.productImage, styles.placeholderImage, { backgroundColor: palette.border }]}>
-                        <Ionicons name="image-outline" size={32} color={palette.subText} />
-                      </View>
-                    )}
+                    <View style={styles.imageContainer}>
+                      {item.image_url ? (
+                        <Image
+                          source={{ uri: item.image_url }}
+                          style={styles.productImage}
+                          resizeMode="cover"
+                        />
+                      ) : (
+                        <View
+                          style={[
+                            styles.productImage,
+                            styles.placeholderImage,
+                            { backgroundColor: isDark ? '#1A2B57' : '#F0F0F0' },
+                          ]}
+                        >
+                          <Ionicons
+                            name="image-outline"
+                            size={32}
+                            color={palette.subText}
+                          />
+                        </View>
+                      )}
+                    </View>
 
                     {/* Product Info */}
                     <View style={styles.productInfo}>
-                      <Text style={[{ fontSize: h4 }, { color: palette.text }]} numberOfLines={2}>
-                        {item.product_name}
-                      </Text>
-                      <Text style={[{ fontSize: body }, { color: colors.primary, marginTop: 4 }]}>
-                        ₱{item.price.toFixed(2)}
-                      </Text>
+                      <View style={styles.titleRow}>
+                        <Text
+                          style={[
+                            { fontSize: body, fontWeight: '600' },
+                            { color: palette.text, flex: 1 },
+                          ]}
+                          numberOfLines={2}
+                        >
+                          {item.product_name}
+                        </Text>
+                        <Pressable
+                          hitSlop={10}
+                          onPress={() => handleRemoveItem(item.product_id)}
+                        >
+                          <Ionicons
+                            name="close-circle-outline"
+                            size={22}
+                            color={palette.subText}
+                          />
+                        </Pressable>
+                      </View>
+
                       {item.special_requests && (
-                        <Text style={[{ fontSize: bodySmall }, { color: palette.subText, marginTop: 4 }]} numberOfLines={2}>
-                          Note: {item.special_requests}
+                        <Text
+                          style={[
+                            { fontSize: caption },
+                            { color: palette.subText, marginTop: 4 },
+                          ]}
+                          numberOfLines={1}
+                        >
+                          {item.special_requests}
                         </Text>
                       )}
 
-                      {/* Quantity Controls */}
-                      <View style={styles.quantityRow}>
-                        <Pressable
-                          style={[styles.quantityButton, { backgroundColor: palette.border }]}
-                          onPress={() => handleQuantityChange(item.product_id, item.quantity, -1)}
+                      <View style={styles.priceQuantityRow}>
+                        <Text
+                          style={[
+                            { fontSize: body, fontWeight: '700' },
+                            { color: isDark ? '#FFD700' : colors.primary }, // Gold in dark, Primary in light
+                          ]}
                         >
-                          <Ionicons name="remove" size={16} color={palette.text} />
-                        </Pressable>
-                        
-                        <Text style={[{ fontSize: body }, { color: palette.text, marginHorizontal: 16 }]}>
-                          {item.quantity}
+                          ₱{item.price.toFixed(2)}
                         </Text>
-                        
-                        <Pressable
-                          style={[styles.quantityButton, { backgroundColor: palette.border }]}
-                          onPress={() => handleQuantityChange(item.product_id, item.quantity, 1)}
-                          disabled={item.quantity >= item.stock}
-                        >
-                          <Ionicons name="add" size={16} color={palette.text} />
-                        </Pressable>
 
-                        <Text style={[{ fontSize: body }, { color: palette.text, marginLeft: 'auto' }]}>
-                          ₱{(item.price * item.quantity).toFixed(2)}
-                        </Text>
+                        {/* Quantity Controls */}
+                        <View
+                          style={[
+                            styles.quantityControl,
+                            { backgroundColor: isDark ? '#0A1B47' : '#F5F5F5' },
+                          ]}
+                        >
+                          <Pressable
+                            style={styles.qtyBtn}
+                            onPress={() =>
+                              handleQuantityChange(
+                                item.product_id,
+                                item.quantity,
+                                -1
+                              )
+                            }
+                          >
+                            <Ionicons
+                              name="remove"
+                              size={16}
+                              color={palette.text}
+                            />
+                          </Pressable>
+
+                          <Text
+                            style={[
+                              { fontSize: bodySmall, fontWeight: '600' },
+                              {
+                                color: palette.text,
+                                minWidth: 20,
+                                textAlign: 'center',
+                              },
+                            ]}
+                          >
+                            {item.quantity}
+                          </Text>
+
+                          <Pressable
+                            style={styles.qtyBtn}
+                            onPress={() =>
+                              handleQuantityChange(
+                                item.product_id,
+                                item.quantity,
+                                1
+                              )
+                            }
+                            disabled={item.quantity >= item.stock}
+                          >
+                            <Ionicons
+                              name="add"
+                              size={16}
+                              color={
+                                item.quantity >= item.stock
+                                  ? palette.subText
+                                  : palette.text
+                              }
+                            />
+                          </Pressable>
+                        </View>
                       </View>
                     </View>
-
-                    {/* Remove Button */}
-                    <Pressable
-                      style={styles.removeButton}
-                      onPress={() => handleRemoveItem(item.product_id)}
-                    >
-                      <Ionicons name="trash-outline" size={20} color={colors.error} />
-                    </Pressable>
                   </View>
-                ))}
-              </ScrollView>
+                </View>
+              ))}
+            </ScrollView>
 
-              {/* Summary Footer */}
-              <View style={[styles.footer, { backgroundColor: palette.card, borderTopColor: palette.border }]}>
+            {/* Summary Footer */}
+            <View
+              style={[
+                styles.footer,
+                {
+                  backgroundColor: palette.card,
+                  borderTopColor: isDark ? '#1A2B57' : '#F0F0F0',
+                  shadowColor: '#000',
+                },
+              ]}
+            >
+              <View style={styles.summaryDetails}>
                 <View style={styles.summaryRow}>
-                  <Text style={[{ fontSize: body }, { color: palette.subText }]}>
-                    Items ({totalItems})
+                  <Text
+                    style={[{ fontSize: body }, { color: palette.subText }]}
+                  >
+                    Subtotal ({totalItems} items)
                   </Text>
-                  <Text style={[{ fontSize: body }, { color: palette.subText }]}>
+                  <Text
+                    style={[
+                      { fontSize: body, fontWeight: '600' },
+                      { color: palette.text },
+                    ]}
+                  >
                     ₱{subtotal.toFixed(2)}
                   </Text>
                 </View>
-
-                <View style={styles.summaryRow}>
-                  <Text style={[{ fontSize: h4 }, { color: palette.text }]}>
-                    Subtotal
+                <View style={[styles.summaryRow, { marginTop: 8 }]}>
+                  <Text
+                    style={[
+                      { fontSize: h4, fontWeight: 'bold' },
+                      { color: palette.text },
+                    ]}
+                  >
+                    Total
                   </Text>
-                  <Text style={[{ fontSize: h4 }, { color: colors.primary }]}>
+                  <Text
+                    style={[
+                      { fontSize: h4, fontWeight: 'bold' },
+                      { color: isDark ? '#FFD700' : colors.primary },
+                    ]}
+                  >
                     ₱{subtotal.toFixed(2)}
                   </Text>
                 </View>
+              </View>
 
-                <Pressable
-                  style={[styles.checkoutButton, { backgroundColor: colors.primary }]}
-                  onPress={handleCheckout}
+              <Pressable
+                style={styles.checkoutButtonWrapper}
+                onPress={handleCheckout}
+              >
+                <LinearGradient
+                  colors={buttonGradient}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={styles.checkoutButton}
                 >
-                  <Text style={[{ fontSize: body }, { color: '#FFF' }]}>
+                  <Text
+                    style={[
+                      { fontSize: body, fontWeight: 'bold' },
+                      { color: buttonText },
+                    ]}
+                  >
                     Proceed to Checkout
                   </Text>
-                </Pressable>
-              </View>
-            </>
-          )}
-        </View>
-      </PageContainer>
+                  <Ionicons
+                    name="arrow-forward"
+                    size={20}
+                    color={buttonText}
+                    style={{ marginLeft: 8 }}
+                  />
+                </LinearGradient>
+              </Pressable>
+            </View>
+          </>
+        )}
+      </View>
     </>
   );
 };
@@ -245,27 +444,52 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 32,
   },
+  emptyIconContainer: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  browseButtonWrapper: {
+    marginTop: 32,
+    borderRadius: 25,
+    overflow: 'hidden',
+    width: '100%',
+    maxWidth: 250,
+  },
   browseButton: {
-    paddingVertical: 12,
-    paddingHorizontal: 32,
-    borderRadius: 12,
-    marginTop: 24,
+    paddingVertical: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   scrollView: {
     flex: 1,
   },
+  scrollContent: {
+    padding: 16,
+    paddingBottom: 100,
+  },
   cartItem: {
-    flexDirection: 'row',
+    borderRadius: 16,
+    marginBottom: 16,
     padding: 12,
-    marginHorizontal: 16,
-    marginTop: 12,
-    borderRadius: 12,
-    borderWidth: 1,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  itemMainRow: {
+    flexDirection: 'row',
+  },
+  imageContainer: {
+    marginRight: 16,
   },
   productImage: {
-    width: 80,
-    height: 80,
-    borderRadius: 8,
+    width: 90,
+    height: 90,
+    borderRadius: 12,
   },
   placeholderImage: {
     justifyContent: 'center',
@@ -273,37 +497,70 @@ const styles = StyleSheet.create({
   },
   productInfo: {
     flex: 1,
-    marginLeft: 12,
+    justifyContent: 'space-between',
+    paddingVertical: 4,
   },
-  quantityRow: {
+  titleRow: {
     flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+  },
+  priceQuantityRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
     marginTop: 8,
   },
-  quantityButton: {
+  quantityControl: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 20,
+    padding: 4,
+  },
+  qtyBtn: {
     width: 28,
     height: 28,
     borderRadius: 14,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  removeButton: {
-    padding: 8,
-  },
   footer: {
-    padding: 16,
+    padding: 20,
+    paddingBottom: Platform.OS === 'ios' ? 34 : 20,
     borderTopWidth: 1,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 10,
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+  },
+  summaryDetails: {
+    marginBottom: 20,
   },
   summaryRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 12,
+    alignItems: 'center',
+  },
+  checkoutButtonWrapper: {
+    borderRadius: 16,
+    overflow: 'hidden',
+    shadowColor: '#FFD700',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 5,
   },
   checkoutButton: {
-    paddingVertical: 16,
-    borderRadius: 12,
+    flexDirection: 'row',
+    paddingVertical: 18,
     alignItems: 'center',
-    marginTop: 8,
+    justifyContent: 'center',
   },
 });
 

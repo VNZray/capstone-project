@@ -9,8 +9,8 @@ import {
 } from 'react-native';
 import { ThemedText } from '@/components/themed-text';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Feather } from '@expo/vector-icons';
 import { Colors } from '@/constants/color';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 type City = {
   id: string;
@@ -47,7 +47,7 @@ const PLACEHOLDER_CITIES: City[] = [
     id: 'dubai',
     name: 'Dubai',
     image:
-      'https://images.unsplash.com/photo-1512453979798-5ea90b2009f4?auto=format&fit=crop&w=600&q=80',
+      'https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?auto=format&fit=crop&w=600&q=80',
   },
 ];
 
@@ -65,9 +65,33 @@ const CityListSection: React.FC<CityListSectionProps> = ({
 
   return (
     <View style={styles.container}>
-      <ThemedText type="sub-title-small" weight="bold" style={styles.heading}>
-        Explore by Cities
-      </ThemedText>
+      <View style={styles.header}>
+        <ThemedText type="sub-title-small" weight="bold">
+          Explore by Cities
+        </ThemedText>
+        <Pressable
+          onPress={onPressViewMore}
+          style={({ pressed }) => ({
+            opacity: pressed ? 0.7 : 1,
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 4,
+          })}
+        >
+          <ThemedText
+            type="label-small"
+            lightColor={colors.primary}
+            darkColor={colors.accent}
+          >
+            View All
+          </ThemedText>
+          <MaterialCommunityIcons
+            name="arrow-right"
+            size={16}
+            color={colors.accent}
+          />
+        </Pressable>
+      </View>
       <FlatList
         horizontal
         data={PLACEHOLDER_CITIES}
@@ -101,27 +125,6 @@ const CityListSection: React.FC<CityListSectionProps> = ({
             </ImageBackground>
           </Pressable>
         )}
-        ListFooterComponent={
-          <Pressable
-            style={[
-              styles.viewMoreCard,
-              {
-                backgroundColor: colors.surface,
-              },
-            ]}
-            onPress={onPressViewMore}
-          >
-            <Feather name="arrow-right" size={32} color={colors.accent} />
-            <ThemedText
-              type="label-small"
-              lightColor={colors.accent}
-              darkColor={colors.accent}
-              style={styles.viewMoreText}
-            >
-              View More
-            </ThemedText>
-          </Pressable>
-        }
       />
     </View>
   );
@@ -132,9 +135,12 @@ const styles = StyleSheet.create({
     marginRight: -24,
     marginLeft: -24,
   },
-  heading: {
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     marginBottom: 16,
-    paddingLeft: 24,
+    paddingHorizontal: 24,
   },
   listContent: {
     paddingRight: 24,
@@ -163,17 +169,6 @@ const styles = StyleSheet.create({
   cityName: {
     fontSize: 16,
     fontWeight: '700',
-  },
-  viewMoreCard: {
-    width: 140,
-    height: 180,
-    borderRadius: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: 8,
-  },
-  viewMoreText: {
-    fontWeight: '600',
   },
 });
 

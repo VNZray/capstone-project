@@ -1,18 +1,17 @@
 import Header, { HEADER_BASE_HEIGHT } from '@/components/home/Header';
 import HeroSection from '@/components/home/HeroSection';
-import MainContentCard from '@/components/home/MainContentCard';
 import WelcomeSection from '@/components/home/WelcomeSection';
-import SectionContainer from '@/components/home/SectionContainer';
 
-import EventListCard from '@/components/home/EventListCard';
-import NewsCard from '@/components/home/NewsCard';
+import NewsAndEventsSection from '@/components/home/NewsAndEventsSection';
 import { ThemedText } from '@/components/themed-text';
 import CityListSection from '@/components/home/CityListSection';
 import PersonalRecommendationSection from '@/components/home/PersonalRecommendationSection';
+import VisitorsHandbookSection from '@/components/home/VisitorsHandbookSection';
 import SpecialOffersSection from '@/components/home/SpecialOffersSection';
 import FeaturedPartnersSection from '@/components/home/FeaturedPartnersSection';
-import { ResponsiveContainer } from '@/components/layout/ResponsiveContainer';
-import { WebLayout } from '@/components/layout/WebLayout';
+import FeaturedTouristSpotsSection from '@/components/home/FeaturedTouristSpotsSection';
+import ReportIssueSection from '@/components/home/ReportIssueSection';
+
 import { useAuth } from '@/context/AuthContext';
 import { Colors } from '@/constants/color';
 import { navigateToAccommodationHome } from '@/routes/accommodationRoutes';
@@ -24,7 +23,6 @@ import {
   type NewsArticle,
 } from '@/services/HomeContentService';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
@@ -33,8 +31,6 @@ import {
   StatusBar,
   StyleSheet,
   View,
-  ViewStyle,
-  StyleProp,
   RefreshControl,
   useColorScheme,
 } from 'react-native';
@@ -46,11 +42,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import {
   ACTIONS,
-  PROMO_CARD,
   PLACEHOLDER_EVENTS,
   PLACEHOLDER_NEWS,
   type ActionItem,
-  type PromoCardContent,
 } from '@/components/home/data';
 
 const HERO_HEIGHT = 260;
@@ -63,7 +57,6 @@ const HomeScreen = () => {
   const scrollY = useSharedValue(0);
   const { bottom } = useSafeAreaInsets();
   const colorScheme = useColorScheme() ?? 'light';
-  const isDarkMode = colorScheme === 'dark';
   const palette = Colors[colorScheme];
   const didRedirect = useRef(false);
   const [searchValue, setSearchValue] = useState('');
@@ -172,156 +165,98 @@ const HomeScreen = () => {
     });
   }, []);
 
-  const renderEventSection = () => {
-    if (eventState.loading && eventState.data.length === 0) {
-      return <EventSkeleton />;
-    }
-    if (!eventState.loading && eventState.data.length === 0) {
-      return (
-        <EmptyState
-          icon="calendar-blank"
-          message="No upcoming events available."
-        />
-      );
-    }
-
-    return (
-      <>
-        {eventState.error ? <SectionError message={eventState.error} /> : null}
-        {eventState.data.map((event) => (
-          <EventListCard
-            key={event.id}
-            event={event}
-            onPress={handleEventPress}
-          />
-        ))}
-      </>
-    );
-  };
-
-  const renderNewsSection = () => {
-    if (newsState.loading && newsState.data.length === 0) {
-      return <NewsSkeleton />;
-    }
-    if (!newsState.loading && newsState.data.length === 0) {
-      return (
-        <EmptyState icon="newspaper-remove" message="No news articles yet." />
-      );
-    }
-
-    return (
-      <>
-        {newsState.error ? <SectionError message={newsState.error} /> : null}
-        {newsState.data.map((article) => (
-          <NewsCard
-            key={article.id}
-            article={article}
-            onPress={handleNewsPress}
-          />
-        ))}
-      </>
-    );
-  };
-
   if (!user) return null;
 
   return (
-    <WebLayout>
-      <View style={[styles.root, { backgroundColor: palette.background }]}>
-        <StatusBar
-          translucent
-          backgroundColor="transparent"
-          barStyle="light-content"
-        />
+    <View style={[styles.root, { backgroundColor: palette.background }]}>
+      <StatusBar
+        translucent
+        backgroundColor="transparent"
+        barStyle="light-content"
+      />
 
-        <HeroSection scrollY={scrollY} heroHeight={HERO_HEIGHT} />
+      <HeroSection scrollY={scrollY} heroHeight={HERO_HEIGHT} />
 
-        <AnimatedScrollView
-          style={StyleSheet.absoluteFill}
-          contentContainerStyle={{
-            paddingBottom: bottom + 32,
-          }}
-          refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={handleRefresh}
-              tintColor={isDarkMode ? '#fff' : '#0A1B47'}
-            />
-          }
-          onScroll={handleScroll}
-          scrollEventThrottle={16}
-          showsVerticalScrollIndicator={false}
+      <AnimatedScrollView
+        style={StyleSheet.absoluteFill}
+        contentContainerStyle={{
+          paddingBottom: bottom + 32,
+        }}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            tintColor={palette.primary}
+          />
+        }
+        onScroll={handleScroll}
+        scrollEventThrottle={16}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.heroSpacer}>
+          <WelcomeSection
+            scrollY={scrollY}
+            name={displayName}
+            subtitle="Stay connected with city life, follow events, and access the services you need every day."
+          />
+        </View>
+
+        <View
+          style={[
+            styles.contentContainer,
+            { backgroundColor: palette.background },
+          ]}
         >
-          <ResponsiveContainer>
-            <View style={styles.heroSpacer}>
-              <WelcomeSection
-                scrollY={scrollY}
-                name={displayName}
-                subtitle="Stay connected with city life, follow events, and access the services you need every day."
-              />
-            </View>
+          <ActionGrid items={ACTIONS} onPressItem={handleActionPress} />
 
-            <MainContentCard
-              style={[
-                styles.mainCard,
-                {
-                  backgroundColor: palette.surface,
-                  shadowColor: palette.shadow,
-                  shadowOpacity: isDarkMode ? 0.3 : 0.1,
-                  shadowRadius: 20,
-                  shadowOffset: { width: 0, height: 8 },
-                  elevation: 8,
-                  borderWidth: isDarkMode ? 1 : StyleSheet.hairlineWidth,
-                  borderColor: palette.border,
-                },
-              ]}
-            >
-              <ActionGrid items={ACTIONS} onPressItem={handleActionPress} />
+          <CityListSection
+            onPressCity={(city) => console.log(city.name)}
+            onPressViewMore={() => console.log('View more cities')}
+          />
 
-              <CityListSection
-                onPressCity={(city) => console.log(city.name)}
-                onPressViewMore={() => console.log('View more cities')}
-              />
+          <PersonalRecommendationSection
+            onPressItem={(item) => console.log(item.title)}
+          />
 
-              <PersonalRecommendationSection
-                onPressItem={(item) => console.log(item.title)}
-              />
+          <VisitorsHandbookSection />
 
-              <SpecialOffersSection
-                onPressOffer={(offer) => console.log(offer.title)}
-              />
+          <SpecialOffersSection
+            onPressOffer={(offer) => console.log(offer.title)}
+          />
 
-              <FeaturedPartnersSection
-                onPressPartner={(partner) => console.log(partner.name)}
-              />
+          <FeaturedPartnersSection
+            onPressPartner={(partner) => console.log(partner.name)}
+          />
 
-              <SectionContainer
-                title="Upcoming Events"
-                onPressViewAll={navigateToEventHome}
-              >
-                {renderEventSection()}
-              </SectionContainer>
+          <FeaturedTouristSpotsSection />
 
-              <SectionContainer title="News & Updates">
-                {renderNewsSection()}
-              </SectionContainer>
+          <ReportIssueSection
+            onViewReports={() => console.log('View Reports')}
+            onReportIssue={() => console.log('Report Issue')}
+          />
 
-              <PromoCard content={PROMO_CARD} style={styles.promoCard} />
-            </MainContentCard>
-          </ResponsiveContainer>
-        </AnimatedScrollView>
+          <NewsAndEventsSection
+            newsData={newsState.data}
+            eventsData={eventState.data}
+            loading={newsState.loading || eventState.loading}
+            error={newsState.error || eventState.error}
+            onPressArticle={handleNewsPress}
+            onPressEvent={handleEventPress}
+            onPressViewAllEvents={navigateToEventHome}
+          />
+        </View>
+      </AnimatedScrollView>
 
-        <Header
-          scrollY={scrollY}
-          heroHeight={HERO_HEIGHT}
-          searchValue={searchValue}
-          onChangeSearch={setSearchValue}
-          style={styles.header}
-          onPressBell={() => {}}
-          onPressCart={() => navigateToCart()}
-        />
-      </View>
-    </WebLayout>
+      <Header
+        scrollY={scrollY}
+        heroHeight={HERO_HEIGHT}
+        searchValue={searchValue}
+        onChangeSearch={setSearchValue}
+        style={styles.header}
+        onPressBell={() => {}}
+        onPressCart={() => navigateToCart()}
+      />
+    </View>
   );
 };
 
@@ -348,16 +283,16 @@ const ActionGrid: React.FC<ActionGridProps> = ({ items, onPressItem }) => {
 
   const onMomentumScrollEnd = (event: any) => {
     const pageIndex = Math.round(
-      event.nativeEvent.contentOffset.x / (SCREEN_WIDTH - 40)
+      event.nativeEvent.contentOffset.x / SCREEN_WIDTH
     );
     setCurrentPage(pageIndex);
   };
 
-  // Calculate width based on screen width minus padding (20px each side)
-  const PAGE_WIDTH = SCREEN_WIDTH - 40;
+  // Use full screen width for pagination to avoid edge bleeding
+  const PAGE_WIDTH = SCREEN_WIDTH;
 
   return (
-    <View>
+    <View style={styles.actionGridContainer}>
       <Animated.ScrollView
         horizontal
         pagingEnabled
@@ -365,42 +300,55 @@ const ActionGrid: React.FC<ActionGridProps> = ({ items, onPressItem }) => {
         onScroll={handleScroll}
         onMomentumScrollEnd={onMomentumScrollEnd}
         scrollEventThrottle={16}
-        style={{ marginHorizontal: -4 }} // Negative margin to offset padding in items if needed
+        style={{ marginHorizontal: -20 }} // Negative margin to allow full width scrolling
       >
         {pages.map((page, pageIndex) => (
           <View
             key={pageIndex}
-            style={[styles.actionGridPage, { width: PAGE_WIDTH }]}
+            style={{ width: PAGE_WIDTH, paddingHorizontal: 20 }}
           >
-            {page.map((item) => (
-              <Pressable
-                key={item.id}
-                style={[styles.actionItem, { width: '25%' }]}
-                onPress={() => onPressItem(item.id)}
-              >
-                <View
-                  style={[
-                    styles.actionIcon,
-                    { backgroundColor: colors.highlight },
-                  ]}
-                >
-                  <MaterialCommunityIcons
-                    name={item.icon}
-                    size={28}
-                    color={colors.complementary}
-                  />
-                </View>
-                <ThemedText
-                  type="label-small"
-                  align="center"
-                  style={styles.actionLabel}
-                  lightColor={colors.textSecondary}
-                  darkColor={colors.textSecondary}
-                >
-                  {item.label}
-                </ThemedText>
-              </Pressable>
-            ))}
+            <View style={[styles.actionGridPage, { width: '100%' }]}>
+              {page.map((item, index) => {
+                const globalIndex = pageIndex * ITEMS_PER_PAGE + index;
+                // Modern subtle palette
+                const palettes = [
+                  { bg: 'rgba(52, 152, 219, 0.1)', icon: '#3498db' }, // Blue
+                  { bg: 'rgba(46, 204, 113, 0.1)', icon: '#2ecc71' }, // Green
+                  { bg: 'rgba(155, 89, 182, 0.1)', icon: '#9b59b6' }, // Purple
+                  { bg: 'rgba(230, 126, 34, 0.1)', icon: '#e67e22' }, // Orange
+                  { bg: 'rgba(231, 76, 60, 0.1)', icon: '#e74c3c' }, // Red
+                  { bg: 'rgba(26, 188, 156, 0.1)', icon: '#1abc9c' }, // Teal
+                  { bg: 'rgba(241, 196, 15, 0.1)', icon: '#f1c40f' }, // Yellow
+                  { bg: 'rgba(52, 73, 94, 0.1)', icon: '#34495e' }, // Dark Blue
+                ];
+                const { bg, icon } = palettes[globalIndex % palettes.length];
+
+                return (
+                  <Pressable
+                    key={item.id}
+                    style={[styles.actionItem, { width: '25%' }]}
+                    onPress={() => onPressItem(item.id)}
+                  >
+                    <View style={[styles.actionIcon, { backgroundColor: bg }]}>
+                      <MaterialCommunityIcons
+                        name={item.icon}
+                        size={26}
+                        color={icon}
+                      />
+                    </View>
+                    <ThemedText
+                      type="label-small"
+                      align="center"
+                      style={styles.actionLabel}
+                      lightColor={colors.textSecondary}
+                      darkColor={colors.textSecondary}
+                    >
+                      {item.label}
+                    </ThemedText>
+                  </Pressable>
+                );
+              })}
+            </View>
           </View>
         ))}
       </Animated.ScrollView>
@@ -417,7 +365,7 @@ const ActionGrid: React.FC<ActionGridProps> = ({ items, onPressItem }) => {
                 isActive ? styles.paginationDotActive : null,
                 {
                   backgroundColor: isActive
-                    ? colors.complementary
+                    ? colors.primary
                     : colors.borderStrong,
                 },
               ]}
@@ -426,159 +374,6 @@ const ActionGrid: React.FC<ActionGridProps> = ({ items, onPressItem }) => {
         })}
       </View>
     </View>
-  );
-};
-
-type PromoCardProps = {
-  content: PromoCardContent;
-  style?: StyleProp<ViewStyle>;
-  onPrimaryPress?: () => void;
-  onSecondaryPress?: () => void;
-};
-
-const PromoCard: React.FC<PromoCardProps> = ({
-  content,
-  style,
-  onPrimaryPress,
-  onSecondaryPress,
-}) => {
-  const colorScheme = useColorScheme() ?? 'light';
-  const colors = Colors[colorScheme];
-
-  return (
-    <LinearGradient
-      colors={[colors.primary, colors.accent]}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 1, y: 1 }}
-      style={[styles.promoBase, style]}
-    >
-      <ThemedText
-        type="sub-title-small"
-        weight="bold"
-        lightColor={colors.textInverse}
-        darkColor={colors.textInverse}
-      >
-        {content.title}
-      </ThemedText>
-      <ThemedText
-        type="body-small"
-        lightColor={colors.textInverse}
-        darkColor={colors.textInverse}
-        style={[styles.promoDescription, { opacity: 0.9 }]}
-      >
-        {content.description}
-      </ThemedText>
-      <View style={styles.promoActions}>
-        <Pressable
-          style={[
-            styles.ctaButton,
-            styles.ctaSecondary,
-            { backgroundColor: colors.surface },
-          ]}
-          onPress={onPrimaryPress}
-        >
-          <ThemedText
-            type="label-small"
-            weight="semi-bold"
-            lightColor={colors.primary}
-            darkColor={colors.primary}
-          >
-            {content.primaryCta}
-          </ThemedText>
-        </Pressable>
-        <Pressable
-          style={[
-            styles.ctaButton,
-            styles.ctaPrimary,
-            { backgroundColor: 'rgba(255,255,255,0.2)' },
-          ]}
-          onPress={onSecondaryPress}
-        >
-          <ThemedText
-            type="label-small"
-            weight="semi-bold"
-            lightColor={colors.textInverse}
-            darkColor={colors.textInverse}
-          >
-            {content.secondaryCta}
-          </ThemedText>
-        </Pressable>
-      </View>
-    </LinearGradient>
-  );
-};
-
-const SectionError = ({ message }: { message?: string }) =>
-  message ? (
-    <ThemedText type="label-small" lightColor="#FFB4A2">
-      {message}
-    </ThemedText>
-  ) : null;
-
-const EmptyState = ({
-  icon,
-  message,
-}: {
-  icon: React.ComponentProps<typeof MaterialCommunityIcons>['name'];
-  message: string;
-}) => {
-  const scheme = useColorScheme() ?? 'light';
-
-  return (
-    <View
-      style={[
-        styles.emptyState,
-        {
-          backgroundColor: Colors[scheme].surfaceOverlay,
-          borderWidth: StyleSheet.hairlineWidth,
-          borderColor: Colors[scheme].border,
-        },
-      ]}
-    >
-      <MaterialCommunityIcons
-        name={icon}
-        size={22}
-        color={Colors[scheme].icon}
-        style={styles.emptyIcon}
-      />
-      <ThemedText
-        type="label-small"
-        lightColor={Colors[scheme].textSecondary}
-        darkColor={Colors[scheme].textSecondary}
-      >
-        {message}
-      </ThemedText>
-    </View>
-  );
-};
-
-const EventSkeleton = () => {
-  const scheme = useColorScheme() ?? 'light';
-  const placeholderColor = Colors[scheme].highlight;
-  return (
-    <>
-      {Array.from({ length: 3 }).map((_, index) => (
-        <View
-          key={`event-skeleton-${index}`}
-          style={[styles.eventSkeleton, { backgroundColor: placeholderColor }]}
-        />
-      ))}
-    </>
-  );
-};
-
-const NewsSkeleton = () => {
-  const scheme = useColorScheme() ?? 'light';
-  const placeholderColor = Colors[scheme].highlight;
-  return (
-    <>
-      {Array.from({ length: 2 }).map((_, index) => (
-        <View
-          key={`news-skeleton-${index}`}
-          style={[styles.newsSkeleton, { backgroundColor: placeholderColor }]}
-        />
-      ))}
-    </>
   );
 };
 
@@ -593,12 +388,18 @@ const styles = StyleSheet.create({
     paddingTop: HEADER_BASE_HEIGHT - 6,
     paddingBottom: 24,
   },
-  mainCard: {
+  contentContainer: {
+    paddingBottom: 24,
+    paddingHorizontal: 20,
+    paddingTop: 24,
+    gap: 30,
     marginTop: -16,
-    gap: 20,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    // backgroundColor set dynamically
   },
-  sectionHeading: {
-    marginBottom: 20,
+  actionGridContainer: {
+    paddingTop: 16,
   },
   actionGridPage: {
     flexDirection: 'row',
@@ -607,18 +408,19 @@ const styles = StyleSheet.create({
   },
   actionItem: {
     alignItems: 'center',
-    marginBottom: 24,
+    marginBottom: 20,
   },
   actionIcon: {
-    width: 64,
-    height: 64,
-    borderRadius: 22,
+    width: 56,
+    height: 56,
+    borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
-    overflow: 'hidden', // Ensure rounded corners are respected
+    marginBottom: 8,
   },
   actionLabel: {
-    marginTop: 8,
+    fontSize: 11,
+    fontWeight: '500',
   },
   promoBase: {
     borderRadius: 28,
@@ -651,29 +453,6 @@ const styles = StyleSheet.create({
     paddingLeft: 0,
   },
 
-  eventSkeleton: {
-    height: 96,
-    borderRadius: 16,
-    backgroundColor: 'rgba(255,255,255,0.08)',
-    marginBottom: 12,
-  },
-  newsSkeleton: {
-    height: 200,
-    borderRadius: 18,
-    backgroundColor: 'rgba(255,255,255,0.08)',
-    marginBottom: 14,
-  },
-  emptyState: {
-    padding: 16,
-    borderRadius: 16,
-    backgroundColor: '#151426',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-  },
-  emptyIcon: {
-    marginBottom: 4,
-  },
   header: {
     position: 'absolute',
     top: 0,
@@ -692,7 +471,7 @@ const styles = StyleSheet.create({
   paginationDot: {
     width: 6,
     height: 6,
-    borderRadius: 3,
+    borderRadius: 4,
   },
   paginationDotActive: {
     width: 24,

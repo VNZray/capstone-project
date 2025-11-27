@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { ThemedText } from '@/components/themed-text';
 import { Colors } from '@/constants/color';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SPECIAL_OFFERS, type SpecialOffer } from '@/components/home/data';
 
@@ -32,14 +33,26 @@ const SpecialOffersSection: React.FC<SpecialOffersSectionProps> = ({
         <ThemedText type="sub-title-small" weight="bold">
           Special Offers
         </ThemedText>
-        <Pressable>
+        <Pressable
+          style={({ pressed }) => ({
+            opacity: pressed ? 0.7 : 1,
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 4,
+          })}
+        >
           <ThemedText
             type="label-small"
-            lightColor={colors.accent}
+            lightColor={colors.primary}
             darkColor={colors.accent}
           >
-            See All
+            View All
           </ThemedText>
+          <MaterialCommunityIcons
+            name="arrow-right"
+            size={16}
+            color={colors.accent}
+          />
         </Pressable>
       </View>
 
@@ -110,10 +123,7 @@ const SpecialOffersSection: React.FC<SpecialOffersSectionProps> = ({
 
                 {/* CTA Button */}
                 <Pressable
-                  style={[
-                    styles.ctaButton,
-                    { backgroundColor: colors.complementary },
-                  ]}
+                  style={[styles.ctaButton, { backgroundColor: colors.accent }]}
                 >
                   <ThemedText
                     type="label-small"

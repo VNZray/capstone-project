@@ -7,17 +7,16 @@ import FormTextInput from '@/components/TextInput';
 import { ThemedText } from '@/components/themed-text';
 import { colors } from '@/constants/color';
 import { useAuth } from '@/context/AuthContext';
-import { useColorScheme } from '@/hooks/use-color-scheme.web';
+import { useColorScheme } from '@/hooks/use-color-scheme';
 import { insertData } from '@/query/mainQuery';
 import { navigateToHome, navigateToLogin } from '@/routes/mainRoutes';
 import api from '@/services/api';
 import { Tourist } from '@/types/Tourist';
 import { User } from '@/types/User';
 import axios from 'axios';
-import { LinearGradient } from 'expo-linear-gradient';
 import { StatusBar } from 'expo-status-bar';
 import React, { useEffect, useState } from 'react';
-import { ScrollView, StyleSheet, TouchableOpacity, View, Platform, ImageBackground } from 'react-native';
+import { ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 
 const RegistrationPage = () => {
@@ -201,325 +200,317 @@ const RegistrationPage = () => {
     <SafeAreaProvider>
       <SafeAreaView style={{ flex: 1, backgroundColor: '#fff' }}>
         <StatusBar />
-        
-        {/* Web Split Screen Wrapper */}
-        <View style={styles.container}>
-          {/* Left Side Image (Web Only) */}
-          {Platform.OS === 'web' && (
-            <View style={styles.webImageContainer}>
-              <ImageBackground
-                source={{ uri: 'https://i0.wp.com/nagayon.com/wp-content/uploads/2024/08/oragon-monument-by-colline.jpg' }}
-                style={styles.webImage}
-                resizeMode="cover"
-              >
-                <LinearGradient
-                  colors={['rgba(10, 27, 71, 0.4)', 'rgba(10, 27, 71, 0.8)']}
-                  style={styles.webImageOverlay}
-                >
-                  <View style={styles.webHeroContent}>
-                    <ThemedText type="title-large" weight="extra-bold" style={{ color: 'white', fontSize: 48 }}>
-                      Join City Venture
-                    </ThemedText>
-                    <ThemedText type="body-large" style={{ color: 'white', marginTop: 16, maxWidth: 400 }}>
-                      Create your account and start exploring the vibrant city of Naga. Connect with local businesses and discover amazing experiences.
-                    </ThemedText>
-                  </View>
-                </LinearGradient>
-              </ImageBackground>
-            </View>
-          )}
 
-          {/* Right Side Form */}
+        {/* Mobile Form Container */}
+        <View style={styles.container}>
           <View style={styles.formContainer}>
-            <ScrollView 
+            <ScrollView
               showsVerticalScrollIndicator={false}
               contentContainerStyle={styles.scrollContent}
             >
-              <PageContainer gap={16} style={{ maxWidth: Platform.OS === 'web' ? 480 : '100%', width: '100%', alignSelf: 'center' }}>
-          <FormLogo />
+              <PageContainer
+                gap={16}
+                style={{ width: '100%', alignSelf: 'center' }}
+              >
+                <FormLogo />
 
-          <View style={styles.heading}>
-            <ThemedText type="title-medium" weight="bold">
-              Create Your Account
-            </ThemedText>
-            <ThemedText type="sub-title-small" weight="medium">
-              Discover and connect with the city
-            </ThemedText>
-          </View>
-
-          <FormTextInput
-            label="First Name"
-            placeholder="Enter your first name"
-            value={firstName}
-            onChangeText={setFirstName}
-            variant="outlined"
-            autoCapitalize="words"
-          />
-
-          <FormTextInput
-            label="Middle Name"
-            placeholder="Enter your middle name"
-            value={middleName}
-            onChangeText={setMiddleName}
-            variant="outlined"
-            autoCapitalize="words"
-          />
-
-          <FormTextInput
-            label="Last Name"
-            placeholder="Enter your last name"
-            value={lastName}
-            onChangeText={setLastName}
-            variant="outlined"
-            autoCapitalize="words"
-          />
-
-          <View>
-            <ThemedText type="label-medium" mb={6}>
-              Gender
-            </ThemedText>
-            <View style={styles.radioGroup}>
-              {['Male', 'Female', 'Prefer not to say'].map((option) => (
-                <TouchableOpacity
-                  key={option}
-                  style={[
-                    colorScheme === 'light'
-                      ? styles.radioButton
-                      : styles.darkRadioButton,
-                    gender === option && styles.radioSelected,
-                  ]}
-                  onPress={() => setGender(option)}
-                >
-                  <ThemedText
-                    type="label-small"
-                    style={[gender === option && styles.radioTextSelected]}
-                  >
-                    {option.charAt(0).toUpperCase() + option.slice(1)}
+                <View style={styles.heading}>
+                  <ThemedText type="title-medium" weight="bold">
+                    Create Your Account
                   </ThemedText>
-                </TouchableOpacity>
-              ))}
-            </View>
-          </View>
-
-          <DateInput
-            label="Birthdate"
-            placeholder="Select your birthdate"
-            variant="outlined"
-            style={{ flex: 1 }}
-            mode="single"
-            showStatusLegend={false}
-            requireConfirmation
-            selectionVariant="filled"
-            value={birthdate}
-            disableFuture
-            onChange={(d) => {
-              if (d) setBirthdate(d);
-            }}
-          />
-
-          <FormTextInput
-            label="Contact Number"
-            placeholder="Enter your contact number"
-            value={phoneNumber}
-            onChangeText={setPhoneNumber}
-            keyboardType="phone-pad"
-            variant="outlined"
-          />
-
-          <FormTextInput
-            label="Nationality"
-            placeholder="Enter your nationality"
-            value={nationality}
-            onChangeText={setNationality}
-            variant="outlined"
-            autoCapitalize="words"
-          />
-
-          {/* Address Selection Using Dropdowns */}
-          <Dropdown
-            label="Province"
-            placeholder="Select your province"
-            items={province.map((p) => ({ id: p.id, label: p.province }))}
-            value={provinceId}
-            onSelect={(item) => {
-              const id = item?.id as number;
-              setProvinceId(id);
-              // Reset dependent selections
-              setMunicipalityId(null);
-              setBarangayId(null);
-              setMunicipality([]);
-              setBarangay([]);
-              if (id) fetchMunicipality(id);
-            }}
-            variant="outlined"
-            elevation={2}
-            clearable
-          />
-          <Dropdown
-            label="Municipality"
-            placeholder={
-              provinceId ? 'Select your municipality' : 'Select province first'
-            }
-            items={municipality.map((m) => ({
-              id: m.id,
-              label: m.municipality,
-            }))}
-            value={municipalityId}
-            disabled={!provinceId}
-            onSelect={(item) => {
-              const id = item?.id as number;
-              setMunicipalityId(id);
-              setBarangayId(null);
-              setBarangay([]);
-              if (id) fetchBarangay(id);
-            }}
-            variant="outlined"
-            elevation={2}
-            clearable
-          />
-          <Dropdown
-            label="Barangay"
-            placeholder={
-              municipalityId
-                ? 'Select your barangay'
-                : 'Select municipality first'
-            }
-            items={barangay.map((b) => ({ id: b.id, label: b.barangay }))}
-            value={barangayId}
-            disabled={!municipalityId}
-            onSelect={(item) => {
-              const id = item?.id as number;
-              setBarangayId(id);
-            }}
-            variant="outlined"
-            elevation={2}
-            clearable
-          />
-
-          <View>
-            <ThemedText mb={6} type="label-medium">
-              I am a:
-            </ThemedText>
-            <View style={styles.radioGroup}>
-              {['Bicolano', 'Non-Bicolano', 'Foreign', 'Local'].map((type) => (
-                <TouchableOpacity
-                  key={type}
-                  style={[
-                    colorScheme === 'light'
-                      ? styles.radioButton
-                      : styles.darkRadioButton,
-                    ethnicity === type && styles.radioSelected,
-                  ]}
-                  onPress={() => setEthnicity(type)}
-                >
-                  <ThemedText
-                    type="label-small"
-                    style={[ethnicity === type && styles.radioTextSelected]}
-                  >
-                    {type.charAt(0).toUpperCase() + type.slice(1)}
+                  <ThemedText type="sub-title-small" weight="medium">
+                    Discover and connect with the city
                   </ThemedText>
-                </TouchableOpacity>
-              ))}
-            </View>
-          </View>
+                </View>
 
-          <View>
-            <ThemedText mb={6} type="label-medium">
-              Origin:
-            </ThemedText>
-            <View style={styles.radioGroup}>
-              {['Domestic', 'Local', 'Overseas'].map((type) => (
-                <TouchableOpacity
-                  key={type}
-                  style={[
-                    colorScheme === 'light'
-                      ? styles.radioButton
-                      : styles.darkRadioButton,
-                    origin === type && styles.radioSelected,
-                  ]}
-                  onPress={() => setOrigin(type)}
-                >
-                  <ThemedText
-                    type="label-small"
-                    style={[origin === type && styles.radioTextSelected]}
-                  >
-                    {type.charAt(0).toUpperCase() + type.slice(1)}
+                <FormTextInput
+                  label="First Name"
+                  placeholder="Enter your first name"
+                  value={firstName}
+                  onChangeText={setFirstName}
+                  variant="outlined"
+                  autoCapitalize="words"
+                />
+
+                <FormTextInput
+                  label="Middle Name"
+                  placeholder="Enter your middle name"
+                  value={middleName}
+                  onChangeText={setMiddleName}
+                  variant="outlined"
+                  autoCapitalize="words"
+                />
+
+                <FormTextInput
+                  label="Last Name"
+                  placeholder="Enter your last name"
+                  value={lastName}
+                  onChangeText={setLastName}
+                  variant="outlined"
+                  autoCapitalize="words"
+                />
+
+                <View>
+                  <ThemedText type="label-medium" mb={6}>
+                    Gender
                   </ThemedText>
-                </TouchableOpacity>
-              ))}
-            </View>
-          </View>
+                  <View style={styles.radioGroup}>
+                    {['Male', 'Female', 'Prefer not to say'].map((option) => (
+                      <TouchableOpacity
+                        key={option}
+                        style={[
+                          colorScheme === 'light'
+                            ? styles.radioButton
+                            : styles.darkRadioButton,
+                          gender === option && styles.radioSelected,
+                        ]}
+                        onPress={() => setGender(option)}
+                      >
+                        <ThemedText
+                          type="label-small"
+                          style={[
+                            gender === option && styles.radioTextSelected,
+                          ]}
+                        >
+                          {option.charAt(0).toUpperCase() + option.slice(1)}
+                        </ThemedText>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                </View>
 
-          {/* Email */}
-          <FormTextInput
-            label="Email"
-            placeholder="Enter your email"
-            value={email}
-            onChangeText={setEmail}
-            autoCapitalize="none"
-            keyboardType="email-address"
-            variant="outlined"
-          />
+                <DateInput
+                  label="Birthdate"
+                  placeholder="Select your birthdate"
+                  variant="outlined"
+                  style={{ flex: 1 }}
+                  mode="single"
+                  showStatusLegend={false}
+                  requireConfirmation
+                  selectionVariant="filled"
+                  value={birthdate}
+                  disableFuture
+                  onChange={(d) => {
+                    if (d) setBirthdate(d);
+                  }}
+                />
 
-          {/* Password */}
-          <FormTextInput
-            label="Password"
-            placeholder="Enter your password"
-            value={password}
-            onChangeText={setPassword}
-            secureTextEntry
-            variant="outlined"
-          />
+                <FormTextInput
+                  label="Contact Number"
+                  placeholder="Enter your contact number"
+                  value={phoneNumber}
+                  onChangeText={setPhoneNumber}
+                  keyboardType="phone-pad"
+                  variant="outlined"
+                />
 
-          {/* Confirm Password */}
-          <FormTextInput
-            label="Confirm Password"
-            placeholder="Re-enter your password"
-            value={confirmPassword}
-            onChangeText={setConfirmPassword}
-            secureTextEntry
-            variant="outlined"
-          />
+                <FormTextInput
+                  label="Nationality"
+                  placeholder="Enter your nationality"
+                  value={nationality}
+                  onChangeText={setNationality}
+                  variant="outlined"
+                  autoCapitalize="words"
+                />
 
-          <View
-            style={{
-              flexDirection: 'row',
-              justifyContent: 'center',
-              gap: 6,
-              flexWrap: 'wrap',
-            }}
-          >
-            <ThemedText type="body-small">
-              By signing up, you agree to our
-            </ThemedText>
-            <ThemedText type="link-small">Terms and Conditions</ThemedText>
-            <ThemedText type="body-small">and</ThemedText>
-            <ThemedText type="link-small">Privacy Policy</ThemedText>
-          </View>
+                {/* Address Selection Using Dropdowns */}
+                <Dropdown
+                  label="Province"
+                  placeholder="Select your province"
+                  items={province.map((p) => ({ id: p.id, label: p.province }))}
+                  value={provinceId}
+                  onSelect={(item) => {
+                    const id = item?.id as number;
+                    setProvinceId(id);
+                    // Reset dependent selections
+                    setMunicipalityId(null);
+                    setBarangayId(null);
+                    setMunicipality([]);
+                    setBarangay([]);
+                    if (id) fetchMunicipality(id);
+                  }}
+                  variant="outlined"
+                  elevation={2}
+                  clearable
+                />
+                <Dropdown
+                  label="Municipality"
+                  placeholder={
+                    provinceId
+                      ? 'Select your municipality'
+                      : 'Select province first'
+                  }
+                  items={municipality.map((m) => ({
+                    id: m.id,
+                    label: m.municipality,
+                  }))}
+                  value={municipalityId}
+                  disabled={!provinceId}
+                  onSelect={(item) => {
+                    const id = item?.id as number;
+                    setMunicipalityId(id);
+                    setBarangayId(null);
+                    setBarangay([]);
+                    if (id) fetchBarangay(id);
+                  }}
+                  variant="outlined"
+                  elevation={2}
+                  clearable
+                />
+                <Dropdown
+                  label="Barangay"
+                  placeholder={
+                    municipalityId
+                      ? 'Select your barangay'
+                      : 'Select municipality first'
+                  }
+                  items={barangay.map((b) => ({ id: b.id, label: b.barangay }))}
+                  value={barangayId}
+                  disabled={!municipalityId}
+                  onSelect={(item) => {
+                    const id = item?.id as number;
+                    setBarangayId(id);
+                  }}
+                  variant="outlined"
+                  elevation={2}
+                  clearable
+                />
 
-          <Button
-            fullWidth
-            size="large"
-            label="Sign Up"
-            color="primary"
-            variant="solid"
-            onPress={handleTouristRegistration}
-          />
+                <View>
+                  <ThemedText mb={6} type="label-medium">
+                    I am a:
+                  </ThemedText>
+                  <View style={styles.radioGroup}>
+                    {['Bicolano', 'Non-Bicolano', 'Foreign', 'Local'].map(
+                      (type) => (
+                        <TouchableOpacity
+                          key={type}
+                          style={[
+                            colorScheme === 'light'
+                              ? styles.radioButton
+                              : styles.darkRadioButton,
+                            ethnicity === type && styles.radioSelected,
+                          ]}
+                          onPress={() => setEthnicity(type)}
+                        >
+                          <ThemedText
+                            type="label-small"
+                            style={[
+                              ethnicity === type && styles.radioTextSelected,
+                            ]}
+                          >
+                            {type.charAt(0).toUpperCase() + type.slice(1)}
+                          </ThemedText>
+                        </TouchableOpacity>
+                      )
+                    )}
+                  </View>
+                </View>
 
-          <View
-            style={{
-              flexDirection: 'row',
-              justifyContent: 'center',
-              gap: 6,
-              marginBottom: 32,
-            }}
-          >
-            <ThemedText type="body-medium">Already have an account?</ThemedText>
+                <View>
+                  <ThemedText mb={6} type="label-medium">
+                    Origin:
+                  </ThemedText>
+                  <View style={styles.radioGroup}>
+                    {['Domestic', 'Local', 'Overseas'].map((type) => (
+                      <TouchableOpacity
+                        key={type}
+                        style={[
+                          colorScheme === 'light'
+                            ? styles.radioButton
+                            : styles.darkRadioButton,
+                          origin === type && styles.radioSelected,
+                        ]}
+                        onPress={() => setOrigin(type)}
+                      >
+                        <ThemedText
+                          type="label-small"
+                          style={[origin === type && styles.radioTextSelected]}
+                        >
+                          {type.charAt(0).toUpperCase() + type.slice(1)}
+                        </ThemedText>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                </View>
 
-            <ThemedText type="link-medium" onPress={() => navigateToLogin()}>
-              Sign In
-            </ThemedText>
-          </View>
+                {/* Email */}
+                <FormTextInput
+                  label="Email"
+                  placeholder="Enter your email"
+                  value={email}
+                  onChangeText={setEmail}
+                  autoCapitalize="none"
+                  keyboardType="email-address"
+                  variant="outlined"
+                />
+
+                {/* Password */}
+                <FormTextInput
+                  label="Password"
+                  placeholder="Enter your password"
+                  value={password}
+                  onChangeText={setPassword}
+                  secureTextEntry
+                  variant="outlined"
+                />
+
+                {/* Confirm Password */}
+                <FormTextInput
+                  label="Confirm Password"
+                  placeholder="Re-enter your password"
+                  value={confirmPassword}
+                  onChangeText={setConfirmPassword}
+                  secureTextEntry
+                  variant="outlined"
+                />
+
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    justifyContent: 'center',
+                    gap: 6,
+                    flexWrap: 'wrap',
+                  }}
+                >
+                  <ThemedText type="body-small">
+                    By signing up, you agree to our
+                  </ThemedText>
+                  <ThemedText type="link-small">
+                    Terms and Conditions
+                  </ThemedText>
+                  <ThemedText type="body-small">and</ThemedText>
+                  <ThemedText type="link-small">Privacy Policy</ThemedText>
+                </View>
+
+                <Button
+                  fullWidth
+                  size="large"
+                  label="Sign Up"
+                  color="primary"
+                  variant="solid"
+                  onPress={handleTouristRegistration}
+                />
+
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    justifyContent: 'center',
+                    gap: 6,
+                    marginBottom: 32,
+                  }}
+                >
+                  <ThemedText type="body-medium">
+                    Already have an account?
+                  </ThemedText>
+
+                  <ThemedText
+                    type="link-medium"
+                    onPress={() => navigateToLogin()}
+                  >
+                    Sign In
+                  </ThemedText>
+                </View>
 
                 {/* Legacy picker modals removed in favor of Dropdown component */}
               </PageContainer>
@@ -536,32 +527,15 @@ export default RegistrationPage;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    flexDirection: Platform.OS === 'web' ? 'row' : 'column',
-  },
-  webImageContainer: {
-    flex: 1,
-    backgroundColor: '#0A1B47',
-  },
-  webImage: {
-    flex: 1,
-    width: '100%',
-    height: '100%',
-  },
-  webImageOverlay: {
-    flex: 1,
-    justifyContent: 'center',
-    padding: 60,
-  },
-  webHeroContent: {
-    maxWidth: 600,
+    flexDirection: 'column',
   },
   formContainer: {
-    flex: Platform.OS === 'web' ? 1 : 1,
+    flex: 1,
     backgroundColor: '#fff',
-    maxWidth: Platform.OS === 'web' ? 800 : '100%',
+    width: '100%',
   },
   scrollContent: {
-    padding: Platform.OS === 'web' ? 40 : 16,
+    padding: 16,
   },
   card: {
     borderRadius: 16,

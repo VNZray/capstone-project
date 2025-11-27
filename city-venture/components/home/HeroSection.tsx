@@ -44,14 +44,16 @@ const HeroSection: React.FC<HeroSectionProps> = ({
   }));
 
   return (
-    <Animated.View style={[styles.container, { height: heroHeight + 120 }, animatedStyle]}>
+    <Animated.View
+      style={[styles.container, { height: heroHeight + 120 }, animatedStyle]}
+    >
       <ImageBackground
         source={{ uri: imageUri }}
         style={StyleSheet.absoluteFill}
         resizeMode="cover"
       >
         <LinearGradient
-          colors={['rgba(4,4,10,0.2)', 'rgba(10,10,20,0.95)']}
+          colors={['rgba(4,4,10,0.1)', 'rgba(10,10,20,0.6)']}
           start={{ x: 0, y: 0 }}
           end={{ x: 0, y: 1 }}
           style={StyleSheet.absoluteFill}
