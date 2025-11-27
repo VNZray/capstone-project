@@ -57,7 +57,6 @@ const EditBusinessModal: React.FC<EditBusinessModalProps> = ({
       onClose={onClose}
       title="Edit Business"
       description="Update your business information and contact details"
-      maxWidth={720}
       actions={[
         { label: "Cancel", onClick: onClose },
         { label: "Save", onClick: handleSave, variant: "primary" },

@@ -1,10 +1,5 @@
 import * as React from "react";
 import {
-  Modal,
-  ModalDialog,
-  DialogContent,
-  DialogActions,
-  Button,
   Input,
   FormControl,
   FormLabel,
@@ -13,9 +8,10 @@ import {
   Autocomplete,
   FormHelperText,
   Alert as JoyAlert,
+  Stack,
 } from "@mui/joy";
 import { updateData, getData } from "@/src/services/Service";
-import Typography from "@/src/components/Typography";
+import BaseEditModal from "@/src/components/BaseEditModal";
 import Alert from "@/src/components/Alert";
 import type { Room } from "@/src/types/Business";
 
@@ -209,15 +205,23 @@ const EditBasicInfo: React.FC<EditDescriptionModalProps> = ({
 
   return (
     <>
-      <Modal open={open} onClose={onClose}>
-        <ModalDialog size="lg" variant="outlined" maxWidth={500} minWidth={500}>
-          <Typography.CardTitle>Edit Basic Information</Typography.CardTitle>
-          <DialogContent>
-            {error && (
-              <JoyAlert color="danger" variant="soft">
-                {error}
-              </JoyAlert>
-            )}
+      <BaseEditModal
+        open={open}
+        onClose={onClose}
+        title="Edit Basic Information"
+        description="Update room details and information"
+        maxWidth={500}
+        actions={[
+          { label: "Cancel", onClick: onClose, variant: "secondary" },
+          { label: "Save Changes", onClick: handleSave, variant: "primary" },
+        ]}
+      >
+        <Stack spacing={2}>
+          {error && (
+            <JoyAlert color="danger" variant="soft">
+              {error}
+            </JoyAlert>
+          )}
           <FormControl error={!!error && error.includes("Room number")}>
             <FormLabel>Room Number</FormLabel>
             <Input
@@ -281,17 +285,8 @@ const EditBasicInfo: React.FC<EditDescriptionModalProps> = ({
               <Option value="Maintenance">Maintenance</Option>
             </Select>
           </FormControl>
-        </DialogContent>
-        <DialogActions>
-          <Button fullWidth variant="plain" color="neutral" onClick={onClose}>
-            Cancel
-          </Button>
-          <Button fullWidth color="primary" onClick={handleSave}>
-            Save
-          </Button>
-        </DialogActions>
-      </ModalDialog>
-    </Modal>
+        </Stack>
+      </BaseEditModal>
     
     <Alert
       open={alertConfig.open}

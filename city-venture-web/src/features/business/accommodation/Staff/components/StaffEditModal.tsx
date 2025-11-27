@@ -7,37 +7,46 @@ import {
   Select,
   Option,
   FormHelperText,
+  Divider,
+  Box,
 } from "@mui/joy";
 import Container from "@/src/components/Container";
+import Button from "@/src/components/Button";
+import { RotateCw } from "lucide-react";
+import Typography from "@/src/components/Typography";
 import { fetchRolesByBusinessId, type Role } from "@/src/services/manage-staff/StaffService";
 import { useBusiness } from "@/src/context/BusinessContext";
 
-export type StaffFormData = {
+export type StaffEditData = {
   first_name: string;
+  middle_name?: string;
   last_name?: string;
   email: string;
-  password: string;
   phone_number?: string;
   role: string;
 };
 
-type StaffAddModalProps = {
+type StaffEditModalProps = {
   open: boolean;
   onClose: () => void;
-  onSave: (data: StaffFormData) => void;
+  onSave: (data: StaffEditData) => void;
+  onResetPassword: () => void;
+  initialData?: StaffEditData;
 };
 
-export default function StaffAddModal({
+export default function StaffEditModal({
   open,
   onClose,
   onSave,
-}: StaffAddModalProps) {
+  onResetPassword,
+  initialData,
+}: StaffEditModalProps) {
   const { businessDetails } = useBusiness();
   const [firstName, setFirstName] = React.useState("");
+  const [middleName, setMiddleName] = React.useState("");
   const [lastName, setLastName] = React.useState("");
   const [email, setEmail] = React.useState("");
   const [phone, setPhone] = React.useState("");
-  const [password, setPassword] = React.useState("123456");
   const [role, setRole] = React.useState<string>("");
   const [error, setError] = React.useState<string>("");
   const [businessRoles, setBusinessRoles] = React.useState<Role[]>([]);
@@ -45,16 +54,19 @@ export default function StaffAddModal({
 
   React.useEffect(() => {
     if (!open) return;
-    // reset on open to always start clean
-    setFirstName("");
-    setLastName("");
-    setEmail("");
-    setPhone("");
-    setPassword("123456");
-    setRole("");
-    setError("");
     loadBusinessRoles();
   }, [open, businessDetails?.id]);
+
+  React.useEffect(() => {
+    if (!open || !initialData) return;
+    setFirstName(initialData.first_name || "");
+    setMiddleName(initialData.middle_name || "");
+    setLastName(initialData.last_name || "");
+    setEmail(initialData.email || "");
+    setPhone(initialData.phone_number || "");
+    setRole(initialData.role || "");
+    setError("");
+  }, [open, initialData]);
 
   const loadBusinessRoles = async () => {
     if (!businessDetails?.id) return;
@@ -63,7 +75,6 @@ export default function StaffAddModal({
     try {
       const roles = await fetchRolesByBusinessId(businessDetails.id);
       setBusinessRoles(roles);
-      console.log("Loaded business roles:", roles);
     } catch (err) {
       console.error("Failed to load business roles:", err);
     } finally {
@@ -71,11 +82,11 @@ export default function StaffAddModal({
     }
   };
 
-  const canSubmit = firstName.trim().length > 0 && email.trim().length > 0 && role.length > 0;
+  const canSubmit = firstName.trim().length > 0 && email.trim().length > 0;
 
   const handleSave = () => {
     if (!canSubmit) {
-      setError("First name, email, and role are required.");
+      setError("First name and email are required.");
       return;
     }
     if (!email.includes("@")) {
@@ -84,25 +95,24 @@ export default function StaffAddModal({
     }
     onSave({
       first_name: firstName.trim(),
+      middle_name: middleName.trim() || undefined,
       last_name: lastName.trim() || undefined,
       email: email.trim(),
-      password: password.trim(),
       phone_number: phone.trim() || undefined,
       role,
     });
-    onClose();
   };
 
   return (
     <BaseEditModal
       open={open}
       onClose={onClose}
-      title="Add Staff"
-      description="Create a new staff member and assign a role"
+      title="Edit Staff Member"
+      description="Update staff member details or reset their password"
       actions={[
         { label: "Cancel", onClick: onClose },
         {
-          label: "Add",
+          label: "Save Changes",
           onClick: handleSave,
           variant: "primary",
           disabled: !canSubmit,
@@ -118,6 +128,16 @@ export default function StaffAddModal({
             size="md"
             value={firstName}
             onChange={(e) => setFirstName(e.target.value)}
+          />
+        </FormControl>
+        <FormControl>
+          <FormLabel>Middle Name</FormLabel>
+          <Input
+            placeholder="M."
+            type="text"
+            size="md"
+            value={middleName}
+            onChange={(e) => setMiddleName(e.target.value)}
           />
         </FormControl>
         <FormControl>
@@ -156,7 +176,7 @@ export default function StaffAddModal({
             value={role} 
             onChange={(_e, val) => val && setRole(val)}
             disabled={loading || businessRoles.length === 0}
-            placeholder={businessRoles.length === 0 ? "No roles available. Create one first." : "Select a role"}
+            placeholder={businessRoles.length === 0 ? "No roles available" : "Select a role"}
           >
             {businessRoles.map((businessRole) => (
               <Option key={businessRole.id} value={businessRole.role_name}>
@@ -170,6 +190,25 @@ export default function StaffAddModal({
             </FormHelperText>
           )}
         </FormControl>
+
+        <Divider sx={{ my: 2 }} />
+
+        <Box>
+          <Typography.Label>Password Management</Typography.Label>
+          <Typography.Body size="sm" sx={{ mb: 2, color: "text.secondary" }}>
+            Reset password to generate and send a new temporary password to the
+            staff member's email.
+          </Typography.Body>
+          <Button
+            variant="outlined"
+            colorScheme="warning"
+            startDecorator={<RotateCw size={16} />}
+            onClick={onResetPassword}
+            fullWidth
+          >
+            Reset Password
+          </Button>
+        </Box>
       </Container>
       {error ? (
         <FormHelperText color="danger" sx={{ mt: 1 }}>

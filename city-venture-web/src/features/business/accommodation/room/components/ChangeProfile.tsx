@@ -1,19 +1,12 @@
 import React, { useState } from "react";
-import {
-  Modal,
-  ModalDialog,
-  DialogActions,
-  Button,
-  FormControl,
-  FormLabel,
-  Stack,
-  Typography,
-} from "@mui/joy";
+import { FormControl, FormLabel, Stack } from "@mui/joy";
 import { X } from "lucide-react";
 import ImageUpload from "@/src/components/ImageUpload";
 import { useRoom } from "@/src/context/RoomContext";
 import { updateData } from "@/src/services/Service";
 import { useBusiness } from "@/src/context/BusinessContext";
+import BaseEditModal from "@/src/components/BaseEditModal";
+import Typography from "@/src/components/Typography";
 
 export interface ChangeProfileProps {
   open: boolean;
@@ -84,26 +77,22 @@ const ChangeProfile: React.FC<ChangeProfileProps> = ({
   };
 
   return (
-    <Modal open={open} onClose={onClose}>
-      <ModalDialog
-        size="md"
-        minWidth={500}
-        maxWidth={500}
-        variant="outlined"
-        role="dialog"
-      >
-        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-          <Typography level="h4" fontWeight={600}>
-            Change Room Profile
-          </Typography>
-        </div>
-
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-          }}
-        >
-          <Stack spacing={2}>
+    <BaseEditModal
+      open={open}
+      onClose={onClose}
+      title="Change Room Profile"
+      description="Upload a new profile image for this room"
+      maxWidth={500}
+      actions={[
+        {
+          label: "Cancel",
+          onClick: onClose,
+          variant: "secondary",
+          disabled: isUploading,
+        },
+      ]}
+    >
+      <Stack spacing={2}>
             {/* Current Image Preview */}
             {roomDetails?.room_image && (
               <FormControl>
@@ -155,33 +144,19 @@ const ChangeProfile: React.FC<ChangeProfileProps> = ({
                 }}
               >
                 <X size={18} color="#c62828" />
-                <Typography level="body-sm" color="danger">
+                <Typography.Body size="sm" color="error">
                   {error}
-                </Typography>
+                </Typography.Body>
               </div>
             )}
 
             {/* Info Message */}
-            <Typography level="body-sm" color="neutral">
+            <Typography.Body size="sm" sx={{ opacity: 0.7 }}>
               💡 Recommended image size: 1200x800px or higher. Maximum file
               size: 5MB.
-            </Typography>
-
-            {/* Actions */}
-            <DialogActions>
-              <Button
-                variant="plain"
-                color="neutral"
-                onClick={onClose}
-                disabled={isUploading}
-              >
-                Cancel
-              </Button>
-            </DialogActions>
+            </Typography.Body>
           </Stack>
-        </form>
-      </ModalDialog>
-    </Modal>
+    </BaseEditModal>
   );
 };
 

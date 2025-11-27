@@ -1,4 +1,6 @@
+import { apiService } from "@/src/utils/api";
 import apiClient from "../apiClient";
+import api from "../api";
 
 export interface StaffMember {
   id: string;
@@ -13,6 +15,23 @@ export interface StaffMember {
   user_profile?: string;
   is_active: boolean;
   role?: string;
+}
+
+export interface Permission {
+  id: number;
+  name: string;
+  description: string;
+  can_add: boolean;
+  can_view: boolean;
+  can_update: boolean;
+  can_delete: boolean;
+  permission_for: string;
+}
+
+export interface Role {
+  id: number;
+  role_name: string;
+  description: string;
 }
 
 /**
@@ -71,8 +90,113 @@ export const deleteStaffById = async (id: string) => {
  * Toggle staff active status
  */
 export const toggleStaffActive = async (
-  id: string,
+  user_id: string,
   is_active: boolean
-): Promise<StaffMember> => {
-  return updateStaffById(id, { is_active: !is_active });
+): Promise<void> => {
+  // Update the user table where is_active is stored
+  await apiClient.put(`/users/${user_id}`, { is_active: !is_active });
 };
+
+/**
+ * Fetch all roles
+ */
+export const fetchAllRoles = async () => {
+  const { data } = await apiClient.get(`/user-roles`);
+  return data;
+};
+
+/**
+ * Fetch roles by role_for (Business or Tourism roles)
+ */
+export const fetchRolesByRoleFor = async (roleFor: string = 'Business'): Promise<Role[]> => {
+  const { data } = await apiClient.get<Role[]>(`/user-roles/role-for/${roleFor}`);
+  return data;
+};
+
+/**
+ * Fetch roles by business (custom roles created by business owner)
+ */
+export const fetchRolesByBusinessId = async (businessId: string): Promise<Role[]> => {
+  const { data } = await apiClient.get<Role[]>(`/user-roles/business/${businessId}`);
+  return data;
+};
+
+/**
+ * Fetch all permissions
+ */
+export const fetchAllPermissions = async (): Promise<Permission[]> => {
+  const { data } = await apiClient.get<Permission[]>(`/permissions`);
+  return data;
+};
+
+/**
+ * Fetch permissions for a role
+ */
+export const fetchRolePermissions = async (roleId: number): Promise<Permission[]> => {
+  const { data } = await apiClient.get<Permission[]>(`/permissions/role/${roleId}`);
+  return data;
+};
+
+/**
+ * Create a new permission
+ */
+export const createPermission = async (permissionData: {
+  name: string;
+  description: string;
+  can_add: boolean;
+  can_view: boolean;
+  can_update: boolean;
+  can_delete: boolean;
+  permission_for: string;
+}) => {
+  const { data } = await apiClient.post(`/permissions`, permissionData);
+  return data;
+};
+
+/**
+ * Create a new role
+ */
+export const createRole = async (roleData: {
+  role_name: string;
+  description: string;
+  role_for?: string | undefined | null;
+}): Promise<Role> => {
+  const { data } = await apiClient.post(`/user-roles`, roleData);
+  return data;
+};
+
+/**
+ * Assign permissions to a role
+ */
+export const assignRolePermissions = async (
+  roleId: number,
+  permissionIds: number[]
+) => {
+  console.log(`Assigning ${permissionIds.length} permissions to role ${roleId}`);
+  const { data } = await apiClient.post(`/permissions/role_permission`, {
+    user_role_id: roleId,
+    permission_ids: permissionIds,
+  });
+  console.log("Assign permissions response:", data);
+  return data;
+};
+
+/**
+ * Insert a new permission
+ * @param permissionData - The data for the new permission
+ */
+export const insertPermission = async (permissionData: {
+  name: string;
+  description: string;
+  can_add: boolean;
+  can_view: boolean;
+  can_update: boolean;
+  can_delete: boolean;
+  business_id: string | null | undefined;
+}) => {
+  console.log("Inserting permission with data:", permissionData);
+  const { data } = await apiClient.post("/permissions", permissionData);
+  console.log("Insert permission response:", data);
+  return data;
+};
+

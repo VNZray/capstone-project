@@ -104,7 +104,6 @@ const EditAmenitiesModal: React.FC<EditBusinessModalProps> = ({
       onClose={onClose}
       title="Edit Amenities"
       description="Select amenities for this business"
-      maxWidth={640}
       actions={[
         { label: 'Cancel', onClick: onClose },
         { label: 'Save', onClick: handleSave, variant: 'primary' },
