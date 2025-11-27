@@ -6,9 +6,10 @@ import {
 	insertPermission,
 	updatePermissionById,
 	deletePermissionById,
+	createDefaultBusinessPermissions,
 	// Role-permissions
 	getPermissionsByRoleId,
-	assignPermissionToRole,
+	addRolePermission,
 	unassignPermissionFromRole,
 } from "../controller/auth/PermissionController.js";
 import { authenticate } from "../middleware/authenticate.js";
@@ -23,13 +24,14 @@ router.get('/me', authenticate, getMyPermissions);
 
 // Role-permissions endpoints
 router.get("/role/:user_role_id", getPermissionsByRoleId);
-router.post("/assign", assignPermissionToRole);
-router.delete("/assign/:user_role_id/:permission_id", unassignPermissionFromRole);
+router.post("/role_permission", addRolePermission);
+router.delete("/role_permission/:user_role_id/:permission_id", unassignPermissionFromRole);
 
 // Permissions CRUD
 // Only admins/officers should manage permissions; view can be broader if needed
 router.get("/", getAllPermissions);
 router.post("/", insertPermission);
+router.post("/default", createDefaultBusinessPermissions);
 router.get("/:id", getPermissionById);
 router.put("/:id", updatePermissionById);
 router.delete("/:id", deletePermissionById);

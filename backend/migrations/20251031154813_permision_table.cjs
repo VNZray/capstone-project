@@ -6,12 +6,6 @@ exports.up = async function(knex) {
     table.increments('id').primary();
     table.string('name').notNullable(); // manage_bookings, manage_users, manage_rooms, etc.
     table.string('description'); // description of the permission
-
-    // CRUD permissions
-    table.boolean('can_add').defaultTo(false).notNullable();
-    table.boolean('can_view').defaultTo(false).notNullable();
-    table.boolean('can_update').defaultTo(false).notNullable();
-    table.boolean('can_delete').defaultTo(false).notNullable();
     table.uuid('permission_for').notNullable(); // business or tourism
   });
 

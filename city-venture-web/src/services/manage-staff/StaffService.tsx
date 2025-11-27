@@ -172,9 +172,31 @@ export const assignRolePermissions = async (
   roleId: number,
   permissionIds: number[]
 ) => {
-  const { data } = await apiClient.post(`/permissions/assign`, {
+  console.log(`Assigning ${permissionIds.length} permissions to role ${roleId}`);
+  const { data } = await apiClient.post(`/permissions/role_permission`, {
     user_role_id: roleId,
     permission_ids: permissionIds,
   });
+  console.log("Assign permissions response:", data);
   return data;
 };
+
+/**
+ * Insert a new permission
+ * @param permissionData - The data for the new permission
+ */
+export const insertPermission = async (permissionData: {
+  name: string;
+  description: string;
+  can_add: boolean;
+  can_view: boolean;
+  can_update: boolean;
+  can_delete: boolean;
+  business_id: string | null | undefined;
+}) => {
+  console.log("Inserting permission with data:", permissionData);
+  const { data } = await apiClient.post("/permissions", permissionData);
+  console.log("Insert permission response:", data);
+  return data;
+};
+

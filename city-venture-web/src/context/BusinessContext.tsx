@@ -17,7 +17,7 @@ import { useAuth } from "./AuthContext";
 
 interface BusinessContextType {
   selectedBusinessId: string | null;
-  businessDetails: Business | null;
+  businessDetails: Business | null | undefined;
   loading: boolean;
   setBusinessId: (id: string) => void;
   clearBusinessId: () => void;

@@ -68,6 +68,25 @@ async function createPermissionProcedures(knex) {
 			DELETE FROM permissions WHERE id = p_id;
 		END;
 	`);
+
+	// Create default permissions for a new business
+	await knex.raw(`
+		CREATE PROCEDURE CreateDefaultBusinessPermissions(IN p_business_id CHAR(36))
+		BEGIN
+			INSERT INTO permissions(name, description, can_add, can_view, can_update, can_delete, permission_for) VALUES
+			('dashboard', 'Access to business analytics and overview', false, true, false, false, p_business_id),
+			('transactions', 'View and manage payment transactions', false, true, true, false, p_business_id),
+			('bookings', 'Handle customer reservations and bookings', true, true, true, true, p_business_id),
+			('business_profile', 'Edit business information and settings', false, true, true, false, p_business_id),
+			('rooms', 'Add, edit, and manage room inventory', true, true, true, true, p_business_id),
+			('promotions', 'Create and manage promotional offers', true, true, true, true, p_business_id),
+			('subscriptions', 'Handle business subscription plans', false, true, true, false, p_business_id),
+			('reviews', 'Respond to and manage customer feedback', false, true, true, false, p_business_id),
+			('staff', 'Add and manage staff members', true, true, true, true, p_business_id);
+		
+			SELECT * FROM permissions WHERE permission_for = p_business_id;
+		END;
+	`);
 }
 
 async function dropPermissionProcedures(knex) {
@@ -76,6 +95,7 @@ async function dropPermissionProcedures(knex) {
 	await knex.raw("DROP PROCEDURE IF EXISTS InsertPermission;");
 	await knex.raw("DROP PROCEDURE IF EXISTS UpdatePermission;");
 	await knex.raw("DROP PROCEDURE IF EXISTS DeletePermission;");
+	await knex.raw("DROP PROCEDURE IF EXISTS CreateDefaultBusinessPermissions;");
 }
 
 // Procedures for role_permissions assignments and lookups

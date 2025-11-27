@@ -8,9 +8,8 @@ import {
   FormHelperText,
   Box,
   Checkbox,
-  Card,
-  Select,
-  Option,
+  Table,
+  Sheet,
 } from "@mui/joy";
 import Container from "@/src/components/Container";
 import Typography from "@/src/components/Typography";
@@ -18,6 +17,7 @@ import {
   createRole,
   assignRolePermissions,
   fetchAllPermissions,
+  insertPermission,
   type Permission,
 } from "@/src/services/manage-staff/StaffService";
 import { useState, useEffect } from "react";
@@ -40,84 +40,83 @@ interface RolePermissionModalProps {
   onSuccess: () => void;
 }
 
+type PermissionType = "add" | "view" | "update" | "delete";
+
 interface PermissionModule {
   id: string;
   name: string;
   description: string;
   icon: React.ElementType;
-  permissions: {
-    add: boolean;
-    view: boolean;
-    update: boolean;
-    delete: boolean;
-  };
+  availablePermissions: PermissionType[];
 }
 
 const PERMISSION_MODULES: PermissionModule[] = [
   {
     id: "dashboard",
-    name: "Manage Dashboard",
+    name: "Dashboard",
     description: "Access to business analytics and overview",
     icon: LayoutDashboard,
-    permissions: { add: false, view: true, update: false, delete: false },
+    availablePermissions: ["view"],
   },
   {
     id: "transactions",
-    name: "Manage Transactions",
+    name: "Transactions",
     description: "View and manage payment transactions",
     icon: CreditCard,
-    permissions: { add: false, view: true, update: true, delete: false },
+    availablePermissions: ["view", "update"],
   },
   {
     id: "bookings",
-    name: "Manage Bookings",
+    name: "Bookings",
     description: "Handle customer reservations and bookings",
     icon: Calendar,
-    permissions: { add: true, view: true, update: true, delete: true },
+    availablePermissions: ["add", "view", "update", "delete"],
   },
   {
     id: "business_profile",
-    name: "Manage Business Profile",
+    name: "Business Profile",
     description: "Edit business information and settings",
     icon: Building2,
-    permissions: { add: false, view: true, update: true, delete: false },
+    availablePermissions: ["view", "update"],
   },
   {
     id: "rooms",
-    name: "Manage Rooms",
+    name: "Rooms",
     description: "Add, edit, and manage room inventory",
     icon: BedDouble,
-    permissions: { add: true, view: true, update: true, delete: true },
+    availablePermissions: ["add", "view", "update", "delete"],
   },
   {
     id: "promotions",
-    name: "Manage Promotions",
+    name: "Promotions",
     description: "Create and manage promotional offers",
     icon: Megaphone,
-    permissions: { add: true, view: true, update: true, delete: true },
+    availablePermissions: ["add", "view", "update", "delete"],
   },
   {
     id: "subscriptions",
-    name: "Manage Subscriptions",
+    name: "Subscriptions",
     description: "Handle business subscription plans",
     icon: Crown,
-    permissions: { add: false, view: true, update: true, delete: false },
+    availablePermissions: ["view", "update"],
   },
   {
     id: "reviews",
-    name: "Manage Reviews & Ratings",
+    name: "Reviews & Ratings",
     description: "Respond to and manage customer feedback",
     icon: Star,
-    permissions: { add: false, view: true, update: true, delete: false },
+    availablePermissions: ["view", "update"],
   },
   {
     id: "staff",
-    name: "Manage Staff",
+    name: "Staff",
     description: "Add and manage staff members",
     icon: Users,
-    permissions: { add: true, view: true, update: true, delete: true },
+    availablePermissions: ["add", "view", "update", "delete"],
   },
 ];
+
+const ALL_PERMISSIONS: PermissionType[] = ["view", "add", "update", "delete"];
 
 export default function RolePermissionModal({
   open,
@@ -127,55 +126,44 @@ export default function RolePermissionModal({
   const { businessDetails } = useBusiness();
   const [roleName, setRoleName] = useState("");
   const [description, setDescription] = useState("");
-  const [selectedModules, setSelectedModules] = useState<Record<string, PermissionModule["permissions"]>>({});
+  const [selectedPermissions, setSelectedPermissions] = useState<
+    Record<string, Partial<Record<PermissionType, boolean>>>
+  >({});
   const [error, setError] = useState<string>("");
   const [loading, setLoading] = useState(false);
   const [allPermissions, setAllPermissions] = useState<Permission[]>([]);
 
   useEffect(() => {
     if (!open) return;
-    // Reset form
     setRoleName("");
     setDescription("");
-    setSelectedModules({});
+    setSelectedPermissions({});
     setError("");
     loadPermissions();
-  }, [open]);
+  }, [open, businessDetails]);
 
   const loadPermissions = async () => {
+    if (!businessDetails?.id) return;
     try {
+      console.log("Loading all permissions for business...");
       const data = await fetchAllPermissions();
-      // Filter to only show permissions for this business
       const businessPerms = data.filter(
-        (p: Permission) => p.permission_for === businessDetails?.id || p.permission_for === 'business'
+        (p: Permission) => p.permission_for === businessDetails?.id
       );
       setAllPermissions(businessPerms);
+      console.log(`Loaded ${businessPerms.length} permissions.`);
     } catch (err) {
       setError("Failed to load permissions");
+      console.error(err);
     }
-  };
-
-  const handleToggleModule = (moduleId: string) => {
-    setSelectedModules((prev) => {
-      const newModules = { ...prev };
-      if (newModules[moduleId]) {
-        delete newModules[moduleId];
-      } else {
-        const module = PERMISSION_MODULES.find((m) => m.id === moduleId);
-        if (module) {
-          newModules[moduleId] = { ...module.permissions };
-        }
-      }
-      return newModules;
-    });
   };
 
   const handlePermissionChange = (
     moduleId: string,
-    permType: "add" | "view" | "update" | "delete",
+    permType: PermissionType,
     checked: boolean
   ) => {
-    setSelectedModules((prev) => ({
+    setSelectedPermissions((prev) => ({
       ...prev,
       [moduleId]: {
         ...prev[moduleId],
@@ -184,76 +172,155 @@ export default function RolePermissionModal({
     }));
   };
 
+  const handleSelectRow = (moduleId: string, checked: boolean) => {
+    const module = PERMISSION_MODULES.find((m) => m.id === moduleId);
+    if (!module) return;
+
+    const newPerms: Partial<Record<PermissionType, boolean>> = {};
+    if (checked) {
+      module.availablePermissions.forEach((p) => {
+        newPerms[p] = true;
+      });
+    }
+
+    setSelectedPermissions((prev) => ({
+      ...prev,
+      [moduleId]: newPerms,
+    }));
+  };
+
+  const handleSelectColumn = (permType: PermissionType, checked: boolean) => {
+    const newSelected = { ...selectedPermissions };
+    PERMISSION_MODULES.forEach((module) => {
+      if (module.availablePermissions.includes(permType)) {
+        if (!newSelected[module.id]) {
+          newSelected[module.id] = {};
+        }
+        newSelected[module.id]![permType] = checked;
+      }
+    });
+    setSelectedPermissions(newSelected);
+  };
+
+  const handleSelectAll = (checked: boolean) => {
+    const newSelected: Record<
+      string,
+      Partial<Record<PermissionType, boolean>>
+    > = {};
+    if (checked) {
+      PERMISSION_MODULES.forEach((module) => {
+        newSelected[module.id] = {};
+        module.availablePermissions.forEach((perm) => {
+          newSelected[module.id][perm] = true;
+        });
+      });
+    }
+    setSelectedPermissions(newSelected);
+  };
+
+  const isAllSelected = () => {
+    const totalPossible = PERMISSION_MODULES.reduce(
+      (acc, m) => acc + m.availablePermissions.length,
+      0
+    );
+    const totalSelected = Object.values(selectedPermissions).reduce(
+      (acc, perms) => acc + Object.values(perms).filter(Boolean).length,
+      0
+    );
+    return totalSelected === totalPossible;
+  };
+
+  const isColumnSelected = (permType: PermissionType) => {
+    return PERMISSION_MODULES.every(
+      (m) =>
+        !m.availablePermissions.includes(permType) ||
+        selectedPermissions[m.id]?.[permType]
+    );
+  };
+
+  const isRowSelected = (moduleId: string) => {
+    const module = PERMISSION_MODULES.find((m) => m.id === moduleId);
+    if (!module) return false;
+    return module.availablePermissions.every(
+      (p) => selectedPermissions[moduleId]?.[p]
+    );
+  };
+
   const handleSave = async () => {
     if (!roleName.trim()) {
       setError("Role name is required.");
       return;
     }
-    if (Object.keys(selectedModules).length === 0) {
-      setError("Please select at least one permission module.");
+    if (Object.keys(selectedPermissions).length === 0) {
+      setError("Please select at least one permission.");
       return;
     }
 
     setLoading(true);
     try {
-      // Create role with role_for = 'Business'
       const newRole = await createRole({
         role_name: roleName.trim(),
         description: description.trim(),
         role_for: businessDetails?.id,
       });
 
-      console.log("Created role:", newRole);
+      const permissionIdsToAssign: number[] = [];
 
-      // Create permissions for each selected module and assign them
-      const permissionIds: number[] = [];
-      
-      Object.entries(selectedModules).forEach(([moduleId, perms]) => {
-        const module = PERMISSION_MODULES.find((m) => m.id === moduleId);
-        if (!module) return;
+      for (const [moduleId, perms] of Object.entries(selectedPermissions)) {
+        if (Object.values(perms).every(v => !v)) continue; // Skip if no perms selected for this module
 
-        // Find matching permissions in the database by module keywords
-        const keywords = [moduleId, ...module.name.toLowerCase().split(' ')];
+        const module = PERMISSION_MODULES.find(m => m.id === moduleId);
+        if (!module) continue;
+
+        const can_add = !!perms.add;
+        const can_view = !!perms.view;
+        const can_update = !!perms.update;
+        const can_delete = !!perms.delete;
+
+        // Find if an identical permission already exists for this business
+        let existingPerm = allPermissions.find(p => 
+            p.name === module.name &&
+            p.can_add === can_add &&
+            p.can_view === can_view &&
+            p.can_update === can_update &&
+            p.can_delete === can_delete
+        );
+
+        let permissionId: number;
+
+        if (existingPerm) {
+            permissionId = existingPerm.id;
+        } else {
+            // Create new permission
+            console.log(`Creating new permission for ${module.name} with custom rights.`);
+            const newPerm = await insertPermission({
+                name: module.name,
+                description: module.description,
+                can_add,
+                can_view,
+                can_update,
+                can_delete,
+                business_id: businessDetails?.id || null || undefined,
+            });
+            permissionId = newPerm.id;
+            // Add to allPermissions to avoid creating duplicates in the same run
+            setAllPermissions(prev => [...prev, newPerm]); 
+        }
         
-        const matchingPerms = allPermissions.filter((p) => {
-          const nameLower = p.name.toLowerCase();
-          const descLower = p.description.toLowerCase();
-          
-          // Check if any keyword matches the permission name or description
-          return keywords.some(kw => 
-            nameLower.includes(kw) || descLower.includes(kw)
-          );
-        });
+        if (permissionId) {
+            permissionIdsToAssign.push(permissionId);
+        }
+      }
 
-        console.log(`Module ${moduleId} matched ${matchingPerms.length} permissions:`, matchingPerms.map(p => p.name));
-
-        // Add all matching permissions that have ANY of the selected CRUD flags
-        matchingPerms.forEach((perm) => {
-          const shouldInclude =
-            (perms.add && perm.can_add) ||
-            (perms.view && perm.can_view) ||
-            (perms.update && perm.can_update) ||
-            (perms.delete && perm.can_delete);
-
-          if (shouldInclude && !permissionIds.includes(perm.id)) {
-            permissionIds.push(perm.id);
-          }
-        });
-      });
-
-      console.log("Permission IDs to assign:", permissionIds);
-
-      // Assign permissions
-      if (permissionIds.length > 0) {
-        await assignRolePermissions(newRole.id, permissionIds);
-        console.log("Permissions assigned successfully");
+      if (permissionIdsToAssign.length > 0) {
+        await assignRolePermissions(newRole.id, permissionIdsToAssign);
       }
 
       onSuccess();
       onClose();
     } catch (err) {
-      console.error("Error creating role:", err);
       setError(err instanceof Error ? err.message : "Failed to create role");
+      console.error(err);
     } finally {
       setLoading(false);
     }
@@ -265,14 +332,17 @@ export default function RolePermissionModal({
       onClose={onClose}
       title="Create Custom Role"
       description="Define a new role with specific permissions for your staff"
-      maxWidth={800}
+      maxWidth={900}
       actions={[
         { label: "Cancel", onClick: onClose },
         {
           label: loading ? "Creating..." : "Create Role",
           onClick: handleSave,
           variant: "primary",
-          disabled: !roleName.trim() || Object.keys(selectedModules).length === 0 || loading,
+          disabled:
+            !roleName.trim() ||
+            Object.keys(selectedPermissions).length === 0 ||
+            loading,
         },
       ]}
     >
@@ -282,7 +352,7 @@ export default function RolePermissionModal({
             <Typography.Label>Role Name</Typography.Label>
           </FormLabel>
           <Input
-            placeholder="e.g. Admin"
+            placeholder="e.g. Front Desk Manager"
             type="text"
             size="lg"
             value={roleName}
@@ -296,7 +366,7 @@ export default function RolePermissionModal({
           </FormLabel>
           <Textarea
             placeholder="Describe the responsibilities of this role"
-            minRows={3}
+            minRows={2}
             size="lg"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
@@ -304,154 +374,130 @@ export default function RolePermissionModal({
         </FormControl>
 
         <Box>
-          <Typography.Label sx={{ mb: 1 }}>Access</Typography.Label>
-          <Container padding="0" gap="12px">
-            {PERMISSION_MODULES.map((module) => {
-              const Icon = module.icon;
-              const isSelected = !!selectedModules[module.id];
-
-              return (
-                <Card
-                  key={module.id}
-                  variant={isSelected ? "soft" : "outlined"}
-                  sx={{
-                    cursor: "pointer",
-                    transition: "all 0.2s",
-                    border: isSelected ? "2px solid" : "1px solid",
-                    borderColor: isSelected ? "primary.500" : "divider",
-                    "&:hover": {
-                      borderColor: "primary.300",
-                      boxShadow: "sm",
-                    },
-                  }}
-                  onClick={() => handleToggleModule(module.id)}
-                >
-                  <Box
-                    sx={{
-                      display: "flex",
-                      alignItems: "flex-start",
-                      justifyContent: "space-between",
-                      gap: 2,
-                    }}
-                  >
-                    <Box sx={{ display: "flex", gap: 2, flex: 1 }}>
-                      <Box
-                        sx={{
-                          width: 48,
-                          height: 48,
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          borderRadius: "8px",
-                          backgroundColor: isSelected ? "primary.100" : "background.level2",
-                          color: isSelected ? "primary.600" : "text.secondary",
-                        }}
-                      >
-                        <Icon size={24} />
-                      </Box>
-                      <Box sx={{ flex: 1 }}>
-                        <Typography.CardTitle>{module.name}</Typography.CardTitle>
-                        <Typography.Body size="sm" sx={{ color: "text.secondary" }}>
-                          {module.description}
-                        </Typography.Body>
-                      </Box>
-                    </Box>
-
+          <Typography.Label sx={{ mb: 1 }}>Permissions</Typography.Label>
+          <Sheet
+            variant="outlined"
+            sx={{
+              borderRadius: "sm",
+              overflow: "auto",
+              boxShadow: "sm",
+            }}
+          >
+            <Table
+              borderAxis="bothBetween"
+              stickyHeader
+              hoverRow
+              sx={{
+                "& tr > *:first-of-type": {
+                  position: "sticky",
+                  left: 0,
+                  boxShadow: "1px 0 var(--joy-palette-divider)",
+                  bgcolor: "background.surface",
+                },
+                "& tr > *:last-child": {
+                  textAlign: "center",
+                },
+              }}
+            >
+              <thead>
+                <tr>
+                  <th style={{ width: 250, minWidth: 200 }}>
                     <Box
-                      sx={{ minWidth: 140 }}
-                      onClick={(e) => e.stopPropagation()}
+                      sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 1.5,
+                      }}
                     >
-                      <Select
-                        placeholder="Permission"
+                      <Checkbox
                         size="sm"
-                        value={
-                          isSelected
-                            ? Object.entries(selectedModules[module.id] || {})
-                                .filter(([_, val]) => val)
-                                .map(([key]) => key)
-                                .join(",") || "custom"
-                            : ""
-                        }
-                        disabled={!isSelected}
-                        onChange={(_, value) => {
-                          if (!value) return;
-                          const perms = value.split(",");
-                          setSelectedModules((prev) => ({
-                            ...prev,
-                            [module.id]: {
-                              add: perms.includes("add"),
-                              view: perms.includes("view"),
-                              update: perms.includes("update"),
-                              delete: perms.includes("delete"),
-                            },
-                          }));
-                        }}
-                      >
-                        {module.permissions.add && (
-                          <Option value="add">Add</Option>
-                        )}
-                        {module.permissions.view && (
-                          <Option value="view">View</Option>
-                        )}
-                        {module.permissions.update && (
-                          <Option value="update,view">Update</Option>
-                        )}
-                        {module.permissions.delete && (
-                          <Option value="delete">Delete</Option>
-                        )}
-                        <Option value="add,view,update,delete">All</Option>
-                      </Select>
-
-                      {isSelected && (
-                        <Box sx={{ mt: 1, display: "flex", flexDirection: "column", gap: 0.5 }}>
-                          {module.permissions.add && (
-                            <Checkbox
-                              label="Add"
-                              size="sm"
-                              checked={selectedModules[module.id]?.add || false}
-                              onChange={(e) =>
-                                handlePermissionChange(module.id, "add", e.target.checked)
-                              }
-                            />
-                          )}
-                          {module.permissions.view && (
-                            <Checkbox
-                              label="View"
-                              size="sm"
-                              checked={selectedModules[module.id]?.view || false}
-                              onChange={(e) =>
-                                handlePermissionChange(module.id, "view", e.target.checked)
-                              }
-                            />
-                          )}
-                          {module.permissions.update && (
-                            <Checkbox
-                              label="Update"
-                              size="sm"
-                              checked={selectedModules[module.id]?.update || false}
-                              onChange={(e) =>
-                                handlePermissionChange(module.id, "update", e.target.checked)
-                              }
-                            />
-                          )}
-                          {module.permissions.delete && (
-                            <Checkbox
-                              label="Delete"
-                              size="sm"
-                              checked={selectedModules[module.id]?.delete || false}
-                              onChange={(e) =>
-                                handlePermissionChange(module.id, "delete", e.target.checked)
-                              }
-                            />
-                          )}
-                        </Box>
-                      )}
+                        checked={isAllSelected()}
+                        onChange={(e) => handleSelectAll(e.target.checked)}
+                      />
+                      <Typography.Label>Module</Typography.Label>
                     </Box>
-                  </Box>
-                </Card>
-              );
-            })}
-          </Container>
+                  </th>
+                  {ALL_PERMISSIONS.map((perm) => (
+                    <th key={perm} style={{ textAlign: "center" }}>
+                      <Checkbox
+                        label={perm.charAt(0).toUpperCase() + perm.slice(1)}
+                        size="sm"
+                        checked={isColumnSelected(perm)}
+                        onChange={(e) =>
+                          handleSelectColumn(perm, e.target.checked)
+                        }
+                      />
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {PERMISSION_MODULES.map((module) => {
+                  const Icon = module.icon;
+                  return (
+                    <tr key={module.id}>
+                      <td>
+                        <Box
+                          sx={{ display: "flex", alignItems: "center", gap: 2 }}
+                        >
+                          <Checkbox
+                            size="sm"
+                            checked={isRowSelected(module.id)}
+                            onChange={(e) =>
+                              handleSelectRow(module.id, e.target.checked)
+                            }
+                          />
+                          <Icon
+                            size={20}
+                            style={{
+                              color: "var(--joy-palette-text-secondary)",
+                            }}
+                          />
+                          <Box>
+                            <Typography.Body size="sm">
+                              {module.name}
+                            </Typography.Body>
+                            <Typography.Body
+                              size="xs"
+                              sx={{ color: "text.tertiary" }}
+                            >
+                              {module.description}
+                            </Typography.Body>
+                          </Box>
+                        </Box>
+                      </td>
+                      {ALL_PERMISSIONS.map((perm) => (
+                        <td key={perm}>
+                          {module.availablePermissions.includes(perm) ? (
+                            <Checkbox
+                              size="sm"
+                              checked={
+                                selectedPermissions[module.id]?.[perm] || false
+                              }
+                              onChange={(e) =>
+                                handlePermissionChange(
+                                  module.id,
+                                  perm,
+                                  e.target.checked
+                                )
+                              }
+                            />
+                          ) : (
+                            <Typography.Body
+                              size="sm"
+                              sx={{ color: "text.disabled" }}
+                            >
+                              N/A
+                            </Typography.Body>
+                          )}
+                        </td>
+                      ))}
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </Table>
+          </Sheet>
         </Box>
       </Container>
       {error ? (
