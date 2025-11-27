@@ -263,7 +263,7 @@ const Profile = () => {
                 logout();
                 router.replace('/');
               }}
-              variant="outline"
+              variant="outlined"
               color="error"
               size="large"
               fullWidth
@@ -351,14 +351,16 @@ const MenuItem = ({
       >
         <Ionicons name={icon} size={20} color={iconColor || '#718096'} />
       </View>
-      <ThemedText
-        type="body-medium"
-        weight="medium"
-        style={{ flex: 1, color: textColor }}
-      >
-        {label}
-      </ThemedText>
-      <Ionicons name="chevron-forward" size={18} color={Colors.light.accent} />
+      <View style={{ flex: 1 }}>
+        <ThemedText
+          type="body-medium"
+          weight="medium"
+          style={{ color: textColor }}
+        >
+          {label}
+        </ThemedText>
+      </View>
+      <FontAwesome5 name="chevron-right" size={14} color="#C5A059" />
     </Pressable>
   );
 };
@@ -370,13 +372,13 @@ const styles = StyleSheet.create({
   },
   headerGradient: {
     paddingHorizontal: 24,
-    paddingBottom: 32,
+    paddingBottom: 20,
   },
   headerTop: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 24,
+    marginBottom: 12,
   },
   iconBtn: {
     width: 40,
@@ -392,8 +394,8 @@ const styles = StyleSheet.create({
   },
   profileInfo: {
     alignItems: 'center',
-    gap: 16,
-    marginBottom: 32,
+    gap: 10,
+    marginBottom: 20,
   },
   avatarContainer: {
     position: 'relative',
@@ -404,9 +406,9 @@ const styles = StyleSheet.create({
     elevation: 10,
   },
   avatar: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
+    width: 80,
+    height: 80,
+    borderRadius: 40,
   },
   editBadge: {
     position: 'absolute',
@@ -426,6 +428,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 12,
+    marginBottom: 12,
   },
   statDivider: {
     width: 1,
@@ -457,6 +460,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 14,
+  },
+  chevronContainer: {
+    width: 24,
+    height: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   themeOption: {
     flex: 1,
