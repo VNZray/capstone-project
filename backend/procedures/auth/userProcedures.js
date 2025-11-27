@@ -54,12 +54,11 @@ async function createUserProcedures(knex) {
   await knex.raw(`
     CREATE PROCEDURE InsertUserRole(
       IN p_role_name VARCHAR(40),
-      IN p_role_description TEXT,
-      IN p_role_for VARCHAR(40)
+      IN p_role_description TEXT
     )
     BEGIN
-      INSERT INTO user_role (role_name, role_description, role_for)
-      VALUES (p_role_name, p_role_description, p_role_for);
+      INSERT INTO user_role (role_name, role_description)
+      VALUES (p_role_name, p_role_description);
       SELECT * FROM user_role WHERE id = LAST_INSERT_ID();
     END;
   `);
@@ -80,39 +79,17 @@ async function createUserProcedures(knex) {
     END;
   `);
 
-  // Get user roles by role_for (Business or Tourism)
-  await knex.raw(`
-    CREATE PROCEDURE GetUserRolesByRoleFor(IN p_role_for VARCHAR(40))
-    BEGIN
-      SELECT * FROM user_role WHERE role_for = p_role_for ORDER BY created_at DESC;
-    END;
-  `);
-
-  // Get custom roles by business_id
-  await knex.raw(`
-    CREATE PROCEDURE GetUserRolesByBusinessId(
-      IN p_business_id CHAR(64)
-    )
-    BEGIN
-      SELECT * FROM user_role
-      WHERE role_for = p_business_id
-      ORDER BY created_at DESC;
-    END;
-  `);
-
   // Update user role by ID
   await knex.raw(`
     CREATE PROCEDURE UpdateUserRole(
       IN p_id INT,
       IN p_role_name VARCHAR(40),
-      IN p_role_description TEXT,
-      IN p_role_for VARCHAR(40)
+      IN p_role_description TEXT
     )
     BEGIN
       UPDATE user_role
       SET role_name = IFNULL(p_role_name, role_name),
-          role_description = IFNULL(p_role_description, role_description),
-          role_for = IFNULL(p_role_for, role_for)
+          role_description = IFNULL(p_role_description, role_description)
       WHERE id = p_id;
       SELECT * FROM user_role WHERE id = p_id;
     END;
@@ -122,15 +99,15 @@ async function createUserProcedures(knex) {
   await knex.raw(`
     CREATE PROCEDURE UpdateUserRoleByName(
       IN p_role_name VARCHAR(40),
-      IN p_role_description TEXT,
-      IN p_role_for VARCHAR(40)
+      IN p_new_role_name VARCHAR(40),
+      IN p_role_description TEXT
     )
     BEGIN
       UPDATE user_role
-      SET role_name = IFNULL(p_role_name, role_name),
-          role_description = IFNULL(p_role_description, role_description),
-          role_for = IFNULL(p_role_for, role_for)
+      SET role_name = IFNULL(p_new_role_name, role_name),
+          role_description = IFNULL(p_role_description, role_description)
       WHERE role_name = p_role_name;
+      SELECT * FROM user_role WHERE role_name = IFNULL(p_new_role_name, p_role_name);
     END;
   `);
 
@@ -184,8 +161,6 @@ async function dropUserProcedures(knex) {
   await knex.raw("DROP PROCEDURE IF EXISTS InsertUserRole;");
   await knex.raw("DROP PROCEDURE IF EXISTS GetAllUserRoles;");
   await knex.raw("DROP PROCEDURE IF EXISTS GetUserRoleById;");
-  await knex.raw("DROP PROCEDURE IF EXISTS GetUserRolesByRoleFor;");
-  await knex.raw("DROP PROCEDURE IF EXISTS GetUserRolesByBusinessId;");
   await knex.raw("DROP PROCEDURE IF EXISTS UpdateUserRole;");
   await knex.raw("DROP PROCEDURE IF EXISTS UpdateUserRoleByName;");
   await knex.raw("DROP PROCEDURE IF EXISTS UpdateUser;");

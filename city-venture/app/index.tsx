@@ -84,6 +84,7 @@ const Main = () => {
               fullWidth
               size="large"
               label="Sign Up"
+              variant="soft"
               color="neutral"
               onPress={() => navigateToRegister()}
             />

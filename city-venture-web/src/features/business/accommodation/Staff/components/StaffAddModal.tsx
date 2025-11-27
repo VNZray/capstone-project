@@ -77,6 +77,30 @@ export default function StaffAddModal({
       phone_number: phone.trim() || undefined,
       role,
     });
+
+    console.log(role);
+    console.log(role);
+    console.log(role);
+    console.log(role);
+    console.log(role);
+    console.log(role);
+    console.log(role);
+    console.log(role);
+    console.log(role);
+    console.log(role);
+    console.log(role);
+    console.log(role);
+    console.log(role);
+    console.log(role);
+    console.log(role);
+    console.log(role);
+    console.log(role);
+    console.log(role);
+    console.log(role);
+    console.log(role);
+    console.log(role);
+    console.log(role);
+
     onClose();
   };
 
@@ -86,7 +110,6 @@ export default function StaffAddModal({
       onClose={onClose}
       title="Add Staff"
       description="Create a new staff member and assign a role"
-      
       actions={[
         { label: "Cancel", onClick: onClose },
         {
