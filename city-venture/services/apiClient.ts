@@ -17,19 +17,40 @@ let accessToken: string | null = null;
 let isRefreshing = false;
 let refreshPromise: Promise<string | null> | null = null;
 
+// Session ID to invalidate stale refresh operations after logout
+let sessionId = 0;
+
 // Function to set access token
 export const setAccessToken = (token: string | null) => {
+  console.log('[apiClient] setAccessToken called:', token ? 'token set' : 'token cleared');
   accessToken = token;
 };
 
 export const getAccessToken = () => accessToken;
 
 /**
+ * Clear all client-side auth state.
+ * Call this on logout to ensure no stale state persists.
+ * Increments sessionId to invalidate any in-flight refresh operations.
+ */
+export const clearApiClientState = () => {
+  console.log('[apiClient] Clearing all auth state');
+  accessToken = null;
+  isRefreshing = false;
+  refreshPromise = null;
+  sessionId++; // Invalidate any pending refresh operations
+};
+
+/**
  * Centralized token refresh function with lock.
  * Ensures only ONE refresh request is made even if called multiple times.
  * All callers wait for the same promise.
+ * Uses sessionId to detect if logout occurred during refresh.
  */
 export const refreshTokens = async (): Promise<string | null> => {
+  // Capture current session ID to detect logout during async operations
+  const currentSessionId = sessionId;
+  
   // If already refreshing, return the existing promise
   if (isRefreshing && refreshPromise) {
     return refreshPromise;
@@ -40,6 +61,13 @@ export const refreshTokens = async (): Promise<string | null> => {
     try {
       const refreshToken = await getRefreshToken();
       if (!refreshToken) {
+        console.log('[apiClient] No refresh token available');
+        return null;
+      }
+
+      // Check if logout occurred while we were getting the refresh token
+      if (sessionId !== currentSessionId) {
+        console.log('[apiClient] Session invalidated during refresh - aborting');
         return null;
       }
 
@@ -47,6 +75,12 @@ export const refreshTokens = async (): Promise<string | null> => {
       const response = await axios.post(`${api}/auth/refresh`, {
         refreshToken,
       });
+
+      // Check again after async operation
+      if (sessionId !== currentSessionId) {
+        console.log('[apiClient] Session invalidated after refresh call - discarding tokens');
+        return null;
+      }
 
       const { accessToken: newAccessToken, refreshToken: newRefreshToken } = response.data;
 
@@ -56,8 +90,10 @@ export const refreshTokens = async (): Promise<string | null> => {
         await saveRefreshToken(newRefreshToken);
       }
 
+      console.log('[apiClient] Token refresh successful');
       return newAccessToken;
-    } catch {
+    } catch (error) {
+      console.log('[apiClient] Token refresh failed:', error instanceof Error ? error.message : 'Unknown error');
       // Refresh failed - clear auth data
       setAccessToken(null);
       await clearAllAuthData();
@@ -74,8 +110,15 @@ export const refreshTokens = async (): Promise<string | null> => {
 // Request Interceptor
 apiClient.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
-    if (accessToken) {
-      config.headers.Authorization = `Bearer ${accessToken}`;
+    // Always read the current accessToken (may have changed since last request)
+    const currentToken = accessToken;
+    if (currentToken) {
+      config.headers.Authorization = `Bearer ${currentToken}`;
+      console.log('[apiClient] Request with auth token:', config.url);
+    } else {
+      // Ensure no stale Authorization header exists
+      delete config.headers.Authorization;
+      console.log('[apiClient] Request without auth token:', config.url);
     }
     return config;
   },

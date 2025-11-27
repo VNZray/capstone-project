@@ -1,4 +1,4 @@
-import apiClient, { setAccessToken } from './apiClient';
+import apiClient, { setAccessToken, clearApiClientState } from './apiClient';
 import debugLogger from '@/utils/debugLogger';
 import type {
   Address,
@@ -83,14 +83,42 @@ export const loginUser = async (
       data: {
         accessToken: accessToken ? 'present' : 'missing',
         refreshToken: refreshToken ? 'present' : 'missing',
+        loginUserSummary: loginUserSummary ? JSON.stringify(loginUserSummary) : 'missing',
       },
     });
 
-    // Store tokens
+    // Validate tokens are present
+    if (!accessToken || !refreshToken) {
+      throw new Error('Login response missing tokens');
+    }
+
+    // Store tokens - MUST happen before any subsequent API calls
     setAccessToken(accessToken);
     await saveRefreshToken(refreshToken);
 
-    const user_id = loginUserSummary.id;
+    // Validate user ID from login response
+    const user_id = loginUserSummary?.id;
+    
+    if (!user_id) {
+      debugLogger({
+        title: 'AuthService: ❌ Login response missing user ID',
+        error: {
+          loginUserSummary,
+          keys: loginUserSummary ? Object.keys(loginUserSummary) : [],
+        },
+        errorCode: 'MISSING_USER_ID',
+      });
+      throw new Error('Login response missing user ID - please contact support');
+    }
+
+    debugLogger({
+      title: 'AuthService: User ID validated',
+      data: { 
+        user_id, 
+        user_id_type: typeof user_id,
+        user_id_length: typeof user_id === 'string' ? user_id.length : 'N/A',
+      },
+    });
 
     // Step 3: Fetch user details
     debugLogger({
@@ -106,9 +134,19 @@ export const loginUser = async (
             user_id,
             message: err?.message,
             status: err?.response?.status,
+            responseData: err?.response?.data,
           },
           errorCode: err?.response?.status,
         });
+        
+        // Provide more helpful error message for 404
+        if (err?.response?.status === 404) {
+          const error = new Error(`User account not found. Please try logging in again or contact support.`);
+          (error as any).code = 'USER_NOT_FOUND';
+          (error as any).status = 404;
+          throw error;
+        }
+        
         throw err;
       });
 
@@ -271,20 +309,35 @@ export const loginUser = async (
 /** LOGOUT */
 export const logoutUser = async (): Promise<void> => {
   try {
+    debugLogger({
+      title: 'AuthService: Logout - clearing all auth state',
+    });
+
+    // IMPORTANT: Clear API client state FIRST to invalidate any in-flight operations
+    // This increments the sessionId, causing any pending refresh operations to abort
+    clearApiClientState();
+
     const refreshToken = await getRefreshToken();
     if (refreshToken) {
-      // Attempt server-side logout
-      await apiClient.post('/auth/logout', { refreshToken }).catch(() => {});
+      // Attempt server-side logout (non-blocking - don't wait for response)
+      apiClient.post('/auth/logout', { refreshToken }).catch((err) => {
+        debugLogger({
+          title: 'AuthService: Server logout failed (non-critical)',
+          error: err?.message || 'Unknown error',
+        });
+      });
     }
 
-    setAccessToken(null);
+    // Clear all stored auth data
     await clearAllAuthData();
 
     debugLogger({
-      title: 'AuthService: ✅ Logout successful',
+      title: 'AuthService: ✅ Logout successful - all state cleared',
     });
   } catch (error) {
     console.error('[AuthService] Logout error:', error);
+    // Even if logout fails, ensure local state is cleared
+    clearApiClientState();
     await clearAllAuthData();
   }
 };
@@ -318,13 +371,23 @@ let initPromise: Promise<boolean> | null = null;
 export const initializeAuth = async (): Promise<boolean> => {
   // If initialization is already in progress, return the existing promise
   if (initPromise) {
+    debugLogger({
+      title: 'AuthService: initializeAuth - returning existing promise',
+    });
     return initPromise;
   }
 
   initPromise = (async () => {
     try {
+      debugLogger({
+        title: 'AuthService: initializeAuth - starting',
+      });
+
       const refreshToken = await getRefreshToken();
       if (!refreshToken) {
+        debugLogger({
+          title: 'AuthService: initializeAuth - no refresh token found',
+        });
         return false;
       }
 
@@ -337,9 +400,18 @@ export const initializeAuth = async (): Promise<boolean> => {
         await saveRefreshToken(res.data.refreshToken);
       }
 
+      debugLogger({
+        title: 'AuthService: initializeAuth - session restored successfully',
+      });
       return true;
     } catch (e) {
-      // Failed to refresh -> logged out
+      debugLogger({
+        title: 'AuthService: initializeAuth - failed to restore session',
+        error: e instanceof Error ? e.message : String(e),
+      });
+      // Failed to refresh -> clear state and return false
+      clearApiClientState();
+      await clearAllAuthData();
       return false;
     }
   })();
