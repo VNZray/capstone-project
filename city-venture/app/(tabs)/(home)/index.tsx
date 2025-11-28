@@ -1,5 +1,30 @@
-import HeroSection from '@/components/home/HeroSection';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import {
+  Dimensions,
+  Pressable,
+  StatusBar,
+  StyleSheet,
+  View,
+  RefreshControl,
+  useColorScheme,
+  Platform,
+  UIManager,
+} from 'react-native';
+import Animated, {
+  useAnimatedScrollHandler,
+  useSharedValue,
+  useAnimatedStyle,
+  interpolate,
+  Extrapolation,
+  withTiming,
+  Easing,
+} from 'react-native-reanimated';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { MaterialCommunityIcons, Ionicons } from '@expo/vector-icons';
+import { router } from 'expo-router';
 
+// --- YOUR IMPORTS ---
+import HeroSection from '@/components/home/HeroSection';
 import NewsAndEventsSection from '@/components/home/NewsAndEventsSection';
 import { ThemedText } from '@/components/themed-text';
 import CityListSection from '@/components/home/CityListSection';
@@ -9,6 +34,7 @@ import SpecialOffersSection from '@/components/home/SpecialOffersSection';
 import FeaturedPartnersSection from '@/components/home/FeaturedPartnersSection';
 import FeaturedTouristSpotsSection from '@/components/home/FeaturedTouristSpotsSection';
 import ReportIssueSection from '@/components/home/ReportIssueSection';
+import SearchBar from '@/components/SearchBar';
 
 import { useAuth } from '@/context/AuthContext';
 import { Colors } from '@/constants/color';
@@ -20,31 +46,6 @@ import {
   type HomeEvent,
   type NewsArticle,
 } from '@/services/HomeContentService';
-import { MaterialCommunityIcons, Ionicons } from '@expo/vector-icons';
-import { router } from 'expo-router';
-import SearchBar from '@/components/SearchBar';
-import React, { useCallback, useEffect, useRef, useState } from 'react';
-import {
-  Dimensions,
-  Pressable,
-  StatusBar,
-  StyleSheet,
-  View,
-  RefreshControl,
-  useColorScheme,
-} from 'react-native';
-import Animated, {
-  useAnimatedScrollHandler,
-  useSharedValue,
-  interpolateColor,
-  useAnimatedStyle,
-  interpolate,
-  Extrapolation,
-  withTiming,
-  Easing,
-} from 'react-native-reanimated';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-
 import {
   ACTIONS,
   PLACEHOLDER_EVENTS,
@@ -52,24 +53,55 @@ import {
   type ActionItem,
 } from '@/components/home/data';
 
-const HERO_HEIGHT = 260;
+// Enable LayoutAnimation for Android
+if (
+  Platform.OS === 'android' &&
+  UIManager.setLayoutAnimationEnabledExperimental
+) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
+
+const HERO_HEIGHT = 280;
 const SCREEN_WIDTH = Dimensions.get('window').width;
+const HEADER_SCROLL_THRESHOLD = 80;
 
 const AnimatedScrollView = Animated.ScrollView;
 
 const HomeScreen = () => {
   const { user } = useAuth();
-  const scrollY = useSharedValue(0);
-  const prevScrollY = useSharedValue(0);
-  const headerVisible = useSharedValue(1); // 1 = visible, 0 = hidden
   const { top: insetsTop, bottom } = useSafeAreaInsets();
   const colorScheme = useColorScheme() ?? 'light';
   const palette = Colors[colorScheme];
   const didRedirect = useRef(false);
+
+  // --- Animation Values ---
+  const scrollY = useSharedValue(0);
+  const prevScrollY = useSharedValue(0);
+  const headerVisible = useSharedValue(1); // 1 = Visible, 0 = Hidden
+
+  // --- State ---
   const [searchValue, setSearchValue] = useState('');
   const [refreshing, setRefreshing] = useState(false);
   const [greeting, setGreeting] = useState('Hello');
 
+  const [eventState, setEventState] = useState<{
+    data: HomeEvent[];
+    loading: boolean;
+    error?: string;
+  }>({
+    data: [],
+    loading: true,
+  });
+  const [newsState, setNewsState] = useState<{
+    data: NewsArticle[];
+    loading: boolean;
+    error?: string;
+  }>({
+    data: [],
+    loading: true,
+  });
+
+  // --- Effects ---
   useEffect(() => {
     const greetings = [
       'Hello',
@@ -88,21 +120,6 @@ const HomeScreen = () => {
     return () => clearInterval(interval);
   }, []);
 
-  type SectionState<T> = {
-    data: T[];
-    loading: boolean;
-    error?: string;
-  };
-
-  const [eventState, setEventState] = useState<SectionState<HomeEvent>>({
-    data: [],
-    loading: true,
-  });
-  const [newsState, setNewsState] = useState<SectionState<NewsArticle>>({
-    data: [],
-    loading: true,
-  });
-
   useEffect(() => {
     if (!user && !didRedirect.current) {
       didRedirect.current = true;
@@ -111,24 +128,14 @@ const HomeScreen = () => {
   }, [user]);
 
   const loadHomeContent = useCallback(async (isRefresh = false) => {
-    if (isRefresh) {
-      setRefreshing(true);
-    } else {
+    if (isRefresh) setRefreshing(true);
+    else {
       setEventState((prev) => ({ ...prev, loading: true }));
       setNewsState((prev) => ({ ...prev, loading: true }));
     }
-
-    // Simulate network delay for better UX
     await new Promise((resolve) => setTimeout(resolve, 500));
-
-    setEventState({
-      data: PLACEHOLDER_EVENTS,
-      loading: false,
-    });
-    setNewsState({
-      data: PLACEHOLDER_NEWS,
-      loading: false,
-    });
+    setEventState({ data: PLACEHOLDER_EVENTS, loading: false });
+    setNewsState({ data: PLACEHOLDER_NEWS, loading: false });
     setRefreshing(false);
   }, []);
 
@@ -136,39 +143,71 @@ const HomeScreen = () => {
     loadHomeContent();
   }, [loadHomeContent]);
 
-  const handleRefresh = useCallback(() => {
-    loadHomeContent(true);
-  }, [loadHomeContent]);
-
+  // --- UPDATED SCROLL HANDLER (Fixes Slow Scroll Issue) ---
   const handleScroll = useAnimatedScrollHandler((event) => {
     const currentY = event.contentOffset.y;
     const diff = currentY - prevScrollY.value;
 
-    // Only apply direction-based visibility after scrolling past threshold
-    if (currentY > 80) {
-      if (diff > 5) {
-        // Scrolling down - hide header
+    // 1. Top of screen logic (always show fully)
+    if (currentY < HEADER_SCROLL_THRESHOLD) {
+      if (headerVisible.value !== 1) {
+        headerVisible.value = withTiming(1, { duration: 200 });
+      }
+    } else {
+      // 2. Scrolled down logic
+      // We use '0' instead of '5' to catch even the slowest downward scroll
+      if (diff > 0 && headerVisible.value !== 0) {
+        // Scrolling Down -> Hide Row 1
         headerVisible.value = withTiming(0, {
-          duration: 200,
-          easing: Easing.out(Easing.ease),
-        });
-      } else if (diff < -5) {
-        // Scrolling up - show header
-        headerVisible.value = withTiming(1, {
-          duration: 200,
+          duration: 250,
           easing: Easing.out(Easing.ease),
         });
       }
-    } else {
-      // Near top - always show
-      headerVisible.value = withTiming(1, {
-        duration: 200,
-        easing: Easing.out(Easing.ease),
-      });
+      // We keep a small buffer (-3) for scrolling up to prevent flickering
+      else if (diff < -3 && headerVisible.value !== 1) {
+        // Scrolling Up -> Show Row 1
+        headerVisible.value = withTiming(1, {
+          duration: 250,
+          easing: Easing.out(Easing.ease),
+        });
+      }
     }
 
     prevScrollY.value = currentY;
     scrollY.value = currentY;
+  });
+
+  // --- Animated Styles ---
+  const headerBackgroundStyle = useAnimatedStyle(() => {
+    const opacity = interpolate(
+      scrollY.value,
+      [0, HEADER_SCROLL_THRESHOLD],
+      [0, 1],
+      Extrapolation.CLAMP
+    );
+    return {
+      opacity,
+      backgroundColor: palette.primary,
+    };
+  });
+
+  const topRowAnimatedStyle = useAnimatedStyle(() => {
+    const translateY = interpolate(headerVisible.value, [0, 1], [-60, 0]);
+    const opacity = interpolate(headerVisible.value, [0, 1], [0, 1]);
+    const height = interpolate(
+      headerVisible.value,
+      [0, 1],
+      [0, 60],
+      Extrapolation.CLAMP
+    );
+
+    return {
+      transform: [{ translateY }],
+      opacity,
+      height,
+      marginBottom: interpolate(headerVisible.value, [0, 1], [0, 12]),
+      overflow: 'hidden',
+    };
   });
 
   const handleActionPress = (id: ActionItem['id']) => {
@@ -177,13 +216,7 @@ const HomeScreen = () => {
         navigateToAccommodationHome();
         break;
       case 'food':
-        navigateToShopHome(); // Assuming food is under shops for now
-        break;
-      case 'transport':
-        // TODO: Navigate to transport
-        break;
-      case 'map':
-        // TODO: Navigate to map
+        navigateToShopHome();
         break;
       case 'tours':
         navigateToTouristSpotHome();
@@ -191,114 +224,14 @@ const HomeScreen = () => {
       case 'tickets':
         navigateToEventHome();
         break;
-      case 'guides':
-        // TODO: Navigate to guides
-        break;
-      case 'saved':
-        // TODO: Navigate to saved
-        break;
       default:
         break;
     }
   };
 
-  const handleEventPress = useCallback((event: HomeEvent) => {
-    router.push({
-      pathname: '/(tabs)/(home)/(event)',
-      params: { eventId: event.id },
-    });
-  }, []);
-
-  const handleNewsPress = useCallback((article: NewsArticle) => {
-    router.push({
-      pathname: '/(tabs)/(home)',
-      params: { newsId: article.id },
-    });
-  }, []);
-
-  // Row 1 (profile + icons) - shows/hides based on scroll direction
-  const topRowAnimatedStyle = useAnimatedStyle(() => {
-    // Initial collapse based on scroll position
-    const initialTranslateY = interpolate(
-      scrollY.value,
-      [0, 80],
-      [0, -60],
-      Extrapolation.CLAMP
-    );
-    const initialOpacity = interpolate(
-      scrollY.value,
-      [0, 60],
-      [1, 0],
-      Extrapolation.CLAMP
-    );
-
-    // When scrolled past threshold, use direction-based visibility
-    const isCollapsed = scrollY.value > 80;
-
-    if (isCollapsed) {
-      // Use headerVisible to show/hide based on direction
-      return {
-        transform: [
-          { translateY: interpolate(headerVisible.value, [0, 1], [-60, 0]) },
-        ],
-        opacity: headerVisible.value,
-      };
-    }
-
-    // Initial scroll behavior
-    return {
-      transform: [{ translateY: initialTranslateY }],
-      opacity: initialOpacity,
-    };
-  });
-
-  // Search bar container background interpolates from transparent to primary
-  const searchBarContainerStyle = useAnimatedStyle(() => {
-    const isCollapsed = scrollY.value > 80;
-
-    if (isCollapsed) {
-      // When collapsed, always show primary when header is hidden
-      return {
-        backgroundColor: interpolateColor(
-          headerVisible.value,
-          [0, 1],
-          [palette.primary, 'transparent']
-        ),
-      };
-    }
-
-    return {
-      backgroundColor: interpolateColor(
-        scrollY.value,
-        [0, 80],
-        ['transparent', palette.primary]
-      ),
-    };
-  });
-
-  // Search bar moves up as top row collapses, then adjusts based on header visibility
-  const searchBarAnimatedStyle = useAnimatedStyle(() => {
-    const isCollapsed = scrollY.value > 80;
-
-    if (isCollapsed) {
-      // When collapsed, move based on header visibility
-      const translateY = interpolate(headerVisible.value, [0, 1], [-56, 0]);
-      return {
-        transform: [{ translateY }],
-      };
-    }
-
-    // Initial collapse animation
-    const translateY = interpolate(
-      scrollY.value,
-      [0, 80],
-      [0, -56],
-      Extrapolation.CLAMP
-    );
-    return {
-      transform: [{ translateY }],
-    };
-  });
+  const handleRefresh = useCallback(() => {
+    loadHomeContent(true);
+  }, [loadHomeContent]);
 
   if (!user) return null;
 
@@ -310,94 +243,14 @@ const HomeScreen = () => {
         barStyle="light-content"
       />
 
-      <HeroSection scrollY={scrollY} heroHeight={HERO_HEIGHT} />
-
-      <AnimatedScrollView
-        style={StyleSheet.absoluteFill}
-        contentContainerStyle={{
-          paddingBottom: bottom + 32,
-        }}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={handleRefresh}
-            tintColor={palette.primary}
-          />
-        }
-        onScroll={handleScroll}
-        scrollEventThrottle={16}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Spacer for sticky header and hero */}
-        <View style={{ height: insetsTop + 200 }} />
-
-        {/* Content wrapper with rounded corners overlay */}
-        <View style={styles.contentWrapper}>
-          {/* Rounded corner overlay - stays fixed at top of content */}
-          <View
-            style={[
-              styles.roundedCornerOverlay,
-              {
-                backgroundColor: palette.background,
-                borderRadius: 20,
-                zIndex: 1,
-              },
-            ]}
-          />
-          <View
-            style={[
-              styles.contentContainer,
-              {
-                backgroundColor: palette.background,
-                borderRadius: 20,
-                zIndex: 2,
-              },
-            ]}
-          >
-            <ActionGrid items={ACTIONS} onPressItem={handleActionPress} />
-
-            <CityListSection
-              onPressCity={(city) => console.log(city.name)}
-              onPressViewMore={() => console.log('View more cities')}
-            />
-
-            <PersonalRecommendationSection
-              onPressItem={(item) => console.log(item.title)}
-            />
-
-            <VisitorsHandbookSection />
-
-            <SpecialOffersSection
-              onPressOffer={(offer) => console.log(offer.title)}
-            />
-
-            <FeaturedPartnersSection
-              onPressPartner={(partner) => console.log(partner.name)}
-            />
-
-            <FeaturedTouristSpotsSection />
-
-            <ReportIssueSection
-              onViewReports={() => console.log('View Reports')}
-              onReportIssue={() => console.log('Report Issue')}
-            />
-
-            <NewsAndEventsSection
-              newsData={newsState.data}
-              eventsData={eventState.data}
-              loading={newsState.loading || eventState.loading}
-              error={newsState.error || eventState.error}
-              onPressArticle={handleNewsPress}
-              onPressEvent={handleEventPress}
-              onPressViewAllEvents={navigateToEventHome}
-            />
-          </View>
-        </View>
-      </AnimatedScrollView>
-
-      {/* Sticky Header */}
+      {/* --- Sticky Header --- */}
       <View style={[styles.stickyHeader, { paddingTop: insetsTop + 10 }]}>
-        {/* Row 1: Profile + Icons (eases up on scroll) */}
+        {/* Animated Background Layer */}
+        <Animated.View
+          style={[StyleSheet.absoluteFill, headerBackgroundStyle]}
+        />
+
+        {/* Row 1: Profile + Icons */}
         <Animated.View style={[styles.topRow, topRowAnimatedStyle]}>
           <View style={styles.profileSection}>
             <View style={styles.profileIcon}>
@@ -433,31 +286,92 @@ const HomeScreen = () => {
           </View>
         </Animated.View>
 
-        {/* Row 2: Search Bar (stays sticky, bg interpolates) */}
-        <Animated.View
-          style={[styles.searchBarWrapper, searchBarAnimatedStyle]}
-        >
-          <Animated.View
-            style={[styles.searchBarContainer, searchBarContainerStyle]}
-          >
-            <SearchBar
-              value={searchValue}
-              onChangeText={setSearchValue}
-              onSearch={() => {}}
-              placeholder="Where do you want to go?"
-              variant="plain"
-              containerStyle={{
-                backgroundColor: 'rgba(255,255,255,0.95)',
-                borderRadius: 12,
-                borderWidth: 0,
-              }}
-            />
-          </Animated.View>
-        </Animated.View>
+        {/* Row 2: Search Bar */}
+        <View style={styles.searchBarWrapper}>
+          <SearchBar
+            value={searchValue}
+            onChangeText={setSearchValue}
+            onSearch={() => {}}
+            placeholder="Where do you want to go?"
+            variant="plain"
+            containerStyle={styles.searchBarContainer}
+          />
+        </View>
       </View>
+
+      {/* --- Main Content --- */}
+      <HeroSection scrollY={scrollY} heroHeight={HERO_HEIGHT} />
+
+      <AnimatedScrollView
+        style={StyleSheet.absoluteFill}
+        contentContainerStyle={{
+          paddingBottom: bottom + 32,
+        }}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            tintColor={palette.primary}
+          />
+        }
+        onScroll={handleScroll}
+        scrollEventThrottle={16}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={{ height: HERO_HEIGHT - 30 }} />
+
+        <View
+          style={[styles.contentSheet, { backgroundColor: palette.background }]}
+        >
+          <ActionGrid items={ACTIONS} onPressItem={handleActionPress} />
+
+          <View style={styles.sectionContainer}>
+            <CityListSection
+              onPressCity={(city) => console.log(city.name)}
+              onPressViewMore={() => console.log('View more cities')}
+            />
+            <PersonalRecommendationSection
+              onPressItem={(item) => console.log(item.title)}
+            />
+            <VisitorsHandbookSection />
+            <SpecialOffersSection
+              onPressOffer={(offer) => console.log(offer.title)}
+            />
+            <FeaturedPartnersSection
+              onPressPartner={(partner) => console.log(partner.name)}
+            />
+            <FeaturedTouristSpotsSection />
+            <ReportIssueSection
+              onViewReports={() => console.log('View Reports')}
+              onReportIssue={() => console.log('Report Issue')}
+            />
+            <NewsAndEventsSection
+              newsData={newsState.data}
+              eventsData={eventState.data}
+              loading={newsState.loading || eventState.loading}
+              error={newsState.error || eventState.error}
+              onPressArticle={(article) =>
+                router.push({
+                  pathname: '/(tabs)/(home)',
+                  params: { newsId: article.id },
+                })
+              }
+              onPressEvent={(event) =>
+                router.push({
+                  pathname: '/(tabs)/(home)/(event)',
+                  params: { eventId: event.id },
+                })
+              }
+              onPressViewAllEvents={navigateToEventHome}
+            />
+          </View>
+        </View>
+      </AnimatedScrollView>
     </View>
   );
 };
+
+// --- Sub-Components ---
 
 type ActionGridProps = {
   items: ActionItem[];
@@ -487,9 +401,6 @@ const ActionGrid: React.FC<ActionGridProps> = ({ items, onPressItem }) => {
     setCurrentPage(pageIndex);
   };
 
-  // Use full screen width for pagination to avoid edge bleeding
-  const PAGE_WIDTH = SCREEN_WIDTH;
-
   return (
     <View style={styles.actionGridContainer}>
       <Animated.ScrollView
@@ -499,38 +410,36 @@ const ActionGrid: React.FC<ActionGridProps> = ({ items, onPressItem }) => {
         onScroll={handleScroll}
         onMomentumScrollEnd={onMomentumScrollEnd}
         scrollEventThrottle={16}
-        style={{ marginHorizontal: -20 }} // Negative margin to allow full width scrolling
       >
         {pages.map((page, pageIndex) => (
           <View
             key={pageIndex}
-            style={{ width: PAGE_WIDTH, paddingHorizontal: 20 }}
+            style={{ width: SCREEN_WIDTH, paddingHorizontal: 20 }}
           >
-            <View style={[styles.actionGridPage, { width: '100%' }]}>
+            <View style={styles.actionGridPage}>
               {page.map((item, index) => {
                 const globalIndex = pageIndex * ITEMS_PER_PAGE + index;
-                // Modern subtle palette
                 const palettes = [
-                  { bg: 'rgba(52, 152, 219, 0.1)', icon: '#3498db' }, // Blue
-                  { bg: 'rgba(46, 204, 113, 0.1)', icon: '#2ecc71' }, // Green
-                  { bg: 'rgba(155, 89, 182, 0.1)', icon: '#9b59b6' }, // Purple
-                  { bg: 'rgba(230, 126, 34, 0.1)', icon: '#e67e22' }, // Orange
-                  { bg: 'rgba(231, 76, 60, 0.1)', icon: '#e74c3c' }, // Red
-                  { bg: 'rgba(26, 188, 156, 0.1)', icon: '#1abc9c' }, // Teal
-                  { bg: 'rgba(241, 196, 15, 0.1)', icon: '#f1c40f' }, // Yellow
-                  { bg: 'rgba(52, 73, 94, 0.1)', icon: '#34495e' }, // Dark Blue
+                  { bg: 'rgba(52, 152, 219, 0.1)', icon: '#3498db' },
+                  { bg: 'rgba(46, 204, 113, 0.1)', icon: '#2ecc71' },
+                  { bg: 'rgba(155, 89, 182, 0.1)', icon: '#9b59b6' },
+                  { bg: 'rgba(230, 126, 34, 0.1)', icon: '#e67e22' },
+                  { bg: 'rgba(231, 76, 60, 0.1)', icon: '#e74c3c' },
+                  { bg: 'rgba(26, 188, 156, 0.1)', icon: '#1abc9c' },
+                  { bg: 'rgba(241, 196, 15, 0.1)', icon: '#f1c40f' },
+                  { bg: 'rgba(52, 73, 94, 0.1)', icon: '#34495e' },
                 ];
                 const { bg, icon } = palettes[globalIndex % palettes.length];
 
                 return (
                   <Pressable
                     key={item.id}
-                    style={[styles.actionItem, { width: '25%' }]}
+                    style={styles.actionItem}
                     onPress={() => onPressItem(item.id)}
                   >
                     <View style={[styles.actionIcon, { backgroundColor: bg }]}>
                       <MaterialCommunityIcons
-                        name={item.icon}
+                        name={item.icon as any}
                         size={26}
                         color={icon}
                       />
@@ -540,7 +449,6 @@ const ActionGrid: React.FC<ActionGridProps> = ({ items, onPressItem }) => {
                       align="center"
                       style={styles.actionLabel}
                       lightColor={colors.textSecondary}
-                      darkColor={colors.textSecondary}
                     >
                       {item.label}
                     </ThemedText>
@@ -552,26 +460,27 @@ const ActionGrid: React.FC<ActionGridProps> = ({ items, onPressItem }) => {
         ))}
       </Animated.ScrollView>
 
-      {/* Pagination Indicator */}
-      <View style={styles.paginationContainer}>
-        {pages.map((_, index) => {
-          const isActive = currentPage === index;
-          return (
-            <View
-              key={index}
-              style={[
-                styles.paginationDot,
-                isActive ? styles.paginationDotActive : null,
-                {
-                  backgroundColor: isActive
-                    ? colors.primary
-                    : colors.borderStrong,
-                },
-              ]}
-            />
-          );
-        })}
-      </View>
+      {pages.length > 1 && (
+        <View style={styles.paginationContainer}>
+          {pages.map((_, index) => {
+            const isActive = currentPage === index;
+            return (
+              <View
+                key={index}
+                style={[
+                  styles.paginationDot,
+                  isActive ? styles.paginationDotActive : null,
+                  {
+                    backgroundColor: isActive
+                      ? colors.primary
+                      : colors.borderStrong,
+                  },
+                ]}
+              />
+            );
+          })}
+        </View>
+      )}
     </View>
   );
 };
@@ -592,7 +501,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 20,
-    paddingBottom: 12,
   },
   profileSection: {
     flexDirection: 'row',
@@ -613,51 +521,54 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 12,
   },
+  iconButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
+  },
   searchBarWrapper: {
     paddingHorizontal: 20,
     paddingBottom: 12,
   },
   searchBarContainer: {
+    backgroundColor: '#FFF',
     borderRadius: 12,
-    overflow: 'hidden',
+    borderWidth: 0,
+    elevation: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
   },
-  heroSpacer: {
-    minHeight: HERO_HEIGHT + 0 * 0.05, // Adjusted since HEADER_BASE_HEIGHT is removed
-    justifyContent: 'flex-end',
-    paddingHorizontal: 20,
-    paddingTop: 0 - 6,
-    paddingBottom: 24,
-  },
-  contentWrapper: {
-    position: 'relative',
-  },
-  roundedCornerOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    height: 40,
+  contentSheet: {
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
-    zIndex: 1,
-  },
-  contentContainer: {
-    paddingBottom: 24,
-    paddingHorizontal: 20,
     paddingTop: 24,
+    paddingBottom: 40,
+    minHeight: 1000,
+    overflow: 'hidden',
+  },
+  sectionContainer: {
+    paddingHorizontal: 20,
     gap: 30,
-    minHeight: 1000, // Ensure content extends far enough
-    // backgroundColor set dynamically
+    marginTop: 10,
   },
   actionGridContainer: {
-    paddingTop: 16,
+    paddingTop: 0,
+    marginBottom: 20,
   },
   actionGridPage: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    justifyContent: 'flex-start',
+    width: '100%',
   },
   actionItem: {
+    width: '25%',
     alignItems: 'center',
     marginBottom: 20,
   },
@@ -673,53 +584,11 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '500',
   },
-  promoBase: {
-    borderRadius: 28,
-    padding: 24,
-    gap: 10,
-  },
-  promoCard: {
-    marginTop: 4,
-  },
-  promoDescription: {
-    lineHeight: 20,
-  },
-  promoActions: {
-    flexDirection: 'row',
-    gap: 12,
-    marginTop: 8,
-  },
-  ctaButton: {
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-    flex: 1,
-  },
-  ctaSecondary: {},
-  ctaPrimary: {},
-  horizontalList: {
-    paddingRight: 0,
-    paddingLeft: 0,
-  },
-
-  iconButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
-  },
   paginationContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
     marginTop: -8,
-    marginBottom: 8,
     gap: 6,
   },
   paginationDot: {
