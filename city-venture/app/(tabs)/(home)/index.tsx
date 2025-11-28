@@ -40,6 +40,8 @@ import Animated, {
   useAnimatedStyle,
   interpolate,
   Extrapolation,
+  withTiming,
+  Easing,
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -58,6 +60,8 @@ const AnimatedScrollView = Animated.ScrollView;
 const HomeScreen = () => {
   const { user } = useAuth();
   const scrollY = useSharedValue(0);
+  const prevScrollY = useSharedValue(0);
+  const headerVisible = useSharedValue(1); // 1 = visible, 0 = hidden
   const { top: insetsTop, bottom } = useSafeAreaInsets();
   const colorScheme = useColorScheme() ?? 'light';
   const palette = Colors[colorScheme];
@@ -137,7 +141,34 @@ const HomeScreen = () => {
   }, [loadHomeContent]);
 
   const handleScroll = useAnimatedScrollHandler((event) => {
-    scrollY.value = event.contentOffset.y;
+    const currentY = event.contentOffset.y;
+    const diff = currentY - prevScrollY.value;
+
+    // Only apply direction-based visibility after scrolling past threshold
+    if (currentY > 80) {
+      if (diff > 5) {
+        // Scrolling down - hide header
+        headerVisible.value = withTiming(0, {
+          duration: 200,
+          easing: Easing.out(Easing.ease),
+        });
+      } else if (diff < -5) {
+        // Scrolling up - show header
+        headerVisible.value = withTiming(1, {
+          duration: 200,
+          easing: Easing.out(Easing.ease),
+        });
+      }
+    } else {
+      // Near top - always show
+      headerVisible.value = withTiming(1, {
+        duration: 200,
+        easing: Easing.out(Easing.ease),
+      });
+    }
+
+    prevScrollY.value = currentY;
+    scrollY.value = currentY;
   });
 
   const handleActionPress = (id: ActionItem['id']) => {
@@ -185,28 +216,57 @@ const HomeScreen = () => {
     });
   }, []);
 
-  // Row 1 (profile + icons) animates up and fades out
+  // Row 1 (profile + icons) - shows/hides based on scroll direction
   const topRowAnimatedStyle = useAnimatedStyle(() => {
-    const translateY = interpolate(
+    // Initial collapse based on scroll position
+    const initialTranslateY = interpolate(
       scrollY.value,
       [0, 80],
       [0, -60],
       Extrapolation.CLAMP
     );
-    const opacity = interpolate(
+    const initialOpacity = interpolate(
       scrollY.value,
       [0, 60],
       [1, 0],
       Extrapolation.CLAMP
     );
+
+    // When scrolled past threshold, use direction-based visibility
+    const isCollapsed = scrollY.value > 80;
+
+    if (isCollapsed) {
+      // Use headerVisible to show/hide based on direction
+      return {
+        transform: [
+          { translateY: interpolate(headerVisible.value, [0, 1], [-60, 0]) },
+        ],
+        opacity: headerVisible.value,
+      };
+    }
+
+    // Initial scroll behavior
     return {
-      transform: [{ translateY }],
-      opacity,
+      transform: [{ translateY: initialTranslateY }],
+      opacity: initialOpacity,
     };
   });
 
   // Search bar container background interpolates from transparent to primary
   const searchBarContainerStyle = useAnimatedStyle(() => {
+    const isCollapsed = scrollY.value > 80;
+
+    if (isCollapsed) {
+      // When collapsed, always show primary when header is hidden
+      return {
+        backgroundColor: interpolateColor(
+          headerVisible.value,
+          [0, 1],
+          [palette.primary, 'transparent']
+        ),
+      };
+    }
+
     return {
       backgroundColor: interpolateColor(
         scrollY.value,
@@ -216,8 +276,19 @@ const HomeScreen = () => {
     };
   });
 
-  // Search bar moves up as top row collapses
+  // Search bar moves up as top row collapses, then adjusts based on header visibility
   const searchBarAnimatedStyle = useAnimatedStyle(() => {
+    const isCollapsed = scrollY.value > 80;
+
+    if (isCollapsed) {
+      // When collapsed, move based on header visibility
+      const translateY = interpolate(headerVisible.value, [0, 1], [-56, 0]);
+      return {
+        transform: [{ translateY }],
+      };
+    }
+
+    // Initial collapse animation
     const translateY = interpolate(
       scrollY.value,
       [0, 80],
@@ -257,52 +328,70 @@ const HomeScreen = () => {
         scrollEventThrottle={16}
         showsVerticalScrollIndicator={false}
       >
-        {/* Spacer for sticky header */}
-        <View style={{ height: insetsTop + 220 }} />
+        {/* Spacer for sticky header and hero */}
+        <View style={{ height: insetsTop + 200 }} />
 
-        <View
-          style={[
-            styles.contentContainer,
-            { backgroundColor: palette.background },
-          ]}
-        >
-          <ActionGrid items={ACTIONS} onPressItem={handleActionPress} />
-
-          <CityListSection
-            onPressCity={(city) => console.log(city.name)}
-            onPressViewMore={() => console.log('View more cities')}
+        {/* Content wrapper with rounded corners overlay */}
+        <View style={styles.contentWrapper}>
+          {/* Rounded corner overlay - stays fixed at top of content */}
+          <View
+            style={[
+              styles.roundedCornerOverlay,
+              {
+                backgroundColor: palette.background,
+                borderRadius: 20,
+                zIndex: 1,
+              },
+            ]}
           />
+          <View
+            style={[
+              styles.contentContainer,
+              {
+                backgroundColor: palette.background,
+                borderRadius: 20,
+                zIndex: 2,
+              },
+            ]}
+          >
+            <ActionGrid items={ACTIONS} onPressItem={handleActionPress} />
 
-          <PersonalRecommendationSection
-            onPressItem={(item) => console.log(item.title)}
-          />
+            <CityListSection
+              onPressCity={(city) => console.log(city.name)}
+              onPressViewMore={() => console.log('View more cities')}
+            />
 
-          <VisitorsHandbookSection />
+            <PersonalRecommendationSection
+              onPressItem={(item) => console.log(item.title)}
+            />
 
-          <SpecialOffersSection
-            onPressOffer={(offer) => console.log(offer.title)}
-          />
+            <VisitorsHandbookSection />
 
-          <FeaturedPartnersSection
-            onPressPartner={(partner) => console.log(partner.name)}
-          />
+            <SpecialOffersSection
+              onPressOffer={(offer) => console.log(offer.title)}
+            />
 
-          <FeaturedTouristSpotsSection />
+            <FeaturedPartnersSection
+              onPressPartner={(partner) => console.log(partner.name)}
+            />
 
-          <ReportIssueSection
-            onViewReports={() => console.log('View Reports')}
-            onReportIssue={() => console.log('Report Issue')}
-          />
+            <FeaturedTouristSpotsSection />
 
-          <NewsAndEventsSection
-            newsData={newsState.data}
-            eventsData={eventState.data}
-            loading={newsState.loading || eventState.loading}
-            error={newsState.error || eventState.error}
-            onPressArticle={handleNewsPress}
-            onPressEvent={handleEventPress}
-            onPressViewAllEvents={navigateToEventHome}
-          />
+            <ReportIssueSection
+              onViewReports={() => console.log('View Reports')}
+              onReportIssue={() => console.log('Report Issue')}
+            />
+
+            <NewsAndEventsSection
+              newsData={newsState.data}
+              eventsData={eventState.data}
+              loading={newsState.loading || eventState.loading}
+              error={newsState.error || eventState.error}
+              onPressArticle={handleNewsPress}
+              onPressEvent={handleEventPress}
+              onPressViewAllEvents={navigateToEventHome}
+            />
+          </View>
         </View>
       </AnimatedScrollView>
 
@@ -539,14 +628,25 @@ const styles = StyleSheet.create({
     paddingTop: 0 - 6,
     paddingBottom: 24,
   },
+  contentWrapper: {
+    position: 'relative',
+  },
+  roundedCornerOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 40,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    zIndex: 1,
+  },
   contentContainer: {
     paddingBottom: 24,
     paddingHorizontal: 20,
     paddingTop: 24,
     gap: 30,
-    marginTop: -16,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
+    minHeight: 1000, // Ensure content extends far enough
     // backgroundColor set dynamically
   },
   actionGridContainer: {
