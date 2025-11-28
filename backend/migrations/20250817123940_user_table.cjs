@@ -7,7 +7,8 @@ exports.up = async function (knex) {
   await knex.schema.createTable("user_role", (table) => {
     table.increments("id").primary();
     table.string("role_name", 20).notNullable();
-    table.text("description").nullable();
+    table.text("role_description").nullable();
+    table.string("role_for").nullable(); // id of business that created the role
     table.timestamp("created_at").defaultTo(knex.fn.now());
   });
 

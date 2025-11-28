@@ -29,8 +29,12 @@ const ReviewCard: React.FC<ReviewCardProps> = ({ review, onSaveReply, onDeleteRe
   const [editingReply, setEditingReply] = React.useState(false);
   const [draftReply, setDraftReply] = React.useState(review.reply?.text || '');
 
-  const truncated = review.text.length > 240 && !expanded;
-  const displayText = truncated ? review.text.slice(0,240) + '…' : review.text;
+  // Guard against undefined text/images coming from API
+  const safeText = review.text ?? '';
+  const images = review.images ?? [];
+
+  const truncated = safeText.length > 240 && !expanded;
+  const displayText = truncated ? safeText.slice(0,240) + '…' : safeText;
 
   const handleSave = () => {
     if (draftReply.trim()) {
@@ -66,7 +70,7 @@ const ReviewCard: React.FC<ReviewCardProps> = ({ review, onSaveReply, onDeleteRe
             )}
           </Typography>
 
-          {review.images && review.images.length > 0 && (
+          {images.length > 0 && (
             <Box
               sx={{
                 mt: 1.5,
@@ -75,7 +79,7 @@ const ReviewCard: React.FC<ReviewCardProps> = ({ review, onSaveReply, onDeleteRe
                 gap: 1,
               }}
             >
-              {review.images.map((img, idx) => (
+              {images.map((img, idx) => (
                 <Box
                   key={idx}
                   sx={{

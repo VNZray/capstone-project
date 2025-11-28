@@ -25,46 +25,44 @@ const NavCard: React.FC<NavCardProps> = ({
       hoverEffect="lift"
       cursor="pointer"
       onClick={onClick}
-      padding="1.25rem"
+      padding="1rem"
       elevation={2}
       radius="12px"
-      hoverDuration={200}
-      background={active ? colors.primary : colors.white}
+      hoverDuration={150}
+      background={colors.white}
+      style={{
+        border: active ? `1px solid ${colors.primary}` : `1px solid #E5E7EB`,
+      }}
     >
       <div
         style={{
           display: "flex",
-          flexDirection: "row",
+          flexDirection: "column",
           alignItems: "center",
-          justifyContent: "space-between",
+          justifyContent: "center",
+          gap: 10,
         }}
       >
-        <div>
-          {active ? (
-            <div>
-              <Typography level="body-md" sx={{ color: colors.white }}>
-                {label}
-              </Typography>
-              <Typography level="h4" sx={{ color: colors.white }}>
-                {typeof count === "number" ? count : "-"}
-              </Typography>
-            </div>
-          ) : (
-            <div>
-              <Typography level="body-md" sx={{ color: colors.black }}>
-                {label}
-              </Typography>
-              <Typography level="h4" sx={{ color: colors.black }}>
-                {typeof count === "number" ? count : "-"}
-              </Typography>
-            </div>
-          )}
+        <div
+          style={{
+            width: 44,
+            height: 44,
+            borderRadius: 12,
+            background: active ? colors.primary : "#0A1B4720",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            color: active ? colors.white : colors.primary,
+          }}
+        >
+          {icon}
         </div>
-        {active ? (
-          <div style={{ color: colors.white }}>{icon}</div>
-        ) : (
-          <div style={{ color: colors.black }}>{icon}</div>
-        )}
+        <Typography level="h4" sx={{ color: colors.black, lineHeight: 1 }}>
+          {typeof count === "number" ? count : "-"}
+        </Typography>
+        <Typography level="body-sm" sx={{ color: colors.black, opacity: 0.9 }}>
+          {label}
+        </Typography>
       </div>
     </Container>
   );

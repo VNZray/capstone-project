@@ -1,4 +1,4 @@
-import { ShopColors } from '@/constants/ShopColors';
+import { ShopColors } from '@/constants/color';
 import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
 import {

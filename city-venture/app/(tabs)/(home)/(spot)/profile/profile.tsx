@@ -5,8 +5,7 @@ import Tabs from '@/components/Tabs';
 import { ThemedText } from '@/components/themed-text';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import Container from '@/components/Container';
-import { useColorScheme } from '@/hooks/use-color-scheme';
-import { background } from '@/constants/color';
+import { Colors } from '@/constants/color';
 import { useTouristSpot } from '@/context/TouristSpotContext';
 import type { Tab } from '@/types/Tab';
 import Details from './details';
@@ -19,8 +18,8 @@ const TouristSpotProfile = () => {
   const { selectedSpot, addressDetails } = useTouristSpot();
   const averageRating = 0;
   const [activeTab, setActiveTab] = useState('details');
-  const colorScheme = useColorScheme();
-  const bg = colorScheme === 'dark' ? background.dark : background.light;
+  const colors = Colors.light;
+  const bg = colors.background;
 
   useEffect(() => {
     if (selectedSpot?.name && selectedSpot?.id) {
@@ -58,7 +57,11 @@ const TouristSpotProfile = () => {
         ListHeaderComponent={
           <>
             <Image
-              source={{ uri: primaryImage?.file_url || 'https://via.placeholder.com/400x300' }}
+              source={{
+                uri:
+                  primaryImage?.file_url ||
+                  'https://via.placeholder.com/400x300',
+              }}
               style={styles.image}
               resizeMode="cover"
             />
@@ -76,14 +79,21 @@ const TouristSpotProfile = () => {
                   <ThemedText type="body-small">
                     {[
                       addressDetails?.barangay || selectedSpot?.barangay,
-                      addressDetails?.municipality || selectedSpot?.municipality,
+                      addressDetails?.municipality ||
+                        selectedSpot?.municipality,
                       addressDetails?.province || selectedSpot?.province,
-                    ].filter(Boolean).join(', ')}
+                    ]
+                      .filter(Boolean)
+                      .join(', ')}
                   </ThemedText>
                 </View>
                 <View style={{ alignItems: 'flex-end' }}>
                   <ThemedText type="body-small">
-                    <MaterialCommunityIcons name="star" size={20} color="#FFB007" />
+                    <MaterialCommunityIcons
+                      name="star"
+                      size={20}
+                      color={colors.accent}
+                    />
                     {averageRating.toFixed(1)}
                   </ThemedText>
                 </View>
@@ -97,7 +107,6 @@ const TouristSpotProfile = () => {
           </>
         }
       />
-      
     </View>
   );
 };

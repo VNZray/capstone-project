@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import "./styles/LoginStyle.css";
 import { useAuth } from "@/src/context/AuthContext"; // adjust path if needed
+import { useBusiness } from "@/src/context/BusinessContext"; // Import Business Context
 import PageContainer from "@/src/components/PageContainer";
 import LoginForm from "./components/LoginForm";
 import { Divider } from "@mui/joy";
@@ -14,6 +15,7 @@ const Login: React.FC = () => {
   const [loginError, setLoginError] = useState("");
   const navigate = useNavigate();
   const { login, logout } = useAuth(); // from AuthProvider
+  const { setBusinessId } = useBusiness(); // from BusinessProvider
   const [rememberMe, setRememberMe] = useState(false);
   const [loading, setLoading] = useState(false);
   const [showLoadingScreen, setShowLoadingScreen] = useState(false);
@@ -50,7 +52,10 @@ const Login: React.FC = () => {
       const userRole = loggedInUser.role_name || "";
 
       if (staffRoles.includes(userRole)) {
-        // Staff members go directly to business dashboard
+        // Staff members: Set their assigned business_id and go to dashboard
+        if (loggedInUser.business_id) {
+          setBusinessId(loggedInUser.business_id);
+        }
         navigate("/business/dashboard");
       } else if (userRole === tourist) {
         // Tourist to landing page
@@ -136,7 +141,7 @@ const Login: React.FC = () => {
             onRememberMeChange={setRememberMe}
             onLogin={handleLogin}
             error={loginError}
-            forgotPasswordLink="/TouristApp/(screens)/ForgotPassword"
+            forgotPasswordLink="/forget-password"
             signUpLink="/business-registration"
             size="large"
             title="Sign In"

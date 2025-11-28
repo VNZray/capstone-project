@@ -158,7 +158,12 @@ export const calculateKPIStats = (
 ): KPIStats => {
   const { rooms, bookings } = data;
 
+  console.log("📊 calculateKPIStats - Total bookings:", bookings.length);
+  console.log("📊 calculateKPIStats - Filter:", filter);
+
   const filteredBookings = filterByDatePeriod(bookings, filter, "check_in_date");
+  console.log("📊 calculateKPIStats - Filtered bookings:", filteredBookings.length);
+  
   const previousFilter = getPreviousPeriodFilter(filter);
   const previousBookings = filterByDatePeriod(bookings, previousFilter, "check_in_date");
 
@@ -337,42 +342,39 @@ export const calculateBookingStatusStats = (
   bookings: Booking[],
   filter: FilterPeriod
 ): BookingStatusStats => {
+  console.log("📊 calculateBookingStatusStats - Total bookings:", bookings.length);
   const filteredBookings = filterByDatePeriod(bookings, filter, "check_in_date");
+  console.log("📊 calculateBookingStatusStats - Filtered bookings:", filteredBookings.length);
 
-  return {
+  const stats = {
     reserved: filteredBookings.filter((b) => b.booking_status === "Reserved").length,
     checkedIn: filteredBookings.filter((b) => b.booking_status === "Checked-In").length,
     checkedOut: filteredBookings.filter((b) => b.booking_status === "Checked-Out")
       .length,
     canceled: filteredBookings.filter((b) => b.booking_status === "Canceled").length,
   };
+  
+  console.log("📊 calculateBookingStatusStats - Stats:", stats);
+  return stats;
 };
 
 // ==================== Recent Bookings ====================
 
 export const getRecentBookings = (
   bookings: Booking[],
-  rooms: Room[]
+  rooms: Room[],
+  limit: number = 10
 ): RecentBooking[] => {
-  const now = new Date();
-  const startOfWeek = new Date(now);
-  startOfWeek.setDate(now.getDate() - now.getDay());
-  startOfWeek.setHours(0, 0, 0, 0);
+  console.log("📋 getRecentBookings - Input bookings:", bookings.length);
+  console.log("📋 getRecentBookings - Input rooms:", rooms.length);
 
-  const endOfWeek = new Date(startOfWeek);
-  endOfWeek.setDate(startOfWeek.getDate() + 6);
-  endOfWeek.setHours(23, 59, 59, 999);
-
-  return bookings
-    .filter((booking) => {
-      const bookingDate = new Date(booking.created_at || booking.check_in_date || "");
-      return bookingDate >= startOfWeek && bookingDate <= endOfWeek;
-    })
+  const recentBookings = bookings
     .sort(
       (a, b) =>
-        new Date(b.created_at || "").getTime() -
-        new Date(a.created_at || "").getTime()
+        new Date(b.created_at || b.check_in_date || "").getTime() -
+        new Date(a.created_at || a.check_in_date || "").getTime()
     )
+    .slice(0, limit)
     .map((booking) => {
       const room = rooms.find((r) => r.id === booking.room_id);
       return {
@@ -388,6 +390,9 @@ export const getRecentBookings = (
         createdAt: booking.created_at ? String(booking.created_at) : undefined,
       };
     });
+
+  console.log("📋 getRecentBookings - Output:", recentBookings.length);
+  return recentBookings;
 };
 
 // ==================== Recent Payments ====================

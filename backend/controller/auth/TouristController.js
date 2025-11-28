@@ -26,13 +26,13 @@ const buildTouristParams = (id, body) => [
 ];
 
 // Get all tourists
-export async function getAllTourists(req, res) {
-	try {
-		const [rows] = await db.query("CALL GetAllStaff()");
-		return res.json(rows[0]);
-	} catch (error) {
-		return handleDbError(error, res);
-	}
+export async function getAllTourists(request, response) {
+  try {
+    const [data] = await db.query("CALL GetAllTourists()");
+    response.json(data[0]);
+  } catch (error) {
+    return handleDbError(error, response);
+  }
 }
 
 

@@ -54,7 +54,6 @@ const EditPricingModal: React.FC<EditDescriptionModalProps> = ({
       onClose={onClose}
       title="Edit Pricing"
       description="Set the minimum and maximum price for your offering"
-      maxWidth={600}
       actions={[
         { label: 'Cancel', onClick: onClose },
         { label: 'Save Changes', onClick: handleSave, variant: 'primary' },

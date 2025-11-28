@@ -26,7 +26,7 @@ const TourismStaffManagement: React.FC = () => {
   const [staff, setStaff] = useState<TourismStaff[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [display, setDisplay] = useState<DisplayMode>('cards');
+  const [display, setDisplay] = useState<DisplayMode>('table');
   const [roles, setRoles] = useState<UserRoles[]>([]);
 
   // Modals state
@@ -334,31 +334,18 @@ const TourismStaffManagement: React.FC = () => {
             title="No Results Found"
             message={`No staff members match your search criteria. Try adjusting your filters.`}
           />
+        ) : display === 'table' ? (
+          <TourismStaffTable
+            staff={filtered}
+            onEdit={handleEdit}
+            onResetPassword={handleResetPassword}
+          />
         ) : (
-          <div
-            style={{
-              display: display === 'cards' ? "grid" : "block",
-              gridTemplateColumns: display === 'cards' ? "repeat(auto-fill,minmax(280px,1fr))" : undefined,
-              gap: display === 'cards' ? 20 : undefined,
-            }}
-          >
-            {display === 'table' ? (
-              <TourismStaffTable
-                staff={filtered}
-                onEdit={handleEdit}
-                onResetPassword={handleResetPassword}
-              />
-            ) : (
-              filtered.map((s) => (
-                <TourismStaffCards
-                  key={s.tourism_id}
-                  staff={[s]}
-                  onEdit={handleEdit}
-                  onResetPassword={handleResetPassword}
-                />
-              ))
-            )}
-          </div>
+          <TourismStaffCards
+            staff={filtered}
+            onEdit={handleEdit}
+            onResetPassword={handleResetPassword}
+          />
         )}
       </Container>
 

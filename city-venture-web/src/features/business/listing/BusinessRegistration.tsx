@@ -22,11 +22,10 @@ import type {
   BusinessHours,
   Registration,
 } from "@/src/types/Business";
-import axios from "axios";
+import apiClient from "@/src/services/apiClient";
 import type { Permit } from "@/src/types/Permit";
 import type { BusinessAmenity } from "@/src/types/Amenity";
 import type { Address } from "@/src/types/Address";
-import api from "@/src/services/api";
 // steps definition
 const steps = [
   "Basic",
@@ -39,7 +38,6 @@ const steps = [
 ];
 
 interface CommonProps {
-  api: string;
   data: Business;
   addressData: Address;
   setAddressData: React.Dispatch<React.SetStateAction<Address>>;
@@ -197,7 +195,6 @@ const BusinessRegistration: React.FC = () => {
   if (!formData) return null;
 
   const commonProps = {
-    api,
     data: formData,
     addressData,
     setAddressData,
@@ -243,7 +240,7 @@ const BusinessRegistration: React.FC = () => {
       }
 
       // 1️⃣ Insert Business
-      const res = await axios.post(`${api}/business`, {
+      const res = await apiClient.post(`/business`, {
         ...formData,
         barangay_id: addressData.barangay_id,
       });
@@ -257,7 +254,7 @@ const BusinessRegistration: React.FC = () => {
           externalBookings.map((site) => {
             if (!site.name || !site.link) return null; // skip empty
 
-            return axios.post(`${api}/external-booking`, {
+            return apiClient.post(`/external-booking`, {
               business_id: businessId,
               name: site.name,
               link: site.link,
@@ -269,7 +266,7 @@ const BusinessRegistration: React.FC = () => {
       if (businessHours.length > 0) {
         await Promise.all(
           businessHours.map((hours) =>
-            axios.post(`${api}/business-hours`, {
+            apiClient.post(`/business-hours`, {
               business_id: businessId,
               day_of_week: hours.day_of_week,
               open_time: hours.open_time,
@@ -283,7 +280,7 @@ const BusinessRegistration: React.FC = () => {
       if (businessAmenities.length > 0) {
         await Promise.all(
           businessAmenities.map((amenity) =>
-            axios.post(`${api}/business-amenities`, {
+            apiClient.post(`/business-amenities`, {
               business_id: businessId,
               amenity_id: amenity.amenity_id,
             })
@@ -294,7 +291,7 @@ const BusinessRegistration: React.FC = () => {
       if (permitData.length > 0) {
         await Promise.all(
           permitData.map((permit) =>
-            axios.post(`${api}/permit`, {
+            apiClient.post(`/permit`, {
               business_id: businessId,
               permit_type: permit.permit_type,
               file_url: permit.file_url,
@@ -307,7 +304,7 @@ const BusinessRegistration: React.FC = () => {
       }
 
       // 1️⃣ Insert Business Registration
-      const registration = await axios.post(`${api}/registration`, {
+      const registration = await apiClient.post(`/registration`, {
         ...registrationData,
         business_id: businessId,
       });

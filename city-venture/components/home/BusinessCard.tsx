@@ -52,7 +52,6 @@ const styles = StyleSheet.create({
     width: 200,
     borderRadius: 18,
     padding: 14,
-    marginRight: 16,
     overflow: 'hidden',
   },
   logoWrapper: {

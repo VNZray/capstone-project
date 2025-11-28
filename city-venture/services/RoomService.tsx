@@ -1,7 +1,7 @@
-import api from '@/services/api';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import axios from 'axios';
+import apiClient from '@/services/apiClient';
 import type { Room } from '../types/Business';
+
 
 /** Get stored Room ID */
 export const getStoredRoomId = async (): Promise<string | null> => {
@@ -20,7 +20,7 @@ export const clearStoredRoomId = async () => {
 
 /** Fetch Room Details from API */
 export const fetchRoomDetails = async (room_id: string): Promise<Room> => {
-  const { data } = await axios.get<Room>(`${api}/room/profile/${room_id}`);
+  const { data } = await apiClient.get<Room>(`/room/profile/${room_id}`);
   return data;
 };
 
@@ -30,7 +30,7 @@ export async function fetchRoomsByBusinessId(
   opts?: { noCache?: boolean }
 ): Promise<Room[]> {
   const cacheSuffix = opts?.noCache ? `?ts=${Date.now()}` : '';
-  const { data } = await axios.get(`${api}/room/${businessId}${cacheSuffix}` , {
+  const { data } = await apiClient.get(`/room/${businessId}${cacheSuffix}` , {
     headers: opts?.noCache
       ? {
           'Cache-Control': 'no-cache',
@@ -41,6 +41,3 @@ export async function fetchRoomsByBusinessId(
   });
   return Array.isArray(data) ? data : [data];
 }
-
-export { api };
-

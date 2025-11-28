@@ -29,6 +29,11 @@ export const getPendingTouristSpots = async (req, res) => {
     const rows = data[0] || [];
     const cats = data[1] || [];
     const scheds = data[2] || [];
+    const primaryImages = data[3] || [];
+    const primaryImagesMap = new Map();
+    for (const img of primaryImages) {
+      primaryImagesMap.set(img.tourist_spot_id, img.file_url);
+    }
     const catMap = new Map();
     for (const c of cats) {
       if (!catMap.has(c.tourist_spot_id)) catMap.set(c.tourist_spot_id, []);
@@ -47,6 +52,7 @@ export const getPendingTouristSpots = async (req, res) => {
     for (const row of rows) {
       row.categories = catMap.get(row.id) || [];
       row.schedules = schedMap.get(row.id) || [];
+      row.primary_image = primaryImagesMap.get(row.id) || null;
     }
     res.json({ success: true, data: rows, message: "Pending tourist spots retrieved successfully" });
   } catch (error) {
@@ -121,6 +127,82 @@ export const rejectEditRequest = async (req, res) => {
     res.json({ success: true, message: "Edit request rejected successfully", data: updated });
   } catch (error) {
     console.error("Error rejecting edit request:", error);
+    return handleDbError(error, res);
+  }
+};
+
+// ==================== BUSINESS APPROVAL WORKFLOW ====================
+
+// Get all pending businesses with type & category names for approval dashboard
+export const getPendingBusinesses = async (req, res) => {
+  try {
+    const [data] = await db.query("CALL GetPendingBusinesses()");
+    const raw = data[0] || [];
+    const rows = raw.map((r) => {
+      const row = { ...r };
+      // Normalize names for frontend
+      row.name = row.name || row.business_name || row.businessName || null;
+      row.business_type_name = row.business_type_name || row.type || row.business_type || null;
+      row.business_category_name = row.business_category_name || row.category || row.business_category || null;
+      return row;
+    });
+    res.json({ success: true, data: rows, message: 'Pending businesses retrieved successfully' });
+  } catch (error) {
+    console.error('Error fetching pending businesses:', error);
+    return handleDbError(error, res);
+  }
+};
+
+// Approve a business (set status from Pending -> Active)
+export const approveBusiness = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const [result] = await db.query("CALL ApproveBusiness(?)", [id]);
+    const row = result?.[0];
+    const successFlag = row?.success === 1;
+    if (!successFlag) {
+      // Idempotent fallback: if already Active, return success
+      try {
+        const [checkSets] = await db.query("CALL GetBusinessById(?)", [id]);
+        const businessRow = checkSets?.[0]?.[0];
+        if (businessRow && String(businessRow.status).toLowerCase() === 'active') {
+          return res.json({ success: true, message: 'Business already active' });
+        }
+      } catch (e) {
+        // ignore and fall through
+      }
+      return res.status(400).json({ success: false, message: 'Business not found or not pending' });
+    }
+    res.json({ success: true, message: 'Business approved successfully' });
+  } catch (error) {
+    console.error('Error approving business:', error);
+    return handleDbError(error, res);
+  }
+};
+
+// Reject a business (set status from Pending -> Inactive)
+export const rejectBusiness = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const [result] = await db.query("CALL RejectBusiness(?)", [id]);
+    const row = result?.[0];
+    const successFlag = row?.success === 1;
+    if (!successFlag) {
+      // Idempotent fallback: if already Inactive, return success
+      try {
+        const [checkSets] = await db.query("CALL GetBusinessById(?)", [id]);
+        const businessRow = checkSets?.[0]?.[0];
+        if (businessRow && String(businessRow.status).toLowerCase() === 'inactive') {
+          return res.json({ success: true, message: 'Business already inactive' });
+        }
+      } catch (e) {
+        // ignore and fall through
+      }
+      return res.status(400).json({ success: false, message: 'Business not found or not pending' });
+    }
+    res.json({ success: true, message: 'Business rejected successfully' });
+  } catch (error) {
+    console.error('Error rejecting business:', error);
     return handleDbError(error, res);
   }
 };

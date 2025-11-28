@@ -33,6 +33,7 @@ interface CartProviderProps {
 }
 
 export const CartProvider = ({ children }: CartProviderProps) => {
+  console.log('[CartContext] Initializing');
   const [items, setItems] = useState<CartItem[]>([]);
   const [businessId, setBusinessId] = useState<string | null>(null);
   const [businessName, setBusinessName] = useState<string | null>(null);

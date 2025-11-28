@@ -1,5 +1,4 @@
-import axios from 'axios';
-import api from '@/src/services/api';
+import apiClient from './apiClient';
 import type {
   Promotion,
   CreatePromotionPayload,
@@ -35,7 +34,7 @@ function normalizeArrayResponse<T>(payload: unknown): T[] {
 /** Update expired promotions in database */
 export const updateExpiredPromotions = async (): Promise<void> => {
   try {
-    await axios.post(`${api}/promotions/maintenance/update-expired`);
+    await apiClient.post(`/promotions/maintenance/update-expired`);
   } catch (error) {
     console.warn("Failed to update expired promotions:", error);
   }
@@ -44,14 +43,14 @@ export const updateExpiredPromotions = async (): Promise<void> => {
 /** Get all promotions */
 export const fetchAllPromotions = async (): Promise<Promotion[]> => {
   await updateExpiredPromotions();
-  const { data } = await axios.get<Promotion[]>(`${api}/promotions`);
+  const { data } = await apiClient.get<Promotion[]>(`/promotions`);
   return normalizeArrayResponse<Promotion>(data);
 };
 
 /** Get all active promotions */
 export const fetchAllActivePromotions = async (): Promise<Promotion[]> => {
   await updateExpiredPromotions();
-  const { data } = await axios.get<Promotion[]>(`${api}/promotions/active`);
+  const { data } = await apiClient.get<Promotion[]>(`/promotions/active`);
   return normalizeArrayResponse<Promotion>(data);
 };
 
@@ -60,8 +59,8 @@ export const fetchPromotionsByBusinessId = async (
   businessId: string
 ): Promise<Promotion[]> => {
   await updateExpiredPromotions();
-  const { data } = await axios.get<Promotion[]>(
-    `${api}/promotions/business/${businessId}`
+  const { data } = await apiClient.get<Promotion[]>(
+    `/promotions/business/${businessId}`
   );
   return normalizeArrayResponse<Promotion>(data);
 };
@@ -71,15 +70,15 @@ export const fetchActivePromotionsByBusinessId = async (
   businessId: string
 ): Promise<Promotion[]> => {
   await updateExpiredPromotions();
-  const { data } = await axios.get<Promotion[]>(
-    `${api}/promotions/business/${businessId}/active`
+  const { data } = await apiClient.get<Promotion[]>(
+    `/promotions/business/${businessId}/active`
   );
   return normalizeArrayResponse<Promotion>(data);
 };
 
 /** Get promotion by ID */
 export const fetchPromotionById = async (promotionId: string): Promise<Promotion> => {
-  const { data } = await axios.get<Promotion | Promotion[]>(`${api}/promotions/${promotionId}`);
+  const { data } = await apiClient.get<Promotion | Promotion[]>(`/promotions/${promotionId}`);
   
   // Handle if data is returned as an array
   if (Array.isArray(data)) {
@@ -93,8 +92,8 @@ export const fetchPromotionById = async (promotionId: string): Promise<Promotion
 export const createPromotion = async (
   payload: CreatePromotionPayload
 ): Promise<Promotion> => {
-  const { data } = await axios.post<{ message: string; data: Promotion }>(
-    `${api}/promotions`,
+  const { data } = await apiClient.post<{ message: string; data: Promotion }>(
+    `/promotions`,
     payload
   );
   return data.data;
@@ -105,8 +104,8 @@ export const updatePromotion = async (
   promotionId: string,
   payload: UpdatePromotionPayload
 ): Promise<Promotion> => {
-  const { data } = await axios.put<{ message: string; data: Promotion }>(
-    `${api}/promotions/${promotionId}`,
+  const { data } = await apiClient.put<{ message: string; data: Promotion }>(
+    `/promotions/${promotionId}`,
     payload
   );
   return data.data;
@@ -114,5 +113,5 @@ export const updatePromotion = async (
 
 /** Delete promotion */
 export const deletePromotion = async (promotionId: string): Promise<void> => {
-  await axios.delete(`${api}/promotions/${promotionId}`);
+  await apiClient.delete(`/promotions/${promotionId}`);
 };

@@ -1,7 +1,4 @@
-// See spec.md §4 - Tourist flow: Checkout with COP
-// See spec.md §7 - POST /api/orders endpoint
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -11,10 +8,14 @@ import {
   TextInput,
   Alert,
   ActivityIndicator,
+  Platform,
+  KeyboardAvoidingView,
+  LayoutAnimation,
+  UIManager,
 } from 'react-native';
 import { Stack, router } from 'expo-router';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import { colors } from '@/constants/color';
+import { Colors } from '@/constants/color';
 import { useTypography } from '@/constants/typography';
 import PageContainer from '@/components/PageContainer';
 import { useCart } from '@/context/CartContext';
@@ -25,29 +26,36 @@ import type { CreateOrderPayload } from '@/types/Order';
 import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 
+// Enable LayoutAnimation for Android
+if (
+  Platform.OS === 'android' &&
+  UIManager.setLayoutAnimationEnabledExperimental
+) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
+
 const CheckoutScreen = () => {
-  const scheme = useColorScheme();
-  const isDark = scheme === 'dark';
+  const colorScheme = useColorScheme();
+  const theme = Colors[colorScheme ?? 'light'];
+  const isDark = colorScheme === 'dark';
   const type = useTypography();
-  const { h3, h4, body, bodySmall } = type;
+
   const { items, businessId, clearCart, getSubtotal } = useCart();
   const { user } = useAuth();
 
-  const [pickupDate, setPickupDate] = useState(new Date(Date.now() + 60 * 60 * 1000)); // 1 hour from now
+  const [pickupDate, setPickupDate] = useState(
+    new Date(Date.now() + 60 * 60 * 1000)
+  ); // 1 hour from now
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [specialInstructions, setSpecialInstructions] = useState('');
-  const [paymentMethod, setPaymentMethod] = useState<'cash_on_pickup' | 'paymongo'>('cash_on_pickup');
-  const [paymentMethodType, setPaymentMethodType] = useState<'gcash' | 'card' | 'paymaya' | 'grab_pay'>('gcash');
+  const [paymentMethod, setPaymentMethod] = useState<
+    'cash_on_pickup' | 'paymongo'
+  >('cash_on_pickup');
+  const [paymentMethodType, setPaymentMethodType] = useState<
+    'gcash' | 'card' | 'paymaya' | 'grab_pay'
+  >('gcash');
   const [loading, setLoading] = useState(false);
-
-  const palette = {
-    bg: isDark ? '#0D1B2A' : '#F8F9FA',
-    card: isDark ? '#1C2833' : '#FFFFFF',
-    text: isDark ? '#ECEDEE' : '#0D1B2A',
-    subText: isDark ? '#9BA1A6' : '#6B7280',
-    border: isDark ? '#2A2F36' : '#E5E8EC',
-  };
 
   const subtotal = getSubtotal();
   const taxAmount = 0; // Per spec.md - currently taxAmount=0
@@ -66,6 +74,11 @@ const CheckoutScreen = () => {
     if (selectedDate) {
       setPickupDate(selectedDate);
     }
+  };
+
+  const togglePaymentMethod = (method: 'cash_on_pickup' | 'paymongo') => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    setPaymentMethod(method);
   };
 
   const handlePlaceOrder = async () => {
@@ -87,32 +100,36 @@ const CheckoutScreen = () => {
     // Validate pickup datetime is in the future
     const now = new Date();
     const maxPickupTime = new Date(now.getTime() + 3 * 60 * 60 * 1000); // 3 hours from now
-    
+
     if (pickupDate <= now) {
       Alert.alert('Invalid Date', 'Pickup time must be in the future');
       return;
     }
-    
+
     if (pickupDate > maxPickupTime) {
-      Alert.alert('Invalid Time', 'Pickup time cannot be more than 3 hours from now');
+      Alert.alert(
+        'Invalid Time',
+        'Pickup time cannot be more than 3 hours from now'
+      );
       return;
     }
-    
+
     // Validate pickup date is within 2 days
     const maxPickupDate = new Date(now.getTime() + 2 * 24 * 60 * 60 * 1000);
     if (pickupDate > maxPickupDate) {
-      Alert.alert('Invalid Date', 'Pickup date cannot be more than 2 days from today');
+      Alert.alert(
+        'Invalid Date',
+        'Pickup date cannot be more than 2 days from today'
+      );
       return;
     }
 
     try {
       setLoading(true);
 
-      // Build order payload per spec.md §7 Create Order Request
-      // Note: user_id is NOT included - backend extracts it from JWT token (req.user.id)
       const orderPayload: CreateOrderPayload = {
         business_id: businessId,
-        user_id: user.id, // Still needed for type compatibility, backend will use req.user.id
+        user_id: user.id,
         items: items.map((item) => ({
           product_id: item.product_id,
           quantity: item.quantity,
@@ -122,35 +139,27 @@ const CheckoutScreen = () => {
         pickup_datetime: pickupDate.toISOString(),
         special_instructions: specialInstructions || undefined,
         payment_method: paymentMethod,
-        payment_method_type: paymentMethod === 'paymongo' ? paymentMethodType : undefined,
+        payment_method_type:
+          paymentMethod === 'paymongo' ? paymentMethodType : undefined,
       };
 
       console.log('[Checkout] Creating order:', orderPayload);
 
-      // Call backend to create order
       const orderResponse = await createOrder(orderPayload);
 
       console.log('[Checkout] Order created:', orderResponse);
 
-      // Clear cart after successful order
       clearCart();
 
       const checkoutUrl = orderResponse.checkout_url;
 
-      // Per spec.md §4 & §7: PayMongo flow - redirect to checkout immediately
       if (paymentMethod === 'paymongo') {
         if (checkoutUrl) {
           console.log('[Checkout] Opening PayMongo checkout:', checkoutUrl);
 
           try {
-            // Open PayMongo checkout - user will be redirected back via deep link
-            // Success: cityventure://orders/{orderId}/payment-success
-            // Cancel: cityventure://orders/{orderId}/payment-cancel
             await openPayMongoCheckout(checkoutUrl);
-            
-            // Navigate to payment-cancel screen as default
-            // This handles the case where user presses back without completing payment
-            // If payment succeeds, the deep link will override this and go to payment-success
+
             router.replace({
               pathname: '/(screens)/payment-cancel',
               params: {
@@ -159,7 +168,10 @@ const CheckoutScreen = () => {
             } as never);
             return;
           } catch (checkoutError: any) {
-            console.error('[Checkout] Failed to open PayMongo checkout:', checkoutError);
+            console.error(
+              '[Checkout] Failed to open PayMongo checkout:',
+              checkoutError
+            );
             Alert.alert(
               'Payment Error',
               'Failed to open payment page. You can retry payment from your orders.',
@@ -179,7 +191,6 @@ const CheckoutScreen = () => {
             return;
           }
         } else {
-          // No checkout URL - allow user to retry via initiatePayment
           Alert.alert(
             'Payment Warning',
             'Payment checkout not ready. You can complete payment from the order confirmation screen.',
@@ -205,7 +216,6 @@ const CheckoutScreen = () => {
         }
       }
 
-      // Cash on Pickup flow or PayMongo fallback without checkout URL
       router.replace({
         pathname: '/(screens)/order-confirmation',
         params: {
@@ -218,58 +228,60 @@ const CheckoutScreen = () => {
       } as never);
     } catch (error: any) {
       console.error('[Checkout] Order creation failed:', error);
-      
+
       let errorTitle = 'Order Failed';
       let errorMessage = 'Failed to create order. Please try again.';
       let showRetry = true;
-      
-      // Parse specific error types for better user guidance
+
       if (error.response?.data?.message) {
         const msg = error.response.data.message;
         errorMessage = msg;
-        
-        // Stock validation errors
-        if (msg.includes('out of stock') || msg.includes('insufficient stock')) {
+
+        if (
+          msg.includes('out of stock') ||
+          msg.includes('insufficient stock')
+        ) {
           errorTitle = 'Stock Issue';
-          errorMessage = msg + '\n\nSome items are out of stock. Please review your cart and try again.';
-          showRetry = false; // User needs to fix cart first
-        }
-        
-        // Product unavailable errors
-        if (msg.includes('unavailable') || msg.includes('not available')) {
-          errorTitle = 'Product Unavailable';
-          errorMessage = msg + '\n\nSome products are temporarily unavailable. Please remove them from your cart.';
+          errorMessage =
+            msg +
+            '\n\nSome items are out of stock. Please review your cart and try again.';
           showRetry = false;
         }
-        
-        // Payment-related errors
+
+        if (msg.includes('unavailable') || msg.includes('not available')) {
+          errorTitle = 'Product Unavailable';
+          errorMessage =
+            msg +
+            '\n\nSome products are temporarily unavailable. Please remove them from your cart.';
+          showRetry = false;
+        }
+
         if (msg.includes('payment') && msg.includes('failed')) {
           errorTitle = 'Payment Error';
-          errorMessage = 'Payment processing failed. You can retry payment from the order details screen.';
+          errorMessage =
+            'Payment processing failed. You can retry payment from the order details screen.';
         }
-        
-        // Network or timeout errors
+
         if (error.code === 'ECONNABORTED' || msg.includes('timeout')) {
           errorTitle = 'Connection Timeout';
-          errorMessage = 'Request timed out. Please check your internet connection and try again.';
+          errorMessage =
+            'Request timed out. Please check your internet connection and try again.';
         }
       } else if (error.message) {
         errorMessage = error.message;
       }
 
-      Alert.alert(
-        errorTitle,
-        errorMessage,
-        [
-          { text: 'OK', style: 'cancel' },
-          ...(showRetry ? [
-            {
-              text: 'Retry',
-              onPress: () => handlePlaceOrder(),
-            }
-          ] : []),
-        ]
-      );
+      Alert.alert(errorTitle, errorMessage, [
+        { text: 'OK', style: 'cancel' },
+        ...(showRetry
+          ? [
+              {
+                text: 'Retry',
+                onPress: () => handlePlaceOrder(),
+              },
+            ]
+          : []),
+      ]);
     } finally {
       setLoading(false);
     }
@@ -280,300 +292,594 @@ const CheckoutScreen = () => {
       <Stack.Screen
         options={{
           title: 'Checkout',
-          headerStyle: { backgroundColor: palette.card },
-          headerTintColor: palette.text,
+          headerStyle: { backgroundColor: theme.background },
+          headerTintColor: theme.text,
+          headerShadowVisible: false,
         }}
       />
-      <PageContainer>
-        <ScrollView
-          style={[styles.container, { backgroundColor: palette.bg }]}
-          showsVerticalScrollIndicator={false}
-        >
-          {/* Order Items Summary */}
-          <View style={[styles.section, { backgroundColor: palette.card }]}>
-            <Text style={[{ fontSize: h4 }, { color: palette.text, marginBottom: 12 }]}>
-              Order Summary
-            </Text>
-            {items.map((item) => (
-              <View key={item.product_id} style={styles.itemRow}>
-                <Text style={[{ fontSize: body }, { color: palette.text, flex: 1 }]} numberOfLines={1}>
-                  {item.quantity}x {item.product_name}
-                </Text>
-                <Text style={[{ fontSize: body }, { color: palette.text }]}>
-                  ₱{(item.price * item.quantity).toFixed(2)}
-                </Text>
-              </View>
-            ))}
-          </View>
-
-          {/* Pickup DateTime */}
-          <View style={[styles.section, { backgroundColor: palette.card }]}>
-            <Text style={[{ fontSize: h4 }, { color: palette.text, marginBottom: 12 }]}>
-              Pickup Time
-            </Text>
-            <Pressable
-              style={[styles.dateButton, { borderColor: palette.border }]}
-              onPress={() => setShowDatePicker(true)}
-            >
-              <Ionicons name="calendar-outline" size={20} color={colors.primary} />
-              <Text style={[{ fontSize: body }, { color: palette.text, marginLeft: 12 }]}>
-                {pickupDate.toLocaleDateString()}
-              </Text>
-            </Pressable>
-
-            <Pressable
-              style={[styles.dateButton, { borderColor: palette.border }]}
-              onPress={() => setShowTimePicker(true)}
-            >
-              <Ionicons name="time-outline" size={20} color={colors.primary} />
-              <Text style={[{ fontSize: body }, { color: palette.text, marginLeft: 12 }]}>
-                {pickupDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-              </Text>
-            </Pressable>
-
-            {showDatePicker && (
-              <DateTimePicker
-                value={pickupDate}
-                mode="date"
-                display="default"
-                minimumDate={new Date()}
-                maximumDate={new Date(Date.now() + 2 * 24 * 60 * 60 * 1000)} // Today + 2 days
-                onChange={handleDateChange}
-              />
-            )}
-
-            {showTimePicker && (
-              <DateTimePicker
-                value={pickupDate}
-                mode="time"
-                display="default"
-                minimumDate={new Date()} // Can't pick time earlier than now
-                onChange={handleTimeChange}
-              />
-            )}
-          </View>
-
-          {/* Special Instructions */}
-          <View style={[styles.section, { backgroundColor: palette.card }]}>
-            <Text style={[{ fontSize: h4 }, { color: palette.text, marginBottom: 12 }]}>
-              Special Instructions (Optional)
-            </Text>
-            <TextInput
-              style={[
-                styles.textInput,
-                {
-                  backgroundColor: palette.bg,
-                  color: palette.text,
-                  borderColor: palette.border,
-                },
-              ]}
-              placeholder="e.g., leave at counter, call upon arrival"
-              placeholderTextColor={palette.subText}
-              value={specialInstructions}
-              onChangeText={setSpecialInstructions}
-              multiline
-              numberOfLines={3}
-            />
-          </View>
-
-          {/* Payment Method - COP only for Phase 1 */}
-          <View style={[styles.section, { backgroundColor: palette.card }]}>
-            <Text style={[{ fontSize: h4 }, { color: palette.text, marginBottom: 12 }]}>
-              Payment Method
-            </Text>
-            
-            <Pressable
-              style={[
-                styles.paymentOption,
-                {
-                  borderColor: paymentMethod === 'cash_on_pickup' ? colors.primary : palette.border,
-                  backgroundColor: paymentMethod === 'cash_on_pickup' ? `${colors.primary}10` : palette.bg,
-                },
-              ]}
-              onPress={() => setPaymentMethod('cash_on_pickup')}
-            >
-              <Ionicons
-                name={paymentMethod === 'cash_on_pickup' ? 'radio-button-on' : 'radio-button-off'}
-                size={24}
-                color={paymentMethod === 'cash_on_pickup' ? colors.primary : palette.subText}
-              />
-              <View style={{ marginLeft: 12, flex: 1 }}>
-                <Text style={[{ fontSize: h4 }, { color: palette.text }]}>
-                  Cash on Pickup
-                </Text>
-                <Text style={[{ fontSize: bodySmall }, { color: palette.subText }]}>
-                  Pay when you pick up your order
-                </Text>
-              </View>
-              <Ionicons name="cash-outline" size={24} color={colors.primary} />
-            </Pressable>
-
-            {/* PayMongo online payment option */}
-            <Pressable
-              style={[
-                styles.paymentOption,
-                {
-                  borderColor: paymentMethod === 'paymongo' ? colors.primary : palette.border,
-                  backgroundColor: paymentMethod === 'paymongo' ? `${colors.primary}10` : palette.bg,
-                },
-              ]}
-              onPress={() => setPaymentMethod('paymongo')}
-            >
-              <Ionicons 
-                name={paymentMethod === 'paymongo' ? 'radio-button-on' : 'radio-button-off'} 
-                size={24} 
-                color={paymentMethod === 'paymongo' ? colors.primary : palette.subText} 
-              />
-              <View style={{ marginLeft: 12, flex: 1 }}>
-                <Text style={[{ fontSize: h4 }, { color: palette.text }]}>
-                  Online Payment
-                </Text>
-                <Text style={[{ fontSize: bodySmall }, { color: palette.subText }]}>
-                  GCash, Card, PayMaya, GrabPay
-                </Text>
-              </View>
-              <Ionicons name="card-outline" size={24} color={colors.primary} />
-            </Pressable>
-
-            {/* Payment Method Type Selection - Only show when PayMongo is selected */}
-            {paymentMethod === 'paymongo' && (
-              <View style={{ marginTop: 12, paddingLeft: 12 }}>
-                <Text style={[{ fontSize: body }, { color: palette.subText, marginBottom: 8 }]}>
-                  Select Payment Method
-                </Text>
-                
-                {/* GCash */}
-                <Pressable
-                  style={[
-                    styles.paymentMethodType,
-                    {
-                      borderColor: paymentMethodType === 'gcash' ? colors.primary : palette.border,
-                      backgroundColor: paymentMethodType === 'gcash' ? `${colors.primary}05` : 'transparent',
-                    },
-                  ]}
-                  onPress={() => setPaymentMethodType('gcash')}
-                >
-                  <Ionicons
-                    name={paymentMethodType === 'gcash' ? 'checkmark-circle' : 'ellipse-outline'}
-                    size={20}
-                    color={paymentMethodType === 'gcash' ? colors.primary : palette.subText}
-                  />
-                  <Text style={[{ fontSize: body }, { color: palette.text, marginLeft: 8 }]}>
-                    GCash
-                  </Text>
-                </Pressable>
-
-                {/* Card */}
-                <Pressable
-                  style={[
-                    styles.paymentMethodType,
-                    {
-                      borderColor: paymentMethodType === 'card' ? colors.primary : palette.border,
-                      backgroundColor: paymentMethodType === 'card' ? `${colors.primary}05` : 'transparent',
-                    },
-                  ]}
-                  onPress={() => setPaymentMethodType('card')}
-                >
-                  <Ionicons
-                    name={paymentMethodType === 'card' ? 'checkmark-circle' : 'ellipse-outline'}
-                    size={20}
-                    color={paymentMethodType === 'card' ? colors.primary : palette.subText}
-                  />
-                  <Text style={[{ fontSize: body }, { color: palette.text, marginLeft: 8 }]}>
-                    Credit/Debit Card
-                  </Text>
-                </Pressable>
-
-                {/* PayMaya */}
-                <Pressable
-                  style={[
-                    styles.paymentMethodType,
-                    {
-                      borderColor: paymentMethodType === 'paymaya' ? colors.primary : palette.border,
-                      backgroundColor: paymentMethodType === 'paymaya' ? `${colors.primary}05` : 'transparent',
-                    },
-                  ]}
-                  onPress={() => setPaymentMethodType('paymaya')}
-                >
-                  <Ionicons
-                    name={paymentMethodType === 'paymaya' ? 'checkmark-circle' : 'ellipse-outline'}
-                    size={20}
-                    color={paymentMethodType === 'paymaya' ? colors.primary : palette.subText}
-                  />
-                  <Text style={[{ fontSize: body }, { color: palette.text, marginLeft: 8 }]}>
-                    PayMaya
-                  </Text>
-                </Pressable>
-
-                {/* GrabPay */}
-                <Pressable
-                  style={[
-                    styles.paymentMethodType,
-                    {
-                      borderColor: paymentMethodType === 'grab_pay' ? colors.primary : palette.border,
-                      backgroundColor: paymentMethodType === 'grab_pay' ? `${colors.primary}05` : 'transparent',
-                    },
-                  ]}
-                  onPress={() => setPaymentMethodType('grab_pay')}
-                >
-                  <Ionicons
-                    name={paymentMethodType === 'grab_pay' ? 'checkmark-circle' : 'ellipse-outline'}
-                    size={20}
-                    color={paymentMethodType === 'grab_pay' ? colors.primary : palette.subText}
-                  />
-                  <Text style={[{ fontSize: body }, { color: palette.text, marginLeft: 8 }]}>
-                    GrabPay
-                  </Text>
-                </Pressable>
-              </View>
-            )}
-          </View>
-
-          {/* Total Summary */}
-          <View style={[styles.section, { backgroundColor: palette.card }]}>
-            <View style={styles.summaryRow}>
-              <Text style={[{ fontSize: body }, { color: palette.subText }]}>Subtotal</Text>
-              <Text style={[{ fontSize: body }, { color: palette.text }]}>₱{subtotal.toFixed(2)}</Text>
-            </View>
-            <View style={styles.summaryRow}>
-              <Text style={[{ fontSize: body }, { color: palette.subText }]}>Discount</Text>
-              <Text style={[{ fontSize: body }, { color: palette.text }]}>-₱{discountAmount.toFixed(2)}</Text>
-            </View>
-            <View style={styles.summaryRow}>
-              <Text style={[{ fontSize: body }, { color: palette.subText }]}>Tax</Text>
-              <Text style={[{ fontSize: body }, { color: palette.text }]}>₱{taxAmount.toFixed(2)}</Text>
-            </View>
-            <View style={[styles.divider, { backgroundColor: palette.border }]} />
-            <View style={styles.summaryRow}>
-              <Text style={[{ fontSize: h3 }, { color: palette.text }]}>Total</Text>
-              <Text style={[{ fontSize: h3 }, { color: colors.primary }]}>₱{total.toFixed(2)}</Text>
-            </View>
-          </View>
-
-          {/* Place Order Button */}
-          <Pressable
-            style={[
-              styles.placeOrderButton,
-              {
-                backgroundColor: loading ? palette.border : colors.primary,
-              },
-            ]}
-            onPress={handlePlaceOrder}
-            disabled={loading}
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        style={{ flex: 1 }}
+      >
+        <PageContainer padding={0}>
+          <ScrollView
+            style={[styles.container, { backgroundColor: theme.background }]}
+            contentContainerStyle={styles.contentContainer}
+            showsVerticalScrollIndicator={false}
           >
-            {loading ? (
-              <ActivityIndicator color="#FFF" />
-            ) : (
-              <>
-                <Ionicons name="checkmark-circle" size={24} color="#FFF" />
-                <Text style={[{ fontSize: h4 }, { color: '#FFF', marginLeft: 12 }]}>
-                  Place Order
+            {/* Progress Indicator */}
+            <View style={styles.progressContainer}>
+              <View style={styles.stepWrapper}>
+                <View
+                  style={[
+                    styles.stepCircle,
+                    {
+                      backgroundColor: theme.primary,
+                      borderColor: theme.primary,
+                    },
+                  ]}
+                >
+                  <Ionicons name="checkmark" size={16} color="#FFF" />
+                </View>
+                <Text
+                  style={[styles.stepLabel, { color: theme.textSecondary }]}
+                >
+                  Cart
                 </Text>
-              </>
-            )}
-          </Pressable>
-        </ScrollView>
-      </PageContainer>
+              </View>
+              <View
+                style={[styles.stepLine, { backgroundColor: theme.primary }]}
+              />
+              <View style={styles.stepWrapper}>
+                <View
+                  style={[
+                    styles.stepCircle,
+                    {
+                      backgroundColor: theme.accent,
+                      borderColor: theme.accent,
+                    },
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.stepNumber,
+                      { color: theme.buttonPrimaryText },
+                    ]}
+                  >
+                    2
+                  </Text>
+                </View>
+                <Text
+                  style={[
+                    styles.stepLabel,
+                    { color: theme.text, fontWeight: '600' },
+                  ]}
+                >
+                  Checkout
+                </Text>
+              </View>
+              <View
+                style={[styles.stepLine, { backgroundColor: theme.border }]}
+              />
+              <View style={styles.stepWrapper}>
+                <View
+                  style={[
+                    styles.stepCircle,
+                    {
+                      backgroundColor: 'transparent',
+                      borderColor: theme.border,
+                    },
+                  ]}
+                >
+                  <Text
+                    style={[styles.stepNumber, { color: theme.textSecondary }]}
+                  >
+                    3
+                  </Text>
+                </View>
+                <Text
+                  style={[styles.stepLabel, { color: theme.textSecondary }]}
+                >
+                  Done
+                </Text>
+              </View>
+            </View>
+
+            {/* Order Summary */}
+            <View
+              style={[
+                styles.card,
+                { backgroundColor: theme.surface, shadowColor: theme.shadow },
+              ]}
+            >
+              <View style={styles.cardHeader}>
+                <Text
+                  style={[
+                    styles.cardTitle,
+                    { color: theme.text, fontSize: type.h4 },
+                  ]}
+                >
+                  Order Summary
+                </Text>
+                <Pressable onPress={() => router.back()}>
+                  <Text style={[styles.editLink, { color: theme.active }]}>
+                    Edit
+                  </Text>
+                </Pressable>
+              </View>
+              {items.slice(0, 3).map((item) => (
+                <View key={item.product_id} style={styles.itemRow}>
+                  <View
+                    style={[
+                      styles.quantityBadge,
+                      { backgroundColor: theme.background },
+                    ]}
+                  >
+                    <Text style={[styles.quantityText, { color: theme.text }]}>
+                      {item.quantity}x
+                    </Text>
+                  </View>
+                  <Text
+                    style={[styles.itemName, { color: theme.text }]}
+                    numberOfLines={1}
+                  >
+                    {item.product_name}
+                  </Text>
+                  <Text style={[styles.itemPrice, { color: theme.text }]}>
+                    ₱{(item.price * item.quantity).toFixed(2)}
+                  </Text>
+                </View>
+              ))}
+              {items.length > 3 && (
+                <Text
+                  style={[styles.moreItems, { color: theme.textSecondary }]}
+                >
+                  +{items.length - 3} more items
+                </Text>
+              )}
+            </View>
+
+            {/* Pickup Details */}
+            <View
+              style={[
+                styles.card,
+                { backgroundColor: theme.surface, shadowColor: theme.shadow },
+              ]}
+            >
+              <Text
+                style={[
+                  styles.cardTitle,
+                  { color: theme.text, fontSize: type.h4, marginBottom: 16 },
+                ]}
+              >
+                Pickup Details
+              </Text>
+
+              <View style={styles.dateTimeContainer}>
+                <Pressable
+                  style={[
+                    styles.dateTimeButton,
+                    {
+                      backgroundColor: theme.background,
+                      borderColor: theme.border,
+                    },
+                  ]}
+                  onPress={() => setShowDatePicker(true)}
+                >
+                  <View
+                    style={[
+                      styles.iconContainer,
+                      { backgroundColor: theme.surface },
+                    ]}
+                  >
+                    <Ionicons
+                      name="calendar-outline"
+                      size={20}
+                      color={theme.accent}
+                    />
+                  </View>
+                  <View>
+                    <Text
+                      style={[
+                        styles.dateTimeLabel,
+                        { color: theme.textSecondary },
+                      ]}
+                    >
+                      Date
+                    </Text>
+                    <Text style={[styles.dateTimeValue, { color: theme.text }]}>
+                      {pickupDate.toLocaleDateString()}
+                    </Text>
+                  </View>
+                </Pressable>
+
+                <Pressable
+                  style={[
+                    styles.dateTimeButton,
+                    {
+                      backgroundColor: theme.background,
+                      borderColor: theme.border,
+                    },
+                  ]}
+                  onPress={() => setShowTimePicker(true)}
+                >
+                  <View
+                    style={[
+                      styles.iconContainer,
+                      { backgroundColor: theme.surface },
+                    ]}
+                  >
+                    <Ionicons
+                      name="time-outline"
+                      size={20}
+                      color={theme.accent}
+                    />
+                  </View>
+                  <View>
+                    <Text
+                      style={[
+                        styles.dateTimeLabel,
+                        { color: theme.textSecondary },
+                      ]}
+                    >
+                      Time
+                    </Text>
+                    <Text style={[styles.dateTimeValue, { color: theme.text }]}>
+                      {pickupDate.toLocaleTimeString([], {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })}
+                    </Text>
+                  </View>
+                </Pressable>
+              </View>
+
+              {showDatePicker && (
+                <DateTimePicker
+                  value={pickupDate}
+                  mode="date"
+                  display="default"
+                  minimumDate={new Date()}
+                  maximumDate={new Date(Date.now() + 2 * 24 * 60 * 60 * 1000)}
+                  onChange={handleDateChange}
+                />
+              )}
+
+              {showTimePicker && (
+                <DateTimePicker
+                  value={pickupDate}
+                  mode="time"
+                  display="default"
+                  minimumDate={new Date()}
+                  onChange={handleTimeChange}
+                />
+              )}
+
+              <View
+                style={[styles.divider, { backgroundColor: theme.border }]}
+              />
+
+              <Text style={[styles.inputLabel, { color: theme.textSecondary }]}>
+                Special Instructions (Optional)
+              </Text>
+              <TextInput
+                style={[
+                  styles.textInput,
+                  {
+                    backgroundColor: theme.background,
+                    color: theme.text,
+                    borderColor: theme.border,
+                  },
+                ]}
+                placeholder="e.g., leave at counter, call upon arrival"
+                placeholderTextColor={theme.textSecondary}
+                value={specialInstructions}
+                onChangeText={setSpecialInstructions}
+                multiline
+                numberOfLines={3}
+              />
+            </View>
+
+            {/* Payment Method */}
+            <View
+              style={[
+                styles.card,
+                { backgroundColor: theme.surface, shadowColor: theme.shadow },
+              ]}
+            >
+              <Text
+                style={[
+                  styles.cardTitle,
+                  { color: theme.text, fontSize: type.h4, marginBottom: 16 },
+                ]}
+              >
+                Payment Method
+              </Text>
+
+              <Pressable
+                style={[
+                  styles.paymentOption,
+                  {
+                    borderColor:
+                      paymentMethod === 'cash_on_pickup'
+                        ? theme.accent
+                        : theme.border,
+                    backgroundColor:
+                      paymentMethod === 'cash_on_pickup'
+                        ? isDark
+                          ? 'rgba(255, 183, 3, 0.1)'
+                          : '#FFF9E6'
+                        : theme.background,
+                  },
+                ]}
+                onPress={() => togglePaymentMethod('cash_on_pickup')}
+              >
+                <View style={styles.paymentOptionHeader}>
+                  <View
+                    style={[
+                      styles.paymentIcon,
+                      { backgroundColor: theme.surface },
+                    ]}
+                  >
+                    <Ionicons
+                      name="cash-outline"
+                      size={24}
+                      color={theme.primary}
+                    />
+                  </View>
+                  <View style={styles.paymentTextContainer}>
+                    <Text style={[styles.paymentTitle, { color: theme.text }]}>
+                      Cash on Pickup
+                    </Text>
+                    <Text
+                      style={[
+                        styles.paymentSubtitle,
+                        { color: theme.textSecondary },
+                      ]}
+                    >
+                      Pay when you collect
+                    </Text>
+                  </View>
+                  <Ionicons
+                    name={
+                      paymentMethod === 'cash_on_pickup'
+                        ? 'radio-button-on'
+                        : 'radio-button-off'
+                    }
+                    size={24}
+                    color={
+                      paymentMethod === 'cash_on_pickup'
+                        ? theme.accent
+                        : theme.textSecondary
+                    }
+                  />
+                </View>
+              </Pressable>
+
+              <Pressable
+                style={[
+                  styles.paymentOption,
+                  {
+                    borderColor:
+                      paymentMethod === 'paymongo'
+                        ? theme.accent
+                        : theme.border,
+                    backgroundColor:
+                      paymentMethod === 'paymongo'
+                        ? isDark
+                          ? 'rgba(255, 183, 3, 0.1)'
+                          : '#FFF9E6'
+                        : theme.background,
+                  },
+                ]}
+                onPress={() => togglePaymentMethod('paymongo')}
+              >
+                <View style={styles.paymentOptionHeader}>
+                  <View
+                    style={[
+                      styles.paymentIcon,
+                      { backgroundColor: theme.surface },
+                    ]}
+                  >
+                    <Ionicons
+                      name="card-outline"
+                      size={24}
+                      color={theme.primary}
+                    />
+                  </View>
+                  <View style={styles.paymentTextContainer}>
+                    <Text style={[styles.paymentTitle, { color: theme.text }]}>
+                      Online Payment
+                    </Text>
+                    <Text
+                      style={[
+                        styles.paymentSubtitle,
+                        { color: theme.textSecondary },
+                      ]}
+                    >
+                      GCash, Card, PayMaya
+                    </Text>
+                  </View>
+                  <Ionicons
+                    name={
+                      paymentMethod === 'paymongo'
+                        ? 'radio-button-on'
+                        : 'radio-button-off'
+                    }
+                    size={24}
+                    color={
+                      paymentMethod === 'paymongo'
+                        ? theme.accent
+                        : theme.textSecondary
+                    }
+                  />
+                </View>
+
+                {paymentMethod === 'paymongo' && (
+                  <View style={styles.subPaymentMethods}>
+                    <View
+                      style={[
+                        styles.divider,
+                        { backgroundColor: theme.border, marginVertical: 12 },
+                      ]}
+                    />
+                    <Text
+                      style={[
+                        styles.subPaymentLabel,
+                        { color: theme.textSecondary },
+                      ]}
+                    >
+                      Select Provider
+                    </Text>
+                    <ScrollView
+                      horizontal
+                      showsHorizontalScrollIndicator={false}
+                      contentContainerStyle={styles.providerScroll}
+                    >
+                      {['gcash', 'card', 'paymaya', 'grab_pay'].map((type) => (
+                        <Pressable
+                          key={type}
+                          style={[
+                            styles.providerChip,
+                            {
+                              backgroundColor:
+                                paymentMethodType === type
+                                  ? theme.primary
+                                  : theme.background,
+                              borderColor:
+                                paymentMethodType === type
+                                  ? theme.primary
+                                  : theme.border,
+                            },
+                          ]}
+                          onPress={() => setPaymentMethodType(type as any)}
+                        >
+                          <Text
+                            style={[
+                              styles.providerText,
+                              {
+                                color:
+                                  paymentMethodType === type
+                                    ? '#FFF'
+                                    : theme.text,
+                              },
+                            ]}
+                          >
+                            {type === 'grab_pay'
+                              ? 'GrabPay'
+                              : type.charAt(0).toUpperCase() + type.slice(1)}
+                          </Text>
+                        </Pressable>
+                      ))}
+                    </ScrollView>
+                  </View>
+                )}
+              </Pressable>
+
+              {/* Security Badge */}
+              <View style={styles.securityBadge}>
+                <Ionicons name="lock-closed" size={14} color={theme.success} />
+                <Text style={[styles.securityText, { color: theme.success }]}>
+                  Secure 256-bit SSL Encryption
+                </Text>
+              </View>
+            </View>
+
+            {/* Total Section */}
+            <View
+              style={[
+                styles.card,
+                {
+                  backgroundColor: theme.surface,
+                  shadowColor: theme.shadow,
+                  marginBottom: 100,
+                },
+              ]}
+            >
+              <View style={styles.summaryRow}>
+                <Text
+                  style={[styles.summaryLabel, { color: theme.textSecondary }]}
+                >
+                  Subtotal
+                </Text>
+                <Text style={[styles.summaryValue, { color: theme.text }]}>
+                  ₱{subtotal.toFixed(2)}
+                </Text>
+              </View>
+              <View style={styles.summaryRow}>
+                <Text
+                  style={[styles.summaryLabel, { color: theme.textSecondary }]}
+                >
+                  Tax
+                </Text>
+                <Text style={[styles.summaryValue, { color: theme.text }]}>
+                  ₱{taxAmount.toFixed(2)}
+                </Text>
+              </View>
+              <View
+                style={[styles.divider, { backgroundColor: theme.border }]}
+              />
+              <View style={styles.totalRow}>
+                <Text style={[styles.totalLabel, { color: theme.text }]}>
+                  Total
+                </Text>
+                <Text style={[styles.totalValue, { color: theme.accent }]}>
+                  ₱{total.toFixed(2)}
+                </Text>
+              </View>
+            </View>
+          </ScrollView>
+
+          {/* Bottom Action Bar */}
+          <View
+            style={[
+              styles.bottomBar,
+              { backgroundColor: theme.surface, borderTopColor: theme.border },
+            ]}
+          >
+            <View style={styles.bottomBarTotal}>
+              <Text
+                style={[
+                  styles.bottomTotalLabel,
+                  { color: theme.textSecondary },
+                ]}
+              >
+                Total Amount
+              </Text>
+              <Text style={[styles.bottomTotalValue, { color: theme.text }]}>
+                ₱{total.toFixed(2)}
+              </Text>
+            </View>
+            <Pressable
+              style={[
+                styles.placeOrderButton,
+                {
+                  backgroundColor: loading ? theme.disabled : theme.primary,
+                  opacity: loading ? 0.8 : 1,
+                },
+              ]}
+              onPress={handlePlaceOrder}
+              disabled={loading}
+            >
+              {loading ? (
+                <ActivityIndicator color="#FFF" />
+              ) : (
+                <>
+                  <Text style={[styles.placeOrderText, { color: '#FFF' }]}>
+                    Place Order
+                  </Text>
+                  <Ionicons
+                    name="arrow-forward"
+                    size={20}
+                    color="#FFF"
+                    style={{ marginLeft: 8 }}
+                  />
+                </>
+              )}
+            </Pressable>
+          </View>
+        </PageContainer>
+      </KeyboardAvoidingView>
     </>
   );
 };
@@ -582,63 +888,272 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  section: {
-    margin: 16,
+  contentContainer: {
     padding: 16,
-    borderRadius: 12,
+    paddingBottom: 40,
+  },
+  headerContainer: {
+    marginBottom: 24,
+  },
+  progressContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 24,
+    paddingHorizontal: 16,
+  },
+  stepWrapper: {
+    alignItems: 'center',
+    zIndex: 1,
+  },
+  stepCircle: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    borderWidth: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 4,
+    backgroundColor: 'transparent',
+  },
+  stepNumber: {
+    fontSize: 14,
+    fontWeight: 'bold',
+  },
+  stepLabel: {
+    fontSize: 12,
+    marginTop: 4,
+  },
+  stepLine: {
+    flex: 1,
+    height: 2,
+    marginHorizontal: 4,
+    marginBottom: 20, // Align with center of circle
+  },
+  card: {
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 16,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  cardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  cardTitle: {
+    fontWeight: '700',
+  },
+  editLink: {
+    fontSize: 14,
+    fontWeight: '600',
   },
   itemRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 8,
+    alignItems: 'center',
+    marginBottom: 12,
   },
-  dateButton: {
+  quantityBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    marginRight: 12,
+  },
+  quantityText: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  itemName: {
+    flex: 1,
+    fontSize: 14,
+    marginRight: 12,
+  },
+  itemPrice: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  moreItems: {
+    fontSize: 12,
+    textAlign: 'center',
+    marginTop: 8,
+    fontStyle: 'italic',
+  },
+  dateTimeContainer: {
+    flexDirection: 'row',
+    gap: 12,
+    marginBottom: 16,
+  },
+  dateTimeButton: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     padding: 12,
+    borderRadius: 12,
     borderWidth: 1,
-    borderRadius: 8,
-    marginBottom: 12,
+  },
+  iconContainer: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  dateTimeLabel: {
+    fontSize: 12,
+    marginBottom: 2,
+  },
+  dateTimeValue: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  divider: {
+    height: 1,
+    marginVertical: 16,
+  },
+  inputLabel: {
+    fontSize: 14,
+    marginBottom: 8,
+    fontWeight: '500',
   },
   textInput: {
     borderWidth: 1,
-    borderRadius: 8,
+    borderRadius: 12,
     padding: 12,
     fontSize: 14,
     textAlignVertical: 'top',
+    minHeight: 80,
   },
   paymentOption: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 16,
     borderWidth: 2,
     borderRadius: 12,
     marginBottom: 12,
+    overflow: 'hidden',
   },
-  paymentMethodType: {
+  paymentOptionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 12,
-    borderWidth: 1,
-    borderRadius: 8,
+    padding: 16,
+  },
+  paymentIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  paymentTextContainer: {
+    flex: 1,
+  },
+  paymentTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 2,
+  },
+  paymentSubtitle: {
+    fontSize: 12,
+  },
+  subPaymentMethods: {
+    paddingHorizontal: 16,
+    paddingBottom: 16,
+  },
+  subPaymentLabel: {
+    fontSize: 12,
     marginBottom: 8,
+    fontWeight: '500',
+  },
+  providerScroll: {
+    gap: 8,
+  },
+  providerChip: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    borderWidth: 1,
+  },
+  providerText: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  securityBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 8,
+    gap: 6,
+  },
+  securityText: {
+    fontSize: 12,
+    fontWeight: '500',
   },
   summaryRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginBottom: 12,
   },
-  divider: {
-    height: 1,
-    marginVertical: 12,
+  summaryLabel: {
+    fontSize: 14,
+  },
+  summaryValue: {
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  totalRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  totalLabel: {
+    fontSize: 18,
+    fontWeight: '700',
+  },
+  totalValue: {
+    fontSize: 24,
+    fontWeight: '800',
+  },
+  bottomBar: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    paddingBottom: Platform.OS === 'ios' ? 32 : 16,
+    borderTopWidth: 1,
+    elevation: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+  },
+  bottomBarTotal: {
+    flex: 1,
+  },
+  bottomTotalLabel: {
+    fontSize: 12,
+  },
+  bottomTotalValue: {
+    fontSize: 20,
+    fontWeight: '700',
   },
   placeOrderButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    margin: 16,
-    paddingVertical: 16,
+    paddingVertical: 14,
+    paddingHorizontal: 24,
     borderRadius: 12,
+    minWidth: 160,
+  },
+  placeOrderText: {
+    fontSize: 16,
+    fontWeight: '700',
   },
 });
 

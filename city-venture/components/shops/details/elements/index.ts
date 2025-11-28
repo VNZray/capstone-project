@@ -11,3 +11,6 @@ export { default as ReviewSubmittedModal } from './ReviewSubmittedModal';
 export { default as ReviewValidationModal } from './ReviewValidationModal';
 export { default as WriteReviewModal } from './WriteReviewModal';
 export { default as PhotoGalleryModal } from './PhotoGalleryModal';
+export { default as ShopDetailAbout } from './ShopDetailAbout';
+export { default as ShopDetailFilterChips } from './ShopDetailFilterChips';
+export { default as ShopDetailPhotoFilterChips } from './ShopDetailPhotoFilterChips';

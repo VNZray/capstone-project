@@ -15,10 +15,8 @@ import {
 
 import Tabs from '@/components/Tabs';
 import { ThemedText } from '@/components/themed-text';
-import { useColorScheme } from '@/hooks/use-color-scheme';
-
+import { Colors } from '@/constants/color';
 import Container from '@/components/Container';
-import { background } from '@/constants/color';
 import { useAccommodation } from '@/context/AccommodationContext';
 import { useAuth } from '@/context/AuthContext';
 import { Tab } from '@/types/Tab';
@@ -29,7 +27,7 @@ import placeholder from '@/assets/images/placeholder.png';
 import Button from '@/components/Button';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AddReview from '@/components/reviews/AddReview';
-import FeedbackService from '@/services/FeedbackService';
+import { createReview } from '@/services/FeedbackService';
 import Chip from '@/components/Chip';
 
 const { width, height } = Dimensions.get('window');
@@ -37,7 +35,7 @@ const { width, height } = Dimensions.get('window');
 const AccommodationProfile = () => {
   const navigation = useNavigation();
   const [activeTab, setActiveTab] = useState<string>('details');
-  const colorScheme = useColorScheme();
+  const colors = Colors.light;
   const { user } = useAuth();
   const {
     accommodationDetails,
@@ -83,12 +81,9 @@ const AccommodationProfile = () => {
   }, [onRefresh, refreshing]);
   const insets = useSafeAreaInsets();
 
-  const [loading, setLoading] = useState(true);
   const [modalVisible, setModalVisible] = useState(false);
-  const [reviewSubmitting, setReviewSubmitting] = useState(false);
-  const [reviewError, setReviewError] = useState<string | null>(null);
   const [ratingsRefreshKey, setRatingsRefreshKey] = useState(0);
-  const bg = colorScheme === 'dark' ? background.dark : background.light;
+  const bg = colors.background;
 
   useEffect(() => {
     if (accommodationDetails?.business_name && accommodationDetails?.id) {
@@ -102,8 +97,7 @@ const AccommodationProfile = () => {
     accommodationDetails?.id,
   ]);
 
-  const [averageAccommodationReviews, setAverageAccommodationReviews] =
-    useState(0);
+  const [averageAccommodationReviews] = useState(0);
 
   const TABS: Tab[] = [
     { key: 'details', label: 'Details', icon: '' },
@@ -173,7 +167,7 @@ const AccommodationProfile = () => {
                     <MaterialCommunityIcons
                       name="map-marker"
                       size={16}
-                      color="#FFB007"
+                      color={colors.accent}
                     />
                     {accommodationDetails?.address},{' '}
                     {/* {accommodationDetails?.barangay_name},{' '}
@@ -194,7 +188,7 @@ const AccommodationProfile = () => {
                     <MaterialCommunityIcons
                       name="star"
                       size={20}
-                      color="#FFB007"
+                      color={colors.accent}
                     />
                     {averageAccommodationReviews.toFixed(1) || '0.0'}
                   </ThemedText>
@@ -246,7 +240,7 @@ const AccommodationProfile = () => {
           onClose={() => setModalVisible(false)}
           onSubmit={async (payload) => {
             try {
-              await FeedbackService.createReview(payload);
+              await createReview(payload);
               setModalVisible(false);
               setRatingsRefreshKey((prev) => prev + 1);
             } catch (error) {

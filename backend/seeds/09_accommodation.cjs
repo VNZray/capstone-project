@@ -133,7 +133,7 @@ module.exports.seed = async function (knex) {
       min_price: 4000,
       max_price: 4000,
       email: 'diamond-residences@gmail.com',
-  phone_number: randomPhone(),
+      phone_number: randomPhone(),
       business_type_id: 1, // Accommodation type id
       business_category_id: 1, // Hotel category
       barangay_id: 2,

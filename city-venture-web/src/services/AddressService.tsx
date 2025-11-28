@@ -1,7 +1,5 @@
-import api from "@/src/services/api";
-
 // src/services/AddressService.ts
-import axios from "axios";
+import apiClient from "./apiClient";
 import { getData, getDataById } from "./Service";
 
 export type Province = { id: number; province: string };
@@ -10,28 +8,28 @@ export type Barangay = { id: number; barangay: string };
 
 export const AddressService = {
   async getProvinces(): Promise<Province[]> {
-    const res = await axios.get(`${api}/address/provinces`);
+    const res = await apiClient.get(`/address/provinces`);
     return Array.isArray(res.data) ? res.data : [];
   },
 
   async getMunicipalities(provinceId: number): Promise<Municipality[]> {
-    const res = await axios.get(`${api}/address/municipalities/${provinceId}`);
+    const res = await apiClient.get(`/address/municipalities/${provinceId}`);
     return Array.isArray(res.data) ? res.data : [];
   },
 
   async getBarangays(municipalityId: number): Promise<Barangay[]> {
-    const res = await axios.get(`${api}/address/barangays/${municipalityId}`);
+    const res = await apiClient.get(`/address/barangays/${municipalityId}`);
     return Array.isArray(res.data) ? res.data : [];
   },
 
   async getBarangayById(barangayId: number) {
-    const res = await axios.get(`${api}/address/barangay/${barangayId}`);
+    const res = await apiClient.get(`/address/barangay/${barangayId}`);
     return res.data;
   },
 
   async getMunicipalityById(municipalityId: number) {
-    const res = await axios.get(
-      `${api}/address/municipality/${municipalityId}`
+    const res = await apiClient.get(
+      `/address/municipality/${municipalityId}`
     );
     return res.data;
   },

@@ -1,9 +1,21 @@
-import React, { useEffect, useRef } from 'react';
+import React from "react";
+import {
+  Modal,
+  ModalDialog,
+  ModalClose,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Divider,
+  Box,
+} from "@mui/joy";
+import Button from "./Button";
+import Typography from "./Typography";
 
 type Action = {
   label: string;
   onClick: () => void;
-  variant?: 'primary' | 'secondary';
+  variant?: "primary" | "secondary";
   disabled?: boolean;
 };
 
@@ -19,10 +31,10 @@ type BaseEditModalProps = {
 
 /**
  * BaseEditModal
- * A simple, accessible modal dialog without external UI libraries.
+ * An accessible modal dialog using Joy UI components.
  * - Click outside to close
  * - Escape key closes
- * - Focus is moved to the dialog when opened (basic)
+ * - Uses custom Typography component for text
  * - Renders header, description, children, and action buttons
  *
  * Usage example (commented at bottom of file):
@@ -30,178 +42,89 @@ type BaseEditModalProps = {
 export default function BaseEditModal({
   open,
   onClose,
-  title = 'Edit',
+  title = "Edit",
   description,
   actions = [],
   children,
   maxWidth = 640,
 }: BaseEditModalProps) {
-  const overlayRef = useRef<HTMLDivElement | null>(null);
-  const dialogRef = useRef<HTMLDivElement | null>(null);
-
-  useEffect(() => {
-    function onKeyDown(e: KeyboardEvent) {
-      if (e.key === 'Escape') onClose();
-      // basic focus trap: keep focus inside dialog when open and Tab pressed
-      if (e.key === 'Tab' && dialogRef.current) {
-        const focusable = dialogRef.current.querySelectorAll<HTMLElement>(
-          'a[href], button:not([disabled]), textarea, input, select, [tabindex]:not([tabindex="-1"])'
-        );
-        if (focusable.length === 0) return;
-        const first = focusable[0];
-        const last = focusable[focusable.length - 1];
-        if (!e.shiftKey && document.activeElement === last) {
-          e.preventDefault();
-          first.focus();
-        }
-        if (e.shiftKey && document.activeElement === first) {
-          e.preventDefault();
-          last.focus();
-        }
-      }
-    }
-
-    if (open) {
-      document.addEventListener('keydown', onKeyDown);
-      // save scroll and prevent body scroll
-      const prev = document.body.style.overflow;
-      document.body.style.overflow = 'hidden';
-      // focus the dialog for accessibility
-      setTimeout(() => dialogRef.current?.focus(), 0);
-      return () => {
-        document.removeEventListener('keydown', onKeyDown);
-        document.body.style.overflow = prev;
-      };
-    }
-    return;
-  }, [open, onClose]);
-
-  if (!open) return null;
-
-  const overlayStyle: React.CSSProperties = {
-    position: 'fixed',
-    inset: 0,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 1000,
-    padding: '24px',
-  };
-
-  const dialogStyle: React.CSSProperties = {
-    background: '#fff',
-    borderRadius: 12,
-    width: '100%',
-    maxWidth: typeof maxWidth === 'number' ? `${maxWidth}px` : String(maxWidth),
-    boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04)',
-    padding: '20px',
-    outline: 'none',
-  };
-
-  const closeBtnStyle: React.CSSProperties = {
-    position: 'absolute',
-    top: 12,
-    right: 12,
-    background: 'transparent',
-    border: 'none',
-    fontSize: 20,
-    cursor: 'pointer',
-    color: '#6b7280',
-  };
-
-  const headerStyle: React.CSSProperties = {
-    margin: 0,
-    fontSize: 18,
-    fontWeight: 600,
-    color: '#111827',
-  };
-
-  const descriptionStyle: React.CSSProperties = {
-    margin: '8px 0 16px',
-    color: '#6b7280',
-    fontSize: 14,
-  };
-
-  const actionsContainerStyle: React.CSSProperties = {
-    display: 'flex',
-    gap: 8,
-    justifyContent: 'flex-end',
-    marginTop: 20,
-    flexWrap: 'wrap',
-  };
-
-  const baseButtonStyle: React.CSSProperties = {
-    padding: '8px 14px',
-    fontSize: 14,
-    borderRadius: 8,
-    cursor: 'pointer',
-    border: 'none',
-  };
-
-  const primaryStyle: React.CSSProperties = {
-    ...baseButtonStyle,
-    background: 'var(--primary-color)',
-    color: '#fff',
-  };
-
-  const secondaryStyle: React.CSSProperties = {
-    ...baseButtonStyle,
-    background: 'transparent',
-    color: '#374151',
-    border: '1px solid transparent',
-  };
-
   return (
-    <div
-      ref={overlayRef}
-      style={overlayStyle}
-      role="presentation"
-      onMouseDown={(e) => {
-        // close when clicking on overlay background
-        if (e.target === overlayRef.current) onClose();
-      }}
-    >
-      <div
-        ref={dialogRef}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="base-edit-modal-title"
-        tabIndex={-1}
-        style={{ position: 'relative', ...dialogStyle }}
-        onMouseDown={(e) => e.stopPropagation()}
+    <Modal open={open} onClose={onClose}>
+      <ModalDialog
+        sx={{
+          maxWidth: typeof maxWidth === "number" ? `${maxWidth}px` : maxWidth,
+          width: { xs: "100%", sm: "100%", md: "60vw", lg: "40vw", xl: "40vw" },
+          maxHeight: "90vh",
+          overflow: "hidden",
+          display: "flex",
+          flexDirection: "column",
+          borderRadius: "12px",
+          p: 0,
+        }}
       >
-        <button
-          aria-label="Close"
-          onClick={onClose}
-          style={closeBtnStyle}
-          onMouseOver={(e) => (e.currentTarget.style.color = '#374151')}
-          onMouseOut={(e) => (e.currentTarget.style.color = '#6b7280')}
+        <ModalClose />
+
+
+        <DialogTitle sx={{ px: 3, pt: 3, pb: 1 }}>
+          <Typography.Header size="sm">{title}</Typography.Header>
+        </DialogTitle>
+
+        {description && (
+          <Box sx={{ px: 3, pb: 2 }}>
+            <Typography.Body size="sm" color="default" sx={{ opacity: 0.7 }}>
+              {description}
+            </Typography.Body>
+          </Box>
+        )}
+
+        <Divider />
+
+        <DialogContent
+          sx={{
+            px: 3,
+            py: 3,
+            overflow: "auto",
+            flex: 1,
+          }}
         >
-          ✕
-        </button>
+          {children}
+        </DialogContent>
 
-        <h2 id="base-edit-modal-title" style={headerStyle}>
-          {title}
-        </h2>
-        {description && <p style={descriptionStyle}>{description}</p>}
-
-        <div>{children}</div>
-
-        <div style={actionsContainerStyle}>
-          {actions.map((a, idx) => (
-            <button
-              key={idx}
-              onClick={a.onClick}
-              disabled={a.disabled}
-              style={a.variant === 'primary' ? primaryStyle : secondaryStyle}
-            >
-              {a.label}
-            </button>
-          ))}
-        </div>
-      </div>
-    </div>
+        {actions.length > 0 && (
+          <>
+            <Divider />
+            <DialogActions sx={{ px: 3, py: 2 }}>
+              <Box
+                sx={{
+                  display: "flex",
+                  gap: 1,
+                  justifyContent: "flex-end",
+                  width: "100%",
+                  flexWrap: "wrap",
+                }}
+              >
+                {actions.map((action, idx) => (
+                  <Button
+                    key={idx}
+                    onClick={action.onClick}
+                    disabled={action.disabled}
+                    variant={
+                      action.variant === "primary" ? "solid" : "outlined"
+                    }
+                    colorScheme={
+                      action.variant === "primary" ? "primary" : "secondary"
+                    }
+                    size="md"
+                  >
+                    {action.label}
+                  </Button>
+                ))}
+              </Box>
+            </DialogActions>
+          </>
+        )}
+      </ModalDialog>
+    </Modal>
   );
 }
 

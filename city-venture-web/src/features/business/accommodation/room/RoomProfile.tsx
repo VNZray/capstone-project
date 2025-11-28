@@ -4,8 +4,10 @@ import StarIcon from "@mui/icons-material/Star";
 import { colors } from "@/src/utils/Colors";
 import {
   AspectRatio,
+  Breadcrumbs,
   Chip,
   Dropdown,
+  Link,
   Menu,
   MenuButton,
   MenuItem,
@@ -127,6 +129,17 @@ const RoomProfile = () => {
         gap: "20px",
       }}
     >
+              {/* Breadcrumbs Navigation */}
+        <Breadcrumbs>
+          <Link
+            color="neutral"
+            onClick={() => navigate("/business/rooms")}
+            sx={{ cursor: "pointer" }}
+          >
+            Manage Room
+          </Link>
+          <Typography.Body>Room Profile</Typography.Body>
+        </Breadcrumbs>
       {/* --- Room Header --- */}
       <Container
         elevation={2}

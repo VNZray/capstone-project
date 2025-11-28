@@ -1,10 +1,5 @@
 import * as React from "react";
 import {
-  Modal,
-  ModalDialog,
-  DialogContent,
-  DialogActions,
-  Button,
   FormLabel,
   FormControl,
   Autocomplete,
@@ -12,7 +7,7 @@ import {
 } from "@mui/joy";
 import { deleteData, getData, insertData } from "@/src/services/Service";
 import type { Amenity } from "@/src/types/Amenity";
-import Typography from "@/src/components/Typography";
+import BaseEditModal from "@/src/components/BaseEditModal";
 import Alert from "@/src/components/Alert";
 interface EditBusinessModalProps {
   open: boolean;
@@ -146,11 +141,18 @@ const EditAmenitiesModal: React.FC<EditBusinessModalProps> = ({
 
   return (
     <>
-      <Modal open={open} onClose={onClose}>
-        <ModalDialog size="lg" variant="outlined" maxWidth={600} minWidth={600}>
-          <Typography.CardTitle>Add New Room</Typography.CardTitle>
-          <DialogContent>
-            <FormControl>
+      <BaseEditModal
+        open={open}
+        onClose={onClose}
+        title="Edit Room Amenities"
+        description="Add or remove amenities for this room"
+        maxWidth={600}
+        actions={[
+          { label: "Cancel", onClick: onClose, variant: "secondary" },
+          { label: "Save Changes", onClick: handleSave, variant: "primary" },
+        ]}
+      >
+        <FormControl>
               <FormLabel>Update Amenities</FormLabel>
               <Autocomplete
                 size="lg"
@@ -238,17 +240,7 @@ const EditAmenitiesModal: React.FC<EditBusinessModalProps> = ({
                 }}
               />
             </FormControl>
-          </DialogContent>
-          <DialogActions>
-            <Button fullWidth variant="plain" color="neutral" onClick={onClose}>
-              Cancel
-            </Button>
-            <Button fullWidth color="primary" onClick={handleSave}>
-              Save
-            </Button>
-          </DialogActions>
-        </ModalDialog>
-      </Modal>
+      </BaseEditModal>
 
       <Alert
         open={alertConfig.open}

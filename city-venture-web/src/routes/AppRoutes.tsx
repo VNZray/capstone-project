@@ -11,8 +11,8 @@ import About from "../pages/About";
 import Registration from "../pages/BusinessRegistration";
 
 import BusinessPortalLogin from "../features/auth/LoginPage";
-import AdminLogin from "../features/auth/AdminLogin";
-import AdminRegister from "../features/auth/AdminRegister";
+import AdminLogin from "../features/auth/old-page/AdminLogin";
+import AdminRegister from "../features/auth/old-page/AdminRegister";
 import Unauthorized from "@/src/pages/Unauthorized";
 import BusinessLayout from "../layout/BusinessLayout";
 import MyBusiness from "../features/business/listing/MyBusiness";
@@ -41,7 +41,6 @@ import AccommodationDashboard from "../features/business/accommodation/dashboard
 import ShopDashboard from "../features/business/shop/dashboard/Dashboard";
 import ManageShop from "../features/business/shop/manage-business/ManageBusiness";
 import AdminLayout from "../layout/AdminLayout";
-import Room from "../features/admin/services/accommodation/Room";
 import Reviews from "../features/business/accommodation/reviews/Reviews";
 import Settings from "../features/business/settings/Settings";
 import AccommodationPromotionForm from "../features/business/accommodation/promotion/components/PromotionForm";
@@ -54,26 +53,52 @@ import Shop from "@/src/features/admin/services/shop/Shop";
 import Event from "@/src/features/admin/services/event/Event";
 import Spot from "@/src/features/admin/services/tourist-spot/Spot";
 import TouristSpotDetailsScreen from "@/src/features/admin/services/tourist-spot/TouristSpotDetailsScreen";
+import TouristSpotReviews from "@/src/features/admin/services/tourist-spot/reviews/Reviews";
+import { TouristSpotProvider } from "@/src/context/TouristSpotContext";
 import { BusinessProvider } from "../context/BusinessContext";
 import ReportDetailsScreen from "@/src/features/admin/report/ReportDetailsScreen";
 import AccommodationSubscription from "@/src/features/business/accommodation/subscription/Subscription";
 import ShopSubscription from "@/src/features/business/shop/subscription/Subscription";
 import TourismStaffManagement from "@/src/features/admin/tourism-staff/TourismStaffManagement";
+import TourismSettings from "../features/admin/settings/Settings";
 
 import Notification from "../features/business/accommodation/notfication/Notification";
 import AccommodationStaff from "../features/business/accommodation/Staff/ManageStaff";
 import ShopStaff from "../features/business/shop/Staff/ManageStaff";
 import Test from "../pages/Test";
-import TestButton from "../pages/TestButton";
 import OwnerProfile from "../features/business/profile/Profile";
 import TourismProfile from "../features/admin/profile/Profile";
 import TouristRegister from "../features/auth/TouristRegister";
+import axios from "axios";
+import api from "../services/api";
+import type { User } from "../types/User";
+import { useEffect, useState } from "react";
+import ServerDown from "../pages/ServerDown";
+import Loading from "../components/ui/Loading";
+import ForgetPassword from "../features/auth/ForgetPassword";
 
 export default function AppRoutes() {
-  const user = "/";
+  const home = "/";
   const business = "/business";
   const tourism = "/tourism";
   const business_type = "Accommodation";
+  const [isServerUp, setIsServerUp] = useState<boolean | null>(null);
+
+  const checkServerStatus = async () => {
+    try {
+      const { data } = await axios.get<User[]>(`${api}/users`, {
+        timeout: 5000,
+      });
+      setIsServerUp(Array.isArray(data));
+    } catch (error) {
+      console.error("Server status check failed:", error);
+      setIsServerUp(false);
+    }
+  };
+
+  useEffect(() => {
+    checkServerStatus();
+  }, []);
 
   // Normalized role names as produced by AuthService
   const TOURISM_ROLES = ["Admin", "Tourism Officer"]; // Officer has restricted pages handled per-route
@@ -85,6 +110,15 @@ export default function AppRoutes() {
     "Sales Associate",
   ];
 
+  // Show loading or server down while checking
+  if (isServerUp === null) {
+    return <Loading variant="default" showProgress />;
+  }
+
+  if (isServerUp === false) {
+    return <ServerDown />;
+  }
+
   return (
     <Routes>
       <Route
@@ -94,21 +128,26 @@ export default function AppRoutes() {
           </AuthProvider>
         }
       >
-        {/* Auth routes */}
-
         <Route element={<MainLayout />}>
           <Route index element={<LandingPage />} />
-          <Route path={`${user}`} element={<LandingPage />} />
-          <Route path={`${user}about`} element={<About />} />
+          <Route path={`${home}`} element={<LandingPage />} />
+          <Route path={`${home}about`} element={<About />} />
+          <Route path={`${home}forget-password`} element={<ForgetPassword />} />
         </Route>
         <Route path={`/unauthorized`} element={<Unauthorized />} />
         {/* <Route path={`/login`} element={<UnifiedLogin />} /> */}
-        <Route path={`/login`} element={<BusinessPortalLogin />} />
+        <Route
+          element={
+            <BusinessProvider>
+              <Outlet />
+            </BusinessProvider>
+          }
+        >
+          <Route path={`/login`} element={<BusinessPortalLogin />} />
+        </Route>
         <Route path={`business-registration`} element={<Registration />} />
         <Route path={`/test`} element={<Test />} />
-        <Route path={`/test-button`} element={<TestButton />} />
         <Route path={`user/profile`} element={<OwnerProfile />} />
-        <Route path={`tourism/profile`} element={<TourismProfile />} />
         <Route path={`/register`} element={<TouristRegister />} />
         <Route path={`${tourism}/login`} element={<AdminLogin />} />
         <Route path={`${tourism}/signup`} element={<AdminRegister />} />
@@ -231,6 +270,14 @@ export default function AppRoutes() {
             />
             <Route
               path={`${business}/create-promotion`}
+              element={
+                <ProtectedRoute requiredRoles={BUSINESS_ROLES}>
+                  <AccommodationPromotionForm />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path={`${business}/edit-promotion/:id`}
               element={
                 <ProtectedRoute requiredRoles={BUSINESS_ROLES}>
                   <AccommodationPromotionForm />
@@ -447,6 +494,15 @@ export default function AppRoutes() {
             }
           />
           <Route
+            path={`tourism/profile`}
+            element={
+              <ProtectedRoute requiredRoles={TOURISM_ROLES}>
+                <TourismProfile />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
             path={`${tourism}/services/shop`}
             element={
               <ProtectedRoute requiredRoles={TOURISM_ROLES}>
@@ -462,43 +518,52 @@ export default function AppRoutes() {
               </ProtectedRoute>
             }
           />
+          {/* Tourist Spot routes wrapped with TouristSpotProvider */}
           <Route
-            path={`${tourism}/services/tourist-spot`}
             element={
-              <ProtectedRoute requiredRoles={TOURISM_ROLES}>
-                <Spot />
-              </ProtectedRoute>
+              <TouristSpotProvider>
+                <Outlet />
+              </TouristSpotProvider>
             }
-          />
-          <Route
-            path={`${tourism}/services/tourist-spot/:id`}
-            element={
-              <ProtectedRoute requiredRoles={TOURISM_ROLES}>
-                <TouristSpotDetailsScreen />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path={`${tourism}/room/:id`}
-            element={
-              <ProtectedRoute requiredRoles={TOURISM_ROLES}>
-                <Room />
-              </ProtectedRoute>
-            }
-          />
+          >
+            <Route
+              path={`${tourism}/services/tourist-spot`}
+              element={
+                <ProtectedRoute requiredRoles={TOURISM_ROLES}>
+                  <Spot />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path={`${tourism}/services/tourist-spot/:id`}
+              element={
+                <ProtectedRoute requiredRoles={TOURISM_ROLES}>
+                  <TouristSpotDetailsScreen />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path={`${tourism}/services/tourist-spot/:id/reviews`}
+              element={
+                <ProtectedRoute requiredRoles={TOURISM_ROLES}>
+                  <TouristSpotReviews />
+                </ProtectedRoute>
+              }
+            />
+          </Route>
+
           {/* Public offer pages removed */}
           <Route
             path={`${tourism}/settings`}
             element={
               <ProtectedRoute requiredRoles={TOURISM_ROLES}>
-                <Settings />
+                <TourismSettings />
               </ProtectedRoute>
             }
           />
           {/* Admin offer pages removed */}
         </Route>
       </Route>
-
       {/* 404 */}
       <Route path="*" element={<NotFound />} />
     </Routes>

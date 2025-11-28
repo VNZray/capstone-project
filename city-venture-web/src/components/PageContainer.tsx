@@ -5,13 +5,17 @@ interface PageContainerProps {
   padding?: string | number;
   gap?: string | number;
   style?: React.CSSProperties;
+  className?: string;
+  id?: string;
 }
 
-const PageContainer: React.FC<PageContainerProps> = ({ 
-  children, 
-  style, 
-  padding = "clamp(0.75rem, 2vw + 0.25rem, 1rem)", 
-  gap = "clamp(1rem, 2vw + 0.5rem, 1.25rem)" 
+const PageContainer: React.FC<PageContainerProps> = ({
+  children,
+  style,
+  padding = "clamp(0.75rem, 2vw + 0.25rem, 1rem)",
+  gap = "clamp(1rem, 2vw + 0.5rem, 1.25rem)",
+  className = "",
+  id,
 }) => {
   return (
     <div
@@ -23,6 +27,8 @@ const PageContainer: React.FC<PageContainerProps> = ({
         ...style,
         gap: gap,
       }}
+      className={className}
+      id={id}
     >
       {children}
     </div>

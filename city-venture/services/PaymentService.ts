@@ -4,9 +4,7 @@
  * All PayMongo API calls are made through the backend for security
  */
 
-import axios from 'axios';
-import api from './api';
-import { ensureValidToken } from './AuthService';
+import apiClient from '@/services/apiClient';
 import * as WebBrowser from 'expo-web-browser';
 import * as Linking from 'expo-linking';
 
@@ -53,21 +51,9 @@ export async function initiatePayment(
   paymentData: InitiatePaymentRequest
 ): Promise<InitiatePaymentResponse> {
   try {
-    const token = await ensureValidToken();
-    
-    if (!token) {
-      throw new Error('Authentication required. Please log in again.');
-    }
-
-    const response = await axios.post<InitiatePaymentResponse>(
-      `${api}/payments/initiate`,
-      paymentData,
-      {
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-      }
+    const response = await apiClient.post<InitiatePaymentResponse>(
+      `/payments/initiate`,
+      paymentData
     );
 
     return response.data;
@@ -84,19 +70,8 @@ export async function initiatePayment(
  */
 export async function getPaymentStatus(paymentId: string): Promise<PaymentStatus> {
   try {
-    const token = await ensureValidToken();
-    
-    if (!token) {
-      throw new Error('Authentication required. Please log in again.');
-    }
-
-    const response = await axios.get<PaymentStatus>(
-      `${api}/payments/${paymentId}`,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      }
+    const response = await apiClient.get<PaymentStatus>(
+      `/payments/${paymentId}`
     );
 
     return response.data;

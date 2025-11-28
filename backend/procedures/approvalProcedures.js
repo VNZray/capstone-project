@@ -2,7 +2,9 @@
 export async function createTouristSpotApprovalProcedures(knex) {
   const approvalProcs = [
     'GetPendingEditRequests', 'GetPendingTouristSpots', 'ApproveTouristSpot',
-    'ApproveTouristSpotEdit', 'RejectTouristSpotEdit', 'RejectTouristSpot'
+    'ApproveTouristSpotEdit', 'RejectTouristSpotEdit', 'RejectTouristSpot',
+    // Business approval procedures
+    'GetPendingBusinesses', 'ApproveBusiness', 'RejectBusiness'
   ];
   for (const n of approvalProcs) {
     await knex.raw(`DROP PROCEDURE IF EXISTS ${n};`);
@@ -91,6 +93,13 @@ export async function createTouristSpotApprovalProcedures(knex) {
         SELECT id FROM tourist_spots WHERE spot_status = 'pending'
       )
       ORDER BY s.tourist_spot_id, s.day_of_week ASC;
+
+      -- Primary images for pending tourist spots
+      SELECT i.tourist_spot_id, i.file_url
+      FROM tourist_spot_images i
+      WHERE i.is_primary = 1 AND i.tourist_spot_id IN (
+        SELECT id FROM tourist_spots WHERE spot_status = 'pending'
+      );
     END;
   `);
   await knex.raw(`
@@ -167,12 +176,85 @@ export async function createTouristSpotApprovalProcedures(knex) {
       SELECT ROW_COUNT() AS affected_rows;
     END;
   `);
+
+  // ==================== BUSINESS APPROVAL PROCEDURES ====================
+  await knex.raw(`
+    CREATE PROCEDURE GetPendingBusinesses()
+    BEGIN
+      SELECT 
+        b.*, 
+        t.type AS business_type_name,
+        c.category AS business_category_name
+      FROM business b
+      LEFT JOIN type t ON b.business_type_id = t.id
+      LEFT JOIN category c ON b.business_category_id = c.id
+      WHERE b.status = 'Pending'
+      ORDER BY b.created_at DESC;
+    END;
+  `);
+
+  await knex.raw(`
+    CREATE PROCEDURE ApproveBusiness(IN p_id CHAR(64))
+    BEGIN
+      -- Set business Active only if currently Pending
+      UPDATE business 
+      SET status='Active'
+      WHERE id = p_id AND status='Pending';
+
+      IF ROW_COUNT() > 0 THEN
+        -- Cascade approve related registration (if pending)
+        UPDATE registration 
+        SET status = 'Approved', approved_at = CURRENT_TIMESTAMP
+        WHERE business_id = p_id AND status = 'Pending';
+
+        -- Cascade approve related permits (if pending)
+        UPDATE permit 
+        SET status = 'approved', approved_at = CURRENT_TIMESTAMP
+        WHERE business_id = p_id AND status = 'pending';
+
+        -- Log business approval
+        CALL LogApprovalRecord('new', 'business', p_id, 'approved', NULL, NULL);
+        SELECT 1 AS success;
+      ELSE
+        SELECT 0 AS success; -- Not found or not pending
+      END IF;
+    END;
+  `);
+
+  await knex.raw(`
+    CREATE PROCEDURE RejectBusiness(IN p_id CHAR(64))
+    BEGIN
+      -- Set business Inactive only if currently Pending
+      UPDATE business 
+      SET status='Inactive'
+      WHERE id = p_id AND status='Pending';
+
+      IF ROW_COUNT() > 0 THEN
+        -- Cascade reject related registration (if pending)
+        UPDATE registration 
+        SET status = 'Rejected'
+        WHERE business_id = p_id AND status = 'Pending';
+
+        -- Cascade reject related permits (if pending)
+        UPDATE permit 
+        SET status = 'rejected'
+        WHERE business_id = p_id AND status = 'pending';
+
+        -- Log business rejection
+        CALL LogApprovalRecord('new', 'business', p_id, 'rejected', NULL, NULL);
+        SELECT 1 AS success;
+      ELSE
+        SELECT 0 AS success; -- Not found or not pending
+      END IF;
+    END;
+  `);
 }
 
 export async function dropTouristSpotApprovalProcedures(knex) {
   const names = [
     'GetPendingEditRequests', 'GetPendingTouristSpots', 'ApproveTouristSpot',
-    'ApproveTouristSpotEdit', 'RejectTouristSpotEdit', 'RejectTouristSpot'
+    'ApproveTouristSpotEdit', 'RejectTouristSpotEdit', 'RejectTouristSpot',
+    'GetPendingBusinesses', 'ApproveBusiness', 'RejectBusiness'
   ];
   for (const n of names) {
     await knex.raw(`DROP PROCEDURE IF EXISTS ${n};`);

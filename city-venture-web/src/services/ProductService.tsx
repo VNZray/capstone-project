@@ -1,5 +1,4 @@
-import axios from 'axios';
-import api from '@/src/services/api';
+import apiClient from './apiClient';
 import type {
   Product,
   ProductStock,
@@ -37,7 +36,7 @@ function normalizeArrayResponse<T>(payload: unknown): T[] {
 
 /** Get all products */
 export const fetchAllProducts = async (): Promise<Product[]> => {
-  const { data } = await axios.get<Product[]>(`${api}/products`);
+  const { data } = await apiClient.get<Product[]>(`/products`);
   return normalizeArrayResponse<Product>(data);
 };
 
@@ -45,7 +44,7 @@ export const fetchAllProducts = async (): Promise<Product[]> => {
 export const fetchProductsByBusinessId = async (
   businessId: string
 ): Promise<Product[]> => {
-  const { data } = await axios.get<Product[]>(`${api}/products/business/${businessId}`);
+  const { data } = await apiClient.get<Product[]>(`/products/business/${businessId}`);
   return normalizeArrayResponse<Product>(data);
 };
 
@@ -53,13 +52,13 @@ export const fetchProductsByBusinessId = async (
 export const fetchProductsByCategoryId = async (
   categoryId: string
 ): Promise<Product[]> => {
-  const { data } = await axios.get<Product[]>(`${api}/products/category/${categoryId}`);
+  const { data } = await apiClient.get<Product[]>(`/products/category/${categoryId}`);
   return normalizeArrayResponse<Product>(data);
 };
 
 /** Get product by ID */
 export const fetchProductById = async (productId: string): Promise<Product> => {
-  const { data } = await axios.get<Product>(`${api}/products/${productId}`);
+  const { data } = await apiClient.get<Product>(`/products/${productId}`);
   return (data as { data?: Product }).data ?? data;
 };
 
@@ -67,8 +66,8 @@ export const fetchProductById = async (productId: string): Promise<Product> => {
 export const createProduct = async (
   payload: CreateProductPayload
 ): Promise<Product> => {
-  const { data } = await axios.post<{ message: string; data: Product }>(
-    `${api}/products`,
+  const { data } = await apiClient.post<{ message: string; data: Product }>(
+    `/products`,
     payload
   );
   return data.data;
@@ -79,8 +78,8 @@ export const updateProduct = async (
   productId: string,
   payload: UpdateProductPayload
 ): Promise<Product> => {
-  const { data } = await axios.put<{ message: string; data: Product }>(
-    `${api}/products/${productId}`,
+  const { data } = await apiClient.put<{ message: string; data: Product }>(
+    `/products/${productId}`,
     payload
   );
   return data.data;
@@ -88,7 +87,7 @@ export const updateProduct = async (
 
 /** Delete product */
 export const deleteProduct = async (productId: string): Promise<void> => {
-  await axios.delete(`${api}/products/${productId}`);
+  await apiClient.delete(`/products/${productId}`);
 };
 
 // ==================== STOCK MANAGEMENT ====================
@@ -97,7 +96,7 @@ export const deleteProduct = async (productId: string): Promise<void> => {
 export const fetchProductStock = async (
   productId: string
 ): Promise<ProductStock> => {
-  const { data } = await axios.get<ProductStock>(`${api}/products/${productId}/stock`);
+  const { data } = await apiClient.get<ProductStock>(`/products/${productId}/stock`);
   return data;
 };
 
@@ -106,8 +105,8 @@ export const updateProductStock = async (
   productId: string,
   payload: UpdateStockPayload
 ): Promise<ProductStock> => {
-  const { data } = await axios.put<{ message: string; data: ProductStock }>(
-    `${api}/products/${productId}/stock`,
+  const { data } = await apiClient.put<{ message: string; data: ProductStock }>(
+    `/products/${productId}/stock`,
     payload
   );
   return data.data;
@@ -117,8 +116,8 @@ export const updateProductStock = async (
 export const fetchProductStockHistory = async (
   productId: string
 ): Promise<StockHistory[]> => {
-  const { data } = await axios.get<StockHistory[]>(
-    `${api}/products/${productId}/stock/history`
+  const { data } = await apiClient.get<StockHistory[]>(
+    `/products/${productId}/stock/history`
   );
   return data;
 };

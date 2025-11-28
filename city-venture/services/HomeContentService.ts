@@ -1,5 +1,4 @@
-import axios from 'axios';
-import api from '@/services/api';
+import apiClient from '@/services/apiClient';
 
 export type HighlightedTouristSpot = {
   id: string;
@@ -36,21 +35,21 @@ export type NewsArticle = {
 };
 
 export const fetchHighlightedSpots = async (): Promise<HighlightedTouristSpot[]> => {
-  const { data } = await axios.get(`${api}/home/highlighted-spots`);
+  const { data } = await apiClient.get(`/home/highlighted-spots`);
   return data;
 };
 
 export const fetchPartnerBusinesses = async (): Promise<PartnerBusiness[]> => {
-  const { data } = await axios.get(`${api}/home/partner-businesses`);
+  const { data } = await apiClient.get(`/home/partner-businesses`);
   return data;
 };
 
 export const fetchUpcomingEvents = async (): Promise<HomeEvent[]> => {
-  const { data } = await axios.get(`${api}/home/upcoming-events`);
+  const { data } = await apiClient.get(`/home/upcoming-events`);
   return data;
 };
 
 export const fetchNewsArticles = async (): Promise<NewsArticle[]> => {
-  const { data } = await axios.get(`${api}/home/news`);
+  const { data } = await apiClient.get(`/home/news`);
   return data;
 };

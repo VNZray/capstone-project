@@ -9,8 +9,8 @@ import {
   FormHelperText,
 } from "@mui/joy";
 import Container from "@/src/components/Container";
-
-export type StaffRole = "Manager" | "Room Manager" | "Receptionist";
+import { fetchRolesByBusinessId, type Role } from "@/src/services/manage-staff/StaffService";
+import { useBusiness } from "@/src/context/BusinessContext";
 
 export type StaffFormData = {
   first_name: string;
@@ -18,7 +18,7 @@ export type StaffFormData = {
   email: string;
   password: string;
   phone_number?: string;
-  role: StaffRole;
+  role: string;
 };
 
 type StaffAddModalProps = {
@@ -27,24 +27,21 @@ type StaffAddModalProps = {
   onSave: (data: StaffFormData) => void;
 };
 
-const ROLE_OPTIONS: { label: string; value: StaffRole }[] = [
-  { label: "Manager", value: "Manager" },
-  { label: "Room Manager", value: "Room Manager" },
-  { label: "Receptionist", value: "Receptionist" },
-];
-
 export default function StaffAddModal({
   open,
   onClose,
   onSave,
 }: StaffAddModalProps) {
+  const { businessDetails } = useBusiness();
   const [firstName, setFirstName] = React.useState("");
   const [lastName, setLastName] = React.useState("");
   const [email, setEmail] = React.useState("");
   const [phone, setPhone] = React.useState("");
   const [password, setPassword] = React.useState("123456");
-  const [role, setRole] = React.useState<StaffRole>("Manager");
+  const [role, setRole] = React.useState<string>("");
   const [error, setError] = React.useState<string>("");
+  const [businessRoles, setBusinessRoles] = React.useState<Role[]>([]);
+  const [loading, setLoading] = React.useState(false);
 
   React.useEffect(() => {
     if (!open) return;
@@ -54,15 +51,31 @@ export default function StaffAddModal({
     setEmail("");
     setPhone("");
     setPassword("123456");
-    setRole("Manager");
+    setRole("");
     setError("");
-  }, [open]);
+    loadBusinessRoles();
+  }, [open, businessDetails?.id]);
 
-  const canSubmit = firstName.trim().length > 0 && email.trim().length > 0;
+  const loadBusinessRoles = async () => {
+    if (!businessDetails?.id) return;
+    
+    setLoading(true);
+    try {
+      const roles = await fetchRolesByBusinessId(businessDetails.id);
+      setBusinessRoles(roles);
+      console.log("Loaded business roles:", roles);
+    } catch (err) {
+      console.error("Failed to load business roles:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const canSubmit = firstName.trim().length > 0 && email.trim().length > 0 && role.length > 0;
 
   const handleSave = () => {
     if (!canSubmit) {
-      setError("First name and email are required.");
+      setError("First name, email, and role are required.");
       return;
     }
     if (!email.includes("@")) {
@@ -86,7 +99,6 @@ export default function StaffAddModal({
       onClose={onClose}
       title="Add Staff"
       description="Create a new staff member and assign a role"
-      maxWidth={400}
       actions={[
         { label: "Cancel", onClick: onClose },
         {
@@ -140,13 +152,23 @@ export default function StaffAddModal({
         </FormControl>
         <FormControl>
           <FormLabel>Assign Role</FormLabel>
-          <Select value={role} onChange={(_e, val) => val && setRole(val)}>
-            {ROLE_OPTIONS.map((opt) => (
-              <Option key={opt.value} value={opt.value}>
-                {opt.label}
+          <Select 
+            value={role} 
+            onChange={(_e, val) => val && setRole(val)}
+            disabled={loading || businessRoles.length === 0}
+            placeholder={businessRoles.length === 0 ? "No roles available. Create one first." : "Select a role"}
+          >
+            {businessRoles.map((businessRole) => (
+              <Option key={businessRole.id} value={businessRole.role_name}>
+                {businessRole.role_name}
               </Option>
             ))}
           </Select>
+          {businessRoles.length === 0 && !loading && (
+            <FormHelperText>
+              Please create a role in "Manage Roles & Permissions" first.
+            </FormHelperText>
+          )}
         </FormControl>
       </Container>
       {error ? (

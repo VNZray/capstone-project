@@ -71,7 +71,7 @@ const Navbar: React.FC<NavbarProps> = ({
     if (!id) return;
     const el = document.getElementById(id);
     if (el) {
-      el.scrollIntoView({ behavior: "smooth", block: "center" });
+      el.scrollIntoView({ behavior: "smooth", block: "start" });
       setOpen(false);
     }
   };
@@ -134,6 +134,15 @@ const Navbar: React.FC<NavbarProps> = ({
             }}
           >
             Services
+          </a>
+          <a
+            className="nav-link"
+            href="#features"
+            onClick={(e) => {
+              navigate("/test");
+            }}
+          >
+            Components
           </a>
         </div>
 

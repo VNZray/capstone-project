@@ -72,7 +72,7 @@ const Reviews: React.FC = () => {
         setError(null);
         const apiReviews = await FeedbackServices.getBusinessReviews(
           selectedRoomId,
-          "accommodation"
+          "room"
         );
         const transformedReviews = apiReviews.map(transformReview);
         setReviews(transformedReviews);

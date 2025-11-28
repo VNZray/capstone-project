@@ -1,9 +1,5 @@
 import * as React from "react";
 import {
-  Modal,
-  ModalDialog,
-  DialogActions,
-  Button,
   Input,
   FormControl,
   FormLabel,
@@ -19,9 +15,9 @@ import { useBusiness } from "@/src/context/BusinessContext";
 import { getData, insertData } from "@/src/services/Service";
 import type { Amenity } from "@/src/types/Amenity";
 import { useEffect } from "react";
-import Typography from "@/src/components/Typography";
 import ImageUpload from "@/src/components/ImageUpload";
 import Alert from "@/src/components/Alert";
+import BaseEditModal from "@/src/components/BaseEditModal";
 interface AddRoomModalProps {
   business_name?: string;
   open: boolean;
@@ -218,16 +214,19 @@ export default function AddRoomModal({
 
   return (
     <>
-      <Modal open={open} onClose={onClose}>
-        <ModalDialog
-          size="md"
-          minWidth={600}
-          maxWidth={600}
-          variant="outlined"
-          role="dialog"
-        >
-          <Typography.CardTitle>Add New Room</Typography.CardTitle>
-
+      <BaseEditModal
+        open={open}
+        onClose={onClose}
+        title="Add New Room"
+        actions={[
+          { label: "Cancel", onClick: onClose },
+          {
+            label: "Save",
+            onClick: handleSave,
+            variant: "primary",
+          },
+        ]}
+      >
         <form
           onSubmit={(e) => {
             e.preventDefault();
@@ -458,20 +457,9 @@ export default function AddRoomModal({
                 }}
               />
             </FormControl>
-
-            {/* Actions */}
-            <DialogActions>
-              <Button variant="plain" color="neutral" onClick={onClose}>
-                Cancel
-              </Button>
-              <Button type="submit" color="primary">
-                Save
-              </Button>
-            </DialogActions>
           </Stack>
         </form>
-      </ModalDialog>
-    </Modal>
+      </BaseEditModal>
 
       {/* Alert Dialog */}
       <Alert

@@ -61,9 +61,11 @@ interface ContainerProps {
   onMouseEnterProp?: (event: React.MouseEvent<HTMLDivElement>) => void;
   onMouseLeaveProp?: (event: React.MouseEvent<HTMLDivElement>) => void;
   onKeyDown?: (event: React.KeyboardEvent<HTMLDivElement>) => void;
+  id?: string;
 }
 
 const Container: React.FC<ContainerProps> = ({
+  id,
   children,
   elevation = 0,
   className = "",
@@ -74,7 +76,7 @@ const Container: React.FC<ContainerProps> = ({
   style,
   gap = "clamp(0.5rem, 1.5vw + 0.25rem, 1rem)",
   direction = "column",
-  background = 'transparent',
+  background = "transparent",
   opacity = 1,
   align,
   justify,
@@ -250,6 +252,7 @@ const Container: React.FC<ContainerProps> = ({
       `}</style>
 
       <div
+        id={id}
         className={`container elevation-${elevation} ${className}`.trim()}
         style={containerStyle}
         onMouseEnter={(e) => {

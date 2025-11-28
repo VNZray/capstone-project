@@ -13,7 +13,6 @@
 
 .main-hero {
   position: relative;
-  overflow: hidden;
   background:
     radial-gradient(600px 600px at 10% 12%, var(--blobCool) 0%, transparent 60%),
     radial-gradient(720px 720px at 95% 28%, var(--blobWarm) 0%, transparent 64%),
@@ -25,14 +24,13 @@
 }
 
 .hero-inner {
-  max-width: 1400px;
+  max-width: 1500px;
   margin: 0 auto;
   display: grid;
   grid-template-columns: 1.1fr 1fr;
   gap: 32px;
   align-items: center;
   justify-content: center;
-  padding-top: 60px;
 }
 
 @media (max-width: 980px) {

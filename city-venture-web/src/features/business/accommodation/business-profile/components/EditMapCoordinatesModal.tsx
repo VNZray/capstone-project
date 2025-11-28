@@ -76,7 +76,6 @@ const EditMapCoordinatesModal: React.FC<EditDescriptionModalProps> = ({
       onClose={onClose}
       title="Edit Map Coordinates"
       description="Pin the location of your business on the map"
-      maxWidth={600}
       actions={[
         { label: 'Cancel', onClick: onClose },
         { label: 'Locate', onClick: handleGetCurrentLocation },

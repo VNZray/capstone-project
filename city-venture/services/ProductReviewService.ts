@@ -1,6 +1,4 @@
-import axios from 'axios';
-import api from '@/services/api';
-import { getToken } from '@/utils/secureStorage';
+import apiClient from '@/services/apiClient';
 
 export interface ProductReviewStats {
   product_id: string;
@@ -39,13 +37,6 @@ export interface ProductReview {
   updated_at: string;
 }
 
-const getAuthAxios = async () => {
-  const token = await getToken();
-  return axios.create({
-    headers: token ? { Authorization: `Bearer ${token}` } : {},
-  });
-};
-
 /**
  * Fetch business review statistics
  * GET /api/product-reviews/business/:businessId/stats
@@ -54,9 +45,8 @@ export const fetchBusinessReviewStats = async (
   businessId: string
 ): Promise<BusinessReviewStats | null> => {
   try {
-    const authAxios = await getAuthAxios();
-    const { data } = await authAxios.get<BusinessReviewStats>(
-      `${api}/product-reviews/business/${businessId}/stats`
+    const { data } = await apiClient.get<BusinessReviewStats>(
+      `/product-reviews/business/${businessId}/stats`
     );
     return data;
   } catch (error) {
@@ -73,9 +63,8 @@ export const fetchReviewsByBusinessId = async (
   businessId: string
 ): Promise<ProductReview[]> => {
   try {
-    const authAxios = await getAuthAxios();
-    const { data } = await authAxios.get<ProductReview[]>(
-      `${api}/product-reviews/business/${businessId}`
+    const { data } = await apiClient.get<ProductReview[]>(
+      `/product-reviews/business/${businessId}`
     );
     return Array.isArray(data) ? data : [];
   } catch (error) {
@@ -92,9 +81,8 @@ export const fetchReviewsByProductId = async (
   productId: string
 ): Promise<ProductReview[]> => {
   try {
-    const authAxios = await getAuthAxios();
-    const { data } = await authAxios.get<ProductReview[]>(
-      `${api}/product-reviews/product/${productId}`
+    const { data } = await apiClient.get<ProductReview[]>(
+      `/product-reviews/product/${productId}`
     );
     return Array.isArray(data) ? data : [];
   } catch (error) {
@@ -117,9 +105,8 @@ export const createProductReview = async (reviewData: {
   is_verified_purchase?: boolean;
 }): Promise<ProductReview | null> => {
   try {
-    const authAxios = await getAuthAxios();
-    const { data } = await authAxios.post<{ data: ProductReview }>(
-      `${api}/product-reviews`,
+    const { data } = await apiClient.post<{ data: ProductReview }>(
+      `/product-reviews`,
       reviewData
     );
     return data.data;

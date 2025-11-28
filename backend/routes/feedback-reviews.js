@@ -7,6 +7,7 @@ import {
   updateReview,
   deleteReview,
 } from "../controller/feedback/reviewController.js";
+import { authenticate } from "../middleware/authenticate.js";
 
 const router = express.Router();
 
@@ -14,8 +15,8 @@ const router = express.Router();
 router.get("/", getAllReviews);
 router.get("/type/:review_type/:review_type_id", getReviewsByTypeAndEntityId);
 router.get("/:id", getReviewById);
-router.post("/", insertReview);
-router.patch("/:id", updateReview);
-router.delete("/:id", deleteReview);
+router.post("/", authenticate, insertReview);
+router.patch("/:id", authenticate, updateReview);
+router.delete("/:id", authenticate, deleteReview);
 
 export default router;

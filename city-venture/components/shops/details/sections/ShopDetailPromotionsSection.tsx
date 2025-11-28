@@ -1,6 +1,6 @@
 import { ShopDetailPromotionCard } from '@/components/shops/details/elements';
 import type { BusinessProfileView } from '@/components/shops/details/types';
-import { ShopColors } from '@/constants/ShopColors';
+import { ShopColors } from '@/constants/color';
 import React from 'react';
 import { FlatList, StyleSheet, Text, View } from 'react-native';
 

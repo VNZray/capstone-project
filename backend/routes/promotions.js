@@ -1,5 +1,7 @@
 import express from "express";
 import * as promotionController from "../controller/promotionController.js";
+import { authenticate } from "../middleware/authenticate.js";
+import { authorizeRole } from "../middleware/authorizeRole.js";
 
 const router = express.Router();
 
@@ -10,7 +12,7 @@ router.get("/", promotionController.getAllPromotions);
 router.get("/active", promotionController.getAllActivePromotions);
 
 // Create new promotion
-router.post("/", promotionController.insertPromotion);
+router.post("/", authenticate, authorizeRole("Business Owner", "Staff", "Admin"), promotionController.insertPromotion);
 
 // Update expired promotions (maintenance)
 router.post("/maintenance/update-expired", promotionController.updateExpiredPromotions);
@@ -25,9 +27,9 @@ router.get("/business/:businessId/active", promotionController.getActivePromotio
 router.get("/:id", promotionController.getPromotionById);
 
 // Update promotion
-router.put("/:id", promotionController.updatePromotion);
+router.put("/:id", authenticate, authorizeRole("Business Owner", "Staff", "Admin"), promotionController.updatePromotion);
 
 // Delete promotion
-router.delete("/:id", promotionController.deletePromotion);
+router.delete("/:id", authenticate, authorizeRole("Business Owner", "Staff", "Admin"), promotionController.deletePromotion);
 
 export default router;

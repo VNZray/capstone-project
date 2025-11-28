@@ -28,7 +28,7 @@ function toMySQLDateTime(input) {
 export async function getAllPromotions(req, res) {
   try {
     const [data] = await db.query("CALL GetAllPromotions()");
-    res.json(data);
+    res.json(data[0]);
   } catch (error) {
     return handleDbError(error, res);
   }
@@ -39,7 +39,7 @@ export async function getPromotionsByBusinessId(req, res) {
   const { businessId } = req.params;
   try {
     const [data] = await db.query("CALL GetPromotionsByBusinessId(?)", [businessId]);
-    res.json(data);
+    res.json(data[0]);
   } catch (error) {
     return handleDbError(error, res);
   }
@@ -50,7 +50,7 @@ export async function getActivePromotionsByBusinessId(req, res) {
   const { businessId } = req.params;
   try {
     const [data] = await db.query("CALL GetActivePromotionsByBusinessId(?)", [businessId]);
-    res.json(data);
+    res.json(data[0]);
   } catch (error) {
     return handleDbError(error, res);
   }
@@ -60,7 +60,7 @@ export async function getActivePromotionsByBusinessId(req, res) {
 export async function getAllActivePromotions(req, res) {
   try {
     const [data] = await db.query("CALL GetAllActivePromotions()");
-    res.json(data);
+    res.json(data[0]);
   } catch (error) {
     return handleDbError(error, res);
   }
@@ -97,8 +97,13 @@ export async function insertPromotion(req, res) {
       description,
       image_url,
       external_link,
+      promo_code,
+      discount_percentage,
+      fixed_discount_amount,
+      usage_limit,
       start_date,
-      end_date
+      end_date,
+      promo_type
     } = req.body;
 
     // Normalize date inputs to MySQL DATETIME format
@@ -114,15 +119,25 @@ export async function insertPromotion(req, res) {
       }
     }
 
-    const [data] = await db.query("CALL InsertPromotion(?, ?, ?, ?, ?, ?, ?, ?)", [
+    // Validate promo_type
+    if (!promo_type || (promo_type !== 1 && promo_type !== 2)) {
+      return res.status(400).json({ message: "promo_type must be 1 (discount) or 2 (promo_code)" });
+    }
+
+    const [data] = await db.query("CALL InsertPromotion(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", [
       id, 
       business_id, 
       title, 
       description || null,
       image_url || null,
       external_link || null,
+      promo_code || null,
+      discount_percentage || null,
+      fixed_discount_amount || null,
+      usage_limit || null,
       pStart,
-      pEnd
+      pEnd,
+      promo_type
     ]);
     
     res.status(201).json({
@@ -143,9 +158,14 @@ export async function updatePromotion(req, res) {
       description,
       image_url,
       external_link,
+      promo_code,
+      discount_percentage,
+      fixed_discount_amount,
+      usage_limit,
       start_date,
       end_date,
-      is_active
+      is_active,
+      promo_type
     } = req.body;
 
     // Normalize date inputs to MySQL DATETIME format
@@ -161,15 +181,20 @@ export async function updatePromotion(req, res) {
       }
     }
 
-    const [data] = await db.query("CALL UpdatePromotion(?, ?, ?, ?, ?, ?, ?, ?)", [
+    const [data] = await db.query("CALL UpdatePromotion(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", [
       id, 
       title || null, 
       description || null,
       image_url || null,
       external_link || null,
+      promo_code || null,
+      discount_percentage || null,
+      fixed_discount_amount || null,
+      usage_limit || null,
       pStart, 
       pEnd,
-      is_active !== undefined ? is_active : null
+      is_active !== undefined ? is_active : null,
+      promo_type || null
     ]);
 
     if (!data || data.length === 0) {

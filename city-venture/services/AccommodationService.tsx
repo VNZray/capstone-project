@@ -5,7 +5,7 @@ import type {
   BusinessType,
 } from '@/types/Business';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import axios from 'axios';
+import apiClient from '@/services/apiClient';
 
 import api from '@/services/api';
 import { Address } from '@/types/Address';
@@ -28,7 +28,7 @@ export const clearStoredBusinessId = async () => {
 
 /** Fetch Business Details from API */
 export const fetchAllBusinessDetails = async (): Promise<Business[]> => {
-  const { data } = await axios.get<Business[]>(`${api}/business`);
+  const { data } = await apiClient.get<Business[]>(`/business`);
   return data;
 };
 
@@ -36,29 +36,29 @@ export const fetchAllBusinessDetails = async (): Promise<Business[]> => {
 export const fetchBusinessDetails = async (
   business_id: string
 ): Promise<Business> => {
-  const { data } = await axios.get<Business>(`${api}/business/${business_id}`);
+  const { data } = await apiClient.get<Business>(`/business/${business_id}`);
   return data;
 };
 
 export const fetchBusinessesByOwner = async (
   owner_id: string
 ): Promise<Business[]> => {
-  const { data } = await axios.get(`${api}/business/owner/${owner_id}`);
+  const { data } = await apiClient.get(`/business/owner/${owner_id}`);
   return Array.isArray(data) ? data : [data]; // ensure it's always an array
 };
 
 export const fetchBusinessesByStatus = async (
   status: string
 ): Promise<Business[]> => {
-  const { data } = await axios.get(`${api}/business/status/${status}`);
+  const { data } = await apiClient.get(`/business/status/${status}`);
   return Array.isArray(data) ? data : [data]; // ensure it's always an array
 };
 
 export const fetchBusinessType = async (
   business_type_id: number
 ): Promise<BusinessType> => {
-  const res = await axios.get<BusinessType>(
-    `${api}/category-and-type/type/${business_type_id}`
+  const res = await apiClient.get<BusinessType>(
+    `/category-and-type/type/${business_type_id}`
   );
   return res.data;
 };
@@ -66,14 +66,14 @@ export const fetchBusinessType = async (
 export const fetchBusinessCategory = async (
   business_category_id: number
 ): Promise<BusinessCategory> => {
-  const res = await axios.get<BusinessCategory>(
-    `${api}/category-and-type/category-by-id/${business_category_id}`
+  const res = await apiClient.get<BusinessCategory>(
+    `/category-and-type/category-by-id/${business_category_id}`
   );
   return res.data;
 };
 
 export const fetchAddress = async (barangay_id: number): Promise<Address> => {
-  const res = await axios.get<Address>(`${api}/address/${barangay_id}`);
+  const res = await apiClient.get<Address>(`/address/${barangay_id}`);
   return res.data;
 };
 
@@ -125,7 +125,7 @@ export const fetchBookings = async (
   tourist_id: string
 ): Promise<Bookings[]> => {
   try {
-    const response = await axios.get(`${api}/booking/tourist/${tourist_id}`);
+    const response = await apiClient.get(`/booking/tourist/${tourist_id}`);
     return response.data;
   } catch (err: any) {
     debugLogger({
@@ -138,7 +138,7 @@ export const fetchBookings = async (
 
 export const fetchAllBookings = async (): Promise<Bookings[]> => {
   try {
-    const response = await axios.get(`${api}/booking`);
+    const response = await apiClient.get(`/booking`);
     return response.data;
   } catch (err: any) {
     debugLogger({

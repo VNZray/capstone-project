@@ -1,4 +1,4 @@
-import { ShopColors } from '@/constants/ShopColors';
+import { ShopColors } from '@/constants/color';
 import type { BusinessProfileMenuItem, BusinessProfileView } from '@/components/shops/details/types';
 import {
   ShopDetailInfoSection,
@@ -626,7 +626,8 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     paddingHorizontal: 20,
-    paddingVertical: 20,
+    paddingTop: 20,
+    paddingBottom: 44,
   },
   shopMainInfo: {
     marginBottom: 12,
@@ -701,6 +702,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     borderBottomWidth: 1,
     borderBottomColor: ShopColors.border,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    marginTop: -24,
   },
   quickActionButton: {
     flex: 1,

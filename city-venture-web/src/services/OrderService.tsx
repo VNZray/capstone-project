@@ -1,17 +1,5 @@
-import axios from "axios";
-import api from "@/src/services/api";
+import apiClient from "./apiClient";
 import type { Order, OrderDetails, OrderStats, OrderStatus, PaymentStatus } from "@/src/types/Order";
-
-// Configure axios to include Authorization header
-axios.interceptors.request.use((config) => {
-  const token = localStorage.getItem("token");
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
-}, (error) => {
-  return Promise.reject(error);
-});
 
 interface OrderResponse<T = Order | null> {
   message?: string;
@@ -91,14 +79,14 @@ function unwrapOrderDetails(payload: unknown): OrderDetails | null {
 }
 
 function isNotFound(error: unknown): boolean {
-  return axios.isAxiosError(error) && error.response?.status === 404;
+  return (error as { response?: { status?: number } }).response?.status === 404;
 }
 
 // ==================== Fetchers ====================
 
 export const fetchOrdersByBusinessId = async (businessId: string): Promise<Order[]> => {
   try {
-    const { data } = await axios.get<Order[]>(`${api}/orders/business/${businessId}`);
+    const { data } = await apiClient.get<Order[]>(`/orders/business/${businessId}`);
     return normalizeArrayResponse<Order>(data);
   } catch (error) {
     if (isNotFound(error)) {
@@ -110,7 +98,7 @@ export const fetchOrdersByBusinessId = async (businessId: string): Promise<Order
 
 export const fetchOrderById = async (orderId: string): Promise<OrderDetails | null> => {
   try {
-    const { data } = await axios.get<OrderDetails>(`${api}/orders/${orderId}`);
+    const { data } = await apiClient.get<OrderDetails>(`/orders/${orderId}`);
     if (data && typeof data === "object" && "items" in data) {
       return data as OrderDetails;
     }
@@ -128,8 +116,8 @@ export const fetchOrderStatsByBusiness = async (
   periodInDays = 30
 ): Promise<OrderStats | null> => {
   try {
-    const { data } = await axios.get<OrderStats>(
-      `${api}/orders/business/${businessId}/stats`,
+    const { data } = await apiClient.get<OrderStats>(
+      `/orders/business/${businessId}/stats`,
       {
         params: { period: periodInDays.toString() },
       }
@@ -175,7 +163,7 @@ export const updateOrderStatus = async (
   orderId: string,
   status: OrderStatus
 ): Promise<Order | null> => {
-  const { data } = await axios.patch<OrderResponse>(`${api}/orders/${orderId}/status`, {
+  const { data } = await apiClient.patch<OrderResponse>(`/orders/${orderId}/status`, {
     status,
   });
   return unwrapOrder(data);
@@ -185,7 +173,7 @@ export const updatePaymentStatus = async (
   orderId: string,
   payment_status: PaymentStatus
 ): Promise<Order | null> => {
-  const { data } = await axios.patch<OrderResponse>(`${api}/orders/${orderId}/payment-status`, {
+  const { data } = await apiClient.patch<OrderResponse>(`/orders/${orderId}/payment-status`, {
     payment_status,
   });
   return unwrapOrder(data);
@@ -195,19 +183,19 @@ export const cancelOrder = async (
   orderId: string,
   cancellation_reason?: string
 ): Promise<Order | null> => {
-  const { data } = await axios.post<OrderResponse>(`${api}/orders/${orderId}/cancel`, {
+  const { data } = await apiClient.post<OrderResponse>(`/orders/${orderId}/cancel`, {
     cancellation_reason,
   });
   return unwrapOrder(data);
 };
 
 export const markOrderAsReady = async (orderId: string): Promise<Order | null> => {
-  const { data } = await axios.post<OrderResponse>(`${api}/orders/${orderId}/mark-ready`, {});
+  const { data } = await apiClient.post<OrderResponse>(`/orders/${orderId}/mark-ready`, {});
   return unwrapOrder(data);
 };
 
 export const markOrderAsPickedUp = async (orderId: string): Promise<Order | null> => {
-  const { data } = await axios.post<OrderResponse>(`${api}/orders/${orderId}/mark-picked-up`, {});
+  const { data } = await apiClient.post<OrderResponse>(`/orders/${orderId}/mark-picked-up`, {});
   return unwrapOrder(data);
 };
 
@@ -216,8 +204,8 @@ export const verifyArrivalCode = async (
   arrival_code: string
 ): Promise<Order | null> => {
   try {
-    const { data } = await axios.post<OrderResponse>(
-      `${api}/orders/business/${businessId}/verify-arrival`,
+    const { data } = await apiClient.post<OrderResponse>(
+      `/orders/business/${businessId}/verify-arrival`,
       { arrival_code }
     );
     return unwrapOrder(data);

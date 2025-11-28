@@ -1,5 +1,4 @@
-import axios from 'axios';
-import api from '@/src/services/api';
+import apiClient from './apiClient';
 import type {
   Discount,
   DiscountStats,
@@ -38,7 +37,7 @@ function normalizeArrayResponse<T>(payload: unknown): T[] {
 /** Update expired discounts in database (auto-mark as expired if end_datetime has passed) */
 export const updateExpiredDiscounts = async (): Promise<void> => {
   try {
-    await axios.post(`${api}/discounts/maintenance/update-expired`);
+    await apiClient.post(`/discounts/maintenance/update-expired`);
   } catch (error) {
     // Silently fail - this is a maintenance operation
     console.warn("Failed to update expired discounts:", error);
@@ -50,7 +49,7 @@ export const fetchAllDiscounts = async (): Promise<Discount[]> => {
   // First, update expired discounts in database
   await updateExpiredDiscounts();
   
-  const { data } = await axios.get<Discount[]>(`${api}/discounts`);
+  const { data } = await apiClient.get<Discount[]>(`/discounts`);
   return normalizeArrayResponse<Discount>(data);
 };
 
@@ -61,8 +60,8 @@ export const fetchDiscountsByBusinessId = async (
   // First, update expired discounts in database
   await updateExpiredDiscounts();
   
-  const { data } = await axios.get<Discount[]>(
-    `${api}/discounts/business/${businessId}`
+  const { data } = await apiClient.get<Discount[]>(
+    `/discounts/business/${businessId}`
   );
   return normalizeArrayResponse<Discount>(data);
 };
@@ -74,15 +73,15 @@ export const fetchActiveDiscountsByBusinessId = async (
   // First, update expired discounts in database
   await updateExpiredDiscounts();
   
-  const { data } = await axios.get<Discount[]>(
-    `${api}/discounts/business/${businessId}/active`
+  const { data } = await apiClient.get<Discount[]>(
+    `/discounts/business/${businessId}/active`
   );
   return normalizeArrayResponse<Discount>(data);
 };
 
 /** Get discount by ID */
 export const fetchDiscountById = async (discountId: string): Promise<Discount> => {
-  const { data } = await axios.get<Discount>(`${api}/discounts/${discountId}`);
+  const { data } = await apiClient.get<Discount>(`/discounts/${discountId}`);
   return data;
 };
 
@@ -90,8 +89,8 @@ export const fetchDiscountById = async (discountId: string): Promise<Discount> =
 export const createDiscount = async (
   payload: CreateDiscountPayload
 ): Promise<Discount> => {
-  const { data } = await axios.post<{ message: string; data: Discount }>(
-    `${api}/discounts`,
+  const { data } = await apiClient.post<{ message: string; data: Discount }>(
+    `/discounts`,
     payload
   );
   return data.data;
@@ -102,8 +101,8 @@ export const updateDiscount = async (
   discountId: string,
   payload: UpdateDiscountPayload
 ): Promise<Discount> => {
-  const { data } = await axios.put<{ message: string; data: Discount }>(
-    `${api}/discounts/${discountId}`,
+  const { data } = await apiClient.put<{ message: string; data: Discount }>(
+    `/discounts/${discountId}`,
     payload
   );
   return data.data;
@@ -111,7 +110,7 @@ export const updateDiscount = async (
 
 /** Delete discount */
 export const deleteDiscount = async (discountId: string): Promise<void> => {
-  await axios.delete(`${api}/discounts/${discountId}`);
+  await apiClient.delete(`/discounts/${discountId}`);
 };
 
 // ==================== DISCOUNT VALIDATION & USAGE ====================
@@ -121,8 +120,8 @@ export const validateDiscount = async (
   discountId: string,
   payload: ValidateDiscountPayload
 ): Promise<ValidateDiscountResponse> => {
-  const { data } = await axios.post<ValidateDiscountResponse>(
-    `${api}/discounts/${discountId}/validate`,
+  const { data } = await apiClient.post<ValidateDiscountResponse>(
+    `/discounts/${discountId}/validate`,
     payload
   );
   return data;
@@ -130,15 +129,15 @@ export const validateDiscount = async (
 
 /** Update discount usage count */
 export const updateDiscountUsage = async (discountId: string): Promise<void> => {
-  await axios.put(`${api}/discounts/${discountId}/usage`);
+  await apiClient.put(`/discounts/${discountId}/usage`);
 };
 
 /** Get discount statistics */
 export const fetchDiscountStats = async (
   discountId: string
 ): Promise<DiscountStats> => {
-  const { data } = await axios.get<DiscountStats>(
-    `${api}/discounts/${discountId}/stats`
+  const { data } = await apiClient.get<DiscountStats>(
+    `/discounts/${discountId}/stats`
   );
   return data;
 };

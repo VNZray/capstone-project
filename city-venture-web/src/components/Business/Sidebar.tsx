@@ -95,6 +95,7 @@ export default function Sidebar({
             icon={<LayoutDashboard size={ICON_SIZE} />}
             onClick={onClose}
           />
+          
           {businessDetails?.business_type_id === 1 ? (
             <>
               {(hasRole("Business Owner", "Manager") ||

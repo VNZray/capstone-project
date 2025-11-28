@@ -48,7 +48,6 @@ const EditDescriptionModal: React.FC<EditDescriptionModalProps> = ({
       onClose={onClose}
       title="Edit Description"
       description="Update the business description"
-      maxWidth={640}
       actions={[
         { label: 'Cancel', onClick: onClose },
         { label: 'Save', onClick: handleSave, variant: 'primary' },

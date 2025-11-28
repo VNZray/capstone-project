@@ -32,6 +32,7 @@ const PageContainer = ({
   height = '100%',
   padding = 16,
 }: PageContainerProps) => {
+    console.log('[PageContainer] Rendering');
     const colorScheme = useColorScheme();
     const bg = colorScheme === 'dark' ? background.dark : background.light;
     const windowDimensions = useWindowDimensions();

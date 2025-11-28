@@ -18,7 +18,6 @@ import {
   IconButton,
   Select,
   Option,
-  Autocomplete,
 } from "@mui/joy";
 import {
   FiAlertCircle,
@@ -120,23 +119,16 @@ export default function PromotionForm(): React.ReactElement {
     external_link: "",
     start_date: getCurrentDateTimeLocal(),
     end_date: "",
+    promo_type: 1, // Default to discount
   });
 
-  // Additional UI-only promo fields (not yet persisted by backend)
-  type PromoType = "DISCOUNT" | "CODE";
-  const [promoType, setPromoType] = useState<PromoType>("DISCOUNT");
+  // Promo fields
+  type PromoType = "DISCOUNT_COUPON" | "ROOM_DISCOUNT" | "PROMO_CODE";
+  const [promoType, setPromoType] = useState<PromoType>("DISCOUNT_COUPON");
   const [discountValue, setDiscountValue] = useState<number | "">("");
   const [promoCode, setPromoCode] = useState<string>("");
   const [amount, setAmount] = useState<number | "">("");
-  const [appliesToAll, setAppliesToAll] = useState<boolean>(true);
-  const staticRooms = [
-    { id: "room_101", name: "Room 101" },
-    { id: "room_102", name: "Room 102" },
-    { id: "room_201", name: "Room 201" },
-    { id: "room_202", name: "Room 202" },
-    { id: "room_301", name: "Room 301" },
-  ];
-  const [selectedRooms, setSelectedRooms] = useState<string[]>([]);
+  const [usageLimit, setUsageLimit] = useState<number | "">("");
 
   // Update business_id when businessDetails changes
   useEffect(() => {
@@ -171,7 +163,7 @@ export default function PromotionForm(): React.ReactElement {
             ? convertUTCToLocalDateTime(promotionData.end_date)
             : "";
 
-          const newFormData = {
+          const newFormData: CreatePromotionPayload = {
             business_id: promotionData.business_id,
             title: promotionData.title,
             description: promotionData.description || "",
@@ -179,9 +171,29 @@ export default function PromotionForm(): React.ReactElement {
             external_link: promotionData.external_link || "",
             start_date: convertedStartDate,
             end_date: convertedEndDate,
+            promo_type: promotionData.promo_type,
+            promo_code: promotionData.promo_code || "",
+            discount_percentage: promotionData.discount_percentage || null,
+            fixed_discount_amount: promotionData.fixed_discount_amount || null,
+            usage_limit: promotionData.usage_limit || null,
           };
 
           setFormData(newFormData);
+
+          // Set promo type UI state based on promo_type
+          if (promotionData.promo_type === 3) {
+            setPromoType("PROMO_CODE");
+            setPromoCode(promotionData.promo_code || "");
+            setAmount(promotionData.fixed_discount_amount || "");
+          } else if (promotionData.promo_type === 2) {
+            setPromoType("ROOM_DISCOUNT");
+            setDiscountValue(promotionData.discount_percentage || "");
+          } else {
+            setPromoType("DISCOUNT_COUPON");
+            setDiscountValue(promotionData.discount_percentage || "");
+          }
+
+          setUsageLimit(promotionData.usage_limit || "");
 
           setHasEndDate(!!promotionData.end_date);
 
@@ -226,24 +238,32 @@ export default function PromotionForm(): React.ReactElement {
       newErrors.end_date = "End date must be after start date";
     }
 
-    // Promo type specific validation (UI only)
-    if (promoType === "DISCOUNT") {
+    // Promo type specific validation
+    if (promoType === "DISCOUNT_COUPON" || promoType === "ROOM_DISCOUNT") {
       const val =
         typeof discountValue === "number" ? discountValue : Number.NaN;
       if (!val || isNaN(val) || val <= 0) {
         newErrors.discount_value = "Discount % must be greater than 0";
       }
-      if (!appliesToAll && selectedRooms.length === 0) {
-        newErrors.room_ids = "Select at least one room or choose All Rooms";
+      if (val > 100) {
+        newErrors.discount_value = "Discount % cannot exceed 100";
       }
     }
-    if (promoType === "CODE") {
+    if (promoType === "PROMO_CODE") {
       if (!promoCode.trim()) {
         newErrors.promo_code = "Promo code is required";
       }
       const amt = typeof amount === "number" ? amount : Number.NaN;
       if (!amt || isNaN(amt) || amt <= 0) {
         newErrors.amount = "Amount must be greater than 0";
+      }
+    }
+
+    // Validate usage limit if provided
+    if (usageLimit !== "") {
+      const limit = typeof usageLimit === "number" ? usageLimit : Number.NaN;
+      if (isNaN(limit) || limit <= 0) {
+        newErrors.usage_limit = "Usage limit must be greater than 0";
       }
     }
 
@@ -312,7 +332,7 @@ export default function PromotionForm(): React.ReactElement {
             .toLowerCase()
             .replace(/[^a-z0-9]+/g, "-")
         : "promotion";
-      const fileName = `shop-promotions/${businessDetails?.id}/${safeTitle}-${timestamp}.${fileExt}`;
+      const fileName = `business-promotions/${businessDetails?.id}/${safeTitle}-${timestamp}.${fileExt}`;
 
       // Upload to Supabase storage with public read access
       const { data: uploadData, error: uploadError } = await supabase.storage
@@ -358,7 +378,7 @@ export default function PromotionForm(): React.ReactElement {
       return;
     }
 
-    const payload = {
+    const payload: CreatePromotionPayload = {
       ...formData,
       start_date: convertLocalDateTimeToUTC(formData.start_date || ""),
       end_date:
@@ -368,13 +388,18 @@ export default function PromotionForm(): React.ReactElement {
       image_url: formData.image_url?.trim() || null,
       external_link: formData.external_link?.trim() || null,
       description: formData.description?.trim() || null,
-      // NOTE: The backend currently ignores these extra fields; retained here for future support.
-      // promo_type: promoType,
-      // discount_value: promoType === "DISCOUNT" ? (typeof discountValue === "number" ? discountValue : null) : null,
-      // promo_code: promoType === "CODE" ? promoCode.trim() : null,
-      // amount: promoType === "CODE" ? (typeof amount === "number" ? amount : null) : null,
-      // applies_to_all: promoType === "DISCOUNT" ? appliesToAll : null,
-      // room_ids: promoType === "DISCOUNT" && !appliesToAll ? selectedRooms : [],
+      promo_type: promoType === "DISCOUNT_COUPON" ? 1 : promoType === "ROOM_DISCOUNT" ? 2 : 3,
+      promo_code: promoType === "PROMO_CODE" ? promoCode.trim() : null,
+      discount_percentage:
+        (promoType === "DISCOUNT_COUPON" || promoType === "ROOM_DISCOUNT") && typeof discountValue === "number"
+          ? discountValue
+          : null,
+      fixed_discount_amount:
+        promoType === "PROMO_CODE" && typeof amount === "number" ? amount : null,
+      usage_limit:
+        usageLimit !== "" && typeof usageLimit === "number"
+          ? usageLimit
+          : null,
     };
 
     setLoading(true);
@@ -384,7 +409,7 @@ export default function PromotionForm(): React.ReactElement {
       } else {
         await PromotionService.createPromotion(payload);
       }
-      navigate("/business/promotion");
+      navigate("/business/manage-promotion");
     } catch (error) {
       console.error("Error submitting promotion:", error);
       setErrors({ submit: "Failed to save promotion. Please try again." });
@@ -693,17 +718,23 @@ export default function PromotionForm(): React.ReactElement {
                       </FormLabel>
                       <Select
                         value={promoType}
-                        onChange={(_, v) =>
-                          setPromoType((v as PromoType) || "DISCOUNT")
-                        }
+                        onChange={(_, v) => {
+                          const newType = (v as PromoType) || "DISCOUNT_COUPON";
+                          setPromoType(newType);
+                          setFormData((prev) => ({
+                            ...prev,
+                            promo_type: newType === "DISCOUNT_COUPON" ? 1 : newType === "ROOM_DISCOUNT" ? 2 : 3,
+                          }));
+                        }}
                       >
-                        <Option value="DISCOUNT">Discount</Option>
-                        <Option value="CODE">Promo Code</Option>
+                        <Option value="DISCOUNT_COUPON">Discount Coupon</Option>
+                        <Option value="ROOM_DISCOUNT">Room Discount</Option>
+                        <Option value="PROMO_CODE">Promo Code</Option>
                       </Select>
                     </FormControl>
                   </Grid>
 
-                  {promoType === "DISCOUNT" && (
+                  {(promoType === "DISCOUNT_COUPON" || promoType === "ROOM_DISCOUNT") && (
                     <Grid xs={12} md={6}>
                       <FormControl error={!!errors.discount_value}>
                         <FormLabel sx={{ fontWeight: 600, mb: 0.75 }}>
@@ -730,7 +761,7 @@ export default function PromotionForm(): React.ReactElement {
                   )}
                 </Grid>
 
-                {promoType === "CODE" && (
+                {promoType === "PROMO_CODE" && (
                   <Grid container spacing={3}>
                     <Grid xs={12} md={6}>
                       <FormControl error={!!errors.promo_code}>
@@ -773,71 +804,34 @@ export default function PromotionForm(): React.ReactElement {
                   </Grid>
                 )}
 
-                {promoType === "DISCOUNT" && (
-                  <Stack spacing={1.5}>
-                    <FormLabel sx={{ fontWeight: 600 }}>Applies To</FormLabel>
-                    <Box
-                      sx={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 1.5,
-                        p: 1.5,
-                        bgcolor: "background.level1",
-                        borderRadius: "md",
-                        border: "1px solid",
-                        borderColor: "divider",
-                      }}
-                    >
-                      <Box sx={{ flex: 1 }}>
-                        <Typography level="body-sm" fontWeight="600">
-                          {appliesToAll ? "All Rooms" : "Specific Rooms"}
-                        </Typography>
-                        <Typography
-                          level="body-xs"
-                          sx={{ color: "text.secondary", mt: 0.25 }}
-                        >
-                          {appliesToAll
-                            ? "Discount will apply to all rooms"
-                            : `${selectedRooms.length || 0} room${
-                                selectedRooms.length === 1 ? "" : "s"
-                              } selected`}
-                        </Typography>
-                      </Box>
-                      <Switch
-                        checked={!appliesToAll}
-                        onChange={(e) => setAppliesToAll(!e.target.checked)}
-                        size="md"
+                {/* Usage Limit Field */}
+                <Grid container spacing={3}>
+                  <Grid xs={12} md={6}>
+                    <FormControl error={!!errors.usage_limit}>
+                      <FormLabel sx={{ fontWeight: 600, mb: 0.75 }}>
+                        Usage Limit (Optional)
+                      </FormLabel>
+                      <Input
+                        type="number"
+                        value={usageLimit}
+                        onChange={(e) =>
+                          setUsageLimit(
+                            e.target.value ? Number(e.target.value) : ""
+                          )
+                        }
+                        placeholder="e.g., 100"
+                        slotProps={{
+                          input: {
+                            min: 1,
+                          },
+                        }}
                       />
-                    </Box>
-
-                    {!appliesToAll && (
-                      <FormControl error={!!errors.room_ids}>
-                        <FormLabel sx={{ fontWeight: 600, mb: 0.75 }}>
-                          Select Rooms
-                        </FormLabel>
-                        <Autocomplete
-                          multiple
-                          placeholder="Search & select rooms"
-                          options={staticRooms}
-                          getOptionLabel={(r) => r.name}
-                          value={staticRooms.filter((r) =>
-                            selectedRooms.includes(r.id)
-                          )}
-                          onChange={(_, val) =>
-                            setSelectedRooms(
-                              (val as { id: string; name: string }[]).map(
-                                (r) => r.id
-                              )
-                            )
-                          }
-                        />
-                        {errors.room_ids && (
-                          <FormHelperText>{errors.room_ids}</FormHelperText>
-                        )}
-                      </FormControl>
-                    )}
-                  </Stack>
-                )}
+                      <FormHelperText>
+                        {errors.usage_limit || "Maximum number of times this promotion can be used"}
+                      </FormHelperText>
+                    </FormControl>
+                  </Grid>
+                </Grid>
               </Stack>
             </Container>
 
@@ -1045,7 +1039,7 @@ export default function PromotionForm(): React.ReactElement {
                 <Button
                   variant="outlined"
                   color="neutral"
-                  onClick={() => navigate("/business/promotion")}
+                  onClick={() => navigate("/business/manage-promotion")}
                   disabled={loading}
                 >
                   Cancel

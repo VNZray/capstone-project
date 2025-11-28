@@ -5,18 +5,19 @@ import Typography from "@/src/components/Typography";
 import Button from "@/src/components/Button";
 import { Chip, Grid } from "@mui/joy";
 import { FaAppStoreIos, FaGooglePlay } from "react-icons/fa";
+import Section from "@/src/components/ui/Section";
 
 const ValuePropositionSection: React.FC = () => {
   const navigate = useNavigate();
 
   return (
-    <section id="value-proposition" style={{ scrollMarginTop: 80,  padding: 16 }}>
-      <Container
-        gap="20px"
-        align="center"
-        padding="0"
-        style={{ margin: "120px 0" }}
-      >
+    <Section
+      height="auto"
+      justify="center"
+      id="value-proposition"
+      padding="120px 0"
+    >
+      <Container gap="20px" align="center" padding="0">
         <Typography.Header size="md" align="center">
           How City Venture Works For You
         </Typography.Header>
@@ -103,7 +104,7 @@ const ValuePropositionSection: React.FC = () => {
           </Grid>
         </Grid>
       </Container>
-    </section>
+    </Section>
   );
 };
 

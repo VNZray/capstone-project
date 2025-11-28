@@ -1,8 +1,6 @@
-import { moderateScale } from '@/utils/responsive';
-import { useWindowDimensions } from 'react-native';
-
-// Base (design) font sizes
-const BASE_TOKENS = {
+// Temporary helper to provide typography values
+// This replaces the deleted typography.ts file
+export const typography = {
   display: 32,
   h1: 28,
   h2: 24,
@@ -14,22 +12,7 @@ const BASE_TOKENS = {
   micro: 10,
 };
 
-export type TypographyKey = keyof typeof BASE_TOKENS;
-
-export function scaleFont(size: number, width?: number) {
-  return moderateScale(size, 0.45, width);
-}
-
+// Deprecated: Use direct values or ThemedText component instead
 export function useTypography() {
-  const { width } = useWindowDimensions();
-  const tokens: Record<TypographyKey, number> = Object.entries(BASE_TOKENS).reduce(
-    (acc, [k, v]) => {
-      (acc as any)[k] = scaleFont(v, width);
-      return acc;
-    },
-    {} as Record<TypographyKey, number>
-  );
-  return tokens;
+  return typography;
 }
-
-export const typography = BASE_TOKENS; // unscaled baseline (can be used for static mapping)

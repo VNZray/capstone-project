@@ -1,21 +1,22 @@
 // app/(tabs)/_layout.js
-import { Tabs, router, usePathname } from 'expo-router';
-import React, { useMemo } from 'react';
-import { Platform, View } from 'react-native';
+import { Tabs, usePathname } from 'expo-router';
+import React from 'react';
+import { Platform } from 'react-native';
 
 import { HapticTab } from '@/components/haptic-tab';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import TabBarBackground from '@/components/ui/TabBarBackground';
 import { Colors } from '@/constants/color';
 import { AccommodationProvider } from '@/context/AccommodationContext';
-import { useColorScheme } from '@/hooks/use-color-scheme';
+
 export default function TabLayout() {
-  const colorScheme = useColorScheme();
   const pathname = usePathname();
 
   // Determine if current route is within the booking flow; hide tabs if so
   const hideTabs = React.useMemo(
-    () => !!pathname && /\/room\/booking/i.test(pathname),
+    () =>
+      !!pathname &&
+      (/\/room\/booking/i.test(pathname) || /\/cart/i.test(pathname)),
     [pathname]
   );
 
@@ -25,7 +26,7 @@ export default function TabLayout() {
     <AccommodationProvider>
       <Tabs
         screenOptions={{
-          tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
+          tabBarActiveTintColor: Colors.light.tint,
           headerShown: false,
           tabBarButton: HapticTab,
           tabBarBackground: TabBarBackground,
@@ -81,19 +82,6 @@ export default function TabLayout() {
             headerTitleAlign: 'center',
             tabBarIcon: ({ color }) => (
               <IconSymbol size={32} name="heart.fill" color={color} />
-            ),
-          }}
-        />
-
-        <Tabs.Screen
-          name="orders"
-          options={{
-            title: 'Orders',
-            headerShown: false,
-            animation: 'shift',
-            headerTitleAlign: 'center',
-            tabBarIcon: ({ color }) => (
-              <IconSymbol size={32} name="list.clipboard.fill" color={color} />
             ),
           }}
         />

@@ -50,6 +50,7 @@ const PasswordModal = ({
           borderRadius: 8,
         }}
         width="clamp(10rem, 90vw, 25rem)"
+        background="white"
       >
         <Typography.CardTitle size="sm">Change Password</Typography.CardTitle>
         <Divider />

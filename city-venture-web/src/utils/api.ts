@@ -7,28 +7,13 @@ import type { UserRoles } from '@/src/types/User';
 import type { TourismStaff, CreateTourismStaffRequest, UpdateTourismStaffRequest } from '@/src/types/TourismStaff';
 import type { EntityType } from '../types/approval';
 
-// Create axios instance with default config
-const api = axios.create({
-  baseURL: API_BASE_URL,
-  headers: {
-    'Content-Type': 'application/json',
-  },
-});
+import apiClient from '@/src/services/apiClient';
 
-// Attach Authorization header from sessionStorage token if present
-api.interceptors.request.use((config) => {
-  try {
-    const token = sessionStorage.getItem('token');
-    if (token) {
-      (config.headers as any).Authorization = `Bearer ${token}`;
-    } else {
-      console.warn('[apiService] No auth token found in sessionStorage for request', config.url);
-    }
-  } catch (e) {
-    console.error('[apiService] Interceptor error reading token', e);
-  }
-  return config;
-});
+// Use apiClient instead of creating a new axios instance
+const api = apiClient;
+
+// NOTE: This file is kept for backward compatibility.
+// New code should use apiClient directly.
 
 // Define types for tourist spot images
 export interface TouristSpotImage {
@@ -169,9 +154,16 @@ class ApiService {
           rejectNew: (id: string) => `/approval/reject-spot/${id}`,
           rejectEdit: (id: string) => `/approval/reject-edit/${id}`,
         } as const;
-      case 'events':
       case 'businesses':
-      case 'accommodations':
+        return {
+          pendingNew: '/approval/pending-businesses',
+          pendingEdits: '/approval/businesses/pending-edits',
+          approveNew: (id: string) => `/approval/approve-business/${id}`,
+          approveEdit: (id: string) => `/approval/businesses/approve-edit/${id}`,
+          rejectNew: (id: string) => `/approval/reject-business/${id}`,
+          rejectEdit: (id: string) => `/approval/businesses/reject-edit/${id}`,
+        } as const;
+      case 'events':
       default:
         return {
           pendingNew: `/approval/${entity}/pending`,
@@ -378,6 +370,22 @@ class ApiService {
     } catch (err: any) {
       console.error('[apiService] Failed POST /tourism-staff/:id/reset-password', {
         id,
+        message: err?.message,
+        status: err?.response?.status,
+        data: err?.response?.data,
+      });
+      throw err;
+    }
+  }
+
+  // ===== BUSINESS MANAGEMENT =====
+  async getBusinesses(): Promise<any[]> {
+    try {
+      console.debug('[apiService] GET /business');
+      const response: AxiosResponse<ApiResponse<any[]>> = await api.get('/business');
+      return (response.data as any).data ?? (response.data as any);
+    } catch (err: any) {
+      console.error('[apiService] Failed GET /business', {
         message: err?.message,
         status: err?.response?.status,
         data: err?.response?.data,

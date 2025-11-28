@@ -58,7 +58,6 @@ const styles = StyleSheet.create({
     width: 300,
     height: 210,
     borderRadius: 20,
-    marginRight: 16,
     overflow: 'hidden',
     backgroundColor: '#1d1c2b',
   },

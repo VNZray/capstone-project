@@ -26,7 +26,9 @@ export async function getUserRole(userId) {
  */
 function normalizeRole(role) {
   if (!role) return null;
-  const lower = role.toLowerCase();
+  // Ensure role is a string before calling toLowerCase
+  const roleStr = typeof role === 'string' ? role : String(role);
+  const lower = roleStr.toLowerCase();
   switch (lower) {
     case "admin":
       return "Admin";
@@ -41,21 +43,35 @@ function normalizeRole(role) {
       return "System";
     default:
       // Fallback to original casing if unexpected
-      return role;
+      return roleStr;
   }
 }
 
 export async function ensureUserRole(req) {
-  if (!req?.user?.id) return null;
-  if (req.user.role) return req.user.role;
-
-  const role = await getUserRole(req.user.id);
-  if (role) {
-    const normalized = normalizeRole(role);
-    req.user.role = normalized;
-    req.user.roleRaw = role;
+  if (!req?.user?.id) {
+    console.error('[ensureUserRole] No user ID in request');
+    return null;
   }
-  return req.user.role || null;
+  
+  if (req.user.role) {
+    return req.user.role;
+  }
+
+  try {
+    const role = await getUserRole(req.user.id);
+    if (role) {
+      const normalized = normalizeRole(role);
+      req.user.role = normalized;
+      req.user.roleRaw = role;
+      console.log('[ensureUserRole] Role resolved for user', req.user.id, ':', normalized);
+    } else {
+      console.error('[ensureUserRole] No role found in DB for user:', req.user.id);
+    }
+    return req.user.role || null;
+  } catch (error) {
+    console.error('[ensureUserRole] Database error fetching role for user', req.user.id, ':', error);
+    return null;
+  }
 }
 
 /**

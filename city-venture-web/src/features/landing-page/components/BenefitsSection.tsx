@@ -8,7 +8,7 @@ import { colors } from "@/src/utils/Colors";
 const BenefitsSection: React.FC = () => {
   return (
     <section id="about" style={{ scrollMarginTop: 80, padding: 16 }}>
-      <Container padding="0" align="center" style={{ margin: "60px 0" }}>
+      <Container padding="0" align="center">
         <Chip size="lg" color="primary">
           About
         </Chip>

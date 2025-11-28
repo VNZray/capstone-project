@@ -9,7 +9,9 @@ import Grid2 from "@/src/assets/gridimages/grid2.jpg";
 import Grid3 from "@/src/assets/gridimages/grid3.jpg";
 import Grid4 from "@/src/assets/gridimages/grid4.jpg";
 import Grid5 from "@/src/assets/gridimages/grid5.jpg";
-
+import Section from "@/src/components/ui/Section";
+import { section } from "@/src/utils/Colors";
+import placeholder from "@/src/assets/images/placeholder-image.png";
 interface GridItem {
   src: string;
   title: string;
@@ -49,7 +51,13 @@ const HeroSection: React.FC<HeroSectionProps> = ({ gridItems }) => {
   const displayItems = gridItems.length > 0 ? gridItems : defaultGridImages;
 
   return (
-    <section id="hero" className="main-hero" style={{ padding: 16 }}>
+    <Section
+      padding="150px 20px"
+      id="hero"
+      height="auto"
+      background={section.bg3}
+      align="center"
+    >
       <div className="hero-inner">
         {/* Left column: Welcome and actions */}
         <div className="hero-left">
@@ -149,7 +157,7 @@ const HeroSection: React.FC<HeroSectionProps> = ({ gridItems }) => {
                     overflow: "hidden",
                   }}
                 >
-                  <img src={item.src} alt={item.title} />
+                  <img src={placeholder} alt={item.title} />
                 </AspectRatio>
                 <div className="tile-label" aria-hidden>
                   <div className="tile-title">{item.title}</div>
@@ -160,7 +168,7 @@ const HeroSection: React.FC<HeroSectionProps> = ({ gridItems }) => {
           </div>
         </div>
       </div>
-    </section>
+    </Section>
   );
 };
 

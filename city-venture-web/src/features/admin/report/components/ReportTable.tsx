@@ -1,14 +1,9 @@
-import React, { useEffect, useState } from "react";
-import { 
-  Typography, 
-  Chip, 
-  Stack, 
-  Sheet, 
-  Grid 
-} from "@mui/joy";
+import React, { useEffect, useMemo, useState } from "react";
+import { Chip } from "@mui/joy";
 import Button from "@/src/components/Button";
 import type { Report } from "@/src/types/Report";
 import { apiService } from "@/src/utils/api";
+import Table, { type TableColumn } from "@/src/components/ui/Table";
 
 interface ReportTableProps {
   reports: Report[];
@@ -85,164 +80,90 @@ const ReportTable: React.FC<ReportTableProps> = ({
     });
   };
 
+  const columns: TableColumn<Report & { target_info?: { name: string; type: string } }>[] = useMemo(() => [
+    {
+      id: "title",
+      label: "Report Title",
+      minWidth: 220,
+      render: (row) => (
+        <div style={{ display: "flex", flexDirection: "column" }}>
+          <span style={{ fontWeight: 600 }}>{row.title}</span>
+          <span style={{ opacity: 0.7, fontSize: 12 }}>
+            {row.description.length > 50
+              ? `${row.description.substring(0, 50)}...`
+              : row.description}
+          </span>
+        </div>
+      ),
+    },
+    {
+      id: "reporter_email",
+      label: "Reporter",
+      minWidth: 160,
+      render: (_row, val) => <span>{val || "Unknown"}</span>,
+    },
+    {
+      id: "target_type",
+      label: "Target",
+      minWidth: 160,
+      render: (row) => (
+        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+          <Chip color={getTargetTypeColor(row.target_type)} size="sm" variant="soft">
+            {row.target_info?.type || row.target_type.replace("_", " ")}
+          </Chip>
+          <span style={{ opacity: 0.7, fontSize: 12 }}>
+            {row.target_info?.name || row.target_id}
+          </span>
+        </div>
+      ),
+    },
+    {
+      id: "status",
+      label: "Status",
+      minWidth: 120,
+      render: (row) => (
+        <Chip color={getStatusColor(row.status)} size="sm" variant="soft">
+          {row.status.replace("_", " ")}
+        </Chip>
+      ),
+    },
+    {
+      id: "created_at",
+      label: "Created",
+      minWidth: 160,
+      render: (_row, val) => <span style={{ fontSize: 12 }}>{formatDate(val)}</span>,
+    },
+    {
+      id: "actions",
+      label: "Actions",
+      minWidth: 180,
+      render: (row) => (
+        <div style={{ display: "flex", gap: 8, whiteSpace: "nowrap" }}>
+          <Button size="sm" variant="outlined" colorScheme="success" onClick={() => onViewDetails(row)}>
+            View
+          </Button>
+          <Button size="sm" variant="outlined" colorScheme="primary" onClick={() => onUpdateStatus(row)}>
+            Update
+          </Button>
+        </div>
+      ),
+    },
+  ], [onUpdateStatus, onViewDetails]);
+
   if (loading) {
     return (
-      <Sheet variant="outlined" sx={{ p: 4, textAlign: 'center', borderRadius: 8 }}>
-        <Typography level="body-md">Loading report details...</Typography>
-      </Sheet>
+      <Table columns={columns} data={[]} loading radius="12px" />
     );
   }
 
   return (
-    <Stack spacing={1}>
-      {/* Header */}
-      <Sheet
-        variant="outlined"
-        sx={{
-          p: 2,
-          backgroundColor: '#0A1B47',
-          borderRadius: 8,
-        }}
-      >
-        <Grid container spacing={2} alignItems="center">
-          <Grid xs={12} sm={3}>
-            <Typography level="title-md" sx={{ fontWeight: 700, color: '#fff' }}>
-              Report Title
-            </Typography>
-          </Grid>
-          <Grid xs={12} sm={2}>
-            <Typography level="title-md" sx={{ fontWeight: 700, color: '#fff' }}>
-              Reporter
-            </Typography>
-          </Grid>
-          <Grid xs={12} sm={2}>
-            <Typography level="title-md" sx={{ fontWeight: 700, color: '#fff' }}>
-              Target
-            </Typography>
-          </Grid>
-          <Grid xs={12} sm={1.5}>
-            <Typography level="title-md" sx={{ fontWeight: 700, color: '#fff' }}>
-              Status
-            </Typography>
-          </Grid>
-          <Grid xs={12} sm={1.5}>
-            <Typography level="title-md" sx={{ fontWeight: 700, color: '#fff' }}>
-              Created
-            </Typography>
-          </Grid>
-          <Grid xs={12} sm={2}>
-            <Typography level="title-md" sx={{ fontWeight: 700, color: '#fff' }}>
-              Actions
-            </Typography>
-          </Grid>
-        </Grid>
-      </Sheet>
-
-      {/* Rows */}
-      {reportsWithTargetInfo.map((report) => (
-        <Sheet
-          key={report.id}
-          variant="outlined"
-          sx={{
-            p: 2,
-            backgroundColor: '#fff',
-            borderRadius: 8,
-            '&:hover': {
-              backgroundColor: '#f8f9fa',
-            },
-          }}
-        >
-          <Grid container spacing={2} alignItems="center">
-            <Grid xs={12} sm={3}>
-              <Stack spacing={0.5}>
-                <Typography level="body-md" sx={{ fontWeight: 600 }}>
-                  {report.title}
-                </Typography>
-                <Typography level="body-sm" sx={{ opacity: 0.7 }}>
-                  {report.description.length > 50
-                    ? `${report.description.substring(0, 50)}...`
-                    : report.description}
-                </Typography>
-              </Stack>
-            </Grid>
-
-            <Grid xs={12} sm={2}>
-              <Typography level="body-md">
-                {report.reporter_email || 'Unknown'}
-              </Typography>
-            </Grid>
-            
-            <Grid xs={12} sm={2}>
-              <Stack spacing={0.5}>
-                <Chip
-                  color={getTargetTypeColor(report.target_type)}
-                  variant="soft"
-                  size="sm"
-                >
-                  {report.target_info?.type || report.target_type.replace('_', ' ')}
-                </Chip>
-                <Typography level="body-sm" sx={{ opacity: 0.7 }}>
-                  {report.target_info?.name || report.target_id}
-                </Typography>
-              </Stack>
-            </Grid>
-            
-            <Grid xs={12} sm={1.5}>
-              <Chip
-                color={getStatusColor(report.status)}
-                variant="soft"
-                size="sm"
-              >
-                {report.status.replace('_', ' ')}
-              </Chip>
-            </Grid>
-            
-            <Grid xs={12} sm={1.5}>
-              <Typography level="body-sm">
-                {formatDate(report.created_at)}
-              </Typography>
-            </Grid>
-            
-            <Grid xs={12} sm={2}>
-              <Stack direction="row" spacing={1}>
-                <Button
-                  size="sm"
-                  variant="outlined"
-                  colorScheme="success"
-                  onClick={() => onViewDetails(report)}
-                >
-                  View
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outlined"
-                  colorScheme="primary"
-                  onClick={() => onUpdateStatus(report)}
-                >
-                  Update
-                </Button>
-              </Stack>
-            </Grid>
-          </Grid>
-        </Sheet>
-      ))}
-
-      {reportsWithTargetInfo.length === 0 && (
-        <Sheet 
-          variant="outlined" 
-          sx={{ 
-            p: 4, 
-            textAlign: 'center', 
-            borderRadius: 8,
-            borderStyle: 'dashed'
-          }}
-        >
-          <Typography level="body-md">
-            No reports found
-          </Typography>
-        </Sheet>
-      )}
-    </Stack>
+    <Table
+      columns={columns}
+      data={reportsWithTargetInfo}
+      rowsPerPage={10}
+      emptyMessage="No reports found"
+      radius="12px"
+    />
   );
 };
 

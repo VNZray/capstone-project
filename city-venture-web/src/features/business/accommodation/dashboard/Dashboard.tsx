@@ -87,9 +87,13 @@ const Dashboard = () => {
       setLoading(true);
       try {
         const dashboardData = await fetchDashboardData(businessDetails.id);
+        console.log("✅ Dashboard Data Loaded:", dashboardData);
+        console.log("📊 Rooms:", dashboardData.rooms.length);
+        console.log("📅 Bookings:", dashboardData.bookings.length);
+        console.log("💰 Payments:", dashboardData.payments.length);
         setData(dashboardData);
       } catch (error) {
-        console.error("Failed to fetch dashboard data", error);
+        console.error("❌ Failed to fetch dashboard data", error);
       } finally {
         setLoading(false);
       }
@@ -160,6 +164,27 @@ const Dashboard = () => {
     () => getTopRoomsByRevenue(data.bookings, data.rooms),
     [data.bookings, data.rooms]
   );
+
+  // Debug logging
+  useEffect(() => {
+    console.log("📈 KPI Stats:", kpiStats);
+    console.log("💵 Revenue Stats:", revenueStats);
+    console.log("📊 Booking Status Stats:", bookingStatusStats);
+    console.log("🌍 Tourist Stats:", touristStats);
+    console.log("📋 Recent Bookings:", recentBookings);
+    console.log("💳 Recent Payments:", recentPayments);
+    console.log("🏆 Top Rooms by Bookings:", topRoomsByBookings);
+    console.log("💎 Top Rooms by Revenue:", topRoomsByRevenue);
+  }, [
+    kpiStats,
+    revenueStats,
+    bookingStatusStats,
+    touristStats,
+    recentBookings,
+    recentPayments,
+    topRoomsByBookings,
+    topRoomsByRevenue,
+  ]);
 
   if (businessLoading || loading) {
     return (

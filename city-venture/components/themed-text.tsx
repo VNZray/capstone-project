@@ -1,7 +1,12 @@
-import { useThemeColor } from '@/hooks/use-theme-color';
-import { useFonts } from 'expo-font';
+import { Colors } from '@/constants/color';
 import React from 'react';
-import { Platform, StyleSheet, Text, View, type TextProps, useWindowDimensions } from 'react-native';
+import {
+  Platform,
+  Text,
+  View,
+  type TextProps,
+  useWindowDimensions,
+} from 'react-native';
 import { scaled } from '@/utils/responsive';
 
 export type TypographyType =
@@ -78,25 +83,20 @@ export function ThemedText({
 
   ...rest
 }: ThemedTextProps) {
-  const isLink = type.startsWith('link-');
-  const defaultColor = isLink
-    ? '#1e90ff'
-    : useThemeColor({ light: lightColor, dark: darkColor }, 'text');
+  const colors = Colors.light;
+  const isLink = type?.startsWith('link-');
+
+  // Use semantic color tokens
+  const defaultColor =
+    lightColor ||
+    darkColor ||
+    (isLink
+      ? colors.textLink
+      : type === 'label-small' || type === 'label-extra-small'
+      ? colors.textSecondary
+      : colors.text);
 
   const { width } = useWindowDimensions();
-
-  const [fontsLoaded] = useFonts({
-    'Poppins-Regular': require('@/assets/fonts/Poppins/Poppins-Regular.ttf'),
-    'Poppins-Medium': require('@/assets/fonts/Poppins/Poppins-Medium.ttf'),
-    'Poppins-SemiBold': require('@/assets/fonts/Poppins/Poppins-SemiBold.ttf'),
-    'Poppins-Bold': require('@/assets/fonts/Poppins/Poppins-Bold.ttf'),
-    'Poppins-ExtraBold': require('@/assets/fonts/Poppins/Poppins-ExtraBold.ttf'),
-    'Poppins-Black': require('@/assets/fonts/Poppins/Poppins-Black.ttf'),
-  });
-
-  if (!fontsLoaded) {
-    return null;
-  }
 
   const responsiveSpacing = {
     pt: scaled(pt, { min: 0, max: pt * 1.5, width }),
@@ -152,7 +152,7 @@ export function ThemedText({
 
   // If start/end icon → horizontal layout
   return (
-    <View style={{ flexDirection: 'row', alignItems: 'center' , }}>
+    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
       {startIcon ? <View style={{ marginRight: 6 }}>{startIcon}</View> : null}
       {textElement}
       {endIcon ? <View style={{ marginLeft: 6 }}>{endIcon}</View> : null}
@@ -179,7 +179,10 @@ function getFontWeightStyle(weight: FontWeight) {
   }
 }
 
-const fontSizeMap: Record<TypographyType, { base: number; min: number; max: number }> = {
+const fontSizeMap: Record<
+  TypographyType,
+  { base: number; min: number; max: number }
+> = {
   // Titles
   'title-large': { base: 32, min: 24, max: 40 },
   'title-medium': { base: 28, min: 22, max: 34 },
@@ -229,8 +232,14 @@ const fontSizeMap: Record<TypographyType, { base: number; min: number; max: numb
   'link-extra-small': { base: 12, min: 10, max: 14 },
 };
 
-function getResponsiveStyle(type: TypographyType, width: number) {
-  const config = fontSizeMap[type];
-  const fontSize = scaled(config.base, { min: config.min, max: config.max, factor: 0.5, width });
+function getResponsiveStyle(type: TypographyType | undefined, width: number) {
+  const config =
+    fontSizeMap[type ?? 'body-medium'] ?? fontSizeMap['body-medium'];
+  const fontSize = scaled(config.base, {
+    min: config.min,
+    max: config.max,
+    factor: 0.5,
+    width,
+  });
   return { fontSize };
 }

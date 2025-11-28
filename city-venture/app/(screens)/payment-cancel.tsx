@@ -3,7 +3,7 @@
  * Displayed when user cancels/closes PayMongo checkout without completing payment
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -11,6 +11,7 @@ import {
   Pressable,
   Alert,
   ActivityIndicator,
+  Dimensions,
 } from 'react-native';
 import { useLocalSearchParams, Stack, router } from 'expo-router';
 import { useColorScheme } from '@/hooks/use-color-scheme';
@@ -18,15 +19,49 @@ import { colors } from '@/constants/color';
 import { useTypography } from '@/constants/typography';
 import PageContainer from '@/components/PageContainer';
 import { Ionicons } from '@expo/vector-icons';
-import { initiatePayment, openPayMongoCheckout } from '@/services/PaymentService';
+import {
+  initiatePayment,
+  openPayMongoCheckout,
+} from '@/services/PaymentService';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withSpring,
+  withTiming,
+  withSequence,
+} from 'react-native-reanimated';
+import { LinearGradient } from 'expo-linear-gradient';
+
+const { width } = Dimensions.get('window');
 
 const PaymentCancelScreen = () => {
   const params = useLocalSearchParams<{ orderId: string }>();
   const scheme = useColorScheme();
   const isDark = scheme === 'dark';
   const type = useTypography();
-  const { h2, body, bodySmall } = type;
+  const { h1, h2, body, bodySmall } = type;
   const [retrying, setRetrying] = useState(false);
+
+  // Animations
+  const scale = useSharedValue(0);
+  const opacity = useSharedValue(0);
+  const translateY = useSharedValue(50);
+  const shake = useSharedValue(0);
+
+  useEffect(() => {
+    // Entrance animation
+    scale.value = withSpring(1, { damping: 12 });
+    opacity.value = withTiming(1, { duration: 800 });
+    translateY.value = withSpring(0, { damping: 15 });
+
+    // Shake effect for error icon
+    shake.value = withSequence(
+      withTiming(10, { duration: 100 }),
+      withTiming(-10, { duration: 100 }),
+      withTiming(10, { duration: 100 }),
+      withTiming(0, { duration: 100 })
+    );
+  }, []);
 
   const palette = {
     bg: isDark ? '#0D1B2A' : '#F8F9FA',
@@ -34,14 +69,17 @@ const PaymentCancelScreen = () => {
     text: isDark ? '#ECEDEE' : '#0D1B2A',
     subText: isDark ? '#9BA1A6' : '#6B7280',
     border: isDark ? '#2A2F36' : '#E5E8EC',
+    errorBg: isDark ? 'rgba(239, 68, 68, 0.1)' : '#FEF2F2',
   };
 
   const handleRetryPayment = async () => {
     try {
       setRetrying(true);
-      console.log('[PaymentCancel] Retrying payment for order:', params.orderId);
+      console.log(
+        '[PaymentCancel] Retrying payment for order:',
+        params.orderId
+      );
 
-      // Initiate payment through backend
       const response = await initiatePayment({
         order_id: params.orderId,
         use_checkout_session: true,
@@ -52,19 +90,14 @@ const PaymentCancelScreen = () => {
       }
 
       console.log('[PaymentCancel] Opening PayMongo checkout...');
-      
-      // Open PayMongo checkout - user will be redirected back via deep link
       await openPayMongoCheckout(response.data.checkout_url);
-      
-      // Note: Stay on this screen. When payment completes or is cancelled,
-      // PayMongo will deep link to payment-success or payment-cancel screen.
-      // This prevents showing "Order Confirmed" before payment is actually completed.
-
     } catch (error: any) {
       console.error('[PaymentCancel] Payment retry failed:', error);
       Alert.alert(
         'Payment Error',
-        error.response?.data?.message || error.message || 'Failed to start payment process'
+        error.response?.data?.message ||
+          error.message ||
+          'Failed to start payment process'
       );
     } finally {
       setRetrying(false);
@@ -82,83 +115,154 @@ const PaymentCancelScreen = () => {
     router.replace('/(tabs)/(home)' as never);
   };
 
+  const animatedIconStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }, { translateX: shake.value }],
+    opacity: opacity.value,
+  }));
+
+  const animatedContentStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: translateY.value }],
+    opacity: opacity.value,
+  }));
+
   return (
     <>
       <Stack.Screen
         options={{
-          title: 'Payment Pending',
-          headerStyle: { backgroundColor: palette.card },
-          headerTintColor: palette.text,
-          headerLeft: () => null,
+          headerShown: false,
         }}
       />
       <PageContainer>
         <View style={[styles.container, { backgroundColor: palette.bg }]}>
-          {/* Info Icon */}
-          <View style={[styles.iconContainer, { backgroundColor: `${colors.warning}20` }]}>
-            <Ionicons name="close-circle-outline" size={80} color={colors.warning} />
-          </View>
+          <View style={styles.content}>
+            <Animated.View style={[styles.iconWrapper, animatedIconStyle]}>
+              <LinearGradient
+                colors={[colors.error, '#EF4444']}
+                style={styles.gradientIcon}
+              >
+                <Ionicons name="close" size={64} color="#FFF" />
+              </LinearGradient>
+            </Animated.View>
 
-          <Text style={[{ fontSize: h2 }, { color: palette.text, textAlign: 'center', marginTop: 24 }]}>
-            Payment Not Completed
-          </Text>
+            <Animated.View
+              style={[styles.contentWrapper, animatedContentStyle]}
+            >
+              <Text
+                style={[
+                  {
+                    fontSize: h1,
+                    color: palette.text,
+                    textAlign: 'center',
+                    marginBottom: 8,
+                  },
+                ]}
+              >
+                Payment Failed
+              </Text>
+              <Text
+                style={[
+                  {
+                    fontSize: body,
+                    color: palette.subText,
+                    textAlign: 'center',
+                    marginBottom: 32,
+                    paddingHorizontal: 20,
+                  },
+                ]}
+              >
+                We couldn't process your payment. Please try again or use a
+                different payment method.
+              </Text>
 
-          <Text style={[{ fontSize: body }, { color: palette.subText, textAlign: 'center', marginTop: 8, paddingHorizontal: 20 }]}>
-            Payment was not completed. Your order is pending and will be cancelled automatically if payment is not received.
-          </Text>
-
-          {/* Info Card */}
-          <View style={[styles.infoCard, { backgroundColor: palette.card, borderColor: palette.border }]}>
-            <View style={styles.infoRow}>
-              <Ionicons name="information-circle-outline" size={24} color={colors.primary} />
-              <View style={{ flex: 1, marginLeft: 12 }}>
-                <Text style={[{ fontSize: bodySmall }, { color: palette.text, fontWeight: '600', marginBottom: 4 }]}>
-                  What happens next?
-                </Text>
-                <Text style={[{ fontSize: bodySmall }, { color: palette.subText, lineHeight: 20 }]}>
-                  • Your order is NOT confirmed yet{'\n'}
-                  • Complete payment to confirm your order{'\n'}
-                  • Business will NOT receive your order until paid{'\n'}
-                  • Order will auto-cancel if not paid soon
-                </Text>
+              <View
+                style={[
+                  styles.infoCard,
+                  {
+                    backgroundColor: palette.card,
+                    borderColor: palette.border,
+                  },
+                ]}
+              >
+                <View style={styles.infoRow}>
+                  <Ionicons
+                    name="alert-circle-outline"
+                    size={24}
+                    color={colors.warning}
+                  />
+                  <View style={{ flex: 1, marginLeft: 12 }}>
+                    <Text
+                      style={[
+                        {
+                          fontSize: bodySmall,
+                          color: palette.text,
+                          fontWeight: '600',
+                          marginBottom: 4,
+                        },
+                      ]}
+                    >
+                      Don't worry!
+                    </Text>
+                    <Text
+                      style={[
+                        {
+                          fontSize: bodySmall,
+                          color: palette.subText,
+                          lineHeight: 20,
+                        },
+                      ]}
+                    >
+                      Your order is saved as pending. You can retry payment now
+                      to confirm your order.
+                    </Text>
+                  </View>
+                </View>
               </View>
-            </View>
-          </View>
 
-          {/* Action Buttons */}
-          <View style={styles.buttonContainer}>
-            <Pressable
-              style={[styles.button, { backgroundColor: colors.primary }]}
-              onPress={handleRetryPayment}
-              disabled={retrying}
-            >
-              {retrying ? (
-                <ActivityIndicator size="small" color="#FFF" style={{ marginRight: 8 }} />
-              ) : (
-                <Ionicons name="card-outline" size={20} color="#FFF" style={{ marginRight: 8 }} />
-              )}
-              <Text style={[{ fontSize: body, fontWeight: '600' }, { color: '#FFF' }]}>
-                {retrying ? 'Opening Payment...' : 'Retry Payment'}
-              </Text>
-            </Pressable>
+              <View style={styles.buttonContainer}>
+                <Pressable
+                  style={[
+                    styles.primaryButton,
+                    { backgroundColor: colors.primary },
+                  ]}
+                  onPress={handleRetryPayment}
+                  disabled={retrying}
+                >
+                  {retrying ? (
+                    <ActivityIndicator size="small" color="#FFF" />
+                  ) : (
+                    <Text style={styles.buttonText}>Retry Payment</Text>
+                  )}
+                </Pressable>
 
-            <Pressable
-              style={[styles.button, { backgroundColor: palette.card, borderColor: palette.border, borderWidth: 1 }]}
-              onPress={handleViewOrder}
-            >
-              <Text style={[{ fontSize: body, fontWeight: '600' }, { color: palette.text }]}>
-                View Order Details
-              </Text>
-            </Pressable>
+                <Pressable
+                  style={[
+                    styles.secondaryButton,
+                    { borderColor: palette.border },
+                  ]}
+                  onPress={handleViewOrder}
+                >
+                  <Text
+                    style={[
+                      styles.secondaryButtonText,
+                      { color: palette.text },
+                    ]}
+                  >
+                    View Order Details
+                  </Text>
+                </Pressable>
 
-            <Pressable
-              style={[styles.button, { backgroundColor: palette.card, borderColor: palette.border, borderWidth: 1 }]}
-              onPress={handleBackToHome}
-            >
-              <Text style={[{ fontSize: body, fontWeight: '600' }, { color: palette.text }]}>
-                Back to Home
-              </Text>
-            </Pressable>
+                <Pressable
+                  style={[styles.textButton]}
+                  onPress={handleBackToHome}
+                >
+                  <Text
+                    style={[styles.textButtonText, { color: palette.subText }]}
+                  >
+                    Back to Home
+                  </Text>
+                </Pressable>
+              </View>
+            </Animated.View>
           </View>
         </View>
       </PageContainer>
@@ -169,37 +273,88 @@ const PaymentCancelScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 20,
     justifyContent: 'center',
+    alignItems: 'center',
   },
-  iconContainer: {
+  content: {
+    alignItems: 'center',
+    width: '100%',
+    paddingHorizontal: 24,
+    marginTop: -40,
+  },
+  iconWrapper: {
+    marginBottom: 24,
+    shadowColor: colors.error,
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.3,
+    shadowRadius: 20,
+    elevation: 10,
+  },
+  gradientIcon: {
     width: 120,
     height: 120,
     borderRadius: 60,
     justifyContent: 'center',
     alignItems: 'center',
-    alignSelf: 'center',
+  },
+  contentWrapper: {
+    width: '100%',
+    alignItems: 'center',
   },
   infoCard: {
-    marginTop: 32,
+    width: '100%',
     padding: 20,
-    borderRadius: 12,
+    borderRadius: 16,
     borderWidth: 1,
+    marginBottom: 32,
   },
   infoRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
   },
   buttonContainer: {
-    marginTop: 32,
+    width: '100%',
+    gap: 12,
   },
-  button: {
-    paddingVertical: 16,
-    borderRadius: 12,
-    alignItems: 'center',
-    marginBottom: 12,
-    flexDirection: 'row',
+  primaryButton: {
+    width: '100%',
+    height: 56,
+    borderRadius: 28,
     justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  secondaryButton: {
+    width: '100%',
+    height: 56,
+    borderRadius: 28,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    backgroundColor: 'transparent',
+  },
+  textButton: {
+    width: '100%',
+    height: 48,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  buttonText: {
+    color: '#FFF',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  secondaryButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  textButtonText: {
+    fontSize: 14,
+    fontWeight: '500',
   },
 });
 

@@ -25,6 +25,7 @@ import type { Notification } from "./NotificationPopup";
 //   "/business/owner-profile": "Owner Profile",
 // };
 import placeholderImage from "@/src/assets/images/placeholder-image.png";
+import { Link } from "@mui/joy";
 interface MainHeaderProps {
   onMenuClick?: () => void;
 }
@@ -147,14 +148,7 @@ export default function MainHeader({ onMenuClick }: MainHeaderProps) {
             <Menu size={22} />
           </IconButton>
         </Box>
-        <IconButton
-          onClick={() => navigate(-1)}
-          variant="plain"
-          colorScheme="gray"
-          aria-label="Go Back"
-        >
-          <ArrowLeft size={22} />
-        </IconButton>
+
         {/* <Typography.Header>{title}</Typography.Header> */}
       </Container>
 
@@ -211,15 +205,24 @@ export default function MainHeader({ onMenuClick }: MainHeaderProps) {
               {user?.email}
             </Typography.Body>
           </Container>
-          <img
-            src={user?.user_profile || placeholderImage}
-            style={{
-              width: 40,
-              height: 40,
-              borderRadius: "50%",
-              objectFit: "cover",
-            }}
-          />
+          <IconButton
+            colorScheme="primary"
+            sx={{ padding: 0, margin: 0, borderRadius: "50%" }}
+            size="lg"
+            variant="soft"
+            onClick={() => navigate("user/profile")}
+            
+          >
+            <img
+              src={user?.user_profile || placeholderImage}
+              style={{
+                width: 40,
+                height: 40,
+                borderRadius: "50%",
+                objectFit: "cover",
+              }}
+            />
+          </IconButton>
         </Box>
 
         {/* Switch Profile - Full button on medium+ screens - Only for Business Owner */}

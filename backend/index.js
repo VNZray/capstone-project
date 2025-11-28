@@ -1,10 +1,13 @@
 import express from "express";
 import cors from "cors";
+import cookieParser from "cookie-parser";
 import "dotenv/config";
 import { createServer } from "http";
 import { initializeSocket } from "./services/socketService.js";
+import { startTokenCleanupScheduler } from "./services/tokenCleanupService.js";
 
 import userRoutes from "./routes/users.js";
+import authRoutes from "./routes/auth.js";
 import userRoleRoutes from "./routes/users_role.js";
 
 import registrationRoutes from "./routes/registration.js";
@@ -86,6 +89,7 @@ const routeSections = [
   {
     section: "Auth & Users",
     routes: [
+      { path: "/api/auth", handler: authRoutes, label: "Authentication" },
       { path: "/api/user-roles", handler: userRoleRoutes, label: "User Roles" },
       { path: "/api/users", handler: userRoutes, label: "Users" },
       { path: "/api/owner", handler: ownerRoutes, label: "Owners" },
@@ -210,7 +214,42 @@ const routeSections = [
 // Flattened list for registration
 const routes = routeSections.flatMap((s) => s.routes);
 
-app.use(cors());
+// CORS configuration for authentication with credentials
+const isProduction = process.env.NODE_ENV === 'production';
+
+app.use(cors({
+  origin: function(origin, callback) {
+    // Allow requests with no origin (mobile apps, Postman, etc.)
+    if (!origin) return callback(null, true);
+    
+    // List of allowed origins
+    const allowedOrigins = [
+      'http://localhost:5173',
+      'http://localhost:3000',
+      process.env.WEB_URL,
+      process.env.FRONTEND_URL,
+      process.env.FRONTEND_BASE_URL,
+    ].filter(Boolean); // Remove undefined values
+    
+    if (allowedOrigins.some(allowed => origin.startsWith(allowed))) {
+      callback(null, true);
+    } else {
+      console.warn(`CORS blocked origin: ${origin}`);
+      // SECURITY: In production, reject unknown origins. In development, allow with warning.
+      if (isProduction) {
+        callback(new Error(`Origin ${origin} not allowed by CORS policy`), false);
+      } else {
+        console.warn('  ⚠️  Allowing for development - this would be blocked in production');
+        callback(null, true);
+      }
+    }
+  },
+  credentials: true, // Allow cookies to be sent/received
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  exposedHeaders: ['Set-Cookie'], // Expose Set-Cookie header for cross-origin
+}));
+app.use(cookieParser());
 
 // Raw body parser for webhook signature verification
 // Must come BEFORE express.json() to capture raw body
@@ -236,8 +275,9 @@ const sendPaymongoRedirect = (res, orderId, status) => {
   const isExpoDev = process.env.EXPO_DEV === 'true';
   const expoHost = process.env.EXPO_DEV_HOST || '192.168.1.1:8081';
   
+  // Use Expo Go universal link format: exp://HOST:PORT/--/(screens)/payment-success
   const appUrl = isExpoDev 
-    ? `exp://${expoHost}/--/payment-${status}?orderId=${orderId}`
+    ? `exp://${expoHost}/--/(screens)/payment-${status}?orderId=${orderId}`
     : `${MOBILE_DEEP_LINK_BASE}/${orderId}/payment-${status}`;
   
   const webFallback = `${FRONTEND_BASE_URL}/orders/${orderId}/payment-${status}`;
@@ -298,7 +338,7 @@ app.get("/orders/:orderId/payment-cancel", (req, res) => {
 // Validate critical environment variables on startup
 function validateEnvironment() {
   const required = {
-    'JWT_SECRET': process.env.JWT_SECRET,
+    'JWT_ACCESS_SECRET': process.env.JWT_ACCESS_SECRET,
     'DB_HOST': process.env.DB_HOST,
     'DB_USER': process.env.DB_USER,
     'DB_NAME': process.env.DB_NAME,
@@ -309,7 +349,7 @@ function validateEnvironment() {
     'PAYMONGO_PUBLIC_KEY': process.env.PAYMONGO_PUBLIC_KEY,
     'PAYMONGO_WEBHOOK_SECRET': process.env.PAYMONGO_WEBHOOK_SECRET,
     'FRONTEND_BASE_URL': process.env.FRONTEND_BASE_URL,
-  };
+           };
 
   const missing = [];
   const warnings = [];
@@ -359,6 +399,10 @@ httpServer.listen(PORT, "0.0.0.0", () => {
   console.log(colorServer("✅ Connected to MariaDB (Promise Pool)"));
   console.log(colorServer("✅ Environment validated"));
   console.log(colorServer("✅ API is ready to use\n"));
+
+  // Start token cleanup scheduler (runs every 6 hours)
+  startTokenCleanupScheduler();
+  console.log(colorServer("✅ Token cleanup scheduler started"));
 
   // Quick access to Tourism Admin Login
   const frontendBase = process.env.FRONTEND_URL || process.env.WEB_URL || "http://localhost:5173";
