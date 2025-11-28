@@ -57,7 +57,7 @@ export type ChipProps = {
 const THEME_COLORS: Record<ChipColor, string> = {
   primary: '#0A1B47',
   secondary: '#0077B6',
-  neutral: '#DEE3F2',
+  neutral: '#64748B', // Slate 500 - Better for text/border contrast
   error: '#dc3545',
   success: '#198754',
   warning: '#ffc107',
@@ -65,12 +65,21 @@ const THEME_COLORS: Record<ChipColor, string> = {
   link: '#1e90ff',
 };
 
-const sizes: Record<ChipSize, { padH: number; padV: number; radius: number; font: number; gap: number; icon: number }>
-  = {
-    small: { padH: 10, padV: 6, radius: 16, font: 12, gap: 6, icon: 14 },
-    medium: { padH: 14, padV: 8, radius: 18, font: 14, gap: 8, icon: 16 },
-    large: { padH: 18, padV: 10, radius: 22, font: 16, gap: 10, icon: 18 },
-  };
+const sizes: Record<
+  ChipSize,
+  {
+    padH: number;
+    padV: number;
+    radius: number;
+    font: number;
+    gap: number;
+    icon: number;
+  }
+> = {
+  small: { padH: 12, padV: 7, radius: 20, font: 13, gap: 6, icon: 14 }, // Slightly larger padding, better font size
+  medium: { padH: 16, padV: 9, radius: 24, font: 14, gap: 8, icon: 16 },
+  large: { padH: 20, padV: 11, radius: 28, font: 16, gap: 10, icon: 18 },
+};
 
 // Diameter for icon-only circular chips
 const iconOnlyDiameter: Record<ChipSize, number> = {
@@ -81,7 +90,15 @@ const iconOnlyDiameter: Record<ChipSize, number> = {
 
 function hexToRgb(hex: string) {
   const m = hex.replace('#', '');
-  const bigint = parseInt(m.length === 3 ? m.split('').map((c) => c + c).join('') : m, 16);
+  const bigint = parseInt(
+    m.length === 3
+      ? m
+          .split('')
+          .map((c) => c + c)
+          .join('')
+      : m,
+    16
+  );
   return { r: (bigint >> 16) & 255, g: (bigint >> 8) & 255, b: bigint & 255 };
 }
 
@@ -104,52 +121,82 @@ function shade(hex: string, percent: number) {
 
 function getElevation(level: 1 | 2 | 3 | 4 | 5 | 6): ViewStyle {
   const iosShadow: Record<number, ViewStyle> = {
-    1: { shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 2, shadowOffset: { width: 0, height: 1 } },
-    2: { shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 4, shadowOffset: { width: 0, height: 2 } },
-    3: { shadowColor: '#000', shadowOpacity: 0.10, shadowRadius: 6, shadowOffset: { width: 0, height: 3 } },
-    4: { shadowColor: '#000', shadowOpacity: 0.12, shadowRadius: 8, shadowOffset: { width: 0, height: 4 } },
-    5: { shadowColor: '#000', shadowOpacity: 0.14, shadowRadius: 10, shadowOffset: { width: 0, height: 5 } },
-    6: { shadowColor: '#000', shadowOpacity: 0.16, shadowRadius: 12, shadowOffset: { width: 0, height: 6 } },
+    1: {
+      shadowColor: '#000',
+      shadowOpacity: 0.06,
+      shadowRadius: 2,
+      shadowOffset: { width: 0, height: 1 },
+    },
+    2: {
+      shadowColor: '#000',
+      shadowOpacity: 0.08,
+      shadowRadius: 4,
+      shadowOffset: { width: 0, height: 2 },
+    },
+    3: {
+      shadowColor: '#000',
+      shadowOpacity: 0.1,
+      shadowRadius: 6,
+      shadowOffset: { width: 0, height: 3 },
+    },
+    4: {
+      shadowColor: '#000',
+      shadowOpacity: 0.12,
+      shadowRadius: 8,
+      shadowOffset: { width: 0, height: 4 },
+    },
+    5: {
+      shadowColor: '#000',
+      shadowOpacity: 0.14,
+      shadowRadius: 10,
+      shadowOffset: { width: 0, height: 5 },
+    },
+    6: {
+      shadowColor: '#000',
+      shadowOpacity: 0.16,
+      shadowRadius: 12,
+      shadowOffset: { width: 0, height: 6 },
+    },
   };
-  
+
   // Enhanced Android elevation with better shadow effects
   const androidElevation: Record<number, ViewStyle> = {
-    1: { 
+    1: {
       elevation: 1,
       shadowColor: '#000',
       shadowOffset: { width: 0, height: 1 },
       shadowOpacity: 0.08,
       shadowRadius: 1,
     },
-    2: { 
+    2: {
       elevation: 2,
       shadowColor: '#000',
       shadowOffset: { width: 0, height: 1 },
-      shadowOpacity: 0.10,
+      shadowOpacity: 0.1,
       shadowRadius: 2,
     },
-    3: { 
+    3: {
       elevation: 3,
       shadowColor: '#000',
       shadowOffset: { width: 0, height: 2 },
       shadowOpacity: 0.12,
       shadowRadius: 3,
     },
-    4: { 
+    4: {
       elevation: 4,
       shadowColor: '#000',
       shadowOffset: { width: 0, height: 2 },
       shadowOpacity: 0.14,
       shadowRadius: 4,
     },
-    5: { 
+    5: {
       elevation: 5,
       shadowColor: '#000',
       shadowOffset: { width: 0, height: 3 },
       shadowOpacity: 0.16,
       shadowRadius: 5,
     },
-    6: { 
+    6: {
       elevation: 6,
       shadowColor: '#000',
       shadowOffset: { width: 0, height: 3 },
@@ -157,11 +204,11 @@ function getElevation(level: 1 | 2 | 3 | 4 | 5 | 6): ViewStyle {
       shadowRadius: 6,
     },
   };
-  
-  return Platform.select<ViewStyle>({ 
-    ios: iosShadow[level], 
-    android: androidElevation[level], 
-    default: androidElevation[level] 
+
+  return Platform.select<ViewStyle>({
+    ios: iosShadow[level],
+    android: androidElevation[level],
+    default: androidElevation[level],
   })!;
 }
 
@@ -230,7 +277,6 @@ export default function Chip({
 
     // Disabled state reduces contrast
     if (disabled) {
-      const muted = rgba(onSurface, 0.28);
       return {
         bg: variant === 'solid' ? rgba(base, 0.5) : rgba(onSurface, 0.06),
         fg: rgba(onSurface, 0.5),
@@ -262,22 +308,38 @@ export default function Chip({
       ]}
     >
       {withTop && (
-        <FontAwesome5 name={topIconName as IconName} size={iconSz + 2} color={iconColor ?? tokens.fg} />
+        <FontAwesome5
+          name={topIconName as IconName}
+          size={iconSz + 2}
+          color={iconColor ?? tokens.fg}
+        />
       )}
       {!withTop && withStart && (
-        <FontAwesome5 name={(startIconName || leftIconName) as IconName} size={iconSz} color={iconColor ?? tokens.fg} />
+        <FontAwesome5
+          name={(startIconName || leftIconName) as IconName}
+          size={iconSz}
+          color={iconColor ?? tokens.fg}
+        />
       )}
       {hasLabel && (
         <Text
           allowFontScaling={allowFontScaling}
           numberOfLines={1}
-          style={[styles.text, { color: tokens.fg, fontSize: sz.font }, textStyle]}
+          style={[
+            styles.text,
+            { color: tokens.fg, fontSize: sz.font },
+            textStyle,
+          ]}
         >
           {label}
         </Text>
       )}
       {!withTop && withEnd && (
-        <FontAwesome5 name={endIconName as IconName} size={iconSz} color={iconColor ?? tokens.fg} />
+        <FontAwesome5
+          name={endIconName as IconName}
+          size={iconSz}
+          color={iconColor ?? tokens.fg}
+        />
       )}
     </View>
   );
@@ -298,7 +360,10 @@ export default function Chip({
     }),
   };
 
-  const elevated = elevation && elevation > 0 ? getElevation(elevation as 1 | 2 | 3 | 4 | 5 | 6) : undefined;
+  const elevated =
+    elevation && elevation > 0
+      ? getElevation(elevation as 1 | 2 | 3 | 4 | 5 | 6)
+      : undefined;
 
   return (
     <Pressable
@@ -311,7 +376,9 @@ export default function Chip({
         styles.shadowWrapper,
         elevated,
         // pressed state: subtle scale and tint
-        pressed && !disabled && Platform.OS !== 'web' && { transform: [{ scale: 0.98 }] },
+        pressed &&
+          !disabled &&
+          Platform.OS !== 'web' && { transform: [{ scale: 0.98 }] },
         { margin: margin as any },
         style,
       ]}
@@ -340,7 +407,9 @@ export default function Chip({
               justifyContent: 'center',
             },
             // pressed overlay for visual feedback
-            pressed && !disabled && Platform.OS !== 'android' && // Skip for Android since ripple handles feedback
+            pressed &&
+              !disabled &&
+              Platform.OS !== 'android' && // Skip for Android since ripple handles feedback
               (variant === 'solid'
                 ? { backgroundColor: shade(tokens.bg, -0.08) }
                 : variant === 'outlined'
@@ -385,7 +454,7 @@ const styles = StyleSheet.create({
     }),
   },
   text: {
-    fontWeight: '700',
+    fontWeight: '600', // Reduced from 700 for a more premium feel
     ...Platform.select({
       android: {
         // Better text rendering on Android

@@ -1,6 +1,5 @@
 import React, { useMemo, useState } from 'react';
 import { FlatList, ScrollView, StyleSheet, View } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
 import { ThemedText } from '@/components/themed-text';
 import { Colors } from '@/constants/color';
 import SearchBar from '@/components/SearchBar';
@@ -131,12 +130,14 @@ const TouristSpotScreen = () => {
                 borderWidth: 0,
               }}
               inputStyle={{ fontSize: 15 }}
-              rightIcon={
-                <Ionicons
-                  name="options-outline"
-                  size={20}
-                  color={colors.active}
-                />
+              enableFiltering={true}
+              quickFilters={[
+                { id: 'open_now', label: 'Open Now', value: 'open_now' },
+                { id: 'nearby', label: 'Nearby', value: 'nearby' },
+                { id: 'top_rated', label: 'Top Rated', value: 'top_rated' },
+              ]}
+              onQuickFilterChange={(filters) =>
+                console.log('Quick filters:', filters)
               }
             />
           </View>
