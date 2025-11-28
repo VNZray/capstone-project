@@ -1,5 +1,5 @@
 import React from 'react';
-import { ImageBackground, StyleSheet } from 'react-native';
+import { ImageBackground, StyleSheet, ImageSourcePropType } from 'react-native';
 import Animated, {
   Extrapolate,
   SharedValue,
@@ -11,20 +11,17 @@ import { LinearGradient } from 'expo-linear-gradient';
 type HeroSectionProps = {
   scrollY: SharedValue<number>;
   heroHeight: number;
-  imageUri?: string;
-  headerVisible?: SharedValue<number>;
+  imageSource?: ImageSourcePropType;
+  headerScrollThreshold?: number;
 };
 
-const DEFAULT_IMAGE =
-  'https://images.unsplash.com/photo-1469474968028-56623f02e42e?auto=format&fit=crop&w=900&q=80';
-
-const AnimatedLinearGradient = Animated.createAnimatedComponent(LinearGradient);
+const DEFAULT_IMAGE = require('@/assets/images/home-hero.png');
 
 const HeroSection: React.FC<HeroSectionProps> = ({
   scrollY,
   heroHeight,
-  imageUri = DEFAULT_IMAGE,
-  headerVisible,
+  imageSource = DEFAULT_IMAGE,
+  headerScrollThreshold = 80,
 }) => {
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [
@@ -47,13 +44,16 @@ const HeroSection: React.FC<HeroSectionProps> = ({
     ],
   }));
 
-  // Animate overlay opacity based on header visibility (1 = visible/expanded, 0 = collapsed)
+  // Animate overlay opacity based on scroll position (same as header background)
+  // Goes from 60% (0.6) at top to 100% (1.0) when scrolled past threshold
   const overlayStyle = useAnimatedStyle(() => {
-    // When header is collapsed (headerVisible = 0), make overlay fully opaque
-    const opacity = headerVisible 
-      ? interpolate(headerVisible.value, [0, 1], [1, 0.6], Extrapolate.CLAMP)
-      : 0.6;
-    
+    const opacity = interpolate(
+      scrollY.value,
+      [0, headerScrollThreshold],
+      [0.6, 1],
+      Extrapolate.CLAMP
+    );
+
     return { opacity };
   });
 
@@ -62,23 +62,24 @@ const HeroSection: React.FC<HeroSectionProps> = ({
       style={[styles.container, { height: heroHeight + 120 }, animatedStyle]}
     >
       <ImageBackground
-        source={{ uri: imageUri }}
+        source={imageSource}
         style={StyleSheet.absoluteFill}
         resizeMode="cover"
       >
+        {/* Base gradient */}
         <LinearGradient
-          colors={['rgba(10, 27, 71, 0.9)', 'rgba(15, 15, 134, 0.6)']}
+          colors={['rgba(10, 27, 71, 0.4)', 'rgba(15, 15, 134, 0.3)']}
           start={{ x: 0, y: 0 }}
           end={{ x: 0, y: 1 }}
           style={StyleSheet.absoluteFill}
         />
-        {/* Solid color overlay that fades in when header collapses */}
-        <Animated.View 
+        {/* Animated solid color overlay that increases opacity on scroll */}
+        <Animated.View
           style={[
-            StyleSheet.absoluteFill, 
+            StyleSheet.absoluteFill,
             { backgroundColor: '#0a1b47' },
-            overlayStyle
-          ]} 
+            overlayStyle,
+          ]}
         />
       </ImageBackground>
     </Animated.View>

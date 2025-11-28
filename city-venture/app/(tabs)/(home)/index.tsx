@@ -61,18 +61,8 @@ if (
   UIManager.setLayoutAnimationEnabledExperimental(true);
 }
 
-// --- CONSTANTS ---
+const HERO_HEIGHT = 280;
 const SCREEN_WIDTH = Dimensions.get('window').width;
-
-const HERO_HEIGHT = 280; 
-const HERO_OVERLAP = 30; 
-
-const HEADER_TOP_PADDING = 10;
-const ROW_PROFILE_HEIGHT = 60;
-const ROW_PROFILE_MARGIN = 12;
-const SEARCH_CONTAINER_HEIGHT = 50; 
-const SEARCH_CONTAINER_PADDING = 12; 
-
 const HEADER_SCROLL_THRESHOLD = 80;
 
 const AnimatedScrollView = Animated.ScrollView;
@@ -87,7 +77,7 @@ const HomeScreen = () => {
   // --- Animation Values ---
   const scrollY = useSharedValue(0);
   const prevScrollY = useSharedValue(0);
-  const headerVisible = useSharedValue(1); 
+  const headerVisible = useSharedValue(1); // 1 = Visible, 0 = Hidden
 
   // --- State ---
   const [searchValue, setSearchValue] = useState('');
@@ -114,7 +104,13 @@ const HomeScreen = () => {
   // --- Effects ---
   useEffect(() => {
     const greetings = [
-      'Hello', 'Bonjour', 'Hola', 'Ciao', 'Konnichiwa', 'Guten Tag', 'Namaste',
+      'Hello',
+      'Bonjour',
+      'Hola',
+      'Ciao',
+      'Konnichiwa',
+      'Guten Tag',
+      'Namaste',
     ];
     let index = 0;
     const interval = setInterval(() => {
@@ -147,27 +143,29 @@ const HomeScreen = () => {
     loadHomeContent();
   }, [loadHomeContent]);
 
-  // --- SCROLL HANDLER ---
+  // --- UPDATED SCROLL HANDLER (Fixes Slow Scroll Issue) ---
   const handleScroll = useAnimatedScrollHandler((event) => {
     const currentY = event.contentOffset.y;
     const diff = currentY - prevScrollY.value;
 
-    // Only update header visibility when there's a meaningful scroll direction change
+    // 1. Top of screen logic (always show fully)
     if (currentY < HEADER_SCROLL_THRESHOLD) {
-      // Near top - always show header
-      if (headerVisible.value < 0.5) {
+      if (headerVisible.value !== 1) {
         headerVisible.value = withTiming(1, { duration: 200 });
       }
     } else {
-      // Scrolling down - hide header
-      if (diff > 2 && headerVisible.value > 0.5) {
+      // 2. Scrolled down logic
+      // We use '0' instead of '5' to catch even the slowest downward scroll
+      if (diff > 0 && headerVisible.value !== 0) {
+        // Scrolling Down -> Hide Row 1
         headerVisible.value = withTiming(0, {
           duration: 250,
           easing: Easing.out(Easing.ease),
         });
-      } 
-      // Scrolling up - show header
-      else if (diff < -4 && headerVisible.value < 0.5) {
+      }
+      // We keep a small buffer (-3) for scrolling up to prevent flickering
+      else if (diff < -3 && headerVisible.value !== 1) {
+        // Scrolling Up -> Show Row 1
         headerVisible.value = withTiming(1, {
           duration: 250,
           easing: Easing.out(Easing.ease),
@@ -179,8 +177,7 @@ const HomeScreen = () => {
     scrollY.value = currentY;
   });
 
-  // --- ANIMATED STYLES ---
-
+  // --- Animated Styles ---
   const headerBackgroundStyle = useAnimatedStyle(() => {
     const opacity = interpolate(
       scrollY.value,
@@ -200,7 +197,7 @@ const HomeScreen = () => {
     const height = interpolate(
       headerVisible.value,
       [0, 1],
-      [0, ROW_PROFILE_HEIGHT],
+      [0, 60],
       Extrapolation.CLAMP
     );
 
@@ -208,44 +205,27 @@ const HomeScreen = () => {
       transform: [{ translateY }],
       opacity,
       height,
-      marginBottom: interpolate(headerVisible.value, [0, 1], [0, ROW_PROFILE_MARGIN]),
+      marginBottom: interpolate(headerVisible.value, [0, 1], [0, 12]),
       overflow: 'hidden',
     };
   });
 
-  // Calculate header heights for clamping
-  const COLLAPSED_HEADER_HEIGHT = insetsTop + HEADER_TOP_PADDING + SEARCH_CONTAINER_HEIGHT + SEARCH_CONTAINER_PADDING;
-  const EXPANDED_HEADER_HEIGHT = COLLAPSED_HEADER_HEIGHT + ROW_PROFILE_HEIGHT + ROW_PROFILE_MARGIN;
-
-  // Sheet style that clamps to header
-  const sheetStyle = useAnimatedStyle(() => {
-    // Header height changes based on visibility - use same interpolation as header
-    const currentHeaderHeight = interpolate(
-      headerVisible.value,
-      [0, 1],
-      [COLLAPSED_HEADER_HEIGHT, EXPANDED_HEADER_HEIGHT],
-      Extrapolation.CLAMP
-    );
-
-    // Natural position based on scroll (starts at hero bottom minus overlap)
-    const naturalSheetY = (HERO_HEIGHT - HERO_OVERLAP) - scrollY.value;
-    
-    // Clamp so it never goes above the header
-    // Use a simple max - the smoothness comes from headerVisible already being animated
-    const translateY = Math.max(currentHeaderHeight, naturalSheetY);
-
-    return {
-      transform: [{ translateY }],
-    };
-  }, [insetsTop]); // Add dependency for insetsTop
-
   const handleActionPress = (id: ActionItem['id']) => {
     switch (id) {
-      case 'accommodation': navigateToAccommodationHome(); break;
-      case 'food': navigateToShopHome(); break;
-      case 'tours': navigateToTouristSpotHome(); break;
-      case 'tickets': navigateToEventHome(); break;
-      default: break;
+      case 'accommodation':
+        navigateToAccommodationHome();
+        break;
+      case 'food':
+        navigateToShopHome();
+        break;
+      case 'tours':
+        navigateToTouristSpotHome();
+        break;
+      case 'tickets':
+        navigateToEventHome();
+        break;
+      default:
+        break;
     }
   };
 
@@ -263,34 +243,50 @@ const HomeScreen = () => {
         barStyle="light-content"
       />
 
-      {/* --- 1. STICKY HEADER (Elevation: 100) --- */}
-      <View style={[styles.stickyHeader, { paddingTop: insetsTop + HEADER_TOP_PADDING }]}>
-        <Animated.View style={[StyleSheet.absoluteFill, headerBackgroundStyle]} />
+      {/* --- Sticky Header --- */}
+      <View style={[styles.stickyHeader, { paddingTop: insetsTop + 10 }]}>
+        {/* Animated Background Layer */}
+        <Animated.View
+          style={[StyleSheet.absoluteFill, headerBackgroundStyle]}
+        />
 
+        {/* Row 1: Profile + Icons */}
         <Animated.View style={[styles.topRow, topRowAnimatedStyle]}>
           <View style={styles.profileSection}>
             <View style={styles.profileIcon}>
               <Ionicons name="person" size={20} color="#FFF" />
             </View>
             <View>
-              <ThemedText type="label-medium" style={{ color: 'rgba(255,255,255,0.8)' }}>
+              <ThemedText
+                type="label-medium"
+                style={{ color: 'rgba(255,255,255,0.8)' }}
+              >
                 {greeting}
               </ThemedText>
-              <ThemedText type="body-large" weight="bold" style={{ color: '#FFF' }}>
+              <ThemedText
+                type="body-large"
+                weight="bold"
+                style={{ color: '#FFF' }}
+              >
                 Tourist!
               </ThemedText>
             </View>
           </View>
+
           <View style={styles.iconRow}>
-            <Pressable style={styles.iconButton}>
+            <Pressable onPress={() => {}} style={styles.iconButton}>
               <Ionicons name="notifications-outline" size={24} color="#FFF" />
             </Pressable>
-            <Pressable onPress={() => navigateToCart()} style={styles.iconButton}>
+            <Pressable
+              onPress={() => navigateToCart()}
+              style={styles.iconButton}
+            >
               <Ionicons name="cart-outline" size={24} color="#FFF" />
             </Pressable>
           </View>
         </Animated.View>
 
+        {/* Row 2: Search Bar */}
         <View style={styles.searchBarWrapper}>
           <SearchBar
             value={searchValue}
@@ -303,86 +299,79 @@ const HomeScreen = () => {
         </View>
       </View>
 
-      {/* --- 2. HERO IMAGE (Elevation: 0) --- */}
-      <HeroSection scrollY={scrollY} heroHeight={HERO_HEIGHT} headerVisible={headerVisible} />
+      {/* --- Main Content --- */}
+      <HeroSection scrollY={scrollY} heroHeight={HERO_HEIGHT} />
 
-      {/* --- 3. SHEET CONTAINER - Clamps to header, never goes above --- */}
-      <Animated.View 
-        style={[
-          styles.sheetContainer, 
-          { backgroundColor: palette.background }, 
-          sheetStyle
-        ]}
-        pointerEvents="box-none"
+      <AnimatedScrollView
+        style={StyleSheet.absoluteFill}
+        contentContainerStyle={{
+          paddingBottom: bottom + 32,
+        }}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            tintColor={palette.primary}
+          />
+        }
+        onScroll={handleScroll}
+        scrollEventThrottle={16}
+        showsVerticalScrollIndicator={false}
       >
-        <AnimatedScrollView
-          style={styles.scrollView}
-          contentContainerStyle={{
-            paddingTop: 24,
-            paddingBottom: bottom + 32,
-          }}
-          refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={handleRefresh}
-              tintColor={palette.primary}
-            />
-          }
-          onScroll={handleScroll}
-          scrollEventThrottle={16}
-          showsVerticalScrollIndicator={false}
-        >
-          <View style={styles.contentContainer}>
-            <ActionGrid items={ACTIONS} onPressItem={handleActionPress} />
+        <View style={{ height: HERO_HEIGHT - 30 }} />
 
-            <View style={styles.sectionContainer}>
-              <CityListSection
-                onPressCity={(city) => console.log(city.name)}
-                onPressViewMore={() => console.log('View more cities')}
-              />
-              <PersonalRecommendationSection
-                onPressItem={(item) => console.log(item.title)}
-              />
-              <VisitorsHandbookSection />
-              <SpecialOffersSection
-                onPressOffer={(offer) => console.log(offer.title)}
-              />
-              <FeaturedPartnersSection
-                onPressPartner={(partner) => console.log(partner.name)}
-              />
-              <FeaturedTouristSpotsSection />
-              <ReportIssueSection
-                onViewReports={() => console.log('View Reports')}
-                onReportIssue={() => console.log('Report Issue')}
-              />
-              <NewsAndEventsSection
-                newsData={newsState.data}
-                eventsData={eventState.data}
-                loading={newsState.loading || eventState.loading}
-                error={newsState.error || eventState.error}
-                onPressArticle={(article) =>
-                  router.push({
-                    pathname: '/(tabs)/(home)',
-                    params: { newsId: article.id },
-                  })
-                }
-                onPressEvent={(event) =>
-                  router.push({
-                    pathname: '/(tabs)/(home)/(event)',
-                    params: { eventId: event.id },
-                  })
-                }
-                onPressViewAllEvents={navigateToEventHome}
-              />
-            </View>
+        <View
+          style={[styles.contentSheet, { backgroundColor: palette.background }]}
+        >
+          <ActionGrid items={ACTIONS} onPressItem={handleActionPress} />
+
+          <View style={styles.sectionContainer}>
+            <CityListSection
+              onPressCity={(city) => console.log(city.name)}
+              onPressViewMore={() => console.log('View more cities')}
+            />
+            <PersonalRecommendationSection
+              onPressItem={(item) => console.log(item.title)}
+            />
+            <VisitorsHandbookSection />
+            <SpecialOffersSection
+              onPressOffer={(offer) => console.log(offer.title)}
+            />
+            <FeaturedPartnersSection
+              onPressPartner={(partner) => console.log(partner.name)}
+            />
+            <FeaturedTouristSpotsSection />
+            <ReportIssueSection
+              onViewReports={() => console.log('View Reports')}
+              onReportIssue={() => console.log('Report Issue')}
+            />
+            <NewsAndEventsSection
+              newsData={newsState.data}
+              eventsData={eventState.data}
+              loading={newsState.loading || eventState.loading}
+              error={newsState.error || eventState.error}
+              onPressArticle={(article) =>
+                router.push({
+                  pathname: '/(tabs)/(home)',
+                  params: { newsId: article.id },
+                })
+              }
+              onPressEvent={(event) =>
+                router.push({
+                  pathname: '/(tabs)/(home)/(event)',
+                  params: { eventId: event.id },
+                })
+              }
+              onPressViewAllEvents={navigateToEventHome}
+            />
           </View>
-        </AnimatedScrollView>
-      </Animated.View>
+        </View>
+      </AnimatedScrollView>
     </View>
   );
 };
 
-// --- SUB-COMPONENTS ---
+// --- Sub-Components ---
 
 type ActionGridProps = {
   items: ActionItem[];
@@ -506,7 +495,6 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     zIndex: 100,
-    elevation: 100, // Top layer
   },
   topRow: {
     flexDirection: 'row',
@@ -545,9 +533,7 @@ const styles = StyleSheet.create({
   },
   searchBarWrapper: {
     paddingHorizontal: 20,
-    paddingBottom: SEARCH_CONTAINER_PADDING,
-    height: SEARCH_CONTAINER_HEIGHT + SEARCH_CONTAINER_PADDING,
-    justifyContent: 'flex-start',
+    paddingBottom: 12,
   },
   searchBarContainer: {
     backgroundColor: '#FFF',
@@ -558,32 +544,15 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.15,
     shadowRadius: 6,
-    height: SEARCH_CONTAINER_HEIGHT,
   },
-  
-  sheetContainer: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    top: 0,
-    bottom: 0,
+  contentSheet: {
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
-    overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -3 },
-    shadowOpacity: 0.1,
-    shadowRadius: 6,
-    elevation: 4,
-  },
-  scrollView: {
-    flex: 1,
-  },
-  contentContainer: {
     paddingTop: 24,
     paddingBottom: 40,
+    minHeight: 1000,
+    overflow: 'hidden',
   },
-
   sectionContainer: {
     paddingHorizontal: 20,
     gap: 30,
