@@ -12,15 +12,12 @@ import {
   Platform,
 } from 'react-native';
 import { Stack, router } from 'expo-router';
-import { LinearGradient } from 'expo-linear-gradient';
-import { Colors } from '@/constants/color';
+import { ShopColors } from '@/constants/color';
 import { useTypography } from '@/constants/typography';
 import { useCart } from '@/context/CartContext';
 import { Ionicons } from '@expo/vector-icons';
 
 const CartScreen = () => {
-  const colors = Colors.light;
-  const isDark = false;
   const type = useTypography();
   const { h3, h4, body, bodySmall, caption } = type;
   const {
@@ -31,16 +28,6 @@ const CartScreen = () => {
     getSubtotal,
     getTotalItems,
   } = useCart();
-
-  const palette = {
-    bg: colors.background,
-    card: colors.surface,
-    text: colors.text,
-    subText: colors.textSecondary,
-    border: colors.border,
-    accent: colors.accent,
-    primary: colors.primary,
-  };
 
   const handleQuantityChange = (
     productId: string,
@@ -98,21 +85,13 @@ const CartScreen = () => {
   const subtotal = getSubtotal();
   const totalItems = getTotalItems();
 
-  // Midnight Sunlight Gradients
-  const buttonGradient = ['#FFD700', '#FF8C00'] as const; // Gold to Dark Orange
-  const buttonText = '#0A1B47'; // Dark text on warm button
-
-  const emptyStateGradient = isDark
-    ? (['#1A2B57', '#0A1B47'] as const)
-    : (['#FFF5E1', '#FFFFFF'] as const);
-
   return (
     <>
       <Stack.Screen
         options={{
           title: 'Shopping Cart',
-          headerStyle: { backgroundColor: palette.bg },
-          headerTintColor: palette.text,
+          headerStyle: { backgroundColor: ShopColors.surface },
+          headerTintColor: ShopColors.textPrimary,
           headerShadowVisible: false,
           headerRight: () =>
             items.length > 0 ? (
@@ -126,7 +105,7 @@ const CartScreen = () => {
                 <Text
                   style={[
                     { fontSize: bodySmall, fontWeight: '600' },
-                    { color: colors.error },
+                    { color: ShopColors.error },
                   ]}
                 >
                   Clear All
@@ -137,23 +116,26 @@ const CartScreen = () => {
       />
 
       {/* Main Background */}
-      <View style={[styles.container, { backgroundColor: palette.bg }]}>
+      <View
+        style={[styles.container, { backgroundColor: ShopColors.background }]}
+      >
         {items.length === 0 ? (
           <View style={styles.emptyContainer}>
-            <LinearGradient
-              colors={emptyStateGradient}
-              style={styles.emptyIconContainer}
-            >
+            <View style={styles.emptyIconContainer}>
               <Ionicons
                 name="cart-outline"
                 size={64}
-                color={isDark ? '#FFD700' : '#FF8C00'}
+                color={ShopColors.textSecondary}
               />
-            </LinearGradient>
+            </View>
             <Text
               style={[
                 { fontSize: h3, fontWeight: 'bold' },
-                { color: palette.text, marginTop: 24, textAlign: 'center' },
+                {
+                  color: ShopColors.textPrimary,
+                  marginTop: 24,
+                  textAlign: 'center',
+                },
               ]}
             >
               Your Cart is Empty
@@ -162,7 +144,7 @@ const CartScreen = () => {
               style={[
                 { fontSize: body },
                 {
-                  color: palette.subText,
+                  color: ShopColors.textSecondary,
                   marginTop: 12,
                   textAlign: 'center',
                   maxWidth: '80%',
@@ -175,21 +157,16 @@ const CartScreen = () => {
               style={styles.browseButtonWrapper}
               onPress={() => router.back()}
             >
-              <LinearGradient
-                colors={buttonGradient}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-                style={styles.browseButton}
-              >
+              <View style={styles.browseButton}>
                 <Text
                   style={[
                     { fontSize: body, fontWeight: 'bold' },
-                    { color: buttonText },
+                    { color: '#FFFFFF' },
                   ]}
                 >
                   Start Shopping
                 </Text>
-              </LinearGradient>
+              </View>
             </Pressable>
           </View>
         ) : (
@@ -206,12 +183,8 @@ const CartScreen = () => {
                   style={[
                     styles.cartItem,
                     {
-                      backgroundColor: palette.card,
-                      shadowColor: isDark ? '#000' : '#ccc',
-                      borderColor: isDark
-                        ? 'rgba(255,215,0,0.1)'
-                        : 'transparent', // Subtle gold border in dark mode
-                      borderWidth: isDark ? 1 : 0,
+                      backgroundColor: ShopColors.surface,
+                      borderColor: ShopColors.border,
                     },
                   ]}
                 >
@@ -229,13 +202,13 @@ const CartScreen = () => {
                           style={[
                             styles.productImage,
                             styles.placeholderImage,
-                            { backgroundColor: isDark ? '#1A2B57' : '#F0F0F0' },
+                            { backgroundColor: ShopColors.inputBackground },
                           ]}
                         >
                           <Ionicons
                             name="image-outline"
                             size={32}
-                            color={palette.subText}
+                            color={ShopColors.textSecondary}
                           />
                         </View>
                       )}
@@ -247,7 +220,7 @@ const CartScreen = () => {
                         <Text
                           style={[
                             { fontSize: body, fontWeight: '600' },
-                            { color: palette.text, flex: 1 },
+                            { color: ShopColors.textPrimary, flex: 1 },
                           ]}
                           numberOfLines={2}
                         >
@@ -258,9 +231,9 @@ const CartScreen = () => {
                           onPress={() => handleRemoveItem(item.product_id)}
                         >
                           <Ionicons
-                            name="close-circle-outline"
-                            size={22}
-                            color={palette.subText}
+                            name="close"
+                            size={20}
+                            color={ShopColors.textSecondary}
                           />
                         </Pressable>
                       </View>
@@ -269,7 +242,7 @@ const CartScreen = () => {
                         <Text
                           style={[
                             { fontSize: caption },
-                            { color: palette.subText, marginTop: 4 },
+                            { color: ShopColors.textSecondary, marginTop: 4 },
                           ]}
                           numberOfLines={1}
                         >
@@ -280,8 +253,8 @@ const CartScreen = () => {
                       <View style={styles.priceQuantityRow}>
                         <Text
                           style={[
-                            { fontSize: body, fontWeight: '700' },
-                            { color: isDark ? '#FFD700' : colors.primary }, // Gold in dark, Primary in light
+                            { fontSize: body, fontWeight: '600' },
+                            { color: ShopColors.textPrimary },
                           ]}
                         >
                           ₱{item.price.toFixed(2)}
@@ -291,7 +264,7 @@ const CartScreen = () => {
                         <View
                           style={[
                             styles.quantityControl,
-                            { backgroundColor: isDark ? '#0A1B47' : '#F5F5F5' },
+                            { borderColor: ShopColors.border },
                           ]}
                         >
                           <Pressable
@@ -307,7 +280,7 @@ const CartScreen = () => {
                             <Ionicons
                               name="remove"
                               size={16}
-                              color={palette.text}
+                              color={ShopColors.textPrimary}
                             />
                           </Pressable>
 
@@ -315,8 +288,8 @@ const CartScreen = () => {
                             style={[
                               { fontSize: bodySmall, fontWeight: '600' },
                               {
-                                color: palette.text,
-                                minWidth: 20,
+                                color: ShopColors.textPrimary,
+                                minWidth: 24,
                                 textAlign: 'center',
                               },
                             ]}
@@ -340,8 +313,8 @@ const CartScreen = () => {
                               size={16}
                               color={
                                 item.quantity >= item.stock
-                                  ? palette.subText
-                                  : palette.text
+                                  ? ShopColors.textSecondary
+                                  : ShopColors.textPrimary
                               }
                             />
                           </Pressable>
@@ -358,33 +331,35 @@ const CartScreen = () => {
               style={[
                 styles.footer,
                 {
-                  backgroundColor: palette.card,
-                  borderTopColor: isDark ? '#1A2B57' : '#F0F0F0',
-                  shadowColor: '#000',
+                  backgroundColor: ShopColors.surface,
+                  borderTopColor: ShopColors.border,
                 },
               ]}
             >
               <View style={styles.summaryDetails}>
                 <View style={styles.summaryRow}>
                   <Text
-                    style={[{ fontSize: body }, { color: palette.subText }]}
+                    style={[
+                      { fontSize: body },
+                      { color: ShopColors.textSecondary },
+                    ]}
                   >
                     Subtotal ({totalItems} items)
                   </Text>
                   <Text
                     style={[
                       { fontSize: body, fontWeight: '600' },
-                      { color: palette.text },
+                      { color: ShopColors.textPrimary },
                     ]}
                   >
                     ₱{subtotal.toFixed(2)}
                   </Text>
                 </View>
-                <View style={[styles.summaryRow, { marginTop: 8 }]}>
+                <View style={[styles.summaryRow, { marginTop: 12 }]}>
                   <Text
                     style={[
                       { fontSize: h4, fontWeight: 'bold' },
-                      { color: palette.text },
+                      { color: ShopColors.textPrimary },
                     ]}
                   >
                     Total
@@ -392,7 +367,7 @@ const CartScreen = () => {
                   <Text
                     style={[
                       { fontSize: h4, fontWeight: 'bold' },
-                      { color: isDark ? '#FFD700' : colors.primary },
+                      { color: ShopColors.textPrimary },
                     ]}
                   >
                     ₱{subtotal.toFixed(2)}
@@ -404,27 +379,16 @@ const CartScreen = () => {
                 style={styles.checkoutButtonWrapper}
                 onPress={handleCheckout}
               >
-                <LinearGradient
-                  colors={buttonGradient}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 0 }}
-                  style={styles.checkoutButton}
-                >
+                <View style={styles.checkoutButton}>
                   <Text
                     style={[
                       { fontSize: body, fontWeight: 'bold' },
-                      { color: buttonText },
+                      { color: '#FFFFFF' },
                     ]}
                   >
                     Proceed to Checkout
                   </Text>
-                  <Ionicons
-                    name="arrow-forward"
-                    size={20}
-                    color={buttonText}
-                    style={{ marginLeft: 8 }}
-                  />
-                </LinearGradient>
+                </View>
               </Pressable>
             </View>
           </>
@@ -445,24 +409,26 @@ const styles = StyleSheet.create({
     paddingHorizontal: 32,
   },
   emptyIconContainer: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    backgroundColor: ShopColors.inputBackground,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 8,
   },
   browseButtonWrapper: {
     marginTop: 32,
-    borderRadius: 25,
+    borderRadius: 8,
     overflow: 'hidden',
     width: '100%',
-    maxWidth: 250,
+    maxWidth: 200,
   },
   browseButton: {
-    paddingVertical: 16,
+    paddingVertical: 14,
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: ShopColors.primary,
   },
   scrollView: {
     flex: 1,
@@ -472,13 +438,10 @@ const styles = StyleSheet.create({
     paddingBottom: 100,
   },
   cartItem: {
-    borderRadius: 16,
+    borderRadius: 8,
     marginBottom: 16,
     padding: 12,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 3,
+    borderWidth: 1,
   },
   itemMainRow: {
     flexDirection: 'row',
@@ -487,9 +450,12 @@ const styles = StyleSheet.create({
     marginRight: 16,
   },
   productImage: {
-    width: 90,
-    height: 90,
-    borderRadius: 12,
+    width: 80,
+    height: 80,
+    borderRadius: 8,
+    backgroundColor: ShopColors.inputBackground,
+    borderWidth: 1,
+    borderColor: ShopColors.border,
   },
   placeholderImage: {
     justifyContent: 'center',
@@ -498,7 +464,7 @@ const styles = StyleSheet.create({
   productInfo: {
     flex: 1,
     justifyContent: 'space-between',
-    paddingVertical: 4,
+    paddingVertical: 2,
   },
   titleRow: {
     flexDirection: 'row',
@@ -514,13 +480,13 @@ const styles = StyleSheet.create({
   quantityControl: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderRadius: 20,
-    padding: 4,
+    borderRadius: 4,
+    borderWidth: 1,
+    height: 32,
   },
   qtyBtn: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+    width: 32,
+    height: '100%',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -528,12 +494,6 @@ const styles = StyleSheet.create({
     padding: 20,
     paddingBottom: Platform.OS === 'ios' ? 34 : 20,
     borderTopWidth: 1,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 10,
     position: 'absolute',
     bottom: 0,
     left: 0,
@@ -548,19 +508,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   checkoutButtonWrapper: {
-    borderRadius: 16,
+    borderRadius: 8,
     overflow: 'hidden',
-    shadowColor: '#FFD700',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 5,
   },
   checkoutButton: {
-    flexDirection: 'row',
-    paddingVertical: 18,
+    paddingVertical: 16,
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: ShopColors.primary,
   },
 });
 

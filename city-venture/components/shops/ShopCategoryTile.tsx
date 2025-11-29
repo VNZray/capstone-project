@@ -40,7 +40,10 @@ const ShopCategoryTile: React.FC<ShopCategoryTileProps> = ({
       )}
       <Text
         numberOfLines={1}
-        style={[styles.label, active ? styles.activeLabel : styles.inactiveLabel]}
+        style={[
+          styles.label,
+          active ? styles.activeLabel : styles.inactiveLabel,
+        ]}
       >
         {label}
       </Text>
@@ -53,18 +56,18 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 24,
-    marginRight: 8,
+    paddingVertical: 10,
+    borderRadius: 8,
+    marginRight: 12,
     borderWidth: 1,
   },
   inactiveContainer: {
-    backgroundColor: ShopColors.cardBackground,
+    backgroundColor: ShopColors.surface,
     borderColor: ShopColors.border,
   },
   activeContainer: {
-    backgroundColor: ShopColors.accent,
-    borderColor: ShopColors.accent,
+    backgroundColor: ShopColors.primary,
+    borderColor: ShopColors.primary,
   },
   pressed: {
     opacity: 0.8,
@@ -73,7 +76,7 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   label: {
-    fontSize: 12,
+    fontSize: 13,
     fontFamily: 'Poppins-Medium',
   },
   inactiveLabel: {
@@ -81,9 +84,7 @@ const styles = StyleSheet.create({
   },
   activeLabel: {
     color: '#FFFFFF',
-    fontFamily: 'Poppins-SemiBold',
   },
 });
 
 export default ShopCategoryTile;
-

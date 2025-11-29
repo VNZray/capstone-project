@@ -4,7 +4,6 @@ import SearchBar from '@/components/SearchBar';
 import FeaturedShopCard from '@/components/shops/FeaturedShopCard';
 import ShopCategoryTile from '@/components/shops/ShopCategoryTile';
 import ShopListCard from '@/components/shops/ShopListCard';
-import SpecialOfferCard from '@/components/shops/SpecialOfferCard';
 import { ThemedText } from '@/components/themed-text';
 import { SHOP_CATEGORIES } from '@/constants/ShopCategories';
 import { ShopColors } from '@/constants/color';
@@ -12,24 +11,22 @@ import { fetchAllBusinessDetails } from '@/services/BusinessService';
 import type { Business } from '@/types/Business';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import {
   ActivityIndicator,
-  FlatList,
   NativeScrollEvent,
   NativeSyntheticEvent,
   RefreshControl,
   ScrollView,
   StyleSheet,
-  TouchableOpacity,
   View,
 } from 'react-native';
-
-const SPECIAL_OFFERS_PLACEHOLDERS = [
-  require('@/assets/images/placeholder.png'),
-  require('@/assets/images/placeholder.png'),
-  require('@/assets/images/placeholder.png'),
-];
 
 const ShopDirectory = () => {
   const router = useRouter();
@@ -103,9 +100,10 @@ const ShopDirectory = () => {
     // Filter by search term
     if (search.trim()) {
       const term = search.toLowerCase();
-      filtered = filtered.filter((b) =>
-        b.business_name?.toLowerCase().includes(term) ||
-        b.description?.toLowerCase().includes(term)
+      filtered = filtered.filter(
+        (b) =>
+          b.business_name?.toLowerCase().includes(term) ||
+          b.description?.toLowerCase().includes(term)
       );
     }
 
@@ -113,7 +111,10 @@ const ShopDirectory = () => {
   }, [businesses, search]);
 
   // Get featured shops (first 3)
-  const featuredShops = useMemo(() => filteredShops.slice(0, 3), [filteredShops]);
+  const featuredShops = useMemo(
+    () => filteredShops.slice(0, 3),
+    [filteredShops]
+  );
 
   // Get shops for discover more section (remaining)
   const discoverMoreShops = useMemo(
@@ -135,7 +136,11 @@ const ShopDirectory = () => {
   const renderFeaturedSection = () => (
     <View style={styles.section}>
       <View style={styles.sectionHeader}>
-        <ThemedText type="sub-title-extra-small" weight="bold" style={{ color: ShopColors.textPrimary }}>
+        <ThemedText
+          type="sub-title-extra-small"
+          weight="bold"
+          style={styles.sectionTitle}
+        >
           Featured Shops
         </ThemedText>
       </View>
@@ -143,7 +148,7 @@ const ShopDirectory = () => {
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
-        contentContainerStyle={{ paddingHorizontal: 16, paddingRight: 8 }}
+        contentContainerStyle={styles.horizontalListContent}
         snapToInterval={300} // Approximation
         decelerationRate="fast"
       >
@@ -151,7 +156,10 @@ const ShopDirectory = () => {
           featuredShops.map((shop) => (
             <FeaturedShopCard
               key={shop.id}
-              image={shop.business_image || require('@/assets/images/placeholder.png')}
+              image={
+                shop.business_image ||
+                require('@/assets/images/placeholder.png')
+              }
               name={shop.business_name}
               category={shop.description}
               rating={4.5}
@@ -162,7 +170,10 @@ const ShopDirectory = () => {
           ))
         ) : (
           <View style={styles.emptyPlaceholder}>
-            <ThemedText type="body-small" style={{ color: ShopColors.textSecondary }}>
+            <ThemedText
+              type="body-small"
+              style={{ color: ShopColors.textSecondary }}
+            >
               No featured shops available
             </ThemedText>
           </View>
@@ -171,46 +182,12 @@ const ShopDirectory = () => {
     </View>
   );
 
-  const renderSpecialOffersSection = () => (
-    <View style={styles.section}>
-      <View style={styles.sectionHeader}>
-        <ThemedText type="sub-title-extra-small" weight="bold" style={{ color: ShopColors.textPrimary }}>
-          Special Offers
-        </ThemedText>
-        <ThemedText
-          type="body-extra-small"
-          style={{ color: ShopColors.accent, fontWeight: '600' }}
-        >
-          View All →
-        </ThemedText>
-      </View>
-
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={{ paddingHorizontal: 16, paddingRight: 8 }}
-      >
-        {SPECIAL_OFFERS_PLACEHOLDERS.map((image, idx) => (
-          <SpecialOfferCard
-            key={idx}
-            image={image}
-            discount={`${20 + idx * 10}% OFF`}
-            title={idx % 2 === 0 ? 'Lunch Special' : 'Weekend Sale'}
-            onPress={() => {
-              // Handle offer tap
-            }}
-          />
-        ))}
-      </ScrollView>
-    </View>
-  );
-
   const renderCategoriesSection = () => (
-    <View style={styles.section}>
+    <View style={styles.categorySection}>
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
-        contentContainerStyle={{ paddingHorizontal: 16 }}
+        contentContainerStyle={styles.horizontalListContent}
       >
         <ShopCategoryTile
           label="All"
@@ -232,8 +209,9 @@ const ShopDirectory = () => {
     </View>
   );
 
-  const renderDiscoverMoreItem = ({ item }: { item: Business }) => (
+  const renderDiscoverMoreItem = (item: Business) => (
     <ShopListCard
+      key={item.id}
       image={item.business_image || require('@/assets/images/placeholder.png')}
       name={item.business_name}
       category={item.description}
@@ -249,11 +227,18 @@ const ShopDirectory = () => {
   const renderListHeader = () => (
     <View style={styles.section}>
       <View style={styles.sectionHeader}>
-        <ThemedText type="sub-title-extra-small" weight="bold" style={{ color: ShopColors.textPrimary }}>
+        <ThemedText
+          type="sub-title-extra-small"
+          weight="bold"
+          style={styles.sectionTitle}
+        >
           Discover More
         </ThemedText>
         {discoverMoreShops.length > 0 && (
-          <ThemedText type="body-extra-small" style={{ color: ShopColors.textSecondary }}>
+          <ThemedText
+            type="body-extra-small"
+            style={{ color: ShopColors.textSecondary }}
+          >
             {discoverMoreShops.length} shops found
           </ThemedText>
         )}
@@ -302,7 +287,11 @@ const ShopDirectory = () => {
     return (
       <PageContainer>
         <View style={styles.loadingContainer}>
-          <FontAwesome5 name="exclamation-circle" size={48} color={ShopColors.error} />
+          <FontAwesome5
+            name="exclamation-circle"
+            size={48}
+            color={ShopColors.error}
+          />
           <ThemedText
             type="title-medium"
             weight="bold"
@@ -322,49 +311,67 @@ const ShopDirectory = () => {
   }
 
   return (
-    <PageContainer padding={0} gap={0} style={{ backgroundColor: ShopColors.background }}>
-      <FlatList
-        data={discoverMoreShops}
-        renderItem={renderDiscoverMoreItem}
-        keyExtractor={(item) => item.id || ''}
-        ListHeaderComponent={
-          <>
-            <Container gap={0} paddingHorizontal={16} paddingTop={16} paddingBottom={16} backgroundColor="transparent">
-              <SearchBar
-                shape="rounded"
-                containerStyle={{ 
-                  flex: 1, 
-                  backgroundColor: '#FFFFFF', 
-                  borderWidth: 0, 
-                  shadowColor: '#000',
-                  shadowOffset: { width: 0, height: 2 },
-                  shadowOpacity: 0.05,
-                  shadowRadius: 8,
-                  elevation: 2
-                }}
-                value={search}
-                onChangeText={(text) => setSearch(text)}
-                onSearch={() => {}}
-                placeholder="Search shops, categories..."
-              />
-            </Container>
-            
-            {renderCategoriesSection()}
-            {renderFeaturedSection()}
-            {renderSpecialOffersSection()}
-            {renderListHeader()}
-          </>
-        }
-        ListEmptyComponent={renderEmpty}
+    <PageContainer
+      padding={0}
+      gap={0}
+      style={{ backgroundColor: ShopColors.surface }}
+    >
+      <ScrollView
+        showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.listContent}
         scrollEventThrottle={32}
         onScroll={handleScroll}
         onScrollEndDrag={handleScrollEndDrag}
+        stickyHeaderIndices={[1]}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[ShopColors.accent]} />
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={[ShopColors.accent]}
+          />
         }
-        showsVerticalScrollIndicator={false}
-      />
+      >
+        {/* Header Title */}
+        <View style={{ marginTop: 8, paddingHorizontal: 20, marginBottom: 16 }}>
+          <ThemedText type="header-large" style={{ fontSize: 32 }}>
+            Shops
+          </ThemedText>
+        </View>
+
+        {/* Sticky Search Bar */}
+        <View style={styles.searchSection}>
+          <SearchBar
+            value={search}
+            onChangeText={setSearch}
+            onSearch={() => {}}
+            placeholder="Search shops, categories..."
+            variant="plain"
+            size="md"
+            containerStyle={{
+              flex: 1,
+              backgroundColor: ShopColors.inputBackground,
+              borderRadius: 12,
+              borderWidth: 0,
+            }}
+            inputStyle={{ fontSize: 15 }}
+            enableFiltering={true}
+          />
+        </View>
+
+        {/* Content */}
+        {renderCategoriesSection()}
+        {renderFeaturedSection()}
+
+        {renderListHeader()}
+
+        {discoverMoreShops.length > 0 ? (
+          <View style={{ paddingBottom: 20 }}>
+            {discoverMoreShops.map(renderDiscoverMoreItem)}
+          </View>
+        ) : (
+          renderEmpty()
+        )}
+      </ScrollView>
     </PageContainer>
   );
 };
@@ -373,18 +380,37 @@ const styles = StyleSheet.create({
   listContent: {
     paddingBottom: 100,
   },
+  searchSection: {
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    backgroundColor: ShopColors.surface,
+    zIndex: 100,
+  },
   section: {
+    marginBottom: 32,
+  },
+  categorySection: {
     marginBottom: 24,
+    marginTop: 8,
   },
   sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    marginBottom: 12,
+    paddingHorizontal: 20,
+    marginBottom: 16,
+  },
+  sectionTitle: {
+    color: ShopColors.textPrimary,
+    fontSize: 20,
+    letterSpacing: -0.5,
+  },
+  horizontalListContent: {
+    paddingHorizontal: 20,
+    paddingRight: 8,
   },
   emptyPlaceholder: {
-    paddingHorizontal: 16,
+    paddingHorizontal: 20,
     paddingVertical: 32,
     justifyContent: 'center',
     alignItems: 'center',

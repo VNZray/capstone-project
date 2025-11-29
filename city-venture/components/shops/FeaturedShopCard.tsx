@@ -40,9 +40,9 @@ const FeaturedShopCard: React.FC<FeaturedShopCardProps> = ({
 }) => {
   const { width } = useWindowDimensions();
 
-  const RADIUS = 16;
+  const RADIUS = 8;
   const CARD_WIDTH = width * 0.75;
-  const IMAGE_HEIGHT = moderateScale(160, 0.55, width);
+  const IMAGE_HEIGHT = moderateScale(180, 0.55, width);
 
   const imageSource = typeof image === 'string' ? { uri: image } : image;
 
@@ -56,12 +56,17 @@ const FeaturedShopCard: React.FC<FeaturedShopCardProps> = ({
         style,
       ]}
     >
-      <View style={[styles.imageContainer, { height: IMAGE_HEIGHT, borderRadius: RADIUS }]}>
+      <View
+        style={[
+          styles.imageContainer,
+          { height: IMAGE_HEIGHT, borderRadius: RADIUS },
+        ]}
+      >
         <Image source={imageSource} style={styles.image} resizeMode="cover" />
         {featured && (
           <View style={styles.badgeContainer}>
             <View style={styles.badge}>
-              <Text style={styles.badgeText}>FEATURED</Text>
+              <Text style={styles.badgeText}>Featured</Text>
             </View>
           </View>
         )}
@@ -74,9 +79,7 @@ const FeaturedShopCard: React.FC<FeaturedShopCardProps> = ({
           </Text>
           <View style={styles.ratingRow}>
             <FontAwesome5 name="star" size={12} color="#FFD700" solid />
-            <Text style={styles.ratingText}>
-              {rating.toFixed(1)} ({reviews})
-            </Text>
+            <Text style={styles.ratingText}>{rating.toFixed(1)}</Text>
           </View>
         </View>
 
@@ -97,18 +100,14 @@ const styles = StyleSheet.create({
   },
   pressed: {
     opacity: 0.95,
-    transform: [{ scale: 0.99 }],
   },
   imageContainer: {
     width: '100%',
     overflow: 'hidden',
     marginBottom: 12,
-    backgroundColor: ShopColors.cardBackground,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
+    backgroundColor: ShopColors.inputBackground,
+    borderWidth: 1,
+    borderColor: ShopColors.border,
   },
   image: {
     width: '100%',
@@ -121,19 +120,23 @@ const styles = StyleSheet.create({
     zIndex: 10,
   },
   badge: {
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
+    backgroundColor: ShopColors.surface,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
   },
   badgeText: {
     color: ShopColors.textPrimary,
-    fontSize: 9,
-    fontFamily: 'Poppins-Bold',
-    letterSpacing: 0.5,
+    fontSize: 11,
+    fontFamily: 'Poppins-Medium',
   },
   contentContainer: {
-    paddingHorizontal: 4,
+    paddingHorizontal: 0,
   },
   headerRow: {
     flexDirection: 'row',
@@ -147,24 +150,21 @@ const styles = StyleSheet.create({
     fontFamily: 'Poppins-SemiBold',
     flex: 1,
     marginRight: 8,
+    letterSpacing: -0.3,
   },
   category: {
     color: ShopColors.textSecondary,
-    fontSize: 12,
+    fontSize: 14,
     fontFamily: 'Poppins-Regular',
   },
   ratingRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: ShopColors.cardBackground,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
   },
   ratingText: {
     color: ShopColors.textPrimary,
-    fontSize: 11,
+    fontSize: 12,
     fontFamily: 'Poppins-Medium',
   },
 });
