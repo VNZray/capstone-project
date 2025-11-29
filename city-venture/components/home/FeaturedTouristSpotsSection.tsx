@@ -230,7 +230,7 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingHorizontal: 20, // Add padding back to align first item
     gap: SPACING,
-    paddingBottom: 20,
+    paddingBottom: 4,
   },
   card: {
     width: CARD_WIDTH,

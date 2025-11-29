@@ -98,7 +98,6 @@ const styles = StyleSheet.create({
   container: {
     marginRight: -24,
     marginLeft: -24,
-    marginBottom: 24,
   },
   card: {
     padding: 24,

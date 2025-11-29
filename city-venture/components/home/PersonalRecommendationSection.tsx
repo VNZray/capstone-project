@@ -85,7 +85,7 @@ const PersonalRecommendationSection: React.FC<
 
             <View style={styles.content}>
               <View style={styles.ratingRow}>
-                <MaterialCommunityIcons name="star" size={16} color="#00BFA5" />
+                <MaterialCommunityIcons name="star" size={16} color={colors.accent}/>
                 <ThemedText type="label-small" style={styles.ratingText}>
                   {item.rating}
                 </ThemedText>

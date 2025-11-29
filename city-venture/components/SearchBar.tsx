@@ -1,11 +1,13 @@
+import Chip from '@/components/Chip';
 import { ThemedView } from '@/components/themed-view';
-import { colors as AppColors } from '@/constants/color';
+import { colors as AppColors, Brand } from '@/constants/color';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { Ionicons } from '@expo/vector-icons';
 import React, { useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Platform,
+  ScrollView,
   StyleProp,
   StyleSheet,
   TextInput,
@@ -15,7 +17,8 @@ import {
   View,
   ViewStyle,
 } from 'react-native';
-
+import { SearchFilters } from '@/components/SearchFilters';
+  
 export type Color =
   | 'primary'
   | 'secondary'
@@ -29,6 +32,12 @@ export type Color =
 type Variant = 'plain' | 'icon-right' | 'icon-left' | 'multi';
 type Size = 'sm' | 'md' | 'lg';
 type Shape = 'rounded' | 'square';
+
+export type QuickFilter = {
+  id: string;
+  label: string;
+  value: any;
+};
 
 type FieldConfig = {
   key: string;
@@ -56,6 +65,9 @@ type BaseProps = {
   containerStyle?: StyleProp<ViewStyle>;
   inputStyle?: StyleProp<TextStyle>;
   iconContainerStyle?: StyleProp<ViewStyle>;
+  enableFiltering?: boolean;
+  quickFilters?: QuickFilter[];
+  onQuickFilterChange?: (activeFilters: string[]) => void;
 };
 
 // Single field usage (backward compatible)
@@ -92,6 +104,9 @@ const SearchBar: React.FC<SearchBarProps> = ({
   containerStyle,
   inputStyle,
   iconContainerStyle,
+  enableFiltering = false,
+  quickFilters,
+  onQuickFilterChange,
   // single field
   value,
   defaultValue,
@@ -105,8 +120,27 @@ const SearchBar: React.FC<SearchBarProps> = ({
   // Palette mapping
   const palette = useMemo(() => getPalette(color, isDark), [color, isDark]);
 
+  // Filter state
+  const [filtersVisible, setFiltersVisible] = useState(false);
+  const [activeQuickFilters, setActiveQuickFilters] = useState<string[]>([]);
+
+  const handleQuickFilterPress = (id: string) => {
+    let newFilters: string[];
+    if (activeQuickFilters.includes(id)) {
+      newFilters = activeQuickFilters.filter((f) => f !== id);
+    } else {
+      newFilters = [...activeQuickFilters, id];
+    }
+    setActiveQuickFilters(newFilters);
+    if (onQuickFilterChange) {
+      onQuickFilterChange(newFilters);
+    }
+  };
+
   // Single field controlled/uncontrolled
-  const [internalValue, setInternalValue] = useState<string>(defaultValue ?? '');
+  const [internalValue, setInternalValue] = useState<string>(
+    defaultValue ?? ''
+  );
   const currentValue = value ?? internalValue;
   const handleChange = (text: string) => {
     if (onChangeText) onChangeText(text);
@@ -124,13 +158,15 @@ const SearchBar: React.FC<SearchBarProps> = ({
     }
   );
 
-  const getFieldValue = (f: FieldConfig) => f.value ?? internalFields[f.key] ?? '';
+  const getFieldValue = (f: FieldConfig) =>
+    f.value ?? internalFields[f.key] ?? '';
   const setFieldValue = (f: FieldConfig, text: string) => {
     if (f.onChangeText) f.onChangeText(text);
     else setInternalFields((prev) => ({ ...prev, [f.key]: text }));
   };
 
-  const showClearButton = showClear && !loading && variant !== 'multi' && !!currentValue;
+  const showClearButton =
+    showClear && !loading && variant !== 'multi' && !!currentValue;
 
   const sizeStyle = sizeStyles[size];
   const radius = shape === 'rounded' ? 999 : 12;
@@ -143,14 +179,18 @@ const SearchBar: React.FC<SearchBarProps> = ({
       disabled={loading}
       style={[
         styles.iconContainer,
-        { backgroundColor: palette.buttonBg, borderTopLeftRadius: radius, borderBottomLeftRadius: radius },
+        {
+          backgroundColor: palette.buttonBg,
+          borderTopLeftRadius: radius,
+          borderBottomLeftRadius: radius,
+        },
         iconContainerStyle,
       ]}
     >
       {loading ? (
         <ActivityIndicator size="small" color="#fff" />
       ) : (
-        leftIcon || <Ionicons name="search" size={18} color="#fff" />
+        leftIcon || <Ionicons name="search" size={18} color={Brand.solarGold} />
       )}
     </TouchableOpacity>
   );
@@ -163,16 +203,41 @@ const SearchBar: React.FC<SearchBarProps> = ({
       disabled={loading}
       style={[
         styles.iconContainer,
-        { backgroundColor: palette.buttonBg, borderTopRightRadius: radius, borderBottomRightRadius: radius },
+        {
+          backgroundColor: palette.buttonBg,
+          borderTopRightRadius: radius,
+          borderBottomRightRadius: radius,
+        },
         iconContainerStyle,
       ]}
     >
       {loading ? (
         <ActivityIndicator size="small" color="#fff" />
       ) : (
-        rightIcon || <Ionicons name="search" size={18} color="#fff" />
+        rightIcon || (
+          <Ionicons name="search" size={18} color={Brand.solarGold} />
+        )
       )}
-    </TouchableOpacity> 
+    </TouchableOpacity>
+  );
+
+  const FilterButton = (
+    <TouchableOpacity
+      accessibilityRole="button"
+      accessibilityLabel="Filters"
+      onPress={() => setFiltersVisible(!filtersVisible)}
+      style={[
+        styles.iconContainer,
+        { paddingHorizontal: 12 },
+        iconContainerStyle,
+      ]}
+    >
+      <Ionicons
+        name="options-outline"
+        size={20}
+        color={filtersVisible ? Brand.solarGold : palette.iconOnBg}
+      />
+    </TouchableOpacity>
   );
 
   const renderInput = (
@@ -181,8 +246,8 @@ const SearchBar: React.FC<SearchBarProps> = ({
       {variant === 'plain' && (
         <Ionicons
           name="search"
-          size={18}
-          color={palette.placeholder}
+          size={20}
+          color={Brand.solarGold}
           style={{ marginLeft: 12, marginRight: 4 }}
         />
       )}
@@ -212,13 +277,16 @@ const SearchBar: React.FC<SearchBarProps> = ({
           <Ionicons name="close" size={16} color={palette.placeholder} />
         </TouchableOpacity>
       )}
-      {variant === 'plain' && rightIcon && (
-         <View style={{ marginRight: 12 }}>
-            {rightIcon}
-         </View>
-      )}
+      {variant === 'plain' &&
+        (enableFiltering
+          ? FilterButton
+          : rightIcon && <View style={{ marginRight: 12 }}>{rightIcon}</View>)}
       {loading && variant === 'plain' && (
-        <ActivityIndicator style={{ marginRight: 8 }} size="small" color={palette.iconOnBg} />
+        <ActivityIndicator
+          style={{ marginRight: 8 }}
+          size="small"
+          color={palette.iconOnBg}
+        />
       )}
     </View>
   );
@@ -226,13 +294,21 @@ const SearchBar: React.FC<SearchBarProps> = ({
   const renderMulti = (
     <View style={[styles.multiRow]}>
       {(fields ?? []).map((f, idx) => (
-        <View key={f.key} style={[styles.multiField, idx !== (fields?.length ?? 1) - 1 && { marginRight: 8 }]}>
+        <View
+          key={f.key}
+          style={[
+            styles.multiField,
+            idx !== (fields?.length ?? 1) - 1 && { marginRight: 8 },
+          ]}
+        >
           <TextInput
             value={getFieldValue(f)}
             onChangeText={(t) => setFieldValue(f, t)}
             placeholder={f.placeholder}
             placeholderTextColor={palette.placeholder}
-            accessibilityLabel={f.ariaLabel || f.placeholder || `Search field ${idx + 1}`}
+            accessibilityLabel={
+              f.ariaLabel || f.placeholder || `Search field ${idx + 1}`
+            }
             keyboardType={f.keyboardType}
             returnKeyType="search"
             onSubmitEditing={onSearch}
@@ -256,36 +332,75 @@ const SearchBar: React.FC<SearchBarProps> = ({
           )}
         </View>
       ))}
-      {RightButton}
+      {enableFiltering ? FilterButton : RightButton}
     </View>
   );
 
   return (
-    <ThemedView
-      style={[
-        styles.container,
-        sizeStyle.container,
-        {
-          backgroundColor: palette.bg,
-          borderColor: palette.border,
-          borderRadius: radius,
-          shadowColor: isDark ? '#000' : '#000',
-        },
-        Platform.OS === 'web' && styles.webContainerBackground,
-        containerStyle,
-      ]}
-    >
-      {variant === 'icon-left' && LeftButton}
+    <View style={{ zIndex: 10 }}>
+      <ThemedView
+        style={[
+          styles.container,
+          sizeStyle.container,
+          {
+            backgroundColor: palette.bg,
+            borderColor: palette.border,
+            borderRadius: radius,
+            shadowColor: isDark ? '#000' : '#000',
+          },
+          Platform.OS === 'web' && styles.webContainerBackground,
+          containerStyle,
+        ]}
+      >
+        {variant === 'icon-left' && LeftButton}
 
-      {variant === 'multi' ? (
-        renderMulti
-      ) : (
-        <>
-          {renderInput}
-          {variant === 'icon-right' && RightButton}
-        </>
+        {variant === 'multi' ? (
+          renderMulti
+        ) : (
+          <>
+            {renderInput}
+            {variant === 'icon-right' &&
+              (enableFiltering ? FilterButton : RightButton)}
+          </>
+        )}
+      </ThemedView>
+
+      {/* Quick Filters */}
+      {quickFilters && quickFilters.length > 0 && (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={styles.quickFiltersContainer}
+          contentContainerStyle={styles.quickFiltersContent}
+        >
+          {quickFilters.map((filter) => {
+            const isActive = activeQuickFilters.includes(filter.id);
+            return (
+              <Chip
+                key={filter.id}
+                label={filter.label}
+                variant={isActive ? 'solid' : 'soft'}
+                color={isActive ? 'primary' : 'neutral'}
+                size="small"
+                onPress={() => handleQuickFilterPress(filter.id)}
+                style={{ marginRight: 8 }}
+              />
+            );
+          })}
+        </ScrollView>
       )}
-    </ThemedView>
+
+      {/* Filters Component */}
+      <SearchFilters
+        visible={filtersVisible}
+        onClose={() => setFiltersVisible(false)}
+        onApply={(filters) => {
+          console.log('Filters applied:', filters);
+          setFiltersVisible(false);
+          if (onSearch) onSearch();
+        }}
+      />
+    </View>
   );
 };
 
@@ -299,6 +414,7 @@ const styles = StyleSheet.create({
     shadowRadius: 10,
     shadowOffset: { width: 0, height: 4 },
     elevation: 1,
+    zIndex: 20,
   },
   inputWrapper: {
     flex: 1,
@@ -330,6 +446,12 @@ const styles = StyleSheet.create({
   },
   webContainerBackground: {
     backgroundColor: '#fff',
+  },
+  quickFiltersContainer: {
+    marginTop: 12,
+  },
+  quickFiltersContent: {
+    paddingRight: 16,
   },
 });
 
@@ -363,11 +485,28 @@ function getPalette(c: Color, isDark: boolean) {
     transparent: 'transparent',
   } as Record<Color, string>;
 
-  const border = c === 'transparent' ? (isDark ? '#2A2F36' : '#E8EBF0') : (c === 'neutral' ? (isDark ? '#2A2F36' : '#E8EBF0') : base[c]);
-  const bg = c === 'transparent' ? 'transparent' : c === 'neutral' ? (isDark ? '#1B1F24' : '#fff') : '#fff';
+  const border =
+    c === 'transparent'
+      ? isDark
+        ? '#2A2F36'
+        : '#E8EBF0'
+      : c === 'neutral'
+      ? isDark
+        ? '#2A2F36'
+        : '#E8EBF0'
+      : base[c];
+  const bg =
+    c === 'transparent'
+      ? 'transparent'
+      : c === 'neutral'
+      ? isDark
+        ? '#1B1F24'
+        : '#fff'
+      : '#fff';
   const text = isDark ? '#ECEDEE' : '#11181C';
   const placeholder = isDark ? '#9BA1A6' : '#6B7280';
-  const buttonBg = c === 'transparent' || c === 'neutral' ? AppColors.primary : base[c];
+  const buttonBg =
+    c === 'transparent' || c === 'neutral' ? AppColors.primary : base[c];
   const iconOnBg = isDark ? '#ECEDEE' : '#0D1B2A';
 
   return { border, bg, text, placeholder, buttonBg, iconOnBg };
