@@ -1,5 +1,5 @@
 import PageContainer from '@/components/PageContainer';
-import React, { useCallback, useRef, useState, useMemo } from 'react';
+import React, { useCallback, useRef, useState, useMemo, useEffect } from 'react';
 import {
   StyleSheet,
   Text,
@@ -18,6 +18,12 @@ import RoomCard from '@/components/accommodation/RoomCard';
 import { useRoom } from '@/context/RoomContext';
 import { navigateToRoomProfile } from '@/routes/accommodationRoutes';
 import placeholder from '@/assets/images/room-placeholder.png';
+import { useAccommodation } from '@/context/AccommodationContext';
+import { 
+  fetchBookingsByBusinessId, 
+  filterAvailableRooms 
+} from '@/services/BookingService';
+import type { Booking } from '@/types/Booking';
 
 // NOTE: We derive floor options dynamically from the room list.
 // Fallback options will only be used if no rooms are loaded yet.
@@ -28,7 +34,8 @@ const fallbackFloors: DropdownItem[] = [
 ];
 
 const Rooms = () => {
-  const { rooms, loading, setRoomId, refreshRooms } = useRoom();
+  const { rooms, loading, setRoomId, refreshRooms, setDateRange } = useRoom();
+  const { selectedAccommodationId } = useAccommodation();
   const [cardView, setCardView] = useState('card');
   // Selected floor (null = all)
   const [selectedFloor, setSelectedFloor] = React.useState<number | null>(null);
@@ -36,11 +43,34 @@ const Rooms = () => {
     start: null,
     end: null,
   });
+  const [bookings, setBookings] = useState<Booking[]>([]);
+  const [loadingBookings, setLoadingBookings] = useState(false);
 
   const [refreshing, setRefreshing] = useState(false);
   const lastOffset = useRef(0);
   const atTopRef = useRef(true);
   const wasScrollingUpRef = useRef(false);
+
+  // Fetch bookings when accommodation changes
+  useEffect(() => {
+    const loadBookings = async () => {
+      if (!selectedAccommodationId) {
+        setBookings([]);
+        return;
+      }
+      setLoadingBookings(true);
+      try {
+        const data = await fetchBookingsByBusinessId(selectedAccommodationId);
+        setBookings(data);
+      } catch (error) {
+        console.error('Failed to load bookings:', error);
+        setBookings([]);
+      } finally {
+        setLoadingBookings(false);
+      }
+    };
+    loadBookings();
+  }, [selectedAccommodationId]);
 
   const onRefresh = useCallback(
     async (force?: boolean) => {
@@ -96,20 +126,30 @@ const Rooms = () => {
   // Filter rooms by selected floor
   const filteredRooms = useMemo(() => {
     if (!rooms) return [];
-    if (selectedFloor == null) return rooms;
-    return rooms.filter((r) => {
-      // @ts-ignore allow flexible field names
-      const direct = r.floor ?? r.floor_number ?? r.level;
-      let floor: number | null = null;
-      if (typeof direct === 'number') floor = direct;
-      else if (typeof direct === 'string' && /^\d+$/.test(direct)) floor = parseInt(direct, 10);
-      else if (!direct && r.room_number) {
-        const match = String(r.room_number).match(/^(\d)/);
-        if (match) floor = parseInt(match[1], 10);
-      }
-      return floor === selectedFloor;
-    });
-  }, [rooms, selectedFloor]);
+    
+    // First filter by floor
+    let filtered = selectedFloor == null 
+      ? rooms 
+      : rooms.filter((r) => {
+          // @ts-ignore allow flexible field names
+          const direct = r.floor ?? r.floor_number ?? r.level;
+          let floor: number | null = null;
+          if (typeof direct === 'number') floor = direct;
+          else if (typeof direct === 'string' && /^\d+$/.test(direct)) floor = parseInt(direct, 10);
+          else if (!direct && r.room_number) {
+            const match = String(r.room_number).match(/^(\d)/);
+            if (match) floor = parseInt(match[1], 10);
+          }
+          return floor === selectedFloor;
+        });
+    
+    // Then filter by date availability if both dates are selected
+    if (range.start && range.end && bookings.length > 0) {
+      filtered = filterAvailableRooms(filtered, bookings, range.start, range.end);
+    }
+    
+    return filtered;
+  }, [rooms, selectedFloor, range, bookings]);
 
   return (
     <PageContainer style={{ paddingTop: 0, paddingBottom: 100 }}>
@@ -149,7 +189,11 @@ const Rooms = () => {
           disablePastNavigation
           requireConfirmation
           showStatusLegend={false}
-        />
+          rangeValue={range}
+          onRangeChange={(newRange) => {
+            setRange(newRange);
+            setDateRange(newRange); // Save to context
+          }}        />
         <Button
           elevation={2}
           color="white"
@@ -159,47 +203,60 @@ const Rooms = () => {
         />
       </Container>
       <View>
-        {loading ? (
+        {loading || loadingBookings ? (
           <View style={styles.center}>
             <Text>Loading rooms…</Text>
           </View>
         ) : filteredRooms && filteredRooms.length > 0 ? (
-          <View style={styles.list}>
-            {filteredRooms.map((room) => (
-              <RoomCard
-                elevation={6}
-                key={room.id}
-                image={room.room_image ? { uri: room.room_image } : placeholder}
-                title={room.room_number || 'Room'}
-                subtitle={room.description || room.room_type || ''}
-                capacity={room.capacity || undefined}
-                price={room.room_price || undefined}
-                rating={4.5}
-                comments={12}
-                status={
-                  room.status === 'available'
-                    ? 'Available'
-                    : room.status === 'maintenance'
-                    ? 'Maintenance'
-                    : room.status === 'booked'
-                    ? 'Booked'
-                    : undefined
-                }
-                view={cardView}
-                variant="solid"
-                size="large"
-                onClick={() => {
-                  if (room.id) {
-                    setRoomId(room.id);
-                    navigateToRoomProfile();
+          <>
+            {range.start && range.end && (
+              <View style={styles.dateInfo}>
+                <Text style={styles.dateInfoText}>
+                  Showing available rooms from {range.start.toLocaleDateString()} to {range.end.toLocaleDateString()}
+                </Text>
+              </View>
+            )}
+            <View style={styles.list}>
+              {filteredRooms.map((room) => (
+                <RoomCard
+                  elevation={6}
+                  key={room.id}
+                  image={room.room_image ? { uri: room.room_image } : placeholder}
+                  title={room.room_number || 'Room'}
+                  subtitle={room.description || room.room_type || ''}
+                  capacity={room.capacity || undefined}
+                  price={room.room_price || undefined}
+                  rating={4.5}
+                  comments={12}
+                  status={
+                    room.status === 'available'
+                      ? 'Available'
+                      : room.status === 'maintenance'
+                      ? 'Maintenance'
+                      : room.status === 'booked'
+                      ? 'Booked'
+                      : undefined
                   }
-                }}
-              />
-            ))}
-          </View>
+                  view={cardView}
+                  variant="solid"
+                  size="large"
+                  onClick={() => {
+                    if (room.id) {
+                      setRoomId(room.id);
+                      navigateToRoomProfile();
+                    }
+                  }}
+                />
+              ))}
+            </View>
+          </>
         ) : (
           <View style={styles.center}>
-            <Text>No rooms available</Text>
+            <Text>
+              {range.start && range.end 
+                ? 'No rooms available for the selected dates' 
+                : 'No rooms available'}
+            </Text>
           </View>
         )}
       </View>
@@ -216,5 +273,18 @@ const styles = StyleSheet.create({
   center: {
     paddingVertical: 24,
     alignItems: 'center',
+  },
+  dateInfo: {
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    backgroundColor: 'rgba(0, 122, 255, 0.1)',
+    borderRadius: 8,
+    marginBottom: 12,
+  },
+  dateInfoText: {
+    fontSize: 14,
+    color: '#007AFF',
+    textAlign: 'center',
+    fontWeight: '500',
   },
 });

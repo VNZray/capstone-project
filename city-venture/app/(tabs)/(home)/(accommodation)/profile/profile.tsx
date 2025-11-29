@@ -210,28 +210,27 @@ const AccommodationProfile = () => {
         (() => {
           const baseBottom = Platform.OS === 'ios' ? 60 : 80;
           // Only show "Write a Review" button if user is logged in and on ratings tab
-          if (activeTab === 'ratings' && !user) {
-            return null;
+          if (activeTab === 'ratings') {
+            return (
+              <View
+                style={[
+                  styles.fabBar,
+                  { paddingBottom: baseBottom + insets.bottom },
+                ]}
+              >
+                <Button
+                  label={actionLabel}
+                  fullWidth
+                  startIcon={primaryIcon}
+                  color="primary"
+                  variant="solid"
+                  onPress={() => setModalVisible(true)}
+                  elevation={3}
+                  style={{ flex: 1 }}
+                />
+              </View>
+            );
           }
-          return (
-            <View
-              style={[
-                styles.fabBar,
-                { paddingBottom: baseBottom + insets.bottom },
-              ]}
-            >
-              <Button
-                label={actionLabel}
-                fullWidth
-                startIcon={primaryIcon}
-                color="primary"
-                variant="solid"
-                onPress={() => setModalVisible(true)}
-                elevation={3}
-                style={{ flex: 1 }}
-              />
-            </View>
-          );
         })()}
 
       {user && (

@@ -87,10 +87,11 @@ const InfoCard: React.FC<{ children: React.ReactNode }> = ({ children }) => (
   </Box>
 );
 
+// UPDATED: Value accepts ReactNode to allow multi-line dates
 const InfoRow: React.FC<{
   icon: React.ReactNode;
   label: string;
-  value: string;
+  value: React.ReactNode;
 }> = ({ icon, label, value }) => (
   <Box
     sx={{
@@ -109,9 +110,16 @@ const InfoRow: React.FC<{
         {label}
       </Typography>
     </Box>
-    <Typography level="body-sm" sx={{ fontWeight: 600, textAlign: "right" }}>
-      {value}
-    </Typography>
+    {/* Right side container */}
+    <Box sx={{ textAlign: "right" }}>
+      {typeof value === "string" || typeof value === "number" ? (
+        <Typography level="body-sm" sx={{ fontWeight: 600 }}>
+          {value}
+        </Typography>
+      ) : (
+        value
+      )}
+    </Box>
   </Box>
 );
 
@@ -207,13 +215,31 @@ const BookingDetails: React.FC<BookingDetailsProps> = ({
     );
   }, [guestInfo?.name]);
 
-  const formatDate = (date?: Date) => {
-    if (!date) return "—";
-    return new Date(date).toLocaleDateString("en-US", {
+  // UPDATED: Returns a styled Box with separate Date and Time
+  const renderDateTime = (dateInput?: Date | string) => {
+    if (!dateInput) return "—";
+    const d = new Date(dateInput);
+    const dateStr = d.toLocaleDateString("en-US", {
       year: "numeric",
       month: "long",
       day: "numeric",
     });
+    const timeStr = d.toLocaleTimeString("en-US", {
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+    });
+
+    return (
+      <Box sx={{ display: "flex", flexDirection: "column", alignItems: "flex-end" }}>
+        <Typography level="body-sm" sx={{ fontWeight: 600 }}>
+          {dateStr}
+        </Typography>
+        <Typography level="body-xs" sx={{ color: "text.tertiary" }}>
+          {timeStr}
+        </Typography>
+      </Box>
+    );
   };
 
   const handleStatusUpdate = (newStatus: string) => {
@@ -504,16 +530,18 @@ const BookingDetails: React.FC<BookingDetailsProps> = ({
                       <Divider sx={{ my: 1.5 }} />
                     </>
                   )}
+                  {/* UPDATED: Uses renderDateTime */}
                   <InfoRow
                     icon={<Calendar size={18} />}
                     label="Check-in"
-                    value={formatDate(booking.check_in_date)}
+                    value={renderDateTime(booking.check_in_date)}
                   />
                   <Divider sx={{ my: 1.5 }} />
+                  {/* UPDATED: Uses renderDateTime */}
                   <InfoRow
                     icon={<Calendar size={18} />}
                     label="Check-out"
-                    value={formatDate(booking.check_out_date)}
+                    value={renderDateTime(booking.check_out_date)}
                   />
                   {booking.created_at && (
                     <>
@@ -521,7 +549,7 @@ const BookingDetails: React.FC<BookingDetailsProps> = ({
                       <InfoRow
                         icon={<Clock size={18} />}
                         label="Booked On"
-                        value={formatDate(booking.created_at)}
+                        value={renderDateTime(booking.created_at)}
                       />
                     </>
                   )}

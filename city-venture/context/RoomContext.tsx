@@ -22,8 +22,11 @@ interface RoomContextType {
   roomDetails: Room | null;
   rooms: Room[] | null;
   loading: boolean;
+  selectedDateRange: { start: Date | null; end: Date | null };
   setRoomId: (id: string) => void;
   clearRoomId: () => void;
+  setDateRange: (range: { start: Date | null; end: Date | null }) => void;
+  clearDateRange: () => void;
   refreshRoom: () => Promise<void>;
   refreshRooms: (opts?: { force?: boolean }) => Promise<void>;
 }
@@ -36,6 +39,11 @@ interface RoomProviderProps {
 
 export const RoomProvider: React.FC<RoomProviderProps> = ({ children }) => {
   const [selectedRoomId, setSelectedRoomId] = useState<string | null>(null);
+  const [selectedDateRange, setSelectedDateRange] = useState<{ start: Date | null; end: Date | null }>({
+    start: null,
+    end: null,
+  });
+  
   // Fetch stored room ID on mount
   useEffect(() => {
     const fetchStoredRoomId = async () => {
@@ -63,6 +71,16 @@ export const RoomProvider: React.FC<RoomProviderProps> = ({ children }) => {
     setSelectedRoomId(null);
     setRoomDetails(null);
     clearStoredRoomId();
+  }, []);
+
+  /** Set date range for booking */
+  const setDateRange = useCallback((range: { start: Date | null; end: Date | null }) => {
+    setSelectedDateRange(range);
+  }, []);
+
+  /** Clear date range */
+  const clearDateRange = useCallback(() => {
+    setSelectedDateRange({ start: null, end: null });
   }, []);
 
   /** Fetch room details from API */
@@ -135,8 +153,11 @@ export const RoomProvider: React.FC<RoomProviderProps> = ({ children }) => {
         roomDetails,
         rooms,
         loading,
+        selectedDateRange,
         setRoomId,
         clearRoomId,
+        setDateRange,
+        clearDateRange,
         refreshRoom: fetchRoom,
         refreshRooms: fetchRoomsForBusiness,
       }}

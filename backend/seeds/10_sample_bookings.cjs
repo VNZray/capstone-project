@@ -1,4 +1,3 @@
-//10_sample_booking.cjs
 const { v4: uuidv4 } = require("uuid");
 const bcrypt = require('bcrypt');
 
@@ -98,7 +97,14 @@ exports.seed = async function (knex) {
     });
   }
   
-  await knex('user').insert(users);
+  // Note: Ensure your 'user' table constraints allow inserting duplicates if running seed multiple times, 
+  // or use .onConflict().ignore() if supported by your DB version.
+  // For now, assuming fresh DB or unique emails.
+  try {
+     await knex('user').insert(users).onConflict('email').ignore();
+  } catch (e) {
+     // Fallback if onConflict isn't supported or needed
+  }
   
   // ---------------------------------------------------------------------------
   // Tourist
@@ -118,7 +124,11 @@ exports.seed = async function (knex) {
       user_id: user.id,
     };
   });
-  await knex("tourist").insert(generateTourists);
+  
+  // Handle potential duplicates for tourists if re-seeding
+  try {
+      await knex("tourist").insert(generateTourists).onConflict('user_id').ignore();
+  } catch(e) {}
 
 
   const existingBookings = await knex("booking").select("id").limit(1);
@@ -147,20 +157,20 @@ exports.seed = async function (knex) {
   const bookings = [];
   const currentDate = new Date();
 
-  // Helper function to generate random date within the last 6 months
+  // UPDATED: Return Date object instead of string
   const getRandomPastDate = (monthsAgo) => {
     const date = new Date();
     date.setMonth(date.getMonth() - monthsAgo);
     const variance = Math.random() * 30; // Random day within the month
     date.setDate(Math.floor(variance));
-    return date.toISOString().split("T")[0];
+    return date; 
   };
 
-  // Helper function to generate random future date
+  // UPDATED: Return Date object instead of string
   const getRandomFutureDate = (daysAhead) => {
     const date = new Date();
     date.setDate(date.getDate() + daysAhead + Math.floor(Math.random() * 30));
-    return date.toISOString().split("T")[0];
+    return date;
   };
 
   // Helper function to get tourist counts (random distribution)
@@ -207,12 +217,17 @@ exports.seed = async function (knex) {
       const room = businessRooms[Math.floor(Math.random() * businessRooms.length)];
       const tourist = tourists[Math.floor(Math.random() * tourists.length)];
       const monthsAgo = Math.floor(Math.random() * 6); // Last 6 months
+      
+      // UPDATED: Handle Time
       const checkInDate = getRandomPastDate(monthsAgo);
+      checkInDate.setHours(14, 0, 0, 0); // Check in at 2:00 PM
+      
       const checkOutDate = new Date(checkInDate);
       checkOutDate.setDate(checkOutDate.getDate() + Math.floor(Math.random() * 4) + 1); // 1-4 nights
+      checkOutDate.setHours(12, 0, 0, 0); // Check out at 12:00 PM
 
       const numberOfNights = Math.floor(
-        (checkOutDate - new Date(checkInDate)) / (1000 * 60 * 60 * 24)
+        (checkOutDate - checkInDate) / (1000 * 60 * 60 * 24)
       );
       const totalPrice = room.room_price * numberOfNights;
 
@@ -232,8 +247,8 @@ exports.seed = async function (knex) {
         tourist_id: tourist.id,
         business_id: business.id,
         room_id: room.id,
-        check_in_date: checkInDate,
-        check_out_date: checkOutDate.toISOString().split("T")[0],
+        check_in_date: checkInDate, // Pass object directly
+        check_out_date: checkOutDate, // Pass object directly
         booking_status: status,
         total_price: totalPrice,
         pax: pax,
@@ -255,12 +270,17 @@ exports.seed = async function (knex) {
       const room = businessRooms[Math.floor(Math.random() * businessRooms.length)];
       const tourist = tourists[Math.floor(Math.random() * tourists.length)];
       const daysAhead = Math.floor(Math.random() * 60) + 1; // 1-90 days ahead
+      
+      // UPDATED: Handle Time
       const checkInDate = getRandomFutureDate(daysAhead);
+      checkInDate.setHours(14, 0, 0, 0); // Check in at 2:00 PM
+
       const checkOutDate = new Date(checkInDate);
       checkOutDate.setDate(checkOutDate.getDate() + Math.floor(Math.random() * 4) + 1); // 1-4 nights
+      checkOutDate.setHours(12, 0, 0, 0); // Check out at 12:00 PM
 
       const numberOfNights = Math.floor(
-        (checkOutDate - new Date(checkInDate)) / (1000 * 60 * 60 * 24)
+        (checkOutDate - checkInDate) / (1000 * 60 * 60 * 24)
       );
       const totalPrice = room.room_price * numberOfNights;
 
@@ -281,8 +301,8 @@ exports.seed = async function (knex) {
         tourist_id: tourist.id,
         business_id: business.id,
         room_id: room.id,
-        check_in_date: checkInDate,
-        check_out_date: checkOutDate.toISOString().split("T")[0],
+        check_in_date: checkInDate, // Pass object directly
+        check_out_date: checkOutDate, // Pass object directly
         booking_status: status,
         total_price: totalPrice,
         pax: pax,
@@ -306,8 +326,8 @@ exports.seed = async function (knex) {
     
     // Separate past and future bookings for statistics
     const now = new Date();
-    const pastBookings = bookings.filter(b => new Date(b.check_in_date) < now);
-    const futureBookings = bookings.filter(b => new Date(b.check_in_date) >= now);
+    const pastBookings = bookings.filter(b => b.check_in_date < now);
+    const futureBookings = bookings.filter(b => b.check_in_date >= now);
     
     console.log(`✅ Successfully created ${bookings.length} sample bookings with tourist data`);
     console.log(`   - Past bookings: ${pastBookings.length}`);

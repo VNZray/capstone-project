@@ -1,21 +1,22 @@
 import React, { useEffect, useState } from "react";
 import { Typography, Box, Chip, Stack, Avatar } from "@mui/joy";
-import { Calendar } from "lucide-react";
+import { Calendar, Clock } from "lucide-react"; // Added Clock icon
 import { colors } from "@/src/utils/Colors";
 import Container from "@/src/components/Container";
 import { fetchTourist } from "@/src/services/BookingService";
 
+// Updated Interface to accept Date objects and potential string ISOs
 interface Booking {
   id: string;
   guestName: string;
   roomNumber: string;
   roomType?: string;
-  checkIn: string;
-  checkOut: string;
+  checkIn: string | Date; // Updated type
+  checkOut: string | Date; // Updated type
   status: "Pending" | "Reserved" | "Checked-in" | "Checked-out" | "Canceled";
   amount: number;
   touristId?: string;
-  createdAt?: string;
+  createdAt?: string | Date;
 }
 
 interface BookingsListProps {
@@ -70,14 +71,19 @@ const BookingsList: React.FC<BookingsListProps> = ({ bookings, title }) => {
     }
   }, [bookings]);
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("en-US", {
+  // UPDATED: Now includes Time in the format (e.g., "Nov 27, 2:00 PM")
+  const formatDateTime = (dateInput: string | Date | undefined) => {
+    if (!dateInput) return "";
+    return new Date(dateInput).toLocaleString("en-US", {
       month: "short",
       day: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
     });
   };
 
-  const formatDaysAgo = (dateString: string | undefined) => {
+  const formatDaysAgo = (dateString: string | Date | undefined) => {
     if (!dateString) return "Recently";
     
     const now = new Date();
@@ -285,20 +291,42 @@ const BookingsList: React.FC<BookingsListProps> = ({ bookings, title }) => {
                     justifyContent: "space-between", 
                     alignItems: "center", 
                     borderTop: "1px solid",
+                    borderColor: "divider", // Explicit divider color
+                    pt: 1.5, // Added top padding
+                    mt: 1    // Added margin top
                   }}
                 >
-                  <Box sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
-                    <Calendar size={15} style={{ color: colors.gray }} />
-                    <Typography level="body-xs" sx={{ color: "text.secondary", fontWeight: 500 }}>
-                      {formatDate(booking.checkIn)} - {formatDate(booking.checkOut)}
-                    </Typography>
+                  <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}>
+                    {/* Check In */}
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
+                       <Typography level="body-xs" fontWeight="600" sx={{ color: "success.plainColor", width: 60 }}>
+                         Check-In:
+                       </Typography>
+                       <Calendar size={14} style={{ color: colors.gray }} />
+                       <Typography level="body-xs" sx={{ color: "text.secondary", fontWeight: 500 }}>
+                        {formatDateTime(booking.checkIn)}
+                       </Typography>
+                    </Box>
+
+                    {/* Check Out */}
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
+                       <Typography level="body-xs" fontWeight="600" sx={{ color: "danger.plainColor", width: 60 }}>
+                         Check-Out:
+                       </Typography>
+                       <Calendar size={14} style={{ color: colors.gray }} />
+                       <Typography level="body-xs" sx={{ color: "text.secondary", fontWeight: 500 }}>
+                        {formatDateTime(booking.checkOut)}
+                       </Typography>
+                    </Box>
                   </Box>
+
                   <Typography 
                     level="title-sm" 
                     fontWeight="700" 
                     sx={{ 
                       color: "success.solidBg",
-                      fontSize: "0.9rem"
+                      fontSize: "0.9rem",
+                      alignSelf: "flex-end" // Align price to bottom
                     }}
                   >
                     ₱{booking.amount.toLocaleString()}

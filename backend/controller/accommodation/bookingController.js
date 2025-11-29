@@ -17,6 +17,7 @@ const BOOKING_FIELDS = [
   "total_price",
   "balance",
   "booking_status",
+  "booking_type",
   "room_id",
   "tourist_id",
   "business_id",
