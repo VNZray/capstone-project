@@ -15,8 +15,11 @@ exports.up = async function (knex) {
     table.integer("overseas_counts", 3).notNullable().defaultTo(0);
     table.integer("local_counts", 3).notNullable().defaultTo(0);
     table.string("trip_purpose", 30).notNullable();
-    table.dateTime("check_in_date").notNullable();
-    table.dateTime("check_out_date").notNullable();
+    table.enum('booking_type', ['overnight', 'short-stay']).defaultTo('overnight');
+    table.date("check_in_date").notNullable();
+    table.date("check_out_date").notNullable();
+    table.time("check_in_time").notNullable();
+    table.time("check_out_time").notNullable();
     table.float("total_price").notNullable();
     table.float("balance").nullable();
     table

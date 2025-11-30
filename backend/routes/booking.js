@@ -13,5 +13,6 @@ router.get("/tourist/:tourist_id", authenticate, authorizeRole("Tourist", "Admin
 router.get("/room/:room_id", authenticate, authorizeRole("Tourist", "Admin", "Business Owner", "Staff"), bookingController.getBookingsByRoomId);
 router.put("/:id", authenticate, authorizeRole("Tourist", "Admin", "Business Owner", "Staff"), bookingController.updateBooking);
 router.delete("/:id", authenticate, authorizeRole("Admin", "Business Owner"), bookingController.deleteBooking);
+router.get("/business/:business_id", bookingController.getBookingsByBusinessId);
 
 export default router;

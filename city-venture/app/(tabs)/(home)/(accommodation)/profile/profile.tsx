@@ -27,7 +27,11 @@ import placeholder from '@/assets/images/placeholder.png';
 import Button from '@/components/Button';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AddReview from '@/components/reviews/AddReview';
-import { createReview } from '@/services/FeedbackService';
+import {
+  createReview,
+  getAverageRating,
+  getTotalReviews,
+} from '@/services/FeedbackService';
 import Chip from '@/components/Chip';
 
 const { width, height } = Dimensions.get('window');
@@ -80,10 +84,10 @@ const AccommodationProfile = () => {
     }
   }, [onRefresh, refreshing]);
   const insets = useSafeAreaInsets();
+  const bg = colors.background;
 
   const [modalVisible, setModalVisible] = useState(false);
   const [ratingsRefreshKey, setRatingsRefreshKey] = useState(0);
-  const bg = colors.background;
 
   useEffect(() => {
     if (accommodationDetails?.business_name && accommodationDetails?.id) {
@@ -97,7 +101,36 @@ const AccommodationProfile = () => {
     accommodationDetails?.id,
   ]);
 
-  const [averageAccommodationReviews] = useState(0);
+  const [headerRating, setHeaderRating] = useState<string>('0.0');
+  const [totalReviews, setTotalReviews] = useState<number>(0);
+  const fetchRating = async () => {
+    let isMounted = true;
+
+    if (accommodationDetails?.id) {
+      try {
+        const rating = await getAverageRating(
+          'accommodation',
+          accommodationDetails.id
+        );
+        const totalReviews = await getTotalReviews(
+          'accommodation',
+          accommodationDetails.id
+        );
+        if (isMounted) {
+          // Always a number, format to 1 decimal place
+          setHeaderRating(Number(rating).toFixed(1));
+          setTotalReviews(Number(totalReviews));
+        }
+      } catch (error) {
+        console.log('Error fetching header rating:', error);
+        if (isMounted) setHeaderRating('0.0');
+      }
+    }
+  };
+
+  useEffect(() => {
+    fetchRating();
+  }, [accommodationDetails?.id, ratingsRefreshKey]);
 
   const TABS: Tab[] = [
     { key: 'details', label: 'Details', icon: '' },
@@ -190,7 +223,7 @@ const AccommodationProfile = () => {
                       size={20}
                       color={colors.accent}
                     />
-                    {averageAccommodationReviews.toFixed(1) || '0.0'}
+                    {headerRating} ({totalReviews} reviews)
                   </ThemedText>
                 </View>
               </Container>

@@ -8,6 +8,7 @@ import { ThemedText } from '@/components/themed-text';
 import { useAccommodation } from '@/context/AccommodationContext';
 import { navigateToAccommodationProfile } from '@/routes/accommodationRoutes';
 import { fetchAddress } from '@/services/AccommodationService';
+import { getAverageRating, getTotalReviews } from '@/services/FeedbackService';
 import type { Business } from '@/types/Business';
 import type { Tab } from '@/types/Tab';
 import { FontAwesome5 } from '@expo/vector-icons';
@@ -136,13 +137,75 @@ const AccommodationDirectory = () => {
 
   const [search, setSearch] = useState('');
   const [activeTab, setActiveTab] = useState<string>('all');
+  const [ratingsMap, setRatingsMap] = useState<
+    Record<string, { avg: number; total: number }>
+  >({});
   const handleResetFilters = () => {
     setSearch('');
     setActiveTab('all');
   };
+  // Cache of resolved address parts per barangay_id
+  const [addressPartsByBarangay, setAddressPartsByBarangay] = useState<
+    Record<number, string[]>
+  >({});
 
-  // Local UI state
-  // Tabs: only categories present for business_type_id === 1; keep 'All'
+  const getBarangayName = useCallback(
+    (barangay_id?: number) => {
+      if (barangay_id == null) return '';
+      const arr = addressPartsByBarangay[barangay_id];
+      return Array.isArray(arr) && arr.length > 0 ? arr[0] : '';
+    },
+    [addressPartsByBarangay]
+  );
+  // Filter: type=1, search (name/address/barangay), status, tab
+  const filteredAccommodations = useMemo(() => {
+    if (!Array.isArray(allAccommodationDetails)) return [];
+    const term = toLowerSafe(search.trim());
+    return allAccommodationDetails.filter((b: Business) => {
+      if (b.business_type_id !== 1) return false;
+      const name = toLowerSafe(b.business_name);
+      const addr = toLowerSafe(b.address);
+      const brgy = toLowerSafe(getBarangayName(b.barangay_id));
+      const matchesSearch =
+        !term ||
+        name.includes(term) ||
+        addr.includes(term) ||
+        brgy.includes(term);
+
+      const categoryKey = getCategoryKey(b);
+      const matchesTab = activeTab === 'all' || categoryKey === activeTab;
+
+      const status = toLowerSafe(b.status);
+      const isVisibleStatus = status === 'active' || status === 'pending';
+
+      return matchesSearch && matchesTab && isVisibleStatus;
+    });
+  }, [allAccommodationDetails, search, activeTab, getBarangayName]);
+
+  // Fetch ratings and total reviews for visible accommodations
+  useEffect(() => {
+    const fetchRatings = async () => {
+      const ids = filteredAccommodations.map((b) => b.id).filter(Boolean);
+      const newMap: Record<string, { avg: number; total: number }> = {};
+      await Promise.all(
+        ids.map(async (id) => {
+          try {
+            const [avg, total] = await Promise.all([
+              getAverageRating('accommodation', id!),
+              getTotalReviews('accommodation', id!),
+            ]);
+            newMap[String(id)] = { avg, total };
+          } catch {
+            newMap[String(id)] = { avg: 0, total: 0 };
+          }
+        })
+      );
+      setRatingsMap(newMap);
+    };
+    if (filteredAccommodations.length > 0) fetchRatings();
+    else setRatingsMap({});
+  }, [filteredAccommodations]);
+
   const dynamicTabs: Tab[] = useMemo(() => {
     const ids = new Set<number>();
     (allAccommodationDetails || []).forEach((b: Business) => {
@@ -179,49 +242,10 @@ const AccommodationDirectory = () => {
     navigateToAccommodationProfile();
   };
 
-  // Cache of resolved address parts per barangay_id
-  const [addressPartsByBarangay, setAddressPartsByBarangay] = useState<
-    Record<number, string[]>
-  >({});
-
-  const getBarangayName = useCallback(
-    (barangay_id?: number) => {
-      if (barangay_id == null) return '';
-      const arr = addressPartsByBarangay[barangay_id];
-      return Array.isArray(arr) && arr.length > 0 ? arr[0] : '';
-    },
-    [addressPartsByBarangay]
-  );
-
   const formatSubtitle = (b: Business) => {
     const barangay = getBarangayName(b.barangay_id);
     return barangay ? `${b.address}, ${barangay}` : b.address ?? '';
   };
-
-  // Filter: type=1, search (name/address/barangay), status, tab
-  const filteredAccommodations = useMemo(() => {
-    if (!Array.isArray(allAccommodationDetails)) return [];
-    const term = toLowerSafe(search.trim());
-    return allAccommodationDetails.filter((b: Business) => {
-      if (b.business_type_id !== 1) return false;
-      const name = toLowerSafe(b.business_name);
-      const addr = toLowerSafe(b.address);
-      const brgy = toLowerSafe(getBarangayName(b.barangay_id));
-      const matchesSearch =
-        !term ||
-        name.includes(term) ||
-        addr.includes(term) ||
-        brgy.includes(term);
-
-      const categoryKey = getCategoryKey(b);
-      const matchesTab = activeTab === 'all' || categoryKey === activeTab;
-
-      const status = toLowerSafe(b.status);
-      const isVisibleStatus = status === 'active' || status === 'pending';
-
-      return matchesSearch && matchesTab && isVisibleStatus;
-    });
-  }, [allAccommodationDetails, search, activeTab, getBarangayName]);
 
   // Return array: [barangay_name, municipality_name, province_name]
   const fetchBusinessAddress = async (
@@ -320,28 +344,35 @@ const AccommodationDirectory = () => {
               Loading...
             </ThemedText>
           ) : filteredAccommodations.length > 0 ? (
-            filteredAccommodations.map((business) => (
-              <AccommodationCard
-                elevation={2}
-                key={business.id}
-                title={business.business_name}
-                subTitle={formatSubtitle(business)}
-                pricing={
-                  business.min_price && business.max_price
-                    ? `${business.min_price} - ${business.max_price}`
-                    : 'N/A'
-                }
-                image={
-                  business.business_image
-                    ? { uri: business.business_image }
-                    : placeholder
-                }
-                ratings={4.5}
-                view={cardView}
-                favorite={false}
-                onClick={() => handleAccommodationSelect(business.id!)}
-              />
-            ))
+            filteredAccommodations.map((business) => {
+              const ratingInfo = ratingsMap[business.id ?? ''] || {
+                avg: 0,
+                total: 0,
+              };
+              return (
+                <AccommodationCard
+                  elevation={2}
+                  key={business.id}
+                  title={business.business_name}
+                  subTitle={formatSubtitle(business)}
+                  pricing={
+                    business.min_price && business.max_price
+                      ? `${business.min_price} - ${business.max_price}`
+                      : 'N/A'
+                  }
+                  image={
+                    business.business_image
+                      ? { uri: business.business_image }
+                      : placeholder
+                  }
+                  ratings={ratingInfo.avg}
+                  noOfComments={ratingInfo.total}
+                  view={cardView}
+                  favorite={false}
+                  onClick={() => handleAccommodationSelect(business.id!)}
+                />
+              );
+            })
           ) : (
             <PageContainer
               padding={16}

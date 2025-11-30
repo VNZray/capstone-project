@@ -29,7 +29,10 @@ import Photos from './photos';
 import Ratings from './ratings';
 import placeholder from '@/assets/images/room-placeholder.png';
 import AddReview from '@/components/reviews/AddReview';
-import FeedbackService from '@/services/FeedbackService';
+import FeedbackService, {
+  getAverageRating,
+  getTotalReviews,
+} from '@/services/FeedbackService';
 
 const { width, height } = Dimensions.get('window');
 
@@ -112,6 +115,31 @@ const AccommodationProfile = () => {
     }
   };
 
+  const [headerRating, setHeaderRating] = useState<string>('0.0');
+  const [totalReviews, setTotalReviews] = useState<number>(0);
+  const fetchRating = async () => {
+    let isMounted = true;
+
+    if (roomDetails?.id) {
+      try {
+        const rating = await getAverageRating('room', roomDetails.id);
+        const totalReviews = await getTotalReviews('room', roomDetails.id);
+        if (isMounted) {
+          // Always a number, format to 1 decimal place
+          setHeaderRating(Number(rating).toFixed(1));
+          setTotalReviews(Number(totalReviews));
+        }
+      } catch (error) {
+        console.log('Error fetching header rating:', error);
+        if (isMounted) setHeaderRating('0.0');
+      }
+    }
+  };
+
+  useEffect(() => {
+    fetchRating();
+  }, [roomDetails?.id, ratingsRefreshKey]);
+
   if (!roomDetails) {
     return (
       <View style={styles.notFoundContainer}>
@@ -167,7 +195,7 @@ const AccommodationProfile = () => {
                     {formattedPrice}
                   </ThemedText>
                 </View>
-                
+
                 <View>
                   <ThemedText type="body-medium">
                     <MaterialCommunityIcons
@@ -175,7 +203,7 @@ const AccommodationProfile = () => {
                       size={20}
                       color="#FFB007"
                     />
-                    {averageAccommodationReviews.toFixed(1) || '0.0'} (100)
+                    {headerRating} ({totalReviews} reviews)
                   </ThemedText>
                 </View>
               </Container>

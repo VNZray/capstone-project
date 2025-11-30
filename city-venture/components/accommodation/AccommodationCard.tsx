@@ -136,7 +136,11 @@ const AccommodationCard: React.FC<AccommodationCardProps> = ({
         {!!subTitle && (
           <Text
             numberOfLines={2}
-            style={[{ color: palette.subText }, sizing.subTitle, subTitleStyle]}
+            style={[
+              { color: palette.subText, flex: 1 },
+              sizing.subTitle,
+              subTitleStyle,
+            ]}
           >
             {subTitle}
           </Text>
@@ -297,7 +301,7 @@ function getSizes(width: number): Record<AccommodationCardSize, SizeConfig> {
       rating: { fontSize: moderateScale(12, 0.45, width), fontWeight: '700' },
       reviews: { fontSize: moderateScale(11, 0.45, width) },
       icon: moderateScale(14, 0.5, width),
-      favIconSize: moderateScale(24, 0.5, width),
+      favIconSize: moderateScale(18, 0.5, width),
       favBtn: { padding: moderateScale(6, 0.5, width) },
     },
     medium: {
@@ -313,7 +317,7 @@ function getSizes(width: number): Record<AccommodationCardSize, SizeConfig> {
       price: { fontSize: moderateScale(13.5, 0.45, width) },
       rating: { fontSize: moderateScale(13.5, 0.45, width), fontWeight: '700' },
       reviews: { fontSize: moderateScale(12, 0.45, width) },
-      icon: moderateScale(16, 0.5, width),
+      icon: moderateScale(14, 0.5, width),
       favIconSize: moderateScale(32, 0.5, width),
       favBtn: { padding: moderateScale(8, 0.5, width) },
     },
@@ -330,7 +334,7 @@ function getSizes(width: number): Record<AccommodationCardSize, SizeConfig> {
       price: { fontSize: moderateScale(14, 0.45, width) },
       rating: { fontSize: moderateScale(14, 0.45, width), fontWeight: '700' },
       reviews: { fontSize: moderateScale(12.5, 0.45, width) },
-      icon: moderateScale(18, 0.5, width),
+      icon: moderateScale(14, 0.5, width),
       favIconSize: moderateScale(24, 0.5, width),
       favBtn: { padding: moderateScale(10, 0.5, width) },
     },

@@ -153,7 +153,7 @@ const HomeScreen = () => {
 
   const handleEventPress = useCallback((event: HomeEvent) => {
     router.push({
-      pathname: '/(tabs)/(home)/(event)',
+      pathname: './(tabs)/(home)/(event)',
       params: { eventId: event.id },
     });
   }, []);

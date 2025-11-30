@@ -1,5 +1,12 @@
 import PageContainer from '@/components/PageContainer';
-import React, { useCallback, useRef, useState, useMemo, useEffect } from 'react';
+import React, {
+  useCallback,
+  useRef,
+  useState,
+  useMemo,
+  useEffect,
+} from 'react';
+import { getAverageRating, getTotalReviews } from '@/services/FeedbackService';
 import {
   StyleSheet,
   Text,
@@ -19,9 +26,9 @@ import { useRoom } from '@/context/RoomContext';
 import { navigateToRoomProfile } from '@/routes/accommodationRoutes';
 import placeholder from '@/assets/images/room-placeholder.png';
 import { useAccommodation } from '@/context/AccommodationContext';
-import { 
-  fetchBookingsByBusinessId, 
-  filterAvailableRooms 
+import {
+  fetchBookingsByBusinessId,
+  filterAvailableRooms,
 } from '@/services/BookingService';
 import type { Booking } from '@/types/Booking';
 
@@ -50,6 +57,9 @@ const Rooms = () => {
   const lastOffset = useRef(0);
   const atTopRef = useRef(true);
   const wasScrollingUpRef = useRef(false);
+  const [roomRatings, setRoomRatings] = useState<
+    Record<string, { avg: number; total: number }>
+  >({});
 
   // Fetch bookings when accommodation changes
   useEffect(() => {
@@ -111,7 +121,8 @@ const Rooms = () => {
       const direct = r.floor ?? r.floor_number ?? r.level;
       let floor: number | null = null;
       if (typeof direct === 'number') floor = direct;
-      else if (typeof direct === 'string' && /^\d+$/.test(direct)) floor = parseInt(direct, 10);
+      else if (typeof direct === 'string' && /^\d+$/.test(direct))
+        floor = parseInt(direct, 10);
       else if (!direct && r.room_number) {
         // Derive from room_number (e.g., 302 -> 3)
         const match = String(r.room_number).match(/^(\d)/);
@@ -126,30 +137,63 @@ const Rooms = () => {
   // Filter rooms by selected floor
   const filteredRooms = useMemo(() => {
     if (!rooms) return [];
-    
+
     // First filter by floor
-    let filtered = selectedFloor == null 
-      ? rooms 
-      : rooms.filter((r) => {
-          // @ts-ignore allow flexible field names
-          const direct = r.floor ?? r.floor_number ?? r.level;
-          let floor: number | null = null;
-          if (typeof direct === 'number') floor = direct;
-          else if (typeof direct === 'string' && /^\d+$/.test(direct)) floor = parseInt(direct, 10);
-          else if (!direct && r.room_number) {
-            const match = String(r.room_number).match(/^(\d)/);
-            if (match) floor = parseInt(match[1], 10);
-          }
-          return floor === selectedFloor;
-        });
-    
+    let filtered =
+      selectedFloor == null
+        ? rooms
+        : rooms.filter((r) => {
+            // @ts-ignore allow flexible field names
+            const direct = r.floor ?? r.floor_number ?? r.level;
+            let floor: number | null = null;
+            if (typeof direct === 'number') floor = direct;
+            else if (typeof direct === 'string' && /^\d+$/.test(direct))
+              floor = parseInt(direct, 10);
+            else if (!direct && r.room_number) {
+              const match = String(r.room_number).match(/^(\d)/);
+              if (match) floor = parseInt(match[1], 10);
+            }
+            return floor === selectedFloor;
+          });
+
     // Then filter by date availability if both dates are selected
     if (range.start && range.end && bookings.length > 0) {
-      filtered = filterAvailableRooms(filtered, bookings, range.start, range.end);
+      filtered = filterAvailableRooms(
+        filtered,
+        bookings,
+        range.start,
+        range.end
+      );
     }
-    
+
     return filtered;
   }, [rooms, selectedFloor, range, bookings]);
+
+  // Fetch ratings and total reviews for visible rooms
+  useEffect(() => {
+    const fetchRatings = async () => {
+      const ids = filteredRooms
+        .map((r) => r.id)
+        .filter((id): id is string => typeof id === 'string' && !!id);
+      const newMap: Record<string, { avg: number; total: number }> = {};
+      await Promise.all(
+        ids.map(async (id) => {
+          try {
+            const [avg, total] = await Promise.all([
+              getAverageRating('room', id),
+              getTotalReviews('room', id),
+            ]);
+            newMap[String(id)] = { avg, total };
+          } catch {
+            newMap[String(id)] = { avg: 0, total: 0 };
+          }
+        })
+      );
+      setRoomRatings(newMap);
+    };
+    if (filteredRooms.length > 0) fetchRatings();
+    else setRoomRatings({});
+  }, [filteredRooms]);
 
   return (
     <PageContainer style={{ paddingTop: 0, paddingBottom: 100 }}>
@@ -171,7 +215,10 @@ const Rooms = () => {
             if (item.id === 'all') {
               setSelectedFloor(null);
             } else {
-              const v = typeof item.id === 'string' ? parseInt(item.id, 10) : (item.id as number);
+              const v =
+                typeof item.id === 'string'
+                  ? parseInt(item.id, 10)
+                  : (item.id as number);
               setSelectedFloor(Number.isNaN(v) ? null : v);
             }
           }}
@@ -193,7 +240,8 @@ const Rooms = () => {
           onRangeChange={(newRange) => {
             setRange(newRange);
             setDateRange(newRange); // Save to context
-          }}        />
+          }}
+        />
         <Button
           elevation={2}
           color="white"
@@ -212,49 +260,59 @@ const Rooms = () => {
             {range.start && range.end && (
               <View style={styles.dateInfo}>
                 <Text style={styles.dateInfoText}>
-                  Showing available rooms from {range.start.toLocaleDateString()} to {range.end.toLocaleDateString()}
+                  Showing available rooms from{' '}
+                  {range.start.toLocaleDateString()} to{' '}
+                  {range.end.toLocaleDateString()}
                 </Text>
               </View>
             )}
             <View style={styles.list}>
-              {filteredRooms.map((room) => (
-                <RoomCard
-                  elevation={6}
-                  key={room.id}
-                  image={room.room_image ? { uri: room.room_image } : placeholder}
-                  title={room.room_number || 'Room'}
-                  subtitle={room.description || room.room_type || ''}
-                  capacity={room.capacity || undefined}
-                  price={room.room_price || undefined}
-                  rating={4.5}
-                  comments={12}
-                  status={
-                    room.status === 'available'
-                      ? 'Available'
-                      : room.status === 'maintenance'
-                      ? 'Maintenance'
-                      : room.status === 'booked'
-                      ? 'Booked'
-                      : undefined
-                  }
-                  view={cardView}
-                  variant="solid"
-                  size="large"
-                  onClick={() => {
-                    if (room.id) {
-                      setRoomId(room.id);
-                      navigateToRoomProfile();
+              {filteredRooms.map((room) => {
+                const ratingInfo = roomRatings[String(room.id)] || {
+                  avg: 0,
+                  total: 0,
+                };
+                return (
+                  <RoomCard
+                    elevation={6}
+                    key={room.id}
+                    image={
+                      room.room_image ? { uri: room.room_image } : placeholder
                     }
-                  }}
-                />
-              ))}
+                    title={room.room_number || 'Room'}
+                    subtitle={room.description || room.room_type || ''}
+                    capacity={room.capacity || undefined}
+                    price={room.room_price || undefined}
+                    rating={ratingInfo.avg}
+                    comments={ratingInfo.total}
+                    status={
+                      room.status === 'available'
+                        ? 'Available'
+                        : room.status === 'maintenance'
+                        ? 'Maintenance'
+                        : room.status === 'booked'
+                        ? 'Booked'
+                        : undefined
+                    }
+                    view={cardView}
+                    variant="solid"
+                    size="large"
+                    onClick={() => {
+                      if (room.id) {
+                        setRoomId(room.id);
+                        navigateToRoomProfile();
+                      }
+                    }}
+                  />
+                );
+              })}
             </View>
           </>
         ) : (
           <View style={styles.center}>
             <Text>
-              {range.start && range.end 
-                ? 'No rooms available for the selected dates' 
+              {range.start && range.end
+                ? 'No rooms available for the selected dates'
                 : 'No rooms available'}
             </Text>
           </View>

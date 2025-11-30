@@ -132,7 +132,7 @@ const LoginPage = () => {
                 showsVerticalScrollIndicator={false}
               >
                 {/* Logo */}
-                <View style={{ alignItems: 'center', marginBottom: 20 }}>
+                <View style={{ alignItems: 'flex-start', marginBottom: 20 }}>
                   <FormLogo />
                 </View>
 

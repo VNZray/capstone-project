@@ -133,15 +133,6 @@ const Profile = () => {
                 </ThemedText>
               </View>
             </View>
-
-            {/* Minimal Stats */}
-            <View style={styles.statsRow}>
-              <StatItem label="Trips" value="12" />
-              <View style={[styles.statDivider, { backgroundColor: border }]} />
-              <StatItem label="Reviews" value="15" />
-              <View style={[styles.statDivider, { backgroundColor: border }]} />
-              <StatItem label="Points" value="2.4k" />
-            </View>
           </LinearGradient>
         </View>
 
@@ -350,7 +341,6 @@ const MenuItem = ({
 const styles = StyleSheet.create({
   screen: { flex: 1 },
   headerContainer: {
-    marginBottom: 24,
     borderBottomLeftRadius: 32,
     borderBottomRightRadius: 32,
     overflow: 'hidden',
@@ -380,7 +370,6 @@ const styles = StyleSheet.create({
   profileInfo: {
     alignItems: 'center',
     gap: 16,
-    marginBottom: 32,
   },
   avatarContainer: {
     position: 'relative',

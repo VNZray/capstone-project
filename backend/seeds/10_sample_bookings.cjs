@@ -9,6 +9,12 @@ const randomPhone = () => {
   return randomPrefix + randomNum;
 };
 
+const setHours = (hours, minutes, seconds = 0, ms = 0) => {
+  const date = new Date();
+  date.setHours(hours, minutes, seconds, ms);
+  return date;
+};
+
 const firstNames = [
   'Juan', 'Maria', 'Jose', 'Ana', 'Pedro', 'Sofia', 'Miguel', 'Carmen', 'Luis', 'Isabel',
   'Carlos', 'Elena', 'Antonio', 'Rosa', 'Manuel', 'Lucia', 'Francisco', 'Teresa', 'Jorge', 'Pilar',
@@ -78,6 +84,7 @@ exports.seed = async function (knex) {
       phone_number: randomPhone(),
       password: '123456',
       user_role_id: 9,
+      user_profile: 'https://scontent.fmnl4-2.fna.fbcdn.net/v/t39.30808-6/473029028_1644429586280092_2882954199635006340_n.jpg?_nc_cat=101&cb2=99be929b-a592a72f&ccb=1-7&_nc_sid=6ee11a&_nc_ohc=Q2TPpDmr4wcQ7kNvwGV4r3E&_nc_oc=Adk0MswTIqYMZKQKdEzGNv4AB4-E69_zhVMxhE3VTiB_jCLtvUfZZdUoP2ED2LeSV7cutXcMMznLvOBLIKzTKQji&_nc_zt=23&_nc_ht=scontent.fmnl4-2.fna&_nc_gid=_kqwUvI_2YT_p82R2Ny6Fw&oh=00_AfiT7s4ORT3mR6W16xEpgDNo88lAcHj24E28vh6YWUfNlw&oe=6931C3F6',
       barangay_id: Math.floor(Math.random() * 5) + 1 // Random barangay 1-5
     });
   }
@@ -92,6 +99,7 @@ exports.seed = async function (knex) {
       password: hashed,
       is_verified: true,
       is_active: true,
+      user_profile: 'https://scontent.fmnl4-2.fna.fbcdn.net/v/t39.30808-6/473029028_1644429586280092_2882954199635006340_n.jpg?_nc_cat=101&cb2=99be929b-a592a72f&ccb=1-7&_nc_sid=6ee11a&_nc_ohc=Q2TPpDmr4wcQ7kNvwGV4r3E&_nc_oc=Adk0MswTIqYMZKQKdEzGNv4AB4-E69_zhVMxhE3VTiB_jCLtvUfZZdUoP2ED2LeSV7cutXcMMznLvOBLIKzTKQji&_nc_zt=23&_nc_ht=scontent.fmnl4-2.fna&_nc_gid=_kqwUvI_2YT_p82R2Ny6Fw&oh=00_AfiT7s4ORT3mR6W16xEpgDNo88lAcHj24E28vh6YWUfNlw&oe=6931C3F6',
       user_role_id: u.user_role_id,
       barangay_id: u.barangay_id
     });
@@ -220,11 +228,11 @@ exports.seed = async function (knex) {
       
       // UPDATED: Handle Time
       const checkInDate = getRandomPastDate(monthsAgo);
-      checkInDate.setHours(14, 0, 0, 0); // Check in at 2:00 PM
+      const checkInTime = setHours(14, 0, 0, 0); // Check in at 2:00 PM
       
       const checkOutDate = new Date(checkInDate);
       checkOutDate.setDate(checkOutDate.getDate() + Math.floor(Math.random() * 4) + 1); // 1-4 nights
-      checkOutDate.setHours(12, 0, 0, 0); // Check out at 12:00 PM
+      const checkOutTime = setHours(12, 0, 0, 0); // Check out at 12:00 PM
 
       const numberOfNights = Math.floor(
         (checkOutDate - checkInDate) / (1000 * 60 * 60 * 24)
@@ -247,8 +255,11 @@ exports.seed = async function (knex) {
         tourist_id: tourist.id,
         business_id: business.id,
         room_id: room.id,
+        booking_type: "overnight",
         check_in_date: checkInDate, // Pass object directly
         check_out_date: checkOutDate, // Pass object directly
+        check_in_time: checkInTime, // Pass object directly
+        check_out_time: checkOutTime, // Pass object directly
         booking_status: status,
         total_price: totalPrice,
         pax: pax,
@@ -273,11 +284,11 @@ exports.seed = async function (knex) {
       
       // UPDATED: Handle Time
       const checkInDate = getRandomFutureDate(daysAhead);
-      checkInDate.setHours(14, 0, 0, 0); // Check in at 2:00 PM
+      const checkInTime = setHours(14, 0, 0, 0); // Check in at 2:00 PM
 
       const checkOutDate = new Date(checkInDate);
       checkOutDate.setDate(checkOutDate.getDate() + Math.floor(Math.random() * 4) + 1); // 1-4 nights
-      checkOutDate.setHours(12, 0, 0, 0); // Check out at 12:00 PM
+      const checkOutTime = setHours(12, 0, 0, 0); // Check out at 12:00 PM
 
       const numberOfNights = Math.floor(
         (checkOutDate - checkInDate) / (1000 * 60 * 60 * 24)
@@ -301,8 +312,12 @@ exports.seed = async function (knex) {
         tourist_id: tourist.id,
         business_id: business.id,
         room_id: room.id,
+                booking_type: "overnight",
+
         check_in_date: checkInDate, // Pass object directly
         check_out_date: checkOutDate, // Pass object directly
+        check_in_time: checkInTime, // Pass object directly
+        check_out_time: checkOutTime, // Pass object directly
         booking_status: status,
         total_price: totalPrice,
         pax: pax,

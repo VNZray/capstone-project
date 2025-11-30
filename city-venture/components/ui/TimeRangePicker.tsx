@@ -8,12 +8,21 @@ import {
   Dimensions,
   Platform,
 } from 'react-native';
-import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
+import DateTimePicker, {
+  DateTimePickerEvent,
+} from '@react-native-community/datetimepicker';
 import { Ionicons } from '@expo/vector-icons';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Colors } from '@/constants/color';
-import { format, setHours, setMinutes, isBefore, isAfter, addMinutes } from 'date-fns';
+import {
+  format,
+  setHours,
+  setMinutes,
+  isBefore,
+  isAfter,
+  addMinutes,
+} from 'date-fns';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -41,12 +50,14 @@ export const TimeRangePicker: React.FC<TimeRangePickerProps> = ({
   stepMinutes = 15,
 }) => {
   const theme = Colors.light;
-  
-  const [startTime, setStartTime] = useState<Date>(initialStartTime || new Date());
+
+  const [startTime, setStartTime] = useState<Date>(
+    initialStartTime || new Date()
+  );
   const [endTime, setEndTime] = useState<Date>(
     initialEndTime || addMinutes(new Date(), minDuration)
   );
-  
+
   const [showStartTimePicker, setShowStartTimePicker] = useState(false);
   const [showEndTimePicker, setShowEndTimePicker] = useState(false);
   const [error, setError] = useState<string>('');
@@ -63,28 +74,31 @@ export const TimeRangePicker: React.FC<TimeRangePickerProps> = ({
 
   const validateTimeRange = (start: Date, end: Date): string => {
     const durationMinutes = (end.getTime() - start.getTime()) / (1000 * 60);
-    
+
     if (durationMinutes < minDuration) {
       return `Duration must be at least ${minDuration} minutes`;
     }
-    
+
     if (durationMinutes > maxDuration) {
       return `Duration cannot exceed ${maxDuration / 60} hours`;
     }
-    
+
     if (isAfter(start, end) || start.getTime() === end.getTime()) {
       return 'End time must be after start time';
     }
-    
+
     return '';
   };
 
-  const handleStartTimeChange = (event: DateTimePickerEvent, selectedTime?: Date) => {
+  const handleStartTimeChange = (
+    event: DateTimePickerEvent,
+    selectedTime?: Date
+  ) => {
     setShowStartTimePicker(Platform.OS === 'ios');
-    
+
     if (selectedTime) {
       setStartTime(selectedTime);
-      
+
       // Auto-adjust end time if needed
       const newError = validateTimeRange(selectedTime, endTime);
       if (newError) {
@@ -97,9 +111,12 @@ export const TimeRangePicker: React.FC<TimeRangePickerProps> = ({
     }
   };
 
-  const handleEndTimeChange = (event: DateTimePickerEvent, selectedTime?: Date) => {
+  const handleEndTimeChange = (
+    event: DateTimePickerEvent,
+    selectedTime?: Date
+  ) => {
     setShowEndTimePicker(Platform.OS === 'ios');
-    
+
     if (selectedTime) {
       const newError = validateTimeRange(startTime, selectedTime);
       if (newError) {
@@ -115,7 +132,7 @@ export const TimeRangePicker: React.FC<TimeRangePickerProps> = ({
     const durationMs = endTime.getTime() - startTime.getTime();
     const hours = Math.floor(durationMs / (1000 * 60 * 60));
     const minutes = Math.floor((durationMs % (1000 * 60 * 60)) / (1000 * 60));
-    
+
     if (hours === 0) {
       return `${minutes}m`;
     } else if (minutes === 0) {
@@ -131,7 +148,7 @@ export const TimeRangePicker: React.FC<TimeRangePickerProps> = ({
       setError(validationError);
       return;
     }
-    
+
     onConfirm(startTime, endTime);
     onClose();
   };
@@ -143,25 +160,35 @@ export const TimeRangePicker: React.FC<TimeRangePickerProps> = ({
       { label: '2h', minutes: 120 },
       { label: '4h', minutes: 240 },
       { label: '8h', minutes: 480 },
-    ].filter(d => d.minutes >= minDuration && d.minutes <= maxDuration);
+    ].filter((d) => d.minutes >= minDuration && d.minutes <= maxDuration);
 
     return (
       <View style={styles.quickDurations}>
-        <ThemedText type="label-small" style={{ color: theme.textSecondary, marginBottom: 8 }}>
+        <ThemedText
+          type="label-small"
+          style={{ color: theme.textSecondary, marginBottom: 8 }}
+        >
           Quick Duration
         </ThemedText>
         <View style={styles.quickDurationButtons}>
           {durations.map((duration) => (
             <Pressable
               key={duration.minutes}
-              style={[styles.quickDurationButton, { borderColor: theme.border }]}
+              style={[
+                styles.quickDurationButton,
+                { borderColor: theme.border },
+              ]}
               onPress={() => {
                 const newEndTime = addMinutes(startTime, duration.minutes);
                 setEndTime(newEndTime);
                 setError('');
               }}
             >
-              <ThemedText type="body-small" weight="medium" style={{ color: theme.primary }}>
+              <ThemedText
+                type="body-small"
+                weight="medium"
+                style={{ color: theme.primary }}
+              >
                 {duration.label}
               </ThemedText>
             </Pressable>
@@ -179,7 +206,10 @@ export const TimeRangePicker: React.FC<TimeRangePickerProps> = ({
       onRequestClose={onClose}
     >
       <Pressable style={styles.overlay} onPress={onClose}>
-        <Pressable style={styles.container} onPress={(e) => e.stopPropagation()}>
+        <Pressable
+          style={styles.container}
+          onPress={(e) => e.stopPropagation()}
+        >
           <ThemedView style={styles.content}>
             <ScrollView showsVerticalScrollIndicator={false}>
               {/* Header */}
@@ -193,10 +223,18 @@ export const TimeRangePicker: React.FC<TimeRangePickerProps> = ({
               </View>
 
               {/* Duration display */}
-              <View style={[styles.durationDisplay, { backgroundColor: theme.surfaceOverlay }]}>
+              <View
+                style={[
+                  styles.durationDisplay,
+                  { backgroundColor: theme.surfaceOverlay },
+                ]}
+              >
                 <Ionicons name="time" size={24} color={theme.primary} />
                 <View style={styles.durationInfo}>
-                  <ThemedText type="label-small" style={{ color: theme.textSecondary }}>
+                  <ThemedText
+                    type="label-small"
+                    style={{ color: theme.textSecondary }}
+                  >
                     Duration
                   </ThemedText>
                   <ThemedText type="card-title-small" weight="bold">
@@ -210,12 +248,16 @@ export const TimeRangePicker: React.FC<TimeRangePickerProps> = ({
                 {/* Start time */}
                 <View style={styles.timePickerContainer}>
                   <View style={styles.timeLabel}>
-                    <Ionicons name="play-circle-outline" size={20} color={theme.success} />
+                    <Ionicons
+                      name="play-circle-outline"
+                      size={20}
+                      color={theme.success}
+                    />
                     <ThemedText type="label-medium" weight="semi-bold">
                       Start Time
                     </ThemedText>
                   </View>
-                  
+
                   <Pressable
                     style={[styles.timeButton, { borderColor: theme.border }]}
                     onPress={() => setShowStartTimePicker(true)}
@@ -223,26 +265,48 @@ export const TimeRangePicker: React.FC<TimeRangePickerProps> = ({
                     <ThemedText type="card-title-small" weight="bold">
                       {format(startTime, 'hh:mm a')}
                     </ThemedText>
-                    <Ionicons name="chevron-down" size={20} color={theme.textSecondary} />
+                    <Ionicons
+                      name="chevron-down"
+                      size={20}
+                      color={theme.textSecondary}
+                    />
                   </Pressable>
                 </View>
 
                 {/* Divider with arrow */}
                 <View style={styles.timeDivider}>
-                  <View style={[styles.dividerLine, { backgroundColor: theme.border }]} />
-                  <Ionicons name="arrow-down" size={20} color={theme.textSecondary} />
-                  <View style={[styles.dividerLine, { backgroundColor: theme.border }]} />
+                  <View
+                    style={[
+                      styles.dividerLine,
+                      { backgroundColor: theme.border },
+                    ]}
+                  />
+                  <Ionicons
+                    name="arrow-down"
+                    size={20}
+                    color={theme.textSecondary}
+                  />
+                  <View
+                    style={[
+                      styles.dividerLine,
+                      { backgroundColor: theme.border },
+                    ]}
+                  />
                 </View>
 
                 {/* End time */}
                 <View style={styles.timePickerContainer}>
                   <View style={styles.timeLabel}>
-                    <Ionicons name="stop-circle-outline" size={20} color={theme.error} />
+                    <Ionicons
+                      name="stop-circle-outline"
+                      size={20}
+                      color={theme.error}
+                    />
                     <ThemedText type="label-medium" weight="semi-bold">
                       End Time
                     </ThemedText>
                   </View>
-                  
+
                   <Pressable
                     style={[styles.timeButton, { borderColor: theme.border }]}
                     onPress={() => setShowEndTimePicker(true)}
@@ -250,7 +314,11 @@ export const TimeRangePicker: React.FC<TimeRangePickerProps> = ({
                     <ThemedText type="card-title-small" weight="bold">
                       {format(endTime, 'hh:mm a')}
                     </ThemedText>
-                    <Ionicons name="chevron-down" size={20} color={theme.textSecondary} />
+                    <Ionicons
+                      name="chevron-down"
+                      size={20}
+                      color={theme.textSecondary}
+                    />
                   </Pressable>
                 </View>
               </View>
@@ -260,9 +328,17 @@ export const TimeRangePicker: React.FC<TimeRangePickerProps> = ({
 
               {/* Error message */}
               {error ? (
-                <View style={[styles.errorContainer, { backgroundColor: theme.errorLight }]}>
+                <View
+                  style={[
+                    styles.errorContainer,
+                    { backgroundColor: theme.errorLight },
+                  ]}
+                >
                   <Ionicons name="warning" size={16} color={theme.error} />
-                  <ThemedText type="body-small" style={{ color: theme.error, flex: 1 }}>
+                  <ThemedText
+                    type="body-small"
+                    style={{ color: theme.error, flex: 1 }}
+                  >
                     {error}
                   </ThemedText>
                 </View>
@@ -271,24 +347,40 @@ export const TimeRangePicker: React.FC<TimeRangePickerProps> = ({
               {/* Action buttons */}
               <View style={styles.actions}>
                 <Pressable
-                  style={[styles.button, styles.cancelButton, { borderColor: theme.border }]}
+                  style={[
+                    styles.button,
+                    styles.cancelButton,
+                    { borderColor: theme.border },
+                  ]}
                   onPress={onClose}
                 >
-                  <ThemedText type="body-medium" weight="semi-bold" style={{ color: theme.text }}>
+                  <ThemedText
+                    type="body-medium"
+                    weight="semi-bold"
+                    style={{ color: theme.text }}
+                  >
                     Cancel
                   </ThemedText>
                 </Pressable>
-                
+
                 <Pressable
                   style={[
                     styles.button,
                     styles.confirmButton,
-                    { backgroundColor: error ? theme.textTertiary : theme.primary },
+                    {
+                      backgroundColor: error
+                        ? theme.textTertiary
+                        : theme.primary,
+                    },
                   ]}
                   onPress={handleConfirm}
                   disabled={!!error}
                 >
-                  <ThemedText type="body-medium" weight="semi-bold" style={{ color: '#FFFFFF' }}>
+                  <ThemedText
+                    type="body-medium"
+                    weight="semi-bold"
+                    style={{ color: '#FFFFFF' }}
+                  >
                     Confirm
                   </ThemedText>
                 </Pressable>
@@ -301,7 +393,11 @@ export const TimeRangePicker: React.FC<TimeRangePickerProps> = ({
             <View style={styles.iosTimePickerContainer}>
               <View style={styles.iosPickerHeader}>
                 <Pressable onPress={() => setShowStartTimePicker(false)}>
-                  <ThemedText type="body-medium" weight="semi-bold" style={{ color: theme.primary }}>
+                  <ThemedText
+                    type="body-medium"
+                    weight="semi-bold"
+                    style={{ color: theme.primary }}
+                  >
                     Done
                   </ThemedText>
                 </Pressable>
@@ -309,7 +405,6 @@ export const TimeRangePicker: React.FC<TimeRangePickerProps> = ({
               {/* @ts-ignore - mode prop type issue with DateTimePicker */}
               <DateTimePicker
                 value={startTime}
-                mode="time"
                 display="spinner"
                 onChange={handleStartTimeChange}
                 minuteInterval={stepMinutes}
@@ -320,7 +415,6 @@ export const TimeRangePicker: React.FC<TimeRangePickerProps> = ({
           {showStartTimePicker && Platform.OS === 'android' && (
             <DateTimePicker
               value={startTime}
-              mode="time"
               display="default"
               onChange={handleStartTimeChange}
               minuteInterval={stepMinutes}
@@ -331,7 +425,11 @@ export const TimeRangePicker: React.FC<TimeRangePickerProps> = ({
             <View style={styles.iosTimePickerContainer}>
               <View style={styles.iosPickerHeader}>
                 <Pressable onPress={() => setShowEndTimePicker(false)}>
-                  <ThemedText type="body-medium" weight="semi-bold" style={{ color: theme.primary }}>
+                  <ThemedText
+                    type="body-medium"
+                    weight="semi-bold"
+                    style={{ color: theme.primary }}
+                  >
                     Done
                   </ThemedText>
                 </Pressable>
@@ -339,7 +437,6 @@ export const TimeRangePicker: React.FC<TimeRangePickerProps> = ({
               {/* @ts-ignore - mode prop type issue with DateTimePicker */}
               <DateTimePicker
                 value={endTime}
-                mode="time"
                 display="spinner"
                 onChange={handleEndTimeChange}
                 minuteInterval={stepMinutes}
@@ -351,7 +448,6 @@ export const TimeRangePicker: React.FC<TimeRangePickerProps> = ({
             /* @ts-ignore - mode prop type issue with DateTimePicker */
             <DateTimePicker
               value={endTime}
-              mode="time"
               display="default"
               onChange={handleEndTimeChange}
               minuteInterval={stepMinutes}

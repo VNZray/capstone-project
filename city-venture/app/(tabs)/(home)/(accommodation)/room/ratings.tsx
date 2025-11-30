@@ -6,7 +6,10 @@ import ReviewCard from '@/components/reviews/ReviewCard';
 import { colors } from '@/constants/color';
 import { useAuth } from '@/context/AuthContext';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import FeedbackService from '@/services/FeedbackService';
+import FeedbackService, {
+  getAverageRating,
+  getTotalReviews,
+} from '@/services/FeedbackService';
 import type { CreateReviewPayload, ReviewWithAuthor } from '@/types/Feedback';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams } from 'expo-router';

@@ -2,6 +2,8 @@ export type Booking = {
     id?: string;
     room_id?: string;
     tourist_id?: string;
+    check_in_time?: Date | String;
+    check_out_time?: Date | String;
     check_in_date?: Date | String;
     check_out_date?: Date | String;
     booking_status?: 'Pending' | 'Reserved' | 'Checked-In' | 'Checked-Out' | 'Canceled';

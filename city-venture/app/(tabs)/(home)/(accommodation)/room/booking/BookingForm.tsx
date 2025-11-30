@@ -18,7 +18,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { ScrollView, StyleSheet, View, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/constants/color';
-import { format, addDays } from 'date-fns';
+import { format, addDays, addHours } from 'date-fns';
 import DateTimePicker from '@react-native-community/datetimepicker';
 
 const travelerType: ChecklistItem[] = [
@@ -96,10 +96,10 @@ const BookingForm: React.FC<Props> = ({
   const [customPurpose, setCustomPurpose] = useState('');
 
   // Date range - Initialize from context if available
-  const [checkIn, setCheckIn] = useState<Date | null>(
+  const [checkInDate, setCheckInDate] = useState<Date | null>(
     (data.check_in_date as Date) || selectedDateRange.start || null
   );
-  const [checkOut, setCheckOut] = useState<Date | null>(
+  const [checkOutDate, setCheckOutDate] = useState<Date | null>(
     (data.check_out_date as Date) || selectedDateRange.end || null
   );
 
@@ -110,6 +110,7 @@ const BookingForm: React.FC<Props> = ({
   // Short stay time states
   const [shortStayTime, setShortStayTime] = useState<Date>(new Date());
   const [showShortStayTimePicker, setShowShortStayTimePicker] = useState(false);
+  const [shortStayDuration, setShortStayDuration] = useState<string>('3');
 
   // Modal visibility for DateTimeRangePicker
   const [showDateTimeRangePicker, setShowDateTimeRangePicker] = useState(false);
@@ -136,25 +137,6 @@ const BookingForm: React.FC<Props> = ({
     const m = String(date.getMonth() + 1).padStart(2, '0');
     const day = String(date.getDate()).padStart(2, '0');
     return `${y}-${m}-${day}`;
-  };
-
-  // Format datetime as 'YYYY-MM-DD HH:mm:ss'
-  const formatDateTime = (
-    date: Date | null,
-    time: Date
-  ): string | undefined => {
-    if (!date) return undefined;
-    return format(
-      new Date(
-        date.getFullYear(),
-        date.getMonth(),
-        date.getDate(),
-        time.getHours(),
-        time.getMinutes(),
-        time.getSeconds()
-      ),
-      'yyyy-MM-dd HH:mm:ss'
-    );
   };
 
   // Load ONLY this user's bookings for this room to prevent duplicate self-bookings.
@@ -283,18 +265,52 @@ const BookingForm: React.FC<Props> = ({
     }
   }, [selectedTypes, pax]);
 
+  // Short stay duration calculation effect
+  useEffect(() => {
+    if (bookingType === 'short-stay' && checkInDate && checkInTime) {
+      const hours = parseInt(shortStayDuration, 10) || 1;
+
+      // Create a combined Date object for the calculation
+      // We use checkInDate for the YMD and checkInTime for HMS
+      const startDateTime = new Date(
+        checkInDate.getFullYear(),
+        checkInDate.getMonth(),
+        checkInDate.getDate(),
+        checkInTime.getHours(),
+        checkInTime.getMinutes(),
+        checkInTime.getSeconds()
+      );
+
+      const endDateTime = addHours(startDateTime, hours);
+
+      // Update checkout states
+      setCheckOutDate(endDateTime);
+      setCheckOutTime(endDateTime);
+    }
+  }, [bookingType, checkInDate, checkInTime, shortStayDuration]);
+
   React.useEffect(() => {
     const selectedPurpose = tripPurpose.find(
       (tp) => tp.id === tripPurposeValue
     );
 
-    // Always use the actual checkIn/checkOut Date objects, which now include the correct time
-    const formattedCheckIn = checkIn
-      ? format(checkIn, 'yyyy-MM-dd HH:mm:ss')
+    // Always use the actual checkInDate/checkOutDate Date objects, which now include the correct time
+    const formattedCheckIn = checkInDate
+      ? format(checkInDate, 'yyyy-MM-dd')
       : undefined;
-    const formattedCheckOut = checkOut
-      ? format(checkOut, 'yyyy-MM-dd HH:mm:ss')
+    const formattedCheckOut = checkOutDate
+      ? format(checkOutDate, 'yyyy-MM-dd')
       : undefined;
+
+    // Format Times
+    const formattedCheckInTime = checkInTime
+      ? format(checkInTime, 'HH:mm:ss')
+      : undefined;
+
+    const formattedCheckOutTime = checkOutTime
+      ? format(checkOutTime, 'HH:mm:ss')
+      : undefined;
+
     setData((prev) => ({
       ...prev,
       room_id: roomDetails?.id,
@@ -304,6 +320,11 @@ const BookingForm: React.FC<Props> = ({
       num_infants: numberOfInfants,
       check_in_date: formattedCheckIn as any,
       check_out_date: formattedCheckOut as any,
+
+      // Include Times in State
+      check_in_time: formattedCheckInTime,
+      check_out_time: formattedCheckOutTime,
+
       booking_type: bookingType as 'overnight' | 'short-stay',
       trip_purpose:
         tripPurposeValue === '5'
@@ -319,8 +340,8 @@ const BookingForm: React.FC<Props> = ({
     numberOfAdults,
     numberOfChildren,
     numberOfInfants,
-    checkIn,
-    checkOut,
+    checkInDate,
+    checkOutDate,
     checkInTime,
     checkOutTime,
     shortStayTime,
@@ -363,10 +384,10 @@ const BookingForm: React.FC<Props> = ({
               enableSingleStatusVisuals
               showStatusLegend
               placeholder="Select date"
-              value={checkIn}
+              value={checkInDate}
               onChange={(date) => {
-                setCheckIn(date);
-                setCheckOut(date);
+                setCheckInDate(date);
+                setCheckOutDate(date);
                 // When date changes, preserve the time part in shortStayTime
                 if (date) {
                   setShortStayTime((prev) => {
@@ -417,7 +438,9 @@ const BookingForm: React.FC<Props> = ({
                   color={Colors.light.primary}
                 />
                 <ThemedText type="body-medium" weight="medium">
-                  {checkIn ? format(shortStayTime, 'hh:mm a') : 'Select time'}
+                  {checkInDate
+                    ? format(shortStayTime, 'hh:mm a')
+                    : 'Select time'}
                 </ThemedText>
               </Pressable>
             </View>
@@ -436,6 +459,13 @@ const BookingForm: React.FC<Props> = ({
                 }}
               />
             )}
+
+            <RadioButton
+              label="Duration"
+              items={hourlyOptions}
+              value={shortStayDuration}
+              onChange={(item) => setShortStayDuration(String(item?.id ?? '3'))}
+            />
           </View>
         ) : (
           <View style={styles.dateTimeContainer}>
@@ -471,13 +501,15 @@ const BookingForm: React.FC<Props> = ({
                     </ThemedText>
                   </View>
                   <ThemedText type="body-medium" weight="semi-bold">
-                    {checkIn ? format(checkIn, 'MMM dd, yyyy') : 'Select date'}
+                    {checkInDate
+                      ? format(checkInDate, 'MMM dd, yyyy')
+                      : 'Select date'}
                   </ThemedText>
                   <ThemedText
                     type="body-small"
                     style={{ color: Colors.light.textSecondary }}
                   >
-                    {checkIn ? format(checkInTime, 'hh:mm a') : '--:-- --'}
+                    {checkInDate ? format(checkInTime, 'hh:mm a') : '--:-- --'}
                   </ThemedText>
                 </View>
 
@@ -502,15 +534,17 @@ const BookingForm: React.FC<Props> = ({
                     </ThemedText>
                   </View>
                   <ThemedText type="body-medium" weight="semi-bold">
-                    {checkOut
-                      ? format(checkOut, 'MMM dd, yyyy')
+                    {checkOutDate
+                      ? format(checkOutDate, 'MMM dd, yyyy')
                       : 'Select date'}
                   </ThemedText>
                   <ThemedText
                     type="body-small"
                     style={{ color: Colors.light.textSecondary }}
                   >
-                    {checkOut ? format(checkOutTime, 'hh:mm a') : '--:-- --'}
+                    {checkOutDate
+                      ? format(checkOutTime, 'hh:mm a')
+                      : '--:-- --'}
                   </ThemedText>
                 </View>
               </View>
@@ -526,7 +560,7 @@ const BookingForm: React.FC<Props> = ({
                   weight="semi-bold"
                   style={{ color: Colors.light.primary }}
                 >
-                  {checkIn && checkOut
+                  {checkInDate && checkOutDate
                     ? 'Change Dates & Times'
                     : 'Select Dates & Times'}
                 </ThemedText>
@@ -538,7 +572,7 @@ const BookingForm: React.FC<Props> = ({
               visible={showDateTimeRangePicker}
               onClose={() => setShowDateTimeRangePicker(false)}
               onConfirm={(startDate, endDate, startTime, endTime) => {
-                setCheckIn(
+                setCheckInDate(
                   new Date(
                     startDate.getFullYear(),
                     startDate.getMonth(),
@@ -548,7 +582,7 @@ const BookingForm: React.FC<Props> = ({
                     startTime.getSeconds()
                   )
                 );
-                setCheckOut(
+                setCheckOutDate(
                   new Date(
                     endDate.getFullYear(),
                     endDate.getMonth(),
@@ -588,8 +622,8 @@ const BookingForm: React.FC<Props> = ({
 
                 setShowDateTimeRangePicker(false);
               }}
-              initialStartDate={checkIn || undefined}
-              initialEndDate={checkOut || undefined}
+              initialStartDate={checkInDate || undefined}
+              initialEndDate={checkOutDate || undefined}
               initialStartTime={checkInTime}
               initialEndTime={checkOutTime}
               availabilityData={availabilityData}

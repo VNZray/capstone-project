@@ -68,12 +68,14 @@ export function isRoomAvailableForDateRange(
   // Check for any overlapping bookings
   for (const booking of activeBookings) {
     const bookingCheckIn = new Date(
-      typeof booking.check_in_date === 'string' || booking.check_in_date instanceof String
+      typeof booking.check_in_date === 'string' ||
+      booking.check_in_date instanceof String
         ? booking.check_in_date.toString()
         : booking.check_in_date!
     );
     const bookingCheckOut = new Date(
-      typeof booking.check_out_date === 'string' || booking.check_out_date instanceof String
+      typeof booking.check_out_date === 'string' ||
+      booking.check_out_date instanceof String
         ? booking.check_out_date.toString()
         : booking.check_out_date!
     );
