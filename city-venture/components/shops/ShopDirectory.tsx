@@ -2,7 +2,7 @@ import Container from '@/components/Container';
 import PageContainer from '@/components/PageContainer';
 import SearchBar from '@/components/SearchBar';
 import FeaturedShopCard from '@/components/shops/FeaturedShopCard';
-import ShopCategoryTile from '@/components/shops/ShopCategoryTile';
+import Chip from '@/components/Chip';
 import ShopListCard from '@/components/shops/ShopListCard';
 import { ThemedText } from '@/components/themed-text';
 import { SHOP_CATEGORIES } from '@/constants/ShopCategories';
@@ -189,20 +189,26 @@ const ShopDirectory = () => {
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.horizontalListContent}
       >
-        <ShopCategoryTile
+        <Chip
           label="All"
-          active={activeCategory === 'all'}
+          variant={activeCategory === 'all' ? 'solid' : 'soft'}
+          color={activeCategory === 'all' ? 'primary' : 'neutral'}
+          size="small"
           onPress={() => handleCategoryChange('all')}
+          style={{ marginRight: 8 }}
         />
         {Object.entries(SHOP_CATEGORIES)
           .slice(0, 8)
           .map(([key, { label, icon }]) => (
-            <ShopCategoryTile
+            <Chip
               key={key}
               label={label}
-              icon={icon}
-              active={activeCategory === key}
+              startIconName={icon as any}
+              variant={activeCategory === key ? 'solid' : 'soft'}
+              color={activeCategory === key ? 'primary' : 'neutral'}
+              size="small"
               onPress={() => handleCategoryChange(key)}
+              style={{ marginRight: 8 }}
             />
           ))}
       </ScrollView>
@@ -314,7 +320,7 @@ const ShopDirectory = () => {
     <PageContainer
       padding={0}
       gap={0}
-      style={{ backgroundColor: ShopColors.surface }}
+      style={{ backgroundColor: ShopColors.background }}
     >
       <ScrollView
         showsVerticalScrollIndicator={false}
@@ -332,7 +338,7 @@ const ShopDirectory = () => {
         }
       >
         {/* Header Title */}
-        <View style={{ marginTop: 8, paddingHorizontal: 20, marginBottom: 16 }}>
+        <View style={{ marginTop: 8, paddingHorizontal: 16 }}>
           <ThemedText type="header-large" style={{ fontSize: 32 }}>
             Shops
           </ThemedText>
@@ -381,9 +387,10 @@ const styles = StyleSheet.create({
     paddingBottom: 100,
   },
   searchSection: {
-    paddingHorizontal: 20,
+    paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: ShopColors.surface,
+    gap: 12,
+    backgroundColor: ShopColors.background,
     zIndex: 100,
   },
   section: {
@@ -397,7 +404,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 20,
+    paddingHorizontal: 16,
     marginBottom: 16,
   },
   sectionTitle: {
@@ -406,11 +413,11 @@ const styles = StyleSheet.create({
     letterSpacing: -0.5,
   },
   horizontalListContent: {
-    paddingHorizontal: 20,
+    paddingHorizontal: 16,
     paddingRight: 8,
   },
   emptyPlaceholder: {
-    paddingHorizontal: 20,
+    paddingHorizontal: 16,
     paddingVertical: 32,
     justifyContent: 'center',
     alignItems: 'center',
