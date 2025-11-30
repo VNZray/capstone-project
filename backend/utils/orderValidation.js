@@ -4,6 +4,11 @@
  * Provides schema validation for order creation and updates
  */
 
+// Pickup time configuration (can be overridden via environment variables)
+// These should match the frontend validation in checkout.tsx
+const MIN_PICKUP_MINUTES = parseInt(process.env.MIN_PICKUP_MINUTES || '30', 10); // Minimum 30 minutes from now
+const MAX_PICKUP_HOURS = parseInt(process.env.MAX_PICKUP_HOURS || '72', 10); // Maximum 72 hours (3 days) from now
+
 /**
  * Validate order creation payload
  * @param {Object} payload - Order creation data
@@ -49,8 +54,24 @@ export function validateOrderCreation(payload) {
     
     if (isNaN(pickupDate.getTime())) {
       errors.push({ field: 'pickup_datetime', message: 'Invalid datetime format' });
-    } else if (pickupDate <= now) {
-      errors.push({ field: 'pickup_datetime', message: 'Pickup datetime must be in the future' });
+    } else {
+      // Calculate time boundaries
+      const minPickupTime = new Date(now.getTime() + MIN_PICKUP_MINUTES * 60 * 1000);
+      const maxPickupTime = new Date(now.getTime() + MAX_PICKUP_HOURS * 60 * 60 * 1000);
+      
+      if (pickupDate <= now) {
+        errors.push({ field: 'pickup_datetime', message: 'Pickup datetime must be in the future' });
+      } else if (pickupDate < minPickupTime) {
+        errors.push({ 
+          field: 'pickup_datetime', 
+          message: `Pickup time must be at least ${MIN_PICKUP_MINUTES} minutes from now` 
+        });
+      } else if (pickupDate > maxPickupTime) {
+        errors.push({ 
+          field: 'pickup_datetime', 
+          message: `Pickup time cannot be more than ${MAX_PICKUP_HOURS} hours from now` 
+        });
+      }
     }
   }
   
@@ -86,6 +107,17 @@ export function validateOrderCreation(payload) {
   return {
     valid: errors.length === 0,
     errors
+  };
+}
+
+/**
+ * Get pickup time constraints for client reference
+ * @returns {Object} { minMinutes, maxHours }
+ */
+export function getPickupTimeConstraints() {
+  return {
+    minMinutes: MIN_PICKUP_MINUTES,
+    maxHours: MAX_PICKUP_HOURS
   };
 }
 

@@ -9,6 +9,7 @@ import {
   Pressable,
   Alert,
   Animated,
+  ActivityIndicator,
 } from 'react-native';
 import { Stack, router } from 'expo-router';
 import { ShopColors, Brand, Slate } from '@/constants/color';
@@ -229,6 +230,7 @@ const CartScreen = () => {
   const {
     items,
     businessName,
+    isLoading,
     removeFromCart,
     updateQuantity,
     clearCart,
@@ -359,7 +361,15 @@ const CartScreen = () => {
           style={StyleSheet.absoluteFill}
         />
 
-        {items.length === 0 ? (
+        {isLoading ? (
+          /* Loading State - Cart being restored from storage */
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color={Brand.deepNavy} />
+            <Text style={[styles.loadingText, { fontSize: body }]}>
+              Loading your cart...
+            </Text>
+          </View>
+        ) : items.length === 0 ? (
           /* Empty State */
           <View style={styles.emptyContainer}>
             <View style={styles.emptyIllustration}>
@@ -561,6 +571,18 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: Slate[50],
+  },
+
+  // Loading State
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 16,
+  },
+  loadingText: {
+    color: Slate[500],
+    fontWeight: '500',
   },
 
   clearButton: {

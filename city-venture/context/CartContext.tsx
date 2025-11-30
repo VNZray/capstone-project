@@ -1,7 +1,13 @@
 // See FRONTEND_IMPLEMENTATION.md - State Management
 
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { Product } from '@/types/Product';
+
+// Storage key for cart persistence
+const CART_STORAGE_KEY = '@cityventure/cart';
+// Cart expires after 24 hours to prevent stale pricing
+const CART_EXPIRY_HOURS = 24;
 
 export interface CartItem {
   product_id: string;
@@ -14,10 +20,18 @@ export interface CartItem {
   image_url?: string;
 }
 
+interface PersistedCartData {
+  items: CartItem[];
+  businessId: string | null;
+  businessName: string | null;
+  timestamp: number;
+}
+
 interface CartContextType {
   items: CartItem[];
   businessId: string | null; // Cart locked to one business per spec
   businessName: string | null;
+  isLoading: boolean; // Loading state for cart restoration
   addToCart: (product: Product, quantity: number, notes?: string) => void;
   updateQuantity: (productId: string, quantity: number) => void;
   removeFromCart: (productId: string) => void;
@@ -37,6 +51,80 @@ export const CartProvider = ({ children }: CartProviderProps) => {
   const [items, setItems] = useState<CartItem[]>([]);
   const [businessId, setBusinessId] = useState<string | null>(null);
   const [businessName, setBusinessName] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isInitialized, setIsInitialized] = useState(false);
+
+  /**
+   * Load cart from AsyncStorage on mount
+   */
+  useEffect(() => {
+    const loadPersistedCart = async () => {
+      try {
+        const storedData = await AsyncStorage.getItem(CART_STORAGE_KEY);
+        
+        if (storedData) {
+          const parsedData: PersistedCartData = JSON.parse(storedData);
+          
+          // Check if cart has expired (24 hours)
+          const now = Date.now();
+          const cartAge = now - parsedData.timestamp;
+          const expiryMs = CART_EXPIRY_HOURS * 60 * 60 * 1000;
+          
+          if (cartAge > expiryMs) {
+            console.log('[CartContext] Persisted cart expired, clearing');
+            await AsyncStorage.removeItem(CART_STORAGE_KEY);
+          } else if (parsedData.items && parsedData.items.length > 0) {
+            console.log('[CartContext] Restoring cart with', parsedData.items.length, 'items');
+            setItems(parsedData.items);
+            setBusinessId(parsedData.businessId);
+            setBusinessName(parsedData.businessName);
+          }
+        } else {
+          console.log('[CartContext] No persisted cart found');
+        }
+      } catch (error) {
+        console.error('[CartContext] Failed to load persisted cart:', error);
+        // Clear potentially corrupted data
+        await AsyncStorage.removeItem(CART_STORAGE_KEY).catch(() => {});
+      } finally {
+        setIsLoading(false);
+        setIsInitialized(true);
+      }
+    };
+
+    loadPersistedCart();
+  }, []);
+
+  /**
+   * Persist cart to AsyncStorage whenever it changes
+   * Only runs after initial load is complete
+   */
+  useEffect(() => {
+    if (!isInitialized) return;
+
+    const persistCart = async () => {
+      try {
+        if (items.length === 0) {
+          // Clear storage if cart is empty
+          await AsyncStorage.removeItem(CART_STORAGE_KEY);
+          console.log('[CartContext] Cart cleared, removed from storage');
+        } else {
+          const dataToStore: PersistedCartData = {
+            items,
+            businessId,
+            businessName,
+            timestamp: Date.now(),
+          };
+          await AsyncStorage.setItem(CART_STORAGE_KEY, JSON.stringify(dataToStore));
+          console.log('[CartContext] Cart persisted with', items.length, 'items');
+        }
+      } catch (error) {
+        console.error('[CartContext] Failed to persist cart:', error);
+      }
+    };
+
+    persistCart();
+  }, [items, businessId, businessName, isInitialized]);
 
   /**
    * Add product to cart
@@ -158,11 +246,18 @@ export const CartProvider = ({ children }: CartProviderProps) => {
    * Clear entire cart
    * Called after successful order placement
    */
-  const clearCart = () => {
+  const clearCart = useCallback(async () => {
     setItems([]);
     setBusinessId(null);
     setBusinessName(null);
-  };
+    // Also clear from storage immediately
+    try {
+      await AsyncStorage.removeItem(CART_STORAGE_KEY);
+      console.log('[CartContext] Cart cleared from storage');
+    } catch (error) {
+      console.error('[CartContext] Failed to clear cart from storage:', error);
+    }
+  }, []);
 
   /**
    * Calculate subtotal
@@ -184,6 +279,7 @@ export const CartProvider = ({ children }: CartProviderProps) => {
         items,
         businessId,
         businessName,
+        isLoading,
         addToCart,
         updateQuantity,
         removeFromCart,

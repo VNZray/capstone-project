@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -34,6 +34,13 @@ if (
   UIManager.setLayoutAnimationEnabledExperimental(true);
 }
 
+// Pickup time constraints (must match backend validation in orderValidation.js)
+const PICKUP_CONSTRAINTS = {
+  MIN_MINUTES: 30, // Minimum 30 minutes from now (preparation time)
+  MAX_HOURS: 72,   // Maximum 72 hours (3 days) for advance ordering
+  DEFAULT_MINUTES: 60, // Default to 1 hour from now
+};
+
 const CheckoutScreen = () => {
   const colorScheme = useColorScheme();
   const theme = Colors[(colorScheme ?? 'light') as 'light' | 'dark'];
@@ -43,9 +50,17 @@ const CheckoutScreen = () => {
   const { items, businessId, clearCart, getSubtotal } = useCart();
   const { user } = useAuth();
 
-  const [pickupDate, setPickupDate] = useState(
-    new Date(Date.now() + 60 * 60 * 1000)
-  ); // 1 hour from now
+  // Calculate pickup time boundaries
+  const pickupBoundaries = useMemo(() => {
+    const now = new Date();
+    return {
+      min: new Date(now.getTime() + PICKUP_CONSTRAINTS.MIN_MINUTES * 60 * 1000),
+      max: new Date(now.getTime() + PICKUP_CONSTRAINTS.MAX_HOURS * 60 * 60 * 1000),
+      default: new Date(now.getTime() + PICKUP_CONSTRAINTS.DEFAULT_MINUTES * 60 * 1000),
+    };
+  }, []);
+
+  const [pickupDate, setPickupDate] = useState(pickupBoundaries.default);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [specialInstructions, setSpecialInstructions] = useState('');
@@ -97,29 +112,28 @@ const CheckoutScreen = () => {
       return;
     }
 
-    // Validate pickup datetime is in the future
+    // Validate pickup datetime using same constraints as defined at top of file
     const now = new Date();
-    const maxPickupTime = new Date(now.getTime() + 3 * 60 * 60 * 1000); // 3 hours from now
+    const minPickupTime = new Date(now.getTime() + PICKUP_CONSTRAINTS.MIN_MINUTES * 60 * 1000);
+    const maxPickupTime = new Date(now.getTime() + PICKUP_CONSTRAINTS.MAX_HOURS * 60 * 60 * 1000);
 
     if (pickupDate <= now) {
-      Alert.alert('Invalid Date', 'Pickup time must be in the future');
+      Alert.alert('Invalid Time', 'Pickup time must be in the future');
+      return;
+    }
+
+    if (pickupDate < minPickupTime) {
+      Alert.alert(
+        'Too Soon',
+        `Pickup time must be at least ${PICKUP_CONSTRAINTS.MIN_MINUTES} minutes from now to allow preparation time.`
+      );
       return;
     }
 
     if (pickupDate > maxPickupTime) {
       Alert.alert(
-        'Invalid Time',
-        'Pickup time cannot be more than 3 hours from now'
-      );
-      return;
-    }
-
-    // Validate pickup date is within 2 days
-    const maxPickupDate = new Date(now.getTime() + 2 * 24 * 60 * 60 * 1000);
-    if (pickupDate > maxPickupDate) {
-      Alert.alert(
-        'Invalid Date',
-        'Pickup date cannot be more than 2 days from today'
+        'Too Far Ahead',
+        `Pickup time cannot be more than ${PICKUP_CONSTRAINTS.MAX_HOURS / 24} days from now.`
       );
       return;
     }
@@ -539,8 +553,8 @@ const CheckoutScreen = () => {
                   value={pickupDate}
                   mode="date"
                   display="default"
-                  minimumDate={new Date()}
-                  maximumDate={new Date(Date.now() + 2 * 24 * 60 * 60 * 1000)}
+                  minimumDate={pickupBoundaries.min}
+                  maximumDate={pickupBoundaries.max}
                   onChange={handleDateChange}
                 />
               )}
@@ -550,7 +564,7 @@ const CheckoutScreen = () => {
                   value={pickupDate}
                   mode="time"
                   display="default"
-                  minimumDate={new Date()}
+                  minimumDate={pickupBoundaries.min}
                   onChange={handleTimeChange}
                 />
               )}

@@ -57,11 +57,27 @@ export async function insertOrder(req, res) {
     const orderItems = [];
     
     for (const item of items) {
-      const [product] = await connection.query("SELECT price, status FROM product WHERE id = ?", [item.product_id]);
+      // Use FOR UPDATE to lock the product row and prevent concurrent modifications
+      const [product] = await connection.query(
+        "SELECT p.price, p.status, ps.current_stock FROM product p LEFT JOIN product_stock ps ON p.id = ps.product_id WHERE p.id = ? FOR UPDATE", 
+        [item.product_id]
+      );
       if (!product || product.length === 0) {
         await connection.rollback();
         return res.status(400).json({ 
           message: `Product with ID ${item.product_id} not found` 
+        });
+      }
+      
+      // Check stock availability with locked row
+      const currentStock = product[0].current_stock || 0;
+      if (currentStock < item.quantity) {
+        await connection.rollback();
+        return res.status(400).json({ 
+          message: `Insufficient stock for product. Available: ${currentStock}, Requested: ${item.quantity}`,
+          product_id: item.product_id,
+          available_stock: currentStock,
+          requested_quantity: item.quantity
         });
       }
       
