@@ -1,11 +1,25 @@
-import Constants from 'expo-constants';
 import * as WebBrowser from 'expo-web-browser';
 
-// Basic PayMongo integration helpers. For production, move secret usage to your backend.
+/**
+ * @deprecated SECURITY WARNING: Direct PayMongo API calls from mobile apps are NOT SAFE.
+ * 
+ * This file has been deprecated to prevent secret key exposure in mobile bundles.
+ * All PayMongo API calls MUST go through the backend server.
+ * 
+ * For orders/shops: Use PaymentService.ts which calls backend endpoints
+ * For bookings: A backend endpoint should be created to handle PayMongo checkout
+ * 
+ * The only safe function to use from this file is `openCheckoutUrl()` which
+ * just opens a browser to a URL (no credentials involved).
+ */
+
+// ============================================================================
+// DEPRECATED TYPES - Kept for reference during migration
+// ============================================================================
 
 type PayMongoSourceCreateParams = {
-    amount: number; // in cents/lowest currency unit
-    currency?: string; // default PHP
+    amount: number;
+    currency?: string;
     type: 'gcash' | 'paymaya' | 'grab_pay' | 'dob' | 'qrph';
     description?: string;
     billing?: {
@@ -15,8 +29,8 @@ type PayMongoSourceCreateParams = {
     };
     metadata?: Record<string, any>;
     redirect: {
-        success: string; // deep link or https
-        failed: string; // deep link or https
+        success: string;
+        failed: string;
     };
 };
 
@@ -26,7 +40,7 @@ export type PayMongoSource = {
     attributes: {
         amount: number;
         currency: string;
-        checkout_url?: string; // some docs show it nested under redirect
+        checkout_url?: string;
         redirect?: {
             checkout_url?: string;
             success?: string;
@@ -38,84 +52,6 @@ export type PayMongoSource = {
     };
 };
 
-const PAYMONGO_BASE_URL = 'https://api.paymongo.com/v1';
-
-// WARNING: This should be handled by a secure backend in production.
-// Store a pre-encoded Basic token in Expo extra (e.g., "Basic base64(sk_test_xxx:)"), or use a proxy server.
-const extra = (Constants?.expoConfig?.extra || {}) as Record<string, any>;
-const BASIC_AUTH =
-    process.env.EXPO_PUBLIC_PAYMONGO_BASIC_AUTH ||
-    (extra?.EXPO_PUBLIC_PAYMONGO_BASIC_AUTH as string) ||
-    (extra?.PAYMONGO_BASIC_AUTH as string);
-
-if (!BASIC_AUTH) {
-    // eslint-disable-next-line no-console
-    console.warn(
-        '[PayMongoService] Missing EXPO_PUBLIC_PAYMONGO_BASIC_AUTH. Online payments will not work.'
-    );
-}
-
-export async function createPayMongoSource(
-    params: PayMongoSourceCreateParams
-): Promise<PayMongoSource> {
-    if (!BASIC_AUTH) throw new Error('PayMongo credentials not configured');
-
-    // PayMongo requires https URLs for redirects; deep links are not accepted.
-    const normalizeRedirect = (url: string, fallback: string) =>
-        /^https?:\/\//i.test(url) ? url : fallback;
-
-    const redirect = {
-        success: normalizeRedirect(
-            params.redirect.success,
-            'https://city-venture.com/payment/success'
-        ),
-        failed: normalizeRedirect(
-            params.redirect.failed,
-            'https://city-venture.com/payment/failed'
-        ),
-    };
-
-    const payload = {
-        data: {
-            attributes: {
-                amount: Math.round(params.amount),
-                currency: params.currency || 'PHP',
-                type: params.type,
-                description: params.description || 'Payment',
-                billing: params.billing,
-                redirect,
-            },
-            metadata: params.metadata,
-
-        },
-    };
-
-    const res = await fetch(`${PAYMONGO_BASE_URL}/sources`, {
-        method: 'POST',
-        headers: {
-            Accept: 'application/json',
-            'Content-Type': 'application/json',
-            Authorization: BASIC_AUTH,
-        },
-        body: JSON.stringify(payload),
-    });
-
-    if (!res.ok) {
-        const text = await res.text();
-        throw new Error(`PayMongo create source failed: ${res.status} ${text}`);
-    }
-    const json = (await res.json()) as { data: PayMongoSource };
-    return json.data;
-}
-
-export async function openCheckoutUrl(url: string) {
-    // Open the hosted checkout in a browser tab
-    return WebBrowser.openBrowserAsync(url, {
-        presentationStyle: WebBrowser.WebBrowserPresentationStyle.FULL_SCREEN,
-    });
-}
-
-// Checkout Sessions API (hosted checkout)
 export type PayMongoCheckoutSession = {
     id: string;
     type: 'checkout_session';
@@ -138,13 +74,57 @@ export type PayMongoCheckoutSession = {
     };
 };
 
-export async function createCheckoutSession(params: {
+// ============================================================================
+// DEPRECATED - These credentials should NEVER be in a mobile app
+// ============================================================================
+
+const PAYMONGO_BASE_URL = 'https://api.paymongo.com/v1';
+
+// Credentials removed - this is intentional for security
+const BASIC_AUTH: string | undefined = undefined;
+
+// Log deprecation warning once on module load
+console.warn(
+    '[PayMongoService] ⚠️ DEPRECATED: Direct PayMongo API calls are disabled for security.\n' +
+    'Use backend endpoints via PaymentService.ts instead.\n' +
+    'Only openCheckoutUrl() is safe to use from this module.'
+);
+
+// ============================================================================
+// DEPRECATED FUNCTIONS - Will throw errors if called
+// ============================================================================
+
+/**
+ * @deprecated SECURITY RISK - Do not use.
+ * This function has been disabled to prevent secret key exposure.
+ * Use backend API endpoints instead.
+ * @throws {Error} Always throws - function is disabled
+ */
+export async function createPayMongoSource(
+    _params: PayMongoSourceCreateParams
+): Promise<PayMongoSource> {
+    throw new Error(
+        '[PayMongoService] SECURITY ERROR: createPayMongoSource() is disabled.\n' +
+        'Direct PayMongo API calls from mobile apps expose secret keys.\n' +
+        'Please use the backend API endpoint instead:\n' +
+        '  POST /api/payments/initiate\n' +
+        'See PaymentService.ts for the secure implementation.'
+    );
+}
+
+/**
+ * @deprecated SECURITY RISK - Do not use.
+ * This function has been disabled to prevent secret key exposure.
+ * Use backend API endpoints instead.
+ * @throws {Error} Always throws - function is disabled
+ */
+export async function createCheckoutSession(_params: {
     description?: string;
     payment_method_types: ('gcash' | 'paymaya' | 'grab_pay' | 'dob' | 'qrph' | 'card' | string)[];
     line_items: Array<{
         name: string;
-        amount: number; // centavos
-        currency?: string; // default PHP
+        amount: number;
+        currency?: string;
         quantity: number;
         description?: string;
     }>;
@@ -155,51 +135,37 @@ export async function createCheckoutSession(params: {
     success_url?: string;
     cancel_url?: string;
 }): Promise<PayMongoCheckoutSession> {
-    if (!BASIC_AUTH) throw new Error('PayMongo credentials not configured');
+    throw new Error(
+        '[PayMongoService] SECURITY ERROR: createCheckoutSession() is disabled.\n' +
+        'Direct PayMongo API calls from mobile apps expose secret keys.\n' +
+        'Please use the backend API endpoint instead:\n' +
+        '  POST /api/payments/initiate (for orders)\n' +
+        '  POST /api/bookings/initiate-payment (for accommodations - needs implementation)\n' +
+        'See PaymentService.ts for the secure implementation pattern.'
+    );
+}
 
-    const normalizeHttps = (url?: string) =>
-        url && /^https?:\/\//i.test(url) ? url : undefined;
+// ============================================================================
+// SAFE FUNCTION - Can still be used
+// ============================================================================
 
-    const payload = {
-        data: {
-            attributes: {
-                description: params.description,
-                billing: params.billing,
-                send_email_receipt: params.send_email_receipt ?? true,
-                show_description: params.show_description ?? true,
-                show_line_items: params.show_line_items ?? true,
-                line_items: params.line_items.map((li) => ({
-                    currency: li.currency || 'PHP',
-                    amount: Math.round(li.amount),
-                    name: li.name,
-                    quantity: li.quantity,
-                    description: li.description,
-                })),
-                payment_method_types: params.payment_method_types,
-                // Optional redirect URLs for hosted checkout completion
-                success_url:
-                    normalizeHttps(params.success_url) ||
-                    'https://city-venture.com/payment/success',
-                cancel_url:
-                    normalizeHttps(params.cancel_url) ||
-                    'https://city-venture.com/payment/cancel',
-            },
-        },
-    };
-
-    const res = await fetch(`${PAYMONGO_BASE_URL}/checkout_sessions`, {
-        method: 'POST',
-        headers: {
-            Accept: 'application/json',
-            'Content-Type': 'application/json',
-            Authorization: BASIC_AUTH,
-        },
-        body: JSON.stringify(payload),
-    });
-    if (!res.ok) {
-        const text = await res.text();
-        throw new Error(`PayMongo create checkout_session failed: ${res.status} ${text}`);
+/**
+ * Open a PayMongo checkout URL in the browser.
+ * This function is SAFE to use as it only opens a URL - no credentials involved.
+ * 
+ * @param url - The checkout URL returned from backend
+ * @returns Promise that resolves when browser is closed
+ */
+export async function openCheckoutUrl(url: string) {
+    if (!url || typeof url !== 'string') {
+        throw new Error('Invalid checkout URL provided');
     }
-    const json = (await res.json()) as { data: PayMongoCheckoutSession };
-    return json.data;
+    
+    if (!url.startsWith('https://')) {
+        console.warn('[PayMongoService] Warning: Checkout URL should use HTTPS');
+    }
+    
+    return WebBrowser.openBrowserAsync(url, {
+        presentationStyle: WebBrowser.WebBrowserPresentationStyle.FULL_SCREEN,
+    });
 }
