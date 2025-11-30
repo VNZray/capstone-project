@@ -4,6 +4,7 @@ import { handleDbError } from "../utils/errorHandler.js";
 import * as paymongoService from "../services/paymongoService.js";
 import * as socketService from "../services/socketService.js";
 import * as notificationHelper from "../services/notificationHelper.js";
+import * as auditService from "../services/auditService.js";
 import { ensureUserRole, hasBusinessAccess } from "../utils/authHelpers.js";
 
 // Environment configuration
@@ -726,6 +727,19 @@ async function processWebhookEvent(eventType, eventData, webhook_id) {
       status: paymentStatus
     });
 
+    // ========== Audit Logging ==========
+    await auditService.logPaymentUpdate({
+      orderId: order_id,
+      oldStatus: 'unpaid',
+      newStatus: 'paid',
+      actor: null, // System/webhook event
+      paymentDetails: {
+        paymongo_payment_id: paymentId,
+        amount_centavos: paymentAmount,
+        webhook_event_type: 'checkout_session.payment.paid'
+      }
+    });
+
     // Emit real-time events AND order notifications (deferred from order creation)
     console.log(`[Webhook] 📡 Emitting socket events for order ${order_id}...`);
     await emitPaymentEvents(order_id, paymentId, 'paid', paymentAmount);
@@ -934,6 +948,20 @@ async function processWebhookEvent(eventType, eventData, webhook_id) {
 
     console.log(`[Webhook] 💔 Order ${resolvedOrderId} marked as failed payment: ${failedMessage} (code: ${failedCode})`);
 
+    // ========== Audit Logging ==========
+    await auditService.logPaymentUpdate({
+      orderId: resolvedOrderId,
+      oldStatus: 'unpaid',
+      newStatus: 'failed',
+      actor: null, // System/webhook event
+      paymentDetails: {
+        paymongo_payment_id: paymentId,
+        failed_code: failedCode,
+        failed_message: failedMessage,
+        webhook_event_type: 'payment.failed'
+      }
+    });
+
     // Emit real-time events
     await emitPaymentEvents(resolvedOrderId, paymentId, 'failed', eventData.attributes?.amount);
   }
@@ -974,6 +1002,19 @@ async function processWebhookEvent(eventType, eventData, webhook_id) {
         );
 
         console.log(`Order ${order_id} refund completed (refund: ${refundId})`);
+
+        // ========== Audit Logging ==========
+        await auditService.logPaymentUpdate({
+          orderId: order_id,
+          oldStatus: 'paid',
+          newStatus: 'refunded',
+          actor: null, // System/webhook event
+          paymentDetails: {
+            refund_id: refundId,
+            refund_amount: eventData.attributes?.amount / 100,
+            webhook_event_type: 'refund.updated'
+          }
+        });
 
         // Emit real-time events
         await emitPaymentEvents(order_id, payment_id, 'refunded', eventData.attributes?.amount);

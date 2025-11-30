@@ -168,7 +168,7 @@ const routeSections = [
         label: "External Booking",
       },
       { path: "/api/payment", handler: paymentRoutes, label: "Payments" },
-      { path: "/api/payments", handler: paymentRoutes, label: "Payments (alias)" },
+      // REMOVED: { path: "/api/payments", handler: paymentRoutes } - duplicate route removed per ORDERING_SYSTEM_AUDIT.md Phase 1
     ],
   },
   {

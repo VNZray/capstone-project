@@ -157,13 +157,62 @@ export function initializeSocket(httpServer) {
     });
 
     // Handle custom room subscriptions
-    socket.on('order:subscribe', (data) => {
+    // SECURITY: Verify user has access to the order before allowing subscription
+    socket.on('order:subscribe', async (data) => {
       const { orderId } = data;
       
-      // Validate user can subscribe to this order
-      // In production, query DB to verify ownership
-      socket.join(`order:${orderId}`);
-      console.log(`User ${socket.userId} subscribed to order:${orderId}`);
+      if (!orderId) {
+        socket.emit('error', { 
+          message: 'Order ID is required',
+          code: 'ORDER_ID_REQUIRED'
+        });
+        return;
+      }
+
+      try {
+        // Verify user has access to this order
+        const [orderRows] = await db.query(
+          `SELECT o.id, o.user_id, o.business_id 
+           FROM orders o 
+           WHERE o.id = ?`,
+          [orderId]
+        );
+
+        if (!orderRows || orderRows.length === 0) {
+          socket.emit('error', { 
+            message: 'Order not found',
+            code: 'ORDER_NOT_FOUND'
+          });
+          return;
+        }
+
+        const order = orderRows[0];
+        
+        // Check if user is the order owner (Tourist)
+        const isOrderOwner = order.user_id === socket.userId;
+        
+        // Check if user has business access (Owner/Staff/Admin)
+        const hasAccess = isOrderOwner || await verifyBusinessAccess(socket.userId, order.business_id);
+
+        if (!hasAccess) {
+          socket.emit('error', { 
+            message: 'Access denied: You do not have permission to view this order',
+            code: 'ORDER_ACCESS_DENIED'
+          });
+          console.warn(`[Socket] Access denied: User ${socket.userId} tried to subscribe to order:${orderId}`);
+          return;
+        }
+
+        socket.join(`order:${orderId}`);
+        socket.emit('order:subscribed', { orderId, success: true });
+        console.log(`User ${socket.userId} subscribed to order:${orderId} (${isOrderOwner ? 'owner' : 'business'})`);
+      } catch (error) {
+        console.error(`[Socket] Error verifying order access for order:${orderId}:`, error);
+        socket.emit('error', { 
+          message: 'Failed to subscribe to order updates',
+          code: 'SUBSCRIPTION_ERROR'
+        });
+      }
     });
 
     socket.on('order:unsubscribe', (data) => {

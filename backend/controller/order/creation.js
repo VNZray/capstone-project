@@ -9,6 +9,7 @@ import {
 import * as paymongoService from "../../services/paymongoService.js";
 import * as socketService from "../../services/socketService.js";
 import * as notificationHelper from "../../services/notificationHelper.js";
+import * as auditService from "../../services/auditService.js";
 import { generateOrderNumber, generateArrivalCode } from "./utils.js";
 
 /**
@@ -203,6 +204,26 @@ export async function insertOrder(req, res) {
     }
 
     await connection.commit();
+    
+    // ========== Audit Logging ==========
+    // Log order creation event for audit trail
+    const actor = {
+      id: user_id,
+      role: 'Tourist',
+      ip: req.ip || req.headers['x-forwarded-for'] || req.connection?.remoteAddress
+    };
+    
+    await auditService.logOrderCreated({
+      orderId,
+      orderNumber,
+      actor,
+      orderDetails: {
+        payment_method: payment_method || 'cash_on_pickup',
+        total_amount: totalAmount,
+        item_count: orderItems.length,
+        business_id
+      }
+    });
     
     // ========== PayMongo Integration ==========
     // If payment method is PayMongo, create checkout session immediately
