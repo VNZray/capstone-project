@@ -19,6 +19,7 @@ import SearchBar from "@/src/components/SearchBar";
 import { colors } from "@/src/utils/Colors";
 import DataTable, { type TableColumn } from "@/src/components/ui/Table";
 import AppButton from "@/src/components/Button";
+import placeholderImage from "@/src/assets/images/placeholder-image.png";
 
 interface PendingItem {
   id: string;
@@ -387,6 +388,32 @@ const ApprovalDashboard: React.FC = () => {
     return base;
   }, [pendingBusinesses, query, businessCategory]);
 
+  // Helper to extract a display image for tourist spots (new or edits)
+  const getTouristSpotImage = (item: any): string | null => {
+    if (!item || typeof item !== 'object') return null;
+    // Direct properties
+    const directPrimary = item.primary_image || item.image_url;
+    // Images array on pending item
+    const imagesArr = Array.isArray(item.images) ? item.images : [];
+    const primaryFromArray = imagesArr.find((i: any) => i && (i.is_primary || i.isPrimary));
+    const firstImage = imagesArr[0];
+    // If this is an edit, inspect existingSpot container
+    const existing = item.existingSpot || item.original || null;
+    const existingImages = existing && Array.isArray(existing.images) ? existing.images : [];
+    const existingPrimary = existingImages.find((i: any) => i && (i.is_primary || i.isPrimary));
+    const existingFirst = existingImages[0];
+    const existingPrimaryImageField = existing ? (existing.primary_image || existing.image_url) : null;
+    return (
+      directPrimary ||
+      (primaryFromArray && (primaryFromArray.file_url || primaryFromArray.url)) ||
+      (firstImage && (firstImage.file_url || firstImage.url)) ||
+      existingPrimaryImageField ||
+      (existingPrimary && (existingPrimary.file_url || existingPrimary.url)) ||
+      (existingFirst && (existingFirst.file_url || existingFirst.url)) ||
+      null
+    ) || null;
+  };
+
   if (loading)
     return (
       <PageContainer padding={20}>
@@ -568,9 +595,9 @@ const ApprovalDashboard: React.FC = () => {
             <div
               style={{
                 display: "grid",
-                gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))",
-                gap: "12px",
-                padding: "8px",
+                gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))",
+                gap: "20px",
+                padding: "8px 0",
               }}
             >
               {(
@@ -584,7 +611,7 @@ const ApprovalDashboard: React.FC = () => {
                   typeLabel: "tourist spot",
                   categoryLabel: (item as any).categories?.[0]?.category || "—",
                   submittedDate: (item as any).submitted_at || (item as any).created_at || "",
-                  image: (item as any).primary_image || null,
+                  image: getTouristSpotImage(item) || placeholderImage,
                   raw: item as any,
                 };
                 return (
@@ -679,9 +706,9 @@ const ApprovalDashboard: React.FC = () => {
           <div
             style={{
               display: "grid",
-              gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))",
-              gap: "12px",
-              padding: "8px",
+              gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))",
+              gap: "20px",
+              padding: "8px 0",
             }}
           >
             {filteredBusinesses
