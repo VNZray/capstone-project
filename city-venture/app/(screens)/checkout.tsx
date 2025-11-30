@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -21,10 +21,15 @@ import PageContainer from '@/components/PageContainer';
 import { useCart } from '@/context/CartContext';
 import { useAuth } from '@/context/AuthContext';
 import { createOrder } from '@/services/OrderService';
-import { openPayMongoCheckout } from '@/services/PaymentService';
+import {
+  createPaymentIntent,
+  attachEwalletPaymentMethod,
+  open3DSAuthentication,
+} from '@/services/PaymentIntentService';
 import type { CreateOrderPayload } from '@/types/Order';
 import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import API_URL from '@/services/api';
 
 // Enable LayoutAnimation for Android
 if (
@@ -43,7 +48,7 @@ const PICKUP_CONSTRAINTS = {
 
 const CheckoutScreen = () => {
   const colorScheme = useColorScheme();
-  const theme = Colors[(colorScheme ?? 'light') as 'light' | 'dark'];
+  const theme = Colors[colorScheme as keyof typeof Colors];
   const isDark = colorScheme === 'dark';
   const type = useTypography();
 
@@ -72,6 +77,11 @@ const CheckoutScreen = () => {
   >('gcash');
   const [loading, setLoading] = useState(false);
 
+  // Billing information for PayMongo payments
+  const [billingName, setBillingName] = useState(user?.first_name && user?.last_name ? `${user.first_name} ${user.last_name}` : '');
+  const [billingEmail, setBillingEmail] = useState(user?.email || '');
+  const [billingPhone, setBillingPhone] = useState(user?.phone_number || '');
+
   const subtotal = getSubtotal();
   const taxAmount = 0; // Per spec.md - currently taxAmount=0
   const discountAmount = 0; // No discount for Phase 1
@@ -94,6 +104,116 @@ const CheckoutScreen = () => {
   const togglePaymentMethod = (method: 'cash_on_pickup' | 'paymongo') => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     setPaymentMethod(method);
+  };
+
+  /**
+   * Process payment using Payment Intent workflow
+   * Handles e-wallets (GCash, Maya, GrabPay) with redirect flow
+   * For card payments, uses the card payment screen
+   */
+  const processPaymentIntentFlow = async (
+    orderId: string,
+    orderNumber: string,
+    arrivalCode: string
+  ): Promise<boolean> => {
+    try {
+      console.log('[Checkout] Starting Payment Intent flow...');
+
+      // Step 1: Create Payment Intent via backend
+      const intentResponse = await createPaymentIntent({
+        order_id: orderId,
+        payment_method_types: [paymentMethodType],
+      });
+
+      console.log('[Checkout] Payment Intent created:', intentResponse.data.payment_intent_id);
+
+      const paymentIntentId = intentResponse.data.payment_intent_id;
+
+      // For card payments, navigate to card payment screen
+      if (paymentMethodType === 'card') {
+        router.replace({
+          pathname: '/(screens)/card-payment',
+          params: {
+            orderId,
+            orderNumber,
+            arrivalCode,
+            paymentIntentId,
+            clientKey: intentResponse.data.client_key,
+            amount: intentResponse.data.amount.toString(),
+            total: total.toString(),
+          },
+        } as never);
+        return true;
+      }
+
+      // For e-wallets (GCash, Maya, GrabPay), attach payment method
+      console.log('[Checkout] Attaching e-wallet payment method:', paymentMethodType);
+
+      // Generate return URL for redirect after e-wallet authorization
+      // PayMongo requires https:// URLs - use backend's redirect bridge endpoint
+      // which will redirect back to the mobile app via deep links
+      const backendBaseUrl = API_URL.replace('/api', '');
+      const returnUrl = `${backendBaseUrl}/orders/${orderId}/payment-success`;
+      console.log('[Checkout] Return URL for PayMongo:', returnUrl);
+
+      // Billing info collected from the form
+      const billing = {
+        name: billingName.trim(),
+        email: billingEmail.trim().toLowerCase(),
+        phone: billingPhone.trim() || undefined,
+      };
+
+      const attachResponse = await attachEwalletPaymentMethod(
+        paymentIntentId,
+        paymentMethodType as 'gcash' | 'paymaya' | 'grab_pay',
+        returnUrl,
+        billing
+      );
+
+      console.log('[Checkout] Attachment response:', attachResponse.data.status);
+
+      // Check if redirect is needed (for e-wallet authorization)
+      if (attachResponse.data.redirect_url) {
+        console.log('[Checkout] Opening e-wallet authorization:', attachResponse.data.redirect_url);
+
+        // Open the e-wallet authorization URL
+        await open3DSAuthentication(attachResponse.data.redirect_url);
+
+        // After user returns from e-wallet, navigate to processing screen
+        router.replace({
+          pathname: '/(screens)/payment-processing',
+          params: {
+            orderId,
+            orderNumber,
+            arrivalCode,
+            paymentIntentId,
+            total: total.toString(),
+          },
+        } as never);
+        return true;
+      }
+
+      // If no redirect needed (unlikely for e-wallets), payment may have succeeded
+      if (attachResponse.data.status === 'succeeded') {
+        router.replace({
+          pathname: '/(screens)/order-confirmation',
+          params: {
+            orderId,
+            orderNumber,
+            arrivalCode,
+            total: total.toString(),
+            paymentMethod: paymentMethod,
+            paymentSuccess: 'true',
+          },
+        } as never);
+        return true;
+      }
+
+      return true;
+    } catch (error: any) {
+      console.error('[Checkout] Payment Intent flow failed:', error);
+      throw error;
+    }
   };
 
   const handlePlaceOrder = async () => {
@@ -138,6 +258,34 @@ const CheckoutScreen = () => {
       return;
     }
 
+    // Validate minimum amount for PayMongo Payment Intents (₱20.00)
+    if (paymentMethod === 'paymongo' && total < 20) {
+      Alert.alert(
+        'Minimum Amount',
+        'Online payment requires a minimum order of ₱20.00. Please add more items or choose Cash on Pickup.',
+        [{ text: 'OK' }]
+      );
+      return;
+    }
+
+    // Validate billing information for PayMongo payments
+    if (paymentMethod === 'paymongo') {
+      if (!billingName.trim()) {
+        Alert.alert('Missing Information', 'Please enter your full name for billing.');
+        return;
+      }
+      if (!billingEmail.trim()) {
+        Alert.alert('Missing Information', 'Please enter your email address for billing.');
+        return;
+      }
+      // Basic email validation
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(billingEmail.trim())) {
+        Alert.alert('Invalid Email', 'Please enter a valid email address.');
+        return;
+      }
+    }
+
     try {
       setLoading(true);
 
@@ -155,6 +303,8 @@ const CheckoutScreen = () => {
         payment_method: paymentMethod,
         payment_method_type:
           paymentMethod === 'paymongo' ? paymentMethodType : undefined,
+        // Don't request checkout_url - we'll use Payment Intent flow
+        skip_checkout_session: paymentMethod === 'paymongo',
       };
 
       console.log('[Checkout] Creating order:', orderPayload);
@@ -165,52 +315,25 @@ const CheckoutScreen = () => {
 
       clearCart();
 
-      const checkoutUrl = orderResponse.checkout_url;
-
+      // For PayMongo payments, use Payment Intent workflow
       if (paymentMethod === 'paymongo') {
-        if (checkoutUrl) {
-          console.log('[Checkout] Opening PayMongo checkout:', checkoutUrl);
-
-          try {
-            await openPayMongoCheckout(checkoutUrl);
-
-            router.replace({
-              pathname: '/(screens)/payment-cancel',
-              params: {
-                orderId: orderResponse.order_id,
-              },
-            } as never);
-            return;
-          } catch (checkoutError: any) {
-            console.error(
-              '[Checkout] Failed to open PayMongo checkout:',
-              checkoutError
-            );
-            Alert.alert(
-              'Payment Error',
-              'Failed to open payment page. You can retry payment from your orders.',
-              [
-                {
-                  text: 'View Orders',
-                  onPress: () => {
-                    router.replace('/(tabs)/orders' as never);
-                  },
-                },
-                {
-                  text: 'OK',
-                  style: 'cancel',
-                },
-              ]
-            );
-            return;
-          }
-        } else {
+        try {
+          await processPaymentIntentFlow(
+            orderResponse.order_id,
+            orderResponse.order_number,
+            orderResponse.arrival_code
+          );
+          return;
+        } catch (paymentError: any) {
+          console.error('[Checkout] Payment Intent flow failed:', paymentError);
+          
+          // If Payment Intent fails, show error and navigate to order details
           Alert.alert(
-            'Payment Warning',
-            'Payment checkout not ready. You can complete payment from the order confirmation screen.',
+            'Payment Error',
+            'Failed to initialize payment. You can retry payment from your order details.',
             [
               {
-                text: 'OK',
+                text: 'View Order',
                 onPress: () => {
                   router.replace({
                     pathname: '/(screens)/order-confirmation',
@@ -220,6 +343,7 @@ const CheckoutScreen = () => {
                       arrivalCode: orderResponse.arrival_code,
                       total: total.toString(),
                       paymentMethod: paymentMethod,
+                      paymentPending: 'true',
                     },
                   } as never);
                 },
@@ -230,6 +354,7 @@ const CheckoutScreen = () => {
         }
       }
 
+      // For Cash on Pickup, go directly to confirmation
       router.replace({
         pathname: '/(screens)/order-confirmation',
         params: {
@@ -790,6 +915,87 @@ const CheckoutScreen = () => {
                 )}
               </Pressable>
 
+              {/* Billing Information - Only show for PayMongo */}
+              {paymentMethod === 'paymongo' && (
+                <View style={styles.billingSection}>
+                  <View
+                    style={[styles.divider, { backgroundColor: theme.border, marginVertical: 16 }]}
+                  />
+                  <Text
+                    style={[
+                      styles.cardTitle,
+                      { color: theme.text, fontSize: type.h4, marginBottom: 12 },
+                    ]}
+                  >
+                    Billing Information
+                  </Text>
+                  <Text
+                    style={[styles.billingHint, { color: theme.textSecondary, marginBottom: 16 }]}
+                  >
+                    Required for online payment processing
+                  </Text>
+
+                  <Text style={[styles.inputLabel, { color: theme.textSecondary }]}>
+                    Full Name *
+                  </Text>
+                  <TextInput
+                    style={[
+                      styles.billingInput,
+                      {
+                        backgroundColor: theme.background,
+                        color: theme.text,
+                        borderColor: theme.border,
+                      },
+                    ]}
+                    placeholder="Juan Dela Cruz"
+                    placeholderTextColor={theme.textSecondary}
+                    value={billingName}
+                    onChangeText={setBillingName}
+                    autoCapitalize="words"
+                  />
+
+                  <Text style={[styles.inputLabel, { color: theme.textSecondary, marginTop: 12 }]}>
+                    Email Address *
+                  </Text>
+                  <TextInput
+                    style={[
+                      styles.billingInput,
+                      {
+                        backgroundColor: theme.background,
+                        color: theme.text,
+                        borderColor: theme.border,
+                      },
+                    ]}
+                    placeholder="juan@email.com"
+                    placeholderTextColor={theme.textSecondary}
+                    value={billingEmail}
+                    onChangeText={setBillingEmail}
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                  />
+
+                  <Text style={[styles.inputLabel, { color: theme.textSecondary, marginTop: 12 }]}>
+                    Phone Number (Optional)
+                  </Text>
+                  <TextInput
+                    style={[
+                      styles.billingInput,
+                      {
+                        backgroundColor: theme.background,
+                        color: theme.text,
+                        borderColor: theme.border,
+                      },
+                    ]}
+                    placeholder="09XX XXX XXXX"
+                    placeholderTextColor={theme.textSecondary}
+                    value={billingPhone}
+                    onChangeText={setBillingPhone}
+                    keyboardType="phone-pad"
+                  />
+                </View>
+              )}
+
               {/* Security Badge */}
               <View style={styles.securityBadge}>
                 <Ionicons name="lock-closed" size={14} color={theme.success} />
@@ -1168,6 +1374,19 @@ const styles = StyleSheet.create({
   placeOrderText: {
     fontSize: 16,
     fontWeight: '700',
+  },
+  billingSection: {
+    marginTop: 8,
+  },
+  billingHint: {
+    fontSize: 12,
+  },
+  billingInput: {
+    borderWidth: 1,
+    borderRadius: 12,
+    padding: 12,
+    fontSize: 14,
+    height: 48,
   },
 });
 

@@ -7,8 +7,22 @@ const router = express.Router();
 
 // ============= PayMongo Integration Routes =============
 
-// Initiate payment (Tourist only)
+// Initiate payment using Checkout Session (Tourist only) - RECOMMENDED
 router.post("/initiate", authenticate, authorizeRole("Tourist"), paymentController.initiatePayment);
+
+// ============= Payment Intent Workflow Routes =============
+// For custom checkout integration with more control
+
+// Create Payment Intent for an order (Tourist only)
+router.post("/intent", authenticate, authorizeRole("Tourist"), paymentController.createPaymentIntentForOrder);
+
+// Attach Payment Method to Payment Intent (for e-wallets, server-side)
+router.post("/intent/:id/attach", authenticate, authorizeRole("Tourist"), paymentController.attachPaymentMethodToIntent);
+
+// Get Payment Intent status
+router.get("/intent/:id", authenticate, paymentController.getPaymentIntentStatus);
+
+// ============= Webhook & Refund Routes =============
 
 // Webhook endpoint (no auth, signature-based verification)
 router.post("/webhook", paymentController.handleWebhook);

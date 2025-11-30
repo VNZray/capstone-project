@@ -52,7 +52,7 @@ export async function initiatePayment(
 ): Promise<InitiatePaymentResponse> {
   try {
     const response = await apiClient.post<InitiatePaymentResponse>(
-      `/payments/initiate`,
+      `/payment/initiate`,
       paymentData
     );
 
@@ -71,7 +71,7 @@ export async function initiatePayment(
 export async function getPaymentStatus(paymentId: string): Promise<PaymentStatus> {
   try {
     const response = await apiClient.get<PaymentStatus>(
-      `/payments/${paymentId}`
+      `/payment/${paymentId}`
     );
 
     return response.data;

@@ -1,5 +1,19 @@
 // See spec.md §5 - Order State Machine & §6 - Data Model
+// Note: Mobile app uses UPPERCASE status values for consistency
+// Backend normalizes status to UPPERCASE for /api/orders/user/:userId endpoint
 
+/**
+ * Order statuses in UPPERCASE format (mobile convention)
+ * Maps to lowercase database values:
+ * - PENDING -> pending
+ * - ACCEPTED -> accepted
+ * - PREPARING -> preparing
+ * - READY_FOR_PICKUP -> ready_for_pickup
+ * - PICKED_UP -> picked_up
+ * - CANCELLED_BY_USER -> cancelled_by_user
+ * - CANCELLED_BY_BUSINESS -> cancelled_by_business
+ * - FAILED_PAYMENT -> failed_payment
+ */
 export type OrderStatus = 
   | 'PENDING' 
   | 'ACCEPTED' 
@@ -10,7 +24,15 @@ export type OrderStatus =
   | 'CANCELLED_BY_BUSINESS' 
   | 'FAILED_PAYMENT';
 
-export type PaymentStatus = 'PENDING' | 'PAID' | 'REFUNDED' | 'FAILED';
+/**
+ * Payment statuses in UPPERCASE format (mobile convention)
+ * Maps to lowercase database values:
+ * - PENDING/UNPAID -> unpaid/pending
+ * - PAID -> paid
+ * - FAILED -> failed
+ * - REFUNDED -> refunded
+ */
+export type PaymentStatus = 'PENDING' | 'UNPAID' | 'PAID' | 'REFUNDED' | 'FAILED';
 
 export type PaymentMethod = 'cash_on_pickup' | 'paymongo';
 
@@ -63,6 +85,11 @@ export interface CreateOrderPayload {
   special_instructions?: string;
   payment_method: PaymentMethod;
   payment_method_type?: 'gcash' | 'card' | 'paymaya' | 'grab_pay' | 'qrph';
+  /**
+   * When true, skips checkout session creation for PayMongo payments.
+   * Use this when implementing Payment Intent workflow instead of hosted checkout.
+   */
+  skip_checkout_session?: boolean;
 }
 
 // Response from POST /api/orders (spec.md §7)

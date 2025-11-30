@@ -47,7 +47,8 @@ export async function insertOrder(req, res) {
       pickup_datetime, 
       special_instructions,
       payment_method,
-      payment_method_type
+      payment_method_type,
+      skip_checkout_session // When true, use Payment Intent flow instead of checkout session
     } = req.body;
 
     // Sanitize string inputs
@@ -227,11 +228,12 @@ export async function insertOrder(req, res) {
     
     // ========== PayMongo Integration ==========
     // If payment method is PayMongo, create checkout session immediately
+    // UNLESS skip_checkout_session is true (for Payment Intent workflow)
     let checkout_url = null;
     
     console.log(`[insertOrder] Order ${orderNumber} created, payment_method: ${payment_method}`);
     
-    if (payment_method === 'paymongo') {
+    if (payment_method === 'paymongo' && !skip_checkout_session) {
       try {
         // Prepare line items for checkout
         const lineItems = orderItems.map((item) => ({
