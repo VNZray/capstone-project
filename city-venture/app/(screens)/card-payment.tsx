@@ -19,6 +19,7 @@ import {
   createPaymentMethod,
   attachPaymentMethodClient,
   open3DSAuthentication,
+  dismissBrowser,
   validateCardNumber,
   formatCardNumber,
   getCardBrand,
@@ -236,7 +237,49 @@ const CardPaymentScreen = () => {
         // 3DS authentication required
         console.log('[CardPayment] 3DS authentication required');
         
-        await open3DSAuthentication(nextAction.redirect.url);
+        // Use in-app browser session for 3DS
+        const authResult = await open3DSAuthentication(
+          nextAction.redirect.url,
+          returnUrl
+        );
+
+        console.log('[CardPayment] 3DS auth result:', authResult.type);
+
+        // Dismiss any lingering browser
+        dismissBrowser();
+
+        // Check if user cancelled
+        if (authResult.type === 'cancel' || authResult.type === 'dismiss') {
+          console.log('[CardPayment] User cancelled 3DS authentication');
+          Alert.alert(
+            'Payment Cancelled',
+            'You cancelled the payment authentication. You can retry or pay later.',
+            [
+              {
+                text: 'Go to Order',
+                onPress: () => {
+                  router.replace({
+                    pathname: '/(screens)/order-confirmation',
+                    params: {
+                      orderId: params.orderId,
+                      orderNumber: params.orderNumber,
+                      arrivalCode: params.arrivalCode,
+                      total: params.total,
+                      paymentMethod: 'paymongo',
+                      paymentPending: 'true',
+                      paymentCancelled: 'true',
+                    },
+                  } as never);
+                },
+              },
+              {
+                text: 'Retry',
+                style: 'cancel',
+              },
+            ]
+          );
+          return;
+        }
 
         // Navigate to processing screen to check result
         router.replace({

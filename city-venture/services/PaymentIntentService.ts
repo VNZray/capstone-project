@@ -348,25 +348,54 @@ export async function getPaymentIntentStatus(
 }
 
 /**
- * Open 3DS authentication URL in browser
- * Call this when next_action requires redirect
+ * Open 3DS/e-wallet authentication URL in an in-app browser session
+ * Uses openAuthSessionAsync which:
+ * - Opens browser inside the app
+ * - Auto-closes when redirect URL is detected  
+ * - Returns control back to the app with the final URL
  * 
- * @param redirectUrl - 3DS authentication URL
- * @returns Browser result
+ * @param redirectUrl - 3DS or e-wallet authentication URL from PayMongo
+ * @param expectedRedirectBase - Base URL that PayMongo will redirect to after auth (your backend bridge)
+ * @returns Browser auth session result with final URL
  */
-export async function open3DSAuthentication(redirectUrl: string): Promise<WebBrowser.WebBrowserResult> {
+export async function open3DSAuthentication(
+  redirectUrl: string,
+  expectedRedirectBase?: string
+): Promise<WebBrowser.WebBrowserAuthSessionResult> {
   try {
-    const result = await WebBrowser.openBrowserAsync(redirectUrl, {
-      presentationStyle: WebBrowser.WebBrowserPresentationStyle.FULL_SCREEN,
-      toolbarColor: '#0D1B2A',
-      controlsColor: '#FFFFFF',
-    });
+    // The redirect URL is typically your backend's bridge endpoint
+    // openAuthSessionAsync will detect when the browser navigates to this URL
+    // and automatically close, returning the full URL with query params
+    const redirectListenUrl = expectedRedirectBase || redirectUrl;
+    
+    console.log('[PaymentIntentService] Opening auth session:', redirectUrl);
+    console.log('[PaymentIntentService] Listening for redirect to:', redirectListenUrl);
+    
+    const result = await WebBrowser.openAuthSessionAsync(
+      redirectUrl,
+      redirectListenUrl,
+      {
+        preferEphemeralSession: true, // Don't persist cookies across sessions
+      }
+    );
 
-    console.log('[PaymentIntentService] 3DS browser result:', result);
+    console.log('[PaymentIntentService] Auth session result:', result);
     return result;
   } catch (error: any) {
-    console.error('[PaymentIntentService] 3DS auth failed:', error.message);
-    throw new Error('Failed to open 3DS authentication');
+    console.error('[PaymentIntentService] Auth session failed:', error.message);
+    throw new Error('Failed to open payment authentication');
+  }
+}
+
+/**
+ * Dismiss any active browser session
+ * Call this when handling deep links from payment completion
+ */
+export function dismissBrowser(): void {
+  try {
+    WebBrowser.dismissBrowser();
+  } catch (error) {
+    // Browser might not be open, ignore
   }
 }
 
@@ -592,6 +621,7 @@ export default {
   attachEwalletPaymentMethod,
   getPaymentIntentStatus,
   open3DSAuthentication,
+  dismissBrowser,
   processCardPayment,
   pollPaymentIntentStatus,
   validateCardNumber,

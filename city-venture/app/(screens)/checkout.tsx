@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   View,
   Text,
@@ -25,7 +25,9 @@ import {
   createPaymentIntent,
   attachEwalletPaymentMethod,
   open3DSAuthentication,
+  dismissBrowser,
 } from '@/services/PaymentIntentService';
+import * as WebBrowser from 'expo-web-browser';
 import type { CreateOrderPayload } from '@/types/Order';
 import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
@@ -81,6 +83,16 @@ const CheckoutScreen = () => {
   const [billingName, setBillingName] = useState(user?.first_name && user?.last_name ? `${user.first_name} ${user.last_name}` : '');
   const [billingEmail, setBillingEmail] = useState(user?.email || '');
   const [billingPhone, setBillingPhone] = useState(user?.phone_number || '');
+
+  // Warm up browser for faster payment flow (Android optimization)
+  useEffect(() => {
+    if (Platform.OS === 'android') {
+      WebBrowser.warmUpAsync();
+      return () => {
+        WebBrowser.coolDownAsync();
+      };
+    }
+  }, []);
 
   const subtotal = getSubtotal();
   const taxAmount = 0; // Per spec.md - currently taxAmount=0
@@ -176,8 +188,36 @@ const CheckoutScreen = () => {
       if (attachResponse.data.redirect_url) {
         console.log('[Checkout] Opening e-wallet authorization:', attachResponse.data.redirect_url);
 
-        // Open the e-wallet authorization URL
-        await open3DSAuthentication(attachResponse.data.redirect_url);
+        // Open the e-wallet authorization URL using in-app browser session
+        // Pass the backend return URL so the session knows when to auto-close
+        const authResult = await open3DSAuthentication(
+          attachResponse.data.redirect_url,
+          returnUrl
+        );
+
+        console.log('[Checkout] Auth session completed:', authResult.type);
+
+        // Dismiss any lingering browser
+        dismissBrowser();
+
+        // Check if user cancelled the payment
+        if (authResult.type === 'cancel' || authResult.type === 'dismiss') {
+          console.log('[Checkout] User cancelled payment authorization');
+          // Navigate to order with payment pending status
+          router.replace({
+            pathname: '/(screens)/order-confirmation',
+            params: {
+              orderId,
+              orderNumber,
+              arrivalCode,
+              total: total.toString(),
+              paymentMethod: paymentMethod,
+              paymentPending: 'true',
+              paymentCancelled: 'true',
+            },
+          } as never);
+          return true;
+        }
 
         // After user returns from e-wallet, navigate to processing screen
         router.replace({
