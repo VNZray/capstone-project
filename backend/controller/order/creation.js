@@ -47,8 +47,7 @@ export async function insertOrder(req, res) {
       pickup_datetime, 
       special_instructions,
       payment_method,
-      payment_method_type,
-      skip_checkout_session // When true, use Payment Intent flow instead of checkout session
+      payment_method_type
     } = req.body;
 
     // Sanitize string inputs
@@ -226,99 +225,7 @@ export async function insertOrder(req, res) {
       }
     });
     
-    // ========== PayMongo Integration ==========
-    // If payment method is PayMongo, create checkout session immediately
-    // UNLESS skip_checkout_session is true (for Payment Intent workflow)
-    let checkout_url = null;
-    
     console.log(`[insertOrder] Order ${orderNumber} created, payment_method: ${payment_method}`);
-    
-    if (payment_method === 'paymongo' && !skip_checkout_session) {
-      try {
-        // Prepare line items for checkout
-        const lineItems = orderItems.map((item) => ({
-          currency: 'PHP',
-          amount: Math.round(item.unit_price * 100),
-          name: item.product_name || `Product ${item.product_id}`,
-          quantity: item.quantity,
-        }));
-
-        // Get product names for line items (orderItems don't have names yet)
-        for (let i = 0; i < orderItems.length; i++) {
-          const [productData] = await connection.query(
-            "SELECT name, image_url FROM product WHERE id = ?",
-            [orderItems[i].product_id]
-          );
-          if (productData && productData.length > 0) {
-            lineItems[i].name = productData[0].name;
-            if (productData[0].image_url) {
-              lineItems[i].images = [productData[0].image_url];
-            }
-          }
-        }
-
-        // Prepare redirect URLs (these are HTTP URLs for PayMongo API)
-        const redirectBase = process.env.PAYMONGO_REDIRECT_BASE || process.env.FRONTEND_BASE_URL || "http://localhost:5173";
-        const successUrl = `${redirectBase}/orders/${orderId}/payment-success`;
-        const cancelUrl = `${redirectBase}/orders/${orderId}/payment-cancel`;
-
-        // Create PayMongo checkout session
-        const checkoutSession = await paymongoService.createCheckoutSession({
-          orderId,
-          orderNumber,
-          amount: Math.round(totalAmount * 100), // Convert to centavos
-          lineItems,
-          successUrl,
-          cancelUrl,
-          description: `Order ${orderNumber}`,
-          metadata: {
-            order_id: orderId,
-            order_number: orderNumber,
-            business_id: business_id,
-            user_id: user_id,
-            total_amount: totalAmount.toString(),
-          }
-        });
-
-        checkout_url = checkoutSession.attributes.checkout_url;
-        const provider_reference = checkoutSession.id;
-
-        // Create payment record
-        const payment_id = uuidv4();
-        await connection.query(
-          `CALL InsertPayment(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-          [
-            payment_id,
-            'Tourist',
-            'online',
-            payment_method_type || 'paymongo',
-            totalAmount,
-            'pending',
-            'order',
-            user_id,
-            orderId,
-            new Date()
-          ]
-        );
-
-        // Store provider reference
-        await connection.query(
-          `UPDATE payment 
-           SET provider_reference = ?, currency = 'PHP' 
-           WHERE id = ?`,
-          [provider_reference, payment_id]
-        );
-
-        console.log(`[insertOrder] ✅ PayMongo checkout created for order ${orderNumber}`);
-        console.log(`[insertOrder] 🔗 Checkout URL: ${checkout_url}`);
-        console.log(`[insertOrder] 📝 Provider reference (checkout session ID): ${provider_reference}`);
-
-      } catch (paymongoError) {
-        console.error(`[insertOrder] ❌ PayMongo checkout creation failed for order ${orderNumber}:`, paymongoError.message);
-        // Don't fail the order, but log the error
-        // checkout_url will remain null and frontend can handle retry via /payments/initiate
-      }
-    }
     
     // Return spec-compliant response (spec.md §7)
     const response = {
@@ -330,13 +237,9 @@ export async function insertOrder(req, res) {
       total_amount: totalAmount
     };
 
-    // Add checkout_url for PayMongo orders
-    if (checkout_url) {
-      response.checkout_url = checkout_url;
-    }
-
     // ========== Real-time Notifications ==========
     // For PayMongo orders: SKIP notifications until payment is confirmed via webhook
+    // Payment Intent flow is initiated separately by the mobile app
     // For COP orders: Emit immediately since no payment confirmation needed
     if (payment_method === 'cash_on_pickup') {
       console.log(`[insertOrder] 📢 Emitting notifications for COP order ${orderNumber}`);
@@ -382,7 +285,7 @@ export async function insertOrder(req, res) {
         console.error('Failed to emit new order event:', socketError);
       }
     } else {
-      console.log(`[insertOrder] ⏳ PayMongo order ${orderNumber} - notifications deferred until payment confirmation`);
+      console.log(`[insertOrder] ⏳ PayMongo order ${orderNumber} - notifications deferred until payment confirmation via webhook`);
     }
 
     res.status(201).json(response);

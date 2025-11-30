@@ -85,11 +85,6 @@ export interface CreateOrderPayload {
   special_instructions?: string;
   payment_method: PaymentMethod;
   payment_method_type?: 'gcash' | 'card' | 'paymaya' | 'grab_pay' | 'qrph';
-  /**
-   * When true, skips checkout session creation for PayMongo payments.
-   * Use this when implementing Payment Intent workflow instead of hosted checkout.
-   */
-  skip_checkout_session?: boolean;
 }
 
 // Response from POST /api/orders (spec.md §7)
@@ -100,5 +95,4 @@ export interface CreateOrderResponse {
   status: string;
   payment_status: string;
   total_amount: number;
-  checkout_url?: string; // PayMongo checkout URL (when payment_method=paymongo)
 }

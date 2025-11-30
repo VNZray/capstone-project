@@ -14,9 +14,15 @@ import { useColorScheme } from '@/hooks/use-color-scheme';
 import { colors } from '@/constants/color';
 import { useTypography } from '@/constants/typography';
 import PageContainer from '@/components/PageContainer';
-import { cancelOrder } from '@/services/OrderService';
-import { initiatePayment, openPayMongoCheckout } from '@/services/PaymentService';
+import { cancelOrder, getOrderById } from '@/services/OrderService';
+import {
+  createPaymentIntent,
+  attachEwalletPaymentMethod,
+  open3DSAuthentication,
+  dismissBrowser,
+} from '@/services/PaymentIntentService';
 import { Ionicons } from '@expo/vector-icons';
+import API_URL from '@/services/api';
 
 const OrderConfirmationScreen = () => {
   const params = useLocalSearchParams<{
@@ -25,7 +31,9 @@ const OrderConfirmationScreen = () => {
     arrivalCode: string;
     total: string;
     paymentMethod?: string; // 'cash_on_pickup' or 'paymongo'
-    hasCheckoutUrl?: string; // 'true' if checkout was already opened
+    paymentSuccess?: string; // 'true' if payment was completed
+    paymentPending?: string; // 'true' if payment is pending
+    paymentCancelled?: string; // 'true' if user cancelled payment
   }>();
 
   const scheme = useColorScheme();
@@ -124,25 +132,74 @@ const OrderConfirmationScreen = () => {
     try {
       setInitiatingPayment(true);
 
-      // Initiate payment through backend
-      const response = await initiatePayment({
+      // Get order details to determine payment method type
+      const orderDetails = await getOrderById(params.orderId);
+      const paymentMethodType = orderDetails.payment_method_type || 'gcash';
+
+      // Step 1: Create Payment Intent
+      const intentResponse = await createPaymentIntent({
         order_id: params.orderId,
-        use_checkout_session: true,
+        payment_method_types: [paymentMethodType],
       });
 
-      if (!response.success || !response.data.checkout_url) {
-        throw new Error(response.message || 'Failed to initiate payment');
+      const paymentIntentId = intentResponse.data.payment_intent_id;
+
+      // For card payments, navigate to card payment screen
+      if (paymentMethodType === 'card') {
+        router.push({
+          pathname: '/(screens)/card-payment',
+          params: {
+            orderId: params.orderId,
+            orderNumber: params.orderNumber,
+            arrivalCode: params.arrivalCode,
+            paymentIntentId,
+            clientKey: intentResponse.data.client_key,
+            amount: intentResponse.data.amount.toString(),
+            total: params.total,
+          },
+        } as never);
+        return;
       }
 
-      // Open PayMongo checkout in browser
-      await openPayMongoCheckout(response.data.checkout_url);
+      // For e-wallets, attach payment method and redirect
+      const backendBaseUrl = API_URL.replace('/api', '');
+      const returnUrl = `${backendBaseUrl}/orders/${params.orderId}/payment-success`;
 
-      // Note: When user completes payment or cancels,
-      // PayMongo will redirect to our deep link URLs:
-      // Success: cityventure://orders/{orderId}/payment-success
-      // Cancel: cityventure://orders/{orderId}/payment-cancel
-      // These are handled by payment-success.tsx and payment-cancel.tsx screens
+      const attachResponse = await attachEwalletPaymentMethod(
+        paymentIntentId,
+        paymentMethodType as 'gcash' | 'paymaya' | 'grab_pay',
+        returnUrl
+      );
 
+      if (attachResponse.data.redirect_url) {
+        const authResult = await open3DSAuthentication(
+          attachResponse.data.redirect_url,
+          returnUrl
+        );
+
+        dismissBrowser();
+
+        if (authResult.type === 'cancel' || authResult.type === 'dismiss') {
+          Alert.alert(
+            'Payment Cancelled',
+            'You cancelled the payment. You can try again later.',
+            [{ text: 'OK' }]
+          );
+          return;
+        }
+
+        // Navigate to payment processing to verify
+        router.replace({
+          pathname: '/(screens)/payment-processing',
+          params: {
+            orderId: params.orderId,
+            orderNumber: params.orderNumber,
+            arrivalCode: params.arrivalCode,
+            paymentIntentId,
+            total: params.total,
+          },
+        } as never);
+      }
     } catch (error: any) {
       console.error('[OrderConfirmation] Payment initiation failed:', error);
       Alert.alert(
@@ -154,11 +211,16 @@ const OrderConfirmationScreen = () => {
     }
   };
 
+  // Determine if this is a truly confirmed order or one awaiting payment
+  // For PayMongo orders, only paymentSuccess === 'true' means payment is complete
+  const isPaymentComplete = params.paymentMethod !== 'paymongo' || params.paymentSuccess === 'true';
+  const isAwaitingPayment = params.paymentMethod === 'paymongo' && params.paymentSuccess !== 'true';
+
   return (
     <>
       <Stack.Screen
         options={{
-          title: 'Order Confirmed',
+          title: isPaymentComplete ? 'Order Confirmed' : 'Order Placed',
           headerStyle: { backgroundColor: palette.card },
           headerTintColor: palette.text,
           headerLeft: () => null, // Disable back button
@@ -166,17 +228,26 @@ const OrderConfirmationScreen = () => {
       />
       <PageContainer>
         <View style={[styles.container, { backgroundColor: palette.bg }]}>
-          {/* Success Icon */}
-          <View style={[styles.iconContainer, { backgroundColor: `${colors.success}20` }]}>
-            <Ionicons name="checkmark-circle" size={80} color={colors.success} />
+          {/* Icon - Green check for complete orders, Warning for awaiting payment */}
+          <View style={[
+            styles.iconContainer, 
+            { backgroundColor: isPaymentComplete ? `${colors.success}20` : `${colors.warning}20` }
+          ]}>
+            <Ionicons 
+              name={isPaymentComplete ? "checkmark-circle" : "time"} 
+              size={80} 
+              color={isPaymentComplete ? colors.success : colors.warning} 
+            />
           </View>
 
           <Text style={[{ fontSize: h2 }, { color: palette.text, textAlign: 'center', marginTop: 24 }]}>
-            Order Confirmed!
+            {isPaymentComplete ? 'Order Confirmed!' : 'Order Placed'}
           </Text>
 
           <Text style={[{ fontSize: body }, { color: palette.subText, textAlign: 'center', marginTop: 8 }]}>
-            Your order has been placed successfully
+            {isPaymentComplete 
+              ? 'Your order has been placed successfully' 
+              : 'Complete payment to confirm your order'}
           </Text>
 
           {/* Order Details Card */}
@@ -213,8 +284,16 @@ const OrderConfirmationScreen = () => {
             {/* Payment Status */}
             <View style={styles.detailRow}>
               <Text style={[{ fontSize: body }, { color: palette.subText }]}>Payment Status</Text>
-              <View style={[styles.statusBadge, { backgroundColor: `${colors.warning}20` }]}>
-                <Text style={[{ fontSize: bodySmall }, { color: colors.warning }]}>PENDING</Text>
+              <View style={[
+                styles.statusBadge, 
+                { backgroundColor: isPaymentComplete ? `${colors.success}20` : `${colors.warning}20` }
+              ]}>
+                <Text style={[
+                  { fontSize: bodySmall }, 
+                  { color: isPaymentComplete ? colors.success : colors.warning }
+                ]}>
+                  {isPaymentComplete ? 'PAID' : 'PENDING'}
+                </Text>
               </View>
             </View>
 
@@ -226,6 +305,22 @@ const OrderConfirmationScreen = () => {
               </Text>
             </View>
           </View>
+
+          {/* Payment Pending Warning - Show prominently for unpaid PayMongo orders */}
+          {isAwaitingPayment && (
+            <View style={[styles.warningContainer, { backgroundColor: `${colors.error}15`, borderColor: colors.error }]}>
+              <Ionicons name="alert-circle" size={24} color={colors.error} />
+              <View style={{ flex: 1, marginLeft: 12 }}>
+                <Text style={[{ fontSize: body, fontWeight: '600' }, { color: colors.error }]}>
+                  Payment Required
+                </Text>
+                <Text style={[{ fontSize: bodySmall }, { color: palette.text, marginTop: 4 }]}>
+                  Your order will only be processed after payment is completed. 
+                  The business has not been notified yet.
+                </Text>
+              </View>
+            </View>
+          )}
 
           {/* Grace Period Warning */}
           {graceTimeRemaining > 0 && (
@@ -239,8 +334,8 @@ const OrderConfirmationScreen = () => {
 
           {/* Action Buttons */}
           <View style={styles.buttonContainer}>
-            {/* Complete Payment Button - Only for PayMongo orders that haven't opened checkout yet */}
-            {params.paymentMethod === 'paymongo' && params.hasCheckoutUrl !== 'true' && (
+            {/* Complete Payment Button - Only for PayMongo orders with pending payment */}
+            {params.paymentMethod === 'paymongo' && params.paymentSuccess !== 'true' && (
               <Pressable
                 style={[styles.button, { backgroundColor: colors.success }]}
                 onPress={handleCompletePayment}
@@ -341,6 +436,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 12,
     borderRadius: 8,
+    borderWidth: 1,
+    marginTop: 16,
+  },
+  warningContainer: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    padding: 16,
+    borderRadius: 12,
     borderWidth: 1,
     marginTop: 16,
   },

@@ -1,6 +1,6 @@
 /**
  * Payment Cancel Screen
- * Displayed when user cancels/closes PayMongo checkout without completing payment
+ * Displayed when user cancels/closes PayMongo payment without completing
  */
 
 import React, { useState, useEffect } from 'react';
@@ -19,10 +19,14 @@ import { colors } from '@/constants/color';
 import { useTypography } from '@/constants/typography';
 import PageContainer from '@/components/PageContainer';
 import { Ionicons } from '@expo/vector-icons';
+import { getOrderById } from '@/services/OrderService';
 import {
-  initiatePayment,
-  openPayMongoCheckout,
-} from '@/services/PaymentService';
+  createPaymentIntent,
+  attachEwalletPaymentMethod,
+  open3DSAuthentication,
+  dismissBrowser,
+} from '@/services/PaymentIntentService';
+import API_URL from '@/services/api';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -80,17 +84,74 @@ const PaymentCancelScreen = () => {
         params.orderId
       );
 
-      const response = await initiatePayment({
+      // Get order details to determine payment method type
+      const orderDetails = await getOrderById(params.orderId);
+      const paymentMethodType = orderDetails.payment_method_type || 'gcash';
+
+      // Create Payment Intent
+      const intentResponse = await createPaymentIntent({
         order_id: params.orderId,
-        use_checkout_session: true,
+        payment_method_types: [paymentMethodType],
       });
 
-      if (!response.success || !response.data.checkout_url) {
-        throw new Error(response.message || 'Failed to initiate payment');
+      const paymentIntentId = intentResponse.data.payment_intent_id;
+
+      // For card payments, navigate to card payment screen
+      if (paymentMethodType === 'card') {
+        router.replace({
+          pathname: '/(screens)/card-payment',
+          params: {
+            orderId: params.orderId,
+            orderNumber: orderDetails.order_number,
+            arrivalCode: orderDetails.arrival_code,
+            paymentIntentId,
+            clientKey: intentResponse.data.client_key,
+            amount: intentResponse.data.amount.toString(),
+            total: orderDetails.total_amount?.toString(),
+          },
+        } as never);
+        return;
       }
 
-      console.log('[PaymentCancel] Opening PayMongo checkout...');
-      await openPayMongoCheckout(response.data.checkout_url);
+      // For e-wallets, attach payment method and redirect
+      const backendBaseUrl = API_URL.replace('/api', '');
+      const returnUrl = `${backendBaseUrl}/orders/${params.orderId}/payment-success`;
+
+      const attachResponse = await attachEwalletPaymentMethod(
+        paymentIntentId,
+        paymentMethodType as 'gcash' | 'paymaya' | 'grab_pay',
+        returnUrl
+      );
+
+      if (attachResponse.data.redirect_url) {
+        const authResult = await open3DSAuthentication(
+          attachResponse.data.redirect_url,
+          returnUrl
+        );
+
+        dismissBrowser();
+
+        if (authResult.type === 'cancel' || authResult.type === 'dismiss') {
+          Alert.alert(
+            'Payment Cancelled',
+            'You cancelled the payment. You can try again later.',
+            [{ text: 'OK' }]
+          );
+          return;
+        }
+
+        // Navigate to payment processing to verify
+        router.replace({
+          pathname: '/(screens)/payment-processing',
+          params: {
+            orderId: params.orderId,
+            orderNumber: orderDetails.order_number,
+            arrivalCode: orderDetails.arrival_code,
+            paymentIntentId,
+            total: orderDetails.total_amount?.toString(),
+          },
+        } as never);
+      }
     } catch (error: any) {
       console.error('[PaymentCancel] Payment retry failed:', error);
       Alert.alert(

@@ -52,12 +52,18 @@ export default function RootLayout() {
     }
 
     try {
-      const { path } = Linking.parse(url);
+      const { path, queryParams } = Linking.parse(url);
 
-      // Handle payment success: cityventure://orders/{orderId}/payment-success
+      // Handle payment success: 
+      // - Production: cityventure://orders/{orderId}/payment-success
+      // - Expo Go: exp://HOST/--/(screens)/payment-success?orderId=...
       if (path?.includes('payment-success')) {
-        const orderIdMatch = path.match(/orders\/([^\/]+)\/payment-success/);
-        const orderId = orderIdMatch?.[1];
+        // Try to get orderId from query params first (Expo Go format), then from path (production format)
+        let orderId = queryParams?.orderId as string | undefined;
+        if (!orderId) {
+          const orderIdMatch = path.match(/orders\/([^\/]+)\/payment-success/);
+          orderId = orderIdMatch?.[1];
+        }
 
         console.log('[Deep Link] Payment success for order:', orderId);
 
@@ -72,10 +78,16 @@ export default function RootLayout() {
         // router.push(`/(tabs)/(home)/orders/${orderId}`);
       }
 
-      // Handle payment cancel: cityventure://orders/{orderId}/payment-cancel
+      // Handle payment cancel: 
+      // - Production: cityventure://orders/{orderId}/payment-cancel
+      // - Expo Go: exp://HOST/--/(screens)/payment-cancel?orderId=...
       else if (path?.includes('payment-cancel')) {
-        const orderIdMatch = path.match(/orders\/([^\/]+)\/payment-cancel/);
-        const orderId = orderIdMatch?.[1];
+        // Try to get orderId from query params first (Expo Go format), then from path (production format)
+        let orderId = queryParams?.orderId as string | undefined;
+        if (!orderId) {
+          const orderIdMatch = path.match(/orders\/([^\/]+)\/payment-cancel/);
+          orderId = orderIdMatch?.[1];
+        }
 
         console.log('[Deep Link] Payment cancelled for order:', orderId);
 

@@ -21,17 +21,10 @@ import PageContainer from '@/components/PageContainer';
 import { useCart } from '@/context/CartContext';
 import { useAuth } from '@/context/AuthContext';
 import { createOrder } from '@/services/OrderService';
-import {
-  createPaymentIntent,
-  attachEwalletPaymentMethod,
-  open3DSAuthentication,
-  dismissBrowser,
-} from '@/services/PaymentIntentService';
 import * as WebBrowser from 'expo-web-browser';
 import type { CreateOrderPayload } from '@/types/Order';
 import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import API_URL from '@/services/api';
 
 // Enable LayoutAnimation for Android
 if (
@@ -118,144 +111,6 @@ const CheckoutScreen = () => {
     setPaymentMethod(method);
   };
 
-  /**
-   * Process payment using Payment Intent workflow
-   * Handles e-wallets (GCash, Maya, GrabPay) with redirect flow
-   * For card payments, uses the card payment screen
-   */
-  const processPaymentIntentFlow = async (
-    orderId: string,
-    orderNumber: string,
-    arrivalCode: string
-  ): Promise<boolean> => {
-    try {
-      console.log('[Checkout] Starting Payment Intent flow...');
-
-      // Step 1: Create Payment Intent via backend
-      const intentResponse = await createPaymentIntent({
-        order_id: orderId,
-        payment_method_types: [paymentMethodType],
-      });
-
-      console.log('[Checkout] Payment Intent created:', intentResponse.data.payment_intent_id);
-
-      const paymentIntentId = intentResponse.data.payment_intent_id;
-
-      // For card payments, navigate to card payment screen
-      if (paymentMethodType === 'card') {
-        router.replace({
-          pathname: '/(screens)/card-payment',
-          params: {
-            orderId,
-            orderNumber,
-            arrivalCode,
-            paymentIntentId,
-            clientKey: intentResponse.data.client_key,
-            amount: intentResponse.data.amount.toString(),
-            total: total.toString(),
-          },
-        } as never);
-        return true;
-      }
-
-      // For e-wallets (GCash, Maya, GrabPay), attach payment method
-      console.log('[Checkout] Attaching e-wallet payment method:', paymentMethodType);
-
-      // Generate return URL for redirect after e-wallet authorization
-      // PayMongo requires https:// URLs - use backend's redirect bridge endpoint
-      // which will redirect back to the mobile app via deep links
-      const backendBaseUrl = API_URL.replace('/api', '');
-      const returnUrl = `${backendBaseUrl}/orders/${orderId}/payment-success`;
-      console.log('[Checkout] Return URL for PayMongo:', returnUrl);
-
-      // Billing info collected from the form
-      const billing = {
-        name: billingName.trim(),
-        email: billingEmail.trim().toLowerCase(),
-        phone: billingPhone.trim() || undefined,
-      };
-
-      const attachResponse = await attachEwalletPaymentMethod(
-        paymentIntentId,
-        paymentMethodType as 'gcash' | 'paymaya' | 'grab_pay',
-        returnUrl,
-        billing
-      );
-
-      console.log('[Checkout] Attachment response:', attachResponse.data.status);
-
-      // Check if redirect is needed (for e-wallet authorization)
-      if (attachResponse.data.redirect_url) {
-        console.log('[Checkout] Opening e-wallet authorization:', attachResponse.data.redirect_url);
-
-        // Open the e-wallet authorization URL using in-app browser session
-        // Pass the backend return URL so the session knows when to auto-close
-        const authResult = await open3DSAuthentication(
-          attachResponse.data.redirect_url,
-          returnUrl
-        );
-
-        console.log('[Checkout] Auth session completed:', authResult.type);
-
-        // Dismiss any lingering browser
-        dismissBrowser();
-
-        // Check if user cancelled the payment
-        if (authResult.type === 'cancel' || authResult.type === 'dismiss') {
-          console.log('[Checkout] User cancelled payment authorization');
-          // Navigate to order with payment pending status
-          router.replace({
-            pathname: '/(screens)/order-confirmation',
-            params: {
-              orderId,
-              orderNumber,
-              arrivalCode,
-              total: total.toString(),
-              paymentMethod: paymentMethod,
-              paymentPending: 'true',
-              paymentCancelled: 'true',
-            },
-          } as never);
-          return true;
-        }
-
-        // After user returns from e-wallet, navigate to processing screen
-        router.replace({
-          pathname: '/(screens)/payment-processing',
-          params: {
-            orderId,
-            orderNumber,
-            arrivalCode,
-            paymentIntentId,
-            total: total.toString(),
-          },
-        } as never);
-        return true;
-      }
-
-      // If no redirect needed (unlikely for e-wallets), payment may have succeeded
-      if (attachResponse.data.status === 'succeeded') {
-        router.replace({
-          pathname: '/(screens)/order-confirmation',
-          params: {
-            orderId,
-            orderNumber,
-            arrivalCode,
-            total: total.toString(),
-            paymentMethod: paymentMethod,
-            paymentSuccess: 'true',
-          },
-        } as never);
-        return true;
-      }
-
-      return true;
-    } catch (error: any) {
-      console.error('[Checkout] Payment Intent flow failed:', error);
-      throw error;
-    }
-  };
-
   const handlePlaceOrder = async () => {
     if (!user?.id) {
       Alert.alert('Authentication Required', 'Please log in to place an order');
@@ -326,28 +181,59 @@ const CheckoutScreen = () => {
       }
     }
 
+    // Build the order payload
+    const orderPayload: CreateOrderPayload = {
+      business_id: businessId,
+      user_id: user.id,
+      items: items.map((item) => ({
+        product_id: item.product_id,
+        quantity: item.quantity,
+        special_requests: item.special_requests,
+      })),
+      discount_id: null,
+      pickup_datetime: pickupDate.toISOString(),
+      special_instructions: specialInstructions || undefined,
+      payment_method: paymentMethod,
+      payment_method_type:
+        paymentMethod === 'paymongo' ? paymentMethodType : undefined,
+    };
+
+    // ========== FoodPanda/GrabFood Style Flow ==========
+    // For PayMongo payments: Show grace period screen BEFORE creating order
+    // This allows user to cancel within 10 seconds without creating any records
+    if (paymentMethod === 'paymongo') {
+      console.log('[Checkout] Navigating to grace period screen for PayMongo payment');
+      
+      // Prepare billing info for payment
+      const billingInfo = {
+        name: billingName.trim(),
+        email: billingEmail.trim().toLowerCase(),
+        phone: billingPhone.trim() || undefined,
+      };
+
+      // Clear cart before navigating (order will be created after grace period)
+      clearCart();
+
+      // Navigate to grace period screen with order data
+      // Order is NOT created yet - will be created after countdown ends
+      router.push({
+        pathname: '/(screens)/order-grace-period',
+        params: {
+          orderData: JSON.stringify(orderPayload),
+          paymentMethodType: paymentMethodType,
+          billingInfo: JSON.stringify(billingInfo),
+          total: total.toString(),
+        },
+      } as never);
+      return;
+    }
+
+    // ========== Cash on Pickup Flow (unchanged) ==========
+    // For COP: Create order immediately (no payment processing needed)
     try {
       setLoading(true);
 
-      const orderPayload: CreateOrderPayload = {
-        business_id: businessId,
-        user_id: user.id,
-        items: items.map((item) => ({
-          product_id: item.product_id,
-          quantity: item.quantity,
-          special_requests: item.special_requests,
-        })),
-        discount_id: null,
-        pickup_datetime: pickupDate.toISOString(),
-        special_instructions: specialInstructions || undefined,
-        payment_method: paymentMethod,
-        payment_method_type:
-          paymentMethod === 'paymongo' ? paymentMethodType : undefined,
-        // Don't request checkout_url - we'll use Payment Intent flow
-        skip_checkout_session: paymentMethod === 'paymongo',
-      };
-
-      console.log('[Checkout] Creating order:', orderPayload);
+      console.log('[Checkout] Creating COP order:', orderPayload);
 
       const orderResponse = await createOrder(orderPayload);
 
@@ -355,46 +241,7 @@ const CheckoutScreen = () => {
 
       clearCart();
 
-      // For PayMongo payments, use Payment Intent workflow
-      if (paymentMethod === 'paymongo') {
-        try {
-          await processPaymentIntentFlow(
-            orderResponse.order_id,
-            orderResponse.order_number,
-            orderResponse.arrival_code
-          );
-          return;
-        } catch (paymentError: any) {
-          console.error('[Checkout] Payment Intent flow failed:', paymentError);
-          
-          // If Payment Intent fails, show error and navigate to order details
-          Alert.alert(
-            'Payment Error',
-            'Failed to initialize payment. You can retry payment from your order details.',
-            [
-              {
-                text: 'View Order',
-                onPress: () => {
-                  router.replace({
-                    pathname: '/(screens)/order-confirmation',
-                    params: {
-                      orderId: orderResponse.order_id,
-                      orderNumber: orderResponse.order_number,
-                      arrivalCode: orderResponse.arrival_code,
-                      total: total.toString(),
-                      paymentMethod: paymentMethod,
-                      paymentPending: 'true',
-                    },
-                  } as never);
-                },
-              },
-            ]
-          );
-          return;
-        }
-      }
-
-      // For Cash on Pickup, go directly to confirmation
+      // Go directly to confirmation
       router.replace({
         pathname: '/(screens)/order-confirmation',
         params: {
