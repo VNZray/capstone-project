@@ -89,15 +89,27 @@ const BookingDateTimeModal: React.FC<BookingDateTimeModalProps> = ({
     initialCheckOutTime || new Date()
   );
 
+  // Helper to ensure we have a valid Date object
+  const ensureDate = (value: Date | string | null | undefined): Date | null => {
+    if (!value) return null;
+    if (value instanceof Date) return value;
+    try {
+      const parsed = new Date(value);
+      return isNaN(parsed.getTime()) ? null : parsed;
+    } catch {
+      return null;
+    }
+  };
+
   // Reset states when modal opens with new initial values
   useEffect(() => {
     if (visible) {
-      setShortStayDate(initialCheckInDate ?? null);
-      setShortStayTime(initialCheckInTime || new Date());
-      setOvernightCheckIn(initialCheckInDate ?? null);
-      setOvernightCheckOut(initialCheckOutDate ?? null);
-      setOvernightCheckInTime(initialCheckInTime || new Date());
-      setOvernightCheckOutTime(initialCheckOutTime || new Date());
+      setShortStayDate(ensureDate(initialCheckInDate));
+      setShortStayTime(ensureDate(initialCheckInTime) || new Date());
+      setOvernightCheckIn(ensureDate(initialCheckInDate));
+      setOvernightCheckOut(ensureDate(initialCheckOutDate));
+      setOvernightCheckInTime(ensureDate(initialCheckInTime) || new Date());
+      setOvernightCheckOutTime(ensureDate(initialCheckOutTime) || new Date());
     }
   }, [
     visible,
@@ -108,18 +120,20 @@ const BookingDateTimeModal: React.FC<BookingDateTimeModalProps> = ({
   ]);
 
   const handleShortStayConfirm = () => {
-    if (!shortStayDate) return;
+    const validDate = ensureDate(shortStayDate);
+    if (!validDate) return;
 
     const hours = parseInt(shortStayDuration, 10) || 1;
+    const validTime = ensureDate(shortStayTime) || new Date();
 
     // Combine date and time
     const startDateTime = new Date(
-      shortStayDate.getFullYear(),
-      shortStayDate.getMonth(),
-      shortStayDate.getDate(),
-      shortStayTime.getHours(),
-      shortStayTime.getMinutes(),
-      shortStayTime.getSeconds()
+      validDate.getFullYear(),
+      validDate.getMonth(),
+      validDate.getDate(),
+      validTime.getHours(),
+      validTime.getMinutes(),
+      validTime.getSeconds()
     );
 
     // Calculate end time
@@ -154,20 +168,25 @@ const BookingDateTimeModal: React.FC<BookingDateTimeModalProps> = ({
     onClose();
   };
 
-  const calculatedEndTime =
-    shortStayDate && shortStayTime
-      ? addHours(
-          new Date(
-            shortStayDate.getFullYear(),
-            shortStayDate.getMonth(),
-            shortStayDate.getDate(),
-            shortStayTime.getHours(),
-            shortStayTime.getMinutes(),
-            shortStayTime.getSeconds()
-          ),
-          parseInt(shortStayDuration, 10) || 1
-        )
-      : null;
+  const calculatedEndTime = (() => {
+    const validDate = ensureDate(shortStayDate);
+    const validTime = ensureDate(shortStayTime);
+    if (!validDate || !validTime) return null;
+
+    try {
+      const combined = new Date(
+        validDate.getFullYear(),
+        validDate.getMonth(),
+        validDate.getDate(),
+        validTime.getHours(),
+        validTime.getMinutes(),
+        validTime.getSeconds()
+      );
+      return addHours(combined, parseInt(shortStayDuration, 10) || 1);
+    } catch {
+      return null;
+    }
+  })();
 
   return (
     <BaseModal
@@ -314,43 +333,51 @@ const BookingDateTimeModal: React.FC<BookingDateTimeModalProps> = ({
           />
 
           {/* Summary */}
-          {shortStayDate && calculatedEndTime && (
-            <View style={styles.summaryCard}>
-              <Ionicons
-                name="information-circle"
-                size={20}
-                color={Colors.light.primary}
-              />
-              <View style={{ flex: 1 }}>
-                <ThemedText
-                  type="body-small"
-                  weight="semi-bold"
-                  style={{ color: Colors.light.primary, marginBottom: 4 }}
-                >
-                  Booking Summary
-                </ThemedText>
-                <ThemedText
-                  type="body-small"
-                  style={{ color: Colors.light.textSecondary }}
-                >
-                  {format(shortStayDate, 'MMM dd, yyyy')} •{' '}
-                  {format(shortStayTime, 'hh:mm a')} -{' '}
-                  {format(calculatedEndTime, 'hh:mm a')}
-                  {shortStayDate.toDateString() !==
-                    calculatedEndTime.toDateString() &&
-                    ` (${format(calculatedEndTime, 'MMM dd')})`}
-                </ThemedText>
-                <ThemedText
-                  type="body-small"
-                  weight="medium"
-                  style={{ color: Colors.light.primary, marginTop: 2 }}
-                >
-                  {shortStayDuration} hour
-                  {parseInt(shortStayDuration) > 1 ? 's' : ''} stay
-                </ThemedText>
+          {(() => {
+            const validDate = ensureDate(shortStayDate);
+            const validTime = ensureDate(shortStayTime);
+            if (!validDate || !calculatedEndTime) return null;
+
+            const isDifferentDay =
+              validDate.toDateString() !== calculatedEndTime.toDateString();
+
+            return (
+              <View style={styles.summaryCard}>
+                <Ionicons
+                  name="information-circle"
+                  size={20}
+                  color={Colors.light.primary}
+                />
+                <View style={{ flex: 1 }}>
+                  <ThemedText
+                    type="body-small"
+                    weight="semi-bold"
+                    style={{ color: Colors.light.primary, marginBottom: 4 }}
+                  >
+                    Booking Summary
+                  </ThemedText>
+                  <ThemedText
+                    type="body-small"
+                    style={{ color: Colors.light.textSecondary }}
+                  >
+                    {format(validDate, 'MMM dd, yyyy')} •{' '}
+                    {validTime ? format(validTime, 'hh:mm a') : '--:--'} -{' '}
+                    {format(calculatedEndTime, 'hh:mm a')}
+                    {isDifferentDay &&
+                      ` (${format(calculatedEndTime, 'MMM dd')})`}
+                  </ThemedText>
+                  <ThemedText
+                    type="body-small"
+                    weight="medium"
+                    style={{ color: Colors.light.primary, marginTop: 2 }}
+                  >
+                    {shortStayDuration} hour
+                    {parseInt(shortStayDuration) > 1 ? 's' : ''} stay
+                  </ThemedText>
+                </View>
               </View>
-            </View>
-          )}
+            );
+          })()}
         </>
       ) : (
         <>

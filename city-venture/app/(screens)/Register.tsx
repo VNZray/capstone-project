@@ -1,91 +1,124 @@
 import Button from '@/components/Button';
-import DateInput from '@/components/DateInput';
-import Dropdown from '@/components/Dropdown';
 import FormLogo from '@/components/FormLogo';
 import PageContainer from '@/components/PageContainer';
-import FormTextInput from '@/components/TextInput';
 import { ThemedText } from '@/components/themed-text';
 import { colors } from '@/constants/color';
 import { useAuth } from '@/context/AuthContext';
-import { useColorScheme } from '@/hooks/use-color-scheme';
 import { insertData } from '@/query/mainQuery';
 import { navigateToHome, navigateToLogin } from '@/routes/mainRoutes';
-import api from '@/services/api';
 import { Tourist } from '@/types/Tourist';
 import { User } from '@/types/User';
 import axios from 'axios';
 import { StatusBar } from 'expo-status-bar';
-import React, { useEffect, useState } from 'react';
-import { Alert } from 'react-native';
-import { ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
+import React, { useState, useRef, useEffect } from 'react';
+import { Alert, ScrollView, StyleSheet, View, Animated } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
+import PersonalDetails from './register/PersonalDetails';
+import Address from './register/Address';
+import ContactDetails from './register/ContactDetails';
+import Verification from './register/Verification';
+import CreatePassword from './register/CreatePassword';
+import { useColorScheme } from '@/hooks/use-color-scheme';
 
 const RegistrationPage = () => {
+  const [currentStep, setCurrentStep] = useState(1);
+  const [generatedOTP, setGeneratedOTP] = useState('');
+  const { login } = useAuth();
   const colorScheme = useColorScheme();
+  const isDark = colorScheme === 'dark';
 
-  const [firstName, setFirstName] = useState('Rayven');
-  const [middleName, setMiddleName] = useState('');
-  const [lastName, setLastName] = useState('Clores');
-  const [email, setEmail] = useState('rayven.clores@unc.edu.ph');
-  const [password, setPassword] = useState('@Rayven22-17782');
-  const [confirmPassword, setConfirmPassword] = useState('@Rayven22-17782');
-  const [birthdate, setBirthdate] = useState(new Date());
-  const [ethnicity, setEthnicity] = useState<string>('');
-  const [origin, setOrigin] = useState<string>('');
-  const [gender, setGender] = useState<string>('');
-  const [phoneNumber, setPhoneNumber] = useState('09784561234');
-  const [nationality, setNationality] = useState('Filipino');
-  const [provinceId, setProvinceId] = useState<number | null>(20);
-  const [municipalityId, setMunicipalityId] = useState<number | null>(24);
-  const [barangayId, setBarangayId] = useState<number | null>(6);
-  const { login, user } = useAuth(); // from AuthProvider
+  // Animation values
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(50)).current;
+  const scrollViewRef = useRef<ScrollView>(null);
 
-  const [province, setProvince] = useState<{ id: number; province: string }[]>(
-    []
-  );
-  const [municipality, setMunicipality] = useState<
-    { id: number; municipality: string }[]
-  >([]);
-  const [barangay, setBarangay] = useState<{ id: number; barangay: string }[]>(
-    []
-  );
+  // Animate step transitions
+  useEffect(() => {
+    fadeAnim.setValue(0);
+    slideAnim.setValue(50);
 
-  const fetchProvince = async () => {
-    try {
-      const response = await axios.get(`${api}/address/provinces`);
-      if (Array.isArray(response.data)) {
-        setProvince(response.data);
-      }
-    } catch (error) {
-      console.error('Error fetching business categories:', error);
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 400,
+        useNativeDriver: true,
+      }),
+      Animated.timing(slideAnim, {
+        toValue: 0,
+        duration: 400,
+        useNativeDriver: true,
+      }),
+    ]).start();
+
+    // Scroll to top on step change
+    scrollViewRef.current?.scrollTo({ y: 0, animated: true });
+  }, [currentStep]);
+
+  // Form data
+  const [formData, setFormData] = useState({
+    // Step 1: Personal Details
+    firstName: 'Rayven',
+    middleName: '',
+    lastName: 'Clores',
+    gender: 'Male',
+    birthdate: new Date('2003-09-28'),
+    phoneNumber: '09876543210',
+    nationality: 'Filipino',
+    provinceId: null as number | null,
+    municipalityId: null as number | null,
+    barangayId: null as number | null,
+    ethnicity: 'Bicolano',
+    origin: 'Local',
+    // Step 2: Contact & Verification
+    email: 'rclores666@gmail.com',
+    verificationType: 'email' as 'email' | 'phone',
+    // Step 3: Password
+    password: 'RayvenClores22-17782',
+    confirmPassword: 'RayvenClores22-17782',
+  });
+
+  const updateFormData = (data: Partial<typeof formData>) => {
+    setFormData((prev) => ({ ...prev, ...data }));
+  };
+
+  // Generate 6-digit OTP
+  const generateOTP = () => {
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    setGeneratedOTP(otp);
+    return otp;
+  };
+
+  // Send OTP (static for now)
+  const handleSendOTP = () => {
+    const otp = generateOTP();
+    console.log(`[OTP] Generated: ${otp}`);
+
+    // TODO: Implement actual email/SMS sending
+    if (formData.verificationType === 'email') {
+      console.log(`[OTP] Sending to email: ${formData.email}`);
+      Alert.alert(
+        'Verification Code Sent',
+        `A 6-digit code has been sent to ${formData.email}`,
+        [{ text: 'OK', onPress: () => setCurrentStep(4) }]
+      );
+    } else {
+      console.log(`[OTP] Sending to phone: ${formData.phoneNumber}`);
+      Alert.alert(
+        'Verification Code Sent',
+        `A 6-digit code has been sent to ${formData.phoneNumber}`,
+        [{ text: 'OK', onPress: () => setCurrentStep(4) }]
+      );
     }
   };
 
-  const fetchMunicipality = async (provinceId: number) => {
-    try {
-      const response = await axios.get(
-        `${api}/address/municipalities/${provinceId}`
-      );
-
-      if (Array.isArray(response.data)) {
-        setMunicipality(response.data);
-      }
-    } catch (error) {
-      console.error('Error fetching business types:', error);
-    }
-  };
-
-  const fetchBarangay = async (municipalityId: number) => {
-    try {
-      const response = await axios.get(
-        `${api}/address/barangays/${municipalityId}`
-      );
-
-      if (Array.isArray(response.data)) {
-        setBarangay(response.data);
-      }
-    } catch (error) {
-      console.error('Error fetching business types:', error);
+  // Verify OTP
+  const handleVerifyOTP = (enteredOTP: string) => {
+    if (enteredOTP === generatedOTP) {
+      Alert.alert('Success', 'Verification successful!', [
+        { text: 'OK', onPress: () => setCurrentStep(5) },
+      ]);
+    } else {
+      Alert.alert('Error', 'Invalid verification code. Please try again.');
     }
   };
 
@@ -94,70 +127,56 @@ const RegistrationPage = () => {
     if (!date) return '';
     return date.toISOString().split('T')[0];
   };
-  const newUser: User = {
-    email: email,
-    phone_number: phoneNumber,
-    password: password,
-    user_role_id: 9,
-    is_active: false,
-    is_verified: false,
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-    otp: null,
-    barangay_id: barangayId,
-  };
 
-  const newTourist: Tourist = {
-    first_name: firstName,
-    middle_name: middleName,
-    last_name: lastName,
-    ethnicity: ethnicity,
-    gender: gender,
-    nationality: nationality,
-    origin: origin,
-    birthdate: formatDate(birthdate),
-    age: (new Date().getFullYear() - birthdate.getFullYear()).toString(),
-  };
-
-  // Default fallback IDs kept to reduce friction; prefer user's selections when available
-  const newAddress = {
-    province_id: provinceId ?? 20,
-    municipality_id: municipalityId ?? 24,
-    barangay_id: barangayId ?? 6,
-  };
-
-  const handleTouristRegistration = async () => {
+  // Complete registration
+  const handleCompleteRegistration = async () => {
     try {
-      console.log('[Register] Inserting user', newUser);
-      console.log('[Register] Inserting tourist (pre)', newTourist);
+      const newUser: User = {
+        email: formData.email,
+        phone_number: formData.phoneNumber,
+        password: formData.password,
+        user_role_id: 9,
+        is_active: true,
+        is_verified: true,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        otp: null,
+        barangay_id: formData.barangayId ?? 6,
+      };
+
+      const newTourist: Tourist = {
+        first_name: formData.firstName,
+        middle_name: formData.middleName,
+        last_name: formData.lastName,
+        ethnicity: formData.ethnicity,
+        gender: formData.gender,
+        nationality: formData.nationality,
+        origin: formData.origin,
+        birthdate: formatDate(formData.birthdate),
+        age: (
+          new Date().getFullYear() - formData.birthdate.getFullYear()
+        ).toString(),
+      };
+
+      console.log('[Register] Creating user', newUser);
 
       // 1) Create base user
       const userRes = await insertData(newUser, 'users');
-
-      // Robustly extract User ID to handle different API response structures
-      // API might return: { id: 1 }, { data: { id: 1 } }, { insertId: 1 }
       const userId = userRes?.id || userRes?.data?.id || userRes?.insertId;
 
-      console.debug('[Register] Created user response:', userRes);
-      console.debug('[Register] Extracted User ID:', userId);
+      console.debug('[Register] User created:', userId);
 
       if (!userId) {
-        console.error('Full User Response:', JSON.stringify(userRes, null, 2));
-        throw new Error(
-          'Failed to retrieve User ID from response. Tourist profile cannot be created.'
-        );
+        throw new Error('Failed to retrieve User ID from response.');
       }
 
-      // 2) Create tourist profile linked to the new user
+      // 2) Create tourist profile
       const touristPayload: any = {
         ...newTourist,
         user_id: userId,
       };
 
-      console.log(
-        '[Register] Inserting tourist (final payload)',
-        touristPayload
-      );
+      console.log('[Register] Creating tourist profile', touristPayload);
 
       const response = await insertData(touristPayload, 'tourist');
       const tourist_id =
@@ -165,18 +184,19 @@ const RegistrationPage = () => {
 
       if (!tourist_id) {
         throw new Error('Tourist profile creation failed.');
-      } else {
-        console.debug('[Register] Created tourist', { tourist_id });
-        Alert.alert(
-          tourist_id,
-          'Your account has been created successfully. You will be logged in automatically.'
-        );
-        // 3) Auto-login and navigate home
-        console.debug('[Register] Auto-login start', { email });
-        await login(email, password);
-        console.debug('[Register] Auto-login success');
-        navigateToHome();
       }
+
+      console.debug('[Register] Tourist created:', tourist_id);
+
+      Alert.alert('Success', 'Your account has been created successfully!', [
+        {
+          text: 'OK',
+          onPress: async () => {
+            await login(formData.email, formData.password);
+            navigateToHome();
+          },
+        },
+      ]);
     } catch (err: any) {
       if (axios.isAxiosError(err)) {
         const status = err.response?.status;
@@ -184,329 +204,259 @@ const RegistrationPage = () => {
         console.error('[Register] Registration failed', { status, data });
 
         if (status === 409) {
-          // Duplicate entry (email/user already exists) → try to login instead
-          try {
-            console.warn('[Register] Duplicate detected, attempting login');
-            await login(email, password);
-            navigateToHome();
-            return;
-          } catch (e) {
-            console.error('[Register] Auto-login after duplicate failed', e);
-            alert('Account already exists. Please sign in.');
-            navigateToLogin();
-            return;
-          }
+          Alert.alert('Error', 'Account already exists. Please sign in.');
+          navigateToLogin();
+          return;
         }
-        alert(data?.error || 'Registration failed. Please try again.');
+        Alert.alert(
+          'Error',
+          data?.error || 'Registration failed. Please try again.'
+        );
       } else {
         console.error('[Register] Unexpected error', err);
-        alert(err.message || 'Unexpected error occurred.');
+        Alert.alert('Error', err.message || 'Unexpected error occurred.');
       }
     }
   };
 
-  useEffect(() => {
-    fetchProvince();
-  }, []);
+  const canProceedStep1 = () => {
+    return (
+      formData.firstName.trim() !== '' &&
+      formData.lastName.trim() !== '' &&
+      formData.gender !== '' &&
+      formData.nationality.trim() !== ''
+    );
+  };
 
-  useEffect(() => {
-    if (provinceId) {
-      fetchMunicipality(provinceId);
-    }
-  }, [provinceId]);
+  const canProceedStep2 = () => {
+    return (
+      formData.provinceId !== null &&
+      formData.municipalityId !== null &&
+      formData.barangayId !== null &&
+      formData.ethnicity !== '' &&
+      formData.origin !== ''
+    );
+  };
 
-  useEffect(() => {
-    if (municipalityId) {
-      fetchBarangay(municipalityId);
-    }
-  }, [municipalityId]);
+  const canProceedStep3 = () => {
+    return formData.email.trim() !== '' && formData.phoneNumber.trim() !== '';
+  };
+
+  const canProceedStep5 = () => {
+    return (
+      formData.password.length >= 8 &&
+      formData.password === formData.confirmPassword &&
+      /[A-Z]/.test(formData.password) &&
+      /[a-z]/.test(formData.password) &&
+      /[0-9]/.test(formData.password)
+    );
+  };
+
+  const stepTitles = [
+    'Personal Details',
+    'Address & Demographics',
+    'Contact Information',
+    'Verify Account',
+    'Create Password',
+  ];
 
   return (
     <SafeAreaProvider>
-      <SafeAreaView style={{ flex: 1, backgroundColor: '#fff' }}>
-        <StatusBar />
+      <SafeAreaView
+        style={[
+          styles.safeArea,
+          { backgroundColor: isDark ? '#0D1117' : '#F8FAFC' },
+        ]}
+      >
+        <StatusBar style={isDark ? 'light' : 'dark'} />
 
-        {/* Mobile Form Container */}
+        {/* Progress Bar - Top Fixed Position */}
+        <View
+          style={[
+            styles.progressBarContainer,
+            { backgroundColor: isDark ? '#161B22' : '#FFFFFF' },
+          ]}
+        >
+          <View style={styles.progressHeader}>
+            <ThemedText
+              type="label-small"
+              weight="semi-bold"
+              style={{ color: colors.primary }}
+            >
+              {stepTitles[currentStep - 1]}
+            </ThemedText>
+            <ThemedText
+              type="label-small"
+              style={{ color: isDark ? '#8B92A6' : '#64748B' }}
+            >
+              Step {currentStep} of 5
+            </ThemedText>
+          </View>
+          <View
+            style={[
+              styles.progressBarBackground,
+              { backgroundColor: isDark ? '#1F2937' : '#E5E7EB' },
+            ]}
+          >
+            <Animated.View
+              style={[
+                styles.progressBarFill,
+                {
+                  width: `${(currentStep / 5) * 100}%`,
+                  backgroundColor: colors.primary,
+                },
+              ]}
+            />
+          </View>
+        </View>
+
         <View style={styles.formContainer}>
           <ScrollView
+            ref={scrollViewRef}
             showsVerticalScrollIndicator={false}
             contentContainerStyle={styles.scrollContent}
           >
             <PageContainer
-              gap={16}
+              gap={24}
               style={{ width: '100%', alignSelf: 'center' }}
             >
-              <FormLogo />
-
-              <View style={styles.heading}>
-                <ThemedText type="title-medium" weight="bold">
-                  Create Your Account
-                </ThemedText>
-                <ThemedText type="sub-title-small" weight="medium">
-                  Discover and connect with the city
-                </ThemedText>
-              </View>
-
-              <FormTextInput
-                label="First Name"
-                placeholder="Enter your first name"
-                value={firstName}
-                onChangeText={setFirstName}
-                variant="outlined"
-                autoCapitalize="words"
-              />
-
-              <FormTextInput
-                label="Middle Name"
-                placeholder="Enter your middle name"
-                value={middleName}
-                onChangeText={setMiddleName}
-                variant="outlined"
-                autoCapitalize="words"
-              />
-
-              <FormTextInput
-                label="Last Name"
-                placeholder="Enter your last name"
-                value={lastName}
-                onChangeText={setLastName}
-                variant="outlined"
-                autoCapitalize="words"
-              />
-
-              <View>
-                <ThemedText type="label-medium" mb={6}>
-                  Gender
-                </ThemedText>
-                <View style={styles.radioGroup}>
-                  {['Male', 'Female', 'Prefer not to say'].map((option) => (
-                    <TouchableOpacity
-                      key={option}
-                      style={[
-                        colorScheme === 'light'
-                          ? styles.radioButton
-                          : styles.darkRadioButton,
-                        gender === option && styles.radioSelected,
-                      ]}
-                      onPress={() => setGender(option)}
-                    >
-                      <ThemedText
-                        type="label-small"
-                        style={[gender === option && styles.radioTextSelected]}
-                      >
-                        {option.charAt(0).toUpperCase() + option.slice(1)}
-                      </ThemedText>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              </View>
-
-              <DateInput
-                label="Birthdate"
-                placeholder="Select your birthdate"
-                variant="outlined"
-                style={{ flex: 1 }}
-                mode="single"
-                showStatusLegend={false}
-                requireConfirmation
-                selectionVariant="filled"
-                value={birthdate}
-                disableFuture
-                onChange={(d) => {
-                  if (d) setBirthdate(d);
-                }}
-              />
-
-              <FormTextInput
-                label="Contact Number"
-                placeholder="Enter your contact number"
-                value={phoneNumber}
-                onChangeText={setPhoneNumber}
-                keyboardType="phone-pad"
-                variant="outlined"
-              />
-
-              <FormTextInput
-                label="Nationality"
-                placeholder="Enter your nationality"
-                value={nationality}
-                onChangeText={setNationality}
-                variant="outlined"
-                autoCapitalize="words"
-              />
-
-              {/* Address Selection Using Dropdowns */}
-              <Dropdown
-                label="Province"
-                placeholder="Select your province"
-                items={province.map((p) => ({ id: p.id, label: p.province }))}
-                value={provinceId}
-                onSelect={(item) => {
-                  const id = item?.id as number;
-                  setProvinceId(id);
-                  // Reset dependent selections
-                  setMunicipalityId(null);
-                  setBarangayId(null);
-                  setMunicipality([]);
-                  setBarangay([]);
-                  if (id) fetchMunicipality(id);
-                }}
-                variant="outlined"
-                elevation={2}
-                clearable
-              />
-              <Dropdown
-                label="Municipality"
-                placeholder={
-                  provinceId
-                    ? 'Select your municipality'
-                    : 'Select province first'
-                }
-                items={municipality.map((m) => ({
-                  id: m.id,
-                  label: m.municipality,
-                }))}
-                value={municipalityId}
-                disabled={!provinceId}
-                onSelect={(item) => {
-                  const id = item?.id as number;
-                  setMunicipalityId(id);
-                  setBarangayId(null);
-                  setBarangay([]);
-                  if (id) fetchBarangay(id);
-                }}
-                variant="outlined"
-                elevation={2}
-                clearable
-              />
-              <Dropdown
-                label="Barangay"
-                placeholder={
-                  municipalityId
-                    ? 'Select your barangay'
-                    : 'Select municipality first'
-                }
-                items={barangay.map((b) => ({ id: b.id, label: b.barangay }))}
-                value={barangayId}
-                disabled={!municipalityId}
-                onSelect={(item) => {
-                  const id = item?.id as number;
-                  setBarangayId(id);
-                }}
-                variant="outlined"
-                elevation={2}
-                clearable
-              />
-
-              <View>
-                <ThemedText mb={6} type="label-medium">
-                  I am a:
-                </ThemedText>
-                <View style={styles.radioGroup}>
-                  {['Bicolano', 'Non-Bicolano', 'Foreigner'].map((type) => (
-                    <TouchableOpacity
-                      key={type}
-                      style={[
-                        colorScheme === 'light'
-                          ? styles.radioButton
-                          : styles.darkRadioButton,
-                        ethnicity === type && styles.radioSelected,
-                      ]}
-                      onPress={() => setEthnicity(type)}
-                    >
-                      <ThemedText
-                        type="label-small"
-                        style={[ethnicity === type && styles.radioTextSelected]}
-                      >
-                        {type.charAt(0).toUpperCase() + type.slice(1)}
-                      </ThemedText>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              </View>
-
-              <View>
-                <ThemedText mb={6} type="label-medium">
-                  Origin:
-                </ThemedText>
-                <View style={styles.radioGroup}>
-                  {['Domestic', 'Local', 'Overseas'].map((type) => (
-                    <TouchableOpacity
-                      key={type}
-                      style={[
-                        colorScheme === 'light'
-                          ? styles.radioButton
-                          : styles.darkRadioButton,
-                        origin === type && styles.radioSelected,
-                      ]}
-                      onPress={() => setOrigin(type)}
-                    >
-                      <ThemedText
-                        type="label-small"
-                        style={[origin === type && styles.radioTextSelected]}
-                      >
-                        {type.charAt(0).toUpperCase() + type.slice(1)}
-                      </ThemedText>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              </View>
-
-              {/* Email */}
-              <FormTextInput
-                label="Email"
-                placeholder="Enter your email"
-                value={email}
-                onChangeText={setEmail}
-                autoCapitalize="none"
-                keyboardType="email-address"
-                variant="outlined"
-              />
-
-              {/* Password */}
-              <FormTextInput
-                label="Password"
-                placeholder="Enter your password"
-                value={password}
-                onChangeText={setPassword}
-                secureTextEntry
-                variant="outlined"
-              />
-
-              {/* Confirm Password */}
-              <FormTextInput
-                label="Confirm Password"
-                placeholder="Re-enter your password"
-                value={confirmPassword}
-                onChangeText={setConfirmPassword}
-                secureTextEntry
-                variant="outlined"
-              />
-
-              <View
+              {/* Animated Step Content */}
+              <Animated.View
                 style={{
-                  flexDirection: 'row',
-                  justifyContent: 'center',
-                  gap: 6,
-                  flexWrap: 'wrap',
+                  opacity: fadeAnim,
+                  transform: [{ translateY: slideAnim }],
                 }}
               >
-                <ThemedText type="body-small">
-                  By signing up, you agree to our
-                </ThemedText>
-                <ThemedText type="link-small">Terms and Conditions</ThemedText>
-                <ThemedText type="body-small">and</ThemedText>
-                <ThemedText type="link-small">Privacy Policy</ThemedText>
-              </View>
+                <View
+                  style={[
+                    styles.contentCard,
+                    { backgroundColor: isDark ? '#161B22' : '#FFFFFF' },
+                  ]}
+                >
+                  {/* Step Title & Description */}
+                  <View style={styles.stepHeader}>
+                    <ThemedText type="title-small" weight="semi-bold">
+                      {stepTitles[currentStep - 1]}
+                    </ThemedText>
+                    <ThemedText
+                      type="body-small"
+                      style={{
+                        color: isDark ? '#8B92A6' : '#64748B',
+                        marginTop: 4,
+                      }}
+                    >
+                      {
+                        [
+                          'Tell us about yourself',
+                          'Where are you from?',
+                          'How can we reach you?',
+                          'Confirm your identity',
+                          'Secure your account',
+                        ][currentStep - 1]
+                      }
+                    </ThemedText>
+                  </View>
 
-              <Button
-                fullWidth
-                size="large"
-                label="Sign Up"
-                color="primary"
-                variant="solid"
-                onPress={handleTouristRegistration}
-              />
+                  {currentStep === 1 && (
+                    <PersonalDetails
+                      data={formData}
+                      onUpdate={updateFormData}
+                    />
+                  )}
+
+                  {currentStep === 2 && (
+                    <Address data={formData} onUpdate={updateFormData} />
+                  )}
+
+                  {currentStep === 3 && (
+                    <ContactDetails
+                      data={formData}
+                      onUpdate={updateFormData}
+                      onSendOTP={handleSendOTP}
+                    />
+                  )}
+
+                  {currentStep === 4 && (
+                    <Verification
+                      generatedOTP={generatedOTP}
+                      verificationType={formData.verificationType}
+                      contactInfo={
+                        formData.verificationType === 'email'
+                          ? formData.email
+                          : formData.phoneNumber
+                      }
+                      onVerify={handleVerifyOTP}
+                      onResend={handleSendOTP}
+                    />
+                  )}
+
+                  {currentStep === 5 && (
+                    <CreatePassword data={formData} onUpdate={updateFormData} />
+                  )}
+                </View>
+              </Animated.View>
+
+              {/* Enhanced Navigation Buttons */}
+              {currentStep !== 3 && currentStep !== 4 && (
+                <View style={styles.buttonContainer}>
+                  {currentStep > 1 && currentStep !== 4 && (
+                    <Button
+                      size="large"
+                      label="Back"
+                      color="secondary"
+                      variant="outlined"
+                      onPress={() => setCurrentStep((prev) => prev - 1)}
+                      style={{ flex: 1 }}
+                      endIcon={'arrow-left'}
+                    />
+                  )}
+
+                  {currentStep < 5 ? (
+                    <Button
+                      size="large"
+                      label="Continue"
+                      color="primary"
+                      variant="solid"
+                      onPress={() => setCurrentStep((prev) => prev + 1)}
+                      disabled={
+                        (currentStep === 1 && !canProceedStep1()) ||
+                        (currentStep === 2 && !canProceedStep2())
+                      }
+                      style={{ flex: currentStep === 1 ? 1 : 1 }}
+                      startIcon="arrow-right"
+                    />
+                  ) : (
+                    <Button
+                      size="large"
+                      label="Create Account"
+                      color="primary"
+                      variant="solid"
+                      onPress={handleCompleteRegistration}
+                      disabled={!canProceedStep5()}
+                      style={{ flex: 1 }}
+                      endIcon="check-circle"
+                    />
+                  )}
+                </View>
+              )}
+
+              {/* Help Text */}
+              {(currentStep === 1 || currentStep === 2) && (
+                <View style={styles.helpSection}>
+                  <ThemedText
+                    type="body-small"
+                    style={{
+                      flex: 1,
+                      color: isDark ? '#8B92A6' : '#64748B',
+                      textAlign: 'center',
+                    }}
+                  >
+                    {currentStep === 1
+                      ? '🔒 Your information is secure and will only be used for account verification'
+                      : '📍 We use this information to provide personalized recommendations'}
+                  </ThemedText>
+                </View>
+              )}
 
               <View
                 style={{
@@ -538,114 +488,83 @@ const RegistrationPage = () => {
 export default RegistrationPage;
 
 const styles = StyleSheet.create({
-  container: {
+  safeArea: {
     flex: 1,
-    flexDirection: 'column',
   },
   formContainer: {
     flex: 1,
-    backgroundColor: '#fff',
     width: '100%',
   },
-  scrollContent: {},
-  card: {
-    borderRadius: 16,
+  scrollContent: {
+    paddingBottom: 40,
+  },
+  logoContainer: {
+    alignItems: 'center',
+  },
+  heading: {
+    marginBottom: 16,
+    alignItems: 'center',
+  },
+  progressBarContainer: {
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    paddingBottom: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(0,0,0,0.05)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  progressHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  progressBarBackground: {
+    height: 8,
+    borderRadius: 8,
+    overflow: 'hidden',
+  },
+  progressBarFill: {
+    height: '100%',
+    borderRadius: 8,
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.4,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  contentCard: {
+    borderRadius: 20,
     padding: 24,
     shadowColor: '#000',
-    shadowOpacity: 0.05,
-    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
     elevation: 3,
-    marginBottom: 60,
   },
-
-  heading: {
-    marginBottom: 20,
+  stepHeader: {
+    marginBottom: 24,
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
   },
-  subtext: {
-    fontSize: 13,
-    color: '#666',
-    marginTop: 4,
-  },
-  row: {
+  buttonContainer: {
     flexDirection: 'row',
     gap: 12,
+    marginTop: 16,
   },
-  nameRow: {
+  helpSection: {
     flexDirection: 'row',
-    gap: 12,
-    width: '100%',
-  },
-  nameInput: {
-    flex: 1,
-    minWidth: 0,
-  },
-
-  radioGroup: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 10,
-  },
-  radioButton: {
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 18,
-    borderWidth: 1,
-    borderColor: '#ddd',
-    backgroundColor: '#F9F9F9',
-  },
-
-  darkRadioButton: {
-    backgroundColor: colors.dark,
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 18,
-    borderWidth: 1,
-    borderColor: '#2e2e2e',
-  },
-
-  radioSelected: {
-    backgroundColor: '#0A1B47',
-    borderWidth: 0,
-  },
-  radioText: {
-    fontSize: 13,
-    color: '#333',
-    fontFamily: 'Poppins-Medium',
-  },
-  radioTextSelected: {
-    color: '#fff',
-  },
-  radioLabel: {
-    fontSize: 14,
-    fontFamily: 'Poppins-Medium',
-    marginBottom: 6,
-    marginTop: 6,
-  },
-  terms: {
-    fontSize: 12,
-    fontFamily: 'Poppins-Regular',
-    color: '#555',
-    marginVertical: 14,
-    textAlign: 'center',
-  },
-  footerText: {
-    textAlign: 'center',
-    fontSize: 14,
-    fontFamily: 'Poppins-Regular',
-    marginTop: 20,
-    marginBottom: 50,
-  },
-  label: {
-    fontSize: 13,
-    fontFamily: 'Poppins-Medium',
-    color: '#333',
-    marginBottom: 4,
-    marginTop: 10,
-  },
-  webContainer: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: 0,
+    alignItems: 'flex-start',
+    backgroundColor: colors.info + '10',
+    padding: 16,
+    borderRadius: 12,
+    marginTop: 8,
+    borderLeftWidth: 3,
+    borderLeftColor: colors.info,
   },
 });

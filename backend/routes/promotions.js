@@ -27,7 +27,7 @@ router.get("/business/:businessId/active", promotionController.getActivePromotio
 router.get("/:id", promotionController.getPromotionById);
 
 // Update promotion
-router.put("/:id", authenticate, authorizeRole("Business Owner", "Staff", "Admin"), promotionController.updatePromotion);
+router.put("/:id", promotionController.updatePromotion);
 
 // Delete promotion
 router.delete("/:id", authenticate, authorizeRole("Business Owner", "Staff", "Admin"), promotionController.deletePromotion);

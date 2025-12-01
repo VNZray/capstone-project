@@ -11,20 +11,20 @@ export const fetchPromotionsByBusinessId = async (businessId: string): Promise<P
     const { data } = await apiClient.get<Promotion[]>(
       `/promotions/business/${businessId}`
     );
-    
+
     // Filter only active promotions
     const now = new Date();
     return data.filter(promo => {
       if (!promo.is_active) return false;
-      
+
       const startDate = new Date(promo.start_date);
       if (startDate > now) return false; // Not started yet
-      
+
       if (promo.end_date) {
         const endDate = new Date(promo.end_date);
         if (endDate < now) return false; // Already ended
       }
-      
+
       return true;
     });
   } catch (error) {

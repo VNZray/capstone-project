@@ -8,6 +8,12 @@ import React, {
 } from 'react';
 import { getAverageRating, getTotalReviews } from '@/services/FeedbackService';
 import {
+  getFavoritesByTouristId,
+  addFavorite,
+  deleteFavorite,
+} from '@/services/FavoriteService';
+import { useAuth } from '@/context/AuthContext';
+import {
   StyleSheet,
   Text,
   View,
@@ -31,6 +37,8 @@ import {
   filterAvailableRooms,
 } from '@/services/BookingService';
 import type { Booking } from '@/types/Booking';
+import * as PromotionService from '@/services/PromotionService';
+import type { Promotion } from '@/types/Promotion';
 
 // NOTE: We derive floor options dynamically from the room list.
 // Fallback options will only be used if no rooms are loaded yet.
@@ -43,7 +51,12 @@ const fallbackFloors: DropdownItem[] = [
 const Rooms = () => {
   const { rooms, loading, setRoomId, refreshRooms, setDateRange } = useRoom();
   const { selectedAccommodationId } = useAccommodation();
+  const { user } = useAuth();
   const [cardView, setCardView] = useState('card');
+  const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set());
+  const [favoriteRecords, setFavoriteRecords] = useState<Map<string, string>>(
+    new Map()
+  );
   // Selected floor (null = all)
   const [selectedFloor, setSelectedFloor] = React.useState<number | null>(null);
   const [range, setRange] = useState<{ start: Date | null; end: Date | null }>({
@@ -60,6 +73,72 @@ const Rooms = () => {
   const [roomRatings, setRoomRatings] = useState<
     Record<string, { avg: number; total: number }>
   >({});
+  const [promotions, setPromotions] = useState<Promotion[]>([]);
+  const [roomDiscount, setRoomDiscount] = useState<Promotion | null>(null);
+
+  // Fetch favorites when user changes
+  const fetchFavorites = useCallback(async () => {
+    if (!user?.id) return;
+
+    try {
+      const favorites = await getFavoritesByTouristId(user.id);
+      const roomFavorites = favorites.filter(
+        (fav) => fav.favorite_type === 'room'
+      );
+
+      const ids = new Set(roomFavorites.map((fav) => fav.my_favorite_id));
+      const records = new Map(
+        roomFavorites.map((fav) => [fav.my_favorite_id, fav.id])
+      );
+
+      setFavoriteIds(ids);
+      setFavoriteRecords(records);
+    } catch (error) {
+      console.error('Failed to fetch favorites:', error);
+    }
+  }, [user?.id]);
+
+  // Fetch promotions to check for room discounts
+  const fetchPromotions = useCallback(async () => {
+    if (!selectedAccommodationId) {
+      console.log('[Rooms Listing] No selectedAccommodationId');
+      return;
+    }
+
+    console.log(
+      '[Rooms Listing] Fetching promotions for business:',
+      selectedAccommodationId
+    );
+
+    try {
+      const promos = await PromotionService.fetchPromotionsByBusinessId(
+        selectedAccommodationId
+      );
+      console.log('[Rooms Listing] Fetched promotions:', promos);
+      setPromotions(promos);
+
+      // Find best room discount (type 2)
+      const roomDiscounts = promos.filter(
+        (p) => p.promo_type === 2 && p.discount_percentage
+      );
+      console.log('[Rooms Listing] Room discounts (type 2):', roomDiscounts);
+
+      if (roomDiscounts.length > 0) {
+        const bestDiscount = roomDiscounts.reduce((prev, current) =>
+          (current.discount_percentage || 0) > (prev.discount_percentage || 0)
+            ? current
+            : prev
+        );
+        console.log('[Rooms Listing] Best room discount:', bestDiscount);
+        setRoomDiscount(bestDiscount);
+      } else {
+        console.log('[Rooms Listing] No room discounts found');
+        setRoomDiscount(null);
+      }
+    } catch (error) {
+      console.error('[Rooms Listing] Failed to fetch promotions:', error);
+    }
+  }, [selectedAccommodationId]);
 
   // Fetch bookings when accommodation changes
   useEffect(() => {
@@ -80,18 +159,66 @@ const Rooms = () => {
       }
     };
     loadBookings();
-  }, [selectedAccommodationId]);
+    fetchFavorites();
+    fetchPromotions();
+  }, [selectedAccommodationId, fetchFavorites, fetchPromotions]);
+
+  const handleToggleFavorite = useCallback(
+    async (roomId: string, isFavorite: boolean) => {
+      if (!user?.id) {
+        alert('Please log in to add favorites');
+        return;
+      }
+
+      // Optimistic UI update
+      const newFavoriteIds = new Set(favoriteIds);
+      const newFavoriteRecords = new Map(favoriteRecords);
+
+      if (isFavorite) {
+        newFavoriteIds.add(roomId);
+      } else {
+        newFavoriteIds.delete(roomId);
+      }
+
+      setFavoriteIds(newFavoriteIds);
+
+      try {
+        if (isFavorite) {
+          // Add favorite
+          const result = await addFavorite(user.id, 'room', roomId);
+          newFavoriteRecords.set(roomId, result.id);
+          setFavoriteRecords(newFavoriteRecords);
+        } else {
+          // Remove favorite
+          const favoriteId = favoriteRecords.get(roomId);
+          if (favoriteId) {
+            await deleteFavorite(favoriteId);
+            newFavoriteRecords.delete(roomId);
+            setFavoriteRecords(newFavoriteRecords);
+          }
+        }
+      } catch (error) {
+        console.error('Failed to toggle favorite:', error);
+        // Revert optimistic update on error
+        setFavoriteIds(favoriteIds);
+        setFavoriteRecords(favoriteRecords);
+        alert('Failed to update favorite. Please try again.');
+      }
+    },
+    [user?.id, favoriteIds, favoriteRecords]
+  );
 
   const onRefresh = useCallback(
     async (force?: boolean) => {
       setRefreshing(true);
       try {
         await refreshRooms({ force });
+        await fetchFavorites();
       } finally {
         setRefreshing(false);
       }
     },
-    [refreshRooms]
+    [refreshRooms, fetchFavorites]
   );
 
   const handleScroll = useCallback(
@@ -224,6 +351,7 @@ const Rooms = () => {
           }}
           variant="solid"
           color="primary"
+          clearable={false}
         />
 
         <DateInput
@@ -272,17 +400,45 @@ const Rooms = () => {
                   avg: 0,
                   total: 0,
                 };
+
+                // Calculate discounted price if room discount exists
+                let displayPrice: string | number | undefined = room.room_price;
+                let originalPriceValue: number | undefined = undefined;
+                let discountPercent: number | undefined = undefined;
+
+                if (
+                  roomDiscount &&
+                  roomDiscount.discount_percentage &&
+                  room.room_price
+                ) {
+                  const originalPrice =
+                    typeof room.room_price === 'number'
+                      ? room.room_price
+                      : parseFloat(
+                          String(room.room_price).replace(/[^0-9.]/g, '')
+                        );
+
+                  if (!isNaN(originalPrice)) {
+                    originalPriceValue = originalPrice;
+                    discountPercent = roomDiscount.discount_percentage;
+                    const discountAmount = Math.floor(
+                      originalPrice * (roomDiscount.discount_percentage / 100)
+                    );
+                    displayPrice = originalPrice - discountAmount;
+                  }
+                }
+
                 return (
                   <RoomCard
                     elevation={6}
                     key={room.id}
-                    image={
-                      room.room_image ? { uri: room.room_image } : placeholder
-                    }
+                    image={room.room_image ? room.room_image : placeholder}
                     title={room.room_number || 'Room'}
                     subtitle={room.description || room.room_type || ''}
                     capacity={room.capacity || undefined}
-                    price={room.room_price || undefined}
+                    price={displayPrice || undefined}
+                    originalPrice={originalPriceValue}
+                    discountPercentage={discountPercent}
                     rating={ratingInfo.avg}
                     comments={ratingInfo.total}
                     status={
@@ -293,6 +449,10 @@ const Rooms = () => {
                         : room.status === 'booked'
                         ? 'Booked'
                         : undefined
+                    }
+                    favorite={favoriteIds.has(room.id!)}
+                    addToFavorite={(isFav) =>
+                      handleToggleFavorite(room.id!, isFav)
                     }
                     view={cardView}
                     variant="solid"

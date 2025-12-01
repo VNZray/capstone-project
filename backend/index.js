@@ -49,6 +49,7 @@ import feedbackReplyRoutes from "./routes/feedback-replies.js";
 import feedbackReviewPhotoRoutes from "./routes/feedback-review-photos.js";
 import roomPhotosRoutes from "./routes/room-photos.js";
 import tourismStaffManagementRoutes from "./routes/tourism_staff_management.js";
+import favoriteRoutes from "./routes/favorite.js";
 
 const app = express();
 const PORT = 3000;
@@ -207,6 +208,7 @@ const routeSections = [
       { path: "/api/reviews", handler: feedbackReviewRoutes, label: "Reviews (Generic)" },
       { path: "/api/replies", handler: feedbackReplyRoutes, label: "Replies" },
       { path: "/api/review-photos", handler: feedbackReviewPhotoRoutes, label: "Review Photos" },
+      { path: "/api/favorite", handler: favoriteRoutes, label: "Favorites" },
     ],
   },
 ];

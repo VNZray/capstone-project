@@ -22,6 +22,8 @@ export type Booking = {
     trip_purpose?: string;
     balance?: number;
     business_id?: string;
+    applied_promotions?: string[]; // Array of promotion IDs used in this booking
+
 }
 
 export type Bookings = Booking[];

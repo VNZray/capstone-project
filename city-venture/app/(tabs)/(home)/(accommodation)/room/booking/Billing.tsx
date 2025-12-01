@@ -7,11 +7,14 @@ import { ThemedText } from '@/components/themed-text';
 import { colors } from '@/constants/color';
 
 import { useRoom } from '@/context/RoomContext';
+import { useAccommodation } from '@/context/AccommodationContext';
 import { Booking, BookingPayment } from '@/types/Booking';
 import { MaterialIcons } from '@expo/vector-icons';
 import React, { useEffect, useMemo, useState } from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { ScrollView, StyleSheet, View, Alert } from 'react-native';
 import { parse } from 'date-fns';
+import * as PromotionService from '@/services/PromotionService';
+import type { Promotion } from '@/types/Promotion';
 
 type Props = {
   data: Booking;
@@ -22,6 +25,9 @@ type Props = {
 
 const Payment: React.FC<Props> = ({ data, payment, setData, setPayment }) => {
   const { roomDetails } = useRoom();
+  const { selectedAccommodationId } = useAccommodation();
+  const [promotions, setPromotions] = useState<Promotion[]>([]);
+  const [loadingPromotions, setLoadingPromotions] = useState(true);
 
   // Helper to parse 'YYYY-MM-DD HH:mm:ss' to Date
   const parseDateTime = (dt: string | Date | null | undefined) => {
@@ -84,39 +90,118 @@ const Payment: React.FC<Props> = ({ data, payment, setData, setPayment }) => {
     payment.payment_type || 'Full Payment'
   );
 
-  // Discounts (future implementation). Each discount: positive amount to subtract from subtotal.
+  // Discounts - Each discount: positive amount to subtract from subtotal
   const [discounts, setDiscounts] = useState<
-    { label: string; amount: number }[]
+    {
+      label: string;
+      amount: number;
+      type: 'room' | 'coupon' | 'code';
+      promotionId?: string;
+    }[]
   >([]);
   const [discountCode, setDiscountCode] = useState('');
   const [discountError, setDiscountError] = useState<string | null>(null);
 
-  // Move validDiscounts inside handler to access latest values
+  // Fetch promotions on mount
+  useEffect(() => {
+    const fetchPromotions = async () => {
+      if (!selectedAccommodationId) {
+        setLoadingPromotions(false);
+        return;
+      }
+
+      setLoadingPromotions(true);
+      try {
+        const promos = await PromotionService.fetchPromotionsByBusinessId(
+          selectedAccommodationId
+        );
+        setPromotions(promos);
+      } catch (error) {
+        console.error('Failed to fetch promotions:', error);
+      } finally {
+        setLoadingPromotions(false);
+      }
+    };
+
+    fetchPromotions();
+  }, [selectedAccommodationId]);
+
   const handleApplyDiscount = () => {
     const code = discountCode.trim().toUpperCase();
     if (!code) {
       setDiscountError('Please enter a code.');
       return;
     }
-    if (discounts.some((d) => d.label === code)) {
+
+    // Check if code already applied
+    if (discounts.some((d) => d.label.includes(code))) {
       setDiscountError('Code already applied.');
       return;
     }
-    // Calculate HALFPRICE based on current values
-    const validDiscounts: Record<string, number> = {
-      SAVE100: 100,
-      SAVE500: 500,
-      HALFPRICE: Math.floor(
-        (baseRoomPrice + bookingFee + transactionFee) * 0.5
-      ),
-    };
-    if (validDiscounts[code]) {
-      setDiscounts((prev) => [
-        ...prev,
-        { label: code, amount: validDiscounts[code] },
-      ]);
-      setDiscountCode('');
-      setDiscountError(null);
+
+    // Only allow one coupon/code at a time
+    const hasCouponOrCode = discounts.some(
+      (d) => d.type === 'coupon' || d.type === 'code'
+    );
+    if (hasCouponOrCode) {
+      setDiscountError('Only one discount coupon or promo code can be used.');
+      return;
+    }
+
+    // Find matching promotion from backend
+    const matchingPromo = promotions.find(
+      (p) =>
+        p.promo_code?.toUpperCase() === code &&
+        (p.promo_type === 1 || p.promo_type === 3)
+    );
+
+    if (matchingPromo) {
+      // Check usage limit
+      if (
+        matchingPromo.usage_limit &&
+        (matchingPromo.used_count || 0) >= matchingPromo.usage_limit
+      ) {
+        setDiscountError('This code has reached its usage limit.');
+        return;
+      }
+
+      let discountAmount = 0;
+      let discountType: 'coupon' | 'code' = 'coupon';
+
+      if (matchingPromo.promo_type === 1) {
+        // Discount Coupon - percentage off
+        discountType = 'coupon';
+        if (matchingPromo.discount_percentage) {
+          discountAmount = Math.floor(
+            (baseRoomPrice + bookingFee) *
+              (matchingPromo.discount_percentage / 100)
+          );
+        }
+      } else if (matchingPromo.promo_type === 3) {
+        // Promo Code - fixed amount off
+        discountType = 'code';
+        discountAmount = matchingPromo.fixed_discount_amount || 0;
+      }
+
+      if (discountAmount > 0) {
+        setDiscounts((prev) => [
+          ...prev,
+          {
+            label:
+              discountType === 'coupon'
+                ? `${matchingPromo.title} (${matchingPromo.discount_percentage}% OFF)`
+                : `${matchingPromo.title} (₱${discountAmount} OFF)`,
+            amount: discountAmount,
+            type: discountType,
+            promotionId: matchingPromo.id,
+          },
+        ]);
+        setDiscountCode('');
+        setDiscountError(null);
+        Alert.alert('Success', `${matchingPromo.title} applied successfully!`);
+      } else {
+        setDiscountError('Invalid discount value.');
+      }
     } else {
       setDiscountError('Invalid or expired code.');
     }
@@ -126,8 +211,8 @@ const Payment: React.FC<Props> = ({ data, payment, setData, setPayment }) => {
   const baseRoomPrice = useMemo(() => {
     if (!roomDetails?.room_price) return 0;
     if (isShortStay) {
-      // For short stay, charge per hour
-      return hours > 0 ? Number(roomDetails.room_price) * hours : 0;
+      // For short stay, charge 1 day price regardless of hours
+      return hours > 0 ? Number(roomDetails.room_price) : 0;
     }
     // For overnight, charge per day
     return days > 0 ? Number(roomDetails.room_price) * days : 0;
@@ -163,11 +248,53 @@ const Payment: React.FC<Props> = ({ data, payment, setData, setPayment }) => {
     [totalPayable, amountDue]
   );
 
+  // Auto-apply room discounts when promotions and baseRoomPrice are ready
+  useEffect(() => {
+    if (!loadingPromotions && promotions.length > 0 && baseRoomPrice > 0) {
+      const roomDiscounts = promotions.filter(
+        (p) => p.promo_type === 2 && p.discount_percentage
+      );
+
+      // Apply only if no room discount already applied
+      const hasRoomDiscount = discounts.some((d) => d.type === 'room');
+      if (!hasRoomDiscount && roomDiscounts.length > 0) {
+        // Apply the best room discount (highest percentage)
+        const bestDiscount = roomDiscounts.reduce((prev, current) =>
+          (current.discount_percentage || 0) > (prev.discount_percentage || 0)
+            ? current
+            : prev
+        );
+
+        const discountAmount = Math.floor(
+          baseRoomPrice * ((bestDiscount.discount_percentage || 0) / 100)
+        );
+
+        setDiscounts((prev) => [
+          ...prev,
+          {
+            label: `${bestDiscount.title} (${bestDiscount.discount_percentage}% OFF)`,
+            amount: discountAmount,
+            type: 'room',
+            promotionId: bestDiscount.id,
+          },
+        ]);
+      }
+    }
+    // Only run when these specific dependencies change, not discounts to avoid loop
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loadingPromotions, promotions, baseRoomPrice]);
+
   // Persist booking + payment upward whenever dependencies change
   useEffect(() => {
+    // Extract promotion IDs from applied discounts
+    const appliedPromotions = discounts
+      .filter((d) => d.promotionId)
+      .map((d) => d.promotionId as string);
+
     setData((prev) => ({
       ...prev,
       total_price: totalPayable, // full amount of the booking
+      applied_promotions: appliedPromotions,
     }));
     setPayment((prev) => ({
       ...prev,
@@ -181,6 +308,7 @@ const Payment: React.FC<Props> = ({ data, payment, setData, setPayment }) => {
     totalPayable,
     amountDue,
     balance,
+    discounts,
     setPayment,
     setData,
   ]);
@@ -368,7 +496,7 @@ const Payment: React.FC<Props> = ({ data, payment, setData, setPayment }) => {
           )}
           {discounts.map((d, idx) => (
             <Container
-              key={d.label}
+              key={`${d.type}-${idx}`}
               padding={0}
               backgroundColor="transparent"
               direction="row"
@@ -376,9 +504,21 @@ const Payment: React.FC<Props> = ({ data, payment, setData, setPayment }) => {
               align="center"
               style={{ gap: 8 }}
             >
-              <ThemedText type="body-extra-small" weight="medium">
-                {d.label}
-              </ThemedText>
+              <View style={{ flex: 1 }}>
+                <ThemedText type="body-extra-small" weight="medium">
+                  {d.label}
+                </ThemedText>
+                <ThemedText
+                  type="body-extra-small"
+                  style={{ opacity: 0.6, fontSize: 10 }}
+                >
+                  {d.type === 'room'
+                    ? 'Room Discount (Auto-applied)'
+                    : d.type === 'coupon'
+                    ? 'Discount Coupon'
+                    : 'Promo Code'}
+                </ThemedText>
+              </View>
               <View
                 style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}
               >
@@ -390,23 +530,25 @@ const Payment: React.FC<Props> = ({ data, payment, setData, setPayment }) => {
                 >
                   -₱{d.amount.toLocaleString()}
                 </ThemedText>
-                <Button
-                  label="Remove"
-                  size="small"
-                  color="error"
-                  startIcon={'trash'}
-                  icon
-                  variant="soft"
-                  onPress={() => {
-                    setDiscounts((prev) => prev.filter((_, i) => i !== idx));
-                  }}
-                  style={{
-                    paddingHorizontal: 8,
-                    paddingVertical: 2,
-                    minWidth: 0,
-                  }}
-                  textStyle={{ fontSize: 12 }}
-                />
+                {d.type !== 'room' && (
+                  <Button
+                    label="Remove"
+                    size="small"
+                    color="error"
+                    startIcon={'trash'}
+                    icon
+                    variant="soft"
+                    onPress={() => {
+                      setDiscounts((prev) => prev.filter((_, i) => i !== idx));
+                    }}
+                    style={{
+                      paddingHorizontal: 8,
+                      paddingVertical: 2,
+                      minWidth: 0,
+                    }}
+                    textStyle={{ fontSize: 12 }}
+                  />
+                )}
               </View>
             </Container>
           ))}

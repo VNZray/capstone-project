@@ -173,12 +173,12 @@ const LoginPage = () => {
                     label="Password"
                     placeholder="Enter password"
                     secureTextEntry={!showPassword}
+                    rightIcon={showPassword ? 'eye-slash' : 'eye'}
+                    onPressRightIcon={() => setShowPassword((p) => !p)}
                     value={password}
                     onChangeText={setPassword}
                     variant="outlined"
                     autoCapitalize="none"
-                    rightIcon={showPassword ? 'eye-slash' : 'eye'}
-                    onPressRightIcon={() => setShowPassword((p) => !p)}
                     required
                     errorText={passwordError}
                   />

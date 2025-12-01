@@ -21,6 +21,7 @@ import {
   isAfter,
   isBefore,
   startOfDay,
+  set,
 } from 'date-fns';
 import BaseModal from '../BaseModal';
 
@@ -268,6 +269,7 @@ export const DateTimeRangePicker: React.FC<DateTimeRangePickerProps> = ({
                     (isStartDate || isEndDate) && {
                       backgroundColor: theme.primary,
                       borderWidth: 0,
+                      borderRadius: '50%',
                     },
                     isToday &&
                       !isStartDate &&
@@ -515,6 +517,7 @@ export const DateTimeRangePicker: React.FC<DateTimeRangePickerProps> = ({
                 mode="time"
                 display="default"
                 onChange={(event, selectedTime) => {
+                  setShowStartTimePicker(false);
                   if (selectedTime) setStartTime(selectedTime);
                 }}
               />
@@ -554,6 +557,7 @@ export const DateTimeRangePicker: React.FC<DateTimeRangePickerProps> = ({
                 mode="time"
                 display="default"
                 onChange={(event, selectedTime) => {
+                  setShowEndTimePicker(false);
                   if (selectedTime) setEndTime(selectedTime);
                 }}
               />

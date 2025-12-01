@@ -398,42 +398,44 @@ const BookingForm: React.FC<Props> = ({
           maxDate={addDays(new Date(), 365)}
         />
 
-        <FormTextInput
-          size="small"
-          keyboardType="numeric"
-          label="Pax"
-          placeholder="Enter number of pax"
-          required
-          minLength={1}
-          maxLength={2}
-          pattern={/^[1-9]\d*$/}
-          validateOnBlur
-          onChangeText={handlePaxChange}
-          customValidator={(value) => {
-            const num = parseInt(value);
-            if (num < 1) return 'At least 1 pax is required';
-            if (num > 20) return 'Maximum 20 pax allowed';
-            return null;
-          }}
-          value={pax === 0 ? '' : pax.toString()}
-        />
-
         <Container direction="row" padding={0} backgroundColor="transparent">
           <FormTextInput
             size="small"
             keyboardType="numeric"
-            label="Adult(s)"
-            placeholder="Auto"
-            editable={false}
-            value={numberOfAdults.toString()}
+            label="Pax"
+            placeholder="e.g., 4"
+            required
+            minLength={1}
+            maxLength={2}
+            pattern={/^[1-9]\d*$/}
+            validateOnBlur
+            onChangeText={handlePaxChange}
+            customValidator={(value) => {
+              const num = parseInt(value);
+              if (num < 1) return 'At least 1 pax is required';
+              if (num > 20) return 'Maximum 20 pax allowed';
+              return null;
+            }}
+            value={pax === 0 ? '' : pax.toString()}
           />
 
           <FormTextInput
             size="small"
             keyboardType="numeric"
+            label="Adult(s)"
+            placeholder="e.g., 2"
+            editable={false}
+            value={numberOfAdults.toString()}
+          />
+        </Container>
+
+        <Container direction="row" padding={0} backgroundColor="transparent">
+          <FormTextInput
+            size="small"
+            keyboardType="numeric"
             label="Children"
             maxLength={2}
-            placeholder="No. of children(s)"
+            placeholder="e.g., 2"
             pattern={/^[0-9]\d*$/}
             validateOnBlur
             customValidator={(value) => {
@@ -461,7 +463,7 @@ const BookingForm: React.FC<Props> = ({
             keyboardType="numeric"
             label="Infants"
             maxLength={2}
-            placeholder="No. of infant(s)"
+            placeholder="e.g., 2"
             pattern={/^[0-9]\d*$/}
             validateOnBlur
             customValidator={(value) => {

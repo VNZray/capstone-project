@@ -290,7 +290,7 @@ const booking = () => {
       </View>
 
       {(() => {
-        const baseBottom = Platform.OS === 'ios' ? 0 : 0;
+        const baseBottom = Platform.OS === 'ios' ? 0 : 12;
         return (
           <View
             style={[
