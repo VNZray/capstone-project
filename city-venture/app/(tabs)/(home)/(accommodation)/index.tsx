@@ -7,6 +7,7 @@ import { ThemedText } from '@/components/themed-text';
 import { useAccommodation } from '@/context/AccommodationContext';
 import { navigateToAccommodationProfile } from '@/routes/accommodationRoutes';
 import { fetchAddress } from '@/services/AccommodationService';
+import { getAverageRating, getTotalReviews } from '@/services/FeedbackService';
 import type { Business } from '@/types/Business';
 
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';

@@ -26,6 +26,7 @@ import api from "@/src/services/api";
 import { colors } from "@/src/utils/Colors";
 import Button from "@/src/components/Button";
 import Alert from "@/src/components/Alert";
+import { format } from "date-fns";
 
 interface BookingDetailsProps {
   open: boolean;
@@ -87,10 +88,11 @@ const InfoCard: React.FC<{ children: React.ReactNode }> = ({ children }) => (
   </Box>
 );
 
+// Value accepts ReactNode to allow multi-line dates
 const InfoRow: React.FC<{
   icon: React.ReactNode;
   label: string;
-  value: string;
+  value: React.ReactNode;
 }> = ({ icon, label, value }) => (
   <Box
     sx={{
@@ -109,9 +111,16 @@ const InfoRow: React.FC<{
         {label}
       </Typography>
     </Box>
-    <Typography level="body-sm" sx={{ fontWeight: 600, textAlign: "right" }}>
-      {value}
-    </Typography>
+    {/* Right side container */}
+    <Box sx={{ textAlign: "right" }}>
+      {typeof value === "string" || typeof value === "number" ? (
+        <Typography level="body-sm" sx={{ fontWeight: 600 }}>
+          {value}
+        </Typography>
+      ) : (
+        value
+      )}
+    </Box>
   </Box>
 );
 
@@ -207,13 +216,102 @@ const BookingDetails: React.FC<BookingDetailsProps> = ({
     );
   }, [guestInfo?.name]);
 
-  const formatDate = (date?: Date) => {
-    if (!date) return "—";
-    return new Date(date).toLocaleDateString("en-US", {
+  // Returns a styled Box with separate Date and Time
+  const renderDateTime = (
+    dateInput?: Date | string,
+    timeInput?: Date | string
+  ) => {
+    if (!dateInput) return "—";
+
+    const d = new Date(dateInput);
+    const dateStr = d.toLocaleDateString("en-US", {
       year: "numeric",
       month: "long",
       day: "numeric",
     });
+
+    let timeStr = "";
+
+    // 1. Try explicit time input first
+    if (timeInput) {
+      if (timeInput instanceof Date) {
+        timeStr = timeInput.toLocaleTimeString("en-US", {
+          hour: "numeric",
+          minute: "2-digit",
+          hour12: true,
+        });
+      } else if (typeof timeInput === "string") {
+        // If it looks like HH:mm:ss
+        if (timeInput.includes(":") && !timeInput.includes("T")) {
+          const [h, m] = timeInput.split(":");
+          const dummyDate = new Date();
+          dummyDate.setHours(Number(h));
+          dummyDate.setMinutes(Number(m));
+          timeStr = dummyDate.toLocaleTimeString("en-US", {
+            hour: "numeric",
+            minute: "2-digit",
+            hour12: true,
+          });
+        } else {
+          // Try parsing as standard string/ISO
+          const tDate = new Date(timeInput);
+          if (!isNaN(tDate.getTime())) {
+            timeStr = tDate.toLocaleTimeString("en-US", {
+              hour: "numeric",
+              minute: "2-digit",
+              hour12: true,
+            });
+          }
+        }
+      }
+    }
+
+    // 2. Fallback: Extract time from dateInput if no explicit time and dateInput has time info
+    if (
+      !timeStr &&
+      typeof dateInput === "string" &&
+      (dateInput.includes("T") || dateInput.length > 10)
+    ) {
+      const tDate = new Date(dateInput);
+      // Check if it's not default midnight (unless it really is midnight, but usually API returns midnight for dates)
+      if (tDate.getHours() !== 0 || tDate.getMinutes() !== 0) {
+        timeStr = tDate.toLocaleTimeString("en-US", {
+          hour: "numeric",
+          minute: "2-digit",
+          hour12: true,
+        });
+      }
+    } else if (!timeStr && dateInput instanceof Date) {
+      if (dateInput.getHours() !== 0 || dateInput.getMinutes() !== 0) {
+        timeStr = dateInput.toLocaleTimeString("en-US", {
+          hour: "numeric",
+          minute: "2-digit",
+          hour12: true,
+        });
+      }
+    }
+
+    // If still no time string, default to empty or standard fallback if desired,
+    // but usually better to show nothing if we aren't sure.
+
+    return (
+      <Box
+        sx={{
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "flex-end",
+        }}
+      >
+        <Typography level="body-sm" sx={{ fontWeight: 600 }}>
+          {dateStr}
+        </Typography>
+        {timeStr && (
+          <Typography level="body-xs" sx={{ color: "text.tertiary" }}>
+            {timeStr}
+          </Typography>
+        )}
+      </Box>
+    );
   };
 
   const handleStatusUpdate = (newStatus: string) => {
@@ -504,16 +602,24 @@ const BookingDetails: React.FC<BookingDetailsProps> = ({
                       <Divider sx={{ my: 1.5 }} />
                     </>
                   )}
+                  {/* UPDATED: Pass both date and time */}
                   <InfoRow
                     icon={<Calendar size={18} />}
                     label="Check-in"
-                    value={formatDate(booking.check_in_date)}
+                    value={renderDateTime(
+                      booking.check_in_date,
+                      booking.check_in_time
+                    )}
                   />
                   <Divider sx={{ my: 1.5 }} />
+                  {/* UPDATED: Pass both date and time */}
                   <InfoRow
                     icon={<Calendar size={18} />}
                     label="Check-out"
-                    value={formatDate(booking.check_out_date)}
+                    value={renderDateTime(
+                      booking.check_out_date,
+                      booking.check_out_time
+                    )}
                   />
                   {booking.created_at && (
                     <>
@@ -521,7 +627,7 @@ const BookingDetails: React.FC<BookingDetailsProps> = ({
                       <InfoRow
                         icon={<Clock size={18} />}
                         label="Booked On"
-                        value={formatDate(booking.created_at)}
+                        value={renderDateTime(booking.created_at)}
                       />
                     </>
                   )}

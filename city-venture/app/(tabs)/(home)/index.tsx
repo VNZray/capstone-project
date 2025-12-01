@@ -229,9 +229,19 @@ const HomeScreen = () => {
     }
   };
 
-  const handleRefresh = useCallback(() => {
-    loadHomeContent(true);
-  }, [loadHomeContent]);
+  const handleEventPress = useCallback((event: HomeEvent) => {
+    router.push({
+      pathname: './(tabs)/(home)/(event)',
+      params: { eventId: event.id },
+    });
+  }, []);
+
+  const handleNewsPress = useCallback((article: NewsArticle) => {
+    router.push({
+      pathname: '/(tabs)/(home)',
+      params: { newsId: article.id },
+    });
+  }, []);
 
   if (!user) return null;
 

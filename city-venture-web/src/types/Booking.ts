@@ -1,7 +1,10 @@
 export type Booking = {
     id?: string;
     room_id?: string;
+    booking_type?: 'overnight' | 'short-stay';
     tourist_id?: string;
+    check_in_time?: Date | string;
+    check_out_time?: Date | string;
     check_in_date?: Date;
     check_out_date?: Date;
     booking_status?: 'Pending' | 'Reserved' | 'Checked-In' | 'Checked-Out' | 'Canceled';

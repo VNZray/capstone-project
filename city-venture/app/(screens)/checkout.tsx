@@ -36,7 +36,7 @@ if (
 
 const CheckoutScreen = () => {
   const colorScheme = useColorScheme();
-  const theme = Colors[colorScheme ?? 'light'];
+  const theme = Colors[(colorScheme ?? 'light') as 'light' | 'dark'];
   const isDark = colorScheme === 'dark';
   const type = useTypography();
 

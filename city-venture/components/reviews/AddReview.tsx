@@ -18,6 +18,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import Button from '../Button';
 
 type Props = {
   visible: boolean;
@@ -65,7 +66,10 @@ const AddReview = ({
   const pickImage = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
-      Alert.alert('Permission Denied', 'We need permission to access your photos');
+      Alert.alert(
+        'Permission Denied',
+        'We need permission to access your photos'
+      );
       return;
     }
 
@@ -93,40 +97,43 @@ const AddReview = ({
 
     setLoading(true);
     setUploadProgress('Preparing...');
-    
+
     try {
       let uploadedImageUrls: string[] = [];
 
       // Upload images to Supabase if there are new local images
       if (images.length > 0) {
         setUploadProgress(`Uploading images (0/${images.length})...`);
-        
-        const businessName = accommodationDetails?.business_name || 'unknown-business';
-        
+
+        const businessName =
+          accommodationDetails?.business_name || 'unknown-business';
+
         uploadedImageUrls = await Promise.all(
           images.map(async (imageUri, index) => {
             // Skip if already a URL (already uploaded)
             if (imageUri.startsWith('http')) {
               return imageUri;
             }
-            
-            setUploadProgress(`Uploading images (${index + 1}/${images.length})...`);
-            
+
+            setUploadProgress(
+              `Uploading images (${index + 1}/${images.length})...`
+            );
+
             // Determine mime type from URI
-            const mimeType = imageUri.endsWith('.png') 
-              ? 'image/png' 
+            const mimeType = imageUri.endsWith('.png')
+              ? 'image/png'
               : imageUri.endsWith('.gif')
               ? 'image/gif'
               : imageUri.endsWith('.webp')
               ? 'image/webp'
               : 'image/jpeg';
-            
+
             const publicUrl = await uploadReviewImage({
               uri: imageUri,
               businessName,
               mimeType,
             });
-            
+
             return publicUrl;
           })
         );
@@ -149,7 +156,7 @@ const AddReview = ({
     } catch (error) {
       console.error('Submit review error:', error);
       Alert.alert(
-        'Error', 
+        'Error',
         error instanceof Error ? error.message : 'Failed to submit review'
       );
       setUploadProgress('');
@@ -162,19 +169,19 @@ const AddReview = ({
     <Modal
       visible={visible}
       transparent
-      animationType="slide"
+      animationType="fade"
       onRequestClose={onClose}
     >
-      <View style={styles.overlay}>
+      <View style={styles.floatingOverlay}>
         <View
           style={[
-            styles.container,
+            styles.floatingContainer,
             { backgroundColor: isDark ? card.dark : card.light },
           ]}
         >
           {/* Header */}
           <View style={styles.header}>
-            <ThemedText type="header-medium">
+            <ThemedText type="card-title-large" weight="medium">
               {editReview ? 'Edit Review' : 'Write a Review'}
             </ThemedText>
             <Pressable onPress={onClose}>
@@ -186,7 +193,10 @@ const AddReview = ({
             </Pressable>
           </View>
 
-          <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+          <ScrollView
+            style={styles.content}
+            showsVerticalScrollIndicator={false}
+          >
             {/* Rating */}
             <View style={styles.section}>
               <ThemedText type="label-medium" style={styles.label}>
@@ -257,7 +267,11 @@ const AddReview = ({
                         style={styles.removeButton}
                         onPress={() => removeImage(index)}
                       >
-                        <Ionicons name="close-circle" size={24} color={colors.error} />
+                        <Ionicons
+                          name="close-circle"
+                          size={24}
+                          color={colors.error}
+                        />
                       </Pressable>
                     </View>
                   ))}
@@ -276,33 +290,25 @@ const AddReview = ({
                 </ThemedText>
               </View>
             ) : null}
-            
+
             <View style={styles.buttonRow}>
-              <Pressable
-                style={[styles.button, styles.cancelButton]}
+              <Button
+                fullWidth
+                color="secondary"
                 onPress={onClose}
                 disabled={loading}
               >
-                <ThemedText type="body-medium">Cancel</ThemedText>
-              </Pressable>
-              <Pressable
-                style={[
-                  styles.button,
-                  styles.submitButton,
-                  { backgroundColor: colors.primary },
-                  loading && styles.buttonDisabled,
-                ]}
-                onPress={handleSubmit}
-                disabled={loading}
-              >
+                Cancel
+              </Button>
+              <Button fullWidth onPress={handleSubmit} disabled={loading}>
                 {loading && !uploadProgress ? (
                   <ActivityIndicator color="white" />
+                ) : editReview ? (
+                  'Update Review'
                 ) : (
-                  <ThemedText type="body-medium" style={{ color: 'white' }}>
-                    {editReview ? 'Update' : 'Submit'}
-                  </ThemedText>
+                  'Submit Review'
                 )}
-              </Pressable>
+              </Button>
             </View>
           </View>
         </View>
@@ -314,16 +320,26 @@ const AddReview = ({
 export default AddReview;
 
 const styles = StyleSheet.create({
-  overlay: {
+  floatingOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'flex-end',
+    backgroundColor: 'rgba(0,0,0,0.25)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 16,
   },
-  container: {
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
+  floatingContainer: {
+    width: '100%',
+    maxWidth: 400,
+    borderRadius: 20,
     maxHeight: '90%',
     paddingBottom: 20,
+    // Shadow for iOS
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.18,
+    shadowRadius: 16,
+    // Shadow for Android
+    elevation: 12,
   },
   header: {
     flexDirection: 'row',

@@ -29,23 +29,23 @@ function unwrap<T>(res: any): T {
 // or objects with numbered keys like { "0": {...}, "1": {...} }
 function normalizeList<T>(raw: any): T[] {
   const src = unwrap<any>(raw);
-  
+
   if (Array.isArray(src)) {
     // Handle nested arrays
     if (src.length > 0 && Array.isArray(src[0])) {
       return src[0] as T[];
     }
-    
+
     // Handle array of objects where first item has numbered keys
     if (src.length > 0 && typeof src[0] === 'object' && src[0] !== null) {
       // Check if it's an object with numeric string keys (0, 1, 2, etc.)
       const keys = Object.keys(src[0]);
-      const numericKeys = keys.filter(k => /^\d+$/.test(k));
-      
+      const numericKeys = keys.filter((k) => /^\d+$/.test(k));
+
       if (numericKeys.length > 0) {
         // Extract values from numeric keys and flatten
         const extracted: T[] = [];
-        numericKeys.forEach(key => {
+        numericKeys.forEach((key) => {
           const item = src[0][key];
           if (item && typeof item === 'object' && 'id' in item) {
             extracted.push(item as T);
@@ -54,18 +54,18 @@ function normalizeList<T>(raw: any): T[] {
         return extracted;
       }
     }
-    
+
     return src as T[];
   }
-  
+
   // Handle single object with numeric keys
   if (typeof src === 'object' && src !== null) {
     const keys = Object.keys(src);
-    const numericKeys = keys.filter(k => /^\d+$/.test(k));
-    
+    const numericKeys = keys.filter((k) => /^\d+$/.test(k));
+
     if (numericKeys.length > 0) {
       const extracted: T[] = [];
-      numericKeys.forEach(key => {
+      numericKeys.forEach((key) => {
         const item = src[key];
         if (item && typeof item === 'object' && 'id' in item) {
           extracted.push(item as T);
@@ -74,7 +74,7 @@ function normalizeList<T>(raw: any): T[] {
       return extracted;
     }
   }
-  
+
   return [src as T];
 }
 
@@ -95,7 +95,7 @@ export async function getReviewsByTypeAndEntityId(
   review_type_id: string
 ): Promise<ReviewAndRatings> {
   const { data } = await apiClient.get(
-    `/reviews/type/${(review_type)}/${review_type_id}`
+    `/reviews/type/${review_type}/${review_type_id}`
   );
   return normalizeList<ReviewAndRating>(data);
 }
@@ -113,8 +113,8 @@ export async function getBusinessReviews(
   if (!rawReviews || rawReviews.length === 0) return [];
 
   // Filter out invalid entries (like the OkPacket objects)
-  const reviews = rawReviews.filter(r => 
-    r && typeof r === 'object' && 'id' in r && 'rating' in r
+  const reviews = rawReviews.filter(
+    (r) => r && typeof r === 'object' && 'id' in r && 'rating' in r
   );
 
   if (reviews.length === 0) return [];
@@ -162,7 +162,7 @@ export async function getBusinessReviews(
   // Fetch photos and replies for each review
   const photosMap = new Map<string, ReviewPhotos>();
   const repliesMap = new Map<string, Replies>();
-  
+
   await Promise.all(
     reviews.map(async (r) => {
       try {
@@ -172,7 +172,7 @@ export async function getBusinessReviews(
         console.error(`Error fetching photos for review ${r.id}:`, error);
         photosMap.set(r.id, []);
       }
-      
+
       try {
         const replies = await getRepliesByReviewId(r.id);
         repliesMap.set(r.id, replies);
@@ -186,23 +186,27 @@ export async function getBusinessReviews(
   // Merge review with its author details, photos, and replies
   const enriched: ReviewWithAuthor[] = reviews.map((r) => {
     const tourist = touristMap.get(String(r.tourist_id)) ?? null;
-    const user = tourist?.user_id ? userMap.get(String(tourist.user_id)) ?? null : null;
+    const user = tourist?.user_id
+      ? userMap.get(String(tourist.user_id)) ?? null
+      : null;
     const photos = photosMap.get(r.id) || [];
     const replies = repliesMap.get(r.id) || [];
-    
-    return { 
-      ...r, 
-      tourist, 
+
+    return {
+      ...r,
+      tourist,
       user,
       photos,
-      replies
+      replies,
     };
   });
 
   return enriched;
 }
 
-export async function createReview(payload: CreateReviewPayload): Promise<ReviewAndRating> {
+export async function createReview(
+  payload: CreateReviewPayload
+): Promise<ReviewAndRating> {
   const { data } = await apiClient.post(`/reviews`, payload);
   return unwrap<ReviewAndRating>(data);
 }
@@ -242,7 +246,10 @@ export async function createReply(payload: CreateReplyPayload): Promise<Reply> {
   return unwrap<Reply>(data);
 }
 
-export async function updateReply(id: string, payload: UpdateReplyPayload): Promise<Reply> {
+export async function updateReply(
+  id: string,
+  payload: UpdateReplyPayload
+): Promise<Reply> {
   const { data } = await apiClient.patch(`/replies/${id}`, payload);
   return unwrap<Reply>(data);
 }
@@ -255,19 +262,87 @@ export async function deleteReply(id: string): Promise<{ message: string }> {
 // ===== Review Photos =====
 
 export async function getReviewPhotos(reviewId: string): Promise<ReviewPhotos> {
-  const { data } = await apiClient.get(`/review-photos/reviews/${reviewId}/photos`);
+  const { data } = await apiClient.get(
+    `/review-photos/reviews/${reviewId}/photos`
+  );
   return normalizeList<ReviewPhoto>(data);
 }
 
-export async function addReviewPhotos(reviewId: string, photos: string[]): Promise<ReviewPhotos> {
-  const { data } = await apiClient.post(`/review-photos/reviews/${reviewId}/photos`, { photos });
+export async function addReviewPhotos(
+  reviewId: string,
+  photos: string[]
+): Promise<ReviewPhotos> {
+  const { data } = await apiClient.post(
+    `/review-photos/reviews/${reviewId}/photos`,
+    { photos }
+  );
   // Endpoint returns { message, data }
   return unwrap<ReviewPhotos>(data);
 }
 
-export async function deleteReviewPhoto(photoId: string): Promise<{ message: string }> {
-  const { data } = await apiClient.delete(`/review-photos/reviews/photos/${photoId}`);
+export async function deleteReviewPhoto(
+  photoId: string
+): Promise<{ message: string }> {
+  const { data } = await apiClient.delete(
+    `/review-photos/reviews/photos/${photoId}`
+  );
   return data;
+}
+
+// calculate average rating for a review type and entity id
+export async function getAverageRating(
+  review_type: ReviewType,
+  review_type_id: string
+): Promise<number> {
+  const { data } = await apiClient.get(
+    `/reviews/average/${review_type}/${review_type_id}`
+  );
+  // Handle array/object response: [{ average_rating: "5.0000" }]
+  let avg = 0;
+  if (
+    Array.isArray(data) &&
+    data.length > 0 &&
+    data[0].average_rating !== undefined
+  ) {
+    avg = parseFloat(data[0].average_rating);
+  } else if (
+    data &&
+    typeof data === 'object' &&
+    data.average_rating !== undefined
+  ) {
+    avg = parseFloat(data.average_rating);
+  } else if (typeof data === 'number') {
+    avg = data;
+  }
+  return isNaN(avg) ? 0 : avg;
+}
+
+// calculate total number of reviews for a review type and entity id
+export async function getTotalReviews(
+  review_type: ReviewType,
+  review_type_id: string
+): Promise<number> {
+  const { data } = await apiClient.get(
+    `/reviews/total/${review_type}/${review_type_id}`
+  );
+  // Handle array/object response: [{ total_reviews: 2 }]
+  let total = 0;
+  if (
+    Array.isArray(data) &&
+    data.length > 0 &&
+    data[0].total_reviews !== undefined
+  ) {
+    total = Number(data[0].total_reviews);
+  } else if (
+    data &&
+    typeof data === 'object' &&
+    data.total_reviews !== undefined
+  ) {
+    total = Number(data.total_reviews);
+  } else if (typeof data === 'number') {
+    total = data;
+  }
+  return isNaN(total) ? 0 : total;
 }
 
 export default {

@@ -6,6 +6,8 @@ import {
   insertReview,
   updateReview,
   deleteReview,
+  getAverageRating,
+  getTotalReviews,
 } from "../controller/feedback/reviewController.js";
 import { authenticate } from "../middleware/authenticate.js";
 
@@ -18,5 +20,7 @@ router.get("/:id", getReviewById);
 router.post("/", authenticate, insertReview);
 router.patch("/:id", authenticate, updateReview);
 router.delete("/:id", authenticate, deleteReview);
+router.get("/average/:review_type/:review_type_id", getAverageRating);
+router.get("/total/:review_type/:review_type_id", getTotalReviews);
 
 export default router;

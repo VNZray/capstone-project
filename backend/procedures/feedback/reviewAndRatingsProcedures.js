@@ -78,6 +78,34 @@ async function createReviewAndRatingTable(knex) {
       DELETE FROM review_and_rating WHERE id = p_id;
     END;
   `);
+
+  // calculate average rating for a given (review_type, review_type_id)
+  await knex.raw(`
+    CREATE PROCEDURE CalculateAverageRating(
+      IN p_review_type ENUM('Accommodation','Room','Shop','Event','Tourist Spot','Product','Service'),
+      IN p_review_type_id CHAR(64)
+    )
+    BEGIN
+      SELECT AVG(rating) AS average_rating
+      FROM review_and_rating
+      WHERE review_type = p_review_type
+        AND review_type_id = p_review_type_id;
+    END;
+  `);
+
+  // calculate total number of reviews for a given (review_type, review_type_id)
+  await knex.raw(`
+    CREATE PROCEDURE CalculateTotalReviews(
+      IN p_review_type ENUM('Accommodation','Room','Shop','Event','Tourist Spot','Product','Service'),
+      IN p_review_type_id CHAR(64)
+    )
+    BEGIN
+      SELECT COUNT(*) AS total_reviews
+      FROM review_and_rating
+      WHERE review_type = p_review_type
+        AND review_type_id = p_review_type_id;
+    END;
+  `);
 }
 
 async function dropReviewAndRatingTable(knex) {
@@ -87,6 +115,8 @@ async function dropReviewAndRatingTable(knex) {
   await knex.raw("DROP PROCEDURE IF EXISTS InsertReview;");
   await knex.raw("DROP PROCEDURE IF EXISTS UpdateReview;");
   await knex.raw("DROP PROCEDURE IF EXISTS DeleteReview;");
+  await knex.raw("DROP PROCEDURE IF EXISTS CalculateAverageRating;");
+  await knex.raw("DROP PROCEDURE IF EXISTS CalculateTotalReviews;");
 }
 
 export { createReviewAndRatingTable, dropReviewAndRatingTable };

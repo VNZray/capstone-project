@@ -1,6 +1,6 @@
 import { card, colors as themeColors } from '@/constants/color';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import { FontAwesome5 } from '@expo/vector-icons';
+import { FontAwesome5, Ionicons } from '@expo/vector-icons';
 import React, { useMemo, useState } from 'react';
 import {
   Image,
@@ -22,12 +22,12 @@ export type RoomCardView = 'card' | 'list' | string;
 
 export interface RoomCardProps {
   image?: string | ImageSourcePropType;
-  title: string;            // Room number / name
-  subtitle?: string;        // Room type
+  title: string; // Room number / name
+  subtitle?: string; // Room type
   capacity?: number | string; // Guests capacity
-  price?: string | number;  // Display price (already formatted or raw)
-  rating?: number;          // 0-5
-  comments?: number;        // number of reviews
+  price?: string | number; // Display price (already formatted or raw)
+  rating?: number; // 0-5
+  comments?: number; // number of reviews
   status?: 'Available' | 'Booked' | 'Maintenance';
   favorite?: boolean;
   addToFavorite?: (next: boolean) => void;
@@ -100,15 +100,47 @@ const SIZE_MAP: Record<RoomCardSize, SizeConfig> = {
   },
 };
 
-function getElevation(level: 1 | 2 | 3 | 4 | 5 | 6 | undefined): ViewStyle | undefined {
+function getElevation(
+  level: 1 | 2 | 3 | 4 | 5 | 6 | undefined
+): ViewStyle | undefined {
   if (!level) return undefined;
   const iosShadow: Record<number, ViewStyle> = {
-    1: { shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 4, shadowOffset: { width: 0, height: 2 } },
-    2: { shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 6, shadowOffset: { width: 0, height: 3 } },
-    3: { shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 8, shadowOffset: { width: 0, height: 4 } },
-    4: { shadowColor: '#000', shadowOpacity: 0.12, shadowRadius: 12, shadowOffset: { width: 0, height: 6 } },
-    5: { shadowColor: '#000', shadowOpacity: 0.14, shadowRadius: 16, shadowOffset: { width: 0, height: 8 } },
-    6: { shadowColor: '#000', shadowOpacity: 0.16, shadowRadius: 20, shadowOffset: { width: 0, height: 10 } },
+    1: {
+      shadowColor: '#000',
+      shadowOpacity: 0.06,
+      shadowRadius: 4,
+      shadowOffset: { width: 0, height: 2 },
+    },
+    2: {
+      shadowColor: '#000',
+      shadowOpacity: 0.08,
+      shadowRadius: 6,
+      shadowOffset: { width: 0, height: 3 },
+    },
+    3: {
+      shadowColor: '#000',
+      shadowOpacity: 0.1,
+      shadowRadius: 8,
+      shadowOffset: { width: 0, height: 4 },
+    },
+    4: {
+      shadowColor: '#000',
+      shadowOpacity: 0.12,
+      shadowRadius: 12,
+      shadowOffset: { width: 0, height: 6 },
+    },
+    5: {
+      shadowColor: '#000',
+      shadowOpacity: 0.14,
+      shadowRadius: 16,
+      shadowOffset: { width: 0, height: 8 },
+    },
+    6: {
+      shadowColor: '#000',
+      shadowOpacity: 0.16,
+      shadowRadius: 20,
+      shadowOffset: { width: 0, height: 10 },
+    },
   };
   const androidElevation: Record<number, ViewStyle> = {
     1: { elevation: 1 },
@@ -118,7 +150,11 @@ function getElevation(level: 1 | 2 | 3 | 4 | 5 | 6 | undefined): ViewStyle | und
     5: { elevation: 5 },
     6: { elevation: 6 },
   };
-  return Platform.select<ViewStyle>({ ios: iosShadow[level], android: androidElevation[level], default: androidElevation[level] });
+  return Platform.select<ViewStyle>({
+    ios: iosShadow[level],
+    android: androidElevation[level],
+    default: androidElevation[level],
+  });
 }
 
 export const RoomCard: React.FC<RoomCardProps> = ({
@@ -199,7 +235,11 @@ export const RoomCard: React.FC<RoomCardProps> = ({
   const priceDisplay = useMemo(() => {
     if (price == null) return undefined;
     const format = (n: number) =>
-      '₱' + n.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      '₱' +
+      n.toLocaleString('en-PH', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      });
     if (typeof price === 'number') return format(price);
     const raw = price.trim();
     // Extract numeric part (allow digits & single decimal point)
@@ -224,7 +264,9 @@ export const RoomCard: React.FC<RoomCardProps> = ({
         },
         getElevation(elevation),
         margin != null && typeof margin !== 'object' ? { margin } : undefined,
-        pressed && onClick && Platform.OS !== 'web' && { transform: [{ scale: 0.98 }] },
+        pressed &&
+          onClick &&
+          Platform.OS !== 'web' && { transform: [{ scale: 0.98 }] },
         style,
       ]}
       disabled={disabled}
@@ -248,18 +290,19 @@ export const RoomCard: React.FC<RoomCardProps> = ({
           style={[
             view === 'card' ? styles.imageCardWrap : styles.imageListWrap,
             view === 'card' && { height: sz.imageHeight },
-            view === 'list' && { width: sz.imageWidthList, height: sz.imageWidthList },
+            view === 'list' && {
+              width: sz.imageWidthList,
+              height: sz.imageWidthList,
+            },
           ]}
         >
-          <Image
-            source={imgSource}
-            style={styles.image}
-            resizeMode="cover"
-          />
+          <Image source={imgSource} style={styles.image} resizeMode="cover" />
           <Pressable
             onPress={onToggleFavorite}
             style={styles.favBtn}
-            accessibilityLabel={fav ? 'Remove from favorites' : 'Add to favorites'}
+            accessibilityLabel={
+              fav ? 'Remove from favorites' : 'Add to favorites'
+            }
           >
             <FontAwesome5
               name={fav ? 'heart' : 'heart'}
@@ -274,7 +317,13 @@ export const RoomCard: React.FC<RoomCardProps> = ({
                 label={status}
                 size="small"
                 variant="soft"
-                color={status === 'Available' ? 'success' : status === 'Booked' ? 'warning' : 'error'}
+                color={
+                  status === 'Available'
+                    ? 'success'
+                    : status === 'Booked'
+                    ? 'warning'
+                    : 'error'
+                }
                 elevation={0 as any}
               />
             </View>
@@ -282,16 +331,28 @@ export const RoomCard: React.FC<RoomCardProps> = ({
         </View>
 
         {/* Body */}
-        <View style={[styles.body, view === 'list' && { flex: 1, paddingLeft: sz.gap }]}>  
+        <View
+          style={[
+            styles.body,
+            view === 'list' && { flex: 1, paddingLeft: sz.gap },
+          ]}
+        >
           {view === 'card' ? (
             <View style={styles.columnsWrap}>
-              <View style={[styles.colLeft, { gap: 4 }]}>  
-                <Text style={[{ color: textColor }, sz.title, titleStyle]} numberOfLines={2}>
+              <View style={[styles.colLeft, { gap: 4 }]}>
+                <Text
+                  style={[{ color: textColor }, sz.title, titleStyle]}
+                  numberOfLines={2}
+                >
                   {title}
                 </Text>
                 {!!subtitle && (
                   <Text
-                    style={[{ color: subTextColor }, sz.subtitle, subtitleStyle]}
+                    style={[
+                      { color: subTextColor },
+                      sz.subtitle,
+                      subtitleStyle,
+                    ]}
                     numberOfLines={2}
                   >
                     {subtitle}
@@ -299,14 +360,25 @@ export const RoomCard: React.FC<RoomCardProps> = ({
                 )}
                 {capacity != null && (
                   <View style={[styles.inline, { marginTop: 2, gap: 4 }]}>
-                    <FontAwesome5 name="users" size={sz.icon} color={subTextColor} />
-                    <Text style={{ color: subTextColor, fontSize: sz.subtitle.fontSize }}>
+                    <FontAwesome5
+                      name="users"
+                      size={sz.icon}
+                      color={subTextColor}
+                    />
+                    <Text
+                      style={{
+                        color: subTextColor,
+                        fontSize: sz.subtitle.fontSize,
+                      }}
+                    >
                       {capacity} pax
                     </Text>
                   </View>
                 )}
               </View>
-              <View style={[styles.colRight, { alignItems: 'flex-end', gap: 4 }]}>                
+              <View
+                style={[styles.colRight, { alignItems: 'flex-end', gap: 4 }]}
+              >
                 {priceDisplay && (
                   <Text
                     style={[{ color: baseAccent }, sz.price, priceStyle]}
@@ -316,21 +388,39 @@ export const RoomCard: React.FC<RoomCardProps> = ({
                   </Text>
                 )}
                 <View style={[styles.inline, { marginTop: 2 }]}>
-                  <FontAwesome5 name="star" size={sz.icon} color="#FFC107" />
-                  <Text style={[{ color: textColor, marginLeft: 4 }, sz.rating]}>{rating.toFixed(1)}</Text>
-                  <Text style={[{ color: subTextColor, marginLeft: 6 }, sz.comments]}>({comments})</Text>
+                  <Ionicons name="star" size={16} color="#FFC107" />
+                  <Text
+                    style={[{ color: textColor, marginLeft: 4 }, sz.rating]}
+                  >
+                    {rating.toFixed(1)}
+                  </Text>
+                  <Text
+                    style={[
+                      { color: subTextColor, marginLeft: 6 },
+                      sz.comments,
+                    ]}
+                  >
+                    ({comments})
+                  </Text>
                 </View>
               </View>
             </View>
           ) : (
             // list layout keeps original stacking
             <View>
-              <Text style={[{ color: textColor }, sz.title, titleStyle]} numberOfLines={2}>
+              <Text
+                style={[{ color: textColor }, sz.title, titleStyle]}
+                numberOfLines={2}
+              >
                 {title}
               </Text>
               {!!subtitle && (
                 <Text
-                  style={[{ color: subTextColor, marginTop: 2 }, sz.subtitle, subtitleStyle]}
+                  style={[
+                    { color: subTextColor, marginTop: 2 },
+                    sz.subtitle,
+                    subtitleStyle,
+                  ]}
                   numberOfLines={2}
                 >
                   {subtitle}
@@ -338,15 +428,28 @@ export const RoomCard: React.FC<RoomCardProps> = ({
               )}
               {capacity != null && (
                 <View style={[styles.inline, { marginTop: 6, gap: 4 }]}>
-                  <FontAwesome5 name="users" size={sz.icon} color={subTextColor} />
-                  <Text style={{ color: subTextColor, fontSize: sz.subtitle.fontSize }}>
+                  <FontAwesome5
+                    name="users"
+                    size={sz.icon}
+                    color={subTextColor}
+                  />
+                  <Text
+                    style={{
+                      color: subTextColor,
+                      fontSize: sz.subtitle.fontSize,
+                    }}
+                  >
                     {capacity} pax{String(capacity) === '1' ? '' : 's'}
                   </Text>
                 </View>
               )}
               {priceDisplay && (
                 <Text
-                  style={[{ color: baseAccent, marginTop: 6 }, sz.price, priceStyle]}
+                  style={[
+                    { color: baseAccent, marginTop: 6 },
+                    sz.price,
+                    priceStyle,
+                  ]}
                   numberOfLines={1}
                 >
                   {priceDisplay}
@@ -354,8 +457,14 @@ export const RoomCard: React.FC<RoomCardProps> = ({
               )}
               <View style={[styles.inline, { marginTop: 8 }]}>
                 <FontAwesome5 name="star" size={sz.icon} color="#FFC107" />
-                <Text style={[{ color: textColor, marginLeft: 4 }, sz.rating]}>{rating.toFixed(1)}</Text>
-                <Text style={[{ color: subTextColor, marginLeft: 6 }, sz.comments]}>({comments})</Text>
+                <Text style={[{ color: textColor, marginLeft: 4 }, sz.rating]}>
+                  {rating.toFixed(1)}
+                </Text>
+                <Text
+                  style={[{ color: subTextColor, marginLeft: 6 }, sz.comments]}
+                >
+                  ({comments})
+                </Text>
               </View>
             </View>
           )}

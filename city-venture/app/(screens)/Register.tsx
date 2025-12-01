@@ -133,18 +133,36 @@ const RegistrationPage = () => {
 
       // 1) Create base user
       const userRes = await insertData(newUser, 'users');
-      const userId = userRes.id;
-      console.debug('[Register] Created user', { userId });
 
-      // 3) Create tourist profile
+      // Robustly extract User ID to handle different API response structures
+      // API might return: { id: 1 }, { data: { id: 1 } }, { insertId: 1 }
+      const userId = userRes?.id || userRes?.data?.id || userRes?.insertId;
+
+      console.debug('[Register] Created user response:', userRes);
+      console.debug('[Register] Extracted User ID:', userId);
+
+      if (!userId) {
+        console.error('Full User Response:', JSON.stringify(userRes, null, 2));
+        throw new Error(
+          'Failed to retrieve User ID from response. Tourist profile cannot be created.'
+        );
+      }
+
+      // 3) Create tourist profile linked to the new user
       const touristPayload: any = {
         ...newTourist,
         email,
         user_id: userId,
       };
-      console.log('[Register] Inserting tourist (final)', touristPayload);
+
+      console.log(
+        '[Register] Inserting tourist (final payload)',
+        touristPayload
+      );
+
       const response = await insertData(touristPayload, 'tourist');
-      const tourist_id = response.id;
+      const tourist_id = response?.id || response?.data?.id;
+
       console.debug('[Register] Created tourist', { tourist_id });
 
       // 4) Auto-login and navigate home
@@ -175,7 +193,7 @@ const RegistrationPage = () => {
         alert(data?.error || 'Registration failed. Please try again.');
       } else {
         console.error('[Register] Unexpected error', err);
-        alert('Unexpected error occurred.');
+        alert(err.message || 'Unexpected error occurred.');
       }
     }
   };

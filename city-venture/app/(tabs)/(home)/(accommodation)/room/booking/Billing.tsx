@@ -5,11 +5,13 @@ import RadioButton from '@/components/RadioButton';
 import FormTextInput from '@/components/TextInput';
 import { ThemedText } from '@/components/themed-text';
 import { colors } from '@/constants/color';
+
 import { useRoom } from '@/context/RoomContext';
 import { Booking, BookingPayment } from '@/types/Booking';
 import { MaterialIcons } from '@expo/vector-icons';
 import React, { useEffect, useMemo, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
+import { parse } from 'date-fns';
 
 type Props = {
   data: Booking;
@@ -21,8 +23,26 @@ type Props = {
 const Payment: React.FC<Props> = ({ data, payment, setData, setPayment }) => {
   const { roomDetails } = useRoom();
 
-  const checkIn = (data.check_in_date as Date) || null;
-  const checkOut = (data.check_out_date as Date) || null;
+
+  // Helper to parse 'YYYY-MM-DD HH:mm:ss' to Date
+  const parseDateTime = (dt: string | Date | null | undefined) => {
+    if (!dt) return null;
+    if (dt instanceof Date) return dt;
+    // Try to parse string
+    // Accepts 'YYYY-MM-DD HH:mm:ss' or ISO
+    if (typeof dt === 'string') {
+      // Try date-fns parse
+      const parsed = parse(dt, 'yyyy-MM-dd HH:mm:ss', new Date());
+      if (!isNaN(parsed.getTime())) return parsed;
+      // fallback: try Date constructor
+      const fallback = new Date(dt);
+      if (!isNaN(fallback.getTime())) return fallback;
+    }
+    return null;
+  };
+
+  const checkIn = parseDateTime(data.check_in_date as string) || null;
+  const checkOut = parseDateTime(data.check_out_date as string) || null;
 
   // Calculate days and nights
   let days = 0;

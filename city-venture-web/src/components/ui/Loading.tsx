@@ -113,7 +113,7 @@ export default function Loading({
         justifyContent: "center",
         gap: 2,
         padding: 4,
-        minHeight: "100vh",
+        height: "100vh",
       }}
     >
       <CircularProgress

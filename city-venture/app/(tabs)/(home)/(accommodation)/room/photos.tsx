@@ -1,29 +1,87 @@
 import PageContainer from '@/components/PageContainer';
 import PhotoGallery from '@/components/PhotoGallery';
-import React from 'react';
-
-// Sample room photos - replace with actual data from props or API
-const SAMPLE_ROOM_PHOTOS = [
-  'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800',
-  'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=800',
-  'https://images.unsplash.com/photo-1595576508898-0ad5c879a061?w=800',
-  'https://images.unsplash.com/photo-1618773928121-c32242e63f39?w=800',
-  'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=800',
-  'https://images.unsplash.com/photo-1571896349842-33c89424de2d?w=800',
-  'https://images.unsplash.com/photo-1590490360182-c33d57733427?w=800',
-  'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=800',
-];
+import { useRoom } from '@/context/RoomContext';
+import { fetchRoomPhotosByRoomId } from '@/services/RoomPhotoService';
+import React, { useEffect, useState } from 'react';
+import { View, Text, ActivityIndicator, StyleSheet } from 'react-native';
 
 const RoomPhotos = () => {
+  const { roomDetails } = useRoom();
+  const [photos, setPhotos] = useState<string[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const loadPhotos = async () => {
+      if (!roomDetails?.id) {
+        setPhotos([]);
+        setLoading(false);
+        return;
+      }
+      
+      setLoading(true);
+      try {
+        const roomPhotos = await fetchRoomPhotosByRoomId(roomDetails.id);
+        const photoUrls = roomPhotos.map(p => p.file_url);
+        setPhotos(photoUrls);
+      } catch (error) {
+        console.error('Failed to load room photos:', error);
+        setPhotos([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadPhotos();
+  }, [roomDetails?.id]);
+
+  if (loading) {
+    return (
+      <PageContainer style={{ paddingTop: 0 }}>
+        <View style={styles.centerContainer}>
+          <ActivityIndicator size="large" color="#007AFF" />
+          <Text style={styles.loadingText}>Loading photos...</Text>
+        </View>
+      </PageContainer>
+    );
+  }
+
+  if (photos.length === 0) {
+    return (
+      <PageContainer style={{ paddingTop: 0 }}>
+        <View style={styles.centerContainer}>
+          <Text style={styles.emptyText}>No photos available for this room</Text>
+        </View>
+      </PageContainer>
+    );
+  }
+
   return (
     <PageContainer style={{ paddingTop: 0 }}>
       <PhotoGallery 
-        photos={SAMPLE_ROOM_PHOTOS}
+        photos={photos}
         title="Room Photos"
         columns={2}
       />
     </PageContainer>
   );
 };
+
+const styles = StyleSheet.create({
+  centerContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 40,
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 14,
+    color: '#6B7280',
+  },
+  emptyText: {
+    fontSize: 14,
+    color: '#6B7280',
+  },
+});
 
 export default RoomPhotos;

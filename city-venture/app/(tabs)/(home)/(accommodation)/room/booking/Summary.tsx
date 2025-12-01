@@ -310,9 +310,17 @@ const MiniBadge: React.FC<MiniBadgeProps> = ({ label, caption }) => (
   </View>
 );
 
-function formatDate(d?: Date) {
+function formatDate(d?: Date | string | String) {
   if (!d) return '';
-  return new Date(d).toLocaleDateString(undefined, {
+  let dateObj: Date;
+  if (d instanceof Date) {
+    dateObj = d;
+  } else if (typeof d === 'string' || d instanceof String) {
+    dateObj = new Date(d.toString());
+  } else {
+    return '';
+  }
+  return dateObj.toLocaleDateString(undefined, {
     year: 'numeric',
     month: 'short',
     day: 'numeric',
