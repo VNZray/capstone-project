@@ -2,7 +2,7 @@ import { background } from '@/constants/color';
 import { useAuth } from '@/context/AuthContext';
 import { useRoom } from '@/context/RoomContext';
 import { bookRoom, payBooking } from '@/query/accommodationQuery';
-import { Booking, BookingPayment, Guests } from '@/types/Booking';
+import { Booking, BookingPayment } from '@/types/Booking';
 import debugLogger from '@/utils/debugLogger';
 import { notifyPayment } from '@/utils/paymentBus';
 import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
@@ -58,20 +58,15 @@ const OnlinePayment = () => {
 
   const parsed = useMemo(() => {
     let b: Partial<Booking> = {};
-    let g: Guests = [];
     let p: Partial<BookingPayment> = {};
     try {
       if (bookingData) b = JSON.parse(String(bookingData));
     } catch {}
     try {
-      if (guests) g = JSON.parse(String(guests));
-    } catch {}
-    try {
       if (paymentData) p = JSON.parse(String(paymentData));
     } catch {}
-    return { b, g, p } as {
+    return { b, p } as {
       b: Partial<Booking>;
-      g: Guests;
       p: Partial<BookingPayment>;
     };
   }, [bookingData, guests, paymentData]);
@@ -83,7 +78,7 @@ const OnlinePayment = () => {
       setCreating(true);
       const total = Number((parsed.b as Booking)?.total_price) || 0;
       const paid = Number((parsed.p as BookingPayment)?.amount) || 0;
-      
+
       // Step 1: Create the booking first
       const bookingPayload: Booking = {
         ...(parsed.b as Booking),
@@ -97,9 +92,9 @@ const OnlinePayment = () => {
         title: 'OnlinePayment: Creating booking',
         data: { bookingPayload },
       });
-      
+
       const createdBooking = await bookRoom(bookingPayload);
-      
+
       if (!createdBooking?.id) {
         throw new Error('Booking ID not returned after creation');
       }

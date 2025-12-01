@@ -1,13 +1,9 @@
 import Checklist, { ChecklistItem, ChecklistRef } from '@/components/Checklist';
 import Container from '@/components/Container';
-import DateInput from '@/components/DateInput';
 import PageContainer from '@/components/PageContainer';
 import RadioButton, { RadioItem } from '@/components/RadioButton';
 import FormTextInput from '@/components/TextInput';
-import {
-  DateTimeRangePicker,
-  DateAvailabilityInfo,
-} from '@/components/ui/DateTimeRangePicker';
+import { DateAvailabilityInfo } from '@/components/ui/DateTimeRangePicker';
 import { ThemedText } from '@/components/themed-text';
 import { useAuth } from '@/context/AuthContext';
 import { useRoom } from '@/context/RoomContext';
@@ -18,8 +14,8 @@ import React, { useEffect, useRef, useState } from 'react';
 import { ScrollView, StyleSheet, View, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/constants/color';
-import { format, addDays, addHours } from 'date-fns';
-import DateTimePicker from '@react-native-community/datetimepicker';
+import { format, addDays } from 'date-fns';
+import BookingDateTimeModal from './modal/BookingDateTimeModal';
 
 const travelerType: ChecklistItem[] = [
   { id: '1', label: 'Local' },
@@ -107,13 +103,8 @@ const BookingForm: React.FC<Props> = ({
   const [checkInTime, setCheckInTime] = useState<Date>(new Date());
   const [checkOutTime, setCheckOutTime] = useState<Date>(new Date());
 
-  // Short stay time states
-  const [shortStayTime, setShortStayTime] = useState<Date>(new Date());
-  const [showShortStayTimePicker, setShowShortStayTimePicker] = useState(false);
-  const [shortStayDuration, setShortStayDuration] = useState<string>('3');
-
-  // Modal visibility for DateTimeRangePicker
-  const [showDateTimeRangePicker, setShowDateTimeRangePicker] = useState(false);
+  // Modal visibility
+  const [showBookingModal, setShowBookingModal] = useState(false);
 
   // Status map for current user's own bookings (self-blocking only)
   const [statusMap, setStatusMap] = useState<
@@ -265,36 +256,14 @@ const BookingForm: React.FC<Props> = ({
     }
   }, [selectedTypes, pax]);
 
-  // Short stay duration calculation effect
-  useEffect(() => {
-    if (bookingType === 'short-stay' && checkInDate && checkInTime) {
-      const hours = parseInt(shortStayDuration, 10) || 1;
-
-      // Create a combined Date object for the calculation
-      // We use checkInDate for the YMD and checkInTime for HMS
-      const startDateTime = new Date(
-        checkInDate.getFullYear(),
-        checkInDate.getMonth(),
-        checkInDate.getDate(),
-        checkInTime.getHours(),
-        checkInTime.getMinutes(),
-        checkInTime.getSeconds()
-      );
-
-      const endDateTime = addHours(startDateTime, hours);
-
-      // Update checkout states
-      setCheckOutDate(endDateTime);
-      setCheckOutTime(endDateTime);
-    }
-  }, [bookingType, checkInDate, checkInTime, shortStayDuration]);
-
   React.useEffect(() => {
     const selectedPurpose = tripPurpose.find(
       (tp) => tp.id === tripPurposeValue
     );
 
-    // Always use the actual checkInDate/checkOutDate Date objects, which now include the correct time
+    // Format dates and times for the booking data
+    // For short-stay: both dates might be the same day (e.g., Dec 1 10am - 2pm)
+    // For overnight: dates are typically different days
     const formattedCheckIn = checkInDate
       ? format(checkInDate, 'yyyy-MM-dd')
       : undefined;
@@ -302,7 +271,7 @@ const BookingForm: React.FC<Props> = ({
       ? format(checkOutDate, 'yyyy-MM-dd')
       : undefined;
 
-    // Format Times
+    // Format times - these can span across midnight for short-stay
     const formattedCheckInTime = checkInTime
       ? format(checkInTime, 'HH:mm:ss')
       : undefined;
@@ -321,7 +290,7 @@ const BookingForm: React.FC<Props> = ({
       check_in_date: formattedCheckIn as any,
       check_out_date: formattedCheckOut as any,
 
-      // Include Times in State
+      // Include times - critical for short-stay bookings within the same day
       check_in_time: formattedCheckInTime,
       check_out_time: formattedCheckOutTime,
 
@@ -344,7 +313,6 @@ const BookingForm: React.FC<Props> = ({
     checkOutDate,
     checkInTime,
     checkOutTime,
-    shortStayTime,
     bookingType,
     tripPurposeValue,
     customPurpose,
@@ -365,275 +333,70 @@ const BookingForm: React.FC<Props> = ({
           }
         />
 
-        {bookingType === 'short-stay' ? (
-          <View style={styles.dateTimeContainer}>
-            <ThemedText
-              type="label-medium"
-              weight="semi-bold"
-              style={{ marginBottom: 8 }}
-            >
-              Check-in Date/Time
-            </ThemedText>
-
-            <DateInput
-              requireConfirmation
-              selectionVariant="filled"
-              mode="single"
-              label=""
-              dateStatuses={statusMap}
-              enableSingleStatusVisuals
-              showStatusLegend
-              placeholder="Select date"
-              value={checkInDate}
-              onChange={(date) => {
-                setCheckInDate(date);
-                setCheckOutDate(date);
-                // When date changes, preserve the time part in shortStayTime
-                if (date) {
-                  setShortStayTime((prev) => {
-                    // If prev is today, keep the time, else default to 12:00 PM
-                    const t = prev instanceof Date ? prev : new Date();
-                    return new Date(
-                      date.getFullYear(),
-                      date.getMonth(),
-                      date.getDate(),
-                      t.getHours(),
-                      t.getMinutes(),
-                      t.getSeconds()
-                    );
-                  });
-                  setCheckInTime((prev) => {
-                    const t = prev instanceof Date ? prev : new Date();
-                    return new Date(
-                      date.getFullYear(),
-                      date.getMonth(),
-                      date.getDate(),
-                      t.getHours(),
-                      t.getMinutes(),
-                      t.getSeconds()
-                    );
-                  });
-                }
-              }}
-              disablePast
+        {/* Booking Date/Time Display Card */}
+        <Pressable
+          style={styles.bookingCard}
+          onPress={() => setShowBookingModal(true)}
+        >
+          <View style={styles.bookingCardHeader}>
+            <Ionicons
+              name="calendar-outline"
+              size={24}
+              color={Colors.light.primary}
             />
-
-            <View style={styles.timePickerContainer}>
-              <ThemedText
-                type="label-small"
-                style={{ color: Colors.light.textSecondary, marginBottom: 8 }}
-              >
-                Check-in Time
+            <View style={{ flex: 1 }}>
+              <ThemedText type="label-medium" weight="semi-bold">
+                {bookingType === 'short-stay'
+                  ? 'Short Stay Details'
+                  : 'Check-in / Check-out'}
               </ThemedText>
-              <Pressable
-                style={[
-                  styles.timeButton,
-                  { borderColor: Colors.light.border },
-                ]}
-                onPress={() => setShowShortStayTimePicker(true)}
+              <ThemedText
+                type="body-small"
+                style={{ color: Colors.light.textSecondary }}
               >
-                <Ionicons
-                  name="time-outline"
-                  size={20}
-                  color={Colors.light.primary}
-                />
-                <ThemedText type="body-medium" weight="medium">
-                  {checkInDate
-                    ? format(shortStayTime, 'hh:mm a')
-                    : 'Select time'}
-                </ThemedText>
-              </Pressable>
+                {checkInDate && checkOutDate
+                  ? bookingType === 'short-stay'
+                    ? `${format(checkInDate, 'MMM dd, yyyy')} • ${format(
+                        checkInTime,
+                        'hh:mm a'
+                      )} - ${format(checkOutTime, 'hh:mm a')}`
+                    : `${format(checkInDate, 'MMM dd')} - ${format(
+                        checkOutDate,
+                        'MMM dd, yyyy'
+                      )}`
+                  : 'Tap to select dates and times'}
+              </ThemedText>
             </View>
-
-            {showShortStayTimePicker && (
-              <DateTimePicker
-                value={shortStayTime}
-                mode="time"
-                display="default"
-                onChange={(event, selectedTime) => {
-                  setShowShortStayTimePicker(false);
-                  if (selectedTime) {
-                    setShortStayTime(selectedTime);
-                    setCheckInTime(selectedTime);
-                  }
-                }}
-              />
-            )}
-
-            <RadioButton
-              label="Duration"
-              items={hourlyOptions}
-              value={shortStayDuration}
-              onChange={(item) => setShortStayDuration(String(item?.id ?? '3'))}
+            <Ionicons
+              name="chevron-forward"
+              size={20}
+              color={Colors.light.textSecondary}
             />
           </View>
-        ) : (
-          <View style={styles.dateTimeContainer}>
-            <ThemedText
-              type="label-medium"
-              weight="semi-bold"
-              style={{ marginBottom: 8 }}
-            >
-              Check-in / Check-out Date & Time Range
-            </ThemedText>
+        </Pressable>
 
-            {/* Display current selection */}
-            <Pressable
-              style={[
-                styles.dateRangeDisplay,
-                { borderColor: Colors.light.border },
-              ]}
-              onPress={() => setShowDateTimeRangePicker(true)}
-            >
-              <View style={styles.dateRangeContent}>
-                <View style={styles.dateColumn}>
-                  <View style={styles.iconLabel}>
-                    <Ionicons
-                      name="calendar"
-                      size={16}
-                      color={Colors.light.primary}
-                    />
-                    <ThemedText
-                      type="label-small"
-                      style={{ color: Colors.light.textSecondary }}
-                    >
-                      Check-in
-                    </ThemedText>
-                  </View>
-                  <ThemedText type="body-medium" weight="semi-bold">
-                    {checkInDate
-                      ? format(checkInDate, 'MMM dd, yyyy')
-                      : 'Select date'}
-                  </ThemedText>
-                  <ThemedText
-                    type="body-small"
-                    style={{ color: Colors.light.textSecondary }}
-                  >
-                    {checkInDate ? format(checkInTime, 'hh:mm a') : '--:-- --'}
-                  </ThemedText>
-                </View>
-
-                <Ionicons
-                  name="arrow-forward"
-                  size={20}
-                  color={Colors.light.textSecondary}
-                />
-
-                <View style={styles.dateColumn}>
-                  <View style={styles.iconLabel}>
-                    <Ionicons
-                      name="calendar"
-                      size={16}
-                      color={Colors.light.primary}
-                    />
-                    <ThemedText
-                      type="label-small"
-                      style={{ color: Colors.light.textSecondary }}
-                    >
-                      Check-out
-                    </ThemedText>
-                  </View>
-                  <ThemedText type="body-medium" weight="semi-bold">
-                    {checkOutDate
-                      ? format(checkOutDate, 'MMM dd, yyyy')
-                      : 'Select date'}
-                  </ThemedText>
-                  <ThemedText
-                    type="body-small"
-                    style={{ color: Colors.light.textSecondary }}
-                  >
-                    {checkOutDate
-                      ? format(checkOutTime, 'hh:mm a')
-                      : '--:-- --'}
-                  </ThemedText>
-                </View>
-              </View>
-
-              <View style={styles.changeButtonContainer}>
-                <Ionicons
-                  name="create-outline"
-                  size={18}
-                  color={Colors.light.primary}
-                />
-                <ThemedText
-                  type="body-small"
-                  weight="semi-bold"
-                  style={{ color: Colors.light.primary }}
-                >
-                  {checkInDate && checkOutDate
-                    ? 'Change Dates & Times'
-                    : 'Select Dates & Times'}
-                </ThemedText>
-              </View>
-            </Pressable>
-
-            {/* DateTimeRangePicker Modal */}
-            <DateTimeRangePicker
-              visible={showDateTimeRangePicker}
-              onClose={() => setShowDateTimeRangePicker(false)}
-              onConfirm={(startDate, endDate, startTime, endTime) => {
-                setCheckInDate(
-                  new Date(
-                    startDate.getFullYear(),
-                    startDate.getMonth(),
-                    startDate.getDate(),
-                    startTime.getHours(),
-                    startTime.getMinutes(),
-                    startTime.getSeconds()
-                  )
-                );
-                setCheckOutDate(
-                  new Date(
-                    endDate.getFullYear(),
-                    endDate.getMonth(),
-                    endDate.getDate(),
-                    endTime.getHours(),
-                    endTime.getMinutes(),
-                    endTime.getSeconds()
-                  )
-                );
-                setCheckInTime(startTime);
-                setCheckOutTime(endTime);
-                console.log(
-                  'Selected range:',
-                  startDate,
-                  endDate,
-                  startTime,
-                  endTime,
-                  startDate.getFullYear(),
-                  startDate.getMonth(),
-                  startDate.getDate(),
-                  startTime.getHours(),
-                  startTime.getMinutes(),
-                  startTime.getSeconds()
-                );
-
-                console.log(
-                  'Combined check-in:',
-                  new Date(
-                    startDate.getFullYear(),
-                    startDate.getMonth(),
-                    startDate.getDate(),
-                    startTime.getHours(),
-                    startTime.getMinutes(),
-                    startTime.getSeconds()
-                  )
-                );
-
-                setShowDateTimeRangePicker(false);
-              }}
-              initialStartDate={checkInDate || undefined}
-              initialEndDate={checkOutDate || undefined}
-              initialStartTime={checkInTime}
-              initialEndTime={checkOutTime}
-              availabilityData={availabilityData}
-              roomId={roomDetails?.id}
-              businessId={roomDetails?.business_id}
-              minDate={new Date()}
-              maxDate={addDays(new Date(), 365)}
-            />
-          </View>
-        )}
+        {/* Booking Date/Time Modal */}
+        <BookingDateTimeModal
+          visible={showBookingModal}
+          bookingType={bookingType as 'overnight' | 'short-stay'}
+          onClose={() => setShowBookingModal(false)}
+          onConfirm={(checkIn, checkOut, checkInT, checkOutT) => {
+            setCheckInDate(checkIn);
+            setCheckOutDate(checkOut);
+            setCheckInTime(checkInT);
+            setCheckOutTime(checkOutT);
+          }}
+          initialCheckInDate={checkInDate}
+          initialCheckOutDate={checkOutDate}
+          initialCheckInTime={checkInTime}
+          initialCheckOutTime={checkOutTime}
+          dateStatuses={statusMap}
+          availabilityData={availabilityData}
+          roomId={roomDetails?.id}
+          businessId={roomDetails?.business_id}
+          minDate={new Date()}
+          maxDate={addDays(new Date(), 365)}
+        />
 
         <FormTextInput
           size="small"
@@ -767,52 +530,16 @@ const BookingForm: React.FC<Props> = ({
 export default BookingForm;
 
 const styles = StyleSheet.create({
-  dateTimeContainer: {
-    gap: 12,
-  },
-  dateRangeDisplay: {
+  bookingCard: {
     padding: 16,
     borderRadius: 12,
     borderWidth: 1.5,
+    borderColor: Colors.light.border,
     backgroundColor: Colors.light.surface,
+  },
+  bookingCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: 12,
-  },
-  dateRangeContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  dateColumn: {
-    flex: 1,
-  },
-  iconLabel: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    marginBottom: 4,
-  },
-  changeButtonContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-    backgroundColor: Colors.light.surfaceOverlay,
-  },
-  timePickerContainer: {
-    marginTop: 8,
-  },
-  timeButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 10,
-    borderWidth: 1.5,
-    backgroundColor: Colors.light.surface,
   },
 });

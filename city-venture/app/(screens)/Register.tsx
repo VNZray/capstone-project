@@ -16,6 +16,7 @@ import { User } from '@/types/User';
 import axios from 'axios';
 import { StatusBar } from 'expo-status-bar';
 import React, { useEffect, useState } from 'react';
+import { Alert } from 'react-native';
 import { ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 
@@ -97,7 +98,7 @@ const RegistrationPage = () => {
     email: email,
     phone_number: phoneNumber,
     password: password,
-    user_role_id: 2,
+    user_role_id: 9,
     is_active: false,
     is_verified: false,
     created_at: new Date().toISOString(),
@@ -128,7 +129,6 @@ const RegistrationPage = () => {
   const handleTouristRegistration = async () => {
     try {
       console.log('[Register] Inserting user', newUser);
-      console.log('[Register] Inserting address', newAddress);
       console.log('[Register] Inserting tourist (pre)', newTourist);
 
       // 1) Create base user
@@ -148,10 +148,9 @@ const RegistrationPage = () => {
         );
       }
 
-      // 3) Create tourist profile linked to the new user
+      // 2) Create tourist profile linked to the new user
       const touristPayload: any = {
         ...newTourist,
-        email,
         user_id: userId,
       };
 
@@ -161,15 +160,23 @@ const RegistrationPage = () => {
       );
 
       const response = await insertData(touristPayload, 'tourist');
-      const tourist_id = response?.id || response?.data?.id;
+      const tourist_id =
+        response?.id || response?.data?.id || response?.insertId;
 
-      console.debug('[Register] Created tourist', { tourist_id });
-
-      // 4) Auto-login and navigate home
-      console.debug('[Register] Auto-login start', { email });
-      await login(email, password);
-      console.debug('[Register] Auto-login success');
-      navigateToHome();
+      if (!tourist_id) {
+        throw new Error('Tourist profile creation failed.');
+      } else {
+        console.debug('[Register] Created tourist', { tourist_id });
+        Alert.alert(
+          tourist_id,
+          'Your account has been created successfully. You will be logged in automatically.'
+        );
+        // 3) Auto-login and navigate home
+        console.debug('[Register] Auto-login start', { email });
+        await login(email, password);
+        console.debug('[Register] Auto-login success');
+        navigateToHome();
+      }
     } catch (err: any) {
       if (axios.isAxiosError(err)) {
         const status = err.response?.status;
@@ -396,29 +403,25 @@ const RegistrationPage = () => {
                   I am a:
                 </ThemedText>
                 <View style={styles.radioGroup}>
-                  {['Bicolano', 'Non-Bicolano', 'Foreign', 'Local'].map(
-                    (type) => (
-                      <TouchableOpacity
-                        key={type}
-                        style={[
-                          colorScheme === 'light'
-                            ? styles.radioButton
-                            : styles.darkRadioButton,
-                          ethnicity === type && styles.radioSelected,
-                        ]}
-                        onPress={() => setEthnicity(type)}
+                  {['Bicolano', 'Non-Bicolano', 'Foreigner'].map((type) => (
+                    <TouchableOpacity
+                      key={type}
+                      style={[
+                        colorScheme === 'light'
+                          ? styles.radioButton
+                          : styles.darkRadioButton,
+                        ethnicity === type && styles.radioSelected,
+                      ]}
+                      onPress={() => setEthnicity(type)}
+                    >
+                      <ThemedText
+                        type="label-small"
+                        style={[ethnicity === type && styles.radioTextSelected]}
                       >
-                        <ThemedText
-                          type="label-small"
-                          style={[
-                            ethnicity === type && styles.radioTextSelected,
-                          ]}
-                        >
-                          {type.charAt(0).toUpperCase() + type.slice(1)}
-                        </ThemedText>
-                      </TouchableOpacity>
-                    )
-                  )}
+                        {type.charAt(0).toUpperCase() + type.slice(1)}
+                      </ThemedText>
+                    </TouchableOpacity>
+                  ))}
                 </View>
               </View>
 
@@ -524,8 +527,6 @@ const RegistrationPage = () => {
                   Sign In
                 </ThemedText>
               </View>
-
-              {/* Legacy picker modals removed in favor of Dropdown component */}
             </PageContainer>
           </ScrollView>
         </View>
@@ -578,9 +579,6 @@ const styles = StyleSheet.create({
     flex: 1,
     minWidth: 0,
   },
-  // Removed native TextInput styles after migrating to FormTextInput component
-
-  // Removed unused picker/modal styles after Dropdown integration
 
   radioGroup: {
     flexDirection: 'row',

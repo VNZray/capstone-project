@@ -236,7 +236,7 @@ const AccommodationDirectory = () => {
       >
         {/* Header Section (Scrolls away) */}
         <View style={{ marginTop: 8, paddingHorizontal: 16 }}>
-          <ThemedText type="header-large" style={{ fontSize: 32 }}>
+          <ThemedText type="header-small" weight="medium">
             Accommodation
           </ThemedText>
         </View>

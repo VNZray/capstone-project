@@ -22,6 +22,7 @@ import {
   isBefore,
   startOfDay,
 } from 'date-fns';
+import BaseModal from '../BaseModal';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -305,287 +306,262 @@ export const DateTimeRangePicker: React.FC<DateTimeRangePickerProps> = ({
   };
 
   return (
-    <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
-      <ThemedView style={styles.fullScreenContainer}>
-        <View style={styles.content}>
-          {loading ? (
-            <View style={styles.loadingContainer}>
-              <ActivityIndicator size="large" color={theme.primary} />
+    <BaseModal
+      title="Select Date & Time Range"
+      visible={visible}
+      onClose={onClose}
+      scrollable={true}
+      primaryButtonLabel="Confirm"
+      onPrimaryPress={handleConfirm}
+      secondaryButtonLabel="Cancel"
+      onSecondaryPress={onClose}
+    >
+      <View style={styles.content}>
+        {loading ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color={theme.primary} />
+            <ThemedText
+              type="body-medium"
+              style={{ color: theme.textSecondary, marginTop: 16 }}
+            >
+              Loading availability...
+            </ThemedText>
+          </View>
+        ) : (
+          <>
+            <View style={styles.selectionIndicator}>
               <ThemedText
-                type="body-medium"
-                style={{ color: theme.textSecondary, marginTop: 16 }}
+                type="body-small"
+                style={{ color: theme.textSecondary }}
               >
-                Loading availability...
+                {selectingStartDate
+                  ? 'Select check-in date'
+                  : 'Select check-out date'}
               </ThemedText>
             </View>
-          ) : (
-            <ScrollView showsVerticalScrollIndicator={false}>
-              {/* Header */}
-              <View style={styles.header}>
-                <ThemedText type="header-small" weight="bold">
-                  Select Date & Time Range
-                </ThemedText>
-                <Pressable onPress={onClose} style={styles.closeButton}>
-                  <Ionicons name="close" size={24} color={theme.text} />
-                </Pressable>
-              </View>
 
-              {/* Selection indicator */}
-              <View style={styles.selectionIndicator}>
+            {/* Selected dates display */}
+            <View style={styles.selectedDatesContainer}>
+              <View style={styles.dateDisplay}>
                 <ThemedText
-                  type="body-small"
+                  type="label-small"
                   style={{ color: theme.textSecondary }}
                 >
-                  {selectingStartDate
-                    ? 'Select check-in date'
-                    : 'Select check-out date'}
+                  Check-in
+                </ThemedText>
+                <ThemedText type="body-medium" weight="semi-bold">
+                  {format(startDate, 'MMM dd, yyyy')}
                 </ThemedText>
               </View>
 
-              {/* Selected dates display */}
-              <View style={styles.selectedDatesContainer}>
-                <View style={styles.dateDisplay}>
-                  <ThemedText
-                    type="label-small"
-                    style={{ color: theme.textSecondary }}
-                  >
-                    Check-in
-                  </ThemedText>
-                  <ThemedText type="body-medium" weight="semi-bold">
-                    {format(startDate, 'MMM dd, yyyy')}
-                  </ThemedText>
-                </View>
+              <Ionicons
+                name="arrow-forward"
+                size={20}
+                color={theme.textSecondary}
+              />
 
-                <Ionicons
-                  name="arrow-forward"
-                  size={20}
-                  color={theme.textSecondary}
-                />
-
-                <View style={styles.dateDisplay}>
-                  <ThemedText
-                    type="label-small"
-                    style={{ color: theme.textSecondary }}
-                  >
-                    Check-out
-                  </ThemedText>
-                  <ThemedText type="body-medium" weight="semi-bold">
-                    {format(endDate, 'MMM dd, yyyy')}
-                  </ThemedText>
-                </View>
-              </View>
-
-              {/* Calendar */}
-              {renderCalendar()}
-
-              {/* Availability legend */}
-              <View style={styles.legend}>
-                <View style={styles.legendItems}>
-                  <View style={styles.legendItem}>
-                    <View
-                      style={[
-                        styles.legendDot,
-                        {
-                          backgroundColor: 'transparent',
-                          borderColor: theme.border,
-                          borderWidth: 1.5,
-                        },
-                      ]}
-                    />
-                    <ThemedText type="body-extra-small">Available</ThemedText>
-                  </View>
-                  <View style={styles.legendItem}>
-                    <View
-                      style={[
-                        styles.legendDot,
-                        {
-                          backgroundColor: theme.warningLight,
-                          borderColor: theme.warning,
-                          borderWidth: 1.5,
-                        },
-                      ]}
-                    />
-                    <ThemedText type="body-extra-small">Reserved</ThemedText>
-                  </View>
-                  <View style={styles.legendItem}>
-                    <View
-                      style={[
-                        styles.legendDot,
-                        {
-                          backgroundColor: theme.errorLight,
-                          borderColor: theme.error,
-                          borderWidth: 1.5,
-                        },
-                      ]}
-                    />
-                    <ThemedText type="body-extra-small">Occupied</ThemedText>
-                  </View>
-                </View>
-              </View>
-
-              {/* Time selection */}
-              <View style={styles.timeSection}>
+              <View style={styles.dateDisplay}>
                 <ThemedText
-                  type="card-title-small"
-                  weight="bold"
-                  style={{ marginBottom: 12 }}
+                  type="label-small"
+                  style={{ color: theme.textSecondary }}
                 >
-                  Select Time
+                  Check-out
                 </ThemedText>
+                <ThemedText type="body-medium" weight="semi-bold">
+                  {format(endDate, 'MMM dd, yyyy')}
+                </ThemedText>
+              </View>
+            </View>
 
-                <View style={styles.timePickersRow}>
-                  {/* Start time */}
-                  <View style={styles.timePicker}>
-                    <ThemedText
-                      type="label-small"
-                      style={{ color: theme.textSecondary, marginBottom: 8 }}
-                    >
-                      Check-in Time
-                    </ThemedText>
-                    <Pressable
-                      style={[styles.timeButton, { borderColor: theme.border }]}
-                      onPress={() => setShowStartTimePicker(true)}
-                    >
-                      <Ionicons
-                        name="time-outline"
-                        size={20}
-                        color={theme.primary}
-                      />
-                      <ThemedText type="body-medium" weight="medium">
-                        {format(startTime, 'hh:mm a')}
-                      </ThemedText>
-                    </Pressable>
-                  </View>
+            {/* Calendar */}
+            {renderCalendar()}
 
-                  {/* End time */}
-                  <View style={styles.timePicker}>
-                    <ThemedText
-                      type="label-small"
-                      style={{ color: theme.textSecondary, marginBottom: 8 }}
-                    >
-                      Check-out Time
-                    </ThemedText>
-                    <Pressable
-                      style={[styles.timeButton, { borderColor: theme.border }]}
-                      onPress={() => setShowEndTimePicker(true)}
-                    >
-                      <Ionicons
-                        name="time-outline"
-                        size={20}
-                        color={theme.primary}
-                      />
-                      <ThemedText type="body-medium" weight="medium">
-                        {format(endTime, 'hh:mm a')}
-                      </ThemedText>
-                    </Pressable>
-                  </View>
+            {/* Availability legend */}
+            <View style={styles.legend}>
+              <View style={styles.legendItems}>
+                <View style={styles.legendItem}>
+                  <View
+                    style={[
+                      styles.legendDot,
+                      {
+                        backgroundColor: 'transparent',
+                        borderColor: theme.border,
+                        borderWidth: 1.5,
+                      },
+                    ]}
+                  />
+                  <ThemedText type="body-extra-small">Available</ThemedText>
+                </View>
+                <View style={styles.legendItem}>
+                  <View
+                    style={[
+                      styles.legendDot,
+                      {
+                        backgroundColor: theme.warningLight,
+                        borderColor: theme.warning,
+                        borderWidth: 1.5,
+                      },
+                    ]}
+                  />
+                  <ThemedText type="body-extra-small">Reserved</ThemedText>
+                </View>
+                <View style={styles.legendItem}>
+                  <View
+                    style={[
+                      styles.legendDot,
+                      {
+                        backgroundColor: theme.errorLight,
+                        borderColor: theme.error,
+                        borderWidth: 1.5,
+                      },
+                    ]}
+                  />
+                  <ThemedText type="body-extra-small">Occupied</ThemedText>
                 </View>
               </View>
+            </View>
 
-              {/* Action buttons */}
-              <View style={styles.actions}>
-                <Pressable
-                  style={[
-                    styles.button,
-                    styles.cancelButton,
-                    { borderColor: theme.border },
-                  ]}
-                  onPress={onClose}
-                >
-                  <ThemedText
-                    type="body-medium"
-                    weight="semi-bold"
-                    style={{ color: theme.text }}
-                  >
-                    Cancel
-                  </ThemedText>
-                </Pressable>
+            {/* Time selection */}
+            <View style={styles.timeSection}>
+              <ThemedText
+                type="card-title-small"
+                weight="bold"
+                style={{ marginBottom: 12 }}
+              >
+                Select Time
+              </ThemedText>
 
-                <Pressable
-                  style={[
-                    styles.button,
-                    styles.confirmButton,
-                    { backgroundColor: theme.primary },
-                  ]}
-                  onPress={handleConfirm}
-                >
+              <View style={styles.timePickersRow}>
+                {/* Start time */}
+                <View style={styles.timePicker}>
                   <ThemedText
-                    type="body-medium"
-                    weight="semi-bold"
-                    style={{ color: '#FFFFFF' }}
+                    type="label-small"
+                    style={{ color: theme.textSecondary, marginBottom: 8 }}
                   >
-                    Confirm
+                    Check-in Time
                   </ThemedText>
-                </Pressable>
+                  <Pressable
+                    style={[styles.timeButton, { borderColor: theme.border }]}
+                    onPress={() => setShowStartTimePicker(true)}
+                  >
+                    <Ionicons
+                      name="time-outline"
+                      size={20}
+                      color={theme.primary}
+                    />
+                    <ThemedText type="body-medium" weight="medium">
+                      {format(startTime, 'hh:mm a')}
+                    </ThemedText>
+                  </Pressable>
+                </View>
+
+                {/* End time */}
+                <View style={styles.timePicker}>
+                  <ThemedText
+                    type="label-small"
+                    style={{ color: theme.textSecondary, marginBottom: 8 }}
+                  >
+                    Check-out Time
+                  </ThemedText>
+                  <Pressable
+                    style={[styles.timeButton, { borderColor: theme.border }]}
+                    onPress={() => setShowEndTimePicker(true)}
+                  >
+                    <Ionicons
+                      name="time-outline"
+                      size={20}
+                      color={theme.primary}
+                    />
+                    <ThemedText type="body-medium" weight="medium">
+                      {format(endTime, 'hh:mm a')}
+                    </ThemedText>
+                  </Pressable>
+                </View>
               </View>
-            </ScrollView>
-          )}
-        </View>
-        {/* Time pickers floating at center */}
-        {showStartTimePicker && (
-          <View style={styles.timePickerOverlay}>
-            <Pressable
-              style={styles.timePickerBackdrop}
-              onPress={() => setShowStartTimePicker(false)}
-            />
-            {Platform.OS === 'ios' ? (
-              <View style={styles.iosTimePickerContainer}>
+            </View>
+          </>
+        )}
+      </View>
+
+      {showStartTimePicker && (
+        <View>
+          <Pressable onPress={() => setShowStartTimePicker(false)} />
+          {Platform.OS === 'ios' ? (
+            <BaseModal
+              title="Check-in Time"
+              visible={showStartTimePicker}
+              onClose={() => setShowStartTimePicker(false)}
+              scrollable={false}
+              primaryButtonLabel="Done"
+              onPrimaryPress={() => setShowStartTimePicker(false)}
+              secondaryButtonLabel="Cancel"
+              onSecondaryPress={() => setShowStartTimePicker(false)}
+            >
+              <View style={{ display: 'flex', alignItems: 'center' }}>
                 <DateTimePicker
                   value={startTime}
                   mode="time"
                   display="spinner"
                   onChange={(event, selectedTime) => {
-                    setShowStartTimePicker(false);
                     if (selectedTime) setStartTime(selectedTime);
                   }}
                 />
               </View>
-            ) : (
+            </BaseModal>
+          ) : (
+            <View style={{ display: 'flex', alignItems: 'center' }}>
               <DateTimePicker
                 value={startTime}
                 mode="time"
                 display="default"
                 onChange={(event, selectedTime) => {
-                  setShowStartTimePicker(false);
                   if (selectedTime) setStartTime(selectedTime);
                 }}
               />
-            )}
-          </View>
-        )}
-        {showEndTimePicker && (
-          <View style={styles.timePickerOverlay}>
-            <Pressable
-              style={styles.timePickerBackdrop}
-              onPress={() => setShowEndTimePicker(false)}
-            />
-            {Platform.OS === 'ios' ? (
-              <View style={styles.iosTimePickerContainer}>
+            </View>
+          )}
+        </View>
+      )}
+      {showEndTimePicker && (
+        <View>
+          <Pressable onPress={() => setShowEndTimePicker(false)} />
+          {Platform.OS === 'ios' ? (
+            <BaseModal
+              title="Check-out Time"
+              visible={showEndTimePicker}
+              onClose={() => setShowEndTimePicker(false)}
+              scrollable={false}
+              primaryButtonLabel="Done"
+              onPrimaryPress={() => setShowEndTimePicker(false)}
+              secondaryButtonLabel="Cancel"
+              onSecondaryPress={() => setShowEndTimePicker(false)}
+            >
+              <View style={{ display: 'flex', alignItems: 'center' }}>
                 <DateTimePicker
                   value={endTime}
                   mode="time"
                   display="spinner"
                   onChange={(event, selectedTime) => {
-                    setShowEndTimePicker(false);
                     if (selectedTime) setEndTime(selectedTime);
                   }}
                 />
               </View>
-            ) : (
+            </BaseModal>
+          ) : (
+            <View style={{ display: 'flex', alignItems: 'center' }}>
               <DateTimePicker
                 value={endTime}
                 mode="time"
                 display="default"
                 onChange={(event, selectedTime) => {
-                  setShowEndTimePicker(false);
                   if (selectedTime) setEndTime(selectedTime);
                 }}
               />
-            )}
-          </View>
-        )}
-      </ThemedView>
-    </Modal>
+            </View>
+          )}
+        </View>
+      )}
+    </BaseModal>
   );
 };
 
@@ -593,11 +569,7 @@ const styles = StyleSheet.create({
   fullScreenContainer: {
     flex: 1,
   },
-  content: {
-    flex: 1,
-    padding: 20,
-    paddingTop: Platform.OS === 'ios' ? 60 : 20,
-  },
+  content: {},
   loadingContainer: {
     paddingVertical: 60,
     alignItems: 'center',
@@ -728,36 +700,7 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     backgroundColor: Colors.light.surface,
   },
-  timePickerOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    justifyContent: 'center',
-    alignItems: 'center',
-    zIndex: 1000,
-  },
-  timePickerBackdrop: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-  },
-  iosTimePickerContainer: {
-    backgroundColor: Colors.light.surface,
-    borderRadius: 16,
-    padding: 16,
-    width: SCREEN_WIDTH * 0.9,
-    maxWidth: 400,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 10,
-  },
+
   actions: {
     flexDirection: 'row',
     gap: 12,

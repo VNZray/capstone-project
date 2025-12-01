@@ -27,6 +27,7 @@ import {
 } from 'react-native';
 import Button from './Button';
 import { ThemedText } from './themed-text';
+import BaseModal from './BaseModal';
 
 export type DateInputMode = 'single' | 'range';
 
@@ -861,9 +862,7 @@ const DateInput = React.forwardRef<DateInputRef, DateInputProps>(
                 panelStyle,
               ]}
             >
-              <View style={styles.modalHeaderBar}>
-                <View style={styles.modalHeaderSpacer} />
-              </View>
+              {/* Header with navigation */}
               <View style={[styles.header, { borderColor }]}>
                 <Pressable
                   onPress={goPrevMonth}
@@ -1327,13 +1326,6 @@ const styles = StyleSheet.create({
   },
   centeredModal: { maxWidth: 350, width: '92%', alignSelf: 'center' },
   centerWrap: { justifyContent: 'center', alignItems: 'center' },
-  modalHeaderBar: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    paddingHorizontal: 8,
-    paddingTop: 6,
-  },
-  modalHeaderSpacer: { flex: 1 },
   closeBtn: { padding: 6 },
   header: {
     flexDirection: 'row',

@@ -114,8 +114,8 @@ export async function insertBooking(req, res) {
       booking_type = "overnight",
       check_in_date,
       check_out_date,
-      check_in_time,
-      check_out_time,
+      check_in_time = "14:00:00", // Default check-in time: 2:00 PM
+      check_out_time = "12:00:00", // Default check-out time: 12:00 PM
       total_price,
       balance,
       booking_status,
@@ -138,10 +138,32 @@ export async function insertBooking(req, res) {
         .json({ error: "Missing required fields", fields: missing });
     }
 
+    // Validation: For short-stay bookings, times are critical
+    if (booking_type === "short-stay") {
+      if (!req.body.check_in_time) {
+        return res.status(400).json({ 
+          error: "check_in_time is required for short-stay bookings" 
+        });
+      }
+      if (!req.body.check_out_time) {
+        return res.status(400).json({ 
+          error: "check_out_time is required for short-stay bookings" 
+        });
+      }
+    }
+
     const effectiveBalance = balance ?? total_price;
     const effectiveStatus = booking_status ?? "Pending";
+    
+    // Prepare body with defaults applied
+    const bodyWithDefaults = {
+      ...req.body,
+      check_in_time: req.body.check_in_time || check_in_time,
+      check_out_time: req.body.check_out_time || check_out_time,
+    };
+    
     // build params with defaults applied for balance and booking_status
-    const params = buildBookingParams(id, req.body, {
+    const params = buildBookingParams(id, bodyWithDefaults, {
       defaultBalanceFor: "balance",
       defaultBalanceValue: effectiveBalance,
       defaultStatusFor: "booking_status",

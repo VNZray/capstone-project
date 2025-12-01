@@ -127,6 +127,10 @@ const HomeScreen = () => {
     }
   }, [user]);
 
+  const handleRefresh = useCallback(() => {
+    loadHomeContent(true);
+  }, []);
+
   const loadHomeContent = useCallback(async (isRefresh = false) => {
     if (isRefresh) setRefreshing(true);
     else {
@@ -368,7 +372,7 @@ const HomeScreen = () => {
               }
               onPressEvent={(event) =>
                 router.push({
-                  pathname: '/(tabs)/(home)/(event)',
+                  pathname: './(tabs)/(home)/(event)',
                   params: { eventId: event.id },
                 })
               }

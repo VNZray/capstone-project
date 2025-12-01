@@ -23,7 +23,6 @@ type Props = {
 const Payment: React.FC<Props> = ({ data, payment, setData, setPayment }) => {
   const { roomDetails } = useRoom();
 
-
   // Helper to parse 'YYYY-MM-DD HH:mm:ss' to Date
   const parseDateTime = (dt: string | Date | null | undefined) => {
     if (!dt) return null;
@@ -44,24 +43,38 @@ const Payment: React.FC<Props> = ({ data, payment, setData, setPayment }) => {
   const checkIn = parseDateTime(data.check_in_date as string) || null;
   const checkOut = parseDateTime(data.check_out_date as string) || null;
 
-  // Calculate days and nights
+  // Calculate days and nights for overnight, or hours for short stay
   let days = 0;
   let nights = 0;
+  let hours = 0;
+  let isShortStay = false;
+
   if (checkIn && checkOut) {
-    // Normalize to midnight to avoid timezone issues
-    const inDate = new Date(
-      checkIn.getFullYear(),
-      checkIn.getMonth(),
-      checkIn.getDate()
-    );
-    const outDate = new Date(
-      checkOut.getFullYear(),
-      checkOut.getMonth(),
-      checkOut.getDate()
-    );
-    const diff = (outDate.getTime() - inDate.getTime()) / (1000 * 60 * 60 * 24);
-    days = diff > 0 ? diff : 0;
-    nights = days > 0 ? days - 1 : 0;
+    // Calculate total time difference in hours
+    const totalHours =
+      (checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60);
+
+    // If less than 24 hours, it's a short stay
+    if (totalHours < 24) {
+      isShortStay = true;
+      hours = Math.round(totalHours);
+    } else {
+      // Overnight stay: normalize to midnight to avoid timezone issues
+      const inDate = new Date(
+        checkIn.getFullYear(),
+        checkIn.getMonth(),
+        checkIn.getDate()
+      );
+      const outDate = new Date(
+        checkOut.getFullYear(),
+        checkOut.getMonth(),
+        checkOut.getDate()
+      );
+      const diff =
+        (outDate.getTime() - inDate.getTime()) / (1000 * 60 * 60 * 24);
+      days = diff > 0 ? diff : 0;
+      nights = days > 0 ? days - 1 : 0;
+    }
   }
 
   const [paymentMethod, setPaymentMethod] = useState<string | null>(
@@ -111,9 +124,14 @@ const Payment: React.FC<Props> = ({ data, payment, setData, setPayment }) => {
 
   // Base room price (without fees) only when date range valid
   const baseRoomPrice = useMemo(() => {
-    if (!roomDetails?.room_price || days <= 0) return 0;
-    return Number(roomDetails.room_price) * days;
-  }, [roomDetails?.room_price, days]);
+    if (!roomDetails?.room_price) return 0;
+    if (isShortStay) {
+      // For short stay, charge per hour
+      return hours > 0 ? Number(roomDetails.room_price) * hours : 0;
+    }
+    // For overnight, charge per day
+    return days > 0 ? Number(roomDetails.room_price) * days : 0;
+  }, [roomDetails?.room_price, days, hours, isShortStay]);
 
   // Fixed booking fee (apply only if base price exists)
   const bookingFee = baseRoomPrice > 0 ? 50 : 0;
@@ -157,7 +175,15 @@ const Payment: React.FC<Props> = ({ data, payment, setData, setPayment }) => {
       payment_type: paymentType as BookingPayment['payment_type'],
       amount: amountDue, // amount to be paid now
     }));
-  }, [paymentMethod, paymentType, totalPayable, amountDue, balance, setPayment, setData]);
+  }, [
+    paymentMethod,
+    paymentType,
+    totalPayable,
+    amountDue,
+    balance,
+    setPayment,
+    setData,
+  ]);
 
   return (
     <ScrollView>
@@ -174,13 +200,17 @@ const Payment: React.FC<Props> = ({ data, payment, setData, setPayment }) => {
             justify="space-between"
           >
             <ThemedText type="body-extra-small" weight="medium">
-              Day's of Stay
+              {isShortStay ? 'Duration' : "Day's of Stay"}
             </ThemedText>
             <ThemedText type="body-extra-small" weight="medium">
-              {checkIn && checkOut && days > 0
-                ? `${days} day${days > 1 ? 's' : ''} / ${nights} night${
-                    nights !== 1 ? 's' : ''
-                  }`
+              {checkIn && checkOut
+                ? isShortStay
+                  ? `${hours} hour${hours !== 1 ? 's' : ''}`
+                  : days > 0
+                  ? `${days} day${days > 1 ? 's' : ''} / ${nights} night${
+                      nights !== 1 ? 's' : ''
+                    }`
+                  : 'Select check-in and check-out dates'
                 : 'Select check-in and check-out dates'}
             </ThemedText>
           </Container>
@@ -444,10 +474,18 @@ const Payment: React.FC<Props> = ({ data, payment, setData, setPayment }) => {
             justify="space-between"
             style={{ marginTop: 4 }}
           >
-            <ThemedText type="body-extra-small" weight="medium" style={{ opacity: 0.7 }}>
+            <ThemedText
+              type="body-extra-small"
+              weight="medium"
+              style={{ opacity: 0.7 }}
+            >
               Total
             </ThemedText>
-            <ThemedText type="body-extra-small" weight="medium" style={{ opacity: 0.7 }}>
+            <ThemedText
+              type="body-extra-small"
+              weight="medium"
+              style={{ opacity: 0.7 }}
+            >
               {totalPayable > 0 ? `₱${totalPayable.toLocaleString()}` : '—'}
             </ThemedText>
           </Container>

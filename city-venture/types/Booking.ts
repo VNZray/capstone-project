@@ -26,16 +26,6 @@ export type Booking = {
 
 export type Bookings = Booking[];
 
-export type Guest = {
-    id?: number;
-    booking_id: string;
-    name: string;
-    age: number | null;
-    gender: 'Male' | 'Female' | string;
-}
-
-export type Guests = Guest[];
-
 
 export type BookingPayment = {
     id?: number;

@@ -211,7 +211,6 @@ const LoginPage = () => {
 
                 {/* Login Button */}
                 <Button
-                  fullWidth
                   size="large"
                   label={isLoading ? 'Signing In...' : 'Sign In'}
                   color="primary"
