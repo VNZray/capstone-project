@@ -3,7 +3,7 @@ import { View, StyleSheet } from 'react-native';
 import FormTextInput from '@/components/TextInput';
 import { ThemedText } from '@/components/themed-text';
 import { colors } from '@/constants/color';
-import { IconSymbol } from '@/components/ui/icon-symbol';
+
 
 interface CreatePasswordProps {
   data: {

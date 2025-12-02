@@ -1,16 +1,51 @@
 import { ThemeProvider } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
-import * as Linking from 'expo-linking';
-import { useEffect } from 'react';
-import { Alert } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import 'react-native-reanimated';
 
-import { getRefreshToken } from '@/utils/secureStorage';
 import { AuthProvider } from '@/context/AuthContext';
 import { CartProvider } from '@/context/CartContext';
+import { NavigationProvider } from '@/context/NavigationContext';
 import { NavigationTheme } from '@/constants/color';
+import { useProtectedRoute } from '@/hooks/useProtectedRoute';
+
+/**
+ * RootLayoutNav - Navigation structure with centralized auth protection
+ * Uses useProtectedRoute hook to handle auth-based redirects
+ */
+function RootLayoutNav() {
+  // Centralized auth protection - handles redirects between auth and protected routes
+  useProtectedRoute();
+
+  return (
+    <Stack screenOptions={{ headerShown: false }}>
+      {/* Auth screens - unauthenticated users */}
+      <Stack.Screen name="(auth)" />
+
+      {/* Main tabs - authenticated users */}
+      <Stack.Screen name="(tabs)" />
+
+      {/* Checkout flow - authenticated, hides tabs */}
+      <Stack.Screen name="(checkout)" />
+
+      {/* Modal screens - cross-tab shared views */}
+      <Stack.Screen
+        name="(modals)"
+        options={{
+          presentation: 'modal',
+          animation: 'slide_from_bottom',
+        }}
+      />
+
+      {/* Welcome/splash redirect screen */}
+      <Stack.Screen name="index" />
+
+      {/* Catch unmatched routes */}
+      <Stack.Screen name="+not-found" />
+    </Stack>
+  );
+}
 
 export default function RootLayout() {
   const [loaded] = useFonts({
@@ -22,89 +57,6 @@ export default function RootLayout() {
     'Poppins-Black': require('@/assets/fonts/Poppins/Poppins-Black.ttf'),
   });
 
-  // Handle deep links for payment redirects
-  useEffect(() => {
-    // Handle initial URL if app was opened via deep link
-    Linking.getInitialURL().then((url) => {
-      if (url) {
-        handleDeepLink(url);
-      }
-    });
-
-    // Listen for deep link events while app is running
-    const subscription = Linking.addEventListener('url', (event) => {
-      handleDeepLink(event.url);
-    });
-
-    return () => {
-      subscription.remove();
-    };
-  }, []);
-
-  const handleDeepLink = async (url: string) => {
-    console.log('[Deep Link] Received:', url);
-
-    // Security Check: Ensure user is authenticated
-    const token = await getRefreshToken();
-    if (!token) {
-      console.warn('[Deep Link] Unauthenticated access attempt blocked.');
-      return;
-    }
-
-    try {
-      const { path, queryParams } = Linking.parse(url);
-
-      // Handle payment success: 
-      // - Production: cityventure://orders/{orderId}/payment-success
-      // - Expo Go: exp://HOST/--/(screens)/payment-success?orderId=...
-      if (path?.includes('payment-success')) {
-        // Try to get orderId from query params first (Expo Go format), then from path (production format)
-        let orderId = queryParams?.orderId as string | undefined;
-        if (!orderId) {
-          const orderIdMatch = path.match(/orders\/([^\/]+)\/payment-success/);
-          orderId = orderIdMatch?.[1];
-        }
-
-        console.log('[Deep Link] Payment success for order:', orderId);
-
-        // Show success message
-        Alert.alert(
-          'Payment Successful',
-          'Your payment has been received. Please wait for the business to confirm your order.',
-          [{ text: 'OK' }]
-        );
-
-        // Navigate to order details (implement navigation logic as needed)
-        // router.push(`/(tabs)/(home)/orders/${orderId}`);
-      }
-
-      // Handle payment cancel: 
-      // - Production: cityventure://orders/{orderId}/payment-cancel
-      // - Expo Go: exp://HOST/--/(screens)/payment-cancel?orderId=...
-      else if (path?.includes('payment-cancel')) {
-        // Try to get orderId from query params first (Expo Go format), then from path (production format)
-        let orderId = queryParams?.orderId as string | undefined;
-        if (!orderId) {
-          const orderIdMatch = path.match(/orders\/([^\/]+)\/payment-cancel/);
-          orderId = orderIdMatch?.[1];
-        }
-
-        console.log('[Deep Link] Payment cancelled for order:', orderId);
-
-        Alert.alert(
-          'Payment Cancelled',
-          'Your payment was cancelled. You can try again from your order details.',
-          [{ text: 'OK' }]
-        );
-
-        // Navigate to order details
-        // router.push(`/(tabs)/(home)/orders/${orderId}`);
-      }
-    } catch (error) {
-      console.error('[Deep Link] Error parsing URL:', error);
-    }
-  };
-
   if (!loaded) {
     return null;
   }
@@ -112,17 +64,13 @@ export default function RootLayout() {
   return (
     <SafeAreaProvider>
       <AuthProvider>
-        <CartProvider>
-          <ThemeProvider value={NavigationTheme}>
-            <Stack>
-              <Stack.Screen name="(screens)" options={{ headerShown: false }} />
-              <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-              <Stack.Screen name="index" options={{ headerShown: false }} />
-
-              <Stack.Screen name="+not-found" />
-            </Stack>
-          </ThemeProvider>
-        </CartProvider>
+        <NavigationProvider>
+          <CartProvider>
+            <ThemeProvider value={NavigationTheme}>
+              <RootLayoutNav />
+            </ThemeProvider>
+          </CartProvider>
+        </NavigationProvider>
       </AuthProvider>
     </SafeAreaProvider>
   );

@@ -1,6 +1,6 @@
 import Button from '@/components/Button';
 import { ThemedText } from '@/components/themed-text';
-import { navigateToLogin, navigateToRegister } from '@/routes/mainRoutes';
+import { Routes } from '@/routes/mainRoutes';
 import { useAuth } from '@/context/AuthContext';
 import { useFonts } from 'expo-font';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -21,7 +21,7 @@ const Main = () => {
 
   useEffect(() => {
     if (!loading && user) {
-      router.replace('/(tabs)/(home)');
+      router.replace(Routes.tabs.home);
     }
   }, [user, loading]);
 
@@ -77,7 +77,7 @@ const Main = () => {
               label="Sign In"
               color="secondary"
               variant="solid"
-              onPress={() => navigateToLogin()}
+              onPress={() => router.push(Routes.auth.login)}
             />
 
             <Button
@@ -86,7 +86,7 @@ const Main = () => {
               label="Sign Up"
               variant="soft"
               color="neutral"
-              onPress={() => navigateToRegister()}
+              onPress={() => router.push(Routes.auth.register)}
             />
           </View>
         </LinearGradient>

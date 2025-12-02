@@ -7,6 +7,7 @@ import {
   Platform,
 } from 'react-native';
 import { Stack, router, useLocalSearchParams } from 'expo-router';
+import { Routes } from '@/routes/mainRoutes';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { Colors } from '@/constants/color';
 import PageContainer from '@/components/PageContainer';
@@ -28,15 +29,11 @@ const PaymentFailedScreen = () => {
 
   const handleRetryPayment = () => {
     // Navigate back to order details where user can retry payment
-    router.replace({
-      pathname: '/(tabs)/orders',
-    } as never);
+    router.replace(Routes.profile.orders.index);
   };
 
   const handleViewOrder = () => {
-    router.replace({
-      pathname: '/(tabs)/orders',
-    } as never);
+    router.replace(Routes.profile.orders.index);
   };
 
   return (

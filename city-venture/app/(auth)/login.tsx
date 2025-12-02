@@ -6,7 +6,8 @@ import FormTextInput from '@/components/TextInput';
 import { ThemedText } from '@/components/themed-text';
 import { colors } from '@/constants/color';
 import { useAuth } from '@/context/AuthContext';
-import { navigateToHome } from '@/routes/mainRoutes';
+import { Routes } from '@/routes/mainRoutes';
+import { usePreventDoubleNavigation } from '@/hooks/usePreventDoubleNavigation';
 import Entypo from '@expo/vector-icons/Entypo';
 import { Link } from 'expo-router';
 import React, { useEffect, useState } from 'react';
@@ -27,20 +28,21 @@ import debugLogger from '@/utils/debugLogger';
 
 const LoginPage = () => {
   console.log('[LoginPage] Rendering');
-  const [email, setEmail] = useState('rclores666@gmail.com');
-  const [password, setPassword] = useState('RayvenClores22-17782');
+  const [email, setEmail] = useState('tourist@gmail.com');
+  const [password, setPassword] = useState('tourist123');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [passwordError, setPasswordError] = useState('');
   const [loginError, setLoginError] = useState('');
   const [emailError, setEmailError] = useState('');
   const { login, user } = useAuth();
+  const { replace } = usePreventDoubleNavigation();
 
   useEffect(() => {
     if (user) {
-      navigateToHome();
+      replace(Routes.tabs.home);
     }
-  }, [user]);
+  }, [user, replace]);
 
   // Clear field-specific errors when user types
   useEffect(() => {
@@ -91,7 +93,7 @@ const LoginPage = () => {
       });
 
       // Navigate to home on success
-      navigateToHome();
+      replace(Routes.tabs.home);
     } catch (error: any) {
       debugLogger({
         title: 'Login: ❌ Login failed',
@@ -185,7 +187,7 @@ const LoginPage = () => {
                 </View>
 
                 <View style={{ alignItems: 'flex-end' }}>
-                  <Link href="./(screens)/ForgotPassword">
+                  <Link href="/(auth)/forgot-password">
                     <ThemedText type="link-medium">Forgot Password?</ThemedText>
                   </Link>
                 </View>
@@ -225,7 +227,7 @@ const LoginPage = () => {
                   <ThemedText type="body-medium">
                     Don&apos;t have an account?
                   </ThemedText>
-                  <Link href={'./Register'}>
+                  <Link href="/(auth)/register">
                     <ThemedText type="link-medium">Sign Up</ThemedText>
                   </Link>
                 </View>

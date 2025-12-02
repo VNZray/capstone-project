@@ -8,6 +8,7 @@ import {
   Easing,
 } from 'react-native';
 import { Stack, router, useLocalSearchParams } from 'expo-router';
+import { Routes } from '@/routes/mainRoutes';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { Colors } from '@/constants/color';
 import PageContainer from '@/components/PageContainer';
@@ -103,17 +104,14 @@ const PaymentProcessingScreen = () => {
           // Navigate to confirmation after short delay
           setTimeout(() => {
             if (isMounted) {
-              router.replace({
-                pathname: '/(screens)/order-confirmation',
-                params: {
-                  orderId: params.orderId,
-                  orderNumber: params.orderNumber,
-                  arrivalCode: params.arrivalCode,
-                  total: params.total,
-                  paymentMethod: 'paymongo',
-                  paymentSuccess: 'true',
-                },
-              } as never);
+              router.replace(Routes.checkout.orderConfirmation({
+                orderId: params.orderId,
+                orderNumber: params.orderNumber,
+                arrivalCode: params.arrivalCode,
+                total: params.total,
+                paymentMethod: 'paymongo',
+                paymentSuccess: 'true',
+              }));
             }
           }, 1500);
         } else if (result.data.last_payment_error) {
@@ -125,14 +123,11 @@ const PaymentProcessingScreen = () => {
           // Navigate to failure screen after delay
           setTimeout(() => {
             if (isMounted) {
-              router.replace({
-                pathname: '/(screens)/payment-failed',
-                params: {
-                  orderId: params.orderId,
-                  orderNumber: params.orderNumber,
-                  errorMessage: result.data.last_payment_error?.message || 'Payment failed',
-                },
-              } as never);
+              router.replace(Routes.checkout.paymentFailed({
+                orderId: params.orderId,
+                orderNumber: params.orderNumber,
+                errorMessage: result.data.last_payment_error?.message || 'Payment failed',
+              }));
             }
           }, 2000);
         } else {
@@ -142,12 +137,9 @@ const PaymentProcessingScreen = () => {
           
           setTimeout(() => {
             if (isMounted) {
-              router.replace({
-                pathname: '/(screens)/payment-cancel',
-                params: {
-                  orderId: params.orderId,
-                },
-              } as never);
+              router.replace(Routes.checkout.paymentCancel({
+                orderId: params.orderId,
+              }));
             }
           }, 2000);
         }
@@ -161,17 +153,14 @@ const PaymentProcessingScreen = () => {
         
         setTimeout(() => {
           if (isMounted) {
-            router.replace({
-              pathname: '/(screens)/order-confirmation',
-              params: {
-                orderId: params.orderId,
-                orderNumber: params.orderNumber,
-                arrivalCode: params.arrivalCode,
-                total: params.total,
-                paymentMethod: 'paymongo',
-                paymentPending: 'true',
-              },
-            } as never);
+            router.replace(Routes.checkout.orderConfirmation({
+              orderId: params.orderId,
+              orderNumber: params.orderNumber,
+              arrivalCode: params.arrivalCode,
+              total: params.total,
+              paymentMethod: 'paymongo',
+              paymentPending: 'true',
+            }));
           }
         }, 2000);
       }

@@ -13,7 +13,7 @@ import {
   LayoutAnimation,
   UIManager,
 } from 'react-native';
-import { Stack, router } from 'expo-router';
+import { Stack } from 'expo-router';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { Colors } from '@/constants/color';
 import { useTypography } from '@/constants/typography';
@@ -25,6 +25,9 @@ import * as WebBrowser from 'expo-web-browser';
 import type { CreateOrderPayload } from '@/types/Order';
 import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import { usePreventDoubleNavigation } from '@/hooks/usePreventDoubleNavigation';
+import { Routes } from '@/routes/mainRoutes';
+import { useHideTabs } from '@/hooks/useHideTabs';
 
 // Enable LayoutAnimation for Android
 if (
@@ -46,6 +49,10 @@ const CheckoutScreen = () => {
   const theme = Colors[colorScheme as keyof typeof Colors];
   const isDark = colorScheme === 'dark';
   const type = useTypography();
+  const { push, replace, back, isNavigating } = usePreventDoubleNavigation();
+
+  // Hide tabs during checkout flow
+  useHideTabs();
 
   const { items, businessId, clearCart, getSubtotal } = useCart();
   const { user } = useAuth();
@@ -216,15 +223,18 @@ const CheckoutScreen = () => {
 
       // Navigate to grace period screen with order data
       // Order is NOT created yet - will be created after countdown ends
-      router.push({
-        pathname: '/(screens)/order-grace-period',
-        params: {
-          orderData: JSON.stringify(orderPayload),
+      push(Routes.checkout.orderGracePeriod({
+        orderId: JSON.stringify({
+          orderData: orderPayload,
           paymentMethodType: paymentMethodType,
-          billingInfo: JSON.stringify(billingInfo),
+          billingInfo: {
+            name: billingName.trim(),
+            email: billingEmail.trim().toLowerCase(),
+            phone: billingPhone.trim() || undefined,
+          },
           total: total.toString(),
-        },
-      } as never);
+        }),
+      }));
       return;
     }
 
@@ -242,16 +252,10 @@ const CheckoutScreen = () => {
       clearCart();
 
       // Go directly to confirmation
-      router.replace({
-        pathname: '/(screens)/order-confirmation',
-        params: {
-          orderId: orderResponse.order_id,
-          orderNumber: orderResponse.order_number,
-          arrivalCode: orderResponse.arrival_code,
-          total: total.toString(),
-          paymentMethod: paymentMethod,
-        },
-      } as never);
+      replace(Routes.checkout.orderConfirmation({
+        orderId: orderResponse.order_id,
+        businessId: orderPayload.business_id,
+      }));
     } catch (error: any) {
       console.error('[Checkout] Order creation failed:', error);
 
@@ -427,7 +431,7 @@ const CheckoutScreen = () => {
                 >
                   Order Summary
                 </Text>
-                <Pressable onPress={() => router.back()}>
+                <Pressable onPress={() => back()}>
                   <Text style={[styles.editLink, { color: theme.active }]}>
                     Edit
                   </Text>

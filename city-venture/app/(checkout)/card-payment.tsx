@@ -12,6 +12,7 @@ import {
   ScrollView,
 } from 'react-native';
 import { Stack, router, useLocalSearchParams } from 'expo-router';
+import { Routes } from '@/routes/mainRoutes';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { Colors } from '@/constants/color';
 import PageContainer from '@/components/PageContainer';
@@ -258,18 +259,15 @@ const CardPaymentScreen = () => {
               {
                 text: 'Go to Order',
                 onPress: () => {
-                  router.replace({
-                    pathname: '/(screens)/order-confirmation',
-                    params: {
-                      orderId: params.orderId,
-                      orderNumber: params.orderNumber,
-                      arrivalCode: params.arrivalCode,
-                      total: params.total,
-                      paymentMethod: 'paymongo',
-                      paymentPending: 'true',
-                      paymentCancelled: 'true',
-                    },
-                  } as never);
+                  router.replace(Routes.checkout.orderConfirmation({
+                    orderId: params.orderId,
+                    orderNumber: params.orderNumber,
+                    arrivalCode: params.arrivalCode,
+                    total: params.total,
+                    paymentMethod: 'paymongo',
+                    paymentPending: 'true',
+                    paymentCancelled: 'true',
+                  }));
                 },
               },
               {
@@ -282,16 +280,13 @@ const CardPaymentScreen = () => {
         }
 
         // Navigate to processing screen to check result
-        router.replace({
-          pathname: '/(screens)/payment-processing',
-          params: {
-            orderId: params.orderId,
-            orderNumber: params.orderNumber,
-            arrivalCode: params.arrivalCode,
-            paymentIntentId: params.paymentIntentId,
-            total: params.total,
-          },
-        } as never);
+        router.replace(Routes.checkout.paymentProcessing({
+          orderId: params.orderId,
+          orderNumber: params.orderNumber,
+          arrivalCode: params.arrivalCode,
+          paymentIntentId: params.paymentIntentId,
+          total: params.total,
+        }));
         return;
       }
 
@@ -299,17 +294,14 @@ const CardPaymentScreen = () => {
         // Payment successful without 3DS
         console.log('[CardPayment] Payment succeeded immediately');
         
-        router.replace({
-          pathname: '/(screens)/order-confirmation',
-          params: {
-            orderId: params.orderId,
-            orderNumber: params.orderNumber,
-            arrivalCode: params.arrivalCode,
-            total: params.total,
-            paymentMethod: 'paymongo',
-            paymentSuccess: 'true',
-          },
-        } as never);
+        router.replace(Routes.checkout.orderConfirmation({
+          orderId: params.orderId,
+          orderNumber: params.orderNumber,
+          arrivalCode: params.arrivalCode,
+          total: params.total,
+          paymentMethod: 'paymongo',
+          paymentSuccess: 'true',
+        }));
         return;
       }
 
@@ -317,16 +309,13 @@ const CardPaymentScreen = () => {
         // Payment is processing
         console.log('[CardPayment] Payment processing');
         
-        router.replace({
-          pathname: '/(screens)/payment-processing',
-          params: {
-            orderId: params.orderId,
-            orderNumber: params.orderNumber,
-            arrivalCode: params.arrivalCode,
-            paymentIntentId: params.paymentIntentId,
-            total: params.total,
-          },
-        } as never);
+        router.replace(Routes.checkout.paymentProcessing({
+          orderId: params.orderId,
+          orderNumber: params.orderNumber,
+          arrivalCode: params.arrivalCode,
+          paymentIntentId: params.paymentIntentId,
+          total: params.total,
+        }));
         return;
       }
 

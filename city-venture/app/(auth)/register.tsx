@@ -1,11 +1,11 @@
 import Button from '@/components/Button';
-import FormLogo from '@/components/FormLogo';
 import PageContainer from '@/components/PageContainer';
 import { ThemedText } from '@/components/themed-text';
 import { colors } from '@/constants/color';
 import { useAuth } from '@/context/AuthContext';
 import { insertData } from '@/query/mainQuery';
-import { navigateToHome, navigateToLogin } from '@/routes/mainRoutes';
+import { Routes } from '@/routes/mainRoutes';
+import { usePreventDoubleNavigation } from '@/hooks/usePreventDoubleNavigation';
 import { Tourist } from '@/types/Tourist';
 import { User } from '@/types/User';
 import axios from 'axios';
@@ -13,11 +13,13 @@ import { StatusBar } from 'expo-status-bar';
 import React, { useState, useRef, useEffect } from 'react';
 import { Alert, ScrollView, StyleSheet, View, Animated } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
-import PersonalDetails from './register/PersonalDetails';
-import Address from './register/Address';
-import ContactDetails from './register/ContactDetails';
-import Verification from './register/Verification';
-import CreatePassword from './register/CreatePassword';
+import {
+  PersonalDetails,
+  Address,
+  ContactDetails,
+  Verification,
+  CreatePassword,
+} from '@/components/register';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 
 const RegistrationPage = () => {
@@ -26,6 +28,7 @@ const RegistrationPage = () => {
   const { login } = useAuth();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
+  const { replace } = usePreventDoubleNavigation();
 
   // Animation values
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -52,7 +55,7 @@ const RegistrationPage = () => {
 
     // Scroll to top on step change
     scrollViewRef.current?.scrollTo({ y: 0, animated: true });
-  }, [currentStep]);
+  }, [currentStep, fadeAnim, slideAnim]);
 
   // Form data
   const [formData, setFormData] = useState({
@@ -193,7 +196,7 @@ const RegistrationPage = () => {
           text: 'OK',
           onPress: async () => {
             await login(formData.email, formData.password);
-            navigateToHome();
+            replace(Routes.tabs.home);
           },
         },
       ]);
@@ -205,7 +208,7 @@ const RegistrationPage = () => {
 
         if (status === 409) {
           Alert.alert('Error', 'Account already exists. Please sign in.');
-          navigateToLogin();
+          replace(Routes.auth.login);
           return;
         }
         Alert.alert(
@@ -472,7 +475,7 @@ const RegistrationPage = () => {
 
                 <ThemedText
                   type="link-medium"
-                  onPress={() => navigateToLogin()}
+                  onPress={() => replace(Routes.auth.login)}
                 >
                   Sign In
                 </ThemedText>

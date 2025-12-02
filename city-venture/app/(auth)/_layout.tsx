@@ -6,21 +6,32 @@ import {
 } from '@react-navigation/native';
 import { Stack } from 'expo-router';
 import React from 'react';
-import { View, Animated } from 'react-native';
-import { ThemedText } from '@/components/themed-text';
-import { colors } from '@/constants/color';
 
-const Screens = () => {
+/**
+ * Auth Layout - Stack navigator for unauthenticated user flows.
+ * Contains login, registration, and password reset screens.
+ */
+export default function AuthLayout() {
   const colorScheme = useColorScheme();
   const color = colorScheme === 'light' ? '#000' : '#fff';
-  const isDark = colorScheme === 'dark';
 
   return (
     <ThemeProvider value={colorScheme === 'light' ? DefaultTheme : DarkTheme}>
-      <Stack>
-        <Stack.Screen name="index" options={{ headerShown: false }} />
+      <Stack
+        screenOptions={{
+          headerShown: false,
+          animation: 'slide_from_right',
+        }}
+      >
         <Stack.Screen
-          name="Register"
+          name="login"
+          options={{
+            headerShown: false,
+            title: 'Sign In',
+          }}
+        />
+        <Stack.Screen
+          name="register"
           options={{
             headerBackTitle: 'Back',
             headerTintColor: color,
@@ -29,7 +40,7 @@ const Screens = () => {
           }}
         />
         <Stack.Screen
-          name="ForgotPassword"
+          name="forgot-password"
           options={{
             headerBackTitle: 'Back',
             headerTintColor: color,
@@ -40,6 +51,4 @@ const Screens = () => {
       </Stack>
     </ThemeProvider>
   );
-};
-
-export default Screens;
+}

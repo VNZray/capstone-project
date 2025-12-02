@@ -14,6 +14,7 @@ import {
   Dimensions,
 } from 'react-native';
 import { useLocalSearchParams, Stack, router } from 'expo-router';
+import { Routes } from '@/routes/mainRoutes';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { colors } from '@/constants/color';
 import { useTypography } from '@/constants/typography';
@@ -98,18 +99,15 @@ const PaymentCancelScreen = () => {
 
       // For card payments, navigate to card payment screen
       if (paymentMethodType === 'card') {
-        router.replace({
-          pathname: '/(screens)/card-payment',
-          params: {
-            orderId: params.orderId,
-            orderNumber: orderDetails.order_number,
-            arrivalCode: orderDetails.arrival_code,
-            paymentIntentId,
-            clientKey: intentResponse.data.client_key,
-            amount: intentResponse.data.amount.toString(),
-            total: orderDetails.total_amount?.toString(),
-          },
-        } as never);
+        router.replace(Routes.checkout.cardPayment({
+          orderId: params.orderId,
+          orderNumber: orderDetails.order_number,
+          arrivalCode: orderDetails.arrival_code,
+          paymentIntentId,
+          clientKey: intentResponse.data.client_key,
+          amount: intentResponse.data.amount.toString(),
+          total: orderDetails.total_amount?.toString(),
+        }));
         return;
       }
 
@@ -141,16 +139,13 @@ const PaymentCancelScreen = () => {
         }
 
         // Navigate to payment processing to verify
-        router.replace({
-          pathname: '/(screens)/payment-processing',
-          params: {
-            orderId: params.orderId,
-            orderNumber: orderDetails.order_number,
-            arrivalCode: orderDetails.arrival_code,
-            paymentIntentId,
-            total: orderDetails.total_amount?.toString(),
-          },
-        } as never);
+        router.replace(Routes.checkout.paymentProcessing({
+          orderId: params.orderId,
+          orderNumber: orderDetails.order_number,
+          arrivalCode: orderDetails.arrival_code,
+          paymentIntentId,
+          total: orderDetails.total_amount?.toString(),
+        }));
       }
     } catch (error: any) {
       console.error('[PaymentCancel] Payment retry failed:', error);
@@ -166,14 +161,11 @@ const PaymentCancelScreen = () => {
   };
 
   const handleViewOrder = () => {
-    router.replace({
-      pathname: '/(tabs)/orders/[orderId]',
-      params: { orderId: params.orderId },
-    } as never);
+    router.replace(Routes.profile.orders.detail(params.orderId));
   };
 
   const handleBackToHome = () => {
-    router.replace('/(tabs)/(home)' as never);
+    router.replace(Routes.tabs.home);
   };
 
   const animatedIconStyle = useAnimatedStyle(() => ({

@@ -6,7 +6,10 @@ import { createFullBooking } from '@/query/accommodationQuery';
 import { initiateBookingPayment, mapPaymentMethodType } from '@/services/BookingPaymentService';
 import { Booking, BookingPayment } from '@/types/Booking';
 import debugLogger from '@/utils/debugLogger';
+// useNavigation: for setOptions (header customization)
+// useRouter: for navigation actions (push, replace, back)
 import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
+import { Routes } from '@/routes/mainRoutes';
 import React, { useEffect } from 'react';
 import { Alert, Platform, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -188,27 +191,24 @@ const booking = () => {
       });
 
       // Navigate to online payment screen with checkout URL
-      router.push({
-        pathname: '/(tabs)/(home)/(accommodation)/room/booking/OnlinePayment',
-        params: {
-          checkoutUrl,
-          successUrl: `${process.env.EXPO_PUBLIC_API_URL?.replace('/api', '') || 'https://city-venture.com'}/bookings/${bookingData.id}/payment-success`,
-          cancelUrl: `${process.env.EXPO_PUBLIC_API_URL?.replace('/api', '') || 'https://city-venture.com'}/bookings/${bookingData.id}/payment-cancel`,
-          payment_method: paymentMethodType,
-          payment_id,
-          // pass booking data, billing/payment data as JSON strings
-          bookingData: JSON.stringify({
-            ...bookingData,
-            check_in_date: bookingData.check_in_date
-              ? new Date(bookingData.check_in_date as any).toISOString()
-              : undefined,
-            check_out_date: bookingData.check_out_date
-              ? new Date(bookingData.check_out_date as any).toISOString()
-              : undefined,
-          }),
-          paymentData: JSON.stringify(paymentData || {}),
-        },
-      });
+      router.push(Routes.accommodation.room.onlinePayment({
+        checkoutUrl,
+        successUrl: `${process.env.EXPO_PUBLIC_API_URL?.replace('/api', '') || 'https://city-venture.com'}/bookings/${bookingData.id}/payment-success`,
+        cancelUrl: `${process.env.EXPO_PUBLIC_API_URL?.replace('/api', '') || 'https://city-venture.com'}/bookings/${bookingData.id}/payment-cancel`,
+        payment_method: paymentMethodType,
+        payment_id,
+        // pass booking data, billing/payment data as JSON strings
+        bookingData: JSON.stringify({
+          ...bookingData,
+          check_in_date: bookingData.check_in_date
+            ? new Date(bookingData.check_in_date as any).toISOString()
+            : undefined,
+          check_out_date: bookingData.check_out_date
+            ? new Date(bookingData.check_out_date as any).toISOString()
+            : undefined,
+        }),
+        paymentData: JSON.stringify(paymentData || {}),
+      }));
     } catch (err: any) {
       console.error('[Booking Payment Error]', err);
       debugLogger({

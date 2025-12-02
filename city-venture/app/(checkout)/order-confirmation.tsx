@@ -10,6 +10,7 @@ import {
   Alert,
 } from 'react-native';
 import { useLocalSearchParams, Stack, router } from 'expo-router';
+import { Routes } from '@/routes/mainRoutes';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { colors } from '@/constants/color';
 import { useTypography } from '@/constants/typography';
@@ -98,7 +99,7 @@ const OrderConfirmationScreen = () => {
                 [
                   {
                     text: 'OK',
-                    onPress: () => router.replace('/(tabs)/(home)' as never),
+                    onPress: () => router.replace(Routes.tabs.home),
                   },
                 ]
               );
@@ -118,14 +119,11 @@ const OrderConfirmationScreen = () => {
   };
 
   const handleViewOrderDetails = () => {
-    router.replace({
-      pathname: '/(tabs)/orders/[orderId]',
-      params: { orderId: params.orderId },
-    } as never);
+    router.replace(Routes.profile.orders.detail(params.orderId));
   };
 
   const handleBackToHome = () => {
-    router.replace('/(tabs)/(home)' as never);
+    router.replace(Routes.tabs.home);
   };
 
   const handleCompletePayment = async () => {
@@ -146,18 +144,15 @@ const OrderConfirmationScreen = () => {
 
       // For card payments, navigate to card payment screen
       if (paymentMethodType === 'card') {
-        router.push({
-          pathname: '/(screens)/card-payment',
-          params: {
-            orderId: params.orderId,
-            orderNumber: params.orderNumber,
-            arrivalCode: params.arrivalCode,
-            paymentIntentId,
-            clientKey: intentResponse.data.client_key,
-            amount: intentResponse.data.amount.toString(),
-            total: params.total,
-          },
-        } as never);
+        router.push(Routes.checkout.cardPayment({
+          orderId: params.orderId,
+          orderNumber: params.orderNumber,
+          arrivalCode: params.arrivalCode,
+          paymentIntentId,
+          clientKey: intentResponse.data.client_key,
+          amount: intentResponse.data.amount.toString(),
+          total: params.total,
+        }));
         return;
       }
 
@@ -189,16 +184,13 @@ const OrderConfirmationScreen = () => {
         }
 
         // Navigate to payment processing to verify
-        router.replace({
-          pathname: '/(screens)/payment-processing',
-          params: {
-            orderId: params.orderId,
-            orderNumber: params.orderNumber,
-            arrivalCode: params.arrivalCode,
-            paymentIntentId,
-            total: params.total,
-          },
-        } as never);
+        router.replace(Routes.checkout.paymentProcessing({
+          orderId: params.orderId,
+          orderNumber: params.orderNumber,
+          arrivalCode: params.arrivalCode,
+          paymentIntentId,
+          total: params.total,
+        }));
       }
     } catch (error: any) {
       console.error('[OrderConfirmation] Payment initiation failed:', error);

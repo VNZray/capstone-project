@@ -22,6 +22,7 @@ import Animated, {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons, Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
+import { Routes } from '@/routes/mainRoutes';
 
 // --- YOUR IMPORTS ---
 import HeroSection from '@/components/home/HeroSection';
@@ -123,7 +124,7 @@ const HomeScreen = () => {
   useEffect(() => {
     if (!user && !didRedirect.current) {
       didRedirect.current = true;
-      router.replace('/(screens)');
+      router.replace(Routes.auth.login);
     }
   }, [user]);
 
@@ -233,18 +234,14 @@ const HomeScreen = () => {
     }
   };
 
-  const handleEventPress = useCallback((event: HomeEvent) => {
-    router.push({
-      pathname: './(tabs)/(home)/(event)',
-      params: { eventId: event.id },
-    });
+  const handleEventPress = useCallback((_event: HomeEvent) => {
+    // TODO: Event detail route [id].tsx not yet implemented
+    router.push(Routes.event.index as any);
   }, []);
 
-  const handleNewsPress = useCallback((article: NewsArticle) => {
-    router.push({
-      pathname: '/(tabs)/(home)',
-      params: { newsId: article.id },
-    });
+  const handleNewsPress = useCallback((_article: NewsArticle) => {
+    // TODO: News detail not yet implemented
+    router.push(Routes.tabs.home);
   }, []);
 
   if (!user) return null;
@@ -365,17 +362,9 @@ const HomeScreen = () => {
               loading={newsState.loading || eventState.loading}
               error={newsState.error || eventState.error}
               onPressArticle={(article) =>
-                router.push({
-                  pathname: '/(tabs)/(home)',
-                  params: { newsId: article.id },
-                })
+                router.push(Routes.tabs.home)
               }
-              onPressEvent={(event) =>
-                router.push({
-                  pathname: './(tabs)/(home)/(event)',
-                  params: { eventId: event.id },
-                })
-              }
+              onPressEvent={() => router.push(Routes.event.index as any)}
               onPressViewAllEvents={navigateToEventHome}
             />
           </View>

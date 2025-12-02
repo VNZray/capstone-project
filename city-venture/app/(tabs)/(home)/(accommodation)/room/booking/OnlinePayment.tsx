@@ -5,7 +5,10 @@ import { bookRoom, payBooking } from '@/query/accommodationQuery';
 import { Booking, BookingPayment } from '@/types/Booking';
 import debugLogger from '@/utils/debugLogger';
 import { notifyPayment } from '@/utils/paymentBus';
+// useNavigation: for setOptions (header customization)
+// useRouter: for navigation actions (push, replace, back)
 import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
+import { Routes } from '@/routes/mainRoutes';
 import React, {
   useCallback,
   useEffect,
@@ -155,27 +158,21 @@ const OnlinePayment = () => {
       if (successUrl && lower.startsWith(successUrl.toLowerCase())) {
         notifyPayment('success');
         submitBooking().finally(() => {
-          router.replace({
-            pathname: '/(tabs)/(home)/(accommodation)/room/booking/Summary',
-            params: {
-              bookingData: bookingData || '',
-              guests: guests || '',
-              paymentData: paymentData || '',
-            },
-          });
+          router.replace(Routes.accommodation.room.summary({
+            bookingData: bookingData || '',
+            guests: guests || '',
+            paymentData: paymentData || '',
+          }));
         });
         return false;
       }
       if (cancelUrl && lower.startsWith(cancelUrl.toLowerCase())) {
         notifyPayment('cancel');
-        router.replace({
-          pathname: '/(tabs)/(home)/(accommodation)/room/booking/Billing',
-          params: {
-            bookingData: bookingData || '',
-            guests: guests || '',
-            paymentData: paymentData || '',
-          },
-        });
+        router.replace(Routes.accommodation.room.billing({
+          bookingData: bookingData || '',
+          guests: guests || '',
+          paymentData: paymentData || '',
+        }));
         return false;
       }
 

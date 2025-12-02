@@ -28,6 +28,7 @@ import {
   Platform,
 } from 'react-native';
 import { Stack, router, useLocalSearchParams } from 'expo-router';
+import { Routes } from '@/routes/mainRoutes';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { Colors } from '@/constants/color';
 import PageContainer from '@/components/PageContainer';
@@ -124,18 +125,15 @@ const OrderGracePeriodScreen = () => {
       // Step 3: Handle based on payment method type
       if (paymentMethodType === 'card') {
         // Navigate to card payment screen
-        router.replace({
-          pathname: '/(screens)/card-payment',
-          params: {
-            orderId,
-            orderNumber,
-            arrivalCode,
-            paymentIntentId,
-            clientKey: intentResponse.data.client_key,
-            amount: intentResponse.data.amount.toString(),
-            total: totalAmount.toString(),
-          },
-        } as never);
+        router.replace(Routes.checkout.cardPayment({
+          orderId,
+          orderNumber,
+          arrivalCode,
+          paymentIntentId,
+          clientKey: intentResponse.data.client_key,
+          amount: intentResponse.data.amount.toString(),
+          total: totalAmount.toString(),
+        }));
         return;
       }
 
@@ -177,14 +175,11 @@ const OrderGracePeriodScreen = () => {
         if (authResult.type === 'cancel') {
           // Explicit cancel - user tapped cancel button
           console.log('[GracePeriod] User explicitly cancelled payment authorization');
-          router.replace({
-            pathname: '/(screens)/payment-cancel',
-            params: {
-              orderId,
-              orderNumber,
-              reason: 'cancelled',
-            },
-          } as never);
+          router.replace(Routes.checkout.paymentCancel({
+            orderId,
+            orderNumber,
+            reason: 'cancelled',
+          }));
           return;
         }
 
@@ -193,46 +188,37 @@ const OrderGracePeriodScreen = () => {
         console.log('[GracePeriod] Auth session ended, verifying payment status...');
 
         // After user returns from e-wallet, navigate to processing screen
-        router.replace({
-          pathname: '/(screens)/payment-processing',
-          params: {
-            orderId,
-            orderNumber,
-            arrivalCode,
-            paymentIntentId,
-            total: totalAmount.toString(),
-          },
-        } as never);
-        return;
-      }
-
-      // If no redirect needed (unlikely for e-wallets), payment may have succeeded
-      if (attachResponse.data.status === 'succeeded') {
-        router.replace({
-          pathname: '/(screens)/order-confirmation',
-          params: {
-            orderId,
-            orderNumber,
-            arrivalCode,
-            total: totalAmount.toString(),
-            paymentMethod: 'paymongo',
-            paymentSuccess: 'true',
-          },
-        } as never);
-        return;
-      }
-
-      // Fallback - go to processing screen
-      router.replace({
-        pathname: '/(screens)/payment-processing',
-        params: {
+        router.replace(Routes.checkout.paymentProcessing({
           orderId,
           orderNumber,
           arrivalCode,
           paymentIntentId,
           total: totalAmount.toString(),
-        },
-      } as never);
+        }));
+        return;
+      }
+
+      // If no redirect needed (unlikely for e-wallets), payment may have succeeded
+      if (attachResponse.data.status === 'succeeded') {
+        router.replace(Routes.checkout.orderConfirmation({
+          orderId,
+          orderNumber,
+          arrivalCode,
+          total: totalAmount.toString(),
+          paymentMethod: 'paymongo',
+          paymentSuccess: 'true',
+        }));
+        return;
+      }
+
+      // Fallback - go to processing screen
+      router.replace(Routes.checkout.paymentProcessing({
+        orderId,
+        orderNumber,
+        arrivalCode,
+        paymentIntentId,
+        total: totalAmount.toString(),
+      }));
 
     } catch (error: any) {
       console.error('[GracePeriod] Error processing order:', error);

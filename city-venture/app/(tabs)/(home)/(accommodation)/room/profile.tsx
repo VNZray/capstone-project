@@ -1,5 +1,8 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+// useNavigation: for setOptions (header customization)
+// useRouter: for navigation actions (push, replace, back)
 import { useNavigation, useRouter } from 'expo-router';
+import { Routes } from '@/routes/mainRoutes';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Dimensions,
@@ -171,11 +174,8 @@ const AccommodationProfile = () => {
       setModalVisible(true);
       return;
     }
-    if (user && roomDetails) {
-      router.push({
-        pathname: '/(tabs)/(home)/(accommodation)/room/booking',
-        params: { userId: user.id, roomId: roomDetails.id },
-      });
+    if (user?.id && roomDetails?.id) {
+      router.push(Routes.accommodation.room.booking(user.id, roomDetails.id));
     } else {
       console.log('User or room details not available');
     }
