@@ -64,9 +64,30 @@ const BookingDetailsModal: React.FC<BookingDetailsProps> = ({
   };
 
   // Format time
-  const formatTime = (dateString?: Date | string | String): string => {
-    if (!dateString) return 'N/A';
-    const date = new Date(dateString as string);
+  const formatTime = (timeString?: Date | string | String): string => {
+    if (!timeString) return 'N/A';
+
+    const timeStr = String(timeString);
+
+    // Handle time format like "0:00:00" or "14:30:00"
+    if (timeStr.includes(':')) {
+      const [hours, minutes] = timeStr.split(':');
+      const hour = parseInt(hours, 10);
+      const minute = parseInt(minutes, 10);
+
+      if (isNaN(hour) || isNaN(minute)) return 'N/A';
+
+      const period = hour >= 12 ? 'PM' : 'AM';
+      const displayHour = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
+      const displayMinute = minute.toString().padStart(2, '0');
+
+      return `${displayHour}:${displayMinute} ${period}`;
+    }
+
+    // Fallback to date parsing if it's a full datetime string
+    const date = new Date(timeStr);
+    if (isNaN(date.getTime())) return 'N/A';
+
     return date.toLocaleTimeString('en-US', {
       hour: 'numeric',
       minute: '2-digit',
