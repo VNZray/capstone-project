@@ -22,19 +22,11 @@ export type Booking = {
     trip_purpose?: string;
     balance?: number;
     business_id?: string;
+    applied_promotions?: string[]; // Array of promotion IDs used in this booking
+
 }
 
 export type Bookings = Booking[];
-
-export type Guest = {
-    id?: number;
-    booking_id: string;
-    name: string;
-    age: number | null;
-    gender: 'Male' | 'Female' | string;
-}
-
-export type Guests = Guest[];
 
 
 export type BookingPayment = {

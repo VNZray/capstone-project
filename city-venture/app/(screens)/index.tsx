@@ -27,8 +27,8 @@ import debugLogger from '@/utils/debugLogger';
 
 const LoginPage = () => {
   console.log('[LoginPage] Rendering');
-  const [email, setEmail] = useState('rayven.clores@unc.edu.ph');
-  const [password, setPassword] = useState('@Rayven22-17782');
+  const [email, setEmail] = useState('rclores666@gmail.com');
+  const [password, setPassword] = useState('RayvenClores22-17782');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [passwordError, setPasswordError] = useState('');
@@ -173,12 +173,12 @@ const LoginPage = () => {
                     label="Password"
                     placeholder="Enter password"
                     secureTextEntry={!showPassword}
+                    rightIcon={showPassword ? 'eye-slash' : 'eye'}
+                    onPressRightIcon={() => setShowPassword((p) => !p)}
                     value={password}
                     onChangeText={setPassword}
                     variant="outlined"
                     autoCapitalize="none"
-                    rightIcon={showPassword ? 'eye-slash' : 'eye'}
-                    onPressRightIcon={() => setShowPassword((p) => !p)}
                     required
                     errorText={passwordError}
                   />
@@ -211,7 +211,6 @@ const LoginPage = () => {
 
                 {/* Login Button */}
                 <Button
-                  fullWidth
                   size="large"
                   label={isLoading ? 'Signing In...' : 'Sign In'}
                   color="primary"

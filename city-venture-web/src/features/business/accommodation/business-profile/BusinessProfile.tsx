@@ -12,11 +12,10 @@ import Container from "@/src/components/Container";
 import { MdEmail, MdFacebook } from "react-icons/md";
 import { HomeWork, LocationCity, Place, Public } from "@mui/icons-material";
 import EditDescriptionModal from "./components/EditDescription";
-import type { Business, BusinessHours } from "@/src/types/Business";
+import type { Business, BusinessHours, Room } from "@/src/types/Business";
 import React, { useEffect, useState, useCallback } from "react";
 import EditContactModal from "./components/EditContactModal";
 import EditSocialMediaModal from "./components/EditSocialMediaModal";
-import EditPricingModal from "./components/EditPricingModal";
 import EditAddressModal from "./components/EditAddressModal";
 import EditMapCoordinatesModal from "./components/EditMapCoordinatesModal";
 import EditBusinessModal from "./components/EditBusinessModal";
@@ -33,7 +32,6 @@ const BusinessProfile = () => {
   const [editDescOpen, setEditDescOpen] = useState(false);
   const [editContactOpen, setEditContactOpen] = useState(false);
   const [editSocialMediaOpen, setEditSocialMediaOpen] = useState(false);
-  const [editPricingOpen, setEditPricingOpen] = useState(false);
   const [editAddressOpen, setEditAddressOpen] = useState(false);
   const [editMapCoordinatesOpen, setEditMapCoordinatesOpen] = useState(false);
   const [editBusinessHoursOpen, setEditBusinessHoursOpen] = useState(false);
@@ -41,6 +39,11 @@ const BusinessProfile = () => {
 
   const [businessHours, setBusinessHours] = useState<BusinessHours[]>([]);
   const [amenities, setAmenities] = React.useState<Amenity[]>([]);
+  const [rooms, setRooms] = React.useState<Room[]>([]);
+  const [priceRange, setPriceRange] = React.useState<{
+    min: number;
+    max: number;
+  }>({ min: 0, max: 0 });
 
   // Fetch full hierarchical address (province/municipality/barangay) by barangay_id
   const { address } = useAddress(businessDetails?.barangay_id);
@@ -74,9 +77,37 @@ const BusinessProfile = () => {
     setAmenities(filtered);
   }, [businessDetails?.id]);
 
+  const fetchRooms = useCallback(async () => {
+    if (!businessDetails?.id) return;
+
+    const response = await getData("room");
+    const filtered = Array.isArray(response)
+      ? response.filter((room: Room) => room.business_id === businessDetails.id)
+      : [];
+
+    setRooms(filtered);
+
+    // Calculate min and max prices from rooms
+    if (filtered.length > 0) {
+      const prices = filtered
+        .map((room: Room) => parseFloat(room.room_price || "0"))
+        .filter((price) => price > 0);
+
+      if (prices.length > 0) {
+        setPriceRange({
+          min: Math.min(...prices),
+          max: Math.max(...prices),
+        });
+      }
+    } else {
+      setPriceRange({ min: 0, max: 0 });
+    }
+  }, [businessDetails?.id]);
+
   React.useEffect(() => {
     fetchBusinessAmenities();
-  }, [fetchBusinessAmenities]);
+    fetchRooms();
+  }, [fetchBusinessAmenities, fetchRooms]);
 
   const formatTime = (time: string) => {
     const [hour, minute] = time.split(":");
@@ -155,22 +186,11 @@ const BusinessProfile = () => {
     });
   };
 
-  const handleSaveSocialMedia = (
-    fbLink: string,
-    igLink: string,
-  ) => {
+  const handleSaveSocialMedia = (fbLink: string, igLink: string) => {
     setBusinessData({
       ...businessData,
       facebook_url: fbLink,
       instagram_url: igLink,
-    });
-  };
-
-  const handleSavePricing = (min_price: string, max_price: string) => {
-    setBusinessData({
-      ...businessData,
-      min_price: min_price,
-      max_price: max_price,
     });
   };
 
@@ -200,7 +220,6 @@ const BusinessProfile = () => {
       longitude: longitude,
     });
   };
-
 
   return (
     <PageContainer
@@ -720,22 +739,7 @@ const BusinessProfile = () => {
                   justify="space-between"
                 >
                   <Typography.CardTitle>Pricing Range</Typography.CardTitle>
-
-                  <Button
-                    className="bp-edit-btn"
-                    startDecorator={<EditIcon />}
-                    onClick={() => setEditPricingOpen(true)}
-                    size="sm"
-                    variant="outlined"
-                  >
-                    Edit
-                  </Button>
                 </Container>
-
-                <Typography.Body>
-                  Display your price range to help customers understand your
-                  offerings.
-                </Typography.Body>
 
                 <Sheet
                   variant="outlined"
@@ -744,15 +748,21 @@ const BusinessProfile = () => {
                     borderRadius: "12px",
                   }}
                 >
-                  <Typography.Body
-                    startDecorator={
-                      <PhilippinePeso style={{ color: "#059669" }} />
-                    }
-                  >
-                    ₱{businessDetails?.min_price?.toLocaleString() || "0"}
-                    {" - "}₱
-                    {businessDetails?.max_price?.toLocaleString() || "0"}
-                  </Typography.Body>
+                  {rooms.length > 0 ? (
+                    <Typography.Body
+                      startDecorator={
+                        <PhilippinePeso style={{ color: "#059669" }} />
+                      }
+                    >
+                      ₱{priceRange.min.toLocaleString()}
+                      {priceRange.min !== priceRange.max &&
+                        ` - ₱${priceRange.max.toLocaleString()}`}
+                    </Typography.Body>
+                  ) : (
+                    <Typography.Body>
+                      No rooms listed yet. Add rooms to display price range.
+                    </Typography.Body>
+                  )}
                 </Sheet>
               </Container>
             </Container>
@@ -795,16 +805,6 @@ const BusinessProfile = () => {
         businessId={businessDetails?.id || ""}
         onClose={() => setEditSocialMediaOpen(false)}
         onSave={handleSaveSocialMedia}
-        onUpdate={() => window.location.reload()}
-      />
-
-      <EditPricingModal
-        open={editPricingOpen && Boolean(businessDetails?.id)}
-        initialMinimumPrice={businessDetails?.min_price || ""}
-        initialMaximumPrice={businessDetails?.max_price || ""}
-        businessId={businessDetails?.id || ""}
-        onClose={() => setEditPricingOpen(false)}
-        onSave={handleSavePricing}
         onUpdate={() => window.location.reload()}
       />
 

@@ -1,4 +1,4 @@
-import { card, colors } from '@/constants/color';
+import { card, Colors, colors } from '@/constants/color';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { FontAwesome5 } from '@expo/vector-icons';
 import React, {
@@ -19,6 +19,7 @@ import {
   ViewStyle,
 } from 'react-native';
 import { ThemedText } from './themed-text';
+import { IconSymbol } from './ui/icon-symbol';
 
 export interface FormTextInputProps {
   label?: string;
@@ -40,12 +41,14 @@ export interface FormTextInputProps {
   autoCapitalize?: 'none' | 'sentences' | 'words' | 'characters';
   variant?: 'solid' | 'outlined' | 'soft';
   size?: 'small' | 'medium' | 'large';
-  color?: keyof typeof colors;
+  color?: 'primary' | 'success' | 'warning' | 'error';
   elevation?: 1 | 2 | 3 | 4 | 5 | 6;
-  style?: StyleProp<ViewStyle>; // wrapper style
+  style?: StyleProp<ViewStyle>;
   inputStyle?: StyleProp<TextStyle>;
-  containerStyle?: StyleProp<ViewStyle>; // inner container style
+  containerStyle?: StyleProp<ViewStyle>;
   testID?: string;
+  startDecorator?: React.ReactNode;
+  endDecorator?: React.ReactNode;
   leftIcon?: keyof typeof FontAwesome5.glyphMap;
   rightIcon?: keyof typeof FontAwesome5.glyphMap;
   onPressRightIcon?: () => void;
@@ -53,15 +56,13 @@ export interface FormTextInputProps {
   returnKeyType?: any;
   editable?: boolean;
   columns?: 1 | 2 | 3 | 4;
-  // show character counter when maxLength provided
   showCounter?: boolean;
-  // validation props
   required?: boolean;
   minLength?: number;
   pattern?: RegExp;
   validateOnBlur?: boolean;
   validateOnChange?: boolean;
-  customValidator?: (value: string) => string | null; // returns error message or null
+  customValidator?: (value: string) => string | null;
 }
 
 export interface FormTextInputRef {
@@ -116,7 +117,6 @@ function getElevation(
     },
   };
 
-  // Enhanced Android elevation
   const android: Record<number, ViewStyle> = {
     1: {
       elevation: 1,
@@ -170,8 +170,8 @@ function getElevation(
 }
 
 const FormTextInput = React.forwardRef<FormTextInputRef, FormTextInputProps>(
-  (
-    {
+  (props, ref) => {
+    const {
       label,
       placeholder = 'Enter text',
       value,
@@ -197,6 +197,8 @@ const FormTextInput = React.forwardRef<FormTextInputRef, FormTextInputProps>(
       inputStyle,
       containerStyle,
       testID,
+      startDecorator,
+      endDecorator,
       leftIcon,
       rightIcon,
       onPressRightIcon,
@@ -211,9 +213,8 @@ const FormTextInput = React.forwardRef<FormTextInputRef, FormTextInputProps>(
       validateOnBlur = true,
       validateOnChange = false,
       customValidator,
-    },
-    ref
-  ) => {
+    } = props;
+
     const scheme = useColorScheme();
     const isDark = scheme === 'dark';
     const accent = colors[color] || colors.primary;
@@ -228,15 +229,14 @@ const FormTextInput = React.forwardRef<FormTextInputRef, FormTextInputProps>(
     const [validationError, setValidationError] = useState<string | null>(null);
     const currentValue = controlled ? value! : internal;
 
-    // Sizing tokens unified with Dropdown
     const sizeCfg = useMemo(() => {
       switch (size) {
         case 'small':
-          return { h: 40, font: 13, padH: 10, padV: 8, icon: 14 };
+          return { h: 40, font: 13, padH: 10, padV: 8, icon: 18 };
         case 'large':
-          return { h: 54, font: 16, padH: 16, padV: 14, icon: 18 };
+          return { h: 54, font: 16, padH: 16, padV: 14, icon: 22 };
         default:
-          return { h: 48, font: 14, padH: 14, padV: 12, icon: 16 };
+          return { h: 48, font: 14, padH: 14, padV: 12, icon: 20 };
       }
     }, [size]);
 
@@ -249,7 +249,6 @@ const FormTextInput = React.forwardRef<FormTextInputRef, FormTextInputProps>(
           borderWidth: 0.3,
           borderColor: accent,
         };
-      // soft
       return {
         backgroundColor: isDark ? '#1E2535' : '#EEF3FA',
         borderWidth: 1,
@@ -260,8 +259,6 @@ const FormTextInput = React.forwardRef<FormTextInputRef, FormTextInputProps>(
     const handleChange = (t: string) => {
       if (!controlled) setInternal(t);
       onChangeText?.(t);
-
-      // Validate on change if enabled
       if (validateOnChange) {
         validate(t);
       }
@@ -269,8 +266,6 @@ const FormTextInput = React.forwardRef<FormTextInputRef, FormTextInputProps>(
 
     const handleBlur = () => {
       onBlur?.();
-
-      // Validate on blur if enabled
       if (validateOnBlur) {
         validate();
       }
@@ -281,28 +276,20 @@ const FormTextInput = React.forwardRef<FormTextInputRef, FormTextInputProps>(
       onChangeText?.('');
     };
 
-    // Validation function
     const validate = useCallback(
       (valueToValidate?: string): boolean => {
         const val = valueToValidate ?? currentValue;
         let error: string | null = null;
 
-        // Required validation
         if (required && (!val || val.trim() === '')) {
           error = `${label || 'This field'} is required`;
-        }
-        // Min length validation
-        else if (minLength && val.length < minLength) {
+        } else if (minLength && val.length < minLength) {
           error = `${
             label || 'This field'
           } must be at least ${minLength} characters`;
-        }
-        // Pattern validation
-        else if (pattern && !pattern.test(val)) {
+        } else if (pattern && !pattern.test(val)) {
           error = `${label || 'This field'} format is invalid`;
-        }
-        // Custom validation
-        else if (customValidator) {
+        } else if (customValidator) {
           const customError = customValidator(val);
           if (customError) {
             error = customError;
@@ -319,6 +306,8 @@ const FormTextInput = React.forwardRef<FormTextInputRef, FormTextInputProps>(
       return validationError;
     }, [validationError]);
 
+    const inputRef = React.useRef<RNTextInput>(null);
+
     useImperativeHandle(
       ref,
       () => ({
@@ -332,15 +321,12 @@ const FormTextInput = React.forwardRef<FormTextInputRef, FormTextInputProps>(
       [currentValue, validate, getError]
     );
 
-    const inputRef = React.useRef<RNTextInput>(null);
-
     const elevationStyle = useMemo(
       () => getElevation(elevation as 1 | 2 | 3 | 4 | 5 | 6 | undefined),
       [elevation]
     );
 
     const colStyle: ViewStyle = useMemo(() => {
-      const pct = columns === 3 ? 100 : columns === 2 ? 66.6666 : 33.3333; // treat columns as span out of 3? default 1 => 33%
       if (columns === 1) return { flex: 1 };
       if (columns === 2) return { width: '48%' };
       if (columns === 3) return { width: '31%' };
@@ -353,7 +339,7 @@ const FormTextInput = React.forwardRef<FormTextInputRef, FormTextInputProps>(
       <View style={[style, colStyle]} testID={testID}>
         {label && (
           <ThemedText
-            type="label-small"
+            type="label-medium"
             weight="semi-bold"
             mb={6}
             style={{ color: subTextColor }}
@@ -379,15 +365,24 @@ const FormTextInput = React.forwardRef<FormTextInputRef, FormTextInputProps>(
             containerStyle,
           ]}
         >
-          {leftIcon && (
-            <View style={{ marginRight: 10, paddingTop: multiline ? 6 : 0 }}>
+          {startDecorator ? (
+            <View
+              style={{
+                paddingTop: multiline ? 6 : 0,
+                marginLeft: 16,
+              }}
+            >
+              {startDecorator}
+            </View>
+          ) : leftIcon ? (
+            <View style={{ paddingTop: multiline ? 6 : 0 }}>
               <FontAwesome5
                 name={leftIcon}
                 size={sizeCfg.icon}
                 color={subTextColor}
               />
             </View>
-          )}
+          ) : null}
           <RNTextInput
             ref={inputRef}
             style={[
@@ -399,10 +394,9 @@ const FormTextInput = React.forwardRef<FormTextInputRef, FormTextInputProps>(
                 paddingVertical: multiline ? sizeCfg.padV : 0,
                 flex: 1,
                 height: multiline
-                  ? sizeCfg.h * numberOfLines! || sizeCfg.h
+                  ? sizeCfg.h * (numberOfLines || 1)
                   : sizeCfg.h,
               },
-              // Ensure proper vertical alignment on Android
               Platform.select({
                 android: {
                   textAlignVertical: multiline ? 'top' : 'center',
@@ -436,23 +430,36 @@ const FormTextInput = React.forwardRef<FormTextInputRef, FormTextInputProps>(
               onPress={clear}
               hitSlop={10}
               style={({ pressed }) => [
-                { padding: 4, borderRadius: 4 },
+                { padding: 4, borderRadius: 4, marginRight: 8 },
                 pressed && { opacity: 0.6 },
               ]}
             >
-              <FontAwesome5
-                name="times-circle"
-                size={16}
-                color={subTextColor}
+              <IconSymbol
+                name="x.circle"
+                size={sizeCfg.icon}
+                color={Colors.light.text}
               />
             </Pressable>
           )}
-          {rightIcon && (
+          {endDecorator ? (
+            <View
+              style={{
+                marginLeft: 8,
+                marginRight: 12,
+                paddingTop: multiline ? 4 : 0,
+              }}
+            >
+              {endDecorator}
+            </View>
+          ) : rightIcon ? (
             <Pressable
               disabled={!onPressRightIcon}
               onPress={onPressRightIcon}
               hitSlop={10}
-              style={{ marginLeft: 8, marginRight: 12, paddingTop: multiline ? 4 : 0 }}
+              style={{
+                marginRight: 12,
+                paddingTop: multiline ? 4 : 0,
+              }}
             >
               <FontAwesome5
                 name={rightIcon}
@@ -460,7 +467,7 @@ const FormTextInput = React.forwardRef<FormTextInputRef, FormTextInputProps>(
                 color={subTextColor}
               />
             </Pressable>
-          )}
+          ) : null}
         </View>
         {!!helperText && !errorText && !validationError && (
           <ThemedText
@@ -485,6 +492,8 @@ const FormTextInput = React.forwardRef<FormTextInputRef, FormTextInputProps>(
   }
 );
 
+FormTextInput.displayName = 'FormTextInput';
+
 export default FormTextInput;
 
 const styles = StyleSheet.create({
@@ -492,7 +501,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     ...Platform.select({
       android: {
-        // Better border rendering on Android
         borderStyle: 'solid',
         overflow: 'hidden',
       },
@@ -502,9 +510,8 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     ...Platform.select({
       android: {
-        // Better text input behavior on Android
         includeFontPadding: false,
-        paddingVertical: 0, // Remove default padding that can cause alignment issues
+        paddingVertical: 0,
       },
     }),
   },

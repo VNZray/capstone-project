@@ -140,25 +140,6 @@ const Profile = () => {
                 </ThemedText>
               </View>
             </View>
-
-            {/* Minimal Stats */}
-            <View style={styles.statsRow}>
-              <StatItem label="Trips" value="12" color="white" />
-              <View
-                style={[
-                  styles.statDivider,
-                  { backgroundColor: 'rgba(255,255,255,0.2)' },
-                ]}
-              />
-              <StatItem label="Reviews" value="15" color="white" />
-              <View
-                style={[
-                  styles.statDivider,
-                  { backgroundColor: 'rgba(255,255,255,0.2)' },
-                ]}
-              />
-              <StatItem label="Points" value="2.4k" color="white" />
-            </View>
           </LinearGradient>
         </View>
 

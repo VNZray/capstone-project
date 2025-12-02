@@ -108,7 +108,14 @@ const booking = () => {
       });
       // Update local booking state with returned id/status if present
       if (created?.id) {
-        setBookingData((prev) => ({ ...prev, id: created.id, booking_status: created.booking_status || prev.booking_status } as Booking));
+        setBookingData(
+          (prev) =>
+            ({
+              ...prev,
+              id: created.id,
+              booking_status: created.booking_status || prev.booking_status,
+            } as Booking)
+        );
       }
       if (paymentData.payment_method === 'Cash') {
         setStep('summary');
@@ -283,7 +290,7 @@ const booking = () => {
       </View>
 
       {(() => {
-        const baseBottom = Platform.OS === 'ios' ? 0 : 0;
+        const baseBottom = Platform.OS === 'ios' ? 0 : 12;
         return (
           <View
             style={[
@@ -295,11 +302,14 @@ const booking = () => {
             ]}
           >
             <Button
-              label="Previous"
+              label={step === 'booking' ? 'Cancel' : 'Previous'}
               style={{ flex: 1 }}
               onPress={() => {
-                if (step === 'payment') setStep('booking');
-                else if (step === 'summary') {
+                if (step === 'booking') {
+                  navigation.goBack();
+                } else if (step === 'payment') {
+                  setStep('booking');
+                } else if (step === 'summary') {
                   if (paymentData.payment_method === 'Cash') setStep('payment');
                   else setStep('online');
                 }

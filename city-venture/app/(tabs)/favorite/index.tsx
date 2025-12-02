@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import {
   View,
   StyleSheet,
@@ -10,19 +10,42 @@ import {
   ScrollView,
   useColorScheme,
   Platform,
+  ActivityIndicator,
+  RefreshControl,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ThemedText } from '@/components/themed-text';
 import { Colors } from '@/constants/color';
 import { MaterialCommunityIcons, Ionicons, Feather } from '@expo/vector-icons';
 import { router, Stack } from 'expo-router';
+import { useAuth } from '@/context/AuthContext';
+import {
+  getFavoritesByTouristId,
+  deleteFavorite,
+  type Favorite,
+  type FavoriteType,
+} from '@/services/FavoriteService';
+import { fetchBusinessDetails } from '@/services/AccommodationService';
+import { fetchRoomDetails } from '@/services/RoomService';
+import { fetchTouristSpotById } from '@/services/TouristSpotService';
+import type { BusinessDetails } from '@/types/Business';
+import type { Room } from '@/types/Business';
+import placeholder from '@/assets/images/placeholder.png';
 
 // --- Types ---
 
-type Category = 'All' | 'Stay' | 'Dining' | 'Visit';
+type Category =
+  | 'All'
+  | 'Accommodation'
+  | 'Room'
+  | 'Shop'
+  | 'Event'
+  | 'Tourist Spot';
 
 type FavoriteItem = {
   id: string;
+  favoriteId: string; // The favorite record ID for deletion
   title: string;
   location: string;
   rating: number;
@@ -30,89 +53,37 @@ type FavoriteItem = {
   price?: string;
   category: Exclude<Category, 'All'>;
   image: string;
+  favoriteType: FavoriteType;
+  itemId: string; // The actual item ID (accommodation_id, room_id, etc.)
 };
 
-// --- Mock Data ---
-
-const MOCK_FAVORITES: FavoriteItem[] = [
-  {
-    id: '1',
-    title: 'Aman Tokyo',
-    location: 'Otemachi Tower, Tokyo',
-    rating: 4.9,
-    price: '$1850',
-    category: 'Stay',
-    image:
-      'https://images.unsplash.com/photo-1566073771259-6a8506099945?q=80&w=2070&auto=format&fit=crop',
-  },
-  {
-    id: '2',
-    title: 'Hotel de Crillon',
-    location: 'Place de la Concorde, Paris',
-    rating: 4.8,
-    price: '$2100',
-    category: 'Stay',
-    image:
-      'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?q=80&w=2070&auto=format&fit=crop',
-  },
-  {
-    id: '3',
-    title: 'The Brando',
-    location: 'Tetiaroa, French Polynesia',
-    rating: 5.0,
-    price: '$3500',
-    category: 'Stay',
-    image:
-      'https://images.unsplash.com/photo-1590523741831-ab7e8b8f9c7f?q=80&w=1974&auto=format&fit=crop',
-  },
-  {
-    id: '4',
-    title: "Claridge's",
-    location: 'Mayfair, London',
-    rating: 4.7,
-    price: '$1200',
-    category: 'Stay',
-    image:
-      'https://images.unsplash.com/photo-1590490360182-c33d57733427?q=80&w=1974&auto=format&fit=crop',
-  },
-  {
-    id: '5',
-    title: 'Le Bernardin',
-    location: 'New York, USA',
-    rating: 4.9,
-    price: '$450',
-    category: 'Dining',
-    image:
-      'https://images.unsplash.com/photo-1559339352-11d035aa65de?q=80&w=1974&auto=format&fit=crop',
-  },
-  {
-    id: '6',
-    title: 'Louvre Museum',
-    location: 'Paris, France',
-    rating: 4.8,
-    price: '$20',
-    category: 'Visit',
-    image:
-      'https://images.unsplash.com/photo-1499856871940-a09627c6dcf6?q=80&w=2020&auto=format&fit=crop',
-  },
+const CATEGORIES: Category[] = [
+  'All',
+  'Accommodation',
+  'Shop',
+  'Room',
+  'Event',
+  'Tourist Spot',
 ];
-
-const CATEGORIES: Category[] = ['All', 'Stay', 'Dining', 'Visit'];
 
 // --- Components ---
 
 const GridCard = ({
   item,
   colors,
+  onRemove,
 }: {
   item: FavoriteItem;
   colors: typeof Colors.light;
+  onRemove: (favoriteId: string) => void;
 }) => {
   const handlePress = () => {
-    router.push({
-      pathname: '/(tabs)/(home)/(spot)',
-      params: { spotId: item.id },
-    });
+    // Navigate based on category type
+    if (item.category === 'Accommodation') {
+      router.push('/(tabs)/(home)/(accommodation)');
+    } else if (item.category === 'Tourist Spot') {
+      router.push('/(tabs)/(home)/(spot)');
+    }
   };
 
   return (
@@ -122,10 +93,16 @@ const GridCard = ({
     >
       {/* Image Container */}
       <View style={styles.gridImageContainer}>
-        <Image source={{ uri: item.image }} style={styles.gridImage} />
+        <Image
+          source={item.image ? { uri: item.image } : placeholder}
+          style={styles.gridImage}
+        />
 
         {/* Heart Icon */}
-        <Pressable style={styles.heartButton}>
+        <Pressable
+          style={styles.heartButton}
+          onPress={() => onRemove(item.favoriteId)}
+        >
           <MaterialCommunityIcons name="heart" size={16} color="#D4AF37" />
         </Pressable>
 
@@ -136,7 +113,7 @@ const GridCard = ({
             weight="bold"
             style={styles.categoryBadgeText}
           >
-            {item.category.toUpperCase()}
+            {item.category}
           </ThemedText>
         </View>
       </View>
@@ -217,15 +194,19 @@ const GridCard = ({
 const ListCard = ({
   item,
   colors,
+  onRemove,
 }: {
   item: FavoriteItem;
   colors: typeof Colors.light;
+  onRemove: (favoriteId: string) => void;
 }) => {
   const handlePress = () => {
-    router.push({
-      pathname: '/(tabs)/(home)/(spot)',
-      params: { spotId: item.id },
-    });
+    // Navigate based on category type
+    if (item.category === 'Accommodation') {
+      router.push('/(tabs)/(home)/(accommodation)');
+    } else if (item.category === 'Tourist Spot') {
+      router.push('/(tabs)/(home)/(spot)');
+    }
   };
 
   return (
@@ -235,8 +216,14 @@ const ListCard = ({
     >
       {/* Image */}
       <View style={styles.listImageContainer}>
-        <Image source={{ uri: item.image }} style={styles.listImage} />
-        <Pressable style={styles.listHeartButton}>
+        <Image
+          source={item.image ? { uri: item.image } : placeholder}
+          style={styles.listImage}
+        />
+        <Pressable
+          style={styles.listHeartButton}
+          onPress={() => onRemove(item.favoriteId)}
+        >
           <MaterialCommunityIcons name="heart" size={14} color="#D4AF37" />
         </Pressable>
       </View>
@@ -249,7 +236,7 @@ const ListCard = ({
             weight="bold"
             style={{ color: '#D4AF37', letterSpacing: 1 }}
           >
-            {item.category.toUpperCase()}
+            {item.category}
           </ThemedText>
           {item.price && (
             <ThemedText type="label-small" weight="bold">
@@ -314,15 +301,186 @@ const ListCard = ({
 
 // --- Main Screen ---
 
-const Favorite = () => {
+const MyFavorite = () => {
   const scheme = useColorScheme() ?? 'light';
   const colors = Colors[scheme];
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const { user } = useAuth();
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
   const [activeCategory, setActiveCategory] = useState<Category>('All');
   const [searchQuery, setSearchQuery] = useState('');
+  const [favorites, setFavorites] = useState<FavoriteItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+
+  // Map favorite type to category
+  const mapFavoriteTypeToCategory = (
+    type: FavoriteType
+  ): Exclude<Category, 'All'> => {
+    const mapping: Record<FavoriteType, Exclude<Category, 'All'>> = {
+      accommodation: 'Accommodation',
+      room: 'Room',
+      shop: 'Shop',
+      event: 'Event',
+      tourist_spot: 'Tourist Spot',
+    };
+    return mapping[type];
+  };
+
+  // Fetch favorites and their details
+  const fetchFavorites = useCallback(async () => {
+    if (!user?.id) {
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const favoritesData = await getFavoritesByTouristId(user.id);
+      console.log(
+        'Raw favorites data:',
+        JSON.stringify(favoritesData, null, 2)
+      );
+
+      // Fetch details for each favorite
+      const favoritesWithDetails = await Promise.all(
+        favoritesData.map(async (fav: Favorite) => {
+          try {
+            let itemData: any = null;
+            let title = 'Unknown';
+            let location = 'Location not available';
+            let image = '';
+            let price = undefined;
+
+            console.log(
+              `Fetching details for favorite ${fav.id}, type: ${fav.favorite_type}, item_id: ${fav.my_favorite_id}`
+            );
+
+            if (fav.favorite_type === 'accommodation') {
+              itemData = await fetchBusinessDetails(fav.my_favorite_id);
+              console.log('Accommodation data:', itemData);
+              title = itemData.business_name || 'Accommodation';
+              location = `${itemData.barangay_name || ''}, ${
+                itemData.municipality_name || ''
+              }`;
+              image = itemData.business_image || '';
+              price = itemData.min_price ? `₱${itemData.min_price}` : undefined;
+            } else if (fav.favorite_type === 'room') {
+              itemData = await fetchRoomDetails(fav.my_favorite_id);
+              console.log('Room data:', itemData);
+              title =
+                itemData.room_type || `Room ${itemData.room_number || ''}`;
+              location = `${
+                itemData.room_number ? 'Room ' + itemData.room_number : ''
+              } • ${itemData.floor || ''}sqm`;
+              image = itemData.room_image || '';
+
+              // Format room price
+              const rawPrice = itemData.room_price as any;
+              if (rawPrice != null) {
+                if (typeof rawPrice === 'number') {
+                  price =
+                    '₱' +
+                    rawPrice.toLocaleString('en-PH', {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    });
+                } else {
+                  const numeric = String(rawPrice).replace(/[^0-9.]/g, '');
+                  const num = Number(numeric);
+                  if (!isNaN(num)) {
+                    price =
+                      '₱' +
+                      num.toLocaleString('en-PH', {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                      });
+                  }
+                }
+              }
+            } else if (fav.favorite_type === 'tourist_spot') {
+              itemData = await fetchTouristSpotById(fav.my_favorite_id);
+              title = itemData.name || 'Tourist Spot';
+              location = `${itemData.barangay_name || ''}, ${
+                itemData.municipality_name || ''
+              }`;
+              image = itemData.spot_image || '';
+            }
+
+            return {
+              id: fav.id,
+              favoriteId: fav.id,
+              itemId: fav.my_favorite_id,
+              title,
+              location,
+              rating: 0, // TODO: Fetch ratings
+              reviews: 0,
+              price,
+              category: mapFavoriteTypeToCategory(fav.favorite_type),
+              image,
+              favoriteType: fav.favorite_type,
+            } as FavoriteItem;
+          } catch (error) {
+            console.error(
+              `Failed to fetch details for favorite ${fav.id}:`,
+              error
+            );
+            return null;
+          }
+        })
+      );
+
+      setFavorites(
+        favoritesWithDetails.filter(
+          (item): item is FavoriteItem => item !== null
+        )
+      );
+    } catch (error) {
+      console.error('Failed to fetch favorites:', error);
+      Alert.alert('Error', 'Failed to load favorites. Please try again.');
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, [user?.id]);
+
+  useEffect(() => {
+    fetchFavorites();
+  }, [fetchFavorites]);
+
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    fetchFavorites();
+  }, [fetchFavorites]);
+
+  const handleRemoveFavorite = useCallback(async (favoriteId: string) => {
+    Alert.alert(
+      'Remove Favorite',
+      'Are you sure you want to remove this from your favorites?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Remove',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await deleteFavorite(favoriteId);
+              setFavorites((prev) =>
+                prev.filter((item) => item.favoriteId !== favoriteId)
+              );
+            } catch (error) {
+              console.error('Failed to remove favorite:', error);
+              Alert.alert(
+                'Error',
+                'Failed to remove favorite. Please try again.'
+              );
+            }
+          },
+        },
+      ]
+    );
+  }, []);
 
   const filteredData = useMemo(() => {
-    return MOCK_FAVORITES.filter((item) => {
+    return favorites.filter((item) => {
       const matchesCategory =
         activeCategory === 'All' || item.category === activeCategory;
       const matchesSearch =
@@ -330,7 +488,7 @@ const Favorite = () => {
         item.location.toLowerCase().includes(searchQuery.toLowerCase());
       return matchesCategory && matchesSearch;
     });
-  }, [activeCategory, searchQuery]);
+  }, [favorites, activeCategory, searchQuery]);
 
   return (
     <SafeAreaView
@@ -375,43 +533,9 @@ const Favorite = () => {
               type="label-medium"
               style={{ color: colors.textSecondary }}
             >
-              {MOCK_FAVORITES.length} saved places
+              {favorites.length} saved places
             </ThemedText>
           </View>
-        </View>
-
-        {/* View Toggle */}
-        <View style={[styles.viewToggle, { backgroundColor: colors.surface }]}>
-          <Pressable
-            onPress={() => setViewMode('grid')}
-            style={[
-              styles.toggleButton,
-              viewMode === 'grid' && { backgroundColor: colors.text },
-            ]}
-          >
-            <MaterialCommunityIcons
-              name="view-grid-outline"
-              size={20}
-              color={
-                viewMode === 'grid' ? colors.background : colors.textSecondary
-              }
-            />
-          </Pressable>
-          <Pressable
-            onPress={() => setViewMode('list')}
-            style={[
-              styles.toggleButton,
-              viewMode === 'list' && { backgroundColor: colors.text },
-            ]}
-          >
-            <MaterialCommunityIcons
-              name="format-list-bulleted"
-              size={20}
-              color={
-                viewMode === 'list' ? colors.background : colors.textSecondary
-              }
-            />
-          </Pressable>
         </View>
       </View>
 
@@ -475,34 +599,77 @@ const Favorite = () => {
       </View>
 
       {/* Content */}
-      <FlatList
-        key={viewMode} // Force re-render when switching modes
-        data={filteredData}
-        keyExtractor={(item) => item.id}
-        numColumns={viewMode === 'grid' ? 2 : 1}
-        columnWrapperStyle={
-          viewMode === 'grid' ? styles.columnWrapper : undefined
-        }
-        contentContainerStyle={styles.listContent}
-        showsVerticalScrollIndicator={false}
-        renderItem={({ item }) =>
-          viewMode === 'grid' ? (
-            <GridCard item={item} colors={colors} />
-          ) : (
-            <ListCard item={item} colors={colors} />
-          )
-        }
-        ListEmptyComponent={
-          <View style={styles.emptyState}>
-            <ThemedText
-              type="body-medium"
-              style={{ color: colors.textSecondary }}
-            >
-              No items found
-            </ThemedText>
-          </View>
-        }
-      />
+      {loading ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={colors.primary} />
+          <ThemedText
+            type="body-medium"
+            style={{ marginTop: 16, color: colors.textSecondary }}
+          >
+            Loading your favorites...
+          </ThemedText>
+        </View>
+      ) : (
+        <FlatList
+          key={viewMode} // Force re-render when switching modes
+          data={filteredData}
+          keyExtractor={(item) => item.id}
+          numColumns={viewMode === 'grid' ? 2 : 1}
+          columnWrapperStyle={
+            viewMode === 'grid' ? styles.columnWrapper : undefined
+          }
+          contentContainerStyle={styles.listContent}
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              tintColor={colors.primary}
+            />
+          }
+          renderItem={({ item }) =>
+            viewMode === 'grid' ? (
+              <GridCard
+                item={item}
+                colors={colors}
+                onRemove={handleRemoveFavorite}
+              />
+            ) : (
+              <ListCard
+                item={item}
+                colors={colors}
+                onRemove={handleRemoveFavorite}
+              />
+            )
+          }
+          ListEmptyComponent={
+            <View style={styles.emptyState}>
+              <Ionicons
+                name="heart-outline"
+                size={64}
+                color={colors.textSecondary}
+              />
+              <ThemedText
+                type="card-title-medium"
+                weight="semi-bold"
+                style={{ marginTop: 16, color: colors.text }}
+              >
+                No Favorites Yet
+              </ThemedText>
+              <ThemedText
+                type="body-medium"
+                style={{
+                  marginTop: 8,
+                  color: colors.textSecondary,
+                  textAlign: 'center',
+                }}
+              >
+                Start adding places to your favorites to see them here!
+              </ThemedText>
+            </View>
+          }
+        />
+      )}
     </SafeAreaView>
   );
 };
@@ -510,6 +677,12 @@ const Favorite = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 32,
   },
   header: {
     flexDirection: 'row',
@@ -574,7 +747,7 @@ const styles = StyleSheet.create({
   },
   listContent: {
     paddingHorizontal: 20,
-    paddingBottom: 20,
+    paddingBottom: 100,
     gap: 16,
     flexGrow: 1, // Ensure scrollability
   },
@@ -582,8 +755,11 @@ const styles = StyleSheet.create({
     gap: 16,
   },
   emptyState: {
+    flex: 1,
     alignItems: 'center',
-    marginTop: 40,
+    justifyContent: 'center',
+    paddingHorizontal: 32,
+    paddingTop: 80,
   },
 
   // Grid Card Styles
@@ -700,4 +876,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default Favorite;
+export default MyFavorite;

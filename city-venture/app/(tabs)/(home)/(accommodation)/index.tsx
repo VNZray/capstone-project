@@ -5,9 +5,15 @@ import SearchBar from '@/components/SearchBar';
 import Chip from '@/components/Chip';
 import { ThemedText } from '@/components/themed-text';
 import { useAccommodation } from '@/context/AccommodationContext';
+import { useAuth } from '@/context/AuthContext';
 import { navigateToAccommodationProfile } from '@/routes/accommodationRoutes';
 import { fetchAddress } from '@/services/AccommodationService';
 import { getAverageRating, getTotalReviews } from '@/services/FeedbackService';
+import {
+  getFavoritesByTouristId,
+  addFavorite,
+  deleteFavorite,
+} from '@/services/FavoriteService';
 import type { Business } from '@/types/Business';
 
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
@@ -21,6 +27,7 @@ import {
   StyleSheet,
   View,
   Text,
+  Alert,
 } from 'react-native';
 import placeholder from '@/assets/images/placeholder.png';
 import { Colors } from '@/constants/color';
@@ -75,20 +82,50 @@ const AccommodationDirectory = () => {
     setAccommodationId,
     refreshAllAccommodations,
   } = useAccommodation();
+  const { user } = useAuth();
 
   const [refreshing, setRefreshing] = useState(false);
+  const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set());
+  const [favoriteRecords, setFavoriteRecords] = useState<Map<string, string>>(
+    new Map()
+  ); // accommodationId -> favoriteId
   const lastScrollOffset = useRef(0);
   const atTopRef = useRef(true);
   const wasScrollingUpRef = useRef(false);
 
+  // Fetch user's favorites
+  const fetchFavorites = useCallback(async () => {
+    if (!user?.id) return;
+    try {
+      const favorites = await getFavoritesByTouristId(user.id);
+      const accommodationFavorites = favorites.filter(
+        (fav) => fav.favorite_type === 'accommodation'
+      );
+      const ids = new Set(
+        accommodationFavorites.map((fav) => fav.my_favorite_id)
+      );
+      const records = new Map(
+        accommodationFavorites.map((fav) => [fav.my_favorite_id, fav.id])
+      );
+      setFavoriteIds(ids);
+      setFavoriteRecords(records);
+    } catch (error) {
+      console.error('Failed to fetch favorites:', error);
+    }
+  }, [user?.id]);
+
+  useEffect(() => {
+    fetchFavorites();
+  }, [fetchFavorites]);
+
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
     try {
-      await refreshAllAccommodations();
+      await Promise.all([refreshAllAccommodations(), fetchFavorites()]);
     } finally {
       setRefreshing(false);
     }
-  }, [refreshAllAccommodations]);
+  }, [refreshAllAccommodations, fetchFavorites]);
 
   const handleScroll = useCallback(
     (e: NativeSyntheticEvent<NativeScrollEvent>) => {
@@ -131,6 +168,66 @@ const AccommodationDirectory = () => {
     setAccommodationId(id);
     navigateToAccommodationProfile();
   };
+
+  const handleToggleFavorite = useCallback(
+    async (accommodationId: string, isFavorite: boolean) => {
+      if (!user?.id) {
+        Alert.alert('Sign In Required', 'Please sign in to add favorites.');
+        return;
+      }
+
+      // Optimistic UI update
+      if (isFavorite) {
+        setFavoriteIds((prev) => new Set(prev).add(accommodationId));
+      } else {
+        setFavoriteIds((prev) => {
+          const next = new Set(prev);
+          next.delete(accommodationId);
+          return next;
+        });
+      }
+
+      try {
+        if (isFavorite) {
+          // Add to favorites
+          const result = await addFavorite(
+            user.id,
+            'accommodation',
+            accommodationId
+          );
+          setFavoriteRecords((prev) =>
+            new Map(prev).set(accommodationId, result.id)
+          );
+        } else {
+          // Remove from favorites
+          const favoriteId = favoriteRecords.get(accommodationId);
+          if (favoriteId) {
+            await deleteFavorite(favoriteId);
+            setFavoriteRecords((prev) => {
+              const next = new Map(prev);
+              next.delete(accommodationId);
+              return next;
+            });
+          }
+        }
+      } catch (error) {
+        console.error('Failed to toggle favorite:', error);
+        Alert.alert('Error', 'Failed to update favorite. Please try again.');
+        // Revert optimistic update on error
+        if (isFavorite) {
+          setFavoriteIds((prev) => {
+            const next = new Set(prev);
+            next.delete(accommodationId);
+            return next;
+          });
+        } else {
+          setFavoriteIds((prev) => new Set(prev).add(accommodationId));
+        }
+        fetchFavorites();
+      }
+    },
+    [user?.id, favoriteRecords, fetchFavorites]
+  );
 
   // Address caching
   const [addressPartsByBarangay, setAddressPartsByBarangay] = useState<
@@ -220,6 +317,34 @@ const AccommodationDirectory = () => {
     };
     load();
   }, [filteredAccommodations]);
+  const [accommodationRatings, setAccommodationRatings] = useState<
+    Record<string, { avg: number; total: number }>
+  >({});
+  // Fetch ratings and total reviews for visible accommodations
+  useEffect(() => {
+    const fetchRatings = async () => {
+      const ids = filteredAccommodations
+        .map((r) => r.id)
+        .filter((id): id is string => typeof id === 'string' && !!id);
+      const newMap: Record<string, { avg: number; total: number }> = {};
+      await Promise.all(
+        ids.map(async (id) => {
+          try {
+            const [avg, total] = await Promise.all([
+              getAverageRating('accommodation', id),
+              getTotalReviews('accommodation', id),
+            ]);
+            newMap[String(id)] = { avg, total };
+          } catch {
+            newMap[String(id)] = { avg: 0, total: 0 };
+          }
+        })
+      );
+      setAccommodationRatings(newMap);
+    };
+    if (filteredAccommodations.length > 0) fetchRatings();
+    else setAccommodationRatings({});
+  }, [filteredAccommodations]);
 
   return (
     <View style={{ flex: 1, backgroundColor: bg }}>
@@ -236,7 +361,7 @@ const AccommodationDirectory = () => {
       >
         {/* Header Section (Scrolls away) */}
         <View style={{ marginTop: 8, paddingHorizontal: 16 }}>
-          <ThemedText type="header-large" style={{ fontSize: 32 }}>
+          <ThemedText type="header-small" weight="medium">
             Accommodation
           </ThemedText>
         </View>
@@ -290,31 +415,41 @@ const AccommodationDirectory = () => {
           {loading ? (
             <Text style={styles.loadingText}>Loading...</Text>
           ) : filteredAccommodations.length > 0 ? (
-            filteredAccommodations.map((business, index) => (
-              <AccommodationCard
-                key={business.id}
-                title={business.business_name}
-                subTitle={formatSubtitle(business)}
-                pricing={
-                  business.min_price && business.max_price
-                    ? `${business.min_price} - ${business.max_price}`
-                    : '$$$$'
-                }
-                image={
-                  business.business_image
-                    ? { uri: business.business_image }
-                    : placeholder
-                }
-                ratings={4.9}
-                noOfComments={1254}
-                badge={index === 0 ? 'GUEST FAVORITE' : undefined}
-                tags={['Luxury', 'Spa']}
-                isOpen={true}
-                view="card"
-                favorite={false}
-                onClick={() => handleAccommodationSelect(business.id!)}
-              />
-            ))
+            filteredAccommodations.map((business, index) => {
+              const ratingInfo = accommodationRatings[String(business.id)] || {
+                avg: 0,
+                total: 0,
+              };
+
+              return (
+                <AccommodationCard
+                  key={business.id}
+                  title={business.business_name}
+                  subTitle={formatSubtitle(business)}
+                  pricing={
+                    business.min_price && business.max_price
+                      ? `${business.min_price} - ${business.max_price}`
+                      : '$$$$'
+                  }
+                  image={
+                    business.business_image
+                      ? { uri: business.business_image }
+                      : placeholder
+                  }
+                  ratings={ratingInfo.avg}
+                  noOfComments={ratingInfo.total}
+                  badge={index === 0 ? 'GUEST FAVORITE' : undefined}
+                  tags={['Luxury', 'Spa']}
+                  isOpen={true}
+                  view="card"
+                  favorite={favoriteIds.has(business.id!)}
+                  addToFavorite={(isFavorite) =>
+                    handleToggleFavorite(business.id!, isFavorite)
+                  }
+                  onClick={() => handleAccommodationSelect(business.id!)}
+                />
+              );
+            })
           ) : (
             <PageContainer
               padding={16}

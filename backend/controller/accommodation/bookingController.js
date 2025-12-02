@@ -1,6 +1,7 @@
 import db from "../../db.js";
 import { v4 as uuidv4 } from "uuid";
 import { handleDbError } from "../../utils/errorHandler.js";
+import { incrementPromotionUsage } from "../promotionController.js";
 // Booking fields in the order expected by the stored procedures after id
 const BOOKING_FIELDS = [
   "pax",
@@ -114,8 +115,8 @@ export async function insertBooking(req, res) {
       booking_type = "overnight",
       check_in_date,
       check_out_date,
-      check_in_time,
-      check_out_time,
+      check_in_time = "14:00:00", // Default check-in time: 2:00 PM
+      check_out_time = "12:00:00", // Default check-out time: 12:00 PM
       total_price,
       balance,
       booking_status,
@@ -138,10 +139,32 @@ export async function insertBooking(req, res) {
         .json({ error: "Missing required fields", fields: missing });
     }
 
+    // Validation: For short-stay bookings, times are critical
+    if (booking_type === "short-stay") {
+      if (!req.body.check_in_time) {
+        return res.status(400).json({
+          error: "check_in_time is required for short-stay bookings"
+        });
+      }
+      if (!req.body.check_out_time) {
+        return res.status(400).json({
+          error: "check_out_time is required for short-stay bookings"
+        });
+      }
+    }
+
     const effectiveBalance = balance ?? total_price;
     const effectiveStatus = booking_status ?? "Pending";
+
+    // Prepare body with defaults applied
+    const bodyWithDefaults = {
+      ...req.body,
+      check_in_time: req.body.check_in_time || check_in_time,
+      check_out_time: req.body.check_out_time || check_out_time,
+    };
+
     // build params with defaults applied for balance and booking_status
-    const params = buildBookingParams(id, req.body, {
+    const params = buildBookingParams(id, bodyWithDefaults, {
       defaultBalanceFor: "balance",
       defaultBalanceValue: effectiveBalance,
       defaultStatusFor: "booking_status",
@@ -149,6 +172,16 @@ export async function insertBooking(req, res) {
     });
     const placeholders = makePlaceholders(params.length);
     const [rows] = await db.query(`CALL InsertBooking(${placeholders})`, params);
+
+    // Increment usage count for applied promotions
+    if (req.body.applied_promotions && Array.isArray(req.body.applied_promotions)) {
+      for (const promoId of req.body.applied_promotions) {
+        if (promoId) {
+          await incrementPromotionUsage(promoId);
+        }
+      }
+    }
+
     return res.status(201).json(rows[0][0]);
   } catch (error) {
     return handleDbError(error, res);

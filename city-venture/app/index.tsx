@@ -72,7 +72,7 @@ const Main = () => {
             }}
           >
             <Button
-              fullWidth
+              style={{ width: '100%' }}
               size="large"
               label="Sign In"
               color="secondary"
@@ -81,7 +81,7 @@ const Main = () => {
             />
 
             <Button
-              fullWidth
+              style={{ width: '100%' }}
               size="large"
               label="Sign Up"
               variant="soft"

@@ -5,7 +5,6 @@ import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { View, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { ThemedText } from '@/components/themed-text';
 const AccommodationLayout = () => {
   const scheme = useColorScheme();
   return (
@@ -14,7 +13,7 @@ const AccommodationLayout = () => {
         <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
         <Stack
           screenOptions={{
-            headerBackTitle: 'Back',
+            headerBackVisible: false,
           }}
         >
           <Stack.Screen

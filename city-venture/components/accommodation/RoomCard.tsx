@@ -26,6 +26,8 @@ export interface RoomCardProps {
   subtitle?: string; // Room type
   capacity?: number | string; // Guests capacity
   price?: string | number; // Display price (already formatted or raw)
+  originalPrice?: string | number; // Original price before discount
+  discountPercentage?: number; // Discount percentage if applicable
   rating?: number; // 0-5
   comments?: number; // number of reviews
   status?: 'Available' | 'Booked' | 'Maintenance';
@@ -163,6 +165,8 @@ export const RoomCard: React.FC<RoomCardProps> = ({
   subtitle,
   capacity,
   price,
+  originalPrice,
+  discountPercentage,
   rating = 0,
   comments = 0,
   status,
@@ -249,6 +253,25 @@ export const RoomCard: React.FC<RoomCardProps> = ({
     if (isNaN(num)) return raw; // can't parse, return original
     return format(num);
   }, [price]);
+
+  const originalPriceDisplay = useMemo(() => {
+    if (originalPrice == null) return undefined;
+    const format = (n: number) =>
+      '₱' +
+      n.toLocaleString('en-PH', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      });
+    if (typeof originalPrice === 'number') return format(originalPrice);
+    const raw = String(originalPrice).trim();
+    const numeric = raw.replace(/[^0-9.]/g, '');
+    if (!numeric) return raw;
+    const num = Number(numeric);
+    if (isNaN(num)) return raw;
+    return format(num);
+  }, [originalPrice]);
+
+  const hasDiscount = !!(originalPrice && discountPercentage);
 
   const Wrapper: React.ElementType = onClick ? Pressable : View;
 
@@ -379,13 +402,66 @@ export const RoomCard: React.FC<RoomCardProps> = ({
               <View
                 style={[styles.colRight, { alignItems: 'flex-end', gap: 4 }]}
               >
-                {priceDisplay && (
-                  <Text
-                    style={[{ color: baseAccent }, sz.price, priceStyle]}
-                    numberOfLines={1}
-                  >
-                    {priceDisplay}
-                  </Text>
+                {hasDiscount ? (
+                  <View style={{ alignItems: 'flex-end' }}>
+                    <Text
+                      style={[
+                        {
+                          color: subTextColor,
+                          textDecorationLine: 'line-through',
+                          fontSize: sz.price.fontSize! * 0.75,
+                        },
+                      ]}
+                      numberOfLines={1}
+                    >
+                      {originalPriceDisplay}
+                    </Text>
+                    <View
+                      style={{
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        gap: 6,
+                      }}
+                    >
+                      <Text
+                        style={[
+                          { color: themeColors.secondary },
+                          sz.price,
+                          priceStyle,
+                        ]}
+                        numberOfLines={1}
+                      >
+                        {priceDisplay}
+                      </Text>
+                      <View
+                        style={{
+                          backgroundColor: themeColors.secondary,
+                          paddingHorizontal: 6,
+                          paddingVertical: 2,
+                          borderRadius: 4,
+                        }}
+                      >
+                        <Text
+                          style={{
+                            color: 'white',
+                            fontSize: 10,
+                            fontWeight: '700',
+                          }}
+                        >
+                          {discountPercentage}% OFF
+                        </Text>
+                      </View>
+                    </View>
+                  </View>
+                ) : (
+                  priceDisplay && (
+                    <Text
+                      style={[{ color: baseAccent }, sz.price, priceStyle]}
+                      numberOfLines={1}
+                    >
+                      {priceDisplay}
+                    </Text>
+                  )
                 )}
                 <View style={[styles.inline, { marginTop: 2 }]}>
                   <Ionicons name="star" size={16} color="#FFC107" />
@@ -443,17 +519,71 @@ export const RoomCard: React.FC<RoomCardProps> = ({
                   </Text>
                 </View>
               )}
-              {priceDisplay && (
-                <Text
-                  style={[
-                    { color: baseAccent, marginTop: 6 },
-                    sz.price,
-                    priceStyle,
-                  ]}
-                  numberOfLines={1}
-                >
-                  {priceDisplay}
-                </Text>
+              {hasDiscount ? (
+                <View style={{ marginTop: 6 }}>
+                  <Text
+                    style={[
+                      {
+                        color: subTextColor,
+                        textDecorationLine: 'line-through',
+                        fontSize: sz.price.fontSize! * 0.75,
+                      },
+                    ]}
+                    numberOfLines={1}
+                  >
+                    {originalPriceDisplay}
+                  </Text>
+                  <View
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      gap: 6,
+                      marginTop: 2,
+                    }}
+                  >
+                    <Text
+                      style={[
+                        { color: themeColors.secondary },
+                        sz.price,
+                        priceStyle,
+                      ]}
+                      numberOfLines={1}
+                    >
+                      {priceDisplay}
+                    </Text>
+                    <View
+                      style={{
+                        backgroundColor: themeColors.secondary,
+                        paddingHorizontal: 6,
+                        paddingVertical: 2,
+                        borderRadius: 4,
+                      }}
+                    >
+                      <Text
+                        style={{
+                          color: 'white',
+                          fontSize: 10,
+                          fontWeight: '700',
+                        }}
+                      >
+                        {discountPercentage}% OFF
+                      </Text>
+                    </View>
+                  </View>
+                </View>
+              ) : (
+                priceDisplay && (
+                  <Text
+                    style={[
+                      { color: baseAccent, marginTop: 6 },
+                      sz.price,
+                      priceStyle,
+                    ]}
+                    numberOfLines={1}
+                  >
+                    {priceDisplay}
+                  </Text>
+                )
               )}
               <View style={[styles.inline, { marginTop: 8 }]}>
                 <FontAwesome5 name="star" size={sz.icon} color="#FFC107" />

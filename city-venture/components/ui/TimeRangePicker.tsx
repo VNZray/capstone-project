@@ -15,6 +15,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Colors } from '@/constants/color';
+import BaseModal from '@/components/BaseModal';
 import {
   format,
   setHours,
@@ -199,295 +200,228 @@ export const TimeRangePicker: React.FC<TimeRangePickerProps> = ({
   };
 
   return (
-    <Modal
-      visible={visible}
-      transparent
-      animationType="fade"
-      onRequestClose={onClose}
-    >
-      <Pressable style={styles.overlay} onPress={onClose}>
-        <Pressable
-          style={styles.container}
-          onPress={(e) => e.stopPropagation()}
+    <>
+      <BaseModal
+        visible={visible}
+        onClose={onClose}
+        title={title}
+        primaryButtonLabel="Confirm"
+        onPrimaryPress={handleConfirm}
+        primaryButtonDisabled={!!error}
+        secondaryButtonLabel="Cancel"
+        onSecondaryPress={onClose}
+        scrollable={true}
+      >
+        {/* Duration display */}
+        <View
+          style={[
+            styles.durationDisplay,
+            { backgroundColor: theme.surfaceOverlay },
+          ]}
         >
-          <ThemedView style={styles.content}>
-            <ScrollView showsVerticalScrollIndicator={false}>
-              {/* Header */}
-              <View style={styles.header}>
-                <ThemedText type="header-small" weight="bold">
-                  {title}
-                </ThemedText>
-                <Pressable onPress={onClose} style={styles.closeButton}>
-                  <Ionicons name="close" size={24} color={theme.text} />
-                </Pressable>
-              </View>
+          <Ionicons name="time" size={24} color={theme.primary} />
+          <View style={styles.durationInfo}>
+            <ThemedText
+              type="label-small"
+              style={{ color: theme.textSecondary }}
+            >
+              Duration
+            </ThemedText>
+            <ThemedText type="card-title-small" weight="bold">
+              {calculateDuration()}
+            </ThemedText>
+          </View>
+        </View>
 
-              {/* Duration display */}
-              <View
-                style={[
-                  styles.durationDisplay,
-                  { backgroundColor: theme.surfaceOverlay },
-                ]}
-              >
-                <Ionicons name="time" size={24} color={theme.primary} />
-                <View style={styles.durationInfo}>
-                  <ThemedText
-                    type="label-small"
-                    style={{ color: theme.textSecondary }}
-                  >
-                    Duration
-                  </ThemedText>
-                  <ThemedText type="card-title-small" weight="bold">
-                    {calculateDuration()}
-                  </ThemedText>
-                </View>
-              </View>
+        {/* Time selection */}
+        <View style={styles.timeSection}>
+          {/* Start time */}
+          <View style={styles.timePickerContainer}>
+            <View style={styles.timeLabel}>
+              <Ionicons
+                name="play-circle-outline"
+                size={20}
+                color={theme.success}
+              />
+              <ThemedText type="label-medium" weight="semi-bold">
+                Start Time
+              </ThemedText>
+            </View>
 
-              {/* Time selection */}
-              <View style={styles.timeSection}>
-                {/* Start time */}
-                <View style={styles.timePickerContainer}>
-                  <View style={styles.timeLabel}>
-                    <Ionicons
-                      name="play-circle-outline"
-                      size={20}
-                      color={theme.success}
-                    />
-                    <ThemedText type="label-medium" weight="semi-bold">
-                      Start Time
+            <Pressable
+              style={[styles.timeButton, { borderColor: theme.border }]}
+              onPress={() => setShowStartTimePicker(true)}
+            >
+              <ThemedText type="card-title-small" weight="bold">
+                {format(startTime, 'hh:mm a')}
+              </ThemedText>
+              <Ionicons
+                name="chevron-down"
+                size={20}
+                color={theme.textSecondary}
+              />
+            </Pressable>
+          </View>
+
+          {/* Divider with arrow */}
+          <View style={styles.timeDivider}>
+            <View
+              style={[styles.dividerLine, { backgroundColor: theme.border }]}
+            />
+            <Ionicons name="arrow-down" size={20} color={theme.textSecondary} />
+            <View
+              style={[styles.dividerLine, { backgroundColor: theme.border }]}
+            />
+          </View>
+
+          {/* End time */}
+          <View style={styles.timePickerContainer}>
+            <View style={styles.timeLabel}>
+              <Ionicons
+                name="stop-circle-outline"
+                size={20}
+                color={theme.error}
+              />
+              <ThemedText type="label-medium" weight="semi-bold">
+                End Time
+              </ThemedText>
+            </View>
+
+            <Pressable
+              style={[styles.timeButton, { borderColor: theme.border }]}
+              onPress={() => setShowEndTimePicker(true)}
+            >
+              <ThemedText type="card-title-small" weight="bold">
+                {format(endTime, 'hh:mm a')}
+              </ThemedText>
+              <Ionicons
+                name="chevron-down"
+                size={20}
+                color={theme.textSecondary}
+              />
+            </Pressable>
+          </View>
+        </View>
+
+        {/* Quick duration buttons */}
+        {renderQuickDurations()}
+
+        {/* Error message */}
+        {error ? (
+          <View
+            style={[
+              styles.errorContainer,
+              { backgroundColor: theme.errorLight },
+            ]}
+          >
+            <Ionicons name="warning" size={16} color={theme.error} />
+            <ThemedText
+              type="body-small"
+              style={{ color: theme.error, flex: 1 }}
+            >
+              {error}
+            </ThemedText>
+          </View>
+        ) : null}
+      </BaseModal>
+
+      {/* Time pickers as separate modals */}
+      {showStartTimePicker && (
+        <Modal
+          visible={true}
+          transparent={true}
+          animationType="fade"
+          onRequestClose={() => setShowStartTimePicker(false)}
+        >
+          <View style={styles.timePickerOverlay}>
+            <Pressable
+              style={styles.timePickerBackdrop}
+              onPress={() => setShowStartTimePicker(false)}
+            />
+            {Platform.OS === 'ios' ? (
+              <View style={styles.iosTimePickerContainer}>
+                <View style={styles.iosPickerHeader}>
+                  <Pressable onPress={() => setShowStartTimePicker(false)}>
+                    <ThemedText
+                      type="body-medium"
+                      weight="semi-bold"
+                      style={{ color: theme.primary }}
+                    >
+                      Done
                     </ThemedText>
-                  </View>
-
-                  <Pressable
-                    style={[styles.timeButton, { borderColor: theme.border }]}
-                    onPress={() => setShowStartTimePicker(true)}
-                  >
-                    <ThemedText type="card-title-small" weight="bold">
-                      {format(startTime, 'hh:mm a')}
-                    </ThemedText>
-                    <Ionicons
-                      name="chevron-down"
-                      size={20}
-                      color={theme.textSecondary}
-                    />
                   </Pressable>
                 </View>
-
-                {/* Divider with arrow */}
-                <View style={styles.timeDivider}>
-                  <View
-                    style={[
-                      styles.dividerLine,
-                      { backgroundColor: theme.border },
-                    ]}
-                  />
-                  <Ionicons
-                    name="arrow-down"
-                    size={20}
-                    color={theme.textSecondary}
-                  />
-                  <View
-                    style={[
-                      styles.dividerLine,
-                      { backgroundColor: theme.border },
-                    ]}
-                  />
-                </View>
-
-                {/* End time */}
-                <View style={styles.timePickerContainer}>
-                  <View style={styles.timeLabel}>
-                    <Ionicons
-                      name="stop-circle-outline"
-                      size={20}
-                      color={theme.error}
-                    />
-                    <ThemedText type="label-medium" weight="semi-bold">
-                      End Time
-                    </ThemedText>
-                  </View>
-
-                  <Pressable
-                    style={[styles.timeButton, { borderColor: theme.border }]}
-                    onPress={() => setShowEndTimePicker(true)}
-                  >
-                    <ThemedText type="card-title-small" weight="bold">
-                      {format(endTime, 'hh:mm a')}
-                    </ThemedText>
-                    <Ionicons
-                      name="chevron-down"
-                      size={20}
-                      color={theme.textSecondary}
-                    />
-                  </Pressable>
-                </View>
+                {/* @ts-ignore - mode prop type issue */}
+                <DateTimePicker
+                  value={startTime}
+                  display="spinner"
+                  onChange={handleStartTimeChange}
+                  minuteInterval={stepMinutes}
+                />
               </View>
-
-              {/* Quick duration buttons */}
-              {renderQuickDurations()}
-
-              {/* Error message */}
-              {error ? (
-                <View
-                  style={[
-                    styles.errorContainer,
-                    { backgroundColor: theme.errorLight },
-                  ]}
-                >
-                  <Ionicons name="warning" size={16} color={theme.error} />
-                  <ThemedText
-                    type="body-small"
-                    style={{ color: theme.error, flex: 1 }}
-                  >
-                    {error}
-                  </ThemedText>
-                </View>
-              ) : null}
-
-              {/* Action buttons */}
-              <View style={styles.actions}>
-                <Pressable
-                  style={[
-                    styles.button,
-                    styles.cancelButton,
-                    { borderColor: theme.border },
-                  ]}
-                  onPress={onClose}
-                >
-                  <ThemedText
-                    type="body-medium"
-                    weight="semi-bold"
-                    style={{ color: theme.text }}
-                  >
-                    Cancel
-                  </ThemedText>
-                </Pressable>
-
-                <Pressable
-                  style={[
-                    styles.button,
-                    styles.confirmButton,
-                    {
-                      backgroundColor: error
-                        ? theme.textTertiary
-                        : theme.primary,
-                    },
-                  ]}
-                  onPress={handleConfirm}
-                  disabled={!!error}
-                >
-                  <ThemedText
-                    type="body-medium"
-                    weight="semi-bold"
-                    style={{ color: '#FFFFFF' }}
-                  >
-                    Confirm
-                  </ThemedText>
-                </Pressable>
-              </View>
-            </ScrollView>
-          </ThemedView>
-
-          {/* Time pickers */}
-          {showStartTimePicker && Platform.OS === 'ios' && (
-            <View style={styles.iosTimePickerContainer}>
-              <View style={styles.iosPickerHeader}>
-                <Pressable onPress={() => setShowStartTimePicker(false)}>
-                  <ThemedText
-                    type="body-medium"
-                    weight="semi-bold"
-                    style={{ color: theme.primary }}
-                  >
-                    Done
-                  </ThemedText>
-                </Pressable>
-              </View>
-              {/* @ts-ignore - mode prop type issue with DateTimePicker */}
+            ) : (
+              /* @ts-ignore - mode prop type issue */
               <DateTimePicker
                 value={startTime}
-                display="spinner"
+                display="default"
                 onChange={handleStartTimeChange}
                 minuteInterval={stepMinutes}
               />
-            </View>
-          )}
+            )}
+          </View>
+        </Modal>
+      )}
 
-          {showStartTimePicker && Platform.OS === 'android' && (
-            <DateTimePicker
-              value={startTime}
-              display="default"
-              onChange={handleStartTimeChange}
-              minuteInterval={stepMinutes}
+      {showEndTimePicker && (
+        <Modal
+          visible={true}
+          transparent={true}
+          animationType="fade"
+          onRequestClose={() => setShowEndTimePicker(false)}
+        >
+          <View style={styles.timePickerOverlay}>
+            <Pressable
+              style={styles.timePickerBackdrop}
+              onPress={() => setShowEndTimePicker(false)}
             />
-          )}
-
-          {showEndTimePicker && Platform.OS === 'ios' && (
-            <View style={styles.iosTimePickerContainer}>
-              <View style={styles.iosPickerHeader}>
-                <Pressable onPress={() => setShowEndTimePicker(false)}>
-                  <ThemedText
-                    type="body-medium"
-                    weight="semi-bold"
-                    style={{ color: theme.primary }}
-                  >
-                    Done
-                  </ThemedText>
-                </Pressable>
+            {Platform.OS === 'ios' ? (
+              <View style={styles.iosTimePickerContainer}>
+                <View style={styles.iosPickerHeader}>
+                  <Pressable onPress={() => setShowEndTimePicker(false)}>
+                    <ThemedText
+                      type="body-medium"
+                      weight="semi-bold"
+                      style={{ color: theme.primary }}
+                    >
+                      Done
+                    </ThemedText>
+                  </Pressable>
+                </View>
+                {/* @ts-ignore - mode prop type issue */}
+                <DateTimePicker
+                  value={endTime}
+                  display="spinner"
+                  onChange={handleEndTimeChange}
+                  minuteInterval={stepMinutes}
+                />
               </View>
-              {/* @ts-ignore - mode prop type issue with DateTimePicker */}
+            ) : (
+              /* @ts-ignore - mode prop type issue */
               <DateTimePicker
                 value={endTime}
-                display="spinner"
+                display="default"
                 onChange={handleEndTimeChange}
                 minuteInterval={stepMinutes}
               />
-            </View>
-          )}
-
-          {showEndTimePicker && Platform.OS === 'android' && (
-            /* @ts-ignore - mode prop type issue with DateTimePicker */
-            <DateTimePicker
-              value={endTime}
-              display="default"
-              onChange={handleEndTimeChange}
-              minuteInterval={stepMinutes}
-            />
-          )}
-        </Pressable>
-      </Pressable>
-    </Modal>
+            )}
+          </View>
+        </Modal>
+      )}
+    </>
   );
 };
 
 const styles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  container: {
-    width: Math.min(SCREEN_WIDTH * 0.9, 400),
-    maxHeight: SCREEN_HEIGHT * 0.8,
-  },
-  content: {
-    borderRadius: 20,
-    padding: 24,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 8,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  closeButton: {
-    padding: 4,
-  },
   durationDisplay: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -554,40 +488,41 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     marginBottom: 16,
   },
+  timePickerOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1000,
+  },
+  timePickerBackdrop: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
   iosTimePickerContainer: {
     backgroundColor: Colors.light.surface,
-    borderRadius: 12,
-    overflow: 'hidden',
-    marginTop: 12,
+    borderRadius: 16,
+    padding: 16,
+    width: SCREEN_WIDTH * 0.9,
+    maxWidth: 400,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 10,
   },
   iosPickerHeader: {
     flexDirection: 'row',
     justifyContent: 'flex-end',
-    padding: 12,
+    paddingBottom: 12,
     borderBottomWidth: 1,
     borderBottomColor: Colors.light.border,
-  },
-  actions: {
-    flexDirection: 'row',
-    gap: 12,
-    marginTop: 8,
-  },
-  button: {
-    flex: 1,
-    paddingVertical: 14,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  cancelButton: {
-    borderWidth: 1.5,
-    backgroundColor: Colors.light.surface,
-  },
-  confirmButton: {
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
   },
 });

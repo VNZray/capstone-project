@@ -71,11 +71,11 @@ export async function getPromotionById(req, res) {
   const { id } = req.params;
   try {
     const [data] = await db.query("CALL GetPromotionById(?)", [id]);
-    
+
     // MySQL stored procedures return: [[rows], metadata]
     // data[0] is the first result set (array of rows)
     // We need to return the first row as a single object
-    
+
     if (!data || !data[0] || data[0].length === 0) {
       return res.status(404).json({ message: "Promotion not found" });
     }
@@ -125,9 +125,9 @@ export async function insertPromotion(req, res) {
     }
 
     const [data] = await db.query("CALL InsertPromotion(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", [
-      id, 
-      business_id, 
-      title, 
+      id,
+      business_id,
+      title,
       description || null,
       image_url || null,
       external_link || null,
@@ -139,7 +139,7 @@ export async function insertPromotion(req, res) {
       pEnd,
       promo_type
     ]);
-    
+
     res.status(201).json({
       message: "Promotion created successfully",
       data: data[0]
@@ -182,8 +182,8 @@ export async function updatePromotion(req, res) {
     }
 
     const [data] = await db.query("CALL UpdatePromotion(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", [
-      id, 
-      title || null, 
+      id,
+      title || null,
       description || null,
       image_url || null,
       external_link || null,
@@ -191,7 +191,7 @@ export async function updatePromotion(req, res) {
       discount_percentage || null,
       fixed_discount_amount || null,
       usage_limit || null,
-      pStart, 
+      pStart,
       pEnd,
       is_active !== undefined ? is_active : null,
       promo_type || null
@@ -225,11 +225,11 @@ export async function deletePromotion(req, res) {
 export async function updateExpiredPromotions(req, res) {
   try {
     const [results] = await db.query("CALL UpdateExpiredPromotions()");
-    
+
     if (!results || results.length === 0) {
-      return res.json({ 
+      return res.json({
         message: "No expired promotions to update",
-        updated_count: 0 
+        updated_count: 0
       });
     }
 
@@ -241,5 +241,16 @@ export async function updateExpiredPromotions(req, res) {
     });
   } catch (error) {
     return handleDbError(error, res);
+  }
+}
+
+// Increment promotion usage count
+export async function incrementPromotionUsage(promotionId) {
+  try {
+    await db.query("CALL IncrementPromotionUsage(?)", [promotionId]);
+    return true;
+  } catch (error) {
+    console.error('Failed to increment promotion usage:', error);
+    return false;
   }
 }
