@@ -64,9 +64,9 @@ const RegistrationPage = () => {
     birthdate: new Date('2003-09-28'),
     phoneNumber: '09876543210',
     nationality: 'Filipino',
-    provinceId: null as number | null,
-    municipalityId: null as number | null,
-    barangayId: null as number | null,
+    provinceId: 20 as number | null,
+    municipalityId: 24 as number | null,
+    barangayId: 6 as number | null,
     ethnicity: 'Bicolano',
     origin: 'Local',
     // Step 2: Contact & Verification
