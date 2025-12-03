@@ -16,6 +16,8 @@ type Props = {
     | "space-around";
   padding?: string;
   height?: string;
+  minHeight?: string | number;
+  maxHeight?: string | number;
   style?: React.CSSProperties;
 };
 
@@ -30,6 +32,8 @@ const Section: React.FC<Props> = ({
   justify,
   padding,
   height = "100vh",
+  minHeight,
+  maxHeight,
   style,
 }) => {
   return (
@@ -43,7 +47,7 @@ const Section: React.FC<Props> = ({
       justify={justify}
       padding={padding}
       height={height}
-      style={style}
+      style={{ minHeight: minHeight, maxHeight: maxHeight, ...style }}
     >
       {children}
     </Container>

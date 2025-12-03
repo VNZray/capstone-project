@@ -50,7 +50,7 @@ export const clearApiClientState = () => {
 export const refreshTokens = async (): Promise<string | null> => {
   // Capture current session ID to detect logout during async operations
   const currentSessionId = sessionId;
-  
+
   // If already refreshing, return the existing promise
   if (isRefreshing && refreshPromise) {
     return refreshPromise;
@@ -138,7 +138,7 @@ apiClient.interceptors.response.use(
       try {
         // Use centralized refresh with lock to prevent race conditions
         const newAccessToken = await refreshTokens();
-        
+
         if (!newAccessToken) {
           // Refresh failed - reject with original error
           return Promise.reject(error);
