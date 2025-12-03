@@ -272,7 +272,7 @@ routes.forEach((route) => {
 });
 
 // PayMongo redirect bridge:
-// PayMongo requires http/https URLs, but the mobile app expects a custom scheme (cityventure://orders/...).
+// PayMongo requires http/https URLs, but the mobile app expects a custom scheme (cityventure://...).
 // These handlers take the web redirect and bounce users back into the app, with a web fallback.
 const sendPaymongoRedirect = (res, orderId, status) => {
   // Support both Expo Go (exp://) and production builds (cityventure://)
@@ -281,14 +281,14 @@ const sendPaymongoRedirect = (res, orderId, status) => {
   
   // Expo Go deep link format: exp://HOST:PORT/--/path
   // For Expo Router, the path should match the file-based route
-  // e.g., (screens)/payment-success maps to /--/(screens)/payment-success
+  // e.g., (checkout)/payment-success maps to /--/(checkout)/payment-success
   let appUrl;
   if (isExpoDev) {
     // Expo Go format - use query params for data
-    appUrl = `exp://${expoHost}/--/(screens)/payment-${status}?orderId=${orderId}`;
+    appUrl = `exp://${expoHost}/--/(checkout)/payment-${status}?orderId=${orderId}`;
   } else {
-    // Production build with custom scheme
-    appUrl = `${MOBILE_DEEP_LINK_BASE}/(screens)/payment-${status}?orderId=${orderId}`;
+    // Production build with custom scheme - use (checkout) group
+    appUrl = `cityventure://(checkout)/payment-${status}?orderId=${orderId}`;
   }
   
   console.log(`[PayMongo Redirect] isExpoDev: ${isExpoDev}, appUrl: ${appUrl}`);

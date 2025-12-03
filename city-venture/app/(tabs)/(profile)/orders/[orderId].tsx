@@ -231,7 +231,7 @@ const OrderDetailScreen = () => {
               styles.backButton,
               { backgroundColor: palette.card, borderColor: palette.border },
             ]}
-            onPress={() => router.back()}
+            onPress={() => router.replace('/(tabs)/(profile)/orders')}
           >
             <Text style={{ color: palette.text }}>Go Back</Text>
           </Pressable>
@@ -250,7 +250,7 @@ const OrderDetailScreen = () => {
           headerShadowVisible: false,
           headerLeft: () => (
             <Pressable
-              onPress={() => router.back()}
+              onPress={() => router.replace('/(tabs)/(profile)/orders')}
               style={{ paddingRight: 16 }}
             >
               <Ionicons name="arrow-back" size={24} color={palette.text} />
