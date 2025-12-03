@@ -1,7 +1,8 @@
 // app/(tabs)/_layout.js
-import { Tabs, usePathname } from 'expo-router';
+import { Tabs } from 'expo-router';
 import React from 'react';
 import { Platform } from 'react-native';
+import { useNavigationContext } from '@/context/NavigationContext';
 
 import { HapticTab } from '@/components/haptic-tab';
 import { IconSymbol } from '@/components/ui/icon-symbol';
@@ -11,17 +12,7 @@ import { AccommodationProvider } from '@/context/AccommodationContext';
 import { RoomProvider } from '@/context/RoomContext';
 
 export default function TabLayout() {
-  const pathname = usePathname();
-
-  // Determine if current route is within the booking flow; hide tabs if so
-  const hideTabs = React.useMemo(
-    () =>
-      !!pathname &&
-      (/\/room\/booking/i.test(pathname) || /\/cart/i.test(pathname)),
-    [pathname]
-  );
-
-  // Remove artificial loading delay for faster tab responses
+  const { tabsVisible } = useNavigationContext();
 
   return (
     <AccommodationProvider>
@@ -32,7 +23,7 @@ export default function TabLayout() {
             headerShown: false,
             tabBarButton: HapticTab,
             tabBarBackground: TabBarBackground,
-            tabBarStyle: hideTabs
+            tabBarStyle: !tabsVisible
               ? { display: 'none' }
               : Platform.select({
                   ios: {

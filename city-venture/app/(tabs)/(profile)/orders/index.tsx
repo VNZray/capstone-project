@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, router } from 'expo-router';
+import { Routes } from '@/routes/mainRoutes';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { colors } from '@/constants/color';
 import { useTypography } from '@/constants/typography';
@@ -91,10 +92,7 @@ const MyOrdersScreen = () => {
   }, [loadOrders]);
 
   const handleOrderPress = (orderId: string) => {
-    router.push({
-      pathname: '/(tabs)/(profile)/orders/[orderId]',
-      params: { orderId },
-    } as never);
+    router.push(Routes.profile.orders.detail(orderId));
   };
 
   const filterOrders = (tab: TabType) => {
@@ -291,7 +289,7 @@ const MyOrdersScreen = () => {
                     styles.retryButton,
                     { backgroundColor: colors.primary, marginTop: 24 },
                   ]}
-                  onPress={() => router.push('/(tabs)/(home)' as never)}
+                  onPress={() => router.push(Routes.tabs.home)}
                 >
                   <Text
                     style={[

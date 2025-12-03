@@ -2,6 +2,7 @@ import logo from '@/assets/logo/logo.png';
 import { background } from '@/constants/color';
 import { useFonts } from 'expo-font';
 import { router } from 'expo-router';
+import { Routes } from '@/routes/mainRoutes';
 import React, { useEffect, useRef } from 'react';
 import { Animated, Image, StyleSheet, useColorScheme, View } from 'react-native';
 
@@ -33,7 +34,7 @@ const LoadingScreen = () => {
       ).start();
 
       const timer = setTimeout(() => {
-        router.replace('/');
+        router.replace(Routes.root);
       }, 2500);
 
       return () => clearTimeout(timer);

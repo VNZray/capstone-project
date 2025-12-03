@@ -3,6 +3,7 @@ import { View, StyleSheet, ScrollView } from 'react-native';
 import Button from '@/components/Button';
 import { ThemedText } from '@/components/themed-text';
 import { router } from 'expo-router';
+import { Routes } from '@/routes/mainRoutes';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -93,7 +94,7 @@ export default function ReportsHome() {
               textStyle={{ color: Colors.light.primary }}
               startIcon="plus"
               onPress={() =>
-                router.push('/(tabs)/(profile)/(reports)/submit' as any)
+                router.push(Routes.profile.reports.submit)
               }
             />
           </View>
@@ -135,7 +136,7 @@ export default function ReportsHome() {
               style={{ marginTop: 20 }}
               startIcon="eye"
               onPress={() =>
-                router.push('/(tabs)/(profile)/(reports)/my-reports' as any)
+                router.push(Routes.profile.reports.myReports)
               }
             />
           </View>

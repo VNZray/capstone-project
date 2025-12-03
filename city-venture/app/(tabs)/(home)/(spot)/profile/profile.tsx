@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Dimensions, FlatList, Image, StyleSheet, View } from 'react-native';
+// useNavigation is used for setOptions (header customization)
+// For navigation actions, use useRouter or usePreventDoubleNavigation hook
 import { useNavigation } from 'expo-router';
 import Tabs from '@/components/Tabs';
 import { ThemedText } from '@/components/themed-text';

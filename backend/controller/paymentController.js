@@ -4,7 +4,9 @@ import { handleDbError } from "../utils/errorHandler.js";
 import * as paymongoService from "../services/paymongoService.js";
 import * as socketService from "../services/socketService.js";
 import * as notificationHelper from "../services/notificationHelper.js";
+import * as auditService from "../services/auditService.js";
 import { ensureUserRole, hasBusinessAccess } from "../utils/authHelpers.js";
+import * as webhookQueueService from "../services/webhookQueueService.js";
 
 // Environment configuration
 const FRONTEND_BASE_URL = (process.env.FRONTEND_BASE_URL || "http://localhost:5173").replace(/\/$/, "");
@@ -502,9 +504,379 @@ export async function initiatePayment(req, res) {
 }
 
 /**
+ * Create a Payment Intent for an order (Payment Intent Workflow)
+ * POST /api/payments/intent
+ * Body: { order_id: string, payment_method_types?: string[] }
+ * Auth: Required (Tourist role)
+ * 
+ * This endpoint is for custom checkout integration where:
+ * 1. Server creates Payment Intent (this endpoint)
+ * 2. Client collects card details and creates Payment Method using public key
+ * 3. Client attaches Payment Method to Intent
+ * 4. Client handles 3DS redirect if needed
+ * 5. Webhook confirms payment success/failure
+ * 
+ * Returns client_key for client-side operations
+ */
+export async function createPaymentIntentForOrder(req, res) {
+  try {
+    const { order_id, payment_method_types } = req.body;
+    const user_id = req.user.id;
+
+    // Validate input
+    if (!order_id) {
+      return res.status(400).json({ 
+        success: false, 
+        message: "order_id is required" 
+      });
+    }
+
+    // 1. Fetch order details and validate ownership
+    const [orderRows] = await db.query(
+      `SELECT 
+        o.id, o.order_number, o.user_id, o.business_id, o.total_amount, 
+        o.status, o.payment_status, o.payment_method, o.payment_method_type
+       FROM \`order\` o
+       WHERE o.id = ?`,
+      [order_id]
+    );
+
+    if (!orderRows || orderRows.length === 0) {
+      return res.status(404).json({ 
+        success: false, 
+        message: "Order not found" 
+      });
+    }
+
+    const order = orderRows[0];
+
+    // Validate ownership
+    if (order.user_id !== user_id) {
+      return res.status(403).json({ 
+        success: false, 
+        message: "You are not authorized to create payment for this order" 
+      });
+    }
+
+    // Validate order status
+    if (order.status !== 'pending') {
+      return res.status(400).json({ 
+        success: false, 
+        message: `Cannot create payment for order with status: ${order.status}` 
+      });
+    }
+
+    // Validate payment not already completed
+    if (order.payment_status === 'paid') {
+      return res.status(400).json({ 
+        success: false, 
+        message: "Payment already completed for this order" 
+      });
+    }
+
+    // 2. Prepare payment amount (minimum ₱20 for Payment Intents)
+    const amountInCentavos = Math.round(order.total_amount * 100);
+    
+    if (amountInCentavos < 2000) {
+      return res.status(400).json({ 
+        success: false, 
+        message: "Order amount too low for Payment Intent (minimum ₱20.00)" 
+      });
+    }
+
+    // 3. Enhanced metadata for webhook reconciliation
+    const metadata = {
+      order_id: order.id,
+      order_number: order.order_number,
+      business_id: order.business_id,
+      user_id: user_id,
+      total_amount: order.total_amount.toString(),
+      source: 'payment_intent'
+    };
+
+    // 4. Define allowed payment methods
+    const allowedMethods = payment_method_types || ['card', 'paymaya', 'gcash', 'grab_pay'];
+
+    // 5. Create Payment Intent via PayMongo
+    const paymentIntent = await paymongoService.createPaymentIntent({
+      orderId: order.id,
+      amount: amountInCentavos,
+      description: `Payment for Order #${order.order_number}`,
+      paymentMethodAllowed: allowedMethods,
+      metadata,
+      statementDescriptor: 'CITY VENTURE'
+    });
+
+    const paymentIntentId = paymentIntent.id;
+    const clientKey = paymentIntent.attributes.client_key;
+
+    // 6. Update order with Payment Intent ID
+    await db.query(
+      `UPDATE \`order\` SET paymongo_payment_intent_id = ? WHERE id = ?`,
+      [paymentIntentId, order.id]
+    );
+
+    // 7. Create payment record in database
+    const payment_id = uuidv4();
+    const created_at = new Date();
+
+    await db.query(
+      `CALL InsertPayment(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        payment_id,
+        'Tourist',                    // payer_type
+        'online',                     // payment_type
+        'payment_intent',             // payment_method
+        order.total_amount,           // amount in PHP
+        'pending',                    // status
+        'order',                      // payment_for
+        user_id,                      // payer_id
+        order.id,                     // payment_for_id
+        created_at
+      ]
+    );
+
+    // Store provider reference and metadata
+    await db.query(
+      `UPDATE payment 
+       SET provider_reference = ?, 
+           currency = 'PHP', 
+           metadata = ?
+       WHERE id = ?`,
+      [paymentIntentId, JSON.stringify(metadata), payment_id]
+    );
+
+    // 8. Return client_key for client-side operations
+    res.status(201).json({
+      success: true,
+      message: "Payment Intent created successfully",
+      data: {
+        payment_id,
+        payment_intent_id: paymentIntentId,
+        client_key: clientKey,  // Client uses this to attach payment method
+        order_id: order.id,
+        order_number: order.order_number,
+        amount: order.total_amount,
+        amount_centavos: amountInCentavos,
+        currency: 'PHP',
+        payment_method_allowed: allowedMethods,
+        status: paymentIntent.attributes.status, // 'awaiting_payment_method'
+        public_key: process.env.PAYMONGO_PUBLIC_KEY // For client-side SDK
+      }
+    });
+
+  } catch (error) {
+    console.error("Error creating payment intent:", error);
+    
+    if (error.message && error.message.includes('PayMongo')) {
+      return res.status(502).json({ 
+        success: false, 
+        message: "Payment provider error. Please try again later." 
+      });
+    }
+
+    return res.status(500).json({ 
+      success: false, 
+      message: "Failed to create payment intent",
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+}
+
+/**
+ * Attach Payment Method to Payment Intent (Server-side for e-wallets)
+ * POST /api/payments/intent/:id/attach
+ * Body: { payment_method_type: string, return_url: string, billing?: object }
+ * Auth: Required (Tourist role)
+ * 
+ * This endpoint is for server-side attachment of e-wallet payment methods.
+ * For card payments, the client should attach directly using public key + client_key.
+ */
+export async function attachPaymentMethodToIntent(req, res) {
+  try {
+    const { id } = req.params; // Payment Intent ID
+    const { payment_method_type, return_url, billing } = req.body;
+    const user_id = req.user.id;
+
+    // Validate input
+    if (!payment_method_type) {
+      return res.status(400).json({ 
+        success: false, 
+        message: "payment_method_type is required" 
+      });
+    }
+
+    if (!return_url) {
+      return res.status(400).json({ 
+        success: false, 
+        message: "return_url is required for e-wallet payments" 
+      });
+    }
+
+    // 1. Find the order associated with this payment intent
+    const [orderRows] = await db.query(
+      `SELECT o.id, o.user_id, o.order_number, o.total_amount, o.status, o.payment_status
+       FROM \`order\` o 
+       WHERE o.paymongo_payment_intent_id = ?`,
+      [id]
+    );
+
+    if (!orderRows || orderRows.length === 0) {
+      return res.status(404).json({ 
+        success: false, 
+        message: "Payment Intent not found or not associated with any order" 
+      });
+    }
+
+    const order = orderRows[0];
+
+    // Validate ownership
+    if (order.user_id !== user_id) {
+      return res.status(403).json({ 
+        success: false, 
+        message: "You are not authorized to attach payment method to this intent" 
+      });
+    }
+
+    // Validate order status
+    if (order.payment_status === 'paid') {
+      return res.status(400).json({ 
+        success: false, 
+        message: "Payment already completed for this order" 
+      });
+    }
+
+    // 2. Create Payment Method for e-wallet
+    const validEwalletTypes = ['gcash', 'paymaya', 'grab_pay', 'shopee_pay', 'dob', 'billease', 'qrph', 'brankas'];
+    if (!validEwalletTypes.includes(payment_method_type)) {
+      return res.status(400).json({ 
+        success: false, 
+        message: `Invalid payment method type. For server-side attachment, use: ${validEwalletTypes.join(', ')}. For card payments, use client-side attachment.`
+      });
+    }
+
+    const paymentMethod = await paymongoService.createPaymentMethod({
+      type: payment_method_type,
+      billing: billing || {}
+    });
+
+    // 3. Attach Payment Method to Payment Intent
+    const updatedIntent = await paymongoService.attachPaymentIntent(
+      id,
+      paymentMethod.id,
+      return_url
+    );
+
+    // 4. Handle next_action (redirect for e-wallets)
+    const nextAction = updatedIntent.attributes.next_action;
+    const intentStatus = updatedIntent.attributes.status;
+
+    res.status(200).json({
+      success: true,
+      message: "Payment method attached successfully",
+      data: {
+        payment_intent_id: id,
+        payment_method_id: paymentMethod.id,
+        status: intentStatus, // 'awaiting_next_action' or 'processing'
+        next_action: nextAction, // Contains redirect URL for e-wallets
+        redirect_url: nextAction?.redirect?.url || null,
+        order_id: order.id
+      }
+    });
+
+  } catch (error) {
+    console.error("Error attaching payment method:", error);
+    
+    if (error.message && error.message.includes('PayMongo')) {
+      return res.status(502).json({ 
+        success: false, 
+        message: "Payment provider error. Please try again later.",
+        error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      });
+    }
+
+    return res.status(500).json({ 
+      success: false, 
+      message: "Failed to attach payment method",
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+}
+
+/**
+ * Retrieve Payment Intent status
+ * GET /api/payments/intent/:id
+ * Auth: Required (Tourist role)
+ */
+export async function getPaymentIntentStatus(req, res) {
+  try {
+    const { id } = req.params; // Payment Intent ID
+    const user_id = req.user.id;
+
+    // 1. Find the order associated with this payment intent
+    const [orderRows] = await db.query(
+      `SELECT o.id, o.user_id, o.order_number, o.status, o.payment_status
+       FROM \`order\` o 
+       WHERE o.paymongo_payment_intent_id = ?`,
+      [id]
+    );
+
+    if (!orderRows || orderRows.length === 0) {
+      return res.status(404).json({ 
+        success: false, 
+        message: "Payment Intent not found" 
+      });
+    }
+
+    const order = orderRows[0];
+
+    // Validate ownership (or admin)
+    const userRole = await ensureUserRole(req);
+    if (userRole !== 'Admin' && order.user_id !== user_id) {
+      return res.status(403).json({ 
+        success: false, 
+        message: "You are not authorized to view this payment intent" 
+      });
+    }
+
+    // 2. Retrieve Payment Intent from PayMongo
+    const paymentIntent = await paymongoService.getPaymentIntent(id);
+
+    res.status(200).json({
+      success: true,
+      data: {
+        payment_intent_id: id,
+        status: paymentIntent.attributes.status,
+        amount: paymentIntent.attributes.amount / 100,
+        currency: paymentIntent.attributes.currency,
+        payment_method_allowed: paymentIntent.attributes.payment_method_allowed,
+        last_payment_error: paymentIntent.attributes.last_payment_error,
+        next_action: paymentIntent.attributes.next_action,
+        payments: paymentIntent.attributes.payments || [],
+        order_id: order.id,
+        order_status: order.status,
+        order_payment_status: order.payment_status
+      }
+    });
+
+  } catch (error) {
+    console.error("Error retrieving payment intent:", error);
+    
+    return res.status(500).json({ 
+      success: false, 
+      message: "Failed to retrieve payment intent",
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+}
+
+/**
  * Handle PayMongo webhook events
  * POST /api/payments/webhook
  * No authentication required (signature-based verification)
+ * 
+ * BEST PRACTICE: Respond immediately with HTTP 200, then process asynchronously
+ * This prevents webhook timeouts and ensures PayMongo doesn't retry unnecessarily
  */
 export async function handleWebhook(req, res) {
   console.log('[Webhook] 📨 Received PayMongo webhook request');
@@ -528,11 +900,11 @@ export async function handleWebhook(req, res) {
       });
     }
 
-    // 1. Verify webhook signature
+    // 1. Verify webhook signature (SYNCHRONOUS - must happen before responding)
     const isValid = paymongoService.verifyWebhookSignature(rawBody, signature);
     
     if (!isValid) {
-      console.warn("Invalid webhook signature received");
+      console.warn("[Webhook] ⚠️ Invalid webhook signature received");
       return res.status(401).json({ 
         success: false, 
         message: "Invalid webhook signature" 
@@ -553,11 +925,9 @@ export async function handleWebhook(req, res) {
     const event = paymongoService.parseWebhookEvent(parsedBody);
     const eventId = event.id;
     const eventType = event.type;
-    const eventData = event.data;
 
     console.log(`[Webhook] 📬 Event type: ${eventType}`);
     console.log(`[Webhook] 🆔 Event ID: ${eventId}`);
-    console.log(`[Webhook] 📦 Event data:`, JSON.stringify(eventData, null, 2));
 
     // 3. Check for duplicate events (idempotency)
     const [existingEvents] = await db.query(
@@ -567,16 +937,16 @@ export async function handleWebhook(req, res) {
 
     if (existingEvents && existingEvents.length > 0) {
       const existingEvent = existingEvents[0];
-      console.log(`Duplicate webhook event detected: ${eventId}, status: ${existingEvent.status}`);
+      console.log(`[Webhook] ⏭️ Duplicate event detected: ${eventId}, status: ${existingEvent.status}`);
       
-      // Return 200 to acknowledge receipt (already processed)
+      // Return 200 to acknowledge receipt (already processed or queued)
       return res.status(200).json({ 
         success: true, 
         message: "Event already processed" 
       });
     }
 
-    // 4. Store webhook event
+    // 4. Store webhook event immediately (before queuing)
     const webhook_id = uuidv4();
     await db.query(
       `INSERT INTO webhook_event 
@@ -594,43 +964,44 @@ export async function handleWebhook(req, res) {
       ]
     );
 
-    // 5. Process event based on type
-    try {
-      await processWebhookEvent(eventType, eventData, webhook_id);
-
-      // Mark as processed
-      await db.query(
-        `UPDATE webhook_event 
-         SET status = 'processed', processed_at = ? 
-         WHERE id = ?`,
-        [new Date(), webhook_id]
-      );
-
-      res.status(200).json({ 
-        success: true, 
-        message: "Webhook processed successfully" 
+    // 5. Enqueue for async processing (non-blocking)
+    const queue = webhookQueueService.getWebhookQueue();
+    if (queue) {
+      await webhookQueueService.enqueueWebhook({
+        webhookId: webhook_id,
+        eventId,
+        eventType,
+        event
       });
-
-    } catch (processingError) {
-      console.error("Error processing webhook event:", processingError);
-
-      // Mark as failed
-      await db.query(
-        `UPDATE webhook_event 
-         SET status = 'failed', processed_at = ? 
-         WHERE id = ?`,
-        [new Date(), webhook_id]
-      );
-
-      // Still return 200 to acknowledge receipt
-      res.status(200).json({ 
-        success: true, 
-        message: "Webhook received but processing failed" 
+      console.log(`[Webhook] ✅ Event ${eventId} queued for processing`);
+    } else {
+      // Fallback: Process synchronously if queue not available
+      console.warn('[Webhook] ⚠️ Queue not available, processing synchronously');
+      setImmediate(async () => {
+        try {
+          await processWebhookEvent(eventType, event.data, webhook_id);
+          await db.query(
+            `UPDATE webhook_event SET status = 'processed', processed_at = ? WHERE id = ?`,
+            [new Date(), webhook_id]
+          );
+        } catch (err) {
+          console.error('[Webhook] Sync processing failed:', err);
+          await db.query(
+            `UPDATE webhook_event SET status = 'failed', processed_at = ? WHERE id = ?`,
+            [new Date(), webhook_id]
+          );
+        }
       });
     }
 
+    // 6. Respond immediately with 200 (PayMongo best practice)
+    res.status(200).json({ 
+      success: true, 
+      message: "Webhook received and queued for processing" 
+    });
+
   } catch (error) {
-    console.error("Error handling webhook:", error);
+    console.error("[Webhook] ❌ Error handling webhook:", error);
     
     // Return 200 to avoid retries for unrecoverable errors
     res.status(200).json({ 
@@ -642,15 +1013,18 @@ export async function handleWebhook(req, res) {
 
 /**
  * Process webhook event based on type
- * Internal helper function
+ * Exported for use by the webhook queue processor
+ * @param {string} eventType - The PayMongo event type (e.g., 'checkout_session.payment.paid')
+ * @param {object} eventData - The event data from PayMongo
+ * @param {string} webhook_id - The webhook event ID stored in our database
  */
-async function processWebhookEvent(eventType, eventData, webhook_id) {
+export async function processWebhookEvent(eventType, eventData, webhook_id) {
   const resourceType = eventData.attributes?.type || eventType.split('.')[0];
   const status = eventData.attributes?.status;
   const metadata = eventData.attributes?.metadata || {};
   const order_id = metadata.order_id;
 
-  console.log(`Processing ${eventType} for order ${order_id}, status: ${status}`);
+  console.log(`[Webhook Processor] Processing ${eventType} for order ${order_id}, status: ${status}`);
 
   // ========== Checkout Session Events (RECOMMENDED FLOW) ==========
   
@@ -724,6 +1098,19 @@ async function processWebhookEvent(eventType, eventData, webhook_id) {
       amount: paymentAmount / 100,
       currency: 'PHP',
       status: paymentStatus
+    });
+
+    // ========== Audit Logging ==========
+    await auditService.logPaymentUpdate({
+      orderId: order_id,
+      oldStatus: 'unpaid',
+      newStatus: 'paid',
+      actor: null, // System/webhook event
+      paymentDetails: {
+        paymongo_payment_id: paymentId,
+        amount_centavos: paymentAmount,
+        webhook_event_type: 'checkout_session.payment.paid'
+      }
     });
 
     // Emit real-time events AND order notifications (deferred from order creation)
@@ -814,31 +1201,91 @@ async function processWebhookEvent(eventType, eventData, webhook_id) {
 
     const paymentId = eventData.id;
     const paymentIntentId = eventData.attributes?.payment_intent_id;
+    const paymentAmount = eventData.attributes?.amount;
+
+    console.log(`[Webhook] 💳 Processing payment.paid for Order ${order_id}`);
+    console.log(`[Webhook] 🔑 Payment ID: ${paymentId}, Intent: ${paymentIntentId}`);
 
     // Update payment status to paid
     await db.query(
       `UPDATE payment 
        SET status = 'paid', 
            paymongo_payment_id = ?,
+           metadata = JSON_SET(
+             COALESCE(metadata, '{}'),
+             '$.paymongo_payment_status', 'paid',
+             '$.paymongo_amount_centavos', ?,
+             '$.payment_intent_id', ?,
+             '$.webhook_processed_at', ?
+           ),
            updated_at = ? 
        WHERE payment_for = 'order' 
          AND payment_for_id = ?`,
-      [paymentId, new Date(), order_id]
+      [paymentId, paymentAmount, paymentIntentId || '', new Date().toISOString(), new Date(), order_id]
     );
 
     // Update order payment status
     await db.query(
       `UPDATE \`order\` 
        SET payment_status = 'paid',
-           paymongo_payment_id = ?
+           paymongo_payment_id = ?,
+           updated_at = ?
        WHERE id = ?`,
-      [paymentId, order_id]
+      [paymentId, new Date(), order_id]
     );
 
-    console.log(`Order ${order_id} marked as paid (payment.paid: ${paymentId})`);
+    console.log(`[Webhook] ✅ Order ${order_id} marked as paid (payment.paid: ${paymentId})`);
 
-    // Emit real-time events
-    await emitPaymentEvents(order_id, paymentId, 'paid', eventData.attributes?.amount);
+    // ========== Audit Logging ==========
+    await auditService.logPaymentUpdate({
+      orderId: order_id,
+      oldStatus: 'unpaid',
+      newStatus: 'paid',
+      actor: null,
+      paymentDetails: {
+        paymongo_payment_id: paymentId,
+        payment_intent_id: paymentIntentId,
+        amount_centavos: paymentAmount,
+        webhook_event_type: 'payment.paid'
+      }
+    });
+
+    // Emit real-time events and notify business
+    await emitPaymentEvents(order_id, paymentId, 'paid', paymentAmount);
+
+    // Notify business about the new PAID order (same as checkout session flow)
+    console.log(`[Webhook] 📢 Emitting new order notification for payment.paid...`);
+    try {
+      const [orderRows] = await db.query(
+        `SELECT o.*, u.email as user_email FROM \`order\` o 
+         JOIN user u ON u.id = o.user_id 
+         WHERE o.id = ?`,
+        [order_id]
+      );
+      
+      if (orderRows && orderRows.length > 0) {
+        const order = orderRows[0];
+        
+        // Fetch items
+        const [itemsResult] = await db.query(
+          "SELECT * FROM order_item WHERE order_id = ?",
+          [order_id]
+        );
+        
+        const completeOrderData = {
+          ...order,
+          items: itemsResult || [],
+          item_count: itemsResult?.length || 0,
+        };
+        
+        socketService.emitNewOrder(completeOrderData);
+        await notificationHelper.triggerNewOrderNotifications(completeOrderData);
+        
+        console.log(`[Webhook] ✅ Business notified of new paid order ${order.order_number}`);
+      }
+    } catch (notifError) {
+      console.error(`[Webhook] ❌ Failed to emit order notifications:`, notifError);
+    }
   }
 
   // Handle payment.failed event
@@ -934,6 +1381,20 @@ async function processWebhookEvent(eventType, eventData, webhook_id) {
 
     console.log(`[Webhook] 💔 Order ${resolvedOrderId} marked as failed payment: ${failedMessage} (code: ${failedCode})`);
 
+    // ========== Audit Logging ==========
+    await auditService.logPaymentUpdate({
+      orderId: resolvedOrderId,
+      oldStatus: 'unpaid',
+      newStatus: 'failed',
+      actor: null, // System/webhook event
+      paymentDetails: {
+        paymongo_payment_id: paymentId,
+        failed_code: failedCode,
+        failed_message: failedMessage,
+        webhook_event_type: 'payment.failed'
+      }
+    });
+
     // Emit real-time events
     await emitPaymentEvents(resolvedOrderId, paymentId, 'failed', eventData.attributes?.amount);
   }
@@ -974,6 +1435,19 @@ async function processWebhookEvent(eventType, eventData, webhook_id) {
         );
 
         console.log(`Order ${order_id} refund completed (refund: ${refundId})`);
+
+        // ========== Audit Logging ==========
+        await auditService.logPaymentUpdate({
+          orderId: order_id,
+          oldStatus: 'paid',
+          newStatus: 'refunded',
+          actor: null, // System/webhook event
+          paymentDetails: {
+            refund_id: refundId,
+            refund_amount: eventData.attributes?.amount / 100,
+            webhook_event_type: 'refund.updated'
+          }
+        });
 
         // Emit real-time events
         await emitPaymentEvents(order_id, payment_id, 'refunded', eventData.attributes?.amount);

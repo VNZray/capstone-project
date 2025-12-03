@@ -127,7 +127,7 @@ async function createOrderProcedures(knex) {
     END;
   `);
 
-  // Update stock for order item
+  // Update stock for order item with row-level locking to prevent race conditions
   await knex.raw(`
     CREATE PROCEDURE UpdateStockForOrder(
       IN p_product_id CHAR(64),
@@ -140,21 +140,31 @@ async function createOrderProcedures(knex) {
       DECLARE current_stock_val INT DEFAULT 0;
       DECLARE new_stock_val INT DEFAULT 0;
       
-      SELECT current_stock INTO current_stock_val FROM product_stock WHERE product_id = p_product_id;
+      -- Use SELECT FOR UPDATE to lock the row and prevent concurrent modifications
+      -- This ensures atomic read-check-update operation
+      SELECT current_stock INTO current_stock_val 
+      FROM product_stock 
+      WHERE product_id = p_product_id 
+      FOR UPDATE;
+      
       SET new_stock_val = current_stock_val - p_quantity;
       
+      -- Double-check stock availability with locked row
       IF new_stock_val < 0 THEN
         SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Insufficient stock for this product';
       END IF;
       
+      -- Update stock atomically while holding the lock
       UPDATE product_stock SET 
         current_stock = new_stock_val,
         updated_at = NOW()
       WHERE product_id = p_product_id;
       
+      -- Record stock history
       INSERT INTO stock_history (id, product_id, change_type, quantity_change, previous_stock, new_stock, notes, created_by)
       VALUES (p_history_id, p_product_id, 'sale', -p_quantity, current_stock_val, new_stock_val, CONCAT('Order: ', p_order_number), p_user_id);
       
+      -- Update product status based on remaining stock
       UPDATE product SET status = IF(new_stock_val = 0, 'out_of_stock', 'active') WHERE id = p_product_id;
     END;
   `);

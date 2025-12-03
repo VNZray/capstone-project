@@ -44,8 +44,8 @@ const ShopListCard: React.FC<ShopListCardProps> = ({
 }) => {
   const { width } = useWindowDimensions();
 
-  const RADIUS = 12;
-  const IMAGE_SIZE = moderateScale(80, 0.55, width);
+  const RADIUS = 8;
+  const IMAGE_SIZE = moderateScale(72, 0.55, width);
 
   const imageSource = typeof image === 'string' ? { uri: image } : image;
 
@@ -58,7 +58,14 @@ const ShopListCard: React.FC<ShopListCardProps> = ({
         style,
       ]}
     >
-      <Image source={imageSource} style={[styles.image, { width: IMAGE_SIZE, height: IMAGE_SIZE, borderRadius: RADIUS }]} resizeMode="cover" />
+      <Image
+        source={imageSource}
+        style={[
+          styles.image,
+          { width: IMAGE_SIZE, height: IMAGE_SIZE, borderRadius: RADIUS },
+        ]}
+        resizeMode="cover"
+      />
 
       <View style={styles.content}>
         <View style={styles.topRow}>
@@ -78,13 +85,13 @@ const ShopListCard: React.FC<ShopListCardProps> = ({
           <View style={styles.ratingRow}>
             <FontAwesome5 name="star" size={10} color="#FFD700" solid />
             <Text style={styles.ratingText}>
-              {rating.toFixed(1)} <Text style={styles.reviewsText}>({reviews})</Text>
+              {rating.toFixed(1)}{' '}
+              <Text style={styles.reviewsText}>({reviews})</Text>
             </Text>
           </View>
-          
+
           {location && (
             <View style={styles.locationContainer}>
-              <FontAwesome5 name="map-marker-alt" size={10} color={ShopColors.textSecondary} />
               <Text style={styles.location} numberOfLines={1}>
                 {location}
               </Text>
@@ -99,23 +106,20 @@ const ShopListCard: React.FC<ShopListCardProps> = ({
 const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
-    backgroundColor: ShopColors.cardBackground,
-    borderRadius: 16,
-    padding: 12,
-    marginBottom: 12,
-    // Soft shadow
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.03,
-    shadowRadius: 8,
-    elevation: 1,
+    backgroundColor: ShopColors.surface,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: ShopColors.border,
   },
   pressed: {
-    opacity: 0.7,
+    backgroundColor: ShopColors.background,
   },
   image: {
     marginRight: 16,
-    backgroundColor: '#f0f0f0',
+    backgroundColor: ShopColors.inputBackground,
+    borderWidth: 1,
+    borderColor: ShopColors.border,
   },
   content: {
     flex: 1,
@@ -128,22 +132,23 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   name: {
-    fontSize: 15,
+    fontSize: 16,
     fontFamily: 'Poppins-SemiBold',
     color: ShopColors.textPrimary,
     flex: 1,
     marginRight: 8,
+    letterSpacing: -0.3,
   },
   distanceText: {
-    fontSize: 11,
-    fontFamily: 'Poppins-Medium',
-    color: ShopColors.textSecondary,
-  },
-  category: {
     fontSize: 12,
     fontFamily: 'Poppins-Regular',
     color: ShopColors.textSecondary,
-    marginBottom: 8,
+  },
+  category: {
+    fontSize: 14,
+    fontFamily: 'Poppins-Regular',
+    color: ShopColors.textSecondary,
+    marginBottom: 6,
   },
   footerRow: {
     flexDirection: 'row',
@@ -154,13 +159,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: '#FAFAFA',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
   },
   ratingText: {
-    fontSize: 11,
+    fontSize: 12,
     fontFamily: 'Poppins-Medium',
     color: ShopColors.textPrimary,
   },
@@ -168,17 +169,15 @@ const styles = StyleSheet.create({
     color: ShopColors.textSecondary,
   },
   locationContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
     flex: 1,
     justifyContent: 'flex-end',
     marginLeft: 8,
   },
   location: {
-    fontSize: 11,
+    fontSize: 12,
     fontFamily: 'Poppins-Regular',
     color: ShopColors.textSecondary,
+    textAlign: 'right',
   },
 });
 

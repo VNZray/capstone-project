@@ -17,7 +17,7 @@ const ShopLayout = () => {
               headerShown: true,
               animation: 'slide_from_right',
               headerTitleAlign: 'center',
-              headerTitle: 'Shop',
+              headerTitle: '',
               headerBackTitle: 'Back',
               headerShadowVisible: false,
               headerStyle: { backgroundColor: '#F9FAFB' },

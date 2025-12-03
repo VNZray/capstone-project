@@ -1,4 +1,6 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+// useNavigation is used for setOptions (header customization)
+// For navigation actions, use useRouter or usePreventDoubleNavigation hook
 import { useNavigation } from 'expo-router';
 import { useEffect, useState, useCallback, useRef } from 'react';
 import {

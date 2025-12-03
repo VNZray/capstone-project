@@ -14,6 +14,7 @@ import { FontAwesome5 } from '@expo/vector-icons';
 import { ThemedText } from '@/components/themed-text';
 import Button from '@/components/Button';
 import { colors } from '@/constants/color';
+import { Routes } from '@/routes/mainRoutes';
 
 export default function NotFoundScreen() {
   const pathname = usePathname();
@@ -129,7 +130,7 @@ export default function NotFoundScreen() {
                 radius={14}
                 elevation={3}
                 textSize={16}
-                onPress={() => router.replace('/')}
+                onPress={() => router.replace(Routes.tabs.home)}
               />
               <Button
                 label="Try Again"

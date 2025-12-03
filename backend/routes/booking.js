@@ -15,4 +15,8 @@ router.put("/:id", authenticate, authorizeRole("Tourist", "Admin", "Business Own
 router.delete("/:id", authenticate, authorizeRole("Admin", "Business Owner"), bookingController.deleteBooking);
 router.get("/business/:business_id", bookingController.getBookingsByBusinessId);
 
+// PayMongo payment initiation for bookings
+// POST /api/bookings/:id/initiate-payment
+router.post("/:id/initiate-payment", authenticate, bookingController.initiateBookingPayment);
+
 export default router;

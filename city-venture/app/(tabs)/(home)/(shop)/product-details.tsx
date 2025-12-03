@@ -12,6 +12,7 @@ import {
   Alert,
 } from 'react-native';
 import { useLocalSearchParams, Stack, router } from 'expo-router';
+import { Routes } from '@/routes/mainRoutes';
 import { Colors } from '@/constants/color';
 import { useTypography } from '@/constants/typography';
 import PageContainer from '@/components/PageContainer';
@@ -100,7 +101,7 @@ const ProductDetails = () => {
           { text: 'Continue Shopping', style: 'cancel' },
           {
             text: 'View Cart',
-            onPress: () => router.push('/(tabs)/(home)/(shop)/cart' as never),
+            onPress: () => router.push(Routes.shop.cart),
           },
         ]
       );
