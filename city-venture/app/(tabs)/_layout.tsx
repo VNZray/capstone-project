@@ -1,45 +1,34 @@
 // app/(tabs)/_layout.js
-import { Tabs, router, usePathname } from 'expo-router';
-import React, { useMemo } from 'react';
-import { Platform, View } from 'react-native';
+import { Tabs } from 'expo-router';
+import React from 'react';
+import { Platform } from 'react-native';
+import { useNavigationContext } from '@/context/NavigationContext';
 
 import { HapticTab } from '@/components/haptic-tab';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import TabBarBackground from '@/components/ui/TabBarBackground';
 import { Colors } from '@/constants/color';
 import { AccommodationProvider } from '@/context/AccommodationContext';
-import { useColorScheme } from '@/hooks/use-color-scheme';
-import { WebLayout } from '@/components/layout/WebLayout';
+import { RoomProvider } from '@/context/RoomContext';
+
 export default function TabLayout() {
-  const colorScheme = useColorScheme();
-  const pathname = usePathname();
-
-  // Determine if current route is within the booking flow; hide tabs if so
-  const hideTabs = React.useMemo(
-    () => !!pathname && /\/room\/booking/i.test(pathname),
-    [pathname]
-  );
-
-  // Remove artificial loading delay for faster tab responses
+  const { tabsVisible } = useNavigationContext();
 
   return (
     <AccommodationProvider>
-      <WebLayout>
+      <RoomProvider>
         <Tabs
           screenOptions={{
-            tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
+            tabBarActiveTintColor: Colors.light.tint,
             headerShown: false,
             tabBarButton: HapticTab,
             tabBarBackground: TabBarBackground,
-            tabBarStyle: hideTabs
+            tabBarStyle: !tabsVisible
               ? { display: 'none' }
               : Platform.select({
                   ios: {
                     position: 'absolute',
                     paddingTop: 10,
-                  },
-                  web: {
-                    display: 'none',
                   },
                   default: {
                     position: 'absolute',
@@ -91,19 +80,6 @@ export default function TabLayout() {
           />
 
           <Tabs.Screen
-            name="orders"
-            options={{
-              title: 'Orders',
-              headerShown: false,
-              animation: 'shift',
-              headerTitleAlign: 'center',
-              tabBarIcon: ({ color }) => (
-                <IconSymbol size={32} name="list.clipboard.fill" color={color} />
-              ),
-            }}
-          />
-
-          <Tabs.Screen
             name="(profile)"
             options={{
               title: 'Profile',
@@ -117,7 +93,7 @@ export default function TabLayout() {
             }}
           />
         </Tabs>
-      </WebLayout>
+      </RoomProvider>
     </AccommodationProvider>
   );
 }

@@ -4,6 +4,17 @@
  * Provides schema validation for order creation and updates
  */
 
+import {
+  MIN_PICKUP_MINUTES,
+  MAX_PICKUP_HOURS,
+  VALID_ORDER_STATUSES,
+  VALID_PAYMENT_STATUSES,
+  VALID_PAYMENT_METHODS,
+  PAYMONGO_PAYMENT_TYPES,
+  ORDER_STATUS,
+  PAYMENT_STATUS
+} from '../constants/order.js';
+
 /**
  * Validate order creation payload
  * @param {Object} payload - Order creation data
@@ -49,24 +60,38 @@ export function validateOrderCreation(payload) {
     
     if (isNaN(pickupDate.getTime())) {
       errors.push({ field: 'pickup_datetime', message: 'Invalid datetime format' });
-    } else if (pickupDate <= now) {
-      errors.push({ field: 'pickup_datetime', message: 'Pickup datetime must be in the future' });
+    } else {
+      // Calculate time boundaries
+      const minPickupTime = new Date(now.getTime() + MIN_PICKUP_MINUTES * 60 * 1000);
+      const maxPickupTime = new Date(now.getTime() + MAX_PICKUP_HOURS * 60 * 60 * 1000);
+      
+      if (pickupDate <= now) {
+        errors.push({ field: 'pickup_datetime', message: 'Pickup datetime must be in the future' });
+      } else if (pickupDate < minPickupTime) {
+        errors.push({ 
+          field: 'pickup_datetime', 
+          message: `Pickup time must be at least ${MIN_PICKUP_MINUTES} minutes from now` 
+        });
+      } else if (pickupDate > maxPickupTime) {
+        errors.push({ 
+          field: 'pickup_datetime', 
+          message: `Pickup time cannot be more than ${MAX_PICKUP_HOURS} hours from now` 
+        });
+      }
     }
   }
   
   // Payment method validation
-  const validPaymentMethods = ['cash_on_pickup', 'paymongo'];
-  if (!payload.payment_method || !validPaymentMethods.includes(payload.payment_method)) {
+  if (!payload.payment_method || !VALID_PAYMENT_METHODS.includes(payload.payment_method)) {
     errors.push({ field: 'payment_method', message: 'Payment method must be either "cash_on_pickup" or "paymongo"' });
   }
   
   // Payment method type validation (required for paymongo)
   if (payload.payment_method === 'paymongo') {
-    const validPaymentTypes = ['gcash', 'card', 'paymaya', 'grab_pay', 'qrph'];
-    if (!payload.payment_method_type || !validPaymentTypes.includes(payload.payment_method_type)) {
+    if (!payload.payment_method_type || !PAYMONGO_PAYMENT_TYPES.includes(payload.payment_method_type)) {
       errors.push({ 
         field: 'payment_method_type', 
-        message: 'Payment method type is required for PayMongo and must be one of: gcash, card, paymaya, grab_pay, qrph' 
+        message: `Payment method type is required for PayMongo and must be one of: ${PAYMONGO_PAYMENT_TYPES.join(', ')}` 
       });
     }
   }
@@ -86,6 +111,17 @@ export function validateOrderCreation(payload) {
   return {
     valid: errors.length === 0,
     errors
+  };
+}
+
+/**
+ * Get pickup time constraints for client reference
+ * @returns {Object} { minMinutes, maxHours }
+ */
+export function getPickupTimeConstraints() {
+  return {
+    minMinutes: MIN_PICKUP_MINUTES,
+    maxHours: MAX_PICKUP_HOURS
   };
 }
 
@@ -126,21 +162,10 @@ export function generateOrderNumber() {
  * @returns {Object} { valid: boolean, error: string }
  */
 export function validateStatus(status) {
-  const validStatuses = [
-    'pending',
-    'accepted',
-    'preparing',
-    'ready_for_pickup',
-    'picked_up',
-    'cancelled_by_user',
-    'cancelled_by_business',
-    'failed_payment'
-  ];
-  
-  if (!status || !validStatuses.includes(status)) {
+  if (!status || !VALID_ORDER_STATUSES.includes(status)) {
     return {
       valid: false,
-      error: `Status must be one of: ${validStatuses.join(', ')}`
+      error: `Status must be one of: ${VALID_ORDER_STATUSES.join(', ')}`
     };
   }
   
@@ -153,12 +178,10 @@ export function validateStatus(status) {
  * @returns {Object} { valid: boolean, error: string }
  */
 export function validatePaymentStatus(paymentStatus) {
-  const validStatuses = ['pending', 'paid', 'failed', 'refunded'];
-  
-  if (!paymentStatus || !validStatuses.includes(paymentStatus)) {
+  if (!paymentStatus || !VALID_PAYMENT_STATUSES.includes(paymentStatus)) {
     return {
       valid: false,
-      error: `Payment status must be one of: ${validStatuses.join(', ')}`
+      error: `Payment status must be one of: ${VALID_PAYMENT_STATUSES.join(', ')}`
     };
   }
   

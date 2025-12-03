@@ -52,6 +52,36 @@ async function createRefreshTokenProcedures(knex) {
       UPDATE refresh_tokens SET revoked = TRUE WHERE family_id = p_family_id;
     END;
   `);
+
+  // Cleanup Expired Tokens (for scheduled maintenance)
+  await knex.raw(`
+    CREATE PROCEDURE CleanupExpiredRefreshTokens(IN p_revoked_retention_days INT)
+    BEGIN
+      -- Delete expired tokens
+      DELETE FROM refresh_tokens WHERE expires_at < NOW();
+      
+      -- Delete old revoked tokens (keep for audit trail)
+      DELETE FROM refresh_tokens 
+      WHERE revoked = TRUE 
+      AND created_at < DATE_SUB(NOW(), INTERVAL p_revoked_retention_days DAY);
+      
+      -- Return count of remaining tokens
+      SELECT COUNT(*) as remaining_tokens FROM refresh_tokens;
+    END;
+  `);
+
+  // Get Token Statistics (for monitoring)
+  await knex.raw(`
+    CREATE PROCEDURE GetRefreshTokenStats()
+    BEGIN
+      SELECT 
+        COUNT(*) as total,
+        SUM(CASE WHEN revoked = FALSE AND expires_at > NOW() THEN 1 ELSE 0 END) as active,
+        SUM(CASE WHEN revoked = TRUE THEN 1 ELSE 0 END) as revoked,
+        SUM(CASE WHEN expires_at <= NOW() THEN 1 ELSE 0 END) as expired
+      FROM refresh_tokens;
+    END;
+  `);
 }
 
 async function dropRefreshTokenProcedures(knex) {

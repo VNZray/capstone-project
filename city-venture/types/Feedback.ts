@@ -14,7 +14,7 @@ export type ReviewAndRating = {
 
 export type ReviewAndRatings = ReviewAndRating[];
 
-export type ReviewType = 'accommodation' | 'restaurant' | 'tourist_spot' | 'shop' | 'service';
+export type ReviewType = 'accommodation' | 'restaurant' | 'tourist_spot' | 'shop' | 'service' | 'room';
 
 export type ReviewPhoto = {
   id: string;

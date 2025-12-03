@@ -1,9 +1,14 @@
-import { createContext, useContext, useEffect, useState, useCallback } from "react";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  useCallback,
+} from "react";
 import type { ReactNode } from "react";
 import {
   loginUser,
   logoutUser,
-  getStoredUser,
   initializeAuth,
 } from "@/src/services/auth/AuthService";
 import type { UserDetails } from "@/src/types/User";
@@ -11,7 +16,11 @@ import type { UserDetails } from "@/src/types/User";
 interface AuthContextType {
   user: UserDetails | null;
   loading: boolean;
-  login: (email: string, password: string, rememberMe?: boolean) => Promise<UserDetails>;
+  login: (
+    email: string,
+    password: string,
+    rememberMe?: boolean
+  ) => Promise<UserDetails>;
   logout: () => void;
 }
 
@@ -30,15 +39,19 @@ export function AuthProvider({ children }: AuthProviderProps) {
     (async () => {
       // Try to restore session from cookie (refresh token)
       const success = await initializeAuth();
-      
+
       if (success) {
-        const storedUser = getStoredUser();
-        if (storedUser) {
-          setUser(storedUser);
-          
-          // If we have a user but no permissions (legacy check), we might want to refetch
-          // But initializeAuth doesn't return user, and loginUser handles permission fetching.
-          // We assume storedUser is up to date enough or will be updated on next login/refresh if we implement that.
+        try {
+          // Fetch fresh user data from API
+          const { fetchCurrentUser } = await import(
+            "@/src/services/auth/AuthService"
+          );
+          const user = await fetchCurrentUser();
+          setUser(user);
+        } catch (error) {
+          console.error("[AuthContext] Failed to fetch user profile", error);
+          // If fetch fails, maybe logout?
+          // logoutUser();
         }
       }
       setLoading(false);
@@ -48,25 +61,32 @@ export function AuthProvider({ children }: AuthProviderProps) {
     const handleStorageChange = async (e: StorageEvent) => {
       // Handle logout from another tab
       if (e.key === "logout-event") {
-        console.log('[AuthContext] Logout detected from another tab');
+        console.log("[AuthContext] Logout detected from another tab");
         setUser(null);
-        
+
         // Clear session storage too just in case
         sessionStorage.clear();
-        
+
         // Reload to reset state completely
-        window.location.href = '/login';
+        window.location.href = "/login";
         return;
       }
 
       // Handle login from another tab
       if (e.key === "login-event") {
-        console.log('[AuthContext] Login detected from another tab, syncing...');
+        console.log(
+          "[AuthContext] Login detected from another tab, syncing..."
+        );
         const success = await initializeAuth();
         if (success) {
-          const storedUser = getStoredUser();
-          if (storedUser) {
-            setUser(storedUser);
+          try {
+            const { fetchCurrentUser } = await import(
+              "@/src/services/auth/AuthService"
+            );
+            const user = await fetchCurrentUser();
+            setUser(user);
+          } catch (e) {
+            console.error("Failed to sync user", e);
           }
         }
       }
@@ -74,15 +94,15 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
     // Monitor tab visibility to ensure session validity
     const handleVisibilityChange = async () => {
-      if (document.visibilityState === 'visible') {
-         // Re-verify session if needed (optional)
-         // For now, we rely on apiClient interceptors to catch 401
+      if (document.visibilityState === "visible") {
+        // Re-verify session if needed (optional)
+        // For now, we rely on apiClient interceptors to catch 401
       }
     };
 
     window.addEventListener("storage", handleStorageChange);
     document.addEventListener("visibilitychange", handleVisibilityChange);
-    
+
     return () => {
       window.removeEventListener("storage", handleStorageChange);
       document.removeEventListener("visibilitychange", handleVisibilityChange);
@@ -90,11 +110,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
   }, []);
 
   /** LOGIN */
-  const login = useCallback(async (email: string, password: string, rememberMe = false) => {
-    const loggedInUser = await loginUser(email, password, rememberMe);
-    setUser(loggedInUser);
-    return loggedInUser;
-  }, []);
+  const login = useCallback(
+    async (email: string, password: string, rememberMe = false) => {
+      const loggedInUser = await loginUser(email, password, rememberMe);
+      setUser(loggedInUser);
+      return loggedInUser;
+    },
+    []
+  );
 
   /** LOGOUT */
   const logout = useCallback(async () => {

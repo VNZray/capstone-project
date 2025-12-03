@@ -1,5 +1,6 @@
 import api from '@/services/api';
-import { Booking, BookingPayment, Guests } from '@/types/Booking';
+import apiClient from '@/services/apiClient';
+import { Booking, BookingPayment } from '@/types/Booking';
 import debugLogger from '@/utils/debugLogger';
 import axios from 'axios';
 
@@ -38,7 +39,6 @@ export const bookRoom = async (bookingData: Booking) => {
   });
   return response.data;
 };
-
 
 // Create a payment record for a booking
 export const createBookingPayment = async (
@@ -87,13 +87,16 @@ export const payBooking = async (
       ...payment,
       payment_for_id: String(bookingId),
     };
-    
-    const paymentResult = await createBookingPayment(bookingId, paymentWithBookingId);
-    
+
+    const paymentResult = await createBookingPayment(
+      bookingId,
+      paymentWithBookingId
+    );
+
     // After successful payment creation, adjust booking balance if partial or full
     const paid = Number(payment.amount) || 0;
     const newBalance = Math.max(totalPrice - paid, 0);
-    
+
     try {
       if (!isNaN(newBalance)) {
         await axios.put(`${api}/booking/${bookingId}`, { balance: newBalance });
@@ -113,7 +116,7 @@ export const payBooking = async (
       title: 'FLOW Payment completed',
       successMessage: `Payment complete for booking ${bookingId}`,
     });
-    
+
     return paymentResult;
   } catch (e) {
     debugLogger({
@@ -133,10 +136,10 @@ export const createFullBooking = async (
     title: 'FLOW Creating full booking',
     data: { booking, payment },
   });
-  
+
   const createdBooking = await bookRoom(booking);
   const bookingId = createdBooking?.id;
-  
+
   if (!bookingId) {
     debugLogger({
       title: 'FLOW Booking create response unexpected',
@@ -156,7 +159,7 @@ export const createFullBooking = async (
       successMessage: `Booking complete (id=${bookingId}) - no payment created`,
     });
   }
-  
+
   debugLogger({
     title: 'FLOW Full booking completed',
     successMessage: `Booking complete (id=${bookingId})`,
@@ -165,17 +168,17 @@ export const createFullBooking = async (
 };
 
 export const getBookingsByTourist = async (tourist_id: string) => {
-  const response = await axios.get(`${api}/booking/tourist/${tourist_id}`);
+  const response = await apiClient.get(`booking/tourist/${tourist_id}`);
   return response.data;
 };
 
 export const getBookingById = async (booking_id: string) => {
-  const response = await axios.get(`${api}/booking/${booking_id}`);
+  const response = await apiClient.get(`booking/${booking_id}`);
   return response.data;
 };
 
 export const cancelBooking = async (booking_id: string) => {
-  const response = await axios.put(`${api}/booking/${booking_id}`, {
+  const response = await apiClient.put(`booking/${booking_id}`, {
     booking_status: 'Canceled',
   });
   return response.data;

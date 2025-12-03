@@ -4,6 +4,9 @@ import cookieParser from "cookie-parser";
 import "dotenv/config";
 import { createServer } from "http";
 import { initializeSocket } from "./services/socketService.js";
+import { startTokenCleanupScheduler } from "./services/tokenCleanupService.js";
+import * as webhookQueueService from "./services/webhookQueueService.js";
+import { registerProcessor } from "./services/webhookProcessor.js";
 
 import userRoutes from "./routes/users.js";
 import authRoutes from "./routes/auth.js";
@@ -48,6 +51,7 @@ import feedbackReplyRoutes from "./routes/feedback-replies.js";
 import feedbackReviewPhotoRoutes from "./routes/feedback-review-photos.js";
 import roomPhotosRoutes from "./routes/room-photos.js";
 import tourismStaffManagementRoutes from "./routes/tourism_staff_management.js";
+import favoriteRoutes from "./routes/favorite.js";
 
 const app = express();
 const PORT = 3000;
@@ -166,7 +170,7 @@ const routeSections = [
         label: "External Booking",
       },
       { path: "/api/payment", handler: paymentRoutes, label: "Payments" },
-      { path: "/api/payments", handler: paymentRoutes, label: "Payments (alias)" },
+      // REMOVED: { path: "/api/payments", handler: paymentRoutes } - duplicate route removed per ORDERING_SYSTEM_AUDIT.md Phase 1
     ],
   },
   {
@@ -206,6 +210,7 @@ const routeSections = [
       { path: "/api/reviews", handler: feedbackReviewRoutes, label: "Reviews (Generic)" },
       { path: "/api/replies", handler: feedbackReplyRoutes, label: "Replies" },
       { path: "/api/review-photos", handler: feedbackReviewPhotoRoutes, label: "Review Photos" },
+      { path: "/api/favorite", handler: favoriteRoutes, label: "Favorites" },
     ],
   },
 ];
@@ -214,6 +219,8 @@ const routeSections = [
 const routes = routeSections.flatMap((s) => s.routes);
 
 // CORS configuration for authentication with credentials
+const isProduction = process.env.NODE_ENV === 'production';
+
 app.use(cors({
   origin: function(origin, callback) {
     // Allow requests with no origin (mobile apps, Postman, etc.)
@@ -232,7 +239,13 @@ app.use(cors({
       callback(null, true);
     } else {
       console.warn(`CORS blocked origin: ${origin}`);
-      callback(null, true); // Allow for development - tighten in production
+      // SECURITY: In production, reject unknown origins. In development, allow with warning.
+      if (isProduction) {
+        callback(new Error(`Origin ${origin} not allowed by CORS policy`), false);
+      } else {
+        console.warn('  ⚠️  Allowing for development - this would be blocked in production');
+        callback(null, true);
+      }
     }
   },
   credentials: true, // Allow cookies to be sent/received
@@ -244,7 +257,7 @@ app.use(cookieParser());
 
 // Raw body parser for webhook signature verification
 // Must come BEFORE express.json() to capture raw body
-["/api/payment/webhook", "/api/payments/webhook"].forEach((path) => {
+["/api/payment/webhook", "/api/payment/webhook"].forEach((path) => {
   app.use(path, express.raw({ type: "application/json" }), (req, res, next) => {
     req.rawBody = req.body.toString("utf8");
     next();
@@ -266,10 +279,19 @@ const sendPaymongoRedirect = (res, orderId, status) => {
   const isExpoDev = process.env.EXPO_DEV === 'true';
   const expoHost = process.env.EXPO_DEV_HOST || '192.168.1.1:8081';
   
-  // Use Expo Go universal link format: exp://HOST:PORT/--/(screens)/payment-success
-  const appUrl = isExpoDev 
-    ? `exp://${expoHost}/--/(screens)/payment-${status}?orderId=${orderId}`
-    : `${MOBILE_DEEP_LINK_BASE}/${orderId}/payment-${status}`;
+  // Expo Go deep link format: exp://HOST:PORT/--/path
+  // For Expo Router, the path should match the file-based route
+  // e.g., (screens)/payment-success maps to /--/(screens)/payment-success
+  let appUrl;
+  if (isExpoDev) {
+    // Expo Go format - use query params for data
+    appUrl = `exp://${expoHost}/--/(screens)/payment-${status}?orderId=${orderId}`;
+  } else {
+    // Production build with custom scheme
+    appUrl = `${MOBILE_DEEP_LINK_BASE}/(screens)/payment-${status}?orderId=${orderId}`;
+  }
+  
+  console.log(`[PayMongo Redirect] isExpoDev: ${isExpoDev}, appUrl: ${appUrl}`);
   
   const webFallback = `${FRONTEND_BASE_URL}/orders/${orderId}/payment-${status}`;
 
@@ -382,7 +404,7 @@ function validateEnvironment() {
 validateEnvironment();
 
 // Start server with Socket.IO
-httpServer.listen(PORT, "0.0.0.0", () => {
+httpServer.listen(PORT, "0.0.0.0", async () => {
   console.log(colorServer(`🚀 Server running at http://localhost:${PORT}`));
   console.log(
     colorServer(`🌐 Also accessible at http://192.168.111.111:${PORT}`)
@@ -390,6 +412,23 @@ httpServer.listen(PORT, "0.0.0.0", () => {
   console.log(colorServer("✅ Connected to MariaDB (Promise Pool)"));
   console.log(colorServer("✅ Environment validated"));
   console.log(colorServer("✅ API is ready to use\n"));
+
+  // Start token cleanup scheduler (runs every 6 hours)
+  startTokenCleanupScheduler();
+  console.log(colorServer("✅ Token cleanup scheduler started"));
+
+  // Initialize webhook queue for async PayMongo webhook processing
+  try {
+    const queue = await webhookQueueService.initializeQueue();
+    if (queue) {
+      registerProcessor(queue);
+      console.log(colorServer("✅ Webhook queue initialized (Redis)"));
+    } else {
+      console.warn(`${COLORS.yellow}⚠️  Webhook queue not initialized (Redis unavailable - using sync fallback)${COLORS.reset}`);
+    }
+  } catch (queueError) {
+    console.warn(`${COLORS.yellow}⚠️  Webhook queue init failed: ${queueError.message}${COLORS.reset}`);
+  }
 
   // Quick access to Tourism Admin Login
   const frontendBase = process.env.FRONTEND_URL || process.env.WEB_URL || "http://localhost:5173";
@@ -414,3 +453,31 @@ httpServer.listen(PORT, "0.0.0.0", () => {
 
   console.log("\nCTRL + C to stop the server\n");
 });
+
+// ========== GRACEFUL SHUTDOWN ==========
+async function gracefulShutdown(signal) {
+  console.log(`\n${COLORS.yellow}${signal} received. Shutting down gracefully...${COLORS.reset}`);
+  
+  try {
+    // Close webhook queue
+    await webhookQueueService.shutdownQueue();
+    console.log(colorServer("✅ Webhook queue closed"));
+  } catch (err) {
+    console.error("Error closing webhook queue:", err);
+  }
+  
+  // Close HTTP server
+  httpServer.close(() => {
+    console.log(colorServer("✅ HTTP server closed"));
+    process.exit(0);
+  });
+  
+  // Force exit after 10 seconds
+  setTimeout(() => {
+    console.error("Could not close connections in time, forcefully shutting down");
+    process.exit(1);
+  }, 10000);
+}
+
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));

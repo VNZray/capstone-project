@@ -79,9 +79,7 @@ export interface DropdownProps<T extends DropdownItem = DropdownItem> {
   maxSelected?: number; // maximum number of selections for multi
   validateOnChange?: boolean; // validate whenever selection changes
   validateOnClose?: boolean; // validate when the dropdown panel closes (analogous to blur)
-  customValidator?: (
-    selection: T | T[] | null
-  ) => string | null; // return error message or null
+  customValidator?: (selection: T | T[] | null) => string | null; // return error message or null
 }
 
 export interface DropdownRef<T extends DropdownItem = DropdownItem> {
@@ -234,14 +232,14 @@ const DropdownInner = <T extends DropdownItem = DropdownItem>(
       case 'small':
         return {
           height: 40,
-            fontSize: 13,
-            padding: 10,
-            icon: 14,
-            optionPadV: 8,
-            optionPadH: 12,
-            optionFont: 13,
-            optionSubFont: 12,
-            optionIcon: 14,
+          fontSize: 13,
+          padding: 10,
+          icon: 14,
+          optionPadV: 8,
+          optionPadH: 12,
+          optionFont: 13,
+          optionSubFont: 12,
+          optionIcon: 14,
         };
       case 'large':
         return {
@@ -499,7 +497,6 @@ const DropdownInner = <T extends DropdownItem = DropdownItem>(
             justifyContent: 'space-between',
           },
           triggerVariant.container,
-          elevationStyle,
           disabled && { opacity: 0.6 },
           pressed && !disabled && { opacity: 0.85 },
           triggerStyle,

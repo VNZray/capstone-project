@@ -2,10 +2,13 @@ import { background } from '@/constants/color';
 import { useAuth } from '@/context/AuthContext';
 import { useRoom } from '@/context/RoomContext';
 import { bookRoom, payBooking } from '@/query/accommodationQuery';
-import { Booking, BookingPayment, Guests } from '@/types/Booking';
+import { Booking, BookingPayment } from '@/types/Booking';
 import debugLogger from '@/utils/debugLogger';
 import { notifyPayment } from '@/utils/paymentBus';
+// useNavigation: for setOptions (header customization)
+// useRouter: for navigation actions (push, replace, back)
 import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
+import { Routes } from '@/routes/mainRoutes';
 import React, {
   useCallback,
   useEffect,
@@ -58,20 +61,15 @@ const OnlinePayment = () => {
 
   const parsed = useMemo(() => {
     let b: Partial<Booking> = {};
-    let g: Guests = [];
     let p: Partial<BookingPayment> = {};
     try {
       if (bookingData) b = JSON.parse(String(bookingData));
     } catch {}
     try {
-      if (guests) g = JSON.parse(String(guests));
-    } catch {}
-    try {
       if (paymentData) p = JSON.parse(String(paymentData));
     } catch {}
-    return { b, g, p } as {
+    return { b, p } as {
       b: Partial<Booking>;
-      g: Guests;
       p: Partial<BookingPayment>;
     };
   }, [bookingData, guests, paymentData]);
@@ -83,7 +81,7 @@ const OnlinePayment = () => {
       setCreating(true);
       const total = Number((parsed.b as Booking)?.total_price) || 0;
       const paid = Number((parsed.p as BookingPayment)?.amount) || 0;
-      
+
       // Step 1: Create the booking first
       const bookingPayload: Booking = {
         ...(parsed.b as Booking),
@@ -97,9 +95,9 @@ const OnlinePayment = () => {
         title: 'OnlinePayment: Creating booking',
         data: { bookingPayload },
       });
-      
+
       const createdBooking = await bookRoom(bookingPayload);
-      
+
       if (!createdBooking?.id) {
         throw new Error('Booking ID not returned after creation');
       }
@@ -160,27 +158,21 @@ const OnlinePayment = () => {
       if (successUrl && lower.startsWith(successUrl.toLowerCase())) {
         notifyPayment('success');
         submitBooking().finally(() => {
-          router.replace({
-            pathname: '/(tabs)/(home)/(accommodation)/room/booking/Summary',
-            params: {
-              bookingData: bookingData || '',
-              guests: guests || '',
-              paymentData: paymentData || '',
-            },
-          });
+          router.replace(Routes.accommodation.room.summary({
+            bookingData: bookingData || '',
+            guests: guests || '',
+            paymentData: paymentData || '',
+          }));
         });
         return false;
       }
       if (cancelUrl && lower.startsWith(cancelUrl.toLowerCase())) {
         notifyPayment('cancel');
-        router.replace({
-          pathname: '/(tabs)/(home)/(accommodation)/room/booking/Billing',
-          params: {
-            bookingData: bookingData || '',
-            guests: guests || '',
-            paymentData: paymentData || '',
-          },
-        });
+        router.replace(Routes.accommodation.room.billing({
+          bookingData: bookingData || '',
+          guests: guests || '',
+          paymentData: paymentData || '',
+        }));
         return false;
       }
 

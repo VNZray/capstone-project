@@ -106,7 +106,6 @@ const EditBusinessHoursModal: React.FC<EditBusinessHoursModalProps> = ({
       onClose={onClose}
       title="Edit Business Hours"
       description="Configure opening hours for each day"
-      maxWidth={640}
       actions={[{ label: 'Cancel', onClick: onClose }, { label: 'Save', onClick: handleSave, variant: 'primary' }]}
     >
       <div>

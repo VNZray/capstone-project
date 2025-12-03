@@ -20,7 +20,7 @@ export async function sendNotification(recipientId, title, message, type, metada
     // Extract related_id and related_type from metadata or derive from type
     const relatedId = metadata.order_id || metadata.payment_id || metadata.booking_id;
     const relatedType = metadata.order_id ? 'order' : 'service_booking';
-    
+
     // Map generic types to notification_type enum
     const notificationTypeMap = {
       'order_new': 'order_created',
@@ -29,15 +29,15 @@ export async function sendNotification(recipientId, title, message, type, metada
       'order_cancelled': 'order_cancelled',
       'payment_updated': 'payment_received'
     };
-    
+
     const notificationType = notificationTypeMap[type] || 'order_created';
-    
+
     await db.query(
       `INSERT INTO notification (id, user_id, notification_type, related_id, related_type, title, message, metadata, is_read, created_at)
        VALUES (UUID(), ?, ?, ?, ?, ?, ?, ?, 0, NOW())`,
       [recipientId, notificationType, relatedId, relatedType, title, message, JSON.stringify(metadata)]
     );
-    
+
     console.log(`Notification sent to user ${recipientId}: ${title}`);
   } catch (error) {
     console.error('Failed to create notification:', error);
@@ -53,7 +53,7 @@ export async function notifyBusinessNewOrder(order) {
   try {
     // Get business owner and staff
     const [businessUsers] = await db.query(
-      `SELECT u.id, u.email, u.email AS name 
+      `SELECT u.id, u.email, u.email AS name
        FROM business b
        JOIN user u ON u.id = b.owner_id
        WHERE b.id = ?
@@ -76,10 +76,10 @@ export async function notifyBusinessNewOrder(order) {
 
     for (const user of businessUsers) {
       await sendNotification(user.id, title, message, 'order_new', metadata);
-      
+
       // TODO: Send email notification
       // await sendEmail(user.email, title, message, metadata);
-      
+
       // TODO: Send push notification
       // await sendPushNotification(user.id, title, message, metadata);
     }
@@ -116,7 +116,7 @@ export async function notifyTouristOrderUpdated(order, previousStatus) {
 
   try {
     await sendNotification(order.user_id, title, message, 'order_updated', metadata);
-    
+
     // TODO: Send push notification to tourist mobile device
     // await sendPushNotification(order.user_id, title, message, metadata);
   } catch (error) {
@@ -149,7 +149,7 @@ export async function notifyPaymentUpdated(payment, order) {
   try {
     // Notify tourist
     await sendNotification(order.user_id, title, message, 'payment_updated', metadata);
-    
+
     // TODO: Send push notification
     // await sendPushNotification(order.user_id, title, message, metadata);
   } catch (error) {
@@ -165,7 +165,7 @@ export async function notifyPaymentUpdated(payment, order) {
 export async function triggerNewOrderNotifications(order) {
   // Notify business
   await notifyBusinessNewOrder(order);
-  
+
   // Notify tourist (confirmation)
   const title = `Order Placed #${order.order_number}`;
   const message = `Your order has been placed successfully. Total: ₱${order.total_amount}`;
@@ -175,7 +175,7 @@ export async function triggerNewOrderNotifications(order) {
     amount: order.total_amount,
     arrival_code: order.arrival_code
   };
-  
+
   await sendNotification(order.user_id, title, message, 'order_created', metadata);
 }
 
@@ -186,19 +186,19 @@ export async function triggerNewOrderNotifications(order) {
  */
 export async function triggerOrderUpdateNotifications(order, previousStatus) {
   await notifyTouristOrderUpdated(order, previousStatus);
-  
+
   // Optionally notify business for certain transitions
   if (order.status === 'cancelled_by_user') {
     // Notify business that user cancelled
     const title = `Order Cancelled #${order.order_number}`;
     const message = `Customer cancelled order #${order.order_number}`;
     const metadata = { order_id: order.id, order_number: order.order_number };
-    
+
     const [businessOwner] = await db.query(
       `SELECT owner_id FROM business WHERE id = ?`,
       [order.business_id]
     );
-    
+
     if (businessOwner && businessOwner.length > 0) {
       await sendNotification(businessOwner[0].owner_id, title, message, 'order_cancelled', metadata);
     }

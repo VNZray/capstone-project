@@ -37,6 +37,7 @@ import {
   type DashboardData,
   type FilterPeriod,
 } from "@/src/services/dashboard/AccommodationDashboardServices";
+import Loading from "@/src/components/ui/Loading";
 
 const Dashboard = () => {
   const { businessDetails, loading: businessLoading } = useBusiness();
@@ -189,9 +190,7 @@ const Dashboard = () => {
   if (businessLoading || loading) {
     return (
       <PageContainer>
-        <Container>
-          <Typography.Title>Loading Dashboard...</Typography.Title>
-        </Container>
+        <Loading showProgress title="Loading Dashboard..." variant="default" />
       </PageContainer>
     );
   }

@@ -160,3 +160,27 @@ export async function deleteReview(req, res) {
     return handleDbError(error, res);
   }
 }
+
+// calculate average rating for a given type and entity id
+export async function getAverageRating(req, res) {
+  const { review_type, review_type_id } = req.params;
+  try {
+    const [data] = await db.query("CALL CalculateAverageRating(?, ?)", [review_type, review_type_id]);
+    const average_rating = data[0] ? data[0] : null;
+    res.json(average_rating);
+  } catch (error) {
+    return handleDbError(error, res);
+  }
+}
+
+// calculate total reviews for a given type and entity id
+export async function getTotalReviews(req, res) {
+  const { review_type, review_type_id } = req.params; 
+  try {
+    const [data] = await db.query("CALL CalculateTotalReviews(?, ?)", [review_type, review_type_id]);
+    const total_reviews = data[0] ? data[0] : 0;
+    res.json(total_reviews);
+  } catch (error) {
+    return handleDbError(error, res);
+  }
+}

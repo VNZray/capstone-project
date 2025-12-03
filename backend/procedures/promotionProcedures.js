@@ -4,8 +4,8 @@ async function createPromotionProcedures(knex) {
     CREATE PROCEDURE GetAllPromotions()
     BEGIN
       SELECT p.*, b.business_name, pt.promo_name
-      FROM promotion p 
-      JOIN business b ON p.business_id = b.id 
+      FROM promotion p
+      JOIN business b ON p.business_id = b.id
       LEFT JOIN promo_type pt ON p.promo_type = pt.id
       ORDER BY p.created_at DESC;
     END;
@@ -16,10 +16,10 @@ async function createPromotionProcedures(knex) {
     CREATE PROCEDURE GetPromotionsByBusinessId(IN p_businessId CHAR(64))
     BEGIN
       SELECT p.*, b.business_name, pt.promo_name
-      FROM promotion p 
-      JOIN business b ON p.business_id = b.id 
+      FROM promotion p
+      JOIN business b ON p.business_id = b.id
       LEFT JOIN promo_type pt ON p.promo_type = pt.id
-      WHERE p.business_id = p_businessId 
+      WHERE p.business_id = p_businessId
       ORDER BY p.created_at DESC;
     END;
   `);
@@ -29,12 +29,12 @@ async function createPromotionProcedures(knex) {
     CREATE PROCEDURE GetActivePromotionsByBusinessId(IN p_businessId CHAR(64))
     BEGIN
       SELECT p.*, b.business_name, pt.promo_name
-      FROM promotion p 
-      JOIN business b ON p.business_id = b.id 
+      FROM promotion p
+      JOIN business b ON p.business_id = b.id
       LEFT JOIN promo_type pt ON p.promo_type = pt.id
-      WHERE p.business_id = p_businessId 
+      WHERE p.business_id = p_businessId
         AND p.is_active = 1
-        AND p.start_date <= NOW() 
+        AND p.start_date <= NOW()
         AND (p.end_date IS NULL OR p.end_date >= NOW())
       ORDER BY p.start_date ASC;
     END;
@@ -45,11 +45,11 @@ async function createPromotionProcedures(knex) {
     CREATE PROCEDURE GetAllActivePromotions()
     BEGIN
       SELECT p.*, b.business_name, pt.promo_name
-      FROM promotion p 
-      JOIN business b ON p.business_id = b.id 
+      FROM promotion p
+      JOIN business b ON p.business_id = b.id
       LEFT JOIN promo_type pt ON p.promo_type = pt.id
       WHERE p.is_active = 1
-        AND p.start_date <= NOW() 
+        AND p.start_date <= NOW()
         AND (p.end_date IS NULL OR p.end_date >= NOW())
       ORDER BY p.created_at DESC;
     END;
@@ -60,8 +60,8 @@ async function createPromotionProcedures(knex) {
     CREATE PROCEDURE GetPromotionById(IN p_promotionId CHAR(64))
     BEGIN
       SELECT p.*, b.business_name, pt.promo_name
-      FROM promotion p 
-      JOIN business b ON p.business_id = b.id 
+      FROM promotion p
+      JOIN business b ON p.business_id = b.id
       LEFT JOIN promo_type pt ON p.promo_type = pt.id
       WHERE p.id = p_promotionId;
     END;
@@ -86,7 +86,7 @@ async function createPromotionProcedures(knex) {
     )
     BEGIN
       INSERT INTO promotion (
-        id, business_id, title, description, 
+        id, business_id, title, description,
         image_url, external_link, promo_code,
         discount_percentage, fixed_discount_amount, usage_limit,
         start_date, end_date, promo_type
@@ -98,8 +98,8 @@ async function createPromotionProcedures(knex) {
       );
 
       SELECT p.*, b.business_name, pt.promo_name
-      FROM promotion p 
-      JOIN business b ON p.business_id = b.id 
+      FROM promotion p
+      JOIN business b ON p.business_id = b.id
       LEFT JOIN promo_type pt ON p.promo_type = pt.id
       WHERE p.id = p_id;
     END;
@@ -140,8 +140,8 @@ async function createPromotionProcedures(knex) {
       WHERE id = p_id;
 
       SELECT p.*, b.business_name, pt.promo_name
-      FROM promotion p 
-      JOIN business b ON p.business_id = b.id 
+      FROM promotion p
+      JOIN business b ON p.business_id = b.id
       LEFT JOIN promo_type pt ON p.promo_type = pt.id
       WHERE p.id = p_id;
     END;
@@ -159,13 +159,24 @@ async function createPromotionProcedures(knex) {
   await knex.raw(`
     CREATE PROCEDURE UpdateExpiredPromotions()
     BEGIN
-      UPDATE promotion 
+      UPDATE promotion
       SET is_active = 0, updated_at = NOW()
       WHERE is_active = 1
-        AND end_date IS NOT NULL 
+        AND end_date IS NOT NULL
         AND end_date < NOW();
-      
+
       SELECT ROW_COUNT() as updated_count;
+    END;
+  `);
+
+  // Increment promotion usage count
+  await knex.raw(`
+    CREATE PROCEDURE IncrementPromotionUsage(IN p_promotionId CHAR(64))
+    BEGIN
+      UPDATE promotion
+      SET used_count = used_count + 1,
+          updated_at = NOW()
+      WHERE id = p_promotionId;
     END;
   `);
 }
@@ -180,6 +191,7 @@ async function dropPromotionProcedures(knex) {
   await knex.raw("DROP PROCEDURE IF EXISTS UpdatePromotion;");
   await knex.raw("DROP PROCEDURE IF EXISTS DeletePromotion;");
   await knex.raw("DROP PROCEDURE IF EXISTS UpdateExpiredPromotions;");
+  await knex.raw("DROP PROCEDURE IF EXISTS IncrementPromotionUsage;");
 }
 
 export { createPromotionProcedures, dropPromotionProcedures };

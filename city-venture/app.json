@@ -4,7 +4,7 @@
     "slug": "city-venture",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/logo/light-logo.png",
+    "icon": "./assets/logo/city-ventures-main.png",
     "scheme": "cityventure",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,

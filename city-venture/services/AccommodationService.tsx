@@ -11,6 +11,8 @@ import api from '@/services/api';
 import { Address } from '@/types/Address';
 import { Bookings } from '@/types/Booking';
 import debugLogger from '@/utils/debugLogger';
+import { getAverageRating, getTotalReviews } from '@/services/FeedbackService';
+import type { ReviewType } from '@/types/Feedback';
 /** Get stored Business ID */
 export const getStoredBusinessId = async (): Promise<string | null> => {
   return await AsyncStorage.getItem('selectedBusinessId');
@@ -89,6 +91,18 @@ export const fetchBusinessData = async (
   );
   const address = await fetchAddress(business.barangay_id);
 
+  // Fetch average rating and total reviews
+  const reviewType = business_type.type.toLowerCase() as ReviewType;
+  const [rawAverageRating, totalReviews] = await Promise.all([
+    getAverageRating(reviewType, id),
+    getTotalReviews(reviewType, id),
+  ]);
+  // Round to one decimal place (1.0–5.0)
+  const averageRating =
+    typeof rawAverageRating === 'number'
+      ? Math.round(rawAverageRating * 10) / 10
+      : Number(parseFloat(String(rawAverageRating)).toFixed(1));
+
   const businessDetails: BusinessDetails = {
     id: business.id,
     owner_id: business.owner_id,
@@ -116,6 +130,8 @@ export const fetchBusinessData = async (
     business_category_id: business.business_category_id,
     type: business_type.type,
     category: business_category.category,
+    ratings: averageRating,
+    reviews: totalReviews,
   };
 
   return businessDetails;
@@ -148,4 +164,3 @@ export const fetchAllBookings = async (): Promise<Bookings[]> => {
     return [];
   }
 };
-

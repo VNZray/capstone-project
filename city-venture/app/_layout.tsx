@@ -1,23 +1,53 @@
-import {
-  DarkTheme,
-  DefaultTheme,
-  ThemeProvider,
-} from '@react-navigation/native';
+import { ThemeProvider } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
-import * as Linking from 'expo-linking';
-import { useEffect } from 'react';
-import { Alert } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import 'react-native-reanimated';
 
 import { AuthProvider } from '@/context/AuthContext';
 import { CartProvider } from '@/context/CartContext';
-import { ThemeProvider as CustomThemeProvider } from '@/context/ThemeContext';
-import { useColorScheme } from '@/hooks/use-color-scheme';
+import { NavigationProvider } from '@/context/NavigationContext';
+import { NavigationTheme } from '@/constants/color';
+import { useProtectedRoute } from '@/hooks/useProtectedRoute';
+
+/**
+ * RootLayoutNav - Navigation structure with centralized auth protection
+ * Uses useProtectedRoute hook to handle auth-based redirects
+ */
+function RootLayoutNav() {
+  // Centralized auth protection - handles redirects between auth and protected routes
+  useProtectedRoute();
+
+  return (
+    <Stack screenOptions={{ headerShown: false }}>
+      {/* Auth screens - unauthenticated users */}
+      <Stack.Screen name="(auth)" />
+
+      {/* Main tabs - authenticated users */}
+      <Stack.Screen name="(tabs)" />
+
+      {/* Checkout flow - authenticated, hides tabs */}
+      <Stack.Screen name="(checkout)" />
+
+      {/* Modal screens - cross-tab shared views */}
+      <Stack.Screen
+        name="(modals)"
+        options={{
+          presentation: 'modal',
+          animation: 'slide_from_bottom',
+        }}
+      />
+
+      {/* Welcome/splash redirect screen */}
+      <Stack.Screen name="index" />
+
+      {/* Catch unmatched routes */}
+      <Stack.Screen name="+not-found" />
+    </Stack>
+  );
+}
 
 export default function RootLayout() {
-  const colorScheme = useColorScheme();
   const [loaded] = useFonts({
     'Poppins-Regular': require('@/assets/fonts/Poppins/Poppins-Regular.ttf'),
     'Poppins-Medium': require('@/assets/fonts/Poppins/Poppins-Medium.ttf'),
@@ -27,70 +57,6 @@ export default function RootLayout() {
     'Poppins-Black': require('@/assets/fonts/Poppins/Poppins-Black.ttf'),
   });
 
-  // Handle deep links for payment redirects
-  useEffect(() => {
-    // Handle initial URL if app was opened via deep link
-    Linking.getInitialURL().then((url) => {
-      if (url) {
-        handleDeepLink(url);
-      }
-    });
-
-    // Listen for deep link events while app is running
-    const subscription = Linking.addEventListener('url', (event) => {
-      handleDeepLink(event.url);
-    });
-
-    return () => {
-      subscription.remove();
-    };
-  }, []);
-
-  const handleDeepLink = (url: string) => {
-    console.log('[Deep Link] Received:', url);
-    
-    try {
-      const { path } = Linking.parse(url);
-
-      // Handle payment success: cityventure://orders/{orderId}/payment-success
-      if (path?.includes('payment-success')) {
-        const orderIdMatch = path.match(/orders\/([^\/]+)\/payment-success/);
-        const orderId = orderIdMatch?.[1];
-        
-        console.log('[Deep Link] Payment success for order:', orderId);
-        
-        // Show success message
-        Alert.alert(
-          'Payment Successful',
-          'Your payment has been received. Please wait for the business to confirm your order.',
-          [{ text: 'OK' }]
-        );
-        
-        // Navigate to order details (implement navigation logic as needed)
-        // router.push(`/(tabs)/(home)/orders/${orderId}`);
-      }
-      
-      // Handle payment cancel: cityventure://orders/{orderId}/payment-cancel
-      else if (path?.includes('payment-cancel')) {
-        const orderIdMatch = path.match(/orders\/([^\/]+)\/payment-cancel/);
-        const orderId = orderIdMatch?.[1];
-        
-        console.log('[Deep Link] Payment cancelled for order:', orderId);
-        
-        Alert.alert(
-          'Payment Cancelled',
-          'Your payment was cancelled. You can try again from your order details.',
-          [{ text: 'OK' }]
-        );
-        
-        // Navigate to order details
-        // router.push(`/(tabs)/(home)/orders/${orderId}`);
-      }
-    } catch (error) {
-      console.error('[Deep Link] Error parsing URL:', error);
-    }
-  };
-
   if (!loaded) {
     return null;
   }
@@ -98,19 +64,13 @@ export default function RootLayout() {
   return (
     <SafeAreaProvider>
       <AuthProvider>
-        <CartProvider>
-          <CustomThemeProvider>
-            <ThemeProvider value={colorScheme === 'light' ? DefaultTheme : DarkTheme}>
-              <Stack>
-                <Stack.Screen name="(screens)" options={{ headerShown: false }} />
-                <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-                <Stack.Screen name="index" options={{ headerShown: false }} />
-                <Stack.Screen name="landing" options={{ headerShown: false }} />
-                <Stack.Screen name="+not-found" />
-              </Stack>
+        <NavigationProvider>
+          <CartProvider>
+            <ThemeProvider value={NavigationTheme}>
+              <RootLayoutNav />
             </ThemeProvider>
-          </CustomThemeProvider>
-        </CartProvider>
+          </CartProvider>
+        </NavigationProvider>
       </AuthProvider>
     </SafeAreaProvider>
   );

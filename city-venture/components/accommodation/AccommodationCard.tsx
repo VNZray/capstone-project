@@ -1,6 +1,5 @@
 import { card } from '@/constants/color';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import { moderateScale } from '@/utils/responsive';
 import { Ionicons } from '@expo/vector-icons';
 import React, { useEffect, useMemo, useState } from 'react';
 import {
@@ -24,7 +23,7 @@ export type AccommodationCardView = 'card' | 'list' | string;
 export type AccommodationCardProps = {
   image: string | ImageSourcePropType;
   title: string;
-  subTitle?: string;
+  subTitle?: string; // Location/Category combined
   pricing?: string | number;
   ratings?: number; // 0-5
   noOfComments?: number;
@@ -32,6 +31,9 @@ export type AccommodationCardProps = {
   size?: AccommodationCardSize;
   view?: AccommodationCardView;
   favorite?: boolean;
+  badge?: string;
+  tags?: string[];
+  isOpen?: boolean;
   onClick?: () => void;
   addToFavorite?: (next: boolean) => void;
   style?: StyleProp<ViewStyle>;
@@ -51,6 +53,9 @@ const AccommodationCard: React.FC<AccommodationCardProps> = ({
   size = 'medium',
   view = 'card',
   favorite: favoriteProp,
+  badge,
+  tags = [],
+  isOpen = true,
   onClick,
   addToFavorite,
   style,
@@ -68,21 +73,20 @@ const AccommodationCard: React.FC<AccommodationCardProps> = ({
 
   const palette = useMemo(
     () => ({
-      bg: isDark ? card.dark : card.light,
-      text: isDark ? '#ECEDEE' : '#0D1B2A',
-      subText: isDark ? '#9BA1A6' : '#6B7280',
+      bg: isDark ? card.dark : '#FFFFFF',
+      text: isDark ? '#ECEDEE' : '#1A1A1A', // Shopify dark gray
+      subText: isDark ? '#9BA1A6' : '#616161', // Shopify soft gray
       border: isDark ? '#2A2F36' : '#E8EBF0',
       accent: isDark ? '#60A5FA' : '#2563EB',
       shadow: '#000',
+      success: '#008a05',
     }),
     [isDark]
   );
 
   const { width: windowWidth } = useWindowDimensions();
   const sizes = getSizes(windowWidth);
-  // Select concrete sizing config for current size prop (fallback to medium if undefined)
   const sizing = sizes[size] ?? sizes.medium;
-  const elevationStyle = getElevation(elevation);
 
   const onToggleFavorite = () => {
     const next = !favorite;
@@ -95,7 +99,7 @@ const AccommodationCard: React.FC<AccommodationCardProps> = ({
 
   const content = (
     <View style={[styles.content, view === 'list' && styles.row]}>
-      {/* Image */}
+      {/* Image Section */}
       <View
         style={[view === 'list' ? styles.listImageWrap : styles.cardImageWrap]}
       >
@@ -104,6 +108,14 @@ const AccommodationCard: React.FC<AccommodationCardProps> = ({
           style={view === 'list' ? sizing.listImage : sizing.cardImage}
           resizeMode="cover"
         />
+
+        {/* Badge (Guest Favorite) */}
+        {view === 'card' && badge && (
+          <View style={styles.badgeContainer}>
+            <Text style={styles.badgeText}>{badge}</Text>
+          </View>
+        )}
+
         {/* Favorite button overlay for card view */}
         {view === 'card' && (
           <Pressable
@@ -116,48 +128,78 @@ const AccommodationCard: React.FC<AccommodationCardProps> = ({
           >
             <Ionicons
               name={favorite ? 'heart' : 'heart-outline'}
-              size={sizing.favIconSize}
-              color={favorite ? '#ff6b81' : '#ffffffcc'}
+              size={20}
+              color={favorite ? '#ff6b81' : '#000'}
             />
           </Pressable>
         )}
       </View>
 
-      {/* Body */}
+      {/* Body Section */}
       <View
         style={[styles.body, view === 'list' && { flex: 1, paddingLeft: 12 }]}
       >
-        <Text
-          numberOfLines={2}
-          style={[{ color: palette.text }, sizing.title, titleStyle]}
-        >
-          {title}
-        </Text>
-        {!!subTitle && (
+        {/* Title and Price Row */}
+        <View style={styles.titleRow}>
           <Text
-            numberOfLines={2}
-            style={[{ color: palette.subText }, sizing.subTitle, subTitleStyle]}
+            numberOfLines={1}
+            style={[{ color: palette.text }, sizing.title, titleStyle]}
           >
-            {subTitle}
+            {title}
           </Text>
-        )}
-        {!!priceText && (
-          <Text style={[{ color: '#FF914D', fontWeight: '700' }, sizing.price]}>
-            {priceText}
-          </Text>
-        )}
+          {!!priceText && (
+            <Text
+              style={[{ color: palette.text, fontWeight: '600' }, sizing.price]}
+            >
+              {priceText}
+            </Text>
+          )}
+        </View>
 
-        {/* Footer rating row */}
-        <View style={[styles.footerRow]}>
-          <Ionicons name="star" size={sizing.icon} color="#FFC107" />
-          <Text style={[{ color: palette.text, marginLeft: 6 }, sizing.rating]}>
-            {(ratings ?? 0).toFixed(1)}
-          </Text>
+        {/* Rating and Subtitle Row */}
+        <View style={styles.metaRow}>
+          <Ionicons name="star" size={14} color="#FFB007" />
           <Text
-            style={[{ color: palette.subText, marginLeft: 4 }, sizing.reviews]}
+            style={[
+              styles.metaText,
+              { color: palette.text, fontWeight: '600' },
+            ]}
           >
+            {ratings.toFixed(1)}
+          </Text>
+          <Text style={[styles.metaText, { color: palette.subText }]}>
             ({noOfComments})
           </Text>
+          {!!subTitle && (
+            <>
+              <Text style={[styles.dot, { color: palette.subText }]}>•</Text>
+              <Text
+                numberOfLines={1}
+                style={[styles.metaText, { color: palette.subText, flex: 1 }]}
+              >
+                {subTitle}
+              </Text>
+            </>
+          )}
+        </View>
+
+        {/* Status and Tags Row */}
+        <View style={styles.tagsRow}>
+          {isOpen && (
+            <Text style={[styles.statusText, { color: palette.success }]}>
+              Open Now
+            </Text>
+          )}
+          {tags.map((tag, index) => (
+            <React.Fragment key={index}>
+              {(isOpen || index > 0) && (
+                <Text style={[styles.dot, { color: palette.subText }]}>•</Text>
+              )}
+              <Text style={[styles.tagText, { color: palette.subText }]}>
+                {tag}
+              </Text>
+            </React.Fragment>
+          ))}
         </View>
       </View>
 
@@ -185,20 +227,15 @@ const AccommodationCard: React.FC<AccommodationCardProps> = ({
     <Pressable
       onPress={onClick}
       style={({ pressed }) => [
-        styles.shadowWrapper,
-        elevationStyle,
-        // dynamic radius for outer shadow wrapper
-        { borderRadius: (sizing.container as any).borderRadius ?? 16 },
-        pressed && Platform.OS !== 'web' && { transform: [{ scale: 0.98 }] },
+        styles.containerWrapper,
+        pressed && Platform.OS !== 'web' && { opacity: 0.9 },
         style,
       ]}
     >
       <View
         style={[
           styles.container,
-          sizing.container,
           view === 'list' ? styles.listContainer : styles.cardContainer,
-          { backgroundColor: palette.bg, borderColor: palette.border },
         ]}
       >
         {content}
@@ -211,19 +248,21 @@ export default AccommodationCard;
 
 // Styles and helpers
 const styles = StyleSheet.create({
-  shadowWrapper: {
-    // wrapper just for shadow; no overflow so iOS shadow is visible
+  containerWrapper: {
+    marginBottom: 8,
   },
   container: {
-    borderRadius: 16,
-    borderWidth: 1,
-    overflow: 'hidden', // keep clipping for rounded images/content
+    backgroundColor: 'transparent',
   },
   cardContainer: {
     paddingBottom: 10,
   },
   listContainer: {
     padding: 10,
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#eee',
   },
   content: {
     width: '100%',
@@ -234,8 +273,11 @@ const styles = StyleSheet.create({
   },
   cardImageWrap: {
     width: '100%',
-    aspectRatio: 16 / 9,
+    aspectRatio: 4 / 3,
     position: 'relative',
+    borderRadius: 20,
+    overflow: 'hidden',
+    backgroundColor: '#f0f0f0',
   },
   listImageWrap: {
     width: 84,
@@ -244,26 +286,80 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   body: {
-    paddingHorizontal: 12,
-    paddingTop: 8,
+    paddingTop: 12,
+    paddingHorizontal: 4,
   },
-  footerRow: {
-    marginTop: 6,
+  titleRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 4,
+  },
+  metaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  metaText: {
+    fontSize: 14,
+    marginLeft: 4,
+  },
+  dot: {
+    marginHorizontal: 4,
+    fontSize: 12,
+  },
+  tagsRow: {
     flexDirection: 'row',
     alignItems: 'center',
   },
+  statusText: {
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  tagText: {
+    fontSize: 13,
+  },
   favBtn: {
     position: 'absolute',
-    top: 10,
-    right: 10,
-    backgroundColor: 'rgba(0,0,0,0.2)',
-    borderRadius: 24,
-    padding: 6,
+    top: 16,
+    right: 16,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 50,
+    width: 36,
+    height: 36,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   favBtnList: {
     position: 'absolute',
     top: 24,
     right: 8,
+  },
+  badgeContainer: {
+    position: 'absolute',
+    top: 16,
+    left: 16,
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  badgeText: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: '#1A1A1A',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
 });
 
@@ -272,11 +368,7 @@ type SizeConfig = {
   cardImage: ImageStyle;
   listImage: ImageStyle;
   title: TextStyle;
-  subTitle: TextStyle;
   price: TextStyle;
-  rating: TextStyle;
-  reviews: TextStyle;
-  icon: number;
   favIconSize: number;
   favBtn: ViewStyle;
 };
@@ -284,109 +376,31 @@ type SizeConfig = {
 function getSizes(width: number): Record<AccommodationCardSize, SizeConfig> {
   return {
     small: {
-      container: { borderRadius: moderateScale(12, 0.5, width) },
+      container: {},
       cardImage: { width: '100%', height: '100%' },
-      listImage: {
-        width: moderateScale(72, 0.55, width),
-        height: moderateScale(72, 0.55, width),
-        borderRadius: moderateScale(10, 0.5, width),
-      },
-      title: { fontSize: moderateScale(14, 0.45, width), fontWeight: '800' },
-      subTitle: { fontSize: moderateScale(11, 0.45, width) },
-      price: { fontSize: moderateScale(12, 0.45, width) },
-      rating: { fontSize: moderateScale(12, 0.45, width), fontWeight: '700' },
-      reviews: { fontSize: moderateScale(11, 0.45, width) },
-      icon: moderateScale(14, 0.5, width),
-      favIconSize: moderateScale(24, 0.5, width),
-      favBtn: { padding: moderateScale(6, 0.5, width) },
+      listImage: { width: 72, height: 72 },
+      title: { fontSize: 14, fontWeight: '600' },
+      price: { fontSize: 14 },
+      favIconSize: 20,
+      favBtn: { padding: 6 },
     },
     medium: {
-      container: { borderRadius: moderateScale(16, 0.5, width) },
+      container: {},
       cardImage: { width: '100%', height: '100%' },
-      listImage: {
-        width: moderateScale(84, 0.55, width),
-        height: moderateScale(84, 0.55, width),
-        borderRadius: moderateScale(12, 0.5, width),
-      },
-      title: { fontSize: moderateScale(16, 0.45, width), fontWeight: '800' },
-      subTitle: { fontSize: moderateScale(12.5, 0.45, width) },
-      price: { fontSize: moderateScale(13.5, 0.45, width) },
-      rating: { fontSize: moderateScale(13.5, 0.45, width), fontWeight: '700' },
-      reviews: { fontSize: moderateScale(12, 0.45, width) },
-      icon: moderateScale(16, 0.5, width),
-      favIconSize: moderateScale(32, 0.5, width),
-      favBtn: { padding: moderateScale(8, 0.5, width) },
+      listImage: { width: 84, height: 84 },
+      title: { fontSize: 18, fontWeight: '600' },
+      price: { fontSize: 16 },
+      favIconSize: 20,
+      favBtn: { padding: 8 },
     },
     large: {
-      container: { borderRadius: moderateScale(18, 0.5, width) },
+      container: {},
       cardImage: { width: '100%', height: '100%' },
-      listImage: {
-        width: moderateScale(96, 0.55, width),
-        height: moderateScale(96, 0.55, width),
-        borderRadius: moderateScale(14, 0.5, width),
-      },
-      title: { fontSize: moderateScale(18, 0.45, width), fontWeight: '800' },
-      subTitle: { fontSize: moderateScale(13.5, 0.45, width) },
-      price: { fontSize: moderateScale(14, 0.45, width) },
-      rating: { fontSize: moderateScale(14, 0.45, width), fontWeight: '700' },
-      reviews: { fontSize: moderateScale(12.5, 0.45, width) },
-      icon: moderateScale(18, 0.5, width),
-      favIconSize: moderateScale(24, 0.5, width),
-      favBtn: { padding: moderateScale(10, 0.5, width) },
+      listImage: { width: 96, height: 96 },
+      title: { fontSize: 20, fontWeight: '600' },
+      price: { fontSize: 18 },
+      favIconSize: 24,
+      favBtn: { padding: 10 },
     },
   };
-}
-
-function getElevation(level: 1 | 2 | 3 | 4 | 5 | 6): ViewStyle {
-  const iosShadow: Record<number, ViewStyle> = {
-    1: {
-      shadowColor: '#000',
-      shadowOpacity: 0.06,
-      shadowRadius: 6,
-      shadowOffset: { width: 0, height: 2 },
-    },
-    2: {
-      shadowColor: '#000',
-      shadowOpacity: 0.08,
-      shadowRadius: 10,
-      shadowOffset: { width: 0, height: 4 },
-    },
-    3: {
-      shadowColor: '#000',
-      shadowOpacity: 0.1,
-      shadowRadius: 14,
-      shadowOffset: { width: 0, height: 6 },
-    },
-    4: {
-      shadowColor: '#000',
-      shadowOpacity: 0.12,
-      shadowRadius: 18,
-      shadowOffset: { width: 0, height: 8 },
-    },
-    5: {
-      shadowColor: '#000',
-      shadowOpacity: 0.14,
-      shadowRadius: 22,
-      shadowOffset: { width: 0, height: 10 },
-    },
-    6: {
-      shadowColor: '#000',
-      shadowOpacity: 0.16,
-      shadowRadius: 26,
-      shadowOffset: { width: 0, height: 12 },
-    },
-  };
-  const androidElevation: Record<number, ViewStyle> = {
-    1: { elevation: 1 },
-    2: { elevation: 2 },
-    3: { elevation: 3 },
-    4: { elevation: 4 },
-    5: { elevation: 5 },
-    6: { elevation: 6 },
-  };
-  return Platform.select<ViewStyle>({
-    ios: iosShadow[level],
-    android: androidElevation[level],
-    default: androidElevation[level],
-  })!;
 }

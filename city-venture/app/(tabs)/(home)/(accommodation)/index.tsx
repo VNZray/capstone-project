@@ -1,27 +1,36 @@
 import AccommodationCard from '@/components/accommodation/AccommodationCard';
-import Button from '@/components/Button';
-import Container from '@/components/Container';
 import PageContainer from '@/components/PageContainer';
-import ScrollableTab from '@/components/ScrollableTab';
+
 import SearchBar from '@/components/SearchBar';
+import Chip from '@/components/Chip';
 import { ThemedText } from '@/components/themed-text';
-import { background } from '@/constants/color';
 import { useAccommodation } from '@/context/AccommodationContext';
-import { useColorScheme } from '@/hooks/use-color-scheme';
+import { useAuth } from '@/context/AuthContext';
 import { navigateToAccommodationProfile } from '@/routes/accommodationRoutes';
 import { fetchAddress } from '@/services/AccommodationService';
-import type { Business } from '@/types/Business';
-import { Tab } from '@/types/Tab';
-import { FontAwesome5 } from '@expo/vector-icons';
-import { useCallback, useEffect, useRef, useState, useMemo } from 'react';
+import { getAverageRating, getTotalReviews } from '@/services/FeedbackService';
 import {
-  RefreshControl,
-  NativeSyntheticEvent,
+  getFavoritesByTouristId,
+  addFavorite,
+  deleteFavorite,
+} from '@/services/FavoriteService';
+import type { Business } from '@/types/Business';
+
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
   NativeScrollEvent,
+  NativeSyntheticEvent,
+  Pressable,
+  RefreshControl,
   ScrollView,
   StyleSheet,
   View,
+  Text,
+  Alert,
 } from 'react-native';
+import placeholder from '@/assets/images/placeholder.png';
+import { Colors } from '@/constants/color';
 
 // ---- Category constants and helpers (module scope) ----
 const CATEGORY_ID_TO_KEY: Record<number, string> = {
@@ -60,33 +69,12 @@ const CATEGORY_KEY_TO_LABEL: Record<string, string> = {
   eco_resort: 'Eco Resort',
 };
 
-const CATEGORY_KEY_TO_ICON: Record<string, string> = {
-  hotel: 'hotel',
-  resort: 'umbrella-beach',
-  hostel: 'user-friends',
-  inn: 'bed',
-  bed_and_breakfast: 'coffee',
-  guesthouse: 'home',
-  motel: 'car',
-  serviced_apartment: 'building',
-  villa: 'landmark',
-  lodge: 'house-user',
-  homestay: 'home',
-  cottage: 'tree',
-  capsule_hotel: 'cube',
-  boutique_hotel: 'gem',
-  eco_resort: 'leaf',
-};
-
-import placeholder from '@/assets/images/placeholder.png';
-
-const toLowerSafe = (v?: string | null) => (typeof v === 'string' ? v.toLowerCase() : '');
-const getCategoryKey = (b: Business) =>
-  b.business_category_id != null ? CATEGORY_ID_TO_KEY[b.business_category_id] : undefined;
+const toLowerSafe = (v?: string | null) =>
+  typeof v === 'string' ? v.toLowerCase() : '';
 
 const AccommodationDirectory = () => {
-  const colorScheme = useColorScheme();
-  const bg = colorScheme === 'dark' ? background.dark : background.light;
+  const bg = Colors.light.background;
+  const primaryColor = Colors.light.primary;
 
   const {
     loading,
@@ -94,34 +82,62 @@ const AccommodationDirectory = () => {
     setAccommodationId,
     refreshAllAccommodations,
   } = useAccommodation();
-  const [cardView, setCardView] = useState('card');
+  const { user } = useAuth();
+
   const [refreshing, setRefreshing] = useState(false);
+  const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set());
+  const [favoriteRecords, setFavoriteRecords] = useState<Map<string, string>>(
+    new Map()
+  ); // accommodationId -> favoriteId
   const lastScrollOffset = useRef(0);
   const atTopRef = useRef(true);
   const wasScrollingUpRef = useRef(false);
 
+  // Fetch user's favorites
+  const fetchFavorites = useCallback(async () => {
+    if (!user?.id) return;
+    try {
+      const favorites = await getFavoritesByTouristId(user.id);
+      const accommodationFavorites = favorites.filter(
+        (fav) => fav.favorite_type === 'accommodation'
+      );
+      const ids = new Set(
+        accommodationFavorites.map((fav) => fav.my_favorite_id)
+      );
+      const records = new Map(
+        accommodationFavorites.map((fav) => [fav.my_favorite_id, fav.id])
+      );
+      setFavoriteIds(ids);
+      setFavoriteRecords(records);
+    } catch (error) {
+      console.error('Failed to fetch favorites:', error);
+    }
+  }, [user?.id]);
+
+  useEffect(() => {
+    fetchFavorites();
+  }, [fetchFavorites]);
+
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
     try {
-      await refreshAllAccommodations();
+      await Promise.all([refreshAllAccommodations(), fetchFavorites()]);
     } finally {
       setRefreshing(false);
     }
-  }, [refreshAllAccommodations]);
+  }, [refreshAllAccommodations, fetchFavorites]);
 
-  // Track scroll direction only
   const handleScroll = useCallback(
     (e: NativeSyntheticEvent<NativeScrollEvent>) => {
       const offsetY = e.nativeEvent.contentOffset.y;
       const prev = lastScrollOffset.current;
       wasScrollingUpRef.current = offsetY < prev;
-      atTopRef.current = offsetY <= 0; // near/at top
+      atTopRef.current = offsetY <= 0;
       lastScrollOffset.current = offsetY;
     },
     []
   );
 
-  // Trigger refresh only after user releases the scroll (end drag) while scrolling up at top
   const handleScrollEndDrag = useCallback(() => {
     if (
       atTopRef.current &&
@@ -134,79 +150,131 @@ const AccommodationDirectory = () => {
   }, [loading, onRefresh, refreshing]);
 
   const [search, setSearch] = useState('');
-  const [activeTab, setActiveTab] = useState<string>('all');
-  const handleResetFilters = () => {
-    setSearch('');
-    setActiveTab('all');
+  const [activeQuickFilters, setActiveQuickFilters] = useState<string[]>([]);
+
+  const toggleQuickFilter = (id: string) => {
+    setActiveQuickFilters((prev) =>
+      prev.includes(id) ? prev.filter((f) => f !== id) : [...prev, id]
+    );
   };
 
-  // Local UI state
-  // Tabs: only categories present for business_type_id === 1; keep 'All'
-  const dynamicTabs: Tab[] = useMemo(() => {
-    const ids = new Set<number>();
-    (allAccommodationDetails || []).forEach((b: Business) => {
-      if (b.business_type_id === 1 && typeof b.business_category_id === 'number') {
-        ids.add(b.business_category_id);
-      }
-    });
-    const tabs = Array.from(ids)
-      .map((id) => {
-        const key = CATEGORY_ID_TO_KEY[id];
-        if (!key) return undefined;
-        return { key, label: CATEGORY_KEY_TO_LABEL[key], icon: CATEGORY_KEY_TO_ICON[key] || 'hotel' } as Tab;
-      })
-      .filter((t): t is Tab => !!t)
-      .sort((a, b) => a.label.localeCompare(b.label));
-    return [{ key: 'all', label: 'All', icon: 'th-large' }, ...tabs];
-  }, [allAccommodationDetails]);
-  // Use dynamicTabs instead of TABS below
-
-  const handleTabChange = (tab: Tab) => {
-    setActiveTab(tab.key);
-    console.log('Filtering for:', tab.key);
-  };
+  const quickFilters = [
+    { id: 'open_now', label: 'Open Now' },
+    { id: 'free_cancellation', label: 'Free Cancellation' },
+    { id: 'top_rated', label: 'Top Rated' },
+  ];
 
   const handleAccommodationSelect = (id: string) => {
     setAccommodationId(id);
     navigateToAccommodationProfile();
   };
 
-  // Cache of resolved address parts per barangay_id
-  const [addressPartsByBarangay, setAddressPartsByBarangay] = useState<Record<number, string[]>>({});
+  const handleToggleFavorite = useCallback(
+    async (accommodationId: string, isFavorite: boolean) => {
+      if (!user?.id) {
+        Alert.alert('Sign In Required', 'Please sign in to add favorites.');
+        return;
+      }
 
-  const getBarangayName = (barangay_id?: number) => {
-    if (barangay_id == null) return '';
-    const arr = addressPartsByBarangay[barangay_id];
-    return Array.isArray(arr) && arr.length > 0 ? arr[0] : '';
-  };
+      // Optimistic UI update
+      if (isFavorite) {
+        setFavoriteIds((prev) => new Set(prev).add(accommodationId));
+      } else {
+        setFavoriteIds((prev) => {
+          const next = new Set(prev);
+          next.delete(accommodationId);
+          return next;
+        });
+      }
+
+      try {
+        if (isFavorite) {
+          // Add to favorites
+          const result = await addFavorite(
+            user.id,
+            'accommodation',
+            accommodationId
+          );
+          setFavoriteRecords((prev) =>
+            new Map(prev).set(accommodationId, result.id)
+          );
+        } else {
+          // Remove from favorites
+          const favoriteId = favoriteRecords.get(accommodationId);
+          if (favoriteId) {
+            await deleteFavorite(favoriteId);
+            setFavoriteRecords((prev) => {
+              const next = new Map(prev);
+              next.delete(accommodationId);
+              return next;
+            });
+          }
+        }
+      } catch (error) {
+        console.error('Failed to toggle favorite:', error);
+        Alert.alert('Error', 'Failed to update favorite. Please try again.');
+        // Revert optimistic update on error
+        if (isFavorite) {
+          setFavoriteIds((prev) => {
+            const next = new Set(prev);
+            next.delete(accommodationId);
+            return next;
+          });
+        } else {
+          setFavoriteIds((prev) => new Set(prev).add(accommodationId));
+        }
+        fetchFavorites();
+      }
+    },
+    [user?.id, favoriteRecords, fetchFavorites]
+  );
+
+  // Address caching
+  const [addressPartsByBarangay, setAddressPartsByBarangay] = useState<
+    Record<number, string[]>
+  >({});
+
+  const getBarangayName = useCallback(
+    (barangay_id?: number) => {
+      if (barangay_id == null) return '';
+      const arr = addressPartsByBarangay[barangay_id];
+      return Array.isArray(arr) && arr.length > 0 ? arr[0] : '';
+    },
+    [addressPartsByBarangay]
+  );
 
   const formatSubtitle = (b: Business) => {
     const barangay = getBarangayName(b.barangay_id);
-    return barangay ? `${b.address}, ${barangay}` : b.address ?? '';
+    const category = b.business_category_id
+      ? CATEGORY_KEY_TO_LABEL[CATEGORY_ID_TO_KEY[b.business_category_id]]
+      : 'Accommodation';
+    const location = barangay || b.address || 'City Center';
+    return `${category} • ${location}`;
   };
 
-  // Filter: type=1, search (name/address/barangay), status, tab
   const filteredAccommodations = useMemo(() => {
     if (!Array.isArray(allAccommodationDetails)) return [];
     const term = toLowerSafe(search.trim());
-    return allAccommodationDetails.filter((b: Business) => {
+    let results = allAccommodationDetails.filter((b: Business) => {
       if (b.business_type_id !== 1) return false;
       const name = toLowerSafe(b.business_name);
       const addr = toLowerSafe(b.address);
       const brgy = toLowerSafe(getBarangayName(b.barangay_id));
-      const matchesSearch = !term || name.includes(term) || addr.includes(term) || brgy.includes(term);
-
-      const categoryKey = getCategoryKey(b);
-      const matchesTab = activeTab === 'all' || categoryKey === activeTab;
+      const matchesSearch =
+        !term ||
+        name.includes(term) ||
+        addr.includes(term) ||
+        brgy.includes(term);
 
       const status = toLowerSafe(b.status);
       const isVisibleStatus = status === 'active' || status === 'pending';
 
-      return matchesSearch && matchesTab && isVisibleStatus;
+      return matchesSearch && isVisibleStatus;
     });
-  }, [allAccommodationDetails, search, activeTab, addressPartsByBarangay]);
 
-  // Return array: [barangay_name, municipality_name, province_name]
+    return results;
+  }, [allAccommodationDetails, search, getBarangayName]);
+
   const fetchBusinessAddress = async (
     barangay_id: number
   ): Promise<string[]> => {
@@ -224,7 +292,6 @@ const AccommodationDirectory = () => {
     }
   };
 
-  // Prefetch address parts for visible accommodations
   useEffect(() => {
     const load = async () => {
       const ids = Array.from(
@@ -249,78 +316,140 @@ const AccommodationDirectory = () => {
       });
     };
     load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filteredAccommodations]);
+  const [accommodationRatings, setAccommodationRatings] = useState<
+    Record<string, { avg: number; total: number }>
+  >({});
+  // Fetch ratings and total reviews for visible accommodations
+  useEffect(() => {
+    const fetchRatings = async () => {
+      const ids = filteredAccommodations
+        .map((r) => r.id)
+        .filter((id): id is string => typeof id === 'string' && !!id);
+      const newMap: Record<string, { avg: number; total: number }> = {};
+      await Promise.all(
+        ids.map(async (id) => {
+          try {
+            const [avg, total] = await Promise.all([
+              getAverageRating('accommodation', id),
+              getTotalReviews('accommodation', id),
+            ]);
+            newMap[String(id)] = { avg, total };
+          } catch {
+            newMap[String(id)] = { avg: 0, total: 0 };
+          }
+        })
+      );
+      setAccommodationRatings(newMap);
+    };
+    if (filteredAccommodations.length > 0) fetchRatings();
+    else setAccommodationRatings({});
   }, [filteredAccommodations]);
 
   return (
-    <PageContainer padding={0} gap={0} style={{ backgroundColor: bg }}>
-      <Container gap={0} paddingBottom={0} backgroundColor="transparent">
-        <View style={styles.SearchContainer}>
-          <SearchBar
-            shape="square"
-            containerStyle={{ flex: 1 }}
-            value={search}
-            onChangeText={(text) => setSearch(text)}
-            onSearch={() => {}}
-            placeholder={'Search Accommodation or Location'}
-          />
-          <Button
-            elevation={2}
-            color="white"
-            startIcon={cardView === 'card' ? 'list' : 'th-large'}
-            icon
-            onPress={() => setCardView(cardView === 'card' ? 'list' : 'card')}
-          />
-        </View>
-        <ScrollableTab
-          tabs={dynamicTabs}
-          onTabChange={handleTabChange}
-          activeKey={activeTab}
-        />
-      </Container>
-
+    <View style={{ flex: 1, backgroundColor: bg }}>
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{
-          paddingTop: 0,
-          paddingBottom: 100,
-          paddingHorizontal: 16,
-        }}
+        contentContainerStyle={styles.scrollContent}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
         onScroll={handleScroll}
         onScrollEndDrag={handleScrollEndDrag}
         scrollEventThrottle={32}
+        stickyHeaderIndices={[1]} // Make SearchSection (index 1) sticky
       >
+        {/* Header Section (Scrolls away) */}
+        <View style={{ marginTop: 8, paddingHorizontal: 16 }}>
+          <ThemedText type="header-small" weight="medium">
+            Accommodation
+          </ThemedText>
+        </View>
+
+        {/* Search and Filter Section (Sticky) */}
+        <View style={styles.searchSection}>
+          <SearchBar
+            value={search}
+            onChangeText={setSearch}
+            onSearch={() => {}}
+            placeholder="Where to? (e.g. Sushi, Hotel)"
+            variant="plain"
+            size="md"
+            containerStyle={{
+              flex: 1,
+              backgroundColor: Colors.light.inputBackground,
+              borderRadius: 12,
+              borderWidth: 0,
+            }}
+            inputStyle={{ fontSize: 15 }}
+            enableFiltering={true}
+          />
+        </View>
+
+        {/* Quick Filters (Scrolls away) */}
+        <View style={styles.quickFiltersContainer}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.quickFiltersContent}
+          >
+            {quickFilters.map((filter) => (
+              <Chip
+                key={filter.id}
+                label={filter.label}
+                variant={
+                  activeQuickFilters.includes(filter.id) ? 'solid' : 'soft'
+                }
+                color={
+                  activeQuickFilters.includes(filter.id) ? 'primary' : 'neutral'
+                }
+                size="small"
+                onPress={() => toggleQuickFilter(filter.id)}
+                style={{ marginRight: 8 }}
+              />
+            ))}
+          </ScrollView>
+        </View>
+
         <View style={styles.cardWrapper}>
           {loading ? (
-            <ThemedText
-              type="card-title-medium"
-              weight="bold"
-              style={{ textAlign: 'center', marginTop: 20 }}
-            >
-              Loading...
-            </ThemedText>
+            <Text style={styles.loadingText}>Loading...</Text>
           ) : filteredAccommodations.length > 0 ? (
-            filteredAccommodations.map((business) => (
-              <AccommodationCard
-                elevation={2}
-                key={business.id}
-                title={business.business_name}
-                subTitle={formatSubtitle(business)}
-                pricing={
-                  business.min_price && business.max_price
-                    ? `${business.min_price} - ${business.max_price}`
-                    : 'N/A'
-                }
-                image={business.business_image ? { uri: business.business_image } : placeholder}
-                ratings={4.5}
-                view={cardView}
-                favorite={false}
-                onClick={() => handleAccommodationSelect(business.id!)}
-              />
-            ))
+            filteredAccommodations.map((business, index) => {
+              const ratingInfo = accommodationRatings[String(business.id)] || {
+                avg: 0,
+                total: 0,
+              };
+
+              return (
+                <AccommodationCard
+                  key={business.id}
+                  title={business.business_name}
+                  subTitle={formatSubtitle(business)}
+                  pricing={
+                    business.min_price && business.max_price
+                      ? `${business.min_price} - ${business.max_price}`
+                      : '$$$$'
+                  }
+                  image={
+                    business.business_image
+                      ? { uri: business.business_image }
+                      : placeholder
+                  }
+                  ratings={ratingInfo.avg}
+                  noOfComments={ratingInfo.total}
+                  badge={index === 0 ? 'GUEST FAVORITE' : undefined}
+                  tags={['Luxury', 'Spa']}
+                  isOpen={true}
+                  view="card"
+                  favorite={favoriteIds.has(business.id!)}
+                  addToFavorite={(isFavorite) =>
+                    handleToggleFavorite(business.id!, isFavorite)
+                  }
+                  onClick={() => handleAccommodationSelect(business.id!)}
+                />
+              );
+            })
           ) : (
             <PageContainer
               padding={16}
@@ -329,65 +458,70 @@ const AccommodationDirectory = () => {
               height={450}
             >
               <View style={styles.illustrationInner}>
-                <FontAwesome5 name="map-pin" size={36} color="#FFB007" />
+                <MaterialCommunityIcons
+                  name="map-marker-off"
+                  size={48}
+                  color="#FFB007"
+                />
               </View>
-              <ThemedText
-                type="title-medium"
-                weight="bold"
-                align="center"
-                mt={8}
-              >
+              <Text style={[styles.notFoundTitle, { color: primaryColor }]}>
                 No accommodations found
-              </ThemedText>
-              <ThemedText
-                type="body-small"
-                align="center"
-                mt={6}
-                style={{ color: '#6A768E' }}
-              >
-                Try adjusting your search or clearing filters to see more
-                places.
-              </ThemedText>
-
-              <Button
-                label="Clear Filters"
-                variant="soft"
-                color="secondary"
-                size="medium"
-                fullWidth
-                radius={14}
-                startIcon="redo"
-                onPress={handleResetFilters}
-              />
+              </Text>
+              <Text style={styles.notFoundText}>
+                Try adjusting your search or clearing filters.
+              </Text>
             </PageContainer>
           )}
         </View>
       </ScrollView>
-    </PageContainer>
+
+      {/* Floating Map Button */}
+      <View style={styles.floatingButtonContainer}>
+        <Pressable
+          style={[styles.mapButton, { backgroundColor: primaryColor }]}
+        >
+          <Text style={styles.mapButtonText}>Map View</Text>
+          <Ionicons
+            name="map-outline"
+            size={18}
+            color="#FFFFFF"
+            style={{ marginLeft: 8 }}
+          />
+        </Pressable>
+      </View>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
-  SearchContainer: {
-    display: 'flex',
+  searchSection: {
     flexDirection: 'row',
-    gap: 8,
-    overflow: 'visible',
+    paddingHorizontal: 16,
+    paddingVertical: 12, // Add vertical padding
+    gap: 12,
+    backgroundColor: Colors.light.background, // Ensure background covers scrolling content
+    zIndex: 100, // Keep above other content
+  },
+  quickFiltersContainer: {
+    paddingBottom: 16,
+  },
+  quickFiltersContent: {
+    paddingHorizontal: 16,
+  },
+
+  scrollContent: {
+    paddingTop: 0,
+    paddingBottom: 100,
   },
   cardWrapper: {
-    gap: 16,
-    overflow: 'visible',
+    gap: 24,
+    paddingHorizontal: 16,
   },
-  notFoundWrapper: {
-    width: '100%',
-    alignItems: 'center',
-    marginTop: 12,
-  },
-  notFoundCard: {
-    width: '100%',
-    borderRadius: 16,
-    padding: 16,
-    ...shadow(2),
+  loadingText: {
+    textAlign: 'center',
+    marginTop: 20,
+    fontSize: 16,
+    color: Colors.light.textSecondary,
   },
   illustrationInner: {
     width: '100%',
@@ -395,33 +529,43 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingVertical: 6,
   },
-  notFoundActions: {
-    width: '100%',
-    marginTop: 12,
+  notFoundTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    textAlign: 'center',
+    marginTop: 8,
+  },
+  notFoundText: {
+    fontSize: 14,
+    color: Colors.light.textSecondary,
+    textAlign: 'center',
+    marginTop: 6,
+  },
+  floatingButtonContainer: {
+    position: 'absolute',
+    bottom: 32,
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+    zIndex: 1,
+  },
+  mapButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 30,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 6,
+  },
+  mapButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#FFFFFF',
   },
 });
-
-// soft shadow helper (inline, compact)
-function shadow(level: 1 | 2 | 3) {
-  switch (level) {
-    case 1:
-      return {
-        shadowColor: '#1e1e1e',
-        shadowOpacity: 0.1,
-        shadowRadius: 2,
-        shadowOffset: { width: 0, height: 1 },
-        elevation: 1,
-      } as const;
-    case 2:
-    default:
-      return {
-        shadowColor: '#1e1e1e',
-        shadowOpacity: 0.15,
-        shadowRadius: 3,
-        shadowOffset: { width: 0, height: 2 },
-        elevation: 2,
-      } as const;
-  }
-}
 
 export default AccommodationDirectory;

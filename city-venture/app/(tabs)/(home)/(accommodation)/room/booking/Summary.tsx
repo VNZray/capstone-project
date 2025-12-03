@@ -7,6 +7,7 @@ import { useRoom } from '@/context/RoomContext';
 import { Booking, BookingPayment } from '@/types/Booking';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { Routes } from '@/routes/mainRoutes';
 import React, { useMemo, useState } from 'react';
 import {
   Modal,
@@ -211,7 +212,7 @@ const Summary: React.FC<Props> = ({ data, payment }) => {
             label="Okay"
             onPress={() => {
               setIsVisible(false);
-              router.replace('/(tabs)/(home)/(accommodation)/room/profile');
+              router.replace(Routes.accommodation.room.profile(''));
             }}
           />
 
@@ -310,9 +311,17 @@ const MiniBadge: React.FC<MiniBadgeProps> = ({ label, caption }) => (
   </View>
 );
 
-function formatDate(d?: Date) {
+function formatDate(d?: Date | string | String) {
   if (!d) return '';
-  return new Date(d).toLocaleDateString(undefined, {
+  let dateObj: Date;
+  if (d instanceof Date) {
+    dateObj = d;
+  } else if (typeof d === 'string' || d instanceof String) {
+    dateObj = new Date(d.toString());
+  } else {
+    return '';
+  }
+  return dateObj.toLocaleDateString(undefined, {
     year: 'numeric',
     month: 'short',
     day: 'numeric',

@@ -12,7 +12,7 @@ import {
   LogOut,
 } from "lucide-react";
 import BookingDetails from "./components/BookingDetails";
-import { Input} from "@mui/joy";
+import { Input, Box, Typography as JoyTypography } from "@mui/joy"; // Added Box and JoyTypography
 import Container from "@/src/components/Container";
 import { Select, Option } from "@mui/joy";
 import { useBusiness } from "@/src/context/BusinessContext";
@@ -150,14 +150,21 @@ const Bookings = () => {
     load();
   }, [businessDetails?.id]);
 
-  // format date
-  const formatDate = (dateString: string) => {
-    const options: Intl.DateTimeFormatOptions = {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
+  // Updated Date Format to separate Date and Time
+  const getDateTimeParts = (dateString: string | Date) => {
+    const dateObj = new Date(dateString);
+    return {
+      date: dateObj.toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+      }),
+      time: dateObj.toLocaleTimeString("en-US", {
+        hour: "numeric",
+        minute: "2-digit",
+        hour12: true,
+      }),
     };
-    return new Date(dateString).toLocaleDateString("en-US", options);
   };
 
   // Extract available years from bookingData
@@ -299,7 +306,7 @@ const Bookings = () => {
       {
         id: "room",
         label: "Room",
-        minWidth: 180,
+        minWidth: 120,
         render: (row) => {
           const roomNumber = roomInfoById[row.room_id as string];
           
@@ -317,17 +324,41 @@ const Bookings = () => {
         label: "Purpose",
         minWidth: 120,
       },
+      // UPDATED: Check-in Column with Time
       {
         id: "check_in_date",
         label: "Check-in",
-        minWidth: 140,
-        format: (value: string) => (value ? formatDate(String(value)) : "—"),
+        minWidth: 160,
+        render: (row) => {
+          if (!row.check_in_date) return "—";
+          const { date, time } = getDateTimeParts(row.check_in_date);
+          return (
+            <Box>
+              <JoyTypography level="body-sm">{date}</JoyTypography>
+              <JoyTypography level="body-xs" sx={{ color: "text.tertiary" }}>
+                {time}
+              </JoyTypography>
+            </Box>
+          );
+        },
       },
+      // UPDATED: Check-out Column with Time
       {
         id: "check_out_date",
         label: "Check-out",
-        minWidth: 140,
-        format: (value: string) => (value ? formatDate(String(value)) : "—"),
+        minWidth: 160,
+        render: (row) => {
+          if (!row.check_out_date) return "—";
+          const { date, time } = getDateTimeParts(row.check_out_date);
+          return (
+            <Box>
+              <JoyTypography level="body-sm">{date}</JoyTypography>
+              <JoyTypography level="body-xs" sx={{ color: "text.tertiary" }}>
+                {time}
+              </JoyTypography>
+            </Box>
+          );
+        },
       },
       {
         id: "total_price",
@@ -352,7 +383,7 @@ const Bookings = () => {
         ),
       },
     ],
-    [guestInfoById, formatDate, handleStatusChange, handleViewBooking]
+    [guestInfoById, roomInfoById, handleStatusChange, handleViewBooking]
   );
 
   return (
@@ -383,7 +414,7 @@ const Bookings = () => {
             size="lg"
             sx={{ flex: 1 }}
             value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)} // 👈 bind state
+            onChange={(e) => setSearchTerm(e.target.value)}
           />
 
           {/* Range Filter */}

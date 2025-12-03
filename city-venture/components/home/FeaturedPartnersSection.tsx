@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { ThemedText } from '@/components/themed-text';
 import { Colors } from '@/constants/color';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 type FeaturedPartner = {
   id: string;
@@ -78,23 +79,27 @@ const FeaturedPartnersSection: React.FC<FeaturedPartnersSectionProps> = ({
           <ThemedText type="sub-title-small" weight="bold">
             Featured Partners
           </ThemedText>
-          <ThemedText
-            type="label-small"
-            lightColor={colors.textSecondary}
-            darkColor={colors.textSecondary}
-            style={styles.subtitle}
-          >
-            Top rated businesses selected for you
-          </ThemedText>
         </View>
-        <Pressable>
+        <Pressable
+          style={({ pressed }) => ({
+            opacity: pressed ? 0.7 : 1,
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 4,
+          })}
+        >
           <ThemedText
             type="label-small"
-            lightColor={colors.accent}
+            lightColor={colors.primary}
             darkColor={colors.accent}
           >
-            See All
+            View All
           </ThemedText>
+          <MaterialCommunityIcons
+            name="arrow-right"
+            size={16}
+            color={colors.accent}
+          />
         </Pressable>
       </View>
 
@@ -151,7 +156,6 @@ const FeaturedPartnersSection: React.FC<FeaturedPartnersSectionProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    marginBottom: 24,
     marginLeft: -24,
     marginRight: -24,
   },
@@ -161,10 +165,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 20,
     paddingHorizontal: 24,
-  },
-  subtitle: {
-    marginTop: 2,
-    opacity: 0.7,
   },
   listContent: {
     paddingHorizontal: 24,
@@ -177,7 +177,7 @@ const styles = StyleSheet.create({
   logoContainer: {
     width: 72,
     height: 72,
-    borderRadius: 36, // Circular
+    borderRadius: 12, // Circular
     overflow: 'hidden',
     borderWidth: StyleSheet.hairlineWidth,
     elevation: 4,

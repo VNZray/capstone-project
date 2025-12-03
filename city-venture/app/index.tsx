@@ -1,11 +1,12 @@
 import Button from '@/components/Button';
 import { ThemedText } from '@/components/themed-text';
-import { navigateToLogin, navigateToRegister } from '@/routes/mainRoutes';
+import { Routes } from '@/routes/mainRoutes';
+import { useAuth } from '@/context/AuthContext';
 import { useFonts } from 'expo-font';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import React, { useEffect } from 'react';
-import { ImageBackground, View, Platform, useWindowDimensions } from 'react-native';
+import { ImageBackground, View } from 'react-native';
 import 'react-native-url-polyfill/auto';
 
 const Main = () => {
@@ -16,16 +17,13 @@ const Main = () => {
     'Poppins-Bold': require('@/assets/fonts/Poppins/Poppins-Bold.ttf'),
   });
 
-  const { width } = useWindowDimensions();
-  const isWeb = Platform.OS === 'web';
-  const isDesktop = width >= 768;
+  const { user, loading } = useAuth();
 
-  // Redirect to landing page for web/desktop users
   useEffect(() => {
-    if (fontsLoaded && isWeb && isDesktop) {
-      router.replace('/landing');
+    if (!loading && user) {
+      router.replace(Routes.tabs.home);
     }
-  }, [fontsLoaded, isWeb, isDesktop]);
+  }, [user, loading]);
 
   if (!fontsLoaded) {
     return null;
@@ -41,7 +39,7 @@ const Main = () => {
         source={{ uri: imageBackground }}
         resizeMode="cover"
         style={{ flex: 1 }}
-      >        
+      >
         <LinearGradient
           colors={[
             'rgba(255, 255, 255, 0.0)', // Top (transparent)
@@ -74,20 +72,21 @@ const Main = () => {
             }}
           >
             <Button
-              fullWidth
+              style={{ width: '100%' }}
               size="large"
               label="Sign In"
               color="secondary"
               variant="solid"
-              onPress={() => navigateToLogin()}
+              onPress={() => router.push(Routes.auth.login)}
             />
 
             <Button
-              fullWidth
+              style={{ width: '100%' }}
               size="large"
               label="Sign Up"
+              variant="soft"
               color="neutral"
-              onPress={() => navigateToRegister()}
+              onPress={() => router.push(Routes.auth.register)}
             />
           </View>
         </LinearGradient>

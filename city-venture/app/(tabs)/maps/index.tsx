@@ -53,9 +53,22 @@ const Maps = () => {
   const filteredBusinesses = useMemo(() => {
     let businesses: Business[] = [];
 
-    // Only show accommodations for now (business_type_id === 1)
-    if (activeTab === 'all' || activeTab === 'accommodation') {
-      businesses = [...businesses, ...(allAccommodationDetails || [])];
+    if (activeTab === 'all') {
+      // Show both accommodations and shops
+      businesses = (allAccommodationDetails || []).filter(
+        (b) => b.business_type_id === 1 || b.business_type_id === 2
+      );
+    } else if (activeTab === 'accommodation') {
+      businesses = (allAccommodationDetails || []).filter(
+        (b) => b.business_type_id === 1
+      );
+    } else if (activeTab === 'shop') {
+      businesses = (allAccommodationDetails || []).filter(
+        (b) => b.business_type_id === 2
+      );
+    } else {
+      // For other tabs, fallback to all
+      businesses = allAccommodationDetails || [];
     }
 
     // Filter by search term
@@ -323,27 +336,27 @@ const Maps = () => {
 
       {/* Floating Search Bar and Tabs */}
       <View style={styles.searchContainer}>
-          <Container
-            gap={0}
-            paddingBottom={0}
-            backgroundColor="transparent"
-            style={{ overflow: 'visible' }}
-          >
-            <SearchBar
-              shape="square"
-              containerStyle={{ flex: 1 }}
-              value={search}
-              onChangeText={(text) => setSearch(text)}
-              onSearch={() => {}}
-              placeholder={'Search location or business'}
-            />
-            <ScrollableTab
-              tabs={TABS}
-              onTabChange={handleTabChange}
-              activeKey={activeTab}
-            />
-          </Container>
-        </View>
+        <Container
+          gap={0}
+          paddingBottom={0}
+          backgroundColor="transparent"
+          style={{ overflow: 'visible' }}
+        >
+          <SearchBar
+            shape="square"
+            containerStyle={{ flex: 1 }}
+            value={search}
+            onChangeText={(text) => setSearch(text)}
+            onSearch={() => {}}
+            placeholder={'Search location or business'}
+          />
+          <ScrollableTab
+            tabs={TABS}
+            onTabChange={handleTabChange}
+            activeKey={activeTab}
+          />
+        </Container>
+      </View>
 
       <Text
         style={{ position: 'absolute', bottom: 10, alignSelf: 'center', color }}

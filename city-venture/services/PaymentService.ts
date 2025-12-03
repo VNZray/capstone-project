@@ -1,33 +1,12 @@
 /**
  * Payment Service
- * Handles payment initiation and status checking for PayMongo payments
+ * Handles payment status checking for PayMongo payments
+ * For payment initiation, use PaymentIntentService instead (PIPM flow)
  * All PayMongo API calls are made through the backend for security
  */
 
 import apiClient from '@/services/apiClient';
-import * as WebBrowser from 'expo-web-browser';
 import * as Linking from 'expo-linking';
-
-export interface InitiatePaymentRequest {
-  order_id: string;
-  use_checkout_session?: boolean; // Default true
-}
-
-export interface InitiatePaymentResponse {
-  success: boolean;
-  message: string;
-  data: {
-    payment_id: string;
-    order_id: string;
-    order_number: string;
-    amount: number;
-    currency: string;
-    payment_method_type: string;
-    provider_reference: string; // Checkout session or source ID
-    checkout_url: string; // URL to redirect user for payment
-    status: string;
-  };
-}
 
 export interface PaymentStatus {
   id: string;
@@ -42,28 +21,6 @@ export interface PaymentStatus {
 }
 
 /**
- * Initiate payment for an order
- * This creates a PayMongo checkout session via the backend
- * @param paymentData - Payment initiation payload
- * @returns Payment response with checkout URL
- */
-export async function initiatePayment(
-  paymentData: InitiatePaymentRequest
-): Promise<InitiatePaymentResponse> {
-  try {
-    const response = await apiClient.post<InitiatePaymentResponse>(
-      `/payments/initiate`,
-      paymentData
-    );
-
-    return response.data;
-  } catch (error: any) {
-    console.error('[PaymentService] Initiate payment failed:', error.response?.data || error.message);
-    throw error;
-  }
-}
-
-/**
  * Get payment status by payment ID
  * @param paymentId - Payment UUID
  * @returns Payment status details
@@ -71,44 +28,13 @@ export async function initiatePayment(
 export async function getPaymentStatus(paymentId: string): Promise<PaymentStatus> {
   try {
     const response = await apiClient.get<PaymentStatus>(
-      `/payments/${paymentId}`
+      `/payment/${paymentId}`
     );
 
     return response.data;
   } catch (error: any) {
     console.error('[PaymentService] Get payment status failed:', error.response?.data || error.message);
     throw error;
-  }
-}
-
-/**
- * Open PayMongo checkout URL in browser
- * Opens the hosted checkout page for the user to complete payment
- * @param checkoutUrl - PayMongo checkout URL
- * @returns Promise that resolves when browser is closed
- */
-export async function openPayMongoCheckout(checkoutUrl: string): Promise<void> {
-  try {
-    // Open PayMongo checkout in an in-app browser
-    const result = await WebBrowser.openBrowserAsync(checkoutUrl, {
-      presentationStyle: WebBrowser.WebBrowserPresentationStyle.FULL_SCREEN,
-      // toolbarColor and controlsColor are iOS-only
-      toolbarColor: '#0D1B2A',
-      controlsColor: '#FFFFFF',
-    });
-
-    console.log('[PaymentService] Browser result:', result);
-
-    // Result types:
-    // - 'cancel': User closed the browser
-    // - 'dismiss': Same as cancel on iOS
-    // - 'locked': Browser was locked (iOS)
-
-    // Note: PayMongo will redirect to success_url or cancel_url
-    // We need to handle these URLs when the app is reopened
-  } catch (error: any) {
-    console.error('[PaymentService] Open checkout failed:', error.message);
-    throw new Error('Failed to open payment checkout');
   }
 }
 

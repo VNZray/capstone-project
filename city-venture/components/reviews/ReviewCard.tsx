@@ -16,6 +16,7 @@ import {
 } from 'react-native';
 import { format, isValid, parseISO } from 'date-fns';
 import Chip from '../Chip';
+import { useAccommodation } from '@/context/AccommodationContext';
 
 const formatDate = (dateString?: string): string => {
   if (!dateString) return 'Date unknown';
@@ -54,6 +55,7 @@ const ReviewCard = ({
   const isDark = scheme === 'dark';
   const [showMenu, setShowMenu] = useState(false);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const { accommodationDetails } = useAccommodation();
 
   // Check if this review belongs to the current user
   // Compare tourist_id with currentUserId since user.id is the tourist_id
@@ -143,7 +145,12 @@ const ReviewCard = ({
             <View style={styles.userDetails}>
               <View style={styles.nameRatingRow}>
                 {fullName === 'You' ? (
-                  <Chip color='secondary' size='small' variant='soft' label="You" />
+                  <Chip
+                    color="secondary"
+                    size="small"
+                    variant="soft"
+                    label="You"
+                  />
                 ) : (
                   <ThemedText type="card-title-medium" style={styles.userName}>
                     {fullName}
@@ -229,10 +236,17 @@ const ReviewCard = ({
                 ]}
               >
                 <ThemedText
-                  type="card-sub-title-small"
-                  style={styles.replyAuthor}
+                  type="card-sub-title-medium"
+                  weight="bold"
+                  endIcon={
+                    <Ionicons
+                      name="checkmark-circle"
+                      size={16}
+                      color={colors.success}
+                    />
+                  }
                 >
-                  Business Owner
+                  {accommodationDetails?.business_name}
                 </ThemedText>
                 <ThemedText type="body-small" style={styles.replyMessage}>
                   {reply.message}
@@ -414,11 +428,7 @@ const styles = StyleSheet.create({
     padding: 10,
     borderRadius: 8,
   },
-  replyAuthor: {
-    fontWeight: '600',
-    marginBottom: 4,
-    fontSize: 13,
-  },
+  replyAuthor: {},
   replyMessage: {
     marginBottom: 4,
     fontSize: 13,

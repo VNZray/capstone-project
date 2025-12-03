@@ -10,6 +10,12 @@ export interface Promotion {
   end_date?: string;
   is_active: boolean;
   terms_conditions?: string;
+  promo_type: 1 | 2 | 3; // 1 = Discount Coupon, 2 = Room Discount, 3 = Promo Code
+  promo_code?: string | null;
+  discount_percentage?: number | null;
+  fixed_discount_amount?: number | null;
+  usage_limit?: number | null;
+  used_count?: number;
   created_at: string;
   updated_at: string;
 }

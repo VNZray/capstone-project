@@ -1,4 +1,6 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+// useNavigation is used for setOptions (header customization)
+// For navigation actions, use useRouter or usePreventDoubleNavigation hook
 import { useNavigation } from 'expo-router';
 import { useEffect, useState, useCallback, useRef } from 'react';
 import {
@@ -15,10 +17,8 @@ import {
 
 import Tabs from '@/components/Tabs';
 import { ThemedText } from '@/components/themed-text';
-import { useColorScheme } from '@/hooks/use-color-scheme';
-
+import { Colors } from '@/constants/color';
 import Container from '@/components/Container';
-import { background } from '@/constants/color';
 import { useAccommodation } from '@/context/AccommodationContext';
 import { useAuth } from '@/context/AuthContext';
 import { Tab } from '@/types/Tab';
@@ -29,7 +29,11 @@ import placeholder from '@/assets/images/placeholder.png';
 import Button from '@/components/Button';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AddReview from '@/components/reviews/AddReview';
-import FeedbackService from '@/services/FeedbackService';
+import {
+  createReview,
+  getAverageRating,
+  getTotalReviews,
+} from '@/services/FeedbackService';
 import Chip from '@/components/Chip';
 
 const { width, height } = Dimensions.get('window');
@@ -37,7 +41,7 @@ const { width, height } = Dimensions.get('window');
 const AccommodationProfile = () => {
   const navigation = useNavigation();
   const [activeTab, setActiveTab] = useState<string>('details');
-  const colorScheme = useColorScheme();
+  const colors = Colors.light;
   const { user } = useAuth();
   const {
     accommodationDetails,
@@ -82,13 +86,10 @@ const AccommodationProfile = () => {
     }
   }, [onRefresh, refreshing]);
   const insets = useSafeAreaInsets();
+  const bg = colors.background;
 
-  const [loading, setLoading] = useState(true);
   const [modalVisible, setModalVisible] = useState(false);
-  const [reviewSubmitting, setReviewSubmitting] = useState(false);
-  const [reviewError, setReviewError] = useState<string | null>(null);
   const [ratingsRefreshKey, setRatingsRefreshKey] = useState(0);
-  const bg = colorScheme === 'dark' ? background.dark : background.light;
 
   useEffect(() => {
     if (accommodationDetails?.business_name && accommodationDetails?.id) {
@@ -101,9 +102,6 @@ const AccommodationProfile = () => {
     accommodationDetails?.business_name,
     accommodationDetails?.id,
   ]);
-
-  const [averageAccommodationReviews, setAverageAccommodationReviews] =
-    useState(0);
 
   const TABS: Tab[] = [
     { key: 'details', label: 'Details', icon: '' },
@@ -173,7 +171,7 @@ const AccommodationProfile = () => {
                     <MaterialCommunityIcons
                       name="map-marker"
                       size={16}
-                      color="#FFB007"
+                      color={colors.accent}
                     />
                     {accommodationDetails?.address},{' '}
                     {/* {accommodationDetails?.barangay_name},{' '}
@@ -194,9 +192,10 @@ const AccommodationProfile = () => {
                     <MaterialCommunityIcons
                       name="star"
                       size={20}
-                      color="#FFB007"
+                      color={colors.accent}
                     />
-                    {averageAccommodationReviews.toFixed(1) || '0.0'}
+                    {accommodationDetails.ratings} (
+                    {accommodationDetails.reviews} reviews)
                   </ThemedText>
                 </View>
               </Container>
@@ -216,28 +215,27 @@ const AccommodationProfile = () => {
         (() => {
           const baseBottom = Platform.OS === 'ios' ? 60 : 80;
           // Only show "Write a Review" button if user is logged in and on ratings tab
-          if (activeTab === 'ratings' && !user) {
-            return null;
+          if (activeTab === 'ratings') {
+            return (
+              <View
+                style={[
+                  styles.fabBar,
+                  { paddingBottom: baseBottom + insets.bottom },
+                ]}
+              >
+                <Button
+                  label={actionLabel}
+                  fullWidth
+                  startIcon={primaryIcon}
+                  color="primary"
+                  variant="solid"
+                  onPress={() => setModalVisible(true)}
+                  elevation={3}
+                  style={{ flex: 1 }}
+                />
+              </View>
+            );
           }
-          return (
-            <View
-              style={[
-                styles.fabBar,
-                { paddingBottom: baseBottom + insets.bottom },
-              ]}
-            >
-              <Button
-                label={actionLabel}
-                fullWidth
-                startIcon={primaryIcon}
-                color="primary"
-                variant="solid"
-                onPress={() => setModalVisible(true)}
-                elevation={3}
-                style={{ flex: 1 }}
-              />
-            </View>
-          );
         })()}
 
       {user && (
@@ -246,7 +244,7 @@ const AccommodationProfile = () => {
           onClose={() => setModalVisible(false)}
           onSubmit={async (payload) => {
             try {
-              await FeedbackService.createReview(payload);
+              await createReview(payload);
               setModalVisible(false);
               setRatingsRefreshKey((prev) => prev + 1);
             } catch (error) {

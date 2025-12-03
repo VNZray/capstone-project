@@ -7,8 +7,22 @@ const router = express.Router();
 
 // ============= PayMongo Integration Routes =============
 
-// Initiate payment (Tourist only)
+// Initiate payment using Checkout Session (Tourist only) - RECOMMENDED
 router.post("/initiate", authenticate, authorizeRole("Tourist"), paymentController.initiatePayment);
+
+// ============= Payment Intent Workflow Routes =============
+// For custom checkout integration with more control
+
+// Create Payment Intent for an order (Tourist only)
+router.post("/intent", authenticate, authorizeRole("Tourist"), paymentController.createPaymentIntentForOrder);
+
+// Attach Payment Method to Payment Intent (for e-wallets, server-side)
+router.post("/intent/:id/attach", authenticate, authorizeRole("Tourist"), paymentController.attachPaymentMethodToIntent);
+
+// Get Payment Intent status
+router.get("/intent/:id", authenticate, paymentController.getPaymentIntentStatus);
+
+// ============= Webhook & Refund Routes =============
 
 // Webhook endpoint (no auth, signature-based verification)
 router.post("/webhook", paymentController.handleWebhook);
@@ -19,13 +33,13 @@ router.post("/:id/refund", authenticate, authorizeRole("Admin"), paymentControll
 // ============= Legacy Payment Routes =============
 // Add authentication and authorization to legacy routes (Phase 4)
 
-router.post("/", authenticate, authorizeRole("Admin", "Business Owner", "Staff"), paymentController.insertPayment);
-router.get("/:id", authenticate, paymentController.getPaymentById); // Ownership checked in controller
-router.get("/", authenticate, authorizeRole("Admin"), paymentController.getAllPayments);
-router.delete("/:id", authenticate, authorizeRole("Admin"), paymentController.deletePayment);
-router.put("/:id", authenticate, authorizeRole("Admin"), paymentController.updatePayment);
-router.get("/payer/:payer_id", authenticate, paymentController.getPaymentByPayerId); // Should add ownership check
-router.get("/for/:payment_for_id", authenticate, paymentController.getPaymentByPaymentForId); // Should add ownership check
-router.get("/business/:business_id", authenticate, authorizeRole("Business Owner", "Staff", "Admin"), paymentController.getPaymentByBusinessId);
+router.post("/", paymentController.insertPayment);
+router.get("/:id", authenticate,  authorizeRole("Admin", "Business Owner", "Staff", "Tourist"), paymentController.getPaymentById); // Ownership checked in controller
+router.get("/", authenticate,   authorizeRole("Admin", "Business Owner", "Staff", "Tourist"), paymentController.getAllPayments);
+router.delete("/:id", authenticate,  authorizeRole("Admin", "Business Owner", "Staff", "Tourist"), paymentController.deletePayment);
+router.put("/:id", authenticate,  authorizeRole("Admin", "Business Owner", "Staff", "Tourist"), paymentController.updatePayment);
+router.get("/payer/:payer_id", authenticate, authorizeRole("Admin", "Business Owner", "Staff", "Tourist"), paymentController.getPaymentByPayerId); // Should add ownership check
+router.get("/for/:payment_for_id", authenticate, authorizeRole("Admin", "Business Owner", "Staff", "Tourist"), paymentController.getPaymentByPaymentForId); // Should add ownership check
+router.get("/business/:business_id", authenticate,  authorizeRole("Admin", "Business Owner", "Staff", "Tourist"), paymentController.getPaymentByBusinessId);
 
 export default router;

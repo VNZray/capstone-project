@@ -8,7 +8,6 @@ import {
   ShopDetailReviewsSection,
 } from '@/components/shops/details/sections';
 import { LinearGradient } from 'expo-linear-gradient';
-import { router } from 'expo-router';
 import React, { memo, useCallback, useMemo, useRef, useState } from 'react';
 import {
   Animated,
@@ -26,6 +25,8 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useCart } from '@/context/CartContext';
+import { usePreventDoubleNavigation } from '@/hooks/usePreventDoubleNavigation';
+import { Routes } from '@/routes/mainRoutes';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 const HERO_HEIGHT = 280;
@@ -54,6 +55,7 @@ const ShopDetail: React.FC<ShopDetailProps> = ({
   onWebsite,
 }) => {
   const { addToCart, getTotalItems } = useCart();
+  const { push, back, isNavigating } = usePreventDoubleNavigation();
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [selectedMenuItem, setSelectedMenuItem] = useState<BusinessProfileMenuItem | null>(
     null
@@ -136,7 +138,7 @@ const ShopDetail: React.FC<ShopDetailProps> = ({
             text: 'View Cart',
             onPress: () => {
               setSelectedMenuItem(null);
-              router.push('/(tabs)/(home)/(shop)/cart' as never);
+              push(Routes.shop.cart);
             },
           },
         ]
@@ -349,7 +351,7 @@ const ShopDetail: React.FC<ShopDetailProps> = ({
           },
         ]}
       >
-        <TouchableOpacity style={styles.headerButton} onPress={() => router.back()}>
+        <TouchableOpacity style={styles.headerButton} onPress={() => back()}>
           <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
         </TouchableOpacity>
 
@@ -359,7 +361,8 @@ const ShopDetail: React.FC<ShopDetailProps> = ({
           </TouchableOpacity>
           <TouchableOpacity 
             style={styles.headerButton} 
-            onPress={() => router.push('/(tabs)/(home)/(shop)/cart' as never)}
+            onPress={() => push(Routes.shop.cart)}
+            disabled={isNavigating}
           >
             <Ionicons name="cart-outline" size={24} color="#FFFFFF" />
             {getTotalItems() > 0 && (
@@ -392,7 +395,7 @@ const ShopDetail: React.FC<ShopDetailProps> = ({
           <View style={styles.collapsedHeaderContent}>
             <TouchableOpacity
               style={styles.collapsedBackButton}
-              onPress={() => router.back()}
+              onPress={() => back()}
             >
               <Ionicons name="arrow-back" size={24} color={ShopColors.textPrimary} />
             </TouchableOpacity>
@@ -416,7 +419,8 @@ const ShopDetail: React.FC<ShopDetailProps> = ({
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.collapsedActionButton}
-                onPress={() => router.push('/(tabs)/(home)/(shop)/cart' as never)}
+                onPress={() => push(Routes.shop.cart)}
+                disabled={isNavigating}
               >
                 <Ionicons
                   name="cart-outline"

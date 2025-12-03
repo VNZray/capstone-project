@@ -78,4 +78,3 @@ exports.seed = async function (knex) {
 		{ name: 'manage_tourism_staff', description: 'Create, update, deactivate tourism staff accounts' },
 	]);
 };
-

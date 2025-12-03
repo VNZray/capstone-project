@@ -226,7 +226,7 @@ export const PLACEHOLDER_NEWS: NewsArticle[] = [
       'The integrated terminal opens this week, promising smoother rides and safer waiting areas for daily commuters.',
     category: 'Updates',
     image:
-      'https://images.unsplash.com/photo-1505663912202-ac22d4cb370b?auto=format&fit=crop&w=900&q=80',
+      'https://images.unsplash.com/photo-1501785888041-af3ef285b470?auto=format&fit=crop&w=900&q=80',
     publishedAt: 'Today',
   },
   {

@@ -1,6 +1,5 @@
 import db from "../../db.js";
 import bcrypt from "bcrypt";
-import jwt from "jsonwebtoken";
 import { handleDbError } from "../../utils/errorHandler.js";
 import { v4 as uuidv4 } from "uuid";
 

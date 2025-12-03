@@ -1,415 +1,144 @@
-import Button from '@/components/Button';
-import SearchBar from '@/components/SearchBar';
-import ScrollableTab from '@/components/ScrollableTab';
-import { ThemedText } from '@/components/themed-text';
-import { background, card, colors } from '@/constants/color';
-import { useColorScheme } from '@/hooks/use-color-scheme';
-import { FontAwesome5 } from '@expo/vector-icons';
-import { router, useNavigation } from 'expo-router';
-import React, { useLayoutEffect, useRef, useState } from 'react';
-import type { Tab } from '@/types/Tab';
+import React, { useState, useMemo } from 'react';
 import {
-  Animated,
-  Dimensions,
-  FlatList,
-  Image,
-  Pressable,
-  RefreshControl,
-  ScrollView,
-  StyleSheet,
   View,
+  StyleSheet,
+  FlatList,
+  useColorScheme,
+  ActivityIndicator,
+  RefreshControl,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { ThemedText } from '@/components/themed-text';
+import { Colors } from '@/constants/color';
+import { Stack } from 'expo-router';
+import { useAuth } from '@/context/AuthContext';
+import {
+  GridCard,
+  ListCard,
+  FavoriteHeader,
+  SearchBar,
+  CategoryFilter,
+  EmptyState,
+} from './components';
+import { useFavorites } from './hooks/useFavorites';
+import { CATEGORIES, type Category } from './types';
 
-type FavItem = {
-  id: string;
-  title: string;
-  subtitle: string;
-  image: any;
-};
+// --- Main Screen ---
 
-const TABS: Tab[] = [
-  {
-    key: 'accommodation',
-    label: 'Accommodation',
-    icon: 'hotel',
-  },
-  {
-    key: 'room',
-    label: 'Room',
-    icon: 'door-open',
-  },
-  {
-    key: 'spots',
-    label: 'Tourist Spots',
-    icon: 'map-marker-alt',
-  },
-  {
-    key: 'shops',
-    label: 'Shops',
-    icon: 'shopping-bag',
-  },
-  {
-    key: 'events',
-    label: 'Events',
-    icon: 'calendar-alt',
-  },
-];
+const MyFavorite = () => {
+  const scheme = useColorScheme() ?? 'light';
+  const colors = Colors[scheme];
+  const { user } = useAuth();
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
+  const [activeCategory, setActiveCategory] = useState<Category>('All');
+  const [searchQuery, setSearchQuery] = useState('');
 
-type TabKey = (typeof TABS)[number]['key'];
+  // Use custom hook for favorites data
+  const { favorites, loading, refreshing, onRefresh, handleRemoveFavorite } =
+    useFavorites(user?.id);
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
-
-const Favorite = () => {
-  const navigation = useNavigation();
-  const scheme = useColorScheme();
-  const bg = scheme === 'dark' ? background.dark : background.light;
-  const cardBg = scheme === 'dark' ? card.dark : card.light;
-  const textMuted = scheme === 'dark' ? '#A9B2D0' : '#6A768E';
-
-  // Header right: small settings button
-  useLayoutEffect(() => {
-    navigation.setOptions({
-      headerTitle: 'My Favorites',
-      headerRight: () => (
-        <Pressable
-          onPress={() => router.push('/(tabs)/(profile)/(settings)')}
-          style={{ paddingHorizontal: 12 }}
-        >
-          <FontAwesome5
-            name="cog"
-            size={18}
-            color={scheme === 'dark' ? '#fff' : '#1F2A44'}
-          />
-        </Pressable>
-      ),
+  const filteredData = useMemo(() => {
+    return favorites.filter((item) => {
+      const matchesCategory =
+        activeCategory === 'All' || item.category === activeCategory;
+      const matchesSearch =
+        item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        item.location.toLowerCase().includes(searchQuery.toLowerCase());
+      return matchesCategory && matchesSearch;
     });
-  }, [navigation, scheme]);
-
-  // Search
-  const [query, setQuery] = useState('');
-
-  // Data per tab (seeded with placeholder data for demo)
-  const [favByTab, setFavByTab] = useState<Record<TabKey, FavItem[]>>({
-    accommodation: [
-      {
-        id: 'a1',
-        title: 'Sunrise Beach Resort',
-        subtitle: 'Affordable beachfront stay in Naga City',
-        image: require('@/assets/images/android-icon-foreground.png'),
-      },
-    ],
-    room: [
-      {
-        id: 'r1',
-        title: 'Deluxe Room 101',
-        subtitle: 'Spacious room with city view',
-        image: require('@/assets/images/partial-react-logo.png'),
-      },
-    ],
-    spots: [
-      {
-        id: 's1',
-        title: 'Plaza Quince Martires',
-        subtitle: 'Historic city landmark and plaza',
-        image: require('@/assets/images/partial-react-logo.png'),
-      },
-    ],
-    shops: [
-      {
-        id: 'sh1',
-        title: 'Local Souvenir Shop',
-        subtitle: 'Handcrafted goods and delicacies',
-        image: require('@/assets/images/react-logo.png'),
-      },
-    ],
-    events: [
-      {
-        id: 'e1',
-        title: 'Peñafrancia Festival',
-        subtitle: 'Cultural parade and celebration',
-        image: require('@/assets/images/react-logo.png'),
-      },
-    ],
-  });
-
-  // Swipeable tabs
-  const [tabIndex, setTabIndex] = useState(0);
-  const scrollRef = useRef<ScrollView>(null);
-  const scrollX = useRef(new Animated.Value(0)).current;
-
-  const handleTabChange = (tab: Tab, index: number) => {
-    setTabIndex(index);
-    scrollRef.current?.scrollTo({ x: SCREEN_WIDTH * index, animated: false });
-  };
-
-  // Pull-to-refresh
-  const [refreshing, setRefreshing] = useState(false);
-  const onRefresh = async () => {
-    setRefreshing(true);
-    // Simulate refresh
-    await new Promise((r) => setTimeout(r, 800));
-    setRefreshing(false);
-  };
-
-  // Filtered items by search query for the current tab
-  const filteredFor = (key: TabKey) => {
-    const q = query.trim().toLowerCase();
-    const arr = favByTab[key] ?? [];
-    if (!q) return arr;
-    return arr.filter(
-      (i) =>
-        i.title.toLowerCase().includes(q) ||
-        i.subtitle.toLowerCase().includes(q)
-    );
-  };
-
-  // Remove from favorites with small animation
-  const removeFav = (key: TabKey, id: string) => {
-    setFavByTab((prev) => ({
-      ...prev,
-      [key]: (prev[key] || []).filter((i) => i.id !== id),
-    }));
-  };
-
-  // Animated indicator for tabs
-  const indicatorTranslateX = scrollX.interpolate({
-    inputRange: TABS.map((_, i) => i * SCREEN_WIDTH),
-    outputRange: TABS.map((_, i) => (i * (SCREEN_WIDTH - 40)) / TABS.length),
-    extrapolate: 'clamp',
-  });
-
-  const renderCard = (item: FavItem, key: TabKey) => (
-    <View style={[styles.card, { backgroundColor: cardBg }, shadow(2)]}>
-      <Image source={item.image} style={styles.thumb} />
-      <View style={{ flex: 1, marginHorizontal: 12 }}>
-        <ThemedText type="body-medium" weight="semi-bold" numberOfLines={1}>
-          {item.title}
-        </ThemedText>
-        <ThemedText
-          type="label-small"
-          style={{ color: textMuted }}
-          numberOfLines={2}
-        >
-          {item.subtitle}
-        </ThemedText>
-      </View>
-      <HeartButton onPress={() => removeFav(key, item.id)} />
-    </View>
-  );
+  }, [favorites, activeCategory, searchQuery]);
 
   return (
-    <View style={[styles.screen, { backgroundColor: bg }]}>
-      {/* Search */}
-      <View style={{ paddingHorizontal: 20, paddingTop: 10 }}>
-        <SearchBar
-          shape="square"
-          value={query}
-          onChangeText={setQuery}
-          onSearch={() => {}}
-          placeholder="Search favorites…"
-        />
-
-        <ScrollableTab
-          tabs={TABS}
-          onTabChange={handleTabChange}
-          activeKey={TABS[tabIndex].key}
-        />
-      </View>
-      {/* Pages */}
-      <Animated.ScrollView
-        ref={scrollRef}
-        horizontal
-        pagingEnabled
-        showsHorizontalScrollIndicator={false}
-        onScroll={Animated.event(
-          [{ nativeEvent: { contentOffset: { x: scrollX } } }],
-          {
-            listener: (e: {
-              nativeEvent: { contentOffset: { x: number } };
-            }) => {
-              const idx = Math.round(
-                e.nativeEvent.contentOffset.x / SCREEN_WIDTH
-              );
-              if (idx !== tabIndex) setTabIndex(idx);
-            },
-            useNativeDriver: false,
-          }
-        )}
-        scrollEventThrottle={16}
-        style={{ marginTop: 10 }}
-      >
-        {TABS.map((t) => {
-          const key = t.key as TabKey;
-          const data = filteredFor(key);
-          const isEmpty = data.length === 0;
-          return (
-            <View
-              key={t.key}
-              style={{ width: SCREEN_WIDTH, paddingHorizontal: 20 }}
-            >
-              {isEmpty ? (
-                <EmptyState />
-              ) : (
-                <FlatList
-                  data={data}
-                  keyExtractor={(it) => it.id}
-                  renderItem={({ item }) => renderCard(item, key)}
-                  contentContainerStyle={{ paddingVertical: 0, gap: 12 }}
-                  refreshControl={
-                    <RefreshControl
-                      refreshing={refreshing}
-                      onRefresh={onRefresh}
-                    />
-                  }
-                  showsVerticalScrollIndicator={false}
-                />
-              )}
-            </View>
-          );
-        })}
-      </Animated.ScrollView>
-    </View>
-  );
-};
-
-export default Favorite;
-
-// Heart button with tiny pop animation
-const HeartButton = ({ onPress }: { onPress: () => void }) => {
-  const scale = useRef(new Animated.Value(1)).current;
-  const handlePress = () => {
-    Animated.sequence([
-      Animated.timing(scale, {
-        toValue: 1.2,
-        duration: 120,
-        useNativeDriver: true,
-      }),
-      Animated.timing(scale, {
-        toValue: 1,
-        duration: 120,
-        useNativeDriver: true,
-      }),
-    ]).start(() => onPress());
-  };
-  return (
-    <Pressable
-      onPress={handlePress}
-      accessibilityRole="button"
-      accessibilityLabel="Remove from favorites"
+    <SafeAreaView
+      style={[styles.container, { backgroundColor: colors.background }]}
+      edges={['top']}
     >
-      <Animated.View style={{ transform: [{ scale }] }}>
-        <FontAwesome5 name="heart" size={32} color={colors.primary} solid />
-      </Animated.View>
-    </Pressable>
+      <Stack.Screen options={{ headerShown: false }} />
+
+      <FavoriteHeader favoritesCount={favorites.length} colors={colors} />
+
+      <SearchBar
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
+        colors={colors}
+      />
+
+      <CategoryFilter
+        categories={CATEGORIES}
+        activeCategory={activeCategory}
+        onCategoryChange={setActiveCategory}
+        colors={colors}
+      />
+
+      {loading ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={colors.primary} />
+          <ThemedText
+            type="body-medium"
+            style={{ marginTop: 16, color: colors.textSecondary }}
+          >
+            Loading your favorites...
+          </ThemedText>
+        </View>
+      ) : (
+        <FlatList
+          key={viewMode}
+          data={filteredData}
+          keyExtractor={(item) => item.id}
+          numColumns={viewMode === 'grid' ? 2 : 1}
+          columnWrapperStyle={
+            viewMode === 'grid' ? styles.columnWrapper : undefined
+          }
+          contentContainerStyle={styles.listContent}
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              tintColor={colors.primary}
+            />
+          }
+          renderItem={({ item }) =>
+            viewMode === 'grid' ? (
+              <GridCard
+                item={item}
+                colors={colors}
+                onRemove={handleRemoveFavorite}
+              />
+            ) : (
+              <ListCard
+                item={item}
+                colors={colors}
+                onRemove={handleRemoveFavorite}
+              />
+            )
+          }
+          ListEmptyComponent={<EmptyState colors={colors} />}
+        />
+      )}
+    </SafeAreaView>
   );
 };
 
-// Empty state component
-const EmptyState = () => (
-  <View
-    style={{
-      alignItems: 'center',
-      justifyContent: 'center',
-      paddingVertical: 80,
-      gap: 10,
-    }}
-  >
-    <View style={[styles.illustration, shadow(3)]}>
-      <FontAwesome5 name="map" size={36} color={colors.secondary} />
-      <FontAwesome5
-        name="search-location"
-        size={18}
-        color="#7C89B6"
-        style={{ position: 'absolute', right: 16, bottom: 14 }}
-      />
-    </View>
-    <ThemedText type="sub-title-medium" weight="bold" align="center">
-      No favorites yet
-    </ThemedText>
-    <ThemedText type="label-medium" align="center" style={{ color: '#6A768E' }}>
-      Start exploring and add places you love!
-    </ThemedText>
-    <View style={{ width: '70%', marginTop: 6 }}>
-      <Button
-        label="Explore Now"
-        startIcon="compass"
-        variant="solid"
-        color="primary"
-        size="large"
-        fullWidth
-        radius={14}
-        onPress={() => router.push('/(tabs)/(home)')}
-      />
-    </View>
-  </View>
-);
-
-// Styles
 const styles = StyleSheet.create({
-  screen: { flex: 1 },
-  tabRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  tabBtn: {
+  container: {
     flex: 1,
-    backgroundColor: '#EEF4FF',
-    paddingVertical: 10,
-    borderRadius: 12,
-    alignItems: 'center',
+  },
+  loadingContainer: {
+    flex: 1,
     justifyContent: 'center',
-  },
-  indicatorTrack: {
-    height: 3,
-    backgroundColor: '#E1E8F5',
-    marginTop: 8,
-    borderRadius: 2,
-  },
-  indicator: { height: 3, backgroundColor: colors.secondary, borderRadius: 2 },
-  card: {
-    flexDirection: 'row',
     alignItems: 'center',
-    borderRadius: 16,
-    padding: 12,
+    paddingHorizontal: 32,
   },
-  thumb: {
-    width: 64,
-    height: 64,
-    borderRadius: 14,
-    backgroundColor: '#EAEFF7',
+  listContent: {
+    paddingHorizontal: 20,
+    paddingBottom: 100,
+    gap: 16,
+    flexGrow: 1,
   },
-  illustration: {
-    width: 140,
-    height: 90,
-    borderRadius: 20,
-    backgroundColor: '#FFFFFF',
-    alignItems: 'center',
-    justifyContent: 'center',
+  columnWrapper: {
+    gap: 16,
   },
 });
 
-function shadow(level: 1 | 2 | 3) {
-  switch (level) {
-    case 1:
-      return {
-        shadowColor: '#1e1e1e',
-        shadowOpacity: 0.08,
-        shadowRadius: 2,
-        shadowOffset: { width: 0, height: 1 },
-        elevation: 1,
-      } as const;
-    case 2:
-      return {
-        shadowColor: '#1e1e1e',
-        shadowOpacity: 0.12,
-        shadowRadius: 3,
-        shadowOffset: { width: 0, height: 2 },
-        elevation: 2,
-      } as const;
-    default:
-      return {
-        shadowColor: '#1e1e1e',
-        shadowOpacity: 0.16,
-        shadowRadius: 4,
-        shadowOffset: { width: 0, height: 3 },
-        elevation: 3,
-      } as const;
-  }
-}
+export default MyFavorite;
