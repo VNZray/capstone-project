@@ -2,7 +2,7 @@
 /**
  * PayMongo Payment Service
  * Handles secure integration with PayMongo API
- * 
+ *
  * Security practices:
  * - Secret keys never exposed to client
  * - Webhook signature verification using timing-safe comparison
@@ -51,14 +51,14 @@ function getWebhookSecret() {
 
 /**
  * Make authenticated request to PayMongo API
- * @param {string} endpoint 
- * @param {Object} options 
+ * @param {string} endpoint
+ * @param {Object} options
  * @returns {Promise<Object>}
  */
 async function makePayMongoRequest(endpoint, options = {}) {
   const secretKey = getSecretKey();
   const encodedKey = Buffer.from(secretKey).toString('base64');
-  
+
   const response = await fetch(`${PAYMONGO_API_URL}${endpoint}`, {
     ...options,
     headers: {
@@ -78,9 +78,9 @@ async function makePayMongoRequest(endpoint, options = {}) {
       endpoint,
       error: data
     });
-    
+
     throw new Error(
-      data.errors?.[0]?.detail || 
+      data.errors?.[0]?.detail ||
       `PayMongo API error: ${response.status}`
     );
   }
@@ -102,15 +102,15 @@ async function makePayMongoRequest(endpoint, options = {}) {
  * @param {Object} params.metadata - Additional metadata
  * @returns {Promise<Object>} Checkout Session data with checkout_url
  */
-export async function createCheckoutSession({ 
-  orderId, 
-  orderNumber, 
-  amount, 
-  lineItems = [], 
-  successUrl, 
-  cancelUrl, 
-  description, 
-  metadata = {} 
+export async function createCheckoutSession({
+  orderId,
+  orderNumber,
+  amount,
+  lineItems = [],
+  successUrl,
+  cancelUrl,
+  description,
+  metadata = {}
 }) {
   // Validate amount (must be at least 100 centavos = 1 PHP)
   if (!amount || amount < 100) {
@@ -168,7 +168,7 @@ export async function createCheckoutSession({
 
 /**
  * Retrieve Checkout Session by ID
- * @param {string} checkoutSessionId 
+ * @param {string} checkoutSessionId
  * @returns {Promise<Object>}
  */
 export async function getCheckoutSession(checkoutSessionId) {
@@ -179,14 +179,14 @@ export async function getCheckoutSession(checkoutSessionId) {
 /**
  * Create PayMongo Payment Intent for order (for advanced use cases)
  * Use createCheckoutSession for simpler integration
- * 
+ *
  * Payment Intent Workflow:
  * 1. Create Payment Intent (server-side) - returns client_key
  * 2. Create Payment Method (client-side using public key)
  * 3. Attach Payment Method to Intent (client-side using client_key)
  * 4. Handle 3DS authentication if required (client follows next_action.redirect.url)
  * 5. Receive webhook: payment.paid or payment.failed
- * 
+ *
  * @param {Object} params
  * @param {string} params.orderId - Order UUID
  * @param {number} params.amount - Amount in centavos (PHP cents), minimum 2000 (₱20.00)
@@ -196,10 +196,10 @@ export async function getCheckoutSession(checkoutSessionId) {
  * @param {string} params.captureType - 'automatic' (default) or 'manual' for pre-auth
  * @returns {Promise<Object>} Payment Intent data with client_key
  */
-export async function createPaymentIntent({ 
-  orderId, 
-  amount, 
-  description, 
+export async function createPaymentIntent({
+  orderId,
+  amount,
+  description,
   paymentMethodAllowed = ['card', 'paymaya', 'gcash', 'grab_pay'],
   metadata = {},
   currency = 'PHP',
@@ -313,14 +313,14 @@ export async function createSource({ type, amount, orderId, redirectUrl, redirec
 
 /**
  * Create PayMongo Payment Method
- * 
+ *
  * For card payments: details should contain card_number, exp_month, exp_year, cvc
  * For e-wallets: type only needed (gcash, paymaya, grab_pay)
  * For DOB: bank_code required (bpi, ubp, or test_bank_one/test_bank_two for testing)
- * 
+ *
  * IMPORTANT: Card details should be collected client-side for PCI compliance.
  * This function is for server-side use with e-wallets/DOB or tokenized cards.
- * 
+ *
  * @param {Object} params
  * @param {string} params.type - card, paymaya, gcash, grab_pay, dob, billease, qrph, brankas, shopee_pay
  * @param {Object} params.details - Payment method details (card details or bank_code)
@@ -375,12 +375,12 @@ export async function createPaymentMethod({ type, details = {}, billing = {}, me
 
 /**
  * Attach Payment Method to Payment Intent
- * 
+ *
  * For e-wallets and redirect-based methods, return_url is required.
  * After attachment, check the next_action field:
  * - If next_action.type === 'redirect', redirect user to next_action.redirect.url
  * - After user completes auth, they return to return_url
- * 
+ *
  * @param {string} paymentIntentId - Payment Intent ID
  * @param {string} paymentMethodId - Payment Method ID
  * @param {string} returnUrl - URL to return after authentication (required for e-wallets)
@@ -410,7 +410,7 @@ export async function attachPaymentIntent(paymentIntentId, paymentMethodId, retu
 
 /**
  * Retrieve Payment Intent by ID
- * @param {string} paymentIntentId 
+ * @param {string} paymentIntentId
  * @returns {Promise<Object>}
  */
 export async function getPaymentIntent(paymentIntentId) {
@@ -420,7 +420,7 @@ export async function getPaymentIntent(paymentIntentId) {
 
 /**
  * Retrieve Source by ID
- * @param {string} sourceId 
+ * @param {string} sourceId
  * @returns {Promise<Object>}
  */
 export async function getSource(sourceId) {
@@ -430,7 +430,7 @@ export async function getSource(sourceId) {
 
 /**
  * Retrieve Payment by ID
- * @param {string} paymentId 
+ * @param {string} paymentId
  * @returns {Promise<Object>}
  */
 export async function getPayment(paymentId) {
@@ -486,7 +486,7 @@ export async function createRefund({ paymentId, amount, reason, notes, metadata 
 
 /**
  * Retrieve Refund by ID
- * @param {string} refundId 
+ * @param {string} refundId
  * @returns {Promise<Object>}
  */
 export async function getRefund(refundId) {
@@ -497,7 +497,7 @@ export async function getRefund(refundId) {
 /**
  * Verify PayMongo webhook signature using timing-safe comparison
  * CRITICAL SECURITY: Use crypto.timingSafeEqual to prevent timing attacks
- * 
+ *
  * @param {string} payload - Raw request body as string
  * @param {string} signature - Signature from request headers
  * @returns {boolean} True if signature is valid
@@ -510,16 +510,16 @@ export function verifyWebhookSignature(payload, signature) {
 
   try {
     const webhookSecret = getWebhookSecret();
-    
+
     console.log('[PayMongo Webhook] 🔍 Verifying signature...');
     console.log('[PayMongo Webhook] 📋 Signature header:', signature);
     console.log('[PayMongo Webhook] 🔑 Webhook secret configured:', webhookSecret ? 'YES' : 'NO');
-    
+
     // Extract timestamp and signatures from header
     // PayMongo format: t={timestamp},te={signature},li=
     const parts = signature.split(',');
     const timestamp = parts.find(p => p.startsWith('t='))?.split('=')[1];
-    
+
     // PayMongo uses 'te=' for the test signature (not 's1=')
     const signaturePart = parts.find(p => p.startsWith('te='))?.split('=')[1];
     const signatures = signaturePart ? [signaturePart] : [];
@@ -542,9 +542,9 @@ export function verifyWebhookSignature(payload, signature) {
 
     // Construct signed payload
     const signedPayload = `${timestamp}.${payload}`;
-    
+
     console.log('[PayMongo Webhook] 🔨 Signed payload:', signedPayload.substring(0, 100) + '...');
-    
+
     // Compute expected signature
     const expectedSignature = crypto
       .createHmac('sha256', webhookSecret)
@@ -559,15 +559,15 @@ export function verifyWebhookSignature(payload, signature) {
       try {
         const expectedBuffer = Buffer.from(expectedSignature);
         const actualBuffer = Buffer.from(sig);
-        
+
         console.log('[PayMongo Webhook] 🔍 Comparing signature:', sig.substring(0, 20) + '...');
-        
+
         // Ensure buffers are same length before comparison
         if (expectedBuffer.length !== actualBuffer.length) {
           console.log('[PayMongo Webhook] ⚠️ Length mismatch:', expectedBuffer.length, 'vs', actualBuffer.length);
           continue;
         }
-        
+
         if (crypto.timingSafeEqual(expectedBuffer, actualBuffer)) {
           console.log('[PayMongo Webhook] ✅ Signature verification PASSED');
           return true;

@@ -1,7 +1,7 @@
 /**
  * Token Cleanup Service
  * Handles automatic cleanup of expired refresh tokens from the database
- * 
+ *
  * @module services/tokenCleanupService
  */
 
@@ -25,11 +25,11 @@ export async function cleanupExpiredTokens() {
     const [expiredResult] = await db.query(
       'DELETE FROM refresh_tokens WHERE expires_at < NOW()'
     );
-    
+
     // Delete revoked tokens older than retention period
     const [revokedResult] = await db.query(
-      `DELETE FROM refresh_tokens 
-       WHERE revoked = TRUE 
+      `DELETE FROM refresh_tokens
+       WHERE revoked = TRUE
        AND created_at < DATE_SUB(NOW(), INTERVAL ? DAY)`,
       [REVOKED_TOKEN_RETENTION_DAYS]
     );
@@ -58,13 +58,13 @@ export function startTokenCleanupScheduler() {
   }
 
   // Run initial cleanup
-  cleanupExpiredTokens().catch(err => 
+  cleanupExpiredTokens().catch(err =>
     console.error('[TokenCleanup] Initial cleanup failed:', err.message)
   );
 
   // Schedule periodic cleanup
   cleanupIntervalId = setInterval(() => {
-    cleanupExpiredTokens().catch(err => 
+    cleanupExpiredTokens().catch(err =>
       console.error('[TokenCleanup] Scheduled cleanup failed:', err.message)
     );
   }, CLEANUP_INTERVAL_MS);
@@ -90,7 +90,7 @@ export function stopTokenCleanupScheduler() {
 export async function getTokenStats() {
   try {
     const [rows] = await db.query(`
-      SELECT 
+      SELECT
         COUNT(*) as total,
         SUM(CASE WHEN revoked = FALSE AND expires_at > NOW() THEN 1 ELSE 0 END) as active,
         SUM(CASE WHEN revoked = TRUE THEN 1 ELSE 0 END) as revoked,

@@ -1,15 +1,15 @@
 /**
  * Webhook Queue Service
- * 
+ *
  * Provides background job processing for PayMongo webhook events.
  * Follows PayMongo best practice: "Respond immediately with HTTP 2xx, perform processing after"
- * 
+ *
  * Uses Bull queue backed by Redis for reliable async processing with:
  * - Automatic retries with exponential backoff
  * - Job persistence across server restarts
  * - Concurrent job processing
  * - Dead letter queue for failed jobs
- * 
+ *
  * @see docs/ORDERING_SYSTEM_AUDIT.md - Phase 3
  */
 
@@ -56,7 +56,7 @@ let isQueueReady = false;
 /**
  * Initialize the webhook queue
  * Should be called once during server startup
- * 
+ *
  * @returns {Promise<Queue>} The initialized queue instance
  */
 export async function initializeWebhookQueue() {
@@ -104,7 +104,7 @@ export async function initializeWebhookQueue() {
     // Register job processor
     webhookQueue.process(async (job) => {
       const { eventType, eventData, eventId, webhookDbId, rawPayload } = job.data;
-      
+
       console.log(`[WebhookQueue] 🔄 Processing job ${job.id}:`, {
         eventType,
         eventId,
@@ -131,7 +131,7 @@ export async function initializeWebhookQueue() {
 
 /**
  * Add a webhook event to the processing queue
- * 
+ *
  * @param {Object} params - Webhook event parameters
  * @param {string} params.eventType - PayMongo event type (e.g., 'checkout_session.payment.paid')
  * @param {Object} params.eventData - Event data from PayMongo
@@ -172,7 +172,7 @@ export async function enqueueWebhook({ eventType, eventData, eventId, webhookDbI
 /**
  * Get priority for different event types
  * Lower number = higher priority
- * 
+ *
  * @param {string} eventType - PayMongo event type
  * @returns {number} Priority level (1-10)
  */
@@ -183,14 +183,14 @@ function getEventPriority(eventType) {
     'payment_intent.succeeded': 1,
     'payment.paid': 1,
     'source.chargeable': 1,
-    
+
     // Payment failure events - high priority
     'payment.failed': 2,
     'payment_intent.payment_failed': 2,
-    
+
     // Refund events - medium priority
     'refund.updated': 3,
-    
+
     // Other events - lower priority
     default: 5
   };
@@ -200,7 +200,7 @@ function getEventPriority(eventType) {
 
 /**
  * Check if the webhook queue is healthy
- * 
+ *
  * @returns {Promise<Object>} Queue health status
  */
 export async function getQueueHealth() {
@@ -235,7 +235,7 @@ export async function getQueueHealth() {
 /**
  * Gracefully shutdown the webhook queue
  * Should be called during server shutdown
- * 
+ *
  * @returns {Promise<void>}
  */
 export async function shutdownWebhookQueue() {
@@ -244,7 +244,7 @@ export async function shutdownWebhookQueue() {
   }
 
   console.log('[WebhookQueue] 🛑 Shutting down webhook queue...');
-  
+
   try {
     // Wait for active jobs to complete (max 30 seconds)
     await webhookQueue.close(30000);
@@ -259,7 +259,7 @@ export async function shutdownWebhookQueue() {
 
 /**
  * Get the queue instance (for advanced operations)
- * 
+ *
  * @returns {Queue|null} The Bull queue instance
  */
 export function getWebhookQueue() {
@@ -268,7 +268,7 @@ export function getWebhookQueue() {
 
 /**
  * Retry a failed job by its ID
- * 
+ *
  * @param {string} jobId - The job ID to retry
  * @returns {Promise<Job>} The retried job
  */
@@ -293,7 +293,7 @@ export async function retryFailedJob(jobId) {
 
 /**
  * Get recent failed jobs for debugging
- * 
+ *
  * @param {number} limit - Maximum number of jobs to return
  * @returns {Promise<Array>} Array of failed job data
  */

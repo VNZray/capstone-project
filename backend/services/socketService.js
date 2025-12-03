@@ -66,7 +66,7 @@ export function initializeSocket(httpServer) {
   // JWT Authentication middleware
   io.use((socket, next) => {
     const token = socket.handshake.auth.token || socket.handshake.headers.authorization?.replace('Bearer ', '');
-    
+
     if (!token) {
       return next(new Error('Authentication required'));
     }
@@ -108,7 +108,7 @@ export function initializeSocket(httpServer) {
       // Verify access before allowing join
       const hasAccess = await verifyBusinessAccess(socket.userId, businessId);
       if (!hasAccess) {
-        socket.emit('error', { 
+        socket.emit('error', {
           message: 'Access denied: You do not have permission to access this business',
           code: 'BUSINESS_ACCESS_DENIED'
         });
@@ -133,7 +133,7 @@ export function initializeSocket(httpServer) {
     socket.on('join:user', (data) => {
       const { userId } = data;
       if (!userId) return;
-      
+
       // Verify user is joining their own room
       if (userId !== socket.userId) {
         socket.emit('error', {
@@ -143,7 +143,7 @@ export function initializeSocket(httpServer) {
         console.warn(`[Socket] Access denied: User ${socket.userId} tried to join user:${userId}`);
         return;
       }
-      
+
       socket.join(`user:${userId}`);
       console.log(`Socket ${socket.id} joined user room: user:${userId}`);
     });
@@ -160,9 +160,9 @@ export function initializeSocket(httpServer) {
     // SECURITY: Verify user has access to the order before allowing subscription
     socket.on('order:subscribe', async (data) => {
       const { orderId } = data;
-      
+
       if (!orderId) {
-        socket.emit('error', { 
+        socket.emit('error', {
           message: 'Order ID is required',
           code: 'ORDER_ID_REQUIRED'
         });
@@ -172,14 +172,14 @@ export function initializeSocket(httpServer) {
       try {
         // Verify user has access to this order
         const [orderRows] = await db.query(
-          `SELECT o.id, o.user_id, o.business_id 
-           FROM orders o 
+          `SELECT o.id, o.user_id, o.business_id
+           FROM orders o
            WHERE o.id = ?`,
           [orderId]
         );
 
         if (!orderRows || orderRows.length === 0) {
-          socket.emit('error', { 
+          socket.emit('error', {
             message: 'Order not found',
             code: 'ORDER_NOT_FOUND'
           });
@@ -187,15 +187,15 @@ export function initializeSocket(httpServer) {
         }
 
         const order = orderRows[0];
-        
+
         // Check if user is the order owner (Tourist)
         const isOrderOwner = order.user_id === socket.userId;
-        
+
         // Check if user has business access (Owner/Staff/Admin)
         const hasAccess = isOrderOwner || await verifyBusinessAccess(socket.userId, order.business_id);
 
         if (!hasAccess) {
-          socket.emit('error', { 
+          socket.emit('error', {
             message: 'Access denied: You do not have permission to view this order',
             code: 'ORDER_ACCESS_DENIED'
           });
@@ -208,7 +208,7 @@ export function initializeSocket(httpServer) {
         console.log(`User ${socket.userId} subscribed to order:${orderId} (${isOrderOwner ? 'owner' : 'business'})`);
       } catch (error) {
         console.error(`[Socket] Error verifying order access for order:${orderId}:`, error);
-        socket.emit('error', { 
+        socket.emit('error', {
           message: 'Failed to subscribe to order updates',
           code: 'SUBSCRIPTION_ERROR'
         });
@@ -253,7 +253,7 @@ export function emitToUser(userId, event, data) {
     console.warn('Socket.IO not initialized, skipping emit');
     return;
   }
-  
+
   io.to(`user:${userId}`).emit(event, data);
   console.log(`Emitted ${event} to user:${userId}`);
 }
@@ -269,7 +269,7 @@ export function emitToBusiness(businessId, event, data) {
     console.warn('Socket.IO not initialized, skipping emit');
     return;
   }
-  
+
   io.to(`business:${businessId}`).emit(event, data);
   console.log(`Emitted ${event} to business:${businessId}`);
 }
@@ -285,7 +285,7 @@ export function emitToOrder(orderId, event, data) {
     console.warn('Socket.IO not initialized, skipping emit');
     return;
   }
-  
+
   io.to(`order:${orderId}`).emit(event, data);
   console.log(`Emitted ${event} to order:${orderId}`);
 }
@@ -320,7 +320,7 @@ export function emitNewOrder(order) {
 
   // Emit to business (for owner/staff)
   emitToBusiness(order.business_id, 'order:new', eventData);
-  
+
   // Emit to user (tourist who placed order)
   emitToUser(order.user_id, 'order:created', eventData);
 }
@@ -358,10 +358,10 @@ export function emitOrderUpdated(order, previousStatus = null) {
 
   // Emit to business
   emitToBusiness(order.business_id, 'order:updated', eventData);
-  
+
   // Emit to user
   emitToUser(order.user_id, 'order:updated', eventData);
-  
+
   // Emit to order-specific room if anyone subscribed
   emitToOrder(order.id || order.order_id, 'order:updated', eventData);
 }
@@ -385,7 +385,7 @@ export function emitPaymentUpdated(payment, order = null) {
   if (order) {
     // Emit to business
     emitToBusiness(order.business_id, 'payment:updated', eventData);
-    
+
     // Emit to user
     emitToUser(order.user_id, 'payment:updated', eventData);
   } else if (payment.payer_id) {

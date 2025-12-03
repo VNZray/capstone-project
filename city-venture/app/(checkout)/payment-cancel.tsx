@@ -99,20 +99,22 @@ const PaymentCancelScreen = () => {
 
       // For card payments, navigate to card payment screen
       if (paymentMethodType === 'card') {
-        router.replace(Routes.checkout.cardPayment({
-          orderId: params.orderId,
-          orderNumber: orderDetails.order_number,
-          arrivalCode: orderDetails.arrival_code,
-          paymentIntentId,
-          clientKey: intentResponse.data.client_key,
-          amount: intentResponse.data.amount.toString(),
-          total: orderDetails.total_amount?.toString(),
-        }));
+        router.replace(
+          Routes.checkout.cardPayment({
+            orderId: params.orderId,
+            orderNumber: orderDetails.order_number,
+            arrivalCode: orderDetails.arrival_code,
+            paymentIntentId,
+            clientKey: intentResponse.data.client_key,
+            amount: intentResponse.data.amount.toString(),
+            total: orderDetails.total_amount?.toString(),
+          })
+        );
         return;
       }
 
       // For e-wallets, attach payment method and redirect
-      const backendBaseUrl = API_URL.replace('/api', '');
+      const backendBaseUrl = (API_URL || '').replace('/api', '');
       const returnUrl = `${backendBaseUrl}/orders/${params.orderId}/payment-success`;
 
       const attachResponse = await attachEwalletPaymentMethod(
@@ -139,13 +141,15 @@ const PaymentCancelScreen = () => {
         }
 
         // Navigate to payment processing to verify
-        router.replace(Routes.checkout.paymentProcessing({
-          orderId: params.orderId,
-          orderNumber: orderDetails.order_number,
-          arrivalCode: orderDetails.arrival_code,
-          paymentIntentId,
-          total: orderDetails.total_amount?.toString(),
-        }));
+        router.replace(
+          Routes.checkout.paymentProcessing({
+            orderId: params.orderId,
+            orderNumber: orderDetails.order_number,
+            arrivalCode: orderDetails.arrival_code,
+            paymentIntentId,
+            total: orderDetails.total_amount?.toString(),
+          })
+        );
       }
     } catch (error: any) {
       console.error('[PaymentCancel] Payment retry failed:', error);

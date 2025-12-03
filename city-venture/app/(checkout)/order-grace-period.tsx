@@ -1,14 +1,14 @@
 /**
  * Order Grace Period Screen
  * FoodPanda/GrabFood style - Shows a 10-second countdown before processing payment
- * 
+ *
  * Flow:
  * 1. User clicks "Place Order" in checkout
  * 2. Navigate to this screen with order data (NOT created yet)
  * 3. Show 10-second countdown with cancel option
  * 4. If user cancels → go back to checkout (no order created, no payment intent)
  * 5. If countdown completes → create order + payment intent → proceed to payment
- * 
+ *
  * This ensures:
  * - No order is created until user commits (after grace period)
  * - No payment intent is created until after grace period
@@ -58,17 +58,17 @@ const OrderGracePeriodScreen = () => {
 
   // Parse order data from params - memoize to avoid dependency changes
   const orderData = useMemo<CreateOrderPayload | null>(() => {
-    return params.orderData 
-      ? JSON.parse(params.orderData as string) 
+    return params.orderData
+      ? JSON.parse(params.orderData as string)
       : null;
   }, [params.orderData]);
-  
+
   const billingInfo = useMemo(() => {
-    return params.billingInfo 
-      ? JSON.parse(params.billingInfo as string) 
+    return params.billingInfo
+      ? JSON.parse(params.billingInfo as string)
       : {};
   }, [params.billingInfo]);
-  
+
   const paymentMethodType = (params.paymentMethodType as string) || 'gcash';
   const totalAmount = parseFloat((params.total as string) || '0');
 
@@ -141,7 +141,7 @@ const OrderGracePeriodScreen = () => {
       setProcessingStep('Connecting to payment provider...');
 
       // Generate return URL
-      const backendBaseUrl = API_URL.replace('/api', '');
+      const backendBaseUrl = API_URL ? API_URL.replace('/api', '') : '';
       const returnUrl = `${backendBaseUrl}/orders/${orderId}/payment-success`;
 
       // Attach e-wallet payment method
@@ -223,9 +223,9 @@ const OrderGracePeriodScreen = () => {
     } catch (error: any) {
       console.error('[GracePeriod] Error processing order:', error);
       hasStartedPayment.current = false; // Allow retry
-      
+
       let errorMessage = 'Failed to process your order. Please try again.';
-      
+
       if (error.response?.data?.message) {
         errorMessage = error.response.data.message;
       } else if (error.message) {
@@ -313,7 +313,7 @@ const OrderGracePeriodScreen = () => {
    */
   const handleCancel = useCallback(() => {
     setIsCancelling(true);
-    
+
     Alert.alert(
       'Cancel Order?',
       'Are you sure you want to cancel? Your order has not been placed yet.',
@@ -415,7 +415,7 @@ const OrderGracePeriodScreen = () => {
                   },
                 ]}
               />
-              
+
               {/* Progress Circle using SVG-like approach */}
               <Animated.View
                 style={[
@@ -495,7 +495,7 @@ const OrderGracePeriodScreen = () => {
           <View style={[styles.infoContainer, { backgroundColor: `${theme.info}15` }]}>
             <Ionicons name="information-circle" size={24} color={theme.info} />
             <Text style={[styles.infoText, { color: theme.text }]}>
-              Your order will not be created until the countdown ends. 
+              Your order will not be created until the countdown ends.
               You can cancel anytime during this period.
             </Text>
           </View>

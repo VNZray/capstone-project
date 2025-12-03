@@ -23,7 +23,7 @@ import { Ionicons } from '@expo/vector-icons';
 const PaymentProcessingScreen = () => {
   const colorScheme = useColorScheme();
   const theme = Colors[colorScheme as keyof typeof Colors];
-  
+
   const params = useLocalSearchParams<{
     orderId: string;
     orderNumber: string;
@@ -32,8 +32,12 @@ const PaymentProcessingScreen = () => {
     total: string;
   }>();
 
-  const [status, setStatus] = useState<'processing' | 'success' | 'failed'>('processing');
-  const [statusMessage, setStatusMessage] = useState('Verifying your payment...');
+  const [status, setStatus] = useState<'processing' | 'success' | 'failed'>(
+    'processing'
+  );
+  const [statusMessage, setStatusMessage] = useState(
+    'Verifying your payment...'
+  );
   const spinValue = useRef(new Animated.Value(0)).current;
   const scaleValue = useRef(new Animated.Value(1)).current;
 
@@ -83,7 +87,7 @@ const PaymentProcessingScreen = () => {
 
       try {
         setStatusMessage('Verifying your payment...');
-        
+
         const result = await pollPaymentIntentStatus(
           params.paymentIntentId,
           30, // Max 30 attempts (60 seconds)
@@ -95,72 +99,90 @@ const PaymentProcessingScreen = () => {
         const paymentStatus = result.data.status;
         const orderPaymentStatus = result.data.order_payment_status;
 
-        console.log('[PaymentProcessing] Final status:', paymentStatus, orderPaymentStatus);
+        console.log(
+          '[PaymentProcessing] Final status:',
+          paymentStatus,
+          orderPaymentStatus
+        );
 
         if (paymentStatus === 'succeeded' || orderPaymentStatus === 'paid') {
           setStatus('success');
           setStatusMessage('Payment successful!');
-          
+
           // Navigate to confirmation after short delay
           setTimeout(() => {
             if (isMounted) {
-              router.replace(Routes.checkout.orderConfirmation({
-                orderId: params.orderId,
-                orderNumber: params.orderNumber,
-                arrivalCode: params.arrivalCode,
-                total: params.total,
-                paymentMethod: 'paymongo',
-                paymentSuccess: 'true',
-              }));
+              router.replace(
+                Routes.checkout.orderConfirmation({
+                  orderId: params.orderId,
+                  orderNumber: params.orderNumber,
+                  arrivalCode: params.arrivalCode,
+                  total: params.total,
+                  paymentMethod: 'paymongo',
+                  paymentSuccess: 'true',
+                })
+              );
             }
           }, 1500);
         } else if (result.data.last_payment_error) {
           setStatus('failed');
           setStatusMessage(
-            result.data.last_payment_error.message || 'Payment was not completed'
+            result.data.last_payment_error.message ||
+              'Payment was not completed'
           );
-          
+
           // Navigate to failure screen after delay
           setTimeout(() => {
             if (isMounted) {
-              router.replace(Routes.checkout.paymentFailed({
-                orderId: params.orderId,
-                orderNumber: params.orderNumber,
-                errorMessage: result.data.last_payment_error?.message || 'Payment failed',
-              }));
+              router.replace(
+                Routes.checkout.paymentFailed({
+                  orderId: params.orderId,
+                  orderNumber: params.orderNumber,
+                  errorMessage:
+                    result.data.last_payment_error?.message || 'Payment failed',
+                })
+              );
             }
           }, 2000);
         } else {
           // Still processing or awaiting_payment_method (user may have cancelled)
           setStatus('failed');
-          setStatusMessage('Payment was not completed. You can retry from your orders.');
-          
+          setStatusMessage(
+            'Payment was not completed. You can retry from your orders.'
+          );
+
           setTimeout(() => {
             if (isMounted) {
-              router.replace(Routes.checkout.paymentCancel({
-                orderId: params.orderId,
-              }));
+              router.replace(
+                Routes.checkout.paymentCancel({
+                  orderId: params.orderId,
+                })
+              );
             }
           }, 2000);
         }
       } catch (error: any) {
         console.error('[PaymentProcessing] Error:', error);
-        
+
         if (!isMounted) return;
-        
+
         setStatus('failed');
-        setStatusMessage('Could not verify payment status. Please check your orders.');
-        
+        setStatusMessage(
+          'Could not verify payment status. Please check your orders.'
+        );
+
         setTimeout(() => {
           if (isMounted) {
-            router.replace(Routes.checkout.orderConfirmation({
-              orderId: params.orderId,
-              orderNumber: params.orderNumber,
-              arrivalCode: params.arrivalCode,
-              total: params.total,
-              paymentMethod: 'paymongo',
-              paymentPending: 'true',
-            }));
+            router.replace(
+              Routes.checkout.orderConfirmation({
+                orderId: params.orderId,
+                orderNumber: params.orderNumber,
+                arrivalCode: params.arrivalCode,
+                total: params.total,
+                paymentMethod: 'paymongo',
+                paymentPending: 'true',
+              })
+            );
           }
         }, 2000);
       }
@@ -173,7 +195,13 @@ const PaymentProcessingScreen = () => {
       isMounted = false;
       clearTimeout(timeoutId);
     };
-  }, [params.paymentIntentId, params.orderId, params.orderNumber, params.arrivalCode, params.total]);
+  }, [
+    params.paymentIntentId,
+    params.orderId,
+    params.orderNumber,
+    params.arrivalCode,
+    params.total,
+  ]);
 
   const spin = spinValue.interpolate({
     inputRange: [0, 1],
@@ -194,7 +222,9 @@ const PaymentProcessingScreen = () => {
       />
       <PageContainer padding={24}>
         <View style={styles.container}>
-          <View style={[styles.iconContainer, { backgroundColor: theme.surface }]}>
+          <View
+            style={[styles.iconContainer, { backgroundColor: theme.surface }]}
+          >
             {status === 'processing' && (
               <Animated.View style={{ transform: [{ rotate: spin }] }}>
                 <Ionicons name="sync" size={64} color={theme.primary} />
@@ -202,7 +232,11 @@ const PaymentProcessingScreen = () => {
             )}
             {status === 'success' && (
               <Animated.View style={{ transform: [{ scale: scaleValue }] }}>
-                <Ionicons name="checkmark-circle" size={80} color={theme.success} />
+                <Ionicons
+                  name="checkmark-circle"
+                  size={80}
+                  color={theme.success}
+                />
               </Animated.View>
             )}
             {status === 'failed' && (
@@ -223,14 +257,18 @@ const PaymentProcessingScreen = () => {
           {status === 'processing' && (
             <View style={styles.loadingContainer}>
               <ActivityIndicator color={theme.primary} size="small" />
-              <Text style={[styles.loadingText, { color: theme.textSecondary }]}>
+              <Text
+                style={[styles.loadingText, { color: theme.textSecondary }]}
+              >
                 Please wait...
               </Text>
             </View>
           )}
 
           {params.orderNumber && (
-            <View style={[styles.orderInfo, { backgroundColor: theme.surface }]}>
+            <View
+              style={[styles.orderInfo, { backgroundColor: theme.surface }]}
+            >
               <Text style={[styles.orderLabel, { color: theme.textSecondary }]}>
                 Order Number
               </Text>
