@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   View,
   Text,
@@ -13,7 +13,7 @@ import {
   LayoutAnimation,
   UIManager,
 } from 'react-native';
-import { Stack, router } from 'expo-router';
+import { Stack } from 'expo-router';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { Colors } from '@/constants/color';
 import { useTypography } from '@/constants/typography';
@@ -21,10 +21,13 @@ import PageContainer from '@/components/PageContainer';
 import { useCart } from '@/context/CartContext';
 import { useAuth } from '@/context/AuthContext';
 import { createOrder } from '@/services/OrderService';
-import { openPayMongoCheckout } from '@/services/PaymentService';
+import * as WebBrowser from 'expo-web-browser';
 import type { CreateOrderPayload } from '@/types/Order';
 import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import { usePreventDoubleNavigation } from '@/hooks/usePreventDoubleNavigation';
+import { Routes } from '@/routes/mainRoutes';
+import { useHideTabs } from '@/hooks/useHideTabs';
 
 // Enable LayoutAnimation for Android
 if (
@@ -34,18 +37,37 @@ if (
   UIManager.setLayoutAnimationEnabledExperimental(true);
 }
 
+// Pickup time constraints (must match backend validation in orderValidation.js)
+const PICKUP_CONSTRAINTS = {
+  MIN_MINUTES: 30, // Minimum 30 minutes from now (preparation time)
+  MAX_HOURS: 72,   // Maximum 72 hours (3 days) for advance ordering
+  DEFAULT_MINUTES: 60, // Default to 1 hour from now
+};
+
 const CheckoutScreen = () => {
   const colorScheme = useColorScheme();
-  const theme = Colors[(colorScheme ?? 'light') as 'light' | 'dark'];
+  const theme = Colors[colorScheme as keyof typeof Colors];
   const isDark = colorScheme === 'dark';
   const type = useTypography();
+  const { push, replace, back, isNavigating } = usePreventDoubleNavigation();
+
+  // Hide tabs during checkout flow
+  useHideTabs();
 
   const { items, businessId, clearCart, getSubtotal } = useCart();
   const { user } = useAuth();
 
-  const [pickupDate, setPickupDate] = useState(
-    new Date(Date.now() + 60 * 60 * 1000)
-  ); // 1 hour from now
+  // Calculate pickup time boundaries
+  const pickupBoundaries = useMemo(() => {
+    const now = new Date();
+    return {
+      min: new Date(now.getTime() + PICKUP_CONSTRAINTS.MIN_MINUTES * 60 * 1000),
+      max: new Date(now.getTime() + PICKUP_CONSTRAINTS.MAX_HOURS * 60 * 60 * 1000),
+      default: new Date(now.getTime() + PICKUP_CONSTRAINTS.DEFAULT_MINUTES * 60 * 1000),
+    };
+  }, []);
+
+  const [pickupDate, setPickupDate] = useState(pickupBoundaries.default);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [specialInstructions, setSpecialInstructions] = useState('');
@@ -56,6 +78,21 @@ const CheckoutScreen = () => {
     'gcash' | 'card' | 'paymaya' | 'grab_pay'
   >('gcash');
   const [loading, setLoading] = useState(false);
+
+  // Billing information for PayMongo payments
+  const [billingName, setBillingName] = useState(user?.first_name && user?.last_name ? `${user.first_name} ${user.last_name}` : '');
+  const [billingEmail, setBillingEmail] = useState(user?.email || '');
+  const [billingPhone, setBillingPhone] = useState(user?.phone_number || '');
+
+  // Warm up browser for faster payment flow (Android optimization)
+  useEffect(() => {
+    if (Platform.OS === 'android') {
+      WebBrowser.warmUpAsync();
+      return () => {
+        WebBrowser.coolDownAsync();
+      };
+    }
+  }, []);
 
   const subtotal = getSubtotal();
   const taxAmount = 0; // Per spec.md - currently taxAmount=0
@@ -97,53 +134,114 @@ const CheckoutScreen = () => {
       return;
     }
 
-    // Validate pickup datetime is in the future
+    // Validate pickup datetime using same constraints as defined at top of file
     const now = new Date();
-    const maxPickupTime = new Date(now.getTime() + 3 * 60 * 60 * 1000); // 3 hours from now
+    const minPickupTime = new Date(now.getTime() + PICKUP_CONSTRAINTS.MIN_MINUTES * 60 * 1000);
+    const maxPickupTime = new Date(now.getTime() + PICKUP_CONSTRAINTS.MAX_HOURS * 60 * 60 * 1000);
 
     if (pickupDate <= now) {
-      Alert.alert('Invalid Date', 'Pickup time must be in the future');
+      Alert.alert('Invalid Time', 'Pickup time must be in the future');
+      return;
+    }
+
+    if (pickupDate < minPickupTime) {
+      Alert.alert(
+        'Too Soon',
+        `Pickup time must be at least ${PICKUP_CONSTRAINTS.MIN_MINUTES} minutes from now to allow preparation time.`
+      );
       return;
     }
 
     if (pickupDate > maxPickupTime) {
       Alert.alert(
-        'Invalid Time',
-        'Pickup time cannot be more than 3 hours from now'
+        'Too Far Ahead',
+        `Pickup time cannot be more than ${PICKUP_CONSTRAINTS.MAX_HOURS / 24} days from now.`
       );
       return;
     }
 
-    // Validate pickup date is within 2 days
-    const maxPickupDate = new Date(now.getTime() + 2 * 24 * 60 * 60 * 1000);
-    if (pickupDate > maxPickupDate) {
+    // Validate minimum amount for PayMongo Payment Intents (₱20.00)
+    if (paymentMethod === 'paymongo' && total < 20) {
       Alert.alert(
-        'Invalid Date',
-        'Pickup date cannot be more than 2 days from today'
+        'Minimum Amount',
+        'Online payment requires a minimum order of ₱20.00. Please add more items or choose Cash on Pickup.',
+        [{ text: 'OK' }]
       );
       return;
     }
 
+    // Validate billing information for PayMongo payments
+    if (paymentMethod === 'paymongo') {
+      if (!billingName.trim()) {
+        Alert.alert('Missing Information', 'Please enter your full name for billing.');
+        return;
+      }
+      if (!billingEmail.trim()) {
+        Alert.alert('Missing Information', 'Please enter your email address for billing.');
+        return;
+      }
+      // Basic email validation
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(billingEmail.trim())) {
+        Alert.alert('Invalid Email', 'Please enter a valid email address.');
+        return;
+      }
+    }
+
+    // Build the order payload
+    const orderPayload: CreateOrderPayload = {
+      business_id: businessId,
+      user_id: user.id,
+      items: items.map((item) => ({
+        product_id: item.product_id,
+        quantity: item.quantity,
+        special_requests: item.special_requests,
+      })),
+      discount_id: null,
+      pickup_datetime: pickupDate.toISOString(),
+      special_instructions: specialInstructions || undefined,
+      payment_method: paymentMethod,
+      payment_method_type:
+        paymentMethod === 'paymongo' ? paymentMethodType : undefined,
+    };
+
+    // ========== FoodPanda/GrabFood Style Flow ==========
+    // For PayMongo payments: Show grace period screen BEFORE creating order
+    // This allows user to cancel within 10 seconds without creating any records
+    if (paymentMethod === 'paymongo') {
+      console.log('[Checkout] Navigating to grace period screen for PayMongo payment');
+      
+      // Prepare billing info for payment
+      const billingInfo = {
+        name: billingName.trim(),
+        email: billingEmail.trim().toLowerCase(),
+        phone: billingPhone.trim() || undefined,
+      };
+
+      // Clear cart before navigating (order will be created after grace period)
+      clearCart();
+
+      // Navigate to grace period screen with order data
+      // Order is NOT created yet - will be created after countdown ends
+      push(Routes.checkout.orderGracePeriod({
+        orderData: JSON.stringify(orderPayload),
+        paymentMethodType: paymentMethodType,
+        billingInfo: JSON.stringify({
+          name: billingName.trim(),
+          email: billingEmail.trim().toLowerCase(),
+          phone: billingPhone.trim() || undefined,
+        }),
+        total: total.toString(),
+      }));
+      return;
+    }
+
+    // ========== Cash on Pickup Flow (unchanged) ==========
+    // For COP: Create order immediately (no payment processing needed)
     try {
       setLoading(true);
 
-      const orderPayload: CreateOrderPayload = {
-        business_id: businessId,
-        user_id: user.id,
-        items: items.map((item) => ({
-          product_id: item.product_id,
-          quantity: item.quantity,
-          special_requests: item.special_requests,
-        })),
-        discount_id: null,
-        pickup_datetime: pickupDate.toISOString(),
-        special_instructions: specialInstructions || undefined,
-        payment_method: paymentMethod,
-        payment_method_type:
-          paymentMethod === 'paymongo' ? paymentMethodType : undefined,
-      };
-
-      console.log('[Checkout] Creating order:', orderPayload);
+      console.log('[Checkout] Creating COP order:', orderPayload);
 
       const orderResponse = await createOrder(orderPayload);
 
@@ -151,81 +249,11 @@ const CheckoutScreen = () => {
 
       clearCart();
 
-      const checkoutUrl = orderResponse.checkout_url;
-
-      if (paymentMethod === 'paymongo') {
-        if (checkoutUrl) {
-          console.log('[Checkout] Opening PayMongo checkout:', checkoutUrl);
-
-          try {
-            await openPayMongoCheckout(checkoutUrl);
-
-            router.replace({
-              pathname: '/(screens)/payment-cancel',
-              params: {
-                orderId: orderResponse.order_id,
-              },
-            } as never);
-            return;
-          } catch (checkoutError: any) {
-            console.error(
-              '[Checkout] Failed to open PayMongo checkout:',
-              checkoutError
-            );
-            Alert.alert(
-              'Payment Error',
-              'Failed to open payment page. You can retry payment from your orders.',
-              [
-                {
-                  text: 'View Orders',
-                  onPress: () => {
-                    router.replace('/(tabs)/orders' as never);
-                  },
-                },
-                {
-                  text: 'OK',
-                  style: 'cancel',
-                },
-              ]
-            );
-            return;
-          }
-        } else {
-          Alert.alert(
-            'Payment Warning',
-            'Payment checkout not ready. You can complete payment from the order confirmation screen.',
-            [
-              {
-                text: 'OK',
-                onPress: () => {
-                  router.replace({
-                    pathname: '/(screens)/order-confirmation',
-                    params: {
-                      orderId: orderResponse.order_id,
-                      orderNumber: orderResponse.order_number,
-                      arrivalCode: orderResponse.arrival_code,
-                      total: total.toString(),
-                      paymentMethod: paymentMethod,
-                    },
-                  } as never);
-                },
-              },
-            ]
-          );
-          return;
-        }
-      }
-
-      router.replace({
-        pathname: '/(screens)/order-confirmation',
-        params: {
-          orderId: orderResponse.order_id,
-          orderNumber: orderResponse.order_number,
-          arrivalCode: orderResponse.arrival_code,
-          total: total.toString(),
-          paymentMethod: paymentMethod,
-        },
-      } as never);
+      // Go directly to confirmation
+      replace(Routes.checkout.orderConfirmation({
+        orderId: orderResponse.order_id,
+        businessId: orderPayload.business_id,
+      }));
     } catch (error: any) {
       console.error('[Checkout] Order creation failed:', error);
 
@@ -401,7 +429,7 @@ const CheckoutScreen = () => {
                 >
                   Order Summary
                 </Text>
-                <Pressable onPress={() => router.back()}>
+                <Pressable onPress={() => back()}>
                   <Text style={[styles.editLink, { color: theme.active }]}>
                     Edit
                   </Text>
@@ -539,8 +567,8 @@ const CheckoutScreen = () => {
                   value={pickupDate}
                   mode="date"
                   display="default"
-                  minimumDate={new Date()}
-                  maximumDate={new Date(Date.now() + 2 * 24 * 60 * 60 * 1000)}
+                  minimumDate={pickupBoundaries.min}
+                  maximumDate={pickupBoundaries.max}
                   onChange={handleDateChange}
                 />
               )}
@@ -550,7 +578,7 @@ const CheckoutScreen = () => {
                   value={pickupDate}
                   mode="time"
                   display="default"
-                  minimumDate={new Date()}
+                  minimumDate={pickupBoundaries.min}
                   onChange={handleTimeChange}
                 />
               )}
@@ -775,6 +803,87 @@ const CheckoutScreen = () => {
                   </View>
                 )}
               </Pressable>
+
+              {/* Billing Information - Only show for PayMongo */}
+              {paymentMethod === 'paymongo' && (
+                <View style={styles.billingSection}>
+                  <View
+                    style={[styles.divider, { backgroundColor: theme.border, marginVertical: 16 }]}
+                  />
+                  <Text
+                    style={[
+                      styles.cardTitle,
+                      { color: theme.text, fontSize: type.h4, marginBottom: 12 },
+                    ]}
+                  >
+                    Billing Information
+                  </Text>
+                  <Text
+                    style={[styles.billingHint, { color: theme.textSecondary, marginBottom: 16 }]}
+                  >
+                    Required for online payment processing
+                  </Text>
+
+                  <Text style={[styles.inputLabel, { color: theme.textSecondary }]}>
+                    Full Name *
+                  </Text>
+                  <TextInput
+                    style={[
+                      styles.billingInput,
+                      {
+                        backgroundColor: theme.background,
+                        color: theme.text,
+                        borderColor: theme.border,
+                      },
+                    ]}
+                    placeholder="Juan Dela Cruz"
+                    placeholderTextColor={theme.textSecondary}
+                    value={billingName}
+                    onChangeText={setBillingName}
+                    autoCapitalize="words"
+                  />
+
+                  <Text style={[styles.inputLabel, { color: theme.textSecondary, marginTop: 12 }]}>
+                    Email Address *
+                  </Text>
+                  <TextInput
+                    style={[
+                      styles.billingInput,
+                      {
+                        backgroundColor: theme.background,
+                        color: theme.text,
+                        borderColor: theme.border,
+                      },
+                    ]}
+                    placeholder="juan@email.com"
+                    placeholderTextColor={theme.textSecondary}
+                    value={billingEmail}
+                    onChangeText={setBillingEmail}
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                  />
+
+                  <Text style={[styles.inputLabel, { color: theme.textSecondary, marginTop: 12 }]}>
+                    Phone Number (Optional)
+                  </Text>
+                  <TextInput
+                    style={[
+                      styles.billingInput,
+                      {
+                        backgroundColor: theme.background,
+                        color: theme.text,
+                        borderColor: theme.border,
+                      },
+                    ]}
+                    placeholder="09XX XXX XXXX"
+                    placeholderTextColor={theme.textSecondary}
+                    value={billingPhone}
+                    onChangeText={setBillingPhone}
+                    keyboardType="phone-pad"
+                  />
+                </View>
+              )}
 
               {/* Security Badge */}
               <View style={styles.securityBadge}>
@@ -1154,6 +1263,19 @@ const styles = StyleSheet.create({
   placeOrderText: {
     fontSize: 16,
     fontWeight: '700',
+  },
+  billingSection: {
+    marginTop: 8,
+  },
+  billingHint: {
+    fontSize: 12,
+  },
+  billingInput: {
+    borderWidth: 1,
+    borderRadius: 12,
+    padding: 12,
+    fontSize: 14,
+    height: 48,
   },
 });
 

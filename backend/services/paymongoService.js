@@ -179,13 +179,22 @@ export async function getCheckoutSession(checkoutSessionId) {
 /**
  * Create PayMongo Payment Intent for order (for advanced use cases)
  * Use createCheckoutSession for simpler integration
+ * 
+ * Payment Intent Workflow:
+ * 1. Create Payment Intent (server-side) - returns client_key
+ * 2. Create Payment Method (client-side using public key)
+ * 3. Attach Payment Method to Intent (client-side using client_key)
+ * 4. Handle 3DS authentication if required (client follows next_action.redirect.url)
+ * 5. Receive webhook: payment.paid or payment.failed
+ * 
  * @param {Object} params
  * @param {string} params.orderId - Order UUID
- * @param {number} params.amount - Amount in centavos (PHP cents)
+ * @param {number} params.amount - Amount in centavos (PHP cents), minimum 2000 (₱20.00)
  * @param {string} params.description - Payment description
  * @param {Array<string>} params.paymentMethodAllowed - Allowed payment methods
  * @param {Object} params.metadata - Additional metadata
- * @returns {Promise<Object>} Payment Intent data
+ * @param {string} params.captureType - 'automatic' (default) or 'manual' for pre-auth
+ * @returns {Promise<Object>} Payment Intent data with client_key
  */
 export async function createPaymentIntent({ 
   orderId, 
@@ -194,11 +203,12 @@ export async function createPaymentIntent({
   paymentMethodAllowed = ['card', 'paymaya', 'gcash', 'grab_pay'],
   metadata = {},
   currency = 'PHP',
-  statementDescriptor = 'NAGA VENTURE'
+  statementDescriptor = 'NAGA VENTURE',
+  captureType = 'automatic'
 }) {
-  // Validate amount (must be at least 100 centavos = 1 PHP)
-  if (!amount || amount < 100) {
-    throw new Error('Invalid amount: minimum 100 centavos (1 PHP)');
+  // Validate amount (minimum 2000 centavos = ₱20 for Payment Intents)
+  if (!amount || amount < 2000) {
+    throw new Error('Invalid amount: minimum 2000 centavos (₱20.00) for Payment Intents');
   }
 
   const metadataPayload = {
@@ -206,6 +216,7 @@ export async function createPaymentIntent({
     ...metadata
   };
 
+  // Clean up undefined/null/empty metadata values
   Object.keys(metadataPayload).forEach((key) => {
     if (metadataPayload[key] === undefined || metadataPayload[key] === null || metadataPayload[key] === '') {
       delete metadataPayload[key];
@@ -220,7 +231,8 @@ export async function createPaymentIntent({
     },
     currency,
     description: description || `Order #${orderId}`,
-    statement_descriptor: statementDescriptor
+    statement_descriptor: statementDescriptor,
+    capture_type: captureType
   };
 
   if (Object.keys(metadataPayload).length > 0) {
@@ -301,23 +313,60 @@ export async function createSource({ type, amount, orderId, redirectUrl, redirec
 
 /**
  * Create PayMongo Payment Method
+ * 
+ * For card payments: details should contain card_number, exp_month, exp_year, cvc
+ * For e-wallets: type only needed (gcash, paymaya, grab_pay)
+ * For DOB: bank_code required (bpi, ubp, or test_bank_one/test_bank_two for testing)
+ * 
+ * IMPORTANT: Card details should be collected client-side for PCI compliance.
+ * This function is for server-side use with e-wallets/DOB or tokenized cards.
+ * 
  * @param {Object} params
- * @param {string} params.type - card, paymaya
- * @param {Object} params.details - Payment method details
- * @param {Object} params.billing - Billing information
+ * @param {string} params.type - card, paymaya, gcash, grab_pay, dob, billease, qrph, brankas, shopee_pay
+ * @param {Object} params.details - Payment method details (card details or bank_code)
+ * @param {Object} params.billing - Billing information (name, email, phone, address)
+ * @param {Object} params.metadata - Additional metadata
  * @returns {Promise<Object>} Payment Method data
  */
-export async function createPaymentMethod({ type, details, billing }) {
+export async function createPaymentMethod({ type, details = {}, billing = {}, metadata = {} }) {
+  const validTypes = ['card', 'paymaya', 'gcash', 'grab_pay', 'dob', 'billease', 'qrph', 'brankas', 'shopee_pay'];
+  if (!validTypes.includes(type)) {
+    throw new Error(`Invalid payment method type. Must be one of: ${validTypes.join(', ')}`);
+  }
+
+  const attributes = { type };
+
+  // Add details for card or DOB
+  if (type === 'card' && details.card_number) {
+    attributes.details = {
+      card_number: details.card_number,
+      exp_month: details.exp_month,
+      exp_year: details.exp_year,
+      cvc: details.cvc
+    };
+  } else if ((type === 'dob' || type === 'brankas') && details.bank_code) {
+    attributes.details = { bank_code: details.bank_code };
+  }
+
+  // Add billing info if provided
+  if (Object.keys(billing).length > 0) {
+    attributes.billing = {
+      name: billing.name,
+      email: billing.email,
+      phone: billing.phone,
+      address: billing.address || {}
+    };
+  }
+
+  // Add metadata if provided
+  if (Object.keys(metadata).length > 0) {
+    attributes.metadata = metadata;
+  }
+
   const data = await makePayMongoRequest('/payment_methods', {
     method: 'POST',
     body: JSON.stringify({
-      data: {
-        attributes: {
-          type,
-          details,
-          billing
-        }
-      }
+      data: { attributes }
     })
   });
 
@@ -326,21 +375,33 @@ export async function createPaymentMethod({ type, details, billing }) {
 
 /**
  * Attach Payment Method to Payment Intent
- * @param {string} paymentIntentId 
- * @param {string} paymentMethodId 
- * @param {string} returnUrl - URL to return after authentication
- * @returns {Promise<Object>}
+ * 
+ * For e-wallets and redirect-based methods, return_url is required.
+ * After attachment, check the next_action field:
+ * - If next_action.type === 'redirect', redirect user to next_action.redirect.url
+ * - After user completes auth, they return to return_url
+ * 
+ * @param {string} paymentIntentId - Payment Intent ID
+ * @param {string} paymentMethodId - Payment Method ID
+ * @param {string} returnUrl - URL to return after authentication (required for e-wallets)
+ * @param {string} clientKey - Client key (required when using public API key)
+ * @returns {Promise<Object>} Updated Payment Intent with next_action
  */
-export async function attachPaymentIntent(paymentIntentId, paymentMethodId, returnUrl) {
+export async function attachPaymentIntent(paymentIntentId, paymentMethodId, returnUrl, clientKey = null) {
+  const attributes = {
+    payment_method: paymentMethodId,
+    return_url: returnUrl
+  };
+
+  // Include client_key if provided (for client-side API calls)
+  if (clientKey) {
+    attributes.client_key = clientKey;
+  }
+
   const data = await makePayMongoRequest(`/payment_intents/${paymentIntentId}/attach`, {
     method: 'POST',
     body: JSON.stringify({
-      data: {
-        attributes: {
-          payment_method: paymentMethodId,
-          return_url: returnUrl
-        }
-      }
+      data: { attributes }
     })
   });
 

@@ -332,7 +332,7 @@ export default function Verification({
             type="body-small"
             style={{ color: isDark ? '#8B92A6' : '#64748B' }}
           >
-            Didn't receive the code?
+            Didn&apos;t receive the code?
           </ThemedText>
           <Pressable onPress={handleResend} disabled={!canResend}>
             <ThemedText

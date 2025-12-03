@@ -19,6 +19,7 @@ import {
   createReportWithAttachments,
 } from '@/services/ReportService';
 import { router } from 'expo-router';
+import { Routes } from '@/routes/mainRoutes';
 import Dropdown, { DropdownItem } from '@/components/Dropdown';
 import { fetchAllTouristSpots } from '@/services/TouristSpotService';
 import { fetchAllBusinessDetails } from '@/services/AccommodationService';
@@ -200,7 +201,7 @@ export default function SubmitReport() {
           {
             text: 'View My Reports',
             onPress: () =>
-              router.replace('/(tabs)/(profile)/(reports)/my-reports' as any),
+              router.replace(Routes.profile.reports.myReports),
           },
           {
             text: 'OK',

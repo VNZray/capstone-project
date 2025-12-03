@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { View, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+import React from 'react';
+import { View, TouchableOpacity, StyleSheet } from 'react-native';
 import FormTextInput from '@/components/TextInput';
 import { ThemedText } from '@/components/themed-text';
 import { useColorScheme } from '@/hooks/use-color-scheme';
@@ -33,7 +33,7 @@ export default function ContactDetails({
       >
         <FontAwesome5 name="shield-alt" size={20} color={colors.info} />
         <ThemedText type="body-medium" style={{ flex: 1, marginLeft: 12 }}>
-          We'll send a verification code to confirm your identity
+          We&apos;ll send a verification code to confirm your identity
         </ThemedText>
       </View>
 

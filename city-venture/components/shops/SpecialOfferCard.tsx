@@ -30,9 +30,9 @@ const SpecialOfferCard: React.FC<SpecialOfferCardProps> = ({
 }) => {
   const { width } = useWindowDimensions();
 
-  const RADIUS = 16;
+  const RADIUS = 8;
   const CARD_WIDTH = moderateScale(160, 0.55, width);
-  const CARD_HEIGHT = moderateScale(220, 0.55, width);
+  const CARD_HEIGHT = moderateScale(200, 0.55, width);
 
   const imageSource = typeof image === 'string' ? { uri: image } : image;
 
@@ -52,8 +52,6 @@ const SpecialOfferCard: React.FC<SpecialOfferCardProps> = ({
     >
       <View style={styles.imageContainer}>
         <Image source={imageSource} style={styles.image} resizeMode="cover" />
-        <View style={styles.overlay} />
-        
         <View style={styles.discountBadge}>
           <Text style={styles.discountText}>{discount}</Text>
         </View>
@@ -71,60 +69,51 @@ const SpecialOfferCard: React.FC<SpecialOfferCardProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: ShopColors.cardBackground,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 6,
-    elevation: 3,
-    marginRight: 12,
+    backgroundColor: ShopColors.surface,
+    marginRight: 16,
     overflow: 'hidden',
     borderWidth: 1,
     borderColor: ShopColors.border,
   },
   pressed: {
     opacity: 0.9,
-    transform: [{ scale: 0.98 }],
   },
   imageContainer: {
     flex: 3,
     position: 'relative',
+    backgroundColor: ShopColors.inputBackground,
   },
   image: {
     width: '100%',
     height: '100%',
   },
-  overlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.1)',
-  },
   discountBadge: {
     position: 'absolute',
-    top: 12,
-    left: 12,
-    backgroundColor: ShopColors.warning,
+    top: 10,
+    left: 10,
+    backgroundColor: ShopColors.accent,
     paddingHorizontal: 8,
     paddingVertical: 4,
-    borderRadius: 6,
+    borderRadius: 4,
   },
   discountText: {
     color: '#FFFFFF',
-    fontSize: 10,
+    fontSize: 11,
     fontFamily: 'Poppins-Bold',
   },
   contentContainer: {
     flex: 2,
-    padding: 10,
+    padding: 12,
     justifyContent: 'space-between',
   },
   title: {
-    fontSize: 12,
+    fontSize: 14,
     fontFamily: 'Poppins-SemiBold',
     color: ShopColors.textPrimary,
-    lineHeight: 18,
+    lineHeight: 20,
   },
   actionText: {
-    fontSize: 10,
+    fontSize: 12,
     fontFamily: 'Poppins-Medium',
     color: ShopColors.accent,
   },

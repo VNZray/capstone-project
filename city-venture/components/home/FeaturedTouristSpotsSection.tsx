@@ -12,6 +12,7 @@ import { ThemedText } from '@/components/themed-text';
 import { Colors } from '@/constants/color';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
+import { Routes } from '@/routes/mainRoutes';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, {
   useAnimatedStyle,
@@ -95,7 +96,7 @@ const FeaturedTouristSpotsSection = () => {
           Featured Tourist Spots
         </ThemedText>
         <Pressable
-          onPress={() => router.push('/(tabs)/(home)/(spot)')}
+          onPress={() => router.push(Routes.spot.index)}
           style={({ pressed }) => ({
             opacity: pressed ? 0.7 : 1,
             flexDirection: 'row',

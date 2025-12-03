@@ -13,6 +13,7 @@ import {
   Pressable,
 } from 'react-native';
 import { useLocalSearchParams, Stack, router } from 'expo-router';
+import { Routes } from '@/routes/mainRoutes';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { colors } from '@/constants/color';
 import { useTypography } from '@/constants/typography';
@@ -183,14 +184,11 @@ const PaymentSuccessScreen = () => {
   }, [verifyPayment]);
 
   const handleViewOrder = () => {
-    router.replace({
-      pathname: '/(tabs)/orders/[orderId]',
-      params: { orderId: params.orderId },
-    } as never);
+    router.replace(Routes.profile.orders.detail(params.orderId));
   };
 
   const handleBackToHome = () => {
-    router.replace('/(tabs)/(home)' as never);
+    router.replace(Routes.tabs.home);
   };
 
   const animatedIconStyle = useAnimatedStyle(() => ({

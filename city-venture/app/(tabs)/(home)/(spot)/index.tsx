@@ -104,7 +104,7 @@ const TouristSpotScreen = () => {
           contentContainerStyle={styles.content}
           stickyHeaderIndices={[1]}
         >
-          <View style={{ marginTop: 8, marginBottom: 16 }}>
+          <View style={{ marginTop: 8, paddingHorizontal: 16 }}>
             <ThemedText type="header-large" style={{ fontSize: 32 }}>
               Tourist Spots
             </ThemedText>
@@ -144,7 +144,7 @@ const TouristSpotScreen = () => {
 
           {/* Featured Section */}
           {query.trim().length === 0 && featured.length > 0 && (
-            <View style={{ marginTop: 12 }}>
+            <View style={{ marginTop: 12, paddingHorizontal: 16 }}>
               <ThemedText
                 type="header-small"
                 weight="bold"
@@ -195,7 +195,7 @@ const TouristSpotScreen = () => {
 
           {/* Categories Filter */}
           {categories.length > 0 && (
-            <View style={{ marginTop: 12 }}>
+            <View style={{ marginTop: 12, paddingHorizontal: 16 }}>
               <ThemedText
                 type="header-small"
                 weight="bold"
@@ -230,7 +230,7 @@ const TouristSpotScreen = () => {
           )}
 
           {/* Discover More / Grid */}
-          <View style={{ marginTop: 12 }}>
+          <View style={{ marginTop: 12, paddingHorizontal: 16 }}>
             <FlatList
               data={filteredSpots}
               key={'card'}
@@ -263,7 +263,7 @@ export default TouristSpotScreen;
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  content: { paddingBottom: 100, paddingHorizontal: 16 },
+  content: { paddingBottom: 100 },
   screenTitle: { marginTop: 8, fontSize: 22, fontWeight: '800' },
   sectionTitle: { fontSize: 16, fontWeight: '700' },
   emptyText: { marginTop: 16, textAlign: 'center', fontSize: 13, opacity: 0.7 },
@@ -272,9 +272,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingTop: 8,
-    paddingBottom: 8,
-    gap: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    gap: 12,
   },
   center: {
     flex: 1,

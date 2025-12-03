@@ -18,7 +18,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { ThemedText } from '@/components/themed-text';
 import { Colors } from '@/constants/color';
 import { MaterialCommunityIcons, Ionicons, Feather } from '@expo/vector-icons';
-import { router, Stack } from 'expo-router';
+import { Stack } from 'expo-router';
 import { useAuth } from '@/context/AuthContext';
 import {
   getFavoritesByTouristId,
@@ -32,6 +32,8 @@ import { fetchTouristSpotById } from '@/services/TouristSpotService';
 import type { BusinessDetails } from '@/types/Business';
 import type { Room } from '@/types/Business';
 import placeholder from '@/assets/images/placeholder.png';
+import { usePreventDoubleNavigation } from '@/hooks/usePreventDoubleNavigation';
+import { Routes } from '@/routes/mainRoutes';
 
 // --- Types ---
 
@@ -77,18 +79,21 @@ const GridCard = ({
   colors: typeof Colors.light;
   onRemove: (favoriteId: string) => void;
 }) => {
+  const { push, isNavigating } = usePreventDoubleNavigation();
+
   const handlePress = () => {
     // Navigate based on category type
     if (item.category === 'Accommodation') {
-      router.push('/(tabs)/(home)/(accommodation)');
+      push(Routes.accommodation.index);
     } else if (item.category === 'Tourist Spot') {
-      router.push('/(tabs)/(home)/(spot)');
+      push(Routes.spot.index);
     }
   };
 
   return (
     <Pressable
       onPress={handlePress}
+      disabled={isNavigating}
       style={[styles.gridCard, { backgroundColor: colors.surface }]}
     >
       {/* Image Container */}
@@ -200,18 +205,21 @@ const ListCard = ({
   colors: typeof Colors.light;
   onRemove: (favoriteId: string) => void;
 }) => {
+  const { push, isNavigating } = usePreventDoubleNavigation();
+
   const handlePress = () => {
     // Navigate based on category type
     if (item.category === 'Accommodation') {
-      router.push('/(tabs)/(home)/(accommodation)');
+      push(Routes.accommodation.index);
     } else if (item.category === 'Tourist Spot') {
-      router.push('/(tabs)/(home)/(spot)');
+      push(Routes.spot.index);
     }
   };
 
   return (
     <Pressable
       onPress={handlePress}
+      disabled={isNavigating}
       style={[styles.listCard, { backgroundColor: colors.surface }]}
     >
       {/* Image */}
@@ -305,6 +313,7 @@ const MyFavorite = () => {
   const scheme = useColorScheme() ?? 'light';
   const colors = Colors[scheme];
   const { user } = useAuth();
+  const { push, back, canGoBack, isNavigating } = usePreventDoubleNavigation();
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
   const [activeCategory, setActiveCategory] = useState<Category>('All');
   const [searchQuery, setSearchQuery] = useState('');
@@ -503,12 +512,13 @@ const MyFavorite = () => {
           {/* Back Button */}
           <Pressable
             onPress={() => {
-              if (router.canGoBack()) {
-                router.back();
+              if (canGoBack()) {
+                back();
               } else {
-                router.push('/(tabs)/(home)');
+                push(Routes.tabs.home);
               }
             }}
+            disabled={isNavigating}
             style={({ pressed }) => ({
               opacity: pressed ? 0.7 : 1,
               padding: 4,

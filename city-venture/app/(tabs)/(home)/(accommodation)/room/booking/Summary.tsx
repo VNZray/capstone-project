@@ -7,6 +7,7 @@ import { useRoom } from '@/context/RoomContext';
 import { Booking, BookingPayment } from '@/types/Booking';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { Routes } from '@/routes/mainRoutes';
 import React, { useMemo, useState } from 'react';
 import {
   Modal,
@@ -211,7 +212,7 @@ const Summary: React.FC<Props> = ({ data, payment }) => {
             label="Okay"
             onPress={() => {
               setIsVisible(false);
-              router.replace('/(tabs)/(home)/(accommodation)/room/profile');
+              router.replace(Routes.accommodation.room.profile(''));
             }}
           />
 

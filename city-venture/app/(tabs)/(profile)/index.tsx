@@ -4,14 +4,16 @@ import { colors, Colors } from '@/constants/color';
 import { useAuth } from '@/context/AuthContext';
 import { FontAwesome5, Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { router } from 'expo-router';
 import React, { useMemo } from 'react';
 import { Image, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { usePreventDoubleNavigation } from '@/hooks/usePreventDoubleNavigation';
+import { Routes } from '@/routes/mainRoutes';
 
 const Profile = () => {
   const { user, logout } = useAuth();
   const insets = useSafeAreaInsets();
+  const { push, replace, isNavigating } = usePreventDoubleNavigation();
 
   // Colors (Light Mode Only)
   const bg = Colors.light.background;
@@ -58,17 +60,17 @@ const Profile = () => {
             size="large"
             fullWidth
             radius={16}
-            onPress={() => router.replace('/(tabs)/(home)')}
+            onPress={() => replace(Routes.tabs.home)}
           />
         </View>
       </View>
     );
   }
 
-  const onEdit = () => router.push('/(tabs)/(profile)/(edit)');
-  const onSettings = () => router.push('/(tabs)/(profile)/(settings)');
-  const onBookings = () => router.push('/(tabs)/(profile)/(bookings)');
-  const onReports = () => router.push('/(tabs)/(profile)/(reports)');
+  const onEdit = () => push(Routes.profile.edit);
+  const onSettings = () => push('/(tabs)/(profile)/(settings)');
+  const onBookings = () => push('/(tabs)/(profile)/(bookings)');
+  const onReports = () => push(Routes.profile.reports.index);
 
   return (
     <View style={[styles.screen, { backgroundColor: bg }]}>
@@ -152,7 +154,7 @@ const Profile = () => {
               iconColor="#F59E0B"
               iconBg="#FFFBEB"
               label="My Orders"
-              onPress={() => router.push('/(tabs)/(profile)/orders' as any)}
+              onPress={() => push(Routes.profile.orders.index)}
               border={border}
             />
             <MenuItem
@@ -242,7 +244,7 @@ const Profile = () => {
               label="Log Out"
               onPress={async () => {
                 logout();
-                router.replace('/');
+                replace(Routes.root);
               }}
               variant="outlined"
               color="error"

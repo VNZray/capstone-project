@@ -12,6 +12,7 @@ import Button from '@/components/Button';
 import { useAuth } from '@/context/AuthContext';
 import { getReportsByReporter } from '@/services/ReportService';
 import { router } from 'expo-router';
+import { Routes } from '@/routes/mainRoutes';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Colors } from '@/constants/color';
@@ -152,7 +153,7 @@ export default function MyReports() {
           color="primary"
           startIcon="plus"
           onPress={() =>
-            router.push('/(tabs)/(profile)/(reports)/submit' as any)
+            router.push(Routes.profile.reports.submit)
           }
         />
       </View>
@@ -323,7 +324,7 @@ export default function MyReports() {
                   size="medium"
                   startIcon="plus"
                   onPress={() =>
-                    router.push('/(tabs)/(profile)/(reports)/submit' as any)
+                    router.push(Routes.profile.reports.submit)
                   }
                   style={{ marginTop: 24 }}
                 />

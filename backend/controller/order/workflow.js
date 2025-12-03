@@ -8,6 +8,7 @@ import orderTransitionService from "../../services/orderTransitionService.js";
 import * as paymongoService from "../../services/paymongoService.js";
 import * as socketService from "../../services/socketService.js";
 import * as notificationHelper from "../../services/notificationHelper.js";
+import * as auditService from "../../services/auditService.js";
 import { getCompleteOrderForSocket } from "./utils.js";
 
 /**
@@ -77,6 +78,20 @@ export async function updateOrderStatus(req, res) {
     }
 
     const updatedOrder = data[0];
+
+    // ========== Audit Logging ==========
+    const actor = {
+      id: req.user?.id,
+      role: userRole,
+      ip: req.ip || req.headers['x-forwarded-for'] || req.connection?.remoteAddress
+    };
+    
+    await auditService.logStatusChange({
+      orderId: id,
+      oldStatus: currentStatus,
+      newStatus: status,
+      actor
+    });
 
     // Fetch complete order for socket emission
     try {
@@ -241,6 +256,36 @@ export async function cancelOrder(req, res) {
       return res.status(404).json({ message: "Order not found" });
     }
 
+    // ========== Audit Logging ==========
+    const actor = {
+      id: req.user?.id,
+      role: userRole,
+      ip: req.ip || req.headers['x-forwarded-for'] || req.connection?.remoteAddress
+    };
+    
+    await auditService.logCancellation({
+      orderId: id,
+      previousStatus: order.status,
+      cancelledBy: cancellationCheck.cancelled_by,
+      actor,
+      reason: sanitizedReason
+    });
+
+    // Log refund if applicable
+    if (refundData) {
+      await auditService.logPaymentUpdate({
+        orderId: id,
+        oldStatus: 'paid',
+        newStatus: 'refunded',
+        actor,
+        paymentDetails: {
+          refund_id: refundData.refund_id,
+          refund_amount: refundData.amount,
+          refund_status: refundData.status
+        }
+      });
+    }
+
     const response = {
       message: "Order cancelled successfully",
       data: data[0],
@@ -400,6 +445,20 @@ export async function markOrderAsReady(req, res) {
 
     const updatedOrder = data[0];
 
+    // ========== Audit Logging ==========
+    const actor = {
+      id: req.user?.id,
+      role: userRole,
+      ip: req.ip || req.headers['x-forwarded-for'] || req.connection?.remoteAddress
+    };
+    
+    await auditService.logPickupEvent({
+      orderId: id,
+      eventType: auditService.EVENT_TYPES.MARKED_READY,
+      actor,
+      metadata: { order_number: order.order_number }
+    });
+
     // Fetch complete order for socket emission
     try {
       const completeOrderData = await getCompleteOrderForSocket(id);
@@ -471,6 +530,20 @@ export async function markOrderAsPickedUp(req, res) {
     }
 
     const updatedOrder = data[0];
+
+    // ========== Audit Logging ==========
+    const actor = {
+      id: req.user?.id,
+      role: userRole,
+      ip: req.ip || req.headers['x-forwarded-for'] || req.connection?.remoteAddress
+    };
+    
+    await auditService.logPickupEvent({
+      orderId: id,
+      eventType: auditService.EVENT_TYPES.PICKED_UP,
+      actor,
+      metadata: { order_number: order.order_number }
+    });
 
     // Fetch complete order for socket emission
     try {
