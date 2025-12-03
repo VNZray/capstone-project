@@ -72,10 +72,10 @@ const CardPaymentScreen = () => {
   const handleCardNumberChange = (text: string) => {
     const formatted = formatCardNumber(text);
     setCardNumber(formatted);
-    
+
     // Clear error when user starts typing
     if (errors.cardNumber) {
-      setErrors(prev => ({ ...prev, cardNumber: '' }));
+      setErrors((prev) => ({ ...prev, cardNumber: '' }));
     }
   };
 
@@ -85,7 +85,7 @@ const CardPaymentScreen = () => {
     if (digits.length <= 2) {
       setExpMonth(digits);
       if (errors.expMonth) {
-        setErrors(prev => ({ ...prev, expMonth: '' }));
+        setErrors((prev) => ({ ...prev, expMonth: '' }));
       }
       // Auto-focus to year when month is complete
       if (digits.length === 2) {
@@ -100,7 +100,7 @@ const CardPaymentScreen = () => {
     if (digits.length <= 2) {
       setExpYear(digits);
       if (errors.expYear) {
-        setErrors(prev => ({ ...prev, expYear: '' }));
+        setErrors((prev) => ({ ...prev, expYear: '' }));
       }
       // Auto-focus to CVC when year is complete
       if (digits.length === 2) {
@@ -115,7 +115,7 @@ const CardPaymentScreen = () => {
     if (digits.length <= 4) {
       setCvc(digits);
       if (errors.cvc) {
-        setErrors(prev => ({ ...prev, cvc: '' }));
+        setErrors((prev) => ({ ...prev, cvc: '' }));
       }
     }
   };
@@ -196,7 +196,7 @@ const CardPaymentScreen = () => {
 
       // Generate return URL for 3DS redirect
       // PayMongo requires https:// URLs - use backend's redirect bridge endpoint
-      const backendBaseUrl = API_URL.replace('/api', '');
+      const backendBaseUrl = (API_URL || '').replace('/api', '');
       const returnUrl = `${backendBaseUrl}/orders/${params.orderId}/payment-success`;
       console.log('[CardPayment] Return URL for PayMongo:', returnUrl);
 
@@ -237,7 +237,7 @@ const CardPaymentScreen = () => {
       if (status === 'awaiting_next_action' && nextAction?.redirect?.url) {
         // 3DS authentication required
         console.log('[CardPayment] 3DS authentication required');
-        
+
         // Use in-app browser session for 3DS
         const authResult = await open3DSAuthentication(
           nextAction.redirect.url,
@@ -259,15 +259,17 @@ const CardPaymentScreen = () => {
               {
                 text: 'Go to Order',
                 onPress: () => {
-                  router.replace(Routes.checkout.orderConfirmation({
-                    orderId: params.orderId,
-                    orderNumber: params.orderNumber,
-                    arrivalCode: params.arrivalCode,
-                    total: params.total,
-                    paymentMethod: 'paymongo',
-                    paymentPending: 'true',
-                    paymentCancelled: 'true',
-                  }));
+                  router.replace(
+                    Routes.checkout.orderConfirmation({
+                      orderId: params.orderId,
+                      orderNumber: params.orderNumber,
+                      arrivalCode: params.arrivalCode,
+                      total: params.total,
+                      paymentMethod: 'paymongo',
+                      paymentPending: 'true',
+                      paymentCancelled: 'true',
+                    })
+                  );
                 },
               },
               {
@@ -280,63 +282,72 @@ const CardPaymentScreen = () => {
         }
 
         // Navigate to processing screen to check result
-        router.replace(Routes.checkout.paymentProcessing({
-          orderId: params.orderId,
-          orderNumber: params.orderNumber,
-          arrivalCode: params.arrivalCode,
-          paymentIntentId: params.paymentIntentId,
-          total: params.total,
-        }));
+        router.replace(
+          Routes.checkout.paymentProcessing({
+            orderId: params.orderId,
+            orderNumber: params.orderNumber,
+            arrivalCode: params.arrivalCode,
+            paymentIntentId: params.paymentIntentId,
+            total: params.total,
+          })
+        );
         return;
       }
 
       if (status === 'succeeded') {
         // Payment successful without 3DS
         console.log('[CardPayment] Payment succeeded immediately');
-        
-        router.replace(Routes.checkout.orderConfirmation({
-          orderId: params.orderId,
-          orderNumber: params.orderNumber,
-          arrivalCode: params.arrivalCode,
-          total: params.total,
-          paymentMethod: 'paymongo',
-          paymentSuccess: 'true',
-        }));
+
+        router.replace(
+          Routes.checkout.orderConfirmation({
+            orderId: params.orderId,
+            orderNumber: params.orderNumber,
+            arrivalCode: params.arrivalCode,
+            total: params.total,
+            paymentMethod: 'paymongo',
+            paymentSuccess: 'true',
+          })
+        );
         return;
       }
 
       if (status === 'processing') {
         // Payment is processing
         console.log('[CardPayment] Payment processing');
-        
-        router.replace(Routes.checkout.paymentProcessing({
-          orderId: params.orderId,
-          orderNumber: params.orderNumber,
-          arrivalCode: params.arrivalCode,
-          paymentIntentId: params.paymentIntentId,
-          total: params.total,
-        }));
+
+        router.replace(
+          Routes.checkout.paymentProcessing({
+            orderId: params.orderId,
+            orderNumber: params.orderNumber,
+            arrivalCode: params.arrivalCode,
+            paymentIntentId: params.paymentIntentId,
+            total: params.total,
+          })
+        );
         return;
       }
 
       // Unexpected status
       throw new Error(`Unexpected payment status: ${status}`);
-
     } catch (error: any) {
       console.error('[CardPayment] Error:', error);
-      
+
       let errorMessage = 'Payment failed. Please try again.';
-      
+
       if (error.message) {
         if (error.message.includes('card')) {
           errorMessage = error.message;
         } else if (error.message.includes('declined')) {
           errorMessage = 'Your card was declined. Please try a different card.';
-        } else if (error.message.includes('network') || error.message.includes('timeout')) {
-          errorMessage = 'Network error. Please check your connection and try again.';
+        } else if (
+          error.message.includes('network') ||
+          error.message.includes('timeout')
+        ) {
+          errorMessage =
+            'Network error. Please check your connection and try again.';
         }
       }
-      
+
       Alert.alert('Payment Failed', errorMessage, [{ text: 'OK' }]);
     } finally {
       setLoading(false);
@@ -385,9 +396,13 @@ const CardPaymentScreen = () => {
             showsVerticalScrollIndicator={false}
           >
             {/* Order Summary */}
-            <View style={[styles.summaryCard, { backgroundColor: theme.surface }]}>
+            <View
+              style={[styles.summaryCard, { backgroundColor: theme.surface }]}
+            >
               <View style={styles.summaryRow}>
-                <Text style={[styles.summaryLabel, { color: theme.textSecondary }]}>
+                <Text
+                  style={[styles.summaryLabel, { color: theme.textSecondary }]}
+                >
                   Order #{params.orderNumber}
                 </Text>
                 <Text style={[styles.summaryAmount, { color: theme.text }]}>
@@ -412,7 +427,9 @@ const CardPaymentScreen = () => {
                     styles.inputContainer,
                     {
                       backgroundColor: theme.background,
-                      borderColor: errors.cardNumber ? theme.error : theme.border,
+                      borderColor: errors.cardNumber
+                        ? theme.error
+                        : theme.border,
                     },
                   ]}
                 >
@@ -455,7 +472,9 @@ const CardPaymentScreen = () => {
                         {
                           backgroundColor: theme.background,
                           color: theme.text,
-                          borderColor: errors.expMonth ? theme.error : theme.border,
+                          borderColor: errors.expMonth
+                            ? theme.error
+                            : theme.border,
                         },
                       ]}
                       placeholder="MM"
@@ -466,7 +485,12 @@ const CardPaymentScreen = () => {
                       maxLength={2}
                       returnKeyType="next"
                     />
-                    <Text style={[styles.expirySeparator, { color: theme.textSecondary }]}>
+                    <Text
+                      style={[
+                        styles.expirySeparator,
+                        { color: theme.textSecondary },
+                      ]}
+                    >
                       /
                     </Text>
                     <TextInput
@@ -476,7 +500,9 @@ const CardPaymentScreen = () => {
                         {
                           backgroundColor: theme.background,
                           color: theme.text,
-                          borderColor: errors.expYear ? theme.error : theme.border,
+                          borderColor: errors.expYear
+                            ? theme.error
+                            : theme.border,
                         },
                       ]}
                       placeholder="YY"
@@ -547,7 +573,8 @@ const CardPaymentScreen = () => {
                   value={cardholderName}
                   onChangeText={(text) => {
                     setCardholderName(text);
-                    if (errors.name) setErrors(prev => ({ ...prev, name: '' }));
+                    if (errors.name)
+                      setErrors((prev) => ({ ...prev, name: '' }));
                   }}
                   autoCapitalize="words"
                   returnKeyType="next"
@@ -580,7 +607,8 @@ const CardPaymentScreen = () => {
                   value={email}
                   onChangeText={(text) => {
                     setEmail(text);
-                    if (errors.email) setErrors(prev => ({ ...prev, email: '' }));
+                    if (errors.email)
+                      setErrors((prev) => ({ ...prev, email: '' }));
                   }}
                   keyboardType="email-address"
                   autoCapitalize="none"
@@ -610,7 +638,12 @@ const CardPaymentScreen = () => {
                 style={[styles.testButton, { backgroundColor: theme.surface }]}
                 onPress={fillTestCard}
               >
-                <Text style={[styles.testButtonText, { color: theme.textSecondary }]}>
+                <Text
+                  style={[
+                    styles.testButtonText,
+                    { color: theme.textSecondary },
+                  ]}
+                >
                   Fill Test Card (Dev Only)
                 </Text>
               </Pressable>

@@ -125,7 +125,7 @@ const HomeScreen = () => {
   useEffect(() => {
     if (!user && !didRedirect.current) {
       didRedirect.current = true;
-      router.replace(Routes.auth.login);
+      router.replace(Routes.auth.login as any);
     }
   }, [user]);
 
@@ -369,9 +369,7 @@ const HomeScreen = () => {
               eventsData={eventState.data}
               loading={newsState.loading || eventState.loading}
               error={newsState.error || eventState.error}
-              onPressArticle={(article) =>
-                router.push(Routes.tabs.home)
-              }
+              onPressArticle={(article) => router.push(Routes.tabs.home)}
               onPressEvent={() => router.push(Routes.event.index as any)}
               onPressViewAllEvents={navigateToEventHome}
             />

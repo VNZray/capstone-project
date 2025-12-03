@@ -186,7 +186,7 @@ export const Routes = {
       pathname: '/(checkout)/payment-success' as const,
       params: params || {},
     }),
-    paymentCancel: (params?: { 
+    paymentCancel: (params?: {
       orderId?: string;
       orderNumber?: string;
       reason?: string;
@@ -194,7 +194,7 @@ export const Routes = {
       pathname: '/(checkout)/payment-cancel' as const,
       params: params || {},
     }),
-    paymentFailed: (params?: { 
+    paymentFailed: (params?: {
       orderId?: string;
       orderNumber?: string;
       errorMessage?: string;
@@ -203,7 +203,7 @@ export const Routes = {
       pathname: '/(checkout)/payment-failed' as const,
       params: params || {},
     }),
-    orderConfirmation: (params: { 
+    orderConfirmation: (params: {
       orderId: string;
       orderNumber?: string;
       arrivalCode?: string;
@@ -217,7 +217,7 @@ export const Routes = {
       pathname: '/(checkout)/order-confirmation' as const,
       params,
     }),
-    orderGracePeriod: (params: { 
+    orderGracePeriod: (params: {
       orderData: string;
       paymentMethodType: string;
       billingInfo: string;

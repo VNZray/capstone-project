@@ -64,7 +64,7 @@ const PaymentSuccessScreen = () => {
         const token = await AsyncStorage.getItem('authToken');
         if (!token) return;
 
-        const socketUrl = API_URL.replace('/api', '');
+        const socketUrl = (API_URL ?? '').replace('/api', '');
         const socket = io(socketUrl, {
           auth: { token },
           transports: ['websocket', 'polling'],

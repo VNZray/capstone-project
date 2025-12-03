@@ -2,13 +2,7 @@
 // See spec.md §5 - Grace period (10s default)
 
 import React, { useState, useEffect } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  Pressable,
-  Alert,
-} from 'react-native';
+import { View, Text, StyleSheet, Pressable, Alert } from 'react-native';
 import { useLocalSearchParams, Stack, router } from 'expo-router';
 import { Routes } from '@/routes/mainRoutes';
 import { useColorScheme } from '@/hooks/use-color-scheme';
@@ -80,42 +74,40 @@ const OrderConfirmationScreen = () => {
       return;
     }
 
-    Alert.alert(
-      'Cancel Order',
-      'Are you sure you want to cancel this order?',
-      [
-        { text: 'No', style: 'cancel' },
-        {
-          text: 'Yes, Cancel',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              setCancelling(true);
-              await cancelOrder(params.orderId);
-              
-              Alert.alert(
-                'Order Cancelled',
-                'Your order has been cancelled successfully.',
-                [
-                  {
-                    text: 'OK',
-                    onPress: () => router.replace(Routes.tabs.home),
-                  },
-                ]
-              );
-            } catch (error: any) {
-              console.error('[OrderConfirmation] Cancel failed:', error);
-              Alert.alert(
-                'Cancellation Failed',
-                error.response?.data?.message || error.message || 'Failed to cancel order'
-              );
-            } finally {
-              setCancelling(false);
-            }
-          },
+    Alert.alert('Cancel Order', 'Are you sure you want to cancel this order?', [
+      { text: 'No', style: 'cancel' },
+      {
+        text: 'Yes, Cancel',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            setCancelling(true);
+            await cancelOrder(params.orderId);
+
+            Alert.alert(
+              'Order Cancelled',
+              'Your order has been cancelled successfully.',
+              [
+                {
+                  text: 'OK',
+                  onPress: () => router.replace(Routes.tabs.home),
+                },
+              ]
+            );
+          } catch (error: any) {
+            console.error('[OrderConfirmation] Cancel failed:', error);
+            Alert.alert(
+              'Cancellation Failed',
+              error.response?.data?.message ||
+                error.message ||
+                'Failed to cancel order'
+            );
+          } finally {
+            setCancelling(false);
+          }
         },
-      ]
-    );
+      },
+    ]);
   };
 
   const handleViewOrderDetails = () => {
@@ -144,20 +136,22 @@ const OrderConfirmationScreen = () => {
 
       // For card payments, navigate to card payment screen
       if (paymentMethodType === 'card') {
-        router.push(Routes.checkout.cardPayment({
-          orderId: params.orderId,
-          orderNumber: params.orderNumber,
-          arrivalCode: params.arrivalCode,
-          paymentIntentId,
-          clientKey: intentResponse.data.client_key,
-          amount: intentResponse.data.amount.toString(),
-          total: params.total,
-        }));
+        router.push(
+          Routes.checkout.cardPayment({
+            orderId: params.orderId,
+            orderNumber: params.orderNumber,
+            arrivalCode: params.arrivalCode,
+            paymentIntentId,
+            clientKey: intentResponse.data.client_key,
+            amount: intentResponse.data.amount.toString(),
+            total: params.total,
+          })
+        );
         return;
       }
 
       // For e-wallets, attach payment method and redirect
-      const backendBaseUrl = API_URL.replace('/api', '');
+      const backendBaseUrl = (API_URL || '').replace('/api', '');
       const returnUrl = `${backendBaseUrl}/orders/${params.orderId}/payment-success`;
 
       const attachResponse = await attachEwalletPaymentMethod(
@@ -184,19 +178,23 @@ const OrderConfirmationScreen = () => {
         }
 
         // Navigate to payment processing to verify
-        router.replace(Routes.checkout.paymentProcessing({
-          orderId: params.orderId,
-          orderNumber: params.orderNumber,
-          arrivalCode: params.arrivalCode,
-          paymentIntentId,
-          total: params.total,
-        }));
+        router.replace(
+          Routes.checkout.paymentProcessing({
+            orderId: params.orderId,
+            orderNumber: params.orderNumber,
+            arrivalCode: params.arrivalCode,
+            paymentIntentId,
+            total: params.total,
+          })
+        );
       }
     } catch (error: any) {
       console.error('[OrderConfirmation] Payment initiation failed:', error);
       Alert.alert(
         'Payment Error',
-        error.response?.data?.message || error.message || 'Failed to start payment process'
+        error.response?.data?.message ||
+          error.message ||
+          'Failed to start payment process'
       );
     } finally {
       setInitiatingPayment(false);
@@ -205,8 +203,10 @@ const OrderConfirmationScreen = () => {
 
   // Determine if this is a truly confirmed order or one awaiting payment
   // For PayMongo orders, only paymentSuccess === 'true' means payment is complete
-  const isPaymentComplete = params.paymentMethod !== 'paymongo' || params.paymentSuccess === 'true';
-  const isAwaitingPayment = params.paymentMethod === 'paymongo' && params.paymentSuccess !== 'true';
+  const isPaymentComplete =
+    params.paymentMethod !== 'paymongo' || params.paymentSuccess === 'true';
+  const isAwaitingPayment =
+    params.paymentMethod === 'paymongo' && params.paymentSuccess !== 'true';
 
   return (
     <>
@@ -221,53 +221,103 @@ const OrderConfirmationScreen = () => {
       <PageContainer>
         <View style={[styles.container, { backgroundColor: palette.bg }]}>
           {/* Icon - Green check for complete orders, Warning for awaiting payment */}
-          <View style={[
-            styles.iconContainer, 
-            { backgroundColor: isPaymentComplete ? `${colors.success}20` : `${colors.warning}20` }
-          ]}>
-            <Ionicons 
-              name={isPaymentComplete ? "checkmark-circle" : "time"} 
-              size={80} 
-              color={isPaymentComplete ? colors.success : colors.warning} 
+          <View
+            style={[
+              styles.iconContainer,
+              {
+                backgroundColor: isPaymentComplete
+                  ? `${colors.success}20`
+                  : `${colors.warning}20`,
+              },
+            ]}
+          >
+            <Ionicons
+              name={isPaymentComplete ? 'checkmark-circle' : 'time'}
+              size={80}
+              color={isPaymentComplete ? colors.success : colors.warning}
             />
           </View>
 
-          <Text style={[{ fontSize: h2 }, { color: palette.text, textAlign: 'center', marginTop: 24 }]}>
+          <Text
+            style={[
+              { fontSize: h2 },
+              { color: palette.text, textAlign: 'center', marginTop: 24 },
+            ]}
+          >
             {isPaymentComplete ? 'Order Confirmed!' : 'Order Placed'}
           </Text>
 
-          <Text style={[{ fontSize: body }, { color: palette.subText, textAlign: 'center', marginTop: 8 }]}>
-            {isPaymentComplete 
-              ? 'Your order has been placed successfully' 
+          <Text
+            style={[
+              { fontSize: body },
+              { color: palette.subText, textAlign: 'center', marginTop: 8 },
+            ]}
+          >
+            {isPaymentComplete
+              ? 'Your order has been placed successfully'
               : 'Complete payment to confirm your order'}
           </Text>
 
           {/* Order Details Card */}
-          <View style={[styles.detailsCard, { backgroundColor: palette.card, borderColor: palette.border }]}>
+          <View
+            style={[
+              styles.detailsCard,
+              { backgroundColor: palette.card, borderColor: palette.border },
+            ]}
+          >
             {/* Order Number */}
             <View style={styles.detailRow}>
-              <Text style={[{ fontSize: body }, { color: palette.subText }]}>Order Number</Text>
-              <Text style={[{ fontSize: h4 }, { color: palette.text, fontWeight: '600' }]}>
+              <Text style={[{ fontSize: body }, { color: palette.subText }]}>
+                Order Number
+              </Text>
+              <Text
+                style={[
+                  { fontSize: h4 },
+                  { color: palette.text, fontWeight: '600' },
+                ]}
+              >
                 {params.orderNumber}
               </Text>
             </View>
 
             {/* Arrival Code */}
-            <View style={[styles.codeContainer, { backgroundColor: palette.bg, borderColor: colors.primary }]}>
-              <Text style={[{ fontSize: body }, { color: palette.subText, marginBottom: 8 }]}>
+            <View
+              style={[
+                styles.codeContainer,
+                { backgroundColor: palette.bg, borderColor: colors.primary },
+              ]}
+            >
+              <Text
+                style={[
+                  { fontSize: body },
+                  { color: palette.subText, marginBottom: 8 },
+                ]}
+              >
                 Arrival Code
               </Text>
-              <Text style={[{ fontSize: h1 }, { color: colors.primary, letterSpacing: 8 }]}>
+              <Text
+                style={[
+                  { fontSize: h1 },
+                  { color: colors.primary, letterSpacing: 8 },
+                ]}
+              >
                 {params.arrivalCode}
               </Text>
-              <Text style={[{ fontSize: bodySmall }, { color: palette.subText, marginTop: 8, textAlign: 'center' }]}>
+              <Text
+                style={[
+                  { fontSize: bodySmall },
+                  { color: palette.subText, marginTop: 8, textAlign: 'center' },
+                ]}
+              >
                 Show this code when picking up your order
               </Text>
             </View>
 
             {/* Total Amount */}
             <View style={styles.detailRow}>
-              <Text style={[{ fontSize: body }, { color: palette.subText }]}>Total Amount</Text>
+              <Text style={[{ fontSize: body }, { color: palette.subText }]}>
+                Total Amount
+              </Text>
               <Text style={[{ fontSize: h4 }, { color: colors.primary }]}>
                 ₱{parseFloat(params.total).toFixed(2)}
               </Text>
@@ -275,15 +325,29 @@ const OrderConfirmationScreen = () => {
 
             {/* Payment Status */}
             <View style={styles.detailRow}>
-              <Text style={[{ fontSize: body }, { color: palette.subText }]}>Payment Status</Text>
-              <View style={[
-                styles.statusBadge, 
-                { backgroundColor: isPaymentComplete ? `${colors.success}20` : `${colors.warning}20` }
-              ]}>
-                <Text style={[
-                  { fontSize: bodySmall }, 
-                  { color: isPaymentComplete ? colors.success : colors.warning }
-                ]}>
+              <Text style={[{ fontSize: body }, { color: palette.subText }]}>
+                Payment Status
+              </Text>
+              <View
+                style={[
+                  styles.statusBadge,
+                  {
+                    backgroundColor: isPaymentComplete
+                      ? `${colors.success}20`
+                      : `${colors.warning}20`,
+                  },
+                ]}
+              >
+                <Text
+                  style={[
+                    { fontSize: bodySmall },
+                    {
+                      color: isPaymentComplete
+                        ? colors.success
+                        : colors.warning,
+                    },
+                  ]}
+                >
                   {isPaymentComplete ? 'PAID' : 'PENDING'}
                 </Text>
               </View>
@@ -291,23 +355,45 @@ const OrderConfirmationScreen = () => {
 
             {/* Payment Method */}
             <View style={styles.detailRow}>
-              <Text style={[{ fontSize: body }, { color: palette.subText }]}>Payment Method</Text>
+              <Text style={[{ fontSize: body }, { color: palette.subText }]}>
+                Payment Method
+              </Text>
               <Text style={[{ fontSize: body }, { color: palette.text }]}>
-                {params.paymentMethod === 'paymongo' ? 'Online Payment' : 'Cash on Pickup'}
+                {params.paymentMethod === 'paymongo'
+                  ? 'Online Payment'
+                  : 'Cash on Pickup'}
               </Text>
             </View>
           </View>
 
           {/* Payment Pending Warning - Show prominently for unpaid PayMongo orders */}
           {isAwaitingPayment && (
-            <View style={[styles.warningContainer, { backgroundColor: `${colors.error}15`, borderColor: colors.error }]}>
+            <View
+              style={[
+                styles.warningContainer,
+                {
+                  backgroundColor: `${colors.error}15`,
+                  borderColor: colors.error,
+                },
+              ]}
+            >
               <Ionicons name="alert-circle" size={24} color={colors.error} />
               <View style={{ flex: 1, marginLeft: 12 }}>
-                <Text style={[{ fontSize: body, fontWeight: '600' }, { color: colors.error }]}>
+                <Text
+                  style={[
+                    { fontSize: body, fontWeight: '600' },
+                    { color: colors.error },
+                  ]}
+                >
                   Payment Required
                 </Text>
-                <Text style={[{ fontSize: bodySmall }, { color: palette.text, marginTop: 4 }]}>
-                  Your order will only be processed after payment is completed. 
+                <Text
+                  style={[
+                    { fontSize: bodySmall },
+                    { color: palette.text, marginTop: 4 },
+                  ]}
+                >
+                  Your order will only be processed after payment is completed.
                   The business has not been notified yet.
                 </Text>
               </View>
@@ -316,9 +402,22 @@ const OrderConfirmationScreen = () => {
 
           {/* Grace Period Warning */}
           {graceTimeRemaining > 0 && (
-            <View style={[styles.graceContainer, { backgroundColor: `${colors.warning}15`, borderColor: colors.warning }]}>
+            <View
+              style={[
+                styles.graceContainer,
+                {
+                  backgroundColor: `${colors.warning}15`,
+                  borderColor: colors.warning,
+                },
+              ]}
+            >
               <Ionicons name="time-outline" size={20} color={colors.warning} />
-              <Text style={[{ fontSize: bodySmall }, { color: palette.text, marginLeft: 8, flex: 1 }]}>
+              <Text
+                style={[
+                  { fontSize: bodySmall },
+                  { color: palette.text, marginLeft: 8, flex: 1 },
+                ]}
+              >
                 You can cancel this order within {graceTimeRemaining} seconds
               </Text>
             </View>
@@ -327,23 +426,33 @@ const OrderConfirmationScreen = () => {
           {/* Action Buttons */}
           <View style={styles.buttonContainer}>
             {/* Complete Payment Button - Only for PayMongo orders with pending payment */}
-            {params.paymentMethod === 'paymongo' && params.paymentSuccess !== 'true' && (
-              <Pressable
-                style={[styles.button, { backgroundColor: colors.success }]}
-                onPress={handleCompletePayment}
-                disabled={initiatingPayment}
-              >
-                <Ionicons 
-                  name={initiatingPayment ? "hourglass-outline" : "card-outline"} 
-                  size={20} 
-                  color="#FFF" 
-                  style={{ marginRight: 8 }} 
-                />
-                <Text style={[{ fontSize: body, fontWeight: '600' }, { color: '#FFF' }]}>
-                  {initiatingPayment ? 'Opening Payment...' : 'Complete Payment'}
-                </Text>
-              </Pressable>
-            )}
+            {params.paymentMethod === 'paymongo' &&
+              params.paymentSuccess !== 'true' && (
+                <Pressable
+                  style={[styles.button, { backgroundColor: colors.success }]}
+                  onPress={handleCompletePayment}
+                  disabled={initiatingPayment}
+                >
+                  <Ionicons
+                    name={
+                      initiatingPayment ? 'hourglass-outline' : 'card-outline'
+                    }
+                    size={20}
+                    color="#FFF"
+                    style={{ marginRight: 8 }}
+                  />
+                  <Text
+                    style={[
+                      { fontSize: body, fontWeight: '600' },
+                      { color: '#FFF' },
+                    ]}
+                  >
+                    {initiatingPayment
+                      ? 'Opening Payment...'
+                      : 'Complete Payment'}
+                  </Text>
+                </Pressable>
+              )}
 
             {graceTimeRemaining > 0 && (
               <Pressable
@@ -355,7 +464,12 @@ const OrderConfirmationScreen = () => {
                 onPress={handleCancelOrder}
                 disabled={cancelling}
               >
-                <Text style={[{ fontSize: body, fontWeight: '600' }, { color: colors.error }]}>
+                <Text
+                  style={[
+                    { fontSize: body, fontWeight: '600' },
+                    { color: colors.error },
+                  ]}
+                >
                   {cancelling ? 'Cancelling...' : 'Cancel Order'}
                 </Text>
               </Pressable>
@@ -365,16 +479,30 @@ const OrderConfirmationScreen = () => {
               style={[styles.button, { backgroundColor: colors.primary }]}
               onPress={handleViewOrderDetails}
             >
-              <Text style={[{ fontSize: body, fontWeight: '600' }, { color: '#FFF' }]}>
+              <Text
+                style={[
+                  { fontSize: body, fontWeight: '600' },
+                  { color: '#FFF' },
+                ]}
+              >
                 View Order Details
               </Text>
             </Pressable>
 
             <Pressable
-              style={[styles.button, styles.secondaryButton, { backgroundColor: palette.card, borderColor: palette.border }]}
+              style={[
+                styles.button,
+                styles.secondaryButton,
+                { backgroundColor: palette.card, borderColor: palette.border },
+              ]}
               onPress={handleBackToHome}
             >
-              <Text style={[{ fontSize: body, fontWeight: '600' }, { color: palette.text }]}>
+              <Text
+                style={[
+                  { fontSize: body, fontWeight: '600' },
+                  { color: palette.text },
+                ]}
+              >
                 Back to Home
               </Text>
             </Pressable>

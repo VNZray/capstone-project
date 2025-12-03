@@ -28,8 +28,8 @@ import debugLogger from '@/utils/debugLogger';
 
 const LoginPage = () => {
   console.log('[LoginPage] Rendering');
-  const [email, setEmail] = useState('tourist@gmail.com');
-  const [password, setPassword] = useState('tourist123');
+  const [email, setEmail] = useState('rclores666@gmail.com');
+  const [password, setPassword] = useState('RayvenClores22-17782');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [passwordError, setPasswordError] = useState('');
@@ -187,7 +187,7 @@ const LoginPage = () => {
                 </View>
 
                 <View style={{ alignItems: 'flex-end' }}>
-                  <Link href="/(auth)/forgot-password">
+                  <Link href="./(auth)/forgot-password">
                     <ThemedText type="link-medium">Forgot Password?</ThemedText>
                   </Link>
                 </View>

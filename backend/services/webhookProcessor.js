@@ -1,10 +1,10 @@
 /**
  * Webhook Processor
- * 
+ *
  * Handles async processing of PayMongo webhook events via Bull queue.
  * This module delegates to the processWebhookEvent function in paymentController
  * to maintain a single source of truth for webhook processing logic.
- * 
+ *
  * @see docs/ORDERING_SYSTEM_AUDIT.md - Phase 3
  */
 
@@ -14,7 +14,7 @@ import { processWebhookEvent } from '../controller/paymentController.js';
 /**
  * Process a single webhook job
  * Called by webhookQueueService when processing enqueued webhook events
- * 
+ *
  * @param {Object} params - Job parameters
  * @param {string} params.eventType - PayMongo event type
  * @param {Object} params.eventData - Event data from PayMongo
@@ -33,8 +33,8 @@ export async function processWebhookJob({ eventType, eventData, eventId, webhook
 
     // Update webhook_event record as processed
     await db.query(
-      `UPDATE webhook_event 
-       SET status = 'processed', processed_at = ? 
+      `UPDATE webhook_event
+       SET status = 'processed', processed_at = ?
        WHERE id = ?`,
       [new Date(), webhookDbId]
     );
@@ -49,8 +49,8 @@ export async function processWebhookJob({ eventType, eventData, eventId, webhook
 
     // Update webhook_event record as failed
     await db.query(
-      `UPDATE webhook_event 
-       SET status = 'failed', 
+      `UPDATE webhook_event
+       SET status = 'failed',
            processed_at = ?,
            processing_result = ?
        WHERE id = ?`,
@@ -65,13 +65,13 @@ export async function processWebhookJob({ eventType, eventData, eventId, webhook
 /**
  * Register the queue processor
  * Called during server startup to attach the job processor to the Bull queue
- * 
+ *
  * @param {Queue} queue - Bull queue instance
  */
 export function registerProcessor(queue) {
   queue.process('webhook', async (job) => {
     const { webhookId, eventId, eventType, event } = job.data;
-    
+
     console.log(`[WebhookProcessor] 🔄 Processing job ${job.id}: ${eventType}`);
     const startTime = Date.now();
 
@@ -81,8 +81,8 @@ export function registerProcessor(queue) {
 
       // Update webhook_event record as processed
       await db.query(
-        `UPDATE webhook_event 
-         SET status = 'processed', processed_at = ? 
+        `UPDATE webhook_event
+         SET status = 'processed', processed_at = ?
          WHERE id = ?`,
         [new Date(), webhookId]
       );
@@ -97,8 +97,8 @@ export function registerProcessor(queue) {
 
       // Update webhook_event record as failed
       await db.query(
-        `UPDATE webhook_event 
-         SET status = 'failed', 
+        `UPDATE webhook_event
+         SET status = 'failed',
              processed_at = ?,
              processing_result = ?
          WHERE id = ?`,

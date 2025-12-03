@@ -57,7 +57,7 @@ export function canTransition(currentStatus, newStatus, actorRole, order = null)
   currentStatus = currentStatus?.toLowerCase();
   newStatus = newStatus?.toLowerCase();
   actorRole = actorRole?.toLowerCase();
-  
+
   // Check if current status exists in rules
   if (!TRANSITION_RULES[currentStatus]) {
     return {
@@ -65,7 +65,7 @@ export function canTransition(currentStatus, newStatus, actorRole, order = null)
       reason: `Invalid current status: ${currentStatus}`
     };
   }
-  
+
   // Check if new status is in allowed transitions from current
   const allowedTransitions = TRANSITION_RULES[currentStatus];
   if (!allowedTransitions[newStatus]) {
@@ -75,22 +75,22 @@ export function canTransition(currentStatus, newStatus, actorRole, order = null)
       reason: `Cannot transition from ${currentStatus} to ${newStatus}. Valid next states: ${validNextStates.join(', ') || 'none (terminal state)'}`
     };
   }
-  
+
   // Check if actor role is authorized for this transition
   const requiredRoles = allowedTransitions[newStatus];
-  
+
   if (!requiredRoles.includes(actorRole)) {
     return {
       allowed: false,
       reason: `Role ${actorRole} is not authorized to transition from ${currentStatus} to ${newStatus}. Required roles: ${requiredRoles.join(', ')}`
     };
   }
-  
+
   // ========== Payment Status Validation (Phase 4) ==========
   // Block certain transitions for PayMongo orders until payment is confirmed
   if (order && order.payment_method === 'paymongo') {
     const paymentStatus = order.payment_status?.toLowerCase();
-    
+
     // Block PREPARING and READY_FOR_PICKUP until payment is confirmed
     if (['preparing', 'ready_for_pickup'].includes(newStatus)) {
       if (paymentStatus !== 'paid') {
@@ -101,7 +101,7 @@ export function canTransition(currentStatus, newStatus, actorRole, order = null)
       }
     }
   }
-  
+
   return {
     allowed: true,
     reason: null
@@ -110,27 +110,27 @@ export function canTransition(currentStatus, newStatus, actorRole, order = null)
 
 /**
  * Get allowed next statuses for current status and actor
- * @param {string} currentStatus 
- * @param {string} actorRole 
+ * @param {string} currentStatus
+ * @param {string} actorRole
  * @returns {Array<string>} List of allowed next statuses
  */
 export function getAllowedNextStatuses(currentStatus, actorRole) {
   currentStatus = currentStatus?.toLowerCase();
   actorRole = actorRole?.toLowerCase();
-  
+
   if (!TRANSITION_RULES[currentStatus]) {
     return [];
   }
-  
+
   const allowedTransitions = TRANSITION_RULES[currentStatus];
   const nextStatuses = [];
-  
+
   for (const [nextStatus, requiredRoles] of Object.entries(allowedTransitions)) {
     if (requiredRoles.includes(actorRole)) {
       nextStatuses.push(nextStatus);
     }
   }
-  
+
   return nextStatuses;
 }
 
@@ -145,7 +145,7 @@ export function canCancelWithinGrace(orderCreatedAt, graceSeconds = 10) {
   const now = new Date();
   const elapsedSeconds = (now - createdAt) / 1000;
   const remainingSeconds = Math.max(0, graceSeconds - elapsedSeconds);
-  
+
   if (elapsedSeconds <= graceSeconds) {
     return {
       allowed: true,
@@ -153,7 +153,7 @@ export function canCancelWithinGrace(orderCreatedAt, graceSeconds = 10) {
       remainingSeconds: Math.ceil(remainingSeconds)
     };
   }
-  
+
   return {
     allowed: false,
     reason: `Grace period of ${graceSeconds} seconds has expired. Order was created ${Math.floor(elapsedSeconds)} seconds ago.`,
@@ -169,7 +169,7 @@ export function canCancelWithinGrace(orderCreatedAt, graceSeconds = 10) {
  */
 export function getCancelledByActor(actorRole, currentStatus) {
   const roleLower = actorRole?.toLowerCase();
-  
+
   if (roleLower === 'tourist') {
     return 'user';
   } else if (actorRole === 'Business Owner' || roleLower === 'business owner' || roleLower === 'staff') {
@@ -181,7 +181,7 @@ export function getCancelledByActor(actorRole, currentStatus) {
     // Default to system for admin-initiated cancellations
     return 'system';
   }
-  
+
   return 'system'; // fallback
 }
 
@@ -195,7 +195,7 @@ export function getCancelledByActor(actorRole, currentStatus) {
 export function validateCancellation(order, actorRole, graceSeconds = 10) {
   const currentStatus = order.status?.toLowerCase();
   const roleLower = actorRole?.toLowerCase();
-  
+
   // Cannot cancel terminal states
   if (['picked_up', 'cancelled_by_user', 'cancelled_by_business', 'failed_payment'].includes(currentStatus)) {
     return {
@@ -204,7 +204,7 @@ export function validateCancellation(order, actorRole, graceSeconds = 10) {
       cancelled_by: null
     };
   }
-  
+
   // Tourist cancellation rules
   if (roleLower === 'tourist') {
     if (currentStatus !== 'pending') {
@@ -214,7 +214,7 @@ export function validateCancellation(order, actorRole, graceSeconds = 10) {
         cancelled_by: null
       };
     }
-    
+
     // Check grace period
     const graceCheck = canCancelWithinGrace(order.created_at, graceSeconds);
     if (!graceCheck.allowed) {
@@ -224,14 +224,14 @@ export function validateCancellation(order, actorRole, graceSeconds = 10) {
         cancelled_by: null
       };
     }
-    
+
     return {
       allowed: true,
       reason: null,
       cancelled_by: 'user'
     };
   }
-  
+
   // Business (Business Owner/staff) cancellation rules
   if (actorRole === 'Business Owner' || roleLower === 'business owner' || roleLower === 'staff') {
     // Business can cancel before picked_up
@@ -242,14 +242,14 @@ export function validateCancellation(order, actorRole, graceSeconds = 10) {
         cancelled_by: null
       };
     }
-    
+
     return {
       allowed: true,
       reason: null,
       cancelled_by: 'business'
     };
   }
-  
+
   // Admin and system can cancel (with appropriate reason)
   if (['admin', 'system'].includes(actorRole)) {
     return {
@@ -258,7 +258,7 @@ export function validateCancellation(order, actorRole, graceSeconds = 10) {
       cancelled_by: getCancelledByActor(actorRole, currentStatus)
     };
   }
-  
+
   return {
     allowed: false,
     reason: `Invalid actor role: ${actorRole}`,

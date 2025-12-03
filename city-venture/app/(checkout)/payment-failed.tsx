@@ -1,11 +1,5 @@
 import React from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  Pressable,
-  Platform,
-} from 'react-native';
+import { View, Text, StyleSheet, Pressable, Platform } from 'react-native';
 import { Stack, router, useLocalSearchParams } from 'expo-router';
 import { Routes } from '@/routes/mainRoutes';
 import { useColorScheme } from '@/hooks/use-color-scheme';
@@ -19,7 +13,7 @@ import { Ionicons } from '@expo/vector-icons';
  */
 const PaymentFailedScreen = () => {
   const colorScheme = useColorScheme();
-  const theme = Colors[colorScheme ?? 'light'];
+  const theme = Colors[(colorScheme ?? 'light') as keyof typeof Colors];
 
   const params = useLocalSearchParams<{
     orderId: string;
@@ -50,7 +44,12 @@ const PaymentFailedScreen = () => {
       />
       <PageContainer padding={24}>
         <View style={styles.container}>
-          <View style={[styles.iconContainer, { backgroundColor: `${theme.error}15` }]}>
+          <View
+            style={[
+              styles.iconContainer,
+              { backgroundColor: `${theme.error}15` },
+            ]}
+          >
             <Ionicons name="close-circle" size={80} color={theme.error} />
           </View>
 
@@ -59,11 +58,14 @@ const PaymentFailedScreen = () => {
           </Text>
 
           <Text style={[styles.message, { color: theme.textSecondary }]}>
-            {params.errorMessage || 'Your payment could not be processed. Please try again.'}
+            {params.errorMessage ||
+              'Your payment could not be processed. Please try again.'}
           </Text>
 
           {params.orderNumber && (
-            <View style={[styles.orderInfo, { backgroundColor: theme.surface }]}>
+            <View
+              style={[styles.orderInfo, { backgroundColor: theme.surface }]}
+            >
               <Text style={[styles.orderLabel, { color: theme.textSecondary }]}>
                 Order Number
               </Text>
@@ -74,9 +76,14 @@ const PaymentFailedScreen = () => {
           )}
 
           <View style={styles.infoBox}>
-            <Ionicons name="information-circle" size={20} color={theme.primary} />
+            <Ionicons
+              name="information-circle"
+              size={20}
+              color={theme.primary}
+            />
             <Text style={[styles.infoText, { color: theme.textSecondary }]}>
-              Your order has been saved. You can retry payment from your order details.
+              Your order has been saved. You can retry payment from your order
+              details.
             </Text>
           </View>
 

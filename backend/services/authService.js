@@ -40,7 +40,7 @@ export async function generateTokens(user) {
       role: roleName, // Use role name instead of ID
     },
     JWT_ACCESS_SECRET,
-    { 
+    {
       expiresIn: ACCESS_TOKEN_EXPIRY,
       algorithm: 'HS256' // SECURITY: Explicitly pin algorithm
     }
@@ -53,7 +53,7 @@ export async function generateTokens(user) {
       version: 0,
     },
     JWT_REFRESH_SECRET,
-    { 
+    {
       expiresIn: '7d',
       algorithm: 'HS256' // SECURITY: Explicitly pin algorithm
     }
@@ -67,19 +67,19 @@ export async function loginUser(email, password) {
   // Use Stored Procedure
   const [rows] = await db.query('CALL GetUserByEmail(?)', [email]);
   const users = rows[0]; // SP returns [[user], ...]
-  
+
   // SECURITY: Use generic error message to prevent user enumeration attacks
   // Do NOT reveal whether the email exists or the password was wrong
   const GENERIC_AUTH_ERROR = 'Invalid email or password';
-  
+
   if (!users || users.length === 0) {
     // Perform dummy bcrypt comparison to prevent timing attacks
     await bcrypt.compare(password, '$2b$10$dummyhashfortimingattack');
     throw new Error(GENERIC_AUTH_ERROR);
   }
-  
+
   const user = users[0];
-  
+
   // Fetch role name
   if (user.user_role_id && !user.role_name) {
     const [roleRows] = await db.query(
@@ -91,7 +91,7 @@ export async function loginUser(email, password) {
     }
   }
   const isMatch = await bcrypt.compare(password, user.password);
-  
+
   if (!isMatch) {
     throw new Error(GENERIC_AUTH_ERROR);
   }
@@ -103,7 +103,7 @@ export async function loginUser(email, password) {
   // 3. Store refresh token hash
   const tokenHash = hashToken(refreshToken);
   const expiresAt = new Date(decodedRefresh.exp * 1000);
-  
+
   // CALL InsertRefreshToken(token_hash, user_id, expires_at, family_id)
   await db.query('CALL InsertRefreshToken(?, ?, ?, ?)', [
     tokenHash,
@@ -133,7 +133,7 @@ export async function refreshAccessToken(incomingRefreshToken) {
   const tokens = rows[0];
 
   if (!tokens || tokens.length === 0) {
-    // Token not found in DB. 
+    // Token not found in DB.
     // Could be expired and cleaned up, or malicious.
     // If it's a valid JWT but not in DB, it might be a reused token that was deleted/revoked?
     // For strict rotation, we expect to find it.
@@ -165,7 +165,7 @@ export async function refreshAccessToken(incomingRefreshToken) {
     {
       id: payload.id,
       email: payload.email, // Note: payload from refresh might not have email if not put in generateTokens
-      // Better to fetch user fresh or put min info. 
+      // Better to fetch user fresh or put min info.
       // Let's assume we fetch user or just rely on payload.
       // For robustness, let's fetch user ID to ensure existence?
       // But for speed, we trust the valid signed JWT + DB check.
@@ -175,12 +175,12 @@ export async function refreshAccessToken(incomingRefreshToken) {
     JWT_ACCESS_SECRET,
     { expiresIn: ACCESS_TOKEN_EXPIRY }
   );
-  
+
   // Retrieve user to get current role for access token
   // We can use GetUserById existing SP
   const [userRows] = await db.query('CALL GetUserById(?)', [payload.id]);
   const user = userRows[0]?.[0];
-  
+
   if (!user) {
       throw new Error('User not found during refresh');
   }
@@ -203,7 +203,7 @@ export async function refreshAccessToken(incomingRefreshToken) {
       role: roleName, // Use role name instead of ID
     },
     JWT_ACCESS_SECRET,
-    { 
+    {
       expiresIn: ACCESS_TOKEN_EXPIRY,
       algorithm: 'HS256' // SECURITY: Explicitly pin algorithm
     }
@@ -216,7 +216,7 @@ export async function refreshAccessToken(incomingRefreshToken) {
       version: (payload.version || 0) + 1,
     },
     JWT_REFRESH_SECRET,
-    { 
+    {
       expiresIn: '7d',
       algorithm: 'HS256' // SECURITY: Explicitly pin algorithm
     }
