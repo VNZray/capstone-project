@@ -1,3 +1,5 @@
+import type { EntityCategory } from './Category';
+
 export type TouristSpot = {
 	id: string;
 	name: string;
@@ -18,10 +20,9 @@ export type TouristSpot = {
 	entry_fee?: string | null;
 	spot_status: string;
 	is_featured?: boolean | number;
-	type_id: number;
 	created_at?: string;
 	updated_at?: string;
-	categories?: TouristSpotCategory[];
+	categories?: EntityCategory[];
 	images?: TouristSpotImage[];
 };
 
@@ -36,8 +37,9 @@ export type TouristSpotAddressDetails = {
 
 export type TouristSpotCategory = {
 	id: number;
-	category: string;
-	type_id: number;
+	title: string;
+	alias: string;
+	parent_category?: number | null;
 	tourist_spot_id?: string;
 };
 
@@ -80,7 +82,6 @@ export type TouristSpotCoreCreate = {
 	website?: string | null;
 	entry_fee?: string | null;
 	category_ids: number[];
-	type_id: number;
 	schedules?: TouristSpotSchedule[];
 };
 

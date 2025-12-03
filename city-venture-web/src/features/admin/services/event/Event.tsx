@@ -11,6 +11,8 @@ import { Search, Edit, Eye, Trash2, ListChecks, Calendar, Music, Utensils, Party
 import { useState, useEffect } from "react";
 import { getData } from "@/src/services/Service";
 import type { BusinessDetails } from "@/src/types/Business";
+import type { Category } from "@/src/types/TypeAndCategeory";
+import { fetchCategoryTree } from "@/src/services/BusinessService";
 import placeholderImage from "@/src/assets/images/placeholder-image.png";
 
 const Event: React.FC = () => {
@@ -18,6 +20,7 @@ const Event: React.FC = () => {
   const [activeTab, setActiveTab] = useState("all");
   const [filter, setFilter] = useState<"active" | "inactive">("active");
   const [events, setEvents] = useState<BusinessDetails[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   
   // Category icon mapping for event types
@@ -31,46 +34,64 @@ const Event: React.FC = () => {
     32: <Heart size={16} />,
   };
 
-  // Category name mapping
-  const categoryNames: Record<number, string> = {
-    26: "Festival",
-    27: "Concert",
-    28: "Food Fair",
-    29: "Celebration",
-    30: "Exhibition",
-    31: "Sports",
-    32: "Cultural",
+  // Flatten category tree to get all categories
+  const flattenCategories = (cats: Category[]): Category[] => {
+    const result: Category[] = [];
+    const flatten = (items: Category[]) => {
+      for (const cat of items) {
+        result.push(cat);
+        if (cat.children) flatten(cat.children);
+      }
+    };
+    flatten(cats);
+    return result;
+  };
+
+  const flatCategories = flattenCategories(categories);
+
+  // Get category name by ID
+  const getCategoryName = (id: number): string => {
+    const cat = flatCategories.find(c => c.id === id);
+    return cat?.title || `Category ${id}`;
   };
 
   // Generate dynamic tabs based on available categories in events
   const tabs = [
     { id: "all", label: "All", icon: <ListChecks size={16} /> },
-    ...Array.from(new Set(events.map((event) => event.business_category_id)))
+    ...Array.from(new Set(events.flatMap((event) => event.category_ids || [])))
       .filter((categoryId) => categoryId !== undefined && categoryId !== null)
       .sort((a, b) => a - b)
       .map((categoryId) => ({
         id: String(categoryId),
-        label: categoryNames[categoryId] || `Category ${categoryId}`,
+        label: getCategoryName(categoryId),
         icon: categoryIcons[categoryId] || <Calendar size={16} />,
       })),
   ];
 
-  // Fetch events on component mount
+  // Fetch events and categories on component mount
   useEffect(() => {
     fetchEvents();
+    loadCategories();
   }, []);
+
+  const loadCategories = async () => {
+    try {
+      const tree = await fetchCategoryTree();
+      setCategories(tree);
+    } catch (error) {
+      console.error("Error fetching categories:", error);
+    }
+  };
 
   const fetchEvents = async () => {
     setLoading(true);
     try {
-      const response = await getData("business");
-      // Filter for event type businesses (type_id 3 is typically events)
-      const eventData = Array.isArray(response)
-        ? response.filter((business: BusinessDetails) => business.business_type_id === 3)
-        : [];
-      setEvents(eventData);
+      // Fetch from events endpoint if available, otherwise use business data with event categories
+      const response = await getData("event");
+      setEvents(Array.isArray(response) ? response : []);
     } catch (error) {
       console.error("Error fetching events:", error);
+      setEvents([]);
     } finally {
       setLoading(false);
     }
@@ -89,7 +110,7 @@ const Event: React.FC = () => {
         : event.status?.toLowerCase() === "inactive";
 
     const matchesCategory =
-      activeTab === "all" || event.business_category_id === parseInt(activeTab);
+      activeTab === "all" || (event.category_ids || []).includes(parseInt(activeTab));
 
     return matchesSearch && matchesStatus && matchesCategory;
   });

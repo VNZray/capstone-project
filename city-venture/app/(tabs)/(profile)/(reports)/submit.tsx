@@ -118,8 +118,8 @@ export default function SubmitReport() {
           const businesses = await fetchAllBusinessDetails();
           const filtered =
             targetType === 'accommodation'
-              ? businesses.filter((b) => b.business_category_id === 1) // Assuming 1 is accommodation
-              : businesses.filter((b) => b.business_category_id !== 1);
+              ? businesses.filter((b) => b.hasBooking === true) // Accommodations have booking enabled
+              : businesses.filter((b) => b.hasBooking === false); // Shops don't have booking
           setTargetOptions(
             filtered.map((b) => ({
               id: String(b.id),

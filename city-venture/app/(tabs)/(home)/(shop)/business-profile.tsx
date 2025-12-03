@@ -326,7 +326,9 @@ export default function BusinessProfileScreen() {
         ratingCount: typeof count === 'number' && !isNaN(count) ? count : 0,
         ratingBreakdown: breakdown,
         distance: undefined, // Placeholder - requires user location
-        category: undefined, // Could fetch from business_category_id
+        category: business.categories && business.categories.length > 0 
+          ? business.categories[0].title 
+          : undefined, // Uses entity_categories
         priceRange: business.min_price && business.max_price
           ? `₱${business.min_price} - ₱${business.max_price}`
           : undefined,

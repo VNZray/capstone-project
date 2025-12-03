@@ -1,3 +1,5 @@
+import type { EntityCategory } from './Category';
+
 export interface TouristSpot {
   id: string;
   name: string;
@@ -13,9 +15,7 @@ export interface TouristSpot {
   entry_fee: number | null;
   spot_status: 'pending' | 'active' | 'inactive';
   is_featured: boolean;
-  categories: Category[];
-  type: string;
-  type_id: number;
+  categories: EntityCategory[];
   created_at: string;
   updated_at: string;
   province: string;
@@ -43,14 +43,11 @@ export interface Barangay {
 
 export interface Category {
   id: number;
-  category: string;
+  title: string;
+  alias: string;
+  parent_category?: number | null;
 }
 
-export interface Type {
-  id: number;
-  type: string;
-  category_id: number;
-}
 
 export interface TouristSpotSchedule {
   id?: string;
@@ -74,7 +71,6 @@ export interface TouristSpotFormData {
   website: string;
   entry_fee: string;
   category_ids: number[];
-  type_id: string;
   spot_status: "" | "pending" | "active" | "inactive";
   is_featured: boolean;
 }

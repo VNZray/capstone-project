@@ -6,7 +6,7 @@ import type { Address } from "@/src/types/Address";
 import type { Owner } from "@/src/types/Owner";
 import type { User } from "@/src/types/User";
 import type { Permit } from "@/src/types/Permit";
-import { Card, CardContent, Divider } from "@mui/joy";
+import { Card, CardContent, Divider, Chip, Stack } from "@mui/joy";
 import { Avatar } from "@mui/joy";
 import {
   BusinessOutlined,
@@ -18,10 +18,12 @@ import {
   ArticleOutlined,
 } from "@mui/icons-material";
 import { useAddress } from "@/src/hooks/useAddress";
-import { useCategoryAndType } from "@/src/hooks/useCategoryAndType";
+import { useBusinessBasics } from "@/src/hooks/useBusiness";
+import api from "@/src/services/api";
 
 type Props = {
   data: Business;
+  setData: React.Dispatch<React.SetStateAction<Business>>;
   addressData: Address;
   ownerData: Owner;
   userData: User;
@@ -31,12 +33,18 @@ type Props = {
   businessAmenities: any[];
 };
 
-const Step5: React.FC<Props> = ({ data, permitData }) => {
+const Step5: React.FC<Props> = ({ data, setData, permitData }) => {
   const { address } = useAddress(data?.barangay_id);
-  const { category, type } = useCategoryAndType(
-    data?.business_type_id,
-    data?.business_category_id
-  );
+  const { businessCategories } = useBusinessBasics(api, data, setData);
+  
+  // Get selected category names
+  const selectedCategoryNames = (data.category_ids || [])
+    .map(id => businessCategories.find(c => c.id === id)?.title)
+    .filter(Boolean);
+  
+  const primaryCategoryName = data.primary_category_id 
+    ? businessCategories.find(c => c.id === data.primary_category_id)?.title
+    : selectedCategoryNames[0];
 
   const InfoRow = ({
     label,
@@ -159,8 +167,20 @@ const Step5: React.FC<Props> = ({ data, permitData }) => {
             icon={<PersonOutline color="primary" />}
           >
             <InfoRow label="Business Name" value={data.business_name} />
-            <InfoRow label="Type" value={type?.type || null} />
-            <InfoRow label="Category" value={category?.category || null} />
+            <InfoRow label="Type" value={data.hasBooking ? "Accommodation" : "Shop"} />
+            <InfoRow label="Primary Category" value={primaryCategoryName || null} />
+            {selectedCategoryNames.length > 1 && (
+              <div style={{ marginTop: 8 }}>
+                <Typography.Label size="md">All Categories:</Typography.Label>
+                <Stack direction="row" spacing={1} sx={{ mt: 0.5, flexWrap: "wrap", gap: 0.5 }}>
+                  {selectedCategoryNames.map((name, idx) => (
+                    <Chip key={idx} size="sm" variant="soft" color="primary">
+                      {name}
+                    </Chip>
+                  ))}
+                </Stack>
+              </div>
+            )}
           </Section>
 
           {/* Contact */}

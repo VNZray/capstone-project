@@ -56,15 +56,15 @@ const Maps = () => {
     if (activeTab === 'all') {
       // Show both accommodations and shops
       businesses = (allAccommodationDetails || []).filter(
-        (b) => b.business_type_id === 1 || b.business_type_id === 2
+        (b) => b.hasBooking === true || b.hasBooking === false
       );
     } else if (activeTab === 'accommodation') {
       businesses = (allAccommodationDetails || []).filter(
-        (b) => b.business_type_id === 1
+        (b) => b.hasBooking === true
       );
     } else if (activeTab === 'shop') {
       businesses = (allAccommodationDetails || []).filter(
-        (b) => b.business_type_id === 2
+        (b) => b.hasBooking === false
       );
     } else {
       // For other tabs, fallback to all
@@ -94,7 +94,7 @@ const Maps = () => {
   }, [allAccommodationDetails, activeTab, search]);
 
   const handleBusinessPress = (business: Business) => {
-    if (business.business_type_id === 1) {
+    if (business.hasBooking === true) {
       // Accommodation
       setAccommodationId(business.id!);
       navigateToAccommodationProfile();

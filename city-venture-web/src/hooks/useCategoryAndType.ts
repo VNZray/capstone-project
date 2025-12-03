@@ -1,40 +1,64 @@
 import { useEffect, useState } from "react";
-import { getDataById } from "../services/Service";
-import type { Category, Type } from "../types/TypeAndCategeory";
+import type { Category, EntityCategory } from "../types/Category";
+import apiClient from "../services/apiClient";
 
-export function useCategoryAndType(type_id?: number, category_id?: number) {
-
+/**
+ * Hook to fetch categories for an entity using entity_categories
+ * @param entityType - 'business' | 'tourist_spot' | 'event'
+ * @param entityId - The entity's ID
+ */
+export function useEntityCategories(entityType?: string, entityId?: string) {
   const [loading, setLoading] = useState(false);
-
-  const [type, setType] = useState<Type | null>(null);
-  const [category, setCategory] = useState<Category | null>(null);
+  const [categories, setCategories] = useState<EntityCategory[]>([]);
+  const [primaryCategory, setPrimaryCategory] = useState<EntityCategory | null>(null);
 
   useEffect(() => {
-    if (!type_id || !category_id) return;
+    if (!entityType || !entityId) return;
 
     const load = async () => {
       setLoading(true);
       try {
-        const typeRes = await getDataById("category-and-type/type", type_id);
-        setType({ id: typeRes.id, type: typeRes.type });
-
-        const categoryRes = await getDataById("category-and-type/category-by-id", category_id);
-        setCategory({
-          id: categoryRes.id,
-          category: categoryRes.category,
-          type_id: categoryRes.type_id,
-        });
-
+        const { data } = await apiClient.get<EntityCategory[]>(
+          `/category-and-type/entity-categories/${entityType}/${entityId}`
+        );
+        setCategories(data);
+        const primary = data.find(c => c.is_primary) || data[0] || null;
+        setPrimaryCategory(primary);
       } catch (err) {
-        console.error("Failed to fetch Category and Type", err);
+        console.error("Failed to fetch entity categories", err);
       } finally {
         setLoading(false);
       }
     };
 
     load();
-  }, [type_id, category_id]);
+  }, [entityType, entityId]);
 
-  return { loading, type, category };
+  return { loading, categories, primaryCategory };
+}
+
+/**
+ * Legacy hook - kept for backward compatibility
+ * Now fetches from entity_categories instead of old type/category endpoints
+ * @deprecated Use useEntityCategories instead
+ */
+export function useCategoryAndType(entityType?: string, entityId?: string) {
+  const { loading, categories, primaryCategory } = useEntityCategories(
+    entityType === 'business' ? 'business' : entityType === 'tourist_spot' ? 'tourist_spot' : undefined,
+    entityId
+  );
+
+  // Map to legacy format for backward compatibility
+  const category = primaryCategory ? {
+    id: primaryCategory.category_id,
+    category: primaryCategory.category_title,
+  } : null;
+
+  const type = primaryCategory?.parent_title ? {
+    id: primaryCategory.parent_category || 0,
+    type: primaryCategory.parent_title,
+  } : null;
+
+  return { loading, type, category, categories };
 }
 

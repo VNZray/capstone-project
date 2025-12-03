@@ -10,7 +10,7 @@ export const getPendingEditRequests = async (req, res) => {
     const catMap = new Map();
     for (const c of cats) {
       if (!catMap.has(c.tourist_spot_id)) catMap.set(c.tourist_spot_id, []);
-      catMap.get(c.tourist_spot_id).push({ id: c.id, category: c.category, type_id: c.type_id });
+      catMap.get(c.tourist_spot_id).push({ id: c.id, category: c.category, parent_category: c.parent_category, level: c.level });
     }
     for (const row of rows) {
       row.current_categories = catMap.get(row.tourist_spot_id) || [];
@@ -37,7 +37,7 @@ export const getPendingTouristSpots = async (req, res) => {
     const catMap = new Map();
     for (const c of cats) {
       if (!catMap.has(c.tourist_spot_id)) catMap.set(c.tourist_spot_id, []);
-      catMap.get(c.tourist_spot_id).push({ id: c.id, category: c.category, type_id: c.type_id });
+      catMap.get(c.tourist_spot_id).push({ id: c.id, category: c.category, parent_category: c.parent_category, level: c.level });
     }
     const schedMap = new Map();
     for (const s of scheds) {
