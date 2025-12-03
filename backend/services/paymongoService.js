@@ -434,7 +434,7 @@ export async function getSource(sourceId) {
  * @returns {Promise<Object>}
  */
 export async function getPayment(paymentId) {
-  const data = await makePayMongoRequest(`/payments/${paymentId}`);
+  const data = await makePayMongoRequest(`/payment/${paymentId}`);
   return data.data;
 }
 
