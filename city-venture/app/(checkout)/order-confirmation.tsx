@@ -12,6 +12,8 @@ import {
   ActivityIndicator,
   Share,
   Platform,
+  StatusBar,
+  BackHandler,
 } from 'react-native';
 import { useLocalSearchParams, Stack, router } from 'expo-router';
 import { Routes } from '@/routes/mainRoutes';
@@ -101,6 +103,16 @@ const OrderConfirmationScreen = () => {
   useEffect(() => {
     fetchOrderDetails();
   }, [fetchOrderDetails]);
+
+  // Intercept Android back button - go to home instead of back through checkout flow
+  useEffect(() => {
+    const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
+      router.replace(Routes.tabs.home);
+      return true; // Prevent default back behavior
+    });
+
+    return () => backHandler.remove();
+  }, []);
 
   const handleViewOrderDetails = () => {
     router.replace(Routes.profile.orders.detail(params.orderId));
@@ -370,17 +382,6 @@ const OrderConfirmationScreen = () => {
                   )}
                 </Text>
               </View>
-              <View style={[
-                styles.paymentBadge, 
-                { backgroundColor: isPaymentComplete ? palette.successLight : palette.warningLight }
-              ]}>
-                <Text style={[
-                  styles.paymentBadgeText, 
-                  { color: isPaymentComplete ? palette.success : palette.warning }
-                ]}>
-                  {isPaymentComplete ? 'Paid' : 'Pending'}
-                </Text>
-              </View>
             </View>
 
             {/* Total Amount */}
@@ -505,7 +506,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   headerGradient: {
-    paddingTop: 60,
+    paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 24) + 40 : 60,
     paddingBottom: 40,
     paddingHorizontal: 24,
     alignItems: 'center',
@@ -646,15 +647,6 @@ const styles = StyleSheet.create({
   divider: {
     height: 1,
     marginVertical: 16,
-  },
-  paymentBadge: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 8,
-  },
-  paymentBadgeText: {
-    fontSize: 12,
-    fontWeight: '600',
   },
   totalRow: {
     flexDirection: 'row',

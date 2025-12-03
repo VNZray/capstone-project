@@ -274,7 +274,8 @@ const CheckoutScreen = () => {
 
       // Navigate to grace period screen with order data
       // Order is NOT created yet - will be created after countdown ends
-      push(Routes.checkout.orderGracePeriod({
+      // Use replace() to prevent back navigation through checkout flow
+      replace(Routes.checkout.orderGracePeriod({
         orderData: JSON.stringify(orderPayload),
         paymentMethodType: paymentMethodType,
         billingInfo: JSON.stringify({
