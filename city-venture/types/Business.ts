@@ -61,6 +61,8 @@ export type BusinessDetails = {
   business_category_id: number;
   category: string;
   type: string;
+  ratings?: number | string;
+  reviews?: number;
 };
 
 export type Room = {

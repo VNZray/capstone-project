@@ -103,37 +103,6 @@ const AccommodationProfile = () => {
     accommodationDetails?.id,
   ]);
 
-  const [headerRating, setHeaderRating] = useState<string>('0.0');
-  const [totalReviews, setTotalReviews] = useState<number>(0);
-  const fetchRating = async () => {
-    let isMounted = true;
-
-    if (accommodationDetails?.id) {
-      try {
-        const rating = await getAverageRating(
-          'accommodation',
-          accommodationDetails.id
-        );
-        const totalReviews = await getTotalReviews(
-          'accommodation',
-          accommodationDetails.id
-        );
-        if (isMounted) {
-          // Always a number, format to 1 decimal place
-          setHeaderRating(Number(rating).toFixed(1));
-          setTotalReviews(Number(totalReviews));
-        }
-      } catch (error) {
-        console.log('Error fetching header rating:', error);
-        if (isMounted) setHeaderRating('0.0');
-      }
-    }
-  };
-
-  useEffect(() => {
-    fetchRating();
-  }, [accommodationDetails?.id, ratingsRefreshKey]);
-
   const TABS: Tab[] = [
     { key: 'details', label: 'Details', icon: '' },
     { key: 'rooms', label: 'Rooms', icon: '' },
@@ -225,7 +194,8 @@ const AccommodationProfile = () => {
                       size={20}
                       color={colors.accent}
                     />
-                    {headerRating} ({totalReviews} reviews)
+                    {accommodationDetails.ratings} (
+                    {accommodationDetails.reviews} reviews)
                   </ThemedText>
                 </View>
               </Container>
