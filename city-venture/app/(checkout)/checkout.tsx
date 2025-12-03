@@ -224,16 +224,14 @@ const CheckoutScreen = () => {
       // Navigate to grace period screen with order data
       // Order is NOT created yet - will be created after countdown ends
       push(Routes.checkout.orderGracePeriod({
-        orderId: JSON.stringify({
-          orderData: orderPayload,
-          paymentMethodType: paymentMethodType,
-          billingInfo: {
-            name: billingName.trim(),
-            email: billingEmail.trim().toLowerCase(),
-            phone: billingPhone.trim() || undefined,
-          },
-          total: total.toString(),
+        orderData: JSON.stringify(orderPayload),
+        paymentMethodType: paymentMethodType,
+        billingInfo: JSON.stringify({
+          name: billingName.trim(),
+          email: billingEmail.trim().toLowerCase(),
+          phone: billingPhone.trim() || undefined,
         }),
+        total: total.toString(),
       }));
       return;
     }

@@ -217,7 +217,12 @@ export const Routes = {
       pathname: '/(checkout)/order-confirmation' as const,
       params,
     }),
-    orderGracePeriod: (params: { orderId: string }) => ({
+    orderGracePeriod: (params: { 
+      orderData: string;
+      paymentMethodType: string;
+      billingInfo: string;
+      total: string;
+    }) => ({
       pathname: '/(checkout)/order-grace-period' as const,
       params,
     }),
