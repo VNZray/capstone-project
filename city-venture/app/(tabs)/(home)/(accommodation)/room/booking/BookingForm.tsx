@@ -323,7 +323,7 @@ const BookingForm: React.FC<Props> = ({
 
   return (
     <ScrollView>
-      <PageContainer padding={16} gap={16} style={{ paddingBottom: 100 }}>
+      <PageContainer padding={16} gap={16} style={{ paddingBottom: 180 }}>
         <RadioButton
           label="Booking Type"
           items={bookingTypes}

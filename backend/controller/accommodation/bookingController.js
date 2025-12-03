@@ -262,7 +262,7 @@ export async function initiateBookingPayment(req, res) {
       `SELECT 
         b.id, b.total_price, b.balance, b.booking_status, b.tourist_id, b.business_id, b.room_id,
         b.check_in_date, b.check_out_date, b.pax,
-        r.name as room_name, r.price_per_night,
+        CONCAT(r.room_type, ' - ', r.room_number) as room_name, r.room_price as price_per_night,
         bus.business_name,
         t.id as tourist_user_id
        FROM booking b

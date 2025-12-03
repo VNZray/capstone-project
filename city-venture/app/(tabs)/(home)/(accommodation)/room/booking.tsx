@@ -11,11 +11,12 @@ import debugLogger from '@/utils/debugLogger';
 import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
 import { Routes } from '@/routes/mainRoutes';
 import React, { useEffect } from 'react';
-import { Alert, Platform, StyleSheet, View } from 'react-native';
+import { Alert, Platform, StyleSheet, View, useColorScheme } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Billing from './booking/Billing';
 import BookingForm from './booking/BookingForm';
 import Summary from './booking/Summary';
+import { background } from '@/constants/color';
 
 const booking = () => {
   const insets = useSafeAreaInsets();
@@ -151,10 +152,55 @@ const booking = () => {
         return;
       }
       
-      // Validate booking has been created (needs booking ID)
-      if (!bookingData.id) {
-        Alert.alert('Payment', 'Please complete booking first before proceeding to payment.');
+      // Validate required fields before creating booking
+      const validationError = validateBeforeSubmit();
+      if (validationError) {
+        Alert.alert('Cannot proceed', validationError);
         return;
+      }
+
+      let bookingId = bookingData.id;
+      
+      // If booking hasn't been created yet, create it first
+      if (!bookingId) {
+        debugLogger({
+          title: 'Creating booking before payment',
+          data: { roomId: roomDetails?.id, userId: user?.id },
+        });
+
+        const bookingPayload: Booking = {
+          ...bookingData,
+          room_id: roomDetails?.id,
+          tourist_id: user?.id,
+          // Set booking_status to Reserved for online payments
+          booking_status: 'Reserved',
+          balance: Number(bookingData.total_price) - Number(paymentData.amount),
+        };
+
+        const created = await createFullBooking(bookingPayload, undefined);
+        
+        if (!created?.id) {
+          Alert.alert('Error', 'Failed to create booking. Please try again.');
+          return;
+        }
+
+        bookingId = created.id;
+        
+        // Update local booking state with returned id/status
+        setBookingData(
+          (prev) =>
+            ({
+              ...prev,
+              id: created.id,
+              booking_status: created.booking_status || prev.booking_status,
+            } as Booking)
+        );
+
+        debugLogger({
+          title: 'Booking created successfully',
+          data: { bookingId: created.id },
+          successMessage: 'Booking created, proceeding to payment...',
+        });
       }
       
       // Map selected payment method to PayMongo type
@@ -163,7 +209,7 @@ const booking = () => {
       debugLogger({
         title: 'Initiating Booking Payment',
         data: { 
-          bookingId: bookingData.id, 
+          bookingId, 
           amount: paymentData.amount, 
           paymentMethodType,
           paymentType: paymentData.payment_type 
@@ -171,7 +217,7 @@ const booking = () => {
       });
 
       // Call backend to create PayMongo checkout session
-      const response = await initiateBookingPayment(bookingData.id, {
+      const response = await initiateBookingPayment(bookingId, {
         payment_method_type: paymentMethodType,
         payment_type: paymentData.payment_type || 'Full Payment',
         amount: paymentData.amount,
@@ -193,13 +239,14 @@ const booking = () => {
       // Navigate to online payment screen with checkout URL
       router.push(Routes.accommodation.room.onlinePayment({
         checkoutUrl,
-        successUrl: `${process.env.EXPO_PUBLIC_API_URL?.replace('/api', '') || 'https://city-venture.com'}/bookings/${bookingData.id}/payment-success`,
-        cancelUrl: `${process.env.EXPO_PUBLIC_API_URL?.replace('/api', '') || 'https://city-venture.com'}/bookings/${bookingData.id}/payment-cancel`,
+        successUrl: `${process.env.EXPO_PUBLIC_API_URL?.replace('/api', '') || 'https://city-venture.com'}/bookings/${bookingId}/payment-success`,
+        cancelUrl: `${process.env.EXPO_PUBLIC_API_URL?.replace('/api', '') || 'https://city-venture.com'}/bookings/${bookingId}/payment-cancel`,
         payment_method: paymentMethodType,
         payment_id,
         // pass booking data, billing/payment data as JSON strings
         bookingData: JSON.stringify({
           ...bookingData,
+          id: bookingId,
           check_in_date: bookingData.check_in_date
             ? new Date(bookingData.check_in_date as any).toISOString()
             : undefined,
@@ -256,9 +303,15 @@ const booking = () => {
     return true;
   };
 
+  const colorScheme = useColorScheme();
+  const bgColor = colorScheme === 'dark' ? background.dark : background.light;
+
+  // Tab bar height approximation (adjust if needed)
+  const TAB_BAR_HEIGHT = 60;
+
   return (
     <PageContainer padding={0}>
-      <View>
+      <View style={{ flex: 1 }}>
         {step === 'booking' && (
           <BookingForm
             data={bookingData}
@@ -292,8 +345,9 @@ const booking = () => {
             style={[
               styles.fabBar,
               {
-                paddingBottom: baseBottom + insets.bottom,
+                paddingBottom: baseBottom + insets.bottom + TAB_BAR_HEIGHT,
                 paddingTop: Platform.OS === 'ios' ? 16 : 12,
+                backgroundColor: bgColor,
               },
             ]}
           >
@@ -374,6 +428,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    // subtle backdrop & blur alternative (blur not added by default RN)
+    // Add shadow for visibility
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 8,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(0,0,0,0.1)',
   },
 });

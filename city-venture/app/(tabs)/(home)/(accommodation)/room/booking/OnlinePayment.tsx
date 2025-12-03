@@ -1,7 +1,7 @@
 import { background } from '@/constants/color';
 import { useAuth } from '@/context/AuthContext';
 import { useRoom } from '@/context/RoomContext';
-import { bookRoom, payBooking } from '@/query/accommodationQuery';
+import { payBooking } from '@/query/accommodationQuery';
 import { Booking, BookingPayment } from '@/types/Booking';
 import debugLogger from '@/utils/debugLogger';
 import { notifyPayment } from '@/utils/paymentBus';
@@ -33,6 +33,7 @@ type Params = {
   cancelUrl?: string;
   amount?: string;
   payment_method?: string;
+  payment_id?: string;
   bookingData?: string;
   guests?: string;
   paymentData?: string;
@@ -48,11 +49,12 @@ const OnlinePayment = () => {
     successUrl,
     cancelUrl,
     payment_method,
+    payment_id,
     bookingData,
     guests,
     paymentData,
   } = useLocalSearchParams<Params>();
-  const [creating, setCreating] = useState(false);
+  const [processing, setProcessing] = useState(false);
   const webviewRef = useRef<WebView>(null);
 
   useEffect(() => {
@@ -74,45 +76,33 @@ const OnlinePayment = () => {
     };
   }, [bookingData, guests, paymentData]);
 
-  const submitBooking = useCallback(async () => {
-    if (creating) return;
-    if (!roomDetails?.id || !user?.id) return;
+  /**
+   * Update the payment status after successful PayMongo payment
+   * The booking was already created before navigating to this screen
+   */
+  const updatePaymentStatus = useCallback(async () => {
+    if (processing) return;
+    
+    const bookingId = parsed.b?.id;
+    if (!bookingId || !user?.id) {
+      debugLogger({
+        title: 'OnlinePayment: Missing booking ID or user',
+        error: { bookingId, userId: user?.id },
+      });
+      return;
+    }
+    
     try {
-      setCreating(true);
+      setProcessing(true);
       const total = Number((parsed.b as Booking)?.total_price) || 0;
       const paid = Number((parsed.p as BookingPayment)?.amount) || 0;
 
-      // Step 1: Create the booking first
-      const bookingPayload: Booking = {
-        ...(parsed.b as Booking),
-        room_id: roomDetails.id,
-        tourist_id: user.id,
-        booking_status: 'Reserved',
-        balance: Math.max(total - paid, 0),
-      } as Booking;
-
-      debugLogger({
-        title: 'OnlinePayment: Creating booking',
-        data: { bookingPayload },
-      });
-
-      const createdBooking = await bookRoom(bookingPayload);
-
-      if (!createdBooking?.id) {
-        throw new Error('Booking ID not returned after creation');
-      }
-
-      debugLogger({
-        title: 'OnlinePayment: Booking created successfully',
-        data: createdBooking,
-      });
-
-      // Step 2: Create the payment record with the booking ID
+      // Create the payment record for the existing booking
       const paymentPayload: BookingPayment = {
         ...(parsed.p as BookingPayment),
         payer_type: 'Tourist',
         payer_id: user.id,
-        payment_for_id: createdBooking.id,
+        payment_for_id: bookingId,
         payment_for: 'Reservation',
         status:
           parsed.p?.payment_type === 'Full Payment'
@@ -121,33 +111,30 @@ const OnlinePayment = () => {
       } as BookingPayment;
 
       debugLogger({
-        title: 'OnlinePayment: Creating payment',
-        data: { paymentPayload },
+        title: 'OnlinePayment: Recording payment',
+        data: { bookingId, paymentPayload },
       });
 
-      await payBooking(createdBooking.id, paymentPayload, total);
+      await payBooking(bookingId, paymentPayload, total);
 
       debugLogger({
-        title: 'OnlinePayment: Full booking process completed',
-        data: createdBooking,
-        successMessage: 'Booking and payment successfully created.',
+        title: 'OnlinePayment: Payment recorded successfully',
+        data: { bookingId },
+        successMessage: 'Payment completed successfully.',
       });
     } catch (e: any) {
       debugLogger({
-        title: 'OnlinePayment: Booking creation failed',
+        title: 'OnlinePayment: Payment recording failed',
         error: e?.response?.data || e,
         errorCode: e?.code || e?.response?.status,
       });
-      Alert.alert(
-        'Booking',
-        e?.response?.data?.message ||
-          e?.message ||
-          'Booking creation failed after payment.'
-      );
+      // Don't show alert here as payment was successful on PayMongo side
+      // The webhook should handle the payment status update
+      console.error('Failed to record payment locally:', e?.message);
     } finally {
-      setCreating(false);
+      setProcessing(false);
     }
-  }, [creating, parsed, roomDetails?.id, user?.id]);
+  }, [processing, parsed, user?.id]);
 
   const handleUrl = useCallback(
     (url: string) => {
@@ -157,7 +144,7 @@ const OnlinePayment = () => {
       // If redirecting back to provided https success/cancel pages, finish flow
       if (successUrl && lower.startsWith(successUrl.toLowerCase())) {
         notifyPayment('success');
-        submitBooking().finally(() => {
+        updatePaymentStatus().finally(() => {
           router.replace(Routes.accommodation.room.summary({
             bookingData: bookingData || '',
             guests: guests || '',
@@ -192,7 +179,7 @@ const OnlinePayment = () => {
       router,
       successUrl,
       cancelUrl,
-      submitBooking,
+      updatePaymentStatus,
       bookingData,
       guests,
       paymentData,

@@ -42,7 +42,7 @@ export async function initiateBookingPayment(
 ): Promise<InitiateBookingPaymentResponse> {
   try {
     const response = await apiClient.post<InitiateBookingPaymentResponse>(
-      `/bookings/${bookingId}/initiate-payment`,
+      `/booking/${bookingId}/initiate-payment`,
       paymentData
     );
 
