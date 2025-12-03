@@ -89,94 +89,6 @@ async function makePayMongoRequest(endpoint, options = {}) {
 }
 
 /**
- * Create PayMongo Checkout Session for order (RECOMMENDED for most use cases)
- * This provides a hosted checkout page with all payment methods
- * @param {Object} params
- * @param {string} params.orderId - Order UUID
- * @param {string} params.orderNumber - Human-readable order number
- * @param {number} params.amount - Amount in centavos (PHP cents)
- * @param {Array<Object>} params.lineItems - Line items for the checkout
- * @param {string} params.successUrl - URL to redirect on success
- * @param {string} params.cancelUrl - URL to redirect on cancellation
- * @param {string} params.description - Payment description
- * @param {Object} params.metadata - Additional metadata
- * @returns {Promise<Object>} Checkout Session data with checkout_url
- */
-export async function createCheckoutSession({
-  orderId,
-  orderNumber,
-  amount,
-  lineItems = [],
-  successUrl,
-  cancelUrl,
-  description,
-  metadata = {}
-}) {
-  // Validate amount (must be at least 100 centavos = 1 PHP)
-  if (!amount || amount < 100) {
-    throw new Error('Invalid amount: minimum 100 centavos (1 PHP)');
-  }
-
-  const sanitizedLineItems = (lineItems.length > 0 ? lineItems : [{
-    currency: 'PHP',
-    amount: Math.round(amount),
-    name: description || `Order #${orderNumber}`,
-    quantity: 1
-  }]).map(item => {
-    const cleanItem = { ...item };
-    if (Array.isArray(cleanItem.images) && cleanItem.images.length === 0) {
-      delete cleanItem.images;
-    }
-    return cleanItem;
-  });
-
-  const metadataPayload = {
-    order_id: orderId,
-    order_number: orderNumber,
-    ...metadata
-  };
-
-  Object.keys(metadataPayload).forEach((key) => {
-    if (metadataPayload[key] === undefined || metadataPayload[key] === null || metadataPayload[key] === '') {
-      delete metadataPayload[key];
-    }
-  });
-
-  const attributes = {
-    line_items: sanitizedLineItems,
-    payment_method_types: ['card', 'gcash', 'paymaya', 'grab_pay'],
-    success_url: successUrl,
-    cancel_url: cancelUrl,
-    description: description || `Payment for Order #${orderNumber}`
-  };
-
-  if (Object.keys(metadataPayload).length > 0) {
-    attributes.metadata = metadataPayload;
-  }
-
-  const data = await makePayMongoRequest('/checkout_sessions', {
-    method: 'POST',
-    body: JSON.stringify({
-      data: {
-        attributes
-      }
-    })
-  });
-
-  return data.data;
-}
-
-/**
- * Retrieve Checkout Session by ID
- * @param {string} checkoutSessionId
- * @returns {Promise<Object>}
- */
-export async function getCheckoutSession(checkoutSessionId) {
-  const data = await makePayMongoRequest(`/checkout_sessions/${checkoutSessionId}`);
-  return data.data;
-}
-
-/**
  * Create PayMongo Payment Intent for order (for advanced use cases)
  * Use createCheckoutSession for simpler integration
  *
@@ -614,9 +526,111 @@ export function parseWebhookEvent(event) {
   };
 }
 
+/**
+ * PIPM Flow: Create Payment Intent, Payment Method, and Attach in one call
+ * This is the recommended flow for booking payments (replaces Checkout Sessions)
+ * 
+ * Flow:
+ * 1. Create Payment Intent with amount and allowed methods
+ * 2. Create Payment Method with the selected type
+ * 3. Attach Payment Method to Intent - returns redirect URL for e-wallets
+ * 
+ * @param {Object} params
+ * @param {string} params.referenceId - Booking/Order UUID for tracking
+ * @param {number} params.amount - Amount in centavos (minimum 2000 = ₱20)
+ * @param {string} params.paymentMethodType - gcash, paymaya, grab_pay, card, etc.
+ * @param {string} params.description - Payment description
+ * @param {string} params.returnUrl - URL to redirect after payment authentication
+ * @param {Object} params.billing - Billing info (name, email, phone)
+ * @param {Object} params.metadata - Additional metadata
+ * @returns {Promise<Object>} { paymentIntent, paymentMethod, redirectUrl, clientKey }
+ */
+export async function createPIPMPayment({
+  referenceId,
+  amount,
+  paymentMethodType,
+  description,
+  returnUrl,
+  billing = {},
+  metadata = {}
+}) {
+  // Validate amount (minimum 2000 centavos = ₱20 for Payment Intents)
+  if (!amount || amount < 2000) {
+    throw new Error('Invalid amount: minimum 2000 centavos (₱20.00) for Payment Intents');
+  }
+
+  // Validate payment method type
+  const validTypes = ['card', 'paymaya', 'gcash', 'grab_pay', 'dob', 'billease', 'qrph', 'brankas', 'shopee_pay'];
+  if (!validTypes.includes(paymentMethodType)) {
+    throw new Error(`Invalid payment method type. Must be one of: ${validTypes.join(', ')}`);
+  }
+
+  // Clean metadata
+  const metadataPayload = {
+    reference_id: referenceId,
+    ...metadata
+  };
+  Object.keys(metadataPayload).forEach((key) => {
+    if (metadataPayload[key] === undefined || metadataPayload[key] === null || metadataPayload[key] === '') {
+      delete metadataPayload[key];
+    }
+  });
+
+  console.log(`[PIPM] Creating payment for ${referenceId}: ₱${(amount/100).toFixed(2)} via ${paymentMethodType}`);
+
+  // Step 1: Create Payment Intent
+  const paymentIntent = await createPaymentIntent({
+    orderId: referenceId,
+    amount,
+    description,
+    paymentMethodAllowed: [paymentMethodType],
+    metadata: metadataPayload,
+    currency: 'PHP',
+    statementDescriptor: 'CITY VENTURE'
+  });
+
+  console.log(`[PIPM] Payment Intent created: ${paymentIntent.id}`);
+
+  // Step 2: Create Payment Method
+  const paymentMethod = await createPaymentMethod({
+    type: paymentMethodType,
+    billing,
+    metadata: { reference_id: referenceId }
+  });
+
+  console.log(`[PIPM] Payment Method created: ${paymentMethod.id}`);
+
+  // Step 3: Attach Payment Method to Payment Intent
+  const attachedIntent = await attachPaymentIntent(
+    paymentIntent.id,
+    paymentMethod.id,
+    returnUrl
+  );
+
+  console.log(`[PIPM] Payment Method attached. Status: ${attachedIntent.attributes.status}`);
+
+  // Extract redirect URL for e-wallet authentication
+  let redirectUrl = null;
+  const nextAction = attachedIntent.attributes.next_action;
+  
+  if (nextAction && nextAction.type === 'redirect') {
+    redirectUrl = nextAction.redirect.url;
+    console.log(`[PIPM] Redirect URL: ${redirectUrl}`);
+  }
+
+  return {
+    paymentIntent: attachedIntent,
+    paymentIntentId: attachedIntent.id,
+    paymentMethodId: paymentMethod.id,
+    clientKey: paymentIntent.attributes.client_key,
+    status: attachedIntent.attributes.status,
+    redirectUrl,
+    // For compatibility - some code may expect checkout_url
+    checkout_url: redirectUrl
+  };
+}
+
 export default {
-  createCheckoutSession,
-  getCheckoutSession,
   createPaymentIntent,
   createSource,
   createPaymentMethod,
@@ -627,5 +641,6 @@ export default {
   createRefund,
   getRefund,
   verifyWebhookSignature,
-  parseWebhookEvent
+  parseWebhookEvent,
+  createPIPMPayment
 };

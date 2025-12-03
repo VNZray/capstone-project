@@ -274,26 +274,33 @@ routes.forEach((route) => {
 // PayMongo redirect bridge:
 // PayMongo requires http/https URLs, but the mobile app expects a custom scheme (cityventure://...).
 // These handlers take the web redirect and bounce users back into the app, with a web fallback.
-const sendPaymongoRedirect = (res, orderId, status) => {
+const sendPaymongoRedirect = (res, referenceId, status, type = 'order') => {
   // Support both Expo Go (exp://) and production builds (cityventure://)
   const isExpoDev = process.env.EXPO_DEV === 'true';
   const expoHost = process.env.EXPO_DEV_HOST || '192.168.1.1:8081';
   
+  // Determine route path and query param based on type (order vs booking)
+  const isBooking = type === 'booking';
+  const routePath = isBooking ? '(accommodation)/room/booking' : '(checkout)/payment';
+  const paramName = isBooking ? 'bookingId' : 'orderId';
+  const queryParam = isBooking ? `paymentSuccess=1&bookingId=${referenceId}` : `orderId=${referenceId}`;
+  
   // Expo Go deep link format: exp://HOST:PORT/--/path
   // For Expo Router, the path should match the file-based route
-  // e.g., (checkout)/payment-success maps to /--/(checkout)/payment-success
   let appUrl;
   if (isExpoDev) {
     // Expo Go format - use query params for data
-    appUrl = `exp://${expoHost}/--/(checkout)/payment-${status}?orderId=${orderId}`;
+    appUrl = `exp://${expoHost}/--/${routePath}-${status}?${queryParam}`;
   } else {
-    // Production build with custom scheme - use (checkout) group
-    appUrl = `cityventure://(checkout)/payment-${status}?orderId=${orderId}`;
+    // Production build with custom scheme
+    appUrl = `cityventure://${routePath}-${status}?${queryParam}`;
   }
   
-  console.log(`[PayMongo Redirect] isExpoDev: ${isExpoDev}, appUrl: ${appUrl}`);
+  console.log(`[PayMongo Redirect] type: ${type}, isExpoDev: ${isExpoDev}, appUrl: ${appUrl}`);
   
-  const webFallback = `${FRONTEND_BASE_URL}/orders/${orderId}/payment-${status}`;
+  const webFallback = isBooking 
+    ? `${FRONTEND_BASE_URL}/bookings/${referenceId}/payment-${status}`
+    : `${FRONTEND_BASE_URL}/orders/${referenceId}/payment-${status}`;
 
   // Prevent caching to avoid redirect loops
   res.set({
@@ -315,8 +322,8 @@ const sendPaymongoRedirect = (res, orderId, status) => {
     <p><a href="${appUrl}">Click here if not redirected automatically</a></p>
     <script>
       // Redirect ONCE using sessionStorage to prevent loops
-      if (!sessionStorage.getItem('payment_redirected_${orderId}')) {
-        sessionStorage.setItem('payment_redirected_${orderId}', 'true');
+      if (!sessionStorage.getItem('payment_redirected_${referenceId}')) {
+        sessionStorage.setItem('payment_redirected_${referenceId}', 'true');
         window.location.replace('${appUrl}');
         
         // Fallback to web after 2 seconds if app doesn't open
@@ -345,6 +352,24 @@ app.get("/orders/:orderId/payment-cancel", (req, res) => {
     return res.status(400).send("Missing orderId");
   }
   sendPaymongoRedirect(res, orderId, "cancel");
+});
+
+// Booking payment redirect routes (for accommodation bookings)
+app.get("/bookings/:bookingId/payment-success", (req, res) => {
+  const bookingId = req.params.bookingId;
+  if (!bookingId) {
+    return res.status(400).send("Missing bookingId");
+  }
+  // Reuse the same redirect helper - it works for bookings too
+  sendPaymongoRedirect(res, bookingId, "success", "booking");
+});
+
+app.get("/bookings/:bookingId/payment-cancel", (req, res) => {
+  const bookingId = req.params.bookingId;
+  if (!bookingId) {
+    return res.status(400).send("Missing bookingId");
+  }
+  sendPaymongoRedirect(res, bookingId, "cancel", "booking");
 });
 
 // ========== ENVIRONMENT VALIDATION ==========

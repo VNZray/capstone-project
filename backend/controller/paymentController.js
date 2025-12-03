@@ -1023,8 +1023,13 @@ export async function processWebhookEvent(eventType, eventData, webhook_id) {
   const status = eventData.attributes?.status;
   const metadata = eventData.attributes?.metadata || {};
   const order_id = metadata.order_id;
+  const booking_id = metadata.booking_id;
+  const payment_for = metadata.payment_for || (booking_id ? 'booking' : 'order');
+  
+  // Determine the reference ID based on payment type
+  const reference_id = payment_for === 'booking' ? booking_id : order_id;
 
-  console.log(`[Webhook Processor] Processing ${eventType} for order ${order_id}, status: ${status}`);
+  console.log(`[Webhook Processor] Processing ${eventType} for ${payment_for} ${reference_id}, status: ${status}`);
 
   // ========== Checkout Session Events (RECOMMENDED FLOW) ==========
   
@@ -1191,22 +1196,23 @@ export async function processWebhookEvent(eventType, eventData, webhook_id) {
     await emitPaymentEvents(order_id, sourceId, 'paid', eventData.attributes?.amount);
   }
 
-  // ========== Payment Events (Direct Payment Intent Flow) ==========
+  // ========== Payment Events (Direct Payment Intent Flow - Orders & Bookings) ==========
   
   // Handle payment.paid event (card payments or direct payment intents)
   else if (eventType === 'payment.paid') {
-    if (!order_id) {
-      throw new Error("Missing order_id in webhook metadata");
+    // PIPM flow supports both orders and bookings
+    if (!reference_id) {
+      throw new Error("Missing order_id or booking_id in webhook metadata");
     }
 
     const paymentId = eventData.id;
     const paymentIntentId = eventData.attributes?.payment_intent_id;
     const paymentAmount = eventData.attributes?.amount;
 
-    console.log(`[Webhook] 💳 Processing payment.paid for Order ${order_id}`);
+    console.log(`[Webhook] 💳 Processing payment.paid for ${payment_for} ${reference_id}`);
     console.log(`[Webhook] 🔑 Payment ID: ${paymentId}, Intent: ${paymentIntentId}`);
 
-    // Update payment status to paid
+    // Update payment record status to paid
     await db.query(
       `UPDATE payment 
        SET status = 'paid', 
@@ -1219,72 +1225,90 @@ export async function processWebhookEvent(eventType, eventData, webhook_id) {
              '$.webhook_processed_at', ?
            ),
            updated_at = ? 
-       WHERE payment_for = 'order' 
+       WHERE payment_for = ? 
          AND payment_for_id = ?`,
-      [paymentId, paymentAmount, paymentIntentId || '', new Date().toISOString(), new Date(), order_id]
+      [paymentId, paymentAmount, paymentIntentId || '', new Date().toISOString(), new Date(), payment_for, reference_id]
     );
 
-    // Update order payment status
-    await db.query(
-      `UPDATE \`order\` 
-       SET payment_status = 'paid',
-           paymongo_payment_id = ?,
-           updated_at = ?
-       WHERE id = ?`,
-      [paymentId, new Date(), order_id]
-    );
-
-    console.log(`[Webhook] ✅ Order ${order_id} marked as paid (payment.paid: ${paymentId})`);
+    // Update the relevant table based on payment type
+    if (payment_for === 'booking') {
+      // Update booking status and balance (booking table doesn't have updated_at)
+      await db.query(
+        `UPDATE booking 
+         SET booking_status = 'Confirmed',
+             balance = GREATEST(0, balance - ?)
+         WHERE id = ?`,
+        [paymentAmount / 100, reference_id]
+      );
+      console.log(`[Webhook] ✅ Booking ${reference_id} marked as Confirmed (payment.paid: ${paymentId})`);
+    } else {
+      // Update order payment status
+      await db.query(
+        `UPDATE \`order\` 
+         SET payment_status = 'paid',
+             paymongo_payment_id = ?,
+             updated_at = ?
+         WHERE id = ?`,
+        [paymentId, new Date(), reference_id]
+      );
+      console.log(`[Webhook] ✅ Order ${reference_id} marked as paid (payment.paid: ${paymentId})`);
+    }
 
     // ========== Audit Logging ==========
     await auditService.logPaymentUpdate({
-      orderId: order_id,
-      oldStatus: 'unpaid',
-      newStatus: 'paid',
+      orderId: reference_id, // Works for bookings too, just a reference
+      oldStatus: payment_for === 'booking' ? 'Pending' : 'unpaid',
+      newStatus: payment_for === 'booking' ? 'Confirmed' : 'paid',
       actor: null,
       paymentDetails: {
         paymongo_payment_id: paymentId,
         payment_intent_id: paymentIntentId,
         amount_centavos: paymentAmount,
-        webhook_event_type: 'payment.paid'
+        webhook_event_type: 'payment.paid',
+        payment_for: payment_for
       }
     });
 
-    // Emit real-time events and notify business
-    await emitPaymentEvents(order_id, paymentId, 'paid', paymentAmount);
+    // Emit real-time events (for orders)
+    if (payment_for === 'order') {
+      await emitPaymentEvents(reference_id, paymentId, 'paid', paymentAmount);
 
-    // Notify business about the new PAID order (same as checkout session flow)
-    console.log(`[Webhook] 📢 Emitting new order notification for payment.paid...`);
-    try {
-      const [orderRows] = await db.query(
-        `SELECT o.*, u.email as user_email FROM \`order\` o 
-         JOIN user u ON u.id = o.user_id 
-         WHERE o.id = ?`,
-        [order_id]
-      );
-      
-      if (orderRows && orderRows.length > 0) {
-        const order = orderRows[0];
-        
-        // Fetch items
-        const [itemsResult] = await db.query(
-          "SELECT * FROM order_item WHERE order_id = ?",
-          [order_id]
+      // Notify business about the new PAID order
+      console.log(`[Webhook] 📢 Emitting new order notification for payment.paid...`);
+      try {
+        const [orderRows] = await db.query(
+          `SELECT o.*, u.email as user_email FROM \`order\` o 
+           JOIN user u ON u.id = o.user_id 
+           WHERE o.id = ?`,
+          [reference_id]
         );
         
-        const completeOrderData = {
-          ...order,
-          items: itemsResult || [],
-          item_count: itemsResult?.length || 0,
-        };
-        
-        socketService.emitNewOrder(completeOrderData);
-        await notificationHelper.triggerNewOrderNotifications(completeOrderData);
-        
-        console.log(`[Webhook] ✅ Business notified of new paid order ${order.order_number}`);
+        if (orderRows && orderRows.length > 0) {
+          const order = orderRows[0];
+          
+          // Fetch items
+          const [itemsResult] = await db.query(
+            "SELECT * FROM order_item WHERE order_id = ?",
+            [reference_id]
+          );
+          
+          const completeOrderData = {
+            ...order,
+            items: itemsResult || [],
+            item_count: itemsResult?.length || 0,
+          };
+          
+          socketService.emitNewOrder(completeOrderData);
+          await notificationHelper.triggerNewOrderNotifications(completeOrderData);
+          
+          console.log(`[Webhook] ✅ Business notified of new paid order ${order.order_number}`);
+        }
+      } catch (notifError) {
+        console.error(`[Webhook] ❌ Failed to emit order notifications:`, notifError);
       }
-    } catch (notifError) {
-      console.error(`[Webhook] ❌ Failed to emit order notifications:`, notifError);
+    } else if (payment_for === 'booking') {
+      // TODO: Add booking-specific notifications/socket events if needed
+      console.log(`[Webhook] ✅ Booking payment processed successfully`);
     }
   }
 

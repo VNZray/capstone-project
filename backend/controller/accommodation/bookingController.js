@@ -338,37 +338,27 @@ export async function initiateBookingPayment(req, res) {
       payment_for: 'booking'
     };
 
-    // 6. Build redirect URLs
-    const successUrl = `${PAYMONGO_REDIRECT_BASE}/bookings/${booking.id}/payment-success`;
-    const cancelUrl = `${PAYMONGO_REDIRECT_BASE}/bookings/${booking.id}/payment-cancel`;
+    // 6. Build return URL for PIPM flow (user redirected here after payment auth)
+    const returnUrl = `${PAYMONGO_REDIRECT_BASE}/bookings/${booking.id}/payment-success`;
 
-    // 7. Create line items for checkout
-    const lineItems = [
-      {
-        currency: 'PHP',
-        amount: amountInCentavos,
-        name: booking.room_name || 'Room Reservation',
-        quantity: 1,
-        description: `${payment_type} - Check-in: ${booking.check_in_date}, Check-out: ${booking.check_out_date}`
-      }
-    ];
-
-    // 8. Create PayMongo checkout session
-    const checkoutSession = await paymongoService.createCheckoutSession({
-      orderId: booking.id, // Using booking ID as reference
-      orderNumber: `BK-${booking.id.substring(0, 8).toUpperCase()}`,
+    // 7. Create payment using PIPM flow (Payment Intent + Payment Method)
+    const pipmResult = await paymongoService.createPIPMPayment({
+      referenceId: booking.id,
       amount: amountInCentavos,
-      lineItems,
-      successUrl,
-      cancelUrl,
+      paymentMethodType: payment_method_type,
       description: `Booking Payment - ${booking.room_name || 'Room'} at ${booking.business_name || 'Accommodation'}`,
+      returnUrl,
+      billing: {
+        name: metadata.tourist_id || 'Guest',
+        email: req.user?.email
+      },
       metadata
     });
 
-    const provider_reference = checkoutSession.id;
-    const checkout_url = checkoutSession.attributes.checkout_url;
+    const provider_reference = pipmResult.paymentIntentId;
+    const checkout_url = pipmResult.redirectUrl;
 
-    // 9. Create payment record
+    // 8. Create payment record
     const payment_id = uuidv4();
     const created_at = new Date();
 
@@ -388,20 +378,25 @@ export async function initiateBookingPayment(req, res) {
       ]
     );
 
-    // Store provider reference
+    // Store provider reference (Payment Intent ID) and metadata
     await db.query(
       `UPDATE payment 
        SET provider_reference = ?, 
            currency = 'PHP',
            metadata = ?
        WHERE id = ?`,
-      [provider_reference, JSON.stringify(metadata), payment_id]
+      [provider_reference, JSON.stringify({
+        ...metadata,
+        payment_method_id: pipmResult.paymentMethodId,
+        client_key: pipmResult.clientKey,
+        status: pipmResult.status
+      }), payment_id]
     );
 
-    console.log(`[BookingPayment] ✅ Checkout session created for booking ${booking.id}`);
-    console.log(`[BookingPayment] 🔗 Checkout URL: ${checkout_url}`);
+    console.log(`[BookingPayment] ✅ PIPM payment created for booking ${booking.id}`);
+    console.log(`[BookingPayment] 🔗 Redirect URL: ${checkout_url}`);
 
-    // 10. Return checkout URL to client
+    // 9. Return redirect URL to client
     res.status(201).json({
       success: true,
       message: "Payment initiated successfully",

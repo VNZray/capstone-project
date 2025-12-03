@@ -287,20 +287,66 @@ const booking = () => {
   }, [paymentSuccess]);
 
   // Helper to determine if the current step's required fields are filled
-  const isStepValid = () => {
+  const isStepValid = (): boolean => {
     if (step === 'booking') {
-      // Validate booking form fields: pax, num_adults, num_children, trip_purpose, guest info
-      const paxValid =
-        typeof bookingData.pax === 'number' && bookingData.pax > 0;
-      const adultsValid =
-        typeof bookingData.num_adults === 'number' &&
-        bookingData.num_adults > 0;
-      // children can be 0 or more
-      const tripPurposeValid =
-        bookingData.trip_purpose && bookingData.trip_purpose.trim().length > 0;
-      // If guests are being filled in this step, check their validity
+      // Validate booking form fields
+      const paxValid = typeof bookingData.pax === 'number' && bookingData.pax > 0;
+      const datesValid = !!bookingData.check_in_date && !!bookingData.check_out_date;
+      const tripPurposeValid = !!bookingData.trip_purpose && bookingData.trip_purpose.trim().length > 0;
+      
+      // Check traveler type counts sum equals pax
+      const travelerCountsSum = 
+        (bookingData.local_counts || 0) + 
+        (bookingData.domestic_counts || 0) + 
+        (bookingData.foreign_counts || 0) + 
+        (bookingData.overseas_counts || 0);
+      const travelerCountsValid = travelerCountsSum > 0;
+      
+      return paxValid && datesValid && tripPurposeValid && travelerCountsValid;
     }
+    
+    if (step === 'payment') {
+      // Validate payment fields
+      const paymentMethodValid = !!paymentData.payment_method;
+      const amountValid = typeof paymentData.amount === 'number' && paymentData.amount > 0;
+      return paymentMethodValid && amountValid;
+    }
+    
     return true;
+  };
+
+  // Get validation message for current step
+  const getValidationMessage = (): string | null => {
+    if (step === 'booking') {
+      if (typeof bookingData.pax !== 'number' || bookingData.pax < 1) {
+        return 'Please enter number of guests (pax)';
+      }
+      if (!bookingData.check_in_date || !bookingData.check_out_date) {
+        return 'Please select check-in and check-out dates';
+      }
+      if (!bookingData.trip_purpose || bookingData.trip_purpose.trim().length === 0) {
+        return 'Please select a trip purpose';
+      }
+      const travelerCountsSum = 
+        (bookingData.local_counts || 0) + 
+        (bookingData.domestic_counts || 0) + 
+        (bookingData.foreign_counts || 0) + 
+        (bookingData.overseas_counts || 0);
+      if (travelerCountsSum === 0) {
+        return 'Please select at least one traveler type and enter count';
+      }
+    }
+    
+    if (step === 'payment') {
+      if (!paymentData.payment_method) {
+        return 'Please select a payment method';
+      }
+      if (typeof paymentData.amount !== 'number' || paymentData.amount <= 0) {
+        return 'Invalid payment amount. Please check your booking details.';
+      }
+    }
+    
+    return null;
   };
 
   const colorScheme = useColorScheme();
@@ -390,7 +436,15 @@ const booking = () => {
               }}
               disabled={submitting || !isStepValid()}
               onPress={() => {
-                if (submitting || !isStepValid()) return;
+                if (submitting) return;
+                
+                // Validate before proceeding
+                const validationMsg = getValidationMessage();
+                if (validationMsg) {
+                  Alert.alert('Incomplete Information', validationMsg);
+                  return;
+                }
+                
                 if (step === 'booking') {
                   setStep('payment');
                 } else if (step === 'payment') {
