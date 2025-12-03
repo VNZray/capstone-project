@@ -1,9 +1,9 @@
+import type { EntityCategory } from './Category';
+
 // types/BusinessFormData.ts
 export type Business = {
   id?: string | null;
   business_name: string;
-  business_type_id: number;
-  business_category_id: number;
   phone_number?: string | "";
   email: string;
   address?: string | "";
@@ -21,8 +21,13 @@ export type Business = {
   business_image?: string | "";
   hasBooking?: boolean;
   barangay_id: number;
+  // New hierarchical category system
+  categories?: EntityCategory[];
+  category_ids?: number[];
+  primary_category_id?: number;
 };
 
+// Legacy types - kept for backward compatibility during migration
 export type BusinessType = {
   id: number;
   type: string;
@@ -31,7 +36,6 @@ export type BusinessType = {
 export type BusinessCategory = {
   id: number;
   category: string;
-  type_id: number;
 };
 
 export type BusinessDetails = {
@@ -61,8 +65,6 @@ export type BusinessDetails = {
   business_category_id: number;
   category: string;
   type: string;
-  ratings?: number | string;
-  reviews?: number;
 };
 
 export type Room = {

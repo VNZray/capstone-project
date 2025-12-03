@@ -11,6 +11,8 @@ import { Search, Edit, Eye, Trash2, ListChecks, UtensilsCrossed, Coffee, Gift, S
 import { useState, useEffect } from "react";
 import { getData } from "@/src/services/Service";
 import type { BusinessDetails } from "@/src/types/Business";
+import type { Category } from "@/src/types/TypeAndCategeory";
+import { fetchCategoryTree } from "@/src/services/BusinessService";
 import placeholderImage from "@/src/assets/images/placeholder-image.png";
 
 const Shop: React.FC = () => {
@@ -18,6 +20,7 @@ const Shop: React.FC = () => {
   const [activeTab, setActiveTab] = useState("all");
   const [filter, setFilter] = useState<"active" | "inactive">("active");
   const [shops, setShops] = useState<BusinessDetails[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   
   // Category icon mapping for shops
@@ -43,54 +46,62 @@ const Shop: React.FC = () => {
     39: <Dog size={16} />,
   };
 
-  // Category name mapping for shops
-  const categoryNames: Record<number, string> = {
-    3: "Restaurant",
-    5: "Coffee Shop",
-    13: "Gift Shop",
-    14: "Clothing Store",
-    15: "Souvenir Shop",
-    26: "Convenience",
-    27: "Supermarket",
-    28: "Bakery",
-    29: "Pharmacy",
-    30: "Bookstore",
-    31: "Electronics",
-    32: "Jewelry",
-    33: "Department",
-    34: "Market",
-    35: "Artisan",
-    36: "Sports",
-    37: "Toy Store",
-    38: "Furniture",
-    39: "Pet Shop",
+  // Flatten category tree to get all categories
+  const flattenCategories = (cats: Category[]): Category[] => {
+    const result: Category[] = [];
+    const flatten = (items: Category[]) => {
+      for (const cat of items) {
+        result.push(cat);
+        if (cat.children) flatten(cat.children);
+      }
+    };
+    flatten(cats);
+    return result;
+  };
+
+  const flatCategories = flattenCategories(categories);
+
+  // Get category name by ID
+  const getCategoryName = (id: number): string => {
+    const cat = flatCategories.find(c => c.id === id);
+    return cat?.title || `Category ${id}`;
   };
 
   // Generate dynamic tabs based on available categories in shops
   const tabs = [
     { id: "all", label: "All", icon: <ListChecks size={16} /> },
-    ...Array.from(new Set(shops.map((shop) => shop.business_category_id)))
+    ...Array.from(new Set(shops.flatMap((shop) => shop.category_ids || [])))
       .filter((categoryId) => categoryId !== undefined && categoryId !== null)
       .sort((a, b) => a - b)
       .map((categoryId) => ({
         id: String(categoryId),
-        label: categoryNames[categoryId] || `Category ${categoryId}`,
+        label: getCategoryName(categoryId),
         icon: categoryIcons[categoryId] || <ShoppingBag size={16} />,
       })),
   ];
 
-  // Fetch shops on component mount
+  // Fetch shops and categories on component mount
   useEffect(() => {
     fetchShops();
+    loadCategories();
   }, []);
+
+  const loadCategories = async () => {
+    try {
+      const tree = await fetchCategoryTree();
+      setCategories(tree);
+    } catch (error) {
+      console.error("Error fetching categories:", error);
+    }
+  };
 
   const fetchShops = async () => {
     setLoading(true);
     try {
       const response = await getData("business");
-      // Filter for shop type businesses (type_id 2 is shop)
+      // Filter for shop type businesses (hasBooking = false means shop)
       const shopData = Array.isArray(response)
-        ? response.filter((business: BusinessDetails) => business.business_type_id === 2)
+        ? response.filter((business: BusinessDetails) => business.hasBooking === false)
         : [];
       setShops(shopData);
     } catch (error) {
@@ -113,7 +124,7 @@ const Shop: React.FC = () => {
         : shop.status?.toLowerCase() === "inactive";
 
     const matchesCategory =
-      activeTab === "all" || shop.business_category_id === parseInt(activeTab);
+      activeTab === "all" || (shop.category_ids || []).includes(parseInt(activeTab));
 
     return matchesSearch && matchesStatus && matchesCategory;
   });

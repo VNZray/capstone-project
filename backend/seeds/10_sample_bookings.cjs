@@ -146,9 +146,9 @@ exports.seed = async function (knex) {
     return;
   }
 
-  // Get existing businesses and rooms
+  // Get existing businesses and rooms (accommodations have hasBooking=true)
   const businesses = await knex("business")
-    .where("business_type_id", 1) // Accommodation type
+    .where("hasBooking", true)
     .select("id", "business_name");
 
   if (businesses.length === 0) {

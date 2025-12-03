@@ -3,38 +3,55 @@ import { useEffect, useState } from "react";
 import axios from "axios";
 import { supabase } from "@/src/lib/supabase";
 import type { Business } from "@/src/types/Business";
-
-type BusinessCategory = { id: number; category: string };
-type BusinessType = { id: number; type: string };
+import type { Category, CategoryTree } from "@/src/types/Category";
 
 export const useBusinessBasics = (API_URL: string, data: Business, setData: React.Dispatch<React.SetStateAction<Business>>) => {
-  const [businessCategories, setBusinessCategories] = useState<BusinessCategory[]>([]);
-  const [businessTypes, setBusinessTypes] = useState<BusinessType[]>([]);
-  const [selectedType, setSelectedType] = useState<number | null>(null);
+  const [businessCategories, setBusinessCategories] = useState<Category[]>([]);
+  const [rootCategories, setRootCategories] = useState<Category[]>([]);
+  const [categoryTree, setCategoryTree] = useState<CategoryTree[]>([]);
+  const [selectedCategories, setSelectedCategories] = useState<number[]>([]);
   const [businessImage, setBusinessImage] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
-  // Fetch types
-  const getBusinessTypes = async () => {
+  // Fetch root-level categories for businesses
+  const getBusinessCategories = async () => {
     try {
-      const response = await axios.get(`${API_URL}/category-and-type/business-type`);
-      if (Array.isArray(response.data)) {
-        setBusinessTypes(response.data);
-      }
-    } catch (error) {
-      console.error("Error fetching business types:", error);
-    }
-  };
-
-  // Fetch categories based on type
-  const getBusinessCategories = async (type_id: number) => {
-    try {
-      const response = await axios.get(`${API_URL}/category-and-type/category/${type_id}`);
+      const response = await axios.get(`${API_URL}/category-and-type/categories`, {
+        params: { applicable_to: 'business', status: 'active' }
+      });
       if (Array.isArray(response.data)) {
         setBusinessCategories(response.data);
+        // Filter to only root categories (no parent)
+        const roots = response.data.filter((c: Category) => c.parent_category === null);
+        setRootCategories(roots);
       }
     } catch (error) {
       console.error("Error fetching business categories:", error);
+    }
+  };
+
+  // Fetch category tree for hierarchical display
+  const getCategoryTree = async () => {
+    try {
+      const response = await axios.get(`${API_URL}/category-and-type/categories/tree`, {
+        params: { applicable_to: 'business' }
+      });
+      if (Array.isArray(response.data)) {
+        setCategoryTree(response.data);
+      }
+    } catch (error) {
+      console.error("Error fetching category tree:", error);
+    }
+  };
+
+  // Get child categories of a parent
+  const getChildCategories = async (parentId: number): Promise<Category[]> => {
+    try {
+      const response = await axios.get(`${API_URL}/category-and-type/categories/${parentId}/children`);
+      return Array.isArray(response.data) ? response.data : [];
+    } catch (error) {
+      console.error("Error fetching child categories:", error);
+      return [];
     }
   };
 
@@ -77,22 +94,26 @@ export const useBusinessBasics = (API_URL: string, data: Business, setData: Reac
   };
 
   useEffect(() => {
-    getBusinessTypes();
-  }, []);
-
-  // whenever data.business_type_id changes, fetch categories
-  useEffect(() => {
-    if (data.business_type_id) {
-      setSelectedType(data.business_type_id);
-      getBusinessCategories(data.business_type_id);
+    if (API_URL) {
+      getBusinessCategories();
+      getCategoryTree();
     }
-  }, [data.business_type_id]);
+  }, [API_URL]);
+
+  // Initialize selected categories from data.category_ids
+  useEffect(() => {
+    if (data.category_ids && data.category_ids.length > 0) {
+      setSelectedCategories(data.category_ids);
+    }
+  }, [data.category_ids]);
 
   return {
-    businessTypes,
     businessCategories,
-    selectedType,
-    setSelectedType,
+    rootCategories,
+    categoryTree,
+    selectedCategories,
+    setSelectedCategories,
+    getChildCategories,
     previewUrl,
     handleImageChange,
     handleUpload,

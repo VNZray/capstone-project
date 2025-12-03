@@ -19,8 +19,7 @@ export async function seed(knex) {
       website: null,
       entry_fee: null,
       spot_status: "active",
-      is_featured: 1,
-      type_id: 4, 
+      is_featured: 1, 
       categories: [9, 7], // Churches, Historical
     },
     {
@@ -37,7 +36,6 @@ export async function seed(knex) {
       entry_fee: null,
       spot_status: "active",
       is_featured: 1,
-      type_id: 4,
       categories: [9], // Churches
     },
     {
@@ -54,7 +52,6 @@ export async function seed(knex) {
       entry_fee: 0.0,
       spot_status: "active",
       is_featured: 0,
-      type_id: 4,
       categories: [4, 8], // Museum, Urban Attractions
     },
     {
@@ -71,7 +68,6 @@ export async function seed(knex) {
       entry_fee: null,
       spot_status: "active",
       is_featured: 0,
-      type_id: 4,
       categories: [8, 7], // Urban Attractions, Historical
     },
     {
@@ -88,7 +84,6 @@ export async function seed(knex) {
       entry_fee: null,
       spot_status: "active",
       is_featured: 0,
-      type_id: 4,
       categories: [6], // Nature
     },
   ];
@@ -108,18 +103,6 @@ export async function seed(knex) {
       entry_fee: s.entry_fee,
       spot_status: s.spot_status,
       is_featured: s.is_featured,
-      type_id: s.type_id,
     }))
   );
-
-  // Insert categories mapping
-  const catRows = [];
-  for (const s of spots) {
-    for (const catId of s.categories) {
-      catRows.push({ tourist_spot_id: s.id, category_id: catId });
-    }
-  }
-  if (catRows.length) {
-    await knex("tourist_spot_categories").insert(catRows);
-  }
 }

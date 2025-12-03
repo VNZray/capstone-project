@@ -321,7 +321,7 @@ const MyBusiness = () => {
                       aspectRatio="1/1"
                       title={business.business_name}
                       subtitle={
-                        business.business_type_id === 1
+                        business.hasBooking
                           ? "Accommodation"
                           : "Shop"
                       }
@@ -392,7 +392,7 @@ const MyBusiness = () => {
                       aspectRatio="16/9"
                       title={business.business_name}
                       subtitle={
-                        business.business_type_id === 1
+                        business.hasBooking
                           ? "Accommodation"
                           : "Shop"
                       }
@@ -457,7 +457,7 @@ const MyBusiness = () => {
                       aspectRatio="16/9"
                       title={business.business_name}
                       subtitle={
-                        business.business_type_id === 1
+                        business.hasBooking
                           ? "Accommodation"
                           : "Shop"
                       }

@@ -12,6 +12,9 @@ import {
   Option,
   Textarea,
   FormLabel,
+  Checkbox,
+  List,
+  ListItem,
 } from "@mui/joy";
 import { ToggleButton, ToggleButtonGroup } from "@mui/material";
 import { HotelIcon, StoreIcon } from "lucide-react";
@@ -24,8 +27,43 @@ type Props = {
 };
 
 const Step1: React.FC<Props> = ({ data, setData }) => {
-  const { businessCategories, businessTypes, setSelectedType } =
-    useBusinessBasics(api, data, setData);
+  const { 
+    businessCategories,
+    selectedCategories, 
+    setSelectedCategories 
+  } = useBusinessBasics(api, data, setData);
+
+  // Toggle category selection
+  const handleCategoryToggle = (categoryId: number) => {
+    setSelectedCategories((prev) => {
+      const newSelection = prev.includes(categoryId)
+        ? prev.filter((id) => id !== categoryId)
+        : [...prev, categoryId];
+      
+      // Update form data
+      setData((prevData) => ({
+        ...prevData,
+        category_ids: newSelection,
+        // Set first selected as primary if no primary set
+        primary_category_id: prevData.primary_category_id && newSelection.includes(prevData.primary_category_id)
+          ? prevData.primary_category_id
+          : newSelection[0],
+      }));
+      
+      return newSelection;
+    });
+  };
+
+  // Set primary category
+  const handleSetPrimary = (categoryId: number) => {
+    if (selectedCategories.includes(categoryId)) {
+      setData((prev) => ({
+        ...prev,
+        primary_category_id: categoryId,
+      }));
+    }
+  };
+
   return (
     <PageContainer gap={0} padding={0}>
       <Container gap="0">
@@ -109,70 +147,99 @@ const Step1: React.FC<Props> = ({ data, setData }) => {
           </FormLabel>
           <ToggleButtonGroup
             color="primary"
-            value={data.business_type_id?.toString() ?? ""}
+            value={data.hasBooking ? "accommodation" : "shop"}
             exclusive
             onChange={(_e, newValue) => {
               if (!newValue) return;
-              const type_id = Number(newValue);
-              setSelectedType(type_id);
               setData((prev) => ({
                 ...prev,
-                business_type_id: type_id,
+                hasBooking: newValue === "accommodation",
               }));
             }}
             sx={{ display: "flex", gap: 1, mt: 0.5, flexWrap: "wrap" }}
           >
-            {businessTypes.map((type) => (
-              <ToggleButton
-                key={type.id}
-                value={type.id.toString()}
-                sx={{
-                  flex: 1,
-                  minWidth: "120px",
-                  borderRadius: "10px",
-                  px: 2,
-                  py: 1.25,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  gap: 0.75,
-                  textTransform: "none",
-                  border: "1px solid",
-                  borderColor: "#e5e7eb",
-                  backgroundColor: "#fafafa",
-                  color: "#374151",
-                  transition: "all 0.2s ease-in-out",
-                  "&:hover": {
-                    backgroundColor: "#f5f7ff",
-                    borderColor: "#d0d7ff",
-                  },
-                  "&.Mui-selected": {
-                    backgroundColor: "#eaf2ff",
-                    borderColor: "#2563eb",
-                    color: "#1d4ed8",
-                    boxShadow: "0 2px 8px rgba(37, 99, 235, 0.25)",
-                  },
-                  "&.Mui-selected:hover": {
-                    backgroundColor: "#e0ecff",
-                    borderColor: "#1e40af",
-                  },
-                  "&.Mui-focusVisible": {
-                    outline: "2px solid #93c5fd",
-                    outlineOffset: 2,
-                  },
-                }}
-              >
-                {type.type.toLowerCase() === "accommodation" && (
-                  <HotelIcon fontSize="small" />
-                )}
-                {type.type.toLowerCase() === "shop" && (
-                  <StoreIcon fontSize="small" />
-                )}
-                <Typography.Body>
-                  {type.type}
-                </Typography.Body>
-              </ToggleButton>
-            ))}
+            <ToggleButton
+              value="accommodation"
+              sx={{
+                flex: 1,
+                minWidth: "120px",
+                borderRadius: "10px",
+                px: 2,
+                py: 1.25,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 0.75,
+                textTransform: "none",
+                border: "1px solid",
+                borderColor: "#e5e7eb",
+                backgroundColor: "#fafafa",
+                color: "#374151",
+                transition: "all 0.2s ease-in-out",
+                "&:hover": {
+                  backgroundColor: "#f5f7ff",
+                  borderColor: "#d0d7ff",
+                },
+                "&.Mui-selected": {
+                  backgroundColor: "#eaf2ff",
+                  borderColor: "#2563eb",
+                  color: "#1d4ed8",
+                  boxShadow: "0 2px 8px rgba(37, 99, 235, 0.25)",
+                },
+                "&.Mui-selected:hover": {
+                  backgroundColor: "#e0ecff",
+                  borderColor: "#1e40af",
+                },
+                "&.Mui-focusVisible": {
+                  outline: "2px solid #93c5fd",
+                  outlineOffset: 2,
+                },
+              }}
+            >
+              <HotelIcon fontSize="small" />
+              <Typography.Body>Accommodation</Typography.Body>
+            </ToggleButton>
+            <ToggleButton
+              value="shop"
+              sx={{
+                flex: 1,
+                minWidth: "120px",
+                borderRadius: "10px",
+                px: 2,
+                py: 1.25,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 0.75,
+                textTransform: "none",
+                border: "1px solid",
+                borderColor: "#e5e7eb",
+                backgroundColor: "#fafafa",
+                color: "#374151",
+                transition: "all 0.2s ease-in-out",
+                "&:hover": {
+                  backgroundColor: "#f5f7ff",
+                  borderColor: "#d0d7ff",
+                },
+                "&.Mui-selected": {
+                  backgroundColor: "#eaf2ff",
+                  borderColor: "#2563eb",
+                  color: "#1d4ed8",
+                  boxShadow: "0 2px 8px rgba(37, 99, 235, 0.25)",
+                },
+                "&.Mui-selected:hover": {
+                  backgroundColor: "#e0ecff",
+                  borderColor: "#1e40af",
+                },
+                "&.Mui-focusVisible": {
+                  outline: "2px solid #93c5fd",
+                  outlineOffset: 2,
+                },
+              }}
+            >
+              <StoreIcon fontSize="small" />
+              <Typography.Body>Shop</Typography.Body>
+            </ToggleButton>
           </ToggleButtonGroup>
         </FormControl>
 
@@ -185,28 +252,63 @@ const Step1: React.FC<Props> = ({ data, setData }) => {
               color: "#374151",
             }}
           >
-            Business Category
+            Business Categories
           </FormLabel>
-          <Select
-            variant="outlined"
-            size="md"
-            value={data.business_category_id?.toString() ?? ""}
-            onChange={(_e, value) => {
-              if (!value) return;
-              const category_id = Number(value);
-              setData((prev) => ({
-                ...prev,
-                business_category_id: category_id,
-              }));
+          <Typography.CardSubTitle sx={{ mb: 1 }}>
+            Select one or more categories that describe your business
+          </Typography.CardSubTitle>
+          <List
+            sx={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))",
+              gap: 1,
             }}
           >
-            <Option value="">-- Select a category --</Option>
             {businessCategories.map((category) => (
-              <Option key={category.id} value={category.id.toString()}>
-                {category.category}
-              </Option>
+              <ListItem
+                key={category.id}
+                sx={{
+                  p: 0,
+                  border: "1px solid",
+                  borderColor: selectedCategories.includes(category.id)
+                    ? "#2563eb"
+                    : "#e5e7eb",
+                  borderRadius: "8px",
+                  backgroundColor: selectedCategories.includes(category.id)
+                    ? "#eaf2ff"
+                    : "#fafafa",
+                  transition: "all 0.2s ease-in-out",
+                }}
+              >
+                <Checkbox
+                  label={category.title}
+                  checked={selectedCategories.includes(category.id)}
+                  onChange={() => handleCategoryToggle(category.id)}
+                  sx={{ p: 1.5, width: "100%" }}
+                />
+              </ListItem>
             ))}
-          </Select>
+          </List>
+          {selectedCategories.length > 1 && (
+            <FormControl sx={{ mt: 2 }}>
+              <FormLabel>Primary Category</FormLabel>
+              <Select
+                value={data.primary_category_id?.toString() ?? ""}
+                onChange={(_e, value) => {
+                  if (value) handleSetPrimary(Number(value));
+                }}
+              >
+                {selectedCategories.map((catId) => {
+                  const cat = businessCategories.find((c) => c.id === catId);
+                  return (
+                    <Option key={catId} value={catId.toString()}>
+                      {cat?.title ?? `Category ${catId}`}
+                    </Option>
+                  );
+                })}
+              </Select>
+            </FormControl>
+          )}
         </FormControl>
       </Container>
     </PageContainer>

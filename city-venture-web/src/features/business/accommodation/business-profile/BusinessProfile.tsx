@@ -140,9 +140,9 @@ const BusinessProfile = () => {
     max_price: businessDetails?.max_price || "",
     owner_id: businessDetails?.owner_id || "",
     status: businessDetails?.status || "Pending",
-    business_category_id: businessDetails?.business_category_id || 0,
-    business_type_id: businessDetails?.business_type_id || 0,
     hasBooking: businessDetails?.hasBooking || false,
+    category_ids: businessDetails?.category_ids || [],
+    primary_category_id: businessDetails?.primary_category_id,
   });
 
   const [addressData, setAddressData] = React.useState({
