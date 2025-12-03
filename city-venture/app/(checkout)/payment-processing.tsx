@@ -97,6 +97,7 @@ const PaymentProcessingScreen = () => {
 
         console.log('[PaymentProcessing] Final status:', paymentStatus, orderPaymentStatus);
 
+        // Check for successful payment
         if (paymentStatus === 'succeeded' || orderPaymentStatus === 'paid') {
           setStatus('success');
           setStatusMessage('Payment successful!');
@@ -114,7 +115,24 @@ const PaymentProcessingScreen = () => {
               }));
             }
           }, 1500);
-        } else if (result.data.last_payment_error) {
+        } 
+        // Check if webhook already marked payment as failed
+        else if (orderPaymentStatus === 'failed') {
+          setStatus('failed');
+          setStatusMessage('Payment was not completed');
+          
+          setTimeout(() => {
+            if (isMounted) {
+              router.replace(Routes.checkout.paymentFailed({
+                orderId: params.orderId,
+                orderNumber: params.orderNumber,
+                errorMessage: 'Payment was not completed. Please try again.',
+              }));
+            }
+          }, 2000);
+        }
+        // Check for payment error from PayMongo
+        else if (result.data.last_payment_error) {
           setStatus('failed');
           setStatusMessage(
             result.data.last_payment_error.message || 'Payment was not completed'
@@ -148,18 +166,22 @@ const PaymentProcessingScreen = () => {
         
         if (!isMounted) return;
         
-        setStatus('failed');
-        setStatusMessage('Could not verify payment status. Please check your orders.');
+        // Determine if this is a timeout error or other error
+        const isTimeout = error.message?.includes('timeout');
+        const errorMessage = isTimeout 
+          ? 'Payment verification timed out. Please check your order status.'
+          : error.message || 'Could not verify payment status';
         
+        setStatus('failed');
+        setStatusMessage(errorMessage);
+        
+        // Navigate to payment failed screen instead of order confirmation
         setTimeout(() => {
           if (isMounted) {
-            router.replace(Routes.checkout.orderConfirmation({
+            router.replace(Routes.checkout.paymentFailed({
               orderId: params.orderId,
               orderNumber: params.orderNumber,
-              arrivalCode: params.arrivalCode,
-              total: params.total,
-              paymentMethod: 'paymongo',
-              paymentPending: 'true',
+              errorMessage: errorMessage,
             }));
           }
         }, 2000);

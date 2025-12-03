@@ -500,13 +500,19 @@ export async function pollPaymentIntentStatus(
     try {
       const status = await getPaymentIntentStatus(paymentIntentId);
 
-      // Check if payment is complete
+      // Check if payment is complete (success)
       const piStatus = status.data.status;
       if (piStatus === 'succeeded' || status.data.order_payment_status === 'paid') {
         return status;
       }
 
-      // Check for failure
+      // Check if webhook has already marked the order as failed
+      if (status.data.order_payment_status === 'failed') {
+        console.log('[PaymentIntentService] Order payment marked as failed by webhook');
+        return status;
+      }
+
+      // Check for payment error from PayMongo
       if (status.data.last_payment_error) {
         console.error('[PaymentIntentService] Payment failed:', status.data.last_payment_error);
         return status;

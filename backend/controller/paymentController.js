@@ -1295,14 +1295,18 @@ export async function processWebhookEvent(eventType, eventData, webhook_id) {
     const failedCode = eventData.attributes?.failed_code || 'UNKNOWN';
     const failedMessage = eventData.attributes?.failed_message || 'Payment failed';
     
+    console.log(`[Webhook] 💔 Processing payment.failed event`);
+    console.log(`[Webhook] 🔑 Payment ID: ${paymentId}, Intent: ${paymentIntentId}`);
+    
     // Try to get order_id from metadata first
     let resolvedOrderId = order_id;
     
-    // If no order_id in metadata, look it up by payment_id or payment_intent_id
+    // If no order_id in metadata, look it up by payment_id, payment_intent_id, or order's payment_intent_id
     if (!resolvedOrderId) {
       console.log('[Webhook] ⚠️ No order_id in payment.failed metadata, querying database...');
       
       try {
+        // First try to find via payment table
         const [paymentRows] = await db.query(
           `SELECT payment_for_id FROM payment 
            WHERE (paymongo_payment_id = ? OR provider_reference = ?) 
@@ -1313,8 +1317,22 @@ export async function processWebhookEvent(eventType, eventData, webhook_id) {
         
         if (paymentRows && paymentRows.length > 0) {
           resolvedOrderId = paymentRows[0].payment_for_id;
-          console.log(`[Webhook] ✅ Found order_id from database: ${resolvedOrderId}`);
-        } else {
+          console.log(`[Webhook] ✅ Found order_id from payment table: ${resolvedOrderId}`);
+        } else if (paymentIntentId) {
+          // Fallback: try to find via order's paymongo_payment_intent_id
+          console.log('[Webhook] 🔍 Trying to find order by payment_intent_id...');
+          const [orderRows] = await db.query(
+            `SELECT id FROM \`order\` WHERE paymongo_payment_intent_id = ? LIMIT 1`,
+            [paymentIntentId]
+          );
+          
+          if (orderRows && orderRows.length > 0) {
+            resolvedOrderId = orderRows[0].id;
+            console.log(`[Webhook] ✅ Found order_id from order table: ${resolvedOrderId}`);
+          }
+        }
+        
+        if (!resolvedOrderId) {
           console.warn('[Webhook] ❌ Could not find order for payment.failed event');
           
           // Still update payment record even without order
