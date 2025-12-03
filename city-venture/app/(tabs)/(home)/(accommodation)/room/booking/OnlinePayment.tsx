@@ -26,6 +26,9 @@ import {
 } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { WebView } from 'react-native-webview';
+import BookingPaymentResultModal, { 
+  type PaymentResultStatus 
+} from './modal/BookingPaymentResultModal';
 
 type Params = {
   checkoutUrl?: string;
@@ -55,6 +58,8 @@ const OnlinePayment = () => {
     paymentData,
   } = useLocalSearchParams<Params>();
   const [processing, setProcessing] = useState(false);
+  const [paymentResultStatus, setPaymentResultStatus] = useState<PaymentResultStatus>(null);
+  const [errorMessage, setErrorMessage] = useState<string | undefined>();
   const webviewRef = useRef<WebView>(null);
 
   useEffect(() => {
@@ -141,25 +146,19 @@ const OnlinePayment = () => {
       if (!url) return false;
       const lower = url.toLowerCase();
 
-      // If redirecting back to provided https success/cancel pages, finish flow
+      // If redirecting back to provided https success/cancel pages, show modal
       if (successUrl && lower.startsWith(successUrl.toLowerCase())) {
         notifyPayment('success');
         updatePaymentStatus().finally(() => {
-          router.replace(Routes.accommodation.room.summary({
-            bookingData: bookingData || '',
-            guests: guests || '',
-            paymentData: paymentData || '',
-          }));
+          // Show success modal instead of navigating away
+          setPaymentResultStatus('success');
         });
         return false;
       }
       if (cancelUrl && lower.startsWith(cancelUrl.toLowerCase())) {
         notifyPayment('cancel');
-        router.replace(Routes.accommodation.room.billing({
-          bookingData: bookingData || '',
-          guests: guests || '',
-          paymentData: paymentData || '',
-        }));
+        // Show cancelled modal instead of navigating away
+        setPaymentResultStatus('cancelled');
         return false;
       }
 
@@ -176,13 +175,9 @@ const OnlinePayment = () => {
       return true; // allow WebView to load
     },
     [
-      router,
       successUrl,
       cancelUrl,
       updatePaymentStatus,
-      bookingData,
-      guests,
-      paymentData,
     ]
   );
 
@@ -192,20 +187,73 @@ const OnlinePayment = () => {
   const colorScheme = useColorScheme();
   const bg = colorScheme === 'dark' ? background.dark : background.light;
 
+  // Handlers for payment result modal
+  const handleViewBooking = useCallback(() => {
+    // Navigate to bookings list - use dismissAll first then navigate
+    router.dismissAll();
+    // Small delay to ensure navigation stack is clear
+    setTimeout(() => {
+      router.push('/(tabs)/(profile)/(bookings)');
+    }, 100);
+  }, [router]);
+
+  const handleBackToHome = useCallback(() => {
+    // Navigate to home - dismiss all and go to root tabs
+    router.dismissAll();
+    setTimeout(() => {
+      router.replace('/(tabs)/(home)');
+    }, 100);
+  }, [router]);
+
+  const handleRetryPayment = useCallback(() => {
+    // Close modal and let user try again from billing screen
+    setPaymentResultStatus(null);
+    setErrorMessage(undefined);
+    router.replace(Routes.accommodation.room.billing({
+      bookingData: bookingData || '',
+      guests: guests || '',
+      paymentData: paymentData || '',
+    }));
+  }, [router, bookingData, guests, paymentData]);
+
+  const handleCloseModal = useCallback(() => {
+    setPaymentResultStatus(null);
+    setErrorMessage(undefined);
+  }, []);
+
   return (
-    <Modal visible={true} animationType="fade">
-      <SafeAreaProvider>
-        <SafeAreaView style={{ flex: 1 }}>
-          <WebView
-            ref={webviewRef}
-            source={{ uri: checkoutUrl as string }}
-            startInLoadingState={true}
-            onShouldStartLoadWithRequest={(req) => handleUrl(req.url)}
-            javaScriptEnabled={true}
-          />
-        </SafeAreaView>
-      </SafeAreaProvider>
-    </Modal>
+    <>
+      <Modal visible={paymentResultStatus === null} animationType="fade">
+        <SafeAreaProvider>
+          <SafeAreaView style={{ flex: 1 }}>
+            <WebView
+              ref={webviewRef}
+              source={{ uri: checkoutUrl as string }}
+              startInLoadingState={true}
+              onShouldStartLoadWithRequest={(req) => handleUrl(req.url)}
+              javaScriptEnabled={true}
+            />
+          </SafeAreaView>
+        </SafeAreaProvider>
+      </Modal>
+
+      {/* Payment Result Modal */}
+      <BookingPaymentResultModal
+        status={paymentResultStatus}
+        onClose={handleCloseModal}
+        onViewBooking={handleViewBooking}
+        onBackToHome={handleBackToHome}
+        onRetryPayment={handleRetryPayment}
+        bookingDetails={{
+          bookingId: parsed.b?.id,
+          roomName: roomDetails?.room_type || roomDetails?.room_number,
+          checkInDate: parsed.b?.check_in_date as string | undefined,
+          checkOutDate: parsed.b?.check_out_date as string | undefined,
+          totalAmount: Number(parsed.p?.amount) || Number(parsed.b?.total_price),
+        }}
+        errorMessage={errorMessage}
+      />
+    </>
   );
 };
 

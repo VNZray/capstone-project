@@ -69,6 +69,23 @@ const AccommodationLayout = () => {
               headerBackVisible: false,
             }}
           />
+          {/* Payment result screens for deep links */}
+          <Stack.Screen
+            name="room/booking-success"
+            options={{
+              headerShown: false,
+              animation: 'fade',
+              gestureEnabled: false,
+            }}
+          />
+          <Stack.Screen
+            name="room/booking-cancel"
+            options={{
+              headerShown: false,
+              animation: 'fade',
+              gestureEnabled: false,
+            }}
+          />
           <Stack.Screen
             name="index"
             options={{

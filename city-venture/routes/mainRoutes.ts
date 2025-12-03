@@ -101,6 +101,23 @@ export const Routes = {
           '/(tabs)/(home)/(accommodation)/room/booking/Billing' as const,
         params: params || {},
       }),
+      // Payment result deep link handlers (for PayMongo redirects)
+      paymentSuccess: (params?: {
+        bookingId?: string;
+        paymentSuccess?: string;
+      }) => ({
+        pathname:
+          '/(tabs)/(home)/(accommodation)/room/booking-success' as const,
+        params: params || {},
+      }),
+      paymentCancel: (params?: {
+        bookingId?: string;
+        reason?: string;
+      }) => ({
+        pathname:
+          '/(tabs)/(home)/(accommodation)/room/booking-cancel' as const,
+        params: params || {},
+      }),
     },
   },
 
