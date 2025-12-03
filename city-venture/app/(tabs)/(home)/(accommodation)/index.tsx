@@ -257,7 +257,10 @@ const AccommodationDirectory = () => {
     if (!Array.isArray(allAccommodationDetails)) return [];
     const term = toLowerSafe(search.trim());
     let results = allAccommodationDetails.filter((b: Business) => {
-      if (b.hasBooking !== true) return false;
+      // Check hasBooking - handle both boolean and number (MySQL returns 1/0)
+      const hasBooking = b.hasBooking === true || b.hasBooking === 1;
+      if (!hasBooking) return false;
+      
       const name = toLowerSafe(b.business_name);
       const addr = toLowerSafe(b.address);
       const brgy = toLowerSafe(getBarangayName(b.barangay_id));

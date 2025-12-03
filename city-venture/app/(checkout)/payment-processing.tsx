@@ -158,28 +158,6 @@ const PaymentProcessingScreen = () => {
               }));
             }
           }, 2000);
-        }
-        // Check for payment error from PayMongo
-        else if (result.data.last_payment_error) {
-          setStatus('failed');
-          setStatusMessage(
-            result.data.last_payment_error.message ||
-              'Payment was not completed'
-          );
-
-          // Navigate to failure screen after delay
-          setTimeout(() => {
-            if (isMounted) {
-              router.replace(
-                Routes.checkout.paymentFailed({
-                  orderId: params.orderId,
-                  orderNumber: params.orderNumber,
-                  errorMessage:
-                    result.data.last_payment_error?.message || 'Payment failed',
-                })
-              );
-            }
-          }, 2000);
         } else {
           // Still processing or awaiting_payment_method (user may have cancelled)
           setStatus('failed');

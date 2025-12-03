@@ -74,8 +74,8 @@ export const fetchBusinessData = async (
   const categories = await fetchEntityCategories('business', id);
   const primaryCategory = categories.find(c => c.is_primary) || categories[0];
 
-  // Fetch average rating and total reviews
-  const reviewType = business_type.type.toLowerCase() as ReviewType;
+  // Fetch average rating and total reviews for accommodation type
+  const reviewType: ReviewType = 'accommodation';
   const [rawAverageRating, totalReviews] = await Promise.all([
     getAverageRating(reviewType, id),
     getTotalReviews(reviewType, id),
