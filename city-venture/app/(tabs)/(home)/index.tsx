@@ -52,6 +52,7 @@ import {
   PLACEHOLDER_NEWS,
   type ActionItem,
 } from '@/components/home/data';
+import { Image } from 'expo-image';
 
 // Enable LayoutAnimation for Android
 if (
@@ -268,7 +269,14 @@ const HomeScreen = () => {
         <Animated.View style={[styles.topRow, topRowAnimatedStyle]}>
           <View style={styles.profileSection}>
             <View style={styles.profileIcon}>
-              <Ionicons name="person" size={20} color="#FFF" />
+              {user.user_profile ? (
+                <Image
+                  source={{ uri: user.user_profile }}
+                  style={{ width: 40, height: 40, borderRadius: 20 }}
+                />
+              ) : (
+                <Ionicons name="person" size={20} color="#FFF" />
+              )}
             </View>
             <View>
               <ThemedText
@@ -282,7 +290,7 @@ const HomeScreen = () => {
                 weight="bold"
                 style={{ color: '#FFF' }}
               >
-                Tourist!
+                {user.first_name}!
               </ThemedText>
             </View>
           </View>

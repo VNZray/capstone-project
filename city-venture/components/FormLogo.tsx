@@ -8,7 +8,9 @@ const FormLogo = () => {
   return (
     <View style={styles.logoContainer}>
       <Image source={logo} style={styles.logo} />
-      <ThemedText type='card-title-medium' weight='bold'>City Venture</ThemedText>
+      <ThemedText type="card-title-medium" weight="bold">
+        City Venture
+      </ThemedText>
     </View>
   );
 };
@@ -24,6 +26,7 @@ const styles = StyleSheet.create({
   logo: {
     width: 50,
     height: 50,
+    borderRadius: 12,
   },
   logoText: {
     fontSize: 18,

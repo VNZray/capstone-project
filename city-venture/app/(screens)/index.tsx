@@ -111,141 +111,133 @@ const LoginPage = () => {
     <SafeAreaView style={{ flex: 1, backgroundColor: '#fff' }}>
       <StatusBar />
       {/* Mobile Form Container */}
-      <View style={styles.container}>
-        {/* Right Side Form */}
-        <View style={styles.formContainer}>
-          <PageContainer
-            padding={0}
-            style={{
-              width: '100%',
-              alignSelf: 'center',
-            }}
+      <PageContainer
+        padding={0}
+        style={{
+          width: '100%',
+        }}
+      >
+        <KeyboardAvoidingView
+          style={{ flex: 1 }}
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? 80 : 0}
+        >
+          <ScrollView
+            keyboardShouldPersistTaps="handled"
+            contentContainerStyle={styles.scrollContent}
+            showsVerticalScrollIndicator={false}
           >
-            <KeyboardAvoidingView
-              style={{ flex: 1 }}
-              behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-              keyboardVerticalOffset={Platform.OS === 'ios' ? 80 : 0}
-            >
-              <ScrollView
-                keyboardShouldPersistTaps="handled"
-                contentContainerStyle={styles.scrollContent}
-                showsVerticalScrollIndicator={false}
+            {/* Logo */}
+            <View style={{ alignItems: 'flex-start', marginBottom: 20 }}>
+              <FormLogo />
+            </View>
+
+            {/* Headline */}
+            <View style={{ marginBottom: 10 }}>
+              <ThemedText
+                type="title-medium"
+                weight="bold"
+                style={{
+                  textAlign: 'left',
+                }}
               >
-                {/* Logo */}
-                <View style={{ alignItems: 'flex-start', marginBottom: 20 }}>
-                  <FormLogo />
-                </View>
+                Sign In
+              </ThemedText>
+              <ThemedText
+                type="sub-title-small"
+                weight="medium"
+                style={{ color: '#666', marginTop: 8 }}
+              >
+                Navigate with Ease - Your Ultimate City Directory
+              </ThemedText>
+            </View>
 
-                {/* Headline */}
-                <View style={{ marginBottom: 10 }}>
-                  <ThemedText
-                    type="title-medium"
-                    weight="bold"
-                    style={{
-                      textAlign: 'left',
-                    }}
-                  >
-                    Sign In
-                  </ThemedText>
-                  <ThemedText
-                    type="sub-title-small"
-                    weight="medium"
-                    style={{ color: '#666', marginTop: 8 }}
-                  >
-                    Navigate with Ease - Your Ultimate City Directory
-                  </ThemedText>
-                </View>
+            {/* Credentials */}
+            <View style={styles.fieldGroup}>
+              <FormTextInput
+                label="Email"
+                placeholder="Enter email"
+                keyboardType="email-address"
+                autoCapitalize="none"
+                value={email}
+                onChangeText={setEmail}
+                variant="outlined"
+                required
+                errorText={emailError}
+              />
+              <FormTextInput
+                label="Password"
+                placeholder="Enter password"
+                secureTextEntry={!showPassword}
+                rightIcon={showPassword ? 'eye-slash' : 'eye'}
+                onPressRightIcon={() => setShowPassword((p) => !p)}
+                value={password}
+                onChangeText={setPassword}
+                variant="outlined"
+                autoCapitalize="none"
+                required
+                errorText={passwordError}
+              />
+            </View>
 
-                {/* Credentials */}
-                <View style={styles.fieldGroup}>
-                  <FormTextInput
-                    label="Email"
-                    placeholder="Enter email"
-                    keyboardType="email-address"
-                    autoCapitalize="none"
-                    value={email}
-                    onChangeText={setEmail}
-                    variant="outlined"
-                    required
-                    errorText={emailError}
-                  />
-                  <FormTextInput
-                    label="Password"
-                    placeholder="Enter password"
-                    secureTextEntry={!showPassword}
-                    rightIcon={showPassword ? 'eye-slash' : 'eye'}
-                    onPressRightIcon={() => setShowPassword((p) => !p)}
-                    value={password}
-                    onChangeText={setPassword}
-                    variant="outlined"
-                    autoCapitalize="none"
-                    required
-                    errorText={passwordError}
-                  />
-                </View>
+            <View style={{ alignItems: 'flex-end' }}>
+              <Link href="./(screens)/ForgotPassword">
+                <ThemedText type="link-medium">Forgot Password?</ThemedText>
+              </Link>
+            </View>
 
-                <View style={{ alignItems: 'flex-end' }}>
-                  <Link href="./(screens)/ForgotPassword">
-                    <ThemedText type="link-medium">Forgot Password?</ThemedText>
-                  </Link>
-                </View>
+            {/* Error Message */}
+            {loginError ? (
+              <Container
+                padding={16}
+                variant="soft"
+                backgroundColor={colors.error}
+              >
+                <ThemedText
+                  startIcon={<Entypo name="warning" size={18} color="#fff" />}
+                  lightColor="#fff"
+                  type="body-medium"
+                >
+                  {loginError}
+                </ThemedText>
+              </Container>
+            ) : null}
 
-                {/* Error Message */}
-                {loginError ? (
-                  <Container
-                    padding={16}
-                    variant="soft"
-                    backgroundColor={colors.error}
-                  >
-                    <ThemedText
-                      startIcon={
-                        <Entypo name="warning" size={18} color="#fff" />
-                      }
-                      lightColor="#fff"
-                      type="body-medium"
-                    >
-                      {loginError}
-                    </ThemedText>
-                  </Container>
-                ) : null}
+            {/* Login Button */}
+            <Button
+              size="large"
+              label={isLoading ? 'Signing In...' : 'Sign In'}
+              color="primary"
+              variant="solid"
+              onPress={handleLogin}
+              disabled={isLoading}
+              style={{ marginTop: 10 }}
+            />
 
-                {/* Login Button */}
-                <Button
-                  size="large"
-                  label={isLoading ? 'Signing In...' : 'Sign In'}
-                  color="primary"
-                  variant="solid"
-                  onPress={handleLogin}
-                  disabled={isLoading}
-                  style={{ marginTop: 10 }}
-                />
+            {/* Footer */}
+            <View style={styles.footer}>
+              <ThemedText type="body-medium">
+                Don&apos;t have an account?
+              </ThemedText>
+              <Link href={'./Register'}>
+                <ThemedText type="link-medium">Sign Up</ThemedText>
+              </Link>
+            </View>
+          </ScrollView>
+        </KeyboardAvoidingView>
 
-                {/* Footer */}
-                <View style={styles.footer}>
-                  <ThemedText type="body-medium">
-                    Don&apos;t have an account?
-                  </ThemedText>
-                  <Link href={'./Register'}>
-                    <ThemedText type="link-medium">Sign Up</ThemedText>
-                  </Link>
-                </View>
-              </ScrollView>
-            </KeyboardAvoidingView>
-
-            {/* Loading Modal */}
-            <Modal visible={isLoading} transparent={true} animationType="fade">
-              <View style={styles.modalOverlay}>
-                <View style={styles.loadingContainer}>
-                  <ActivityIndicator size="large" color={colors.primary} />
-                  <ThemedText type="body-medium" style={styles.loadingText}>
-                    Signing In...
-                  </ThemedText>
-                </View>
-              </View>
-            </Modal>
-          </PageContainer>
-        </View>
-      </View>
+        {/* Loading Modal */}
+        <Modal visible={isLoading} transparent={true} animationType="fade">
+          <View style={styles.modalOverlay}>
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color={colors.primary} />
+              <ThemedText type="body-medium" style={styles.loadingText}>
+                Signing In...
+              </ThemedText>
+            </View>
+          </View>
+        </Modal>
+      </PageContainer>
     </SafeAreaView>
   );
 };
