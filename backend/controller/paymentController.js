@@ -1312,7 +1312,7 @@ export async function processWebhookEvent(eventType, eventData, webhook_id) {
     }
   }
 
-  // Handle payment.failed event
+  // Handle payment.failed event (supports both orders and bookings)
   else if (eventType === 'payment.failed') {
     const paymentId = eventData.id;
     const paymentIntentId = eventData.attributes?.payment_intent_id;
@@ -1322,26 +1322,28 @@ export async function processWebhookEvent(eventType, eventData, webhook_id) {
     console.log(`[Webhook] 💔 Processing payment.failed event`);
     console.log(`[Webhook] 🔑 Payment ID: ${paymentId}, Intent: ${paymentIntentId}`);
     
-    // Try to get order_id from metadata first
-    let resolvedOrderId = order_id;
+    // Determine if this is for an order or booking
+    // payment_for and reference_id are determined at the top of handlePayMongoWebhook
+    let resolvedReferenceId = reference_id;
+    let resolvedPaymentFor = payment_for;
     
-    // If no order_id in metadata, look it up by payment_id, payment_intent_id, or order's payment_intent_id
-    if (!resolvedOrderId) {
-      console.log('[Webhook] ⚠️ No order_id in payment.failed metadata, querying database...');
+    // If no reference_id in metadata, look it up by payment_id or payment_intent_id
+    if (!resolvedReferenceId) {
+      console.log('[Webhook] ⚠️ No reference_id in payment.failed metadata, querying database...');
       
       try {
-        // First try to find via payment table
+        // First try to find via payment table (works for both orders and bookings)
         const [paymentRows] = await db.query(
-          `SELECT payment_for_id FROM payment 
+          `SELECT payment_for_id, payment_for FROM payment 
            WHERE (paymongo_payment_id = ? OR provider_reference = ?) 
-           AND payment_for = 'order' 
            LIMIT 1`,
           [paymentId, paymentIntentId]
         );
         
         if (paymentRows && paymentRows.length > 0) {
-          resolvedOrderId = paymentRows[0].payment_for_id;
-          console.log(`[Webhook] ✅ Found order_id from payment table: ${resolvedOrderId}`);
+          resolvedReferenceId = paymentRows[0].payment_for_id;
+          resolvedPaymentFor = paymentRows[0].payment_for;
+          console.log(`[Webhook] ✅ Found ${resolvedPaymentFor}_id from payment table: ${resolvedReferenceId}`);
         } else if (paymentIntentId) {
           // Fallback: try to find via order's paymongo_payment_intent_id
           console.log('[Webhook] 🔍 Trying to find order by payment_intent_id...');
@@ -1351,15 +1353,16 @@ export async function processWebhookEvent(eventType, eventData, webhook_id) {
           );
           
           if (orderRows && orderRows.length > 0) {
-            resolvedOrderId = orderRows[0].id;
-            console.log(`[Webhook] ✅ Found order_id from order table: ${resolvedOrderId}`);
+            resolvedReferenceId = orderRows[0].id;
+            resolvedPaymentFor = 'order';
+            console.log(`[Webhook] ✅ Found order_id from order table: ${resolvedReferenceId}`);
           }
         }
         
-        if (!resolvedOrderId) {
-          console.warn('[Webhook] ❌ Could not find order for payment.failed event');
+        if (!resolvedReferenceId) {
+          console.warn('[Webhook] ❌ Could not find order or booking for payment.failed event');
           
-          // Still update payment record even without order
+          // Still update payment record even without reference
           await db.query(
             `UPDATE payment 
              SET status = 'failed', 
@@ -1381,11 +1384,11 @@ export async function processWebhookEvent(eventType, eventData, webhook_id) {
             ]
           );
           
-          console.log(`[Webhook] 💾 Updated payment ${paymentId} as failed (no order found)`);
+          console.log(`[Webhook] 💾 Updated payment ${paymentId} as failed (no order/booking found)`);
           return;
         }
       } catch (err) {
-        console.error('[Webhook] Error querying for order_id:', err);
+        console.error('[Webhook] Error querying for reference_id:', err);
         return;
       }
     }
@@ -1401,44 +1404,65 @@ export async function processWebhookEvent(eventType, eventData, webhook_id) {
              '$.failed_message', ?
            ),
            updated_at = ? 
-       WHERE payment_for = 'order' 
+       WHERE payment_for = ?
          AND payment_for_id = ?`,
       [
         paymentId,
         failedCode,
         failedMessage,
         new Date(), 
-        resolvedOrderId
+        resolvedPaymentFor,
+        resolvedReferenceId
       ]
     );
 
-    // Update order payment status and status
-    await db.query(
-      `UPDATE \`order\` 
-       SET payment_status = 'failed', 
-           status = 'failed_payment' 
-       WHERE id = ?`,
-      [resolvedOrderId]
-    );
-
-    console.log(`[Webhook] 💔 Order ${resolvedOrderId} marked as failed payment: ${failedMessage} (code: ${failedCode})`);
+    // Update order or booking status based on payment_for
+    if (resolvedPaymentFor === 'booking') {
+      // Update booking status to indicate failed payment
+      await db.query(
+        `UPDATE booking 
+         SET booking_status = 'Payment Failed'
+         WHERE id = ?`,
+        [resolvedReferenceId]
+      );
+      console.log(`[Webhook] 💔 Booking ${resolvedReferenceId} marked as Payment Failed: ${failedMessage} (code: ${failedCode})`);
+    } else {
+      // Update order payment status and status
+      await db.query(
+        `UPDATE \`order\` 
+         SET payment_status = 'failed', 
+             status = 'failed_payment' 
+         WHERE id = ?`,
+        [resolvedReferenceId]
+      );
+      console.log(`[Webhook] 💔 Order ${resolvedReferenceId} marked as failed payment: ${failedMessage} (code: ${failedCode})`);
+    }
 
     // ========== Audit Logging ==========
-    await auditService.logPaymentUpdate({
-      orderId: resolvedOrderId,
-      oldStatus: 'unpaid',
-      newStatus: 'failed',
-      actor: null, // System/webhook event
-      paymentDetails: {
-        paymongo_payment_id: paymentId,
-        failed_code: failedCode,
-        failed_message: failedMessage,
-        webhook_event_type: 'payment.failed'
-      }
-    });
+    try {
+      await auditService.logPaymentUpdate({
+        orderId: resolvedReferenceId,
+        oldStatus: resolvedPaymentFor === 'booking' ? 'Pending' : 'unpaid',
+        newStatus: 'failed',
+        actor: null, // System/webhook event
+        paymentDetails: {
+          paymongo_payment_id: paymentId,
+          failed_code: failedCode,
+          failed_message: failedMessage,
+          webhook_event_type: 'payment.failed',
+          payment_for: resolvedPaymentFor
+        }
+      });
+    } catch (auditErr) {
+      // Don't fail the webhook if audit logging fails (e.g., for bookings with no order_audit table)
+      console.log(`[Webhook] ⚠️ Audit logging skipped for ${resolvedPaymentFor}: ${auditErr.message}`);
+    }
 
-    // Emit real-time events
-    await emitPaymentEvents(resolvedOrderId, paymentId, 'failed', eventData.attributes?.amount);
+    // Emit real-time events (only for orders for now)
+    if (resolvedPaymentFor === 'order') {
+      await emitPaymentEvents(resolvedReferenceId, paymentId, 'failed', eventData.attributes?.amount);
+    }
+    // TODO: Add socket events for booking payment failures if needed
   }
 
   // ========== Refund Events ==========

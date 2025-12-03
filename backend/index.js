@@ -7,6 +7,7 @@ import { initializeSocket } from "./services/socketService.js";
 import { startTokenCleanupScheduler } from "./services/tokenCleanupService.js";
 import * as webhookQueueService from "./services/webhookQueueService.js";
 import { registerProcessor } from "./services/webhookProcessor.js";
+import db from "./db.js";
 
 import userRoutes from "./routes/users.js";
 import authRoutes from "./routes/auth.js";
@@ -355,13 +356,41 @@ app.get("/orders/:orderId/payment-cancel", (req, res) => {
 });
 
 // Booking payment redirect routes (for accommodation bookings)
-app.get("/bookings/:bookingId/payment-success", (req, res) => {
+// These routes check the actual payment status before redirecting
+app.get("/bookings/:bookingId/payment-success", async (req, res) => {
   const bookingId = req.params.bookingId;
   if (!bookingId) {
     return res.status(400).send("Missing bookingId");
   }
-  // Reuse the same redirect helper - it works for bookings too
-  sendPaymongoRedirect(res, bookingId, "success", "booking");
+  
+  try {
+    // Check the actual payment status from the database
+    // The webhook may have already updated this to 'failed'
+    const [rows] = await db.query(
+      `SELECT p.status as payment_status, p.provider_reference
+       FROM payment p
+       WHERE p.payment_for_id = ? AND p.payment_for = 'booking'
+       ORDER BY p.created_at DESC
+       LIMIT 1`,
+      [bookingId]
+    );
+    
+    const payment = rows?.[0];
+    
+    // If payment exists and is marked as failed, redirect to cancel flow
+    if (payment && (payment.payment_status === 'failed' || payment.payment_status === 'cancelled')) {
+      console.log(`[PayMongo Redirect] Payment for booking ${bookingId} is ${payment.payment_status}, redirecting to cancel`);
+      return sendPaymongoRedirect(res, bookingId, "cancel", "booking");
+    }
+    
+    // Otherwise proceed with success redirect
+    // Note: The mobile app will still verify the actual PayMongo status
+    sendPaymongoRedirect(res, bookingId, "success", "booking");
+  } catch (error) {
+    console.error(`[PayMongo Redirect] Error checking payment status:`, error);
+    // On error, proceed with success and let mobile verify
+    sendPaymongoRedirect(res, bookingId, "success", "booking");
+  }
 });
 
 app.get("/bookings/:bookingId/payment-cancel", (req, res) => {

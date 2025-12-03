@@ -1,7 +1,7 @@
 import { background } from '@/constants/color';
 import { useAuth } from '@/context/AuthContext';
 import { useRoom } from '@/context/RoomContext';
-import { payBooking } from '@/query/accommodationQuery';
+import { verifyBookingPayment } from '@/services/BookingPaymentService';
 import { Booking, BookingPayment } from '@/types/Booking';
 import debugLogger from '@/utils/debugLogger';
 import { notifyPayment } from '@/utils/paymentBus';
@@ -82,83 +82,145 @@ const OnlinePayment = () => {
   }, [bookingData, guests, paymentData]);
 
   /**
-   * Update the payment status after successful PayMongo payment
-   * The booking was already created before navigating to this screen
+   * Verify payment status with PayMongo via backend API
+   * This checks the actual Payment Intent status to confirm success/failure
    */
-  const updatePaymentStatus = useCallback(async () => {
-    if (processing) return;
+  const verifyAndUpdatePayment = useCallback(async (): Promise<'success' | 'failed' | 'processing'> => {
+    if (processing) return 'processing';
     
     const bookingId = parsed.b?.id;
-    if (!bookingId || !user?.id) {
+    if (!bookingId || !user?.id || !payment_id) {
       debugLogger({
-        title: 'OnlinePayment: Missing booking ID or user',
-        error: { bookingId, userId: user?.id },
+        title: 'OnlinePayment: Missing booking ID, user, or payment ID',
+        error: { bookingId, userId: user?.id, payment_id },
       });
-      return;
+      setErrorMessage('Missing payment information. Please try again.');
+      return 'failed';
     }
     
     try {
       setProcessing(true);
-      const total = Number((parsed.b as Booking)?.total_price) || 0;
-      const paid = Number((parsed.p as BookingPayment)?.amount) || 0;
-
-      // Create the payment record for the existing booking
-      const paymentPayload: BookingPayment = {
-        ...(parsed.p as BookingPayment),
-        payer_type: 'Tourist',
-        payer_id: user.id,
-        payment_for_id: bookingId,
-        payment_for: 'Reservation',
-        status:
-          parsed.p?.payment_type === 'Full Payment'
-            ? 'Paid'
-            : 'Pending Balance',
-      } as BookingPayment;
-
+      
       debugLogger({
-        title: 'OnlinePayment: Recording payment',
-        data: { bookingId, paymentPayload },
+        title: 'OnlinePayment: Verifying payment status with PayMongo',
+        data: { bookingId, payment_id },
       });
 
-      await payBooking(bookingId, paymentPayload, total);
-
+      // Call backend to verify actual PayMongo payment status
+      const response = await verifyBookingPayment(bookingId, payment_id);
+      
       debugLogger({
-        title: 'OnlinePayment: Payment recorded successfully',
-        data: { bookingId },
-        successMessage: 'Payment completed successfully.',
+        title: 'OnlinePayment: Verification response',
+        data: response.data,
       });
+
+      const { verified, payment_status, message, last_payment_error } = response.data;
+
+      if (verified && payment_status === 'success') {
+        // Payment was actually successful!
+        debugLogger({
+          title: 'OnlinePayment: Payment verified as successful',
+          data: { bookingId },
+          successMessage: 'Payment completed successfully.',
+        });
+        return 'success';
+      } else if (payment_status === 'failed') {
+        // Payment failed or was cancelled
+        setErrorMessage(last_payment_error?.message || message || 'Payment was declined. Please try again.');
+        return 'failed';
+      } else if (payment_status === 'processing') {
+        // Still processing - could be webhook delay
+        setErrorMessage('Payment is still being processed. Please wait...');
+        return 'processing';
+      } else {
+        // Pending or unknown status
+        setErrorMessage(message || 'Payment verification failed. Please check your booking status.');
+        return 'failed';
+      }
     } catch (e: any) {
       debugLogger({
-        title: 'OnlinePayment: Payment recording failed',
+        title: 'OnlinePayment: Payment verification failed',
         error: e?.response?.data || e,
         errorCode: e?.code || e?.response?.status,
       });
-      // Don't show alert here as payment was successful on PayMongo side
-      // The webhook should handle the payment status update
-      console.error('Failed to record payment locally:', e?.message);
+      setErrorMessage(e?.response?.data?.message || 'Failed to verify payment. Please check your booking status.');
+      return 'failed';
     } finally {
       setProcessing(false);
     }
-  }, [processing, parsed, user?.id]);
+  }, [processing, parsed, user?.id, payment_id]);
 
   const handleUrl = useCallback(
     (url: string) => {
       if (!url) return false;
       const lower = url.toLowerCase();
 
-      // If redirecting back to provided https success/cancel pages, show modal
+      // Parse URL to check for status indicators
+      let urlObj: URL | null = null;
+      try {
+        urlObj = new URL(url);
+      } catch {
+        // Invalid URL, continue with string matching
+      }
+
+      // Check for explicit failure indicators in URL
+      const hasFailureIndicator = 
+        lower.includes('failed') || 
+        lower.includes('failure') ||
+        lower.includes('error') ||
+        lower.includes('declined') ||
+        (urlObj?.searchParams.get('status') === 'failed') ||
+        (urlObj?.searchParams.get('payment_status') === 'failed');
+
+      // If redirecting to cancel URL OR has failure indicators, show failed modal immediately
+      if (cancelUrl && lower.startsWith(cancelUrl.toLowerCase())) {
+        notifyPayment('cancel');
+        setPaymentResultStatus('cancelled');
+        return false;
+      }
+
+      // Check for success URL - but we need to VERIFY the actual payment status
       if (successUrl && lower.startsWith(successUrl.toLowerCase())) {
-        notifyPayment('success');
-        updatePaymentStatus().finally(() => {
-          // Show success modal instead of navigating away
-          setPaymentResultStatus('success');
+        // If URL contains explicit failure indicators, show failed immediately
+        if (hasFailureIndicator) {
+          notifyPayment('cancel');
+          setErrorMessage('Payment was declined or failed. Please try again.');
+          setPaymentResultStatus('failed');
+          return false;
+        }
+        
+        // Otherwise verify the actual payment status with PayMongo
+        // This is critical - don't assume success just because we got redirected!
+        verifyAndUpdatePayment().then((result) => {
+          if (result === 'success') {
+            notifyPayment('success');
+            setPaymentResultStatus('success');
+          } else if (result === 'processing') {
+            // Payment still processing - show a processing state or wait
+            // For now, we'll check again after a delay
+            setTimeout(async () => {
+              const retryResult = await verifyAndUpdatePayment();
+              if (retryResult === 'success') {
+                notifyPayment('success');
+                setPaymentResultStatus('success');
+              } else {
+                notifyPayment('cancel');
+                setPaymentResultStatus('failed');
+              }
+            }, 2000);
+          } else {
+            notifyPayment('cancel');
+            setPaymentResultStatus('failed');
+          }
         });
         return false;
       }
-      if (cancelUrl && lower.startsWith(cancelUrl.toLowerCase())) {
+
+      // Also check for PayMongo's direct failure redirects
+      if (hasFailureIndicator) {
         notifyPayment('cancel');
-        // Show cancelled modal instead of navigating away
-        setPaymentResultStatus('cancelled');
+        setErrorMessage('Payment was declined. Please try again with a different payment method.');
+        setPaymentResultStatus('failed');
         return false;
       }
 
@@ -177,7 +239,7 @@ const OnlinePayment = () => {
     [
       successUrl,
       cancelUrl,
-      updatePaymentStatus,
+      verifyAndUpdatePayment,
     ]
   );
 
@@ -221,18 +283,67 @@ const OnlinePayment = () => {
     setErrorMessage(undefined);
   }, []);
 
+  // Handle WebView messages from injected JavaScript
+  const handleWebViewMessage = useCallback((event: { nativeEvent: { data: string } }) => {
+    try {
+      const data = JSON.parse(event.nativeEvent.data);
+      debugLogger({
+        title: 'WebView Message',
+        data,
+      });
+      
+      if (data.type === 'PAGE_TITLE' && data.title) {
+        const titleLower = data.title.toLowerCase();
+        // Check title for failure indicators
+        if (
+          titleLower.includes('failed') || 
+          titleLower.includes('declined') ||
+          titleLower.includes('error') ||
+          titleLower.includes('unsuccessful') ||
+          titleLower.includes('cancelled')
+        ) {
+          notifyPayment('cancel');
+          setErrorMessage('Payment was declined by your payment provider.');
+          setPaymentResultStatus('failed');
+        }
+      }
+    } catch {
+      // Ignore non-JSON messages
+    }
+  }, []);
+
+  // Inject script to send page title back to React Native
+  const injectedJavaScript = `
+    (function() {
+      // Send initial title
+      window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'PAGE_TITLE', title: document.title, url: window.location.href }));
+      
+      // Monitor for title changes
+      var observer = new MutationObserver(function() {
+        window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'PAGE_TITLE', title: document.title, url: window.location.href }));
+      });
+      observer.observe(document.querySelector('title') || document.head, { subtree: true, characterData: true, childList: true });
+    })();
+    true;
+  `;
+
+  // WebView props with message handling for payment status detection
+  const webViewProps = {
+    ref: webviewRef,
+    source: { uri: checkoutUrl as string },
+    startInLoadingState: true,
+    onShouldStartLoadWithRequest: (req: { url: string }) => handleUrl(req.url),
+    onMessage: handleWebViewMessage,
+    injectedJavaScript: injectedJavaScript,
+    javaScriptEnabled: true,
+  };
+
   return (
     <>
       <Modal visible={paymentResultStatus === null} animationType="fade">
         <SafeAreaProvider>
           <SafeAreaView style={{ flex: 1 }}>
-            <WebView
-              ref={webviewRef}
-              source={{ uri: checkoutUrl as string }}
-              startInLoadingState={true}
-              onShouldStartLoadWithRequest={(req) => handleUrl(req.url)}
-              javaScriptEnabled={true}
-            />
+            <WebView {...webViewProps} />
           </SafeAreaView>
         </SafeAreaProvider>
       </Modal>

@@ -430,3 +430,174 @@ export async function initiateBookingPayment(req, res) {
     });
   }
 }
+
+/**
+ * Verify payment status for a booking
+ * GET /api/bookings/:id/verify-payment/:paymentId
+ * 
+ * This endpoint checks the actual PayMongo Payment Intent status
+ * to confirm whether a payment was successful or failed.
+ * 
+ * Auth: Required (Tourist role)
+ */
+export async function verifyBookingPayment(req, res) {
+  try {
+    const { id: booking_id, paymentId } = req.params;
+    const user_id = req.user?.id;
+
+    // Validate user authentication
+    if (!user_id) {
+      return res.status(401).json({
+        success: false,
+        message: "Authentication required"
+      });
+    }
+
+    // 1. Fetch booking and payment details
+    const [rows] = await db.query(
+      `SELECT 
+        b.id as booking_id, b.tourist_id, b.booking_status, b.total_price, b.balance,
+        p.id as payment_id, p.provider_reference, p.status as payment_status, p.amount,
+        t.user_id as tourist_user_id
+       FROM booking b
+       LEFT JOIN payment p ON p.payment_for_id = b.id AND p.payment_for = 'booking'
+       LEFT JOIN tourist t ON b.tourist_id = t.id
+       WHERE b.id = ? AND p.id = ?`,
+      [booking_id, paymentId]
+    );
+
+    if (!rows || rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "Booking or payment not found"
+      });
+    }
+
+    const record = rows[0];
+
+    // 2. Validate ownership
+    if (record.tourist_user_id !== user_id) {
+      return res.status(403).json({
+        success: false,
+        message: "You are not authorized to verify this payment"
+      });
+    }
+
+    // 3. Check if we have a PayMongo Payment Intent ID
+    const paymentIntentId = record.provider_reference;
+    
+    if (!paymentIntentId) {
+      return res.status(400).json({
+        success: false,
+        message: "No payment provider reference found"
+      });
+    }
+
+    // 4. Query PayMongo for actual payment status
+    console.log(`[VerifyPayment] Checking PayMongo status for PI: ${paymentIntentId}`);
+    const paymentIntent = await paymongoService.getPaymentIntent(paymentIntentId);
+    const piStatus = paymentIntent?.attributes?.status;
+    const lastPaymentError = paymentIntent?.attributes?.last_payment_error;
+
+    console.log(`[VerifyPayment] PayMongo status: ${piStatus}`);
+
+    // 5. Determine payment outcome
+    // PayMongo Payment Intent statuses:
+    // - awaiting_payment_method: Payment method not yet attached or failed
+    // - awaiting_next_action: Waiting for 3DS or redirect completion
+    // - processing: Payment is being processed
+    // - succeeded: Payment was successful
+    
+    let verified = false;
+    let paymentVerified = 'pending';
+    let message = '';
+
+    switch (piStatus) {
+      case 'succeeded':
+        verified = true;
+        paymentVerified = 'success';
+        message = 'Payment verified successfully';
+        break;
+        
+      case 'awaiting_payment_method':
+        // Payment failed or was cancelled - need new payment method
+        verified = false;
+        paymentVerified = 'failed';
+        message = lastPaymentError?.message || 'Payment was cancelled or declined. Please try again.';
+        break;
+        
+      case 'awaiting_next_action':
+        // Still waiting for user action
+        verified = false;
+        paymentVerified = 'pending';
+        message = 'Payment is still pending user authorization';
+        break;
+        
+      case 'processing':
+        // Payment is processing
+        verified = false;
+        paymentVerified = 'processing';
+        message = 'Payment is being processed. Please wait...';
+        break;
+        
+      default:
+        verified = false;
+        paymentVerified = 'unknown';
+        message = `Unexpected payment status: ${piStatus}`;
+    }
+
+    // 6. Update local payment record if verified successful
+    if (verified && record.payment_status === 'pending') {
+      await db.query(
+        `UPDATE payment SET status = 'Paid' WHERE id = ?`,
+        [paymentId]
+      );
+      
+      // Update booking status to Confirmed/Reserved
+      await db.query(
+        `UPDATE booking SET booking_status = 'Confirmed' WHERE id = ? AND booking_status IN ('Pending', 'Reserved')`,
+        [booking_id]
+      );
+      
+      console.log(`[VerifyPayment] ✅ Payment ${paymentId} verified and marked as Paid`);
+    } else if (paymentVerified === 'failed' && record.payment_status === 'pending') {
+      // Mark local payment as failed
+      await db.query(
+        `UPDATE payment SET status = 'failed' WHERE id = ?`,
+        [paymentId]
+      );
+      console.log(`[VerifyPayment] ❌ Payment ${paymentId} marked as failed`);
+    }
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        verified,
+        payment_status: paymentVerified,
+        message,
+        payment_intent_status: piStatus,
+        booking_id,
+        payment_id: paymentId,
+        amount: record.amount,
+        last_payment_error: lastPaymentError
+      }
+    });
+
+  } catch (error) {
+    console.error("[VerifyPayment] Error:", error);
+
+    // Handle PayMongo API errors
+    if (error.response?.status === 404) {
+      return res.status(404).json({
+        success: false,
+        message: "Payment intent not found on PayMongo"
+      });
+    }
+
+    return res.status(500).json({
+      success: false,
+      message: "Failed to verify payment",
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+}
