@@ -2,6 +2,7 @@
 const API_BASE_URL = 'http://localhost:3000/api';
 
 import axios, { type AxiosResponse } from 'axios';
+import apiClient from '@/src/services/apiClient';
 import type { ApiResponse, TouristSpot, Province, Municipality, Barangay, Category, Type, TouristSpotSchedule, Report, ReportUpdateRequest } from '../types';
 import type { UserRoles } from '@/src/types/User';
 import type { TourismStaff, CreateTourismStaffRequest, UpdateTourismStaffRequest } from '@/src/types/TourismStaff';
@@ -282,7 +283,7 @@ class ApiService {
   async getTourismStaff(): Promise<TourismStaff[]> {
     try {
       console.debug('[apiService] GET /tourism-staff');
-      const response: AxiosResponse<ApiResponse<TourismStaff[]>> = await api.get('/tourism-staff');
+      const response = await apiClient.get<ApiResponse<TourismStaff[]>>('/tourism-staff');
       return (response.data as any).data ?? (response.data as any);
     } catch (err: any) {
       console.error('[apiService] Failed GET /tourism-staff', {
@@ -298,7 +299,7 @@ class ApiService {
   async getTourismStaffById(id: string): Promise<TourismStaff> {
     try {
       console.debug('[apiService] GET /tourism-staff/:id', id);
-      const response: AxiosResponse<ApiResponse<TourismStaff>> = await api.get(`/tourism-staff/${id}`);
+      const response = await apiClient.get<ApiResponse<TourismStaff>>(`/tourism-staff/${id}`);
       return (response.data as any).data ?? (response.data as any);
     } catch (err: any) {
       console.error('[apiService] Failed GET /tourism-staff/:id', {
@@ -314,7 +315,7 @@ class ApiService {
   async createTourismStaff(payload: CreateTourismStaffRequest): Promise<ApiResponse<any>> {
     try {
       console.debug('[apiService] POST /tourism-staff', payload);
-      const response: AxiosResponse<ApiResponse<any>> = await api.post('/tourism-staff', payload);
+      const response = await apiClient.post<ApiResponse<any>>('/tourism-staff', payload);
       return response.data;
     } catch (err: any) {
       console.error('[apiService] Failed POST /tourism-staff', {
@@ -331,7 +332,7 @@ class ApiService {
   async updateTourismStaff(id: string, payload: UpdateTourismStaffRequest): Promise<ApiResponse<any>> {
     try {
       console.debug('[apiService] PUT /tourism-staff/:id', { id, payload });
-      const response: AxiosResponse<ApiResponse<any>> = await api.put(`/tourism-staff/${id}`, payload);
+      const response = await apiClient.put<ApiResponse<any>>(`/tourism-staff/${id}`, payload);
       return response.data;
     } catch (err: any) {
       console.error('[apiService] Failed PUT /tourism-staff/:id', {
@@ -348,7 +349,7 @@ class ApiService {
   async setTourismStaffStatus(id: string, status: { is_active?: boolean; is_verified?: boolean }): Promise<ApiResponse<any>> {
     try {
       console.debug('[apiService] PATCH /tourism-staff/:id/status', { id, status });
-      const response: AxiosResponse<ApiResponse<any>> = await api.patch(`/tourism-staff/${id}/status`, status);
+      const response = await apiClient.patch<ApiResponse<any>>(`/tourism-staff/${id}/status`, status);
       return response.data;
     } catch (err: any) {
       console.error('[apiService] Failed PATCH /tourism-staff/:id/status', {
@@ -365,7 +366,7 @@ class ApiService {
   async resetTourismStaffPassword(id: string): Promise<ApiResponse<{ credentials: { temporary_password: string } }>> {
     try {
       console.debug('[apiService] POST /tourism-staff/:id/reset-password', id);
-      const response: AxiosResponse<ApiResponse<{ credentials: { temporary_password: string } }>> = await api.post(`/tourism-staff/${id}/reset-password`);
+      const response = await apiClient.post<ApiResponse<{ credentials: { temporary_password: string } }>>(`/tourism-staff/${id}/reset-password`);
       return response.data;
     } catch (err: any) {
       console.error('[apiService] Failed POST /tourism-staff/:id/reset-password', {
