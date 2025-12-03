@@ -500,8 +500,28 @@ const OrderGracePeriodScreen = () => {
             </Text>
           </View>
 
-          {/* Cancel Button */}
+          {/* Action Buttons */}
           <View style={styles.buttonContainer}>
+            {/* Proceed Now Button */}
+            <Pressable
+              style={[
+                styles.proceedButton,
+                {
+                  backgroundColor: theme.primary,
+                },
+              ]}
+              onPress={() => {
+                setCountdown(0); // This triggers proceedWithPayment via useEffect
+              }}
+              disabled={isCancelling || isProcessing}
+            >
+              <Ionicons name="checkmark-circle" size={24} color="#FFF" />
+              <Text style={styles.proceedButtonText}>
+                Proceed Now
+              </Text>
+            </Pressable>
+
+            {/* Cancel Button */}
             <Pressable
               style={[
                 styles.cancelButton,
@@ -520,7 +540,7 @@ const OrderGracePeriodScreen = () => {
             </Pressable>
 
             <Text style={[styles.footerText, { color: theme.textSecondary }]}>
-              You&apos;ll be redirected to payment after countdown
+              Or wait for countdown to proceed automatically
             </Text>
           </View>
         </View>
@@ -607,6 +627,27 @@ const styles = StyleSheet.create({
   buttonContainer: {
     alignItems: 'center',
     paddingBottom: Platform.OS === 'ios' ? 20 : 0,
+    gap: 12,
+  },
+  proceedButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 16,
+    paddingHorizontal: 32,
+    borderRadius: 12,
+    gap: 8,
+    width: '100%',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  proceedButtonText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#FFF',
   },
   cancelButton: {
     flexDirection: 'row',
