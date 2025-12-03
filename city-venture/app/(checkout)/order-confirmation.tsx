@@ -1,13 +1,17 @@
 // See spec.md §4 - Order confirmation with arrival code
-// See spec.md §5 - Grace period (10s default)
+// Order confirmation screen shown after successful order placement
+// Grace period happens BEFORE this screen (in order-grace-period.tsx)
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   Pressable,
-  Alert,
+  ScrollView,
+  ActivityIndicator,
+  Share,
+  Platform,
 } from 'react-native';
 import { useLocalSearchParams, Stack, router } from 'expo-router';
 import { Routes } from '@/routes/mainRoutes';
@@ -15,108 +19,88 @@ import { useColorScheme } from '@/hooks/use-color-scheme';
 import { colors } from '@/constants/color';
 import { useTypography } from '@/constants/typography';
 import PageContainer from '@/components/PageContainer';
-import { cancelOrder, getOrderById } from '@/services/OrderService';
-import {
-  createPaymentIntent,
-  attachEwalletPaymentMethod,
-  open3DSAuthentication,
-  dismissBrowser,
-} from '@/services/PaymentIntentService';
+import { getOrderById } from '@/services/OrderService';
 import { Ionicons } from '@expo/vector-icons';
-import API_URL from '@/services/api';
+import type { Order } from '@/types/Order';
+import Animated, {
+  FadeInDown,
+  FadeInUp,
+  useSharedValue,
+  useAnimatedStyle,
+  withSpring,
+  withDelay,
+} from 'react-native-reanimated';
+import { LinearGradient } from 'expo-linear-gradient';
+import * as Haptics from 'expo-haptics';
 
 const OrderConfirmationScreen = () => {
   const params = useLocalSearchParams<{
     orderId: string;
-    orderNumber: string;
-    arrivalCode: string;
-    total: string;
-    paymentMethod?: string; // 'cash_on_pickup' or 'paymongo'
-    paymentSuccess?: string; // 'true' if payment was completed
-    paymentPending?: string; // 'true' if payment is pending
-    paymentCancelled?: string; // 'true' if user cancelled payment
+    orderNumber?: string;
+    arrivalCode?: string;
+    total?: string;
+    paymentMethod?: string;
+    paymentSuccess?: string;
+    businessId?: string;
   }>();
 
   const scheme = useColorScheme();
   const isDark = scheme === 'dark';
-  const type = useTypography();
-  const { h2, h1, h4, body, bodySmall } = type;
+  // Typography hook available if needed for custom font sizes
+  useTypography();
 
-  const [graceTimeRemaining, setGraceTimeRemaining] = useState(10); // 10 seconds grace period
-  const [cancelling, setCancelling] = useState(false);
-  const [initiatingPayment, setInitiatingPayment] = useState(false);
+  const [order, setOrder] = useState<Order | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Animation values
+  const checkScale = useSharedValue(0);
+  const cardTranslate = useSharedValue(50);
 
   const palette = {
-    bg: isDark ? '#0D1B2A' : '#F8F9FA',
+    bg: isDark ? '#0D1B2A' : '#F5F7FA',
     card: isDark ? '#1C2833' : '#FFFFFF',
-    text: isDark ? '#ECEDEE' : '#0D1B2A',
+    text: isDark ? '#ECEDEE' : '#1A1A2E',
     subText: isDark ? '#9BA1A6' : '#6B7280',
-    border: isDark ? '#2A2F36' : '#E5E8EC',
+    border: isDark ? '#2A2F36' : '#E8ECF0',
+    success: '#10B981',
+    successLight: isDark ? 'rgba(16, 185, 129, 0.15)' : '#ECFDF5',
+    warning: '#F59E0B',
+    warningLight: isDark ? 'rgba(245, 158, 11, 0.15)' : '#FFFBEB',
+    primary: colors.primary,
+    primaryLight: isDark ? 'rgba(59, 130, 246, 0.15)' : '#EFF6FF',
   };
 
-  // Grace period countdown timer
-  useEffect(() => {
-    if (graceTimeRemaining <= 0) return;
-
-    const timer = setInterval(() => {
-      setGraceTimeRemaining((prev) => {
-        if (prev <= 1) {
-          clearInterval(timer);
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-
-    return () => clearInterval(timer);
-  }, [graceTimeRemaining]);
-
-  const handleCancelOrder = async () => {
-    if (graceTimeRemaining <= 0) {
-      Alert.alert(
-        'Cannot Cancel',
-        'Grace period has expired. Please contact the business to cancel this order.'
-      );
+  // Fetch order details
+  const fetchOrderDetails = useCallback(async () => {
+    if (!params.orderId) {
+      setError('Order ID not found');
+      setLoading(false);
       return;
     }
 
-    Alert.alert(
-      'Cancel Order',
-      'Are you sure you want to cancel this order?',
-      [
-        { text: 'No', style: 'cancel' },
-        {
-          text: 'Yes, Cancel',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              setCancelling(true);
-              await cancelOrder(params.orderId);
-              
-              Alert.alert(
-                'Order Cancelled',
-                'Your order has been cancelled successfully.',
-                [
-                  {
-                    text: 'OK',
-                    onPress: () => router.replace(Routes.tabs.home),
-                  },
-                ]
-              );
-            } catch (error: any) {
-              console.error('[OrderConfirmation] Cancel failed:', error);
-              Alert.alert(
-                'Cancellation Failed',
-                error.response?.data?.message || error.message || 'Failed to cancel order'
-              );
-            } finally {
-              setCancelling(false);
-            }
-          },
-        },
-      ]
-    );
-  };
+    try {
+      setLoading(true);
+      const orderData = await getOrderById(params.orderId);
+      setOrder(orderData);
+      
+      // Trigger success haptic and animations
+      if (Platform.OS !== 'web') {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      }
+      checkScale.value = withDelay(300, withSpring(1, { damping: 12 }));
+      cardTranslate.value = withDelay(500, withSpring(0, { damping: 15 }));
+    } catch (err: any) {
+      console.error('[OrderConfirmation] Failed to fetch order:', err);
+      setError(err.message || 'Failed to load order details');
+    } finally {
+      setLoading(false);
+    }
+  }, [params.orderId, checkScale, cardTranslate]);
+
+  useEffect(() => {
+    fetchOrderDetails();
+  }, [fetchOrderDetails]);
 
   const handleViewOrderDetails = () => {
     router.replace(Routes.profile.orders.detail(params.orderId));
@@ -126,260 +110,357 @@ const OrderConfirmationScreen = () => {
     router.replace(Routes.tabs.home);
   };
 
-  const handleCompletePayment = async () => {
+  const handleShareOrder = async () => {
+    if (!order) return;
+    
     try {
-      setInitiatingPayment(true);
-
-      // Get order details to determine payment method type
-      const orderDetails = await getOrderById(params.orderId);
-      const paymentMethodType = orderDetails.payment_method_type || 'gcash';
-
-      // Step 1: Create Payment Intent
-      const intentResponse = await createPaymentIntent({
-        order_id: params.orderId,
-        payment_method_types: [paymentMethodType],
+      await Share.share({
+        message: `🛒 Order Confirmed!\n\nOrder #${order.order_number}\nPickup Code: ${order.arrival_code}\nTotal: ₱${order.total_amount.toFixed(2)}\n\nShow this code when picking up your order at ${order.business_name || 'the store'}.`,
+        title: 'Order Confirmation',
       });
-
-      const paymentIntentId = intentResponse.data.payment_intent_id;
-
-      // For card payments, navigate to card payment screen
-      if (paymentMethodType === 'card') {
-        router.push(Routes.checkout.cardPayment({
-          orderId: params.orderId,
-          orderNumber: params.orderNumber,
-          arrivalCode: params.arrivalCode,
-          paymentIntentId,
-          clientKey: intentResponse.data.client_key,
-          amount: intentResponse.data.amount.toString(),
-          total: params.total,
-        }));
-        return;
-      }
-
-      // For e-wallets, attach payment method and redirect
-      const backendBaseUrl = API_URL.replace('/api', '');
-      const returnUrl = `${backendBaseUrl}/orders/${params.orderId}/payment-success`;
-
-      const attachResponse = await attachEwalletPaymentMethod(
-        paymentIntentId,
-        paymentMethodType as 'gcash' | 'paymaya' | 'grab_pay',
-        returnUrl
-      );
-
-      if (attachResponse.data.redirect_url) {
-        const authResult = await open3DSAuthentication(
-          attachResponse.data.redirect_url,
-          returnUrl
-        );
-
-        dismissBrowser();
-
-        if (authResult.type === 'cancel' || authResult.type === 'dismiss') {
-          Alert.alert(
-            'Payment Cancelled',
-            'You cancelled the payment. You can try again later.',
-            [{ text: 'OK' }]
-          );
-          return;
-        }
-
-        // Navigate to payment processing to verify
-        router.replace(Routes.checkout.paymentProcessing({
-          orderId: params.orderId,
-          orderNumber: params.orderNumber,
-          arrivalCode: params.arrivalCode,
-          paymentIntentId,
-          total: params.total,
-        }));
-      }
-    } catch (error: any) {
-      console.error('[OrderConfirmation] Payment initiation failed:', error);
-      Alert.alert(
-        'Payment Error',
-        error.response?.data?.message || error.message || 'Failed to start payment process'
-      );
-    } finally {
-      setInitiatingPayment(false);
+    } catch (err) {
+      console.error('[OrderConfirmation] Share failed:', err);
     }
   };
 
-  // Determine if this is a truly confirmed order or one awaiting payment
-  // For PayMongo orders, only paymentSuccess === 'true' means payment is complete
-  const isPaymentComplete = params.paymentMethod !== 'paymongo' || params.paymentSuccess === 'true';
-  const isAwaitingPayment = params.paymentMethod === 'paymongo' && params.paymentSuccess !== 'true';
+  // Determine payment status
+  const isPaymentComplete = params.paymentMethod !== 'paymongo' || 
+    params.paymentSuccess === 'true' ||
+    order?.payment_status?.toUpperCase() === 'PAID';
+
+  // Animated styles
+  const checkAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: checkScale.value }],
+  }));
+
+  // Format pickup datetime
+  const formatPickupTime = (dateString?: string) => {
+    if (!dateString) return 'As soon as possible';
+    const date = new Date(dateString);
+    const today = new Date();
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    let dayLabel = date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+    if (date.toDateString() === today.toDateString()) dayLabel = 'Today';
+    else if (date.toDateString() === tomorrow.toDateString()) dayLabel = 'Tomorrow';
+
+    const timeLabel = date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+    return `${dayLabel} at ${timeLabel}`;
+  };
+
+  // Get status info
+  const getStatusInfo = (status?: string) => {
+    const normalizedStatus = status?.toUpperCase() || 'PENDING';
+    switch (normalizedStatus) {
+      case 'PENDING':
+        return { label: 'Pending Confirmation', color: palette.warning, icon: 'time-outline' as const };
+      case 'ACCEPTED':
+        return { label: 'Order Accepted', color: palette.success, icon: 'checkmark-circle-outline' as const };
+      case 'PREPARING':
+        return { label: 'Being Prepared', color: colors.primary, icon: 'restaurant-outline' as const };
+      case 'READY_FOR_PICKUP':
+        return { label: 'Ready for Pickup!', color: palette.success, icon: 'bag-check-outline' as const };
+      default:
+        return { label: 'Processing', color: palette.subText, icon: 'hourglass-outline' as const };
+    }
+  };
+
+  // Get payment method label
+  const getPaymentMethodLabel = (method?: string, methodType?: string) => {
+    if (method === 'cash_on_pickup') return 'Cash on Pickup';
+    if (methodType === 'gcash') return 'GCash';
+    if (methodType === 'paymaya') return 'PayMaya';
+    if (methodType === 'grab_pay') return 'GrabPay';
+    if (methodType === 'card') return 'Credit/Debit Card';
+    return 'Online Payment';
+  };
+
+  if (loading) {
+    return (
+      <>
+        <Stack.Screen options={{ headerShown: false }} />
+        <PageContainer>
+          <View style={[styles.loadingContainer, { backgroundColor: palette.bg }]}>
+            <ActivityIndicator size="large" color={palette.primary} />
+            <Text style={[styles.loadingText, { color: palette.subText }]}>
+              Loading order details...
+            </Text>
+          </View>
+        </PageContainer>
+      </>
+    );
+  }
+
+  if (error) {
+    return (
+      <>
+        <Stack.Screen options={{ headerShown: false }} />
+        <PageContainer>
+          <View style={[styles.errorContainer, { backgroundColor: palette.bg }]}>
+            <Ionicons name="alert-circle-outline" size={64} color={colors.error} />
+            <Text style={[styles.errorText, { color: palette.text }]}>{error}</Text>
+            <Pressable
+              style={[styles.retryButton, { backgroundColor: palette.primary }]}
+              onPress={fetchOrderDetails}
+            >
+              <Text style={styles.retryButtonText}>Try Again</Text>
+            </Pressable>
+          </View>
+        </PageContainer>
+      </>
+    );
+  }
+
+  const orderNumber = order?.order_number || params.orderNumber || 'N/A';
+  const arrivalCode = order?.arrival_code || params.arrivalCode || '----';
+  const totalAmount = order?.total_amount || parseFloat(params.total || '0');
+  const statusInfo = getStatusInfo(order?.status);
 
   return (
     <>
       <Stack.Screen
         options={{
-          title: isPaymentComplete ? 'Order Confirmed' : 'Order Placed',
-          headerStyle: { backgroundColor: palette.card },
-          headerTintColor: palette.text,
-          headerLeft: () => null, // Disable back button
+          headerShown: false,
+          gestureEnabled: false,
         }}
       />
       <PageContainer>
-        <View style={[styles.container, { backgroundColor: palette.bg }]}>
-          {/* Icon - Green check for complete orders, Warning for awaiting payment */}
-          <View style={[
-            styles.iconContainer, 
-            { backgroundColor: isPaymentComplete ? `${colors.success}20` : `${colors.warning}20` }
-          ]}>
-            <Ionicons 
-              name={isPaymentComplete ? "checkmark-circle" : "time"} 
-              size={80} 
-              color={isPaymentComplete ? colors.success : colors.warning} 
-            />
-          </View>
+        <ScrollView
+          style={[styles.container, { backgroundColor: palette.bg }]}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
+          {/* Success Header with Gradient */}
+          <LinearGradient
+            colors={isPaymentComplete 
+              ? [palette.success, '#059669'] 
+              : [palette.warning, '#D97706']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.headerGradient}
+          >
+            <Animated.View style={[styles.checkContainer, checkAnimatedStyle]}>
+              <View style={styles.checkCircle}>
+                <Ionicons 
+                  name={isPaymentComplete ? "checkmark" : "time"} 
+                  size={48} 
+                  color={isPaymentComplete ? palette.success : palette.warning} 
+                />
+              </View>
+            </Animated.View>
 
-          <Text style={[{ fontSize: h2 }, { color: palette.text, textAlign: 'center', marginTop: 24 }]}>
-            {isPaymentComplete ? 'Order Confirmed!' : 'Order Placed'}
-          </Text>
+            <Animated.View entering={FadeInUp.delay(400).springify()}>
+              <Text style={styles.headerTitle}>
+                {isPaymentComplete ? 'Order Confirmed!' : 'Order Placed'}
+              </Text>
+              <Text style={styles.headerSubtitle}>
+                {isPaymentComplete 
+                  ? 'Thank you for your order' 
+                  : 'Awaiting payment confirmation'}
+              </Text>
+            </Animated.View>
+          </LinearGradient>
 
-          <Text style={[{ fontSize: body }, { color: palette.subText, textAlign: 'center', marginTop: 8 }]}>
-            {isPaymentComplete 
-              ? 'Your order has been placed successfully' 
-              : 'Complete payment to confirm your order'}
-          </Text>
+          {/* Pickup Code Card - Most Important */}
+          <Animated.View 
+            entering={FadeInDown.delay(500).springify()}
+            style={[styles.pickupCard, { backgroundColor: palette.card }]}
+          >
+            <View style={styles.pickupHeader}>
+              <Ionicons name="qr-code-outline" size={24} color={palette.primary} />
+              <Text style={[styles.pickupLabel, { color: palette.subText }]}>
+                Pickup Code
+              </Text>
+            </View>
+            <Text style={[styles.pickupCode, { color: palette.primary }]}>
+              {arrivalCode}
+            </Text>
+            <Text style={[styles.pickupHint, { color: palette.subText }]}>
+              Show this code when collecting your order
+            </Text>
+          </Animated.View>
 
-          {/* Order Details Card */}
-          <View style={[styles.detailsCard, { backgroundColor: palette.card, borderColor: palette.border }]}>
+          {/* Order Status Timeline */}
+          <Animated.View 
+            entering={FadeInDown.delay(600).springify()}
+            style={[styles.statusCard, { backgroundColor: palette.card }]}
+          >
+            <View style={styles.statusHeader}>
+              <Ionicons name={statusInfo.icon} size={20} color={statusInfo.color} />
+              <Text style={[styles.statusLabel, { color: statusInfo.color }]}>
+                {statusInfo.label}
+              </Text>
+            </View>
+            <View style={[styles.statusBar, { backgroundColor: palette.border }]}>
+              <View 
+                style={[
+                  styles.statusProgress, 
+                  { 
+                    backgroundColor: statusInfo.color,
+                    width: order?.status === 'PENDING' ? '25%' : 
+                           order?.status === 'ACCEPTED' ? '50%' :
+                           order?.status === 'PREPARING' ? '75%' : '100%'
+                  }
+                ]} 
+              />
+            </View>
+          </Animated.View>
+
+          {/* Order Details */}
+          <Animated.View 
+            entering={FadeInDown.delay(700).springify()}
+            style={[styles.detailsCard, { backgroundColor: palette.card }]}
+          >
+            <Text style={[styles.sectionTitle, { color: palette.text }]}>
+              Order Details
+            </Text>
+
             {/* Order Number */}
             <View style={styles.detailRow}>
-              <Text style={[{ fontSize: body }, { color: palette.subText }]}>Order Number</Text>
-              <Text style={[{ fontSize: h4 }, { color: palette.text, fontWeight: '600' }]}>
-                {params.orderNumber}
-              </Text>
+              <View style={styles.detailIconContainer}>
+                <Ionicons name="receipt-outline" size={18} color={palette.primary} />
+              </View>
+              <View style={styles.detailContent}>
+                <Text style={[styles.detailLabel, { color: palette.subText }]}>Order Number</Text>
+                <Text style={[styles.detailValue, { color: palette.text }]}>#{orderNumber}</Text>
+              </View>
             </View>
 
-            {/* Arrival Code */}
-            <View style={[styles.codeContainer, { backgroundColor: palette.bg, borderColor: colors.primary }]}>
-              <Text style={[{ fontSize: body }, { color: palette.subText, marginBottom: 8 }]}>
-                Arrival Code
-              </Text>
-              <Text style={[{ fontSize: h1 }, { color: colors.primary, letterSpacing: 8 }]}>
-                {params.arrivalCode}
-              </Text>
-              <Text style={[{ fontSize: bodySmall }, { color: palette.subText, marginTop: 8, textAlign: 'center' }]}>
-                Show this code when picking up your order
-              </Text>
-            </View>
-
-            {/* Total Amount */}
+            {/* Business/Pickup Location */}
             <View style={styles.detailRow}>
-              <Text style={[{ fontSize: body }, { color: palette.subText }]}>Total Amount</Text>
-              <Text style={[{ fontSize: h4 }, { color: colors.primary }]}>
-                ₱{parseFloat(params.total).toFixed(2)}
-              </Text>
-            </View>
-
-            {/* Payment Status */}
-            <View style={styles.detailRow}>
-              <Text style={[{ fontSize: body }, { color: palette.subText }]}>Payment Status</Text>
-              <View style={[
-                styles.statusBadge, 
-                { backgroundColor: isPaymentComplete ? `${colors.success}20` : `${colors.warning}20` }
-              ]}>
-                <Text style={[
-                  { fontSize: bodySmall }, 
-                  { color: isPaymentComplete ? colors.success : colors.warning }
-                ]}>
-                  {isPaymentComplete ? 'PAID' : 'PENDING'}
+              <View style={styles.detailIconContainer}>
+                <Ionicons name="storefront-outline" size={18} color={palette.primary} />
+              </View>
+              <View style={styles.detailContent}>
+                <Text style={[styles.detailLabel, { color: palette.subText }]}>Pickup Location</Text>
+                <Text style={[styles.detailValue, { color: palette.text }]}>
+                  {order?.business_name || 'Store'}
                 </Text>
               </View>
             </View>
+
+            {/* Pickup Time */}
+            <View style={styles.detailRow}>
+              <View style={styles.detailIconContainer}>
+                <Ionicons name="time-outline" size={18} color={palette.primary} />
+              </View>
+              <View style={styles.detailContent}>
+                <Text style={[styles.detailLabel, { color: palette.subText }]}>Pickup Time</Text>
+                <Text style={[styles.detailValue, { color: palette.text }]}>
+                  {formatPickupTime(order?.pickup_datetime)}
+                </Text>
+              </View>
+            </View>
+
+            {/* Divider */}
+            <View style={[styles.divider, { backgroundColor: palette.border }]} />
 
             {/* Payment Method */}
             <View style={styles.detailRow}>
-              <Text style={[{ fontSize: body }, { color: palette.subText }]}>Payment Method</Text>
-              <Text style={[{ fontSize: body }, { color: palette.text }]}>
-                {params.paymentMethod === 'paymongo' ? 'Online Payment' : 'Cash on Pickup'}
-              </Text>
-            </View>
-          </View>
-
-          {/* Payment Pending Warning - Show prominently for unpaid PayMongo orders */}
-          {isAwaitingPayment && (
-            <View style={[styles.warningContainer, { backgroundColor: `${colors.error}15`, borderColor: colors.error }]}>
-              <Ionicons name="alert-circle" size={24} color={colors.error} />
-              <View style={{ flex: 1, marginLeft: 12 }}>
-                <Text style={[{ fontSize: body, fontWeight: '600' }, { color: colors.error }]}>
-                  Payment Required
+              <View style={styles.detailIconContainer}>
+                <Ionicons name="card-outline" size={18} color={palette.primary} />
+              </View>
+              <View style={styles.detailContent}>
+                <Text style={[styles.detailLabel, { color: palette.subText }]}>Payment Method</Text>
+                <Text style={[styles.detailValue, { color: palette.text }]}>
+                  {getPaymentMethodLabel(
+                    order?.payment_method || params.paymentMethod,
+                    (order as any)?.payment_method_type
+                  )}
                 </Text>
-                <Text style={[{ fontSize: bodySmall }, { color: palette.text, marginTop: 4 }]}>
-                  Your order will only be processed after payment is completed. 
-                  The business has not been notified yet.
+              </View>
+              <View style={[
+                styles.paymentBadge, 
+                { backgroundColor: isPaymentComplete ? palette.successLight : palette.warningLight }
+              ]}>
+                <Text style={[
+                  styles.paymentBadgeText, 
+                  { color: isPaymentComplete ? palette.success : palette.warning }
+                ]}>
+                  {isPaymentComplete ? 'Paid' : 'Pending'}
                 </Text>
               </View>
             </View>
-          )}
 
-          {/* Grace Period Warning */}
-          {graceTimeRemaining > 0 && (
-            <View style={[styles.graceContainer, { backgroundColor: `${colors.warning}15`, borderColor: colors.warning }]}>
-              <Ionicons name="time-outline" size={20} color={colors.warning} />
-              <Text style={[{ fontSize: bodySmall }, { color: palette.text, marginLeft: 8, flex: 1 }]}>
-                You can cancel this order within {graceTimeRemaining} seconds
+            {/* Total Amount */}
+            <View style={[styles.totalRow, { borderTopColor: palette.border }]}>
+              <Text style={[styles.totalLabel, { color: palette.text }]}>Total Amount</Text>
+              <Text style={[styles.totalValue, { color: palette.primary }]}>
+                ₱{totalAmount.toFixed(2)}
               </Text>
             </View>
+          </Animated.View>
+
+          {/* Items Preview (if available) */}
+          {order?.items && order.items.length > 0 && (
+            <Animated.View 
+              entering={FadeInDown.delay(800).springify()}
+              style={[styles.itemsCard, { backgroundColor: palette.card }]}
+            >
+              <Text style={[styles.sectionTitle, { color: palette.text }]}>
+                Items ({order.items.length})
+              </Text>
+              {order.items.slice(0, 3).map((item, index) => (
+                <View key={item.id || index} style={styles.itemRow}>
+                  <View style={[styles.itemQty, { backgroundColor: palette.primaryLight }]}>
+                    <Text style={[styles.itemQtyText, { color: palette.primary }]}>
+                      {item.quantity}x
+                    </Text>
+                  </View>
+                  <Text style={[styles.itemName, { color: palette.text }]} numberOfLines={1}>
+                    {item.product_name || 'Item'}
+                  </Text>
+                  <Text style={[styles.itemPrice, { color: palette.subText }]}>
+                    ₱{item.total_price.toFixed(2)}
+                  </Text>
+                </View>
+              ))}
+              {order.items.length > 3 && (
+                <Pressable onPress={handleViewOrderDetails}>
+                  <Text style={[styles.moreItems, { color: palette.primary }]}>
+                    +{order.items.length - 3} more items
+                  </Text>
+                </Pressable>
+              )}
+            </Animated.View>
           )}
 
           {/* Action Buttons */}
-          <View style={styles.buttonContainer}>
-            {/* Complete Payment Button - Only for PayMongo orders with pending payment */}
-            {params.paymentMethod === 'paymongo' && params.paymentSuccess !== 'true' && (
-              <Pressable
-                style={[styles.button, { backgroundColor: colors.success }]}
-                onPress={handleCompletePayment}
-                disabled={initiatingPayment}
-              >
-                <Ionicons 
-                  name={initiatingPayment ? "hourglass-outline" : "card-outline"} 
-                  size={20} 
-                  color="#FFF" 
-                  style={{ marginRight: 8 }} 
-                />
-                <Text style={[{ fontSize: body, fontWeight: '600' }, { color: '#FFF' }]}>
-                  {initiatingPayment ? 'Opening Payment...' : 'Complete Payment'}
-                </Text>
-              </Pressable>
-            )}
-
-            {graceTimeRemaining > 0 && (
-              <Pressable
-                style={[
-                  styles.button,
-                  styles.cancelButton,
-                  { backgroundColor: palette.card, borderColor: colors.error },
-                ]}
-                onPress={handleCancelOrder}
-                disabled={cancelling}
-              >
-                <Text style={[{ fontSize: body, fontWeight: '600' }, { color: colors.error }]}>
-                  {cancelling ? 'Cancelling...' : 'Cancel Order'}
-                </Text>
-              </Pressable>
-            )}
-
+          <Animated.View 
+            entering={FadeInDown.delay(900).springify()}
+            style={styles.actionsContainer}
+          >
             <Pressable
-              style={[styles.button, { backgroundColor: colors.primary }]}
+              style={[styles.primaryButton, { backgroundColor: palette.primary }]}
               onPress={handleViewOrderDetails}
             >
-              <Text style={[{ fontSize: body, fontWeight: '600' }, { color: '#FFF' }]}>
-                View Order Details
-              </Text>
+              <Ionicons name="eye-outline" size={20} color="#FFF" />
+              <Text style={styles.primaryButtonText}>Track Order</Text>
             </Pressable>
 
-            <Pressable
-              style={[styles.button, styles.secondaryButton, { backgroundColor: palette.card, borderColor: palette.border }]}
-              onPress={handleBackToHome}
-            >
-              <Text style={[{ fontSize: body, fontWeight: '600' }, { color: palette.text }]}>
-                Back to Home
-              </Text>
-            </Pressable>
-          </View>
-        </View>
+            <View style={styles.secondaryActions}>
+              <Pressable
+                style={[styles.secondaryButton, { backgroundColor: palette.card, borderColor: palette.border }]}
+                onPress={handleShareOrder}
+              >
+                <Ionicons name="share-outline" size={20} color={palette.text} />
+                <Text style={[styles.secondaryButtonText, { color: palette.text }]}>Share</Text>
+              </Pressable>
+
+              <Pressable
+                style={[styles.secondaryButton, { backgroundColor: palette.card, borderColor: palette.border }]}
+                onPress={handleBackToHome}
+              >
+                <Ionicons name="home-outline" size={20} color={palette.text} />
+                <Text style={[styles.secondaryButtonText, { color: palette.text }]}>Home</Text>
+              </Pressable>
+            </View>
+          </Animated.View>
+
+          {/* Bottom Spacing */}
+          <View style={{ height: 40 }} />
+        </ScrollView>
       </PageContainer>
     </>
   );
@@ -388,73 +469,288 @@ const OrderConfirmationScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 20,
   },
-  iconContainer: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
+  scrollContent: {
+    paddingBottom: 24,
+  },
+  loadingContainer: {
+    flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    alignSelf: 'center',
-    marginTop: 40,
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 14,
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+  },
+  errorText: {
+    marginTop: 16,
+    fontSize: 16,
+    textAlign: 'center',
+  },
+  retryButton: {
+    marginTop: 24,
+    paddingHorizontal: 32,
+    paddingVertical: 12,
+    borderRadius: 24,
+  },
+  retryButtonText: {
+    color: '#FFF',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  headerGradient: {
+    paddingTop: 60,
+    paddingBottom: 40,
+    paddingHorizontal: 24,
+    alignItems: 'center',
+    borderBottomLeftRadius: 32,
+    borderBottomRightRadius: 32,
+  },
+  checkContainer: {
+    marginBottom: 20,
+  },
+  checkCircle: {
+    width: 88,
+    height: 88,
+    borderRadius: 44,
+    backgroundColor: '#FFF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.15,
+    shadowRadius: 16,
+    elevation: 8,
+  },
+  headerTitle: {
+    fontSize: 28,
+    fontWeight: '700',
+    color: '#FFF',
+    textAlign: 'center',
+  },
+  headerSubtitle: {
+    fontSize: 15,
+    color: 'rgba(255, 255, 255, 0.9)',
+    textAlign: 'center',
+    marginTop: 6,
+  },
+  pickupCard: {
+    marginHorizontal: 16,
+    marginTop: -24,
+    padding: 24,
+    borderRadius: 20,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 4,
+  },
+  pickupHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 12,
+  },
+  pickupLabel: {
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  pickupCode: {
+    fontSize: 42,
+    fontWeight: '800',
+    letterSpacing: 8,
+    marginVertical: 8,
+  },
+  pickupHint: {
+    fontSize: 13,
+    textAlign: 'center',
+  },
+  statusCard: {
+    marginHorizontal: 16,
+    marginTop: 16,
+    padding: 16,
+    borderRadius: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  statusHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 12,
+  },
+  statusLabel: {
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  statusBar: {
+    height: 6,
+    borderRadius: 3,
+    overflow: 'hidden',
+  },
+  statusProgress: {
+    height: '100%',
+    borderRadius: 3,
   },
   detailsCard: {
-    marginTop: 32,
+    marginHorizontal: 16,
+    marginTop: 16,
     padding: 20,
-    borderRadius: 12,
-    borderWidth: 1,
+    borderRadius: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  sectionTitle: {
+    fontSize: 17,
+    fontWeight: '700',
+    marginBottom: 16,
   },
   detailRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 16,
   },
-  codeContainer: {
-    padding: 20,
-    borderRadius: 12,
-    borderWidth: 2,
+  detailIconContainer: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+    justifyContent: 'center',
     alignItems: 'center',
+    marginRight: 12,
+  },
+  detailContent: {
+    flex: 1,
+  },
+  detailLabel: {
+    fontSize: 12,
+    marginBottom: 2,
+  },
+  detailValue: {
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  divider: {
+    height: 1,
     marginVertical: 16,
   },
-  statusBadge: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 12,
-  },
-  graceContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 12,
+  paymentBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
     borderRadius: 8,
-    borderWidth: 1,
-    marginTop: 16,
   },
-  warningContainer: {
+  paymentBadgeText: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  totalRow: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
-    padding: 16,
-    borderRadius: 12,
-    borderWidth: 1,
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingTop: 16,
+    borderTopWidth: 1,
+  },
+  totalLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  totalValue: {
+    fontSize: 22,
+    fontWeight: '800',
+  },
+  itemsCard: {
+    marginHorizontal: 16,
     marginTop: 16,
+    padding: 20,
+    borderRadius: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
   },
-  buttonContainer: {
-    marginTop: 24,
-  },
-  button: {
-    paddingVertical: 16,
-    borderRadius: 12,
+  itemRow: {
+    flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 12,
-    flexDirection: 'row',
-    justifyContent: 'center',
   },
-  cancelButton: {
-    borderWidth: 2,
+  itemQty: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    marginRight: 12,
+  },
+  itemQtyText: {
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  itemName: {
+    flex: 1,
+    fontSize: 14,
+  },
+  itemPrice: {
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  moreItems: {
+    fontSize: 14,
+    fontWeight: '600',
+    textAlign: 'center',
+    marginTop: 8,
+  },
+  actionsContainer: {
+    marginHorizontal: 16,
+    marginTop: 24,
+  },
+  primaryButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 16,
+    borderRadius: 14,
+    gap: 8,
+    shadowColor: '#3B82F6',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  primaryButtonText: {
+    color: '#FFF',
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  secondaryActions: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 12,
   },
   secondaryButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 14,
+    borderRadius: 12,
     borderWidth: 1,
+    gap: 8,
+  },
+  secondaryButtonText: {
+    fontSize: 15,
+    fontWeight: '600',
   },
 });
 
