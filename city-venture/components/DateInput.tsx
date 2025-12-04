@@ -451,7 +451,12 @@ const DateInput = React.forwardRef<DateInputRef, DateInputProps>(
       (d: Date) => {
         if (minDate && isBefore(d, minDate)) return true;
         if (maxDate && isAfter(d, maxDate)) return true;
-        if (disablePast && isBefore(d, new Date())) return true;
+        // Allow booking on current day - only disable dates BEFORE today (not including today)
+        if (disablePast) {
+          const today = startOfDay(new Date());
+          const dateToCheck = startOfDay(d);
+          if (dateToCheck.getTime() < today.getTime()) return true;
+        }
         if (disableFuture && isAfter(d, new Date())) return true;
         if (disabledDates && disabledDates(d)) return true;
         return false;

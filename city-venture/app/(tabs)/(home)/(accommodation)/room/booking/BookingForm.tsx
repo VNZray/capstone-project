@@ -394,7 +394,7 @@ const BookingForm: React.FC<Props> = ({
           availabilityData={availabilityData}
           roomId={roomDetails?.id}
           businessId={roomDetails?.business_id}
-          minDate={new Date()}
+          minDate={undefined}
           maxDate={addDays(new Date(), 365)}
         />
 
