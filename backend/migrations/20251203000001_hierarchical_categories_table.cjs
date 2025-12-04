@@ -40,7 +40,9 @@ exports.up = async function(knex) {
     table.timestamps(true, true);
     
     // Unique constraint: entity can only have each category once
-    table.unique(['entity_id', 'entity_type', 'category_id'], 'idx_entity_category_unique');
+    table.unique(['entity_id', 'entity_type', 'category_id'], {
+      indexName: 'idx_entity_category_unique'
+    });
     
     // Indexes
     table.index(['entity_id', 'entity_type'], 'idx_entity_categories_entity');
