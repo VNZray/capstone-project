@@ -23,7 +23,7 @@ export interface InitiateBookingPaymentResponse {
     currency: string;
     payment_method_type: string;
     payment_type: string;
-    provider_reference: string;
+    payment_intent_id: string;
     checkout_url: string;
     status: string;
   };

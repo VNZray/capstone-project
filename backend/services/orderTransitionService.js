@@ -88,15 +88,18 @@ export function canTransition(currentStatus, newStatus, actorRole, order = null)
 
   // ========== Payment Status Validation (Phase 4) ==========
   // Block certain transitions for PayMongo orders until payment is confirmed
+  // Payment status is tracked in the payment table (single source of truth)
   if (order && order.payment_method === 'paymongo') {
-    const paymentStatus = order.payment_status?.toLowerCase();
+    // Fetch payment status from payment table
+    const paymentStatus = order.payment_status?.toLowerCase() || 
+                         (order.paymongo_payment_id ? 'paid' : 'pending');
 
     // Block PREPARING and READY_FOR_PICKUP until payment is confirmed
     if (['preparing', 'ready_for_pickup'].includes(newStatus)) {
       if (paymentStatus !== 'paid') {
         return {
           allowed: false,
-          reason: `Cannot transition to ${newStatus}: PayMongo payment not confirmed (payment_status: ${order.payment_status}). Order must be paid before preparation.`
+          reason: `Cannot transition to ${newStatus}: PayMongo payment not confirmed (payment_status: ${paymentStatus}). Order must be paid before preparation.`
         };
       }
     }

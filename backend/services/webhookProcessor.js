@@ -2,14 +2,14 @@
  * Webhook Processor
  *
  * Handles async processing of PayMongo webhook events via Bull queue.
- * This module delegates to the processWebhookEvent function in paymentController
+ * This module delegates to the processWebhookEvent function in payment controllers
  * to maintain a single source of truth for webhook processing logic.
  *
  * @see docs/ORDERING_SYSTEM_AUDIT.md - Phase 3
  */
 
 import db from '../db.js';
-import { processWebhookEvent } from '../controller/paymentController.js';
+import { processWebhookEvent } from '../controller/payment/index.js';
 
 /**
  * Process a single webhook job

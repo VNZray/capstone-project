@@ -137,7 +137,7 @@ const OrderGracePeriodScreen = () => {
         return;
       }
 
-      // For e-wallets (GCash, Maya, GrabPay)
+      // For e-wallets (GCash, Maya)
       setProcessingStep('Connecting to payment provider...');
 
       // Generate return URL
@@ -145,9 +145,10 @@ const OrderGracePeriodScreen = () => {
       const returnUrl = `${backendBaseUrl}/orders/${orderId}/payment-success`;
 
       // Attach e-wallet payment method
+      // Note: Backend only supports 'gcash' and 'paymaya' for server-side attachment
       const attachResponse = await attachEwalletPaymentMethod(
         paymentIntentId,
-        paymentMethodType as 'gcash' | 'paymaya' | 'grab_pay',
+        paymentMethodType as 'gcash' | 'paymaya',
         returnUrl,
         billingInfo
       );
@@ -484,7 +485,6 @@ const OrderGracePeriodScreen = () => {
               <Text style={[styles.summaryValue, { color: theme.text }]}>
                 {paymentMethodType === 'gcash' ? 'GCash' :
                  paymentMethodType === 'paymaya' ? 'PayMaya' :
-                 paymentMethodType === 'grab_pay' ? 'GrabPay' :
                  paymentMethodType === 'card' ? 'Credit/Debit Card' :
                  paymentMethodType.toUpperCase()}
               </Text>

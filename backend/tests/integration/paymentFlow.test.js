@@ -337,8 +337,7 @@ describe('Payment Flow Tests', () => {
           id: 'order-123',
           status: 'pending',
           payment_status: 'pending',
-          payment_method: 'paymongo',
-          payment_method_type: 'gcash'
+          payment_method: 'gcash'
         }
       });
 

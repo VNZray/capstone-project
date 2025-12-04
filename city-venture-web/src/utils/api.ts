@@ -8,8 +8,6 @@ import type { UserRoles } from '@/src/types/User';
 import type { TourismStaff, CreateTourismStaffRequest, UpdateTourismStaffRequest } from '@/src/types/TourismStaff';
 import type { EntityType } from '../types/approval';
 
-import apiClient from '@/src/services/apiClient';
-
 // Use apiClient instead of creating a new axios instance
 const api = apiClient;
 

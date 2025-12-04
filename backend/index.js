@@ -367,7 +367,7 @@ app.get("/bookings/:bookingId/payment-success", async (req, res) => {
     // Check the actual payment status from the database
     // The webhook may have already updated this to 'failed'
     const [rows] = await db.query(
-      `SELECT p.status as payment_status, p.provider_reference
+      `SELECT p.status as payment_status, p.payment_intent_id
        FROM payment p
        WHERE p.payment_for_id = ? AND p.payment_for = 'booking'
        ORDER BY p.created_at DESC

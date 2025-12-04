@@ -33,19 +33,12 @@ exports.up = async function (knex) {
       "cancelled_by_business", 
       "failed_payment"
     ]).defaultTo("pending");
-    table.enu("payment_status", ["pending", "paid", "failed", "refunded"]).defaultTo("pending");
-    table.enu("payment_method", ["cash_on_pickup", "paymongo"]).defaultTo("cash_on_pickup");
-    table.string("payment_method_type", 50).nullable(); // gcash, card, paymaya, grab_pay, qrph when paymongo
+    // Payment info is in the payment table (single source of truth)
+    // Query via: SELECT * FROM payment WHERE payment_for = 'order' AND payment_for_id = order.id
     
     // Customer arrival tracking
     table.string("arrival_code", 10).notNullable().defaultTo("000000"); // 6-digit code for customer to show on arrival
     table.timestamp("customer_arrived_at").nullable();
-    
-    // PayMongo reference fields
-    table.string("paymongo_checkout_id", 100).nullable(); // Checkout session ID
-    table.string("paymongo_payment_intent_id", 255).nullable(); // Payment Intent ID for Payment Intent workflow
-    table.string("paymongo_source_id", 100).nullable(); // Source ID for e-wallets
-    table.string("paymongo_payment_id", 100).nullable(); // Actual payment ID once payment is completed
     
     // Order lifecycle tracking
     table.timestamp("confirmed_at").nullable();
@@ -72,8 +65,6 @@ exports.up = async function (knex) {
     // Performance indices for queries with time filtering
     table.index(["business_id", "created_at"], "idx_order_business_created");
     table.index(["user_id", "created_at"], "idx_order_user_created");
-    table.index("payment_method", "idx_order_payment_method");
-    table.index("payment_status", "idx_order_payment_status");
   });
 
   // Create order_item table

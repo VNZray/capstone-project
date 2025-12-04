@@ -237,7 +237,7 @@ export async function deleteBooking(req, res) {
  * Initiate payment for a booking using PayMongo Checkout Session
  * POST /api/bookings/:id/initiate-payment
  * Body: { 
- *   payment_method_type: 'gcash' | 'paymaya' | 'grab_pay' | 'card' | etc.,
+ *   payment_method_type: 'gcash' | 'paymaya' | 'card',
  *   payment_type?: 'Full Payment' | 'Partial Payment',
  *   amount?: number (optional - defaults to booking total_price or balance)
  * }
@@ -355,7 +355,7 @@ export async function initiateBookingPayment(req, res) {
       metadata
     });
 
-    const provider_reference = pipmResult.paymentIntentId;
+    const payment_intent_id = pipmResult.paymentIntentId;
     const checkout_url = pipmResult.redirectUrl;
 
     // 8. Create payment record
@@ -378,14 +378,15 @@ export async function initiateBookingPayment(req, res) {
       ]
     );
 
-    // Store provider reference (Payment Intent ID) and metadata
+    // Store payment_intent_id and metadata
     await db.query(
       `UPDATE payment 
-       SET provider_reference = ?, 
+       SET payment_intent_id = ?, 
+           client_key = ?,
            currency = 'PHP',
            metadata = ?
        WHERE id = ?`,
-      [provider_reference, JSON.stringify({
+      [payment_intent_id, pipmResult.clientKey, JSON.stringify({
         ...metadata,
         payment_method_id: pipmResult.paymentMethodId,
         client_key: pipmResult.clientKey,
@@ -407,7 +408,7 @@ export async function initiateBookingPayment(req, res) {
         currency: 'PHP',
         payment_method_type,
         payment_type,
-        provider_reference,
+        payment_intent_id,
         checkout_url,
         status: 'pending'
       }
@@ -457,7 +458,7 @@ export async function verifyBookingPayment(req, res) {
     const [rows] = await db.query(
       `SELECT 
         b.id as booking_id, b.tourist_id, b.booking_status, b.total_price, b.balance,
-        p.id as payment_id, p.provider_reference, p.status as payment_status, p.amount,
+        p.id as payment_id, p.payment_intent_id, p.status as payment_status, p.amount,
         t.user_id as tourist_user_id
        FROM booking b
        LEFT JOIN payment p ON p.payment_for_id = b.id AND p.payment_for = 'booking'
@@ -484,12 +485,12 @@ export async function verifyBookingPayment(req, res) {
     }
 
     // 3. Check if we have a PayMongo Payment Intent ID
-    const paymentIntentId = record.provider_reference;
+    const paymentIntentId = record.payment_intent_id;
     
     if (!paymentIntentId) {
       return res.status(400).json({
         success: false,
-        message: "No payment provider reference found"
+        message: "No payment intent ID found"
       });
     }
 
