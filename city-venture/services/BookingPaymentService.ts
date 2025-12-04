@@ -11,6 +11,7 @@ export interface InitiateBookingPaymentRequest {
   payment_method_type: 'gcash' | 'paymaya' | 'grab_pay' | 'card' | 'dob' | 'qrph' | string;
   payment_type?: 'Full Payment' | 'Partial Payment';
   amount?: number; // Optional - defaults to booking balance or total
+  bookingData?: any; // Optional - if provided, booking will be created during payment initiation
 }
 
 export interface InitiateBookingPaymentResponse {
@@ -26,6 +27,7 @@ export interface InitiateBookingPaymentResponse {
     provider_reference: string;
     checkout_url: string;
     status: string;
+    booking_created?: boolean; // Indicates if booking was created in this request
   };
 }
 
@@ -82,7 +84,7 @@ export async function openBookingCheckout(checkoutUrl: string): Promise<WebBrows
  */
 export function mapPaymentMethodType(methodName: string): string {
   const method = (methodName || '').toLowerCase();
-  
+
   const methodMap: Record<string, string> = {
     'gcash': 'gcash',
     'paymaya': 'paymaya',
@@ -129,7 +131,7 @@ export interface VerifyBookingPaymentResponse {
  * Verify payment status after PayMongo redirect
  * This checks the actual PayMongo Payment Intent status to confirm
  * whether the payment was successful or failed.
- * 
+ *
  * @param bookingId - The booking UUID
  * @param paymentId - The local payment record UUID
  * @returns Verification result with actual payment status

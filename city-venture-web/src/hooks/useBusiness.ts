@@ -3,24 +3,20 @@ import { useEffect, useState } from "react";
 import axios from "axios";
 import { supabase } from "@/src/lib/supabase";
 import type { Business } from "@/src/types/Business";
+import type { Category } from "@/src/types/Category";
 import api from "../services/api";
 
-type BusinessCategory = { id: number; category: string };
-type BusinessType = { id: number; type: string };
-
 export const useBusinessBasics = (data: Business, setData: React.Dispatch<React.SetStateAction<Business>>) => {
-  const [businessCategories, setBusinessCategories] = useState<BusinessCategory[]>([]);
-  const [businessTypes, setBusinessTypes] = useState<BusinessType[]>([]);
-  const [selectedType, setSelectedType] = useState<number | null>(null);
+  const [rootCategories, setRootCategories] = useState<Category[]>([]);
+  const [selectedCategories, setSelectedCategories] = useState<number[]>([]);
   const [businessImage, setBusinessImage] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
   // Fetch root-level categories for businesses
   const getBusinessCategories = async () => {
     try {
-      const response = await axios.get(`${api}/category-and-type/business-type`);
+      const response = await axios.get(`${api}/category-and-type/root-categories`);
       if (Array.isArray(response.data)) {
-        setBusinessCategories(response.data);
         // Filter to only root categories (no parent)
         const roots = response.data.filter((c: Category) => c.parent_category === null);
         setRootCategories(roots);
@@ -30,22 +26,10 @@ export const useBusinessBasics = (data: Business, setData: React.Dispatch<React.
     }
   };
 
-  // Fetch category tree for hierarchical display
-  const getCategoryTree = async () => {
-    try {
-      const response = await axios.get(`${api}/category-and-type/category/${type_id}`);
-      if (Array.isArray(response.data)) {
-        setCategoryTree(response.data);
-      }
-    } catch (error) {
-      console.error("Error fetching category tree:", error);
-    }
-  };
-
   // Get child categories of a parent
   const getChildCategories = async (parentId: number): Promise<Category[]> => {
     try {
-      const response = await axios.get(`${API_URL}/category-and-type/categories/${parentId}/children`);
+      const response = await axios.get(`${api}/category-and-type/categories/${parentId}/children`);
       return Array.isArray(response.data) ? response.data : [];
     } catch (error) {
       console.error("Error fetching child categories:", error);
@@ -92,11 +76,8 @@ export const useBusinessBasics = (data: Business, setData: React.Dispatch<React.
   };
 
   useEffect(() => {
-    if (API_URL) {
-      getBusinessCategories();
-      getCategoryTree();
-    }
-  }, [API_URL]);
+    getBusinessCategories();
+  }, []);
 
   // Initialize selected categories from data.category_ids
   useEffect(() => {
@@ -106,9 +87,7 @@ export const useBusinessBasics = (data: Business, setData: React.Dispatch<React.
   }, [data.category_ids]);
 
   return {
-    businessCategories,
     rootCategories,
-    categoryTree,
     selectedCategories,
     setSelectedCategories,
     getChildCategories,

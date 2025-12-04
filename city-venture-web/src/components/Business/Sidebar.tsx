@@ -152,15 +152,14 @@ export default function Sidebar({
               />
             ))}
 
-          {businessDetails?.hasBooking === true &&
-            hasRole("Business Owner", "Manager", "Room Manager") && (
-              <NavItem
-                to={`${route}/rooms`}
-                label="Manage Rooms"
-                icon={<BedDouble size={ICON_SIZE} />}
-                onClick={onClose}
-              />
-            )}
+          {hasRole("Business Owner", "Manager", "Room Manager") && (
+            <NavItem
+              to={`${route}/rooms`}
+              label="Manage Rooms"
+              icon={<BedDouble size={ICON_SIZE} />}
+              onClick={onClose}
+            />
+          )}
 
           {businessDetails?.hasBooking === true &&
             hasRole("Business Owner") && (
@@ -172,15 +171,14 @@ export default function Sidebar({
               />
             )}
 
-          {businessDetails?.hasBooking === false &&
-            hasRole("Business Owner") && (
-              <NavItem
-                to={`${route}/subscription`}
-                label="Subscription"
-                icon={<CreditCard size={ICON_SIZE} />}
-                onClick={onClose}
-              />
-            )}
+          {hasRole("Business Owner") && (
+            <NavItem
+              to={`${route}/subscription`}
+              label="Subscription"
+              icon={<CreditCard size={ICON_SIZE} />}
+              onClick={onClose}
+            />
+          )}
 
           {/* Store section (Shop only) */}
           {businessDetails?.hasBooking === false &&
