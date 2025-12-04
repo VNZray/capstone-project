@@ -42,7 +42,7 @@ export async function initiateBookingPayment(
 ): Promise<InitiateBookingPaymentResponse> {
   try {
     const response = await apiClient.post<InitiateBookingPaymentResponse>(
-      `/bookings/${bookingId}/initiate-payment`,
+      `/booking/${bookingId}/initiate-payment`,
       paymentData
     );
 
@@ -106,4 +106,46 @@ export function mapPaymentMethodType(methodName: string): string {
 
   // Default to gcash if no match
   return 'gcash';
+}
+
+export interface VerifyBookingPaymentResponse {
+  success: boolean;
+  data: {
+    verified: boolean;
+    payment_status: 'success' | 'failed' | 'pending' | 'processing' | 'unknown';
+    message: string;
+    payment_intent_status: string;
+    booking_id: string;
+    payment_id: string;
+    amount: number;
+    last_payment_error?: {
+      message?: string;
+      code?: string;
+    };
+  };
+}
+
+/**
+ * Verify payment status after PayMongo redirect
+ * This checks the actual PayMongo Payment Intent status to confirm
+ * whether the payment was successful or failed.
+ * 
+ * @param bookingId - The booking UUID
+ * @param paymentId - The local payment record UUID
+ * @returns Verification result with actual payment status
+ */
+export async function verifyBookingPayment(
+  bookingId: string,
+  paymentId: string
+): Promise<VerifyBookingPaymentResponse> {
+  try {
+    const response = await apiClient.get<VerifyBookingPaymentResponse>(
+      `/booking/${bookingId}/verify-payment/${paymentId}`
+    );
+
+    return response.data;
+  } catch (error: any) {
+    console.error('[BookingPaymentService] Verify payment failed:', error.response?.data || error.message);
+    throw error;
+  }
 }

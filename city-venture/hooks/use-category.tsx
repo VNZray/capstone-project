@@ -1,119 +1,110 @@
-import { getDataById } from '@/query/mainQuery';
-import type { Category, Type } from '@/types/TypeAndCategory';
+import apiClient from '@/services/apiClient';
+import type { EntityCategory } from '@/types/Category';
 import { useEffect, useState } from 'react';
 
-export function useCategoryAndType(type_id?: number, category_id?: number) {
+/**
+ * Hook to fetch categories for an entity using entity_categories
+ * @param entityType - 'business' | 'tourist_spot' | 'event'
+ * @param entityId - The entity's ID
+ */
+export function useEntityCategories(entityType?: string, entityId?: string) {
   const [loading, setLoading] = useState(false);
-
-  const [type, setType] = useState<Type | null>(null);
-  const [category, setCategory] = useState<Category | null>(null);
+  const [categories, setCategories] = useState<EntityCategory[]>([]);
+  const [primaryCategory, setPrimaryCategory] = useState<EntityCategory | null>(null);
 
   useEffect(() => {
-    if (!type_id || !category_id) return;
+    if (!entityType || !entityId) return;
 
     const load = async () => {
       setLoading(true);
       try {
-        const typeRes = await getDataById('category-and-type/type', type_id);
-        setType({ id: typeRes.id, type: typeRes.type });
-
-        const categoryRes = await getDataById(
-          'category-and-type/category-by-id',
-          category_id
+        const { data } = await apiClient.get<EntityCategory[]>(
+          `/category-and-type/entity-categories/${entityType}/${entityId}`
         );
-        setCategory({
-          id: categoryRes.id,
-          category: categoryRes.category,
-          type_id: categoryRes.type_id,
-        });
+        setCategories(data);
+        const primary = data.find(c => c.is_primary) || data[0] || null;
+        setPrimaryCategory(primary);
       } catch (err) {
-        console.error('Failed to fetch Category and Type', err);
+        console.error('Failed to fetch entity categories', err);
       } finally {
         setLoading(false);
       }
     };
 
     load();
-  }, [type_id, category_id]);
+  }, [entityType, entityId]);
 
-  return { loading, type, category };
+  return { loading, categories, primaryCategory };
 }
 
-// Bulk variant: fetch all distinct type & category details for a list of businesses once.
-// Provides O(T + C) network calls instead of O(N).
-export function useCategoriesAndTypesForBusinesses(
-  businesses: { business_type_id?: number; business_category_id?: number }[]
+/**
+ * Legacy hook - kept for backward compatibility
+ * Now fetches from entity_categories instead of old type/category endpoints
+ * @deprecated Use useEntityCategories instead
+ */
+export function useCategoryAndType(entityType?: string, entityId?: string) {
+  const { loading, categories, primaryCategory } = useEntityCategories(
+    entityType === 'business' ? 'business' : entityType === 'tourist_spot' ? 'tourist_spot' : undefined,
+    entityId
+  );
+
+  // Map to legacy format for backward compatibility
+  const category = primaryCategory
+    ? {
+        id: primaryCategory.category_id,
+        category: primaryCategory.category_title,
+      }
+    : null;
+
+  const type = primaryCategory?.parent_title
+    ? {
+        id: primaryCategory.parent_category || 0,
+        type: primaryCategory.parent_title,
+      }
+    : null;
+
+  return { loading, type, category, categories };
+}
+
+/**
+ * Hook to fetch all categories for multiple entities at once
+ * Useful for list views
+ */
+export function useCategoriesForEntities(
+  entityType: 'business' | 'tourist_spot' | 'event',
+  entityIds: string[]
 ) {
   const [loading, setLoading] = useState(false);
-  const [types, setTypes] = useState<Record<number, Type>>({});
-  const [categories, setCategories] = useState<Record<number, Category>>({});
+  const [categoriesMap, setCategoriesMap] = useState<Record<string, EntityCategory[]>>({});
   const [error, setError] = useState<unknown>(null);
 
   useEffect(() => {
-    if (!businesses || businesses.length === 0) return;
-
-    const uniqueTypeIds = Array.from(
-      new Set(
-        businesses
-          .map((b) => b.business_type_id)
-          .filter((id): id is number => typeof id === 'number')
-      )
-    );
-    const uniqueCategoryIds = Array.from(
-      new Set(
-        businesses
-          .map((b) => b.business_category_id)
-          .filter((id): id is number => typeof id === 'number')
-      )
-    );
-
-    if (uniqueTypeIds.length === 0 && uniqueCategoryIds.length === 0) return;
+    if (!entityIds || entityIds.length === 0) return;
 
     let cancelled = false;
     const load = async () => {
       setLoading(true);
       setError(null);
       try {
-        // Fetch all types
-        const typePromises = uniqueTypeIds.map(async (id) => {
-          if (types[id]) return types[id];
-          const res = await getDataById('category-and-type/type', id);
-          return { id: res.id, type: res.type } as Type;
-        });
-        const categoryPromises = uniqueCategoryIds.map(async (id) => {
-          if (categories[id]) return categories[id];
-          const res = await getDataById('category-and-type/category-by-id', id);
-          return {
-            id: res.id,
-            category: res.category,
-            type_id: res.type_id,
-          } as Category;
-        });
-
-        const [typeResults, categoryResults] = await Promise.all([
-          Promise.all(typePromises),
-          Promise.all(categoryPromises),
-        ]);
+        const results = await Promise.all(
+          entityIds.map(async (id) => {
+            const { data } = await apiClient.get<EntityCategory[]>(
+              `/category-and-type/entity-categories/${entityType}/${id}`
+            );
+            return { id, categories: data };
+          })
+        );
 
         if (cancelled) return;
 
-        setTypes((prev) => {
-          const next = { ...prev };
-          for (const t of typeResults) {
-            if (t) next[t.id] = t;
-          }
-          return next;
-        });
-        setCategories((prev) => {
-          const next = { ...prev };
-          for (const c of categoryResults) {
-            if (c) next[c.id] = c;
-          }
-          return next;
-        });
+        const map: Record<string, EntityCategory[]> = {};
+        for (const result of results) {
+          map[result.id] = result.categories;
+        }
+        setCategoriesMap(map);
       } catch (err) {
         if (!cancelled) setError(err);
-        console.error('Failed to bulk fetch categories/types', err);
+        console.error('Failed to bulk fetch entity categories', err);
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -123,16 +114,13 @@ export function useCategoriesAndTypesForBusinesses(
     return () => {
       cancelled = true;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    // Depend on a stable signature of the IDs to avoid refetch loops
-    JSON.stringify(
-      businesses.map((b) => [b.business_type_id, b.business_category_id])
-    ),
-  ]);
+  }, [entityType, JSON.stringify(entityIds)]);
 
-  const getType = (id?: number) => (id ? types[id] : undefined);
-  const getCategory = (id?: number) => (id ? categories[id] : undefined);
+  const getCategories = (entityId: string) => categoriesMap[entityId] || [];
+  const getPrimaryCategory = (entityId: string) => {
+    const cats = categoriesMap[entityId] || [];
+    return cats.find((c) => c.is_primary) || cats[0] || null;
+  };
 
-  return { loading, error, types, categories, getType, getCategory };
+  return { loading, error, categoriesMap, getCategories, getPrimaryCategory };
 }

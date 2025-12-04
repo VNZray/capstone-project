@@ -13,8 +13,7 @@ exports.up = async function (knex) {
     table.float("max_price").nullable();
     table.string("email", 40).notNullable().unique();
     table.string("phone_number", 14).notNullable().unique();
-    table.integer("business_type_id").notNullable();
-    table.integer("business_category_id").notNullable();
+    // Note: business_type_id and business_category_id removed - using entity_categories table instead
 
 
     table.text("address").notNullable();

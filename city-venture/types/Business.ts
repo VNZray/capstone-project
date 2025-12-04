@@ -1,9 +1,9 @@
+import type { EntityCategory } from './Category';
+
 // types/BusinessFormData.ts
 export type Business = {
   id?: string | null;
   business_name: string;
-  business_type_id: number;
-  business_category_id: number;
   phone_number?: string | "";
   email: string;
   address?: string | "";
@@ -19,10 +19,15 @@ export type Business = {
   owner_id: string;
   status: string;
   business_image?: string | "";
-  hasBooking?: boolean;
+  hasBooking?: boolean | number; // MySQL returns 1/0, JS may have true/false
   barangay_id: number;
+  // New hierarchical category system
+  categories?: EntityCategory[];
+  category_ids?: number[];
+  primary_category_id?: number;
 };
 
+// Legacy types - kept for backward compatibility during migration
 export type BusinessType = {
   id: number;
   type: string;
@@ -31,7 +36,6 @@ export type BusinessType = {
 export type BusinessCategory = {
   id: number;
   category: string;
-  type_id: number;
 };
 
 export type BusinessDetails = {
@@ -52,17 +56,21 @@ export type BusinessDetails = {
   owner_id: string;
   status: string;
   business_image?: string | "";
-  hasBooking?: boolean;
+  hasBooking?: boolean | number; // MySQL returns 1/0, JS may have true/false
   barangay_id: number;
   province_name?: string | "";
   municipality_name?: string | "";
   barangay_name?: string | "";
-  business_type_id: number;
-  business_category_id: number;
-  category: string;
-  type: string;
-  ratings?: number | string;
+  // New hierarchical category system
+  categories?: EntityCategory[];
+  primary_category?: string;
+  ratings?: number;
   reviews?: number;
+  // Legacy fields - kept for backward compatibility
+  business_type_id?: number;
+  business_category_id?: number;
+  category?: string;
+  type?: string;
 };
 
 export type Room = {

@@ -70,7 +70,6 @@ const BasicInfoStep: React.FC<BasicInfoStepProps> = ({
                 onFormDataChange((prev) => ({
                   ...prev,
                   category_ids: values ? values.map((v: FormOption) => v.id) : [],
-                  type_id: "4", // Always set to Tourist Spot type
                 }))
               }
               renderTags={(tags, getTagProps) => (

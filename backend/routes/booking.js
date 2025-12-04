@@ -19,4 +19,8 @@ router.get("/business/:business_id", bookingController.getBookingsByBusinessId);
 // POST /api/bookings/:id/initiate-payment
 router.post("/:id/initiate-payment", authenticate, bookingController.initiateBookingPayment);
 
+// Verify payment status after PayMongo redirect
+// GET /api/bookings/:id/verify-payment/:paymentId
+router.get("/:id/verify-payment/:paymentId", authenticate, bookingController.verifyBookingPayment);
+
 export default router;

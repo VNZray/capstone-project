@@ -323,7 +323,7 @@ const BookingForm: React.FC<Props> = ({
 
   return (
     <ScrollView>
-      <PageContainer padding={16} gap={16} style={{ paddingBottom: 100 }}>
+      <PageContainer padding={16} gap={16} style={{ paddingBottom: 180 }}>
         <RadioButton
           label="Booking Type"
           items={bookingTypes}
@@ -411,12 +411,13 @@ const BookingForm: React.FC<Props> = ({
             validateOnBlur
             onChangeText={handlePaxChange}
             customValidator={(value) => {
+              if (!value || value.trim() === '') return 'Pax is required';
               const num = parseInt(value);
-              if (num < 1) return 'At least 1 pax is required';
+              if (isNaN(num) || num < 1) return 'At least 1 pax is required';
               if (num > 20) return 'Maximum 20 pax allowed';
               return null;
             }}
-            value={pax === 0 ? '' : pax.toString()}
+            value={pax > 0 ? pax.toString() : ''}
           />
 
           <FormTextInput
@@ -435,12 +436,13 @@ const BookingForm: React.FC<Props> = ({
             keyboardType="numeric"
             label="Children"
             maxLength={2}
-            placeholder="e.g., 2"
+            placeholder="0"
             pattern={/^[0-9]\d*$/}
             validateOnBlur
             customValidator={(value) => {
-              if (value === '') return null; // Optional
+              if (value === '' || value === '0') return null; // Optional
               const num = parseInt(value);
+              if (isNaN(num)) return 'Must be a number';
               if (num > 10) return 'Maximum 10 children allowed';
               if (num + numberOfInfants > pax) return 'Exceeds pax';
               return null;
@@ -455,7 +457,7 @@ const BookingForm: React.FC<Props> = ({
               }
               setNumberOfChildren(num);
             }}
-            value={numberOfChildren === 0 ? '' : numberOfChildren.toString()}
+            value={numberOfChildren.toString()}
           />
 
           <FormTextInput
@@ -463,12 +465,13 @@ const BookingForm: React.FC<Props> = ({
             keyboardType="numeric"
             label="Infants"
             maxLength={2}
-            placeholder="e.g., 2"
+            placeholder="0"
             pattern={/^[0-9]\d*$/}
             validateOnBlur
             customValidator={(value) => {
-              if (value === '') return null; // Optional
+              if (value === '' || value === '0') return null; // Optional
               const num = parseInt(value);
+              if (isNaN(num)) return 'Must be a number';
               if (num > 10) return 'Maximum 10 infants allowed';
               if (num + numberOfChildren > pax) return 'Exceeds pax';
               return null;
@@ -482,7 +485,7 @@ const BookingForm: React.FC<Props> = ({
               }
               setNumberOfInfants(num);
             }}
-            value={numberOfInfants === 0 ? '' : numberOfInfants.toString()}
+            value={numberOfInfants.toString()}
           />
         </Container>
 

@@ -3,12 +3,20 @@ import { Stack } from 'expo-router';
 const HomeLayout = () => {
   return (
     <Stack
+      initialRouteName="index"
       screenOptions={{
         headerBackTitle: 'Back',
         headerShown: false,
         headerTitle: 'Naga Venture',
       }}
     >
+      <Stack.Screen
+        name="index"
+        options={{
+          headerShown: false,
+          animation: 'default',
+        }}
+      />
       <Stack.Screen
         name="(accommodation)"
         options={{

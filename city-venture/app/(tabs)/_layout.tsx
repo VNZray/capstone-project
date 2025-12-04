@@ -47,6 +47,7 @@ export default function TabLayout() {
               headerShown: false,
               animation: 'shift',
               headerTitleAlign: 'left',
+              popToTopOnBlur: true,
               tabBarIcon: ({ color }) => (
                 <IconSymbol size={32} name="house.fill" color={color} />
               ),
@@ -87,6 +88,7 @@ export default function TabLayout() {
               headerShown: false,
               animation: 'shift',
               headerTitleAlign: 'left',
+              popToTopOnBlur: true,
               tabBarIcon: ({ color }) => (
                 <IconSymbol size={32} name="person.crop.circle" color={color} />
               ),

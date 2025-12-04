@@ -35,6 +35,7 @@ import {
   getTotalReviews,
 } from '@/services/FeedbackService';
 import Chip from '@/components/Chip';
+import { ActivityIndicator } from 'react-native';
 
 const { width, height } = Dimensions.get('window');
 
@@ -45,6 +46,7 @@ const AccommodationProfile = () => {
   const { user } = useAuth();
   const {
     accommodationDetails,
+    loading,
     refreshAccommodation,
     refreshAllAccommodations,
   } = useAccommodation();
@@ -113,6 +115,18 @@ const AccommodationProfile = () => {
     setActiveTab(tab.key);
     console.log('Filtering for:', tab.key);
   };
+
+  // Show loading indicator while fetching data
+  if (loading && !accommodationDetails) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color={colors.primary} />
+        <ThemedText type="body-medium" style={{ marginTop: 16 }}>
+          Loading accommodation...
+        </ThemedText>
+      </View>
+    );
+  }
 
   if (!accommodationDetails) {
     return (
@@ -276,6 +290,12 @@ const styles = StyleSheet.create({
   },
   tabContent: {
     overflow: 'visible',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
   },
   notFoundContainer: {
     flex: 1,
