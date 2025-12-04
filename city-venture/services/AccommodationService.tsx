@@ -1,8 +1,6 @@
 import type {
   Business,
-  BusinessCategory,
   BusinessDetails,
-  BusinessType,
 } from '@/types/Business';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import apiClient from '@/services/apiClient';
@@ -13,6 +11,8 @@ import { Bookings } from '@/types/Booking';
 import debugLogger from '@/utils/debugLogger';
 import { getAverageRating, getTotalReviews } from '@/services/FeedbackService';
 import type { ReviewType } from '@/types/Feedback';
+import { fetchEntityCategories } from '@/services/BusinessService';
+
 /** Get stored Business ID */
 export const getStoredBusinessId = async (): Promise<string | null> => {
   return await AsyncStorage.getItem('selectedBusinessId');
@@ -56,24 +56,6 @@ export const fetchBusinessesByStatus = async (
   return Array.isArray(data) ? data : [data]; // ensure it's always an array
 };
 
-export const fetchBusinessType = async (
-  business_type_id: number
-): Promise<BusinessType> => {
-  const res = await apiClient.get<BusinessType>(
-    `/category-and-type/type/${business_type_id}`
-  );
-  return res.data;
-};
-
-export const fetchBusinessCategory = async (
-  business_category_id: number
-): Promise<BusinessCategory> => {
-  const res = await apiClient.get<BusinessCategory>(
-    `/category-and-type/category-by-id/${business_category_id}`
-  );
-  return res.data;
-};
-
 export const fetchAddress = async (barangay_id: number): Promise<Address> => {
   const res = await apiClient.get<Address>(`/address/${barangay_id}`);
   return res.data;
@@ -81,18 +63,19 @@ export const fetchAddress = async (barangay_id: number): Promise<Address> => {
 
 export { api };
 
+/** Fetch Complete Business Data with categories from entity_categories */
 export const fetchBusinessData = async (
   id: string
 ): Promise<BusinessDetails> => {
   const business = await fetchBusinessDetails(id);
-  const business_type = await fetchBusinessType(business.business_type_id);
-  const business_category = await fetchBusinessCategory(
-    business.business_category_id
-  );
   const address = await fetchAddress(business.barangay_id);
+  
+  // Fetch categories from entity_categories
+  const categories = await fetchEntityCategories('business', id);
+  const primaryCategory = categories.find(c => c.is_primary) || categories[0];
 
-  // Fetch average rating and total reviews
-  const reviewType = business_type.type.toLowerCase() as ReviewType;
+  // Fetch average rating and total reviews for accommodation type
+  const reviewType: ReviewType = 'accommodation';
   const [rawAverageRating, totalReviews] = await Promise.all([
     getAverageRating(reviewType, id),
     getTotalReviews(reviewType, id),
@@ -126,12 +109,10 @@ export const fetchBusinessData = async (
     province_name: address.province_name ?? '',
     municipality_name: address.municipality_name ?? '',
     barangay_name: address.barangay_name ?? '',
-    business_type_id: business.business_type_id,
-    business_category_id: business.business_category_id,
-    type: business_type.type,
-    category: business_category.category,
     ratings: averageRating,
     reviews: totalReviews,
+    categories: categories,
+    primary_category: primaryCategory?.category_title ?? '',
   };
 
   return businessDetails;

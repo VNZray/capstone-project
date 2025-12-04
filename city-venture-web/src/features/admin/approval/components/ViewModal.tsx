@@ -1,11 +1,11 @@
 import React, { useEffect, useRef, useState } from "react";
+import { diffWords, diffChars } from "diff";
 import {
   Modal,
   ModalDialog,
   DialogTitle,
   DialogContent,
   IconButton,
-  Typography as JoyTypography,
   Stack,
   Divider,
   Sheet,
@@ -75,9 +75,6 @@ const ViewModal: React.FC<ViewModalProps> = ({
   const existingSpot =
     (item.existingSpot as Record<string, unknown> | undefined) ?? null;
 
-  // canonical list removed in favor of sectioned layout
-
-  // extra fallbacks per logical field name
   const FALLBACK_KEYS: Record<string, string[]> = {
     category_id: ["category", "category_name", "category_id"],
     contact_email: ["contact_email", "email"],
@@ -92,7 +89,6 @@ const ViewModal: React.FC<ViewModalProps> = ({
   ) => {
     if (!rec) return null;
     const fallbacks = FALLBACK_KEYS[field] ?? [];
-    // For category_id prefer human-readable fallbacks before the numeric id
     if (field === "category_id") {
       for (const k of fallbacks) {
         if (rec[k] != null) return rec[k];
@@ -101,7 +97,6 @@ const ViewModal: React.FC<ViewModalProps> = ({
       return null;
     }
 
-    // default: direct hit first, then fallbacks
     if (rec[field] != null) return rec[field];
     for (const k of fallbacks) {
       if (rec[k] != null) return rec[k];
@@ -109,7 +104,6 @@ const ViewModal: React.FC<ViewModalProps> = ({
     return null;
   };
 
-  // improved getters that use fallbacks
   const getCurrent = (field: string) => {
     const fromExisting = resolveField(existingSpot ?? null, field);
     if (fromExisting != null) return fromExisting;
@@ -144,7 +138,6 @@ const ViewModal: React.FC<ViewModalProps> = ({
     ) {
       const n = Number(String(v));
       if (isNaN(n)) return "";
-      // round to 6 decimals for comparison tolerance
       return n.toFixed(6);
     }
     return String(v).trim().toLowerCase();
@@ -161,6 +154,188 @@ const ViewModal: React.FC<ViewModalProps> = ({
     if (field.toLowerCase().includes("phone"))
       return String(v).replace(/\D/g, "");
     return String(v);
+  };
+
+  const hasChanged = (field: string) => {
+    const cur = normalize(field, getCurrent(field));
+    const next = normalize(field, getProposed(field));
+    return cur !== next;
+  };
+
+  const InlineWordDiff: React.FC<{
+    oldText: string;
+    newText: string;
+    mode: "old" | "new";
+  }> = ({ oldText, newText, mode }) => {
+    const parts = diffWords(oldText ?? "", newText ?? "");
+    const out: React.ReactNode[] = [];
+    for (let i = 0; i < parts.length; i++) {
+      const p = parts[i];
+      const next = parts[i + 1];
+      const isReplacePair = p && next && p.removed && next.added;
+
+      if (isReplacePair) {
+        const oldVal = p.value.trim();
+        const newVal = next.value.trim();
+        const oldWordCount = oldVal.split(/\s+/).length;
+        const newWordCount = newVal.split(/\s+/).length;
+        const simpleSingleWord = oldWordCount === 1 && newWordCount === 1;
+        let doCharLevel = false;
+        if (simpleSingleWord) {
+          const chars = diffChars(oldVal, newVal);
+          let unchangedChars = 0;
+            chars.forEach(c => { if (!c.added && !c.removed) unchangedChars += c.value.length; });
+          const similarity = unchangedChars / Math.max(oldVal.length, newVal.length);
+          if (similarity >= 0.5 && Math.max(oldVal.length, newVal.length) <= 30) {
+            doCharLevel = true;
+            if (mode === "old") {
+              chars.forEach((c, idx) => {
+                if (c.added) return;
+                if (c.removed) {
+                  out.push(
+                    <span key={`o-${i}-${idx}`} style={{ color: "#b00020", textDecoration: "line-through" }}>
+                      {c.value}
+                    </span>
+                  );
+                } else {
+                  out.push(
+                    <span key={`o-${i}-${idx}`} style={{ color: "inherit" }}>
+                      {c.value}
+                    </span>
+                  );
+                }
+              });
+            } else {
+              chars.forEach((c, idx) => {
+                if (c.removed) return;
+                if (c.added) {
+                  out.push(
+                    <span key={`n-${i}-${idx}`} style={{ color: "#1a7f37", fontWeight: 600 }}>
+                      {c.value}
+                    </span>
+                  );
+                } else {
+                  out.push(
+                    <span key={`n-${i}-${idx}`} style={{ color: "inherit" }}>
+                      {c.value}
+                    </span>
+                  );
+                }
+              });
+            }
+          }
+        }
+        if (!doCharLevel) {
+          if (mode === "old") {
+            out.push(
+              <span key={`o-${i}`} style={{ color: "#b00020", textDecoration: "line-through" }}>
+                {p.value}
+              </span>
+            );
+          } else {
+            out.push(
+              <span key={`n-${i}`} style={{ color: "#1a7f37", fontWeight: 600 }}>
+                {next.value}
+              </span>
+            );
+          }
+        }
+        i++;
+        continue;
+      }
+
+      if (mode === "old") {
+        if (p.added) {
+          continue;
+        }
+        if (p.removed) {
+          out.push(
+            <span key={`o-${i}`} style={{ color: "#b00020", textDecoration: "line-through" }}>
+              {p.value}
+            </span>
+          );
+          continue;
+        }
+        out.push(
+          <span key={`o-${i}`} style={{ color: "inherit" }}>
+            {p.value}
+          </span>
+        );
+      } else {
+        if (p.removed) {
+          continue;
+        }
+        if (p.added) {
+          out.push(
+            <span key={`n-${i}`} style={{ color: "#1a7f37", fontWeight: 600 }}>
+              {p.value}
+            </span>
+          );
+          continue;
+        }
+        out.push(
+          <span key={`n-${i}`} style={{ color: "inherit" }}>
+            {p.value}
+          </span>
+        );
+      }
+    }
+    return <>{out}</>;
+  };
+
+  const renderDiffRow = (label: string, field: string, format?: (v: unknown) => string) => {
+    const current = getCurrent(field);
+    const proposed = getProposed(field);
+    const changed = hasChanged(field);
+    const fmt = (v: unknown) => (format ? format(v) : formatValue(field, v));
+    const isLikelyText = ![
+      "entry_fee",
+      "latitude",
+      "longitude",
+      "contact_phone",
+      "phone",
+      "contact_email",
+      "website",
+    ].includes(field);
+    return (
+      <Stack spacing={0.5} sx={{ mb: 1 }}>
+        <Typography.CardTitle size="xs" sx={{ opacity: 0.8 }}>{label}</Typography.CardTitle>
+        {changed ? (
+          <div>
+            {current != null && current !== "" && (
+              <span style={{
+                display: 'inline-block',
+                padding: '4px 8px',
+                borderRadius: 8,
+                background: '#ffe5e5',
+                marginRight: 6,
+              }}>
+                {isLikelyText ? (
+                  <InlineWordDiff oldText={String(fmt(current))} newText={String(fmt(proposed))} mode="old" />
+                ) : (
+                  <span style={{ textDecoration: 'line-through' }}>{fmt(current)}</span>
+                )}
+              </span>
+            )}
+            <span style={{
+              display: 'inline-block',
+              padding: '4px 8px',
+              borderRadius: 8,
+              background: '#e6ffec',
+              fontWeight: 600,
+            }}>
+              {isLikelyText ? (
+                <InlineWordDiff oldText={String(fmt(current))} newText={String(fmt(proposed))} mode="new" />
+              ) : (
+                <>{fmt(proposed)}</>
+              )}
+            </span>
+          </div>
+        ) : (
+          <Typography.Body size="sm">{fmt(current)}</Typography.Body>
+        )}
+      </Stack>
+    );
   };
 
   const id = String(item.id ?? "");
@@ -188,7 +363,7 @@ const ViewModal: React.FC<ViewModalProps> = ({
             : String(item.name ?? "")
         }
         sx={{
-          width: "95%",
+          width: { xs: "100%", md: "96%" },
           maxWidth: 1400,
           borderRadius: "lg",
           boxShadow: "lg",
@@ -251,352 +426,39 @@ const ViewModal: React.FC<ViewModalProps> = ({
           {isEdit ? (
             <Sheet variant="plain" sx={{ p: 3, borderRadius: "lg" }}>
               <Stack spacing={2}>
+                <Stack direction="row" alignItems="center" spacing={1}>
+                  <Typography.CardTitle size="md" color="primary">
+                    Edit Request: {String(item.name ?? "")}
+                  </Typography.CardTitle>
+                  <Typography.Body size="xs" sx={{ backgroundColor: 'warning.100', color: 'warning.700', px: 1.5, py: 0.5, borderRadius: 'sm', fontWeight: 500 }}>
+                    Review changes
+                  </Typography.Body>
+                </Stack>
                 <Divider />
-                {/* Two-column sectioned layout: Current vs Proposed */}
-                <Stack direction={{ xs: "column", md: "row" }} spacing={2}>
-                  {/* Current column */}
+                <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
                   <Box sx={{ flex: 1, minWidth: 0 }}>
-                    <Typography.Label size="sm" sx={{ mb: 1 }}>
-                      Current
-                    </Typography.Label>
-                    <Stack spacing={2}>
-                      {/* Basic Information */}
-                      <Sheet
-                        variant="outlined"
-                        sx={{ p: 2, borderRadius: "md" }}
-                      >
-                        <Typography.CardTitle size="sm" sx={{ mb: 1 }}>
-                          Basic Information
-                        </Typography.CardTitle>
-                        <JoyTypography >
-                          <strong>Name:</strong>{" "}
-                          {formatValue("name", getCurrent("name"))}
-                        </JoyTypography>
-                        <JoyTypography >
-                          <strong>Description:</strong>{" "}
-                          {formatValue(
-                            "description",
-                            getCurrent("description")
-                          )}
-                        </JoyTypography>
-                        <JoyTypography >
-                          <strong>Entry Fee:</strong>{" "}
-                          {formatValue("entry_fee", getCurrent("entry_fee"))}
-                        </JoyTypography>
-                      </Sheet>
-
-                      {/* Location */}
-                      <Sheet
-                        variant="outlined"
-                        sx={{ p: 2, borderRadius: "md" }}
-                      >
-                        <Typography.CardTitle size="sm" sx={{ mb: 1 }}>
-                          Location
-                        </Typography.CardTitle>
-                        <JoyTypography >
-                          <strong>Address:</strong>{" "}
-                          {formatValue("barangay", getCurrent("barangay"))},{" "}
-                          {formatValue(
-                            "municipality",
-                            getCurrent("municipality")
-                          )}
-                          , {formatValue("province", getCurrent("province"))}
-                        </JoyTypography>
-                        <JoyTypography >
-                          <strong>Coordinates:</strong>{" "}
-                          {formatValue("latitude", getCurrent("latitude"))}
-                          {getCurrent("latitude") ? ", " : ""}
-                          {formatValue("longitude", getCurrent("longitude"))}
-                        </JoyTypography>
-                      </Sheet>
-
-                      {/* Contact Information */}
-                      <Sheet
-                        variant="outlined"
-                        sx={{ p: 2, borderRadius: "md" }}
-                      >
-                        <Typography.CardTitle size="sm" sx={{ mb: 1 }}>
-                          Contact Information
-                        </Typography.CardTitle>
-                        {getCurrent("contact_phone") ? (
-                          <Typography.Body size="sm">
-                            <strong>Phone:</strong>{" "}
-                            {formatValue(
-                              "contact_phone",
-                              getCurrent("contact_phone")
-                            )}
-                          </Typography.Body>
-                        ) : null}
-                        {getCurrent("contact_email") ? (
-                          <Typography.Body size="sm">
-                            <strong>Email:</strong>{" "}
-                            {formatValue(
-                              "contact_email",
-                              getCurrent("contact_email")
-                            )}
-                          </Typography.Body>
-                        ) : null}
-                        {getCurrent("website") ? (
-                          <Typography.Body size="sm">
-                            <strong>Website:</strong>{" "}
-                            {formatValue("website", getCurrent("website"))}
-                          </Typography.Body>
-                        ) : (
-                          !getCurrent("contact_phone") &&
-                          !getCurrent("contact_email") && (
-                            <Typography.Body size="sm">
-                              No contact information provided
-                            </Typography.Body>
-                          )
-                        )}
-                      </Sheet>
-                    </Stack>
+                    <Sheet variant="outlined" sx={{ p: 2, borderRadius: 'md' }}>
+                      <Typography.CardTitle size="sm" sx={{ mb: 1 }}>Basic Information</Typography.CardTitle>
+                      {renderDiffRow('Name', 'name')}
+                      {renderDiffRow('Description', 'description')}
+                      {renderDiffRow('Entry Fee', 'entry_fee', (v) => formatValue('entry_fee', v))}
+                    </Sheet>
+                    <Sheet variant="outlined" sx={{ p: 2, borderRadius: 'md', mt: 2 }}>
+                      <Typography.CardTitle size="sm" sx={{ mb: 1 }}>Location</Typography.CardTitle>
+                      {renderDiffRow('Province', 'province')}
+                      {renderDiffRow('Municipality', 'municipality')}
+                      {renderDiffRow('Barangay', 'barangay')}
+                      {renderDiffRow('Latitude', 'latitude')}
+                      {renderDiffRow('Longitude', 'longitude')}
+                    </Sheet>
                   </Box>
-
-                  {/* Proposed column */}
                   <Box sx={{ flex: 1, minWidth: 0 }}>
-                    <Typography.Label size="sm" sx={{ mb: 1 }}>
-                      Proposed
-                    </Typography.Label>
-                    <Stack spacing={2}>
-                      {/* Basic Information */}
-                      <Sheet
-                        variant="outlined"
-                        sx={{ p: 2, borderRadius: "md" }}
-                      >
-                        <Typography.CardTitle size="sm" sx={{ mb: 1 }}>
-                          Basic Information
-                        </Typography.CardTitle>
-                        {(() => {
-                          const changed =
-                            normalize("name", getCurrent("name")) !==
-                            normalize("name", getProposed("name"));
-                          return (
-                            <Typography.Body size="sm">
-                              <strong>Name:</strong>{" "}
-                              <span
-                                className={
-                                  changed ? "value-changed" : undefined
-                                }
-                              >
-                                {formatValue("name", getProposed("name"))}
-                              </span>
-                            </Typography.Body>
-                          );
-                        })()}
-                        {(() => {
-                          const changed =
-                            normalize(
-                              "description",
-                              getCurrent("description")
-                            ) !==
-                            normalize(
-                              "description",
-                              getProposed("description")
-                            );
-                          return (
-                            <Typography.Body size="sm">
-                              <strong>Description:</strong>{" "}
-                              <span
-                                className={
-                                  changed ? "value-changed" : undefined
-                                }
-                              >
-                                {formatValue(
-                                  "description",
-                                  getProposed("description")
-                                )}
-                              </span>
-                            </Typography.Body>
-                          );
-                        })()}
-                        {(() => {
-                          const changed =
-                            normalize("entry_fee", getCurrent("entry_fee")) !==
-                            normalize("entry_fee", getProposed("entry_fee"));
-                          return (
-                            <Typography.Body size="sm">
-                              <strong>Entry Fee:</strong>{" "}
-                              <span
-                                className={
-                                  changed ? "value-changed" : undefined
-                                }
-                              >
-                                {formatValue(
-                                  "entry_fee",
-                                  getProposed("entry_fee")
-                                )}
-                              </span>
-                            </Typography.Body>
-                          );
-                        })()}
-                      </Sheet>
-
-                      {/* Location */}
-                      <Sheet
-                        variant="outlined"
-                        sx={{ p: 2, borderRadius: "md" }}
-                      >
-                        <Typography.CardTitle size="sm" sx={{ mb: 1 }}>
-                          Location
-                        </Typography.CardTitle>
-                        {(() => {
-                          const changed =
-                            normalize("province", getCurrent("province")) !==
-                              normalize("province", getProposed("province")) ||
-                            normalize(
-                              "municipality",
-                              getCurrent("municipality")
-                            ) !==
-                              normalize(
-                                "municipality",
-                                getProposed("municipality")
-                              ) ||
-                            normalize("barangay", getCurrent("barangay")) !==
-                              normalize("barangay", getProposed("barangay"));
-                          return (
-                            <Typography.Body size="sm">
-                              <strong>Address:</strong>{" "}
-                              <span
-                                className={
-                                  changed ? "value-changed" : undefined
-                                }
-                              >
-                                {formatValue(
-                                  "barangay",
-                                  getProposed("barangay")
-                                )}
-                                ,{" "}
-                                {formatValue(
-                                  "municipality",
-                                  getProposed("municipality")
-                                )}
-                                ,{" "}
-                                {formatValue(
-                                  "province",
-                                  getProposed("province")
-                                )}
-                              </span>
-                            </Typography.Body>
-                          );
-                        })()}
-                        {(() => {
-                          const changed =
-                            normalize("latitude", getCurrent("latitude")) !==
-                              normalize("latitude", getProposed("latitude")) ||
-                            normalize("longitude", getCurrent("longitude")) !==
-                              normalize("longitude", getProposed("longitude"));
-                          const lat = formatValue(
-                            "latitude",
-                            getProposed("latitude")
-                          );
-                          const lon = formatValue(
-                            "longitude",
-                            getProposed("longitude")
-                          );
-                          return (
-                            <Typography.Body size="sm">
-                              <strong>Coordinates:</strong>{" "}
-                              <span
-                                className={
-                                  changed ? "value-changed" : undefined
-                                }
-                              >
-                                {lat}
-                                {lat && lon ? ", " : ""}
-                                {lon}
-                              </span>
-                            </Typography.Body>
-                          );
-                        })()}
-                      </Sheet>
-
-                      {/* Contact Information */}
-                      <Sheet
-                        variant="outlined"
-                        sx={{ p: 2, borderRadius: "md" }}
-                      >
-                        <Typography.CardTitle size="sm" sx={{ mb: 1 }}>
-                          Contact Information
-                        </Typography.CardTitle>
-                        {(() => {
-                          const changed =
-                            normalize(
-                              "contact_phone",
-                              getCurrent("contact_phone")
-                            ) !==
-                            normalize(
-                              "contact_phone",
-                              getProposed("contact_phone")
-                            );
-                          const v = getProposed("contact_phone");
-                          return v ? (
-                            <Typography.Body size="sm">
-                              <strong>Phone:</strong>{" "}
-                              <span
-                                className={
-                                  changed ? "value-changed" : undefined
-                                }
-                              >
-                                {formatValue("contact_phone", v)}
-                              </span>
-                            </Typography.Body>
-                          ) : null;
-                        })()}
-                        {(() => {
-                          const changed =
-                            normalize(
-                              "contact_email",
-                              getCurrent("contact_email")
-                            ) !==
-                            normalize(
-                              "contact_email",
-                              getProposed("contact_email")
-                            );
-                          const v = getProposed("contact_email");
-                          return v ? (
-                            <Typography.Body size="sm">
-                              <strong>Email:</strong>{" "}
-                              <span
-                                className={
-                                  changed ? "value-changed" : undefined
-                                }
-                              >
-                                {formatValue("contact_email", v)}
-                              </span>
-                            </Typography.Body>
-                          ) : null;
-                        })()}
-                        {(() => {
-                          const changed =
-                            normalize("website", getCurrent("website")) !==
-                            normalize("website", getProposed("website"));
-                          const v = getProposed("website");
-                          return v ? (
-                            <Typography.Body size="sm">
-                              <strong>Website:</strong>{" "}
-                              <span
-                                className={
-                                  changed ? "value-changed" : undefined
-                                }
-                              >
-                                {formatValue("website", v)}
-                              </span>
-                            </Typography.Body>
-                          ) : null;
-                        })()}
-                        {!getProposed("contact_phone") &&
-                          !getProposed("contact_email") &&
-                          !getProposed("website") && (
-                            <Typography.Body
-                              
-                              sx={{ color: "text.tertiary" }}
-                            >
-                              No contact information provided
-                            </Typography.Body>
-                          )}
-                      </Sheet>
-                    </Stack>
+                    <Sheet variant="outlined" sx={{ p: 2, borderRadius: 'md' }}>
+                      <Typography.CardTitle size="sm" sx={{ mb: 1 }}>Contact</Typography.CardTitle>
+                      {renderDiffRow('Phone', 'contact_phone')}
+                      {renderDiffRow('Email', 'contact_email')}
+                      {renderDiffRow('Website', 'website')}
+                    </Sheet>
                   </Box>
                 </Stack>
               </Stack>
@@ -606,27 +468,8 @@ const ViewModal: React.FC<ViewModalProps> = ({
               const entityType = String(item.entityType || "").toLowerCase();
               const isBusiness = entityType === "businesses";
               return (
-                <Sheet variant="plain" sx={{ p: 3, borderRadius: "lg" }}>
-                  <Stack spacing={2}>
-                    <Stack direction="row" alignItems="center" spacing={1}>
-                      <Typography.CardTitle size="md" color="primary">
-                        {isBusiness ? "Business Details" : "Tourist Spot Details"}
-                      </Typography.CardTitle>
-                      <Typography.Body
-                        size="xs"
-                        sx={{
-                          backgroundColor: "primary.100",
-                          color: "primary.700",
-                          px: 1.5,
-                          py: 0.5,
-                          borderRadius: "sm",
-                          fontWeight: 500,
-                        }}
-                      >
-                        New Submission
-                      </Typography.Body>
-                    </Stack>
-                    <Divider />
+                <Sheet variant="plain" sx={{ p: 1, borderRadius: "lg" }}>
+                  <Stack spacing={1}>
                     <Stack direction={{ xs: "column", md: "row" }} spacing={2}>
                       <Box sx={{ flex: 1, minWidth: 0 }}>
                         <Stack spacing={2}>

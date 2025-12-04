@@ -66,12 +66,12 @@ export const fetchAllBusinesses = async (): Promise<any[]> => {
 };
 
 /**
- * Fetch all accommodations (business_type_id === 1)
+ * Fetch all accommodations (hasBooking === true)
  */
 export const fetchAllAccommodations = async (): Promise<any[]> => {
   try {
     const businesses = await fetchAllBusinesses();
-    return businesses.filter((b) => b.business_type_id === 1);
+    return businesses.filter((b) => b.hasBooking === true || b.hasBooking === 1);
   } catch (error) {
     console.error("Failed to fetch accommodations:", error);
     return [];
@@ -79,12 +79,12 @@ export const fetchAllAccommodations = async (): Promise<any[]> => {
 };
 
 /**
- * Fetch all shops (business_type_id === 2)
+ * Fetch all shops (hasBooking === false or not set)
  */
 export const fetchAllShops = async (): Promise<any[]> => {
   try {
     const businesses = await fetchAllBusinesses();
-    return businesses.filter((b) => b.business_type_id === 2);
+    return businesses.filter((b) => !b.hasBooking || b.hasBooking === false || b.hasBooking === 0);
   } catch (error) {
     console.error("Failed to fetch shops:", error);
     return [];
@@ -167,7 +167,7 @@ export const fetchTourismDashboardData = async (): Promise<TourismDashboardData>
     const registrations: BusinessRegistration[] = businesses.slice(0, 10).map((business: any, index) => ({
       id: business.id || `business-${index}`,
       businessName: business.business_name || `Business ${index + 1}`,
-      businessType: business.business_type_id === 1 ? "accommodation" : "shop",
+      businessType: business.hasBooking ? "accommodation" : "shop",
       ownerName: `${business.owner_first_name || ""} ${business.owner_last_name || ""}`.trim() || "Business Owner",
       email: business.email || `owner${index}@example.com`,
       registeredAt: business.created_at || new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000).toISOString(),
@@ -223,10 +223,10 @@ export const calculateBusinessStats = (businesses: any[]): BusinessStats => {
   };
 
   businesses.forEach((business) => {
-    // Count by type
-    if (business.business_type_id === 1) {
+    // Count by type (using hasBooking flag)
+    if (business.hasBooking === true || business.hasBooking === 1) {
       stats.accommodations++;
-    } else if (business.business_type_id === 2) {
+    } else {
       stats.shops++;
     }
 

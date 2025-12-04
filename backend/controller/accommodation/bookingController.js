@@ -262,7 +262,7 @@ export async function initiateBookingPayment(req, res) {
       `SELECT 
         b.id, b.total_price, b.balance, b.booking_status, b.tourist_id, b.business_id, b.room_id,
         b.check_in_date, b.check_out_date, b.pax,
-        r.name as room_name, r.price_per_night,
+        CONCAT(r.room_type, ' - ', r.room_number) as room_name, r.room_price as price_per_night,
         bus.business_name,
         t.id as tourist_user_id
        FROM booking b
@@ -338,37 +338,27 @@ export async function initiateBookingPayment(req, res) {
       payment_for: 'booking'
     };
 
-    // 6. Build redirect URLs
-    const successUrl = `${PAYMONGO_REDIRECT_BASE}/bookings/${booking.id}/payment-success`;
-    const cancelUrl = `${PAYMONGO_REDIRECT_BASE}/bookings/${booking.id}/payment-cancel`;
+    // 6. Build return URL for PIPM flow (user redirected here after payment auth)
+    const returnUrl = `${PAYMONGO_REDIRECT_BASE}/bookings/${booking.id}/payment-success`;
 
-    // 7. Create line items for checkout
-    const lineItems = [
-      {
-        currency: 'PHP',
-        amount: amountInCentavos,
-        name: booking.room_name || 'Room Reservation',
-        quantity: 1,
-        description: `${payment_type} - Check-in: ${booking.check_in_date}, Check-out: ${booking.check_out_date}`
-      }
-    ];
-
-    // 8. Create PayMongo checkout session
-    const checkoutSession = await paymongoService.createCheckoutSession({
-      orderId: booking.id, // Using booking ID as reference
-      orderNumber: `BK-${booking.id.substring(0, 8).toUpperCase()}`,
+    // 7. Create payment using PIPM flow (Payment Intent + Payment Method)
+    const pipmResult = await paymongoService.createPIPMPayment({
+      referenceId: booking.id,
       amount: amountInCentavos,
-      lineItems,
-      successUrl,
-      cancelUrl,
+      paymentMethodType: payment_method_type,
       description: `Booking Payment - ${booking.room_name || 'Room'} at ${booking.business_name || 'Accommodation'}`,
+      returnUrl,
+      billing: {
+        name: metadata.tourist_id || 'Guest',
+        email: req.user?.email
+      },
       metadata
     });
 
-    const provider_reference = checkoutSession.id;
-    const checkout_url = checkoutSession.attributes.checkout_url;
+    const provider_reference = pipmResult.paymentIntentId;
+    const checkout_url = pipmResult.redirectUrl;
 
-    // 9. Create payment record
+    // 8. Create payment record
     const payment_id = uuidv4();
     const created_at = new Date();
 
@@ -388,20 +378,25 @@ export async function initiateBookingPayment(req, res) {
       ]
     );
 
-    // Store provider reference
+    // Store provider reference (Payment Intent ID) and metadata
     await db.query(
       `UPDATE payment 
        SET provider_reference = ?, 
            currency = 'PHP',
            metadata = ?
        WHERE id = ?`,
-      [provider_reference, JSON.stringify(metadata), payment_id]
+      [provider_reference, JSON.stringify({
+        ...metadata,
+        payment_method_id: pipmResult.paymentMethodId,
+        client_key: pipmResult.clientKey,
+        status: pipmResult.status
+      }), payment_id]
     );
 
-    console.log(`[BookingPayment] ✅ Checkout session created for booking ${booking.id}`);
-    console.log(`[BookingPayment] 🔗 Checkout URL: ${checkout_url}`);
+    console.log(`[BookingPayment] ✅ PIPM payment created for booking ${booking.id}`);
+    console.log(`[BookingPayment] 🔗 Redirect URL: ${checkout_url}`);
 
-    // 10. Return checkout URL to client
+    // 9. Return redirect URL to client
     res.status(201).json({
       success: true,
       message: "Payment initiated successfully",
@@ -431,6 +426,177 @@ export async function initiateBookingPayment(req, res) {
     return res.status(500).json({
       success: false,
       message: "Failed to initiate payment",
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+}
+
+/**
+ * Verify payment status for a booking
+ * GET /api/bookings/:id/verify-payment/:paymentId
+ * 
+ * This endpoint checks the actual PayMongo Payment Intent status
+ * to confirm whether a payment was successful or failed.
+ * 
+ * Auth: Required (Tourist role)
+ */
+export async function verifyBookingPayment(req, res) {
+  try {
+    const { id: booking_id, paymentId } = req.params;
+    const user_id = req.user?.id;
+
+    // Validate user authentication
+    if (!user_id) {
+      return res.status(401).json({
+        success: false,
+        message: "Authentication required"
+      });
+    }
+
+    // 1. Fetch booking and payment details
+    const [rows] = await db.query(
+      `SELECT 
+        b.id as booking_id, b.tourist_id, b.booking_status, b.total_price, b.balance,
+        p.id as payment_id, p.provider_reference, p.status as payment_status, p.amount,
+        t.user_id as tourist_user_id
+       FROM booking b
+       LEFT JOIN payment p ON p.payment_for_id = b.id AND p.payment_for = 'booking'
+       LEFT JOIN tourist t ON b.tourist_id = t.id
+       WHERE b.id = ? AND p.id = ?`,
+      [booking_id, paymentId]
+    );
+
+    if (!rows || rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "Booking or payment not found"
+      });
+    }
+
+    const record = rows[0];
+
+    // 2. Validate ownership
+    if (record.tourist_user_id !== user_id) {
+      return res.status(403).json({
+        success: false,
+        message: "You are not authorized to verify this payment"
+      });
+    }
+
+    // 3. Check if we have a PayMongo Payment Intent ID
+    const paymentIntentId = record.provider_reference;
+    
+    if (!paymentIntentId) {
+      return res.status(400).json({
+        success: false,
+        message: "No payment provider reference found"
+      });
+    }
+
+    // 4. Query PayMongo for actual payment status
+    console.log(`[VerifyPayment] Checking PayMongo status for PI: ${paymentIntentId}`);
+    const paymentIntent = await paymongoService.getPaymentIntent(paymentIntentId);
+    const piStatus = paymentIntent?.attributes?.status;
+    const lastPaymentError = paymentIntent?.attributes?.last_payment_error;
+
+    console.log(`[VerifyPayment] PayMongo status: ${piStatus}`);
+
+    // 5. Determine payment outcome
+    // PayMongo Payment Intent statuses:
+    // - awaiting_payment_method: Payment method not yet attached or failed
+    // - awaiting_next_action: Waiting for 3DS or redirect completion
+    // - processing: Payment is being processed
+    // - succeeded: Payment was successful
+    
+    let verified = false;
+    let paymentVerified = 'pending';
+    let message = '';
+
+    switch (piStatus) {
+      case 'succeeded':
+        verified = true;
+        paymentVerified = 'success';
+        message = 'Payment verified successfully';
+        break;
+        
+      case 'awaiting_payment_method':
+        // Payment failed or was cancelled - need new payment method
+        verified = false;
+        paymentVerified = 'failed';
+        message = lastPaymentError?.message || 'Payment was cancelled or declined. Please try again.';
+        break;
+        
+      case 'awaiting_next_action':
+        // Still waiting for user action
+        verified = false;
+        paymentVerified = 'pending';
+        message = 'Payment is still pending user authorization';
+        break;
+        
+      case 'processing':
+        // Payment is processing
+        verified = false;
+        paymentVerified = 'processing';
+        message = 'Payment is being processed. Please wait...';
+        break;
+        
+      default:
+        verified = false;
+        paymentVerified = 'unknown';
+        message = `Unexpected payment status: ${piStatus}`;
+    }
+
+    // 6. Update local payment record if verified successful
+    if (verified && record.payment_status === 'pending') {
+      await db.query(
+        `UPDATE payment SET status = 'Paid' WHERE id = ?`,
+        [paymentId]
+      );
+      
+      // Update booking status to Confirmed/Reserved
+      await db.query(
+        `UPDATE booking SET booking_status = 'Confirmed' WHERE id = ? AND booking_status IN ('Pending', 'Reserved')`,
+        [booking_id]
+      );
+      
+      console.log(`[VerifyPayment] ✅ Payment ${paymentId} verified and marked as Paid`);
+    } else if (paymentVerified === 'failed' && record.payment_status === 'pending') {
+      // Mark local payment as failed
+      await db.query(
+        `UPDATE payment SET status = 'failed' WHERE id = ?`,
+        [paymentId]
+      );
+      console.log(`[VerifyPayment] ❌ Payment ${paymentId} marked as failed`);
+    }
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        verified,
+        payment_status: paymentVerified,
+        message,
+        payment_intent_status: piStatus,
+        booking_id,
+        payment_id: paymentId,
+        amount: record.amount,
+        last_payment_error: lastPaymentError
+      }
+    });
+
+  } catch (error) {
+    console.error("[VerifyPayment] Error:", error);
+
+    // Handle PayMongo API errors
+    if (error.response?.status === 404) {
+      return res.status(404).json({
+        success: false,
+        message: "Payment intent not found on PayMongo"
+      });
+    }
+
+    return res.status(500).json({
+      success: false,
+      message: "Failed to verify payment",
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }

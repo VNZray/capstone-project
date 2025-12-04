@@ -110,11 +110,11 @@ const BusinessRegistration: React.FC = () => {
     longitude: "",
     latitude: "",
     owner_id: user?.id ?? "",
-    business_category_id: 0,
-    business_type_id: 0,
     barangay_id: 0,
     status: "Pending",
     hasBooking: false,
+    category_ids: [],
+    primary_category_id: undefined,
   });
 
   const [registrationData, setRegistrationData] = useState<Registration>({

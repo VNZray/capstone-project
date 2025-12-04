@@ -12,6 +12,9 @@ import {
   KeyboardAvoidingView,
   LayoutAnimation,
   UIManager,
+  Image,
+  Modal,
+  FlatList,
 } from 'react-native';
 import { Stack } from 'expo-router';
 import { useColorScheme } from '@/hooks/use-color-scheme';
@@ -24,7 +27,7 @@ import { createOrder } from '@/services/OrderService';
 import * as WebBrowser from 'expo-web-browser';
 import type { CreateOrderPayload } from '@/types/Order';
 import { Ionicons } from '@expo/vector-icons';
-import DateTimePicker from '@react-native-community/datetimepicker';
+// Custom date/time picker UI replaces native DateTimePicker
 import { usePreventDoubleNavigation } from '@/hooks/usePreventDoubleNavigation';
 import { Routes } from '@/routes/mainRoutes';
 import { useHideTabs } from '@/hooks/useHideTabs';
@@ -70,6 +73,54 @@ const CheckoutScreen = () => {
   const [pickupDate, setPickupDate] = useState(pickupBoundaries.default);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
+
+  // Generate available dates (today + next 2 days)
+  const availableDates = useMemo(() => {
+    const dates: { label: string; value: Date }[] = [];
+    const now = new Date();
+    for (let i = 0; i < 3; i++) {
+      const date = new Date(now);
+      date.setDate(date.getDate() + i);
+      date.setHours(0, 0, 0, 0);
+      const label = i === 0 ? 'Today' : i === 1 ? 'Tomorrow' : date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+      dates.push({ label, value: date });
+    }
+    return dates;
+  }, []);
+
+  // Generate available time slots (30-min increments)
+  const availableTimeSlots = useMemo(() => {
+    const slots: { label: string; hour: number; minute: number }[] = [];
+    const now = new Date();
+    const selectedDateStr = pickupDate.toDateString();
+    const todayStr = now.toDateString();
+    const isToday = selectedDateStr === todayStr;
+
+    // Start from minimum pickup time if today, otherwise from store opening
+    let startHour = isToday ? now.getHours() : 8;
+    let startMinute = isToday ? (now.getMinutes() < 30 ? 30 : 0) : 0;
+    if (isToday && now.getMinutes() >= 30) startHour += 1;
+    // Add minimum 30 min buffer for preparation
+    if (isToday) {
+      startMinute += 30;
+      if (startMinute >= 60) {
+        startMinute -= 60;
+        startHour += 1;
+      }
+    }
+
+    for (let hour = startHour; hour <= 22; hour++) {
+      for (let minute of [0, 30]) {
+        if (hour === startHour && minute < startMinute) continue;
+        if (hour === 22 && minute > 0) continue;
+        const period = hour >= 12 ? 'PM' : 'AM';
+        const displayHour = hour > 12 ? hour - 12 : hour === 0 ? 12 : hour;
+        const label = `${displayHour}:${minute.toString().padStart(2, '0')} ${period}`;
+        slots.push({ label, hour, minute });
+      }
+    }
+    return slots;
+  }, [pickupDate]);
   const [specialInstructions, setSpecialInstructions] = useState('');
   const [paymentMethod, setPaymentMethod] = useState<
     'cash_on_pickup' | 'paymongo'
@@ -99,18 +150,18 @@ const CheckoutScreen = () => {
   const discountAmount = 0; // No discount for Phase 1
   const total = subtotal - discountAmount + taxAmount;
 
-  const handleDateChange = (event: any, selectedDate?: Date) => {
+  const handleDateSelect = (date: Date) => {
+    const newDate = new Date(pickupDate);
+    newDate.setFullYear(date.getFullYear(), date.getMonth(), date.getDate());
+    setPickupDate(newDate);
     setShowDatePicker(false);
-    if (selectedDate) {
-      setPickupDate(selectedDate);
-    }
   };
 
-  const handleTimeChange = (event: any, selectedDate?: Date) => {
+  const handleTimeSelect = (hour: number, minute: number) => {
+    const newDate = new Date(pickupDate);
+    newDate.setHours(hour, minute, 0, 0);
+    setPickupDate(newDate);
     setShowTimePicker(false);
-    if (selectedDate) {
-      setPickupDate(selectedDate);
-    }
   };
 
   const togglePaymentMethod = (method: 'cash_on_pickup' | 'paymongo') => {
@@ -223,7 +274,8 @@ const CheckoutScreen = () => {
 
       // Navigate to grace period screen with order data
       // Order is NOT created yet - will be created after countdown ends
-      push(Routes.checkout.orderGracePeriod({
+      // Use replace() to prevent back navigation through checkout flow
+      replace(Routes.checkout.orderGracePeriod({
         orderData: JSON.stringify(orderPayload),
         paymentMethodType: paymentMethodType,
         billingInfo: JSON.stringify({
@@ -437,33 +489,42 @@ const CheckoutScreen = () => {
               </View>
               {items.slice(0, 3).map((item) => (
                 <View key={item.product_id} style={styles.itemRow}>
-                  <View
-                    style={[
-                      styles.quantityBadge,
-                      { backgroundColor: theme.background },
-                    ]}
-                  >
-                    <Text style={[styles.quantityText, { color: theme.text }]}>
-                      {item.quantity}x
+                  {/* Product Image */}
+                  <View style={[styles.itemImageContainer, { backgroundColor: theme.background }]}>
+                    {item.image_url ? (
+                      <Image
+                        source={{ uri: item.image_url }}
+                        style={styles.itemImage}
+                        resizeMode="cover"
+                      />
+                    ) : (
+                      <Ionicons name="image-outline" size={24} color={theme.textSecondary} />
+                    )}
+                  </View>
+                  <View style={styles.itemDetails}>
+                    <Text
+                      style={[styles.itemName, { color: theme.text }]}
+                      numberOfLines={1}
+                    >
+                      {item.product_name}
+                    </Text>
+                    <Text style={[styles.itemQuantity, { color: theme.textSecondary }]}>
+                      Qty: {item.quantity}
                     </Text>
                   </View>
-                  <Text
-                    style={[styles.itemName, { color: theme.text }]}
-                    numberOfLines={1}
-                  >
-                    {item.product_name}
-                  </Text>
                   <Text style={[styles.itemPrice, { color: theme.text }]}>
                     ₱{(item.price * item.quantity).toFixed(2)}
                   </Text>
                 </View>
               ))}
               {items.length > 3 && (
-                <Text
-                  style={[styles.moreItems, { color: theme.textSecondary }]}
-                >
-                  +{items.length - 3} more items
-                </Text>
+                <Pressable onPress={() => back()}>
+                  <Text
+                    style={[styles.moreItems, { color: theme.active }]}
+                  >
+                    +{items.length - 3} more items →
+                  </Text>
+                </Pressable>
               )}
             </View>
 
@@ -562,26 +623,124 @@ const CheckoutScreen = () => {
                 </Pressable>
               </View>
 
-              {showDatePicker && (
-                <DateTimePicker
-                  value={pickupDate}
-                  mode="date"
-                  display="default"
-                  minimumDate={pickupBoundaries.min}
-                  maximumDate={pickupBoundaries.max}
-                  onChange={handleDateChange}
-                />
-              )}
+              {/* Date Picker Modal */}
+              <Modal
+                visible={showDatePicker}
+                transparent
+                animationType="fade"
+                onRequestClose={() => setShowDatePicker(false)}
+              >
+                <Pressable 
+                  style={styles.modalOverlay} 
+                  onPress={() => setShowDatePicker(false)}
+                >
+                  <View style={[styles.pickerModal, { backgroundColor: theme.surface }]}>
+                    <View style={styles.pickerHeader}>
+                      <Text style={[styles.pickerTitle, { color: theme.text }]}>Select Date</Text>
+                      <Pressable onPress={() => setShowDatePicker(false)}>
+                        <Ionicons name="close" size={24} color={theme.textSecondary} />
+                      </Pressable>
+                    </View>
+                    <View style={styles.pickerOptions}>
+                      {availableDates.map((dateOption, index) => (
+                        <Pressable
+                          key={index}
+                          style={[
+                            styles.pickerOption,
+                            { 
+                              backgroundColor: pickupDate.toDateString() === dateOption.value.toDateString()
+                                ? theme.primary
+                                : theme.background,
+                              borderColor: theme.border,
+                            },
+                          ]}
+                          onPress={() => handleDateSelect(dateOption.value)}
+                        >
+                          <Text
+                            style={[
+                              styles.pickerOptionText,
+                              { 
+                                color: pickupDate.toDateString() === dateOption.value.toDateString()
+                                  ? '#FFF'
+                                  : theme.text,
+                              },
+                            ]}
+                          >
+                            {dateOption.label}
+                          </Text>
+                          <Text
+                            style={[
+                              styles.pickerOptionSubtext,
+                              { 
+                                color: pickupDate.toDateString() === dateOption.value.toDateString()
+                                  ? 'rgba(255,255,255,0.8)'
+                                  : theme.textSecondary,
+                              },
+                            ]}
+                          >
+                            {dateOption.value.toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}
+                          </Text>
+                        </Pressable>
+                      ))}
+                    </View>
+                  </View>
+                </Pressable>
+              </Modal>
 
-              {showTimePicker && (
-                <DateTimePicker
-                  value={pickupDate}
-                  mode="time"
-                  display="default"
-                  minimumDate={pickupBoundaries.min}
-                  onChange={handleTimeChange}
-                />
-              )}
+              {/* Time Picker Modal */}
+              <Modal
+                visible={showTimePicker}
+                transparent
+                animationType="fade"
+                onRequestClose={() => setShowTimePicker(false)}
+              >
+                <Pressable 
+                  style={styles.modalOverlay} 
+                  onPress={() => setShowTimePicker(false)}
+                >
+                  <View style={[styles.pickerModal, { backgroundColor: theme.surface }]}>
+                    <View style={styles.pickerHeader}>
+                      <Text style={[styles.pickerTitle, { color: theme.text }]}>Select Time</Text>
+                      <Pressable onPress={() => setShowTimePicker(false)}>
+                        <Ionicons name="close" size={24} color={theme.textSecondary} />
+                      </Pressable>
+                    </View>
+                    <FlatList
+                      data={availableTimeSlots}
+                      keyExtractor={(item) => `${item.hour}-${item.minute}`}
+                      style={styles.timeScrollList}
+                      showsVerticalScrollIndicator={false}
+                      renderItem={({ item: slot }) => {
+                        const isSelected = pickupDate.getHours() === slot.hour && pickupDate.getMinutes() === slot.minute;
+                        return (
+                          <Pressable
+                            style={[
+                              styles.timeSlotOption,
+                              { 
+                                backgroundColor: isSelected ? theme.primary : 'transparent',
+                                borderColor: isSelected ? theme.primary : theme.border,
+                              },
+                            ]}
+                            onPress={() => handleTimeSelect(slot.hour, slot.minute)}
+                          >
+                            <Text
+                              style={[
+                                styles.timeSlotText,
+                                { color: isSelected ? '#FFF' : theme.text },
+                              ]}
+                            >
+                              {slot.label}
+                            </Text>
+                            {isSelected && (
+                              <Ionicons name="checkmark-circle" size={20} color="#FFF" />
+                            )}
+                          </Pressable>
+                        );
+                      }}
+                    />
+                  </View>
+                </Pressable>
+              </Modal>
 
               <View
                 style={[styles.divider, { backgroundColor: theme.border }]}
@@ -1066,30 +1225,99 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 12,
   },
-  quantityBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
+  itemImageContainer: {
+    width: 56,
+    height: 56,
+    borderRadius: 10,
+    overflow: 'hidden',
     marginRight: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  quantityText: {
-    fontSize: 12,
-    fontWeight: '600',
+  itemImage: {
+    width: '100%',
+    height: '100%',
+  },
+  itemDetails: {
+    flex: 1,
+    marginRight: 12,
   },
   itemName: {
-    flex: 1,
     fontSize: 14,
-    marginRight: 12,
+    fontWeight: '500',
+    marginBottom: 2,
+  },
+  itemQuantity: {
+    fontSize: 12,
   },
   itemPrice: {
     fontSize: 14,
     fontWeight: '600',
   },
   moreItems: {
-    fontSize: 12,
+    fontSize: 13,
     textAlign: 'center',
     marginTop: 8,
-    fontStyle: 'italic',
+    fontWeight: '500',
+  },
+  // Custom Picker Modal Styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  pickerModal: {
+    width: '100%',
+    maxWidth: 340,
+    borderRadius: 16,
+    padding: 20,
+    maxHeight: '70%',
+  },
+  pickerHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  pickerTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+  },
+  pickerOptions: {
+    gap: 10,
+  },
+  pickerOption: {
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    alignItems: 'center',
+  },
+  pickerOptionText: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  pickerOptionSubtext: {
+    fontSize: 13,
+    marginTop: 2,
+  },
+  timeScrollList: {
+    maxHeight: 300,
+  },
+  timeSlotOption: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderRadius: 10,
+    borderWidth: 1,
+    marginBottom: 8,
+  },
+  timeSlotText: {
+    fontSize: 16,
+    fontWeight: '500',
   },
   dateTimeContainer: {
     flexDirection: 'row',

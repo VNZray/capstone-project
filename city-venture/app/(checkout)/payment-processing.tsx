@@ -105,6 +105,7 @@ const PaymentProcessingScreen = () => {
           orderPaymentStatus
         );
 
+        // Check for successful payment
         if (paymentStatus === 'succeeded' || orderPaymentStatus === 'paid') {
           setStatus('success');
           setStatusMessage('Payment successful!');
@@ -124,24 +125,37 @@ const PaymentProcessingScreen = () => {
               );
             }
           }, 1500);
-        } else if (result.data.last_payment_error) {
+        } 
+        // Check if webhook already marked payment as failed
+        else if (orderPaymentStatus === 'failed') {
+          setStatus('failed');
+          setStatusMessage('Payment was not completed');
+          
+          setTimeout(() => {
+            if (isMounted) {
+              router.replace(Routes.checkout.paymentFailed({
+                orderId: params.orderId,
+                orderNumber: params.orderNumber,
+                errorMessage: 'Payment was not completed. Please try again.',
+              }));
+            }
+          }, 2000);
+        }
+        // Check for payment error from PayMongo
+        else if (result.data.last_payment_error) {
           setStatus('failed');
           setStatusMessage(
-            result.data.last_payment_error.message ||
-              'Payment was not completed'
+            result.data.last_payment_error.message || 'Payment was not completed'
           );
-
+          
           // Navigate to failure screen after delay
           setTimeout(() => {
             if (isMounted) {
-              router.replace(
-                Routes.checkout.paymentFailed({
-                  orderId: params.orderId,
-                  orderNumber: params.orderNumber,
-                  errorMessage:
-                    result.data.last_payment_error?.message || 'Payment failed',
-                })
-              );
+              router.replace(Routes.checkout.paymentFailed({
+                orderId: params.orderId,
+                orderNumber: params.orderNumber,
+                errorMessage: result.data.last_payment_error?.message || 'Payment failed',
+              }));
             }
           }, 2000);
         } else {
@@ -165,24 +179,24 @@ const PaymentProcessingScreen = () => {
         console.error('[PaymentProcessing] Error:', error);
 
         if (!isMounted) return;
-
+        
+        // Determine if this is a timeout error or other error
+        const isTimeout = error.message?.includes('timeout');
+        const errorMessage = isTimeout 
+          ? 'Payment verification timed out. Please check your order status.'
+          : error.message || 'Could not verify payment status';
+        
         setStatus('failed');
-        setStatusMessage(
-          'Could not verify payment status. Please check your orders.'
-        );
-
+        setStatusMessage(errorMessage);
+        
+        // Navigate to payment failed screen instead of order confirmation
         setTimeout(() => {
           if (isMounted) {
-            router.replace(
-              Routes.checkout.orderConfirmation({
-                orderId: params.orderId,
-                orderNumber: params.orderNumber,
-                arrivalCode: params.arrivalCode,
-                total: params.total,
-                paymentMethod: 'paymongo',
-                paymentPending: 'true',
-              })
-            );
+            router.replace(Routes.checkout.paymentFailed({
+              orderId: params.orderId,
+              orderNumber: params.orderNumber,
+              errorMessage: errorMessage,
+            }));
           }
         }, 2000);
       }

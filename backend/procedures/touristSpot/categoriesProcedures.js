@@ -1,60 +1,86 @@
 // Categories-related procedures
-// Procedures for managing tourist spot categories.
+// Procedures for managing tourist spot categories using new hierarchical categories system.
 
 export async function createCategoriesProcedures(knex) {
   
-  // Retrieves all categories for a given tourist spot ID.
+  // Note: GetCategoryTreeDepth function is created in the main hierarchical_categories migration
+  // It's used to compute tree depth dynamically
+  
+  // Retrieves all categories for a given tourist spot ID using entity_categories.
   await knex.raw(`
     CREATE PROCEDURE GetTouristSpotCategories(IN p_id CHAR(36))
     BEGIN
       SELECT 
         c.id,
-        c.category,
-        c.type_id
-      FROM tourist_spot_categories tsc
-      JOIN category c ON tsc.category_id = c.id
-      WHERE tsc.tourist_spot_id = p_id
-      ORDER BY c.category ASC;
+        c.title AS category,
+        c.alias,
+        c.parent_category,
+        GetCategoryTreeDepth(c.id) AS level,
+        ec.is_primary
+      FROM entity_categories ec
+      JOIN categories c ON ec.category_id = c.id
+      WHERE ec.entity_id = p_id AND ec.entity_type = 'tourist_spot'
+      ORDER BY ec.is_primary DESC, c.sort_order, c.title ASC;
     END;
   `);
 
-  // Retrieves all types and categories (filtered by type_id = 4) for tourist spots.
+  // Retrieves all categories applicable to tourist spots from the new hierarchical system.
   await knex.raw(`
     CREATE PROCEDURE GetTouristSpotCategoriesAndTypes()
     BEGIN
-      SELECT * FROM type ORDER BY type ASC;
-      SELECT c.* 
-      FROM category c 
-      INNER JOIN type t ON c.type_id = t.id 
-      WHERE t.id = 4 
-      ORDER BY c.category ASC;
+      -- Return all root categories (level 1 = no parent) applicable to tourist spots
+      SELECT id, alias, title, description, applicable_to, status, sort_order, 1 AS level
+      FROM categories 
+      WHERE parent_category IS NULL 
+        AND status = 'active'
+        AND (applicable_to LIKE '%tourist_spot%' OR applicable_to = 'all')
+      ORDER BY sort_order, title ASC;
+      
+      -- Return all subcategories (has parent) applicable to tourist spots
+      SELECT c.id, c.alias, c.title, c.description, c.parent_category, c.applicable_to, c.status, c.sort_order, 
+             GetCategoryTreeDepth(c.id) AS level,
+             pc.title AS parent_title
+      FROM categories c
+      LEFT JOIN categories pc ON c.parent_category = pc.id
+      WHERE c.parent_category IS NOT NULL 
+        AND c.status = 'active'
+        AND (c.applicable_to LIKE '%tourist_spot%' OR c.applicable_to = 'all')
+      ORDER BY GetCategoryTreeDepth(c.id), c.sort_order, c.title ASC;
     END;
   `);
 
-  // Retrieves only the category IDs for a given tourist spot ID.
+  // Retrieves only the category IDs for a given tourist spot ID using entity_categories.
   await knex.raw(`
     CREATE PROCEDURE GetTouristSpotCategoryIds(IN p_id CHAR(36))
     BEGIN
       SELECT category_id
-      FROM tourist_spot_categories
-      WHERE tourist_spot_id = p_id;
+      FROM entity_categories
+      WHERE entity_id = p_id AND entity_type = 'tourist_spot';
     END;
   `);
 
-  // Deletes all categories associated with a given tourist spot ID.
+  // Deletes all categories associated with a given tourist spot ID from entity_categories.
   await knex.raw(`
     CREATE PROCEDURE DeleteCategoriesByTouristSpot(IN p_id CHAR(36))
     BEGIN
-      DELETE FROM tourist_spot_categories WHERE tourist_spot_id = p_id;
+      DELETE FROM entity_categories 
+      WHERE entity_id = p_id AND entity_type = 'tourist_spot';
     END;
   `);
 
-  // Inserts a new category for a given tourist spot ID and category ID.
+  // Inserts a new category for a given tourist spot using entity_categories.
   await knex.raw(`
-    CREATE PROCEDURE InsertTouristSpotCategory(IN p_id CHAR(36), IN p_category_id INT)
+    CREATE PROCEDURE InsertTouristSpotCategory(
+      IN p_id CHAR(36), 
+      IN p_category_id INT,
+      IN p_is_primary BOOLEAN
+    )
     BEGIN
-      INSERT INTO tourist_spot_categories (id, tourist_spot_id, category_id)
-      VALUES (UUID(), p_id, p_category_id);
+      INSERT INTO entity_categories (entity_id, entity_type, category_id, level, is_primary)
+      VALUES (p_id, 'tourist_spot', p_category_id, 1, COALESCE(p_is_primary, false))
+      ON DUPLICATE KEY UPDATE 
+        is_primary = COALESCE(p_is_primary, is_primary),
+        updated_at = CURRENT_TIMESTAMP;
     END;
   `);
 
@@ -86,10 +112,11 @@ export async function createCategoriesProcedures(knex) {
 }
 
 export async function dropCategoriesProcedures(knex) {
-  const names = [
+  const procedures = [
     'GetTouristSpotCategoriesAndTypes', 'GetTouristSpotCategories', 'GetTouristSpotCategoryIds', 'DeleteCategoriesByTouristSpot', 'InsertTouristSpotCategory', 'UpdateTouristSpotDirectFields'
   ];
-  for (const n of names) {
+  for (const n of procedures) {
     await knex.raw(`DROP PROCEDURE IF EXISTS ${n};`);
   }
+  // Note: GetCategoryTreeDepth function is managed by the main hierarchical_categories migration
 }

@@ -58,8 +58,6 @@ exports.seed = async function (knex) {
     max_price: 500,
     email: 'delacruzgrocery@example.com',
     phone_number: randomPhone(),
-    business_type_id: 2, // Shop
-    business_category_id: 4, // Assuming 4 is Grocery; adjust if different
     barangay_id: 1,
     address: 'Panganiban Drive, Naga City, Camarines Sur',
     owner_id: shopOwner.id,

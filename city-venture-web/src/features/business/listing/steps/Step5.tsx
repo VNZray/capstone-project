@@ -1,9 +1,8 @@
 import CustomTypography from "@/src/components/Typography";
-import React from "react";
+import React, { useEffect, useState } from "react";
 import type { Business } from "@/src/types/Business";
 import { useAddress } from "@/src/hooks/useAddress";
-import { useCategoryAndType } from "@/src/hooks/useCategoryAndType";
-import { Card, CardContent, Divider, Typography } from "@mui/joy";
+import { Card, CardContent, Divider, Typography, Chip } from "@mui/joy";
 import type { Permit } from "@/src/types/Permit";
 import { Avatar } from "@mui/joy";
 import {
@@ -19,6 +18,8 @@ import {
   ArticleOutlined,
 } from "@mui/icons-material";
 import type { Address } from "@/src/types/Address";
+import type { CategoryTree } from "@/src/types/Category";
+import { fetchCategoryTree } from "@/src/services/BusinessService";
 
 type Props = {
   data: Business;
@@ -28,10 +29,43 @@ type Props = {
 
 const Step7: React.FC<Props> = ({ data, permitData }) => {
   const { address } = useAddress(data?.barangay_id);
-  const { category, type } = useCategoryAndType(
-    data?.business_type_id,
-    data?.business_category_id
-  );
+  const [selectedCategoryNames, setSelectedCategoryNames] = useState<string[]>([]);
+  const [primaryCategoryName, setPrimaryCategoryName] = useState<string>("");
+
+  // Fetch categories and resolve names
+  useEffect(() => {
+    const loadCategories = async () => {
+      try {
+        const tree = await fetchCategoryTree();
+        
+        // Resolve category names from IDs
+        if (data?.category_ids && data.category_ids.length > 0) {
+          const flatCategories: CategoryTree[] = [];
+          const flatten = (cats: CategoryTree[]) => {
+            for (const cat of cats) {
+              flatCategories.push(cat);
+              if (cat.children) flatten(cat.children);
+            }
+          };
+          flatten(tree);
+          
+          const names = data.category_ids
+            .map(id => flatCategories.find(c => c.id === id)?.title)
+            .filter((name): name is string => !!name);
+          setSelectedCategoryNames(names);
+          
+          // Get primary category name
+          if (data.primary_category_id) {
+            const primary = flatCategories.find(c => c.id === data.primary_category_id);
+            if (primary) setPrimaryCategoryName(primary.title);
+          }
+        }
+      } catch (error) {
+        console.error("Failed to load categories:", error);
+      }
+    };
+    loadCategories();
+  }, [data?.category_ids, data?.primary_category_id]);
 
   const InfoRow = ({
     label,
@@ -209,15 +243,35 @@ const Step7: React.FC<Props> = ({ data, permitData }) => {
                 </CardContent>
               </Card>
 
-              {/* BASIC INFO */}
-              <Section
-                title="Basic Information"
-                icon={<PersonOutline color="primary" />}
-              >
-                <InfoRow label="Business Name" value={data.business_name} />
-                <InfoRow label="Type" value={category?.category} />
-                <InfoRow label="Category" value={type?.type} />
-              </Section>
+            {/* BASIC INFO */}
+            <Section
+              title="Basic Information"
+              icon={<PersonOutline color="primary" />}
+            >
+              <InfoRow label="Business Name" value={data.business_name} />
+              <InfoRow label="Primary Category" value={primaryCategoryName || "-"} />
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                <CustomTypography.Label size="sm" weight="semibold">
+                  Categories:
+                </CustomTypography.Label>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 4, justifyContent: "flex-end", maxWidth: "60%" }}>
+                  {selectedCategoryNames.length > 0 ? (
+                    selectedCategoryNames.map((name, idx) => (
+                      <Chip
+                        key={idx}
+                        size="sm"
+                        variant={name === primaryCategoryName ? "solid" : "soft"}
+                        color={name === primaryCategoryName ? "primary" : "neutral"}
+                      >
+                        {name}{name === primaryCategoryName ? " (Primary)" : ""}
+                      </Chip>
+                    ))
+                  ) : (
+                    <CustomTypography.Body size="xs">-</CustomTypography.Body>
+                  )}
+                </div>
+              </div>
+            </Section>
 
               {/* CONTACT */}
               <Section

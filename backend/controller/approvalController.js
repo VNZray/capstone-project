@@ -10,10 +10,32 @@ export const getPendingEditRequests = async (req, res) => {
     const catMap = new Map();
     for (const c of cats) {
       if (!catMap.has(c.tourist_spot_id)) catMap.set(c.tourist_spot_id, []);
-      catMap.get(c.tourist_spot_id).push({ id: c.id, category: c.category, type_id: c.type_id });
+      catMap.get(c.tourist_spot_id).push({ id: c.id, category: c.category, parent_category: c.parent_category, level: c.level });
     }
     for (const row of rows) {
       row.current_categories = catMap.get(row.tourist_spot_id) || [];
+    }
+
+    try {
+      const spotIds = Array.from(new Set(rows.map(r => r.tourist_spot_id).filter(Boolean)));
+      const primaryImageBySpot = new Map();
+      for (const sid of spotIds) {
+        try {
+          const [imgSets] = await db.query("CALL GetTouristSpotImages(?)", [sid]);
+          const images = imgSets?.[0] || [];
+          const primary = images.find(i => i && (i.is_primary === 1 || i.is_primary === true));
+          const first = images[0];
+          const url = (primary?.file_url) || (first?.file_url) || null;
+          primaryImageBySpot.set(sid, url);
+        } catch (e) {
+          primaryImageBySpot.set(sid, null);
+        }
+      }
+      for (const row of rows) {
+        const pid = row.tourist_spot_id;
+        row.primary_image = row.primary_image || primaryImageBySpot.get(pid) || null;
+      }
+    } catch (e) {
     }
     res.json({ success: true, data: rows, message: "Pending edit requests retrieved successfully" });
   } catch (error) {
@@ -22,7 +44,7 @@ export const getPendingEditRequests = async (req, res) => {
   }
 };
 
-// Get all pending tourist spots (will be generalized later)
+// Get all pending tourist spots
 export const getPendingTouristSpots = async (req, res) => {
   try {
     const [data] = await db.query("CALL GetPendingTouristSpots()");
@@ -37,7 +59,7 @@ export const getPendingTouristSpots = async (req, res) => {
     const catMap = new Map();
     for (const c of cats) {
       if (!catMap.has(c.tourist_spot_id)) catMap.set(c.tourist_spot_id, []);
-      catMap.get(c.tourist_spot_id).push({ id: c.id, category: c.category, type_id: c.type_id });
+      catMap.get(c.tourist_spot_id).push({ id: c.id, category: c.category, parent_category: c.parent_category, level: c.level });
     }
     const schedMap = new Map();
     for (const s of scheds) {
@@ -61,7 +83,7 @@ export const getPendingTouristSpots = async (req, res) => {
   }
 };
 
-// Change status from pending to active (will be generalized later)
+// Change status from pending to active
 export const approveTouristSpot = async (req, res) => {
   try {
     const { id } = req.params;
@@ -101,7 +123,7 @@ export const rejectTouristSpot = async (req, res) => {
   }
 };
 
-// Approve an edit request for tourist spots (will be generalized later)
+// Approve an edit request for tourist spots
 export const approveEditRequest = async (req, res) => {
   try {
     const { id } = req.params;
@@ -116,7 +138,7 @@ export const approveEditRequest = async (req, res) => {
   }
 };
 
-// Reject an edit request for tourist spots (will be generalized later)
+// Reject an edit request for tourist spots
 export const rejectEditRequest = async (req, res) => {
   try {
     const { id } = req.params;
@@ -161,7 +183,6 @@ export const approveBusiness = async (req, res) => {
     const row = result?.[0];
     const successFlag = row?.success === 1;
     if (!successFlag) {
-      // Idempotent fallback: if already Active, return success
       try {
         const [checkSets] = await db.query("CALL GetBusinessById(?)", [id]);
         const businessRow = checkSets?.[0]?.[0];
@@ -169,7 +190,6 @@ export const approveBusiness = async (req, res) => {
           return res.json({ success: true, message: 'Business already active' });
         }
       } catch (e) {
-        // ignore and fall through
       }
       return res.status(400).json({ success: false, message: 'Business not found or not pending' });
     }
@@ -188,7 +208,6 @@ export const rejectBusiness = async (req, res) => {
     const row = result?.[0];
     const successFlag = row?.success === 1;
     if (!successFlag) {
-      // Idempotent fallback: if already Inactive, return success
       try {
         const [checkSets] = await db.query("CALL GetBusinessById(?)", [id]);
         const businessRow = checkSets?.[0]?.[0];
@@ -196,7 +215,6 @@ export const rejectBusiness = async (req, res) => {
           return res.json({ success: true, message: 'Business already inactive' });
         }
       } catch (e) {
-        // ignore and fall through
       }
       return res.status(400).json({ success: false, message: 'Business not found or not pending' });
     }

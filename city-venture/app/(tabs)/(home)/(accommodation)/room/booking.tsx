@@ -14,11 +14,12 @@ import debugLogger from '@/utils/debugLogger';
 import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
 import { Routes } from '@/routes/mainRoutes';
 import React, { useEffect } from 'react';
-import { Alert, Platform, StyleSheet, View } from 'react-native';
+import { Alert, Platform, StyleSheet, View, useColorScheme } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Billing from './booking/Billing';
 import BookingForm from './booking/BookingForm';
 import Summary from './booking/Summary';
+import { background } from '@/constants/color';
 
 const booking = () => {
   const insets = useSafeAreaInsets();
@@ -153,16 +154,58 @@ const booking = () => {
         Alert.alert('Payment', 'Invalid amount to charge.');
         return;
       }
-
-      // Validate booking has been created (needs booking ID)
-      if (!bookingData.id) {
-        Alert.alert(
-          'Payment',
-          'Please complete booking first before proceeding to payment.'
-        );
+      
+      // Validate required fields before creating booking
+      const validationError = validateBeforeSubmit();
+      if (validationError) {
+        Alert.alert('Cannot proceed', validationError);
         return;
       }
 
+      let bookingId = bookingData.id;
+      
+      // If booking hasn't been created yet, create it first
+      if (!bookingId) {
+        debugLogger({
+          title: 'Creating booking before payment',
+          data: { roomId: roomDetails?.id, userId: user?.id },
+        });
+
+        const bookingPayload: Booking = {
+          ...bookingData,
+          room_id: roomDetails?.id,
+          tourist_id: user?.id,
+          // Set booking_status to Reserved for online payments
+          booking_status: 'Reserved',
+          balance: Number(bookingData.total_price) - Number(paymentData.amount),
+        };
+
+        const created = await createFullBooking(bookingPayload, undefined);
+        
+        if (!created?.id) {
+          Alert.alert('Error', 'Failed to create booking. Please try again.');
+          return;
+        }
+
+        bookingId = created.id;
+        
+        // Update local booking state with returned id/status
+        setBookingData(
+          (prev) =>
+            ({
+              ...prev,
+              id: created.id,
+              booking_status: created.booking_status || prev.booking_status,
+            } as Booking)
+        );
+
+        debugLogger({
+          title: 'Booking created successfully',
+          data: { bookingId: created.id },
+          successMessage: 'Booking created, proceeding to payment...',
+        });
+      }
+      
       // Map selected payment method to PayMongo type
       const paymentMethodType = mapPaymentMethodType(
         paymentData.payment_method || 'gcash'
@@ -170,16 +213,16 @@ const booking = () => {
 
       debugLogger({
         title: 'Initiating Booking Payment',
-        data: {
-          bookingId: bookingData.id,
-          amount: paymentData.amount,
+        data: { 
+          bookingId, 
+          amount: paymentData.amount, 
           paymentMethodType,
           paymentType: paymentData.payment_type,
         },
       });
 
       // Call backend to create PayMongo checkout session
-      const response = await initiateBookingPayment(bookingData.id, {
+      const response = await initiateBookingPayment(bookingId, {
         payment_method_type: paymentMethodType,
         payment_type: paymentData.payment_type || 'Full Payment',
         amount: paymentData.amount,
@@ -199,32 +242,25 @@ const booking = () => {
       });
 
       // Navigate to online payment screen with checkout URL
-      router.push(
-        Routes.accommodation.room.onlinePayment({
-          checkoutUrl,
-          successUrl: `${
-            process.env.EXPO_PUBLIC_API_URL?.replace('/api', '') ||
-            'https://city-venture.com'
-          }/bookings/${bookingData.id}/payment-success`,
-          cancelUrl: `${
-            process.env.EXPO_PUBLIC_API_URL?.replace('/api', '') ||
-            'https://city-venture.com'
-          }/bookings/${bookingData.id}/payment-cancel`,
-          payment_method: paymentMethodType,
-          payment_id,
-          // pass booking data, billing/payment data as JSON strings
-          bookingData: JSON.stringify({
-            ...bookingData,
-            check_in_date: bookingData.check_in_date
-              ? new Date(bookingData.check_in_date as any).toISOString()
-              : undefined,
-            check_out_date: bookingData.check_out_date
-              ? new Date(bookingData.check_out_date as any).toISOString()
-              : undefined,
-          }),
-          paymentData: JSON.stringify(paymentData || {}),
-        })
-      );
+      router.push(Routes.accommodation.room.onlinePayment({
+        checkoutUrl,
+        successUrl: `${process.env.EXPO_PUBLIC_API_URL?.replace('/api', '') || 'https://city-venture.com'}/bookings/${bookingId}/payment-success`,
+        cancelUrl: `${process.env.EXPO_PUBLIC_API_URL?.replace('/api', '') || 'https://city-venture.com'}/bookings/${bookingId}/payment-cancel`,
+        payment_method: paymentMethodType,
+        payment_id,
+        // pass booking data, billing/payment data as JSON strings
+        bookingData: JSON.stringify({
+          ...bookingData,
+          id: bookingId,
+          check_in_date: bookingData.check_in_date
+            ? new Date(bookingData.check_in_date as any).toISOString()
+            : undefined,
+          check_out_date: bookingData.check_out_date
+            ? new Date(bookingData.check_out_date as any).toISOString()
+            : undefined,
+        }),
+        paymentData: JSON.stringify(paymentData || {}),
+      }));
     } catch (err: any) {
       console.error('[Booking Payment Error]', err);
       debugLogger({
@@ -258,25 +294,77 @@ const booking = () => {
   }, [paymentSuccess]);
 
   // Helper to determine if the current step's required fields are filled
-  const isStepValid = () => {
+  const isStepValid = (): boolean => {
     if (step === 'booking') {
-      // Validate booking form fields: pax, num_adults, num_children, trip_purpose, guest info
-      const paxValid =
-        typeof bookingData.pax === 'number' && bookingData.pax > 0;
-      const adultsValid =
-        typeof bookingData.num_adults === 'number' &&
-        bookingData.num_adults > 0;
-      // children can be 0 or more
-      const tripPurposeValid =
-        bookingData.trip_purpose && bookingData.trip_purpose.trim().length > 0;
-      // If guests are being filled in this step, check their validity
+      // Validate booking form fields
+      const paxValid = typeof bookingData.pax === 'number' && bookingData.pax > 0;
+      const datesValid = !!bookingData.check_in_date && !!bookingData.check_out_date;
+      const tripPurposeValid = !!bookingData.trip_purpose && bookingData.trip_purpose.trim().length > 0;
+      
+      // Check traveler type counts sum equals pax
+      const travelerCountsSum = 
+        (bookingData.local_counts || 0) + 
+        (bookingData.domestic_counts || 0) + 
+        (bookingData.foreign_counts || 0) + 
+        (bookingData.overseas_counts || 0);
+      const travelerCountsValid = travelerCountsSum > 0;
+      
+      return paxValid && datesValid && tripPurposeValid && travelerCountsValid;
     }
+    
+    if (step === 'payment') {
+      // Validate payment fields
+      const paymentMethodValid = !!paymentData.payment_method;
+      const amountValid = typeof paymentData.amount === 'number' && paymentData.amount > 0;
+      return paymentMethodValid && amountValid;
+    }
+    
     return true;
   };
 
+  // Get validation message for current step
+  const getValidationMessage = (): string | null => {
+    if (step === 'booking') {
+      if (typeof bookingData.pax !== 'number' || bookingData.pax < 1) {
+        return 'Please enter number of guests (pax)';
+      }
+      if (!bookingData.check_in_date || !bookingData.check_out_date) {
+        return 'Please select check-in and check-out dates';
+      }
+      if (!bookingData.trip_purpose || bookingData.trip_purpose.trim().length === 0) {
+        return 'Please select a trip purpose';
+      }
+      const travelerCountsSum = 
+        (bookingData.local_counts || 0) + 
+        (bookingData.domestic_counts || 0) + 
+        (bookingData.foreign_counts || 0) + 
+        (bookingData.overseas_counts || 0);
+      if (travelerCountsSum === 0) {
+        return 'Please select at least one traveler type and enter count';
+      }
+    }
+    
+    if (step === 'payment') {
+      if (!paymentData.payment_method) {
+        return 'Please select a payment method';
+      }
+      if (typeof paymentData.amount !== 'number' || paymentData.amount <= 0) {
+        return 'Invalid payment amount. Please check your booking details.';
+      }
+    }
+    
+    return null;
+  };
+
+  const colorScheme = useColorScheme();
+  const bgColor = colorScheme === 'dark' ? background.dark : background.light;
+
+  // Tab bar height approximation (adjust if needed)
+  const TAB_BAR_HEIGHT = 60;
+
   return (
     <PageContainer padding={0}>
-      <View>
+      <View style={{ flex: 1 }}>
         {step === 'booking' && (
           <BookingForm
             data={bookingData}
@@ -310,8 +398,9 @@ const booking = () => {
             style={[
               styles.fabBar,
               {
-                paddingBottom: baseBottom + insets.bottom,
+                paddingBottom: baseBottom + insets.bottom + TAB_BAR_HEIGHT,
                 paddingTop: Platform.OS === 'ios' ? 16 : 12,
+                backgroundColor: bgColor,
               },
             ]}
           >
@@ -354,7 +443,15 @@ const booking = () => {
               }}
               disabled={submitting || !isStepValid()}
               onPress={() => {
-                if (submitting || !isStepValid()) return;
+                if (submitting) return;
+                
+                // Validate before proceeding
+                const validationMsg = getValidationMessage();
+                if (validationMsg) {
+                  Alert.alert('Incomplete Information', validationMsg);
+                  return;
+                }
+                
                 if (step === 'booking') {
                   setStep('payment');
                 } else if (step === 'payment') {
@@ -392,6 +489,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    // subtle backdrop & blur alternative (blur not added by default RN)
+    // Add shadow for visibility
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 8,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(0,0,0,0.1)',
   },
 });

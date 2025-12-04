@@ -96,7 +96,7 @@ export default function Sidebar({
             onClick={onClose}
           />
           
-          {businessDetails?.business_type_id === 1 ? (
+          {businessDetails?.hasBooking === true ? (
             <>
               {(hasRole("Business Owner", "Manager") ||
                 canAny(
@@ -135,7 +135,7 @@ export default function Sidebar({
 
           {(hasRole("Business Owner", "Manager", "Sales Associate") ||
             canAny("view_promotions", "manage_promotions")) &&
-            (businessDetails?.business_type_id === 2 ? (
+            (businessDetails?.hasBooking === false ? (
               <NavItem
                 to={`${route}/promotion`}
                 label="Manage Promotions"
@@ -151,7 +151,7 @@ export default function Sidebar({
               />
             ))}
 
-          {businessDetails?.business_type_id === 1 &&
+          {businessDetails?.hasBooking === true &&
             (hasRole(
               "Business Owner",
               "Manager",
@@ -165,7 +165,7 @@ export default function Sidebar({
               />
             ))}
 
-          {businessDetails?.business_type_id === 1 &&
+          {businessDetails?.hasBooking === true &&
             hasRole("Business Owner") && (
               <NavItem
                 to={`${route}/subscription`}
@@ -175,7 +175,7 @@ export default function Sidebar({
               />
             )}
 
-          {businessDetails?.business_type_id === 2 &&
+          {businessDetails?.hasBooking === false &&
             hasRole("Business Owner") && (
               <NavItem
                 to={`${route}/subscription`}
@@ -186,7 +186,7 @@ export default function Sidebar({
             )}
 
           {/* Store section (Shop only) */}
-          {businessDetails?.business_type_id !== 1 &&
+          {businessDetails?.hasBooking === false &&
             hasRole("Business Owner", "Manager", "Sales Associate") && (
               <div className="sidebar-section">
                 <button

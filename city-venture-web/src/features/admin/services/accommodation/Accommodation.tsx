@@ -11,6 +11,8 @@ import { Search, Edit, Eye, Trash2, ListChecks, Home, Building2, Hotel, TreePine
 import { useState, useEffect } from "react";
 import { getData } from "@/src/services/Service";
 import type { BusinessDetails } from "@/src/types/Business";
+import type { Category } from "@/src/types/TypeAndCategeory";
+import { fetchCategoryTree } from "@/src/services/BusinessService";
 import placeholderImage from "@/src/assets/images/placeholder-image.png";
 
 const Accommodation: React.FC = () => {
@@ -18,6 +20,7 @@ const Accommodation: React.FC = () => {
   const [activeTab, setActiveTab] = useState("all");
   const [filter, setFilter] = useState<"active" | "inactive">("active");
   const [accommodations, setAccommodations] = useState<BusinessDetails[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   
   // Category icon mapping
@@ -39,50 +42,62 @@ const Accommodation: React.FC = () => {
     25: <TreePine size={16} />,
   };
 
-  // Category name mapping
-  const categoryNames: Record<number, string> = {
-    1: "Hotel",
-    2: "Resort",
-    10: "Hostel",
-    11: "Inn",
-    12: "B&B",
-    16: "Guesthouse",
-    17: "Motel",
-    18: "Serviced Apt",
-    19: "Villa",
-    20: "Lodge",
-    21: "Homestay",
-    22: "Cottage",
-    23: "Capsule",
-    24: "Boutique",
-    25: "Eco Resort",
+  // Flatten category tree to get all categories
+  const flattenCategories = (cats: Category[]): Category[] => {
+    const result: Category[] = [];
+    const flatten = (items: Category[]) => {
+      for (const cat of items) {
+        result.push(cat);
+        if (cat.children) flatten(cat.children);
+      }
+    };
+    flatten(cats);
+    return result;
+  };
+
+  const flatCategories = flattenCategories(categories);
+
+  // Get category name by ID
+  const getCategoryName = (id: number): string => {
+    const cat = flatCategories.find(c => c.id === id);
+    return cat?.title || `Category ${id}`;
   };
 
   // Generate dynamic tabs based on available categories in accommodations
   const tabs = [
     { id: "all", label: "All", icon: <ListChecks size={16} /> },
-    ...Array.from(new Set(accommodations.map((acc) => acc.business_category_id)))
+    ...Array.from(new Set(accommodations.flatMap((acc) => acc.category_ids || [])))
       .filter((categoryId) => categoryId !== undefined && categoryId !== null)
       .sort((a, b) => a - b)
       .map((categoryId) => ({
         id: String(categoryId),
-        label: categoryNames[categoryId] || `Category ${categoryId}`,
+        label: getCategoryName(categoryId),
         icon: categoryIcons[categoryId] || <Building2 size={16} />,
       })),
   ];
 
-  // Fetch accommodations on component mount
+  // Fetch accommodations and categories on component mount
   useEffect(() => {
     fetchAccommodations();
+    loadCategories();
   }, []);
+
+  const loadCategories = async () => {
+    try {
+      const tree = await fetchCategoryTree();
+      setCategories(tree);
+    } catch (error) {
+      console.error("Error fetching categories:", error);
+    }
+  };
 
   const fetchAccommodations = async () => {
     setLoading(true);
     try {
       const response = await getData("business");
-      // Filter for accommodation type businesses (type_id 1 is typically accommodation)
+      // Filter for accommodation type businesses (hasBooking = true)
       const accommodationData = Array.isArray(response)
-        ? response.filter((business: BusinessDetails) => business.business_type_id === 1)
+        ? response.filter((business: BusinessDetails) => business.hasBooking === true)
         : [];
       setAccommodations(accommodationData);
     } catch (error) {
@@ -105,7 +120,7 @@ const Accommodation: React.FC = () => {
         : acc.status?.toLowerCase() === "inactive";
 
     const matchesCategory =
-      activeTab === "all" || acc.business_category_id === parseInt(activeTab);
+      activeTab === "all" || (acc.category_ids || []).includes(parseInt(activeTab));
 
     return matchesSearch && matchesStatus && matchesCategory;
   });

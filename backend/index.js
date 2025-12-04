@@ -7,6 +7,7 @@ import { initializeSocket } from "./services/socketService.js";
 import { startTokenCleanupScheduler } from "./services/tokenCleanupService.js";
 import * as webhookQueueService from "./services/webhookQueueService.js";
 import { registerProcessor } from "./services/webhookProcessor.js";
+import db from "./db.js";
 
 import userRoutes from "./routes/users.js";
 import authRoutes from "./routes/auth.js";
@@ -272,28 +273,35 @@ routes.forEach((route) => {
 });
 
 // PayMongo redirect bridge:
-// PayMongo requires http/https URLs, but the mobile app expects a custom scheme (cityventure://orders/...).
+// PayMongo requires http/https URLs, but the mobile app expects a custom scheme (cityventure://...).
 // These handlers take the web redirect and bounce users back into the app, with a web fallback.
-const sendPaymongoRedirect = (res, orderId, status) => {
+const sendPaymongoRedirect = (res, referenceId, status, type = 'order') => {
   // Support both Expo Go (exp://) and production builds (cityventure://)
   const isExpoDev = process.env.EXPO_DEV === 'true';
   const expoHost = process.env.EXPO_DEV_HOST || '192.168.1.1:8081';
   
+  // Determine route path and query param based on type (order vs booking)
+  const isBooking = type === 'booking';
+  const routePath = isBooking ? '(accommodation)/room/booking' : '(checkout)/payment';
+  const paramName = isBooking ? 'bookingId' : 'orderId';
+  const queryParam = isBooking ? `paymentSuccess=1&bookingId=${referenceId}` : `orderId=${referenceId}`;
+  
   // Expo Go deep link format: exp://HOST:PORT/--/path
   // For Expo Router, the path should match the file-based route
-  // e.g., (screens)/payment-success maps to /--/(screens)/payment-success
   let appUrl;
   if (isExpoDev) {
     // Expo Go format - use query params for data
-    appUrl = `exp://${expoHost}/--/(screens)/payment-${status}?orderId=${orderId}`;
+    appUrl = `exp://${expoHost}/--/${routePath}-${status}?${queryParam}`;
   } else {
     // Production build with custom scheme
-    appUrl = `${MOBILE_DEEP_LINK_BASE}/(screens)/payment-${status}?orderId=${orderId}`;
+    appUrl = `cityventure://${routePath}-${status}?${queryParam}`;
   }
   
-  console.log(`[PayMongo Redirect] isExpoDev: ${isExpoDev}, appUrl: ${appUrl}`);
+  console.log(`[PayMongo Redirect] type: ${type}, isExpoDev: ${isExpoDev}, appUrl: ${appUrl}`);
   
-  const webFallback = `${FRONTEND_BASE_URL}/orders/${orderId}/payment-${status}`;
+  const webFallback = isBooking 
+    ? `${FRONTEND_BASE_URL}/bookings/${referenceId}/payment-${status}`
+    : `${FRONTEND_BASE_URL}/orders/${referenceId}/payment-${status}`;
 
   // Prevent caching to avoid redirect loops
   res.set({
@@ -315,8 +323,8 @@ const sendPaymongoRedirect = (res, orderId, status) => {
     <p><a href="${appUrl}">Click here if not redirected automatically</a></p>
     <script>
       // Redirect ONCE using sessionStorage to prevent loops
-      if (!sessionStorage.getItem('payment_redirected_${orderId}')) {
-        sessionStorage.setItem('payment_redirected_${orderId}', 'true');
+      if (!sessionStorage.getItem('payment_redirected_${referenceId}')) {
+        sessionStorage.setItem('payment_redirected_${referenceId}', 'true');
         window.location.replace('${appUrl}');
         
         // Fallback to web after 2 seconds if app doesn't open
@@ -345,6 +353,52 @@ app.get("/orders/:orderId/payment-cancel", (req, res) => {
     return res.status(400).send("Missing orderId");
   }
   sendPaymongoRedirect(res, orderId, "cancel");
+});
+
+// Booking payment redirect routes (for accommodation bookings)
+// These routes check the actual payment status before redirecting
+app.get("/bookings/:bookingId/payment-success", async (req, res) => {
+  const bookingId = req.params.bookingId;
+  if (!bookingId) {
+    return res.status(400).send("Missing bookingId");
+  }
+  
+  try {
+    // Check the actual payment status from the database
+    // The webhook may have already updated this to 'failed'
+    const [rows] = await db.query(
+      `SELECT p.status as payment_status, p.provider_reference
+       FROM payment p
+       WHERE p.payment_for_id = ? AND p.payment_for = 'booking'
+       ORDER BY p.created_at DESC
+       LIMIT 1`,
+      [bookingId]
+    );
+    
+    const payment = rows?.[0];
+    
+    // If payment exists and is marked as failed, redirect to cancel flow
+    if (payment && (payment.payment_status === 'failed' || payment.payment_status === 'cancelled')) {
+      console.log(`[PayMongo Redirect] Payment for booking ${bookingId} is ${payment.payment_status}, redirecting to cancel`);
+      return sendPaymongoRedirect(res, bookingId, "cancel", "booking");
+    }
+    
+    // Otherwise proceed with success redirect
+    // Note: The mobile app will still verify the actual PayMongo status
+    sendPaymongoRedirect(res, bookingId, "success", "booking");
+  } catch (error) {
+    console.error(`[PayMongo Redirect] Error checking payment status:`, error);
+    // On error, proceed with success and let mobile verify
+    sendPaymongoRedirect(res, bookingId, "success", "booking");
+  }
+});
+
+app.get("/bookings/:bookingId/payment-cancel", (req, res) => {
+  const bookingId = req.params.bookingId;
+  if (!bookingId) {
+    return res.status(400).send("Missing bookingId");
+  }
+  sendPaymongoRedirect(res, bookingId, "cancel", "booking");
 });
 
 // ========== ENVIRONMENT VALIDATION ==========
