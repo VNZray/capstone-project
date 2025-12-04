@@ -236,7 +236,7 @@ export async function deleteBooking(req, res) {
 /**
  * Initiate payment for a booking using PayMongo Checkout Session
  * POST /api/bookings/:id/initiate-payment
- * Body: { 
+ * Body: {
  *   payment_method_type: 'gcash' | 'paymaya' | 'grab_pay' | 'card' | etc.,
  *   payment_type?: 'Full Payment' | 'Partial Payment',
  *   amount?: number (optional - defaults to booking total_price or balance)
@@ -259,7 +259,7 @@ export async function initiateBookingPayment(req, res) {
 
     // 1. Fetch booking details
     const [bookingRows] = await db.query(
-      `SELECT 
+      `SELECT
         b.id, b.total_price, b.balance, b.booking_status, b.tourist_id, b.business_id, b.room_id,
         b.check_in_date, b.check_out_date, b.pax,
         CONCAT(r.room_type, ' - ', r.room_number) as room_name, r.room_price as price_per_night,
@@ -362,12 +362,16 @@ export async function initiateBookingPayment(req, res) {
     const payment_id = uuidv4();
     const created_at = new Date();
 
+    // Determine payment type: Full Payment if amount >= total_price, else Partial Payment
+    const isFullPayment = paymentAmount >= booking.total_price;
+    const actualPaymentType = isFullPayment ? 'Full Payment' : 'Partial Payment';
+
     await db.query(
       `CALL InsertPayment(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         payment_id,
         'Tourist',                  // payer_type
-        'online',                   // payment_type
+        actualPaymentType,          // payment_type (Full Payment or Partial Payment)
         payment_method_type,        // payment_method
         paymentAmount,              // amount in PHP
         'pending',                  // status
@@ -380,8 +384,8 @@ export async function initiateBookingPayment(req, res) {
 
     // Store provider reference (Payment Intent ID) and metadata
     await db.query(
-      `UPDATE payment 
-       SET provider_reference = ?, 
+      `UPDATE payment
+       SET provider_reference = ?,
            currency = 'PHP',
            metadata = ?
        WHERE id = ?`,
@@ -416,6 +420,26 @@ export async function initiateBookingPayment(req, res) {
   } catch (error) {
     console.error("[BookingPayment] Error initiating payment:", error);
 
+    // If payment creation failed and booking was just created, clean up the booking
+    try {
+      const { id: booking_id } = req.params;
+      const [bookingRows] = await db.query(
+        `SELECT id, booking_status FROM booking WHERE id = ?`,
+        [booking_id]
+      );
+
+      if (bookingRows && bookingRows.length > 0) {
+        const booking = bookingRows[0];
+        // Only delete if booking is still in Reserved or Pending status (not yet confirmed)
+        if (['Reserved', 'Pending'].includes(booking.booking_status)) {
+          await db.query(`CALL DeleteBooking(?)`, [booking_id]);
+          console.log(`[BookingPayment] 🗑️ Deleted booking ${booking_id} due to payment failure`);
+        }
+      }
+    } catch (cleanupError) {
+      console.error("[BookingPayment] Error cleaning up booking:", cleanupError);
+    }
+
     if (error.message && error.message.includes('PayMongo')) {
       return res.status(502).json({
         success: false,
@@ -434,10 +458,10 @@ export async function initiateBookingPayment(req, res) {
 /**
  * Verify payment status for a booking
  * GET /api/bookings/:id/verify-payment/:paymentId
- * 
+ *
  * This endpoint checks the actual PayMongo Payment Intent status
  * to confirm whether a payment was successful or failed.
- * 
+ *
  * Auth: Required (Tourist role)
  */
 export async function verifyBookingPayment(req, res) {
@@ -455,7 +479,7 @@ export async function verifyBookingPayment(req, res) {
 
     // 1. Fetch booking and payment details
     const [rows] = await db.query(
-      `SELECT 
+      `SELECT
         b.id as booking_id, b.tourist_id, b.booking_status, b.total_price, b.balance,
         p.id as payment_id, p.provider_reference, p.status as payment_status, p.amount,
         t.user_id as tourist_user_id
@@ -485,7 +509,7 @@ export async function verifyBookingPayment(req, res) {
 
     // 3. Check if we have a PayMongo Payment Intent ID
     const paymentIntentId = record.provider_reference;
-    
+
     if (!paymentIntentId) {
       return res.status(400).json({
         success: false,
@@ -507,7 +531,7 @@ export async function verifyBookingPayment(req, res) {
     // - awaiting_next_action: Waiting for 3DS or redirect completion
     // - processing: Payment is being processed
     // - succeeded: Payment was successful
-    
+
     let verified = false;
     let paymentVerified = 'pending';
     let message = '';
@@ -518,28 +542,28 @@ export async function verifyBookingPayment(req, res) {
         paymentVerified = 'success';
         message = 'Payment verified successfully';
         break;
-        
+
       case 'awaiting_payment_method':
         // Payment failed or was cancelled - need new payment method
         verified = false;
         paymentVerified = 'failed';
         message = lastPaymentError?.message || 'Payment was cancelled or declined. Please try again.';
         break;
-        
+
       case 'awaiting_next_action':
         // Still waiting for user action
         verified = false;
         paymentVerified = 'pending';
         message = 'Payment is still pending user authorization';
         break;
-        
+
       case 'processing':
         // Payment is processing
         verified = false;
         paymentVerified = 'processing';
         message = 'Payment is being processed. Please wait...';
         break;
-        
+
       default:
         verified = false;
         paymentVerified = 'unknown';
@@ -549,24 +573,31 @@ export async function verifyBookingPayment(req, res) {
     // 6. Update local payment record if verified successful
     if (verified && record.payment_status === 'pending') {
       await db.query(
-        `UPDATE payment SET status = 'Paid' WHERE id = ?`,
+        `UPDATE payment SET status = 'paid' WHERE id = ?`,
         [paymentId]
       );
-      
-      // Update booking status to Confirmed/Reserved
+
+      // Update booking status to Confirmed
       await db.query(
         `UPDATE booking SET booking_status = 'Confirmed' WHERE id = ? AND booking_status IN ('Pending', 'Reserved')`,
         [booking_id]
       );
-      
-      console.log(`[VerifyPayment] ✅ Payment ${paymentId} verified and marked as Paid`);
+
+      console.log(`[VerifyPayment] ✅ Payment ${paymentId} verified and marked as paid`);
+      console.log(`[VerifyPayment] ✅ Booking ${booking_id} confirmed`);
     } else if (paymentVerified === 'failed' && record.payment_status === 'pending') {
       // Mark local payment as failed
       await db.query(
         `UPDATE payment SET status = 'failed' WHERE id = ?`,
         [paymentId]
       );
-      console.log(`[VerifyPayment] ❌ Payment ${paymentId} marked as failed`);
+
+      // Delete the booking if payment failed (only if still in Reserved/Pending status)
+      if (['Reserved', 'Pending'].includes(record.booking_status)) {
+        await db.query(`CALL DeleteBooking(?)`, [booking_id]);
+        console.log(`[VerifyPayment] ❌ Payment ${paymentId} marked as failed`);
+        console.log(`[VerifyPayment] 🗑️ Booking ${booking_id} deleted due to payment failure`);
+      }
     }
 
     return res.status(200).json({
