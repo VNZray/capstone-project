@@ -15,6 +15,11 @@ router.get('/pending-businesses', approvalController.getPendingBusinesses);
 router.put('/approve-business/:id', approvalController.approveBusiness);
 router.put('/reject-business/:id', approvalController.rejectBusiness);
 
+// Event approval endpoints
+router.get('/pending-events', approvalController.getPendingEvents);
+router.put('/approve-event/:id', approvalController.approveEvent);
+router.put('/reject-event/:id', approvalController.rejectEvent);
+
 // Tourist spot edit request endpoints
 router.get('/pending-edits', approvalController.getPendingEditRequests);
 router.put('/approve-edit/:id', approvalController.approveEditRequest);

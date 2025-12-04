@@ -1,8 +1,7 @@
 import React from "react";
 import { GoogleMap, Marker, useJsApiLoader } from "@react-google-maps/api";
 import Typography from "@/src/components/Typography";
-
-const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
+import { googleMapsLoaderOptions } from "@/src/lib/googleMaps";
 
 type Props = {
   latitude: string | number | undefined;
@@ -12,9 +11,7 @@ type Props = {
 };
 
 const MapInput: React.FC<Props> = ({ latitude, longitude, onChange, height }) => {
-  const { isLoaded } = useJsApiLoader({
-    googleMapsApiKey: apiKey!,
-  });
+  const { isLoaded } = useJsApiLoader(googleMapsLoaderOptions);
 
   const center = {
     lat: Number(latitude) || 14.5995, // fallback: Manila

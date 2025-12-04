@@ -51,6 +51,8 @@ import Report from "@/src/features/admin/report/Report";
 import Accommodation from "@/src/features/admin/services/accommodation/Accommodation";
 import Shop from "@/src/features/admin/services/shop/Shop";
 import Event from "@/src/features/admin/services/event/Event";
+import EventDetails from "@/src/features/admin/services/event/EventDetails";
+import EventReviews from "@/src/features/admin/services/event/reviews/Reviews";
 import Spot from "@/src/features/admin/services/tourist-spot/Spot";
 import TouristSpotDetailsScreen from "@/src/features/admin/services/tourist-spot/TouristSpotDetailsScreen";
 import TouristSpotReviews from "@/src/features/admin/services/tourist-spot/reviews/Reviews";
@@ -515,6 +517,22 @@ export default function AppRoutes() {
             element={
               <ProtectedRoute requiredRoles={TOURISM_ROLES}>
                 <Event />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path={`${tourism}/services/event/:id`}
+            element={
+              <ProtectedRoute requiredRoles={TOURISM_ROLES}>
+                <EventDetails />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path={`${tourism}/services/event/:id/reviews`}
+            element={
+              <ProtectedRoute requiredRoles={TOURISM_ROLES}>
+                <EventReviews />
               </ProtectedRoute>
             }
           />

@@ -206,3 +206,132 @@ export const rejectBusiness = async (req, res) => {
     return handleDbError(error, res);
   }
 };
+
+// ==================== EVENT APPROVAL WORKFLOW ====================
+
+/**
+ * Helper function to merge event data with images and tags
+ */
+function mergeEventData(events, images = [], tags = []) {
+  const imgMap = new Map();
+  const tagMap = new Map();
+
+  for (const img of images) {
+    if (!imgMap.has(img.event_id)) imgMap.set(img.event_id, []);
+    imgMap.get(img.event_id).push(img);
+  }
+
+  for (const tag of tags) {
+    if (!tagMap.has(tag.event_id)) tagMap.set(tag.event_id, []);
+    tagMap.get(tag.event_id).push(tag);
+  }
+
+  return events.map(event => ({
+    ...event,
+    images: imgMap.get(event.id) || [],
+    tags: tagMap.get(event.id) || [],
+  }));
+}
+
+/**
+ * Get all pending events for approval
+ */
+export const getPendingEvents = async (req, res) => {
+  try {
+    const [data] = await db.query("CALL GetPendingEvents()");
+    const events = data[0] || [];
+    const images = data[1] || [];
+    const tags = data[2] || [];
+
+    const merged = mergeEventData(events, images, tags);
+
+    res.json({
+      success: true,
+      data: merged,
+      message: 'Pending events retrieved successfully'
+    });
+  } catch (error) {
+    console.error('Error fetching pending events:', error);
+    return handleDbError(error, res);
+  }
+};
+
+/**
+ * Approve an event (set status from pending -> approved)
+ */
+export const approveEvent = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user?.id || null;
+
+    const [result] = await db.query("CALL ApproveEvent(?, ?)", [id, userId]);
+    
+    if (!result[0] || result[0].length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'Event not found or not in pending status'
+      });
+    }
+
+    const event = result[0][0];
+    if (event.status !== 'approved') {
+      return res.status(400).json({
+        success: false,
+        message: 'Event could not be approved'
+      });
+    }
+
+    res.json({
+      success: true,
+      data: event,
+      message: 'Event approved successfully'
+    });
+  } catch (error) {
+    console.error('Error approving event:', error);
+    return handleDbError(error, res);
+  }
+};
+
+/**
+ * Reject an event (set status from pending -> rejected)
+ */
+export const rejectEvent = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { reason } = req.body;
+    const userId = req.user?.id || null;
+
+    if (!reason) {
+      return res.status(400).json({
+        success: false,
+        message: 'Rejection reason is required'
+      });
+    }
+
+    const [result] = await db.query("CALL RejectEvent(?, ?, ?)", [id, userId, reason]);
+    
+    if (!result[0] || result[0].length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'Event not found or not in pending status'
+      });
+    }
+
+    const event = result[0][0];
+    if (event.status !== 'rejected') {
+      return res.status(400).json({
+        success: false,
+        message: 'Event could not be rejected'
+      });
+    }
+
+    res.json({
+      success: true,
+      data: event,
+      message: 'Event rejected successfully'
+    });
+  } catch (error) {
+    console.error('Error rejecting event:', error);
+    return handleDbError(error, res);
+  }
+};

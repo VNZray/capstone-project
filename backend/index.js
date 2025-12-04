@@ -48,6 +48,7 @@ import feedbackReplyRoutes from "./routes/feedback-replies.js";
 import feedbackReviewPhotoRoutes from "./routes/feedback-review-photos.js";
 import roomPhotosRoutes from "./routes/room-photos.js";
 import tourismStaffManagementRoutes from "./routes/tourism_staff_management.js";
+import eventRoutes from "./routes/event.js";
 
 const app = express();
 const PORT = 3000;
@@ -147,6 +148,11 @@ const routeSections = [
         path: "/api/tourist-spots",
         handler: touristSpotRoutes,
         label: "Tourist Spots",
+      },
+      {
+        path: "/api/events",
+        handler: eventRoutes,
+        label: "Events",
       },
       { path: "/api/reports", handler: reportRoutes, label: "Reports" },
       {

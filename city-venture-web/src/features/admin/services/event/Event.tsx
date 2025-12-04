@@ -1,114 +1,268 @@
-import Container from "@/src/components/Container";
-import IconButton from "@/src/components/IconButton";
-import PageContainer from "@/src/components/PageContainer";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
+import { IoAdd } from "react-icons/io5";
+import { Star, Search } from "lucide-react";
 import Typography from "@/src/components/Typography";
+import Button from "@/src/components/Button";
+import Container from "@/src/components/Container";
+import PageContainer from "@/src/components/PageContainer";
+import Table, { type TableColumn } from "@/src/components/ui/Table";
 import DynamicTab from "@/src/components/ui/DynamicTab";
-import Card from "@/src/components/Card";
 import NoDataFound from "@/src/components/NoDataFound";
-import { Refresh, MoreVert } from "@mui/icons-material";
-import { Input, Option, Select, Menu, MenuItem, Dropdown, MenuButton, ListItemDecorator, Chip } from "@mui/joy";
-import { Search, Edit, Eye, Trash2, ListChecks, Calendar, Music, Utensils, PartyPopper, Theater, Trophy, Heart } from "lucide-react";
-import { useState, useEffect } from "react";
-import { getData } from "@/src/services/Service";
-import type { BusinessDetails } from "@/src/types/Business";
-import placeholderImage from "@/src/assets/images/placeholder-image.png";
+import IconButton from "@/src/components/IconButton";
+import { Input, Chip, Stack } from "@mui/joy";
+import { apiService } from "@/src/utils/api";
+import type { Event as EventType, EventCategory, EventStatus } from "@/src/types/Event";
+import { EventForm, FeaturedEventsModal } from "./components";
 
-const Event: React.FC = () => {
+// Status color mapping
+const statusColors: Record<EventStatus, "success" | "warning" | "danger" | "neutral" | "primary"> = {
+  draft: "neutral",
+  pending: "warning",
+  approved: "primary",
+  rejected: "danger",
+  published: "success",
+  cancelled: "danger",
+  completed: "neutral",
+  archived: "neutral",
+};
+
+// Format date for display
+const formatDate = (dateStr: string) => {
+  const date = new Date(dateStr);
+  return date.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+};
+
+const Event = () => {
   const [searchQuery, setSearchQuery] = useState("");
-  const [activeTab, setActiveTab] = useState("all");
-  const [filter, setFilter] = useState<"active" | "inactive">("active");
-  const [events, setEvents] = useState<BusinessDetails[]>([]);
+  const [isAddEventModalVisible, setAddEventModalVisible] = useState(false);
+  const [isEditEventModalVisible, setEditEventModalVisible] = useState(false);
+  const [isFeaturedModalOpen, setFeaturedModalOpen] = useState(false);
+  const [selectedEventForEdit, setSelectedEventForEdit] = useState<EventType | undefined>(undefined);
+  const [events, setEvents] = useState<EventType[]>([]);
+  const [categories, setCategories] = useState<EventCategory[]>([]);
   const [loading, setLoading] = useState(true);
-  
-  // Category icon mapping for event types
-  const categoryIcons: Record<number, React.ReactNode> = {
-    26: <Calendar size={16} />,
-    27: <Music size={16} />,
-    28: <Utensils size={16} />,
-    29: <PartyPopper size={16} />,
-    30: <Theater size={16} />,
-    31: <Trophy size={16} />,
-    32: <Heart size={16} />,
-  };
+  const [error, setError] = useState<string | null>(null);
+  const [categoryTab, setCategoryTab] = useState<string>("All");
+  const [categoryTabs, setCategoryTabs] = useState<Array<{ id: string; label: string }>>([{ id: "All", label: "All" }]);
+  const navigate = useNavigate();
+  const location = useLocation();
 
-  // Category name mapping
-  const categoryNames: Record<number, string> = {
-    26: "Festival",
-    27: "Concert",
-    28: "Food Fair",
-    29: "Celebration",
-    30: "Exhibition",
-    31: "Sports",
-    32: "Cultural",
-  };
-
-  // Generate dynamic tabs based on available categories in events
-  const tabs = [
-    { id: "all", label: "All", icon: <ListChecks size={16} /> },
-    ...Array.from(new Set(events.map((event) => event.business_category_id)))
-      .filter((categoryId) => categoryId !== undefined && categoryId !== null)
-      .sort((a, b) => a - b)
-      .map((categoryId) => ({
-        id: String(categoryId),
-        label: categoryNames[categoryId] || `Category ${categoryId}`,
-        icon: categoryIcons[categoryId] || <Calendar size={16} />,
-      })),
-  ];
-
-  // Fetch events on component mount
-  useEffect(() => {
-    fetchEvents();
-  }, []);
-
-  const fetchEvents = async () => {
+  const fetchEventsAndCategories = useCallback(async () => {
     setLoading(true);
+    setError(null);
     try {
-      const response = await getData("business");
-      // Filter for event type businesses (type_id 3 is typically events)
-      const eventData = Array.isArray(response)
-        ? response.filter((business: BusinessDetails) => business.business_type_id === 3)
-        : [];
-      setEvents(eventData);
+      const [eventsData, categoriesData] = await Promise.all([
+        apiService.getEvents(),
+        apiService.getEventCategories(),
+      ]);
+      setEvents(eventsData);
+      setCategories(categoriesData);
+      
+      // Build category tabs from categories
+      const list = ["All", ...categoriesData.map((c: EventCategory) => c.name)];
+      setCategoryTabs(list.map((c) => ({ id: c, label: c })));
     } catch (error) {
-      console.error("Error fetching events:", error);
+      console.error("Error:", error);
+      setError("An unexpected error occurred");
     } finally {
       setLoading(false);
     }
+  }, []);
+
+  useEffect(() => {
+    fetchEventsAndCategories();
+  }, [fetchEventsAndCategories]);
+
+  const handleSearch = (query: string) => {
+    setSearchQuery(query);
   };
 
-  // Filter events based on search, status, and category
-  const filteredEvents = events.filter((event) => {
-    const matchesSearch =
-      event.business_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      event.address?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      event.barangay_name?.toLowerCase().includes(searchQuery.toLowerCase());
-
-    const matchesStatus =
-      filter === "active"
-        ? event.status?.toLowerCase() === "active"
-        : event.status?.toLowerCase() === "inactive";
-
-    const matchesCategory =
-      activeTab === "all" || event.business_category_id === parseInt(activeTab);
-
-    return matchesSearch && matchesStatus && matchesCategory;
-  });
-
-  const handleView = (id: string) => {
-    console.log("View event:", id);
-    // Navigate to view page
+  const handleViewDetails = (event: EventType) => {
+    navigate(`/tourism/services/event/${event.id}`);
   };
 
-  const handleEdit = (id: string) => {
-    console.log("Edit event:", id);
-    // Navigate to edit page
+  const handleViewReviews = (event: EventType) => {
+    navigate(`/tourism/services/event/${event.id}/reviews`);
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this event?")) return;
-    console.log("Delete event:", id);
-    // Implement delete logic
+  const handleEditEvent = (event: EventType) => {
+    setSelectedEventForEdit(event);
+    setEditEventModalVisible(true);
   };
+
+  const handleCloseEditModal = () => {
+    setEditEventModalVisible(false);
+    setSelectedEventForEdit(undefined);
+  };
+
+  const handleEventUpdated = () => {
+    fetchEventsAndCategories();
+    setEditEventModalVisible(false);
+    setSelectedEventForEdit(undefined);
+  };
+
+  const filteredEvents = useMemo(() => {
+    let filtered = events;
+
+    // Filter by category tab
+    if (categoryTab && categoryTab !== "All") {
+      filtered = filtered.filter((event) => event.category_name === categoryTab);
+    }
+
+    // Filter by search query
+    if (searchQuery) {
+      filtered = filtered.filter((event) =>
+        event.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        event.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        event.venue_name?.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+    }
+
+    return filtered;
+  }, [events, searchQuery, categoryTab]);
+
+  // Define table columns - matching tourist spot style
+  const columns: TableColumn<EventType>[] = [
+    {
+      id: "name",
+      label: "Name",
+      minWidth: 300,
+      render: (row) => (
+        <Typography.Body weight="normal">
+          {row.name}
+        </Typography.Body>
+      ),
+    },
+    {
+      id: "description",
+      label: "Description",
+      minWidth: 300,
+      render: (row) => (
+        <Typography.Body sx={{ opacity: 0.85 }}>
+          {row.description?.substring(0, 60)}{row.description && row.description.length > 60 ? "..." : ""}
+        </Typography.Body>
+      ),
+    },
+    {
+      id: "date",
+      label: "Date",
+      minWidth: 180,
+      render: (row) => (
+        <Typography.Body sx={{ opacity: 0.85 }}>
+          {formatDate(row.start_date)}
+          {row.end_date && row.end_date !== row.start_date && ` - ${formatDate(row.end_date)}`}
+        </Typography.Body>
+      ),
+    },
+    {
+      id: "category",
+      label: "Category",
+      minWidth: 150,
+      render: (row) => (
+        <Stack direction="row" spacing={0.5} sx={{ flexWrap: "wrap" }}>
+          {row.category_name ? (
+            <Chip color="primary" variant="soft" size="md">
+              {row.category_name}
+            </Chip>
+          ) : (
+            <Typography.Body sx={{ opacity: 0.5 }}>Uncategorized</Typography.Body>
+          )}
+        </Stack>
+      ),
+    },
+    {
+      id: "status",
+      label: "Status",
+      minWidth: 120,
+      render: (row) => (
+        <Chip
+          color={statusColors[row.status]}
+          variant="soft"
+          size="md"
+        >
+          {row.status}
+        </Chip>
+      ),
+    },
+    {
+      id: "is_featured",
+      label: "Featured",
+      minWidth: 100,
+      align: "center",
+      render: (row) => (
+        row.is_featured ? (
+          <Star size={18} fill="gold" color="gold" />
+        ) : null
+      ),
+    },
+    {
+      id: "actions",
+      label: "Actions",
+      minWidth: 200,
+      render: (row) => (
+        <Stack direction="row" spacing={0.75}>
+          <Button
+            variant="outlined"
+            colorScheme="primary"
+            size="sm"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleEditEvent(row);
+            }}
+          >
+            Edit
+          </Button>
+          <Button
+            variant="outlined"
+            colorScheme="primary"
+            size="sm"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleViewReviews(row);
+            }}
+          >
+            Reviews
+          </Button>
+        </Stack>
+      ),
+    },
+  ];
+
+  // Handle navigation state coming from the details screen requesting to open edit modal
+  useEffect(() => {
+    const state = location.state as { editEventId?: string } | null;
+    if (state?.editEventId) {
+      const openEdit = async () => {
+        const { editEventId } = state;
+        if (!editEventId) {
+          navigate(".", { replace: true, state: {} });
+          return;
+        }
+        try {
+          // Prefer existing in-memory list, fallback to API
+          let eventToEdit = events.find((e) => e.id === editEventId);
+          if (!eventToEdit) {
+            eventToEdit = await apiService.getEventById(editEventId);
+          }
+          setSelectedEventForEdit(eventToEdit);
+          setEditEventModalVisible(true);
+        } catch (e) {
+          console.error("Failed to prepare edit from details:", e);
+          setSelectedEventForEdit(undefined);
+          setEditEventModalVisible(true);
+        } finally {
+          // Clear state to avoid reopening on re-render/navigation
+          navigate(".", { replace: true, state: {} });
+        }
+      };
+      openEdit();
+    }
+  }, [location.state, events, navigate]);
 
   return (
     <PageContainer>
@@ -130,8 +284,26 @@ const Event: React.FC = () => {
               minWidth: 240,
             }}
           >
-            <Typography.Header>Listed Events</Typography.Header>
+            <Typography.Header>Event Management</Typography.Header>
+            <Button
+              startDecorator={<Star />}
+              colorScheme="secondary"
+              variant="solid"
+              onClick={() => setFeaturedModalOpen(true)}
+            >
+              Featured
+            </Button>
           </div>
+
+          <IconButton
+            onClick={() => setAddEventModalVisible(true)}
+            size="lg"
+            floating
+            floatPosition="bottom-right"
+            hoverEffect="rotate"
+          >
+            <IoAdd />
+          </IconButton>
         </Container>
 
         {/* Search */}
@@ -143,131 +315,106 @@ const Event: React.FC = () => {
         >
           <Input
             startDecorator={<Search />}
-            placeholder="Search events by name, address, or location"
+            placeholder="Search Events"
             size="lg"
             fullWidth
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            sx={{ flex: 1 }}
+            onChange={(e) => handleSearch(e.target.value)}
           />
-          {/* Status Filter */}
-          <Select
-            size="lg"
-            value={filter}
-            onChange={(_, val) => setFilter(val as typeof filter)}
-          >
-            <Option value="active">Active</Option>
-            <Option value="inactive">Inactive</Option>
-          </Select>
-
-          <IconButton
-            variant="solid"
-            colorScheme="black"
-            size="lg"
-            onClick={fetchEvents}
-          >
-            <Refresh />
-          </IconButton>
         </Container>
 
-        {/* Tabs */}
+        {/* Category filter tabs */}
         <DynamicTab
-          tabs={tabs}
-          activeTabId={activeTab}
-          onChange={(tabId) => {
-            setActiveTab(String(tabId));
-          }}
+          padding="12px 20px 0 20px"
+          tabs={categoryTabs}
+          activeTabId={categoryTab}
+          onChange={(tabId) => setCategoryTab(String(tabId))}
         />
       </Container>
 
       <Container background="transparent" padding="0">
         {loading ? (
+          <Container
+            align="center"
+            justify="center"
+            padding="4rem"
+            style={{ minHeight: "400px" }}
+          >
+            <div className="loading-spinner" />
+            <Typography.Body size="normal" sx={{ color: "#666", marginTop: "1rem" }}>
+              Loading events...
+            </Typography.Body>
+          </Container>
+        ) : error ? (
+          <Container
+            align="center"
+            justify="center"
+            padding="4rem"
+            style={{ minHeight: "400px" }}
+          >
+            <Typography.Body size="normal" sx={{ color: "#ff4d4d" }}>
+              Error: {error}
+            </Typography.Body>
+          </Container>
+        ) : events.length === 0 ? (
           <NoDataFound
             icon="database"
-            title="Loading..."
-            message="Fetching events, please wait."
-          />
-        ) : filteredEvents.length === 0 ? (
+            title="No Events Listed"
+            message="No events yet. Add your first event above."
+          >
+            <Button
+              onClick={() => setAddEventModalVisible(true)}
+              startDecorator={<IoAdd size={20} />}
+              colorScheme="primary"
+              variant="solid"
+              size="md"
+            >
+              Add Event
+            </Button>
+          </NoDataFound>
+        ) : filteredEvents.length === 0 && searchQuery.trim() !== "" ? (
           <NoDataFound
-            icon={searchQuery ? "search" : "database"}
-            title={searchQuery ? "No Search Results" : "No Events"}
-            message={
-              searchQuery
-                ? `No events match "${searchQuery}". Try a different search term.`
-                : "No events found. Add your first event to get started."
-            }
+            icon="search"
+            title="No Results Found"
+            message={`No events match "${searchQuery}". Try a different search term.`}
           />
         ) : (
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))",
-              gap: "20px",
-            }}
-          >
-            {filteredEvents.map((event) => (
-              <Card
-                key={event.id}
-                variant="grid"
-                image={event.business_image || placeholderImage}
-                aspectRatio="16/9"
-                title={event.business_name}
-                subtitle={
-                  event.address ||
-                  `${event.barangay_name || ""}, ${event.municipality_name || ""}`
-                }
-                size="default"
-                elevation={2}
-              >
-                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                  <Chip
-                    size="sm"
-                    color={event.status === "active" ? "success" : "neutral"}
-                  >
-                    {event.status}
-                  </Chip>
-                  <Dropdown>
-                    <MenuButton
-                      slots={{ root: IconButton }}
-                      slotProps={{
-                        root: {
-                          variant: "plain",
-                          size: "sm",
-                        } as any,
-                      }}
-                    >
-                      <MoreVert />
-                    </MenuButton>
-                    <Menu placement="bottom-end">
-                      <MenuItem onClick={() => handleView(event.id || "")}>
-                        <ListItemDecorator>
-                          <Eye size={18} />
-                        </ListItemDecorator>
-                        View Details
-                      </MenuItem>
-                      <MenuItem onClick={() => handleEdit(event.id || "")}>
-                        <ListItemDecorator>
-                          <Edit size={18} />
-                        </ListItemDecorator>
-                        Edit
-                      </MenuItem>
-                      <MenuItem
-                        onClick={() => handleDelete(event.id || "")}
-                        color="danger"
-                      >
-                        <ListItemDecorator>
-                          <Trash2 size={18} />
-                        </ListItemDecorator>
-                        Delete
-                      </MenuItem>
-                    </Menu>
-                  </Dropdown>
-                </div>
-              </Card>
-            ))}
-          </div>
+          <Table
+            columns={columns}
+            data={filteredEvents}
+            rowKey="id"
+            onRowClick={(row) => handleViewDetails(row)}
+            rowsPerPage={10}
+            loading={loading}
+            emptyMessage="No events found"
+            stickyHeader
+            maxHeight="600px"
+          />
         )}
       </Container>
+
+      <EventForm
+        isVisible={isAddEventModalVisible}
+        onClose={() => setAddEventModalVisible(false)}
+        onEventAdded={fetchEventsAndCategories}
+        categories={categories}
+        mode="add"
+      />
+
+      <EventForm
+        isVisible={isEditEventModalVisible}
+        onClose={handleCloseEditModal}
+        onEventUpdated={handleEventUpdated}
+        initialData={selectedEventForEdit}
+        categories={categories}
+        mode="edit"
+      />
+
+      <FeaturedEventsModal
+        open={isFeaturedModalOpen}
+        onClose={() => setFeaturedModalOpen(false)}
+        onSuccess={fetchEventsAndCategories}
+      />
     </PageContainer>
   );
 };

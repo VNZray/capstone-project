@@ -80,6 +80,7 @@ const ApprovalDashboard: React.FC = () => {
   const [pendingSpots, setPendingSpots] = useState<PendingItem[]>([]);
   const [pendingEdits, setPendingEdits] = useState<PendingEdit[]>([]);
   const [pendingBusinesses, setPendingBusinesses] = useState<any[]>([]);
+  const [pendingEvents, setPendingEvents] = useState<PendingItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<TabType>("overview");
   const [selectedItem, setSelectedItem] = useState<Record<
@@ -94,20 +95,20 @@ const ApprovalDashboard: React.FC = () => {
   const [statusTab, setStatusTab] = useState<'all'|'new'|'edit'>('all');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
 
-  useEffect(() => {
-    (async () => {
-      setLoading(true);
-      try {
-        const [spotsData, editsData, bizData] = await Promise.all([
-          apiService.getPendingItems("tourist_spots"),
-          apiService.getPendingEditsByEntity("tourist_spots"),
-          apiService.getPendingItems("businesses"),
-        ]);
+  const fetchData = async () => {
+    setLoading(true);
+    try {
+      const [spotsData, editsData, bizData, eventsData] = await Promise.all([
+        apiService.getPendingItems("tourist_spots"),
+        apiService.getPendingEditsByEntity("tourist_spots"),
+        apiService.getPendingItems("businesses"),
+        apiService.getPendingEvents ? apiService.getPendingEvents() : Promise.resolve([]),
+      ]);
 
-        const spots = (spotsData as unknown[] | null) || [];
-        const edits = (editsData as unknown[] | null) || [];
+      const spots = (spotsData as unknown[] | null) || [];
+      const edits = (editsData as unknown[] | null) || [];
 
-        const transformedSpots: PendingItem[] = spots.map((s) => {
+      const transformedSpots: PendingItem[] = spots.map((s) => {
           const rec = (s as Record<string, unknown>) || {};
           return {
             ...rec,
@@ -147,6 +148,22 @@ const ApprovalDashboard: React.FC = () => {
             spotById.set(String(s.id), s as Record<string, unknown>);
 
         setPendingBusinesses((bizData as any[]) || []);
+        
+        // Transform pending events
+        const events = (eventsData as unknown[] | null) || [];
+        const transformedEvents: PendingItem[] = events.map((e) => {
+          const rec = (e as Record<string, unknown>) || {};
+          return {
+            ...rec,
+            id: String(rec["id"] ?? ""),
+            name: String(rec["name"] ?? ""),
+            description: (rec["description"] as string) ?? null,
+            action_type: "new",
+            entityType: "events",
+          } as PendingItem;
+        });
+        setPendingEvents(transformedEvents);
+        
         const enriched: PendingEdit[] = transformedEditsBase.map((edRec) => {
           const ed = edRec as Record<string, unknown>;
           const tourist_spot_id = ed["tourist_spot_id"] ?? ed["spot_id"];
@@ -224,10 +241,11 @@ const ApprovalDashboard: React.FC = () => {
   const refresh = async () => {
     setLoading(true);
     try {
-      const [spotsData, editsData, bizData] = await Promise.all([
+      const [spotsData, editsData, bizData, eventsData] = await Promise.all([
         apiService.getPendingItems("tourist_spots"),
         apiService.getPendingEditsByEntity("tourist_spots"),
         apiService.getPendingItems("businesses"),
+        apiService.getPendingEvents ? apiService.getPendingEvents() : Promise.resolve([]),
       ]);
       const spotsArr = (spotsData as unknown[] | null) || [];
       setPendingSpots(
@@ -258,6 +276,22 @@ const ApprovalDashboard: React.FC = () => {
         })
       );
       setPendingBusinesses(((bizData as any[]) || []).map((b) => ({...b})));
+      
+      // Update pending events
+      const eventsArr = (eventsData as unknown[] | null) || [];
+      setPendingEvents(
+        eventsArr.map((e) => {
+          const rec = (e as Record<string, unknown>) || {};
+          return {
+            ...rec,
+            id: String(rec["id"] ?? ""),
+            name: String(rec["name"] ?? ""),
+            description: (rec["description"] as string) ?? null,
+            action_type: "new",
+            entityType: "events",
+          } as PendingItem;
+        })
+      );
     } catch (err) {
       console.error(err);
     } finally {
@@ -315,11 +349,40 @@ const ApprovalDashboard: React.FC = () => {
   const handleView = (item: Record<string, unknown>) => setSelectedItem(item);
   const closeModal = () => setSelectedItem(null);
 
-  const mockEvents = makeMock("Event");
+  // Use real pending events data instead of mock
   // Accommodations removed from approval scope per latest requirements
 
   const allPendingItems = [...pendingSpots, ...pendingEdits];
   const allItems: PendingItem[] = allPendingItems as PendingItem[];
+
+  // Handle event approval
+  const handleEventApprove = async (id: string) => {
+    setProcessingId(id);
+    try {
+      await apiService.approveEvent(id);
+      refresh();
+    } catch (err) {
+      console.error("Error approving event:", err);
+    } finally {
+      setProcessingId(null);
+    }
+  };
+
+  // Handle event rejection
+  const handleEventReject = async (id: string) => {
+    const reason = window.prompt("Please provide a reason for rejection:");
+    if (reason === null) return;
+    
+    setProcessingId(id);
+    try {
+      await apiService.rejectEvent(id, reason || "No reason provided");
+      refresh();
+    } catch (err) {
+      console.error("Error rejecting event:", err);
+    } finally {
+      setProcessingId(null);
+    }
+  };
 
   // Note: per-tab filtering is applied within each section below
 
@@ -388,7 +451,7 @@ const ApprovalDashboard: React.FC = () => {
           {
             key: "events",
             label: "Events",
-            count: mockEvents.length,
+            count: pendingEvents.length,
             icon: <EventRoundedIcon />,
             tab: "events" as TabType,
           },
@@ -431,9 +494,9 @@ const ApprovalDashboard: React.FC = () => {
           <Grid xs={12} md={6} lg={3}>
             <OverviewCard
               title="Events"
-              count={mockEvents.length}
+              count={pendingEvents.length}
               icon="📅"
-              items={mockEvents}
+              items={pendingEvents}
             />
           </Grid>
           <Grid xs={12} md={6} lg={3}>
@@ -570,30 +633,34 @@ const ApprovalDashboard: React.FC = () => {
             padding: '8px',
           }}
         >
-          {mockEvents.map(ev => {
-            const unified: UnifiedApprovalItem = {
-              id: ev.id,
-              entityType: 'events',
-              actionType: 'new',
-              name: ev.name,
-              typeLabel: 'event',
-              categoryLabel: '—',
-              submittedDate: ev.submitted_at || '',
-              image: null,
-              raw: ev as any,
-            };
-            return (
-              <UnifiedApprovalCard
-                key={`event-${ev.id}`}
-                item={unified}
-                onView={(u) => handleView(u.raw)}
-                onApprove={() => window.alert('Event approval not implemented')}
-                onReject={() => window.alert('Event rejection not implemented')}
-              />
-            );
-          })}
-          {mockEvents.length === 0 && (
-            <div style={{ gridColumn: '1 / -1', textAlign: 'center', opacity: 0.7 }}>No events</div>
+          {pendingEvents
+            .filter((ev) => !query || ev.name.toLowerCase().includes(query.trim().toLowerCase()))
+            .map(ev => {
+              const rec = ev as Record<string, unknown>;
+              const unified: UnifiedApprovalItem = {
+                id: ev.id,
+                entityType: 'events',
+                actionType: 'new',
+                name: ev.name,
+                typeLabel: (rec.category_name as string) || 'event',
+                categoryLabel: (rec.category_name as string) || '—',
+                submittedDate: (rec.created_at as string) || '',
+                image: (rec.primary_image as string) || null,
+                raw: ev as any,
+              };
+              return (
+                <UnifiedApprovalCard
+                  key={`event-${ev.id}`}
+                  item={unified}
+                  onView={(u) => handleView(u.raw)}
+                  onApprove={() => handleEventApprove(ev.id)}
+                  onReject={() => handleEventReject(ev.id)}
+                  processing={processingId === ev.id}
+                />
+              );
+            })}
+          {pendingEvents.length === 0 && (
+            <div style={{ gridColumn: '1 / -1', textAlign: 'center', opacity: 0.7 }}>No pending events</div>
           )}
         </div>
       )}

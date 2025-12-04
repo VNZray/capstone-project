@@ -1,0 +1,276 @@
+/* Event Details - modern hero and subtle edit buttons */
+
+.ed-page {
+  font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  color: #374151;
+  background: #fafafa;
+}
+
+/* Ensure all Typography uses Poppins */
+.ed-page .MuiTypography-root {
+  font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
+}
+
+/* Typography alignment */
+.ed-page .MuiTypography-root[level="title-lg"] {
+  font-weight: 600;
+  color: #111827;
+  letter-spacing: -0.01em;
+  margin-bottom: 4px;
+  font-size: 18px;
+}
+
+.ed-page .MuiTypography-root[level="body-md"] {
+  color: #6b7280;
+  font-weight: 400;
+  letter-spacing: 0.005em;
+  line-height: 1.6;
+  font-size: 15px;
+}
+
+.ed-page .MuiTypography-root[level="body-sm"] {
+  color: #6b7280;
+  font-weight: 400;
+  font-size: 14px;
+}
+
+/* Card look */
+.ed-card {
+  background: #ffffff;
+  border: none;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+/* Hero Banner */
+.ed-hero {
+  position: relative;
+  width: 100%;
+  min-height: 200px;
+  height: clamp(180px, 28vw, 320px);
+  border-radius: 16px;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.ed-hero__bg {
+  position: absolute;
+  inset: 0;
+  background: #0f172a;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  transform: scale(1.02);
+  filter: saturate(1.05);
+}
+
+.ed-hero__gradient {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(80% 60% at 50% 40%, rgba(0,0,0,0.20) 0%, rgba(0,0,0,0.45) 60%, rgba(0,0,0,0.55) 100%),
+              linear-gradient(to top, rgba(0,0,0,0.35), rgba(0,0,0,0.15));
+}
+
+.ed-hero__content {
+  position: absolute;
+  z-index: 2;
+  display: flex;
+  align-items: flex-end;
+  left: 20px;
+  right: 20px;
+  bottom: 20px;
+}
+
+.ed-hero__panel {
+  width: min(760px, 100%);
+  background: transparent !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+  border: none !important;
+  border-radius: 14px;
+  padding: clamp(8px, 1.6vw, 12px) clamp(10px, 1.6vw, 16px);
+  color: #fff;
+  text-shadow: 0 2px 8px rgba(0,0,0,0.6);
+}
+
+.ed-hero__title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Hero title typography */
+.ed-hero .MuiTypography-root[level="h1"] {
+  font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.ed-hero__edit-inline {
+  --IconButton-size: 32px;
+  border-radius: 8px !important;
+  color: #0f172a !important;
+  background: rgba(255,255,255,0.9) !important;
+}
+
+.ed-hero__row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.ed-hero__icon {
+  color: #e5e7eb !important;
+  font-size: 18px !important;
+}
+
+.ed-hero__badges {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+  flex-wrap: wrap;
+}
+
+/* Shared subtle edit button style */
+.ed-edit-btn {
+  border-radius: 8px;
+  text-transform: none;
+  color: #6b7280;
+  font-weight: 500;
+  border: 1px solid #e5e7eb !important;
+  background: transparent !important;
+  padding: 8px 16px;
+  font-size: 14px;
+  transition: all 0.2s ease;
+}
+
+.ed-edit-btn:hover {
+  color: #374151;
+  border-color: #d1d5db !important;
+  background: #f9fafb !important;
+}
+
+/* Chip font styling */
+.ed-page .MuiChip-root {
+  border-radius: 20px;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+}
+
+/* Info row styling */
+.ed-info-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 8px 0;
+}
+
+.ed-info-icon {
+  color: #6b7280;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.ed-info-content {
+  flex: 1;
+}
+
+/* Schedule item */
+.ed-schedule-item {
+  padding: 12px;
+  border-radius: 8px;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+}
+
+.ed-schedule-item:hover {
+  background: #f3f4f6;
+}
+
+/* Image grid */
+.ed-image-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.ed-image-item {
+  position: relative;
+  aspect-ratio: 16/9;
+  border-radius: 8px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.ed-image-item:hover {
+  transform: scale(1.02);
+}
+
+.ed-image-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.ed-image-item--primary {
+  border: 2px solid #3b82f6;
+}
+
+.ed-image-overlay {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 8px;
+  background: linear-gradient(to top, rgba(0,0,0,0.7), transparent);
+  display: flex;
+  justify-content: flex-end;
+  gap: 4px;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.ed-image-item:hover .ed-image-overlay {
+  opacity: 1;
+}
+
+/* Review card */
+.ed-review-card {
+  padding: 16px;
+  border-radius: 12px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+}
+
+.ed-review-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 8px;
+}
+
+.ed-review-stars {
+  display: flex;
+  gap: 2px;
+}
+
+/* Map container */
+.ed-map-container {
+  height: 200px;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #f3f4f6;
+}
+
+@media (max-width: 768px) {
+  .ed-hero { border-radius: 12px; }
+  .ed-hero__panel { padding: 12px 12px; width: calc(100% - 40px); }
+  .ed-hero__content { left: 12px; bottom: 12px; right: 12px; }
+  .ed-image-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 480px) {
+  .ed-image-grid { grid-template-columns: 1fr; }
+}

@@ -2,6 +2,7 @@
 import React from "react";
 import { GoogleMap, Marker, useJsApiLoader } from "@react-google-maps/api";
 import Typography from "@/src/components/Typography";
+import { googleMapsLoaderOptions } from "@/src/lib/googleMaps";
 
 type BusinessMapProps = {
   latitude?: number | string;
@@ -26,9 +27,7 @@ const BusinessMap: React.FC<BusinessMapProps> = ({
   height = "300px",
   width = "100%",
 }) => {
-  const { isLoaded } = useJsApiLoader({
-    googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY as string, // ✅ keep in .env
-  });
+  const { isLoaded } = useJsApiLoader(googleMapsLoaderOptions);
 
   const center = {
     lat: Number(latitude) || 14.5995, // fallback Manila
