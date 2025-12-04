@@ -348,6 +348,9 @@ export async function attachPaymentMethodClient(
  * @param clientKey - Client key from createPaymentIntent response (REQUIRED)
  * @param billing - Optional billing information
  * @returns Response with redirect URL for e-wallet authorization
+ * 
+ * Note: Backend only supports 'gcash' and 'paymaya' for server-side attachment.
+ * For card payments, use client-side attachment with attachPaymentMethodClient.
  */
 export async function attachEwalletPaymentMethod(
   paymentIntentId: string,
