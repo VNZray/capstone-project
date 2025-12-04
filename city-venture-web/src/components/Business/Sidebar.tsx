@@ -95,8 +95,8 @@ export default function Sidebar({
             icon={<LayoutDashboard size={ICON_SIZE} />}
             onClick={onClose}
           />
-          
-          {businessDetails?.hasBooking === true ? (
+
+          {businessDetails?.hasBooking ? (
             <>
               {(hasRole("Business Owner", "Manager") ||
                 canAny(
@@ -123,6 +123,7 @@ export default function Sidebar({
               )}
             </>
           ) : null}
+
           {(hasRole("Business Owner", "Manager") ||
             canAny("view_business_profile", "edit_business_profile")) && (
             <NavItem
@@ -152,18 +153,14 @@ export default function Sidebar({
             ))}
 
           {businessDetails?.hasBooking === true &&
-            (hasRole(
-              "Business Owner",
-              "Manager",
-              "Room Manager",
-            ) && (
+            hasRole("Business Owner", "Manager", "Room Manager") && (
               <NavItem
                 to={`${route}/rooms`}
                 label="Manage Rooms"
                 icon={<BedDouble size={ICON_SIZE} />}
                 onClick={onClose}
               />
-            ))}
+            )}
 
           {businessDetails?.hasBooking === true &&
             hasRole("Business Owner") && (
@@ -265,22 +262,22 @@ export default function Sidebar({
               onClick={onClose}
             />
           )}
-          {(hasRole("Business Owner") && (
+          {hasRole("Business Owner") && (
             <NavItem
               to={`${route}/manage-staff`}
               label="Manage Staff"
               icon={<FaUserFriends />}
               onClick={onClose}
             />
-          ))}
-          {(hasRole("Business Owner") && (
+          )}
+          {hasRole("Business Owner") && (
             <NavItem
               to={`${route}/settings`}
               label="Settings"
               icon={<Settings size={18} />}
               onClick={onClose}
             />
-          ))}
+          )}
         </div>
 
         <div
