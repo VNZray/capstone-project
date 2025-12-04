@@ -2,12 +2,18 @@ import { useEffect, useState } from "react";
 import "./style/landing.css";
 import Loading from "@/src/components/ui/Loading";
 import HeroSection from "./components/HeroSection";
-import ValuePropositionSection from "./components/ValuePropositionSection";
+import WhyVisitSection from "./components/WhyVisitSection";
+import SocialProofSection from "./components/SocialProofSection";
 import BenefitsSection from "./components/BenefitsSection";
-import FeaturesSection from "./components/FeaturesSection";
 import HowItWorksSection from "./components/HowItWorksSection";
 import FooterSection from "./components/FooterSection";
 import PageContainer from "@/src/components/PageContainer";
+import grid1 from "@/src/assets/gridimages/grid1.jpg";
+import grid2 from "@/src/assets/gridimages/grid2.jpg";
+import grid3 from "@/src/assets/gridimages/grid3.jpg";
+import grid5 from "@/src/assets/gridimages/grid5.jpg";
+import grid6 from "@/src/assets/gridimages/grid6.jpg";
+import FeaturesSection from "./components/FeaturesSection";
 
 export default function LandingPage() {
   const [loading, setLoading] = useState(true);
@@ -31,39 +37,49 @@ export default function LandingPage() {
 
   const gridItems = [
     {
-      src: new URL("../assets/gridimages/grid1.jpg", import.meta.url).href,
+      src: grid1,
       title: "Naga Metropolitan Cathedral",
       subtitle: "Shrine of Our Lady of Peñafrancia",
     },
     {
-      src: new URL("../assets/gridimages/grid2.jpg", import.meta.url).href,
-      title: "Kinalas",
-      subtitle: "Authentic Bicolano noodle soup",
+      src: grid2,
+      title: "Kunalao",
+      subtitle: "Mountain Adventures Await",
     },
     {
-      src: new URL("../assets/gridimages/grid3.jpg", import.meta.url).href,
+      src: grid3,
       title: "Plaza Rizal & Heritage Village",
       subtitle: "Heart of historic Naga",
     },
     {
-      src: new URL("../assets/gridimages/grid5.jpg", import.meta.url).href,
+      src: grid5,
       title: "Peñafrancia Festival",
       subtitle: "Centuries of devotion",
     },
     {
-      src: new URL("../assets/gridimages/grid6.jpg", import.meta.url).href,
+      src: grid6,
       title: "Mt. Isarog Nature Reserve",
       subtitle: "Hike and relax",
     },
   ];
 
   return (
-    <PageContainer padding={0} id="top">
+    <PageContainer gap={0} padding={0} id="top">
+      {/* 1. Hero Section - Above the Fold */}
       <HeroSection gridItems={gridItems} />
-      <ValuePropositionSection />
-      <BenefitsSection />
+
+      {/* 2. Why Visit Section - Tourism Promotion */}
+      <WhyVisitSection />
       <FeaturesSection />
+
+      {/* 5. Social Proof & Trust */}
+      <SocialProofSection />
+
+      {/* Additional Sections */}
+      <BenefitsSection />
       <HowItWorksSection />
+
+      {/* Footer */}
       <FooterSection logoImage={logoImage} />
     </PageContainer>
   );

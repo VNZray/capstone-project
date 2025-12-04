@@ -11,7 +11,6 @@ import { supabase } from "@/src/lib/supabase";
 type Props = {
   data: Business;
   setData: React.Dispatch<React.SetStateAction<Business>>;
-  api: string;
   permitData: Permit[];
   setPermitData: React.Dispatch<React.SetStateAction<Permit[]>>;
 };

@@ -7,7 +7,6 @@ import { EmailOutlined, Phone } from "@mui/icons-material";
 type Props = {
   data: Business;
   setData: React.Dispatch<React.SetStateAction<Business>>;
-  api: string;
 };
 
 const Step2: React.FC<Props> = ({ data, setData }) => {

@@ -3,22 +3,22 @@ import { useEffect, useState } from "react";
 import axios from "axios";
 import { supabase } from "@/src/lib/supabase";
 import type { Business } from "@/src/types/Business";
-import type { Category, CategoryTree } from "@/src/types/Category";
+import api from "../services/api";
 
-export const useBusinessBasics = (API_URL: string, data: Business, setData: React.Dispatch<React.SetStateAction<Business>>) => {
-  const [businessCategories, setBusinessCategories] = useState<Category[]>([]);
-  const [rootCategories, setRootCategories] = useState<Category[]>([]);
-  const [categoryTree, setCategoryTree] = useState<CategoryTree[]>([]);
-  const [selectedCategories, setSelectedCategories] = useState<number[]>([]);
+type BusinessCategory = { id: number; category: string };
+type BusinessType = { id: number; type: string };
+
+export const useBusinessBasics = (data: Business, setData: React.Dispatch<React.SetStateAction<Business>>) => {
+  const [businessCategories, setBusinessCategories] = useState<BusinessCategory[]>([]);
+  const [businessTypes, setBusinessTypes] = useState<BusinessType[]>([]);
+  const [selectedType, setSelectedType] = useState<number | null>(null);
   const [businessImage, setBusinessImage] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
   // Fetch root-level categories for businesses
   const getBusinessCategories = async () => {
     try {
-      const response = await axios.get(`${API_URL}/category-and-type/categories`, {
-        params: { applicable_to: 'business', status: 'active' }
-      });
+      const response = await axios.get(`${api}/category-and-type/business-type`);
       if (Array.isArray(response.data)) {
         setBusinessCategories(response.data);
         // Filter to only root categories (no parent)
@@ -33,9 +33,7 @@ export const useBusinessBasics = (API_URL: string, data: Business, setData: Reac
   // Fetch category tree for hierarchical display
   const getCategoryTree = async () => {
     try {
-      const response = await axios.get(`${API_URL}/category-and-type/categories/tree`, {
-        params: { applicable_to: 'business' }
-      });
+      const response = await axios.get(`${api}/category-and-type/category/${type_id}`);
       if (Array.isArray(response.data)) {
         setCategoryTree(response.data);
       }

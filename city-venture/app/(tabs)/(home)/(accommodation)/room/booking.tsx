@@ -3,7 +3,10 @@ import PageContainer from '@/components/PageContainer';
 import { useAuth } from '@/context/AuthContext';
 import { useRoom } from '@/context/RoomContext';
 import { createFullBooking } from '@/query/accommodationQuery';
-import { initiateBookingPayment, mapPaymentMethodType } from '@/services/BookingPaymentService';
+import {
+  initiateBookingPayment,
+  mapPaymentMethodType,
+} from '@/services/BookingPaymentService';
 import { Booking, BookingPayment } from '@/types/Booking';
 import debugLogger from '@/utils/debugLogger';
 // useNavigation: for setOptions (header customization)
@@ -145,7 +148,7 @@ const booking = () => {
   const processPayment = async () => {
     try {
       setSubmitting(true);
-      
+
       // Validate amount
       if (!paymentData.amount || paymentData.amount <= 0) {
         Alert.alert('Payment', 'Invalid amount to charge.');
@@ -204,15 +207,17 @@ const booking = () => {
       }
       
       // Map selected payment method to PayMongo type
-      const paymentMethodType = mapPaymentMethodType(paymentData.payment_method || 'gcash');
-      
+      const paymentMethodType = mapPaymentMethodType(
+        paymentData.payment_method || 'gcash'
+      );
+
       debugLogger({
         title: 'Initiating Booking Payment',
         data: { 
           bookingId, 
           amount: paymentData.amount, 
           paymentMethodType,
-          paymentType: paymentData.payment_type 
+          paymentType: paymentData.payment_type,
         },
       });
 
@@ -229,7 +234,7 @@ const booking = () => {
       }
 
       const { checkout_url: checkoutUrl, payment_id } = response.data;
-      
+
       debugLogger({
         title: 'Booking Payment Initiated',
         data: { checkoutUrl, payment_id },
@@ -265,7 +270,9 @@ const booking = () => {
       });
       Alert.alert(
         'Payment error',
-        err?.response?.data?.message || err?.message || 'Failed to initialize online payment.'
+        err?.response?.data?.message ||
+          err?.message ||
+          'Failed to initialize online payment.'
       );
     } finally {
       setSubmitting(false);
