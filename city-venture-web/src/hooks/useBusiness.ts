@@ -3,11 +3,12 @@ import { useEffect, useState } from "react";
 import axios from "axios";
 import { supabase } from "@/src/lib/supabase";
 import type { Business } from "@/src/types/Business";
+import api from "../services/api";
 
 type BusinessCategory = { id: number; category: string };
 type BusinessType = { id: number; type: string };
 
-export const useBusinessBasics = (API_URL: string, data: Business, setData: React.Dispatch<React.SetStateAction<Business>>) => {
+export const useBusinessBasics = (data: Business, setData: React.Dispatch<React.SetStateAction<Business>>) => {
   const [businessCategories, setBusinessCategories] = useState<BusinessCategory[]>([]);
   const [businessTypes, setBusinessTypes] = useState<BusinessType[]>([]);
   const [selectedType, setSelectedType] = useState<number | null>(null);
@@ -17,7 +18,7 @@ export const useBusinessBasics = (API_URL: string, data: Business, setData: Reac
   // Fetch types
   const getBusinessTypes = async () => {
     try {
-      const response = await axios.get(`${API_URL}/category-and-type/business-type`);
+      const response = await axios.get(`${api}/category-and-type/business-type`);
       if (Array.isArray(response.data)) {
         setBusinessTypes(response.data);
       }
@@ -29,7 +30,7 @@ export const useBusinessBasics = (API_URL: string, data: Business, setData: Reac
   // Fetch categories based on type
   const getBusinessCategories = async (type_id: number) => {
     try {
-      const response = await axios.get(`${API_URL}/category-and-type/category/${type_id}`);
+      const response = await axios.get(`${api}/category-and-type/category/${type_id}`);
       if (Array.isArray(response.data)) {
         setBusinessCategories(response.data);
       }

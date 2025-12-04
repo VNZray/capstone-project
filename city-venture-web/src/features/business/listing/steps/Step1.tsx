@@ -20,19 +20,17 @@ import { getData, insertData } from "@/src/services/Service";
 type Props = {
   data: Business;
   setData: React.Dispatch<React.SetStateAction<Business>>;
-  api: string;
   businessAmenities: BusinessAmenity[];
   setBusinessAmenities: React.Dispatch<React.SetStateAction<BusinessAmenity[]>>;
 };
 
 const Step1: React.FC<Props> = ({
-  api,
   data,
   setData,
   setBusinessAmenities,
 }) => {
   const { businessCategories, businessTypes, setSelectedType } =
-    useBusinessBasics(api, data, setData);
+    useBusinessBasics( data, setData);
 
   const [amenities, setAmenities] = useState<Amenity[]>([]);
   const [selectedAmenities, setSelectedAmenities] = React.useState<Amenity[]>(
