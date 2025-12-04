@@ -2,7 +2,7 @@ import React from "react";
 import Container from "@/src/components/Container";
 import Typography from "@/src/components/Typography";
 import { FaMapMarkerAlt, FaStore, FaBed } from "react-icons/fa";
-import { Chip, Grid } from "@mui/joy";
+import { Grid } from "@mui/joy";
 import { colors } from "@/src/utils/Colors";
 import Section from "@/src/components/ui/Section";
 import { DetailsOutlined } from "@mui/icons-material";

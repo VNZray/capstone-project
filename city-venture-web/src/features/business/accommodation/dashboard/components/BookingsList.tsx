@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Typography, Box, Chip, Stack, Avatar } from "@mui/joy";
-import { Calendar, Clock } from "lucide-react";
+import { Calendar } from "lucide-react";
 import { colors } from "@/src/utils/Colors";
 import Container from "@/src/components/Container";
 import { fetchTourist } from "@/src/services/BookingService";

@@ -35,6 +35,7 @@ import bookingRoutes from "./routes/booking.js";
 import paymentRoutes from "./routes/payment.js";
 import staffRoutes from "./routes/staff.js";
 import permissionRoutes from "./routes/permission.js";
+import subscriptionRoutes from "./routes/subscription.js";
 
 // New Product/Service Management Routes
 import productRoutes from "./routes/products.js";
@@ -171,6 +172,7 @@ const routeSections = [
         label: "External Booking",
       },
       { path: "/api/payment", handler: paymentRoutes, label: "Payments" },
+      { path: "/api/subscriptions", handler: subscriptionRoutes, label: "Subscriptions" },
       // REMOVED: { path: "/api/payments", handler: paymentRoutes } - duplicate route removed per ORDERING_SYSTEM_AUDIT.md Phase 1
     ],
   },
@@ -226,7 +228,7 @@ app.use(cors({
   origin: function(origin, callback) {
     // Allow requests with no origin (mobile apps, Postman, etc.)
     if (!origin) return callback(null, true);
-    
+
     // List of allowed origins
     const allowedOrigins = [
       'http://localhost:5173',
@@ -235,7 +237,7 @@ app.use(cors({
       process.env.FRONTEND_URL,
       process.env.FRONTEND_BASE_URL,
     ].filter(Boolean); // Remove undefined values
-    
+
     if (allowedOrigins.some(allowed => origin.startsWith(allowed))) {
       callback(null, true);
     } else {
@@ -279,13 +281,13 @@ const sendPaymongoRedirect = (res, referenceId, status, type = 'order') => {
   // Support both Expo Go (exp://) and production builds (cityventure://)
   const isExpoDev = process.env.EXPO_DEV === 'true';
   const expoHost = process.env.EXPO_DEV_HOST || '192.168.1.1:8081';
-  
+
   // Determine route path and query param based on type (order vs booking)
   const isBooking = type === 'booking';
   const routePath = isBooking ? '(accommodation)/room/booking' : '(checkout)/payment';
   const paramName = isBooking ? 'bookingId' : 'orderId';
   const queryParam = isBooking ? `paymentSuccess=1&bookingId=${referenceId}` : `orderId=${referenceId}`;
-  
+
   // Expo Go deep link format: exp://HOST:PORT/--/path
   // For Expo Router, the path should match the file-based route
   let appUrl;
@@ -296,10 +298,10 @@ const sendPaymongoRedirect = (res, referenceId, status, type = 'order') => {
     // Production build with custom scheme
     appUrl = `cityventure://${routePath}-${status}?${queryParam}`;
   }
-  
+
   console.log(`[PayMongo Redirect] type: ${type}, isExpoDev: ${isExpoDev}, appUrl: ${appUrl}`);
-  
-  const webFallback = isBooking 
+
+  const webFallback = isBooking
     ? `${FRONTEND_BASE_URL}/bookings/${referenceId}/payment-${status}`
     : `${FRONTEND_BASE_URL}/orders/${referenceId}/payment-${status}`;
 
@@ -326,7 +328,7 @@ const sendPaymongoRedirect = (res, referenceId, status, type = 'order') => {
       if (!sessionStorage.getItem('payment_redirected_${referenceId}')) {
         sessionStorage.setItem('payment_redirected_${referenceId}', 'true');
         window.location.replace('${appUrl}');
-        
+
         // Fallback to web after 2 seconds if app doesn't open
         setTimeout(function() {
           if (document.visibilityState === 'visible') {
@@ -362,7 +364,7 @@ app.get("/bookings/:bookingId/payment-success", async (req, res) => {
   if (!bookingId) {
     return res.status(400).send("Missing bookingId");
   }
-  
+
   try {
     // Check the actual payment status from the database
     // The webhook may have already updated this to 'failed'
@@ -374,15 +376,15 @@ app.get("/bookings/:bookingId/payment-success", async (req, res) => {
        LIMIT 1`,
       [bookingId]
     );
-    
+
     const payment = rows?.[0];
-    
+
     // If payment exists and is marked as failed, redirect to cancel flow
     if (payment && (payment.payment_status === 'failed' || payment.payment_status === 'cancelled')) {
       console.log(`[PayMongo Redirect] Payment for booking ${bookingId} is ${payment.payment_status}, redirecting to cancel`);
       return sendPaymongoRedirect(res, bookingId, "cancel", "booking");
     }
-    
+
     // Otherwise proceed with success redirect
     // Note: The mobile app will still verify the actual PayMongo status
     sendPaymongoRedirect(res, bookingId, "success", "booking");
@@ -511,7 +513,7 @@ httpServer.listen(PORT, "0.0.0.0", async () => {
 // ========== GRACEFUL SHUTDOWN ==========
 async function gracefulShutdown(signal) {
   console.log(`\n${COLORS.yellow}${signal} received. Shutting down gracefully...${COLORS.reset}`);
-  
+
   try {
     // Close webhook queue
     await webhookQueueService.shutdownQueue();
@@ -519,13 +521,13 @@ async function gracefulShutdown(signal) {
   } catch (err) {
     console.error("Error closing webhook queue:", err);
   }
-  
+
   // Close HTTP server
   httpServer.close(() => {
     console.log(colorServer("✅ HTTP server closed"));
     process.exit(0);
   });
-  
+
   // Force exit after 10 seconds
   setTimeout(() => {
     console.error("Could not close connections in time, forcefully shutting down");

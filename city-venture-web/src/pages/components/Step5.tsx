@@ -35,15 +35,16 @@ type Props = {
 
 const Step5: React.FC<Props> = ({ data, setData, permitData }) => {
   const { address } = useAddress(data?.barangay_id);
-  const { businessCategories } = useBusinessBasics(api, data, setData);
-  
+  const { businessCategories } = useBusinessBasics(data, setData);
+
   // Get selected category names
   const selectedCategoryNames = (data.category_ids || [])
-    .map(id => businessCategories.find(c => c.id === id)?.title)
+    .map((id) => businessCategories.find((c) => c.id === id)?.category)
     .filter(Boolean);
-  
-  const primaryCategoryName = data.primary_category_id 
-    ? businessCategories.find(c => c.id === data.primary_category_id)?.title
+
+  const primaryCategoryName = data.primary_category_id
+    ? businessCategories.find((c) => c.id === data.primary_category_id)
+        ?.category
     : selectedCategoryNames[0];
 
   const InfoRow = ({
@@ -167,12 +168,22 @@ const Step5: React.FC<Props> = ({ data, setData, permitData }) => {
             icon={<PersonOutline color="primary" />}
           >
             <InfoRow label="Business Name" value={data.business_name} />
-            <InfoRow label="Type" value={data.hasBooking ? "Accommodation" : "Shop"} />
-            <InfoRow label="Primary Category" value={primaryCategoryName || null} />
+            <InfoRow
+              label="Type"
+              value={data.hasBooking ? "Accommodation" : "Shop"}
+            />
+            <InfoRow
+              label="Primary Category"
+              value={primaryCategoryName || null}
+            />
             {selectedCategoryNames.length > 1 && (
               <div style={{ marginTop: 8 }}>
                 <Typography.Label size="md">All Categories:</Typography.Label>
-                <Stack direction="row" spacing={1} sx={{ mt: 0.5, flexWrap: "wrap", gap: 0.5 }}>
+                <Stack
+                  direction="row"
+                  spacing={1}
+                  sx={{ mt: 0.5, flexWrap: "wrap", gap: 0.5 }}
+                >
                   {selectedCategoryNames.map((name, idx) => (
                     <Chip key={idx} size="sm" variant="soft" color="primary">
                       {name}

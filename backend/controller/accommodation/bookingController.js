@@ -139,10 +139,51 @@ export async function insertBooking(req, res) {
     if (!room_id) missing.push("room_id");
     if (!tourist_id) missing.push("tourist_id");
     if (total_price === undefined) missing.push("total_price");
+    if (!business_id) missing.push("business_id");
     if (missing.length) {
       return res
         .status(400)
         .json({ error: "Missing required fields", fields: missing });
+    }
+
+    // Check if business has active subscription with booking system enabled
+    const [subscriptionRows] = await db.query(
+      `SELECT booking_system, end_date, status
+       FROM subscription
+       WHERE business_id = ? AND status = 'active'
+       ORDER BY created_at DESC LIMIT 1`,
+      [business_id]
+    );
+
+    if (subscriptionRows.length === 0) {
+      return res.status(403).json({
+        error: "Booking system not available",
+        message: "This business does not have an active subscription. Please subscribe to enable booking features."
+      });
+    }
+
+    const subscription = subscriptionRows[0];
+
+    // Check if subscription is expired
+    if (subscription.end_date && new Date(subscription.end_date) < new Date()) {
+      // Auto-expire the subscription
+      await db.query(
+        `UPDATE subscription SET status = 'expired' WHERE business_id = ? AND status = 'active'`,
+        [business_id]
+      );
+
+      return res.status(403).json({
+        error: "Subscription expired",
+        message: "The business subscription has expired. Please renew to continue accepting bookings."
+      });
+    }
+
+    // Check if booking system is enabled in subscription
+    if (!subscription.booking_system) {
+      return res.status(403).json({
+        error: "Booking system not enabled",
+        message: "This business subscription does not include the booking system feature. Please upgrade to enable bookings."
+      });
     }
 
     // Validation: For short-stay bookings, times are critical
@@ -236,7 +277,7 @@ export async function deleteBooking(req, res) {
 /**
  * Initiate payment for a booking using PayMongo Checkout Session
  * POST /api/bookings/:id/initiate-payment
- * Body: { 
+ * Body: {
  *   payment_method_type: 'gcash' | 'paymaya' | 'grab_pay' | 'card' | etc.,
  *   payment_type?: 'Full Payment' | 'Partial Payment',
  *   amount?: number (optional - defaults to booking total_price or balance)
@@ -259,7 +300,7 @@ export async function initiateBookingPayment(req, res) {
 
     // 1. Fetch booking details
     const [bookingRows] = await db.query(
-      `SELECT 
+      `SELECT
         b.id, b.total_price, b.balance, b.booking_status, b.tourist_id, b.business_id, b.room_id,
         b.check_in_date, b.check_out_date, b.pax,
         CONCAT(r.room_type, ' - ', r.room_number) as room_name, r.room_price as price_per_night,
@@ -367,7 +408,7 @@ export async function initiateBookingPayment(req, res) {
       [
         payment_id,
         'Tourist',                  // payer_type
-        'online',                   // payment_type
+        'Full Payment',             // payment_type (ENUM: 'Full Payment', 'Partial Payment')
         payment_method_type,        // payment_method
         paymentAmount,              // amount in PHP
         'pending',                  // status
@@ -380,8 +421,8 @@ export async function initiateBookingPayment(req, res) {
 
     // Store provider reference (Payment Intent ID) and metadata
     await db.query(
-      `UPDATE payment 
-       SET provider_reference = ?, 
+      `UPDATE payment
+       SET provider_reference = ?,
            currency = 'PHP',
            metadata = ?
        WHERE id = ?`,
@@ -434,10 +475,10 @@ export async function initiateBookingPayment(req, res) {
 /**
  * Verify payment status for a booking
  * GET /api/bookings/:id/verify-payment/:paymentId
- * 
+ *
  * This endpoint checks the actual PayMongo Payment Intent status
  * to confirm whether a payment was successful or failed.
- * 
+ *
  * Auth: Required (Tourist role)
  */
 export async function verifyBookingPayment(req, res) {
@@ -455,7 +496,7 @@ export async function verifyBookingPayment(req, res) {
 
     // 1. Fetch booking and payment details
     const [rows] = await db.query(
-      `SELECT 
+      `SELECT
         b.id as booking_id, b.tourist_id, b.booking_status, b.total_price, b.balance,
         p.id as payment_id, p.provider_reference, p.status as payment_status, p.amount,
         t.user_id as tourist_user_id
@@ -485,7 +526,7 @@ export async function verifyBookingPayment(req, res) {
 
     // 3. Check if we have a PayMongo Payment Intent ID
     const paymentIntentId = record.provider_reference;
-    
+
     if (!paymentIntentId) {
       return res.status(400).json({
         success: false,
@@ -507,7 +548,7 @@ export async function verifyBookingPayment(req, res) {
     // - awaiting_next_action: Waiting for 3DS or redirect completion
     // - processing: Payment is being processed
     // - succeeded: Payment was successful
-    
+
     let verified = false;
     let paymentVerified = 'pending';
     let message = '';
@@ -518,28 +559,28 @@ export async function verifyBookingPayment(req, res) {
         paymentVerified = 'success';
         message = 'Payment verified successfully';
         break;
-        
+
       case 'awaiting_payment_method':
         // Payment failed or was cancelled - need new payment method
         verified = false;
         paymentVerified = 'failed';
         message = lastPaymentError?.message || 'Payment was cancelled or declined. Please try again.';
         break;
-        
+
       case 'awaiting_next_action':
         // Still waiting for user action
         verified = false;
         paymentVerified = 'pending';
         message = 'Payment is still pending user authorization';
         break;
-        
+
       case 'processing':
         // Payment is processing
         verified = false;
         paymentVerified = 'processing';
         message = 'Payment is being processed. Please wait...';
         break;
-        
+
       default:
         verified = false;
         paymentVerified = 'unknown';
@@ -552,13 +593,13 @@ export async function verifyBookingPayment(req, res) {
         `UPDATE payment SET status = 'Paid' WHERE id = ?`,
         [paymentId]
       );
-      
+
       // Update booking status to Confirmed/Reserved
       await db.query(
         `UPDATE booking SET booking_status = 'Confirmed' WHERE id = ? AND booking_status IN ('Pending', 'Reserved')`,
         [booking_id]
       );
-      
+
       console.log(`[VerifyPayment] ✅ Payment ${paymentId} verified and marked as Paid`);
     } else if (paymentVerified === 'failed' && record.payment_status === 'pending') {
       // Mark local payment as failed

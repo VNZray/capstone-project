@@ -82,7 +82,7 @@ export async function openBookingCheckout(checkoutUrl: string): Promise<WebBrows
  */
 export function mapPaymentMethodType(methodName: string): string {
   const method = (methodName || '').toLowerCase();
-  
+
   const methodMap: Record<string, string> = {
     'gcash': 'gcash',
     'paymaya': 'paymaya',
@@ -129,7 +129,7 @@ export interface VerifyBookingPaymentResponse {
  * Verify payment status after PayMongo redirect
  * This checks the actual PayMongo Payment Intent status to confirm
  * whether the payment was successful or failed.
- * 
+ *
  * @param bookingId - The booking UUID
  * @param paymentId - The local payment record UUID
  * @returns Verification result with actual payment status

@@ -1,10 +1,7 @@
 // src/services/AddressService.ts
 import apiClient from "./apiClient";
 import { getData, getDataById } from "./Service";
-
-export type Province = { id: number; province: string };
-export type Municipality = { id: number; municipality: string };
-export type Barangay = { id: number; barangay: string };
+import type { Municipality, Barangay, Province } from "@/src/types/Address";
 
 export const AddressService = {
   async getProvinces(): Promise<Province[]> {
@@ -28,9 +25,7 @@ export const AddressService = {
   },
 
   async getMunicipalityById(municipalityId: number) {
-    const res = await apiClient.get(
-      `/address/municipality/${municipalityId}`
-    );
+    const res = await apiClient.get(`/address/municipality/${municipalityId}`);
     return res.data;
   },
 

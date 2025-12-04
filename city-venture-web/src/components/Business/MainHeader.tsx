@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Box } from "@mui/material";
-import { Bell, Repeat, ArrowLeft, Menu } from "lucide-react";
+import { Bell, Repeat, Menu } from "lucide-react";
 import { useAuth } from "@/src/context/AuthContext";
 import Button from "@/src/components/Button";
 import IconButton from "@/src/components/IconButton";
@@ -25,7 +25,6 @@ import type { Notification } from "./NotificationPopup";
 //   "/business/owner-profile": "Owner Profile",
 // };
 import placeholderImage from "@/src/assets/images/placeholder-image.png";
-import { Link } from "@mui/joy";
 interface MainHeaderProps {
   onMenuClick?: () => void;
 }
@@ -211,7 +210,6 @@ export default function MainHeader({ onMenuClick }: MainHeaderProps) {
             size="lg"
             variant="soft"
             onClick={() => navigate("user/profile")}
-            
           >
             <img
               src={user?.user_profile || placeholderImage}

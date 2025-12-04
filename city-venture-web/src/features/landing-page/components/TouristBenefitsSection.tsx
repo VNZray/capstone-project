@@ -1,7 +1,7 @@
 import React from "react";
 import Container from "@/src/components/Container";
 import Typography from "@/src/components/Typography";
-import { Grid, Chip, AspectRatio } from "@mui/joy";
+import { Grid, Chip } from "@mui/joy";
 import {
   FaMapMarkedAlt,
   FaSearch,

@@ -88,43 +88,38 @@ export default function Sidebar({
         <div
           style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}
         >
-          {/* Dashboard visible to any business role */}
+          {/* Dashboard - visible to all business roles */}
           <NavItem
             to={`${route}/dashboard`}
             label="Dashboard"
             icon={<LayoutDashboard size={ICON_SIZE} />}
             onClick={onClose}
           />
-          
-          {businessDetails?.hasBooking === true ? (
-            <>
-              {(hasRole("Business Owner", "Manager") ||
-                canAny(
-                  "view_transactions",
-                  "manage_transactions",
-                  "view_bookings",
-                  "manage_bookings"
-                )) && (
-                <NavItem
-                  to={`${route}/transactions`}
-                  label="Transactions"
-                  icon={<Receipt size={ICON_SIZE} />}
-                  onClick={onClose}
-                />
-              )}
-              {(hasRole("Business Owner", "Manager", "Receptionist") ||
-                canAny("view_bookings", "manage_bookings")) && (
-                <NavItem
-                  to={`${route}/bookings`}
-                  label="Bookings"
-                  icon={<CalendarCheck size={ICON_SIZE} />}
-                  onClick={onClose}
-                />
-              )}
-            </>
-          ) : null}
-          {(hasRole("Business Owner", "Manager") ||
-            canAny("view_business_profile", "edit_business_profile")) && (
+
+          {/* Transactions - Business Owner, Manager only */}
+          {businessDetails?.hasBooking &&
+            hasRole("Business Owner", "Manager") && (
+              <NavItem
+                to={`${route}/transactions`}
+                label="Transactions"
+                icon={<Receipt size={ICON_SIZE} />}
+                onClick={onClose}
+              />
+            )}
+
+          {/* Bookings - Business Owner, Manager, Receptionist */}
+          {businessDetails?.hasBooking &&
+            hasRole("Business Owner", "Manager", "Receptionist") && (
+              <NavItem
+                to={`${route}/bookings`}
+                label="Bookings"
+                icon={<CalendarCheck size={ICON_SIZE} />}
+                onClick={onClose}
+              />
+            )}
+
+          {/* Business Profile - Business Owner, Manager only */}
+          {hasRole("Business Owner", "Manager") && (
             <NavItem
               to={`${route}/business-profile`}
               label="Business Profile"
@@ -133,8 +128,8 @@ export default function Sidebar({
             />
           )}
 
-          {(hasRole("Business Owner", "Manager", "Sales Associate") ||
-            canAny("view_promotions", "manage_promotions")) &&
+          {/* Manage Promotions - Business Owner, Manager, Sales Associate */}
+          {hasRole("Business Owner", "Manager", "Sales Associate") &&
             (businessDetails?.hasBooking === false ? (
               <NavItem
                 to={`${route}/promotion`}
@@ -151,41 +146,28 @@ export default function Sidebar({
               />
             ))}
 
+          {/* Manage Rooms - Business Owner, Manager, Room Manager (accommodation only) */}
           {businessDetails?.hasBooking === true &&
-            (hasRole(
-              "Business Owner",
-              "Manager",
-              "Room Manager",
-            ) && (
+            hasRole("Business Owner", "Manager", "Room Manager") && (
               <NavItem
                 to={`${route}/rooms`}
                 label="Manage Rooms"
                 icon={<BedDouble size={ICON_SIZE} />}
                 onClick={onClose}
               />
-            ))}
-
-          {businessDetails?.hasBooking === true &&
-            hasRole("Business Owner") && (
-              <NavItem
-                to={`${route}/subscription`}
-                label="Subscription"
-                icon={<CreditCard size={ICON_SIZE} />}
-                onClick={onClose}
-              />
             )}
 
-          {businessDetails?.hasBooking === false &&
-            hasRole("Business Owner") && (
-              <NavItem
-                to={`${route}/subscription`}
-                label="Subscription"
-                icon={<CreditCard size={ICON_SIZE} />}
-                onClick={onClose}
-              />
-            )}
+          {/* Subscription - Business Owner only */}
+          {hasRole("Business Owner") && (
+            <NavItem
+              to={`${route}/subscription`}
+              label="Subscription"
+              icon={<CreditCard size={ICON_SIZE} />}
+              onClick={onClose}
+            />
+          )}
 
-          {/* Store section (Shop only) */}
+          {/* Store section - Business Owner, Manager, Sales Associate (shop only) */}
           {businessDetails?.hasBooking === false &&
             hasRole("Business Owner", "Manager", "Sales Associate") && (
               <div className="sidebar-section">
@@ -216,7 +198,6 @@ export default function Sidebar({
                   aria-label="Store section"
                   hidden={!storeOpen}
                 >
-                  {/* Store: show to Owner/Manager/Sales Associate */}
                   <NavItem
                     to={`${route}/store/products`}
                     label="Products"
@@ -256,8 +237,9 @@ export default function Sidebar({
                 </div>
               </div>
             )}
-          {(hasRole("Business Owner", "Manager") ||
-            canAny("view_reviews", "respond_reviews")) && (
+
+          {/* Reviews & Ratings - Business Owner, Manager only */}
+          {hasRole("Business Owner", "Manager") && (
             <NavItem
               to={`${route}/reviews`}
               label="Reviews & Ratings"
@@ -265,22 +247,26 @@ export default function Sidebar({
               onClick={onClose}
             />
           )}
-          {(hasRole("Business Owner") && (
+
+          {/* Manage Staff - Business Owner only */}
+          {hasRole("Business Owner") && (
             <NavItem
               to={`${route}/manage-staff`}
               label="Manage Staff"
               icon={<FaUserFriends />}
               onClick={onClose}
             />
-          ))}
-          {(hasRole("Business Owner") && (
+          )}
+
+          {/* Settings - Business Owner only */}
+          {hasRole("Business Owner") && (
             <NavItem
               to={`${route}/settings`}
               label="Settings"
               icon={<Settings size={18} />}
               onClick={onClose}
             />
-          ))}
+          )}
         </div>
 
         <div

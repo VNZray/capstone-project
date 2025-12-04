@@ -1,9 +1,7 @@
-import { Button } from "@mui/joy";
-import PageContainer from "../components/PageContainer";
-import Stepper from "../components/Stepper";
+import { Button, Box } from "@mui/joy";
+import Typography from "../components/Typography";
 import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
-import Container from "../components/Container";
 import Step1 from "./components/Step1";
 import Step2 from "./components/Step2";
 import Step3 from "./components/Step3";
@@ -16,7 +14,11 @@ import type { BusinessAmenity } from "../types/Amenity";
 import apiClient from "../services/apiClient";
 import type { Owner } from "../types/Owner";
 import type { User } from "../types/User";
-import { initializeEmailJS, sendAccountCredentials } from "../services/email/EmailService";
+import {
+  initializeEmailJS,
+  sendAccountCredentials,
+} from "../services/email/EmailService";
+import { useAuth } from "../context/AuthContext";
 
 const steps = [
   "Business Information",
@@ -51,36 +53,75 @@ type CommonProps = {
 const BusinessRegistration = () => {
   const [activeStep, setActiveStep] = useState(0);
   const navigate = useNavigate();
+  const { user } = useAuth(); // Get authenticated user
   const [submitting, setSubmitting] = useState(false);
+  const [isExistingOwner, setIsExistingOwner] = useState(false);
   const [externalBookings, setExternalBookings] = useState<
     { name: string; link: string }[]
   >([]);
 
+  // Check if user is already logged in (existing owner scenario)
+  useEffect(() => {
+    if (user && user.role_name === "Business Owner") {
+      setIsExistingOwner(true);
+      // Pre-fill user data from authenticated user
+      setUserData({
+        email: user.email || "",
+        phone_number: user.phone_number || "",
+        password: "", // Don't expose password
+        barangay_id: Number(user.barangay_id) || 0,
+        user_role_id: user.user_role_id,
+        id: user.id,
+      });
+      // Try to fetch existing owner data
+      fetchExistingOwnerData(user.id || "");
+    }
+  }, [user]);
+
+  const fetchExistingOwnerData = async (userId: string) => {
+    try {
+      const response = await apiClient.get(`/owner/user/${userId}`);
+      if (response.data) {
+        setOwnerData({
+          first_name: response.data.first_name || "",
+          last_name: response.data.last_name || "",
+          middle_name: response.data.middle_name || "",
+          age: response.data.age || "",
+          birthdate: response.data.birthdate || "",
+          gender: response.data.gender || "",
+        });
+        setFormData((prev) => ({ ...prev, owner_id: response.data.id }));
+      }
+    } catch (error) {
+      console.log("No existing owner data found, will create new");
+    }
+  };
+
   const [userData, setUserData] = useState<User>({
-    email: "juan@gmail.com",
-    phone_number: "9380410303",
-    password: "123456",
-    barangay_id: 3,
-    user_role_id: 4,
+    email: "",
+    phone_number: "",
+    password: "",
+    barangay_id: 0,
+    user_role_id: 4, // Business Owner role
   });
 
   const [ownerData, setOwnerData] = useState<Owner>({
-    first_name: "Juan",
-    last_name: "Dela Cruz",
-    middle_name: "Santos",
-    age: "30",
-    birthdate: "1993-01-01",
-    gender: "Male",
+    first_name: "",
+    last_name: "",
+    middle_name: "",
+    age: "",
+    birthdate: "",
+    gender: "",
   });
 
   const [formData, setFormData] = useState<Business>({
     id: "",
     business_image: "",
-    business_name: "Kim Angela Homestay",
-    phone_number: "09380417373",
-    email: "kim@gmail.com",
-    description: "This place is great",
-    address: "123 Street, City",
+    business_name: "",
+    phone_number: "",
+    email: "",
+    description: "",
+    address: "",
     longitude: "",
     latitude: "",
     owner_id: "",
@@ -189,38 +230,100 @@ const BusinessRegistration = () => {
     try {
       setSubmitting(true);
 
-      // Create User first if needed (endpoint: /api/users)
       let effectiveUserId = userData.id;
-      if (!effectiveUserId) {
-        const userRes = await apiClient.post(`/users`, {
-          ...userData,
-        });
-        effectiveUserId = userRes?.data?.id;
-        if (!effectiveUserId) throw new Error("User creation failed");
-        // keep state in sync for any subsequent steps
-        setUserData((prev) => ({ ...prev, id: effectiveUserId! }));
-
-        // Send account credentials via email
-        await sendAccountCredentials(
-          userData.email,
-          `${ownerData.first_name} ${ownerData.last_name}`,
-          userData.email,
-          userData.password || "owner123"
-        );
-      }
-
-      // If no owner created yet, create it now from Step 2 data
       let effectiveOwnerId = formData.owner_id;
-      if (!effectiveOwnerId) {
-        const ownerRes = await apiClient.post(`/owner`, {
-          ...ownerData,
-          user_id: effectiveUserId,
-        });
-        const ownerId = ownerRes?.data?.id;
-        if (!ownerId) throw new Error("Owner creation failed");
-        effectiveOwnerId = ownerId;
-        // set for subsequent UI uses
-        setFormData((prev) => ({ ...prev, owner_id: ownerId }));
+
+      // SCENARIO 1: EXISTING OWNER (logged in user adding another business)
+      if (isExistingOwner && user) {
+        effectiveUserId = user.id || "";
+
+        // If we already have owner_id from context, use it
+        if (effectiveOwnerId) {
+          console.log("✅ Using existing owner:", effectiveOwnerId);
+        } else {
+          // Try to find existing owner record
+          try {
+            const ownerRes = await apiClient.get(
+              `/owner/user/${effectiveUserId}`
+            );
+            if (ownerRes.data && ownerRes.data.id) {
+              effectiveOwnerId = ownerRes.data.id;
+              console.log("✅ Found existing owner:", effectiveOwnerId);
+            }
+          } catch {
+            // Owner doesn't exist yet, create one
+            const ownerRes = await apiClient.post(`/owner`, {
+              ...ownerData,
+              user_id: effectiveUserId,
+            });
+            effectiveOwnerId = ownerRes?.data?.id;
+            if (!effectiveOwnerId) throw new Error("Owner creation failed");
+            console.log(
+              "✅ Created new owner for existing user:",
+              effectiveOwnerId
+            );
+          }
+        }
+      }
+      // SCENARIO 2: NEW OWNER (public registration - create user account)
+      else {
+        // Check if user with this email already exists
+        let userExists = false;
+        try {
+          const checkUser = await apiClient.get(
+            `/users/email/${userData.email}`
+          );
+          if (checkUser.data) {
+            userExists = true;
+            effectiveUserId = checkUser.data.id;
+            console.log("⚠️ User email already exists:", userData.email);
+            alert(
+              "An account with this email already exists. Please use a different email or log in first."
+            );
+            setSubmitting(false);
+            return;
+          }
+        } catch {
+          // User doesn't exist, proceed with creation
+        }
+
+        if (!userExists) {
+          // Create new user account
+          const userRes = await apiClient.post(`/users`, {
+            ...userData,
+            user_role_id: 4, // Business Owner role
+          });
+          effectiveUserId = userRes?.data?.id;
+          if (!effectiveUserId) throw new Error("User creation failed");
+          setUserData((prev) => ({ ...prev, id: effectiveUserId! }));
+          console.log("✅ Created new user account:", effectiveUserId);
+
+          // Send account credentials via email
+          try {
+            await sendAccountCredentials(
+              userData.email,
+              `${ownerData.first_name} ${ownerData.last_name}`,
+              userData.email,
+              userData.password || "defaultPassword123"
+            );
+            console.log("✅ Sent account credentials to:", userData.email);
+          } catch (emailError) {
+            console.error("⚠️ Failed to send credentials email:", emailError);
+            // Don't fail the entire registration if email fails
+          }
+        }
+
+        // Create owner record
+        if (!effectiveOwnerId) {
+          const ownerRes = await apiClient.post(`/owner`, {
+            ...ownerData,
+            user_id: effectiveUserId,
+          });
+          effectiveOwnerId = ownerRes?.data?.id;
+          if (!effectiveOwnerId) throw new Error("Owner creation failed");
+          setFormData((prev) => ({ ...prev, owner_id: effectiveOwnerId }));
+          console.log("✅ Created new owner record:", effectiveOwnerId);
+        }
       }
 
       // Insert Business
@@ -343,93 +446,236 @@ const BusinessRegistration = () => {
   };
 
   return (
-    <PageContainer
-      style={{
+    <Box
+      sx={{
         display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
+        minHeight: "100vh",
+        height: "100%",
+        background: "#ffffff",
+        overflow: "hidden",
+        flexDirection: { xs: "column", md: "row" },
       }}
     >
-      <Container
-        style={{
-          width: "min(100%, clamp(40rem, calc(40vw + 0rem), 70rem))",
-          maxWidth: "100%",
-          margin: "0 auto",
-          padding: 0,
-          // add bottom padding so content isn't hidden behind fixed buttons
-          paddingBottom: "5rem",
-          gap: 0,
+      {/* Sidebar */}
+      <Box
+        sx={{
+          width: { xs: "100%", md: "320px" },
+          minWidth: { xs: "100%", md: "320px" },
+          height: { xs: "auto", md: "100%" },
+          background: "linear-gradient(180deg, #0A1B47 0%, #0077B6 100%)",
+          padding: { xs: "1.5rem 1rem", md: "2.5rem 1.5rem" },
+          display: "flex",
+          flexDirection: { xs: "row", md: "column" },
+          gap: { xs: "1rem", md: "2rem" },
+          alignItems: { xs: "center", md: "flex-start" },
+          justifyContent: { xs: "space-between", md: "flex-start" },
+          position: { xs: "sticky", md: "static" },
+          top: 0,
+          zIndex: 10,
+          boxShadow: { xs: "0 2px 8px rgba(0,0,0,0.1)", md: "none" },
         }}
       >
-        <Container>
-          <Stepper
-            currentStep={activeStep}
-            steps={steps}
-            orientation="horizontal"
-          />
-        </Container>
-
-        {renderStepContent(activeStep)}
-
-        {/* Fixed action bar at bottom */}
-        <div
-          style={{
-            position: "fixed",
-            left: 0,
-            right: 0,
-            bottom: 0,
-            zIndex: 1200,
-            background: "#fff",
-            borderTop: "1px solid rgba(0,0,0,0.08)",
-            // iOS/Android like elevated feel on web
-            boxShadow: "0 -2px 8px rgba(0,0,0,0.06)",
-          }}
-        >
-          <div
-            style={{
-              width: "min(100%, clamp(25rem, calc(40vw + 0rem), 70rem))",
-              margin: "0 auto",
-              padding: "0.75rem 1rem",
-              display: "flex",
-              justifyContent: "space-between",
+        <Box>
+          <Typography.Header
+            sx={{
+              color: "white",
+              fontSize: { xs: "1.25rem", md: "1.5rem" },
+              mb: 0.5,
+              fontWeight: 700,
             }}
           >
-            <Button
-              size="md"
-              variant="soft"
-              color="neutral"
-              onClick={handleBack}
-              aria-label="Back"
+            Register
+          </Typography.Header>
+          <Typography.Body
+            sx={{
+              color: "rgba(255, 255, 255, 0.8)",
+              fontSize: { xs: "0.75rem", md: "0.875rem" },
+              display: { xs: "none", sm: "block" },
+            }}
+          >
+            {isExistingOwner ? "Add Your Business" : "Create Your Account"}
+          </Typography.Body>
+        </Box>
+
+        {/* Mobile Step Progress Indicator */}
+        <Box
+          sx={{
+            display: { xs: "flex", md: "none" },
+            alignItems: "center",
+            gap: "0.5rem",
+          }}
+        >
+          {steps.map((_, index) => (
+            <Box
+              key={index}
               sx={{
-                minWidth: "100px",
-                fontWeight: 500,
+                width: index === activeStep ? "24px" : "8px",
+                height: "8px",
+                borderRadius: "4px",
+                background:
+                  index < activeStep
+                    ? "#28a745"
+                    : index === activeStep
+                    ? "white"
+                    : "rgba(255, 255, 255, 0.3)",
+                transition: "all 0.3s ease",
               }}
-            >
-              Back
-            </Button>
-            <Button
-              size="md"
-              variant="solid"
-              color="primary"
-              onClick={handleNext}
-              loading={submitting && activeStep === steps.length - 1}
-              disabled={submitting}
-              aria-label={
-                activeStep === steps.length - 1
-                  ? "Submit registration"
-                  : "Next step"
-              }
-              sx={{
-                minWidth: "100px",
-                fontWeight: 500,
-              }}
-            >
-              {activeStep === steps.length - 1 ? "Submit" : "Next"}
-            </Button>
-          </div>
-        </div>
-      </Container>
-    </PageContainer>
+            />
+          ))}
+          <Typography.Body
+            sx={{
+              color: "white",
+              fontSize: "0.75rem",
+              fontWeight: 600,
+              ml: 0.5,
+            }}
+          >
+            {activeStep + 1}/{steps.length}
+          </Typography.Body>
+        </Box>
+
+        {/* Desktop Vertical Stepper */}
+        <Box
+          sx={{
+            display: { xs: "none", md: "flex" },
+            flexDirection: "column",
+            gap: "1.5rem",
+          }}
+        >
+          {steps.map((step, index) => {
+            const isActive = index === activeStep;
+            const isCompleted = index < activeStep;
+
+            return (
+              <Box
+                key={index}
+                sx={{ display: "flex", alignItems: "center", gap: "12px" }}
+              >
+                {/* Step Circle */}
+                <Box
+                  sx={{
+                    width: "40px",
+                    height: "40px",
+                    borderRadius: "50%",
+                    background: isCompleted
+                      ? "#28a745"
+                      : isActive
+                      ? "white"
+                      : "rgba(255, 255, 255, 0.15)",
+                    border: isActive
+                      ? "3px solid rgba(255, 255, 255, 0.5)"
+                      : "none",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    color: isActive ? "#0A1B47" : "white",
+                    fontWeight: 700,
+                    fontSize: "1rem",
+                    transition: "all 0.3s ease",
+                    flexShrink: 0,
+                  }}
+                >
+                  {isCompleted ? "✓" : index + 1}
+                </Box>
+
+                {/* Step Label */}
+                <Box sx={{ flex: 1 }}>
+                  <Typography.Body
+                    sx={{
+                      color: isActive ? "white" : "rgba(255, 255, 255, 0.7)",
+                      fontWeight: isActive ? 600 : 400,
+                      fontSize: "0.875rem",
+                      lineHeight: 1.4,
+                    }}
+                  >
+                    {step}
+                  </Typography.Body>
+                </Box>
+              </Box>
+            );
+          })}
+        </Box>
+      </Box>
+
+      {/* Content Area */}
+      <Box
+        sx={{
+          flex: 1,
+          padding: { xs: "2rem 1rem", sm: "2.5rem 2rem", md: "3rem 4rem" },
+          overflowY: "auto",
+          height: { xs: "auto", md: "100vh" },
+          background: "#fafafa",
+        }}
+      >
+        {renderStepContent(activeStep)}
+
+        {/* Action Buttons */}
+        <Box
+          sx={{
+            display: "flex",
+            justifyContent: "space-between",
+            flexDirection: { xs: "column", sm: "row" },
+            gap: { xs: "1rem", sm: 0 },
+            marginTop: "3rem",
+            paddingTop: "2rem",
+            borderTop: "2px solid #e5e7eb",
+            background: "white",
+            marginX: { xs: "-1rem", sm: "-2rem", md: "-4rem" },
+            marginBottom: { xs: "-2rem", md: "-3rem" },
+            paddingX: { xs: "1rem", sm: "2rem", md: "4rem" },
+            paddingBottom: "2rem",
+          }}
+        >
+          <Button
+            size="lg"
+            variant="outlined"
+            color="neutral"
+            onClick={handleBack}
+            aria-label="Back"
+            sx={{
+              minWidth: { xs: "100%", sm: "120px" },
+              fontWeight: 600,
+              borderRadius: "10px",
+              borderWidth: "2px",
+              borderColor: "#0A1B47",
+              color: "#0A1B47",
+              "&:hover": {
+                borderWidth: "2px",
+                borderColor: "#0077B6",
+                background: "rgba(0, 119, 182, 0.05)",
+              },
+            }}
+          >
+            Back
+          </Button>
+          <Button
+            size="lg"
+            variant="solid"
+            onClick={handleNext}
+            loading={submitting && activeStep === steps.length - 1}
+            disabled={submitting}
+            aria-label={
+              activeStep === steps.length - 1
+                ? "Submit registration"
+                : "Next step"
+            }
+            sx={{
+              minWidth: { xs: "100%", sm: "120px" },
+              fontWeight: 600,
+              borderRadius: "10px",
+              background: "linear-gradient(135deg, #0A1B47 0%, #0077B6 100%)",
+              "&:hover": {
+                background: "linear-gradient(135deg, #0077B6 0%, #0A1B47 100%)",
+                transform: "translateY(-2px)",
+                boxShadow: "0 8px 20px rgba(0, 119, 182, 0.3)",
+              },
+            }}
+          >
+            {activeStep === steps.length - 1 ? "Submit" : "Next"}
+          </Button>
+        </Box>
+      </Box>
+    </Box>
   );
 };
 

@@ -1,7 +1,18 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { IoAdd } from "react-icons/io5";
-import { Star, Search, Landmark, Church, History, Trees, Building2, Eye, Edit, ListChecks } from "lucide-react";
+import {
+  Star,
+  Search,
+  Landmark,
+  Church,
+  History,
+  Trees,
+  Building2,
+  Eye,
+  Edit,
+  ListChecks,
+} from "lucide-react";
 import Typography from "@/src/components/Typography";
 import Button from "@/src/components/Button";
 import TouristSpotForm from "@/src/features/admin/services/tourist-spot/components/TouristSpotForm";
@@ -44,10 +55,14 @@ const Spot = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [categoryTab, setCategoryTab] = useState<string>("All");
-  const [categoryTabs, setCategoryTabs] = useState<Array<{ id: string; label: string; icon?: React.ReactNode }>>([{ id: "All", label: "All", icon: <Landmark size={16} /> }]);
+  const [categoryTabs, setCategoryTabs] = useState<
+    Array<{ id: string; label: string; icon?: React.ReactNode }>
+  >([{ id: "All", label: "All", icon: <Landmark size={16} /> }]);
   type DisplayMode = "cards" | "table";
   const [display, setDisplay] = useState<DisplayMode>("cards");
-  const [statusFilter, setStatusFilter] = useState<"active" | "inactive" | "all">("all");
+  const [statusFilter, setStatusFilter] = useState<
+    "active" | "inactive" | "all"
+  >("all");
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -59,14 +74,29 @@ const Spot = () => {
       setSpots(spotsData);
       try {
         const { categories } = await apiService.getCategoriesAndTypes();
-        const list = ["All", ...Array.from(new Set(categories.map((c: any) => c.category).filter(Boolean)))];
-        setCategoryTabs(list.map((c) => ({ id: c, label: c, icon: categoryIconFor(c) })));
+        const list = [
+          "All",
+          ...Array.from(
+            new Set(categories.map((c: any) => c.category).filter(Boolean))
+          ),
+        ];
+        setCategoryTabs(
+          list.map((c) => ({ id: c, label: c, icon: categoryIconFor(c) }))
+        );
       } catch {
-        const fromSpots = Array.from(new Set(
-          spotsData.flatMap((s) => Array.isArray(s.categories) ? s.categories.map((c: any) => c.category || String(c)) : [])
-        ));
+        const fromSpots = Array.from(
+          new Set(
+            spotsData.flatMap((s) =>
+              Array.isArray(s.categories)
+                ? s.categories.map((c: any) => String(c.category_id || c))
+                : []
+            )
+          )
+        );
         const list = ["All", ...fromSpots];
-        setCategoryTabs(list.map((c) => ({ id: c, label: c, icon: categoryIconFor(c) })));
+        setCategoryTabs(
+          list.map((c) => ({ id: c, label: c, icon: categoryIconFor(c) }))
+        );
       }
     } catch (error) {
       console.error("Error:", error);
@@ -81,8 +111,10 @@ const Spot = () => {
     const n = String(name || "").toLowerCase();
     if (n.includes("museum")) return <Landmark size={16} />;
     if (n.includes("church")) return <Church size={16} />;
-    if (n.includes("historic") || n.includes("historical")) return <History size={16} />;
-    if (n.includes("nature") || n.includes("park") || n.includes("mountain")) return <Trees size={16} />;
+    if (n.includes("historic") || n.includes("historical"))
+      return <History size={16} />;
+    if (n.includes("nature") || n.includes("park") || n.includes("mountain"))
+      return <Trees size={16} />;
     if (n.includes("urban")) return <Building2 size={16} />;
     return <Landmark size={16} />;
   };
@@ -127,22 +159,27 @@ const Spot = () => {
     if (categoryTab && categoryTab !== "All") {
       filtered = filtered.filter((spot) =>
         Array.isArray(spot.categories)
-          ? spot.categories.some((cat: any) => (cat.category || String(cat)) === categoryTab)
+          ? spot.categories.some(
+              (cat: any) => (cat.category || String(cat)) === categoryTab
+            )
           : false
       );
     }
 
     // Filter by search query
     if (searchQuery) {
-      filtered = filtered.filter((spot) =>
-        spot.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        spot.description?.toLowerCase().includes(searchQuery.toLowerCase())
+      filtered = filtered.filter(
+        (spot) =>
+          spot.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          spot.description?.toLowerCase().includes(searchQuery.toLowerCase())
       );
     }
 
     // Filter by status
     if (statusFilter !== "all") {
-      filtered = filtered.filter((spot) => spot.spot_status?.toLowerCase() === statusFilter);
+      filtered = filtered.filter(
+        (spot) => spot.spot_status?.toLowerCase() === statusFilter
+      );
     }
 
     return filtered;
@@ -150,16 +187,20 @@ const Spot = () => {
 
   const getPrimaryImageUrl = (spot: TouristSpot): string => {
     const img = spot.images?.find((i) => i.is_primary) || spot.images?.[0];
-    return (img?.file_url as string | undefined) || (spot as any).primary_image || (spot as any).image_url || placeholderImage;
+    return (
+      (img?.file_url as string | undefined) ||
+      (spot as any).primary_image ||
+      (spot as any).image_url ||
+      placeholderImage
+    );
   };
 
   const getAddressLine = (spot: TouristSpot): string => {
     const parts = [spot.barangay, spot.municipality].filter(Boolean);
-    return parts.join(', ');
+    return parts.join(", ");
   };
 
   const [selectedEditStep, setSelectedEditStep] = useState<number>(0);
-
 
   const columns: TableColumn<TouristSpot>[] = [
     {
@@ -167,9 +208,7 @@ const Spot = () => {
       label: "Name",
       minWidth: 300,
       render: (row) => (
-        <Typography.Body weight="normal">
-          {row.name}
-        </Typography.Body>
+        <Typography.Body weight="normal">{row.name}</Typography.Body>
       ),
     },
     {
@@ -178,7 +217,8 @@ const Spot = () => {
       minWidth: 300,
       render: (row) => (
         <Typography.Body sx={{ opacity: 0.85 }}>
-          {row.description?.substring(0, 60)}{row.description?.length > 60 ? "..." : ""}
+          {row.description?.substring(0, 60)}
+          {row.description?.length > 60 ? "..." : ""}
         </Typography.Body>
       ),
     },
@@ -191,7 +231,7 @@ const Spot = () => {
           {Array.isArray(row.categories)
             ? row.categories.slice(0, 2).map((cat, idx) => (
                 <Chip key={idx} color="primary" variant="soft" size="md">
-                  {cat.category || String(cat)}
+                  {`Category ${cat.category_id || String(cat)}`}
                 </Chip>
               ))
             : null}
@@ -222,11 +262,8 @@ const Spot = () => {
       label: "Featured",
       minWidth: 100,
       align: "center",
-      render: (row) => (
-        row.is_featured ? (
-          <Star size={18} fill="gold" color="gold" />
-        ) : null
-      ),
+      render: (row) =>
+        row.is_featured ? <Star size={18} fill="gold" color="gold" /> : null,
     },
     {
       id: "actions",
@@ -262,7 +299,10 @@ const Spot = () => {
   ];
 
   useEffect(() => {
-    const state = location.state as { editSpotId?: string; editStep?: number } | null;
+    const state = location.state as {
+      editSpotId?: string;
+      editStep?: number;
+    } | null;
     if (state?.editSpotId) {
       const openEdit = async () => {
         const { editSpotId, editStep = 0 } = state;
@@ -316,7 +356,7 @@ const Spot = () => {
             <Typography.Header>Tourist Spot Management</Typography.Header>
           </div>
 
-            <Container direction="row" padding="0" gap="0.5rem" align="center">
+          <Container direction="row" padding="0" gap="0.5rem" align="center">
             <IconButton
               size="sm"
               variant={display === "cards" ? "solid" : "soft"}
@@ -357,7 +397,7 @@ const Spot = () => {
             >
               Manage Featured
             </Button>
-            
+
             <IconButton
               onClick={() => setAddSpotModalVisible(true)}
               size="lg"
@@ -369,7 +409,7 @@ const Spot = () => {
             </IconButton>
           </div>
         </Container>
-        
+
         {/* Search */}
         <Container
           padding="20px 20px 0 20px"
@@ -417,7 +457,10 @@ const Spot = () => {
             style={{ minHeight: "400px" }}
           >
             <div className="loading-spinner" />
-            <Typography.Body size="normal" sx={{ color: "#666", marginTop: "1rem" }}>
+            <Typography.Body
+              size="normal"
+              sx={{ color: "#666", marginTop: "1rem" }}
+            >
               Loading tourist spots...
             </Typography.Body>
           </Container>
@@ -454,84 +497,104 @@ const Spot = () => {
             title="No Results Found"
             message={`No spots match "${searchQuery}". Try a different search term.`}
           />
+        ) : display === "table" ? (
+          <Table
+            columns={columns}
+            data={filteredSpots}
+            rowKey="id"
+            onRowClick={(row) => handleViewDetails(row)}
+            rowsPerPage={10}
+            loading={loading}
+            emptyMessage="No tourist spots found"
+            stickyHeader
+            maxHeight="600px"
+          />
         ) : (
-          display === "table" ? (
-            <Table
-              columns={columns}
-              data={filteredSpots}
-              rowKey="id"
-              onRowClick={(row) => handleViewDetails(row)}
-              rowsPerPage={10}
-              loading={loading}
-              emptyMessage="No tourist spots found"
-              stickyHeader
-              maxHeight="600px"
-            />
-          ) : (
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))",
-                gap: "20px",
-              }}
-            >
-              {filteredSpots.map((spot) => (
-                <Card
-                  key={spot.id}
-                  variant="grid"
-                  image={getPrimaryImageUrl(spot)}
-                  aspectRatio="16/9"
-                  title={spot.name}
-                  subtitle={getAddressLine(spot)}
-                  size="default"
-                  elevation={2}
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))",
+              gap: "20px",
+            }}
+          >
+            {filteredSpots.map((spot) => (
+              <Card
+                key={spot.id}
+                variant="grid"
+                image={getPrimaryImageUrl(spot)}
+                aspectRatio="16/9"
+                title={spot.name}
+                subtitle={getAddressLine(spot)}
+                size="default"
+                elevation={2}
+              >
+                <div
+                  style={{ display: "flex", alignItems: "center", gap: "8px" }}
                 >
-                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                    <Chip
-                      size="sm"
-                      color={spot.spot_status === "active" ? "success" : "neutral"}
+                  <Chip
+                    size="sm"
+                    color={
+                      spot.spot_status === "active" ? "success" : "neutral"
+                    }
+                  >
+                    {spot.spot_status}
+                  </Chip>
+                  <Dropdown>
+                    <MenuButton
+                      slots={{ root: IconButton }}
+                      slotProps={{
+                        root: {
+                          variant: "plain",
+                          size: "sm",
+                          onClick: (e: React.MouseEvent) => e.stopPropagation(),
+                        } as any,
+                      }}
                     >
-                      {spot.spot_status}
-                    </Chip>
-                    <Dropdown>
-                      <MenuButton
-                        slots={{ root: IconButton }}
-                        slotProps={{
-                          root: {
-                            variant: "plain",
-                            size: "sm",
-                            onClick: (e: React.MouseEvent) => e.stopPropagation(),
-                          } as any,
+                      <MoreVert />
+                    </MenuButton>
+                    <Menu
+                      placement="bottom-end"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <MenuItem
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleViewDetails(spot);
                         }}
                       >
-                        <MoreVert />
-                      </MenuButton>
-                      <Menu placement="bottom-end" onClick={(e) => e.stopPropagation()}>
-                        <MenuItem onClick={(e) => { e.stopPropagation(); handleViewDetails(spot); }}>
-                          <ListItemDecorator>
-                            <Eye />
-                          </ListItemDecorator>
-                          View Details
-                        </MenuItem>
-                        <MenuItem onClick={(e) => { e.stopPropagation(); handleEditSpot(spot); }}>
-                          <ListItemDecorator>
-                            <Edit />
-                          </ListItemDecorator>
-                          Edit
-                        </MenuItem>
-                        <MenuItem onClick={(e) => { e.stopPropagation(); handleViewReviews(spot); }}>
-                          <ListItemDecorator>
-                            <ListChecks />
-                          </ListItemDecorator>
-                          Reviews
-                        </MenuItem>
-                      </Menu>
-                    </Dropdown>
-                  </div>
-                </Card>
-              ))}
-            </div>
-          )
+                        <ListItemDecorator>
+                          <Eye />
+                        </ListItemDecorator>
+                        View Details
+                      </MenuItem>
+                      <MenuItem
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleEditSpot(spot);
+                        }}
+                      >
+                        <ListItemDecorator>
+                          <Edit />
+                        </ListItemDecorator>
+                        Edit
+                      </MenuItem>
+                      <MenuItem
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleViewReviews(spot);
+                        }}
+                      >
+                        <ListItemDecorator>
+                          <ListChecks />
+                        </ListItemDecorator>
+                        Reviews
+                      </MenuItem>
+                    </Menu>
+                  </Dropdown>
+                </div>
+              </Card>
+            ))}
+          </div>
         )}
       </Container>
 

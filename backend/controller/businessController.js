@@ -140,7 +140,7 @@ export async function updateBusiness(req, res) {
         "DELETE FROM entity_categories WHERE entity_id = ? AND entity_type = 'business'",
         [id]
       );
-      
+
       // Add new categories
       for (const categoryId of req.body.category_ids) {
         await db.query(
@@ -327,6 +327,45 @@ export async function updateBusinessRegistration(req, res) {
         .status(404)
         .json({ message: "Business registration not found" });
     }
+
+    // If status is being updated to "Approved", send email notification
+    if (req.body.status === "Approved" && req.body.business_id) {
+      try {
+        // Get business details
+        const [businessData] = await db.query("CALL GetBusinessById(?)", [req.body.business_id]);
+        const business = businessData[0]?.[0];
+
+        if (business && business.owner_id) {
+          // Get owner details
+          const [ownerData] = await db.query("CALL GetOwnerById(?)", [business.owner_id]);
+          const owner = ownerData[0]?.[0];
+
+          if (owner && owner.user_id) {
+            // Get user details (for email)
+            const [userData] = await db.query("CALL GetUserById(?)", [owner.user_id]);
+            const user = userData[0]?.[0];
+
+            if (user && user.email) {
+              // Import and send email notification
+              const { sendBusinessApprovalEmail } = await import("../utils/emailService.js");
+
+              await sendBusinessApprovalEmail(
+                user.email,
+                `${owner.first_name} ${owner.last_name}`,
+                business.business_name,
+                user.email // Send email as username
+              );
+
+              console.log(`✅ Sent approval email to: ${user.email}`);
+            }
+          }
+        }
+      } catch (emailError) {
+        // Log error but don't fail the registration update
+        console.error("⚠️ Failed to send approval email:", emailError);
+      }
+    }
+
     res.json({
       message: "Business registration updated successfully",
       ...result[0][0],

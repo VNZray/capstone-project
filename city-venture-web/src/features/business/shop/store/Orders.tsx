@@ -51,7 +51,12 @@ const orderStatuses: OrderStatus[] = [
   "cancelled_by_business",
 ];
 
-const paymentStatuses: PaymentStatus[] = ["pending", "paid", "failed", "refunded"];
+const paymentStatuses: PaymentStatus[] = [
+  "pending",
+  "paid",
+  "failed",
+  "refunded",
+];
 
 const paymentMethodLabels: Record<string, string> = {
   cash_on_pickup: "Cash on Pickup",
@@ -67,7 +72,7 @@ export default function Orders(): React.ReactElement {
   const [searchQuery, setSearchQuery] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
-  
+
   // Arrival code verification modal
   const [verifyModalOpen, setVerifyModalOpen] = useState(false);
   const [arrivalCodeInput, setArrivalCodeInput] = useState("");
@@ -76,13 +81,13 @@ export default function Orders(): React.ReactElement {
   // Real-time socket connection for order updates
   useOrderSocket(businessDetails?.id || null, {
     onNewOrder: (order) => {
-      console.log('[Orders] New order received via socket:', order);
+      console.log("[Orders] New order received via socket:", order);
       setOrders((prevOrders) => [order, ...prevOrders]);
       setSuccess(`New order received: ${order.order_number}`);
       setTimeout(() => setSuccess(null), 5000);
     },
     onOrderUpdated: (order) => {
-      console.log('[Orders] Order updated via socket:', order);
+      console.log("[Orders] Order updated via socket:", order);
       setOrders((prevOrders) =>
         prevOrders.map((o) => (o.id === order.id ? order : o))
       );
@@ -100,20 +105,31 @@ export default function Orders(): React.ReactElement {
     setError(null);
 
     try {
-      const data = await OrderService.fetchOrdersByBusinessId(businessDetails.id);
+      const data = await OrderService.fetchOrdersByBusinessId(
+        businessDetails.id
+      );
       setOrders(Array.isArray(data) ? data : []);
     } catch (err: any) {
-      console.error('[Orders] Error fetching orders:', err);
-      
-      const errorMessage = err.response?.data?.message || err.message || "Failed to load orders.";
+      console.error("[Orders] Error fetching orders:", err);
+
+      const errorMessage =
+        err.response?.data?.message || err.message || "Failed to load orders.";
       const errorDetails = err.response?.data;
-      
+
       if (err.response?.status === 403) {
-        setError(`Access denied: ${errorMessage}${errorDetails?.required ? ` (Required: ${errorDetails.required.join(', ')}, Current: ${errorDetails.current})` : ''}`);
+        setError(
+          `Access denied: ${errorMessage}${
+            errorDetails?.required
+              ? ` (Required: ${errorDetails.required.join(", ")}, Current: ${
+                  errorDetails.current
+                })`
+              : ""
+          }`
+        );
       } else {
         setError(errorMessage);
       }
-      
+
       setOrders([]);
     } finally {
       setLoading(false);
@@ -137,9 +153,15 @@ export default function Orders(): React.ReactElement {
     }
   };
 
-  const handlePaymentStatusChange = async (orderId: string, newStatus: string) => {
+  const handlePaymentStatusChange = async (
+    orderId: string,
+    newStatus: string
+  ) => {
     try {
-      await OrderService.updatePaymentStatus(orderId, newStatus as PaymentStatus);
+      await OrderService.updatePaymentStatus(
+        orderId,
+        newStatus as PaymentStatus
+      );
       setSuccess("Payment status updated successfully!");
       await fetchOrders();
       setTimeout(() => setSuccess(null), 3000);
@@ -164,11 +186,11 @@ export default function Orders(): React.ReactElement {
         businessDetails.id,
         arrivalCodeInput.trim()
       );
-      
-      if (result.found && result.order) {
+
+      if (result) {
         // Automatically mark as picked up
-        await OrderService.updateOrderStatus(result.order.id, "picked_up");
-        setSuccess(`Order ${result.order.order_number} marked as picked up!`);
+        await OrderService.updateOrderStatus(result.id, "picked_up");
+        setSuccess(`Order ${result.order_number} marked as picked up!`);
         setVerifyModalOpen(false);
         setArrivalCodeInput("");
         await fetchOrders();
@@ -236,13 +258,15 @@ export default function Orders(): React.ReactElement {
               size="sm"
               variant="outlined"
               color="danger"
-              onClick={() => handleStatusChange(order.id, "cancelled_by_business")}
+              onClick={() =>
+                handleStatusChange(order.id, "cancelled_by_business")
+              }
             >
               Reject
             </Button>
           </Stack>
         );
-      
+
       case "accepted":
         return (
           <Stack direction="row" spacing={1}>
@@ -257,13 +281,15 @@ export default function Orders(): React.ReactElement {
               size="sm"
               variant="outlined"
               color="danger"
-              onClick={() => handleStatusChange(order.id, "cancelled_by_business")}
+              onClick={() =>
+                handleStatusChange(order.id, "cancelled_by_business")
+              }
             >
               Cancel
             </Button>
           </Stack>
         );
-      
+
       case "preparing":
         return (
           <Stack direction="row" spacing={1}>
@@ -278,13 +304,15 @@ export default function Orders(): React.ReactElement {
               size="sm"
               variant="outlined"
               color="danger"
-              onClick={() => handleStatusChange(order.id, "cancelled_by_business")}
+              onClick={() =>
+                handleStatusChange(order.id, "cancelled_by_business")
+              }
             >
               Cancel
             </Button>
           </Stack>
         );
-      
+
       case "ready_for_pickup":
         return (
           <Stack direction="row" spacing={1}>
@@ -299,13 +327,15 @@ export default function Orders(): React.ReactElement {
               size="sm"
               variant="outlined"
               color="danger"
-              onClick={() => handleStatusChange(order.id, "cancelled_by_business")}
+              onClick={() =>
+                handleStatusChange(order.id, "cancelled_by_business")
+              }
             >
               Cancel
             </Button>
           </Stack>
         );
-      
+
       case "picked_up":
       case "cancelled_by_user":
       case "cancelled_by_business":
@@ -320,9 +350,13 @@ export default function Orders(): React.ReactElement {
             {formatStatusLabel(order.status)}
           </Chip>
         );
-      
+
       default:
-        return <Typography level="body-sm">{formatStatusLabel(order.status)}</Typography>;
+        return (
+          <Typography level="body-sm">
+            {formatStatusLabel(order.status)}
+          </Typography>
+        );
     }
   };
 
@@ -384,9 +418,15 @@ export default function Orders(): React.ReactElement {
       pending: orders.filter((order) => order.status === "pending").length,
       accepted: orders.filter((order) => order.status === "accepted").length,
       preparing: orders.filter((order) => order.status === "preparing").length,
-      ready_for_pickup: orders.filter((order) => order.status === "ready_for_pickup").length,
+      ready_for_pickup: orders.filter(
+        (order) => order.status === "ready_for_pickup"
+      ).length,
       picked_up: orders.filter((order) => order.status === "picked_up").length,
-      cancelled: orders.filter((order) => order.status.startsWith("cancelled_") || order.status === "failed_payment").length,
+      cancelled: orders.filter(
+        (order) =>
+          order.status.startsWith("cancelled_") ||
+          order.status === "failed_payment"
+      ).length,
     }),
     [orders]
   );
@@ -395,11 +435,14 @@ export default function Orders(): React.ReactElement {
     const trimmedQuery = searchQuery.trim().toLowerCase();
 
     return orders.filter((order) => {
-      let matchesStatus = selectedStatus === "all" || order.status === selectedStatus;
-      
+      let matchesStatus =
+        selectedStatus === "all" || order.status === selectedStatus;
+
       // Handle "cancelled" tab matching any cancelled variant
       if (selectedStatus === "cancelled") {
-        matchesStatus = order.status.startsWith("cancelled_") || order.status === "failed_payment";
+        matchesStatus =
+          order.status.startsWith("cancelled_") ||
+          order.status === "failed_payment";
       }
 
       if (!trimmedQuery) {
@@ -451,7 +494,7 @@ export default function Orders(): React.ReactElement {
               Manage your product orders, payments, and pickup statuses
             </Typography>
           </Box>
-          
+
           <Button
             startDecorator={<FiKey />}
             onClick={() => setVerifyModalOpen(true)}
@@ -462,13 +505,18 @@ export default function Orders(): React.ReactElement {
           </Button>
         </Stack>
 
-        <Tabs value={selectedStatus} onChange={(_, value) => setSelectedStatus(value as string)}>
+        <Tabs
+          value={selectedStatus}
+          onChange={(_, value) => setSelectedStatus(value as string)}
+        >
           <TabList>
             <Tab value="all">All ({statusCounts.all})</Tab>
             <Tab value="pending">Pending ({statusCounts.pending})</Tab>
             <Tab value="accepted">Accepted ({statusCounts.accepted})</Tab>
             <Tab value="preparing">Preparing ({statusCounts.preparing})</Tab>
-            <Tab value="ready_for_pickup">Ready ({statusCounts.ready_for_pickup})</Tab>
+            <Tab value="ready_for_pickup">
+              Ready ({statusCounts.ready_for_pickup})
+            </Tab>
             <Tab value="picked_up">Picked Up ({statusCounts.picked_up})</Tab>
             <Tab value="cancelled">Cancelled ({statusCounts.cancelled})</Tab>
           </TabList>
@@ -489,7 +537,10 @@ export default function Orders(): React.ReactElement {
         )}
 
         {!loading && filteredOrders.length > 0 && (
-          <Sheet variant="outlined" sx={{ borderRadius: "sm", overflow: "hidden" }}>
+          <Sheet
+            variant="outlined"
+            sx={{ borderRadius: "sm", overflow: "hidden" }}
+          >
             <Table>
               <thead>
                 <tr>
@@ -587,7 +638,8 @@ export default function Orders(): React.ReactElement {
                           color={getPaymentChipColor(order.payment_method)}
                           startDecorator={<FiCreditCard size={12} />}
                         >
-                          {paymentMethodLabels[order.payment_method ?? ""] ?? "Unknown"}
+                          {paymentMethodLabels[order.payment_method ?? ""] ??
+                            "Unknown"}
                         </Chip>
                         <Select
                           size="sm"
@@ -606,9 +658,7 @@ export default function Orders(): React.ReactElement {
                         </Select>
                       </Stack>
                     </td>
-                    <td>
-                      {getOrderActions(order)}
-                    </td>
+                    <td>{getOrderActions(order)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -695,20 +745,22 @@ export default function Orders(): React.ReactElement {
               <Input
                 placeholder="Enter 6-digit code"
                 value={arrivalCodeInput}
-                onChange={(e) => setArrivalCodeInput(e.target.value.toUpperCase())}
+                onChange={(e) =>
+                  setArrivalCodeInput(e.target.value.toUpperCase())
+                }
                 slotProps={{
                   input: {
                     maxLength: 6,
                     style: {
-                      letterSpacing: '8px',
-                      fontSize: '24px',
-                      textAlign: 'center',
+                      letterSpacing: "8px",
+                      fontSize: "24px",
+                      textAlign: "center",
                       fontWeight: 600,
-                    }
-                  }
+                    },
+                  },
                 }}
                 onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
+                  if (e.key === "Enter") {
                     handleVerifyArrivalCode();
                   }
                 }}

@@ -6,12 +6,47 @@ import DynamicTab from "@/src/components/ui/DynamicTab";
 import Card from "@/src/components/Card";
 import NoDataFound from "@/src/components/NoDataFound";
 import { Refresh, MoreVert } from "@mui/icons-material";
-import { Input, Option, Select, Menu, MenuItem, Dropdown, MenuButton, ListItemDecorator, Chip } from "@mui/joy";
-import { Search, Edit, Eye, Trash2, ListChecks, UtensilsCrossed, Coffee, Gift, Shirt, Store, ShoppingBag, ShoppingCart, Cake, Pill, BookOpen, Smartphone, Gem, Building, ShoppingBasket, Hammer, Dumbbell, Baby, Armchair, Dog } from "lucide-react";
+import {
+  Input,
+  Option,
+  Select,
+  Menu,
+  MenuItem,
+  Dropdown,
+  MenuButton,
+  ListItemDecorator,
+  Chip,
+} from "@mui/joy";
+import {
+  Search,
+  Edit,
+  Eye,
+  Trash2,
+  ListChecks,
+  UtensilsCrossed,
+  Coffee,
+  Gift,
+  Shirt,
+  Store,
+  ShoppingBag,
+  ShoppingCart,
+  Cake,
+  Pill,
+  BookOpen,
+  Smartphone,
+  Gem,
+  Building,
+  ShoppingBasket,
+  Hammer,
+  Dumbbell,
+  Baby,
+  Armchair,
+  Dog,
+} from "lucide-react";
 import { useState, useEffect } from "react";
 import { getData } from "@/src/services/Service";
 import type { BusinessDetails } from "@/src/types/Business";
-import type { Category } from "@/src/types/TypeAndCategeory";
+import type { CategoryTree } from "@/src/types/Category";
 import { fetchCategoryTree } from "@/src/services/BusinessService";
 import placeholderImage from "@/src/assets/images/placeholder-image.png";
 
@@ -20,9 +55,9 @@ const Shop: React.FC = () => {
   const [activeTab, setActiveTab] = useState("all");
   const [filter, setFilter] = useState<"active" | "inactive">("active");
   const [shops, setShops] = useState<BusinessDetails[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
+  const [categories, setCategories] = useState<CategoryTree[]>([]);
   const [loading, setLoading] = useState(true);
-  
+
   // Category icon mapping for shops
   const categoryIcons: Record<number, React.ReactNode> = {
     3: <UtensilsCrossed size={16} />,
@@ -47,9 +82,9 @@ const Shop: React.FC = () => {
   };
 
   // Flatten category tree to get all categories
-  const flattenCategories = (cats: Category[]): Category[] => {
-    const result: Category[] = [];
-    const flatten = (items: Category[]) => {
+  const flattenCategories = (cats: CategoryTree[]): CategoryTree[] => {
+    const result: CategoryTree[] = [];
+    const flatten = (items: CategoryTree[]) => {
       for (const cat of items) {
         result.push(cat);
         if (cat.children) flatten(cat.children);
@@ -63,14 +98,20 @@ const Shop: React.FC = () => {
 
   // Get category name by ID
   const getCategoryName = (id: number): string => {
-    const cat = flatCategories.find(c => c.id === id);
+    const cat = flatCategories.find((c) => c.id === id);
     return cat?.title || `Category ${id}`;
   };
 
   // Generate dynamic tabs based on available categories in shops
   const tabs = [
     { id: "all", label: "All", icon: <ListChecks size={16} /> },
-    ...Array.from(new Set(shops.flatMap((shop) => shop.category_ids || [])))
+    ...Array.from(
+      new Set(
+        shops.flatMap(
+          (shop) => shop.categories?.map((c) => c.category_id) || []
+        )
+      )
+    )
       .filter((categoryId) => categoryId !== undefined && categoryId !== null)
       .sort((a, b) => a - b)
       .map((categoryId) => ({
@@ -101,7 +142,9 @@ const Shop: React.FC = () => {
       const response = await getData("business");
       // Filter for shop type businesses (hasBooking = false means shop)
       const shopData = Array.isArray(response)
-        ? response.filter((business: BusinessDetails) => business.hasBooking === false)
+        ? response.filter(
+            (business: BusinessDetails) => business.hasBooking === false
+          )
         : [];
       setShops(shopData);
     } catch (error) {
@@ -124,7 +167,9 @@ const Shop: React.FC = () => {
         : shop.status?.toLowerCase() === "inactive";
 
     const matchesCategory =
-      activeTab === "all" || (shop.category_ids || []).includes(parseInt(activeTab));
+      activeTab === "all" ||
+      shop.categories?.some((c) => c.category_id === parseInt(activeTab)) ||
+      false;
 
     return matchesSearch && matchesStatus && matchesCategory;
   });
@@ -253,7 +298,9 @@ const Shop: React.FC = () => {
                 size="default"
                 elevation={2}
               >
-                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                <div
+                  style={{ display: "flex", alignItems: "center", gap: "8px" }}
+                >
                   <Chip
                     size="sm"
                     color={shop.status === "active" ? "success" : "neutral"}

@@ -9,7 +9,10 @@ interface BasicInfoSectionProps {
   onEdit: () => void;
 }
 
-const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({ spot, onEdit }) => {
+const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({
+  spot,
+  onEdit,
+}) => {
   const feeDisplay = React.useMemo(() => {
     if (!spot || spot.entry_fee == null) return "N/A";
     try {
@@ -44,14 +47,13 @@ const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({ spot, onEdit }) => 
           size="sm"
           startDecorator={<Edit size={16} />}
           onClick={onEdit}
-          sx={{ borderRadius: '8px' }}
+          sx={{ borderRadius: "8px" }}
         >
           Edit
         </Button>
       </Stack>
 
       <Stack spacing={2}>
-
         {/* Description */}
         <Stack spacing={0.5}>
           <Typography
@@ -73,14 +75,9 @@ const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({ spot, onEdit }) => 
             fontWeight={600}
             sx={{ color: "#1e293b", mb: 0.5 }}
           >
-            Type / Category
+            Category
           </Typography>
           <Stack direction="row" spacing={1} sx={{ flexWrap: "wrap", gap: 1 }}>
-            {spot.type && (
-              <Chip size="md" variant="soft" color="neutral" sx={{ borderRadius: "20px", fontWeight: 500 }}>
-                {spot.type}
-              </Chip>
-            )}
             {Array.isArray(spot.categories) && spot.categories.length > 0 ? (
               spot.categories.map((cat, idx) => (
                 <Chip
@@ -94,7 +91,10 @@ const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({ spot, onEdit }) => 
                 </Chip>
               ))
             ) : (
-              <Typography level="body-md" sx={{ color: "text.tertiary", fontStyle: "italic" }}>
+              <Typography
+                level="body-md"
+                sx={{ color: "text.tertiary", fontStyle: "italic" }}
+              >
                 No categories provided
               </Typography>
             )}
@@ -111,7 +111,9 @@ const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({ spot, onEdit }) => 
             >
               Entrance Fee
             </Typography>
-            <Typography level="body-md" sx={{ color: "#374151" }}>{feeDisplay}</Typography>
+            <Typography level="body-md" sx={{ color: "#374151" }}>
+              {feeDisplay}
+            </Typography>
           </Stack>
         )}
       </Stack>
