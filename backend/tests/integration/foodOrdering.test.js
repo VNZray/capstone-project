@@ -221,55 +221,15 @@ describe('Food Ordering System Tests', () => {
       });
 
       test('should accept valid payment methods', () => {
-        // Test cash_on_pickup (doesn't require payment_method_type)
-        const cashOrder = {
-          business_id: 'business-123',
-          items: [{ product_id: 'product-1', quantity: 1 }],
-          pickup_datetime: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
-          payment_method: 'cash_on_pickup',
-        };
+        // Valid payment methods: gcash, paymaya, card, cash_on_pickup
+        const validMethods = ['gcash', 'paymaya', 'card', 'cash_on_pickup'];
 
-        const cashResult = orderValidation.validateOrderCreation(cashOrder);
-        expect(cashResult.valid).toBe(true);
-
-        // Test paymongo (requires payment_method_type)
-        const paymongoOrder = {
-          business_id: 'business-123',
-          items: [{ product_id: 'product-1', quantity: 1 }],
-          pickup_datetime: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
-          payment_method: 'paymongo',
-          payment_method_type: 'gcash', // Required for paymongo
-        };
-
-        const paymongoResult = orderValidation.validateOrderCreation(paymongoOrder);
-        expect(paymongoResult.valid).toBe(true);
-      });
-
-      test('should require payment_method_type for paymongo payment method', () => {
-        const order = {
-          business_id: 'business-123',
-          items: [{ product_id: 'product-1', quantity: 1 }],
-          pickup_datetime: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
-          payment_method: 'paymongo',
-          // Missing payment_method_type
-        };
-
-        const result = orderValidation.validateOrderCreation(order);
-        
-        expect(result.valid).toBe(false);
-        expect(result.errors.some(e => e.field === 'payment_method_type')).toBe(true);
-      });
-
-      test('should accept valid payment method types for paymongo', () => {
-        const validTypes = ['gcash', 'card', 'paymaya', 'grab_pay', 'qrph'];
-
-        for (const type of validTypes) {
+        for (const method of validMethods) {
           const order = {
             business_id: 'business-123',
             items: [{ product_id: 'product-1', quantity: 1 }],
             pickup_datetime: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
-            payment_method: 'paymongo',
-            payment_method_type: type,
+            payment_method: method,
           };
 
           const result = orderValidation.validateOrderCreation(order);

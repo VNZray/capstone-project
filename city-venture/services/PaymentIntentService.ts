@@ -295,17 +295,20 @@ export async function attachPaymentMethodClient(
 
 /**
  * Attach e-wallet Payment Method to Payment Intent (server-side)
- * For e-wallets like GCash, Maya, GrabPay - goes through backend
+ * For e-wallets like GCash, Maya - goes through backend
  * 
  * @param paymentIntentId - Payment Intent ID
- * @param paymentMethodType - E-wallet type ('gcash', 'paymaya', 'grab_pay')
+ * @param paymentMethodType - E-wallet type ('gcash', 'paymaya')
  * @param returnUrl - URL to return after wallet authorization
  * @param billing - Optional billing information
  * @returns Response with redirect URL for e-wallet authorization
+ * 
+ * Note: Backend only supports 'gcash' and 'paymaya' for server-side attachment.
+ * For card payments, use client-side attachment with attachPaymentMethodClient.
  */
 export async function attachEwalletPaymentMethod(
   paymentIntentId: string,
-  paymentMethodType: 'gcash' | 'paymaya' | 'grab_pay' | 'shopee_pay',
+  paymentMethodType: 'gcash' | 'paymaya',
   returnUrl: string,
   billing?: BillingDetails
 ): Promise<AttachPaymentMethodResponse> {

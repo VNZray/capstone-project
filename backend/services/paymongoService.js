@@ -112,7 +112,7 @@ export async function createPaymentIntent({
   orderId,
   amount,
   description,
-  paymentMethodAllowed = ['card', 'paymaya', 'gcash', 'grab_pay'],
+  paymentMethodAllowed = ['card', 'paymaya', 'gcash'],
   metadata = {},
   currency = 'PHP',
   statementDescriptor = 'NAGA VENTURE',
@@ -164,16 +164,22 @@ export async function createPaymentIntent({
 }
 
 /**
+ * @deprecated LEGACY - Use createPIPMPayment or createPaymentIntent + createPaymentMethod + attachPaymentIntent instead.
+ * 
  * Create PayMongo Source (for non-card payments)
+ * This is the legacy e-wallet flow. The PIPM flow is now recommended.
+ * 
  * @param {Object} params
- * @param {string} params.type - gcash, grab_pay, paymaya
+ * @param {string} params.type - gcash, paymaya
  * @param {number} params.amount - Amount in centavos
  * @param {string} params.orderId - Order UUID
  * @param {string} params.redirectUrl - Success/failed redirect URL
  * @returns {Promise<Object>} Source data with checkout_url
  */
 export async function createSource({ type, amount, orderId, redirectUrl, redirect, metadata = {}, currency = 'PHP' }) {
-  const validTypes = ['gcash', 'grab_pay', 'paymaya'];
+  console.warn('[PayMongo] createSource is DEPRECATED. Use createPIPMPayment or Payment Intent flow instead.');
+  
+  const validTypes = ['gcash', 'paymaya'];
   if (!validTypes.includes(type)) {
     throw new Error(`Invalid source type. Must be one of: ${validTypes.join(', ')}`);
   }
@@ -227,28 +233,27 @@ export async function createSource({ type, amount, orderId, redirectUrl, redirec
  * Create PayMongo Payment Method
  *
  * For card payments: details should contain card_number, exp_month, exp_year, cvc
- * For e-wallets: type only needed (gcash, paymaya, grab_pay)
- * For DOB: bank_code required (bpi, ubp, or test_bank_one/test_bank_two for testing)
+ * For e-wallets: type only needed (gcash, paymaya)
  *
  * IMPORTANT: Card details should be collected client-side for PCI compliance.
- * This function is for server-side use with e-wallets/DOB or tokenized cards.
+ * This function is for server-side use with e-wallets or tokenized cards.
  *
  * @param {Object} params
- * @param {string} params.type - card, paymaya, gcash, grab_pay, dob, billease, qrph, brankas, shopee_pay
- * @param {Object} params.details - Payment method details (card details or bank_code)
+ * @param {string} params.type - card, paymaya, gcash
+ * @param {Object} params.details - Payment method details (card details)
  * @param {Object} params.billing - Billing information (name, email, phone, address)
  * @param {Object} params.metadata - Additional metadata
  * @returns {Promise<Object>} Payment Method data
  */
 export async function createPaymentMethod({ type, details = {}, billing = {}, metadata = {} }) {
-  const validTypes = ['card', 'paymaya', 'gcash', 'grab_pay', 'dob', 'billease', 'qrph', 'brankas', 'shopee_pay'];
+  const validTypes = ['card', 'paymaya', 'gcash'];
   if (!validTypes.includes(type)) {
     throw new Error(`Invalid payment method type. Must be one of: ${validTypes.join(', ')}`);
   }
 
   const attributes = { type };
 
-  // Add details for card or DOB
+  // Add details for card
   if (type === 'card' && details.card_number) {
     attributes.details = {
       card_number: details.card_number,
@@ -256,8 +261,6 @@ export async function createPaymentMethod({ type, details = {}, billing = {}, me
       exp_year: details.exp_year,
       cvc: details.cvc
     };
-  } else if ((type === 'dob' || type === 'brankas') && details.bank_code) {
-    attributes.details = { bank_code: details.bank_code };
   }
 
   // Add billing info if provided
@@ -538,7 +541,7 @@ export function parseWebhookEvent(event) {
  * @param {Object} params
  * @param {string} params.referenceId - Booking/Order UUID for tracking
  * @param {number} params.amount - Amount in centavos (minimum 2000 = ₱20)
- * @param {string} params.paymentMethodType - gcash, paymaya, grab_pay, card, etc.
+ * @param {string} params.paymentMethodType - gcash, paymaya, card
  * @param {string} params.description - Payment description
  * @param {string} params.returnUrl - URL to redirect after payment authentication
  * @param {Object} params.billing - Billing info (name, email, phone)
@@ -560,7 +563,7 @@ export async function createPIPMPayment({
   }
 
   // Validate payment method type
-  const validTypes = ['card', 'paymaya', 'gcash', 'grab_pay', 'dob', 'billease', 'qrph', 'brankas', 'shopee_pay'];
+  const validTypes = ['card', 'paymaya', 'gcash'];
   if (!validTypes.includes(paymentMethodType)) {
     throw new Error(`Invalid payment method type. Must be one of: ${validTypes.join(', ')}`);
   }
@@ -631,16 +634,25 @@ export async function createPIPMPayment({
 }
 
 export default {
+  // PIPM Flow (Recommended)
   createPaymentIntent,
-  createSource,
   createPaymentMethod,
   attachPaymentIntent,
   getPaymentIntent,
-  getSource,
-  getPayment,
+  createPIPMPayment,
+  
+  // Refunds
   createRefund,
   getRefund,
+  
+  // Webhooks
   verifyWebhookSignature,
   parseWebhookEvent,
-  createPIPMPayment
+  
+  // Payment retrieval
+  getPayment,
+  
+  // Legacy (deprecated - do not use for new code)
+  createSource,  // @deprecated - use createPIPMPayment instead
+  getSource      // @deprecated - use getPaymentIntent instead
 };

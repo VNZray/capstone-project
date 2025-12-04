@@ -122,12 +122,14 @@ const CheckoutScreen = () => {
     return slots;
   }, [pickupDate]);
   const [specialInstructions, setSpecialInstructions] = useState('');
+  // Payment selection: 'cash_on_pickup' or PayMongo type ('gcash', 'paymaya', 'card')
   const [paymentMethod, setPaymentMethod] = useState<
-    'cash_on_pickup' | 'paymongo'
+    'cash_on_pickup' | 'gcash' | 'paymaya' | 'card'
   >('cash_on_pickup');
-  const [paymentMethodType, setPaymentMethodType] = useState<
-    'gcash' | 'card' | 'paymaya' | 'grab_pay'
-  >('gcash');
+  
+  // Derived: is this an online payment?
+  const isOnlinePayment = ['gcash', 'paymaya', 'card'].includes(paymentMethod);
+  
   const [loading, setLoading] = useState(false);
 
   // Billing information for PayMongo payments
@@ -164,7 +166,7 @@ const CheckoutScreen = () => {
     setShowTimePicker(false);
   };
 
-  const togglePaymentMethod = (method: 'cash_on_pickup' | 'paymongo') => {
+  const togglePaymentMethod = (method: 'cash_on_pickup' | 'gcash' | 'paymaya' | 'card') => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     setPaymentMethod(method);
   };
@@ -212,7 +214,7 @@ const CheckoutScreen = () => {
     }
 
     // Validate minimum amount for PayMongo Payment Intents (₱20.00)
-    if (paymentMethod === 'paymongo' && total < 20) {
+    if (isOnlinePayment && total < 20) {
       Alert.alert(
         'Minimum Amount',
         'Online payment requires a minimum order of ₱20.00. Please add more items or choose Cash on Pickup.',
@@ -222,7 +224,7 @@ const CheckoutScreen = () => {
     }
 
     // Validate billing information for PayMongo payments
-    if (paymentMethod === 'paymongo') {
+    if (isOnlinePayment) {
       if (!billingName.trim()) {
         Alert.alert('Missing Information', 'Please enter your full name for billing.');
         return;
@@ -252,14 +254,15 @@ const CheckoutScreen = () => {
       pickup_datetime: pickupDate.toISOString(),
       special_instructions: specialInstructions || undefined,
       payment_method: paymentMethod,
-      payment_method_type:
-        paymentMethod === 'paymongo' ? paymentMethodType : undefined,
     };
+
+    // Check if using PayMongo (any online payment method)
+    const isPayMongoPayment = ['gcash', 'paymaya', 'card'].includes(paymentMethod);
 
     // ========== FoodPanda/GrabFood Style Flow ==========
     // For PayMongo payments: Show grace period screen BEFORE creating order
     // This allows user to cancel within 10 seconds without creating any records
-    if (paymentMethod === 'paymongo') {
+    if (isPayMongoPayment) {
       console.log('[Checkout] Navigating to grace period screen for PayMongo payment');
       
       // Prepare billing info for payment
@@ -277,7 +280,7 @@ const CheckoutScreen = () => {
       // Use replace() to prevent back navigation through checkout flow
       replace(Routes.checkout.orderGracePeriod({
         orderData: JSON.stringify(orderPayload),
-        paymentMethodType: paymentMethodType,
+        paymentMethodType: paymentMethod, // Now contains actual type: gcash, paymaya, card
         billingInfo: JSON.stringify({
           name: billingName.trim(),
           email: billingEmail.trim().toLowerCase(),
@@ -848,18 +851,18 @@ const CheckoutScreen = () => {
                   styles.paymentOption,
                   {
                     borderColor:
-                      paymentMethod === 'paymongo'
+                      isOnlinePayment
                         ? theme.accent
                         : theme.border,
                     backgroundColor:
-                      paymentMethod === 'paymongo'
+                      isOnlinePayment
                         ? isDark
                           ? 'rgba(255, 183, 3, 0.1)'
                           : '#FFF9E6'
                         : theme.background,
                   },
                 ]}
-                onPress={() => togglePaymentMethod('paymongo')}
+                onPress={() => setPaymentMethod('gcash')} // Default to gcash when selecting online
               >
                 <View style={styles.paymentOptionHeader}>
                   <View
@@ -889,20 +892,20 @@ const CheckoutScreen = () => {
                   </View>
                   <Ionicons
                     name={
-                      paymentMethod === 'paymongo'
+                      isOnlinePayment
                         ? 'radio-button-on'
                         : 'radio-button-off'
                     }
                     size={24}
                     color={
-                      paymentMethod === 'paymongo'
+                      isOnlinePayment
                         ? theme.accent
                         : theme.textSecondary
                     }
                   />
                 </View>
 
-                {paymentMethod === 'paymongo' && (
+                {isOnlinePayment && (
                   <View style={styles.subPaymentMethods}>
                     <View
                       style={[
@@ -923,38 +926,36 @@ const CheckoutScreen = () => {
                       showsHorizontalScrollIndicator={false}
                       contentContainerStyle={styles.providerScroll}
                     >
-                      {['gcash', 'card', 'paymaya', 'grab_pay'].map((type) => (
+                      {['gcash', 'card', 'paymaya'].map((type) => (
                         <Pressable
                           key={type}
                           style={[
                             styles.providerChip,
                             {
                               backgroundColor:
-                                paymentMethodType === type
+                                paymentMethod === type
                                   ? theme.primary
                                   : theme.background,
                               borderColor:
-                                paymentMethodType === type
+                                paymentMethod === type
                                   ? theme.primary
                                   : theme.border,
                             },
                           ]}
-                          onPress={() => setPaymentMethodType(type as any)}
+                          onPress={() => setPaymentMethod(type as 'gcash' | 'paymaya' | 'card')}
                         >
                           <Text
                             style={[
                               styles.providerText,
                               {
                                 color:
-                                  paymentMethodType === type
+                                  paymentMethod === type
                                     ? '#FFF'
                                     : theme.text,
                               },
                             ]}
                           >
-                            {type === 'grab_pay'
-                              ? 'GrabPay'
-                              : type.charAt(0).toUpperCase() + type.slice(1)}
+                            {type.charAt(0).toUpperCase() + type.slice(1)}
                           </Text>
                         </Pressable>
                       ))}
@@ -963,8 +964,8 @@ const CheckoutScreen = () => {
                 )}
               </Pressable>
 
-              {/* Billing Information - Only show for PayMongo */}
-              {paymentMethod === 'paymongo' && (
+              {/* Billing Information - Only show for online payments */}
+              {isOnlinePayment && (
                 <View style={styles.billingSection}>
                   <View
                     style={[styles.divider, { backgroundColor: theme.border, marginVertical: 16 }]}

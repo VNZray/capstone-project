@@ -46,8 +46,7 @@ export async function insertOrder(req, res) {
       discount_id, 
       pickup_datetime, 
       special_instructions,
-      payment_method,
-      payment_method_type
+      payment_method        // The actual payment method: gcash, paymaya, card, cash_on_pickup
     } = req.body;
 
     // Sanitize string inputs
@@ -153,9 +152,9 @@ export async function insertOrder(req, res) {
     const orderNumber = generateOrderNumber();
     const arrivalCode = generateArrivalCode();
 
-    // Insert order using stored procedure with new parameters
+    // Insert order using stored procedure (without payment fields - those go to payment table)
     await connection.query(
-      "CALL InsertOrder(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", 
+      "CALL InsertOrder(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", 
       [
         orderId, 
         business_id, 
@@ -168,8 +167,6 @@ export async function insertOrder(req, res) {
         finalDiscountId, 
         pickupDateObj, 
         sanitizedInstructions, 
-        payment_method || 'cash_on_pickup',
-        payment_method_type || null,
         arrivalCode
       ]
     );
@@ -238,11 +235,13 @@ export async function insertOrder(req, res) {
     };
 
     // ========== Real-time Notifications ==========
-    // For PayMongo orders: SKIP notifications until payment is confirmed via webhook
+    // For PayMongo orders (gcash, paymaya, card): SKIP notifications until payment is confirmed via webhook
     // Payment Intent flow is initiated separately by the mobile app
-    // For COP orders: Emit immediately since no payment confirmation needed
-    if (payment_method === 'cash_on_pickup') {
-      console.log(`[insertOrder] 📢 Emitting notifications for COP order ${orderNumber}`);
+    // For cash_on_pickup orders: Emit immediately since no payment confirmation needed
+    const isOnlinePayment = ['gcash', 'paymaya', 'card'].includes(payment_method);
+    
+    if (!isOnlinePayment) {
+      console.log(`[insertOrder] 📢 Emitting notifications for cash_on_pickup order ${orderNumber}`);
       
       try {
         const [userEmailResult] = await db.query(

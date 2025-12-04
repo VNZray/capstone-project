@@ -119,7 +119,7 @@ const PaymentCancelScreen = () => {
 
       const attachResponse = await attachEwalletPaymentMethod(
         paymentIntentId,
-        paymentMethodType as 'gcash' | 'paymaya' | 'grab_pay',
+        paymentMethodType as 'gcash' | 'paymaya',
         returnUrl
       );
 
