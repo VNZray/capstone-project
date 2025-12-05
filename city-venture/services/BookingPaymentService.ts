@@ -1,7 +1,10 @@
 /**
  * Booking Payment Service
- * Handles payment initiation for accommodation bookings via backend API
+ * Handles payment initiation for accommodation bookings via unified payment API
  * All PayMongo API calls are made through the backend for security
+ * 
+ * MIGRATED: Now uses the unified /payment/initiate endpoint
+ * instead of the deprecated /booking/:id/initiate-payment
  * 
  * SECURITY NOTE: Uses openAuthSessionAsync for external browser authentication
  * which is more secure than WebView as it:
@@ -37,8 +40,9 @@ export interface InitiateBookingPaymentResponse {
 }
 
 /**
- * Initiate payment for a booking
- * This creates a PayMongo checkout session via the backend
+ * Initiate payment for a booking using the unified payment API
+ * This creates a PayMongo checkout session via the unified /payment/initiate endpoint
+ * 
  * @param bookingId - The booking UUID
  * @param paymentData - Payment details including method type and amount
  * @returns Payment response with checkout URL
@@ -48,9 +52,16 @@ export async function initiateBookingPayment(
   paymentData: InitiateBookingPaymentRequest
 ): Promise<InitiateBookingPaymentResponse> {
   try {
+    // Use the unified payment endpoint
     const response = await apiClient.post<InitiateBookingPaymentResponse>(
-      `/booking/${bookingId}/initiate-payment`,
-      paymentData
+      '/payment/initiate',
+      {
+        payment_for: 'booking',
+        reference_id: bookingId,
+        payment_method: paymentData.payment_method_type,
+        payment_type: paymentData.payment_type,
+        amount: paymentData.amount
+      }
     );
 
     return response.data;
@@ -164,8 +175,7 @@ export interface VerifyBookingPaymentResponse {
 
 /**
  * Verify payment status after PayMongo redirect
- * This checks the actual PayMongo Payment Intent status to confirm
- * whether the payment was successful or failed.
+ * Uses the unified /payment/verify endpoint
  * 
  * @param bookingId - The booking UUID
  * @param paymentId - The local payment record UUID
@@ -176,8 +186,14 @@ export async function verifyBookingPayment(
   paymentId: string
 ): Promise<VerifyBookingPaymentResponse> {
   try {
-    const response = await apiClient.get<VerifyBookingPaymentResponse>(
-      `/booking/${bookingId}/verify-payment/${paymentId}`
+    // Use the unified payment verify endpoint
+    const response = await apiClient.post<VerifyBookingPaymentResponse>(
+      '/payment/verify',
+      {
+        payment_for: 'booking',
+        reference_id: bookingId,
+        payment_id: paymentId
+      }
     );
 
     return response.data;

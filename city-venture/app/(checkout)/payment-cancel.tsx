@@ -89,9 +89,10 @@ const PaymentCancelScreen = () => {
       const orderDetails = await getOrderById(params.orderId);
       const paymentMethodType = orderDetails.payment_method_type || 'gcash';
 
-      // Create Payment Intent
+      // Create Payment Intent using unified API
       const intentResponse = await createPaymentIntent({
-        order_id: params.orderId,
+        payment_for: 'order',
+        reference_id: params.orderId,
         payment_method_types: [paymentMethodType],
       });
 
@@ -113,19 +114,21 @@ const PaymentCancelScreen = () => {
         return;
       }
 
-      // For e-wallets, attach payment method and redirect
+      // For e-wallets, attach payment method and redirect (Client-Side)
       const backendBaseUrl = (API_URL || '').replace('/api', '');
       const returnUrl = `${backendBaseUrl}/orders/${params.orderId}/payment-success`;
 
       const attachResponse = await attachEwalletPaymentMethod(
         paymentIntentId,
         paymentMethodType as 'gcash' | 'paymaya',
-        returnUrl
+        returnUrl,
+        intentResponse.data.client_key // Pass client_key for direct PayMongo call
       );
 
-      if (attachResponse.data.redirect_url) {
+      const nextAction = attachResponse.data.attributes.next_action;
+      if (nextAction?.redirect?.url) {
         const authResult = await open3DSAuthentication(
-          attachResponse.data.redirect_url,
+          nextAction.redirect.url,
           returnUrl
         );
 

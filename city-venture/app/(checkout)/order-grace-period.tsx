@@ -112,10 +112,11 @@ const OrderGracePeriodScreen = () => {
 
       setProcessingStep('Initializing payment...');
 
-      // Step 2: Create Payment Intent
+      // Step 2: Create Payment Intent using unified API
       console.log('[GracePeriod] Creating payment intent...');
       const intentResponse = await createPaymentIntent({
-        order_id: orderId,
+        payment_for: 'order',
+        reference_id: orderId,
         payment_method_types: [paymentMethodType],
       });
 
@@ -144,24 +145,25 @@ const OrderGracePeriodScreen = () => {
       const backendBaseUrl = API_URL ? API_URL.replace('/api', '') : '';
       const returnUrl = `${backendBaseUrl}/orders/${orderId}/payment-success`;
 
-      // Attach e-wallet payment method
-      // Note: Backend only supports 'gcash' and 'paymaya' for server-side attachment
+      // Attach e-wallet payment method (Client-Side - direct to PayMongo)
       const attachResponse = await attachEwalletPaymentMethod(
         paymentIntentId,
         paymentMethodType as 'gcash' | 'paymaya',
         returnUrl,
+        intentResponse.data.client_key, // Pass client_key for direct PayMongo call
         billingInfo
       );
 
-      console.log('[GracePeriod] Attachment response:', attachResponse.data.status);
+      console.log('[GracePeriod] Attachment response:', attachResponse.data.attributes.status);
 
       // Check if redirect is needed (for e-wallet authorization)
-      if (attachResponse.data.redirect_url) {
+      const nextAction = attachResponse.data.attributes.next_action;
+      if (nextAction?.redirect?.url) {
         setProcessingStep('Opening payment app...');
-        console.log('[GracePeriod] Opening e-wallet authorization:', attachResponse.data.redirect_url);
+        console.log('[GracePeriod] Opening e-wallet authorization:', nextAction.redirect.url);
 
         const authResult = await open3DSAuthentication(
-          attachResponse.data.redirect_url,
+          nextAction.redirect.url,
           returnUrl
         );
 
@@ -200,7 +202,7 @@ const OrderGracePeriodScreen = () => {
       }
 
       // If no redirect needed (unlikely for e-wallets), payment may have succeeded
-      if (attachResponse.data.status === 'succeeded') {
+      if (attachResponse.data.attributes.status === 'succeeded') {
         router.replace(Routes.checkout.orderConfirmation({
           orderId,
           orderNumber,
