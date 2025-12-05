@@ -5,9 +5,14 @@ import { useAuth } from "@/src/context/AuthContext";
 import Header from "../../landing-page/components/Header";
 import { useState, useEffect } from "react";
 import apiClient from "@/src/services/apiClient";
-import { Grid, Stack } from "@mui/joy";
+import { Box, Grid, Stack } from "@mui/joy";
 import type { Permit } from "@/src/types/Permit";
-import { getPermitsByBusiness, updatePermit, insertPermit, deletePermit } from "@/src/services/approval/PermitService";
+import {
+  getPermitsByBusiness,
+  updatePermit,
+  insertPermit,
+  deletePermit,
+} from "@/src/services/approval/PermitService";
 
 // Import components
 import HeaderSection from "./components/HeaderSection";
@@ -371,7 +376,15 @@ const OwnerProfile = () => {
     <>
       <Header />
 
-      <PageContainer padding={"80px 16px 16px 16px"} gap={0}>
+      <Box
+        gap={0}
+        sx={{
+          paddingTop: 10,
+          paddingLeft: { xs: 2, sm: 2, md: 30, lg: 40 },
+          paddingRight: { xs: 2, sm: 2, md: 30, lg: 40 },
+          paddingBottom: 10,
+        }}
+      >
         {/* Header Section */}
         <HeaderSection
           profileData={profileData}
@@ -399,7 +412,8 @@ const OwnerProfile = () => {
                   onChange={handleProfileDataChange}
                 />
 
-                {(user?.role_name === "Owner" || user?.role_name === 'Business Owner') && (
+                {(user?.role_name === "Owner" ||
+                  user?.role_name === "Business Owner") && (
                   <Permits
                     businesses={businesses}
                     permits={permits}
@@ -485,7 +499,7 @@ const OwnerProfile = () => {
           showCancel={false}
           confirmText="OK"
         />
-      </PageContainer>
+      </Box>
     </>
   );
 };

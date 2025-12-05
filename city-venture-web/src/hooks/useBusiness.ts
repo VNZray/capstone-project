@@ -15,7 +15,12 @@ export const useBusinessBasics = (data: Business, setData: React.Dispatch<React.
   // Fetch root-level categories for businesses
   const getBusinessCategories = async () => {
     try {
-      const response = await axios.get(`${api}/category-and-type/root-categories`);
+      const response = await axios.get(`${api}/category-and-type/categories`, {
+        params: {
+          applicable_to: 'business',
+          parent_id: 'root'
+        }
+      });
       if (Array.isArray(response.data)) {
         // Filter to only root categories (no parent)
         const roots = response.data.filter((c: Category) => c.parent_category === null);

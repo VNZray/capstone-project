@@ -488,14 +488,14 @@ const ManageStaff = () => {
           padding="16px 16px 0 16px"
         >
           <Typography.Header>Manage Staff</Typography.Header>
-          <Button
+          {/* <Button
             variant="outlined"
             colorScheme="primary"
             size="sm"
             onClick={() => setRolePermissionOpen(true)}
           >
             Manage Roles & Permissions
-          </Button>
+          </Button> */}
         </Container>
 
         <IconButton

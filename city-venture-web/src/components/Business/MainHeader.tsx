@@ -202,7 +202,7 @@ export default function MainHeader({ onMenuClick }: MainHeaderProps) {
               {user?.first_name} {user?.last_name}
             </Typography.Label>
             <Typography.Body size="xs" sx={{ opacity: 0.7 }}>
-              {user?.email}
+              {user?.role_name}
             </Typography.Body>
           </Container>
           <IconButton
@@ -211,7 +211,6 @@ export default function MainHeader({ onMenuClick }: MainHeaderProps) {
             size="lg"
             variant="soft"
             onClick={() => navigate("user/profile")}
-            
           >
             <img
               src={user?.user_profile || placeholderImage}

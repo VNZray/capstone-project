@@ -46,8 +46,10 @@ const Step3: React.FC<Props> = ({
     try {
       const data = await AddressService.getMunicipalities(provinceId);
       if (Array.isArray(data)) {
-        setMunicipality(data);
-        console.log(data);
+        // Normalize response to include province_id required by our types
+        const normalized = data.map((m) => ({ ...m, province_id: provinceId }));
+        setMunicipality(normalized);
+        console.log(normalized);
       }
     } catch (error) {
       console.error("Error fetching municipalities:", error);
@@ -58,8 +60,13 @@ const Step3: React.FC<Props> = ({
     try {
       const data = await AddressService.getBarangays(municipalityId);
       if (Array.isArray(data)) {
-        setBarangay(data);
-        console.log(data);
+        // Normalize response to include municipality_id required by our types
+        const normalized = data.map((b) => ({
+          ...b,
+          municipality_id: municipalityId,
+        }));
+        setBarangay(normalized);
+        console.log(normalized);
       }
     } catch (error) {
       console.error("Error fetching barangays:", error);
