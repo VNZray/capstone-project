@@ -2,10 +2,17 @@
  * Booking Payment Service
  * Handles payment initiation for accommodation bookings via backend API
  * All PayMongo API calls are made through the backend for security
+ * 
+ * SECURITY NOTE: Uses openAuthSessionAsync for external browser authentication
+ * which is more secure than WebView as it:
+ * - Prevents session hijacking
+ * - Uses the system browser's security features
+ * - Properly handles deep link redirects
  */
 
 import apiClient from '@/services/apiClient';
 import * as WebBrowser from 'expo-web-browser';
+import * as Linking from 'expo-linking';
 
 export interface InitiateBookingPaymentRequest {
   payment_method_type: 'gcash' | 'paymaya' | 'grab_pay' | 'card' | 'dob' | 'qrph' | string;
@@ -56,24 +63,54 @@ export async function initiateBookingPayment(
 }
 
 /**
- * Open PayMongo checkout URL in browser
- * Opens the hosted checkout page for the user to complete payment
+ * Open PayMongo checkout URL in secure external browser session
+ * Uses openAuthSessionAsync which:
+ * - Opens in the system browser (more secure than WebView)
+ * - Auto-closes when redirect URL is detected
+ * - Returns control back to the app with the final URL
+ * 
  * @param checkoutUrl - PayMongo checkout URL
- * @returns Promise that resolves when browser is closed
+ * @param expectedRedirectBase - Base URL that PayMongo will redirect to after payment (your backend bridge)
+ * @returns Promise with browser auth session result
  */
-export async function openBookingCheckout(checkoutUrl: string): Promise<WebBrowser.WebBrowserResult> {
+export async function openBookingCheckout(
+  checkoutUrl: string,
+  expectedRedirectBase?: string
+): Promise<WebBrowser.WebBrowserAuthSessionResult> {
   try {
-    const result = await WebBrowser.openBrowserAsync(checkoutUrl, {
-      presentationStyle: WebBrowser.WebBrowserPresentationStyle.FULL_SCREEN,
-      toolbarColor: '#0D1B2A',
-      controlsColor: '#FFFFFF',
-    });
+    // The redirect URL is typically your backend's bridge endpoint
+    // openAuthSessionAsync will detect when the browser navigates to this URL
+    // and automatically close, returning the full URL with query params
+    const redirectListenUrl = expectedRedirectBase || Linking.createURL('');
+    
+    console.log('[BookingPaymentService] Opening auth session:', checkoutUrl);
+    console.log('[BookingPaymentService] Listening for redirect to:', redirectListenUrl);
 
-    console.log('[BookingPaymentService] Browser result:', result);
+    const result = await WebBrowser.openAuthSessionAsync(
+      checkoutUrl,
+      redirectListenUrl,
+      {
+        preferEphemeralSession: true, // Don't persist cookies across sessions for security
+      }
+    );
+
+    console.log('[BookingPaymentService] Auth session result:', result);
     return result;
   } catch (error: any) {
     console.error('[BookingPaymentService] Open checkout failed:', error.message);
     throw new Error('Failed to open payment checkout');
+  }
+}
+
+/**
+ * Dismiss any active browser session
+ * Call this when handling deep links from payment completion
+ */
+export function dismissBookingBrowser(): void {
+  try {
+    WebBrowser.dismissBrowser();
+  } catch {
+    // Browser might not be open, ignore
   }
 }
 

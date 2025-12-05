@@ -1,3 +1,19 @@
+/**
+ * @deprecated This WebView-based payment screen has been superseded by the secure
+ * external browser flow in booking.tsx. The new flow uses WebBrowser.openAuthSessionAsync
+ * which is more secure as it:
+ * - Prevents session hijacking (WebView can be exploited)
+ * - Uses the system browser's security features
+ * - Properly handles deep link redirects back to the app
+ * 
+ * This file is kept for backwards compatibility but should not be used for new payments.
+ * The primary booking payment flow now:
+ * 1. booking.tsx calls openBookingCheckout() from BookingPaymentService
+ * 2. Opens external browser for PayMongo checkout
+ * 3. Backend redirect bridge handles the redirect back via deep links
+ * 4. booking-success.tsx or booking-cancel.tsx shows the result
+ */
+
 import { background } from '@/constants/color';
 import { useAuth } from '@/context/AuthContext';
 import { useRoom } from '@/context/RoomContext';
