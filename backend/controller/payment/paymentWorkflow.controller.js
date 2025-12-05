@@ -507,13 +507,60 @@ export async function getUnifiedPaymentStatus(req, res) {
 
     // 3. Retrieve Payment Intent from PayMongo
     let paymongoIntent = null;
+    let actualPaymentMethod = null;
+    let actualPaymentMethodId = null;
+    
     try {
       paymongoIntent = await paymongoService.getPaymentIntent(paymentIntentId);
+      
+      // Extract actual payment method from PayMongo
+      // The payment intent has a 'payments' array - the last one is the most recent
+      const lastPayment = paymongoIntent.attributes?.payments?.slice(-1)[0];
+      actualPaymentMethod = lastPayment?.attributes?.source?.type || lastPayment?.attributes?.payment_method_type;
+      
+      // Payment method ID can be in different locations depending on payment type:
+      // - For e-wallets: lastPayment.attributes.source.id (e.g., "src_...")
+      // - For cards: paymongoIntent.attributes.payment_method (e.g., "pm_...")
+      // - Alternative: lastPayment.id is the payment ID (e.g., "pay_...")
+      actualPaymentMethodId = lastPayment?.attributes?.source?.id 
+        || paymongoIntent.attributes?.payment_method 
+        || lastPayment?.id;
+      
+      console.log(`[PaymentWorkflow] PayMongo data - Method: ${actualPaymentMethod}, ID: ${actualPaymentMethodId}`);
+      
     } catch (err) {
       console.warn("[PaymentWorkflow] Failed to fetch from PayMongo, relying on local DB:", err.message);
     }
 
-    // 4. Return unified response
+    // 4. "Just-in-Time" Sync: If DB has wrong method OR missing ID, fix it
+    // This handles the case where webhook hasn't fired yet but PayMongo shows the actual method
+    const needsMethodSync = actualPaymentMethod && payment.payment_method !== actualPaymentMethod;
+    const needsIdSync = actualPaymentMethodId && !payment.payment_method_id;
+    
+    if (needsMethodSync || needsIdSync) {
+      console.log(`[PaymentWorkflow] Syncing payment data:`);
+      if (needsMethodSync) {
+        console.log(`  - Method: ${payment.payment_method} -> ${actualPaymentMethod}`);
+      }
+      if (needsIdSync) {
+        console.log(`  - ID: NULL -> ${actualPaymentMethodId}`);
+      }
+      
+      await db.query(
+        `UPDATE payment 
+         SET payment_method = COALESCE(?, payment_method), 
+             payment_method_id = COALESCE(?, payment_method_id),
+             updated_at = ?
+         WHERE id = ?`,
+        [actualPaymentMethod, actualPaymentMethodId, new Date(), payment.id]
+      );
+      
+      // Update local variables so response is correct immediately
+      if (actualPaymentMethod) payment.payment_method = actualPaymentMethod;
+      if (actualPaymentMethodId) payment.payment_method_id = actualPaymentMethodId;
+    }
+
+    // 5. Return unified response
     // CRITICAL: Map local payment.status to 'order_payment_status' for frontend compatibility
     // The frontend PaymentIntentService.pollPaymentIntentStatus() checks for 'order_payment_status'
     res.status(200).json({
@@ -530,6 +577,10 @@ export async function getUnifiedPaymentStatus(req, res) {
         // Local DB status - CRITICAL for frontend poll loop exit
         // Frontend checks: status.data.order_payment_status === 'paid'
         order_payment_status: payment.status,
+        
+        // Payment method info (synced from PayMongo)
+        payment_method: payment.payment_method,
+        payment_method_id: payment.payment_method_id,
         
         amount: paymongoIntent ? paymongoIntent.attributes.amount / 100 : payment.amount,
         currency: paymongoIntent?.attributes?.currency || payment.currency || 'PHP',
