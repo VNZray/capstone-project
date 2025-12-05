@@ -16,6 +16,7 @@
  */
 
 import apiClient from '@/services/apiClient';
+import API_URL from '@/services/api';
 import * as WebBrowser from 'expo-web-browser';
 import * as Linking from 'expo-linking';
 // Import helpers from PaymentIntentService for client-side operations
@@ -106,8 +107,12 @@ export async function initiateBookingPayment(
     // Step 3: Attach Payment Method to Intent (Frontend -> PayMongo)
     console.log('[BookingPayment] Step 3: Attaching Payment Method to Intent...');
     
-    // Construct return URL for deep linking back to the app
-    const returnUrl = Linking.createURL('/payment/verify');
+    // IMPORTANT: PayMongo requires an https:// URL for return_url
+    // Use the backend's bridge endpoint which will redirect to the mobile app via deep link
+    const backendBaseUrl = API_URL ? API_URL.replace('/api', '') : '';
+    const returnUrl = `${backendBaseUrl}/bookings/${bookingId}/payment-success`;
+    
+    console.log('[BookingPayment] Return URL:', returnUrl);
     
     const attachResponse = await attachPaymentMethodClient(
       payment_intent_id,
