@@ -1,22 +1,19 @@
-import Container from "@/src/components/Container";
-import PageContainer from "@/src/components/PageContainer";
 import Typography from "@/src/components/Typography";
-import HierarchicalCategorySelector from "@/src/components/HierarchicalCategorySelector";
 import { useBusinessBasics } from "@/src/hooks/useBusiness";
-import type { BusinessAmenity, Amenity } from "@/src/types/Amenity";
+import type { BusinessAmenity } from "@/src/types/Amenity";
 import type { Business } from "@/src/types/Business";
+import type { Category } from "@/src/types/Category";
 import {
   FormControl,
   Input,
   Textarea,
-  FormLabel,
-  Autocomplete,
-  Chip,
   Box,
   Grid,
+  Select,
+  Option,
 } from "@mui/joy";
-import { useEffect, useState } from "react";
-import { getData, insertData } from "@/src/services/Service";
+import { colors } from "@/src/utils/Colors";
+import { useState, useEffect } from "react";
 
 type Props = {
   data: Business;
@@ -25,347 +22,224 @@ type Props = {
   setBusinessAmenities: React.Dispatch<React.SetStateAction<BusinessAmenity[]>>;
 };
 
-const Step1: React.FC<Props> = ({ data, setData, setBusinessAmenities }) => {
-  const {
-    rootCategories,
-    selectedCategories,
-    setSelectedCategories,
-    getChildCategories,
-  } = useBusinessBasics(data, setData);
+const Step1: React.FC<Props> = ({ data, setData }) => {
+  const { rootCategories, setSelectedCategories, getChildCategories } =
+    useBusinessBasics(data, setData);
 
-  const [amenities, setAmenities] = useState<Amenity[]>([]);
-  const [selectedAmenities, setSelectedAmenities] = useState<Amenity[]>([]);
+  const [primaryCategoryId, setPrimaryCategoryId] = useState<number | null>(
+    null
+  );
+  const [secondaryCategoryId, setSecondaryCategoryId] = useState<number | null>(
+    null
+  );
+  const [subcategoryId, setSubcategoryId] = useState<number | null>(null);
 
-  // Handle category changes from HierarchicalCategorySelector
-  const handleCategoryChange = (categoryIds: number[]) => {
-    setSelectedCategories(categoryIds);
+  const [secondaryCategories, setSecondaryCategories] = useState<Category[]>(
+    []
+  );
+  const [subcategories, setSubcategories] = useState<Category[]>([]);
 
-    // Find primary categories (root level) from the selected IDs
-    const primaryIds = categoryIds.filter((id) =>
-      rootCategories.some(
-        (cat) => cat.id === id && cat.parent_category === null
-      )
-    );
+  // Load secondary categories when primary changes
+  useEffect(() => {
+    if (primaryCategoryId) {
+      getChildCategories(primaryCategoryId).then((children) => {
+        setSecondaryCategories(children);
+        // Reset secondary and subcategory when primary changes
+        setSecondaryCategoryId(null);
+        setSubcategoryId(null);
+        setSubcategories([]);
+      });
+    } else {
+      setSecondaryCategories([]);
+      setSecondaryCategoryId(null);
+      setSubcategoryId(null);
+      setSubcategories([]);
+    }
+  }, [primaryCategoryId]);
 
-    // Determine hasBooking if Accommodation is in primary categories
-    const hasAccommodation = primaryIds.some((id) => {
-      const cat = rootCategories.find((c) => c.id === id);
-      return cat?.alias?.toLowerCase().includes("accommodation");
-    });
+  // Load subcategories when secondary changes
+  useEffect(() => {
+    if (secondaryCategoryId) {
+      getChildCategories(secondaryCategoryId).then((children) => {
+        setSubcategories(children);
+        // Reset subcategory when secondary changes
+        setSubcategoryId(null);
+      });
+    } else {
+      setSubcategories([]);
+      setSubcategoryId(null);
+    }
+  }, [secondaryCategoryId]);
 
-    // Set primary_category_id to first selected primary (or Accommodation if present)
-    const accommodationId = primaryIds.find((id) => {
-      const cat = rootCategories.find((c) => c.id === id);
-      return cat?.alias?.toLowerCase().includes("accommodation");
-    });
-    const mainPrimaryId = accommodationId || primaryIds[0];
+  // Update category_ids whenever any category changes
+  useEffect(() => {
+    const categoryIds: number[] = [];
+    if (primaryCategoryId) categoryIds.push(primaryCategoryId);
+    if (secondaryCategoryId) categoryIds.push(secondaryCategoryId);
+    if (subcategoryId) categoryIds.push(subcategoryId);
+
+    const hasAccommodation = primaryCategoryId
+      ? rootCategories
+          .find((c) => c.id === primaryCategoryId)
+          ?.alias?.toLowerCase()
+          .includes("accommodation")
+      : false;
 
     setData((prev) => ({
       ...prev,
-      primary_category_id: mainPrimaryId ?? undefined,
+      primary_category_id: primaryCategoryId ?? undefined,
       category_ids: categoryIds,
-      hasBooking: hasAccommodation,
+      hasBooking: !!hasAccommodation,
     }));
-  };
 
-  // Fetch amenities
-  const fetchAmenities = async () => {
-    const response = await getData("amenities");
-    if (response) {
-      setAmenities(response);
-    }
-  };
-
-  const addAmenity = (name: string) => {
-    insertData({ name }, "amenities");
-  };
-
-  useEffect(() => {
-    fetchAmenities();
-  }, []);
-
-  // Sync selectedAmenities to parent businessAmenities
-  useEffect(() => {
-    if (selectedAmenities.length > 0) {
-      setBusinessAmenities(
-        selectedAmenities.map((amenity) => ({
-          business_id: data.id ?? undefined,
-          amenity_id: amenity.id ?? undefined,
-        }))
-      );
-    } else {
-      setBusinessAmenities([]);
-    }
-  }, [selectedAmenities, setBusinessAmenities, data.id]);
-
-  // Common styles for inputs
-  const inputSx = {
-    "--Input-focusedThickness": "2px",
-    "--Input-focusedHighlight": "var(--joy-palette-primary-500)",
-    backgroundColor: "#fafafa",
-    border: "1px solid #e0e0e0",
-    borderRadius: "8px",
-    boxShadow: "0 1px 3px rgba(0, 0, 0, 0.1)",
-    transition: "all 0.2s ease-in-out",
-    "&:hover": {
-      backgroundColor: "#ffffff",
-      borderColor: "#d0d0d0",
-      boxShadow: "0 2px 6px rgba(0, 0, 0, 0.15)",
-    },
-    "&:focus-within": {
-      backgroundColor: "#ffffff",
-      borderColor: "var(--joy-palette-primary-500)",
-      boxShadow: "0 0 0 3px rgba(25, 118, 210, 0.1)",
-    },
-  };
+    setSelectedCategories(categoryIds);
+  }, [primaryCategoryId, secondaryCategoryId, subcategoryId]);
 
   return (
-    <PageContainer gap={0} padding={0}>
-      <Container gap="0">
-        <Typography.CardTitle>Business Information</Typography.CardTitle>
-        <Typography.CardSubTitle>
-          Tell us about your business to get started
-        </Typography.CardSubTitle>
-      </Container>
+    <Box sx={{ mb: 4 }}>
+      <Typography.Header sx={{ mb: 1, color: colors.primary }}>
+        Business Information
+      </Typography.Header>
+      <Typography.Body sx={{ mb: 4, color: colors.gray, fontSize: "0.95rem" }}>
+        Tell us about your business
+      </Typography.Body>
 
-      <Container>
-        <Box sx={{ width: "100%" }}>
-          <Grid container spacing={2}>
-            {/* Left Column */}
-            <Grid xs={12} md={6}>
-              <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-                <FormControl required>
-                  <FormLabel
-                    sx={{
-                      mb: 0.75,
-                      fontSize: "0.875rem",
-                      fontWeight: 600,
-                      color: "#374151",
-                    }}
-                  >
-                    Business Name
-                  </FormLabel>
-                  <Input
-                    placeholder="Enter your business name"
-                    fullWidth
-                    value={data.business_name}
-                    onChange={(e) =>
-                      setData((prev) => ({
-                        ...prev,
-                        business_name: e.target.value,
-                      }))
-                    }
-                    sx={inputSx}
-                  />
-                </FormControl>
+      <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
+        <FormControl required>
+          <Typography.Label>Business Name *</Typography.Label>
+          <Input
+            placeholder="Write the name of your business"
+            fullWidth
+            value={data.business_name}
+            onChange={(e) =>
+              setData((prev) => ({
+                ...prev,
+                business_name: e.target.value,
+              }))
+            }
+            sx={{ borderRadius: "8px", fontSize: "0.95rem" }}
+          />
+        </FormControl>
 
-                {/* Hierarchical Category Selector */}
-                <HierarchicalCategorySelector
-                  rootCategories={rootCategories}
-                  selectedCategoryIds={selectedCategories}
-                  onCategoryChange={handleCategoryChange}
-                  getChildCategories={getChildCategories}
-                  applicableTo="business"
-                  required
-                />
-              </Box>
-            </Grid>
-
-            {/* Right Column */}
-            <Grid xs={12} md={6}>
-              <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-                <FormControl required>
-                  <FormLabel
-                    sx={{
-                      mb: 0.75,
-                      fontSize: "0.875rem",
-                      fontWeight: 600,
-                      color: "#374151",
-                    }}
-                  >
-                    Business Email
-                  </FormLabel>
-                  <Input
-                    placeholder="Enter your business email"
-                    fullWidth
-                    type="email"
-                    value={data.email}
-                    onChange={(e) =>
-                      setData((prev) => ({ ...prev, email: e.target.value }))
-                    }
-                    sx={inputSx}
-                  />
-                </FormControl>
-
-                <FormControl required>
-                  <FormLabel
-                    sx={{
-                      mb: 0.75,
-                      fontSize: "0.875rem",
-                      fontWeight: 600,
-                      color: "#374151",
-                    }}
-                  >
-                    Business Phone Number
-                  </FormLabel>
-                  <Input
-                    placeholder="Enter your business phone number"
-                    fullWidth
-                    value={data.phone_number}
-                    onChange={(e) =>
-                      setData((prev) => ({
-                        ...prev,
-                        phone_number: e.target.value,
-                      }))
-                    }
-                    sx={inputSx}
-                  />
-                </FormControl>
-
-                <FormControl>
-                  <FormLabel
-                    sx={{
-                      mb: 0.75,
-                      fontSize: "0.875rem",
-                      fontWeight: 600,
-                      color: "#374151",
-                    }}
-                  >
-                    Amenities
-                  </FormLabel>
-                  <Autocomplete
-                    size="md"
-                    multiple
-                    freeSolo
-                    placeholder="Select or add amenities..."
-                    limitTags={6}
-                    options={amenities}
-                    value={selectedAmenities}
-                    getOptionLabel={(option) =>
-                      typeof option === "string" ? option : option.name
-                    }
-                    renderTags={(value, getTagProps) =>
-                      value.map((option, index) => (
-                        <span key={option.id} style={{ margin: 2 }}>
-                          <Chip
-                            {...getTagProps({ index })}
-                            color="primary"
-                            variant="soft"
-                            size="md"
-                            sx={{
-                              borderRadius: "6px",
-                              fontSize: "0.8rem",
-                              fontWeight: 500,
-                            }}
-                          >
-                            {option.name}
-                          </Chip>
-                        </span>
-                      ))
-                    }
-                    filterOptions={(options, state) => {
-                      const inputValue = state.inputValue.trim().toLowerCase();
-                      const filtered = options.filter(
-                        (option) =>
-                          typeof option !== "string" &&
-                          option.name.toLowerCase().includes(inputValue)
-                      );
-                      if (
-                        inputValue !== "" &&
-                        !options.some(
-                          (opt) =>
-                            typeof opt !== "string" &&
-                            opt.name.toLowerCase() === inputValue
-                        )
-                      ) {
-                        return [
-                          ...filtered,
-                          {
-                            id: -1,
-                            name: `Add "${state.inputValue}"`,
-                          } as Amenity,
-                        ];
-                      }
-                      return filtered;
-                    }}
-                    onChange={async (_, newValue) => {
-                      const last = newValue[newValue.length - 1];
-                      if (
-                        last &&
-                        typeof last !== "string" &&
-                        (last as Amenity).id === -1
-                      ) {
-                        const newAmenityName = (last as Amenity).name
-                          .replace(/^Add\s+"|"$/g, "")
-                          .trim();
-                        await addAmenity(newAmenityName);
-                        await fetchAmenities();
-                        const inserted = amenities.find(
-                          (a) =>
-                            a.name.toLowerCase() ===
-                            newAmenityName.toLowerCase()
-                        );
-                        if (inserted) {
-                          setSelectedAmenities([
-                            ...newValue
-                              .slice(0, -1)
-                              .filter(
-                                (item): item is Amenity =>
-                                  typeof item !== "string"
-                              ),
-                            inserted,
-                          ]);
-                        }
-                      } else {
-                        setSelectedAmenities(
-                          newValue.filter(
-                            (item): item is Amenity => typeof item !== "string"
-                          )
-                        );
-                      }
-                    }}
-                    sx={inputSx}
-                  />
-                </FormControl>
-
-                <FormControl>
-                  <FormLabel
-                    sx={{
-                      mb: 0.75,
-                      fontSize: "0.875rem",
-                      fontWeight: 600,
-                      color: "#374151",
-                    }}
-                  >
-                    Description
-                  </FormLabel>
-                  <Textarea
-                    maxRows={4}
-                    minRows={3}
-                    size="md"
-                    variant="outlined"
-                    placeholder="Describe your business..."
-                    value={data.description}
-                    onChange={(e) =>
-                      setData((prev) => ({
-                        ...prev,
-                        description: e.target.value,
-                      }))
-                    }
-                    sx={{
-                      "--Textarea-focusedThickness": "2px",
-                      "--Textarea-focusedHighlight":
-                        "var(--joy-palette-primary-500)",
-                      ...inputSx,
-                    }}
-                  />
-                </FormControl>
-              </Box>
-            </Grid>
+        <Grid container spacing={2}>
+          <Grid xs={12} md={6}>
+            <FormControl required>
+              <Typography.Label>Primary Category *</Typography.Label>
+              <Select
+                placeholder="Select a primary category..."
+                value={primaryCategoryId?.toString() || null}
+                onChange={(_, value) => {
+                  setPrimaryCategoryId(value ? Number(value) : null);
+                }}
+                sx={{ borderRadius: "8px", fontSize: "0.95rem" }}
+              >
+                {rootCategories
+                  .filter((cat) => cat.parent_category === null)
+                  .map((category) => (
+                    <Option key={category.id} value={category.id.toString()}>
+                      {category.title}
+                    </Option>
+                  ))}
+              </Select>
+            </FormControl>
           </Grid>
-        </Box>
-      </Container>
-    </PageContainer>
+          <Grid xs={12} md={6}>
+            <FormControl required>
+              <Typography.Label>Secondary Category *</Typography.Label>
+              <Select
+                placeholder="Select secondary category..."
+                disabled={
+                  !primaryCategoryId || secondaryCategories.length === 0
+                }
+                value={secondaryCategoryId?.toString() || null}
+                onChange={(_, value) => {
+                  setSecondaryCategoryId(value ? Number(value) : null);
+                }}
+                sx={{ borderRadius: "8px", fontSize: "0.95rem" }}
+              >
+                {secondaryCategories.map((category) => (
+                  <Option key={category.id} value={category.id.toString()}>
+                    {category.title}
+                  </Option>
+                ))}
+              </Select>
+            </FormControl>
+          </Grid>
+        </Grid>
+
+        <FormControl>
+          <Typography.Label>Subcategory (Optional)</Typography.Label>
+          <Select
+            placeholder="Select subcategory..."
+            disabled={!secondaryCategoryId || subcategories.length === 0}
+            value={subcategoryId?.toString() || null}
+            onChange={(_, value) => {
+              setSubcategoryId(value ? Number(value) : null);
+            }}
+            sx={{ borderRadius: "8px", fontSize: "0.95rem" }}
+          >
+            {subcategories.map((category) => (
+              <Option key={category.id} value={category.id.toString()}>
+                {category.title}
+              </Option>
+            ))}
+          </Select>
+        </FormControl>
+
+        <FormControl required>
+          <Typography.Label>Business Email *</Typography.Label>
+          <Input
+            placeholder="john.smith@example.com"
+            fullWidth
+            type="email"
+            value={data.email}
+            onChange={(e) =>
+              setData((prev) => ({ ...prev, email: e.target.value }))
+            }
+            sx={{ borderRadius: "8px", fontSize: "0.95rem" }}
+          />
+        </FormControl>
+
+        <FormControl required>
+          <Typography.Label>Phone Number *</Typography.Label>
+          <Input
+            placeholder="(555) 123-4567"
+            fullWidth
+            value={data.phone_number}
+            onChange={(e) =>
+              setData((prev) => ({ ...prev, phone_number: e.target.value }))
+            }
+            sx={{ borderRadius: "8px", fontSize: "0.95rem" }}
+          />
+          <Typography.Body
+            sx={{ fontSize: "0.8rem", color: colors.gray, mt: 0.5 }}
+          >
+            Format: 09XXXXXXXXX
+          </Typography.Body>
+        </FormControl>
+
+        <FormControl>
+          <Typography.Label>Description</Typography.Label>
+          <Textarea
+            minRows={4}
+            placeholder="Describe your business..."
+            value={data.description}
+            onChange={(e) =>
+              setData((prev) => ({
+                ...prev,
+                description: e.target.value,
+              }))
+            }
+            sx={{ borderRadius: "8px", fontSize: "0.95rem" }}
+          />
+          <Typography.Body
+            sx={{ fontSize: "0.8rem", color: colors.gray, mt: 0.5 }}
+          >
+            Tell us about your business
+          </Typography.Body>
+        </FormControl>
+      </Box>
+    </Box>
   );
 };
 

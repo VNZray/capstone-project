@@ -8,4 +8,5 @@ export type Owner = {
   gender: string | "";
   birthdate: string | "";
   user_id?: string | "";
+  address?: string | "";
 };
