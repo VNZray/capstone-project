@@ -5,26 +5,20 @@ import { authorizeRole } from "../middleware/authorizeRole.js";
 
 const router = express.Router();
 
-// ============= PIPM (Payment Intent Payment Method) Workflow Routes =============
-// This is the recommended flow for all PayMongo payments
+// ============= UNIFIED PAYMENT WORKFLOW (RECOMMENDED) =============
+// Use these endpoints for BOTH Orders and Bookings
+// Frontend calls this single API for all payment types
 
-// Step 1: Create Payment Intent for an order (Tourist only)
-// Returns payment_intent_id and client_key for frontend
-router.post("/initiate", authenticate, authorizeRole("Tourist"), paymentController.initiatePayment);
+// PRIMARY: Initiate payment for any resource (order or booking)
+// Body: { payment_for: 'order' | 'booking', reference_id: string, payment_method?: string }
+router.post("/initiate", authenticate, authorizeRole("Tourist"), paymentController.initiateUnifiedPayment);
 
-// Alternative: Create Payment Intent with custom payment method types
-router.post("/intent", authenticate, authorizeRole("Tourist"), paymentController.createPaymentIntentForOrder);
+// Get payment status by Payment Intent ID (replaces verifyBookingPayment)
+router.get("/intent/:paymentIntentId", authenticate, paymentController.getUnifiedPaymentStatus);
 
-// Step 2: Create Payment Method (for e-wallets, server-side)
-// For card payments, create payment method client-side using public key
-router.post("/method", authenticate, authorizeRole("Tourist"), paymentController.createPaymentMethod);
-
-// Step 3: Attach Payment Method to Payment Intent (for e-wallets, server-side)
-// For card payments, attach client-side using public key + client_key
-router.post("/intent/:id/attach", authenticate, authorizeRole("Tourist"), paymentController.attachPaymentMethodToIntent);
-
-// Get Payment Intent status (useful for polling)
-router.get("/intent/:id", authenticate, paymentController.getPaymentIntentStatus);
+// Verify and fulfill payment after redirect
+// Body: { payment_for: 'order' | 'booking', reference_id: string, payment_id: string }
+router.post("/verify", authenticate, authorizeRole("Tourist"), paymentController.verifyUnifiedPayment);
 
 // ============= Webhook Routes =============
 
@@ -56,17 +50,5 @@ router.get("/for/:payment_for_id", authenticate, authorizeRole("Admin", "Busines
 
 // Get payments by business ID
 router.get("/business/:business_id", authenticate, authorizeRole("Admin", "Business Owner", "Staff", "Tourist"), paymentController.getPaymentByBusinessId);
-
-// ============= CRUD Routes (Internal/Admin) =============
-
-// Create payment record manually
-router.post("/", paymentController.insertPayment);
-router.get("/:id", authenticate,  authorizeRole("Admin", "Business Owner", "Manager", "Room Manager", "Receptionist", "Tourist"), paymentController.getPaymentById); // Ownership checked in controller
-router.get("/", authenticate,   authorizeRole("Admin", "Business Owner", "Manager", "Room Manager", "Receptionist", "Tourist"), paymentController.getAllPayments);
-router.delete("/:id", authenticate,  authorizeRole("Admin", "Business Owner", "Manager", "Room Manager", "Receptionist", "Tourist"), paymentController.deletePayment);
-router.put("/:id", authenticate,  authorizeRole("Admin", "Business Owner", "Manager", "Room Manager", "Receptionist", "Tourist"), paymentController.updatePayment);
-router.get("/payer/:payer_id", authenticate, authorizeRole("Admin", "Business Owner", "Manager", "Room Manager", "Receptionist", "Tourist"), paymentController.getPaymentByPayerId); // Should add ownership check
-router.get("/for/:payment_for_id", authenticate, authorizeRole("Admin", "Business Owner", "Manager", "Room Manager", "Receptionist", "Tourist"), paymentController.getPaymentByPaymentForId); // Should add ownership check
-router.get("/business/:business_id", authenticate,  authorizeRole("Admin", "Business Owner", "Manager", "Room Manager", "Receptionist", "Tourist"), paymentController.getPaymentByBusinessId);
 
 export default router;

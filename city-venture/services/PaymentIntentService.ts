@@ -24,9 +24,23 @@ const PAYMONGO_PUBLIC_KEY = process.env.EXPO_PUBLIC_PAYMONGO_PUBLIC_KEY || '';
 // Types
 // =============================================================================
 
+/**
+ * Unified payment request - works for both orders and bookings
+ * Uses the new /payment/initiate endpoint
+ */
 export interface CreatePaymentIntentRequest {
+  payment_for: 'order' | 'booking';  // Specify the resource type
+  reference_id: string;               // Order ID or Booking ID
+  payment_method?: 'card' | 'gcash' | 'paymaya' | 'grab_pay'; // Optional: simplified payment method
+  payment_method_types?: string[];    // Default: ['card', 'paymaya', 'gcash', 'grab_pay']
+}
+
+/**
+ * @deprecated Use CreatePaymentIntentRequest with payment_for: 'order' instead
+ */
+export interface CreateOrderPaymentRequest {
   order_id: string;
-  payment_method_types?: string[]; // Default: ['card', 'paymaya', 'gcash', 'grab_pay']
+  payment_method_types?: string[];
 }
 
 export interface CreatePaymentIntentResponse {
@@ -36,14 +50,18 @@ export interface CreatePaymentIntentResponse {
     payment_id: string;
     payment_intent_id: string;
     client_key: string;
-    order_id: string;
-    order_number: string;
+    payment_for: 'order' | 'booking';  // Resource type
+    reference_id: string;               // Order ID or Booking ID
+    display_name: string;               // e.g., "Order #12345" or "Booking #..."
     amount: number;
     amount_centavos: number;
     currency: string;
     payment_method_allowed: string[];
     status: string; // 'awaiting_payment_method'
     public_key: string;
+    // Legacy compatibility - may be included for orders
+    order_id?: string;
+    order_number?: string;
   };
 }
 
@@ -138,18 +156,27 @@ export interface PaymentIntentStatus {
 // =============================================================================
 
 /**
- * Create a Payment Intent for an order
- * Call this from your checkout screen when user confirms order
+ * Create a Payment Intent for an order or booking
+ * Call this from your checkout screen when user confirms payment
  * 
- * @param request - Payment Intent creation request
+ * Uses the unified /payment/initiate endpoint
+ * 
+ * @param request - Payment Intent creation request with payment_for and reference_id
  * @returns Payment Intent with client_key for client-side operations
+ * 
+ * @example
+ * // For orders:
+ * createPaymentIntent({ payment_for: 'order', reference_id: orderId })
+ * 
+ * // For bookings:
+ * createPaymentIntent({ payment_for: 'booking', reference_id: bookingId })
  */
 export async function createPaymentIntent(
   request: CreatePaymentIntentRequest
 ): Promise<CreatePaymentIntentResponse> {
   try {
     const response = await apiClient.post<CreatePaymentIntentResponse>(
-      '/payment/intent',
+      '/payment/initiate',  // Unified endpoint
       request
     );
 
@@ -158,6 +185,21 @@ export async function createPaymentIntent(
     console.error('[PaymentIntentService] Create intent failed:', error.response?.data || error.message);
     throw error;
   }
+}
+
+/**
+ * @deprecated Use createPaymentIntent with { payment_for: 'order', reference_id } instead
+ * Kept for backward compatibility during migration
+ */
+export async function createOrderPaymentIntent(
+  orderId: string,
+  paymentMethodTypes?: string[]
+): Promise<CreatePaymentIntentResponse> {
+  return createPaymentIntent({
+    payment_for: 'order',
+    reference_id: orderId,
+    payment_method_types: paymentMethodTypes
+  });
 }
 
 /**
@@ -294,43 +336,75 @@ export async function attachPaymentMethodClient(
 }
 
 /**
- * Attach e-wallet Payment Method to Payment Intent (server-side)
- * For e-wallets like GCash, Maya - goes through backend
+ * Attach e-wallet Payment Method to Payment Intent (Client-Side)
+ * Communicates directly with PayMongo, bypassing the backend.
+ * 
+ * This is the recommended approach for e-wallets (GCash, PayMaya)
+ * as it keeps the backend clean and follows the same pattern as card payments.
  * 
  * @param paymentIntentId - Payment Intent ID
  * @param paymentMethodType - E-wallet type ('gcash', 'paymaya')
  * @param returnUrl - URL to return after wallet authorization
+ * @param clientKey - Client key from createPaymentIntent response (REQUIRED)
  * @param billing - Optional billing information
  * @returns Response with redirect URL for e-wallet authorization
- * 
- * Note: Backend only supports 'gcash' and 'paymaya' for server-side attachment.
- * For card payments, use client-side attachment with attachPaymentMethodClient.
  */
 export async function attachEwalletPaymentMethod(
   paymentIntentId: string,
   paymentMethodType: 'gcash' | 'paymaya',
   returnUrl: string,
+  clientKey: string,
   billing?: BillingDetails
-): Promise<AttachPaymentMethodResponse> {
+): Promise<{
+  data: {
+    id: string;
+    type: 'payment_intent';
+    attributes: {
+      status: string;
+      next_action: {
+        type: 'redirect';
+        redirect: {
+          url: string;
+          return_url: string;
+        };
+      } | null;
+      payments: { id: string }[];
+    };
+  };
+}> {
+  console.log('[PaymentIntentService] Attaching e-wallet (Client-Side)...');
+
   try {
-    const response = await apiClient.post<AttachPaymentMethodResponse>(
-      `/payment/intent/${paymentIntentId}/attach`,
-      {
-        payment_method_type: paymentMethodType,
-        return_url: returnUrl,
-        billing
-      }
+    // 1. Create the Payment Method (Direct to PayMongo)
+    const methodResponse = await createPaymentMethod(
+      paymentMethodType,
+      undefined, // No card details for e-wallets
+      billing
+    );
+    const paymentMethodId = methodResponse.data.id;
+    console.log('[PaymentIntentService] E-wallet payment method created:', paymentMethodId);
+
+    // 2. Attach to the Intent (Direct to PayMongo)
+    // Reuses the existing client-side attachment function
+    const attachResult = await attachPaymentMethodClient(
+      paymentIntentId,
+      paymentMethodId,
+      clientKey,
+      returnUrl
     );
 
-    return response.data;
+    console.log('[PaymentIntentService] E-wallet attached, status:', attachResult.data.attributes.status);
+    return attachResult;
+
   } catch (error: any) {
-    console.error('[PaymentIntentService] Attach e-wallet failed:', error.response?.data || error.message);
+    console.error('[PaymentIntentService] Attach e-wallet failed:', error.message);
     throw error;
   }
 }
 
 /**
  * Get Payment Intent status
+ * Uses the unified /payment/intent/:id endpoint
  * 
  * @param paymentIntentId - Payment Intent ID
  * @returns Payment Intent status details
@@ -340,7 +414,7 @@ export async function getPaymentIntentStatus(
 ): Promise<PaymentIntentStatus> {
   try {
     const response = await apiClient.get<PaymentIntentStatus>(
-      `/payment/intent/${paymentIntentId}`
+      `/payment/intent/${paymentIntentId}`  // Unified endpoint
     );
 
     return response.data;
@@ -429,10 +503,11 @@ export async function processCardPayment(
   status: string;
 }> {
   try {
-    // Step 1: Create Payment Intent via backend
+    // Step 1: Create Payment Intent via backend (unified endpoint)
     console.log('[PaymentIntentService] Step 1: Creating Payment Intent...');
     const intentResponse = await createPaymentIntent({
-      order_id: orderId,
+      payment_for: 'order',
+      reference_id: orderId,
       payment_method_types: ['card']
     });
 
@@ -625,6 +700,7 @@ export const TEST_CARDS = {
 
 export default {
   createPaymentIntent,
+  createOrderPaymentIntent, // Deprecated - use createPaymentIntent
   createPaymentMethod,
   attachPaymentMethodClient,
   attachEwalletPaymentMethod,
