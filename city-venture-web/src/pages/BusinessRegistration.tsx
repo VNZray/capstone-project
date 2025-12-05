@@ -16,7 +16,10 @@ import type { BusinessAmenity } from "../types/Amenity";
 import apiClient from "../services/apiClient";
 import type { Owner } from "../types/Owner";
 import type { User } from "../types/User";
-import { initializeEmailJS, sendAccountCredentials } from "../services/email/EmailService";
+import {
+  initializeEmailJS,
+  sendAccountCredentials,
+} from "../services/email/EmailService";
 
 const steps = [
   "Business Information",
@@ -76,11 +79,11 @@ const BusinessRegistration = () => {
   const [formData, setFormData] = useState<Business>({
     id: "",
     business_image: "",
-    business_name: "Kim Angela Homestay",
-    phone_number: "09380417373",
-    email: "kim@gmail.com",
-    description: "This place is great",
-    address: "123 Street, City",
+    business_name: "",
+    phone_number: "",
+    email: "",
+    description: "",
+    address: "",
     longitude: "",
     latitude: "",
     owner_id: "",
@@ -88,7 +91,7 @@ const BusinessRegistration = () => {
     primary_category_id: undefined,
     barangay_id: 0,
     status: "Pending",
-    hasBooking: false,
+    hasBooking: false, // Default to 0 (false) - only set to true when Accommodation category is selected
   });
 
   const [registrationData] = useState<Registration>({

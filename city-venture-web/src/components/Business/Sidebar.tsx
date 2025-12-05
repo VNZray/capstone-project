@@ -98,29 +98,26 @@ export default function Sidebar({
 
           {businessDetails?.hasBooking ? (
             <>
-              {(hasRole("Business Owner", "Manager") ||
-                canAny(
-                  "view_transactions",
-                  "manage_transactions",
-                  "view_bookings",
-                  "manage_bookings"
-                )) && (
-                <NavItem
-                  to={`${route}/transactions`}
-                  label="Transactions"
-                  icon={<Receipt size={ICON_SIZE} />}
-                  onClick={onClose}
-                />
-              )}
               {(hasRole("Business Owner", "Manager", "Receptionist") ||
-                canAny("view_bookings", "manage_bookings")) && (
-                <NavItem
-                  to={`${route}/bookings`}
-                  label="Bookings"
-                  icon={<CalendarCheck size={ICON_SIZE} />}
-                  onClick={onClose}
-                />
-              )}
+                canAny("view_transactions", "manage_transactions")) &&
+                !hasRole("Room Manager") && (
+                  <NavItem
+                    to={`${route}/transactions`}
+                    label="Transactions"
+                    icon={<Receipt size={ICON_SIZE} />}
+                    onClick={onClose}
+                  />
+                )}
+              {(hasRole("Business Owner", "Manager", "Receptionist") ||
+                canAny("view_bookings", "manage_bookings")) &&
+                !hasRole("Room Manager") && (
+                  <NavItem
+                    to={`${route}/bookings`}
+                    label="Bookings"
+                    icon={<CalendarCheck size={ICON_SIZE} />}
+                    onClick={onClose}
+                  />
+                )}
             </>
           ) : null}
 
@@ -152,14 +149,20 @@ export default function Sidebar({
               />
             ))}
 
-          {hasRole("Business Owner", "Manager", "Room Manager") && (
-            <NavItem
-              to={`${route}/rooms`}
-              label="Manage Rooms"
-              icon={<BedDouble size={ICON_SIZE} />}
-              onClick={onClose}
-            />
-          )}
+          {businessDetails?.hasBooking &&
+            hasRole(
+              "Business Owner",
+              "Manager",
+              "Room Manager",
+              "Receptionist"
+            ) && (
+              <NavItem
+                to={`${route}/rooms`}
+                label="Manage Rooms"
+                icon={<BedDouble size={ICON_SIZE} />}
+                onClick={onClose}
+              />
+            )}
 
           {businessDetails?.hasBooking === true &&
             hasRole("Business Owner") && (

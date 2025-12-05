@@ -102,17 +102,17 @@ const BusinessRegistration: React.FC = () => {
   const [formData, setFormData] = useState<Business>({
     id: "",
     business_image: "",
-    business_name: "Kim Angela Homestay",
-    phone_number: "09380417373",
-    email: "kim@gmail.com",
-    description: "This place is great",
-    address: "123 Street, City",
+    business_name: "",
+    phone_number: "",
+    email: "",
+    description: "",
+    address: "",
     longitude: "",
     latitude: "",
     owner_id: user?.id ?? "",
     barangay_id: 0,
     status: "Pending",
-    hasBooking: false,
+    hasBooking: false, // Default to 0 (false) - only set to true when Accommodation category is selected
     category_ids: [],
     primary_category_id: undefined,
   });

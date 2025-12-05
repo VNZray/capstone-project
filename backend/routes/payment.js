@@ -34,12 +34,12 @@ router.post("/:id/refund", authenticate, authorizeRole("Admin"), paymentControll
 // Add authentication and authorization to legacy routes (Phase 4)
 
 router.post("/", paymentController.insertPayment);
-router.get("/:id", authenticate,  authorizeRole("Admin", "Business Owner", "Staff", "Tourist"), paymentController.getPaymentById); // Ownership checked in controller
-router.get("/", authenticate,   authorizeRole("Admin", "Business Owner", "Staff", "Tourist"), paymentController.getAllPayments);
-router.delete("/:id", authenticate,  authorizeRole("Admin", "Business Owner", "Staff", "Tourist"), paymentController.deletePayment);
-router.put("/:id", authenticate,  authorizeRole("Admin", "Business Owner", "Staff", "Tourist"), paymentController.updatePayment);
-router.get("/payer/:payer_id", authenticate, authorizeRole("Admin", "Business Owner", "Staff", "Tourist"), paymentController.getPaymentByPayerId); // Should add ownership check
-router.get("/for/:payment_for_id", authenticate, authorizeRole("Admin", "Business Owner", "Staff", "Tourist"), paymentController.getPaymentByPaymentForId); // Should add ownership check
-router.get("/business/:business_id", authenticate,  authorizeRole("Admin", "Business Owner", "Staff", "Tourist"), paymentController.getPaymentByBusinessId);
+router.get("/:id", authenticate,  authorizeRole("Admin", "Business Owner", "Manager", "Room Manager", "Receptionist", "Tourist"), paymentController.getPaymentById); // Ownership checked in controller
+router.get("/", authenticate,   authorizeRole("Admin", "Business Owner", "Manager", "Room Manager", "Receptionist", "Tourist"), paymentController.getAllPayments);
+router.delete("/:id", authenticate,  authorizeRole("Admin", "Business Owner", "Manager", "Room Manager", "Receptionist", "Tourist"), paymentController.deletePayment);
+router.put("/:id", authenticate,  authorizeRole("Admin", "Business Owner", "Manager", "Room Manager", "Receptionist", "Tourist"), paymentController.updatePayment);
+router.get("/payer/:payer_id", authenticate, authorizeRole("Admin", "Business Owner", "Manager", "Room Manager", "Receptionist", "Tourist"), paymentController.getPaymentByPayerId); // Should add ownership check
+router.get("/for/:payment_for_id", authenticate, authorizeRole("Admin", "Business Owner", "Manager", "Room Manager", "Receptionist", "Tourist"), paymentController.getPaymentByPaymentForId); // Should add ownership check
+router.get("/business/:business_id", authenticate,  authorizeRole("Admin", "Business Owner", "Manager", "Room Manager", "Receptionist", "Tourist"), paymentController.getPaymentByBusinessId);
 
 export default router;

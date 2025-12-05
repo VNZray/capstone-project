@@ -12,7 +12,7 @@ router.get("/", promotionController.getAllPromotions);
 router.get("/active", promotionController.getAllActivePromotions);
 
 // Create new promotion
-router.post("/", authenticate, authorizeRole("Business Owner", "Staff", "Admin"), promotionController.insertPromotion);
+router.post("/", authenticate, authorizeRole("Business Owner", "Manager", "Admin"), promotionController.insertPromotion);
 
 // Update expired promotions (maintenance)
 router.post("/maintenance/update-expired", promotionController.updateExpiredPromotions);
@@ -30,6 +30,6 @@ router.get("/:id", promotionController.getPromotionById);
 router.put("/:id", promotionController.updatePromotion);
 
 // Delete promotion
-router.delete("/:id", authenticate, authorizeRole("Business Owner", "Staff", "Admin"), promotionController.deletePromotion);
+router.delete("/:id", authenticate, authorizeRole("Business Owner", "Manager", "Admin"), promotionController.deletePromotion);
 
 export default router;
