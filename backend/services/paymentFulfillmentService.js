@@ -66,6 +66,19 @@ export async function handlePaymentPaid({
   const paymentAmount = attributes.amount || 0;
   const paymentFee = attributes.fee || 0;
   const paymentNetAmount = attributes.net_amount || 0;
+  
+  // CRITICAL: Extract actual payment method from PayMongo event
+  // This is the REAL method used (e.g., 'gcash'), not what we guessed during initiation
+  // PayMongo stores method type in different locations depending on payment type:
+  // - For e-wallets: attributes.source.type (e.g., 'gcash')
+  // - Alternative: attributes.payment_method_type
+  const actualPaymentMethodType = attributes.source?.type || attributes.payment_method_type;
+  
+  // Payment method ID is in source.id (e.g., 'src_...' for e-wallets, 'tok_...' for cards)
+  const actualPaymentMethodId = attributes.source?.id || attributes.payment_method_id || paymentId;
+
+  console.log(`[PaymentFulfillment] 💳 Actual payment method: ${actualPaymentMethodType} (${actualPaymentMethodId})`);
+  console.log(`[PaymentFulfillment] 📝 Source data:`, JSON.stringify(attributes.source || {}, null, 2));
 
   // 1. Resolve reference from metadata or database lookup
   let referenceId = metadata.order_id || metadata.booking_id;
@@ -87,11 +100,14 @@ export async function handlePaymentPaid({
   }
 
   // 2. Update payment record (Single Source of Truth)
+  // CRITICAL: Save the ACTUAL payment method from PayMongo, not the initial guess
   await updatePaymentRecord({
     paymentFor,
     referenceId,
     status: PAYMENT_STATUS.PAID,
     paymongoPaymentId: paymentId,
+    actualPaymentMethod: actualPaymentMethodType,
+    actualPaymentMethodId: actualPaymentMethodId,
     metadata: {
       paymongo_payment_status: 'paid',
       paymongo_amount_centavos: paymentAmount,
@@ -415,6 +431,8 @@ async function markBookingAsFailedPayment(bookingId) {
  * @param {string} params.referenceId - Order or booking ID
  * @param {string} params.status - Payment status
  * @param {string} params.paymongoPaymentId - PayMongo payment ID
+ * @param {string} [params.actualPaymentMethod] - Actual payment method type from PayMongo
+ * @param {string} [params.actualPaymentMethodId] - Payment method ID from PayMongo
  * @param {Object} params.metadata - Additional metadata to merge
  */
 async function updatePaymentRecord({
@@ -422,6 +440,8 @@ async function updatePaymentRecord({
   referenceId,
   status,
   paymongoPaymentId,
+  actualPaymentMethod,
+  actualPaymentMethodId,
   metadata = {},
 }) {
   const metadataSetClauses = Object.entries(metadata)
@@ -430,18 +450,34 @@ async function updatePaymentRecord({
 
   const metadataValues = Object.values(metadata);
 
+  // Build SET clause dynamically to include payment method if provided
+  let setClauses = `status = ?, paymongo_payment_id = ?`;
+  let params = [status, paymongoPaymentId];
+
+  // CRITICAL: Update payment_method with the ACTUAL method from PayMongo
+  if (actualPaymentMethod) {
+    setClauses += `, payment_method = ?`;
+    params.push(actualPaymentMethod);
+  }
+
+  // Save payment method ID if provided
+  if (actualPaymentMethodId) {
+    setClauses += `, payment_method_id = ?`;
+    params.push(actualPaymentMethodId);
+  }
+
+  // Add metadata JSON_SET clause
+  if (metadataSetClauses) {
+    setClauses += `, metadata = JSON_SET(COALESCE(metadata, '{}'), ${metadataSetClauses})`;
+    params.push(...metadataValues);
+  }
+
+  setClauses += `, updated_at = ?`;
+  params.push(new Date(), paymentFor, referenceId);
+
   await db.query(
-    `UPDATE payment 
-     SET status = ?, 
-         paymongo_payment_id = ?,
-         metadata = JSON_SET(
-           COALESCE(metadata, '{}'),
-           ${metadataSetClauses}
-         ),
-         updated_at = ? 
-     WHERE payment_for = ? 
-       AND payment_for_id = ?`,
-    [status, paymongoPaymentId, ...metadataValues, new Date(), paymentFor, referenceId]
+    `UPDATE payment SET ${setClauses} WHERE payment_for = ? AND payment_for_id = ?`,
+    params
   );
 }
 

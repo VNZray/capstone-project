@@ -113,11 +113,11 @@ const OrderGracePeriodScreen = () => {
       setProcessingStep('Initializing payment...');
 
       // Step 2: Create Payment Intent using unified API
-      console.log('[GracePeriod] Creating payment intent...');
+      console.log('[GracePeriod] Creating payment intent with method:', paymentMethodType);
       const intentResponse = await createPaymentIntent({
         payment_for: 'order',
         reference_id: orderId,
-        payment_method_types: [paymentMethodType],
+        payment_method: paymentMethodType as 'card' | 'gcash' | 'paymaya',
       });
 
       const paymentIntentId = intentResponse.data.payment_intent_id;

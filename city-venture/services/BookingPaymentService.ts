@@ -1,10 +1,12 @@
 /**
  * Booking Payment Service
  * Handles payment initiation for accommodation bookings via unified payment API
- * All PayMongo API calls are made through the backend for security
  * 
- * MIGRATED: Now uses the unified /payment/initiate endpoint
- * instead of the deprecated /booking/:id/initiate-payment
+ * MIGRATED: Now uses CLIENT-SIDE Payment Intent flow:
+ * 1. Backend creates Payment Intent -> returns client_key
+ * 2. Frontend creates Payment Method (direct to PayMongo)
+ * 3. Frontend attaches Payment Method to Intent (direct to PayMongo)
+ * 4. Frontend receives checkout_url for e-wallet redirect
  * 
  * SECURITY NOTE: Uses openAuthSessionAsync for external browser authentication
  * which is more secure than WebView as it:
@@ -16,6 +18,11 @@
 import apiClient from '@/services/apiClient';
 import * as WebBrowser from 'expo-web-browser';
 import * as Linking from 'expo-linking';
+// Import helpers from PaymentIntentService for client-side operations
+import { 
+  createPaymentMethod, 
+  attachPaymentMethodClient 
+} from './PaymentIntentService';
 
 export interface InitiateBookingPaymentRequest {
   payment_method_type: 'gcash' | 'paymaya' | 'grab_pay' | 'card' | 'dob' | 'qrph' | string;
@@ -40,20 +47,30 @@ export interface InitiateBookingPaymentResponse {
 }
 
 /**
- * Initiate payment for a booking using the unified payment API
- * This creates a PayMongo checkout session via the unified /payment/initiate endpoint
+ * Initiate payment for a booking using the CLIENT-SIDE Payment Intent flow
+ * 
+ * Flow:
+ * 1. Create Payment Intent via backend -> get client_key
+ * 2. Create Payment Method directly with PayMongo (frontend)
+ * 3. Attach Payment Method to Intent directly with PayMongo (frontend)
+ * 4. Return checkout_url for e-wallet redirect
  * 
  * @param bookingId - The booking UUID
  * @param paymentData - Payment details including method type and amount
+ * @param billingInfo - Optional billing details for the payment
  * @returns Payment response with checkout URL
  */
 export async function initiateBookingPayment(
   bookingId: string,
-  paymentData: InitiateBookingPaymentRequest
+  paymentData: InitiateBookingPaymentRequest,
+  billingInfo?: { email?: string; name?: string; phone?: string }
 ): Promise<InitiateBookingPaymentResponse> {
   try {
-    // Use the unified payment endpoint
-    const response = await apiClient.post<InitiateBookingPaymentResponse>(
+    console.log('[BookingPayment] Step 1: Creating Payment Intent (Backend)...');
+    
+    // Step 1: Create Payment Intent via Backend
+    // The backend returns { client_key, payment_intent_id, payment_id }
+    const intentResponse = await apiClient.post<any>(
       '/payment/initiate',
       {
         payment_for: 'booking',
@@ -64,7 +81,63 @@ export async function initiateBookingPayment(
       }
     );
 
-    return response.data;
+    const { client_key, payment_intent_id, payment_id, amount, currency } = intentResponse.data.data || intentResponse.data;
+    
+    console.log('[BookingPayment] Intent created:', { payment_intent_id, payment_id });
+
+    // Step 2: Create Payment Method directly with PayMongo (Frontend)
+    console.log('[BookingPayment] Step 2: Creating Payment Method (Frontend -> PayMongo)...');
+    
+    const methodResponse = await createPaymentMethod(
+      paymentData.payment_method_type as 'gcash' | 'paymaya' | 'grab_pay' | 'card',
+      undefined, // Card details - undefined for e-wallets
+      { 
+        email: billingInfo?.email || 'guest@cityventure.app',
+        name: billingInfo?.name || 'Guest User',
+        phone: billingInfo?.phone
+      }
+    );
+    const paymentMethodId = methodResponse.data.id;
+    
+    console.log('[BookingPayment] Payment Method created:', paymentMethodId);
+
+    // Step 3: Attach Payment Method to Intent (Frontend -> PayMongo)
+    console.log('[BookingPayment] Step 3: Attaching Payment Method to Intent...');
+    
+    // Construct return URL for deep linking back to the app
+    const returnUrl = Linking.createURL('/payment/verify');
+    
+    const attachResponse = await attachPaymentMethodClient(
+      payment_intent_id,
+      paymentMethodId,
+      client_key,
+      returnUrl
+    );
+
+    // Step 4: Extract the Redirect URL from PayMongo's response
+    const nextAction = attachResponse.data.attributes.next_action;
+    const checkout_url = nextAction?.redirect?.url || '';
+    const status = attachResponse.data.attributes.status;
+
+    console.log(`[BookingPayment] Done. Status: ${status}, Checkout URL: ${checkout_url ? 'Available' : 'None'}`);
+
+    // Return combined data so the screen can redirect to the checkout URL
+    return {
+      success: true,
+      message: 'Payment initiated successfully',
+      data: {
+        payment_id: payment_id || '',
+        booking_id: bookingId,
+        amount: amount || paymentData.amount || 0,
+        currency: currency || 'PHP',
+        payment_method_type: paymentData.payment_method_type,
+        payment_type: paymentData.payment_type || 'Full Payment',
+        payment_intent_id,
+        checkout_url, // <-- NOW POPULATED from PayMongo's redirect
+        status
+      }
+    };
+
   } catch (error: any) {
     console.error('[BookingPaymentService] Initiate payment failed:', error.response?.data || error.message);
     throw error;
