@@ -14,6 +14,8 @@ import {
 } from "@mui/joy";
 import { colors } from "@/src/utils/Colors";
 import { useState, useEffect } from "react";
+import FileUpload from "@/src/components/FileUpload";
+import { EmailOutlined, Phone } from "@mui/icons-material";
 
 type Props = {
   data: Business;
@@ -120,6 +122,82 @@ const Step1: React.FC<Props> = ({ data, setData }) => {
             sx={{ borderRadius: "8px", fontSize: "0.95rem" }}
           />
         </FormControl>
+
+        <FormControl>
+          <Typography.Label>Business Profile Image</Typography.Label>
+          <FileUpload
+            folderName={`${data.id || "temp"}/profile`}
+            uploadTo="business-profile"
+            onUploadComplete={(publicUrl) =>
+              setData((prev) => ({ ...prev, business_image: publicUrl }))
+            }
+            accept=".jpg,.jpeg,.png,.webp"
+            maxSizeMB={5}
+            placeholder={
+              data.business_image
+                ? "Change Image"
+                : "Click to upload or drag and drop JPG, PNG, WEBP (Max 5MB)"
+            }
+          />
+          {data.business_image && (
+            <Box sx={{ mt: 1, display: "flex", alignItems: "center", gap: 1 }}>
+              <img
+                src={data.business_image}
+                alt="Business profile"
+                style={{
+                  width: 60,
+                  height: 60,
+                  objectFit: "cover",
+                  borderRadius: 8,
+                }}
+              />
+              <Typography.Body
+                sx={{ fontSize: "0.85rem", color: colors.success }}
+              >
+                ✓ Image uploaded
+              </Typography.Body>
+            </Box>
+          )}
+        </FormControl>
+
+        <Grid container spacing={2}>
+          <Grid xs={12} md={6}>
+            <FormControl required>
+              <Typography.Label>Business Email *</Typography.Label>
+              <Input
+                placeholder="john.smith@example.com"
+                fullWidth
+                type="email"
+                startDecorator={<EmailOutlined />}
+                value={data.email}
+                onChange={(e) =>
+                  setData((prev) => ({ ...prev, email: e.target.value }))
+                }
+                sx={{ borderRadius: "8px", fontSize: "0.95rem" }}
+              />
+            </FormControl>
+          </Grid>
+          <Grid xs={12} md={6}>
+            <FormControl required>
+              <Typography.Label>Phone Number *</Typography.Label>
+              <Input
+                placeholder="(555) 123-4567"
+                fullWidth
+                startDecorator={<Phone />}
+                value={data.phone_number}
+                onChange={(e) =>
+                  setData((prev) => ({ ...prev, phone_number: e.target.value }))
+                }
+                sx={{ borderRadius: "8px", fontSize: "0.95rem" }}
+              />
+              <Typography.Body
+                sx={{ fontSize: "0.8rem", color: colors.gray, mt: 0.5 }}
+              >
+                Format: (XXX) XXX-XXXX
+              </Typography.Body>
+            </FormControl>
+          </Grid>
+        </Grid>
 
         <Grid container spacing={2}>
           <Grid xs={12} md={6}>

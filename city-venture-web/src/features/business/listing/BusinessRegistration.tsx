@@ -1,20 +1,20 @@
 import React, { useEffect, useState } from "react";
-import PageContainer from "@/src/components/PageContainer";
-import Container from "@/src/components/Container";
-import { Button, LinearProgress, IconButton, Box, Stack } from "@mui/joy";
-import { ArrowBackRounded } from "@mui/icons-material";
+import { Box } from "@mui/joy";
+import { ArrowBack } from "@mui/icons-material";
+import { CheckCircle } from "lucide-react";
 import Typography from "@/src/components/Typography";
+import Button from "@/src/components/Button";
+import IconButton from "@/src/components/IconButton";
+import Alert from "@/src/components/Alert";
+import Container from "@/src/components/Container";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/src/context/AuthContext";
 import { colors } from "@/src/utils/Colors";
-import heroImg from "@/src/assets/gridimages/grid5.jpg";
-import { useMediaQuery } from "@mui/material";
+import bg from "@/src/assets/gridimages/grid5.jpg";
 import Step1 from "./steps/Step1";
 import Step2 from "./steps/Step2";
-import Step3 from "./steps/Step3";
 import Step3BusinessHours from "./steps/Step3BusinessHours";
 import Step4 from "./steps/Step4";
-import Step4ImageUpload from "./steps/Step4ImageUpload";
 import Step5 from "./steps/Step5";
 
 import type {
@@ -26,14 +26,13 @@ import apiClient from "@/src/services/apiClient";
 import type { Permit } from "@/src/types/Permit";
 import type { BusinessAmenity } from "@/src/types/Amenity";
 import type { Address } from "@/src/types/Address";
+
 // steps definition
 const steps = [
-  "Basic",
-  "Contact",
-  "Location",
+  "Business Information",
+  "Business Location",
   "Business Hours",
-  "Photos",
-  "Permits",
+  "Permits & Licenses",
   "Review & Submit",
 ];
 
@@ -64,8 +63,6 @@ const StepContent: React.FC<{ step: number; commonProps: CommonProps }> = ({
     case 1:
       return <Step2 {...commonProps} />;
     case 2:
-      return <Step3 {...commonProps} />;
-    case 3:
       return (
         <Step3BusinessHours
           data={commonProps.data}
@@ -73,16 +70,9 @@ const StepContent: React.FC<{ step: number; commonProps: CommonProps }> = ({
           setBusinessHours={commonProps.setBusinessHours}
         />
       );
-    case 4:
-      return (
-        <Step4ImageUpload
-          data={commonProps.data}
-          setData={commonProps.setData}
-        />
-      );
-    case 5:
+    case 3:
       return <Step4 {...commonProps} />;
-    case 6:
+    case 4:
       return <Step5 {...commonProps} />;
     default:
       return null;
@@ -94,10 +84,15 @@ const BusinessRegistration: React.FC = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [submitting, setSubmitting] = useState(false);
-  const isSmall = useMediaQuery("(max-width: 1024px)");
   const [externalBookings, setExternalBookings] = useState<
     { name: string; link: string }[]
   >([]);
+  const [alert, setAlert] = useState<{
+    open: boolean;
+    type: "success" | "error" | "warning" | "info";
+    title: string;
+    message: string;
+  }>({ open: false, type: "info", title: "", message: "" });
 
   const [formData, setFormData] = useState<Business>({
     id: "",
@@ -212,50 +207,68 @@ const BusinessRegistration: React.FC = () => {
   };
 
   const validateStep = (step: number): boolean => {
+    let errorMessage = "";
+
     switch (step) {
       case 0: // Business Information
         if (!formData.business_name?.trim()) {
-          alert("Please enter business name");
-          return false;
-        }
-
-        if (!formData.category_ids || formData.category_ids.length === 0) {
-          alert("Please select at least one category");
-          return false;
-        }
-        break;
-      case 1: // Address
-        if (!formData.phone_number?.trim()) {
-          alert("Please enter phone number");
-          return false;
-        }
-        if (!formData.email?.trim()) {
-          alert("Please enter email");
-          return false;
+          errorMessage = "Please enter business name";
+        } else if (!formData.email?.trim()) {
+          errorMessage = "Please enter email";
+        } else if (!formData.phone_number?.trim()) {
+          errorMessage = "Please enter phone number";
+        } else if (
+          !formData.category_ids ||
+          formData.category_ids.length === 0
+        ) {
+          errorMessage = "Please select at least one category";
         }
         break;
-      case 2: // Business Hours & Photos
-        // Optional validation for business hours if needed
+      case 1: // Business Location
+        if (!addressData.barangay_id) {
+          errorMessage = "Please select barangay";
+        } else if (!formData.address?.trim()) {
+          errorMessage = "Please enter address";
+        }
+        break;
+      case 2: // Business Hours
+        // Optional validation
         break;
       case 3: // Permits
         if (permitData.length === 0) {
-          alert(
-            "Please upload at least one permit (Business Permit or Mayor's Permit)"
+          errorMessage =
+            "Please upload at least one permit (Business Permit or Mayor's Permit)";
+        } else {
+          const permitsWithoutExpiration = permitData.filter(
+            (permit) => !permit.expiration_date
           );
-          return false;
+          if (permitsWithoutExpiration.length > 0) {
+            errorMessage = "Please provide expiration dates for all permits";
+          }
         }
-        if (!addressData.barangay_id) {
-          alert("Please select barangay");
-          return false;
-        }
-
         break;
     }
+
+    if (errorMessage) {
+      setAlert({
+        open: true,
+        type: "warning",
+        title: "Validation Error",
+        message: errorMessage,
+      });
+      return false;
+    }
+
     return true;
   };
 
   const handleNext = () => {
-    if (submitting) return; // avoid double submit
+    if (submitting) return;
+
+    // Validate current step before proceeding
+    if (!validateStep(activeStep)) {
+      return;
+    }
 
     if (activeStep < steps.length - 1) {
       setActiveStep((prev) => prev + 1);
@@ -277,25 +290,39 @@ const BusinessRegistration: React.FC = () => {
       setSubmitting(true);
 
       if (!formData.owner_id) {
-        alert(
-          "Owner profile is required before registering a business. Please complete your owner profile first."
-        );
-        throw new Error("Missing owner_id");
+        setAlert({
+          open: true,
+          type: "error",
+          title: "Missing Owner Profile",
+          message:
+            "Owner profile is required before registering a business. Please complete your owner profile first.",
+        });
+        return;
       }
 
       // Validate permits before submission
       if (permitData.length === 0) {
-        alert("Please upload at least one permit before submitting");
+        setAlert({
+          open: true,
+          type: "warning",
+          title: "Missing Permits",
+          message: "Please upload at least one permit before submitting",
+        });
         return;
       }
 
-      // const permitsWithoutExpiration = permitData.filter(
-      //   (permit) => !permit.expiration_date
-      // );
-      // if (permitsWithoutExpiration.length > 0) {
-      //   alert("All permits must have expiration dates");
-      //   return;
-      // }
+      const permitsWithoutExpiration = permitData.filter(
+        (permit) => !permit.expiration_date
+      );
+      if (permitsWithoutExpiration.length > 0) {
+        setAlert({
+          open: true,
+          type: "warning",
+          title: "Missing Expiration Dates",
+          message: "All permits must have expiration dates",
+        });
+        return;
+      }
 
       // 1️⃣ Insert Business
       const res = await apiClient.post(`/business`, {
@@ -410,217 +437,291 @@ const BusinessRegistration: React.FC = () => {
       }
 
       console.log("✅ Business registration submitted successfully");
-      alert(
-        "Registration submitted successfully! You will be notified once your application is reviewed."
-      );
-      navigate("/business");
+
+      setAlert({
+        open: true,
+        type: "success",
+        title: "Registration Successful!",
+        message:
+          "Your business registration has been submitted successfully. You will be notified once your application is reviewed.",
+      });
+
+      setTimeout(() => {
+        navigate("/business");
+      }, 2000);
     } catch (error: any) {
       console.error("❌ Failed to submit registration:", error);
 
-      // Provide specific error message
       const errorMessage =
         error.message || "Something went wrong. Please try again.";
-      alert(errorMessage);
+
+      setAlert({
+        open: true,
+        type: "error",
+        title: "Registration Failed",
+        message: errorMessage,
+      });
     } finally {
       setSubmitting(false);
     }
   };
 
   return (
-    <div style={{ display: "flex", minHeight: "100vh", width: "100%" }}>
-      {/* Left: Hero image panel (hidden on small screens) */}
-      {!isSmall && (
-        <div
-          style={{
-            flex: 7, // ~35% width when paired with right's flex: 13
-            position: "relative",
-            backgroundImage: `url(${heroImg})`,
-            backgroundSize: "cover",
-            backgroundPosition: "center",
-            filter: "saturate(0.95)",
-          }}
-        >
-          {/* Subtle overlay */}
-          <div
-            style={{
-              position: "absolute",
-              inset: 0,
-              background:
-                "linear-gradient(180deg, rgba(0,0,0,0.25) 0%, rgba(0,0,0,0.35) 100%)",
-            }}
-          />
-        </div>
-      )}
+    <>
+      <Alert
+        open={alert.open}
+        onClose={() => setAlert({ ...alert, open: false })}
+        type={alert.type}
+        title={alert.title}
+        message={alert.message}
+        showCancel={false}
+      />
 
-      {/* Right: Stepper form panel */}
-      <div
-        style={{
-          flex: isSmall ? 1 : 13, // ~65% for the form on large screens
-          display: "flex",
-          flexDirection: "column",
-          padding: isSmall ? "16px" : "24px 32px",
-          backgroundColor: "#fff",
-          width: "100%",
-          minWidth: isSmall ? "auto" : 560,
-          maxWidth: isSmall ? "100%" : 1200,
-          marginLeft: "auto",
+      <Box
+        sx={{
+          display: "grid",
+          gridTemplateColumns: { xs: "1fr", md: "40% 60%" },
+          minHeight: "100vh",
+          overflow: "hidden",
         }}
       >
-        <PageContainer
-          style={{
-            width: "100%",
-            margin: "0 auto",
-            padding: 0,
-            display: "flex",
+        {/* Left Section - Static Info */}
+        <Box
+          sx={{
+            position: { xs: "relative", md: "sticky" },
+            top: 0,
+            height: { xs: "auto", md: "100vh" },
+            backgroundImage: `url('${bg}')`,
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+            backgroundRepeat: "no-repeat",
+            color: colors.white,
+            display: { xs: "none", md: "flex" },
             flexDirection: "column",
-            flex: "1 1 auto",
-            minHeight: 0,
+            justifyContent: "flex-end",
+            alignItems: "flex-start",
+            "&::before": {
+              content: '""',
+              position: "absolute",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: colors.primary,
+              opacity: 0.85,
+              zIndex: 1,
+            },
           }}
         >
-          {/* Header */}
-          <div style={{ padding: "8px 12px", marginBottom: 8 }}>
-            <Stack
-              direction="row"
-              alignItems="center"
-              justifyContent="space-between"
-              gap={1.25}
-            >
-              <Stack direction="row" alignItems="center" gap={0.75}>
-                <IconButton
-                  size="sm"
-                  variant="plain"
-                  color="neutral"
-                  aria-label="Go back"
-                  onClick={handleBack}
-                >
-                  <ArrowBackRounded fontSize="small" />
-                </IconButton>
-              </Stack>
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 12,
-                  flex: 1,
-                  marginLeft: 12,
+          <Box sx={{ position: "relative", zIndex: 2, width: "100%" }}>
+            <Container gap="0" padding="40px">
+              <Typography.Title
+                sx={{
+                  color: colors.white,
+                  mb: 2,
+                  fontSize: { xs: "2rem", md: "2.5rem" },
                 }}
               >
-                <div>
-                  <div style={{ marginBottom: 8 }}>
-                    <Typography.Title size="normal">
-                      Register your business
-                    </Typography.Title>
-                  </div>
-                  <Typography.Body size="xs" sx={{ color: colors.gray }}>
-                    A simple, step-by-step flow to get you listed.
+                Register Your Business
+              </Typography.Title>
+              <Typography.Body
+                sx={{
+                  color: colors.tertiary,
+                  mb: 4,
+                  fontSize: { xs: "0.95rem", md: "1rem" },
+                }}
+              >
+                A simple, step-by-step process to get you listed
+              </Typography.Body>
+
+              <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+                  <Box
+                    sx={{
+                      width: "24px",
+                      height: "24px",
+                      borderRadius: "50%",
+                      backgroundColor: colors.secondary,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      flexShrink: 0,
+                    }}
+                  >
+                    <CheckCircle size={16} color={colors.white} />
+                  </Box>
+                  <Typography.Body sx={{ color: colors.tertiary }}>
+                    Fast & secure process
                   </Typography.Body>
-                </div>
-              </div>
-
-              <Stack alignItems="flex-end" gap={0.5}>
-                <Typography.Body size="sm" sx={{ color: colors.gray }}>
-                  Step {activeStep + 1} of {steps.length}
-                </Typography.Body>
-                <Box sx={{ width: 160, "--LinearProgress-thickness": "4px" }}>
-                  <LinearProgress
-                    determinate
-                    value={Math.round(((activeStep + 1) / steps.length) * 100)}
-                    variant="soft"
-                    color="primary"
-                  />
                 </Box>
-              </Stack>
-            </Stack>
-          </div>
+                <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+                  <Box
+                    sx={{
+                      width: "24px",
+                      height: "24px",
+                      borderRadius: "50%",
+                      backgroundColor: colors.secondary,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      flexShrink: 0,
+                    }}
+                  >
+                    <CheckCircle size={16} color={colors.white} />
+                  </Box>
+                  <Typography.Body sx={{ color: colors.tertiary }}>
+                    Save and resume anytime
+                  </Typography.Body>
+                </Box>
+                <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+                  <Box
+                    sx={{
+                      width: "24px",
+                      height: "24px",
+                      borderRadius: "50%",
+                      backgroundColor: colors.secondary,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      flexShrink: 0,
+                    }}
+                  >
+                    <CheckCircle size={16} color={colors.white} />
+                  </Box>
+                  <Typography.Body sx={{ color: colors.tertiary }}>
+                    Complete in under 10 minutes
+                  </Typography.Body>
+                </Box>
+              </Box>
+            </Container>
+          </Box>
+        </Box>
 
-          {/* Stepper overview removed for a cleaner, minimal header */}
-
-          <Container
-            elevation={0}
-            className="br-section"
-            style={{
-              padding: 0,
-              borderRadius: 0,
-              border: "none",
-              backgroundColor: "transparent",
-              boxShadow: "none",
-              display: "flex",
-              flexDirection: "column",
-              flex: "1 1 auto",
-              minHeight: 0,
+        {/* Right Section - Form Content */}
+        <Box
+          sx={{
+            backgroundColor: colors.background,
+            height: "100vh",
+            display: "flex",
+            flexDirection: "column",
+            position: "relative",
+          }}
+        >
+          {/* Fixed Header - Back Arrow & Step Progress */}
+          <Box
+            sx={{
+              position: "sticky",
+              top: 0,
+              zIndex: 10,
+              backgroundColor: colors.background,
+              borderBottom: `1px solid ${colors.tertiary}`,
+              p: { xs: 2, md: 3 },
             }}
           >
-            {/* Scoped form wrapper to apply compact, consistent spacing */}
-            <div
-              className="br-form-wrapper"
-              style={{
-                padding: "20px 24px 0px 24px",
-                flex: "1 1 auto",
-                minHeight: 0,
-                overflowY: "auto",
-              }}
-            >
-              <StepContent step={activeStep} commonProps={commonProps} />
-            </div>
-
-            {/* Buttons aligned with form content */}
-            <div
-              style={{
-                padding: "24px 24px 20px 24px",
+            <Box
+              sx={{
                 display: "flex",
                 alignItems: "center",
-                justifyContent: "center",
-                width: "100%",
+                justifyContent: "space-between",
+                mb: 2,
               }}
             >
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  width: "100%",
-                  maxWidth: "800px",
-                  margin: "0 auto",
+              <IconButton
+                variant="plain"
+                onClick={handleBack}
+                sx={{ color: colors.gray }}
+              >
+                <ArrowBack />
+              </IconButton>
+              <Typography.Label sx={{ color: colors.gray }}>
+                Step {activeStep + 1} of {steps.length}
+              </Typography.Label>
+            </Box>
+
+            {/* Progress Bar */}
+            <Box
+              sx={{
+                width: "100%",
+                height: "4px",
+                backgroundColor: colors.tertiary,
+                borderRadius: "2px",
+                overflow: "hidden",
+              }}
+            >
+              <Box
+                sx={{
+                  width: `${((activeStep + 1) / steps.length) * 100}%`,
+                  height: "100%",
+                  backgroundColor: colors.secondary,
+                  transition: "width 0.3s ease-in-out",
+                }}
+              />
+            </Box>
+          </Box>
+
+          {/* Scrollable Form Content */}
+          <Box
+            sx={{
+              flex: 1,
+              overflowY: "auto",
+              p: { xs: 3, md: 4 },
+            }}
+          >
+            <StepContent step={activeStep} commonProps={commonProps} />
+          </Box>
+
+          {/* Fixed Bottom Navigation */}
+          <Box
+            sx={{
+              position: "sticky",
+              bottom: 0,
+              zIndex: 10,
+              backgroundColor: colors.white,
+              borderTop: `1px solid ${colors.tertiary}`,
+              boxShadow: "0 -2px 8px rgba(0,0,0,0.06)",
+              p: { xs: 2, md: 3 },
+            }}
+          >
+            <Box
+              sx={{
+                display: "flex",
+                gap: 2,
+                justifyContent: "space-between",
+              }}
+            >
+              <Button
+                size="lg"
+                variant="outlined"
+                colorScheme="secondary"
+                onClick={handleBack}
+                sx={{
+                  flex: 1,
+                  maxWidth: { xs: "none", md: "150px" },
                 }}
               >
-                <Button
-                  size="md"
-                  variant="soft"
-                  color="neutral"
-                  onClick={handleBack}
-                  aria-label="Back"
-                  sx={{
-                    minWidth: "100px",
-                    fontWeight: 500,
-                  }}
-                >
-                  Back
-                </Button>
-                <Button
-                  size="md"
-                  variant="solid"
-                  color="primary"
-                  onClick={handleNext}
-                  loading={submitting && activeStep === steps.length - 1}
-                  disabled={submitting}
-                  aria-label={
-                    activeStep === steps.length - 1
-                      ? "Submit registration"
-                      : "Next step"
-                  }
-                  sx={{
-                    minWidth: "100px",
-                    fontWeight: 500,
-                  }}
-                >
-                  {activeStep === steps.length - 1 ? "Submit" : "Next"}
-                </Button>
-              </div>
-            </div>
-          </Container>
-        </PageContainer>
-      </div>
-    </div>
+                Back
+              </Button>
+              <Button
+                size="lg"
+                variant="solid"
+                colorScheme="primary"
+                onClick={handleNext}
+                loading={submitting && activeStep === steps.length - 1}
+                disabled={submitting}
+                sx={{
+                  flex: 1,
+                  maxWidth: { xs: "none", md: "150px" },
+                }}
+              >
+                {activeStep === steps.length - 1
+                  ? "Submit Registration"
+                  : "Next"}
+              </Button>
+            </Box>
+          </Box>
+        </Box>
+      </Box>
+    </>
   );
 };
 

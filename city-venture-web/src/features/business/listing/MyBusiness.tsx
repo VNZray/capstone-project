@@ -320,11 +320,7 @@ const MyBusiness = () => {
                       image={business.business_image || placeholderImage}
                       aspectRatio="1/1"
                       title={business.business_name}
-                      subtitle={
-                        business.hasBooking
-                          ? "Accommodation"
-                          : "Shop"
-                      }
+                      subtitle={business.hasBooking ? "Accommodation" : "Shop"}
                       elevation={2}
                       onClick={() => {
                         setBusinessId(business.id!);
@@ -386,26 +382,25 @@ const MyBusiness = () => {
                   {pendingBusinesses.map((business) => (
                     <Card
                       key={business.id}
-                      size={isSmallDevice ? "default" : "md"}
-                      variant={isSmallDevice ? "grid" : "list"}
+                      size={isSmallDevice ? "default" : "sm"}
+                      variant={"list"}
                       image={business.business_image || placeholderImage}
-                      aspectRatio="16/9"
+                      aspectRatio="1/1"
                       title={business.business_name}
-                      subtitle={
-                        business.hasBooking
-                          ? "Accommodation"
-                          : "Shop"
-                      }
+                      subtitle={business.hasBooking ? "Accommodation" : "Shop"}
                       elevation={2}
+                      onClick={() => {
+                        setBusinessId(business.id!);
+                        navigate(`/business/dashboard`);
+                      }}
                     >
                       <Chip
+                        size="sm"
                         color="warning"
                         variant="soft"
-                        size="sm"
-                        startDecorator={<HourglassEmpty />}
                         sx={{ fontWeight: 600 }}
                       >
-                        Under Review
+                        {business.status}
                       </Chip>
                     </Card>
                   ))}
@@ -456,11 +451,7 @@ const MyBusiness = () => {
                       image={business.business_image || placeholderImage}
                       aspectRatio="16/9"
                       title={business.business_name}
-                      subtitle={
-                        business.hasBooking
-                          ? "Accommodation"
-                          : "Shop"
-                      }
+                      subtitle={business.hasBooking ? "Accommodation" : "Shop"}
                       elevation={2}
                       hoverEffect="lift"
                       actions={[

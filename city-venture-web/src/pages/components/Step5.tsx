@@ -109,7 +109,6 @@ const Step5: React.FC<Props> = ({ data, ownerData, userData, permitData }) => {
               value={selectedCategoryNames.join(", ")}
             />
             <InfoRow label="Category" value={selectedCategoryNames[0]} />
-            <InfoRow label="Tax ID" value="N/A" />
           </CardContent>
         </Card>
 
@@ -158,7 +157,6 @@ const Step5: React.FC<Props> = ({ data, ownerData, userData, permitData }) => {
                   : ""
               }
             />
-            <InfoRow label="ZIP Code" value={data.barangay_id} />
             <InfoRow label="Country" value="Philippines" />
           </CardContent>
         </Card>

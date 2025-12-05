@@ -209,8 +209,6 @@ const BusinessRegistration = () => {
           errorMessage = "Please enter first name";
         } else if (!ownerData.last_name?.trim()) {
           errorMessage = "Please enter last name";
-        } else if (!userData.email?.trim()) {
-          errorMessage = "Please enter email";
         } else if (!userData.password?.trim()) {
           errorMessage = "Please enter password";
         }
@@ -555,7 +553,7 @@ const BusinessRegistration = () => {
             backgroundPosition: "center",
             backgroundRepeat: "no-repeat",
             color: colors.white,
-            display: "flex",
+            display: { sm: "none", md: "flex" },
             flexDirection: "column",
             justifyContent: "flex-end",
             alignItems: "flex-start",
@@ -755,7 +753,7 @@ const BusinessRegistration = () => {
                 onClick={handleBack}
                 sx={{
                   flex: 1,
-                  maxWidth: { xs: "none", md: "150px" },
+                  maxWidth: { xs: "none", md: "200px" },
                 }}
               >
                 Back
@@ -769,7 +767,7 @@ const BusinessRegistration = () => {
                 disabled={submitting}
                 sx={{
                   flex: 1,
-                  maxWidth: { xs: "none", md: "150px" },
+                  maxWidth: { xs: "none", md: "200px" },
                 }}
               >
                 {activeStep === steps.length - 1
