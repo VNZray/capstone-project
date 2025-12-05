@@ -211,8 +211,52 @@ const BusinessRegistration: React.FC = () => {
     registrationData,
   };
 
+  const validateStep = (step: number): boolean => {
+    switch (step) {
+      case 0: // Business Information
+        if (!formData.business_name?.trim()) {
+          alert("Please enter business name");
+          return false;
+        }
+
+        if (!formData.category_ids || formData.category_ids.length === 0) {
+          alert("Please select at least one category");
+          return false;
+        }
+        break;
+      case 1: // Address
+        if (!formData.phone_number?.trim()) {
+          alert("Please enter phone number");
+          return false;
+        }
+        if (!formData.email?.trim()) {
+          alert("Please enter email");
+          return false;
+        }
+        break;
+      case 2: // Business Hours & Photos
+        // Optional validation for business hours if needed
+        break;
+      case 3: // Permits
+        if (permitData.length === 0) {
+          alert(
+            "Please upload at least one permit (Business Permit or Mayor's Permit)"
+          );
+          return false;
+        }
+        if (!addressData.barangay_id) {
+          alert("Please select barangay");
+          return false;
+        }
+
+        break;
+    }
+    return true;
+  };
+
   const handleNext = () => {
     if (submitting) return; // avoid double submit
+
     if (activeStep < steps.length - 1) {
       setActiveStep((prev) => prev + 1);
     } else {
@@ -239,6 +283,20 @@ const BusinessRegistration: React.FC = () => {
         throw new Error("Missing owner_id");
       }
 
+      // Validate permits before submission
+      if (permitData.length === 0) {
+        alert("Please upload at least one permit before submitting");
+        return;
+      }
+
+      // const permitsWithoutExpiration = permitData.filter(
+      //   (permit) => !permit.expiration_date
+      // );
+      // if (permitsWithoutExpiration.length > 0) {
+      //   alert("All permits must have expiration dates");
+      //   return;
+      // }
+
       // 1️⃣ Insert Business
       const res = await apiClient.post(`/business`, {
         ...formData,
@@ -246,60 +304,98 @@ const BusinessRegistration: React.FC = () => {
       });
 
       const businessId = res.data.id;
-      console.log(businessId);
+      if (!businessId) {
+        throw new Error("Failed to create business. Please try again.");
+      }
+      console.log("Business created with ID:", businessId);
 
       // 2️⃣ Insert External Bookings (if any)
       if (externalBookings.length > 0) {
-        await Promise.all(
-          externalBookings.map((site) => {
-            if (!site.name || !site.link) return null; // skip empty
+        try {
+          await Promise.all(
+            externalBookings.map((site) => {
+              if (!site.name || !site.link) return null; // skip empty
 
-            return apiClient.post(`/external-booking`, {
-              business_id: businessId,
-              name: site.name,
-              link: site.link,
-            });
-          })
-        );
+              return apiClient.post(`/external-booking`, {
+                business_id: businessId,
+                name: site.name,
+                link: site.link,
+              });
+            })
+          );
+        } catch (bookingError) {
+          console.error("Failed to save external bookings:", bookingError);
+          // Continue with registration
+        }
       }
 
+      // Insert Business Hours
       if (businessHours.length > 0) {
-        await Promise.all(
-          businessHours.map((hours) =>
-            apiClient.post(`/business-hours`, {
-              business_id: businessId,
-              day_of_week: hours.day_of_week,
-              open_time: hours.open_time,
-              close_time: hours.close_time,
-              is_open: hours.is_open,
-            })
-          )
-        );
+        try {
+          await Promise.all(
+            businessHours.map((hours) =>
+              apiClient.post(`/business-hours`, {
+                business_id: businessId,
+                day_of_week: hours.day_of_week,
+                open_time: hours.open_time,
+                close_time: hours.close_time,
+                is_open: hours.is_open,
+              })
+            )
+          );
+        } catch (hoursError) {
+          console.error("Failed to save business hours:", hoursError);
+          // Continue with registration
+        }
       }
 
+      // Insert Business Amenities
       if (businessAmenities.length > 0) {
-        await Promise.all(
-          businessAmenities.map((amenity) =>
-            apiClient.post(`/business-amenities`, {
-              business_id: businessId,
-              amenity_id: amenity.amenity_id,
-            })
-          )
-        );
+        try {
+          await Promise.all(
+            businessAmenities.map((amenity) =>
+              apiClient.post(`/business-amenities`, {
+                business_id: businessId,
+                amenity_id: amenity.amenity_id,
+              })
+            )
+          );
+        } catch (amenityError) {
+          console.error("Failed to save amenities:", amenityError);
+          // Continue with registration
+        }
       }
 
+      // Insert Permits - THIS IS CRITICAL, must succeed
       if (permitData.length > 0) {
-        await Promise.all(
-          permitData.map((permit) =>
-            apiClient.post(`/permit`, {
-              business_id: businessId,
-              permit_type: permit.permit_type,
-              file_url: permit.file_url,
-              file_format: permit.file_format,
-              file_size: permit.file_size,
-              status: permit.status || "Pending",
+        try {
+          await Promise.all(
+            permitData.map((permit) => {
+              if (!permit.file_url || !permit.permit_type) {
+                throw new Error(`Invalid permit data: ${permit.permit_type}`);
+              }
+              return apiClient.post(`/permit`, {
+                business_id: businessId,
+                permit_type: permit.permit_type,
+                file_url: permit.file_url,
+                file_format: permit.file_format,
+                file_size: permit.file_size,
+                file_name: permit.file_name,
+                status: permit.status || "pending",
+                expiration_date: permit.expiration_date,
+              });
             })
-          )
+          );
+          console.log("✅ Permits saved successfully");
+        } catch (permitError) {
+          console.error("❌ Failed to save permits:", permitError);
+          throw new Error(
+            "Failed to upload permits. Please ensure all permits are properly uploaded with expiration dates."
+          );
+        }
+      } else {
+        throw new Error(
+          "At least one permit is required to complete registration."
         );
       }
 
@@ -309,13 +405,22 @@ const BusinessRegistration: React.FC = () => {
         business_id: businessId,
       });
 
-      console.log("Registration response:", registration.data);
+      if (!registration.data) {
+        throw new Error("Failed to create registration record");
+      }
 
       console.log("✅ Business registration submitted successfully");
+      alert(
+        "Registration submitted successfully! You will be notified once your application is reviewed."
+      );
       navigate("/business");
-    } catch (error) {
+    } catch (error: any) {
       console.error("❌ Failed to submit registration:", error);
-      alert("Something went wrong. Please try again.");
+
+      // Provide specific error message
+      const errorMessage =
+        error.message || "Something went wrong. Please try again.";
+      alert(errorMessage);
     } finally {
       setSubmitting(false);
     }

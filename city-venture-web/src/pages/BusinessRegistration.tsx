@@ -60,38 +60,39 @@ const BusinessRegistration = () => {
   >([]);
 
   const [userData, setUserData] = useState<User>({
-    email: "juan@gmail.com",
-    phone_number: "9380410303",
-    password: "123456",
+    email: "sample.business@gmail.com",
+    phone_number: "09123456789",
+    password: "SamplePass123!",
     barangay_id: 3,
     user_role_id: 4,
   });
 
   const [ownerData, setOwnerData] = useState<Owner>({
-    first_name: "Juan",
-    last_name: "Dela Cruz",
-    middle_name: "Santos",
-    age: "30",
-    birthdate: "1993-01-01",
-    gender: "Male",
+    first_name: "Maria",
+    last_name: "Santos",
+    middle_name: "Cruz",
+    age: "35",
+    birthdate: "1989-05-15",
+    gender: "Female",
   });
 
   const [formData, setFormData] = useState<Business>({
     id: "",
     business_image: "",
-    business_name: "",
-    phone_number: "",
-    email: "",
-    description: "",
-    address: "",
-    longitude: "",
-    latitude: "",
+    business_name: "Sample Restaurant & Café",
+    phone_number: "09171234567",
+    email: "contact@samplerestaurant.com",
+    description:
+      "A cozy family-friendly restaurant offering authentic Filipino cuisine and specialty coffee. We pride ourselves on using fresh local ingredients and providing excellent service in a warm, welcoming atmosphere.",
+    address: "123 Main Street, Corner Rizal Avenue, Barangay Centro",
+    longitude: "121.0244",
+    latitude: "14.5547",
     owner_id: "",
     category_ids: [],
     primary_category_id: undefined,
-    barangay_id: 0,
+    barangay_id: 3,
     status: "Pending",
-    hasBooking: false, // Default to 0 (false) - only set to true when Accommodation category is selected
+    hasBooking: false,
   });
 
   const [registrationData] = useState<Registration>({
@@ -171,8 +172,83 @@ const BusinessRegistration = () => {
   }, []);
 
   if (!formData) return null;
+
+  const validateStep = (step: number): boolean => {
+    switch (step) {
+      case 0: // Business Information
+        if (!formData.business_name?.trim()) {
+          alert("Please enter business name");
+          return false;
+        }
+        if (!formData.phone_number?.trim()) {
+          alert("Please enter phone number");
+          return false;
+        }
+        if (!formData.email?.trim()) {
+          alert("Please enter email");
+          return false;
+        }
+        if (!formData.category_ids || formData.category_ids.length === 0) {
+          alert("Please select at least one category");
+          return false;
+        }
+        break;
+      case 1: // Owner Information
+        if (!ownerData.first_name?.trim()) {
+          alert("Please enter first name");
+          return false;
+        }
+        if (!ownerData.last_name?.trim()) {
+          alert("Please enter last name");
+          return false;
+        }
+        if (!userData.email?.trim()) {
+          alert("Please enter email");
+          return false;
+        }
+        if (!userData.password?.trim()) {
+          alert("Please enter password");
+          return false;
+        }
+        break;
+      case 2: // Address
+        if (!addressData.barangay_id) {
+          alert("Please select barangay");
+          return false;
+        }
+        if (!formData.address?.trim()) {
+          alert("Please enter address");
+          return false;
+        }
+        break;
+      case 3: // Permits
+        if (permitData.length === 0) {
+          alert(
+            "Please upload at least one permit (Business Permit or Mayor's Permit)"
+          );
+          return false;
+        }
+        // Check if all permits have expiration dates
+        const permitsWithoutExpiration = permitData.filter(
+          (permit) => !permit.expiration_date
+        );
+        if (permitsWithoutExpiration.length > 0) {
+          alert("Please provide expiration dates for all permits");
+          return false;
+        }
+        break;
+    }
+    return true;
+  };
+
   const handleNext = () => {
     if (submitting) return; // avoid double submit
+
+    // Validate current step before proceeding
+    if (!validateStep(activeStep)) {
+      return;
+    }
+
     if (activeStep < steps.length - 1) {
       setActiveStep((prev) => prev + 1);
     } else {
@@ -192,6 +268,20 @@ const BusinessRegistration = () => {
     try {
       setSubmitting(true);
 
+      // Validate permits before submission
+      if (permitData.length === 0) {
+        alert("Please upload at least one permit before submitting");
+        return;
+      }
+
+      const permitsWithoutExpiration = permitData.filter(
+        (permit) => !permit.expiration_date
+      );
+      if (permitsWithoutExpiration.length > 0) {
+        alert("All permits must have expiration dates");
+        return;
+      }
+
       // Create User first if needed (endpoint: /api/users)
       let effectiveUserId = userData.id;
       if (!effectiveUserId) {
@@ -199,17 +289,26 @@ const BusinessRegistration = () => {
           ...userData,
         });
         effectiveUserId = userRes?.data?.id;
-        if (!effectiveUserId) throw new Error("User creation failed");
+        if (!effectiveUserId) {
+          throw new Error(
+            "Failed to create user account. Please check your email and try again."
+          );
+        }
         // keep state in sync for any subsequent steps
         setUserData((prev) => ({ ...prev, id: effectiveUserId! }));
 
         // Send account credentials via email
-        await sendAccountCredentials(
-          userData.email,
-          `${ownerData.first_name} ${ownerData.last_name}`,
-          userData.email,
-          userData.password || "owner123"
-        );
+        try {
+          await sendAccountCredentials(
+            userData.email,
+            `${ownerData.first_name} ${ownerData.last_name}`,
+            userData.email,
+            userData.password || "owner123"
+          );
+        } catch (emailError) {
+          console.error("Failed to send credentials email:", emailError);
+          // Don't fail the whole registration if email fails
+        }
       }
 
       // If no owner created yet, create it now from Step 2 data
@@ -220,7 +319,9 @@ const BusinessRegistration = () => {
           user_id: effectiveUserId,
         });
         const ownerId = ownerRes?.data?.id;
-        if (!ownerId) throw new Error("Owner creation failed");
+        if (!ownerId) {
+          throw new Error("Failed to create owner profile. Please try again.");
+        }
         effectiveOwnerId = ownerId;
         // set for subsequent UI uses
         setFormData((prev) => ({ ...prev, owner_id: ownerId }));
@@ -234,60 +335,98 @@ const BusinessRegistration = () => {
       });
 
       const businessId = res.data.id;
-      console.log(businessId);
+      if (!businessId) {
+        throw new Error("Failed to create business. Please try again.");
+      }
+      console.log("Business created with ID:", businessId);
 
       // Insert External Bookings (if any)
       if (externalBookings.length > 0) {
-        await Promise.all(
-          externalBookings.map((site) => {
-            if (!site.name || !site.link) return null; // skip empty
+        try {
+          await Promise.all(
+            externalBookings.map((site) => {
+              if (!site.name || !site.link) return null; // skip empty
 
-            return apiClient.post(`/external-booking`, {
-              business_id: businessId,
-              name: site.name,
-              link: site.link,
-            });
-          })
-        );
+              return apiClient.post(`/external-booking`, {
+                business_id: businessId,
+                name: site.name,
+                link: site.link,
+              });
+            })
+          );
+        } catch (bookingError) {
+          console.error("Failed to save external bookings:", bookingError);
+          // Continue with registration even if external bookings fail
+        }
       }
 
+      // Insert Business Hours
       if (businessHours.length > 0) {
-        await Promise.all(
-          businessHours.map((hours) =>
-            apiClient.post(`/business-hours`, {
-              business_id: businessId,
-              day_of_week: hours.day_of_week,
-              open_time: hours.open_time,
-              close_time: hours.close_time,
-              is_open: hours.is_open,
-            })
-          )
-        );
+        try {
+          await Promise.all(
+            businessHours.map((hours) =>
+              apiClient.post(`/business-hours`, {
+                business_id: businessId,
+                day_of_week: hours.day_of_week,
+                open_time: hours.open_time,
+                close_time: hours.close_time,
+                is_open: hours.is_open,
+              })
+            )
+          );
+        } catch (hoursError) {
+          console.error("Failed to save business hours:", hoursError);
+          // Continue with registration
+        }
       }
 
+      // Insert Business Amenities
       if (businessAmenities.length > 0) {
-        await Promise.all(
-          businessAmenities.map((amenity) =>
-            apiClient.post(`/business-amenities`, {
-              business_id: businessId,
-              amenity_id: amenity.amenity_id,
-            })
-          )
-        );
+        try {
+          await Promise.all(
+            businessAmenities.map((amenity) =>
+              apiClient.post(`/business-amenities`, {
+                business_id: businessId,
+                amenity_id: amenity.amenity_id,
+              })
+            )
+          );
+        } catch (amenityError) {
+          console.error("Failed to save amenities:", amenityError);
+          // Continue with registration
+        }
       }
 
+      // Insert Permits - THIS IS CRITICAL, must succeed
       if (permitData.length > 0) {
-        await Promise.all(
-          permitData.map((permit) =>
-            apiClient.post(`/permit`, {
-              business_id: businessId,
-              permit_type: permit.permit_type,
-              file_url: permit.file_url,
-              file_format: permit.file_format,
-              file_size: permit.file_size,
-              status: permit.status || "Pending",
+        try {
+          await Promise.all(
+            permitData.map((permit) => {
+              if (!permit.file_url || !permit.permit_type) {
+                throw new Error(`Invalid permit data: ${permit.permit_type}`);
+              }
+              return apiClient.post(`/permit`, {
+                business_id: businessId,
+                permit_type: permit.permit_type,
+                file_url: permit.file_url,
+                file_format: permit.file_format,
+                file_size: permit.file_size,
+                file_name: permit.file_name,
+                status: permit.status || "pending",
+                expiration_date: permit.expiration_date,
+              });
             })
-          )
+          );
+          console.log("✅ Permits saved successfully");
+        } catch (permitError) {
+          console.error("❌ Failed to save permits:", permitError);
+          throw new Error(
+            "Failed to upload permits. Please ensure all permits are properly uploaded with expiration dates."
+          );
+        }
+      } else {
+        throw new Error(
+          "At least one permit is required to complete registration."
         );
       }
 
@@ -297,13 +436,22 @@ const BusinessRegistration = () => {
         business_id: businessId,
       });
 
-      console.log("Registration response:", registration.data);
+      if (!registration.data) {
+        throw new Error("Failed to create registration record");
+      }
 
       console.log("✅ Business registration submitted successfully");
+      alert(
+        "Registration submitted successfully! You will be notified once your application is reviewed."
+      );
       navigate("/business");
-    } catch (error) {
+    } catch (error: any) {
       console.error("❌ Failed to submit registration:", error);
-      alert("Something went wrong. Please try again.");
+
+      // Provide specific error message
+      const errorMessage =
+        error.message || "Something went wrong. Please try again.";
+      alert(errorMessage);
     } finally {
       setSubmitting(false);
     }

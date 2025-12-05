@@ -1,5 +1,11 @@
 import React, { useRef, useState } from "react";
-import { Button, CircularProgress, Typography, Modal, ModalDialog } from "@mui/joy";
+import {
+  Button,
+  CircularProgress,
+  Typography,
+  Modal,
+  ModalDialog,
+} from "@mui/joy";
 import { Upload, X, FileUp, Eye } from "lucide-react";
 import { useFileUpload } from "@/src/hooks/useFileUpload";
 import type { UploadOptions } from "@/src/services/upload/FileUploadService";
@@ -8,7 +14,11 @@ import Container from "@/src/components/Container";
 export interface FileUploadProps {
   folderName: string;
   uploadTo: string;
-  onUploadComplete?: (publicUrl: string, fileName: string, localUrl?: string) => void;
+  onUploadComplete?: (
+    publicUrl: string,
+    fileName: string,
+    localUrl?: string
+  ) => void;
   onError?: (error: string) => void;
   placeholder?: string;
   accept?: string;
@@ -79,7 +89,11 @@ const FileUpload: React.FC<FileUploadProps> = ({
 
     // Callback on completion with the actual result
     if (result?.success && result?.publicUrl) {
-      onUploadComplete?.(result.publicUrl, file.name, result.localUrl || undefined);
+      onUploadComplete?.(
+        result.publicUrl,
+        file.name,
+        result.localUrl || undefined
+      );
     }
 
     // Reset file input
@@ -109,7 +123,6 @@ const FileUpload: React.FC<FileUploadProps> = ({
         cursor: isUploading ? "not-allowed" : "pointer",
         opacity: isUploading ? 0.6 : 1,
         transition: "all 0.3s ease",
-        backgroundColor: selectedFileName ? "#f5f5f5" : "transparent",
       }}
     >
       {/* File Info or Upload Area */}
@@ -121,25 +134,17 @@ const FileUpload: React.FC<FileUploadProps> = ({
             gap="12px"
             padding="12px"
             style={{
-              backgroundColor: "#f0f0f0",
               borderRadius: "8px",
             }}
           >
             <FileUp size={32} style={{ color: "#1976d2" }} />
             <div style={{ textAlign: "left", flex: 1 }}>
-              <Typography level="body-sm" fontWeight={600}>
-                {selectedFileName}
-              </Typography>
-              <Typography level="body-xs" color="neutral">
+              <Typography level="body-xs">
                 ✓ File uploaded successfully
               </Typography>
             </div>
           </Container>
-          {publicUrl && (
-            <Typography level="body-xs" color="neutral">
-              URL: {publicUrl.substring(0, 50)}...
-            </Typography>
-          )}
+
           <Button
             size="md"
             variant="soft"
@@ -317,12 +322,7 @@ const FileUpload: React.FC<FileUploadProps> = ({
               )}
 
               {/* Action Buttons */}
-              <Container
-                direction="row"
-                gap="8px"
-                justify="center"
-                padding="0"
-              >
+              <Container direction="row" gap="8px" justify="center" padding="0">
                 <Button
                   size="md"
                   variant="outlined"
