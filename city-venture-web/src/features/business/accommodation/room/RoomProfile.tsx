@@ -379,16 +379,22 @@ const RoomProfile = () => {
               sx={{ display: "flex", alignItems: "center", gap: 1, mt: 0.5 }}
             >
               <Chip
-                size="sm"
+                size="md"
                 color={getStatusColor(roomDetails?.status || "Available")}
                 variant="solid"
-                startDecorator={getStatusIcon(
-                  roomDetails?.status || "Available"
-                )}
+                sx={{
+                  display: { xs: "none", sm: "none", md: "flex", lg: "flex" },
+                }}
               >
                 {roomDetails?.status || "Available"}
               </Chip>
-              <Typography.Body size="sm" sx={{ color: "text.secondary" }}>
+              <Typography.Body
+                size="sm"
+                sx={{
+                  color: "text.secondary",
+                  display: { xs: "none", sm: "none", md: "flex", lg: "flex" },
+                }}
+              >
                 <MapPin
                   size={14}
                   style={{ display: "inline", marginRight: 4 }}
@@ -419,7 +425,7 @@ const RoomProfile = () => {
       </Container>
 
       <Grid container spacing={2}>
-        <Grid sm={12} md={8}>
+        <Grid sm={12} md={12} lg={12} xl={8}>
           {/* Main Image */}
           <Container padding="0">
             <AspectRatio
@@ -448,7 +454,7 @@ const RoomProfile = () => {
               {/* Room Info Grid */}
               <Grid container spacing={2}>
                 <Grid xs={6} sm={3}>
-                  <Container elevation={2}>
+                  <Container elevation={1}>
                     <Container align="center" padding="0" direction="row">
                       <Home size={18} color={colors.primary} />
                       <Typography.Label size="sm">Room Type</Typography.Label>
@@ -460,7 +466,7 @@ const RoomProfile = () => {
                 </Grid>
 
                 <Grid xs={6} sm={3}>
-                  <Container elevation={2}>
+                  <Container elevation={1}>
                     <Container align="center" padding="0" direction="row">
                       <Users size={18} color={colors.primary} />
                       <Typography.Label size="sm">Capacity</Typography.Label>
@@ -472,7 +478,7 @@ const RoomProfile = () => {
                 </Grid>
 
                 <Grid xs={6} sm={3}>
-                  <Container elevation={2}>
+                  <Container elevation={1}>
                     <Container align="center" padding="0" direction="row">
                       <Maximize size={18} color={colors.primary} />
                       <Typography.Label size="sm">Room Size</Typography.Label>
@@ -484,7 +490,7 @@ const RoomProfile = () => {
                 </Grid>
 
                 <Grid xs={6} sm={3}>
-                  <Container elevation={2}>
+                  <Container elevation={1}>
                     <Container align="center" padding="0" direction="row">
                       <DollarSign size={18} color={colors.primary} />
                       <Typography.Label size="sm">Base Price</Typography.Label>
@@ -863,7 +869,7 @@ const RoomProfile = () => {
           )}
         </Grid>
         {/* Right Column - Performance & Availability */}
-        <Grid xs={12} md={4} spacing={2}>
+        <Grid xs={12} md={12} lg={12} xl={4} spacing={2}>
           <Container padding="0" gap="20px">
             {/* Availability Calendar */}
             <Container elevation={2}>
