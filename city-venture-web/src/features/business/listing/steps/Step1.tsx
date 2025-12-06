@@ -17,7 +17,7 @@ import type { Amenity, BusinessAmenity } from "@/src/types/Amenity";
 import type { Category } from "@/src/types/Category";
 import { getData, insertData } from "@/src/services/Service";
 import FileUpload from "@/src/components/FileUpload";
-import { EmailOutlined, Phone, ImageOutlined } from "@mui/icons-material";
+import { EmailOutlined, Phone } from "@mui/icons-material";
 
 type Props = {
   data: Business;
