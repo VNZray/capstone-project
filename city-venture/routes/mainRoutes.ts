@@ -158,7 +158,10 @@ export const Routes = {
   // ============================================================================
   profile: {
     index: '/(tabs)/(profile)',
-    edit: '/(tabs)/(profile)/(edit)',
+    account: '/(tabs)/(profile)/(account)',
+    security: '/(tabs)/(profile)/(security)',
+    notifications: '/(tabs)/(profile)/(notifications)',
+    transactions: '/(tabs)/(profile)/(transactions)',
     settings: '/(tabs)/(profile)/(settings)',
     bookings: {
       index: '/(tabs)/(profile)/(bookings)',

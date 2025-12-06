@@ -11,7 +11,7 @@ import { ThemedText } from '@/components/themed-text';
 import Button from '@/components/Button';
 import { useAuth } from '@/context/AuthContext';
 import { getReportsByReporter } from '@/services/ReportService';
-import { router } from 'expo-router';
+import { router, Stack } from 'expo-router';
 import { Routes } from '@/routes/mainRoutes';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -19,6 +19,7 @@ import { Colors } from '@/constants/color';
 import PageContainer from '@/components/PageContainer';
 import SearchBar from '@/components/SearchBar';
 import Chip from '@/components/Chip';
+import { AppHeader } from '@/components/header/AppHeader';
 
 interface ReportItem {
   id: string;
@@ -135,205 +136,207 @@ export default function MyReports() {
       .join(' ');
   };
   return (
-    <PageContainer>
-      {/* Header */}
-      <View style={styles.headerSection}>
-        <View>
-          <ThemedText type="title-medium" weight="bold">
-            My Reports
-          </ThemedText>
-          <ThemedText type="body-small" style={{ marginTop: 4, opacity: 0.7 }}>
-            {data.length} {data.length === 1 ? 'report' : 'reports'} total
-          </ThemedText>
-        </View>
-        <Button
-          label="New"
-          size="small"
-          variant="solid"
-          color="primary"
-          startIcon="plus"
-          onPress={() =>
-            router.push(Routes.profile.reports.submit)
-          }
-        />
-      </View>
-
-      {/* Search Bar */}
-      <SearchBar
-        value={searchQuery}
-        onChangeText={setSearchQuery}
-        placeholder="Search reports..."
-        variant="plain"
-        size="md"
-        color="neutral"
-        shape="rounded"
-        showClear={true}
-      />
-
-      <View>
-        {/* Status Filters */}
-        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-          {statusFilters.map((item) => {
-            const active = filterStatus === item.id;
-            return (
-              <Chip
-                key={item.id}
-                label={`${item.label}${
-                  item.count > 0 ? ` (${item.count})` : ''
-                }`}
-                variant={active ? 'solid' : 'outlined'}
-                color={active ? 'primary' : 'neutral'}
-                size="medium"
-                onPress={() => setFilterStatus(item.id)}
-                style={{ marginRight: 6 }}
-              />
-            );
-          })}
-        </ScrollView>
-      </View>
-
-      {/* Reports List */}
-      <FlatList
-        data={filteredData}
-        keyExtractor={(i) => i.id}
-        refreshControl={
-          <RefreshControl refreshing={loading} onRefresh={load} />
+    <>
+      <AppHeader
+        backButton
+        title="My Reports"
+        background="primary"
+        rightComponent={
+          <Button
+            label="New"
+            size="small"
+            variant="solid"
+            color="primary"
+            startIcon="plus"
+            onPress={() => router.push(Routes.profile.reports.submit)}
+          />
         }
-        renderItem={({ item }) => {
-          const statusColor = getStatusColor(item.status);
-          return (
-            <Pressable
-              onPress={() =>
-                router.push(
-                  `/(tabs)/(profile)/(reports)/detail/${item.id}` as any
-                )
-              }
-              style={[
-                styles.card,
-                {
-                  backgroundColor: isDark ? '#161A2E' : '#fff',
-                  borderColor: isDark ? '#28304a' : '#E2E8F0',
-                },
-              ]}
-              android_ripple={{ color: 'rgba(59, 130, 246, 0.1)' }}
-            >
-              {/* Card Header */}
-              <View style={styles.cardHeader}>
-                <View
-                  style={[
-                    styles.iconBadge,
-                    { backgroundColor: statusColor.bg },
-                  ]}
-                >
-                  <MaterialCommunityIcons
-                    name={getTargetIcon(item.target_type) as any}
-                    size={20}
-                    color={statusColor.color}
-                  />
-                </View>
-                <View style={{ flex: 1, marginLeft: 12 }}>
-                  <ThemedText
-                    type="body-medium"
-                    weight="semi-bold"
-                    numberOfLines={2}
+      />
+      <PageContainer>
+        {/* Header */}
+        <View style={styles.headerSection}>
+          <View>
+            <ThemedText type="card-sub-title-medium" weight="semi-bold">
+              {data.length} {data.length === 1 ? 'report' : 'reports'} total
+            </ThemedText>
+          </View>
+        </View>
+
+        {/* Search Bar */}
+        <SearchBar
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+          placeholder="Search reports..."
+          variant="plain"
+          size="md"
+          color="neutral"
+          shape="rounded"
+          showClear={true}
+        />
+
+        <View>
+          {/* Status Filters */}
+          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+            {statusFilters.map((item) => {
+              const active = filterStatus === item.id;
+              return (
+                <Chip
+                  key={item.id}
+                  label={`${item.label}${
+                    item.count > 0 ? ` (${item.count})` : ''
+                  }`}
+                  variant={active ? 'solid' : 'outlined'}
+                  color={active ? 'primary' : 'neutral'}
+                  size="medium"
+                  onPress={() => setFilterStatus(item.id)}
+                  style={{ marginRight: 6 }}
+                />
+              );
+            })}
+          </ScrollView>
+        </View>
+
+        {/* Reports List */}
+        <FlatList
+          data={filteredData}
+          keyExtractor={(i) => i.id}
+          refreshControl={
+            <RefreshControl refreshing={loading} onRefresh={load} />
+          }
+          renderItem={({ item }) => {
+            const statusColor = getStatusColor(item.status);
+            return (
+              <Pressable
+                onPress={() =>
+                  router.push(
+                    `/(tabs)/(profile)/(reports)/detail/${item.id}` as any
+                  )
+                }
+                style={[
+                  styles.card,
+                  {
+                    backgroundColor: isDark ? '#161A2E' : '#fff',
+                    borderColor: isDark ? '#28304a' : '#E2E8F0',
+                  },
+                ]}
+                android_ripple={{ color: 'rgba(59, 130, 246, 0.1)' }}
+              >
+                {/* Card Header */}
+                <View style={styles.cardHeader}>
+                  <View
+                    style={[
+                      styles.iconBadge,
+                      { backgroundColor: statusColor.bg },
+                    ]}
                   >
-                    {item.title}
-                  </ThemedText>
-                  <View style={styles.metaRow}>
-                    <ThemedText type="label-small" style={{ opacity: 0.7 }}>
-                      {getTargetLabel(item.target_type)}
+                    <MaterialCommunityIcons
+                      name={getTargetIcon(item.target_type) as any}
+                      size={20}
+                      color={statusColor.color}
+                    />
+                  </View>
+                  <View style={{ flex: 1, marginLeft: 12 }}>
+                    <ThemedText
+                      type="body-medium"
+                      weight="semi-bold"
+                      numberOfLines={2}
+                    >
+                      {item.title}
                     </ThemedText>
-                    <View style={styles.dot} />
-                    <ThemedText type="label-small" style={{ opacity: 0.7 }}>
-                      {formatDate(item.created_at)}
+                    <View style={styles.metaRow}>
+                      <ThemedText type="label-small" style={{ opacity: 0.7 }}>
+                        {getTargetLabel(item.target_type)}
+                      </ThemedText>
+                      <View style={styles.dot} />
+                      <ThemedText type="label-small" style={{ opacity: 0.7 }}>
+                        {formatDate(item.created_at)}
+                      </ThemedText>
+                    </View>
+                  </View>
+                </View>
+
+                {/* Card Body */}
+                {item.description && (
+                  <ThemedText
+                    type="body-small"
+                    numberOfLines={2}
+                    style={{ marginTop: 12, opacity: 0.8 }}
+                  >
+                    {item.description}
+                  </ThemedText>
+                )}
+
+                {/* Status Badge */}
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    marginTop: 12,
+                  }}
+                >
+                  <View
+                    style={[
+                      styles.statusBadge,
+                      { backgroundColor: statusColor.color },
+                    ]}
+                  >
+                    <MaterialCommunityIcons
+                      name={statusColor.icon as any}
+                      size={14}
+                      color="#fff"
+                    />
+                    <ThemedText
+                      type="label-small"
+                      style={{ color: '#fff', marginLeft: 4 }}
+                    >
+                      {item.status.replace('_', ' ')}
                     </ThemedText>
                   </View>
                 </View>
-              </View>
-
-              {/* Card Body */}
-              {item.description && (
+              </Pressable>
+            );
+          }}
+          ListEmptyComponent={
+            !loading ? (
+              <View style={styles.emptyState}>
+                <MaterialCommunityIcons
+                  name="folder-open-outline"
+                  size={64}
+                  color={isDark ? '#64748B' : '#CBD5E1'}
+                />
+                <ThemedText
+                  type="body-medium"
+                  weight="semi-bold"
+                  style={{ marginTop: 16 }}
+                >
+                  {searchQuery || filterStatus !== 'all'
+                    ? 'No reports found'
+                    : 'No reports yet'}
+                </ThemedText>
                 <ThemedText
                   type="body-small"
-                  numberOfLines={2}
-                  style={{ marginTop: 12, opacity: 0.8 }}
+                  style={{ marginTop: 4, opacity: 0.7, textAlign: 'center' }}
                 >
-                  {item.description}
+                  {searchQuery || filterStatus !== 'all'
+                    ? 'Try adjusting your filters or search query'
+                    : 'Submit your first report to get started'}
                 </ThemedText>
-              )}
-
-              {/* Status Badge */}
-              <View
-                style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  marginTop: 12,
-                }}
-              >
-                <View
-                  style={[
-                    styles.statusBadge,
-                    { backgroundColor: statusColor.color },
-                  ]}
-                >
-                  <MaterialCommunityIcons
-                    name={statusColor.icon as any}
-                    size={14}
-                    color="#fff"
+                {!searchQuery && filterStatus === 'all' && (
+                  <Button
+                    label="Submit Report"
+                    variant="outlined"
+                    size="medium"
+                    startIcon="plus"
+                    onPress={() => router.push(Routes.profile.reports.submit)}
+                    style={{ marginTop: 24 }}
                   />
-                  <ThemedText
-                    type="label-small"
-                    style={{ color: '#fff', marginLeft: 4 }}
-                  >
-                    {item.status.replace('_', ' ')}
-                  </ThemedText>
-                </View>
+                )}
               </View>
-            </Pressable>
-          );
-        }}
-        ListEmptyComponent={
-          !loading ? (
-            <View style={styles.emptyState}>
-              <MaterialCommunityIcons
-                name="folder-open-outline"
-                size={64}
-                color={isDark ? '#64748B' : '#CBD5E1'}
-              />
-              <ThemedText
-                type="body-medium"
-                weight="semi-bold"
-                style={{ marginTop: 16 }}
-              >
-                {searchQuery || filterStatus !== 'all'
-                  ? 'No reports found'
-                  : 'No reports yet'}
-              </ThemedText>
-              <ThemedText
-                type="body-small"
-                style={{ marginTop: 4, opacity: 0.7, textAlign: 'center' }}
-              >
-                {searchQuery || filterStatus !== 'all'
-                  ? 'Try adjusting your filters or search query'
-                  : 'Submit your first report to get started'}
-              </ThemedText>
-              {!searchQuery && filterStatus === 'all' && (
-                <Button
-                  label="Submit Report"
-                  variant="outlined"
-                  size="medium"
-                  startIcon="plus"
-                  onPress={() =>
-                    router.push(Routes.profile.reports.submit)
-                  }
-                  style={{ marginTop: 24 }}
-                />
-              )}
-            </View>
-          ) : null
-        }
-      />
-    </PageContainer>
+            ) : null
+          }
+        />
+      </PageContainer>
+    </>
   );
 }
 

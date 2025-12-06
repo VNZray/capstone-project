@@ -1,6 +1,7 @@
 import { Stack } from 'expo-router';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { Colors } from '@/constants/color';
+import { AppHeader } from '@/components/header/AppHeader';
 
 /**
  * Orders Layout - Stack navigator for orders list and detail views.
@@ -13,7 +14,6 @@ export default function OrdersLayout() {
   return (
     <Stack
       screenOptions={{
-        headerShown: false,
         animation: 'slide_from_right',
         headerStyle: { backgroundColor: theme.background },
         headerTintColor: theme.text,
@@ -23,12 +23,15 @@ export default function OrdersLayout() {
       <Stack.Screen
         name="index"
         options={{
-          title: 'My Orders',
+          headerShown: false,
+          animation: 'slide_from_right',
         }}
       />
       <Stack.Screen
         name="[orderId]"
         options={{
+          headerShown: false,
+          animation: 'slide_from_right',
           title: 'Order Details',
         }}
       />

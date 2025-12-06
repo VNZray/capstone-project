@@ -1,3 +1,4 @@
+import { AppHeader } from '@/components/header/AppHeader';
 import { Stack } from 'expo-router';
 import React from 'react';
 
@@ -16,6 +17,11 @@ const TransactionsLayout = () => {
           headerTitleAlign: 'center',
           headerTitle: 'Trransactions',
           headerBackTitle: 'Back',
+          header() {
+            return (
+              <AppHeader backButton title="Transactions" background="primary" />
+            );
+          },
         }}
       />
     </Stack>
