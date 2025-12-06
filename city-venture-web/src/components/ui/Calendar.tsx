@@ -219,6 +219,7 @@ const Calendar: React.FC<CalendarProps> = ({
           gridTemplateColumns: "repeat(7, 1fr)",
           gap: "clamp(4px, 1vw, 8px)",
           width: "100%",
+          marginBottom: 16,
         }}
       >
         {/* Day Names */}
@@ -287,12 +288,10 @@ const Calendar: React.FC<CalendarProps> = ({
       </div>
 
       {/* Legend */}
-      <Container padding="clamp(8px, 2vw, 12px)" gap="clamp(6px, 1.5vw, 8px)">
-        <Typography.Label size="xs" sx={{ marginBottom: "4px" }}>
-          Status Legend
-        </Typography.Label>
-        <Container direction="row" justify="space-between">
-          <Container direction="row" align="center" gap="6px">
+      <Container padding="0" gap="clamp(6px, 1.5vw, 8px)">
+        <Typography.Label size="xs">Status Legend</Typography.Label>
+        <Container padding="0" direction="row" justify="space-between">
+          <Container padding="0" direction="row" align="center" gap="6px">
             <div
               style={{
                 width: "clamp(12px, 2.5vw, 16px)",
@@ -305,7 +304,7 @@ const Calendar: React.FC<CalendarProps> = ({
             <Typography.Body size="xs">Reserved</Typography.Body>
           </Container>
 
-          <Container direction="row" align="center" gap="6px">
+          <Container padding="0" direction="row" align="center" gap="6px">
             <div
               style={{
                 width: "clamp(12px, 2.5vw, 16px)",
@@ -318,7 +317,7 @@ const Calendar: React.FC<CalendarProps> = ({
             <Typography.Body size="xs">Occupied</Typography.Body>
           </Container>
 
-          <Container direction="row" align="center" gap="6px">
+          <Container padding="0" direction="row" align="center" gap="6px">
             <div
               style={{
                 width: "clamp(12px, 2.5vw, 16px)",

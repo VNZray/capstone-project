@@ -224,7 +224,6 @@ const Reviews: React.FC = () => {
                 distribution={distribution}
                 average={average}
               />
-              W
             </Grid>
 
             <Grid xs={12} sm={6} md={6} lg={3} xl={3}>
