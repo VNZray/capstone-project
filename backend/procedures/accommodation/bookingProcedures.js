@@ -136,6 +136,33 @@ async function createProcedures(knex) {
             DELETE FROM booking WHERE id = p_id;
         END;
     `);
+
+  // Get available rooms by business and date range
+  await knex.raw(`
+        CREATE PROCEDURE GetAvailableRoomsByDateRange(
+            IN p_business_id CHAR(64),
+            IN p_start_date DATE,
+            IN p_end_date DATE
+        )
+        BEGIN
+            -- Get all rooms for the business
+            -- Exclude rooms that have conflicting bookings
+            SELECT r.*
+            FROM room r
+            WHERE r.business_id = p_business_id
+            AND r.id NOT IN (
+                SELECT DISTINCT b.room_id
+                FROM booking b
+                WHERE b.business_id = p_business_id
+                AND b.booking_status NOT IN ('Canceled', 'Checked-Out')
+                AND (
+                    -- Check if the booking overlaps with the requested date range
+                    (b.check_in_date <= p_end_date AND b.check_out_date >= p_start_date)
+                )
+            )
+            ORDER BY r.room_number;
+        END;
+    `);
 }
 
 async function dropProcedures(knex) {
@@ -147,6 +174,7 @@ async function dropProcedures(knex) {
   await knex.raw("DROP PROCEDURE IF EXISTS InsertBooking;");
   await knex.raw("DROP PROCEDURE IF EXISTS UpdateBooking;");
   await knex.raw("DROP PROCEDURE IF EXISTS DeleteBooking;");
+  await knex.raw("DROP PROCEDURE IF EXISTS GetAvailableRoomsByDateRange;");
 }
 
 export { createProcedures, dropProcedures };

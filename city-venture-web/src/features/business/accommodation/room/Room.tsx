@@ -6,8 +6,6 @@ import {
   ModalDialog,
   DialogTitle,
   DialogActions,
-  Breadcrumbs,
-  Link,
 } from "@mui/joy";
 import {
   Calendar,
@@ -17,7 +15,7 @@ import {
   Search,
   TimerOff,
 } from "lucide-react";
-import { Add } from "@mui/icons-material";
+import { Add, SortRounded } from "@mui/icons-material";
 import { useEffect, useState } from "react";
 import AddRoomModal from "./components/AddRoomModal";
 import RoomCard from "./components/RoomCard";
@@ -30,8 +28,9 @@ import placeholderImage from "@/src/assets/images/placeholder-image.png";
 import { useNavigate } from "react-router-dom";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
-import { DateCalendar } from "@mui/x-date-pickers/DateCalendar";
+import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import * as RoomService from "@/src/services/RoomService";
+import dayjs, { Dayjs } from "dayjs";
 
 import NoDataFound from "@/src/components/NoDataFound";
 import Button from "@/src/components/Button";
@@ -44,11 +43,15 @@ const RoomPage = () => {
   const [status, setStatus] = useState<Status>("All");
   const [openModal, setOpenModal] = useState(false);
   const [calendarOpen, setCalendarOpen] = useState(false);
+  const [startDate, setStartDate] = useState<Dayjs | null>(null);
+  const [endDate, setEndDate] = useState<Dayjs | null>(null);
+  const [isFilteringByDate, setIsFilteringByDate] = useState(false);
+  const [availableRoomIds, setAvailableRoomIds] = useState<string[]>([]);
 
   const { businessDetails } = useBusiness();
 
   const [search, setSearch] = useState("");
-  const { setRoomId } = useRoom();
+  const { setRoomId, clearRoomId } = useRoom();
   const [rooms, setRooms] = useState<Room[]>([]);
   const [activeTab, setActiveTab] = useState("all");
   const [roomDiscount, setRoomDiscount] = useState<number | null>(null);
@@ -68,7 +71,11 @@ const RoomPage = () => {
 
       const matchesStatus = status === "All" ? true : room.status === status;
 
-      return matchesSearch && matchesStatus;
+      const matchesDateFilter = isFilteringByDate
+        ? availableRoomIds.includes(room.id)
+        : true;
+
+      return matchesSearch && matchesStatus && matchesDateFilter;
     })
     .sort((a, b) => {
       // If room_number is numeric, sort numerically; otherwise, lexicographically
@@ -95,18 +102,52 @@ const RoomPage = () => {
     setRoomDiscount(discount);
   };
 
+  const handleApplyDateFilter = async () => {
+    if (!businessDetails?.id || !startDate || !endDate) {
+      setIsFilteringByDate(false);
+      setAvailableRoomIds([]);
+      return;
+    }
+
+    if (endDate.isBefore(startDate)) {
+      alert("End date must be after start date");
+      return;
+    }
+
+    try {
+      const availableRooms = await RoomService.fetchAvailableRoomsByDateRange(
+        businessDetails.id,
+        startDate.format("YYYY-MM-DD"),
+        endDate.format("YYYY-MM-DD")
+      );
+      setAvailableRoomIds(availableRooms.map((room) => room.id));
+      setIsFilteringByDate(true);
+      setCalendarOpen(false);
+    } catch (error) {
+      console.error("Error fetching available rooms:", error);
+      alert("Failed to fetch available rooms. Please try again.");
+    }
+  };
+
+  const handleClearDateFilter = () => {
+    setStartDate(null);
+    setEndDate(null);
+    setIsFilteringByDate(false);
+    setAvailableRoomIds([]);
+  };
+
   useEffect(() => {
     if (businessDetails?.id) {
       fetchRooms();
+      clearRoomId();
     }
-  }, [businessDetails?.id]);
+  }, [businessDetails?.id, clearRoomId]);
 
   return (
     <PageContainer>
       {/* Room Management */}
 
       <Container gap="0" padding="0" elevation={3}>
-
         <Container
           direction="row"
           justify="space-between"
@@ -121,6 +162,7 @@ const RoomPage = () => {
               alignItems: "center",
               flex: 1,
               minWidth: 240,
+              flexWrap: "wrap",
             }}
           >
             <Typography.Header>Room Management</Typography.Header>
@@ -130,8 +172,24 @@ const RoomPage = () => {
               variant="solid"
               onClick={() => setCalendarOpen(true)}
             >
-              Calendar
+              {isFilteringByDate ? "Change Dates" : "Filter by Date"}
             </Button>
+            {isFilteringByDate && (
+              <Button
+                colorScheme="secondary"
+                variant="outlined"
+                onClick={handleClearDateFilter}
+                size="sm"
+              >
+                Clear Filter
+              </Button>
+            )}
+            {isFilteringByDate && startDate && endDate && (
+              <Typography.Body size="sm" sx={{ color: "text.secondary" }}>
+                Showing: {startDate.format("MMM D")} -{" "}
+                {endDate.format("MMM D, YYYY")}
+              </Typography.Body>
+            )}
           </div>
 
           <IconButton
@@ -157,7 +215,7 @@ const RoomPage = () => {
               sx={{
                 display: "flex",
                 flexDirection: "column",
-                gap: 0,
+                gap: 2,
                 width: { xs: "100%", sm: "auto" },
                 maxWidth: { xs: "calc(100% - 32px)", sm: 600 },
                 m: { xs: 1, sm: "auto" },
@@ -165,10 +223,48 @@ const RoomPage = () => {
               size="lg"
               variant="outlined"
             >
-              <Typography.CardTitle>Calendar</Typography.CardTitle>
-              <DialogTitle></DialogTitle>
+              <Typography.CardTitle>
+                Filter by Availability
+              </Typography.CardTitle>
+              <DialogTitle
+                sx={{ fontSize: "0.875rem", color: "text.secondary" }}
+              >
+                Select date range to view available rooms
+              </DialogTitle>
               <LocalizationProvider dateAdapter={AdapterDayjs}>
-                <DateCalendar sx={{ width: "100%" }} />
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "16px",
+                  }}
+                >
+                  <DatePicker
+                    label="Start Date"
+                    value={startDate}
+                    onChange={(newValue) => setStartDate(newValue)}
+                    minDate={dayjs()}
+                    slotProps={{
+                      textField: {
+                        size: "medium",
+                        fullWidth: true,
+                      },
+                    }}
+                  />
+                  <DatePicker
+                    label="End Date"
+                    value={endDate}
+                    onChange={(newValue) => setEndDate(newValue)}
+                    minDate={startDate || dayjs()}
+                    disabled={!startDate}
+                    slotProps={{
+                      textField: {
+                        size: "medium",
+                        fullWidth: true,
+                      },
+                    }}
+                  />
+                </div>
               </LocalizationProvider>
               <DialogActions>
                 <Button
@@ -177,10 +273,14 @@ const RoomPage = () => {
                   variant="plain"
                   onClick={() => setCalendarOpen(false)}
                 >
-                  Close
+                  Cancel
                 </Button>
-                <Button fullWidth onClick={() => setCalendarOpen(false)}>
-                  Confirm
+                <Button
+                  fullWidth
+                  onClick={handleApplyDateFilter}
+                  disabled={!startDate || !endDate}
+                >
+                  Apply Filter
                 </Button>
               </DialogActions>
             </ModalDialog>
@@ -201,6 +301,10 @@ const RoomPage = () => {
             fullWidth
             onChange={(e) => setSearch(e.target.value)}
           />
+
+          <IconButton variant="outlined" size="lg">
+            <SortRounded />
+          </IconButton>
         </Container>
 
         {/* Tabs */}

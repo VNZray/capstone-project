@@ -104,6 +104,27 @@ export async function getBookingsByBusinessId(req, res) {
   }
 }
 
+// Get available rooms by business ID and date range
+export async function getAvailableRoomsByDateRange(req, res) {
+  try {
+    const { business_id } = req.params;
+    const { start_date, end_date } = req.query;
+
+    if (!start_date || !end_date) {
+      return res.status(400).json({ error: "start_date and end_date are required" });
+    }
+
+    const [rows] = await db.query("CALL GetAvailableRoomsByDateRange(?, ?, ?)", [
+      business_id,
+      start_date,
+      end_date,
+    ]);
+    res.json(rows[0]);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+}
+
 // Insert booking
 export async function insertBooking(req, res) {
   try {
