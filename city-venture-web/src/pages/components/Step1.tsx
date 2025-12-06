@@ -1,20 +1,21 @@
-import Container from "@/src/components/Container";
-import PageContainer from "@/src/components/PageContainer";
 import Typography from "@/src/components/Typography";
 import { useBusinessBasics } from "@/src/hooks/useBusiness";
-import api from "@/src/services/api";
 import type { BusinessAmenity } from "@/src/types/Amenity";
 import type { Business } from "@/src/types/Business";
+import type { Category } from "@/src/types/Category";
 import {
   FormControl,
   Input,
+  Textarea,
+  Box,
+  Grid,
   Select,
   Option,
-  Textarea,
-  FormLabel,
 } from "@mui/joy";
-import { ToggleButton, ToggleButtonGroup } from "@mui/material";
-import { HotelIcon, StoreIcon } from "lucide-react";
+import { colors } from "@/src/utils/Colors";
+import { useState, useEffect } from "react";
+import FileUpload from "@/src/components/FileUpload";
+import { EmailOutlined, Phone } from "@mui/icons-material";
 
 type Props = {
   data: Business;
@@ -24,192 +25,299 @@ type Props = {
 };
 
 const Step1: React.FC<Props> = ({ data, setData }) => {
-  const { businessCategories, businessTypes, setSelectedType } =
-    useBusinessBasics(api, data, setData);
-  return (
-    <PageContainer gap={0} padding={0}>
-      <Container gap="0">
-        <Typography.CardTitle>Business Information</Typography.CardTitle>
-        <Typography.CardSubTitle>
-          Please provide your business information.
-        </Typography.CardSubTitle>
-      </Container>
+  const { rootCategories, setSelectedCategories, getChildCategories } =
+    useBusinessBasics(data, setData);
 
-      <Container>
+  const [primaryCategoryId, setPrimaryCategoryId] = useState<number | null>(
+    null
+  );
+  const [secondaryCategoryId, setSecondaryCategoryId] = useState<number | null>(
+    null
+  );
+  const [subcategoryId, setSubcategoryId] = useState<number | null>(null);
+
+  const [secondaryCategories, setSecondaryCategories] = useState<Category[]>(
+    []
+  );
+  const [subcategories, setSubcategories] = useState<Category[]>([]);
+
+  // Load secondary categories when primary changes
+  useEffect(() => {
+    if (primaryCategoryId) {
+      getChildCategories(primaryCategoryId).then((children) => {
+        setSecondaryCategories(children);
+        // Reset secondary and subcategory when primary changes
+        setSecondaryCategoryId(null);
+        setSubcategoryId(null);
+        setSubcategories([]);
+      });
+    } else {
+      setSecondaryCategories([]);
+      setSecondaryCategoryId(null);
+      setSubcategoryId(null);
+      setSubcategories([]);
+    }
+  }, [primaryCategoryId]);
+
+  // Load subcategories when secondary changes
+  useEffect(() => {
+    if (secondaryCategoryId) {
+      getChildCategories(secondaryCategoryId).then((children) => {
+        setSubcategories(children);
+        // Reset subcategory when secondary changes
+        setSubcategoryId(null);
+      });
+    } else {
+      setSubcategories([]);
+      setSubcategoryId(null);
+    }
+  }, [secondaryCategoryId]);
+
+  // Update category_ids whenever any category changes
+  useEffect(() => {
+    const categoryIds: number[] = [];
+    if (primaryCategoryId) categoryIds.push(primaryCategoryId);
+    if (secondaryCategoryId) categoryIds.push(secondaryCategoryId);
+    if (subcategoryId) categoryIds.push(subcategoryId);
+
+    const hasAccommodation = primaryCategoryId
+      ? rootCategories
+          .find((c) => c.id === primaryCategoryId)
+          ?.alias?.toLowerCase()
+          .includes("accommodation")
+      : false;
+
+    setData((prev) => ({
+      ...prev,
+      primary_category_id: primaryCategoryId ?? undefined,
+      category_ids: categoryIds,
+      hasBooking: !!hasAccommodation,
+    }));
+
+    setSelectedCategories(categoryIds);
+  }, [primaryCategoryId, secondaryCategoryId, subcategoryId]);
+
+  return (
+    <Box sx={{ mb: 4 }}>
+      <Typography.Header sx={{ mb: 1, color: colors.primary }}>
+        Business Information
+      </Typography.Header>
+      <Typography.Body sx={{ mb: 4, color: colors.gray, fontSize: "0.95rem" }}>
+        Tell us about your business
+      </Typography.Body>
+
+      <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
         <FormControl required>
-          <FormLabel>Business Name</FormLabel>
+          <Typography.Label>Business Name *</Typography.Label>
           <Input
-            placeholder="Enter your business name"
+            placeholder="Write the name of your business"
             fullWidth
             value={data.business_name}
             onChange={(e) =>
-              setData((prev) => ({ ...prev, business_name: e.target.value }))
+              setData((prev) => ({
+                ...prev,
+                business_name: e.target.value,
+              }))
             }
+            sx={{ borderRadius: "8px", fontSize: "0.95rem" }}
           />
         </FormControl>
 
+        <FormControl>
+          <Typography.Label>Business Profile Image</Typography.Label>
+          <FileUpload
+            folderName={`${data.id || "temp"}/profile`}
+            uploadTo="business-profile"
+            onUploadComplete={(publicUrl) =>
+              setData((prev) => ({ ...prev, business_image: publicUrl }))
+            }
+            accept=".jpg,.jpeg,.png,.webp"
+            maxSizeMB={5}
+            placeholder={
+              data.business_image
+                ? "Change Image"
+                : "Click to upload or drag and drop JPG, PNG, WEBP (Max 5MB)"
+            }
+          />
+          {data.business_image && (
+            <Box sx={{ mt: 1, display: "flex", alignItems: "center", gap: 1 }}>
+              <img
+                src={data.business_image}
+                alt="Business profile"
+                style={{
+                  width: 60,
+                  height: 60,
+                  objectFit: "cover",
+                  borderRadius: 8,
+                }}
+              />
+              <Typography.Body
+                sx={{ fontSize: "0.85rem", color: colors.success }}
+              >
+                ✓ Image uploaded
+              </Typography.Body>
+            </Box>
+          )}
+        </FormControl>
+
+        <Grid container spacing={2}>
+          <Grid xs={12} md={6}>
+            <FormControl required>
+              <Typography.Label>Business Email *</Typography.Label>
+              <Input
+                placeholder="john.smith@example.com"
+                fullWidth
+                type="email"
+                startDecorator={<EmailOutlined />}
+                value={data.email}
+                onChange={(e) =>
+                  setData((prev) => ({ ...prev, email: e.target.value }))
+                }
+                sx={{ borderRadius: "8px", fontSize: "0.95rem" }}
+              />
+            </FormControl>
+          </Grid>
+          <Grid xs={12} md={6}>
+            <FormControl required>
+              <Typography.Label>Phone Number *</Typography.Label>
+              <Input
+                placeholder="(555) 123-4567"
+                fullWidth
+                startDecorator={<Phone />}
+                value={data.phone_number}
+                onChange={(e) =>
+                  setData((prev) => ({ ...prev, phone_number: e.target.value }))
+                }
+                sx={{ borderRadius: "8px", fontSize: "0.95rem" }}
+              />
+              <Typography.Body
+                sx={{ fontSize: "0.8rem", color: colors.gray, mt: 0.5 }}
+              >
+                Format: (XXX) XXX-XXXX
+              </Typography.Body>
+            </FormControl>
+          </Grid>
+        </Grid>
+
+        <Grid container spacing={2}>
+          <Grid xs={12} md={6}>
+            <FormControl required>
+              <Typography.Label>Primary Category *</Typography.Label>
+              <Select
+                placeholder="Select a primary category..."
+                value={primaryCategoryId?.toString() || null}
+                onChange={(_, value) => {
+                  setPrimaryCategoryId(value ? Number(value) : null);
+                }}
+                sx={{ borderRadius: "8px", fontSize: "0.95rem" }}
+              >
+                {rootCategories
+                  .filter((cat) => cat.parent_category === null)
+                  .map((category) => (
+                    <Option key={category.id} value={category.id.toString()}>
+                      {category.title}
+                    </Option>
+                  ))}
+              </Select>
+            </FormControl>
+          </Grid>
+          <Grid xs={12} md={6}>
+            <FormControl required>
+              <Typography.Label>Secondary Category *</Typography.Label>
+              <Select
+                placeholder="Select secondary category..."
+                disabled={
+                  !primaryCategoryId || secondaryCategories.length === 0
+                }
+                value={secondaryCategoryId?.toString() || null}
+                onChange={(_, value) => {
+                  setSecondaryCategoryId(value ? Number(value) : null);
+                }}
+                sx={{ borderRadius: "8px", fontSize: "0.95rem" }}
+              >
+                {secondaryCategories.map((category) => (
+                  <Option key={category.id} value={category.id.toString()}>
+                    {category.title}
+                  </Option>
+                ))}
+              </Select>
+            </FormControl>
+          </Grid>
+        </Grid>
+
+        <FormControl>
+          <Typography.Label>Subcategory (Optional)</Typography.Label>
+          <Select
+            placeholder="Select subcategory..."
+            disabled={!secondaryCategoryId || subcategories.length === 0}
+            value={subcategoryId?.toString() || null}
+            onChange={(_, value) => {
+              setSubcategoryId(value ? Number(value) : null);
+            }}
+            sx={{ borderRadius: "8px", fontSize: "0.95rem" }}
+          >
+            {subcategories.map((category) => (
+              <Option key={category.id} value={category.id.toString()}>
+                {category.title}
+              </Option>
+            ))}
+          </Select>
+        </FormControl>
+
         <FormControl required>
-          <FormLabel>Business Email</FormLabel>
+          <Typography.Label>Business Email *</Typography.Label>
           <Input
-            placeholder="Enter your business Email"
+            placeholder="john.smith@example.com"
             fullWidth
+            type="email"
             value={data.email}
             onChange={(e) =>
               setData((prev) => ({ ...prev, email: e.target.value }))
             }
+            sx={{ borderRadius: "8px", fontSize: "0.95rem" }}
           />
         </FormControl>
 
         <FormControl required>
-          <FormLabel>Business Phone Number</FormLabel>
+          <Typography.Label>Phone Number *</Typography.Label>
           <Input
-            placeholder="Enter your business phone number"
+            placeholder="(555) 123-4567"
             fullWidth
             value={data.phone_number}
             onChange={(e) =>
               setData((prev) => ({ ...prev, phone_number: e.target.value }))
             }
+            sx={{ borderRadius: "8px", fontSize: "0.95rem" }}
           />
+          <Typography.Body
+            sx={{ fontSize: "0.8rem", color: colors.gray, mt: 0.5 }}
+          >
+            Format: 09XXXXXXXXX
+          </Typography.Body>
         </FormControl>
 
         <FormControl>
-          <FormLabel
-            sx={{
-              mb: 0.75,
-              fontSize: "0.875rem",
-              fontWeight: 600,
-              color: "#374151",
-            }}
-          >
-            Description
-          </FormLabel>
+          <Typography.Label>Description</Typography.Label>
           <Textarea
-            maxRows={4}
-            minRows={3}
-            size="md"
-            variant="outlined"
+            minRows={4}
             placeholder="Describe your business..."
             value={data.description}
             onChange={(e) =>
-              setData((prev) => ({ ...prev, description: e.target.value }))
+              setData((prev) => ({
+                ...prev,
+                description: e.target.value,
+              }))
             }
+            sx={{ borderRadius: "8px", fontSize: "0.95rem" }}
           />
+          <Typography.Body
+            sx={{ fontSize: "0.8rem", color: colors.gray, mt: 0.5 }}
+          >
+            Tell us about your business
+          </Typography.Body>
         </FormControl>
-
-        <FormControl required>
-          <FormLabel
-            sx={{
-              mb: 0.75,
-              fontSize: "0.875rem",
-              fontWeight: 600,
-              color: "#374151",
-            }}
-          >
-            Business Type
-          </FormLabel>
-          <ToggleButtonGroup
-            color="primary"
-            value={data.business_type_id?.toString() ?? ""}
-            exclusive
-            onChange={(_e, newValue) => {
-              if (!newValue) return;
-              const type_id = Number(newValue);
-              setSelectedType(type_id);
-              setData((prev) => ({
-                ...prev,
-                business_type_id: type_id,
-              }));
-            }}
-            sx={{ display: "flex", gap: 1, mt: 0.5, flexWrap: "wrap" }}
-          >
-            {businessTypes.map((type) => (
-              <ToggleButton
-                key={type.id}
-                value={type.id.toString()}
-                sx={{
-                  flex: 1,
-                  minWidth: "120px",
-                  borderRadius: "10px",
-                  px: 2,
-                  py: 1.25,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  gap: 0.75,
-                  textTransform: "none",
-                  border: "1px solid",
-                  borderColor: "#e5e7eb",
-                  backgroundColor: "#fafafa",
-                  color: "#374151",
-                  transition: "all 0.2s ease-in-out",
-                  "&:hover": {
-                    backgroundColor: "#f5f7ff",
-                    borderColor: "#d0d7ff",
-                  },
-                  "&.Mui-selected": {
-                    backgroundColor: "#eaf2ff",
-                    borderColor: "#2563eb",
-                    color: "#1d4ed8",
-                    boxShadow: "0 2px 8px rgba(37, 99, 235, 0.25)",
-                  },
-                  "&.Mui-selected:hover": {
-                    backgroundColor: "#e0ecff",
-                    borderColor: "#1e40af",
-                  },
-                  "&.Mui-focusVisible": {
-                    outline: "2px solid #93c5fd",
-                    outlineOffset: 2,
-                  },
-                }}
-              >
-                {type.type.toLowerCase() === "accommodation" && (
-                  <HotelIcon fontSize="small" />
-                )}
-                {type.type.toLowerCase() === "shop" && (
-                  <StoreIcon fontSize="small" />
-                )}
-                <Typography.Body>
-                  {type.type}
-                </Typography.Body>
-              </ToggleButton>
-            ))}
-          </ToggleButtonGroup>
-        </FormControl>
-
-        <FormControl required>
-          <FormLabel
-            sx={{
-              mb: 0.75,
-              fontSize: "0.875rem",
-              fontWeight: 600,
-              color: "#374151",
-            }}
-          >
-            Business Category
-          </FormLabel>
-          <Select
-            variant="outlined"
-            size="md"
-            value={data.business_category_id?.toString() ?? ""}
-            onChange={(_e, value) => {
-              if (!value) return;
-              const category_id = Number(value);
-              setData((prev) => ({
-                ...prev,
-                business_category_id: category_id,
-              }));
-            }}
-          >
-            <Option value="">-- Select a category --</Option>
-            {businessCategories.map((category) => (
-              <Option key={category.id} value={category.id.toString()}>
-                {category.category}
-              </Option>
-            ))}
-          </Select>
-        </FormControl>
-      </Container>
-    </PageContainer>
+      </Box>
+    </Box>
   );
 };
 

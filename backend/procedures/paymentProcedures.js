@@ -23,8 +23,8 @@ async function createPaymentProcedures(knex) {
       IN p_payment_type ENUM('Full Payment','Partial Payment'),
       IN p_payment_method ENUM('Gcash','Paymaya','Credit Card','Cash'),
       IN p_amount FLOAT,
-      IN p_status ENUM('Paid','Pending Balance'),
-      IN p_payment_for ENUM('Reservation','Pending Balance','Subscription'),
+      IN p_status ENUM('success', 'pending', 'failed', 'refunded'),
+      IN p_payment_for ENUM('booking','pending_balance','subscription'),
       IN p_payer_id CHAR(64),
       IN p_payment_for_id CHAR(64),
       IN p_created_at TIMESTAMP
@@ -47,8 +47,8 @@ async function createPaymentProcedures(knex) {
       IN p_payment_type ENUM('Full Payment','Partial Payment'),
       IN p_payment_method ENUM('Gcash','Paymaya','Credit Card','Cash'),
       IN p_amount FLOAT,
-      IN p_status ENUM('Paid','Pending Balance'),
-      IN p_payment_for ENUM('Reservation','Pending Balance','Subscription'),
+      IN p_status ENUM('success', 'pending', 'failed', 'refunded'),
+      IN p_payment_for ENUM('booking','pending_balance','subscription'),
       IN p_payer_id CHAR(64),
       IN p_payment_for_id CHAR(64)
     )
@@ -94,7 +94,7 @@ async function createPaymentProcedures(knex) {
   await knex.raw(`
   CREATE PROCEDURE GetPaymentsByBusinessId(IN p_business_id CHAR(64))
   BEGIN
-    SELECT 
+    SELECT
       p.id AS payment_id,
       p.payer_id,
       p.payer_type,

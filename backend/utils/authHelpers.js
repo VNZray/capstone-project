@@ -9,7 +9,7 @@ export async function getUserRole(userId) {
   if (!userId) return null;
 
   const [rows] = await db.query(
-    `SELECT ur.role_name 
+    `SELECT ur.role_name
      FROM user u
      JOIN user_role ur ON ur.id = u.user_role_id
      WHERE u.id = ?`,
@@ -37,6 +37,12 @@ function normalizeRole(role) {
       return "Business Owner";
     case "staff":
       return "Staff";
+    case "manager":
+      return "Manager";
+    case "room manager":
+      return "Room Manager";
+    case "receptionist":
+      return "Receptionist";
     case "tourist":
       return "Tourist";
     case "system":
@@ -52,7 +58,7 @@ export async function ensureUserRole(req) {
     console.error('[ensureUserRole] No user ID in request');
     return null;
   }
-  
+
   if (req.user.role) {
     return req.user.role;
   }
@@ -91,7 +97,7 @@ export async function hasBusinessAccess(businessId, user, roleOverride) {
 
   if (role === "Business Owner") {
     const [rows] = await db.query(
-      `SELECT b.id 
+      `SELECT b.id
        FROM business b
        JOIN owner o ON b.owner_id = o.id
        WHERE b.id = ? AND o.user_id = ?`,
@@ -100,7 +106,8 @@ export async function hasBusinessAccess(businessId, user, roleOverride) {
     return !!(rows && rows.length > 0);
   }
 
-  if (role === "Staff") {
+  // Check for Manager, Room Manager, or Staff roles
+  if (role === "Staff" || role === "Manager" || role === "Room Manager") {
     const [rows] = await db.query(
       "SELECT id FROM staff WHERE business_id = ? AND user_id = ?",
       [businessId, user.id]

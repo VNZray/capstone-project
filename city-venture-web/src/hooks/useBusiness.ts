@@ -3,38 +3,42 @@ import { useEffect, useState } from "react";
 import axios from "axios";
 import { supabase } from "@/src/lib/supabase";
 import type { Business } from "@/src/types/Business";
+import type { Category } from "@/src/types/Category";
+import api from "../services/api";
 
-type BusinessCategory = { id: number; category: string };
-type BusinessType = { id: number; type: string };
-
-export const useBusinessBasics = (API_URL: string, data: Business, setData: React.Dispatch<React.SetStateAction<Business>>) => {
-  const [businessCategories, setBusinessCategories] = useState<BusinessCategory[]>([]);
-  const [businessTypes, setBusinessTypes] = useState<BusinessType[]>([]);
-  const [selectedType, setSelectedType] = useState<number | null>(null);
+export const useBusinessBasics = (data: Business, setData: React.Dispatch<React.SetStateAction<Business>>) => {
+  const [rootCategories, setRootCategories] = useState<Category[]>([]);
+  const [selectedCategories, setSelectedCategories] = useState<number[]>([]);
   const [businessImage, setBusinessImage] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
-  // Fetch types
-  const getBusinessTypes = async () => {
+  // Fetch root-level categories for businesses
+  const getBusinessCategories = async () => {
     try {
-      const response = await axios.get(`${API_URL}/category-and-type/business-type`);
+      const response = await axios.get(`${api}/category-and-type/categories`, {
+        params: {
+          applicable_to: 'business',
+          parent_id: 'root'
+        }
+      });
       if (Array.isArray(response.data)) {
-        setBusinessTypes(response.data);
-      }
-    } catch (error) {
-      console.error("Error fetching business types:", error);
-    }
-  };
-
-  // Fetch categories based on type
-  const getBusinessCategories = async (type_id: number) => {
-    try {
-      const response = await axios.get(`${API_URL}/category-and-type/category/${type_id}`);
-      if (Array.isArray(response.data)) {
-        setBusinessCategories(response.data);
+        // Filter to only root categories (no parent)
+        const roots = response.data.filter((c: Category) => c.parent_category === null);
+        setRootCategories(roots);
       }
     } catch (error) {
       console.error("Error fetching business categories:", error);
+    }
+  };
+
+  // Get child categories of a parent
+  const getChildCategories = async (parentId: number): Promise<Category[]> => {
+    try {
+      const response = await axios.get(`${api}/category-and-type/categories/${parentId}/children`);
+      return Array.isArray(response.data) ? response.data : [];
+    } catch (error) {
+      console.error("Error fetching child categories:", error);
+      return [];
     }
   };
 
@@ -77,22 +81,21 @@ export const useBusinessBasics = (API_URL: string, data: Business, setData: Reac
   };
 
   useEffect(() => {
-    getBusinessTypes();
+    getBusinessCategories();
   }, []);
 
-  // whenever data.business_type_id changes, fetch categories
+  // Initialize selected categories from data.category_ids
   useEffect(() => {
-    if (data.business_type_id) {
-      setSelectedType(data.business_type_id);
-      getBusinessCategories(data.business_type_id);
+    if (data.category_ids && data.category_ids.length > 0) {
+      setSelectedCategories(data.category_ids);
     }
-  }, [data.business_type_id]);
+  }, [data.category_ids]);
 
   return {
-    businessTypes,
-    businessCategories,
-    selectedType,
-    setSelectedType,
+    rootCategories,
+    selectedCategories,
+    setSelectedCategories,
+    getChildCategories,
     previewUrl,
     handleImageChange,
     handleUpload,

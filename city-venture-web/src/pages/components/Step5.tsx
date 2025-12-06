@@ -1,42 +1,59 @@
-import PageContainer from "@/src/components/PageContainer";
-import Container from "@/src/components/Container";
 import Typography from "@/src/components/Typography";
 import type { Business } from "@/src/types/Business";
 import type { Address } from "@/src/types/Address";
 import type { Owner } from "@/src/types/Owner";
 import type { User } from "@/src/types/User";
 import type { Permit } from "@/src/types/Permit";
-import { Card, CardContent, Divider } from "@mui/joy";
-import { Avatar } from "@mui/joy";
-import {
-  BusinessOutlined,
-  PlaceOutlined,
-  EmailOutlined,
-  PhoneOutlined,
-  PersonOutline,
-  DescriptionOutlined,
-  ArticleOutlined,
-} from "@mui/icons-material";
+import { Box, Card, CardContent, Checkbox } from "@mui/joy";
 import { useAddress } from "@/src/hooks/useAddress";
-import { useCategoryAndType } from "@/src/hooks/useCategoryAndType";
+import { useEffect, useState } from "react";
+import { fetchCategoryTree } from "@/src/services/BusinessService";
+import type { CategoryTree } from "@/src/types/Category";
+import { colors } from "@/src/utils/Colors";
+import { CheckCircle } from "lucide-react";
 
 type Props = {
   data: Business;
+  setData: React.Dispatch<React.SetStateAction<Business>>;
   addressData: Address;
   ownerData: Owner;
   userData: User;
   permitData: Permit[];
-  // Keeping these props to maintain call signature, but old UI does not use them
-  businessHours: any[];
-  businessAmenities: any[];
 };
 
-const Step5: React.FC<Props> = ({ data, permitData }) => {
+const Step5: React.FC<Props> = ({ data, ownerData, userData, permitData }) => {
   const { address } = useAddress(data?.barangay_id);
-  const { category, type } = useCategoryAndType(
-    data?.business_type_id,
-    data?.business_category_id
+  const [selectedCategoryNames, setSelectedCategoryNames] = useState<string[]>(
+    []
   );
+  const [agreed, setAgreed] = useState(false);
+
+  useEffect(() => {
+    const loadCategories = async () => {
+      try {
+        const tree = await fetchCategoryTree();
+
+        const flatCategories: CategoryTree[] = [];
+        const flatten = (cats: CategoryTree[]) => {
+          for (const cat of cats) {
+            flatCategories.push(cat);
+            if (cat.children) flatten(cat.children);
+          }
+        };
+        flatten(tree);
+
+        if (data?.category_ids && data.category_ids.length > 0) {
+          const names = data.category_ids
+            .map((id) => flatCategories.find((c) => c.id === id)?.title)
+            .filter((name): name is string => !!name);
+          setSelectedCategoryNames(names);
+        }
+      } catch (error) {
+        console.error("Failed to load categories:", error);
+      }
+    };
+    loadCategories();
+  }, [data?.category_ids]);
 
   const InfoRow = ({
     label,
@@ -45,193 +62,170 @@ const Step5: React.FC<Props> = ({ data, permitData }) => {
     label: string;
     value?: string | number | null;
   }) => (
-    <div style={{ display: "flex", justifyContent: "space-between" }}>
-      <Typography.Label size="md">{label}:</Typography.Label>
-      <Typography.Body>{value || "-"}</Typography.Body>
-    </div>
-  );
-
-  const Section = ({
-    title,
-    children,
-    icon,
-  }: {
-    title: string;
-    children: React.ReactNode;
-    icon: React.ReactNode;
-  }) => (
-    <Card
-      variant="outlined"
-      sx={{ borderRadius: "12px", borderColor: "#e5e7eb" }}
+    <Box
+      sx={{
+        display: "flex",
+        justifyContent: "space-between",
+        py: 1,
+        borderBottom: `1px solid ${colors.tertiary}`,
+      }}
     >
-      <CardContent sx={{ py: 1, px: 1.25 }}>
-        <Typography.CardTitle
-          sx={{ mb: 0.75, display: "flex", alignItems: "center", gap: 1 }}
-        >
-          {icon} {title}
-        </Typography.CardTitle>
-        <Divider sx={{ mb: 1.25 }} />
-        {children}
-      </CardContent>
-    </Card>
+      <Typography.Label size="sm">{label}</Typography.Label>
+      <Typography.Body
+        size="sm"
+        sx={{ textAlign: "right", color: colors.text }}
+      >
+        {value || "N/A"}
+      </Typography.Body>
+    </Box>
   );
 
   return (
-    <PageContainer gap={0} padding={0}>
-      <Container gap="0" style={{ textAlign: "center" }}>
-        <Typography.CardTitle>Review & Submit</Typography.CardTitle>
-        <Typography.CardSubTitle>
-          Review your information before submitting
-        </Typography.CardSubTitle>
-      </Container>
+    <Box sx={{ mb: 4 }}>
+      <Typography.Header sx={{ mb: 1, color: colors.primary }}>
+        Review & Submit
+      </Typography.Header>
+      <Typography.Body sx={{ mb: 4, color: colors.gray, fontSize: "0.95rem" }}>
+        Confirm your information
+      </Typography.Body>
 
-      <Container>
-        {/* Business Summary Card */}
+      <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
+        {/* Business Information */}
         <Card
           variant="outlined"
           sx={{
             borderRadius: "12px",
-            bgcolor: "neutral.softBg",
-            border: "1px solid #e5e7eb",
+            border: `1px solid ${colors.tertiary}`,
+            boxShadow: "none",
           }}
         >
-          <CardContent
-            sx={{
-              display: "flex",
-              flexDirection: "row",
-              alignItems: "center",
-              gap: 1.25,
-              p: 1.25,
-            }}
-          >
-            <Avatar
-              src={data.business_image || ""}
-              alt={data.business_name}
-              variant="solid"
-              size="lg"
-              sx={{ bgcolor: "primary.500", fontSize: "1.5rem" }}
-            >
-              <BusinessOutlined />
-            </Avatar>
-
-            <div>
-              <Typography.CardTitle>
-                {data.business_name || "Unnamed Business"}
-              </Typography.CardTitle>
-
-              <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-                <Typography.CardSubTitle
-                  startDecorator={<PlaceOutlined fontSize="small" />}
-                  sx={{ color: "#6b7280" }}
-                >
-                  {address?.province_name}, {address?.municipality_name},{" "}
-                  {address?.barangay_name}
-                </Typography.CardSubTitle>
-
-                <Typography.Body
-                  startDecorator={<EmailOutlined fontSize="small" />}
-                  sx={{ color: "#6b7280" }}
-                >
-                  {data.email}
-                </Typography.Body>
-                <Typography.Body
-                  startDecorator={<PhoneOutlined fontSize="small" />}
-                  sx={{ color: "#6b7280" }}
-                >
-                  {data.phone_number}
-                </Typography.Body>
-              </div>
-            </div>
+          <CardContent>
+            <Typography.CardTitle size="sm" sx={{ mb: 2 }}>
+              Business Information
+            </Typography.CardTitle>
+            <InfoRow label="Business Name" value={data.business_name} />
+            <InfoRow
+              label="Industry"
+              value={selectedCategoryNames.join(", ")}
+            />
+            <InfoRow label="Category" value={selectedCategoryNames[0]} />
           </CardContent>
         </Card>
 
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            gap: 12,
-            padding: "8px 0",
+        {/* Owner Information */}
+        <Card
+          variant="outlined"
+          sx={{
+            borderRadius: "12px",
+            border: `1px solid ${colors.tertiary}`,
+            boxShadow: "none",
           }}
         >
-          {/* Basic Information */}
-          <Section
-            title="Basic Information"
-            icon={<PersonOutline color="primary" />}
-          >
-            <InfoRow label="Business Name" value={data.business_name} />
-            <InfoRow label="Type" value={type?.type || null} />
-            <InfoRow label="Category" value={category?.category || null} />
-          </Section>
-
-          {/* Contact */}
-          <Section
-            title="Contact Information"
-            icon={<PhoneOutlined color="primary" />}
-          >
-            <InfoRow label="Phone" value={data.phone_number} />
-            <InfoRow label="Email" value={data.email} />
-          </Section>
-
-          {/* Location */}
-          <Section title="Location" icon={<PlaceOutlined color="primary" />}>
-            <InfoRow label="Province" value={address?.province_name || null} />
+          <CardContent>
+            <Typography.CardTitle size="sm" sx={{ mb: 2 }}>
+              Owner Information
+            </Typography.CardTitle>
             <InfoRow
-              label="Municipality"
-              value={address?.municipality_name || null}
+              label="Name"
+              value={`${ownerData.first_name} ${ownerData.last_name}`}
             />
-            <InfoRow label="Barangay" value={address?.barangay_name || null} />
-            <InfoRow label="Latitude" value={data.latitude || null} />
-            <InfoRow label="Longitude" value={data.longitude || null} />
-          </Section>
+            <InfoRow label="Email" value={userData.email} />
+            <InfoRow label="Phone" value={userData.phone_number} />
+            <InfoRow label="Date of Birth" value={ownerData.birthdate} />
+          </CardContent>
+        </Card>
 
-          {/* Description */}
-          <Section
-            title="Business Description"
-            icon={<DescriptionOutlined color="primary" />}
-          >
-            <Typography.Body>{data.description || "-"}</Typography.Body>
-          </Section>
+        {/* Business Location */}
+        <Card
+          variant="outlined"
+          sx={{
+            borderRadius: "12px",
+            border: `1px solid ${colors.tertiary}`,
+            boxShadow: "none",
+          }}
+        >
+          <CardContent>
+            <Typography.CardTitle size="sm" sx={{ mb: 2 }}>
+              Business Location
+            </Typography.CardTitle>
+            <InfoRow label="Address" value={data.address} />
+            <InfoRow
+              label="City, State"
+              value={
+                address
+                  ? `${address.municipality_name}, ${address.province_name}`
+                  : ""
+              }
+            />
+            <InfoRow label="Country" value="Philippines" />
+          </CardContent>
+        </Card>
 
-          {/* Permits */}
-          <Section
-            title="Business Permits"
-            icon={<ArticleOutlined color="primary" />}
-          >
-            {permitData && permitData.length > 0 ? (
-              permitData.map((permit, index) => (
-                <div
-                  key={`${permit.permit_type}-${index}`}
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    padding: "6px 0",
-                    borderBottom: "1px solid #f3f4f6",
-                  }}
-                >
-                  <Typography.Body>
-                    {permit.permit_type.replace("_", " ")}
+        {/* Permits & Licenses */}
+        <Card
+          variant="outlined"
+          sx={{
+            borderRadius: "12px",
+            border: `1px solid ${colors.tertiary}`,
+            boxShadow: "none",
+          }}
+        >
+          <CardContent>
+            <Typography.CardTitle size="sm" sx={{ mb: 2 }}>
+              Permits & Licenses
+            </Typography.CardTitle>
+            {permitData.map((permit, index) => (
+              <Box
+                key={index}
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 1.5,
+                  py: 1,
+                  borderBottom:
+                    index < permitData.length - 1
+                      ? `1px solid ${colors.tertiary}`
+                      : "none",
+                }}
+              >
+                <CheckCircle size={20} color={colors.success} />
+                <Box sx={{ flex: 1 }}>
+                  <Typography.Body size="sm" weight="semibold">
+                    {permit.permit_type}
                   </Typography.Body>
-                  <a
-                    href={permit.file_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={{
-                      color: "#1976d2",
-                      textDecoration: "underline",
-                      fontWeight: 500,
-                    }}
-                  >
-                    View File
-                  </a>
-                </div>
-              ))
-            ) : (
-              <Typography.Body>No permits uploaded yet.</Typography.Body>
-            )}
-          </Section>
-        </div>
-      </Container>
-    </PageContainer>
+                  <Typography.Body size="sm" sx={{ color: colors.gray }}>
+                    Expires: {permit.expiration_date || "N/A"}
+                  </Typography.Body>
+                </Box>
+              </Box>
+            ))}
+          </CardContent>
+        </Card>
+
+        {/* Agreement Checkbox */}
+        <Box
+          sx={{
+            p: 3,
+            borderRadius: "8px",
+            backgroundColor: colors.lightBackground,
+            border: `1px solid ${colors.tertiary}`,
+          }}
+        >
+          <Box sx={{ display: "flex", alignItems: "flex-start", gap: 2 }}>
+            <Checkbox
+              checked={agreed}
+              onChange={(e) => setAgreed(e.target.checked)}
+              sx={{ mt: 0.5 }}
+            />
+            <Typography.Body size="sm">
+              I certify that all information provided is accurate and complete.
+              I understand that providing false information may result in denial
+              of my application or revocation of my business license.
+            </Typography.Body>
+          </Box>
+        </Box>
+      </Box>
+    </Box>
   );
 };
 

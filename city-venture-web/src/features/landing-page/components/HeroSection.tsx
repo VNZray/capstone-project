@@ -2,16 +2,16 @@ import React from "react";
 import Container from "@/src/components/Container";
 import Typography from "@/src/components/Typography";
 import Button from "@/src/components/Button";
-import { AspectRatio } from "@mui/joy";
-import { FaHeart } from "react-icons/fa";
+import { AspectRatio, Chip, Grid } from "@mui/joy";
 import Grid1 from "@/src/assets/gridimages/grid1.jpg";
 import Grid2 from "@/src/assets/gridimages/grid2.jpg";
 import Grid3 from "@/src/assets/gridimages/grid3.jpg";
 import Grid4 from "@/src/assets/gridimages/grid4.jpg";
 import Grid5 from "@/src/assets/gridimages/grid5.jpg";
 import Section from "@/src/components/ui/Section";
-import { section } from "@/src/utils/Colors";
-import placeholder from "@/src/assets/images/placeholder-image.png";
+import { Heart } from "lucide-react";
+import { LandingPageButton } from "./Button";
+
 interface GridItem {
   src: string;
   title: string;
@@ -20,22 +20,6 @@ interface GridItem {
 
 interface HeroSectionProps {
   gridItems: GridItem[];
-}
-
-// Tile class pattern for mosaic grid
-function tileClassFor(index: number): string {
-  const pattern = [
-    "span-c2 span-r2",
-    "span-r3",
-    "span-c2 span-r2",
-    "",
-    "span-c3 span-r2",
-    "span-r2",
-    "",
-    "",
-    "span-c2 span-r2",
-  ];
-  return pattern[index % pattern.length];
 }
 
 const HeroSection: React.FC<HeroSectionProps> = ({ gridItems }) => {
@@ -52,122 +36,396 @@ const HeroSection: React.FC<HeroSectionProps> = ({ gridItems }) => {
 
   return (
     <Section
-      padding="150px 20px"
-      id="hero"
-      height="auto"
-      background={section.bg3}
       align="center"
+      justify="center"
+      height="auto"
+      minHeight={"100vh"}
+      maxHeight={"auto"}
+      id="hero"
     >
-      <div className="hero-inner">
-        {/* Left column: Welcome and actions */}
-        <div className="hero-left">
-          <span className="hero-eyebrow">
-            <FaHeart className="heart" aria-hidden="true" /> Explore Naga City
-          </span>
-
-          <Typography.Title
-            size="lg"
-            color="primary"
-            weight="black"
-            sx={{ lineHeight: 1.1, marginBottom: 2 }}
-          >
-            Begin your journey in the{" "}
-            <span className="gradient-bicol">Heart of Bicol</span>
-          </Typography.Title>
-
-          <div className="hero-quote">— Where Faith Meets Adventure</div>
-
-          <Typography.Body
-            size="md"
-            sx={{ maxWidth: 620, opacity: 0.9, marginBottom: 3 }}
-          >
-            Iconic attractions, vibrant culture, and hidden gems — curated in
-            one place. From the devotion of Peñafrancia to the flavors of
-            kinalas and the trails of Mt. Isarog, experience the city's spirit
-            up close.
-          </Typography.Body>
-
+      <Grid xs={12} sm={12} md={11} lg={10} xl={10} container spacing={12}>
+        <Grid xs={12} sm={12} md={6} lg={6} xl={6}>
           <Container
-            direction="row"
-            gap="12px"
+            height="100%"
             padding="0"
-            style={{ flexWrap: "wrap" }}
-            className="hero-actions"
-            background="transparent"
+            direction="column"
+            justify="center"
           >
-            <Button
-              size="lg"
-              colorScheme="primary"
-              onClick={() => {
-                const el = document.getElementById("how-it-works");
-                el?.scrollIntoView({ behavior: "smooth", block: "start" });
-              }}
-              sx={{
-                borderRadius: 12,
-                px: 3,
-                color: "#ffffff",
-                background:
-                  "linear-gradient(135deg, #FF6B6B 0%, #FF914D 50%, #28C76F 100%)",
-                boxShadow: "0 10px 26px rgba(0,0,0,0.12)",
-                border: "none",
-                textTransform: "none",
-                fontWeight: 700,
-                transition:
-                  "transform 160ms ease, box-shadow 160ms ease, filter 160ms ease",
-                "&:hover": {
-                  filter: "brightness(1.02)",
-                  transform: "translateY(-1px)",
-                  boxShadow: "0 12px 30px rgba(0,0,0,0.14)",
-                },
-              }}
-            >
-              Get Started
-            </Button>
-            <Button
-              size="lg"
-              variant="outlined"
-              colorScheme="gray"
-              onClick={() => {
-                const el = document.getElementById("how-it-works");
-                el?.scrollIntoView({ behavior: "smooth", block: "start" });
-              }}
-              sx={{ borderRadius: 12 }}
-            >
-              Learn More
-            </Button>
-          </Container>
-        </div>
+            <Chip size="lg" startDecorator={<Heart size={16} color="red" />}>
+              Discover Naga City
+            </Chip>
 
-        {/* Right column: Dynamic attractions grid */}
-        <div className="hero-right">
-          <div className="attractions-grid">
-            {displayItems.map((item, i) => (
-              <button
-                key={`${item.title}-${i}`}
-                type="button"
-                className={`tile ${tileClassFor(i)}`}
-                title={item.title}
-                aria-label={`${item.title} — ${item.subtitle}`}
+            <Typography.Title
+              size="lg"
+              color="primary"
+              weight="black"
+              sx={{ lineHeight: 1.1, marginBottom: 2 }}
+            >
+              Begin your journey in the{" "}
+              <span className="gradient-bicol">Heart of Bicol</span>
+            </Typography.Title>
+
+            <Typography.CardSubTitle
+              size="sm"
+              sx={{ opacity: 0.8, fontStyle: "italic" }}
+            >
+              — Where Faith Meets Adventure
+            </Typography.CardSubTitle>
+
+            <Typography.Body size="md" sx={{ opacity: 0.9, marginBottom: 3 }}>
+              Iconic attractions, vibrant culture, and hidden gems — curated in
+              one place. From the devotion of Peñafrancia to the flavors of
+              kinalas and the trails of Mt. Isarog, experience the city's spirit
+              up close.
+            </Typography.Body>
+
+            <Container padding="0" direction="row">
+              <LandingPageButton
+                onClick={() => {
+                  const el = document.getElementById("how-it-works");
+                  el?.scrollIntoView({ behavior: "smooth", block: "start" });
+                }}
+              >
+                Get Started
+              </LandingPageButton>
+
+              <Button sx={{ borderRadius: 12 }} size="lg" variant="outlined">
+                Learn More
+              </Button>
+            </Container>
+
+            {/* Stats Section */}
+            <Container
+              direction="row"
+              gap="32px"
+              padding="32px 0 0 0"
+              background="transparent"
+              style={{ flexWrap: "wrap" }}
+            >
+              <div style={{ textAlign: "center" }}>
+                <Typography.Header size="md" color="primary">
+                  2000+
+                </Typography.Header>
+                <Typography.Body size="sm">Our Explorers</Typography.Body>
+              </div>
+              <div style={{ textAlign: "center" }}>
+                <Typography.Header size="md" color="primary">
+                  100+
+                </Typography.Header>
+                <Typography.Body size="sm">Destinations</Typography.Body>
+              </div>
+              <div style={{ textAlign: "center" }}>
+                <Typography.Header size="md" color="primary">
+                  20+
+                </Typography.Header>
+                <Typography.Body size="sm">Years Experience</Typography.Body>
+              </div>
+            </Container>
+          </Container>
+        </Grid>
+
+        <Grid xs={12} sm={12} md={6} lg={6} xl={6}>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(2, 1fr)",
+              gap: "16px",
+              width: "100%",
+            }}
+          >
+            {/* Large card - Cathedral (spans 2 rows) */}
+            {displayItems[0] && (
+              <div
+                style={{
+                  gridRow: "span 2",
+                  position: "relative",
+                  cursor: "pointer",
+                  borderRadius: "16px",
+                  overflow: "hidden",
+                  transition: "transform 0.3s ease",
+                }}
+                onMouseEnter={(e) =>
+                  (e.currentTarget.style.transform = "scale(1.02)")
+                }
+                onMouseLeave={(e) =>
+                  (e.currentTarget.style.transform = "scale(1)")
+                }
+              >
+                <AspectRatio
+                  ratio="3/4"
+                  sx={{
+                    borderRadius: "16px",
+                    overflow: "hidden",
+                  }}
+                >
+                  <img
+                    src={displayItems[1].src}
+                    alt={displayItems[0].title}
+                    style={{ objectFit: "cover" }}
+                  />
+                </AspectRatio>
+                <div
+                  style={{
+                    position: "absolute",
+                    bottom: 0,
+                    left: 0,
+                    right: 0,
+                    padding: "24px",
+                    background:
+                      "linear-gradient(to top, rgba(0,0,0,0.8), transparent)",
+                    color: "white",
+                  }}
+                >
+                  <Typography.CardTitle
+                    size="md"
+                    sx={{ color: "white", marginBottom: "4px" }}
+                  >
+                    {displayItems[0].title}
+                  </Typography.CardTitle>
+                  <Typography.Body
+                    size="sm"
+                    sx={{ color: "rgba(255,255,255,0.9)" }}
+                  >
+                    {displayItems[0].subtitle}
+                  </Typography.Body>
+                </div>
+              </div>
+            )}
+
+            {/* Kunalao - Top right */}
+            {displayItems[1] && (
+              <div
+                style={{
+                  position: "relative",
+                  cursor: "pointer",
+                  borderRadius: "16px",
+                  overflow: "hidden",
+                  transition: "transform 0.3s ease",
+                }}
+                onMouseEnter={(e) =>
+                  (e.currentTarget.style.transform = "scale(1.02)")
+                }
+                onMouseLeave={(e) =>
+                  (e.currentTarget.style.transform = "scale(1)")
+                }
+              >
+                <AspectRatio
+                  ratio="16/9"
+                  sx={{
+                    borderRadius: "16px",
+                    overflow: "hidden",
+                  }}
+                >
+                  <img
+                    src={displayItems[1].src}
+                    alt={displayItems[1].title}
+                    style={{ objectFit: "cover" }}
+                  />
+                </AspectRatio>
+                <div
+                  style={{
+                    position: "absolute",
+                    bottom: 0,
+                    left: 0,
+                    right: 0,
+                    padding: "16px",
+                    background:
+                      "linear-gradient(to top, rgba(0,0,0,0.8), transparent)",
+                    color: "white",
+                  }}
+                >
+                  <Typography.CardTitle
+                    size="sm"
+                    sx={{ color: "white", marginBottom: "4px" }}
+                  >
+                    {displayItems[1].title}
+                  </Typography.CardTitle>
+                  <Typography.Body
+                    size="xs"
+                    sx={{ color: "rgba(255,255,255,0.9)" }}
+                  >
+                    {displayItems[1].subtitle}
+                  </Typography.Body>
+                </div>
+              </div>
+            )}
+
+            {/* Plaza Rizal - Middle right */}
+            {displayItems[2] && (
+              <div
+                style={{
+                  position: "relative",
+                  cursor: "pointer",
+                  borderRadius: "16px",
+                  overflow: "hidden",
+                  transition: "transform 0.3s ease",
+                }}
+                onMouseEnter={(e) =>
+                  (e.currentTarget.style.transform = "scale(1.02)")
+                }
+                onMouseLeave={(e) =>
+                  (e.currentTarget.style.transform = "scale(1)")
+                }
+              >
+                <AspectRatio
+                  ratio="16/9"
+                  sx={{
+                    borderRadius: "16px",
+                    overflow: "hidden",
+                  }}
+                >
+                  <img
+                    src={displayItems[2].src}
+                    alt={displayItems[2].title}
+                    style={{ objectFit: "cover" }}
+                  />
+                </AspectRatio>
+                <div
+                  style={{
+                    position: "absolute",
+                    bottom: 0,
+                    left: 0,
+                    right: 0,
+                    padding: "16px",
+                    background:
+                      "linear-gradient(to top, rgba(0,0,0,0.8), transparent)",
+                    color: "white",
+                  }}
+                >
+                  <Typography.CardTitle
+                    size="sm"
+                    sx={{ color: "white", marginBottom: "4px" }}
+                  >
+                    {displayItems[2].title}
+                  </Typography.CardTitle>
+                  <Typography.Body
+                    size="xs"
+                    sx={{ color: "rgba(255,255,255,0.9)" }}
+                  >
+                    {displayItems[2].subtitle}
+                  </Typography.Body>
+                </div>
+              </div>
+            )}
+
+            {/* Peñafrancia Festival - Bottom left */}
+            {displayItems[3] && (
+              <div
+                style={{
+                  position: "relative",
+                  cursor: "pointer",
+                  borderRadius: "16px",
+                  overflow: "hidden",
+                  transition: "transform 0.3s ease",
+                }}
+                onMouseEnter={(e) =>
+                  (e.currentTarget.style.transform = "scale(1.02)")
+                }
+                onMouseLeave={(e) =>
+                  (e.currentTarget.style.transform = "scale(1)")
+                }
               >
                 <AspectRatio
                   ratio="4/3"
                   sx={{
-                    width: "100%",
-                    borderRadius: 12,
+                    borderRadius: "16px",
                     overflow: "hidden",
                   }}
                 >
-                  <img src={placeholder} alt={item.title} />
+                  <img
+                    src={displayItems[3].src}
+                    alt={displayItems[3].title}
+                    style={{ objectFit: "cover" }}
+                  />
                 </AspectRatio>
-                <div className="tile-label" aria-hidden>
-                  <div className="tile-title">{item.title}</div>
-                  <div className="tile-sub">{item.subtitle}</div>
+                <div
+                  style={{
+                    position: "absolute",
+                    bottom: 0,
+                    left: 0,
+                    right: 0,
+                    padding: "16px",
+                    background:
+                      "linear-gradient(to top, rgba(0,0,0,0.8), transparent)",
+                    color: "white",
+                  }}
+                >
+                  <Typography.CardTitle
+                    size="sm"
+                    sx={{ color: "white", marginBottom: "4px" }}
+                  >
+                    {displayItems[3].title}
+                  </Typography.CardTitle>
+                  <Typography.Body
+                    size="xs"
+                    sx={{ color: "rgba(255,255,255,0.9)" }}
+                  >
+                    {displayItems[3].subtitle}
+                  </Typography.Body>
                 </div>
-              </button>
-            ))}
+              </div>
+            )}
+
+            {/* Mt. Isarog - Bottom right */}
+            {displayItems[4] && (
+              <div
+                style={{
+                  position: "relative",
+                  cursor: "pointer",
+                  borderRadius: "16px",
+                  overflow: "hidden",
+                  transition: "transform 0.3s ease",
+                }}
+                onMouseEnter={(e) =>
+                  (e.currentTarget.style.transform = "scale(1.02)")
+                }
+                onMouseLeave={(e) =>
+                  (e.currentTarget.style.transform = "scale(1)")
+                }
+              >
+                <AspectRatio
+                  ratio="4/3"
+                  sx={{
+                    borderRadius: "16px",
+                    overflow: "hidden",
+                  }}
+                >
+                  <img
+                    src={displayItems[4].src}
+                    alt={displayItems[4].title}
+                    style={{ objectFit: "cover" }}
+                  />
+                </AspectRatio>
+                <div
+                  style={{
+                    position: "absolute",
+                    bottom: 0,
+                    left: 0,
+                    right: 0,
+                    padding: "16px",
+                    background:
+                      "linear-gradient(to top, rgba(0,0,0,0.8), transparent)",
+                    color: "white",
+                  }}
+                >
+                  <Typography.CardTitle
+                    size="sm"
+                    sx={{ color: "white", marginBottom: "4px" }}
+                  >
+                    {displayItems[4].title}
+                  </Typography.CardTitle>
+                  <Typography.Body
+                    size="xs"
+                    sx={{ color: "rgba(255,255,255,0.9)" }}
+                  >
+                    {displayItems[4].subtitle}
+                  </Typography.Body>
+                </div>
+              </div>
+            )}
           </div>
-        </div>
-      </div>
+        </Grid>
+      </Grid>
     </Section>
   );
 };

@@ -56,7 +56,6 @@ const TouristSpotForm: React.FC<TouristSpotFormProps> = ({
     website: "",
     entry_fee: "",
     category_ids: [],
-    type_id: "4",
     spot_status: "" as "" | "pending" | "active" | "inactive",
     is_featured: false,
   });
@@ -116,7 +115,6 @@ const TouristSpotForm: React.FC<TouristSpotFormProps> = ({
       website: "",
       entry_fee: "",
       category_ids: [],
-      type_id: "4",
       spot_status: "" as "" | "pending" | "active" | "inactive",
       is_featured: false,
     });
@@ -166,7 +164,7 @@ const TouristSpotForm: React.FC<TouristSpotFormProps> = ({
   );
 
   const categoryOptions = useMemo<FormOption[]>(
-    () => categories.map((c) => ({ id: c.id, label: c.category })),
+    () => categories.map((c) => ({ id: c.id, label: c.title })),
     [categories]
   );
 
@@ -237,7 +235,6 @@ const TouristSpotForm: React.FC<TouristSpotFormProps> = ({
         website: initialData.website || "",
         entry_fee: initialData.entry_fee?.toString() || "",
         category_ids: initialData.categories ? initialData.categories.map(c => c.id) : [],
-        type_id: initialData.type_id.toString(),
         spot_status:
           (initialData.spot_status as "pending" | "active" | "inactive") || "",
         is_featured: Boolean(initialData.is_featured),
@@ -283,7 +280,6 @@ const TouristSpotForm: React.FC<TouristSpotFormProps> = ({
         website: "",
         entry_fee: "",
         category_ids: [],
-        type_id: "4",
         spot_status: "" as "" | "pending" | "active" | "inactive",
         is_featured: false,
       });
@@ -358,7 +354,6 @@ const TouristSpotForm: React.FC<TouristSpotFormProps> = ({
         barangay_id: parseInt(formData.barangay_id),
         contact_phone: formData.contact_phone,
         category_ids: formData.category_ids,
-        type_id: parseInt(formData.type_id) || 4,
         ...(formData.latitude
           ? { latitude: parseFloat(formData.latitude) }
           : {}),
@@ -425,7 +420,6 @@ const TouristSpotForm: React.FC<TouristSpotFormProps> = ({
           name: normalize(initialData.name) !== normalize(formData.name),
           description: normalize(initialData.description) !== normalize(formData.description),
           address: addressChanged,
-          type_id: Number(initialData.type_id) !== Number(formData.type_id)
         };
         const directChanged = {
           latitude: Number(initialData.latitude) !== Number(formData.latitude),

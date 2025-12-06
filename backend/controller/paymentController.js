@@ -18,7 +18,7 @@ const buildRedirectUrl = (path, useMobileScheme = false) => {
   if (useMobileScheme) {
     return `${MOBILE_APP_SCHEME}:/${path}`;
   }
-  
+
   const sanitizedBase = PAYMONGO_REDIRECT_BASE.replace(/\/$/, "");
   if (!/^https?:\/\//i.test(sanitizedBase)) {
     console.warn(`[PayMongo] Redirect base must be http/https. Falling back to FRONTEND_BASE_URL. Provided: ${PAYMONGO_REDIRECT_BASE}`);
@@ -64,42 +64,42 @@ export async function getPaymentById(req, res) {
     if (!data[0] || data[0].length === 0) {
       return res.status(404).json({ message: "Payment not found" });
     }
-    
+
     const payment = data[0][0];
-    
+
     // ========== Ownership Validation (Phase 4) ==========
     // Only allow access if user owns the related resource or is admin
     if (req.user) {
       const userId = req.user.id;
       const userRole = await ensureUserRole(req);
-      
+
       if (userRole !== 'Admin') {
         // For tourists: must own the payment (payer_id match)
         if (userRole === 'Tourist' && payment.payer_id !== userId) {
-          return res.status(403).json({ 
-            message: "Forbidden: you can only view your own payments" 
+          return res.status(403).json({
+            message: "Forbidden: you can only view your own payments"
           });
         }
-        
+
         // For business owners/staff: verify they own the business
         if (['Owner', 'Staff'].includes(userRole) && payment.payment_for === 'order') {
           // Get order to check business ownership
           const [orderCheck] = await db.query(
-            `SELECT b.owner_id FROM \`order\` o 
-             JOIN business b ON b.id = o.business_id 
+            `SELECT b.owner_id FROM \`order\` o
+             JOIN business b ON b.id = o.business_id
              WHERE o.id = ?`,
             [payment.payment_for_id]
           );
-          
+
           if (!orderCheck || orderCheck.length === 0 || orderCheck[0].owner_id !== userId) {
-            return res.status(403).json({ 
-              message: "Forbidden: you do not have access to this payment" 
+            return res.status(403).json({
+              message: "Forbidden: you do not have access to this payment"
             });
           }
         }
       }
     }
-    
+
     res.json(payment);
   } catch (error) {
     return handleDbError(error, res);
@@ -269,16 +269,16 @@ export async function initiatePayment(req, res) {
 
     // Validate input
     if (!order_id) {
-      return res.status(400).json({ 
-        success: false, 
-        message: "order_id is required" 
+      return res.status(400).json({
+        success: false,
+        message: "order_id is required"
       });
     }
 
     // 1. Fetch order details and validate ownership
     const [orderRows] = await db.query(
-      `SELECT 
-        o.id, o.order_number, o.user_id, o.business_id, o.total_amount, 
+      `SELECT
+        o.id, o.order_number, o.user_id, o.business_id, o.total_amount,
         o.status, o.payment_status, o.payment_method, o.payment_method_type
        FROM \`order\` o
        WHERE o.id = ?`,
@@ -286,9 +286,9 @@ export async function initiatePayment(req, res) {
     );
 
     if (!orderRows || orderRows.length === 0) {
-      return res.status(404).json({ 
-        success: false, 
-        message: "Order not found" 
+      return res.status(404).json({
+        success: false,
+        message: "Order not found"
       });
     }
 
@@ -296,43 +296,43 @@ export async function initiatePayment(req, res) {
 
     // Validate ownership
     if (order.user_id !== user_id) {
-      return res.status(403).json({ 
-        success: false, 
-        message: "You are not authorized to initiate payment for this order" 
+      return res.status(403).json({
+        success: false,
+        message: "You are not authorized to initiate payment for this order"
       });
     }
 
     // Validate order status
     if (order.status !== 'pending') {
-      return res.status(400).json({ 
-        success: false, 
-        message: `Cannot initiate payment for order with status: ${order.status}` 
+      return res.status(400).json({
+        success: false,
+        message: `Cannot initiate payment for order with status: ${order.status}`
       });
     }
 
     // Validate payment method
     if (order.payment_method !== 'paymongo') {
-      return res.status(400).json({ 
-        success: false, 
-        message: `Payment method must be 'paymongo', got: ${order.payment_method}` 
+      return res.status(400).json({
+        success: false,
+        message: `Payment method must be 'paymongo', got: ${order.payment_method}`
       });
     }
 
     // Validate payment not already completed
     if (order.payment_status === 'paid') {
-      return res.status(400).json({ 
-        success: false, 
-        message: "Payment already completed for this order" 
+      return res.status(400).json({
+        success: false,
+        message: "Payment already completed for this order"
       });
     }
 
     // 2. Prepare payment metadata
     const amountInCentavos = Math.round(order.total_amount * 100);
-    
+
     if (amountInCentavos < 100) {
-      return res.status(400).json({ 
-        success: false, 
-        message: "Order amount too low (minimum 1.00 PHP)" 
+      return res.status(400).json({
+        success: false,
+        message: "Order amount too low (minimum 1.00 PHP)"
       });
     }
 
@@ -431,9 +431,9 @@ export async function initiatePayment(req, res) {
       );
 
     } else {
-      return res.status(400).json({ 
-        success: false, 
-        message: `For non-checkout-session mode, only gcash, grab_pay, and paymaya are supported` 
+      return res.status(400).json({
+        success: false,
+        message: `For non-checkout-session mode, only gcash, grab_pay, and paymaya are supported`
       });
     }
 
@@ -459,9 +459,9 @@ export async function initiatePayment(req, res) {
 
     // Store provider reference and metadata
     await db.query(
-      `UPDATE payment 
-       SET provider_reference = ?, 
-           currency = 'PHP', 
+      `UPDATE payment
+       SET provider_reference = ?,
+           currency = 'PHP',
            metadata = ?
        WHERE id = ?`,
       [provider_reference, JSON.stringify(metadata), payment_id]
@@ -486,17 +486,17 @@ export async function initiatePayment(req, res) {
 
   } catch (error) {
     console.error("Error initiating payment:", error);
-    
+
     // Don't expose internal error details
     if (error.message && error.message.includes('PayMongo')) {
-      return res.status(502).json({ 
-        success: false, 
-        message: "Payment provider error. Please try again later." 
+      return res.status(502).json({
+        success: false,
+        message: "Payment provider error. Please try again later."
       });
     }
 
-    return res.status(500).json({ 
-      success: false, 
+    return res.status(500).json({
+      success: false,
       message: "Failed to initiate payment",
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
@@ -508,14 +508,14 @@ export async function initiatePayment(req, res) {
  * POST /api/payments/intent
  * Body: { order_id: string, payment_method_types?: string[] }
  * Auth: Required (Tourist role)
- * 
+ *
  * This endpoint is for custom checkout integration where:
  * 1. Server creates Payment Intent (this endpoint)
  * 2. Client collects card details and creates Payment Method using public key
  * 3. Client attaches Payment Method to Intent
  * 4. Client handles 3DS redirect if needed
  * 5. Webhook confirms payment success/failure
- * 
+ *
  * Returns client_key for client-side operations
  */
 export async function createPaymentIntentForOrder(req, res) {
@@ -525,16 +525,16 @@ export async function createPaymentIntentForOrder(req, res) {
 
     // Validate input
     if (!order_id) {
-      return res.status(400).json({ 
-        success: false, 
-        message: "order_id is required" 
+      return res.status(400).json({
+        success: false,
+        message: "order_id is required"
       });
     }
 
     // 1. Fetch order details and validate ownership
     const [orderRows] = await db.query(
-      `SELECT 
-        o.id, o.order_number, o.user_id, o.business_id, o.total_amount, 
+      `SELECT
+        o.id, o.order_number, o.user_id, o.business_id, o.total_amount,
         o.status, o.payment_status, o.payment_method, o.payment_method_type
        FROM \`order\` o
        WHERE o.id = ?`,
@@ -542,9 +542,9 @@ export async function createPaymentIntentForOrder(req, res) {
     );
 
     if (!orderRows || orderRows.length === 0) {
-      return res.status(404).json({ 
-        success: false, 
-        message: "Order not found" 
+      return res.status(404).json({
+        success: false,
+        message: "Order not found"
       });
     }
 
@@ -552,35 +552,35 @@ export async function createPaymentIntentForOrder(req, res) {
 
     // Validate ownership
     if (order.user_id !== user_id) {
-      return res.status(403).json({ 
-        success: false, 
-        message: "You are not authorized to create payment for this order" 
+      return res.status(403).json({
+        success: false,
+        message: "You are not authorized to create payment for this order"
       });
     }
 
     // Validate order status
     if (order.status !== 'pending') {
-      return res.status(400).json({ 
-        success: false, 
-        message: `Cannot create payment for order with status: ${order.status}` 
+      return res.status(400).json({
+        success: false,
+        message: `Cannot create payment for order with status: ${order.status}`
       });
     }
 
     // Validate payment not already completed
     if (order.payment_status === 'paid') {
-      return res.status(400).json({ 
-        success: false, 
-        message: "Payment already completed for this order" 
+      return res.status(400).json({
+        success: false,
+        message: "Payment already completed for this order"
       });
     }
 
     // 2. Prepare payment amount (minimum ₱20 for Payment Intents)
     const amountInCentavos = Math.round(order.total_amount * 100);
-    
+
     if (amountInCentavos < 2000) {
-      return res.status(400).json({ 
-        success: false, 
-        message: "Order amount too low for Payment Intent (minimum ₱20.00)" 
+      return res.status(400).json({
+        success: false,
+        message: "Order amount too low for Payment Intent (minimum ₱20.00)"
       });
     }
 
@@ -638,9 +638,9 @@ export async function createPaymentIntentForOrder(req, res) {
 
     // Store provider reference and metadata
     await db.query(
-      `UPDATE payment 
-       SET provider_reference = ?, 
-           currency = 'PHP', 
+      `UPDATE payment
+       SET provider_reference = ?,
+           currency = 'PHP',
            metadata = ?
        WHERE id = ?`,
       [paymentIntentId, JSON.stringify(metadata), payment_id]
@@ -667,16 +667,16 @@ export async function createPaymentIntentForOrder(req, res) {
 
   } catch (error) {
     console.error("Error creating payment intent:", error);
-    
+
     if (error.message && error.message.includes('PayMongo')) {
-      return res.status(502).json({ 
-        success: false, 
-        message: "Payment provider error. Please try again later." 
+      return res.status(502).json({
+        success: false,
+        message: "Payment provider error. Please try again later."
       });
     }
 
-    return res.status(500).json({ 
-      success: false, 
+    return res.status(500).json({
+      success: false,
       message: "Failed to create payment intent",
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
@@ -688,7 +688,7 @@ export async function createPaymentIntentForOrder(req, res) {
  * POST /api/payments/intent/:id/attach
  * Body: { payment_method_type: string, return_url: string, billing?: object }
  * Auth: Required (Tourist role)
- * 
+ *
  * This endpoint is for server-side attachment of e-wallet payment methods.
  * For card payments, the client should attach directly using public key + client_key.
  */
@@ -700,31 +700,31 @@ export async function attachPaymentMethodToIntent(req, res) {
 
     // Validate input
     if (!payment_method_type) {
-      return res.status(400).json({ 
-        success: false, 
-        message: "payment_method_type is required" 
+      return res.status(400).json({
+        success: false,
+        message: "payment_method_type is required"
       });
     }
 
     if (!return_url) {
-      return res.status(400).json({ 
-        success: false, 
-        message: "return_url is required for e-wallet payments" 
+      return res.status(400).json({
+        success: false,
+        message: "return_url is required for e-wallet payments"
       });
     }
 
     // 1. Find the order associated with this payment intent
     const [orderRows] = await db.query(
       `SELECT o.id, o.user_id, o.order_number, o.total_amount, o.status, o.payment_status
-       FROM \`order\` o 
+       FROM \`order\` o
        WHERE o.paymongo_payment_intent_id = ?`,
       [id]
     );
 
     if (!orderRows || orderRows.length === 0) {
-      return res.status(404).json({ 
-        success: false, 
-        message: "Payment Intent not found or not associated with any order" 
+      return res.status(404).json({
+        success: false,
+        message: "Payment Intent not found or not associated with any order"
       });
     }
 
@@ -732,25 +732,25 @@ export async function attachPaymentMethodToIntent(req, res) {
 
     // Validate ownership
     if (order.user_id !== user_id) {
-      return res.status(403).json({ 
-        success: false, 
-        message: "You are not authorized to attach payment method to this intent" 
+      return res.status(403).json({
+        success: false,
+        message: "You are not authorized to attach payment method to this intent"
       });
     }
 
     // Validate order status
     if (order.payment_status === 'paid') {
-      return res.status(400).json({ 
-        success: false, 
-        message: "Payment already completed for this order" 
+      return res.status(400).json({
+        success: false,
+        message: "Payment already completed for this order"
       });
     }
 
     // 2. Create Payment Method for e-wallet
     const validEwalletTypes = ['gcash', 'paymaya', 'grab_pay', 'shopee_pay', 'dob', 'billease', 'qrph', 'brankas'];
     if (!validEwalletTypes.includes(payment_method_type)) {
-      return res.status(400).json({ 
-        success: false, 
+      return res.status(400).json({
+        success: false,
         message: `Invalid payment method type. For server-side attachment, use: ${validEwalletTypes.join(', ')}. For card payments, use client-side attachment.`
       });
     }
@@ -786,17 +786,17 @@ export async function attachPaymentMethodToIntent(req, res) {
 
   } catch (error) {
     console.error("Error attaching payment method:", error);
-    
+
     if (error.message && error.message.includes('PayMongo')) {
-      return res.status(502).json({ 
-        success: false, 
+      return res.status(502).json({
+        success: false,
         message: "Payment provider error. Please try again later.",
         error: process.env.NODE_ENV === 'development' ? error.message : undefined
       });
     }
 
-    return res.status(500).json({ 
-      success: false, 
+    return res.status(500).json({
+      success: false,
       message: "Failed to attach payment method",
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
@@ -816,15 +816,15 @@ export async function getPaymentIntentStatus(req, res) {
     // 1. Find the order associated with this payment intent
     const [orderRows] = await db.query(
       `SELECT o.id, o.user_id, o.order_number, o.status, o.payment_status
-       FROM \`order\` o 
+       FROM \`order\` o
        WHERE o.paymongo_payment_intent_id = ?`,
       [id]
     );
 
     if (!orderRows || orderRows.length === 0) {
-      return res.status(404).json({ 
-        success: false, 
-        message: "Payment Intent not found" 
+      return res.status(404).json({
+        success: false,
+        message: "Payment Intent not found"
       });
     }
 
@@ -833,9 +833,9 @@ export async function getPaymentIntentStatus(req, res) {
     // Validate ownership (or admin)
     const userRole = await ensureUserRole(req);
     if (userRole !== 'Admin' && order.user_id !== user_id) {
-      return res.status(403).json({ 
-        success: false, 
-        message: "You are not authorized to view this payment intent" 
+      return res.status(403).json({
+        success: false,
+        message: "You are not authorized to view this payment intent"
       });
     }
 
@@ -861,9 +861,9 @@ export async function getPaymentIntentStatus(req, res) {
 
   } catch (error) {
     console.error("Error retrieving payment intent:", error);
-    
-    return res.status(500).json({ 
-      success: false, 
+
+    return res.status(500).json({
+      success: false,
       message: "Failed to retrieve payment intent",
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
@@ -874,40 +874,40 @@ export async function getPaymentIntentStatus(req, res) {
  * Handle PayMongo webhook events
  * POST /api/payments/webhook
  * No authentication required (signature-based verification)
- * 
+ *
  * BEST PRACTICE: Respond immediately with HTTP 200, then process asynchronously
  * This prevents webhook timeouts and ensures PayMongo doesn't retry unnecessarily
  */
 export async function handleWebhook(req, res) {
   console.log('[Webhook] 📨 Received PayMongo webhook request');
-  
+
   try {
     const signature = req.headers['paymongo-signature'];
     const rawBody = req.rawBody; // Requires raw body parser middleware
 
     if (!signature) {
       console.warn('[Webhook] ⚠️ Missing signature header');
-      return res.status(401).json({ 
-        success: false, 
-        message: "Missing webhook signature" 
+      return res.status(401).json({
+        success: false,
+        message: "Missing webhook signature"
       });
     }
 
     if (!rawBody) {
-      return res.status(400).json({ 
-        success: false, 
-        message: "Missing request body" 
+      return res.status(400).json({
+        success: false,
+        message: "Missing request body"
       });
     }
 
     // 1. Verify webhook signature (SYNCHRONOUS - must happen before responding)
     const isValid = paymongoService.verifyWebhookSignature(rawBody, signature);
-    
+
     if (!isValid) {
       console.warn("[Webhook] ⚠️ Invalid webhook signature received");
-      return res.status(401).json({ 
-        success: false, 
-        message: "Invalid webhook signature" 
+      return res.status(401).json({
+        success: false,
+        message: "Invalid webhook signature"
       });
     }
 
@@ -938,18 +938,18 @@ export async function handleWebhook(req, res) {
     if (existingEvents && existingEvents.length > 0) {
       const existingEvent = existingEvents[0];
       console.log(`[Webhook] ⏭️ Duplicate event detected: ${eventId}, status: ${existingEvent.status}`);
-      
+
       // Return 200 to acknowledge receipt (already processed or queued)
-      return res.status(200).json({ 
-        success: true, 
-        message: "Event already processed" 
+      return res.status(200).json({
+        success: true,
+        message: "Event already processed"
       });
     }
 
     // 4. Store webhook event immediately (before queuing)
     const webhook_id = uuidv4();
     await db.query(
-      `INSERT INTO webhook_event 
+      `INSERT INTO webhook_event
        (id, provider, provider_event_id, event_type, livemode, payload, status, created_at)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
       [
@@ -995,18 +995,18 @@ export async function handleWebhook(req, res) {
     }
 
     // 6. Respond immediately with 200 (PayMongo best practice)
-    res.status(200).json({ 
-      success: true, 
-      message: "Webhook received and queued for processing" 
+    res.status(200).json({
+      success: true,
+      message: "Webhook received and queued for processing"
     });
 
   } catch (error) {
     console.error("[Webhook] ❌ Error handling webhook:", error);
-    
+
     // Return 200 to avoid retries for unrecoverable errors
-    res.status(200).json({ 
-      success: false, 
-      message: "Webhook handling error" 
+    res.status(200).json({
+      success: false,
+      message: "Webhook handling error"
     });
   }
 }
@@ -1023,11 +1023,16 @@ export async function processWebhookEvent(eventType, eventData, webhook_id) {
   const status = eventData.attributes?.status;
   const metadata = eventData.attributes?.metadata || {};
   const order_id = metadata.order_id;
+  const booking_id = metadata.booking_id;
+  const payment_for = metadata.payment_for || (booking_id ? 'booking' : 'order');
 
-  console.log(`[Webhook Processor] Processing ${eventType} for order ${order_id}, status: ${status}`);
+  // Determine the reference ID based on payment type
+  const reference_id = payment_for === 'booking' ? booking_id : order_id;
+
+  console.log(`[Webhook Processor] Processing ${eventType} for ${payment_for} ${reference_id}, status: ${status}`);
 
   // ========== Checkout Session Events (RECOMMENDED FLOW) ==========
-  
+
   // Handle checkout_session.payment.paid event
   if (eventType === 'checkout_session.payment.paid') {
     if (!order_id) {
@@ -1054,8 +1059,8 @@ export async function processWebhookEvent(eventType, eventData, webhook_id) {
     // Update payment status to paid
     console.log(`[Webhook] 💾 Updating payment record...`);
     await db.query(
-      `UPDATE payment 
-       SET status = 'paid', 
+      `UPDATE payment
+       SET status = 'paid',
            paymongo_payment_id = ?,
            metadata = JSON_SET(
              COALESCE(metadata, '{}'),
@@ -1065,17 +1070,17 @@ export async function processWebhookEvent(eventType, eventData, webhook_id) {
              '$.paymongo_net_amount', ?,
              '$.webhook_processed_at', ?
            ),
-           updated_at = ? 
-       WHERE payment_for = 'order' 
+           updated_at = ?
+       WHERE payment_for = 'order'
          AND payment_for_id = ?`,
       [
-        paymentId, 
+        paymentId,
         paymentStatus,
         paymentAmount,
         payment.attributes?.fee || 0,
         payment.attributes?.net_amount || 0,
         new Date().toISOString(),
-        new Date(), 
+        new Date(),
         order_id
       ]
     );
@@ -1083,7 +1088,7 @@ export async function processWebhookEvent(eventType, eventData, webhook_id) {
     // Update order payment status and add payment details
     console.log(`[Webhook] 💾 Updating order payment_status to 'paid'...`);
     const [updateResult] = await db.query(
-      `UPDATE \`order\` 
+      `UPDATE \`order\`
        SET payment_status = 'paid',
            paymongo_payment_id = ?,
            updated_at = ?
@@ -1116,49 +1121,49 @@ export async function processWebhookEvent(eventType, eventData, webhook_id) {
     // Emit real-time events AND order notifications (deferred from order creation)
     console.log(`[Webhook] 📡 Emitting socket events for order ${order_id}...`);
     await emitPaymentEvents(order_id, paymentId, 'paid', paymentAmount);
-    
+
     // NOW notify business about the new PAID order
     console.log(`[Webhook] 📢 Emitting new order notification (payment confirmed)...`);
     try {
       const [orderRows] = await db.query(
-        `SELECT o.*, u.email as user_email FROM \`order\` o 
-         JOIN user u ON u.id = o.user_id 
+        `SELECT o.*, u.email as user_email FROM \`order\` o
+         JOIN user u ON u.id = o.user_id
          WHERE o.id = ?`,
         [order_id]
       );
-      
+
       if (orderRows && orderRows.length > 0) {
         const order = orderRows[0];
-        
+
         // Fetch items
         const [itemsResult] = await db.query(
           "SELECT * FROM order_item WHERE order_id = ?",
           [order_id]
         );
-        
+
         const completeOrderData = {
           ...order,
           items: itemsResult || [],
           item_count: itemsResult?.length || 0,
         };
-        
+
         const socketService = await import('../services/socketService.js');
         const notificationHelper = await import('../services/notificationHelper.js');
-        
+
         socketService.emitNewOrder(completeOrderData);
         await notificationHelper.triggerNewOrderNotifications(completeOrderData);
-        
+
         console.log(`[Webhook] ✅ Business notified of new paid order ${order.order_number}`);
       }
     } catch (notifError) {
       console.error(`[Webhook] ❌ Failed to emit order notifications:`, notifError);
     }
-    
+
     console.log(`[Webhook] ✅ Webhook processing complete for checkout_session.payment.paid`);
   }
 
   // ========== Source Events (Legacy E-Wallet Flow) ==========
-  
+
   // Handle source.chargeable event (e-wallets like GCash)
   else if (eventType === 'source.chargeable') {
     if (!order_id) {
@@ -1169,18 +1174,18 @@ export async function processWebhookEvent(eventType, eventData, webhook_id) {
 
     // Update payment status to paid
     await db.query(
-      `UPDATE payment 
-       SET status = 'paid', updated_at = ? 
-       WHERE payment_for = 'order' 
-         AND payment_for_id = ? 
+      `UPDATE payment
+       SET status = 'paid', updated_at = ?
+       WHERE payment_for = 'order'
+         AND payment_for_id = ?
          AND provider_reference = ?`,
       [new Date(), order_id, sourceId]
     );
 
     // Update order payment status
     await db.query(
-      `UPDATE \`order\` 
-       SET payment_status = 'paid' 
+      `UPDATE \`order\`
+       SET payment_status = 'paid'
        WHERE id = ?`,
       [order_id]
     );
@@ -1191,25 +1196,26 @@ export async function processWebhookEvent(eventType, eventData, webhook_id) {
     await emitPaymentEvents(order_id, sourceId, 'paid', eventData.attributes?.amount);
   }
 
-  // ========== Payment Events (Direct Payment Intent Flow) ==========
-  
+  // ========== Payment Events (Direct Payment Intent Flow - Orders & Bookings) ==========
+
   // Handle payment.paid event (card payments or direct payment intents)
   else if (eventType === 'payment.paid') {
-    if (!order_id) {
-      throw new Error("Missing order_id in webhook metadata");
+    // PIPM flow supports both orders and bookings
+    if (!reference_id) {
+      throw new Error("Missing order_id or booking_id in webhook metadata");
     }
 
     const paymentId = eventData.id;
     const paymentIntentId = eventData.attributes?.payment_intent_id;
     const paymentAmount = eventData.attributes?.amount;
 
-    console.log(`[Webhook] 💳 Processing payment.paid for Order ${order_id}`);
+    console.log(`[Webhook] 💳 Processing payment.paid for ${payment_for} ${reference_id}`);
     console.log(`[Webhook] 🔑 Payment ID: ${paymentId}, Intent: ${paymentIntentId}`);
 
-    // Update payment status to paid
+    // Update payment record status to paid
     await db.query(
-      `UPDATE payment 
-       SET status = 'paid', 
+      `UPDATE payment
+       SET status = 'paid',
            paymongo_payment_id = ?,
            metadata = JSON_SET(
              COALESCE(metadata, '{}'),
@@ -1218,116 +1224,155 @@ export async function processWebhookEvent(eventType, eventData, webhook_id) {
              '$.payment_intent_id', ?,
              '$.webhook_processed_at', ?
            ),
-           updated_at = ? 
-       WHERE payment_for = 'order' 
-         AND payment_for_id = ?`,
-      [paymentId, paymentAmount, paymentIntentId || '', new Date().toISOString(), new Date(), order_id]
-    );
-
-    // Update order payment status
-    await db.query(
-      `UPDATE \`order\` 
-       SET payment_status = 'paid',
-           paymongo_payment_id = ?,
            updated_at = ?
-       WHERE id = ?`,
-      [paymentId, new Date(), order_id]
+       WHERE payment_for = ?
+         AND payment_for_id = ?`,
+      [paymentId, paymentAmount, paymentIntentId || '', new Date().toISOString(), new Date(), payment_for, reference_id]
     );
 
-    console.log(`[Webhook] ✅ Order ${order_id} marked as paid (payment.paid: ${paymentId})`);
+    // Update the relevant table based on payment type
+    if (payment_for === 'booking') {
+      // Update booking status and balance (booking table doesn't have updated_at)
+      await db.query(
+        `UPDATE booking
+         SET booking_status = 'Confirmed',
+             balance = GREATEST(0, balance - ?)
+         WHERE id = ?`,
+        [paymentAmount / 100, reference_id]
+      );
+      console.log(`[Webhook] ✅ Booking ${reference_id} marked as Confirmed (payment.paid: ${paymentId})`);
+    } else {
+      // Update order payment status
+      await db.query(
+        `UPDATE \`order\`
+         SET payment_status = 'paid',
+             paymongo_payment_id = ?,
+             updated_at = ?
+         WHERE id = ?`,
+        [paymentId, new Date(), reference_id]
+      );
+      console.log(`[Webhook] ✅ Order ${reference_id} marked as paid (payment.paid: ${paymentId})`);
+    }
 
     // ========== Audit Logging ==========
     await auditService.logPaymentUpdate({
-      orderId: order_id,
-      oldStatus: 'unpaid',
-      newStatus: 'paid',
+      orderId: reference_id, // Works for bookings too, just a reference
+      oldStatus: payment_for === 'booking' ? 'Pending' : 'unpaid',
+      newStatus: payment_for === 'booking' ? 'Confirmed' : 'paid',
       actor: null,
       paymentDetails: {
         paymongo_payment_id: paymentId,
         payment_intent_id: paymentIntentId,
         amount_centavos: paymentAmount,
-        webhook_event_type: 'payment.paid'
+        webhook_event_type: 'payment.paid',
+        payment_for: payment_for
       }
     });
 
-    // Emit real-time events and notify business
-    await emitPaymentEvents(order_id, paymentId, 'paid', paymentAmount);
+    // Emit real-time events (for orders)
+    if (payment_for === 'order') {
+      await emitPaymentEvents(reference_id, paymentId, 'paid', paymentAmount);
 
-    // Notify business about the new PAID order (same as checkout session flow)
-    console.log(`[Webhook] 📢 Emitting new order notification for payment.paid...`);
-    try {
-      const [orderRows] = await db.query(
-        `SELECT o.*, u.email as user_email FROM \`order\` o 
-         JOIN user u ON u.id = o.user_id 
-         WHERE o.id = ?`,
-        [order_id]
-      );
-      
-      if (orderRows && orderRows.length > 0) {
-        const order = orderRows[0];
-        
-        // Fetch items
-        const [itemsResult] = await db.query(
-          "SELECT * FROM order_item WHERE order_id = ?",
-          [order_id]
+      // Notify business about the new PAID order
+      console.log(`[Webhook] 📢 Emitting new order notification for payment.paid...`);
+      try {
+        const [orderRows] = await db.query(
+          `SELECT o.*, u.email as user_email FROM \`order\` o
+           JOIN user u ON u.id = o.user_id
+           WHERE o.id = ?`,
+          [reference_id]
         );
-        
-        const completeOrderData = {
-          ...order,
-          items: itemsResult || [],
-          item_count: itemsResult?.length || 0,
-        };
-        
-        socketService.emitNewOrder(completeOrderData);
-        await notificationHelper.triggerNewOrderNotifications(completeOrderData);
-        
-        console.log(`[Webhook] ✅ Business notified of new paid order ${order.order_number}`);
+
+        if (orderRows && orderRows.length > 0) {
+          const order = orderRows[0];
+
+          // Fetch items
+          const [itemsResult] = await db.query(
+            "SELECT * FROM order_item WHERE order_id = ?",
+            [reference_id]
+          );
+
+          const completeOrderData = {
+            ...order,
+            items: itemsResult || [],
+            item_count: itemsResult?.length || 0,
+          };
+
+          socketService.emitNewOrder(completeOrderData);
+          await notificationHelper.triggerNewOrderNotifications(completeOrderData);
+
+          console.log(`[Webhook] ✅ Business notified of new paid order ${order.order_number}`);
+        }
+      } catch (notifError) {
+        console.error(`[Webhook] ❌ Failed to emit order notifications:`, notifError);
       }
-    } catch (notifError) {
-      console.error(`[Webhook] ❌ Failed to emit order notifications:`, notifError);
+    } else if (payment_for === 'booking') {
+      // TODO: Add booking-specific notifications/socket events if needed
+      console.log(`[Webhook] ✅ Booking payment processed successfully`);
     }
   }
 
-  // Handle payment.failed event
+  // Handle payment.failed event (supports both orders and bookings)
   else if (eventType === 'payment.failed') {
     const paymentId = eventData.id;
     const paymentIntentId = eventData.attributes?.payment_intent_id;
     const failedCode = eventData.attributes?.failed_code || 'UNKNOWN';
     const failedMessage = eventData.attributes?.failed_message || 'Payment failed';
-    
-    // Try to get order_id from metadata first
-    let resolvedOrderId = order_id;
-    
-    // If no order_id in metadata, look it up by payment_id or payment_intent_id
-    if (!resolvedOrderId) {
-      console.log('[Webhook] ⚠️ No order_id in payment.failed metadata, querying database...');
-      
+
+    console.log(`[Webhook] 💔 Processing payment.failed event`);
+    console.log(`[Webhook] 🔑 Payment ID: ${paymentId}, Intent: ${paymentIntentId}`);
+
+    // Determine if this is for an order or booking
+    // payment_for and reference_id are determined at the top of handlePayMongoWebhook
+    let resolvedReferenceId = reference_id;
+    let resolvedPaymentFor = payment_for;
+
+    // If no reference_id in metadata, look it up by payment_id or payment_intent_id
+    if (!resolvedReferenceId) {
+      console.log('[Webhook] ⚠️ No reference_id in payment.failed metadata, querying database...');
+
       try {
+        // First try to find via payment table (works for both orders and bookings)
         const [paymentRows] = await db.query(
-          `SELECT payment_for_id FROM payment 
-           WHERE (paymongo_payment_id = ? OR provider_reference = ?) 
-           AND payment_for = 'order' 
+          `SELECT payment_for_id, payment_for FROM payment
+           WHERE (paymongo_payment_id = ? OR provider_reference = ?)
            LIMIT 1`,
           [paymentId, paymentIntentId]
         );
-        
+
         if (paymentRows && paymentRows.length > 0) {
-          resolvedOrderId = paymentRows[0].payment_for_id;
-          console.log(`[Webhook] ✅ Found order_id from database: ${resolvedOrderId}`);
-        } else {
-          console.warn('[Webhook] ❌ Could not find order for payment.failed event');
-          
-          // Still update payment record even without order
+          resolvedReferenceId = paymentRows[0].payment_for_id;
+          resolvedPaymentFor = paymentRows[0].payment_for;
+          console.log(`[Webhook] ✅ Found ${resolvedPaymentFor}_id from payment table: ${resolvedReferenceId}`);
+        } else if (paymentIntentId) {
+          // Fallback: try to find via order's paymongo_payment_intent_id
+          console.log('[Webhook] 🔍 Trying to find order by payment_intent_id...');
+          const [orderRows] = await db.query(
+            `SELECT id FROM \`order\` WHERE paymongo_payment_intent_id = ? LIMIT 1`,
+            [paymentIntentId]
+          );
+
+          if (orderRows && orderRows.length > 0) {
+            resolvedReferenceId = orderRows[0].id;
+            resolvedPaymentFor = 'order';
+            console.log(`[Webhook] ✅ Found order_id from order table: ${resolvedReferenceId}`);
+          }
+        }
+
+        if (!resolvedReferenceId) {
+          console.warn('[Webhook] ❌ Could not find order or booking for payment.failed event');
+
+          // Still update payment record even without reference
           await db.query(
-            `UPDATE payment 
-             SET status = 'failed', 
+            `UPDATE payment
+             SET status = 'failed',
                  paymongo_payment_id = ?,
                  metadata = JSON_SET(
                    COALESCE(metadata, '{}'),
                    '$.failed_code', ?,
                    '$.failed_message', ?
                  ),
-                 updated_at = ? 
+                 updated_at = ?
              WHERE paymongo_payment_id = ? OR provider_reference = ?`,
             [
               paymentId,
@@ -1338,98 +1383,126 @@ export async function processWebhookEvent(eventType, eventData, webhook_id) {
               paymentIntentId
             ]
           );
-          
-          console.log(`[Webhook] 💾 Updated payment ${paymentId} as failed (no order found)`);
+
+          console.log(`[Webhook] 💾 Updated payment ${paymentId} as failed (no order/booking found)`);
           return;
         }
       } catch (err) {
-        console.error('[Webhook] Error querying for order_id:', err);
+        console.error('[Webhook] Error querying for reference_id:', err);
         return;
       }
     }
 
     // Update payment status to failed with error details
     await db.query(
-      `UPDATE payment 
-       SET status = 'failed', 
+      `UPDATE payment
+       SET status = 'failed',
            paymongo_payment_id = ?,
            metadata = JSON_SET(
              COALESCE(metadata, '{}'),
              '$.failed_code', ?,
              '$.failed_message', ?
            ),
-           updated_at = ? 
-       WHERE payment_for = 'order' 
+           updated_at = ?
+       WHERE payment_for = ?
          AND payment_for_id = ?`,
       [
         paymentId,
         failedCode,
         failedMessage,
-        new Date(), 
-        resolvedOrderId
+        new Date(),
+        resolvedPaymentFor,
+        resolvedReferenceId
       ]
     );
 
-    // Update order payment status and status
-    await db.query(
-      `UPDATE \`order\` 
-       SET payment_status = 'failed', 
-           status = 'failed_payment' 
-       WHERE id = ?`,
-      [resolvedOrderId]
-    );
-
-    console.log(`[Webhook] 💔 Order ${resolvedOrderId} marked as failed payment: ${failedMessage} (code: ${failedCode})`);
+    // Update order or booking status based on payment_for
+    if (resolvedPaymentFor === 'booking') {
+      // DELETE booking when payment fails (as per requirements)
+      try {
+        await db.query(`CALL DeleteBooking(?)`, [resolvedReferenceId]);
+        console.log(`[Webhook] 🗑️ Booking ${resolvedReferenceId} DELETED due to payment failure: ${failedMessage} (code: ${failedCode})`);
+      } catch (deleteErr) {
+        console.error(`[Webhook] ❌ Failed to delete booking ${resolvedReferenceId}:`, deleteErr);
+        // Fallback: mark as canceled if delete fails
+        await db.query(
+          `UPDATE booking
+           SET booking_status = 'Canceled'
+           WHERE id = ?`,
+          [resolvedReferenceId]
+        );
+        console.log(`[Webhook] 💔 Booking ${resolvedReferenceId} marked as Canceled (delete failed)`);
+      }
+    } else {
+      // Update order payment status and status
+      await db.query(
+        `UPDATE \`order\`
+         SET payment_status = 'failed',
+             status = 'failed_payment'
+         WHERE id = ?`,
+        [resolvedReferenceId]
+      );
+      console.log(`[Webhook] 💔 Order ${resolvedReferenceId} marked as failed payment: ${failedMessage} (code: ${failedCode})`);
+    }
 
     // ========== Audit Logging ==========
-    await auditService.logPaymentUpdate({
-      orderId: resolvedOrderId,
-      oldStatus: 'unpaid',
-      newStatus: 'failed',
-      actor: null, // System/webhook event
-      paymentDetails: {
-        paymongo_payment_id: paymentId,
-        failed_code: failedCode,
-        failed_message: failedMessage,
-        webhook_event_type: 'payment.failed'
-      }
-    });
+    try {
+      await auditService.logPaymentUpdate({
+        orderId: resolvedReferenceId,
+        oldStatus: resolvedPaymentFor === 'booking' ? 'Pending' : 'unpaid',
+        newStatus: 'failed',
+        actor: null, // System/webhook event
+        paymentDetails: {
+          paymongo_payment_id: paymentId,
+          failed_code: failedCode,
+          failed_message: failedMessage,
+          webhook_event_type: 'payment.failed',
+          payment_for: resolvedPaymentFor
+        }
+      });
+    } catch (auditErr) {
+      // Don't fail the webhook if audit logging fails (e.g., for bookings with no order_audit table)
+      console.log(`[Webhook] ⚠️ Audit logging skipped for ${resolvedPaymentFor}: ${auditErr.message}`);
+    }
 
-    // Emit real-time events
-    await emitPaymentEvents(resolvedOrderId, paymentId, 'failed', eventData.attributes?.amount);
+    // Emit real-time events (only for orders for now)
+    if (resolvedPaymentFor === 'order') {
+      await emitPaymentEvents(resolvedReferenceId, paymentId, 'failed', eventData.attributes?.amount);
+    }
+    // TODO: Add socket events for booking payment failures if needed
   }
 
   // ========== Refund Events ==========
-  
+
   // Handle refund.updated event (succeeded status)
   else if (eventType === 'refund.updated' && status === 'succeeded') {
     const payment_id = eventData.attributes?.payment_id;
     const refundId = eventData.id;
-    
+
     if (payment_id) {
       // Update payment status to refunded
       await db.query(
-        `UPDATE payment 
-         SET status = 'refunded', 
-             refund_reference = ?, 
-             updated_at = ? 
+        `UPDATE payment
+         SET status = 'refunded',
+             refund_reference = ?,
+             updated_at = ?
          WHERE paymongo_payment_id = ?`,
         [refundId, new Date(), payment_id]
       );
 
       // Find order and update payment status
       const [paymentRows] = await db.query(
-        `SELECT payment_for_id FROM payment 
+        `SELECT payment_for_id FROM payment
          WHERE paymongo_payment_id = ? AND payment_for = 'order'`,
         [payment_id]
       );
 
       if (paymentRows && paymentRows.length > 0) {
         const order_id = paymentRows[0].payment_for_id;
-        
+
         await db.query(
-          `UPDATE \`order\` 
-           SET payment_status = 'refunded' 
+          `UPDATE \`order\`
+           SET payment_status = 'refunded'
            WHERE id = ?`,
           [order_id]
         );
@@ -1470,21 +1543,21 @@ async function emitPaymentEvents(order_id, payment_id, status, amount) {
       `SELECT id, order_number, business_id, user_id, status, payment_status FROM \`order\` WHERE id = ?`,
       [order_id]
     );
-    
+
     if (orderRows && orderRows.length > 0) {
       const order = orderRows[0];
-      
-      const paymentObj = { 
-        id: payment_id, 
-        payment_for_id: order_id, 
-        status, 
-        payment_method: 'paymongo', 
+
+      const paymentObj = {
+        id: payment_id,
+        payment_for_id: order_id,
+        status,
+        payment_method: 'paymongo',
         amount: amount ? amount / 100 : 0
       };
-      
+
       socketService.emitPaymentUpdated(paymentObj, order);
       socketService.emitOrderUpdated(order, null);
-      
+
       // Trigger notifications
       await notificationHelper.triggerPaymentUpdateNotifications(paymentObj, order);
     }
@@ -1505,8 +1578,8 @@ export async function initiateRefund(req, res) {
 
     // 1. Fetch payment details
     const [paymentRows] = await db.query(
-      `SELECT 
-        p.id, p.payment_for, p.payment_for_id, p.status, p.amount, 
+      `SELECT
+        p.id, p.payment_for, p.payment_for_id, p.status, p.amount,
         p.provider_reference, p.paymongo_payment_id, p.payment_method, p.currency
        FROM payment p
        WHERE p.id = ?`,
@@ -1514,9 +1587,9 @@ export async function initiateRefund(req, res) {
     );
 
     if (!paymentRows || paymentRows.length === 0) {
-      return res.status(404).json({ 
-        success: false, 
-        message: "Payment not found" 
+      return res.status(404).json({
+        success: false,
+        message: "Payment not found"
       });
     }
 
@@ -1524,25 +1597,25 @@ export async function initiateRefund(req, res) {
 
     // 2. Validate payment is refundable
     if (payment.status !== 'paid') {
-      return res.status(400).json({ 
-        success: false, 
-        message: `Cannot refund payment with status: ${payment.status}` 
+      return res.status(400).json({
+        success: false,
+        message: `Cannot refund payment with status: ${payment.status}`
       });
     }
 
     // Get the actual PayMongo payment ID (not the source/checkout session ID)
     const paymongoPaymentId = payment.paymongo_payment_id || payment.provider_reference;
-    
+
     if (!paymongoPaymentId) {
-      return res.status(400).json({ 
-        success: false, 
-        message: "Payment has no PayMongo payment ID (not processed via PayMongo or payment not completed)" 
+      return res.status(400).json({
+        success: false,
+        message: "Payment has no PayMongo payment ID (not processed via PayMongo or payment not completed)"
       });
     }
 
     // 3. Call PayMongo refund API
     const amountInCentavos = Math.round(payment.amount * 100);
-    
+
     const refundMetadata = {
       payment_id: payment.id,
       payment_for: payment.payment_for,
@@ -1563,18 +1636,18 @@ export async function initiateRefund(req, res) {
 
     // 4. Update payment record
     await db.query(
-      `UPDATE payment 
-       SET status = ?, 
-           refund_reference = ?, 
+      `UPDATE payment
+       SET status = ?,
+           refund_reference = ?,
            metadata = JSON_SET(COALESCE(metadata, '{}'), '$.refund_reason', ?, '$.refund_notes', ?),
-           updated_at = ? 
+           updated_at = ?
        WHERE id = ?`,
       [
         refund_status === 'succeeded' ? 'refunded' : 'pending_refund',
-        refund_id, 
-        reason || '', 
-        notes || '', 
-        new Date(), 
+        refund_id,
+        reason || '',
+        notes || '',
+        new Date(),
         id
       ]
     );
@@ -1582,8 +1655,8 @@ export async function initiateRefund(req, res) {
     // 5. Update order payment status (if applicable and refund succeeded)
     if (payment.payment_for === 'order' && refund_status === 'succeeded') {
       await db.query(
-        `UPDATE \`order\` 
-         SET payment_status = 'refunded' 
+        `UPDATE \`order\`
+         SET payment_status = 'refunded'
          WHERE id = ?`,
         [payment.payment_for_id]
       );
@@ -1604,18 +1677,18 @@ export async function initiateRefund(req, res) {
 
   } catch (error) {
     console.error("Error initiating refund:", error);
-    
+
     // Don't expose internal error details
     if (error.message && error.message.includes('PayMongo')) {
-      return res.status(502).json({ 
-        success: false, 
+      return res.status(502).json({
+        success: false,
         message: "Payment provider error. Please try again later.",
         error: process.env.NODE_ENV === 'development' ? error.message : undefined
       });
     }
 
-    return res.status(500).json({ 
-      success: false, 
+    return res.status(500).json({
+      success: false,
       message: "Failed to initiate refund",
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });

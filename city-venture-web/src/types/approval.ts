@@ -16,12 +16,10 @@ export type ApprovalTableItem = Record<string, unknown> & {
   created_at?: string; // for newly submitted entities
   // Entity type classification
   entityType?: EntityType;
-  // Type & category meta
-  type?: string; // tourist spot type
-  business_type_name?: string;
-  business_category_name?: string;
-  categories?: { id: number | string; category: string; type_id?: number }[];
-  current_categories?: { id: number | string; category: string; type_id?: number }[];
+  // Categories (using new hierarchical system via entity_categories)
+  categories?: { id: number | string; title: string; alias?: string; is_primary?: boolean }[];
+  current_categories?: { id: number | string; title: string; alias?: string; is_primary?: boolean }[];
+  primary_category?: string; // primary category title for display
   // Images
   primary_image?: string | null; // tourist spot primary image
   business_image?: string | null; // business image

@@ -1,5 +1,5 @@
 import express from "express";
-import * as permitController from "../controller/PermitController.js";
+import * as permitController from "../controller/permitController.js";
 
 const router = express.Router();
 

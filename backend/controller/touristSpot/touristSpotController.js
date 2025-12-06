@@ -13,7 +13,7 @@ export const getAllTouristSpots = async (request, response) => {
     const catMap = new Map();
     for (const c of categories) {
       if (!catMap.has(c.tourist_spot_id)) catMap.set(c.tourist_spot_id, []);
-      catMap.get(c.tourist_spot_id).push({ id: c.id, category: c.category, type_id: c.type_id });
+      catMap.get(c.tourist_spot_id).push({ id: c.id, category: c.category, parent_category: c.parent_category, level: c.level });
     }
     const imgMap = new Map();
     for (const i of images) {
@@ -69,7 +69,7 @@ export const createTouristSpot = async (request, response) => {
       website,
       entry_fee,
       category_ids,
-      type_id,
+      primary_category_id,
       schedules,
     } = request.body;
 
@@ -77,23 +77,22 @@ export const createTouristSpot = async (request, response) => {
       !name ||
       !description ||
       !barangay_id ||
-      !type_id ||
       !Array.isArray(category_ids) ||
       category_ids.length === 0
     ) {
       return response.status(400).json({
         success: false,
         message:
-          "Name, description, barangay_id, type_id, and category_ids are required",
+          "Name, description, barangay_id, and category_ids are required",
       });
     }
 
     conn = await db.getConnection();
     await conn.beginTransaction();
 
-    // Use InsertTouristSpot procedure
+    // Use InsertTouristSpot procedure (without type_id)
     const [insertRes] = await conn.query(
-      "CALL InsertTouristSpot(?,?,?,?,?,?,?,?,?,?)",
+      "CALL InsertTouristSpot(?,?,?,?,?,?,?,?,?)",
       [
         name,
         description,
@@ -104,7 +103,6 @@ export const createTouristSpot = async (request, response) => {
         contact_email ?? null,
         website ?? null,
         entry_fee ?? null,
-        type_id,
       ]
     );
     const spotId = insertRes[0] && insertRes[0][0] ? insertRes[0][0].id : null;
@@ -112,9 +110,10 @@ export const createTouristSpot = async (request, response) => {
       throw new Error("Failed to create tourist spot");
     }
 
-    // Insert categories using procedure
+    // Insert categories using entity_categories via procedure
     for (let i = 0; i < category_ids.length; i++) {
-      await conn.query("CALL InsertTouristSpotCategory(?, ?)", [spotId, category_ids[i]]);
+      const isPrimary = category_ids[i] === primary_category_id || (i === 0 && !primary_category_id);
+      await conn.query("CALL InsertTouristSpotCategory(?, ?, ?)", [spotId, category_ids[i], isPrimary]);
     }
 
     // Insert schedules using procedure
@@ -160,7 +159,7 @@ export const getFeaturedTouristSpots = async (request, response) => {
     const catMap = new Map();
     for (const c of categories) {
       if (!catMap.has(c.tourist_spot_id)) catMap.set(c.tourist_spot_id, []);
-      catMap.get(c.tourist_spot_id).push({ id: c.id, category: c.category, type_id: c.type_id });
+      catMap.get(c.tourist_spot_id).push({ id: c.id, category: c.category, parent_category: c.parent_category, level: c.level });
     }
     const imgMap = new Map();
     for (const i of images) {

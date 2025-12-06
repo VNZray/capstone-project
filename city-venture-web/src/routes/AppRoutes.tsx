@@ -27,6 +27,7 @@ import BusinessProfile from "../features/business/accommodation/business-profile
 import ManagePromotion from "../features/business/accommodation/promotion/ManagePromotion";
 import RoomPage from "../features/business/accommodation/room/Room";
 import RoomProfile from "../features/business/accommodation/room/RoomProfile";
+import RoomEdit from "../features/business/accommodation/room/RoomEdit";
 import Products from "../features/business/shop/store/Products";
 import Categories from "../features/business/shop/store/Categories";
 import Services from "../features/business/shop/store/Services";
@@ -419,6 +420,14 @@ export default function AppRoutes() {
                 element={
                   <ProtectedRoute requiredRoles={BUSINESS_ROLES}>
                     <RoomProfile />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path={`${business}/room-edit`}
+                element={
+                  <ProtectedRoute requiredRoles={BUSINESS_ROLES}>
+                    <RoomEdit />
                   </ProtectedRoute>
                 }
               />

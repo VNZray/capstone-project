@@ -14,13 +14,11 @@ export async function createTouristSpotApprovalProcedures(knex) {
     BEGIN
       SELECT 
         tse.*,
-        t.type,
         p.province,
         m.municipality,
         b.barangay,
         ts.name AS original_name,
         ts.description AS original_description,
-        ot.type AS original_type,
         op.province AS original_province,
         om.municipality AS original_municipality,
         ob.barangay AS original_barangay,
@@ -29,7 +27,6 @@ export async function createTouristSpotApprovalProcedures(knex) {
         ts.entry_fee AS original_entry_fee,
         ts.spot_status AS original_status
       FROM tourist_spot_edits tse
-      JOIN type t ON tse.type_id = t.id
       JOIN barangay b ON tse.barangay_id = b.id
       JOIN municipality m ON b.municipality_id = m.id
       JOIN province p ON m.province_id = p.id
@@ -37,21 +34,21 @@ export async function createTouristSpotApprovalProcedures(knex) {
       LEFT JOIN barangay ob ON ts.barangay_id = ob.id
       LEFT JOIN municipality om ON ob.municipality_id = om.id
       LEFT JOIN province op ON om.province_id = op.id
-      LEFT JOIN type ot ON ts.type_id = ot.id
       WHERE tse.approval_status = 'pending'
       ORDER BY tse.submitted_at DESC;
 
       SELECT 
-        tsc.tourist_spot_id,
+        ec.entity_id AS tourist_spot_id,
         c.id,
-        c.category,
-        c.type_id
-      FROM tourist_spot_categories tsc
-      JOIN category c ON tsc.category_id = c.id
-      WHERE tsc.tourist_spot_id IN (
-        SELECT tourist_spot_id FROM tourist_spot_edits WHERE approval_status = 'pending'
-      )
-      ORDER BY c.category ASC;
+        c.title AS category,
+        c.parent_category
+      FROM entity_categories ec
+      JOIN categories c ON ec.category_id = c.id
+      WHERE ec.entity_type = 'tourist_spot'
+        AND ec.entity_id IN (
+          SELECT tourist_spot_id FROM tourist_spot_edits WHERE approval_status = 'pending'
+        )
+      ORDER BY c.title ASC;
     END;
   `);
   await knex.raw(`
@@ -60,10 +57,9 @@ export async function createTouristSpotApprovalProcedures(knex) {
       SELECT 
         ts.id, ts.name, ts.description, ts.barangay_id,
         ts.latitude, ts.longitude, ts.contact_phone, ts.contact_email, ts.website, ts.entry_fee,
-        ts.spot_status, ts.is_featured, t.type, ts.type_id,
+        ts.spot_status, ts.is_featured,
         ts.created_at, ts.updated_at, p.province, m.municipality, b.barangay
       FROM tourist_spots ts
-      JOIN type t ON ts.type_id = t.id
       JOIN barangay b ON ts.barangay_id = b.id
       JOIN municipality m ON b.municipality_id = m.id
       JOIN province p ON m.province_id = p.id
@@ -71,16 +67,17 @@ export async function createTouristSpotApprovalProcedures(knex) {
       ORDER BY ts.created_at DESC;
 
       SELECT 
-        tsc.tourist_spot_id,
+        ec.entity_id AS tourist_spot_id,
         c.id,
-        c.category,
-        c.type_id
-      FROM tourist_spot_categories tsc
-      JOIN category c ON tsc.category_id = c.id
-      WHERE tsc.tourist_spot_id IN (
-        SELECT id FROM tourist_spots WHERE spot_status = 'pending'
-      )
-      ORDER BY c.category ASC;
+        c.title AS category,
+        c.parent_category
+      FROM entity_categories ec
+      JOIN categories c ON ec.category_id = c.id
+      WHERE ec.entity_type = 'tourist_spot'
+        AND ec.entity_id IN (
+          SELECT id FROM tourist_spots WHERE spot_status = 'pending'
+        )
+      ORDER BY c.title ASC;
 
       SELECT 
         s.tourist_spot_id,
@@ -140,7 +137,6 @@ export async function createTouristSpotApprovalProcedures(knex) {
             ts.entry_fee = tse.entry_fee,
             ts.spot_status = tse.spot_status,
             ts.is_featured = tse.is_featured,
-            ts.type_id = tse.type_id,
             ts.updated_at = CURRENT_TIMESTAMP;
 
         UPDATE tourist_spot_edits 
@@ -182,12 +178,12 @@ export async function createTouristSpotApprovalProcedures(knex) {
     CREATE PROCEDURE GetPendingBusinesses()
     BEGIN
       SELECT 
-        b.*, 
-        t.type AS business_type_name,
-        c.category AS business_category_name
+        b.*,
+        (SELECT c.title FROM entity_categories ec 
+         JOIN categories c ON ec.category_id = c.id 
+         WHERE ec.entity_id = b.id AND ec.entity_type = 'business' AND ec.is_primary = 1 
+         LIMIT 1) AS primary_category_name
       FROM business b
-      LEFT JOIN type t ON b.business_type_id = t.id
-      LEFT JOIN category c ON b.business_category_id = c.id
       WHERE b.status = 'Pending'
       ORDER BY b.created_at DESC;
     END;

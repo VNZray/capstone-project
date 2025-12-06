@@ -55,8 +55,6 @@ export async function insertBusiness(req, res) {
       req.body.max_price ?? null,
       req.body.email ?? null,
       req.body.phone_number ?? null,
-      req.body.business_category_id ?? null,
-      req.body.business_type_id ?? null,
       req.body.barangay_id ?? null,
       req.body.address ?? null,
       req.body.owner_id ?? null,
@@ -78,9 +76,21 @@ export async function insertBusiness(req, res) {
       params
     );
 
+    const businessResult = result[0][0];
+
+    // If category_ids provided, add them via entity_categories
+    if (req.body.category_ids && Array.isArray(req.body.category_ids)) {
+      for (const categoryId of req.body.category_ids) {
+        await db.query(
+          "CALL AddEntityCategory(?, ?, ?, ?, ?)",
+          [id, 'business', categoryId, 1, categoryId === req.body.primary_category_id]
+        );
+      }
+    }
+
     res.status(201).json({
       message: "Business created successfully",
-      ...result[0][0], // first row of the SELECT inside procedure
+      ...businessResult,
     });
   } catch (error) {
     return handleDbError(error, res);
@@ -99,8 +109,6 @@ export async function updateBusiness(req, res) {
       req.body.max_price ?? null,
       req.body.email ?? null,
       req.body.phone_number ?? null,
-      req.body.business_category_id ?? null,
-      req.body.business_type_id ?? null,
       req.body.barangay_id ?? null,
       req.body.address ?? null,
       req.body.owner_id ?? null,
@@ -123,6 +131,23 @@ export async function updateBusiness(req, res) {
 
     if (!result[0] || result[0].length === 0) {
       return res.status(404).json({ message: "Business not found" });
+    }
+
+    // If category_ids provided, update entity_categories
+    if (req.body.category_ids && Array.isArray(req.body.category_ids)) {
+      // Remove existing categories for this business
+      await db.query(
+        "DELETE FROM entity_categories WHERE entity_id = ? AND entity_type = 'business'",
+        [id]
+      );
+      
+      // Add new categories
+      for (const categoryId of req.body.category_ids) {
+        await db.query(
+          "CALL AddEntityCategory(?, ?, ?, ?, ?)",
+          [id, 'business', categoryId, 1, categoryId === req.body.primary_category_id]
+        );
+      }
     }
 
     res.json({

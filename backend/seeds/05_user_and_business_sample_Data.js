@@ -108,8 +108,6 @@ function randomPhone() {
       max_price: 550,
       email: 'restaurant@example.com',
       phone_number: randomPhone(),
-      business_type_id: 2, // Shop type id
-      business_category_id: 3, // Restaurant category
       barangay_id: barangayId,
       address: 'Abella, Naga City, Camarines Sur',
       owner_id: owner.id,
@@ -123,4 +121,7 @@ function randomPhone() {
 
   await knex('business').insert(businessRecords);
 
+  // Add entity categories for the business (Shop type category)
+  // Note: Category IDs will be assigned by the hierarchical_categories migration
+  // For now, we'll add them via a separate query after the categories migration runs
 }

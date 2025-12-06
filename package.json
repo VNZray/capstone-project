@@ -8,8 +8,8 @@
   "scripts": {
     "start": "concurrently \"npm run dev -w city-venture-web\" \"npm run dev -w backend\"",
     "build": "npm run build -w city-venture-web && npm run build -w backend",
-    "resetdb" : "npm run resetdb -w backend",
-    "seed" : "npm run seeddb -w backend",
+    "resetdb": "npm run resetdb -w backend",
+    "seed": "npm run seeddb -w backend",
     "latest": "npm run latest -w backend",
     "test": "npm run test -w backend",
     "test:coverage": "npm run test:coverage -w backend"
@@ -20,6 +20,7 @@
     "metro-runtime": "^0.83.1"
   },
   "dependencies": {
-    "emailjs-com": "^3.2.0"
+    "emailjs-com": "^3.2.0",
+    "framer-motion": "^12.23.25"
   }
 }

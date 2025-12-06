@@ -1,14 +1,11 @@
-// const API_BASE_URL = 'http://192.168.1.15:3000/api';
-const API_BASE_URL = 'http://localhost:3000/api';
-
-import axios, { type AxiosResponse } from 'axios';
+import { type AxiosResponse } from 'axios';
 import apiClient from '@/src/services/apiClient';
-import type { ApiResponse, TouristSpot, Province, Municipality, Barangay, Category, Type, TouristSpotSchedule, Report, ReportUpdateRequest } from '../types';
+import type { ApiResponse, TouristSpot, Province, Municipality, Barangay, Category, TouristSpotSchedule, Report, ReportUpdateRequest } from '../types';
+import type { Type } from '../types/TypeAndCategeory';
 import type { UserRoles } from '@/src/types/User';
 import type { TourismStaff, CreateTourismStaffRequest, UpdateTourismStaffRequest } from '@/src/types/TourismStaff';
 import type { EntityType } from '../types/approval';
 
-import apiClient from '@/src/services/apiClient';
 
 // Use apiClient instead of creating a new axios instance
 const api = apiClient;

@@ -245,18 +245,22 @@ const AccommodationDirectory = () => {
 
   const formatSubtitle = (b: Business) => {
     const barangay = getBarangayName(b.barangay_id);
-    const category = b.business_category_id
-      ? CATEGORY_KEY_TO_LABEL[CATEGORY_ID_TO_KEY[b.business_category_id]]
+    // Use category from entity_categories or fallback to "Accommodation"
+    const categoryName = b.categories && b.categories.length > 0 
+      ? b.categories[0].title 
       : 'Accommodation';
     const location = barangay || b.address || 'City Center';
-    return `${category} • ${location}`;
+    return `${categoryName} • ${location}`;
   };
 
   const filteredAccommodations = useMemo(() => {
     if (!Array.isArray(allAccommodationDetails)) return [];
     const term = toLowerSafe(search.trim());
     let results = allAccommodationDetails.filter((b: Business) => {
-      if (b.business_type_id !== 1) return false;
+      // Check hasBooking - handle both boolean and number (MySQL returns 1/0)
+      const hasBooking = b.hasBooking === true || b.hasBooking === 1;
+      if (!hasBooking) return false;
+      
       const name = toLowerSafe(b.business_name);
       const addr = toLowerSafe(b.address);
       const brgy = toLowerSafe(getBarangayName(b.barangay_id));
