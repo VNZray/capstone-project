@@ -59,15 +59,15 @@ export const getActiveRoomDiscount = async (
   businessId: string
 ): Promise<number | null> => {
   try {
-    const activePromotions = await PromotionService.fetchActivePromotionsByBusinessId(
-      businessId
-    );
-    
+    const activePromotions =
+      await PromotionService.fetchActivePromotionsByBusinessId(businessId);
+
     // Find the first active room_discount promotion (promo_type = 2 based on migration)
     const roomDiscount = activePromotions.find(
-      (promo) => promo.promo_name === "room_discount" && promo.discount_percentage
+      (promo) =>
+        promo.promo_name === "room_discount" && promo.discount_percentage
     );
-    
+
     return roomDiscount?.discount_percentage || null;
   } catch (error) {
     console.error("Error fetching room discount:", error);
@@ -82,4 +82,27 @@ export const calculateDiscountedPrice = (
 ): number => {
   if (!discountPercentage || discountPercentage <= 0) return originalPrice;
   return originalPrice * (1 - discountPercentage / 100);
+};
+
+/** Fetch available rooms by business ID and date range */
+export const fetchAvailableRoomsByDateRange = async (
+  businessId: string,
+  startDate: string,
+  endDate: string
+): Promise<Room[]> => {
+  try {
+    const { data } = await apiClient.get(
+      `/booking/business/${businessId}/available-rooms`,
+      {
+        params: {
+          start_date: startDate,
+          end_date: endDate,
+        },
+      }
+    );
+    return Array.isArray(data) ? data : [];
+  } catch (error) {
+    console.error("Error fetching available rooms:", error);
+    return [];
+  }
 };
