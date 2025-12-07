@@ -1,13 +1,13 @@
 /**
  * Universal Payment Workflow Controller
- * 
+ *
  * Unified payment initiation and verification for both Orders and Bookings.
  * This controller replaces the hardcoded order-only logic with a dynamic
  * resource lookup based on payment_for parameter.
- * 
+ *
  * Architecture: THIN controller - handles HTTP concerns only.
  * Business logic delegated to PaymentFulfillmentService.
- * 
+ *
  * @see services/paymentFulfillmentService.js
  * @see services/paymongoService.js
  */
@@ -25,8 +25,8 @@ const VALID_PAYMENT_METHODS = ['card', 'gcash', 'paymaya'];
 
 // Environment configuration
 const PAYMONGO_REDIRECT_BASE = (
-  process.env.PAYMONGO_REDIRECT_BASE || 
-  process.env.FRONTEND_BASE_URL || 
+  process.env.PAYMONGO_REDIRECT_BASE ||
+  process.env.FRONTEND_BASE_URL ||
   "http://localhost:5173"
 ).replace(/\/$/, "");
 
@@ -34,14 +34,14 @@ const PAYMONGO_REDIRECT_BASE = (
 
 /**
  * Lookup order resource and normalize to common structure
- * 
+ *
  * @param {string} referenceId - Order ID
  * @param {string} userId - Authenticated user ID
  * @returns {Promise<Object>} Normalized resource data
  */
 async function lookupOrderResource(referenceId, userId) {
   const [rows] = await db.query(
-    `SELECT 
+    `SELECT
       o.id, o.order_number, o.user_id, o.business_id, o.total_amount, o.status,
       p.status as payment_status,
       p.payment_method as existing_payment_method,
@@ -86,14 +86,14 @@ async function lookupOrderResource(referenceId, userId) {
 
 /**
  * Lookup booking resource and normalize to common structure
- * 
+ *
  * @param {string} referenceId - Booking ID
  * @param {string} userId - Authenticated user ID
  * @returns {Promise<Object>} Normalized resource data
  */
 async function lookupBookingResource(referenceId, userId) {
   const [rows] = await db.query(
-    `SELECT 
+    `SELECT
       b.id, b.tourist_id, b.business_id, b.total_price, b.balance, b.booking_status,
       b.room_id, b.check_in_date, b.check_out_date,
       t.user_id as tourist_user_id,
@@ -118,8 +118,8 @@ async function lookupBookingResource(referenceId, userId) {
   }
 
   const booking = rows[0];
-  const roomName = booking.room_type && booking.room_number 
-    ? `${booking.room_type} - ${booking.room_number}` 
+  const roomName = booking.room_type && booking.room_number
+    ? `${booking.room_type} - ${booking.room_number}`
     : 'Room';
   const shortId = booking.id.substring(0, 8);
 
@@ -134,8 +134,8 @@ async function lookupBookingResource(referenceId, userId) {
       amount: booking.balance || booking.total_price,
       description: `Booking ${shortId} - ${roomName} at ${booking.business_name || 'Accommodation'}`,
       display_name: `Booking ${shortId}`,
-      is_paid: ['Confirmed', 'Paid'].includes(booking.booking_status),
-      can_pay: ['Pending', 'Reserved'].includes(booking.booking_status),
+      is_paid: ['Reserved', 'Checked-In', 'Checked-Out'].includes(booking.booking_status),
+      can_pay: ['Pending'].includes(booking.booking_status),
       status: booking.booking_status,
       payment_status: booking.payment_status,
       existing_payment_id: booking.existing_payment_id,
@@ -155,7 +155,7 @@ async function lookupBookingResource(referenceId, userId) {
 
 /**
  * Dynamic resource lookup based on payment_for type
- * 
+ *
  * @param {string} paymentFor - 'order' or 'booking'
  * @param {string} referenceId - Resource ID
  * @param {string} userId - Authenticated user ID
@@ -167,7 +167,7 @@ async function lookupResource(paymentFor, referenceId, userId) {
   } else if (paymentFor === 'booking') {
     return lookupBookingResource(referenceId, userId);
   }
-  
+
   return { found: false, error: `Invalid payment_for: ${paymentFor}` };
 }
 
@@ -176,15 +176,15 @@ async function lookupResource(paymentFor, referenceId, userId) {
 /**
  * Unified Payment Initiation
  * POST /api/payments/workflow/initiate
- * 
- * Body: { 
- *   payment_for: 'order' | 'booking', 
- *   reference_id: string, 
- *   payment_method?: 'card' | 'gcash' | 'paymaya' 
+ *
+ * Body: {
+ *   payment_for: 'order' | 'booking',
+ *   reference_id: string,
+ *   payment_method?: 'card' | 'gcash' | 'paymaya'
  * }
- * 
+ *
  * Auth: Required (Tourist role)
- * 
+ *
  * This endpoint dynamically looks up the target resource (Order or Booking)
  * and creates a PayMongo Payment Intent for it.
  */
@@ -273,7 +273,7 @@ export async function initiateUnifiedPayment(req, res) {
         // If intent is still valid, return it
         if (['awaiting_payment_method', 'awaiting_next_action'].includes(intentStatus)) {
           console.log(`[PaymentWorkflow] Returning existing Payment Intent: ${normalized.existing_payment_intent_id}`);
-          
+
           return res.status(200).json({
             success: true,
             message: "Existing Payment Intent retrieved",
@@ -351,7 +351,7 @@ export async function initiateUnifiedPayment(req, res) {
     if (normalized.existing_payment_id) {
       // Update existing payment record with new intent
       await db.query(
-        `UPDATE payment 
+        `UPDATE payment
          SET payment_intent_id = ?, client_key = ?, metadata = ?, updated_at = ?
          WHERE id = ?`,
         [
@@ -382,7 +382,7 @@ export async function initiateUnifiedPayment(req, res) {
 
       // Update with PayMongo intent details
       await db.query(
-        `UPDATE payment 
+        `UPDATE payment
          SET payment_intent_id = ?, client_key = ?, currency = 'PHP', metadata = ?
          WHERE id = ?`,
         [
@@ -437,11 +437,11 @@ export async function initiateUnifiedPayment(req, res) {
 /**
  * Get Payment Intent Status (Unified)
  * GET /api/payments/workflow/status/:paymentIntentId
- * 
+ *
  * Query: { payment_for?: 'order' | 'booking' }
- * 
+ *
  * Auth: Required
- * 
+ *
  * Retrieves the current status of a Payment Intent from PayMongo
  * and returns it along with the associated resource status.
  */
@@ -467,7 +467,7 @@ export async function getUnifiedPaymentStatus(req, res) {
 
     // 1. Find the payment record by payment_intent_id
     let query = `
-      SELECT p.*, 
+      SELECT p.*,
              CASE WHEN p.payment_for = 'order' THEN o.user_id
                   WHEN p.payment_for = 'booking' THEN t.user_id
                   ELSE NULL END as owner_user_id
@@ -509,25 +509,25 @@ export async function getUnifiedPaymentStatus(req, res) {
     let paymongoIntent = null;
     let actualPaymentMethod = null;
     let actualPaymentMethodId = null;
-    
+
     try {
       paymongoIntent = await paymongoService.getPaymentIntent(paymentIntentId);
-      
+
       // Extract actual payment method from PayMongo
       // The payment intent has a 'payments' array - the last one is the most recent
       const lastPayment = paymongoIntent.attributes?.payments?.slice(-1)[0];
       actualPaymentMethod = lastPayment?.attributes?.source?.type || lastPayment?.attributes?.payment_method_type;
-      
+
       // Payment method ID can be in different locations depending on payment type:
       // - For e-wallets: lastPayment.attributes.source.id (e.g., "src_...")
       // - For cards: paymongoIntent.attributes.payment_method (e.g., "pm_...")
       // - Alternative: lastPayment.id is the payment ID (e.g., "pay_...")
-      actualPaymentMethodId = lastPayment?.attributes?.source?.id 
-        || paymongoIntent.attributes?.payment_method 
+      actualPaymentMethodId = lastPayment?.attributes?.source?.id
+        || paymongoIntent.attributes?.payment_method
         || lastPayment?.id;
-      
+
       console.log(`[PaymentWorkflow] PayMongo data - Method: ${actualPaymentMethod}, ID: ${actualPaymentMethodId}`);
-      
+
     } catch (err) {
       console.warn("[PaymentWorkflow] Failed to fetch from PayMongo, relying on local DB:", err.message);
     }
@@ -536,7 +536,7 @@ export async function getUnifiedPaymentStatus(req, res) {
     // This handles the case where webhook hasn't fired yet but PayMongo shows the actual method
     const needsMethodSync = actualPaymentMethod && payment.payment_method !== actualPaymentMethod;
     const needsIdSync = actualPaymentMethodId && !payment.payment_method_id;
-    
+
     if (needsMethodSync || needsIdSync) {
       console.log(`[PaymentWorkflow] Syncing payment data:`);
       if (needsMethodSync) {
@@ -545,16 +545,16 @@ export async function getUnifiedPaymentStatus(req, res) {
       if (needsIdSync) {
         console.log(`  - ID: NULL -> ${actualPaymentMethodId}`);
       }
-      
+
       await db.query(
-        `UPDATE payment 
-         SET payment_method = COALESCE(?, payment_method), 
+        `UPDATE payment
+         SET payment_method = COALESCE(?, payment_method),
              payment_method_id = COALESCE(?, payment_method_id),
              updated_at = ?
          WHERE id = ?`,
         [actualPaymentMethod, actualPaymentMethodId, new Date(), payment.id]
       );
-      
+
       // Update local variables so response is correct immediately
       if (actualPaymentMethod) payment.payment_method = actualPaymentMethod;
       if (actualPaymentMethodId) payment.payment_method_id = actualPaymentMethodId;
@@ -570,18 +570,18 @@ export async function getUnifiedPaymentStatus(req, res) {
         payment_intent_id: paymentIntentId,
         payment_for: payment.payment_for,
         reference_id: payment.payment_for_id,
-        
+
         // PayMongo status (e.g., 'succeeded', 'processing', 'awaiting_next_action')
         status: paymongoIntent?.attributes?.status || 'unknown',
-        
+
         // Local DB status - CRITICAL for frontend poll loop exit
         // Frontend checks: status.data.order_payment_status === 'paid'
         order_payment_status: payment.status,
-        
+
         // Payment method info (synced from PayMongo)
         payment_method: payment.payment_method,
         payment_method_id: payment.payment_method_id,
-        
+
         amount: paymongoIntent ? paymongoIntent.attributes.amount / 100 : payment.amount,
         currency: paymongoIntent?.attributes?.currency || payment.currency || 'PHP',
         client_key: payment.client_key,
@@ -606,15 +606,15 @@ export async function getUnifiedPaymentStatus(req, res) {
 /**
  * Verify and Fulfill Payment (Unified)
  * POST /api/payments/workflow/verify
- * 
- * Body: { 
- *   payment_for: 'order' | 'booking', 
+ *
+ * Body: {
+ *   payment_for: 'order' | 'booking',
  *   reference_id: string,
  *   payment_id: string
  * }
- * 
+ *
  * Auth: Required (Tourist role)
- * 
+ *
  * Verifies payment status with PayMongo and fulfills the payment
  * by updating local records if successful.
  */

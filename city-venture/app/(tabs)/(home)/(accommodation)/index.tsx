@@ -246,9 +246,10 @@ const AccommodationDirectory = () => {
   const formatSubtitle = (b: Business) => {
     const barangay = getBarangayName(b.barangay_id);
     // Use category from entity_categories or fallback to "Accommodation"
-    const categoryName = b.categories && b.categories.length > 0 
-      ? b.categories[0].title 
-      : 'Accommodation';
+    const categoryName =
+      b.categories && b.categories.length > 0
+        ? b.categories[0].category_title
+        : 'Accommodation';
     const location = barangay || b.address || 'City Center';
     return `${categoryName} • ${location}`;
   };
@@ -260,7 +261,7 @@ const AccommodationDirectory = () => {
       // Check hasBooking - handle both boolean and number (MySQL returns 1/0)
       const hasBooking = b.hasBooking === true || b.hasBooking === 1;
       if (!hasBooking) return false;
-      
+
       const name = toLowerSafe(b.business_name);
       const addr = toLowerSafe(b.address);
       const brgy = toLowerSafe(getBarangayName(b.barangay_id));

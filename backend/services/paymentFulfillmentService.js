@@ -66,14 +66,14 @@ export async function handlePaymentPaid({
   const paymentAmount = attributes.amount || 0;
   const paymentFee = attributes.fee || 0;
   const paymentNetAmount = attributes.net_amount || 0;
-  
+
   // CRITICAL: Extract actual payment method from PayMongo event
   // This is the REAL method used (e.g., 'gcash'), not what we guessed during initiation
   // PayMongo stores method type in different locations depending on payment type:
   // - For e-wallets: attributes.source.type (e.g., 'gcash')
   // - Alternative: attributes.payment_method_type
   const actualPaymentMethodType = attributes.source?.type || attributes.payment_method_type;
-  
+
   // Payment method ID is in source.id (e.g., 'src_...' for e-wallets, 'tok_...' for cards)
   const actualPaymentMethodId = attributes.source?.id || attributes.payment_method_id || paymentId;
 
@@ -291,17 +291,17 @@ export async function handleRefundSucceeded({
 
   // 1. Update payment status to refunded (Single Source of Truth)
   await db.query(
-    `UPDATE payment 
-     SET status = ?, 
-         refund_reference = ?, 
-         updated_at = ? 
+    `UPDATE payment
+     SET status = ?,
+         refund_reference = ?,
+         updated_at = ?
      WHERE paymongo_payment_id = ?`,
     [PAYMENT_STATUS.REFUNDED, refundId, new Date(), paymentId]
   );
 
   // 2. Find the order/booking for notifications
   const [paymentRows] = await db.query(
-    `SELECT payment_for_id, payment_for FROM payment 
+    `SELECT payment_for_id, payment_for FROM payment
      WHERE paymongo_payment_id = ?`,
     [paymentId]
   );
@@ -365,7 +365,7 @@ export async function handleRefundSucceeded({
  */
 async function markOrderAsPaid(orderId) {
   await db.query(
-    `UPDATE \`order\` 
+    `UPDATE \`order\`
      SET updated_at = ?
      WHERE id = ?`,
     [new Date(), orderId]
@@ -380,7 +380,7 @@ async function markOrderAsPaid(orderId) {
  */
 async function markOrderAsFailedPayment(orderId) {
   await db.query(
-    `UPDATE \`order\` 
+    `UPDATE \`order\`
      SET status = 'failed_payment',
          updated_at = ?
      WHERE id = ?`,
@@ -399,13 +399,13 @@ async function markOrderAsFailedPayment(orderId) {
  */
 async function confirmBooking(bookingId, paymentAmountCentavos) {
   await db.query(
-    `UPDATE booking 
-     SET booking_status = 'Confirmed',
+    `UPDATE booking
+     SET booking_status = 'Reserved',
          balance = GREATEST(0, balance - ?)
      WHERE id = ?`,
     [paymentAmountCentavos / 100, bookingId]
   );
-  console.log(`[PaymentFulfillment] ✅ Booking ${bookingId} confirmed`);
+  console.log(`[PaymentFulfillment] ✅ Booking ${bookingId} confirmed (status: Reserved)`);
 }
 
 /**
@@ -415,10 +415,10 @@ async function confirmBooking(bookingId, paymentAmountCentavos) {
  */
 async function markBookingAsFailedPayment(bookingId) {
   await db.query(
-    `UPDATE booking SET booking_status = 'Payment Failed' WHERE id = ?`,
+    `UPDATE booking SET booking_status = 'Canceled' WHERE id = ?`,
     [bookingId]
   );
-  console.log(`[PaymentFulfillment] 💔 Booking ${bookingId} marked as Payment Failed`);
+  console.log(`[PaymentFulfillment] 💔 Booking ${bookingId} marked as Canceled (payment failed)`);
 }
 
 // ============= Helper Functions =============
@@ -499,14 +499,14 @@ async function updatePaymentRecordByPaymentId({
   const metadataValues = Object.values(metadata);
 
   await db.query(
-    `UPDATE payment 
-     SET status = ?, 
+    `UPDATE payment
+     SET status = ?,
          paymongo_payment_id = ?,
          metadata = JSON_SET(
            COALESCE(metadata, '{}'),
            ${metadataSetClauses}
          ),
-         updated_at = ? 
+         updated_at = ?
      WHERE paymongo_payment_id = ? OR payment_intent_id = ?`,
     [status, paymongoPaymentId, ...metadataValues, new Date(), paymongoPaymentId, paymentIntentId]
   );
@@ -539,7 +539,7 @@ async function lookupPaymentByPaymentId(paymentId) {
   if (!paymentId) return null;
 
   const [rows] = await db.query(
-    `SELECT payment_for_id, payment_for FROM payment 
+    `SELECT payment_for_id, payment_for FROM payment
      WHERE paymongo_payment_id = ? LIMIT 1`,
     [paymentId]
   );
@@ -597,8 +597,8 @@ async function emitPaymentEvents(orderId, paymentId, status, amountCentavos) {
 async function emitNewOrderNotification(orderId) {
   try {
     const [orderRows] = await db.query(
-      `SELECT o.*, u.email as user_email FROM \`order\` o 
-       JOIN user u ON u.id = o.user_id 
+      `SELECT o.*, u.email as user_email FROM \`order\` o
+       JOIN user u ON u.id = o.user_id
        WHERE o.id = ?`,
       [orderId]
     );
@@ -656,6 +656,9 @@ export async function verifyPaymentIntentStatus({ paymentIntentId }) {
       message: 'No payment intent ID provided',
       paymentIntentStatus: null,
       lastPaymentError: null,
+      paymongoPaymentId: null,
+      paymentMethodType: null,
+      paymentMethodId: null,
     };
   }
 
@@ -666,7 +669,26 @@ export async function verifyPaymentIntentStatus({ paymentIntentId }) {
     const piStatus = paymentIntent?.attributes?.status;
     const lastPaymentError = paymentIntent?.attributes?.last_payment_error;
 
+    // Extract payment details from the payments array
+    // The last payment in the array is the most recent successful one
+    const payments = paymentIntent?.attributes?.payments || [];
+    const lastPayment = payments.slice(-1)[0];
+
+    // Extract PayMongo payment ID (e.g., "pay_...")
+    const paymongoPaymentId = lastPayment?.id || null;
+
+    // Extract payment method type (e.g., "gcash", "card")
+    const paymentMethodType = lastPayment?.attributes?.source?.type ||
+                              lastPayment?.attributes?.payment_method_type ||
+                              null;
+
+    // Extract payment method ID (e.g., "src_..." for e-wallets, "pm_..." for cards)
+    const paymentMethodId = lastPayment?.attributes?.source?.id ||
+                            paymentIntent?.attributes?.payment_method ||
+                            null;
+
     console.log(`[PaymentFulfillment] 📊 PayMongo PI status: ${piStatus}`);
+    console.log(`[PaymentFulfillment] 💳 Payment details - ID: ${paymongoPaymentId}, Method: ${paymentMethodType}, MethodID: ${paymentMethodId}`);
 
     // Map PayMongo status to verification result
     // PayMongo Payment Intent statuses:
@@ -680,6 +702,9 @@ export async function verifyPaymentIntentStatus({ paymentIntentId }) {
       ...result,
       paymentIntentStatus: piStatus,
       lastPaymentError,
+      paymongoPaymentId,
+      paymentMethodType,
+      paymentMethodId,
     };
   } catch (error) {
     console.error(`[PaymentFulfillment] ❌ Error verifying payment intent:`, error);
@@ -772,18 +797,42 @@ export async function verifyAndFulfillBookingPayment({
 
   // 2. Update local records based on verification result
   if (verificationResult.verified && currentPaymentStatus === 'pending') {
-    // Payment succeeded - update payment and booking
+    // Payment succeeded - update payment record with PayMongo details
+    // Build dynamic SET clause to include payment method if available
+    let setClauses = `status = 'paid', updated_at = ?`;
+    let params = [new Date()];
+
+    // Add paymongo_payment_id if available
+    if (verificationResult.paymongoPaymentId) {
+      setClauses += `, paymongo_payment_id = ?`;
+      params.push(verificationResult.paymongoPaymentId);
+    }
+
+    // Add payment_method (type) if available
+    if (verificationResult.paymentMethodType) {
+      setClauses += `, payment_method = ?`;
+      params.push(verificationResult.paymentMethodType);
+    }
+
+    // Add payment_method_id if available
+    if (verificationResult.paymentMethodId) {
+      setClauses += `, payment_method_id = ?`;
+      params.push(verificationResult.paymentMethodId);
+    }
+
+    params.push(paymentId); // WHERE clause
+
     await db.query(
-      `UPDATE payment SET status = 'paid', updated_at = ? WHERE id = ?`,
-      [new Date(), paymentId]
+      `UPDATE payment SET ${setClauses} WHERE id = ?`,
+      params
     );
 
     await db.query(
-      `UPDATE booking SET booking_status = 'Confirmed' WHERE id = ? AND booking_status IN ('Pending', 'Reserved')`,
+      `UPDATE booking SET booking_status = 'Reserved' WHERE id = ? AND booking_status IN ('Pending', 'Reserved')`,
       [bookingId]
     );
 
-    console.log(`[PaymentFulfillment] ✅ Booking payment ${paymentId} verified and marked as paid`);
+    console.log(`[PaymentFulfillment] ✅ Booking payment ${paymentId} verified and marked as paid (status: Reserved, paymongoId: ${verificationResult.paymongoPaymentId || 'N/A'})`);
 
     // Audit logging
     try {
@@ -844,10 +893,34 @@ export async function verifyAndFulfillOrderPayment({
 
   // 2. Update local records based on verification result
   if (verificationResult.verified && currentPaymentStatus === 'pending') {
-    // Payment succeeded - update payment and order
+    // Payment succeeded - update payment record with PayMongo details
+    // Build dynamic SET clause to include payment method if available
+    let setClauses = `status = 'paid', updated_at = ?`;
+    let params = [new Date()];
+
+    // Add paymongo_payment_id if available
+    if (verificationResult.paymongoPaymentId) {
+      setClauses += `, paymongo_payment_id = ?`;
+      params.push(verificationResult.paymongoPaymentId);
+    }
+
+    // Add payment_method (type) if available
+    if (verificationResult.paymentMethodType) {
+      setClauses += `, payment_method = ?`;
+      params.push(verificationResult.paymentMethodType);
+    }
+
+    // Add payment_method_id if available
+    if (verificationResult.paymentMethodId) {
+      setClauses += `, payment_method_id = ?`;
+      params.push(verificationResult.paymentMethodId);
+    }
+
+    params.push(paymentId); // WHERE clause
+
     await db.query(
-      `UPDATE payment SET status = 'paid', updated_at = ? WHERE id = ?`,
-      [new Date(), paymentId]
+      `UPDATE payment SET ${setClauses} WHERE id = ?`,
+      params
     );
 
     await db.query(
@@ -855,7 +928,7 @@ export async function verifyAndFulfillOrderPayment({
       [new Date(), orderId]
     );
 
-    console.log(`[PaymentFulfillment] ✅ Order payment ${paymentId} verified and marked as paid`);
+    console.log(`[PaymentFulfillment] ✅ Order payment ${paymentId} verified and marked as paid (paymongoId: ${verificationResult.paymongoPaymentId || 'N/A'})`);
 
     // Emit real-time events
     await emitPaymentEvents(orderId, paymentId, PAYMENT_STATUS.PAID, null);
