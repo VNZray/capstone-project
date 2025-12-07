@@ -15,7 +15,13 @@
  * - User has clear escape window to cancel
  */
 
-import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import React, {
+  useState,
+  useEffect,
+  useCallback,
+  useRef,
+  useMemo,
+} from 'react';
 import {
   View,
   Text,
@@ -39,6 +45,8 @@ import {
   attachEwalletPaymentMethod,
   open3DSAuthentication,
   dismissBrowser,
+  createPaymentMethod,
+  attachPaymentMethodClient,
 } from '@/services/PaymentIntentService';
 import API_URL from '@/services/api';
 import type { CreateOrderPayload } from '@/types/Order';
@@ -58,15 +66,11 @@ const OrderGracePeriodScreen = () => {
 
   // Parse order data from params - memoize to avoid dependency changes
   const orderData = useMemo<CreateOrderPayload | null>(() => {
-    return params.orderData
-      ? JSON.parse(params.orderData as string)
-      : null;
+    return params.orderData ? JSON.parse(params.orderData as string) : null;
   }, [params.orderData]);
 
   const billingInfo = useMemo(() => {
-    return params.billingInfo
-      ? JSON.parse(params.billingInfo as string)
-      : {};
+    return params.billingInfo ? JSON.parse(params.billingInfo as string) : {};
   }, [params.billingInfo]);
 
   const paymentMethodType = (params.paymentMethodType as string) || 'gcash';
@@ -78,6 +82,13 @@ const OrderGracePeriodScreen = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [processingStep, setProcessingStep] = useState('');
   const hasStartedPayment = useRef(false);
+
+  // Track created order for error handling (so user can view order if payment fails)
+  const createdOrderRef = useRef<{
+    orderId: string;
+    orderNumber: string;
+    arrivalCode: string;
+  } | null>(null);
 
   // Animation for countdown circle
   const progressAnim = useRef(new Animated.Value(1)).current;
@@ -110,10 +121,16 @@ const OrderGracePeriodScreen = () => {
       const orderNumber = orderResponse.order_number;
       const arrivalCode = orderResponse.arrival_code;
 
+      // Store order details for error handling
+      createdOrderRef.current = { orderId, orderNumber, arrivalCode };
+
       setProcessingStep('Initializing payment...');
 
       // Step 2: Create Payment Intent using unified API
-      console.log('[GracePeriod] Creating payment intent with method:', paymentMethodType);
+      console.log(
+        '[GracePeriod] Creating payment intent with method:',
+        paymentMethodType
+      );
       const intentResponse = await createPaymentIntent({
         payment_for: 'order',
         reference_id: orderId,
@@ -125,16 +142,132 @@ const OrderGracePeriodScreen = () => {
 
       // Step 3: Handle based on payment method type
       if (paymentMethodType === 'card') {
-        // Navigate to card payment screen
-        router.replace(Routes.checkout.cardPayment({
-          orderId,
-          orderNumber,
-          arrivalCode,
+        // Process card payment inline using card details from billingInfo
+        setProcessingStep('Processing card payment...');
+        console.log('[GracePeriod] Processing card payment inline');
+
+        // Generate return URL
+        const backendBaseUrl = API_URL ? API_URL.replace('/api', '') : '';
+        const returnUrl = `${backendBaseUrl}/orders/${orderId}/payment-success`;
+
+        // Step 3a: Create Payment Method using card details from billingInfo
+        console.log('[GracePeriod] Creating card payment method...');
+        const paymentMethodResponse = await createPaymentMethod(
+          'card',
+          {
+            card_number: billingInfo.cardNumber,
+            exp_month: billingInfo.expMonth,
+            exp_year: billingInfo.expYear,
+            cvc: billingInfo.cvc,
+          },
+          {
+            name: billingInfo.name,
+            email: billingInfo.email,
+          }
+        );
+
+        const paymentMethodId = paymentMethodResponse.data.id;
+        console.log(
+          '[GracePeriod] Card payment method created:',
+          paymentMethodId
+        );
+
+        // Step 3b: Attach Payment Method to Payment Intent
+        setProcessingStep('Verifying card...');
+        console.log('[GracePeriod] Attaching card payment method...');
+        const attachResponse = await attachPaymentMethodClient(
           paymentIntentId,
-          clientKey: intentResponse.data.client_key,
-          amount: intentResponse.data.amount.toString(),
-          total: totalAmount.toString(),
-        }));
+          paymentMethodId,
+          intentResponse.data.client_key,
+          returnUrl
+        );
+
+        const cardStatus = attachResponse.data.attributes.status;
+        const cardNextAction = attachResponse.data.attributes.next_action;
+
+        console.log('[GracePeriod] Card attach result:', cardStatus);
+
+        // Step 3c: Handle 3DS if required
+        if (
+          cardStatus === 'awaiting_next_action' &&
+          cardNextAction?.redirect?.url
+        ) {
+          setProcessingStep('Verifying with your bank...');
+          console.log('[GracePeriod] 3DS authentication required');
+
+          const authResult = await open3DSAuthentication(
+            cardNextAction.redirect.url,
+            returnUrl
+          );
+
+          console.log('[GracePeriod] 3DS auth result:', authResult.type);
+          dismissBrowser();
+
+          if (authResult.type === 'cancel') {
+            console.log('[GracePeriod] User cancelled 3DS authentication');
+            router.replace(
+              Routes.checkout.paymentCancel({
+                orderId,
+                orderNumber,
+                reason: 'cancelled',
+              })
+            );
+            return;
+          }
+
+          // Navigate to processing screen to verify result
+          router.replace(
+            Routes.checkout.paymentProcessing({
+              orderId,
+              orderNumber,
+              arrivalCode,
+              paymentIntentId,
+              total: totalAmount.toString(),
+            })
+          );
+          return;
+        }
+
+        // Card payment succeeded without 3DS
+        if (cardStatus === 'succeeded') {
+          console.log('[GracePeriod] Card payment succeeded immediately');
+          router.replace(
+            Routes.checkout.orderConfirmation({
+              orderId,
+              orderNumber,
+              arrivalCode,
+              total: totalAmount.toString(),
+              paymentMethod: 'paymongo',
+              paymentSuccess: 'true',
+            })
+          );
+          return;
+        }
+
+        // Payment processing
+        if (cardStatus === 'processing') {
+          router.replace(
+            Routes.checkout.paymentProcessing({
+              orderId,
+              orderNumber,
+              arrivalCode,
+              paymentIntentId,
+              total: totalAmount.toString(),
+            })
+          );
+          return;
+        }
+
+        // Unexpected status - go to processing to verify
+        router.replace(
+          Routes.checkout.paymentProcessing({
+            orderId,
+            orderNumber,
+            arrivalCode,
+            paymentIntentId,
+            total: totalAmount.toString(),
+          })
+        );
         return;
       }
 
@@ -154,13 +287,19 @@ const OrderGracePeriodScreen = () => {
         billingInfo
       );
 
-      console.log('[GracePeriod] Attachment response:', attachResponse.data.attributes.status);
+      console.log(
+        '[GracePeriod] Attachment response:',
+        attachResponse.data.attributes.status
+      );
 
       // Check if redirect is needed (for e-wallet authorization)
       const nextAction = attachResponse.data.attributes.next_action;
       if (nextAction?.redirect?.url) {
         setProcessingStep('Opening payment app...');
-        console.log('[GracePeriod] Opening e-wallet authorization:', nextAction.redirect.url);
+        console.log(
+          '[GracePeriod] Opening e-wallet authorization:',
+          nextAction.redirect.url
+        );
 
         const authResult = await open3DSAuthentication(
           nextAction.redirect.url,
@@ -177,73 +316,268 @@ const OrderGracePeriodScreen = () => {
         // We navigate to processing screen to verify actual payment status
         if (authResult.type === 'cancel') {
           // Explicit cancel - user tapped cancel button
-          console.log('[GracePeriod] User explicitly cancelled payment authorization');
-          router.replace(Routes.checkout.paymentCancel({
-            orderId,
-            orderNumber,
-            reason: 'cancelled',
-          }));
+          console.log(
+            '[GracePeriod] User explicitly cancelled payment authorization'
+          );
+          router.replace(
+            Routes.checkout.paymentCancel({
+              orderId,
+              orderNumber,
+              reason: 'cancelled',
+            })
+          );
           return;
         }
 
         // For 'dismiss' or 'success', navigate to processing screen to verify payment status
         // The deep link handler will show appropriate feedback
-        console.log('[GracePeriod] Auth session ended, verifying payment status...');
+        console.log(
+          '[GracePeriod] Auth session ended, verifying payment status...'
+        );
 
         // After user returns from e-wallet, navigate to processing screen
-        router.replace(Routes.checkout.paymentProcessing({
-          orderId,
-          orderNumber,
-          arrivalCode,
-          paymentIntentId,
-          total: totalAmount.toString(),
-        }));
+        router.replace(
+          Routes.checkout.paymentProcessing({
+            orderId,
+            orderNumber,
+            arrivalCode,
+            paymentIntentId,
+            total: totalAmount.toString(),
+          })
+        );
         return;
       }
 
       // If no redirect needed (unlikely for e-wallets), payment may have succeeded
       if (attachResponse.data.attributes.status === 'succeeded') {
-        router.replace(Routes.checkout.orderConfirmation({
-          orderId,
-          orderNumber,
-          arrivalCode,
-          total: totalAmount.toString(),
-          paymentMethod: 'paymongo',
-          paymentSuccess: 'true',
-        }));
+        router.replace(
+          Routes.checkout.orderConfirmation({
+            orderId,
+            orderNumber,
+            arrivalCode,
+            total: totalAmount.toString(),
+            paymentMethod: 'paymongo',
+            paymentSuccess: 'true',
+          })
+        );
         return;
       }
 
       // Fallback - go to processing screen
-      router.replace(Routes.checkout.paymentProcessing({
-        orderId,
-        orderNumber,
-        arrivalCode,
-        paymentIntentId,
-        total: totalAmount.toString(),
-      }));
-
+      router.replace(
+        Routes.checkout.paymentProcessing({
+          orderId,
+          orderNumber,
+          arrivalCode,
+          paymentIntentId,
+          total: totalAmount.toString(),
+        })
+      );
     } catch (error: any) {
       console.error('[GracePeriod] Error processing order:', error);
-      hasStartedPayment.current = false; // Allow retry
+      hasStartedPayment.current = false; // Allow manual retry only
 
-      let errorMessage = 'Failed to process your order. Please try again.';
+      // Map PayMongo error codes to user-friendly messages
+      const getErrorMessage = (
+        err: any
+      ): { title: string; message: string; isCardError: boolean } => {
+        const subCode =
+          err.response?.data?.errors?.[0]?.sub_code || err.sub_code;
+        const errorCode = err.response?.data?.errors?.[0]?.code || err.code;
 
-      if (error.response?.data?.message) {
-        errorMessage = error.response.data.message;
-      } else if (error.message) {
-        errorMessage = error.message;
-      }
+        // Generic message for security-sensitive errors (fraud, lost/stolen cards)
+        // PayMongo recommends NOT exposing these details to customers
+        const GENERIC_DECLINE_MESSAGE =
+          'Your card was declined. Please contact your bank or try a different card.';
 
-      Alert.alert(
-        'Order Failed',
-        errorMessage,
-        [
-          {
-            text: 'Try Again',
-            onPress: () => router.back(),
-          },
-        ]
+        // ===== DECLINED TRANSACTIONS =====
+        const declinedMessages: Record<string, string> = {
+          generic_decline:
+            'Your card was declined. Please contact your bank or try a different card.',
+          do_not_honor:
+            'Your card was declined. Please contact your bank or try a different card.',
+          payment_refused:
+            'Payment was refused. Please try a different card or payment method.',
+          insufficient_funds:
+            'Insufficient funds. Please try a different card or payment method.',
+          debit_card_usage_limit_exceeded:
+            'Card usage limit exceeded. Please try a different card or payment method.',
+          issuer_declined:
+            'Your bank declined this transaction. Please contact them for more information.',
+          issuer_not_available:
+            "We couldn't reach your bank. Please wait a few minutes and try again.",
+          amount_allowed_exceeded:
+            'Amount exceeds your card limit. Please contact your bank or try a different card.',
+          call_card_issuer:
+            'Please contact your bank for more information, then try again.',
+          card_not_supported:
+            'This card type is not supported. Please try a different card.',
+          card_type_mismatch:
+            'Card type mismatch. Please verify your card details and try again.',
+          card_unauthorized:
+            'This card is not authorized for online payments. Please contact your bank or try a different card.',
+          credit_limit_exceeded:
+            'Credit limit exceeded. Please try a different card or payment method.',
+          currency_not_supported_by_card_issuer:
+            'Your card does not support this currency. Please try a different card.',
+        };
+
+        // ===== BLOCKED TRANSACTIONS (Security-sensitive - use generic message) =====
+        const blockedCodes = [
+          'fraudulent',
+          'highest_risk_level',
+          'lost_card',
+          'pickup_card',
+          'processor_blocked',
+          'restricted_card',
+          'stolen_card',
+          'blocked',
+        ];
+
+        // ===== PROCESSOR ERRORS =====
+        const processorMessages: Record<string, string> = {
+          avs_failed:
+            'Address verification failed. Please check your billing address and try again.',
+          card_not_accepted:
+            'This card type is not accepted. Please try a different card.',
+          config_invalid_or_missing:
+            'Payment processing error. Please try again or contact support.',
+          customer_blacklisted:
+            'This payment cannot be processed. Please contact support.',
+          merchant_configuration_invalid:
+            'Payment processing error. Please try again or contact support.',
+          processing_error:
+            'Payment processing error. Please wait a few minutes and try again.',
+          processor_declined:
+            'Payment was declined. Please try a different card or payment method.',
+          processor_timeout:
+            'Payment timed out. Please try again or contact support.',
+          system_error:
+            'System error. Please try again later or contact support.',
+        };
+
+        // ===== UNKNOWN ERRORS =====
+        const unknownErrorCodes = [
+          'server_timeout',
+          'service_timeout',
+          'unknown_error',
+        ];
+
+        // ===== INVALID CARD DETAILS =====
+        const invalidCardMessages: Record<string, string> = {
+          card_number_invalid:
+            'Invalid card number. Please verify your card details and try again.',
+          cvc_invalid:
+            'Invalid security code (CVC). Please check and try again.',
+          cvc_incorrect:
+            'Incorrect security code (CVC). Please check and try again.',
+          expired_card: 'Your card has expired. Please use a different card.',
+        };
+
+        // Check if it's a card-related error
+        if (errorCode === 'resource_failed_state' || subCode) {
+          // Check blocked transactions first (use generic message for security)
+          if (blockedCodes.includes(subCode)) {
+            return {
+              title: 'Card Declined',
+              message: GENERIC_DECLINE_MESSAGE,
+              isCardError: true,
+            };
+          }
+
+          // Check unknown errors
+          if (unknownErrorCodes.includes(subCode)) {
+            return {
+              title: 'Payment Error',
+              message:
+                'Payment failed due to an unknown error. Please try again or contact support.',
+              isCardError: true,
+            };
+          }
+
+          // Check invalid card details
+          if (invalidCardMessages[subCode]) {
+            return {
+              title: 'Invalid Card Details',
+              message: invalidCardMessages[subCode],
+              isCardError: true,
+            };
+          }
+
+          // Check processor errors
+          if (processorMessages[subCode]) {
+            return {
+              title: 'Payment Error',
+              message: processorMessages[subCode],
+              isCardError: true,
+            };
+          }
+
+          // Check declined transactions
+          if (declinedMessages[subCode]) {
+            return {
+              title: 'Card Declined',
+              message: declinedMessages[subCode],
+              isCardError: true,
+            };
+          }
+
+          // Default to generic decline for any unmapped error
+          return {
+            title: 'Card Declined',
+            message: GENERIC_DECLINE_MESSAGE,
+            isCardError: true,
+          };
+        }
+
+        // Generic payment errors
+        if (
+          err.message?.includes('declined') ||
+          err.message?.includes('card')
+        ) {
+          return {
+            title: 'Payment Failed',
+            message:
+              err.message ||
+              'Your payment could not be processed. Please try again or use a different payment method.',
+            isCardError: true,
+          };
+        }
+
+        // Order creation errors
+        if (err.response?.data?.message) {
+          return {
+            title: 'Order Failed',
+            message: err.response.data.message,
+            isCardError: false,
+          };
+        }
+
+        // Generic error
+        return {
+          title: 'Something Went Wrong',
+          message:
+            err.message || 'Failed to process your order. Please try again.',
+          isCardError: false,
+        };
+      };
+
+      const { title, message, isCardError } = getErrorMessage(error);
+      const orderCreated = createdOrderRef.current !== null;
+
+      // Navigate to payment-failed screen instead of showing alert
+      // This completely exits this screen and prevents any re-triggering
+      router.replace(
+        Routes.checkout.paymentFailed({
+          orderId: orderCreated ? createdOrderRef.current!.orderId : undefined,
+          orderNumber: orderCreated
+            ? createdOrderRef.current!.orderNumber
+            : undefined,
+          errorMessage: message,
+          errorTitle: title,
+          isCardError: isCardError ? 'true' : 'false',
+          orderCreated: orderCreated ? 'true' : 'false',
+        })
       );
     } finally {
       setIsProcessing(false);
@@ -363,13 +697,25 @@ const OrderGracePeriodScreen = () => {
           }}
         />
         <PageContainer>
-          <View style={[styles.container, { backgroundColor: theme.background }]}>
-            <View style={[styles.processingContainer, { backgroundColor: theme.surface }]}>
+          <View
+            style={[styles.container, { backgroundColor: theme.background }]}
+          >
+            <View
+              style={[
+                styles.processingContainer,
+                { backgroundColor: theme.surface },
+              ]}
+            >
               <ActivityIndicator size="large" color={theme.primary} />
               <Text style={[styles.processingTitle, { color: theme.text }]}>
                 {processingStep}
               </Text>
-              <Text style={[styles.processingSubtitle, { color: theme.textSecondary }]}>
+              <Text
+                style={[
+                  styles.processingSubtitle,
+                  { color: theme.textSecondary },
+                ]}
+              >
                 Please wait while we process your order
               </Text>
             </View>
@@ -461,7 +807,12 @@ const OrderGracePeriodScreen = () => {
                 >
                   {countdown}
                 </Text>
-                <Text style={[styles.countdownLabel, { color: theme.textSecondary }]}>
+                <Text
+                  style={[
+                    styles.countdownLabel,
+                    { color: theme.textSecondary },
+                  ]}
+                >
                   seconds
                 </Text>
               </Animated.View>
@@ -469,10 +820,18 @@ const OrderGracePeriodScreen = () => {
           </View>
 
           {/* Order Summary */}
-          <View style={[styles.summaryCard, { backgroundColor: theme.surface }]}>
+          <View
+            style={[styles.summaryCard, { backgroundColor: theme.surface }]}
+          >
             <View style={styles.summaryRow}>
-              <Ionicons name="receipt-outline" size={20} color={theme.textSecondary} />
-              <Text style={[styles.summaryLabel, { color: theme.textSecondary }]}>
+              <Ionicons
+                name="receipt-outline"
+                size={20}
+                color={theme.textSecondary}
+              />
+              <Text
+                style={[styles.summaryLabel, { color: theme.textSecondary }]}
+              >
                 Total Amount
               </Text>
               <Text style={[styles.summaryValue, { color: theme.text }]}>
@@ -480,25 +839,39 @@ const OrderGracePeriodScreen = () => {
               </Text>
             </View>
             <View style={styles.summaryRow}>
-              <Ionicons name="card-outline" size={20} color={theme.textSecondary} />
-              <Text style={[styles.summaryLabel, { color: theme.textSecondary }]}>
+              <Ionicons
+                name="card-outline"
+                size={20}
+                color={theme.textSecondary}
+              />
+              <Text
+                style={[styles.summaryLabel, { color: theme.textSecondary }]}
+              >
                 Payment
               </Text>
               <Text style={[styles.summaryValue, { color: theme.text }]}>
-                {paymentMethodType === 'gcash' ? 'GCash' :
-                 paymentMethodType === 'paymaya' ? 'PayMaya' :
-                 paymentMethodType === 'card' ? 'Credit/Debit Card' :
-                 paymentMethodType.toUpperCase()}
+                {paymentMethodType === 'gcash'
+                  ? 'GCash'
+                  : paymentMethodType === 'paymaya'
+                  ? 'PayMaya'
+                  : paymentMethodType === 'card'
+                  ? 'Credit/Debit Card'
+                  : paymentMethodType.toUpperCase()}
               </Text>
             </View>
           </View>
 
           {/* Info Message */}
-          <View style={[styles.infoContainer, { backgroundColor: `${theme.info}15` }]}>
+          <View
+            style={[
+              styles.infoContainer,
+              { backgroundColor: `${theme.info}15` },
+            ]}
+          >
             <Ionicons name="information-circle" size={24} color={theme.info} />
             <Text style={[styles.infoText, { color: theme.text }]}>
-              Your order will not be created until the countdown ends.
-              You can cancel anytime during this period.
+              Your order will not be created until the countdown ends. You can
+              cancel anytime during this period.
             </Text>
           </View>
 
@@ -518,9 +891,7 @@ const OrderGracePeriodScreen = () => {
               disabled={isCancelling || isProcessing}
             >
               <Ionicons name="checkmark-circle" size={24} color="#FFF" />
-              <Text style={styles.proceedButtonText}>
-                Proceed Now
-              </Text>
+              <Text style={styles.proceedButtonText}>Proceed Now</Text>
             </Pressable>
 
             {/* Cancel Button */}
