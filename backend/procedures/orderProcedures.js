@@ -2,7 +2,7 @@ async function createOrderProcedures(knex) {
   // ==================== ORDERS ====================
   // NOTE: Payment info is now fetched from the payment table via LEFT JOIN
   // Payment table is the single source of truth for payment status and PayMongo references
-  
+
   // Get all orders with business, user, and payment info
   await knex.raw(`
     CREATE PROCEDURE GetAllOrders()
@@ -314,11 +314,10 @@ async function createOrderProcedures(knex) {
       END LOOP;
       CLOSE order_items_cursor;
       
-      -- Restore discount usage if applicable
-      UPDATE discount d
-      JOIN \`order\` o ON d.id = o.discount_id 
-      SET d.current_usage_count = GREATEST(0, d.current_usage_count - 1)
-      WHERE o.id = p_orderId AND o.discount_amount > 0;
+      -- Note: Discount usage restoration removed
+      -- The discount table no longer has current_usage_count column (simplified MVP schema).
+      -- Per-product discount stock is tracked in discount_product.current_stock_used.
+      -- TODO: If needed, implement per-product discount stock restoration
       
       -- Update order with cancellation details
       UPDATE \`order\` SET 

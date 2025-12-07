@@ -234,8 +234,12 @@ export const Routes = {
     paymentFailed: (params?: {
       orderId?: string;
       orderNumber?: string;
+      arrivalCode?: string;
+      total?: string;
       errorMessage?: string;
-      error?: string;
+      errorTitle?: string;
+      isCardError?: string;
+      orderCreated?: string;
     }) => ({
       pathname: '/(checkout)/payment-failed' as const,
       params: params || {},

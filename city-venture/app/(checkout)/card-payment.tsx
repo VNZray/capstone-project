@@ -48,12 +48,12 @@ const CardPaymentScreen = () => {
   }>();
 
   // Card details state
-  const [cardNumber, setCardNumber] = useState('');
-  const [expMonth, setExpMonth] = useState('');
-  const [expYear, setExpYear] = useState('');
-  const [cvc, setCvc] = useState('');
-  const [cardholderName, setCardholderName] = useState('');
-  const [email, setEmail] = useState('');
+  const [cardNumber, setCardNumber] = useState('4120000000000007');
+  const [expMonth, setExpMonth] = useState('12');
+  const [expYear, setExpYear] = useState('25');
+  const [cvc, setCvc] = useState('123');
+  const [cardholderName, setCardholderName] = useState('TestName');
+  const [email, setEmail] = useState('test@gmail.com');
 
   // UI state
   const [loading, setLoading] = useState(false);
