@@ -38,6 +38,7 @@ import { Routes } from '@/routes/mainRoutes';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { Colors } from '@/constants/color';
 import PageContainer from '@/components/PageContainer';
+import { useCart } from '@/context/CartContext';
 import { Ionicons } from '@expo/vector-icons';
 import { createOrder } from '@/services/OrderService';
 import {
@@ -63,6 +64,7 @@ const OrderGracePeriodScreen = () => {
   }>();
   const colorScheme = useColorScheme();
   const theme = Colors[colorScheme as keyof typeof Colors];
+  const { clearCart } = useCart();
 
   // Parse order data from params - memoize to avoid dependency changes
   const orderData = useMemo<CreateOrderPayload | null>(() => {
@@ -116,6 +118,9 @@ const OrderGracePeriodScreen = () => {
       console.log('[GracePeriod] Creating order...');
       const orderResponse = await createOrder(orderData);
       console.log('[GracePeriod] Order created:', orderResponse.order_number);
+
+      // Clear cart now that order is successfully created
+      clearCart();
 
       const orderId = orderResponse.order_id;
       const orderNumber = orderResponse.order_number;
@@ -582,7 +587,7 @@ const OrderGracePeriodScreen = () => {
     } finally {
       setIsProcessing(false);
     }
-  }, [orderData, paymentMethodType, billingInfo, totalAmount]);
+  }, [orderData, paymentMethodType, billingInfo, totalAmount, clearCart]);
 
   // Start countdown animation
   useEffect(() => {
