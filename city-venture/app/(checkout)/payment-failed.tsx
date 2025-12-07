@@ -1,23 +1,32 @@
-import React from 'react';
-import { View, Text, StyleSheet, Pressable, Platform } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, Pressable, Platform, Alert, ActivityIndicator } from 'react-native';
 import { Stack, router, useLocalSearchParams } from 'expo-router';
 import { Routes } from '@/routes/mainRoutes';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { Colors } from '@/constants/color';
 import PageContainer from '@/components/PageContainer';
 import { Ionicons } from '@expo/vector-icons';
+import { getOrderById } from '@/services/OrderService';
+import {
+  createPaymentIntent,
+  attachEwalletPaymentMethod,
+  open3DSAuthentication,
+  dismissBrowser,
+} from '@/services/PaymentIntentService';
+import API_URL from '@/services/api';
 
 /**
  * Payment Failed Screen
  * Shown when payment fails, with options to retry or view order
  *
  * Handles two scenarios:
- * 1. Order was created but payment failed → Show order options
+ * 1. Order was created but payment failed → Show retry payment option
  * 2. Order was not created → Go back to checkout
  */
 const PaymentFailedScreen = () => {
   const colorScheme = useColorScheme();
   const theme = Colors[(colorScheme ?? 'light') as keyof typeof Colors];
+  const [retrying, setRetrying] = useState(false);
 
   const params = useLocalSearchParams<{
     orderId?: string;
@@ -48,6 +57,102 @@ const PaymentFailedScreen = () => {
       );
     } else {
       router.replace(Routes.profile.orders.index);
+    }
+  };
+
+  /**
+   * Handle retry payment for existing order
+   * Creates a new payment intent and redirects to e-wallet auth
+   */
+  const handleRetryPayment = async () => {
+    if (!params.orderId) {
+      Alert.alert('Error', 'Order not found. Please try again from your orders.');
+      return;
+    }
+
+    try {
+      setRetrying(true);
+      console.log('[PaymentFailed] Retrying payment for order:', params.orderId);
+
+      // Get order details to determine payment method type
+      const orderDetails = await getOrderById(params.orderId);
+      const paymentMethodType = orderDetails.payment_method_type || 'gcash';
+
+      // Create Payment Intent using unified API
+      const intentResponse = await createPaymentIntent({
+        payment_for: 'order',
+        reference_id: params.orderId,
+        payment_method: paymentMethodType,
+      });
+
+      const paymentIntentId = intentResponse.data.payment_intent_id;
+
+      // For card payments, navigate to card payment screen
+      if (paymentMethodType === 'card') {
+        router.replace(
+          Routes.checkout.cardPayment({
+            orderId: params.orderId,
+            orderNumber: orderDetails.order_number,
+            arrivalCode: orderDetails.arrival_code,
+            paymentIntentId,
+            clientKey: intentResponse.data.client_key,
+            amount: intentResponse.data.amount.toString(),
+            total: orderDetails.total_amount?.toString(),
+          })
+        );
+        return;
+      }
+
+      // For e-wallets, attach payment method and redirect
+      const backendBaseUrl = (API_URL || '').replace('/api', '');
+      const returnUrl = `${backendBaseUrl}/orders/${params.orderId}/payment-success`;
+
+      const attachResponse = await attachEwalletPaymentMethod(
+        paymentIntentId,
+        paymentMethodType as 'gcash' | 'paymaya',
+        returnUrl,
+        intentResponse.data.client_key
+      );
+
+      const nextAction = attachResponse.data.attributes.next_action;
+      if (nextAction?.redirect?.url) {
+        const authResult = await open3DSAuthentication(
+          nextAction.redirect.url,
+          returnUrl
+        );
+
+        dismissBrowser();
+
+        if (authResult.type === 'cancel' || authResult.type === 'dismiss') {
+          Alert.alert(
+            'Payment Cancelled',
+            'You cancelled the payment. You can try again later.',
+            [{ text: 'OK' }]
+          );
+          return;
+        }
+
+        // Navigate to payment processing to verify
+        router.replace(
+          Routes.checkout.paymentProcessing({
+            orderId: params.orderId,
+            orderNumber: orderDetails.order_number,
+            arrivalCode: orderDetails.arrival_code,
+            paymentIntentId,
+            total: orderDetails.total_amount?.toString(),
+          })
+        );
+      }
+    } catch (error: any) {
+      console.error('[PaymentFailed] Payment retry failed:', error);
+      Alert.alert(
+        'Payment Error',
+        error.response?.data?.message ||
+          error.message ||
+          'Failed to start payment process'
+      );
+    } finally {
+      setRetrying(false);
     }
   };
 
@@ -124,16 +229,24 @@ const PaymentFailedScreen = () => {
           <View style={styles.buttonContainer}>
             {orderCreated ? (
               <>
-                {/* Order created - show View Order as primary */}
+                {/* Order created - show Retry Payment as primary */}
                 <Pressable
                   style={[
                     styles.primaryButton,
                     { backgroundColor: theme.primary },
+                    retrying && styles.disabledButton,
                   ]}
-                  onPress={handleViewOrder}
+                  onPress={handleRetryPayment}
+                  disabled={retrying}
                 >
-                  <Ionicons name="receipt-outline" size={20} color="#FFF" />
-                  <Text style={styles.primaryButtonText}>View Order</Text>
+                  {retrying ? (
+                    <ActivityIndicator color="#FFF" size="small" />
+                  ) : (
+                    <>
+                      <Ionicons name="refresh" size={20} color="#FFF" />
+                      <Text style={styles.primaryButtonText}>Try Again</Text>
+                    </>
+                  )}
                 </Pressable>
 
                 <Pressable
@@ -141,12 +254,13 @@ const PaymentFailedScreen = () => {
                     styles.secondaryButton,
                     { borderColor: theme.border },
                   ]}
-                  onPress={handleGoBack}
+                  onPress={handleViewOrder}
+                  disabled={retrying}
                 >
                   <Text
                     style={[styles.secondaryButtonText, { color: theme.text }]}
                   >
-                    Try Different Payment
+                    View Order Details
                   </Text>
                 </Pressable>
               </>
@@ -271,6 +385,9 @@ const styles = StyleSheet.create({
     color: '#FFF',
     fontSize: 16,
     fontWeight: '700',
+  },
+  disabledButton: {
+    opacity: 0.6,
   },
   secondaryButton: {
     alignItems: 'center',

@@ -172,11 +172,15 @@ export async function handlePaymentFailed({
   eventData,
 }) {
   console.log(`[PaymentFulfillment] 💔 Processing payment.failed for intent: ${paymentIntentId}`);
+  console.log(`[PaymentFulfillment] 💔 PaymentId: ${paymentId}`);
 
   const attributes = eventData.attributes || {};
   const metadata = attributes.metadata || {};
   const failedCode = attributes.failed_code || 'UNKNOWN';
   const failedMessage = attributes.failed_message || 'Payment failed';
+
+  console.log(`[PaymentFulfillment] 💔 Failed code: ${failedCode}, message: ${failedMessage}`);
+  console.log(`[PaymentFulfillment] 💔 Metadata:`, JSON.stringify(metadata));
 
   // 1. Resolve reference from metadata or database lookup
   let referenceId = metadata.order_id || metadata.booking_id;
@@ -359,14 +363,33 @@ export async function handleRefundSucceeded({
 
 /**
  * Mark an order as paid
- * Updates only the timestamp (payment table is single source of truth)
+ * Updates the order status back to 'pending' if it was in 'failed_payment' state
+ * (retry scenario). The payment table is the single source of truth for payment status.
  *
  * @param {string} orderId - Order ID
  */
 async function markOrderAsPaid(orderId) {
+  // Update order - reset status to 'pending' if it was 'failed_payment' (retry success)
+  // Clear any cancellation fields that were set during failure
   await db.query(
     `UPDATE \`order\`
-     SET updated_at = ?
+     SET status = CASE 
+           WHEN status = 'failed_payment' THEN 'pending'
+           ELSE status
+         END,
+         cancelled_at = CASE 
+           WHEN status = 'failed_payment' THEN NULL
+           ELSE cancelled_at
+         END,
+         cancelled_by = CASE 
+           WHEN status = 'failed_payment' THEN NULL
+           ELSE cancelled_by
+         END,
+         cancellation_reason = CASE 
+           WHEN status = 'failed_payment' THEN NULL
+           ELSE cancellation_reason
+         END,
+         updated_at = ?
      WHERE id = ?`,
     [new Date(), orderId]
   );
@@ -374,19 +397,124 @@ async function markOrderAsPaid(orderId) {
 }
 
 /**
- * Mark an order as failed payment
+ * Mark an order as failed payment and restore stock
+ * 
+ * IMPORTANT: This function restores stock immediately when payment fails.
+ * This prevents the issue where users lose items from cart and stock is
+ * decremented despite payment failure.
  *
  * @param {string} orderId - Order ID
  */
 async function markOrderAsFailedPayment(orderId) {
-  await db.query(
-    `UPDATE \`order\`
-     SET status = 'failed_payment',
-         updated_at = ?
-     WHERE id = ?`,
-    [new Date(), orderId]
-  );
-  console.log(`[PaymentFulfillment] 💔 Order ${orderId} marked as failed_payment`);
+  const connection = await db.getConnection();
+  
+  try {
+    await connection.beginTransaction();
+    
+    // 1. Get order details for logging and status check
+    const [orderRows] = await connection.query(
+      `SELECT order_number, status FROM \`order\` WHERE id = ?`,
+      [orderId]
+    );
+    const orderNumber = orderRows[0]?.order_number || 'UNKNOWN';
+    const currentStatus = orderRows[0]?.status;
+    
+    // 2. Check if order is already in failed_payment status
+    // If so, stock was already restored - skip restoration to prevent double-crediting
+    if (currentStatus === 'failed_payment') {
+      console.log(`[PaymentFulfillment] ⏭️ Order ${orderId} (${orderNumber}) already in failed_payment status, skipping stock restoration`);
+      await connection.commit();
+      return;
+    }
+    
+    // 3. Update order status to failed_payment
+    await connection.query(
+      `UPDATE \`order\`
+       SET status = 'failed_payment',
+           cancelled_at = NOW(),
+           cancelled_by = 'system',
+           cancellation_reason = 'Payment failed via webhook',
+           updated_at = ?
+       WHERE id = ?`,
+      [new Date(), orderId]
+    );
+    
+    // 4. Restore stock for all order items
+    const [orderItems] = await connection.query(
+      `SELECT oi.product_id, oi.quantity
+       FROM order_item oi
+       WHERE oi.order_id = ?`,
+      [orderId]
+    );
+    
+    let itemsRestored = 0;
+    for (const item of orderItems) {
+      // Restore stock
+      await connection.query(
+        `UPDATE product_stock 
+         SET current_stock = current_stock + ?,
+             updated_at = NOW()
+         WHERE product_id = ?`,
+        [item.quantity, item.product_id]
+      );
+      
+      // Log stock restoration in history
+      await connection.query(
+        `INSERT INTO stock_history (id, product_id, change_type, quantity_change, previous_stock, new_stock, notes)
+         SELECT UUID(), ?, 'adjustment', ?, 
+                current_stock - ?, current_stock, 
+                ?
+         FROM product_stock WHERE product_id = ?`,
+        [
+          item.product_id,
+          item.quantity,
+          item.quantity,
+          `Payment failed - stock restored: Order ${orderNumber}`,
+          item.product_id,
+        ]
+      );
+      
+      // Update product status back to active if it was out_of_stock
+      await connection.query(
+        `UPDATE product 
+         SET status = IF(
+           (SELECT current_stock FROM product_stock WHERE product_id = ?) > 0,
+           'active',
+           status
+         )
+         WHERE id = ?`,
+        [item.product_id, item.product_id]
+      );
+      
+      itemsRestored++;
+    }
+    
+    await connection.commit();
+    
+    console.log(`[PaymentFulfillment] 💔 Order ${orderId} (${orderNumber}) marked as failed_payment, ${itemsRestored} items stock restored`);
+    
+  } catch (error) {
+    await connection.rollback();
+    console.error(`[PaymentFulfillment] ❌ Error marking order as failed:`, error.message);
+    
+    // Fallback: At least update the order status even if stock restoration fails
+    try {
+      await db.query(
+        `UPDATE \`order\`
+         SET status = 'failed_payment',
+             updated_at = ?
+         WHERE id = ?`,
+        [new Date(), orderId]
+      );
+      console.log(`[PaymentFulfillment] ⚠️ Order ${orderId} marked as failed (stock not restored due to error)`);
+    } catch (fallbackError) {
+      console.error(`[PaymentFulfillment] ❌ Fallback update also failed:`, fallbackError.message);
+    }
+    
+    throw error;
+  } finally {
+    connection.release();
+  }
 }
 
 // ============= Booking Service Functions =============
