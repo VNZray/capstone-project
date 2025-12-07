@@ -146,11 +146,11 @@ export async function cancelOrder(req, res) {
   try {
     const userRole = await ensureUserRole(req);
 
-    // Get current order details including payment info
+    // Get current order details including payment info from payment table
     const [orderData] = await db.query(
-      `SELECT o.status, o.created_at, o.payment_status, o.payment_method, o.total_amount,
+      `SELECT o.status, o.created_at, o.total_amount,
               o.business_id, o.user_id, o.order_number,
-              p.id as payment_id, p.provider_reference, p.status as payment_db_status
+              p.id as payment_id, p.payment_intent_id, p.status as payment_status, p.payment_method
        FROM \`order\` o
        LEFT JOIN payment p ON p.payment_for = 'order' AND p.payment_for_id = o.id
        WHERE o.id = ?`, 
@@ -206,13 +206,13 @@ export async function cancelOrder(req, res) {
     if (order.payment_method === 'paymongo' && 
         order.payment_status === 'paid' && 
         order.payment_id && 
-        order.provider_reference) {
+        order.payment_intent_id) {
       
       try {
         const refundAmount = Math.round(order.total_amount * 100); // Convert to centavos
         
         const refundResponse = await paymongoService.createRefund(
-          order.provider_reference,
+          order.payment_intent_id,
           refundAmount,
           `Refund for order ${order.order_number}`,
           {
@@ -233,7 +233,7 @@ export async function cancelOrder(req, res) {
         await db.query(
           `UPDATE payment 
            SET status = 'refunded', 
-               provider_reference = CONCAT(provider_reference, ',', ?)
+               refund_reference = ?
            WHERE id = ?`,
           [refundResponse.id, order.payment_id]
         );
@@ -402,7 +402,11 @@ export async function markOrderAsReady(req, res) {
     const userRole = await ensureUserRole(req);
 
     const [orderRows] = await db.query(
-      "SELECT id, order_number, status, payment_method, payment_status, business_id, user_id FROM `order` WHERE id = ?",
+      `SELECT o.id, o.order_number, o.status, o.business_id, o.user_id,
+              p.status as payment_status, p.payment_method
+       FROM \`order\` o
+       LEFT JOIN payment p ON p.payment_for = 'order' AND p.payment_for_id = o.id
+       WHERE o.id = ?`,
       [id]
     );
 

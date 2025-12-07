@@ -281,10 +281,14 @@ const sendPaymongoRedirect = (res, referenceId, status, type = 'order') => {
   const expoHost = process.env.EXPO_DEV_HOST || '192.168.1.1:8081';
   
   // Determine route path and query param based on type (order vs booking)
+  // Route paths must match Expo Router file-based routes
   const isBooking = type === 'booking';
-  const routePath = isBooking ? '(accommodation)/room/booking' : '(checkout)/payment';
-  const paramName = isBooking ? 'bookingId' : 'orderId';
-  const queryParam = isBooking ? `paymentSuccess=1&bookingId=${referenceId}` : `orderId=${referenceId}`;
+  const routePath = isBooking 
+    ? '(tabs)/(home)/(accommodation)/room/booking' 
+    : '(tabs)/(home)/(checkout)/payment';
+  const queryParam = isBooking 
+    ? `paymentSuccess=1&bookingId=${referenceId}` 
+    : `orderId=${referenceId}`;
   
   // Expo Go deep link format: exp://HOST:PORT/--/path
   // For Expo Router, the path should match the file-based route
@@ -367,7 +371,7 @@ app.get("/bookings/:bookingId/payment-success", async (req, res) => {
     // Check the actual payment status from the database
     // The webhook may have already updated this to 'failed'
     const [rows] = await db.query(
-      `SELECT p.status as payment_status, p.provider_reference
+      `SELECT p.status as payment_status, p.payment_intent_id
        FROM payment p
        WHERE p.payment_for_id = ? AND p.payment_for = 'booking'
        ORDER BY p.created_at DESC
