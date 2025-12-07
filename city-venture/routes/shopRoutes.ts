@@ -11,7 +11,7 @@
  *
  * // After
  * const { push } = usePreventDoubleNavigation();
- * push(Routes.shop.cart);
+ * push(Routes.shop.cart());
  * ```
  */
 import { router } from 'expo-router';
@@ -25,12 +25,12 @@ export const navigateToShopHome = () => {
   router.navigate(Routes.shop.index);
 };
 
-/** @deprecated Use `usePreventDoubleNavigation().push(Routes.shop.cart)` */
+/** @deprecated Use `usePreventDoubleNavigation().push(Routes.shop.cart())` */
 export const navigateToCart = () => {
   console.warn(
     '[Navigation] navigateToCart is deprecated. Use usePreventDoubleNavigation hook.'
   );
-  router.push(Routes.shop.cart);
+  router.push(Routes.shop.cart());
 };
 
 /** @deprecated Use `usePreventDoubleNavigation().push(Routes.modals.businessProfile(id))` */

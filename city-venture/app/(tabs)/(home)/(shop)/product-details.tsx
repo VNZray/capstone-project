@@ -101,7 +101,7 @@ const ProductDetails = () => {
           { text: 'Continue Shopping', style: 'cancel' },
           {
             text: 'View Cart',
-            onPress: () => router.push(Routes.shop.cart),
+            onPress: () => router.push(Routes.shop.cart()),
           },
         ]
       );

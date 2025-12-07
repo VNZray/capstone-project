@@ -121,7 +121,16 @@ const PaymentSuccessScreen = () => {
       try {
         const immediateCheck = await getOrderById(params.orderId);
         if (immediateCheck.payment_status?.toLowerCase() === 'paid') {
-          setVerifying(false);
+          console.log(
+            '[PaymentSuccess] Immediate check passed, redirecting to order confirmation'
+          );
+          router.replace(
+            Routes.checkout.orderConfirmation({
+              orderId: params.orderId,
+              paymentMethod: 'paymongo',
+              paymentSuccess: 'true',
+            })
+          );
           return;
         }
       } catch (_) {
@@ -137,7 +146,17 @@ const PaymentSuccessScreen = () => {
           const order = await getOrderById(params.orderId);
 
           if (order.payment_status?.toLowerCase() === 'paid') {
-            setVerifying(false);
+            console.log(
+              '[PaymentSuccess] Payment verified, redirecting to order confirmation'
+            );
+            // Redirect to order confirmation screen for consistent UX
+            router.replace(
+              Routes.checkout.orderConfirmation({
+                orderId: params.orderId,
+                paymentMethod: 'paymongo',
+                paymentSuccess: 'true',
+              })
+            );
             return;
           }
 
@@ -164,7 +183,16 @@ const PaymentSuccessScreen = () => {
       try {
         const finalCheck = await getOrderById(params.orderId);
         if (finalCheck.payment_status?.toLowerCase() === 'paid') {
-          setVerifying(false);
+          console.log(
+            '[PaymentSuccess] Final check passed, redirecting to order confirmation'
+          );
+          router.replace(
+            Routes.checkout.orderConfirmation({
+              orderId: params.orderId,
+              paymentMethod: 'paymongo',
+              paymentSuccess: 'true',
+            })
+          );
           return;
         }
       } catch (_) {}
