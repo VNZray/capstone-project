@@ -24,6 +24,7 @@ import type { Order } from '@/types/Order';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import OrderCard from '@/components/OrderCard';
+import { AppHeader } from '@/components/header/AppHeader';
 
 type TabType = 'active' | 'completed' | 'cancelled';
 
@@ -144,14 +145,6 @@ const MyOrdersScreen = () => {
   if (loading) {
     return (
       <>
-        <Stack.Screen
-          options={{
-            title: 'My Orders',
-            headerStyle: { backgroundColor: palette.card },
-            headerTintColor: palette.text,
-            headerShadowVisible: false,
-          }}
-        />
         <PageContainer>
           <View
             style={[styles.centerContainer, { backgroundColor: palette.bg }]}
@@ -165,32 +158,10 @@ const MyOrdersScreen = () => {
 
   return (
     <>
-      <Stack.Screen
-        options={{
-          headerShown: false,
-        }}
-      />
+      <AppHeader backButton title="My Orders" background="primary" />
+
       <PageContainer padding={0}>
-        <SafeAreaView
-          style={[styles.container, { backgroundColor: palette.bg }]}
-        >
-          <View style={[styles.header, { paddingHorizontal: 16 }]}>
-            <Pressable
-              onPress={() => router.back()}
-              style={[styles.backButton, { backgroundColor: palette.card }]}
-            >
-              <Ionicons name="arrow-back" size={24} color={palette.text} />
-            </Pressable>
-            <Text
-              style={[
-                styles.headerTitle,
-                { color: palette.text, fontSize: h4 },
-              ]}
-            >
-              My Orders
-            </Text>
-            <View style={{ width: 40 }} />
-          </View>
+        <View style={[styles.container, { backgroundColor: palette.bg }]}>
           {/* Tabs */}
           <View
             style={[
@@ -329,7 +300,7 @@ const MyOrdersScreen = () => {
               ))}
             </ScrollView>
           )}
-        </SafeAreaView>
+        </View>
       </PageContainer>
     </>
   );
@@ -369,8 +340,7 @@ const styles = StyleSheet.create({
   tabsContainer: {
     flexDirection: 'row',
     borderBottomWidth: 1,
-    // marginHorizontal: 16, // Removed margin to be full width
-    paddingHorizontal: 16, // Added padding to align text
+    paddingHorizontal: 16,
     marginBottom: 0,
   },
   tab: {

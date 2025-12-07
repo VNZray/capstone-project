@@ -18,7 +18,6 @@ import {
   FormLabel,
 } from "@mui/joy";
 import React from "react";
-import { colors } from "@/src/utils/Colors";
 
 type Props = {
   data: Business;

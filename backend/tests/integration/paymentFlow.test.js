@@ -73,8 +73,8 @@ describe('Payment Flow Tests', () => {
         data: {
           id: 'evt_test_123',
           attributes: {
-            type: 'checkout_session.payment.paid',
-            data: { id: 'cs_test_123' }
+            type: 'payment.paid',
+            data: { id: 'pay_test_123' }
           }
         }
       });
@@ -178,25 +178,20 @@ describe('Payment Flow Tests', () => {
   // ============================================================================
 
   describe('Webhook Event Parsing', () => {
-    test('should parse checkout_session.payment.paid event', () => {
+    test('should parse payment.paid event with payment intent metadata', () => {
       const event = {
         data: {
           id: 'evt_abc123',
           attributes: {
-            type: 'checkout_session.payment.paid',
+            type: 'payment.paid',
             livemode: false,
             created_at: 1732924800,
             data: {
-              id: 'cs_test_xyz',
+              id: 'pay_test_xyz',
               attributes: {
                 status: 'paid',
-                payments: [{
-                  id: 'pay_123',
-                  attributes: {
-                    amount: 50000,
-                    status: 'paid'
-                  }
-                }],
+                amount: 50000,
+                payment_intent_id: 'pi_test_intent_123',
                 metadata: {
                   order_id: 'order-uuid-123',
                   order_number: 'ORD-ABC123'
@@ -210,10 +205,10 @@ describe('Payment Flow Tests', () => {
       const parsed = paymongoService.parseWebhookEvent(event);
 
       expect(parsed.id).toBe('evt_abc123');
-      expect(parsed.type).toBe('checkout_session.payment.paid');
+      expect(parsed.type).toBe('payment.paid');
       expect(parsed.livemode).toBe(false);
-      expect(parsed.data.id).toBe('cs_test_xyz');
-      expect(parsed.data.attributes.payments).toHaveLength(1);
+      expect(parsed.data.id).toBe('pay_test_xyz');
+      expect(parsed.data.attributes.payment_intent_id).toBe('pi_test_intent_123');
     });
 
     test('should parse payment.paid event', () => {
@@ -337,28 +332,28 @@ describe('Payment Flow Tests', () => {
           id: 'order-123',
           status: 'pending',
           payment_status: 'pending',
-          payment_method: 'paymongo',
-          payment_method_type: 'gcash'
+          payment_method: 'gcash'
         }
       });
 
-      // Step 2: Payment initiated - checkout session created
+      // Step 2: Payment initiated - payment intent created
       flowSteps.push({
         step: 'payment_initiated',
-        checkout_session: {
-          id: 'cs_test_123',
-          checkout_url: 'https://checkout.paymongo.com/cs_test_123'
+        payment_intent: {
+          id: 'pi_test_123',
+          client_key: 'pi_test_123_client_key',
+          status: 'awaiting_payment_method'
         }
       });
 
-      // Step 3: User redirected to PayMongo checkout
+      // Step 3: Payment method attached and user redirected to GCash
 
       // Step 4: User completes GCash payment
 
-      // Step 5: Webhook received - checkout_session.payment.paid
+      // Step 5: Webhook received - payment.paid
       flowSteps.push({
         step: 'webhook_received',
-        event_type: 'checkout_session.payment.paid',
+        event_type: 'payment.paid',
         payment_id: 'pay_gcash_123'
       });
 
@@ -645,14 +640,13 @@ describe('Production Readiness Checklist', () => {
 
   test('should verify PayMongo webhook events to handle', () => {
     const requiredEvents = [
-      'checkout_session.payment.paid',
       'payment.paid',
       'payment.failed',
-      'refund.updated',
-      'source.chargeable' // Legacy but still supported
+      'refund.updated'
     ];
 
-    expect(requiredEvents).toContain('checkout_session.payment.paid');
+    expect(requiredEvents).toContain('payment.paid');
     expect(requiredEvents).toContain('payment.failed');
+    expect(requiredEvents).toContain('refund.updated');
   });
 });

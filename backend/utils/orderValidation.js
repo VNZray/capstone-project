@@ -82,18 +82,13 @@ export function validateOrderCreation(payload) {
   }
   
   // Payment method validation
-  if (!payload.payment_method || !VALID_PAYMENT_METHODS.includes(payload.payment_method)) {
-    errors.push({ field: 'payment_method', message: 'Payment method must be either "cash_on_pickup" or "paymongo"' });
-  }
-  
-  // Payment method type validation (required for paymongo)
-  if (payload.payment_method === 'paymongo') {
-    if (!payload.payment_method_type || !PAYMONGO_PAYMENT_TYPES.includes(payload.payment_method_type)) {
-      errors.push({ 
-        field: 'payment_method_type', 
-        message: `Payment method type is required for PayMongo and must be one of: ${PAYMONGO_PAYMENT_TYPES.join(', ')}` 
-      });
-    }
+  // payment_method should be the actual method: gcash, paymaya, card, cash_on_pickup
+  const validPaymentMethods = ['gcash', 'paymaya', 'card', 'cash_on_pickup'];
+  if (!payload.payment_method || !validPaymentMethods.includes(payload.payment_method)) {
+    errors.push({ 
+      field: 'payment_method', 
+      message: `Payment method must be one of: ${validPaymentMethods.join(', ')}` 
+    });
   }
   
   // Optional fields validation

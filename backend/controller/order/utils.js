@@ -35,14 +35,14 @@ export function normalizeOrderItems(items) {
 
 /**
  * Fetch complete order data for socket emission
- * Includes user email, items, and discount name
+ * Includes user email, items, discount name, and payment info
  * @param {string} orderId - Order UUID
  * @returns {Object} Complete order data ready for socket emission
  */
 export async function getCompleteOrderForSocket(orderId) {
-  // Fetch order details
+  // Fetch order details with payment info
   const [orderRows] = await db.query(
-    "SELECT * FROM `order` WHERE id = ?",
+    "SELECT o.*, p.status as payment_status FROM `order` o LEFT JOIN payment p ON p.payment_for = 'order' AND p.payment_for_id = o.id WHERE o.id = ?",
     [orderId]
   );
 
@@ -83,7 +83,7 @@ export async function getCompleteOrderForSocket(orderId) {
     user_id: order.user_id,
     user_email: userEmail,
     status: order.status,
-    payment_status: order.payment_status,
+    payment_status: order.payment_status || 'pending',
     payment_method: order.payment_method || 'cash_on_pickup',
     subtotal: order.subtotal,
     discount_amount: order.discount_amount || 0,

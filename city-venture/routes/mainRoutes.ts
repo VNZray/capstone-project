@@ -70,19 +70,6 @@ export const Routes = {
         pathname: '/(tabs)/(home)/(accommodation)/room/booking' as const,
         params: { userId, roomId },
       }),
-      onlinePayment: (params: {
-        checkoutUrl: string;
-        successUrl?: string;
-        cancelUrl?: string;
-        payment_method?: string;
-        payment_id?: string;
-        bookingData?: string;
-        paymentData?: string;
-      }) => ({
-        pathname:
-          '/(tabs)/(home)/(accommodation)/room/booking/OnlinePayment' as const,
-        params,
-      }),
       summary: (params?: {
         bookingData?: string;
         guests?: string;
@@ -111,6 +98,23 @@ export const Routes = {
         params: params || {},
       }),
       paymentCancel: (params?: {
+        bookingId?: string;
+        reason?: string;
+      }) => ({
+        pathname:
+          '/(tabs)/(home)/(accommodation)/room/booking-cancel' as const,
+        params: params || {},
+      }),
+      // Aliases for booking-specific naming (same screens)
+      bookingSuccess: (params?: {
+        bookingId?: string;
+        paymentSuccess?: string;
+      }) => ({
+        pathname:
+          '/(tabs)/(home)/(accommodation)/room/booking-success' as const,
+        params: params || {},
+      }),
+      bookingCancel: (params?: {
         bookingId?: string;
         reason?: string;
       }) => ({
@@ -158,7 +162,10 @@ export const Routes = {
   // ============================================================================
   profile: {
     index: '/(tabs)/(profile)',
-    edit: '/(tabs)/(profile)/(edit)',
+    account: '/(tabs)/(profile)/(account)',
+    security: '/(tabs)/(profile)/(security)',
+    notifications: '/(tabs)/(profile)/(notifications)',
+    transactions: '/(tabs)/(profile)/(transactions)',
     settings: '/(tabs)/(profile)/(settings)',
     bookings: {
       index: '/(tabs)/(profile)/(bookings)',

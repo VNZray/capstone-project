@@ -16,12 +16,8 @@ router.delete("/:id", authenticate, authorizeRole("Admin", "Business Owner"), bo
 router.get("/business/:business_id", bookingController.getBookingsByBusinessId);
 router.get("/business/:business_id/available-rooms", bookingController.getAvailableRoomsByDateRange);
 
-// PayMongo payment initiation for bookings
-// POST /api/bookings/:id/initiate-payment
-router.post("/:id/initiate-payment", authenticate, bookingController.initiateBookingPayment);
-
-// Verify payment status after PayMongo redirect
-// GET /api/bookings/:id/verify-payment/:paymentId
-router.get("/:id/verify-payment/:paymentId", authenticate, bookingController.verifyBookingPayment);
+// NOTE: Payment routes have been moved to the unified payment workflow
+// Use POST /api/payments/initiate with { payment_for: 'booking', reference_id: bookingId }
+// Use POST /api/payments/verify for verification
 
 export default router;

@@ -133,7 +133,7 @@ export async function initializeWebhookQueue() {
  * Add a webhook event to the processing queue
  *
  * @param {Object} params - Webhook event parameters
- * @param {string} params.eventType - PayMongo event type (e.g., 'checkout_session.payment.paid')
+ * @param {string} params.eventType - PayMongo event type (e.g., 'payment.paid', 'payment.failed')
  * @param {Object} params.eventData - Event data from PayMongo
  * @param {string} params.eventId - PayMongo event ID for idempotency
  * @param {string} params.webhookDbId - UUID of the webhook_event record in database
@@ -178,11 +178,9 @@ export async function enqueueWebhook({ eventType, eventData, eventId, webhookDbI
  */
 function getEventPriority(eventType) {
   const priorities = {
-    // Payment success events - highest priority
-    'checkout_session.payment.paid': 1,
-    'payment_intent.succeeded': 1,
+    // Payment success events - highest priority (PIPM flow)
     'payment.paid': 1,
-    'source.chargeable': 1,
+    'payment_intent.succeeded': 1,
 
     // Payment failure events - high priority
     'payment.failed': 2,

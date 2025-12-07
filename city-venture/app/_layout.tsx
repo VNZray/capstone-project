@@ -2,6 +2,7 @@ import { ThemeProvider } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import 'react-native-reanimated';
 
 import { AuthProvider } from '@/context/AuthContext';
@@ -62,16 +63,18 @@ export default function RootLayout() {
   }
 
   return (
-    <SafeAreaProvider>
-      <AuthProvider>
-        <NavigationProvider>
-          <CartProvider>
-            <ThemeProvider value={NavigationTheme}>
-              <RootLayoutNav />
-            </ThemeProvider>
-          </CartProvider>
-        </NavigationProvider>
-      </AuthProvider>
-    </SafeAreaProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <SafeAreaProvider>
+        <AuthProvider>
+          <NavigationProvider>
+            <CartProvider>
+              <ThemeProvider value={NavigationTheme}>
+                <RootLayoutNav />
+              </ThemeProvider>
+            </CartProvider>
+          </NavigationProvider>
+        </AuthProvider>
+      </SafeAreaProvider>
+    </GestureHandlerRootView>
   );
 }

@@ -1,8 +1,7 @@
 import Typography from "@/src/components/Typography";
 import type { Business } from "@/src/types/Business";
 import type { Address } from "@/src/types/Address";
-import type { Owner } from "@/src/types/Owner";
-import type { User } from "@/src/types/User";
+
 import type { Permit } from "@/src/types/Permit";
 import { Box, Card, CardContent, Checkbox } from "@mui/joy";
 import { useAddress } from "@/src/hooks/useAddress";
