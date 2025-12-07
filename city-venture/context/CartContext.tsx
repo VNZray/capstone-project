@@ -10,6 +10,7 @@ import React, {
 } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { Product } from '@/types/Product';
+import { fetchProductById } from '@/services/ProductService';
 
 // Storage key for cart persistence
 const CART_STORAGE_KEY = '@cityventure/cart';
@@ -39,12 +40,15 @@ interface CartContextType {
   businessId: string | null; // Cart locked to one business per spec
   businessName: string | null;
   isLoading: boolean; // Loading state for cart restoration
+  isValidating: boolean; // Loading state for cart validation against backend
   addToCart: (product: Product, quantity: number, notes?: string) => void;
   updateQuantity: (productId: string, quantity: number) => void;
   removeFromCart: (productId: string) => void;
   clearCart: () => void;
   getSubtotal: () => number;
   getTotalItems: () => number;
+  /** Validate cart items against the database - removes deleted products, updates prices/stock */
+  validateCart: () => Promise<{ removedCount: number; updatedCount: number }>;
   /** Restore cart items from a failed order */
   restoreFromOrder: (
     orderItems: RestoreOrderItem[],
@@ -75,6 +79,7 @@ export const CartProvider = ({ children }: CartProviderProps) => {
   const [businessId, setBusinessId] = useState<string | null>(null);
   const [businessName, setBusinessName] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isValidating, setIsValidating] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
 
   /**
@@ -356,6 +361,129 @@ export const CartProvider = ({ children }: CartProviderProps) => {
     []
   );
 
+  /**
+   * Validate cart items against the database
+   * - Removes items that no longer exist (deleted products)
+   * - Updates prices if they changed
+   * - Updates stock information
+   * - Marks items as unavailable if out of stock
+   * Should be called when cart screen is opened or app resumes
+   */
+  const validateCart = useCallback(async (): Promise<{
+    removedCount: number;
+    updatedCount: number;
+  }> => {
+    if (items.length === 0) {
+      return { removedCount: 0, updatedCount: 0 };
+    }
+
+    console.log('[CartContext] Validating cart with', items.length, 'items');
+    setIsValidating(true);
+
+    let removedCount = 0;
+    let updatedCount = 0;
+    const validatedItems: CartItem[] = [];
+
+    try {
+      // Validate each cart item against the backend
+      for (const cartItem of items) {
+        try {
+          const product = await fetchProductById(cartItem.product_id);
+
+          // Product exists - check for updates
+          const currentPrice =
+            typeof product.price === 'string'
+              ? parseFloat(product.price)
+              : product.price;
+          const currentStock =
+            typeof product.current_stock === 'string'
+              ? parseInt(product.current_stock)
+              : product.current_stock || 0;
+          const isUnavailable =
+            product.status === 'out_of_stock' ||
+            product.status === 'inactive' ||
+            Boolean(product.is_unavailable);
+
+          const priceChanged = currentPrice !== cartItem.price;
+          const stockChanged = currentStock !== cartItem.stock;
+          const availabilityChanged = isUnavailable !== cartItem.is_unavailable;
+
+          if (priceChanged || stockChanged || availabilityChanged) {
+            updatedCount++;
+            console.log('[CartContext] Updating cart item:', {
+              product_id: cartItem.product_id,
+              priceChanged: priceChanged
+                ? `${cartItem.price} -> ${currentPrice}`
+                : false,
+              stockChanged: stockChanged
+                ? `${cartItem.stock} -> ${currentStock}`
+                : false,
+              availabilityChanged,
+            });
+          }
+
+          // Adjust quantity if it exceeds available stock
+          let adjustedQuantity = cartItem.quantity;
+          if (adjustedQuantity > currentStock && currentStock > 0) {
+            adjustedQuantity = currentStock;
+            console.log(
+              `[CartContext] Adjusted quantity for ${cartItem.product_name}: ${cartItem.quantity} -> ${adjustedQuantity}`
+            );
+          }
+
+          validatedItems.push({
+            ...cartItem,
+            product_name: product.name, // Update name in case it changed
+            price: currentPrice,
+            stock: currentStock,
+            is_unavailable: isUnavailable,
+            quantity: adjustedQuantity,
+            image_url: product.image_url || cartItem.image_url,
+          });
+        } catch (error: any) {
+          // Product not found (404) or other error - remove from cart
+          if (error.response?.status === 404) {
+            console.log(
+              '[CartContext] Product not found, removing from cart:',
+              cartItem.product_id
+            );
+            removedCount++;
+          } else {
+            // For other errors (network issues), keep the item but log warning
+            console.warn(
+              '[CartContext] Failed to validate product, keeping in cart:',
+              cartItem.product_id,
+              error.message
+            );
+            validatedItems.push(cartItem);
+          }
+        }
+      }
+
+      // Update cart with validated items
+      setItems(validatedItems);
+
+      // Clear business if cart becomes empty
+      if (validatedItems.length === 0) {
+        setBusinessId(null);
+        setBusinessName(null);
+      }
+
+      console.log('[CartContext] Cart validation complete:', {
+        removedCount,
+        updatedCount,
+        remainingItems: validatedItems.length,
+      });
+
+      return { removedCount, updatedCount };
+    } catch (error) {
+      console.error('[CartContext] Cart validation failed:', error);
+      return { removedCount: 0, updatedCount: 0 };
+    } finally {
+      setIsValidating(false);
+    }
+  }, [items]);
+
   return (
     <CartContext.Provider
       value={{
@@ -363,12 +491,14 @@ export const CartProvider = ({ children }: CartProviderProps) => {
         businessId,
         businessName,
         isLoading,
+        isValidating,
         addToCart,
         updateQuantity,
         removeFromCart,
         clearCart,
         getSubtotal,
         getTotalItems,
+        validateCart,
         restoreFromOrder,
       }}
     >
