@@ -1,6 +1,6 @@
 // See spec.md §4 - Tourist flow: Review cart → Proceed to checkout
 
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -239,12 +239,50 @@ const CartScreen = () => {
     items,
     businessName,
     isLoading,
+    isValidating,
     removeFromCart,
     updateQuantity,
     clearCart,
     getSubtotal,
     getTotalItems,
+    validateCart,
   } = useCart();
+
+  // Track if we've validated on mount
+  const [hasValidated, setHasValidated] = useState(false);
+
+  // Validate cart when screen opens (sync with database)
+  useEffect(() => {
+    const runValidation = async () => {
+      if (isLoading || hasValidated || items.length === 0) return;
+
+      setHasValidated(true);
+      const { removedCount, updatedCount } = await validateCart();
+
+      // Notify user if items were removed or updated
+      if (removedCount > 0) {
+        Alert.alert(
+          'Cart Updated',
+          `${removedCount} item${
+            removedCount > 1 ? 's were' : ' was'
+          } removed from your cart because ${
+            removedCount > 1 ? 'they are' : 'it is'
+          } no longer available.`,
+          [{ text: 'OK' }]
+        );
+      } else if (updatedCount > 0) {
+        Alert.alert(
+          'Cart Updated',
+          `${updatedCount} item${
+            updatedCount > 1 ? 's have' : ' has'
+          } been updated with the latest prices and availability.`,
+          [{ text: 'OK' }]
+        );
+      }
+    };
+
+    runValidation();
+  }, [isLoading, hasValidated, items.length, validateCart]);
 
   // Handle back navigation
   const handleBack = () => {
@@ -412,12 +450,14 @@ const CartScreen = () => {
           style={StyleSheet.absoluteFill}
         />
 
-        {isLoading ? (
-          /* Loading State - Cart being restored from storage */
+        {isLoading || isValidating ? (
+          /* Loading State - Cart being restored from storage or validated */
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" color={Brand.deepNavy} />
             <Text style={[styles.loadingText, { fontSize: body }]}>
-              Loading your cart...
+              {isValidating
+                ? 'Checking availability...'
+                : 'Loading your cart...'}
             </Text>
           </View>
         ) : items.length === 0 ? (
