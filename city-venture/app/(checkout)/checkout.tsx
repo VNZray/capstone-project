@@ -451,8 +451,9 @@ const CheckoutScreen = () => {
         '[Checkout] Navigating to grace period screen for PayMongo payment'
       );
 
-      // Clear cart before navigating (order will be created after grace period)
-      clearCart();
+      // Clear cart BEFORE navigating removed - we now clear it in the grace period screen AFTER successful order creation
+      // This allows the user to cancel in grace period and have their items back
+      // clearCart();
 
       // Prepare billing info - include card details if card payment
       const billingInfoPayload =
