@@ -4,7 +4,6 @@ import {
   Text,
   StyleSheet,
   Pressable,
-  Platform,
   Alert,
   ActivityIndicator,
 } from 'react-native';
@@ -54,30 +53,13 @@ const PaymentFailedScreen = () => {
   const isCardError = params.isCardError === 'true';
   const errorTitle = params.errorTitle || 'Payment Failed';
 
-  const handleViewOrder = () => {
-    if (params.orderId) {
-      router.replace(
-        Routes.checkout.orderConfirmation({
-          orderId: params.orderId,
-          orderNumber: params.orderNumber,
-          arrivalCode: params.arrivalCode,
-          total: params.total,
-          paymentMethod: 'paymongo',
-          paymentPending: 'true',
-        })
-      );
-    } else {
-      router.replace(Routes.profile.orders.index);
-    }
-  };
-
   /**
    * Handle "Go back to cart" - restore order items to cart and navigate
    */
   const handleGoToCart = async () => {
     if (!params.orderId) {
-      // No order - just go back
-      router.replace(Routes.checkout.cart);
+      // No order - just go to cart
+      router.replace(Routes.checkout.cart({ fromPaymentFailed: 'true' }));
       return;
     }
 
@@ -113,13 +95,21 @@ const PaymentFailedScreen = () => {
       }
 
       // Navigate to cart
-      router.replace(Routes.checkout.cart);
+      router.replace(Routes.checkout.cart({ fromPaymentFailed: 'true' }));
     } catch (error: any) {
       console.error('[PaymentFailed] Failed to restore cart:', error);
       Alert.alert(
         'Could not restore cart',
-        'Unable to restore your items. Going back to cart anyway.',
-        [{ text: 'OK', onPress: () => router.replace(Routes.checkout.cart) }]
+        'Unable to restore your items. Going to cart anyway.',
+        [
+          {
+            text: 'OK',
+            onPress: () =>
+              router.replace(
+                Routes.checkout.cart({ fromPaymentFailed: 'true' })
+              ),
+          },
+        ]
       );
     } finally {
       setGoingToCart(false);
@@ -148,7 +138,28 @@ const PaymentFailedScreen = () => {
 
       // Get order details to determine payment method type
       const orderDetails = await getOrderById(params.orderId);
-      const paymentMethodType = orderDetails.payment_method_type || 'gcash';
+
+      // Use payment_method as the primary field (stores 'gcash', 'paymaya', 'card', 'cash_on_pickup')
+      // Fallback to deprecated payment_method_type for backward compatibility
+      let paymentMethodType = orderDetails.payment_method;
+
+      // Skip cash_on_pickup since it doesn't need online payment
+      if (paymentMethodType === 'cash_on_pickup') {
+        Alert.alert(
+          'Payment Method',
+          'This order uses cash on pickup. No online payment needed.',
+          [{ text: 'OK' }]
+        );
+        setRetrying(false);
+        return;
+      }
+
+      // Fallback to deprecated field if payment_method is not an e-wallet/card type
+      if (!['gcash', 'paymaya', 'card'].includes(paymentMethodType)) {
+        paymentMethodType = orderDetails.payment_method_type || 'gcash';
+      }
+
+      console.log('[PaymentFailed] Using payment method:', paymentMethodType);
 
       // Create Payment Intent using unified API
       const intentResponse = await createPaymentIntent({
@@ -195,24 +206,50 @@ const PaymentFailedScreen = () => {
 
         dismissBrowser();
 
-        if (authResult.type === 'cancel' || authResult.type === 'dismiss') {
+        console.log(
+          '[PaymentFailed] Auth result:',
+          authResult.type,
+          'url' in authResult ? authResult.url : 'no url'
+        );
+
+        // Check if this was a successful redirect (user completed auth)
+        // 'success' means the redirect URL was matched
+        // If there's a URL in the result, the redirect completed
+        if (
+          authResult.type === 'success' ||
+          ('url' in authResult && authResult.url)
+        ) {
+          // Payment auth completed - navigate to processing to verify
+          router.replace(
+            Routes.checkout.paymentProcessing({
+              orderId: params.orderId,
+              orderNumber: orderDetails.order_number,
+              arrivalCode: orderDetails.arrival_code,
+              paymentIntentId,
+              total: orderDetails.total_amount?.toString(),
+            })
+          );
+          return;
+        }
+
+        // User explicitly cancelled the payment auth flow
+        // Note: We only show alert for explicit 'cancel', not 'dismiss'
+        // 'dismiss' can occur when deep link navigates away (which means success)
+        if (authResult.type === 'cancel') {
           Alert.alert(
             'Payment Cancelled',
-            'You cancelled the payment. You can try again later.',
+            'You cancelled the payment. You can try again.',
             [{ text: 'OK' }]
           );
           return;
         }
 
-        // Navigate to payment processing to verify
-        router.replace(
-          Routes.checkout.paymentProcessing({
-            orderId: params.orderId,
-            orderNumber: orderDetails.order_number,
-            arrivalCode: orderDetails.arrival_code,
-            paymentIntentId,
-            total: orderDetails.total_amount?.toString(),
-          })
+        // For 'dismiss' or other cases:
+        // - If payment succeeded, deep link already navigated user to success screen
+        // - If payment failed, user is still here and can retry
+        // - No need to navigate or show alert
+        console.log(
+          '[PaymentFailed] Auth dismissed - user may have been redirected via deep link'
         );
       }
     } catch (error: any) {
@@ -290,7 +327,7 @@ const PaymentFailedScreen = () => {
             <Ionicons name="information-circle" size={20} color={theme.info} />
             <Text style={[styles.infoText, { color: theme.textSecondary }]}>
               {orderCreated
-                ? 'Your order failed and items will be restored to your cart if you go back.'
+                ? 'Your items will be restored to your cart.'
                 : isCardError
                 ? 'You can try a different card or switch to GCash/Maya.'
                 : 'Please check your payment details and try again.'}

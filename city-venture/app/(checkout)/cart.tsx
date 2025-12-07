@@ -1,6 +1,6 @@
 // See spec.md §4 - Tourist flow: Review cart → Proceed to checkout
 
-import React, { useRef } from 'react';
+import React, { useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -10,8 +10,9 @@ import {
   Alert,
   Animated,
   ActivityIndicator,
+  BackHandler,
 } from 'react-native';
-import { Stack } from 'expo-router';
+import { Stack, router, useLocalSearchParams } from 'expo-router';
 import { ShopColors, Brand, Slate } from '@/constants/color';
 import { useTypography } from '@/constants/typography';
 import { useCart } from '@/context/CartContext';
@@ -230,6 +231,10 @@ const CartScreen = () => {
   const insets = useSafeAreaInsets();
   const { push, back, isNavigating } = usePreventDoubleNavigation();
 
+  // Check if we came from payment-failed screen (need special back navigation)
+  const params = useLocalSearchParams<{ fromPaymentFailed?: string }>();
+  const fromPaymentFailed = params.fromPaymentFailed === 'true';
+
   const {
     items,
     businessName,
@@ -240,6 +245,33 @@ const CartScreen = () => {
     getSubtotal,
     getTotalItems,
   } = useCart();
+
+  // Handle back navigation
+  const handleBack = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    if (fromPaymentFailed) {
+      // Coming from payment-failed - go to home to break checkout stack
+      router.replace(Routes.tabs.home);
+    } else {
+      // Normal flow - use default back
+      back();
+    }
+  };
+
+  // Intercept Android back button - only override if from payment-failed
+  useEffect(() => {
+    if (!fromPaymentFailed) return; // Don't override normal flow
+
+    const backHandler = BackHandler.addEventListener(
+      'hardwareBackPress',
+      () => {
+        router.replace(Routes.tabs.home);
+        return true; // Prevent default back behavior
+      }
+    );
+
+    return () => backHandler.remove();
+  }, [fromPaymentFailed]);
 
   const handleQuantityChange = (
     productId: string,
@@ -334,6 +366,22 @@ const CartScreen = () => {
           headerShadowVisible: false,
           headerTintColor: Brand.deepNavy,
           headerStyle: { backgroundColor: Slate[50] },
+          // Custom back button - conditionally goes to home or uses normal back
+          headerLeft: () => (
+            <Pressable
+              onPress={handleBack}
+              style={({ pressed }) => [
+                {
+                  paddingHorizontal: 8,
+                  paddingVertical: 4,
+                  marginLeft: 8,
+                  opacity: pressed ? 0.7 : 1,
+                },
+              ]}
+            >
+              <Ionicons name="arrow-back" size={24} color={Brand.deepNavy} />
+            </Pressable>
+          ),
           headerRight: () =>
             items.length > 0 ? (
               <Pressable

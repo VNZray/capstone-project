@@ -11,7 +11,7 @@
  * import { usePreventDoubleNavigation } from '@/hooks/usePreventDoubleNavigation';
  *
  * const { push } = usePreventDoubleNavigation();
- * push(Routes.shop.cart); // Type-safe, debounced navigation
+ * push(Routes.shop.cart()); // Type-safe, debounced navigation
  * ```
  */
 import { router } from 'expo-router';
@@ -144,7 +144,10 @@ export const Routes = {
   shop: {
     index: '/(tabs)/(home)/(shop)',
     categories: '/(tabs)/(home)/(shop)/categories',
-    cart: '/(checkout)/cart',
+    cart: (params?: { fromPaymentFailed?: string }) => ({
+      pathname: '/(checkout)/cart' as const,
+      params: params || {},
+    }),
     productDetails: '/(tabs)/(home)/(shop)/product-details',
   },
 
@@ -206,7 +209,10 @@ export const Routes = {
   // ============================================================================
   checkout: {
     index: '/(checkout)/checkout',
-    cart: '/(checkout)/cart',
+    cart: (params?: { fromPaymentFailed?: string }) => ({
+      pathname: '/(checkout)/cart' as const,
+      params: params || {},
+    }),
     paymentProcessing: (params: {
       orderId: string;
       orderNumber?: string;
