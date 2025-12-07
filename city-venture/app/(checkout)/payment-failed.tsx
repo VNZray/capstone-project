@@ -1,5 +1,13 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, Pressable, Platform, Alert, ActivityIndicator } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  Pressable,
+  Platform,
+  Alert,
+  ActivityIndicator,
+} from 'react-native';
 import { Stack, router, useLocalSearchParams } from 'expo-router';
 import { Routes } from '@/routes/mainRoutes';
 import { useColorScheme } from '@/hooks/use-color-scheme';
@@ -7,6 +15,7 @@ import { Colors } from '@/constants/color';
 import PageContainer from '@/components/PageContainer';
 import { Ionicons } from '@expo/vector-icons';
 import { getOrderById } from '@/services/OrderService';
+import { useCart } from '@/context/CartContext';
 import {
   createPaymentIntent,
   attachEwalletPaymentMethod,
@@ -27,6 +36,8 @@ const PaymentFailedScreen = () => {
   const colorScheme = useColorScheme();
   const theme = Colors[(colorScheme ?? 'light') as keyof typeof Colors];
   const [retrying, setRetrying] = useState(false);
+  const [goingToCart, setGoingToCart] = useState(false);
+  const { restoreFromOrder } = useCart();
 
   const params = useLocalSearchParams<{
     orderId?: string;
@@ -61,18 +72,79 @@ const PaymentFailedScreen = () => {
   };
 
   /**
+   * Handle "Go back to cart" - restore order items to cart and navigate
+   */
+  const handleGoToCart = async () => {
+    if (!params.orderId) {
+      // No order - just go back
+      router.replace(Routes.checkout.cart);
+      return;
+    }
+
+    try {
+      setGoingToCart(true);
+      console.log(
+        '[PaymentFailed] Restoring items from order:',
+        params.orderId
+      );
+
+      // Fetch order details to get items
+      const orderDetails = await getOrderById(params.orderId);
+
+      if (orderDetails.items && orderDetails.items.length > 0) {
+        // Restore items to cart
+        restoreFromOrder(
+          orderDetails.items.map((item) => ({
+            product_id: item.product_id,
+            product_name: item.product_name,
+            unit_price: item.unit_price,
+            quantity: item.quantity,
+            special_requests: item.special_requests,
+            product_image_url: item.product_image_url,
+          })),
+          orderDetails.business_id,
+          orderDetails.business_name
+        );
+        console.log(
+          '[PaymentFailed] Restored',
+          orderDetails.items.length,
+          'items to cart'
+        );
+      }
+
+      // Navigate to cart
+      router.replace(Routes.checkout.cart);
+    } catch (error: any) {
+      console.error('[PaymentFailed] Failed to restore cart:', error);
+      Alert.alert(
+        'Could not restore cart',
+        'Unable to restore your items. Going back to cart anyway.',
+        [{ text: 'OK', onPress: () => router.replace(Routes.checkout.cart) }]
+      );
+    } finally {
+      setGoingToCart(false);
+    }
+  };
+
+  /**
    * Handle retry payment for existing order
    * Creates a new payment intent and redirects to e-wallet auth
    */
   const handleRetryPayment = async () => {
     if (!params.orderId) {
-      Alert.alert('Error', 'Order not found. Please try again from your orders.');
+      Alert.alert(
+        'Error',
+        'Order not found. Please try again from your orders.'
+      );
       return;
     }
 
     try {
       setRetrying(true);
-      console.log('[PaymentFailed] Retrying payment for order:', params.orderId);
+      console.log(
+        '[PaymentFailed] Retrying payment for order:',
+        params.orderId
+      );
 
       // Get order details to determine payment method type
       const orderDetails = await getOrderById(params.orderId);
@@ -218,7 +290,7 @@ const PaymentFailedScreen = () => {
             <Ionicons name="information-circle" size={20} color={theme.info} />
             <Text style={[styles.infoText, { color: theme.textSecondary }]}>
               {orderCreated
-                ? 'Your order has been saved. You can retry payment from your order details.'
+                ? 'Your order failed and items will be restored to your cart if you go back.'
                 : isCardError
                 ? 'You can try a different card or switch to GCash/Maya.'
                 : 'Please check your payment details and try again.'}
@@ -253,15 +325,23 @@ const PaymentFailedScreen = () => {
                   style={[
                     styles.secondaryButton,
                     { borderColor: theme.border },
+                    goingToCart && styles.disabledButton,
                   ]}
-                  onPress={handleViewOrder}
-                  disabled={retrying}
+                  onPress={handleGoToCart}
+                  disabled={retrying || goingToCart}
                 >
-                  <Text
-                    style={[styles.secondaryButtonText, { color: theme.text }]}
-                  >
-                    View Order Details
-                  </Text>
+                  {goingToCart ? (
+                    <ActivityIndicator color={theme.text} size="small" />
+                  ) : (
+                    <Text
+                      style={[
+                        styles.secondaryButtonText,
+                        { color: theme.text },
+                      ]}
+                    >
+                      Go Back to Cart
+                    </Text>
+                  )}
                 </Pressable>
               </>
             ) : (

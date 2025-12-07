@@ -1,6 +1,13 @@
 // See FRONTEND_IMPLEMENTATION.md - State Management
 
-import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useCallback,
+  ReactNode,
+} from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { Product } from '@/types/Product';
 
@@ -38,6 +45,22 @@ interface CartContextType {
   clearCart: () => void;
   getSubtotal: () => number;
   getTotalItems: () => number;
+  /** Restore cart items from a failed order */
+  restoreFromOrder: (
+    orderItems: RestoreOrderItem[],
+    businessId: string,
+    businessName?: string
+  ) => void;
+}
+
+/** Simplified order item for cart restoration */
+export interface RestoreOrderItem {
+  product_id: string;
+  product_name?: string;
+  unit_price: number;
+  quantity: number;
+  special_requests?: string;
+  product_image_url?: string;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
@@ -61,20 +84,24 @@ export const CartProvider = ({ children }: CartProviderProps) => {
     const loadPersistedCart = async () => {
       try {
         const storedData = await AsyncStorage.getItem(CART_STORAGE_KEY);
-        
+
         if (storedData) {
           const parsedData: PersistedCartData = JSON.parse(storedData);
-          
+
           // Check if cart has expired (24 hours)
           const now = Date.now();
           const cartAge = now - parsedData.timestamp;
           const expiryMs = CART_EXPIRY_HOURS * 60 * 60 * 1000;
-          
+
           if (cartAge > expiryMs) {
             console.log('[CartContext] Persisted cart expired, clearing');
             await AsyncStorage.removeItem(CART_STORAGE_KEY);
           } else if (parsedData.items && parsedData.items.length > 0) {
-            console.log('[CartContext] Restoring cart with', parsedData.items.length, 'items');
+            console.log(
+              '[CartContext] Restoring cart with',
+              parsedData.items.length,
+              'items'
+            );
             setItems(parsedData.items);
             setBusinessId(parsedData.businessId);
             setBusinessName(parsedData.businessName);
@@ -115,8 +142,15 @@ export const CartProvider = ({ children }: CartProviderProps) => {
             businessName,
             timestamp: Date.now(),
           };
-          await AsyncStorage.setItem(CART_STORAGE_KEY, JSON.stringify(dataToStore));
-          console.log('[CartContext] Cart persisted with', items.length, 'items');
+          await AsyncStorage.setItem(
+            CART_STORAGE_KEY,
+            JSON.stringify(dataToStore)
+          );
+          console.log(
+            '[CartContext] Cart persisted with',
+            items.length,
+            'items'
+          );
         }
       } catch (error) {
         console.error('[CartContext] Failed to persist cart:', error);
@@ -143,12 +177,15 @@ export const CartProvider = ({ children }: CartProviderProps) => {
       throw new Error(`${product.name} is currently unavailable`);
     }
 
-    const currentStock = typeof product.current_stock === 'string' 
-      ? parseInt(product.current_stock) 
-      : (product.current_stock || 0);
+    const currentStock =
+      typeof product.current_stock === 'string'
+        ? parseInt(product.current_stock)
+        : product.current_stock || 0;
 
     if (quantity > currentStock) {
-      throw new Error(`Only ${currentStock} units of ${product.name} available`);
+      throw new Error(
+        `Only ${currentStock} units of ${product.name} available`
+      );
     }
 
     // Set business on first item
@@ -167,9 +204,11 @@ export const CartProvider = ({ children }: CartProviderProps) => {
         // Update existing item
         const updated = [...prevItems];
         const newQuantity = updated[existingIndex].quantity + quantity;
-        
+
         if (newQuantity > currentStock) {
-          throw new Error(`Cannot add more. Only ${currentStock} units available.`);
+          throw new Error(
+            `Cannot add more. Only ${currentStock} units available.`
+          );
         }
 
         updated[existingIndex] = {
@@ -189,13 +228,17 @@ export const CartProvider = ({ children }: CartProviderProps) => {
         const newItem: CartItem = {
           product_id: product.id,
           product_name: product.name,
-          price: typeof product.price === 'string' 
-            ? parseFloat(product.price) 
-            : product.price,
+          price:
+            typeof product.price === 'string'
+              ? parseFloat(product.price)
+              : product.price,
           quantity,
           special_requests: notes,
           stock: currentStock,
-          is_unavailable: isTemporarilyUnavailable || product.status === 'out_of_stock' || product.status === 'inactive',
+          is_unavailable:
+            isTemporarilyUnavailable ||
+            product.status === 'out_of_stock' ||
+            product.status === 'inactive',
           image_url: product.image_url || undefined,
         };
         return [...prevItems, newItem];
@@ -230,14 +273,16 @@ export const CartProvider = ({ children }: CartProviderProps) => {
    */
   const removeFromCart = (productId: string) => {
     setItems((prevItems) => {
-      const filtered = prevItems.filter((item) => item.product_id !== productId);
-      
+      const filtered = prevItems.filter(
+        (item) => item.product_id !== productId
+      );
+
       // Clear business if cart becomes empty
       if (filtered.length === 0) {
         setBusinessId(null);
         setBusinessName(null);
       }
-      
+
       return filtered;
     });
   };
@@ -273,6 +318,44 @@ export const CartProvider = ({ children }: CartProviderProps) => {
     return items.reduce((sum, item) => sum + item.quantity, 0);
   };
 
+  /**
+   * Restore cart items from a failed order
+   * Used when user doesn't want to retry payment and wants to go back to cart
+   */
+  const restoreFromOrder = useCallback(
+    (
+      orderItems: RestoreOrderItem[],
+      orderBusinessId: string,
+      orderBusinessName?: string
+    ) => {
+      console.log(
+        '[CartContext] Restoring',
+        orderItems.length,
+        'items from failed order'
+      );
+
+      // Convert order items to cart items
+      const restoredItems: CartItem[] = orderItems.map((item) => ({
+        product_id: item.product_id,
+        product_name: item.product_name || 'Unknown Product',
+        price:
+          typeof item.unit_price === 'string'
+            ? parseFloat(item.unit_price)
+            : item.unit_price,
+        quantity: item.quantity,
+        special_requests: item.special_requests,
+        stock: 999, // Stock will be validated at checkout
+        is_unavailable: false, // Will be checked when viewing cart
+        image_url: item.product_image_url,
+      }));
+
+      setItems(restoredItems);
+      setBusinessId(orderBusinessId);
+      setBusinessName(orderBusinessName || orderBusinessId);
+    },
+    []
+  );
+
   return (
     <CartContext.Provider
       value={{
@@ -286,6 +369,7 @@ export const CartProvider = ({ children }: CartProviderProps) => {
         clearCart,
         getSubtotal,
         getTotalItems,
+        restoreFromOrder,
       }}
     >
       {children}
