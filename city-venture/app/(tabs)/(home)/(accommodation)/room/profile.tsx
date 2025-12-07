@@ -39,6 +39,7 @@ import {
 } from '@/services/FavoriteService';
 import * as PromotionService from '@/services/PromotionService';
 import type { Promotion } from '@/types/Promotion';
+import { LinearGradient } from 'expo-linear-gradient';
 
 const { width, height } = Dimensions.get('window');
 
@@ -278,30 +279,60 @@ const AccommodationProfile = () => {
         contentContainerStyle={{ paddingBottom: 140 }}
         ListHeaderComponent={
           <>
-            <Image
-              source={
-                roomDetails?.room_image
-                  ? { uri: roomDetails.room_image }
-                  : placeholder
-              }
-              style={styles.image}
-              resizeMode="cover"
-            />
-
-            <Container padding={16} backgroundColor={bg}>
-              <Container
-                padding={0}
-                backgroundColor="transparent"
-                direction="row"
-                justify="space-between"
+            <View style={styles.imageContainer}>
+              <Image
+                source={
+                  roomDetails?.room_image
+                    ? { uri: roomDetails.room_image }
+                    : placeholder
+                }
+                style={styles.image}
+                resizeMode="cover"
+              />
+              <LinearGradient
+                colors={['transparent', 'rgba(0, 0, 0, 0.8)']}
+                style={{
+                  position: 'absolute',
+                  bottom: 0,
+                  left: 0,
+                  width: '100%',
+                  paddingTop: 40,
+                  paddingBottom: 12,
+                  paddingHorizontal: 16,
+                }}
               >
-                <View>
-                  <ThemedText type="card-title-medium" weight="bold">
-                    Room {roomDetails?.room_number}
-                  </ThemedText>
-                  <ThemedText type="body-small">
-                    Size: {roomDetails?.floor}sqm
-                  </ThemedText>
+                <Container
+                  padding={0}
+                  backgroundColor="transparent"
+                  direction="row"
+                  justify="space-between"
+                >
+                  <View>
+                    <ThemedText
+                      style={{ color: '#FFFFFF' }}
+                      type="card-title-medium"
+                      weight="bold"
+                    >
+                      Room {roomDetails?.room_number}
+                    </ThemedText>
+                    <ThemedText style={{ color: '#FFFFFF' }} type="body-small">
+                      Size: {roomDetails?.floor}sqm
+                    </ThemedText>
+
+                    <View>
+                      <ThemedText
+                        type="body-medium"
+                        style={{ color: '#FFFFFF' }}
+                      >
+                        <MaterialCommunityIcons
+                          name="star"
+                          size={20}
+                          color="#FFB007"
+                        />
+                        {headerRating} ({totalReviews} reviews)
+                      </ThemedText>
+                    </View>
+                  </View>
 
                   {formattedPrice.hasDiscount ? (
                     <View style={{ marginTop: 4 }}>
@@ -322,16 +353,16 @@ const AccommodationProfile = () => {
                         }}
                       >
                         <ThemedText
-                          darkColor={colors.secondary}
+                          darkColor={colors.light}
                           weight="bold"
-                          lightColor={colors.secondary}
+                          lightColor={colors.light}
                           type="sub-title-large"
                         >
                           {formattedPrice.discounted}
                         </ThemedText>
                         <View
                           style={{
-                            backgroundColor: colors.secondary,
+                            backgroundColor: colors.warning,
                             paddingHorizontal: 8,
                             paddingVertical: 2,
                             borderRadius: 4,
@@ -349,29 +380,20 @@ const AccommodationProfile = () => {
                     </View>
                   ) : (
                     <ThemedText
-                      darkColor={colors.warning}
+                      darkColor={colors.light}
                       weight="medium"
-                      lightColor={colors.warning}
+                      lightColor={colors.light}
                       type="sub-title-large"
                       style={{ marginTop: 4 }}
                     >
                       {formattedPrice.original}
                     </ThemedText>
                   )}
-                </View>
+                </Container>
+              </LinearGradient>
+            </View>
 
-                <View>
-                  <ThemedText type="body-medium">
-                    <MaterialCommunityIcons
-                      name="star"
-                      size={20}
-                      color="#FFB007"
-                    />
-                    {headerRating} ({totalReviews} reviews)
-                  </ThemedText>
-                </View>
-              </Container>
-
+            <Container padding={16} backgroundColor={bg}>
               <Tabs tabs={TABS} onTabChange={handleTabChange} />
             </Container>
 
@@ -418,6 +440,11 @@ const AccommodationProfile = () => {
 };
 
 const styles = StyleSheet.create({
+  imageContainer: {
+    position: 'relative',
+    width: width * 1,
+    height: height * 0.4,
+  },
   image: {
     width: width * 1,
     height: height * 0.4,

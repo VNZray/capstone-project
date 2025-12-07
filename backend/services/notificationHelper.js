@@ -30,6 +30,7 @@ export async function sendNotification(recipientId, title, message, type, metada
       'order_updated': 'order_confirmed',
       'order_cancelled': 'order_cancelled',
       'payment_updated': 'payment_received',
+      'booking_created': 'booking_created',
       'booking_completed': 'booking_completed',
       'booking_confirmed': 'booking_confirmed',
       'booking_cancelled': 'booking_cancelled',

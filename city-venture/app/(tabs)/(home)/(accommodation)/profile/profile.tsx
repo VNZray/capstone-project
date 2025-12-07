@@ -14,6 +14,8 @@ import {
   NativeScrollEvent,
   Platform,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { BlurView } from 'expo-blur';
 
 import Tabs from '@/components/Tabs';
 import { ThemedText } from '@/components/themed-text';
@@ -143,18 +145,74 @@ const AccommodationProfile = () => {
         scrollEventThrottle={32}
         ListHeaderComponent={
           <>
-            <Image
-              source={
-                accommodationDetails?.business_image
-                  ? { uri: accommodationDetails.business_image }
-                  : placeholder
-              }
-              style={styles.image}
-              resizeMode="cover"
-            />
+            <View style={styles.imageContainer}>
+              <Image
+                source={
+                  accommodationDetails?.business_image
+                    ? { uri: accommodationDetails.business_image }
+                    : placeholder
+                }
+                style={styles.image}
+                resizeMode="cover"
+              />
+              <LinearGradient
+                colors={['transparent', 'rgba(0, 0, 0, 0.8)']}
+                style={{
+                  position: 'absolute',
+                  bottom: 0,
+                  left: 0,
+                  width: '100%',
+                  paddingTop: 40,
+                  paddingBottom: 12,
+                  paddingHorizontal: 16,
+                }}
+              >
+                <Container
+                  direction="row"
+                  backgroundColor="transparent"
+                  padding={0}
+                  align="center"
+                  gap={4}
+                >
+                  <MaterialCommunityIcons
+                    name="map-marker"
+                    size={20}
+                    color={colors.accent}
+                  />
+                  <ThemedText
+                    type="body-large"
+                    weight="semi-bold"
+                    style={{ color: '#FFFFFF' }}
+                  >
+                    {accommodationDetails?.address}
+                  </ThemedText>
+                </Container>
+                <Container
+                  direction="row"
+                  backgroundColor="transparent"
+                  padding={0}
+                  align="center"
+                  gap={4}
+                >
+                  <MaterialCommunityIcons
+                    name="star"
+                    size={20}
+                    color={colors.accent}
+                  />
+                  <ThemedText
+                    type="body-medium"
+                    weight="normal"
+                    style={{ color: '#FFFFFF' }}
+                  >
+                    {accommodationDetails.ratings} (
+                    {accommodationDetails.reviews})
+                  </ThemedText>
+                </Container>
+              </LinearGradient>
+            </View>
 
             <Container padding={16} backgroundColor={bg}>
-              <Container
+              {/* <Container
                 padding={0}
                 backgroundColor="transparent"
                 direction="row"
@@ -176,9 +234,7 @@ const AccommodationProfile = () => {
                       size={16}
                       color={colors.accent}
                     />
-                    {accommodationDetails?.address},{' '}
-                    {/* {accommodationDetails?.barangay_name},{' '}
-                    {accommodationDetails?.municipality_name} */}
+                    {accommodationDetails?.address}
                   </ThemedText>
                   <Chip
                     size="small"
@@ -191,17 +247,25 @@ const AccommodationProfile = () => {
                 </View>
 
                 <View>
-                  <ThemedText type="body-small">
+                  <Container
+                    direction="row"
+                    backgroundColor="transparent"
+                    padding={0}
+                    align="center"
+                    gap={4}
+                  >
                     <MaterialCommunityIcons
                       name="star"
                       size={20}
                       color={colors.accent}
                     />
-                    {accommodationDetails.ratings} (
-                    {accommodationDetails.reviews} reviews)
-                  </ThemedText>
+                    <ThemedText type="body-small">
+                      {accommodationDetails.ratings} (
+                      {accommodationDetails.reviews})
+                    </ThemedText>
+                  </Container>
                 </View>
-              </Container>
+              </Container> */}
 
               <Tabs tabs={TABS} onTabChange={handleTabChange} />
             </Container>
@@ -219,9 +283,14 @@ const AccommodationProfile = () => {
 };
 
 const styles = StyleSheet.create({
-  image: {
+  imageContainer: {
+    position: 'relative',
     width: width * 1,
     height: height * 0.4,
+  },
+  image: {
+    width: '100%',
+    height: '100%',
   },
   content: {
     padding: 16,

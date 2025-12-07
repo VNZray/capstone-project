@@ -86,6 +86,7 @@ export const Tab: React.FC<TabProps> = (props) => {
       accessibilityState={{ selected: isActive }}
     >
       <ThemedText
+        type="body-small"
         weight={isActive ? 'medium' : 'normal'}
         style={[{ color: isActive ? colors.primary : 'black' }]}
       >

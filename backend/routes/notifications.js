@@ -8,7 +8,7 @@ const router = express.Router();
 // ==================== NOTIFICATION ROUTES ====================
 
 // All notification routes require authentication
-router.get("/user/:userId", authenticate, notificationController.getNotificationsByUserId);
+router.get("/user/:userId", notificationController.getNotificationsByUserId);
 router.get("/user/:userId/unread", authenticate, notificationController.getUnreadNotificationsByUserId);
 router.get("/user/:userId/unread/count", authenticate, notificationController.getUnreadNotificationCount);
 router.post("/user/:userId/mark-all-read", authenticate, notificationController.markAllNotificationsAsRead);

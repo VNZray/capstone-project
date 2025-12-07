@@ -31,6 +31,28 @@ export interface NotificationResponse {
 }
 
 /**
+ * Parse notification metadata from JSON string to object
+ */
+const parseNotificationMetadata = (notification: any): Notification => {
+    let parsedMetadata = notification.metadata;
+
+    // Parse metadata if it's a JSON string
+    if (typeof notification.metadata === 'string') {
+        try {
+            parsedMetadata = JSON.parse(notification.metadata);
+        } catch {
+            parsedMetadata = {};
+        }
+    }
+
+    return {
+        ...notification,
+        metadata: parsedMetadata || {},
+        is_read: Boolean(notification.is_read), // Convert 0/1 to boolean
+    };
+};
+
+/**
  * Fetch all notifications for a user
  */
 export const getNotificationsByUserId = async (
@@ -39,7 +61,9 @@ export const getNotificationsByUserId = async (
     try {
         const response = await apiClient.get(`/notifications/user/${userId}`);
         // Response is an array with the first element being the notifications array
-        return response.data[0] || [];
+        const rawNotifications = response.data[0] || [];
+        // Parse metadata for each notification
+        return rawNotifications.map(parseNotificationMetadata);
     } catch (error) {
         console.error('Failed to fetch notifications:', error);
         throw error;
@@ -54,7 +78,8 @@ export const getUnreadNotifications = async (
 ): Promise<Notification[]> => {
     try {
         const response = await apiClient.get(`/notifications/user/${userId}/unread`);
-        return response.data[0] || [];
+        const rawNotifications = response.data[0] || [];
+        return rawNotifications.map(parseNotificationMetadata);
     } catch (error) {
         console.error('Failed to fetch unread notifications:', error);
         throw error;

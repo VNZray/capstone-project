@@ -211,17 +211,28 @@ export async function insertBooking(req, res) {
     if (createdBooking) {
       try {
         // Get business and room details for the notification
-        const [businessData] = await db.query("SELECT id, business_name FROM business WHERE id = ?", [business_id]);
+        const [businessData] = await db.query(
+          `SELECT b.id, b.business_name, b.owner_id, o.user_id as owner_user_id, o.first_name as owner_first_name
+           FROM business b
+           JOIN owner o ON b.owner_id = o.id
+           WHERE b.id = ?`,
+          [business_id]
+        );
         const [roomData] = await db.query("SELECT id, room_number FROM room WHERE id = ?", [room_id]);
         const [touristData] = await db.query("CALL GetTouristById(?)", [tourist_id]);
+        const [userData] = await db.query("CALL GetUserById(?)", [touristData[0]?.[0]?.user_id]);
 
         const businessName = businessData[0]?.business_name || "the accommodation";
         const roomNumber = roomData[0]?.room_number || "";
-        const userId = touristData[0]?.[0]?.user_id;
+        const touristUserId = touristData[0]?.[0]?.user_id;
+        const touristName = `${touristData[0]?.[0]?.first_name || ""} ${touristData[0]?.[0]?.last_name || ""}`.trim();
+        const ownerUserId = businessData[0]?.owner_user_id;
+        const userProfile = userData[0]?.[0].user_profile || null;
 
-        if (userId) {
+        // Send notification to tourist - Booking Confirmed
+        if (touristUserId) {
           await sendNotification(
-            userId,
+            touristUserId,
             "Booking Confirmed",
             `Your booking at ${businessName}${roomNumber ? ` (Room ${roomNumber})` : ""} has been successfully secured.`,
             "booking_confirmed",
@@ -236,8 +247,30 @@ export async function insertBooking(req, res) {
             }
           );
         }
+
+        // Send notification to business owner - New Booking
+        if (ownerUserId) {
+          await sendNotification(
+            ownerUserId,
+            "New Booking Received",
+            `${touristName || "A guest"} has booked ${roomNumber ? `Room ${roomNumber}` : "a room"}. Check-in: ${check_in_date}.`,
+            "booking_created",
+            {
+              booking_id: id,
+              business_id: business_id,
+              business_name: businessName,
+              room_id: room_id,
+              room_number: roomNumber,
+              check_in_date: check_in_date,
+              check_out_date: check_out_date,
+              guest_name: touristName,
+              total_price: total_price,
+              user_profile: userProfile,
+            }
+          );
+        }
       } catch (notifError) {
-        console.error("Failed to send booking confirmation notification:", notifError);
+        console.error("Failed to send booking notification:", notifError);
         // Don't fail the booking if notification fails
       }
     }

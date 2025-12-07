@@ -2,12 +2,13 @@ import { Colors } from '@/constants/color';
 import { useColorScheme } from '@/hooks';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ThemedText } from '../themed-text';
-import Container from '../Container';
 import { IconSymbol } from '../ui/icon-symbol';
 import { StatusBar } from 'expo-status-bar';
+import { BlurView } from 'expo-blur';
+import HeaderButton from './HeaderButton';
 
 type Props = {
   background?: 'dark' | 'light' | 'primary' | 'secondary' | 'transparent';
@@ -32,21 +33,21 @@ const findBackgroundColor = (
     return Colors.light.primary;
   } else if (background === 'secondary') {
     return Colors.light.secondary;
+  } else if (background === 'transparent') {
+    return 'transparent';
   } else {
     return background || (isDark ? '#0D1B2A' : '#F8F9FA');
   }
 };
 
 const findTextColor = (background: Props['background'], isDark: boolean) => {
-  if (background === 'dark') {
+  if (background === 'dark' || background === 'transparent') {
     return '#FFFFFF';
   } else if (background === 'light') {
     return '#0D1B2A';
   } else if (background === 'primary') {
     return '#FFFFFF';
   } else if (background === 'secondary') {
-    return '#FFFFFF';
-  } else if (background === 'transparent') {
     return '#FFFFFF';
   } else {
     return isDark ? '#FFFFFF' : '#0D1B2A';
@@ -56,17 +57,21 @@ const findTextColor = (background: Props['background'], isDark: boolean) => {
 export const AppHeader = (props: Props) => {
   const scheme = useColorScheme();
   const isDark = scheme === 'dark';
+  const isTransparent = props.background === 'transparent';
 
-  return (
-    <SafeAreaView
-      edges={['top']}
-      style={{
-        padding: 16,
-        backgroundColor: findBackgroundColor(props.background, isDark),
-        display: 'flex',
-      }}
-    >
-      <StatusBar style={props.background === 'primary' ? 'light' : 'dark'} />
+  const handleBackPress = () => {
+    router.back();
+  };
+
+  const headerContent = (
+    <>
+      <StatusBar
+        style={
+          props.background === 'primary' || props.background === 'transparent'
+            ? 'light'
+            : 'auto'
+        }
+      />
       <View
         style={{
           display: 'flex',
@@ -78,25 +83,8 @@ export const AppHeader = (props: Props) => {
         <View style={{ flex: 1 }}>
           {props.backButton ? (
             <>
-              {props.headerBackTitle === '' ? (
-                <Pressable
-                  onPress={() =>
-                    props.onPress ? props.onPress() : router.back()
-                  }
-                  style={[
-                    styles.backButton,
-                    {
-                      backgroundColor: findBackgroundColor(
-                        props.background,
-                        isDark
-                      ),
-                    },
-                  ]}
-                >
-                  <IconSymbol name="arrow.backward" color={'white'} size={32} />
-                </Pressable>
-              ) : (
-                <Pressable
+              {props.headerBackTitle ? (
+                <TouchableOpacity
                   onPress={() =>
                     props.onPress ? props.onPress() : router.back()
                   }
@@ -105,7 +93,7 @@ export const AppHeader = (props: Props) => {
                     startIcon={
                       <Ionicons
                         name="arrow-back"
-                        size={20}
+                        size={24}
                         color={findTextColor(props.background, isDark)}
                       />
                     }
@@ -115,7 +103,14 @@ export const AppHeader = (props: Props) => {
                   >
                     {props.headerBackTitle}
                   </ThemedText>
-                </Pressable>
+                </TouchableOpacity>
+              ) : (
+                <HeaderButton
+                  isTransparent={isTransparent}
+                  icon="chevron.left"
+                  onPress={handleBackPress}
+                  iconColor={findTextColor(props.background, isDark)}
+                />
               )}
             </>
           ) : (
@@ -146,21 +141,58 @@ export const AppHeader = (props: Props) => {
       {props.bottomComponent && (
         <View style={{ marginTop: 12 }}>{props.bottomComponent}</View>
       )}
+    </>
+  );
+
+  // Use BlurView for transparent background
+  if (isTransparent) {
+    return (
+      <BlurView
+        tint="systemChromeMaterialDark"
+        intensity={15}
+        style={styles.blurContainer}
+      >
+        <SafeAreaView edges={['top']} style={styles.transparentHeader}>
+          {headerContent}
+        </SafeAreaView>
+      </BlurView>
+    );
+  }
+
+  return (
+    <SafeAreaView
+      edges={['top']}
+      style={{
+        padding: 16,
+        backgroundColor: findBackgroundColor(props.background, isDark),
+        display: 'flex',
+      }}
+    >
+      {headerContent}
     </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
   backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 42,
+    height: 42,
+    borderRadius: 21,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.2)',
+  },
+  blurContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 100,
+    overflow: 'hidden',
+  },
+  transparentHeader: {
+    padding: 16,
+    backgroundColor: 'rgba(0, 0, 0, 0.4)', // translucent black
   },
 });

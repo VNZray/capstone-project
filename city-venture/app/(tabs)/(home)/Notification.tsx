@@ -19,11 +19,24 @@ import NotificationService, {
   type Notification,
 } from '@/services/NotificationService';
 import AddReview from '@/components/reviews/AddReview';
-import { createReview } from '@/services/FeedbackService';
+import {
+  createReview,
+  checkIfTouristHasReviewed,
+} from '@/services/FeedbackService';
 
 interface NotificationSection {
   title: string;
   data: Notification[];
+}
+
+// Extended notification type with review status
+interface NotificationWithReviewStatus extends Notification {
+  hasReviewed?: boolean;
+}
+
+interface NotificationSectionWithReviewStatus {
+  title: string;
+  data: NotificationWithReviewStatus[];
 }
 
 const NotificationScreen = () => {
@@ -31,12 +44,14 @@ const NotificationScreen = () => {
   const isDark = scheme === 'dark';
   const { user } = useAuth();
 
-  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [notifications, setNotifications] = useState<
+    NotificationWithReviewStatus[]
+  >([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [reviewModalVisible, setReviewModalVisible] = useState(false);
   const [selectedNotification, setSelectedNotification] =
-    useState<Notification | null>(null);
+    useState<NotificationWithReviewStatus | null>(null);
 
   const textColor = isDark ? '#ECEDEE' : '#0D1B2A';
   const subTextColor = isDark ? '#9BA1A6' : '#6B7280';
@@ -44,48 +59,49 @@ const NotificationScreen = () => {
   const bgColor = isDark ? '#0D1B2A' : '#F8FAFC';
 
   // Group notifications by date
-  const groupedNotifications = useMemo((): NotificationSection[] => {
-    if (notifications.length === 0) return [];
+  const groupedNotifications =
+    useMemo((): NotificationSectionWithReviewStatus[] => {
+      if (notifications.length === 0) return [];
 
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
 
-    const yesterday = new Date(today);
-    yesterday.setDate(yesterday.getDate() - 1);
+      const yesterday = new Date(today);
+      yesterday.setDate(yesterday.getDate() - 1);
 
-    const groups: { [key: string]: Notification[] } = {
-      TODAY: [],
-      YESTERDAY: [],
-      OLDER: [],
-    };
+      const groups: { [key: string]: NotificationWithReviewStatus[] } = {
+        TODAY: [],
+        YESTERDAY: [],
+        OLDER: [],
+      };
 
-    notifications.forEach((notification) => {
-      const notifDate = new Date(notification.created_at);
-      notifDate.setHours(0, 0, 0, 0);
+      notifications.forEach((notification) => {
+        const notifDate = new Date(notification.created_at);
+        notifDate.setHours(0, 0, 0, 0);
 
-      if (notifDate.getTime() === today.getTime()) {
-        groups.TODAY.push(notification);
-      } else if (notifDate.getTime() === yesterday.getTime()) {
-        groups.YESTERDAY.push(notification);
-      } else {
-        groups.OLDER.push(notification);
+        if (notifDate.getTime() === today.getTime()) {
+          groups.TODAY.push(notification);
+        } else if (notifDate.getTime() === yesterday.getTime()) {
+          groups.YESTERDAY.push(notification);
+        } else {
+          groups.OLDER.push(notification);
+        }
+      });
+
+      const sections: NotificationSectionWithReviewStatus[] = [];
+
+      if (groups.TODAY.length > 0) {
+        sections.push({ title: 'TODAY', data: groups.TODAY });
       }
-    });
+      if (groups.YESTERDAY.length > 0) {
+        sections.push({ title: 'YESTERDAY', data: groups.YESTERDAY });
+      }
+      if (groups.OLDER.length > 0) {
+        sections.push({ title: 'OLDER', data: groups.OLDER });
+      }
 
-    const sections: NotificationSection[] = [];
-
-    if (groups.TODAY.length > 0) {
-      sections.push({ title: 'TODAY', data: groups.TODAY });
-    }
-    if (groups.YESTERDAY.length > 0) {
-      sections.push({ title: 'YESTERDAY', data: groups.YESTERDAY });
-    }
-    if (groups.OLDER.length > 0) {
-      sections.push({ title: 'OLDER', data: groups.OLDER });
-    }
-
-    return sections;
-  }, [notifications]);
+      return sections;
+    }, [notifications]);
 
   const fetchNotifications = useCallback(async () => {
     if (!user?.id) return;
@@ -94,7 +110,28 @@ const NotificationScreen = () => {
       const data = await NotificationService.getNotificationsByUserId(
         user.user_id!
       );
-      setNotifications(data);
+
+      // Check review status for booking_completed notifications
+      const notificationsWithReviewStatus = await Promise.all(
+        data.map(async (notification) => {
+          if (
+            notification.notification_type === 'booking_completed' &&
+            notification.related_type === 'service_booking' &&
+            notification.metadata?.business_id &&
+            user.id
+          ) {
+            const hasReviewed = await checkIfTouristHasReviewed(
+              user.id,
+              'accommodation',
+              notification.metadata.business_id
+            );
+            return { ...notification, hasReviewed };
+          }
+          return { ...notification, hasReviewed: false };
+        })
+      );
+
+      setNotifications(notificationsWithReviewStatus);
     } catch (error) {
       console.error('Failed to fetch notifications:', error);
     } finally {
@@ -156,7 +193,7 @@ const NotificationScreen = () => {
   const renderSectionHeader = ({
     section,
   }: {
-    section: NotificationSection;
+    section: NotificationSectionWithReviewStatus;
   }) => (
     <View style={styles.sectionHeader}>
       <ThemedText
@@ -169,11 +206,16 @@ const NotificationScreen = () => {
     </View>
   );
 
-  const renderNotificationItem = ({ item }: { item: Notification }) => (
+  const renderNotificationItem = ({
+    item,
+  }: {
+    item: NotificationWithReviewStatus;
+  }) => (
     <NotificationCard
       notification={item}
       onPress={handleNotificationPress}
       onRateUs={handleRateUs}
+      hasReviewed={item.hasReviewed}
     />
   );
 
@@ -275,6 +317,9 @@ const NotificationScreen = () => {
       {/* Review Modal */}
       {user && selectedNotification && (
         <AddReview
+          title={`How was your stay at ${
+            selectedNotification.metadata?.business_name || 'the accommodation'
+          }?`}
           visible={reviewModalVisible}
           onClose={() => {
             setReviewModalVisible(false);
@@ -283,6 +328,14 @@ const NotificationScreen = () => {
           onSubmit={async (payload) => {
             try {
               await createReview(payload);
+              // Update local state to mark this notification as reviewed
+              setNotifications((prev) =>
+                prev.map((n) =>
+                  n.id === selectedNotification.id
+                    ? { ...n, hasReviewed: true }
+                    : n
+                )
+              );
               setReviewModalVisible(false);
               setSelectedNotification(null);
               Alert.alert(
@@ -295,8 +348,8 @@ const NotificationScreen = () => {
             }
           }}
           touristId={user.id || ''}
-          reviewType="room"
-          reviewTypeId={selectedNotification.metadata?.room_id || ''}
+          reviewType="accommodation"
+          reviewTypeId={selectedNotification.metadata?.business_id || ''}
         />
       )}
     </PageContainer>
@@ -326,7 +379,7 @@ const styles = StyleSheet.create({
   },
   listContent: {
     paddingHorizontal: 16,
-    paddingBottom: 12,
+    paddingBottom: 240,
     marginBottom: 8,
   },
   emptyContainer: {

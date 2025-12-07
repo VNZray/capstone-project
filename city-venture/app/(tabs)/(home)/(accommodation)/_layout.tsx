@@ -1,16 +1,32 @@
-import { AccommodationProvider } from '@/context/AccommodationContext';
-import { RoomProvider } from '@/context/RoomContext';
+import {
+  AccommodationProvider,
+  useAccommodation,
+} from '@/context/AccommodationContext';
+import { RoomProvider, useRoom } from '@/context/RoomContext';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { View, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { AppHeader } from '@/components/header/AppHeader';
+import HeaderButton from '@/components/header/HeaderButton';
+import { Colors } from '@/constants/color';
+import React from 'react';
+import Container from '@/components/Container';
 const AccommodationLayout = () => {
+  const { accommodationDetails } = useAccommodation();
+  const { roomDetails } = useRoom();
   const scheme = useColorScheme();
+  const [favorite, setFavorite] = React.useState(false);
+
+  const toggleFavorite = () => {
+    setFavorite(!favorite);
+  };
+
   return (
     <AccommodationProvider>
       <RoomProvider>
-        <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
         <Stack
           screenOptions={{
             headerBackVisible: false,
@@ -19,20 +35,29 @@ const AccommodationLayout = () => {
           <Stack.Screen
             name="profile/profile"
             options={{
-              headerTransparent: true,
               headerShown: true,
               animation: 'slide_from_right',
-              headerTitleAlign: 'center',
-              headerTitleStyle: {
-                color: '#fff',
-              },
-              headerTintColor: '#fff',
-              headerBackground: () => (
-                <View
-                  style={{
-                    flex: 1,
-                    backgroundColor: 'rgba(0, 0, 0, 0.4)',
-                  }}
+              header: () => (
+                <AppHeader
+                  backButton
+                  title={accommodationDetails?.business_name}
+                  background="transparent"
+                  rightComponent={
+                    <Container
+                      padding={0}
+                      direction="row"
+                      backgroundColor="transparent"
+                      align="center"
+                      justify="flex-end"
+                      gap={8}
+                    >
+                      <HeaderButton
+                        onPress={toggleFavorite}
+                        icon={favorite ? 'heart.fill' : 'heart'}
+                      />
+                      <HeaderButton icon="paperplane.fill" />
+                    </Container>
+                  }
                 />
               ),
             }}
@@ -48,12 +73,11 @@ const AccommodationLayout = () => {
                 color: '#fff',
               },
               headerTintColor: '#fff',
-              headerBackground: () => (
-                <View
-                  style={{
-                    flex: 1,
-                    backgroundColor: 'rgba(0, 0, 0, 0.4)', // translucent black
-                  }}
+              header: () => (
+                <AppHeader
+                  backButton
+                  title={roomDetails?.room_type}
+                  background="transparent"
                 />
               ),
             }}
@@ -84,12 +108,6 @@ const AccommodationLayout = () => {
               headerShown: false,
               animation: 'fade',
               gestureEnabled: false,
-            }}
-          />
-          <Stack.Screen
-            name="room/(booking)"
-            options={{
-              headerShown: false,
             }}
           />
           <Stack.Screen

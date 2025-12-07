@@ -11,12 +11,14 @@ interface NotificationCardProps {
   notification: Notification;
   onPress: (notification: Notification) => void;
   onRateUs?: (notification: Notification) => void;
+  hasReviewed?: boolean;
 }
 
 const NotificationCard: React.FC<NotificationCardProps> = ({
   notification,
   onPress,
   onRateUs,
+  hasReviewed = false,
 }) => {
   const scheme = useColorScheme();
   const isDark = scheme === 'dark';
@@ -34,10 +36,11 @@ const NotificationCard: React.FC<NotificationCardProps> = ({
     ? '#2a2f4e'
     : '#EEF2FF'; // Light purple/blue for unread
 
-  // Show Rate Us button for accommodation booking completed notifications
+  // Show Rate Us button for accommodation booking completed notifications (only if not already reviewed)
   const showRateButton =
     notification.notification_type === 'booking_completed' &&
-    notification.related_type === 'service_booking';
+    notification.related_type === 'service_booking' &&
+    !hasReviewed;
 
   const getNotificationIcon = (): {
     name: string;

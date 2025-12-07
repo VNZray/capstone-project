@@ -345,6 +345,28 @@ export async function getTotalReviews(
   return isNaN(total) ? 0 : total;
 }
 
+/**
+ * Check if a tourist has already reviewed a specific entity (room, accommodation, etc.)
+ * Returns true if a review exists, false otherwise
+ */
+export async function checkIfTouristHasReviewed(
+  touristId: string,
+  reviewType: ReviewType,
+  reviewTypeId: string
+): Promise<boolean> {
+  try {
+    const reviews = await getReviewsByTypeAndEntityId(reviewType, reviewTypeId);
+    // Filter out invalid entries and check if tourist has reviewed
+    const validReviews = reviews.filter(
+      (r) => r && typeof r === 'object' && 'id' in r && 'tourist_id' in r
+    );
+    return validReviews.some((r) => String(r.tourist_id) === String(touristId));
+  } catch (error) {
+    console.error('Error checking if tourist has reviewed:', error);
+    return false;
+  }
+}
+
 export default {
   // reviews
   getAllReviews,
@@ -354,6 +376,7 @@ export default {
   createReview,
   updateReview,
   deleteReview,
+  checkIfTouristHasReviewed,
   // replies
   getAllReplies,
   getReplyById,

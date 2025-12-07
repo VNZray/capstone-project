@@ -33,6 +33,7 @@ type BookingDetailsBottomSheetProps = {
   onCancelBooking?: (bookingId: string) => Promise<void>;
   onBookAgain?: (booking: Booking) => void;
   onRateBooking?: (booking: Booking) => void;
+  hasReviewed?: boolean;
 };
 
 const BookingDetailsBottomSheet: React.FC<BookingDetailsBottomSheetProps> = ({
@@ -42,6 +43,7 @@ const BookingDetailsBottomSheet: React.FC<BookingDetailsBottomSheetProps> = ({
   onCancelBooking,
   onBookAgain,
   onRateBooking,
+  hasReviewed = false,
 }) => {
   const bottomSheetRef = useRef<BottomSheetModal>(null);
   const scheme = useColorScheme();
@@ -224,7 +226,7 @@ const BookingDetailsBottomSheet: React.FC<BookingDetailsBottomSheetProps> = ({
   return (
     <BottomSheetModal
       ref={bottomSheetRef}
-      index={0}
+      index={1}
       snapPoints={snapPoints}
       onChange={handleSheetChanges}
       backdropComponent={renderBackdrop}
@@ -534,24 +536,25 @@ const BookingDetailsBottomSheet: React.FC<BookingDetailsBottomSheetProps> = ({
             </ThemedText>
           </View>
         )}
+      </BottomSheetScrollView>
 
-        {/* Action Buttons */}
-        <View style={[styles.actionSection, { borderTopColor: borderColor }]}>
-          {booking.booking_status === 'Reserved' && (
-            <Button
-              label={cancelling ? 'Cancelling...' : 'Cancel Booking'}
-              onPress={handleCancelBooking}
-              variant="soft"
-              color="error"
-              size="large"
-              disabled={cancelling}
-              startIcon={cancelling ? undefined : 'close-circle'}
-              fullWidth
-            />
-          )}
+      {/* Action Buttons */}
+      <View style={[styles.actionSection, { borderTopColor: borderColor }]}>
+        {booking.booking_status === 'Reserved' && (
+          <Button
+            label={cancelling ? 'Cancelling...' : 'Cancel Booking'}
+            onPress={handleCancelBooking}
+            variant="soft"
+            color="error"
+            size="large"
+            disabled={cancelling}
+            fullWidth
+          />
+        )}
 
-          {booking.booking_status === 'Checked-Out' && (
-            <View style={{ gap: 12 }}>
+        {booking.booking_status === 'Checked-Out' && (
+          <View style={{ gap: 12 }}>
+            {!hasReviewed && (
               <Button
                 label="Rate Us"
                 onPress={handleRateBooking}
@@ -561,31 +564,30 @@ const BookingDetailsBottomSheet: React.FC<BookingDetailsBottomSheetProps> = ({
                 startIcon="star"
                 fullWidth
               />
-              <Button
-                label="Book Again"
-                onPress={handleBookAgain}
-                variant="outlined"
-                color="primary"
-                size="large"
-                startIcon="refresh"
-                fullWidth
-              />
-            </View>
-          )}
-
-          {booking.booking_status !== 'Reserved' &&
-            booking.booking_status !== 'Checked-Out' && (
-              <Button
-                label="Close"
-                onPress={onClose}
-                variant="outlined"
-                color="neutral"
-                size="large"
-                fullWidth
-              />
             )}
-        </View>
-      </BottomSheetScrollView>
+            <Button
+              label="Book Again"
+              onPress={handleBookAgain}
+              variant="outlined"
+              color="primary"
+              size="large"
+              fullWidth
+            />
+          </View>
+        )}
+
+        {booking.booking_status !== 'Reserved' &&
+          booking.booking_status !== 'Checked-Out' && (
+            <Button
+              label="Close"
+              onPress={onClose}
+              variant="outlined"
+              color="neutral"
+              size="large"
+              fullWidth
+            />
+          )}
+      </View>
     </BottomSheetModal>
   );
 };

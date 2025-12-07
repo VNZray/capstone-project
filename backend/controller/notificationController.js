@@ -31,11 +31,11 @@ export async function getNotificationById(req, res) {
   const { id } = req.params;
   try {
     const [data] = await db.query("CALL GetNotificationById(?)", [id]);
-    
+
     if (!data || data.length === 0) {
       return res.status(404).json({ message: "Notification not found" });
     }
-    
+
     res.json(data[0]);
   } catch (error) {
     return handleDbError(error, res);
@@ -46,10 +46,10 @@ export async function getNotificationById(req, res) {
 export async function insertNotification(req, res) {
   try {
     const notificationId = uuidv4();
-    const { 
-      user_id, 
-      notification_type, 
-      related_id, 
+    const {
+      user_id,
+      notification_type,
+      related_id,
       related_type,
       title,
       message,
@@ -58,12 +58,12 @@ export async function insertNotification(req, res) {
     } = req.body;
 
     const [data] = await db.query(
-      "CALL InsertNotification(?, ?, ?, ?, ?, ?, ?, ?, ?)", 
+      "CALL InsertNotification(?, ?, ?, ?, ?, ?, ?, ?, ?)",
       [
-        notificationId, 
-        user_id, 
-        notification_type, 
-        related_id, 
+        notificationId,
+        user_id,
+        notification_type,
+        related_id,
         related_type,
         title,
         message,
@@ -71,7 +71,7 @@ export async function insertNotification(req, res) {
         delivery_method
       ]
     );
-    
+
     res.status(201).json({
       message: "Notification created successfully",
       data: data[0]
@@ -84,7 +84,7 @@ export async function insertNotification(req, res) {
 // Mark notification as read
 export async function markNotificationAsRead(req, res) {
   const { id } = req.params;
-  
+
   try {
     const [data] = await db.query("CALL MarkNotificationAsRead(?)", [id]);
 
@@ -104,7 +104,7 @@ export async function markNotificationAsRead(req, res) {
 // Mark all notifications as read for a user
 export async function markAllNotificationsAsRead(req, res) {
   const { userId } = req.params;
-  
+
   try {
     const [data] = await db.query("CALL MarkAllNotificationsAsRead(?)", [userId]);
 
@@ -121,7 +121,7 @@ export async function markAllNotificationsAsRead(req, res) {
 export async function updateNotificationDeliveryStatus(req, res) {
   const { id } = req.params;
   const { delivery_status } = req.body;
-  
+
   try {
     const [data] = await db.query("CALL UpdateNotificationDeliveryStatus(?, ?)", [id, delivery_status]);
 
@@ -141,7 +141,7 @@ export async function updateNotificationDeliveryStatus(req, res) {
 // Delete notification
 export async function deleteNotification(req, res) {
   const { id } = req.params;
-  
+
   try {
     await db.query("CALL DeleteNotification(?)", [id]);
     res.json({ message: "Notification deleted successfully" });
@@ -153,7 +153,7 @@ export async function deleteNotification(req, res) {
 // Get unread notification count
 export async function getUnreadNotificationCount(req, res) {
   const { userId } = req.params;
-  
+
   try {
     const [data] = await db.query("CALL GetUnreadNotificationCount(?)", [userId]);
     res.json(data[0]);
