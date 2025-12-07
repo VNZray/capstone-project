@@ -3,7 +3,6 @@ import Container from '@/components/Container';
 import PageContainer from '@/components/PageContainer';
 import RadioButton, { RadioItem } from '@/components/RadioButton';
 import FormTextInput from '@/components/TextInput';
-import { DateAvailabilityInfo } from '@/components/ui/DateTimeRangePicker';
 import { ThemedText } from '@/components/themed-text';
 import { useAuth } from '@/context/AuthContext';
 import { useRoom } from '@/context/RoomContext';
@@ -15,7 +14,9 @@ import { ScrollView, StyleSheet, View, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/constants/color';
 import { format, addDays } from 'date-fns';
-import BookingDateTimeModal from './modal/BookingDateTimeModal';
+import { useRouter, useLocalSearchParams } from 'expo-router';
+import type { DateAvailabilityInfo, BookingDateResult } from './BookingDate';
+import { AppHeader } from '@/components/header/AppHeader';
 
 const travelerType: ChecklistItem[] = [
   { id: '1', label: 'Local' },
@@ -63,6 +64,8 @@ const BookingForm: React.FC<Props> = ({
 }) => {
   const { roomDetails, selectedDateRange } = useRoom();
   const { user } = useAuth();
+  const router = useRouter();
+  const params = useLocalSearchParams<{ bookingDateResult?: string }>();
 
   // Core counts
   const [pax, setPax] = useState<number>(data.pax || 0);
@@ -103,9 +106,6 @@ const BookingForm: React.FC<Props> = ({
   const [checkInTime, setCheckInTime] = useState<Date>(new Date());
   const [checkOutTime, setCheckOutTime] = useState<Date>(new Date());
 
-  // Modal visibility
-  const [showBookingModal, setShowBookingModal] = useState(false);
-
   // Status map for current user's own bookings (self-blocking only)
   const [statusMap, setStatusMap] = useState<
     Record<string, 'reserved' | 'occupied' | 'unavailable'>
@@ -115,6 +115,50 @@ const BookingForm: React.FC<Props> = ({
   const [availabilityData, setAvailabilityData] = useState<
     DateAvailabilityInfo[]
   >([]);
+
+  // Handle booking date result from BookingDate page
+  useEffect(() => {
+    if (params.bookingDateResult) {
+      try {
+        const result: BookingDateResult = JSON.parse(params.bookingDateResult);
+        setCheckInDate(new Date(result.startDate));
+        setCheckOutDate(new Date(result.endDate));
+        setCheckInTime(new Date(result.startTime));
+        setCheckOutTime(new Date(result.endTime));
+        // Also update booking type if returned
+        if (result.bookingType) {
+          setBookingType(result.bookingType);
+        }
+        // Clear the param after processing
+        router.setParams({ bookingDateResult: undefined });
+      } catch (e) {
+        debugLogger({
+          title: 'BookingForm: Error parsing booking date result',
+          error: e,
+        });
+      }
+    }
+  }, [params.bookingDateResult]);
+
+  // Navigate to BookingDate page
+  const navigateToBookingDate = () => {
+    router.push({
+      pathname: '/(tabs)/(home)/(accommodation)/room/(booking)/BookingDate',
+      params: {
+        bookingType,
+        initialStartDate: checkInDate?.toISOString(),
+        initialEndDate: checkOutDate?.toISOString(),
+        initialStartTime: checkInTime?.toISOString(),
+        initialEndTime: checkOutTime?.toISOString(),
+        availabilityData: JSON.stringify(
+          availabilityData.map((item) => ({
+            ...item,
+            date: item.date.toISOString(),
+          }))
+        ),
+      },
+    });
+  };
 
   // Helpers
   const handlePaxChange = (value: string) => {
@@ -322,213 +366,190 @@ const BookingForm: React.FC<Props> = ({
   ]);
 
   return (
-    <ScrollView>
-      <PageContainer padding={16} gap={16} style={{ paddingBottom: 180 }}>
-        <RadioButton
-          label="Booking Type"
-          items={bookingTypes}
-          value={bookingType}
-          onChange={(item) =>
-            setBookingType(item?.id?.toString() || 'overnight')
-          }
-        />
+    <>
+      <AppHeader backButton title="Booking Form" background="primary" />
+      <ScrollView>
+        <PageContainer padding={16} gap={16} style={{ paddingBottom: 180 }}>
+          <RadioButton
+            label="Booking Type"
+            items={bookingTypes}
+            value={bookingType}
+            onChange={(item) =>
+              setBookingType(item?.id?.toString() || 'overnight')
+            }
+          />
 
-        {/* Booking Date/Time Display Card */}
-        <Pressable
-          style={styles.bookingCard}
-          onPress={() => setShowBookingModal(true)}
-        >
-          <View style={styles.bookingCardHeader}>
-            <Ionicons
-              name="calendar-outline"
-              size={24}
-              color={Colors.light.primary}
-            />
-            <View style={{ flex: 1 }}>
-              <ThemedText type="label-medium" weight="semi-bold">
-                {bookingType === 'short-stay'
-                  ? 'Short Stay Details'
-                  : 'Check-in / Check-out'}
-              </ThemedText>
-              <ThemedText
-                type="body-small"
-                style={{ color: Colors.light.textSecondary }}
-              >
-                {checkInDate && checkOutDate
-                  ? bookingType === 'short-stay'
-                    ? `${format(checkInDate, 'MMM dd, yyyy')} • ${format(
-                        checkInTime,
-                        'hh:mm a'
-                      )} - ${format(checkOutTime, 'hh:mm a')}`
-                    : `${format(checkInDate, 'MMM dd')} - ${format(
-                        checkOutDate,
-                        'MMM dd, yyyy'
-                      )}`
-                  : 'Tap to select dates and times'}
-              </ThemedText>
+          {/* Booking Date/Time Display Card */}
+          <Pressable style={styles.bookingCard} onPress={navigateToBookingDate}>
+            <View style={styles.bookingCardHeader}>
+              <Ionicons
+                name="calendar-outline"
+                size={24}
+                color={Colors.light.primary}
+              />
+              <View style={{ flex: 1 }}>
+                <ThemedText type="label-medium" weight="semi-bold">
+                  {bookingType === 'short-stay'
+                    ? 'Short Stay Details'
+                    : 'Check-in / Check-out'}
+                </ThemedText>
+                <ThemedText
+                  type="body-small"
+                  style={{ color: Colors.light.textSecondary }}
+                >
+                  {checkInDate && checkOutDate
+                    ? bookingType === 'short-stay'
+                      ? `${format(checkInDate, 'MMM dd, yyyy')} • ${format(
+                          checkInTime,
+                          'hh:mm a'
+                        )} - ${format(checkOutTime, 'hh:mm a')}`
+                      : `${format(checkInDate, 'MMM dd')} - ${format(
+                          checkOutDate,
+                          'MMM dd, yyyy'
+                        )}`
+                    : 'Tap to select dates and times'}
+                </ThemedText>
+              </View>
+              <Ionicons
+                name="chevron-forward"
+                size={20}
+                color={Colors.light.textSecondary}
+              />
             </View>
-            <Ionicons
-              name="chevron-forward"
-              size={20}
-              color={Colors.light.textSecondary}
+          </Pressable>
+
+          <Container direction="row" padding={0} backgroundColor="transparent">
+            <FormTextInput
+              size="small"
+              keyboardType="numeric"
+              label="Pax"
+              placeholder="e.g., 4"
+              required
+              minLength={1}
+              maxLength={2}
+              pattern={/^[1-9]\d*$/}
+              validateOnBlur
+              onChangeText={handlePaxChange}
+              customValidator={(value) => {
+                if (!value || value.trim() === '') return 'Pax is required';
+                const num = parseInt(value);
+                if (isNaN(num) || num < 1) return 'At least 1 pax is required';
+                if (num > 20) return 'Maximum 20 pax allowed';
+                return null;
+              }}
+              value={pax > 0 ? pax.toString() : ''}
             />
-          </View>
-        </Pressable>
 
-        {/* Booking Date/Time Modal */}
-        <BookingDateTimeModal
-          visible={showBookingModal}
-          bookingType={bookingType as 'overnight' | 'short-stay'}
-          onClose={() => setShowBookingModal(false)}
-          onConfirm={(checkIn, checkOut, checkInT, checkOutT) => {
-            setCheckInDate(checkIn);
-            setCheckOutDate(checkOut);
-            setCheckInTime(checkInT);
-            setCheckOutTime(checkOutT);
-          }}
-          initialCheckInDate={checkInDate}
-          initialCheckOutDate={checkOutDate}
-          initialCheckInTime={checkInTime}
-          initialCheckOutTime={checkOutTime}
-          dateStatuses={statusMap}
-          availabilityData={availabilityData}
-          roomId={roomDetails?.id}
-          businessId={roomDetails?.business_id}
-          minDate={undefined}
-          maxDate={addDays(new Date(), 365)}
-        />
+            <FormTextInput
+              size="small"
+              keyboardType="numeric"
+              label="Adult(s)"
+              placeholder="e.g., 2"
+              editable={false}
+              value={numberOfAdults.toString()}
+            />
+          </Container>
 
-        <Container direction="row" padding={0} backgroundColor="transparent">
-          <FormTextInput
+          <Container direction="row" padding={0} backgroundColor="transparent">
+            <FormTextInput
+              size="small"
+              keyboardType="numeric"
+              label="Children"
+              maxLength={2}
+              placeholder="0"
+              pattern={/^[0-9]\d*$/}
+              validateOnBlur
+              customValidator={(value) => {
+                if (value === '' || value === '0') return null; // Optional
+                const num = parseInt(value);
+                if (isNaN(num)) return 'Must be a number';
+                if (num > 10) return 'Maximum 10 children allowed';
+                if (num + numberOfInfants > pax) return 'Exceeds pax';
+                return null;
+              }}
+              onChangeText={(value) => {
+                let num = parseInt(value) || 0;
+                if (num > pax) num = pax; // cap
+                // adjust infants if overflow
+                if (num + numberOfInfants > pax) {
+                  const remaining = pax - num;
+                  setNumberOfInfants(Math.max(0, remaining));
+                }
+                setNumberOfChildren(num);
+              }}
+              value={numberOfChildren.toString()}
+            />
+
+            <FormTextInput
+              size="small"
+              keyboardType="numeric"
+              label="Infants"
+              maxLength={2}
+              placeholder="0"
+              pattern={/^[0-9]\d*$/}
+              validateOnBlur
+              customValidator={(value) => {
+                if (value === '' || value === '0') return null; // Optional
+                const num = parseInt(value);
+                if (isNaN(num)) return 'Must be a number';
+                if (num > 10) return 'Maximum 10 infants allowed';
+                if (num + numberOfChildren > pax) return 'Exceeds pax';
+                return null;
+              }}
+              onChangeText={(value) => {
+                let num = parseInt(value) || 0;
+                if (num > pax) num = pax; // cap
+                if (num + numberOfChildren > pax) {
+                  const remaining = pax - numberOfChildren;
+                  num = Math.max(0, remaining);
+                }
+                setNumberOfInfants(num);
+              }}
+              value={numberOfInfants.toString()}
+            />
+          </Container>
+
+          <Checklist
+            ref={listRef}
+            items={travelerType}
+            onChange={handleTravelerTypeChange}
             size="small"
-            keyboardType="numeric"
-            label="Pax"
-            placeholder="e.g., 4"
-            required
-            minLength={1}
-            maxLength={2}
-            pattern={/^[1-9]\d*$/}
-            validateOnBlur
-            onChangeText={handlePaxChange}
-            customValidator={(value) => {
-              if (!value || value.trim() === '') return 'Pax is required';
-              const num = parseInt(value);
-              if (isNaN(num) || num < 1) return 'At least 1 pax is required';
-              if (num > 20) return 'Maximum 20 pax allowed';
-              return null;
-            }}
-            value={pax > 0 ? pax.toString() : ''}
+            validateOnChange
+            label="Traveler Type (Select all that apply)"
+            values={selectedTypes.map((t) => t.id)}
           />
 
-          <FormTextInput
-            size="small"
-            keyboardType="numeric"
-            label="Adult(s)"
-            placeholder="e.g., 2"
-            editable={false}
-            value={numberOfAdults.toString()}
-          />
-        </Container>
+          {selectedTypes.length > 0 && <>{renderTypeInputs()}</>}
 
-        <Container direction="row" padding={0} backgroundColor="transparent">
-          <FormTextInput
-            size="small"
-            keyboardType="numeric"
-            label="Children"
-            maxLength={2}
-            placeholder="0"
-            pattern={/^[0-9]\d*$/}
-            validateOnBlur
-            customValidator={(value) => {
-              if (value === '' || value === '0') return null; // Optional
-              const num = parseInt(value);
-              if (isNaN(num)) return 'Must be a number';
-              if (num > 10) return 'Maximum 10 children allowed';
-              if (num + numberOfInfants > pax) return 'Exceeds pax';
-              return null;
-            }}
-            onChangeText={(value) => {
-              let num = parseInt(value) || 0;
-              if (num > pax) num = pax; // cap
-              // adjust infants if overflow
-              if (num + numberOfInfants > pax) {
-                const remaining = pax - num;
-                setNumberOfInfants(Math.max(0, remaining));
-              }
-              setNumberOfChildren(num);
-            }}
-            value={numberOfChildren.toString()}
+          <RadioButton
+            label="Trip Purpose"
+            items={tripPurpose}
+            value={tripPurposeValue}
+            onChange={(item) =>
+              setTripPurposeValue(item?.id !== undefined ? String(item.id) : '')
+            }
           />
 
-          <FormTextInput
-            size="small"
-            keyboardType="numeric"
-            label="Infants"
-            maxLength={2}
-            placeholder="0"
-            pattern={/^[0-9]\d*$/}
-            validateOnBlur
-            customValidator={(value) => {
-              if (value === '' || value === '0') return null; // Optional
-              const num = parseInt(value);
-              if (isNaN(num)) return 'Must be a number';
-              if (num > 10) return 'Maximum 10 infants allowed';
-              if (num + numberOfChildren > pax) return 'Exceeds pax';
-              return null;
-            }}
-            onChangeText={(value) => {
-              let num = parseInt(value) || 0;
-              if (num > pax) num = pax; // cap
-              if (num + numberOfChildren > pax) {
-                const remaining = pax - numberOfChildren;
-                num = Math.max(0, remaining);
-              }
-              setNumberOfInfants(num);
-            }}
-            value={numberOfInfants.toString()}
-          />
-        </Container>
-
-        <Checklist
-          ref={listRef}
-          items={travelerType}
-          onChange={handleTravelerTypeChange}
-          size="small"
-          validateOnChange
-          label="Traveler Type (Select all that apply)"
-          values={selectedTypes.map((t) => t.id)}
-        />
-
-        {selectedTypes.length > 0 && <>{renderTypeInputs()}</>}
-
-        <RadioButton
-          label="Trip Purpose"
-          items={tripPurpose}
-          value={tripPurposeValue}
-          onChange={(item) =>
-            setTripPurposeValue(item?.id !== undefined ? String(item.id) : '')
-          }
-        />
-
-        {tripPurposeValue === '5' && (
-          <FormTextInput
-            label="Please specify your trip purpose"
-            required
-            value={customPurpose}
-            onChangeText={setCustomPurpose}
-            minLength={2}
-            maxLength={64}
-            placeholder="Enter purpose"
-            size="small"
-            customValidator={(value) => {
-              if (!value || value.trim().length < 2)
-                return 'Please specify your purpose';
-              return null;
-            }}
-          />
-        )}
-      </PageContainer>
-    </ScrollView>
+          {tripPurposeValue === '5' && (
+            <FormTextInput
+              label="Please specify your trip purpose"
+              required
+              value={customPurpose}
+              onChangeText={setCustomPurpose}
+              minLength={2}
+              maxLength={64}
+              placeholder="Enter purpose"
+              size="small"
+              customValidator={(value) => {
+                if (!value || value.trim().length < 2)
+                  return 'Please specify your purpose';
+                return null;
+              }}
+            />
+          )}
+        </PageContainer>
+      </ScrollView>
+    </>
   );
 };
 

@@ -31,11 +31,7 @@ import Details from './details';
 import Photos from './photos';
 import Ratings from './ratings';
 import placeholder from '@/assets/images/room-placeholder.png';
-import AddReview from '@/components/reviews/AddReview';
-import FeedbackService, {
-  getAverageRating,
-  getTotalReviews,
-} from '@/services/FeedbackService';
+import { getAverageRating, getTotalReviews } from '@/services/FeedbackService';
 import {
   getFavoritesByTouristId,
   addFavorite,
@@ -55,9 +51,6 @@ const AccommodationProfile = () => {
   const { user } = useAuth();
   const { roomDetails } = useRoom();
   const { bookings } = useUserBookings();
-  const [modalVisible, setModalVisible] = useState(false);
-  const [reviewSubmitting, setReviewSubmitting] = useState(false);
-  const [reviewError, setReviewError] = useState<string | null>(null);
   const [ratingsRefreshKey, setRatingsRefreshKey] = useState(0);
   const bg = colorScheme === 'dark' ? background.dark : background.light;
   const [favoriteId, setFavoriteId] = useState<string | null>(null);
@@ -167,15 +160,9 @@ const AccommodationProfile = () => {
     setActiveTab(tab.key);
   };
 
-  const actionLabel = activeTab === 'ratings' ? 'Write a Review' : 'Book Now';
-  const primaryIcon = activeTab === 'ratings' ? 'comment' : 'calendar-check';
-  const handlePrimaryAction = () => {
-    if (activeTab === 'ratings') {
-      setModalVisible(true);
-      return;
-    }
+  const handleBookNow = () => {
     if (user?.id && roomDetails?.id) {
-      router.push(Routes.accommodation.room.booking(user.id, roomDetails.id));
+      router.push(Routes.accommodation.room.booking.index);
     } else {
       console.log('User or room details not available');
     }
@@ -396,57 +383,35 @@ const AccommodationProfile = () => {
           </>
         }
       />
-      {!modalVisible &&
-        (() => {
-          const baseBottom = Platform.OS === 'ios' ? 60 : 80;
-          return (
-            <View
-              style={[
-                styles.fabBar,
-                { paddingBottom: baseBottom + insets.bottom },
-              ]}
-            >
-              {activeTab !== 'ratings' &&
-                user?.role_name?.toLowerCase() === 'tourist' && (
-                  <Button
-                    icon
-                    variant={isFavorite ? 'soft' : 'soft'}
-                    color={isFavorite ? 'error' : 'secondary'}
-                    startIcon={isFavorite ? 'heart' : 'heart'}
-                    onPress={handleToggleFavorite}
-                  />
-                )}
-              <Button
-                label={actionLabel}
-                fullWidth
-                startIcon={primaryIcon}
-                color="primary"
-                variant="solid"
-                onPress={handlePrimaryAction}
-                elevation={3}
-                style={{ flex: 1 }}
-              />
-            </View>
-          );
-        })()}
-      {user && (
-        <AddReview
-          visible={modalVisible}
-          onClose={() => setModalVisible(false)}
-          onSubmit={async (payload) => {
-            try {
-              await FeedbackService.createReview(payload);
-              setModalVisible(false);
-              setRatingsRefreshKey((prev) => prev + 1);
-            } catch (error) {
-              console.error('Error submitting review:', error);
-              throw error;
-            }
-          }}
-          touristId={user.id || ''}
-          reviewType="room"
-          reviewTypeId={roomDetails?.id || ''}
-        />
+      {activeTab !== 'ratings' && (
+        <View
+          style={[
+            styles.fabBar,
+            {
+              paddingBottom: (Platform.OS === 'ios' ? 60 : 80) + insets.bottom,
+            },
+          ]}
+        >
+          {user?.role_name?.toLowerCase() === 'tourist' && (
+            <Button
+              icon
+              variant="soft"
+              color={isFavorite ? 'error' : 'secondary'}
+              startIcon="heart"
+              onPress={handleToggleFavorite}
+            />
+          )}
+          <Button
+            label="Book Now"
+            fullWidth
+            startIcon="calendar-check"
+            color="primary"
+            variant="solid"
+            onPress={handleBookNow}
+            elevation={3}
+            style={{ flex: 1 }}
+          />
+        </View>
       )}
     </PageContainer>
   );

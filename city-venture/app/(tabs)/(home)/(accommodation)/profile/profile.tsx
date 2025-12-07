@@ -26,14 +26,6 @@ import Details from './details';
 import Ratings from './ratings';
 import Rooms from './rooms';
 import placeholder from '@/assets/images/placeholder.png';
-import Button from '@/components/Button';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import AddReview from '@/components/reviews/AddReview';
-import {
-  createReview,
-  getAverageRating,
-  getTotalReviews,
-} from '@/services/FeedbackService';
 import Chip from '@/components/Chip';
 import { ActivityIndicator } from 'react-native';
 
@@ -50,8 +42,7 @@ const AccommodationProfile = () => {
     refreshAccommodation,
     refreshAllAccommodations,
   } = useAccommodation();
-  const actionLabel = activeTab === 'ratings' ? 'Write a Review' : 'Book Now';
-  const primaryIcon = activeTab === 'ratings' ? 'comment' : 'calendar-check';
+
   // Refresh & scroll state
   const [refreshing, setRefreshing] = useState(false);
   const lastOffset = useRef(0);
@@ -87,10 +78,8 @@ const AccommodationProfile = () => {
       onRefresh();
     }
   }, [onRefresh, refreshing]);
-  const insets = useSafeAreaInsets();
   const bg = colors.background;
 
-  const [modalVisible, setModalVisible] = useState(false);
   const [ratingsRefreshKey, setRatingsRefreshKey] = useState(0);
 
   useEffect(() => {
@@ -225,52 +214,6 @@ const AccommodationProfile = () => {
           </>
         }
       />
-      {!modalVisible &&
-        (() => {
-          const baseBottom = Platform.OS === 'ios' ? 60 : 80;
-          // Only show "Write a Review" button if user is logged in and on ratings tab
-          if (activeTab === 'ratings') {
-            return (
-              <View
-                style={[
-                  styles.fabBar,
-                  { paddingBottom: baseBottom + insets.bottom },
-                ]}
-              >
-                <Button
-                  label={actionLabel}
-                  fullWidth
-                  startIcon={primaryIcon}
-                  color="primary"
-                  variant="solid"
-                  onPress={() => setModalVisible(true)}
-                  elevation={3}
-                  style={{ flex: 1 }}
-                />
-              </View>
-            );
-          }
-        })()}
-
-      {user && (
-        <AddReview
-          visible={modalVisible}
-          onClose={() => setModalVisible(false)}
-          onSubmit={async (payload) => {
-            try {
-              await createReview(payload);
-              setModalVisible(false);
-              setRatingsRefreshKey((prev) => prev + 1);
-            } catch (error) {
-              console.error('Error submitting review:', error);
-              throw error;
-            }
-          }}
-          touristId={user.id || ''}
-          reviewType="accommodation"
-          reviewTypeId={accommodationDetails?.id || ''}
-        />
-      )}
     </View>
   );
 };
@@ -302,26 +245,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
-  },
-  buttonContainer: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    zIndex: 10,
-    padding: 16,
-    backgroundColor: 'transparent',
-    marginBottom: 80,
-  },
-  fabBar: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 0,
-    paddingHorizontal: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
   },
 });
 

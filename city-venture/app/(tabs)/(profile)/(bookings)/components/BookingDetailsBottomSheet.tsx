@@ -1,13 +1,18 @@
-import React, { useCallback, useMemo, useRef, useState } from 'react';
-import { Image, ScrollView, StyleSheet, View, Alert } from 'react-native';
-import BottomSheet, {
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
+import { Image, StyleSheet, View, Alert } from 'react-native';
+import {
+  BottomSheetModal,
   BottomSheetBackdrop,
-  BottomSheetView,
   BottomSheetScrollView,
 } from '@gorhom/bottom-sheet';
 import { Ionicons } from '@expo/vector-icons';
 import Button from '@/components/Button';
-import Container from '@/components/Container';
 import { ThemedText } from '@/components/themed-text';
 import { Colors, card } from '@/constants/color';
 import { useColorScheme } from '@/hooks/use-color-scheme';
@@ -27,6 +32,7 @@ type BookingDetailsBottomSheetProps = {
   onClose: () => void;
   onCancelBooking?: (bookingId: string) => Promise<void>;
   onBookAgain?: (booking: Booking) => void;
+  onRateBooking?: (booking: Booking) => void;
 };
 
 const BookingDetailsBottomSheet: React.FC<BookingDetailsBottomSheetProps> = ({
@@ -35,8 +41,9 @@ const BookingDetailsBottomSheet: React.FC<BookingDetailsBottomSheetProps> = ({
   onClose,
   onCancelBooking,
   onBookAgain,
+  onRateBooking,
 }) => {
-  const bottomSheetRef = useRef<BottomSheet>(null);
+  const bottomSheetRef = useRef<BottomSheetModal>(null);
   const scheme = useColorScheme();
   const isDark = scheme === 'dark';
   const [cancelling, setCancelling] = useState(false);
@@ -49,6 +56,15 @@ const BookingDetailsBottomSheet: React.FC<BookingDetailsBottomSheetProps> = ({
 
   // Snap points for different content heights
   const snapPoints = useMemo(() => ['65%', '92%'], []);
+
+  // Present/dismiss modal based on isOpen prop
+  useEffect(() => {
+    if (isOpen && booking) {
+      bottomSheetRef.current?.present();
+    } else {
+      bottomSheetRef.current?.dismiss();
+    }
+  }, [isOpen, booking]);
 
   // Handle sheet changes
   const handleSheetChanges = useCallback(
@@ -183,6 +199,14 @@ const BookingDetailsBottomSheet: React.FC<BookingDetailsBottomSheetProps> = ({
     }
   };
 
+  // Handle rate booking
+  const handleRateBooking = () => {
+    if (booking && onRateBooking) {
+      onRateBooking(booking);
+      onClose();
+    }
+  };
+
   // Calculate nights
   const calculateNights = (): number => {
     if (!booking?.check_in_date || !booking?.check_out_date) return 0;
@@ -192,14 +216,15 @@ const BookingDetailsBottomSheet: React.FC<BookingDetailsBottomSheetProps> = ({
     return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
   };
 
-  if (!booking || !isOpen) return null;
+  // Don't render if no booking data
+  if (!booking) return null;
 
   const nights = calculateNights();
 
   return (
-    <BottomSheet
+    <BottomSheetModal
       ref={bottomSheetRef}
-      index={2}
+      index={0}
       snapPoints={snapPoints}
       onChange={handleSheetChanges}
       backdropComponent={renderBackdrop}
@@ -526,15 +551,26 @@ const BookingDetailsBottomSheet: React.FC<BookingDetailsBottomSheetProps> = ({
           )}
 
           {booking.booking_status === 'Checked-Out' && (
-            <Button
-              label="Book Again"
-              onPress={handleBookAgain}
-              variant="solid"
-              color="primary"
-              size="large"
-              startIcon="refresh"
-              fullWidth
-            />
+            <View style={{ gap: 12 }}>
+              <Button
+                label="Rate Us"
+                onPress={handleRateBooking}
+                variant="solid"
+                color="warning"
+                size="large"
+                startIcon="star"
+                fullWidth
+              />
+              <Button
+                label="Book Again"
+                onPress={handleBookAgain}
+                variant="outlined"
+                color="primary"
+                size="large"
+                startIcon="refresh"
+                fullWidth
+              />
+            </View>
           )}
 
           {booking.booking_status !== 'Reserved' &&
@@ -550,7 +586,7 @@ const BookingDetailsBottomSheet: React.FC<BookingDetailsBottomSheetProps> = ({
             )}
         </View>
       </BottomSheetScrollView>
-    </BottomSheet>
+    </BottomSheetModal>
   );
 };
 
@@ -567,9 +603,7 @@ const styles = StyleSheet.create({
     borderRadius: 2,
     marginTop: 8,
   },
-  scrollContent: {
-    paddingBottom: 110,
-  },
+  scrollContent: {},
   imageContainer: {
     position: 'relative',
     width: '100%',

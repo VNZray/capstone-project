@@ -3,6 +3,7 @@ import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 import 'react-native-reanimated';
 
 import { AuthProvider } from '@/context/AuthContext';
@@ -69,7 +70,9 @@ export default function RootLayout() {
           <NavigationProvider>
             <CartProvider>
               <ThemeProvider value={NavigationTheme}>
-                <RootLayoutNav />
+                <BottomSheetModalProvider>
+                  <RootLayoutNav />
+                </BottomSheetModalProvider>
               </ThemeProvider>
             </CartProvider>
           </NavigationProvider>

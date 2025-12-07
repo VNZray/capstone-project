@@ -17,9 +17,11 @@ import db from "../db.js";
  */
 export async function sendNotification(recipientId, title, message, type, metadata = {}) {
   try {
+    console.log("[sendNotification] Called with:", { recipientId, title, type, metadata });
+
     // Extract related_id and related_type from metadata or derive from type
     const relatedId = metadata.order_id || metadata.payment_id || metadata.booking_id;
-    const relatedType = metadata.order_id ? 'order' : 'service_booking';
+    const relatedType = metadata.booking_id ? 'service_booking' : (metadata.order_id ? 'order' : 'service_booking');
 
     // Map generic types to notification_type enum
     const notificationTypeMap = {
@@ -27,10 +29,16 @@ export async function sendNotification(recipientId, title, message, type, metada
       'order_created': 'order_created',
       'order_updated': 'order_confirmed',
       'order_cancelled': 'order_cancelled',
-      'payment_updated': 'payment_received'
+      'payment_updated': 'payment_received',
+      'booking_completed': 'booking_completed',
+      'booking_confirmed': 'booking_confirmed',
+      'booking_cancelled': 'booking_cancelled',
+      'booking_reminder': 'booking_reminder'
     };
 
     const notificationType = notificationTypeMap[type] || 'order_created';
+
+    console.log("[sendNotification] Inserting notification:", { recipientId, notificationType, relatedId, relatedType, title });
 
     await db.query(
       `INSERT INTO notification (id, user_id, notification_type, related_id, related_type, title, message, metadata, is_read, created_at)
@@ -38,9 +46,9 @@ export async function sendNotification(recipientId, title, message, type, metada
       [recipientId, notificationType, relatedId, relatedType, title, message, JSON.stringify(metadata)]
     );
 
-    console.log(`Notification sent to user ${recipientId}: ${title}`);
+    console.log(`[sendNotification] SUCCESS - Notification sent to user ${recipientId}: ${title}`);
   } catch (error) {
-    console.error('Failed to create notification:', error);
+    console.error('[sendNotification] FAILED - Error creating notification:', error);
     // Don't throw - notifications should not break order flow
   }
 }

@@ -1,3 +1,4 @@
+import { AppHeader } from '@/components/header/AppHeader';
 import { Stack } from 'expo-router';
 
 const HomeLayout = () => {
@@ -15,6 +16,18 @@ const HomeLayout = () => {
         options={{
           headerShown: false,
           animation: 'default',
+        }}
+      />
+      <Stack.Screen
+        name="Notification"
+        options={{
+          headerShown: true,
+          animation: 'slide_from_right',
+          header() {
+            return (
+              <AppHeader backButton title="Notification" background="light" />
+            );
+          },
         }}
       />
       <Stack.Screen

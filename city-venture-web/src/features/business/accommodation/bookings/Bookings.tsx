@@ -2,6 +2,7 @@ import { useEffect, useState, useMemo } from "react";
 import Typography from "@/src/components/Typography";
 import NoDataFound from "@/src/components/NoDataFound";
 import PageContainer from "@/src/components/PageContainer";
+import Alert from "@/src/components/Alert";
 import {
   Search,
   Check,
@@ -79,6 +80,10 @@ const Bookings = () => {
     Record<string, { name: string; user_profile?: string }>
   >({});
 
+  // State for checkout success alert
+  const [checkoutAlertOpen, setCheckoutAlertOpen] = useState(false);
+  const [checkoutGuestName, setCheckoutGuestName] = useState<string>("");
+
   // Fetch room and guest info for all bookings
   useEffect(() => {
     const loadRoomsAndGuests = async () => {
@@ -88,7 +93,9 @@ const Bookings = () => {
         new Set(
           bookings
             .map((b) => b.room_id)
-            .filter((id): id is string => typeof id === "string" && id.length > 0)
+            .filter(
+              (id): id is string => typeof id === "string" && id.length > 0
+            )
         )
       ).filter((id) => !roomInfoById[id]);
 
@@ -96,13 +103,17 @@ const Bookings = () => {
         new Set(
           bookings
             .map((b) => b.tourist_id)
-            .filter((id): id is string => typeof id === "string" && id.length > 0)
+            .filter(
+              (id): id is string => typeof id === "string" && id.length > 0
+            )
         )
       ).filter((id) => !guestInfoById[id]);
 
       const [roomsData, guestsData] = await Promise.all([
         uniqueRoomIds.length > 0 ? fetchRoomNumbersByIds(uniqueRoomIds) : {},
-        uniqueTouristIds.length > 0 ? fetchGuestInfoByIds(uniqueTouristIds) : {},
+        uniqueTouristIds.length > 0
+          ? fetchGuestInfoByIds(uniqueTouristIds)
+          : {},
       ]);
 
       if (Object.keys(roomsData).length > 0) {
@@ -182,6 +193,12 @@ const Bookings = () => {
 
   const handleStatusChange = async (id: string, status: string) => {
     try {
+      // Get booking info before update for notification
+      const bookingToUpdate = bookings.find((b) => b.id === id);
+      const guestName = bookingToUpdate?.tourist_id
+        ? guestInfoById[bookingToUpdate.tourist_id]?.name || "Guest"
+        : "Guest";
+
       // Optimistic update
       setBookings((prev) =>
         prev.map((b) =>
@@ -191,6 +208,12 @@ const Bookings = () => {
         )
       );
       await updateBookingStatus(id, status);
+
+      // Show checkout success alert when status changes to "Checked-Out"
+      if (status === "Checked-Out") {
+        setCheckoutGuestName(guestName);
+        setCheckoutAlertOpen(true);
+      }
     } catch (e) {
       console.error("Failed to update status", e);
     }
@@ -309,7 +332,7 @@ const Bookings = () => {
         minWidth: 120,
         render: (row) => {
           const roomNumber = roomInfoById[row.room_id as string];
-          
+
           return roomNumber || "—";
         },
       },
@@ -387,7 +410,7 @@ const Bookings = () => {
   );
 
   return (
-    <PageContainer >
+    <PageContainer>
       {/* Reservations */}
       <Container gap="0" padding="0" elevation={3}>
         <Container
@@ -499,6 +522,17 @@ const Bookings = () => {
         bookingId={selectedBookingId}
         booking={selectedBooking}
         onStatusChange={handleStatusChange}
+      />
+
+      {/* Checkout Success Alert */}
+      <Alert
+        open={checkoutAlertOpen}
+        onClose={() => setCheckoutAlertOpen(false)}
+        type="success"
+        title="Booking Completed"
+        message={`${checkoutGuestName} has been successfully checked out. A notification has been sent to the tourist thanking them for their stay.`}
+        confirmText="OK"
+        showCancel={false}
       />
     </PageContainer>
   );

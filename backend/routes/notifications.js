@@ -13,7 +13,7 @@ router.get("/user/:userId/unread", authenticate, notificationController.getUnrea
 router.get("/user/:userId/unread/count", authenticate, notificationController.getUnreadNotificationCount);
 router.post("/user/:userId/mark-all-read", authenticate, notificationController.markAllNotificationsAsRead);
 router.get("/:id", authenticate, notificationController.getNotificationById);
-router.post("/", authenticate, authorizeRole("Admin", "Business Owner", "Staff"), notificationController.insertNotification);
+router.post("/", authenticate, authorizeRole("Admin", "Business Owner", "Manager", "Receptionist", "Staff"), notificationController.insertNotification);
 router.put("/:id/read", authenticate, notificationController.markNotificationAsRead);
 router.put("/:id/delivery-status", authenticate, notificationController.updateNotificationDeliveryStatus);
 router.delete("/:id", authenticate, notificationController.deleteNotification);

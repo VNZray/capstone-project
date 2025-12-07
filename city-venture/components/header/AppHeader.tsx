@@ -7,6 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { ThemedText } from '../themed-text';
 import Container from '../Container';
 import { IconSymbol } from '../ui/icon-symbol';
+import { StatusBar } from 'expo-status-bar';
 
 type Props = {
   background?: 'dark' | 'light' | 'primary' | 'secondary' | 'transparent';
@@ -65,6 +66,7 @@ export const AppHeader = (props: Props) => {
         display: 'flex',
       }}
     >
+      <StatusBar style={props.background === 'primary' ? 'light' : 'dark'} />
       <View
         style={{
           display: 'flex',

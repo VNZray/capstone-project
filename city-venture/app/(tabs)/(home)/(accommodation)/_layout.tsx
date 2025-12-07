@@ -87,6 +87,12 @@ const AccommodationLayout = () => {
             }}
           />
           <Stack.Screen
+            name="room/(booking)"
+            options={{
+              headerShown: false,
+            }}
+          />
+          <Stack.Screen
             name="index"
             options={{
               headerShown: true,

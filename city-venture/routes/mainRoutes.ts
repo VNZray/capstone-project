@@ -50,6 +50,7 @@ export const Routes = {
     maps: '/(tabs)/maps',
     favorites: '/(tabs)/favorite',
     profile: '/(tabs)/(profile)',
+    notification: '/(tabs)/(home)/Notification',
   },
 
   // ============================================================================
@@ -66,28 +67,40 @@ export const Routes = {
         pathname: '/(tabs)/(home)/(accommodation)/room/profile' as const,
         params: { roomId },
       }),
-      booking: (userId: string, roomId: string) => ({
-        pathname: '/(tabs)/(home)/(accommodation)/room/booking' as const,
-        params: { userId, roomId },
-      }),
-      summary: (params?: {
-        bookingData?: string;
-        guests?: string;
-        paymentData?: string;
-      }) => ({
-        pathname:
-          '/(tabs)/(home)/(accommodation)/room/booking/Summary' as const,
-        params: params || {},
-      }),
-      billing: (params?: {
-        bookingData?: string;
-        guests?: string;
-        paymentData?: string;
-      }) => ({
-        pathname:
-          '/(tabs)/(home)/(accommodation)/room/booking/Billing' as const,
-        params: params || {},
-      }),
+      // Booking flow routes
+      booking: {
+        index: '/(tabs)/(home)/(accommodation)/room/(booking)' as const,
+        date: (params?: {
+          bookingType?: string;
+          initialStartDate?: string;
+          initialEndDate?: string;
+          initialStartTime?: string;
+          initialEndTime?: string;
+          availabilityData?: string;
+
+
+        }) => ({
+          pathname:
+            '/(tabs)/(home)/(accommodation)/room/(booking)/BookingDate' as const,
+          params: params || {},
+        }),
+        billing: (params?: {
+          bookingData?: string;
+          paymentData?: string;
+        }) => ({
+          pathname:
+            '/(tabs)/(home)/(accommodation)/room/(booking)/Billing' as const,
+          params: params || {},
+        }),
+        summary: (params?: {
+          bookingData?: string;
+          paymentData?: string;
+        }) => ({
+          pathname:
+            '/(tabs)/(home)/(accommodation)/room/(booking)/Summary' as const,
+          params: params || {},
+        }),
+      },
       // Payment result deep link handlers (for PayMongo redirects)
       paymentSuccess: (params?: {
         bookingId?: string;

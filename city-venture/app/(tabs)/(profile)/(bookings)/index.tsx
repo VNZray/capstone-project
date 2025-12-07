@@ -27,6 +27,8 @@ import { Tab, TabContainer } from '@/components/ui/Tabs';
 import BookingCard, { type BookingWithDetails } from './components/BookingCard';
 import BookingDetailsBottomSheet from './components/BookingDetailsBottomSheet';
 import { useBookingsHeader } from './_layout';
+import AddReview from '@/components/reviews/AddReview';
+import { createReview } from '@/services/FeedbackService';
 
 type TabType = 'reserved' | 'completed' | 'canceled';
 
@@ -46,6 +48,9 @@ const Bookings = () => {
     useState<BookingWithDetails | null>(null);
   const [showDetails, setShowDetails] = useState(false);
   const [activeTab, setActiveTab] = useState<TabType>('reserved');
+  const [reviewModalVisible, setReviewModalVisible] = useState(false);
+  const [bookingToReview, setBookingToReview] =
+    useState<BookingWithDetails | null>(null);
 
   const textColor = isDark ? '#ECEDEE' : '#0D1B2A';
   const subTextColor = isDark ? '#9BA1A6' : '#6B7280';
@@ -171,6 +176,11 @@ const Bookings = () => {
     } else {
       Alert.alert('Error', 'Unable to find room details for rebooking.');
     }
+  };
+
+  const handleRateBooking = (booking: Booking) => {
+    setBookingToReview(booking as BookingWithDetails);
+    setReviewModalVisible(true);
   };
 
   const handleTabChange = (tab: string) => {
@@ -325,7 +335,36 @@ const Bookings = () => {
         onClose={() => setShowDetails(false)}
         onCancelBooking={handleCancelBooking}
         onBookAgain={handleBookAgain}
+        onRateBooking={handleRateBooking}
       />
+
+      {/* Review Modal for Rating Bookings */}
+      {user && bookingToReview && (
+        <AddReview
+          visible={reviewModalVisible}
+          onClose={() => {
+            setReviewModalVisible(false);
+            setBookingToReview(null);
+          }}
+          onSubmit={async (payload) => {
+            try {
+              await createReview(payload);
+              setReviewModalVisible(false);
+              setBookingToReview(null);
+              Alert.alert(
+                'Thank You!',
+                'Your review has been submitted successfully.'
+              );
+            } catch (error) {
+              console.error('Error submitting review:', error);
+              throw error;
+            }
+          }}
+          touristId={user.id || ''}
+          reviewType="room"
+          reviewTypeId={bookingToReview.room_id || ''}
+        />
+      )}
     </PageContainer>
   );
 };
