@@ -89,8 +89,8 @@ async function makePayMongoRequest(endpoint, options = {}) {
 }
 
 /**
- * Create PayMongo Payment Intent for order (for advanced use cases)
- * Use createCheckoutSession for simpler integration
+ * Create PayMongo Payment Intent for orders and bookings
+ * This is the PRIMARY payment flow (PIPM - Payment Intent + Payment Method)
  *
  * Payment Intent Workflow:
  * 1. Create Payment Intent (server-side) - returns client_key

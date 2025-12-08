@@ -35,14 +35,6 @@ export interface CreatePaymentIntentRequest {
   payment_method_types?: string[];    // Default: ['card', 'paymaya', 'gcash', 'grab_pay']
 }
 
-/**
- * @deprecated Use CreatePaymentIntentRequest with payment_for: 'order' instead
- */
-export interface CreateOrderPaymentRequest {
-  order_id: string;
-  payment_method_types?: string[];
-}
-
 export interface CreatePaymentIntentResponse {
   success: boolean;
   message: string;
@@ -185,21 +177,6 @@ export async function createPaymentIntent(
     console.error('[PaymentIntentService] Create intent failed:', error.response?.data || error.message);
     throw error;
   }
-}
-
-/**
- * @deprecated Use createPaymentIntent with { payment_for: 'order', reference_id } instead
- * Kept for backward compatibility during migration
- */
-export async function createOrderPaymentIntent(
-  orderId: string,
-  paymentMethodTypes?: string[]
-): Promise<CreatePaymentIntentResponse> {
-  return createPaymentIntent({
-    payment_for: 'order',
-    reference_id: orderId,
-    payment_method_types: paymentMethodTypes
-  });
 }
 
 /**
@@ -743,7 +720,6 @@ export const TEST_CARDS = {
 
 export default {
   createPaymentIntent,
-  createOrderPaymentIntent, // Deprecated - use createPaymentIntent
   createPaymentMethod,
   attachPaymentMethodClient,
   attachEwalletPaymentMethod,
