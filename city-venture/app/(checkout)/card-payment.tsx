@@ -1,20 +1,20 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   TextInput,
   Pressable,
-  Alert,
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  Image,
 } from 'react-native';
 import { Stack, router, useLocalSearchParams } from 'expo-router';
 import { Routes } from '@/routes/mainRoutes';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import { Colors } from '@/constants/color';
+import { Colors, colors } from '@/constants/color';
 import PageContainer from '@/components/PageContainer';
 import {
   createPaymentMethod,
@@ -24,7 +24,6 @@ import {
   validateCardNumber,
   formatCardNumber,
   getCardBrand,
-  TEST_CARDS,
 } from '@/services/PaymentIntentService';
 import { Ionicons } from '@expo/vector-icons';
 import API_URL from '@/services/api';
@@ -32,10 +31,17 @@ import API_URL from '@/services/api';
 /**
  * Card Payment Screen
  * Collects card details and processes payment via Payment Intent
+ *
+ * Features:
+ * - Minimalist, compact design (Shopify-style)
+ * - Card brand detection in input
+ * - Clean validation states
+ * - Secure payment trust signals
  */
 const CardPaymentScreen = () => {
   const colorScheme = useColorScheme();
   const theme = Colors[colorScheme as keyof typeof Colors];
+  const isDark = colorScheme === 'dark';
 
   const params = useLocalSearchParams<{
     orderId: string;
@@ -48,34 +54,50 @@ const CardPaymentScreen = () => {
   }>();
 
   // Card details state
-  const [cardNumber, setCardNumber] = useState('4300000000000017');
-  const [expMonth, setExpMonth] = useState('12');
-  const [expYear, setExpYear] = useState('25');
-  const [cvc, setCvc] = useState('123');
-  const [cardholderName, setCardholderName] = useState('TestName');
-  const [email, setEmail] = useState('test@gmail.com');
+  const [cardNumber, setCardNumber] = useState('');
+  const [expMonth, setExpMonth] = useState('');
+  const [expYear, setExpYear] = useState('');
+  const [cvc, setCvc] = useState('');
+  const [cardholderName, setCardholderName] = useState('');
+  const [email, setEmail] = useState('');
 
   // UI state
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [focusedField, setFocusedField] = useState<string | null>(null);
 
   // Input refs for auto-focus
   const expMonthRef = useRef<TextInput>(null);
   const expYearRef = useRef<TextInput>(null);
   const cvcRef = useRef<TextInput>(null);
   const nameRef = useRef<TextInput>(null);
-  const emailRef = useRef<TextInput>(null);
 
   const cardBrand = getCardBrand(cardNumber);
+
+  // Get card brand icon for input
+  const getCardBrandIcon = () => {
+    switch (cardBrand) {
+      case 'visa':
+        return <Ionicons name="card" size={24} color="#1A1F71" />;
+      case 'mastercard':
+        return <Ionicons name="card" size={24} color="#EB001B" />;
+      default:
+        return (
+          <Ionicons name="card-outline" size={24} color={theme.textSecondary} />
+        );
+    }
+  };
 
   // Format card number as user types
   const handleCardNumberChange = (text: string) => {
     const formatted = formatCardNumber(text);
     setCardNumber(formatted);
-
-    // Clear error when user starts typing
     if (errors.cardNumber) {
       setErrors((prev) => ({ ...prev, cardNumber: '' }));
+    }
+    // Auto focus check
+    if (formatted.replace(/\s/g, '').length === 16) {
+      expMonthRef.current?.focus();
     }
   };
 
@@ -87,7 +109,6 @@ const CardPaymentScreen = () => {
       if (errors.expMonth) {
         setErrors((prev) => ({ ...prev, expMonth: '' }));
       }
-      // Auto-focus to year when month is complete
       if (digits.length === 2) {
         expYearRef.current?.focus();
       }
@@ -102,7 +123,6 @@ const CardPaymentScreen = () => {
       if (errors.expYear) {
         setErrors((prev) => ({ ...prev, expYear: '' }));
       }
-      // Auto-focus to CVC when year is complete
       if (digits.length === 2) {
         cvcRef.current?.focus();
       }
@@ -124,7 +144,6 @@ const CardPaymentScreen = () => {
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
 
-    // Card number validation
     const cleanCardNumber = cardNumber.replace(/\s/g, '');
     if (!cleanCardNumber) {
       newErrors.cardNumber = 'Card number is required';
@@ -132,7 +151,6 @@ const CardPaymentScreen = () => {
       newErrors.cardNumber = 'Invalid card number';
     }
 
-    // Expiry validation
     const month = parseInt(expMonth, 10);
     if (!expMonth) {
       newErrors.expMonth = 'Required';
@@ -148,28 +166,25 @@ const CardPaymentScreen = () => {
       newErrors.expYear = 'Expired';
     }
 
-    // Check if card is expired
     if (expMonth && expYear && !newErrors.expMonth && !newErrors.expYear) {
       const now = new Date();
-      const expDate = new Date(2000 + year, month, 0); // Last day of exp month
+      const expDate = new Date(2000 + year, month, 0);
       if (expDate < now) {
         newErrors.expMonth = 'Card expired';
       }
     }
 
-    // CVC validation
     if (!cvc) {
       newErrors.cvc = 'Required';
     } else if (cvc.length < 3) {
       newErrors.cvc = 'Invalid';
     }
 
-    // Name validation (optional but recommended)
     if (!cardholderName.trim()) {
       newErrors.name = 'Name is required';
     }
 
-    // Email validation (required for PayMongo)
+    // Email validation
     if (!email.trim()) {
       newErrors.email = 'Email is required';
     } else if (!/\S+@\S+\.\S+/.test(email)) {
@@ -180,28 +195,75 @@ const CardPaymentScreen = () => {
     return Object.keys(newErrors).length === 0;
   };
 
-  // Process payment
+  /**
+   * Map PayMongo error codes to user-friendly messages
+   */
+  const getErrorMessage = (
+    err: any
+  ): { title: string; message: string; isCardError: boolean } => {
+    const subCode =
+      err.response?.data?.errors?.[0]?.sub_code ||
+      err.sub_code ||
+      err.response?.data?.last_payment_error?.sub_code ||
+      err.last_payment_error?.sub_code;
+
+    const errorCode =
+      err.response?.data?.errors?.[0]?.code ||
+      err.code ||
+      err.response?.data?.last_payment_error?.code ||
+      err.last_payment_error?.code;
+
+    const GENERIC_DECLINE_MESSAGE =
+      'Your card was declined. Please contact your bank or try a different card.';
+
+    if (err.message?.includes('declined') || err.message?.includes('card')) {
+      return {
+        title: 'Payment Failed',
+        message: err.message || GENERIC_DECLINE_MESSAGE,
+        isCardError: true,
+      };
+    }
+
+    return {
+      title: 'Payment Failed',
+      message: err.message || 'Processing failed. Please try again.',
+      isCardError: true,
+    };
+  };
+
+  const navigateToPaymentFailed = (error: any) => {
+    const { title, message, isCardError } = getErrorMessage(error);
+    router.replace(
+      Routes.checkout.paymentFailed({
+        orderId: params.orderId,
+        orderNumber: params.orderNumber,
+        arrivalCode: params.arrivalCode,
+        total: params.total,
+        errorMessage: message,
+        errorTitle: title,
+        isCardError: isCardError ? 'true' : 'false',
+        orderCreated: 'true',
+      })
+    );
+  };
+
   const handlePayment = async () => {
     if (!validateForm()) {
       return;
     }
 
     if (!params.paymentIntentId || !params.clientKey) {
-      Alert.alert('Error', 'Missing payment information');
+      navigateToPaymentFailed({ message: 'Missing payment information.' });
       return;
     }
 
     try {
       setLoading(true);
 
-      // Generate return URL for 3DS redirect
-      // PayMongo requires https:// URLs - use backend's redirect bridge endpoint
       const backendBaseUrl = (API_URL || '').replace('/api', '');
       const returnUrl = `${backendBaseUrl}/orders/${params.orderId}/payment-success`;
-      console.log('[CardPayment] Return URL for PayMongo:', returnUrl);
 
-      // Step 1: Create Payment Method (client-side using public key)
-      console.log('[CardPayment] Creating payment method...');
+      // Step 1: Create Payment Method
       const paymentMethodResponse = await createPaymentMethod(
         'card',
         {
@@ -217,10 +279,8 @@ const CardPaymentScreen = () => {
       );
 
       const paymentMethodId = paymentMethodResponse.data.id;
-      console.log('[CardPayment] Payment method created:', paymentMethodId);
 
-      // Step 2: Attach Payment Method to Payment Intent
-      console.log('[CardPayment] Attaching payment method...');
+      // Step 2: Attach to Intent
       const attachResponse = await attachPaymentMethodClient(
         params.paymentIntentId,
         paymentMethodId,
@@ -230,58 +290,33 @@ const CardPaymentScreen = () => {
 
       const status = attachResponse.data.attributes.status;
       const nextAction = attachResponse.data.attributes.next_action;
+      const lastPaymentError = (attachResponse.data.attributes as any)
+        .last_payment_error;
 
-      console.log('[CardPayment] Attach result:', status);
+      if (lastPaymentError) {
+        navigateToPaymentFailed({ last_payment_error: lastPaymentError });
+        return;
+      }
 
-      // Step 3: Handle different statuses
       if (status === 'awaiting_next_action' && nextAction?.redirect?.url) {
-        // 3DS authentication required
-        console.log('[CardPayment] 3DS authentication required');
-
-        // Use in-app browser session for 3DS
         const authResult = await open3DSAuthentication(
           nextAction.redirect.url,
           returnUrl
         );
 
-        console.log('[CardPayment] 3DS auth result:', authResult.type);
-
-        // Dismiss any lingering browser
         dismissBrowser();
 
-        // Check if user cancelled
-        if (authResult.type === 'cancel' || authResult.type === 'dismiss') {
-          console.log('[CardPayment] User cancelled 3DS authentication');
-          Alert.alert(
-            'Payment Cancelled',
-            'You cancelled the payment authentication. You can retry or pay later.',
-            [
-              {
-                text: 'Go to Order',
-                onPress: () => {
-                  router.replace(
-                    Routes.checkout.orderConfirmation({
-                      orderId: params.orderId,
-                      orderNumber: params.orderNumber,
-                      arrivalCode: params.arrivalCode,
-                      total: params.total,
-                      paymentMethod: 'paymongo',
-                      paymentPending: 'true',
-                      paymentCancelled: 'true',
-                    })
-                  );
-                },
-              },
-              {
-                text: 'Retry',
-                style: 'cancel',
-              },
-            ]
+        if (authResult.type === 'cancel') {
+          router.replace(
+            Routes.checkout.paymentCancel({
+              orderId: params.orderId,
+              orderNumber: params.orderNumber,
+              reason: 'cancelled',
+            })
           );
           return;
         }
 
-        // Navigate to processing screen to check result
         router.replace(
           Routes.checkout.paymentProcessing({
             orderId: params.orderId,
@@ -294,391 +329,332 @@ const CardPaymentScreen = () => {
         return;
       }
 
-      if (status === 'succeeded') {
-        // Payment successful without 3DS
-        console.log('[CardPayment] Payment succeeded immediately');
+      if (status === 'succeeded' || status === 'processing') {
+        const route =
+          status === 'succeeded'
+            ? Routes.checkout.orderConfirmation({
+                orderId: params.orderId,
+                orderNumber: params.orderNumber,
+                arrivalCode: params.arrivalCode,
+                total: params.total,
+                paymentMethod: 'paymongo',
+                paymentSuccess: 'true',
+              })
+            : Routes.checkout.paymentProcessing({
+                orderId: params.orderId,
+                orderNumber: params.orderNumber,
+                arrivalCode: params.arrivalCode,
+                paymentIntentId: params.paymentIntentId,
+                total: params.total,
+              });
 
-        router.replace(
-          Routes.checkout.orderConfirmation({
-            orderId: params.orderId,
-            orderNumber: params.orderNumber,
-            arrivalCode: params.arrivalCode,
-            total: params.total,
-            paymentMethod: 'paymongo',
-            paymentSuccess: 'true',
-          })
-        );
+        router.replace(route);
         return;
       }
 
-      if (status === 'processing') {
-        // Payment is processing
-        console.log('[CardPayment] Payment processing');
-
-        router.replace(
-          Routes.checkout.paymentProcessing({
-            orderId: params.orderId,
-            orderNumber: params.orderNumber,
-            arrivalCode: params.arrivalCode,
-            paymentIntentId: params.paymentIntentId,
-            total: params.total,
-          })
-        );
-        return;
-      }
-
-      // Unexpected status
-      throw new Error(`Unexpected payment status: ${status}`);
+      navigateToPaymentFailed({
+        message: 'Payment incomplete. Please try again.',
+      });
     } catch (error: any) {
       console.error('[CardPayment] Error:', error);
-
-      let errorMessage = 'Payment failed. Please try again.';
-
-      if (error.message) {
-        if (error.message.includes('card')) {
-          errorMessage = error.message;
-        } else if (error.message.includes('declined')) {
-          errorMessage = 'Your card was declined. Please try a different card.';
-        } else if (
-          error.message.includes('network') ||
-          error.message.includes('timeout')
-        ) {
-          errorMessage =
-            'Network error. Please check your connection and try again.';
-        }
-      }
-
-      Alert.alert('Payment Failed', errorMessage, [{ text: 'OK' }]);
+      navigateToPaymentFailed(error);
     } finally {
       setLoading(false);
     }
   };
 
-  // Fill test card for development
-  const fillTestCard = () => {
-    setCardNumber(formatCardNumber(TEST_CARDS.SUCCESS));
-    setExpMonth('12');
-    setExpYear('28');
-    setCvc('123');
+  // Pre-fill for dev/testing
+  useEffect(() => {
+    // Optional: Remove for production or keep for demo
     setCardholderName('Test User');
     setEmail('test@example.com');
-  };
-
-  const getCardIcon = () => {
-    switch (cardBrand) {
-      case 'visa':
-        return 'card';
-      case 'mastercard':
-        return 'card';
-      default:
-        return 'card-outline';
-    }
-  };
+  }, []);
 
   return (
     <>
-      <Stack.Screen
-        options={{
-          title: 'Card Payment',
-          headerStyle: { backgroundColor: theme.background },
-          headerTintColor: theme.text,
-          headerShadowVisible: false,
-        }}
-      />
+      <Stack.Screen options={{ headerShown: false }} />
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         style={{ flex: 1 }}
       >
-        <PageContainer padding={0}>
-          <ScrollView
+        <PageContainer>
+          <View
             style={[styles.container, { backgroundColor: theme.background }]}
-            contentContainerStyle={styles.contentContainer}
-            showsVerticalScrollIndicator={false}
           >
-            {/* Order Summary */}
-            <View
-              style={[styles.summaryCard, { backgroundColor: theme.surface }]}
-            >
-              <View style={styles.summaryRow}>
-                <Text
-                  style={[styles.summaryLabel, { color: theme.textSecondary }]}
-                >
-                  Order #{params.orderNumber}
-                </Text>
-                <Text style={[styles.summaryAmount, { color: theme.text }]}>
-                  ₱{params.total || params.amount}
-                </Text>
-              </View>
+            {/* Header */}
+            <View style={styles.header}>
+              <Text style={[styles.headerTitle, { color: theme.text }]}>
+                Order #{params.orderNumber}
+              </Text>
             </View>
 
-            {/* Card Form */}
-            <View style={[styles.formCard, { backgroundColor: theme.surface }]}>
-              <Text style={[styles.sectionTitle, { color: theme.text }]}>
-                Card Details
-              </Text>
-
-              {/* Card Number */}
-              <View style={styles.inputGroup}>
-                <Text style={[styles.label, { color: theme.textSecondary }]}>
-                  Card Number
-                </Text>
-                <View
-                  style={[
-                    styles.inputContainer,
-                    {
-                      backgroundColor: theme.background,
-                      borderColor: errors.cardNumber
-                        ? theme.error
-                        : theme.border,
-                    },
-                  ]}
+            <ScrollView
+              style={styles.scrollView}
+              contentContainerStyle={styles.contentContainer}
+              showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
+            >
+              {/* Order Amount Section */}
+              <View style={styles.amountSection}>
+                <Text
+                  style={[styles.totalLabel, { color: theme.textSecondary }]}
                 >
-                  <Ionicons
-                    name={getCardIcon() as any}
-                    size={24}
-                    color={theme.textSecondary}
-                    style={styles.inputIcon}
-                  />
-                  <TextInput
-                    style={[styles.input, { color: theme.text }]}
-                    placeholder="1234 5678 9012 3456"
-                    placeholderTextColor={theme.textSecondary}
-                    value={cardNumber}
-                    onChangeText={handleCardNumberChange}
-                    keyboardType="numeric"
-                    maxLength={19}
-                    returnKeyType="next"
-                    onSubmitEditing={() => expMonthRef.current?.focus()}
-                  />
-                </View>
-                {errors.cardNumber && (
-                  <Text style={[styles.errorText, { color: theme.error }]}>
-                    {errors.cardNumber}
-                  </Text>
-                )}
+                  Total Due
+                </Text>
+                <Text style={[styles.totalAmount, { color: theme.text }]}>
+                  ₱
+                  {parseFloat(
+                    params.total || params.amount || '0'
+                  ).toLocaleString('en-PH', { minimumFractionDigits: 2 })}
+                </Text>
               </View>
 
-              {/* Expiry and CVC Row */}
-              <View style={styles.row}>
-                <View style={[styles.inputGroup, { flex: 1, marginRight: 8 }]}>
-                  <Text style={[styles.label, { color: theme.textSecondary }]}>
-                    Expiry
-                  </Text>
-                  <View style={styles.expiryRow}>
-                    <TextInput
-                      ref={expMonthRef}
-                      style={[
-                        styles.expiryInput,
-                        {
-                          backgroundColor: theme.background,
-                          color: theme.text,
-                          borderColor: errors.expMonth
-                            ? theme.error
-                            : theme.border,
-                        },
-                      ]}
-                      placeholder="MM"
-                      placeholderTextColor={theme.textSecondary}
-                      value={expMonth}
-                      onChangeText={handleExpMonthChange}
-                      keyboardType="numeric"
-                      maxLength={2}
-                      returnKeyType="next"
-                    />
-                    <Text
-                      style={[
-                        styles.expirySeparator,
-                        { color: theme.textSecondary },
-                      ]}
-                    >
-                      /
-                    </Text>
-                    <TextInput
-                      ref={expYearRef}
-                      style={[
-                        styles.expiryInput,
-                        {
-                          backgroundColor: theme.background,
-                          color: theme.text,
-                          borderColor: errors.expYear
-                            ? theme.error
-                            : theme.border,
-                        },
-                      ]}
-                      placeholder="YY"
-                      placeholderTextColor={theme.textSecondary}
-                      value={expYear}
-                      onChangeText={handleExpYearChange}
-                      keyboardType="numeric"
-                      maxLength={2}
-                      returnKeyType="next"
-                    />
-                  </View>
-                  {(errors.expMonth || errors.expYear) && (
-                    <Text style={[styles.errorText, { color: theme.error }]}>
-                      {errors.expMonth || errors.expYear}
-                    </Text>
-                  )}
-                </View>
+              {/* Secure Badge */}
+              <View
+                style={[styles.secureBadge, { backgroundColor: theme.surface }]}
+              >
+                <Ionicons name="lock-closed" size={14} color={theme.success} />
+                <Text
+                  style={[styles.secureText, { color: theme.textSecondary }]}
+                >
+                  All transactions are secure and encrypted.
+                </Text>
+              </View>
 
-                <View style={[styles.inputGroup, { flex: 1, marginLeft: 8 }]}>
-                  <Text style={[styles.label, { color: theme.textSecondary }]}>
-                    CVC
-                  </Text>
+              {/* Form Fields */}
+              <View style={styles.formContainer}>
+                {/* Contact Info (Compact) */}
+                <Text style={[styles.sectionTitle, { color: theme.text }]}>
+                  Contact
+                </Text>
+                <View style={[styles.inputGroup, { marginBottom: 20 }]}>
                   <TextInput
-                    ref={cvcRef}
                     style={[
-                      styles.cvcInput,
+                      styles.input,
                       {
-                        backgroundColor: theme.background,
+                        backgroundColor: theme.inputBackground,
                         color: theme.text,
-                        borderColor: errors.cvc ? theme.error : theme.border,
+                        borderColor: errors.email ? theme.error : theme.border,
                       },
                     ]}
-                    placeholder="123"
+                    placeholder="Email for receipt"
                     placeholderTextColor={theme.textSecondary}
-                    value={cvc}
-                    onChangeText={handleCvcChange}
-                    keyboardType="numeric"
-                    maxLength={4}
-                    secureTextEntry
-                    returnKeyType="next"
-                    onSubmitEditing={() => nameRef.current?.focus()}
+                    value={email}
+                    onChangeText={(text) => {
+                      setEmail(text);
+                      if (errors.email) setErrors({ ...errors, email: '' });
+                    }}
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                    editable={!loading}
                   />
-                  {errors.cvc && (
+                  {errors.email && (
                     <Text style={[styles.errorText, { color: theme.error }]}>
-                      {errors.cvc}
+                      {errors.email}
                     </Text>
                   )}
                 </View>
-              </View>
 
-              {/* Cardholder Name */}
-              <View style={styles.inputGroup}>
-                <Text style={[styles.label, { color: theme.textSecondary }]}>
-                  Cardholder Name
+                {/* Card Details */}
+                <Text style={[styles.sectionTitle, { color: theme.text }]}>
+                  Card Details
                 </Text>
-                <TextInput
-                  ref={nameRef}
-                  style={[
-                    styles.textInput,
-                    {
-                      backgroundColor: theme.background,
-                      color: theme.text,
-                      borderColor: errors.name ? theme.error : theme.border,
-                    },
-                  ]}
-                  placeholder="John Doe"
-                  placeholderTextColor={theme.textSecondary}
-                  value={cardholderName}
-                  onChangeText={(text) => {
-                    setCardholderName(text);
-                    if (errors.name)
-                      setErrors((prev) => ({ ...prev, name: '' }));
-                  }}
-                  autoCapitalize="words"
-                  returnKeyType="next"
-                  onSubmitEditing={() => emailRef.current?.focus()}
-                />
-                {errors.name && (
-                  <Text style={[styles.errorText, { color: theme.error }]}>
-                    {errors.name}
+
+                {/* Name on Card */}
+                <View style={styles.inputGroup}>
+                  <Text style={[styles.label, { color: theme.textSecondary }]}>
+                    Name on card
                   </Text>
-                )}
-              </View>
+                  <TextInput
+                    ref={nameRef}
+                    style={[
+                      styles.input,
+                      {
+                        backgroundColor: theme.inputBackground,
+                        color: theme.text,
+                        borderColor: errors.name ? theme.error : theme.border,
+                      },
+                    ]}
+                    placeholder="Full Name"
+                    placeholderTextColor={theme.textSecondary}
+                    value={cardholderName}
+                    onChangeText={(text) => {
+                      setCardholderName(text);
+                      if (errors.name)
+                        setErrors((prev) => ({ ...prev, name: '' }));
+                    }}
+                    editable={!loading}
+                  />
+                </View>
 
-              {/* Email */}
-              <View style={styles.inputGroup}>
-                <Text style={[styles.label, { color: theme.textSecondary }]}>
-                  Email (for receipt)
-                </Text>
-                <TextInput
-                  ref={emailRef}
-                  style={[
-                    styles.textInput,
-                    {
-                      backgroundColor: theme.background,
-                      color: theme.text,
-                      borderColor: errors.email ? theme.error : theme.border,
-                    },
-                  ]}
-                  placeholder="email@example.com"
-                  placeholderTextColor={theme.textSecondary}
-                  value={email}
-                  onChangeText={(text) => {
-                    setEmail(text);
-                    if (errors.email)
-                      setErrors((prev) => ({ ...prev, email: '' }));
-                  }}
-                  keyboardType="email-address"
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                  returnKeyType="done"
-                  onSubmitEditing={handlePayment}
-                />
-                {errors.email && (
-                  <Text style={[styles.errorText, { color: theme.error }]}>
-                    {errors.email}
+                {/* Card Number */}
+                <View style={styles.inputGroup}>
+                  <Text style={[styles.label, { color: theme.textSecondary }]}>
+                    Card number
                   </Text>
-                )}
+                  <View
+                    style={[
+                      styles.inputWithIcon,
+                      {
+                        backgroundColor: theme.inputBackground,
+                        borderColor: errors.cardNumber
+                          ? theme.error
+                          : focusedField === 'cardNumber'
+                          ? theme.primary
+                          : theme.border,
+                      },
+                    ]}
+                  >
+                    <TextInput
+                      style={[styles.inputFlex, { color: theme.text }]}
+                      placeholder="0000 0000 0000 0000"
+                      placeholderTextColor={theme.textSecondary}
+                      value={cardNumber}
+                      onChangeText={handleCardNumberChange}
+                      onFocus={() => setFocusedField('cardNumber')}
+                      onBlur={() => setFocusedField(null)}
+                      keyboardType="numeric"
+                      maxLength={19}
+                      editable={!loading}
+                    />
+                    <View style={styles.iconContainer}>
+                      {getCardBrandIcon()}
+                    </View>
+                  </View>
+                  {errors.cardNumber && (
+                    <Text style={[styles.errorText, { color: theme.error }]}>
+                      {errors.cardNumber}
+                    </Text>
+                  )}
+                </View>
+
+                {/* Expiry & CVC */}
+                <View style={styles.row}>
+                  <View
+                    style={[styles.inputGroup, { flex: 1, marginRight: 12 }]}
+                  >
+                    <Text
+                      style={[styles.label, { color: theme.textSecondary }]}
+                    >
+                      Expiry (MM/YY)
+                    </Text>
+                    <View style={styles.expiryRow}>
+                      <TextInput
+                        ref={expMonthRef}
+                        style={[
+                          styles.input,
+                          {
+                            flex: 1,
+                            backgroundColor: theme.inputBackground,
+                            color: theme.text,
+                            borderColor: errors.expMonth
+                              ? theme.error
+                              : theme.border,
+                          },
+                        ]}
+                        placeholder="MM"
+                        placeholderTextColor={theme.textSecondary}
+                        value={expMonth}
+                        onChangeText={handleExpMonthChange}
+                        keyboardType="numeric"
+                        maxLength={2}
+                        editable={!loading}
+                      />
+                      <Text
+                        style={{
+                          color: theme.textSecondary,
+                          marginHorizontal: 8,
+                          alignSelf: 'center',
+                        }}
+                      >
+                        /
+                      </Text>
+                      <TextInput
+                        ref={expYearRef}
+                        style={[
+                          styles.input,
+                          {
+                            flex: 1,
+                            backgroundColor: theme.inputBackground,
+                            color: theme.text,
+                            borderColor: errors.expYear
+                              ? theme.error
+                              : theme.border,
+                          },
+                        ]}
+                        placeholder="YY"
+                        placeholderTextColor={theme.textSecondary}
+                        value={expYear}
+                        onChangeText={handleExpYearChange}
+                        keyboardType="numeric"
+                        maxLength={2}
+                        editable={!loading}
+                      />
+                    </View>
+                  </View>
+
+                  <View style={[styles.inputGroup, { flex: 1 }]}>
+                    <Text
+                      style={[styles.label, { color: theme.textSecondary }]}
+                    >
+                      Security Code
+                    </Text>
+                    <TextInput
+                      ref={cvcRef}
+                      style={[
+                        styles.input,
+                        {
+                          backgroundColor: theme.inputBackground,
+                          color: theme.text,
+                          borderColor: errors.cvc ? theme.error : theme.border,
+                        },
+                      ]}
+                      placeholder="CVC"
+                      placeholderTextColor={theme.textSecondary}
+                      value={cvc}
+                      onChangeText={handleCvcChange}
+                      keyboardType="numeric"
+                      maxLength={4}
+                      secureTextEntry
+                      editable={!loading}
+                    />
+                  </View>
+                </View>
               </View>
+            </ScrollView>
 
-              {/* Security Badge */}
-              <View style={styles.securityBadge}>
-                <Ionicons name="lock-closed" size={14} color={theme.success} />
-                <Text style={[styles.securityText, { color: theme.success }]}>
-                  Secured by PayMongo • 256-bit SSL
-                </Text>
-              </View>
-            </View>
-
-            {/* Test Card Button (Dev only) */}
-            {__DEV__ && (
-              <Pressable
-                style={[styles.testButton, { backgroundColor: theme.surface }]}
-                onPress={fillTestCard}
-              >
-                <Text
-                  style={[
-                    styles.testButtonText,
-                    { color: theme.textSecondary },
-                  ]}
-                >
-                  Fill Test Card (Dev Only)
-                </Text>
-              </Pressable>
-            )}
-          </ScrollView>
-
-          {/* Pay Button */}
-          <View
-            style={[
-              styles.bottomBar,
-              { backgroundColor: theme.surface, borderTopColor: theme.border },
-            ]}
-          >
-            <Pressable
+            <View
               style={[
-                styles.payButton,
+                styles.footer,
                 {
-                  backgroundColor: loading ? theme.disabled : theme.primary,
-                  opacity: loading ? 0.8 : 1,
+                  backgroundColor: theme.surface,
+                  borderTopColor: theme.border,
                 },
               ]}
-              onPress={handlePayment}
-              disabled={loading}
             >
-              {loading ? (
-                <ActivityIndicator color="#FFF" />
-              ) : (
-                <>
-                  <Ionicons name="lock-closed" size={20} color="#FFF" />
+              <Pressable
+                style={[
+                  styles.payButton,
+                  {
+                    backgroundColor: theme.primary,
+                    opacity: loading ? 0.7 : 1,
+                  },
+                ]}
+                onPress={handlePayment}
+                disabled={loading}
+              >
+                {loading ? (
+                  <ActivityIndicator color="#FFF" />
+                ) : (
                   <Text style={styles.payButtonText}>
-                    Pay ₱{params.total || params.amount}
+                    Pay ₱
+                    {parseFloat(
+                      params.total || params.amount || '0'
+                    ).toLocaleString('en-PH', { minimumFractionDigits: 2 })}
                   </Text>
-                </>
-              )}
-            </Pressable>
+                )}
+              </Pressable>
+            </View>
           </View>
         </PageContainer>
       </KeyboardAvoidingView>
@@ -690,136 +666,123 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  contentContainer: {
-    padding: 16,
-    paddingBottom: 120,
-  },
-  summaryCard: {
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
-  },
-  summaryRow: {
+  header: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 15,
+  },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+  },
+  backButton: {
+    padding: 8,
+    marginLeft: -8,
+  },
+  scrollView: {
+    flex: 1,
+  },
+  contentContainer: {
+    padding: 24,
+  },
+  amountSection: {
+    marginBottom: 24,
     alignItems: 'center',
   },
-  summaryLabel: {
+  totalLabel: {
     fontSize: 14,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+    marginBottom: 4,
   },
-  summaryAmount: {
-    fontSize: 20,
+  totalAmount: {
+    fontSize: 32,
     fontWeight: '700',
   },
-  formCard: {
-    borderRadius: 16,
-    padding: 20,
-    marginBottom: 16,
+  secureBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 32,
+    gap: 8,
+  },
+  secureText: {
+    fontSize: 12,
+    fontWeight: '500',
   },
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: '700',
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 12,
+  },
+  formContainer: {
     marginBottom: 20,
   },
   inputGroup: {
     marginBottom: 16,
   },
   label: {
-    fontSize: 14,
+    fontSize: 12,
+    marginBottom: 6,
     fontWeight: '500',
-    marginBottom: 8,
-  },
-  inputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderRadius: 12,
-    paddingHorizontal: 12,
-  },
-  inputIcon: {
-    marginRight: 12,
   },
   input: {
+    height: 50,
+    borderRadius: 8,
+    borderWidth: 1,
+    paddingHorizontal: 16,
+    fontSize: 16,
+  },
+  inputWithIcon: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    height: 50,
+    borderRadius: 8,
+    borderWidth: 1,
+    paddingHorizontal: 16,
+  },
+  inputFlex: {
     flex: 1,
     fontSize: 16,
-    paddingVertical: 14,
+    height: '100%',
   },
-  textInput: {
-    borderWidth: 1,
-    borderRadius: 12,
-    padding: 14,
-    fontSize: 16,
+  iconContainer: {
+    marginLeft: 10,
+  },
+  errorText: {
+    fontSize: 12,
+    marginTop: 4,
   },
   row: {
     flexDirection: 'row',
   },
   expiryRow: {
     flexDirection: 'row',
-    alignItems: 'center',
   },
-  expiryInput: {
-    flex: 1,
-    borderWidth: 1,
-    borderRadius: 12,
-    padding: 14,
-    fontSize: 16,
-    textAlign: 'center',
-  },
-  expirySeparator: {
-    fontSize: 20,
-    marginHorizontal: 8,
-  },
-  cvcInput: {
-    borderWidth: 1,
-    borderRadius: 12,
-    padding: 14,
-    fontSize: 16,
-  },
-  errorText: {
-    fontSize: 12,
-    marginTop: 4,
-  },
-  securityBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 16,
-    gap: 6,
-  },
-  securityText: {
-    fontSize: 12,
-    fontWeight: '500',
-  },
-  testButton: {
-    padding: 12,
-    borderRadius: 8,
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  testButtonText: {
-    fontSize: 12,
-  },
-  bottomBar: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    padding: 16,
-    paddingBottom: Platform.OS === 'ios' ? 32 : 16,
+  footer: {
+    padding: 20,
     borderTopWidth: 1,
   },
   payButton: {
-    flexDirection: 'row',
+    height: 54,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 16,
-    borderRadius: 12,
-    gap: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
   },
   payButtonText: {
     color: '#FFF',
-    fontSize: 18,
-    fontWeight: '700',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });
 

@@ -163,6 +163,10 @@ const PaymentFailedScreen = () => {
       console.log('[PaymentFailed] Using payment method:', paymentMethodType);
 
       // Create Payment Intent using unified API
+      // This REUSES the existing order (no ghost data) - backend will:
+      // 1. Detect retry scenario (order status = failed_payment)
+      // 2. Create new Payment Intent for the SAME order
+      // 3. Reset order status to 'pending' and re-deduct stock
       const intentResponse = await createPaymentIntent({
         payment_for: 'order',
         reference_id: params.orderId,
@@ -170,13 +174,26 @@ const PaymentFailedScreen = () => {
       });
 
       const paymentIntentId = intentResponse.data.payment_intent_id;
+      const clientKey = intentResponse.data.client_key;
 
-      // For card payments, we can't securely store card details
-      // So "Try Again" for cards should redirect to checkout to re-enter card details
+      // For card payments, navigate to card-payment screen with NEW payment intent
+      // This reuses the existing order instead of creating a new one
       if (paymentMethodType === 'card') {
-        console.log('[PaymentFailed] Card payment - redirecting to checkout for re-entry');
-        // Use the same logic as handleChangePaymentMethod
-        await handleChangePaymentMethod();
+        console.log('[PaymentFailed] Card payment - navigating to card-payment screen for retry');
+        console.log('[PaymentFailed] New Payment Intent:', paymentIntentId);
+        
+        // Navigate to card-payment screen with payment intent details
+        // User will re-enter card details there (we can't store them securely)
+        router.replace(
+          Routes.checkout.cardPayment({
+            orderId: params.orderId,
+            orderNumber: orderDetails.order_number || params.orderNumber || '',
+            arrivalCode: orderDetails.arrival_code || params.arrivalCode || '',
+            paymentIntentId,
+            clientKey,
+            total: orderDetails.total_amount?.toString() || params.total || '0',
+          })
+        );
         return;
       }
 
