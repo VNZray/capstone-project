@@ -16,7 +16,7 @@ import {
   Modal,
   FlatList,
 } from 'react-native';
-import { Stack } from 'expo-router';
+import { Stack, useLocalSearchParams } from 'expo-router';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { Colors } from '@/constants/color';
 import { useTypography } from '@/constants/typography';
@@ -58,6 +58,20 @@ const CheckoutScreen = () => {
   const isDark = colorScheme === 'dark';
   const type = useTypography();
   const { push, replace, back, isNavigating } = usePreventDoubleNavigation();
+
+  // Get prefill params from navigation (used when changing payment method from failed screen)
+  const prefillParams = useLocalSearchParams<{
+    prefillOrderId?: string;
+    prefillPaymentMethod?: string;
+    prefillBillingName?: string;
+    prefillBillingEmail?: string;
+    prefillBillingPhone?: string;
+    prefillPickupDatetime?: string;
+    prefillSpecialInstructions?: string;
+    fromChangePaymentMethod?: string;
+  }>();
+
+  const isFromChangePaymentMethod = prefillParams.fromChangePaymentMethod === 'true';
 
   // Hide tabs during checkout flow
   useHideTabs();
@@ -162,7 +176,7 @@ const CheckoutScreen = () => {
   const [billingPhone, setBillingPhone] = useState(user?.phone_number || '');
 
   // Card payment form state (inline card entry)
-  const [cardNumber, setCardNumber] = useState('4200000000000018');
+  const [cardNumber, setCardNumber] = useState('5234000000000106');
   const [expMonth, setExpMonth] = useState('12');
   const [expYear, setExpYear] = useState('25');
   const [cvc, setCvc] = useState('123');
@@ -287,6 +301,42 @@ const CheckoutScreen = () => {
       };
     }
   }, []);
+
+  // Prefill form values when coming from change payment method flow
+  useEffect(() => {
+    if (isFromChangePaymentMethod) {
+      console.log('[Checkout] Prefilling from change payment method:', prefillParams);
+      
+      // Prefill billing info
+      if (prefillParams.prefillBillingName) {
+        setBillingName(prefillParams.prefillBillingName);
+      }
+      if (prefillParams.prefillBillingEmail) {
+        setBillingEmail(prefillParams.prefillBillingEmail);
+      }
+      if (prefillParams.prefillBillingPhone) {
+        setBillingPhone(prefillParams.prefillBillingPhone);
+      }
+      
+      // Prefill special instructions
+      if (prefillParams.prefillSpecialInstructions) {
+        setSpecialInstructions(prefillParams.prefillSpecialInstructions);
+      }
+      
+      // Prefill pickup datetime if valid
+      if (prefillParams.prefillPickupDatetime) {
+        const prefillDate = new Date(prefillParams.prefillPickupDatetime);
+        const now = new Date();
+        // Only use prefilled date if it's still in the future
+        if (prefillDate > now) {
+          setPickupDate(prefillDate);
+        }
+      }
+      
+      // Don't prefill payment method - user is changing it
+      // Payment method stays at default 'cash_on_pickup' so user can choose new one
+    }
+  }, [isFromChangePaymentMethod]); // Only run once on mount
 
   const subtotal = getSubtotal();
   const taxAmount = 0; // Per spec.md - currently taxAmount=0

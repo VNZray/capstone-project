@@ -36,6 +36,7 @@ const PaymentFailedScreen = () => {
   const theme = Colors[(colorScheme ?? 'light') as keyof typeof Colors];
   const [retrying, setRetrying] = useState(false);
   const [goingToCart, setGoingToCart] = useState(false);
+  const [changingPaymentMethod, setChangingPaymentMethod] = useState(false);
   const { restoreFromOrder } = useCart();
 
   const params = useLocalSearchParams<{
@@ -170,19 +171,12 @@ const PaymentFailedScreen = () => {
 
       const paymentIntentId = intentResponse.data.payment_intent_id;
 
-      // For card payments, navigate to card payment screen
+      // For card payments, we can't securely store card details
+      // So "Try Again" for cards should redirect to checkout to re-enter card details
       if (paymentMethodType === 'card') {
-        router.replace(
-          Routes.checkout.cardPayment({
-            orderId: params.orderId,
-            orderNumber: orderDetails.order_number,
-            arrivalCode: orderDetails.arrival_code,
-            paymentIntentId,
-            clientKey: intentResponse.data.client_key,
-            amount: intentResponse.data.amount.toString(),
-            total: orderDetails.total_amount?.toString(),
-          })
-        );
+        console.log('[PaymentFailed] Card payment - redirecting to checkout for re-entry');
+        // Use the same logic as handleChangePaymentMethod
+        await handleChangePaymentMethod();
         return;
       }
 
@@ -274,6 +268,78 @@ const PaymentFailedScreen = () => {
     router.replace(Routes.profile.orders.index);
   };
 
+  /**
+   * Handle "Change Payment Method" - restore order items to cart and navigate to checkout
+   * with prefilled data so user can select a different payment method
+   */
+  const handleChangePaymentMethod = async () => {
+    if (!params.orderId) {
+      // No order - just go to checkout
+      router.replace(Routes.checkout.index({ fromChangePaymentMethod: 'true' }));
+      return;
+    }
+
+    try {
+      setChangingPaymentMethod(true);
+      console.log(
+        '[PaymentFailed] Changing payment method for order:',
+        params.orderId
+      );
+
+      // Fetch order details to get items and restore to cart
+      const orderDetails = await getOrderById(params.orderId);
+
+      if (orderDetails.items && orderDetails.items.length > 0) {
+        // Restore items to cart
+        restoreFromOrder(
+          orderDetails.items.map((item) => ({
+            product_id: item.product_id,
+            product_name: item.product_name,
+            unit_price: item.unit_price,
+            quantity: item.quantity,
+            special_requests: item.special_requests,
+            product_image_url: item.product_image_url,
+          })),
+          orderDetails.business_id,
+          orderDetails.business_name
+        );
+        console.log(
+          '[PaymentFailed] Restored',
+          orderDetails.items.length,
+          'items to cart'
+        );
+      }
+
+      // Navigate to checkout with prefilled order info (excluding payment method so user can choose new one)
+      router.replace(
+        Routes.checkout.index({
+          prefillOrderId: params.orderId,
+          prefillBillingName: orderDetails.billing_name || undefined,
+          prefillBillingEmail: orderDetails.billing_email || undefined,
+          prefillBillingPhone: orderDetails.billing_phone || undefined,
+          prefillPickupDatetime: orderDetails.pickup_datetime || undefined,
+          prefillSpecialInstructions: orderDetails.special_instructions || undefined,
+          fromChangePaymentMethod: 'true',
+        })
+      );
+    } catch (error: any) {
+      console.error('[PaymentFailed] Failed to change payment method:', error);
+      Alert.alert(
+        'Error',
+        'Unable to change payment method. Please try again.',
+        [
+          {
+            text: 'OK',
+            onPress: () =>
+              router.replace(Routes.checkout.index({ fromChangePaymentMethod: 'true' })),
+          },
+        ]
+      );
+    } finally {
+      setChangingPaymentMethod(false);
+    }
+  };
+
   return (
     <>
       <Stack.Screen
@@ -327,7 +393,9 @@ const PaymentFailedScreen = () => {
             <Ionicons name="information-circle" size={20} color={theme.info} />
             <Text style={[styles.infoText, { color: theme.textSecondary }]}>
               {orderCreated
-                ? 'Your items will be restored to your cart.'
+                ? isCardError
+                  ? 'Your card details need to be re-entered. Tap below to return to checkout.'
+                  : 'You can retry payment or change to a different payment method.'
                 : isCardError
                 ? 'You can try a different card or switch to GCash/Maya.'
                 : 'Please check your payment details and try again.'}
@@ -338,17 +406,18 @@ const PaymentFailedScreen = () => {
           <View style={styles.buttonContainer}>
             {orderCreated ? (
               <>
-                {/* Order created - show Retry Payment as primary */}
+                {/* For card errors: "Try Again" redirects to checkout (same as change payment) */}
+                {/* For e-wallets: "Try Again" retries with same payment info */}
                 <Pressable
                   style={[
                     styles.primaryButton,
                     { backgroundColor: theme.primary },
-                    retrying && styles.disabledButton,
+                    (retrying || changingPaymentMethod) && styles.disabledButton,
                   ]}
                   onPress={handleRetryPayment}
-                  disabled={retrying}
+                  disabled={retrying || changingPaymentMethod}
                 >
-                  {retrying ? (
+                  {(retrying || (isCardError && changingPaymentMethod)) ? (
                     <ActivityIndicator color="#FFF" size="small" />
                   ) : (
                     <>
@@ -358,6 +427,37 @@ const PaymentFailedScreen = () => {
                   )}
                 </Pressable>
 
+                {/* Change Payment Method - only show for e-wallets (card "Try Again" already does this) */}
+                {!isCardError && (
+                  <Pressable
+                    style={[
+                      styles.secondaryButton,
+                      { borderColor: theme.border },
+                      changingPaymentMethod && styles.disabledButton,
+                    ]}
+                    onPress={handleChangePaymentMethod}
+                    disabled={retrying || changingPaymentMethod}
+                  >
+                    {changingPaymentMethod ? (
+                      <ActivityIndicator color={theme.text} size="small" />
+                    ) : (
+                      <>
+                        <Ionicons
+                          name="swap-horizontal"
+                          size={20}
+                          color={theme.text}
+                        />
+                        <Text
+                          style={[styles.secondaryButtonText, { color: theme.text }]}
+                        >
+                          Change Payment Method
+                        </Text>
+                      </>
+                    )}
+                  </Pressable>
+                )}
+
+                {/* Go Back to Cart as tertiary option */}
                 <Pressable
                   style={[
                     styles.secondaryButton,
@@ -365,7 +465,7 @@ const PaymentFailedScreen = () => {
                     goingToCart && styles.disabledButton,
                   ]}
                   onPress={handleGoToCart}
-                  disabled={retrying || goingToCart}
+                  disabled={retrying || goingToCart || changingPaymentMethod}
                 >
                   {goingToCart ? (
                     <ActivityIndicator color={theme.text} size="small" />
