@@ -389,7 +389,7 @@ const CartScreen = () => {
       return;
     }
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    push(Routes.checkout.index);
+    push(Routes.checkout.index());
   };
 
   const subtotal = getSubtotal();

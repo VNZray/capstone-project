@@ -21,6 +21,7 @@ import { useTypography } from '@/constants/typography';
 import PageContainer from '@/components/PageContainer';
 import { Ionicons } from '@expo/vector-icons';
 import { getOrderById } from '@/services/OrderService';
+import { useCart } from '@/context/CartContext';
 import {
   createPaymentIntent,
   attachEwalletPaymentMethod,
@@ -46,6 +47,8 @@ const PaymentCancelScreen = () => {
   const type = useTypography();
   const { h1, h2, body, bodySmall } = type;
   const [retrying, setRetrying] = useState(false);
+  const [changingPaymentMethod, setChangingPaymentMethod] = useState(false);
+  const { restoreFromOrder } = useCart();
 
   // Animations
   const scale = useSharedValue(0);
@@ -175,6 +178,77 @@ const PaymentCancelScreen = () => {
     router.replace(Routes.tabs.home);
   };
 
+  /**
+   * Handle "Change Payment Method" - restore order items to cart and navigate to checkout
+   * with prefilled data so user can select a different payment method
+   */
+  const handleChangePaymentMethod = async () => {
+    if (!params.orderId) {
+      router.replace(Routes.checkout.index({ fromChangePaymentMethod: 'true' }));
+      return;
+    }
+
+    try {
+      setChangingPaymentMethod(true);
+      console.log(
+        '[PaymentCancel] Changing payment method for order:',
+        params.orderId
+      );
+
+      // Fetch order details to get items and restore to cart
+      const orderDetails = await getOrderById(params.orderId);
+
+      if (orderDetails.items && orderDetails.items.length > 0) {
+        // Restore items to cart
+        restoreFromOrder(
+          orderDetails.items.map((item: any) => ({
+            product_id: item.product_id,
+            product_name: item.product_name,
+            unit_price: item.unit_price,
+            quantity: item.quantity,
+            special_requests: item.special_requests,
+            product_image_url: item.product_image_url,
+          })),
+          orderDetails.business_id,
+          orderDetails.business_name
+        );
+        console.log(
+          '[PaymentCancel] Restored',
+          orderDetails.items.length,
+          'items to cart'
+        );
+      }
+
+      // Navigate to checkout with prefilled order info (excluding payment method so user can choose new one)
+      router.replace(
+        Routes.checkout.index({
+          prefillOrderId: params.orderId,
+          prefillBillingName: orderDetails.billing_name || undefined,
+          prefillBillingEmail: orderDetails.billing_email || undefined,
+          prefillBillingPhone: orderDetails.billing_phone || undefined,
+          prefillPickupDatetime: orderDetails.pickup_datetime || undefined,
+          prefillSpecialInstructions: orderDetails.special_instructions || undefined,
+          fromChangePaymentMethod: 'true',
+        })
+      );
+    } catch (error: any) {
+      console.error('[PaymentCancel] Failed to change payment method:', error);
+      Alert.alert(
+        'Error',
+        'Unable to change payment method. Please try again.',
+        [
+          {
+            text: 'OK',
+            onPress: () =>
+              router.replace(Routes.checkout.index({ fromChangePaymentMethod: 'true' })),
+          },
+        ]
+      );
+    } finally {
+      setChangingPaymentMethod(false);
+    }
+  };
+
   const animatedIconStyle = useAnimatedStyle(() => ({
     transform: [{ scale: scale.value }, { translateX: shake.value }],
     opacity: opacity.value,
@@ -283,9 +357,10 @@ const PaymentCancelScreen = () => {
                   style={[
                     styles.primaryButton,
                     { backgroundColor: colors.primary },
+                    (retrying || changingPaymentMethod) && styles.disabledButton,
                   ]}
                   onPress={handleRetryPayment}
-                  disabled={retrying}
+                  disabled={retrying || changingPaymentMethod}
                 >
                   {retrying ? (
                     <ActivityIndicator size="small" color="#FFF" />
@@ -298,8 +373,35 @@ const PaymentCancelScreen = () => {
                   style={[
                     styles.secondaryButton,
                     { borderColor: palette.border },
+                    changingPaymentMethod && styles.disabledButton,
+                  ]}
+                  onPress={handleChangePaymentMethod}
+                  disabled={retrying || changingPaymentMethod}
+                >
+                  {changingPaymentMethod ? (
+                    <ActivityIndicator size="small" color={palette.text} />
+                  ) : (
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                      <Ionicons name="swap-horizontal" size={18} color={palette.text} />
+                      <Text
+                        style={[
+                          styles.secondaryButtonText,
+                          { color: palette.text },
+                        ]}
+                      >
+                        Change Payment Method
+                      </Text>
+                    </View>
+                  )}
+                </Pressable>
+
+                <Pressable
+                  style={[
+                    styles.secondaryButton,
+                    { borderColor: palette.border },
                   ]}
                   onPress={handleViewOrder}
+                  disabled={retrying || changingPaymentMethod}
                 >
                   <Text
                     style={[
@@ -415,6 +517,9 @@ const styles = StyleSheet.create({
   textButtonText: {
     fontSize: 14,
     fontWeight: '500',
+  },
+  disabledButton: {
+    opacity: 0.6,
   },
 });
 

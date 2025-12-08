@@ -208,7 +208,19 @@ export const Routes = {
   // Checkout Domain - Payment/order flow (separate from tabs)
   // ============================================================================
   checkout: {
-    index: '/(checkout)/checkout',
+    index: (params?: {
+      prefillOrderId?: string;
+      prefillPaymentMethod?: string;
+      prefillBillingName?: string;
+      prefillBillingEmail?: string;
+      prefillBillingPhone?: string;
+      prefillPickupDatetime?: string;
+      prefillSpecialInstructions?: string;
+      fromChangePaymentMethod?: string;
+    }) => ({
+      pathname: '/(checkout)/checkout' as const,
+      params: params || {},
+    }),
     cart: (params?: { fromPaymentFailed?: string }) => ({
       pathname: '/(checkout)/cart' as const,
       params: params || {},
