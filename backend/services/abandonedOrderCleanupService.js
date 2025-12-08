@@ -120,7 +120,9 @@ export async function cleanupAbandonedOrders() {
  * - Payment method is online (gcash, paymaya, card)
  * - Payment status is 'pending'
  * - Order status is 'pending'
- * - Created more than ABANDONMENT_THRESHOLD_MINUTES ago
+ * - Payment created more than ABANDONMENT_THRESHOLD_MINUTES ago
+ *   (We use payment.created_at because it's stored in UTC consistently,
+ *    unlike order.created_at which may use server timezone)
  *
  * @param {Object} results - Results object to accumulate counts
  * @returns {Promise<number>} Number of orders processed
@@ -131,11 +133,14 @@ async function processAbandonedOnlinePaymentOrders(results) {
   );
 
   console.log(
-    `[AbandonedOrderCleanup] Looking for orders abandoned before ${cutoffTime.toISOString()}`
+    `[AbandonedOrderCleanup] Looking for payments abandoned before ${cutoffTime.toISOString()}`
   );
 
   try {
     // Find abandoned orders with pending online payments
+    // NOTE: Using p.created_at instead of o.created_at because payment timestamps
+    // are stored in UTC (via JavaScript Date), while order timestamps may use
+    // server timezone (MariaDB CURRENT_TIMESTAMP in PHT), causing timezone mismatch
     const [abandonedOrders] = await db.query(
       `
       SELECT 
@@ -148,14 +153,15 @@ async function processAbandonedOnlinePaymentOrders(results) {
         p.id as payment_id,
         p.payment_intent_id,
         p.status as payment_status,
-        p.payment_method
+        p.payment_method,
+        p.created_at as payment_created_at
       FROM \`order\` o
-      LEFT JOIN payment p ON p.payment_for = 'order' AND p.payment_for_id = o.id
+      INNER JOIN payment p ON p.payment_for = 'order' AND p.payment_for_id = o.id
       WHERE o.status = 'pending'
         AND p.status = 'pending'
         AND p.payment_method IN ('gcash', 'paymaya', 'card')
-        AND o.created_at < ?
-      ORDER BY o.created_at ASC
+        AND p.created_at < ?
+      ORDER BY p.created_at ASC
       LIMIT 50
     `,
       [cutoffTime]
@@ -602,14 +608,15 @@ export async function getAbandonedOrderStats() {
       Date.now() - ABANDONMENT_THRESHOLD_MINUTES * 60 * 1000
     );
 
+    // Use p.created_at for consistent UTC timestamps (see processAbandonedOnlinePaymentOrders comment)
     const [rows] = await db.query(
       `
       SELECT 
         COUNT(*) as pending_online_payments,
-        SUM(CASE WHEN o.created_at < ? THEN 1 ELSE 0 END) as potentially_abandoned,
-        MIN(o.created_at) as oldest_pending
+        SUM(CASE WHEN p.created_at < ? THEN 1 ELSE 0 END) as potentially_abandoned,
+        MIN(p.created_at) as oldest_pending
       FROM \`order\` o
-      LEFT JOIN payment p ON p.payment_for = 'order' AND p.payment_for_id = o.id
+      INNER JOIN payment p ON p.payment_for = 'order' AND p.payment_for_id = o.id
       WHERE o.status = 'pending'
         AND p.status = 'pending'
         AND p.payment_method IN ('gcash', 'paymaya', 'card')
