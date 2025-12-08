@@ -252,9 +252,14 @@ export async function createPaymentMethod(
     });
 
     if (!response.ok) {
-      const error = await response.json();
-      console.error('[PaymentIntentService] PayMongo error:', error);
-      throw new Error(error.errors?.[0]?.detail || 'Failed to create payment method');
+      const errorData = await response.json();
+      console.error('[PaymentIntentService] PayMongo error:', errorData);
+      // Create an error with the PayMongo error structure preserved
+      const paymongoError = new Error(errorData.errors?.[0]?.detail || 'Failed to create payment method');
+      (paymongoError as any).response = { data: errorData };
+      (paymongoError as any).sub_code = errorData.errors?.[0]?.sub_code;
+      (paymongoError as any).code = errorData.errors?.[0]?.code;
+      throw paymongoError;
     }
 
     return response.json();
@@ -323,9 +328,15 @@ export async function attachPaymentMethodClient(
     );
 
     if (!response.ok) {
-      const error = await response.json();
-      console.error('[PaymentIntentService] Attach error:', error);
-      throw new Error(error.errors?.[0]?.detail || 'Failed to attach payment method');
+      const errorData = await response.json();
+      console.error('[PaymentIntentService] Attach error:', errorData);
+      // Create an error with the PayMongo error structure preserved
+      // so the error handler can map sub_code to user-friendly messages
+      const paymongoError = new Error(errorData.errors?.[0]?.detail || 'Failed to attach payment method');
+      (paymongoError as any).response = { data: errorData };
+      (paymongoError as any).sub_code = errorData.errors?.[0]?.sub_code;
+      (paymongoError as any).code = errorData.errors?.[0]?.code;
+      throw paymongoError;
     }
 
     return response.json();
@@ -471,7 +482,7 @@ export async function open3DSAuthentication(
 export function dismissBrowser(): void {
   try {
     WebBrowser.dismissBrowser();
-  } catch (error) {
+  } catch {
     // Browser might not be open, ignore
   }
 }
