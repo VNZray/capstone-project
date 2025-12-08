@@ -385,7 +385,10 @@ const OrderGracePeriodScreen = () => {
       );
     } catch (error: any) {
       console.error('[GracePeriod] Error processing order:', error);
-      hasStartedPayment.current = false; // Allow manual retry only
+      // IMPORTANT: Do NOT reset hasStartedPayment.current to false here!
+      // This was causing double order creation when the useEffect re-triggered.
+      // Once payment processing has failed, the user must navigate to payment-failed
+      // screen and manually retry from there.
 
       // Map PayMongo error codes to user-friendly messages
       const getErrorMessage = (
