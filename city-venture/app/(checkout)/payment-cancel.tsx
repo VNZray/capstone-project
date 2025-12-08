@@ -90,26 +90,54 @@ const PaymentCancelScreen = () => {
 
       // Get order details to determine payment method type
       const orderDetails = await getOrderById(params.orderId);
-      const paymentMethodType = orderDetails.payment_method_type || 'gcash';
+      
+      // Use payment_method as the primary field (stores 'gcash', 'paymaya', 'card', 'cash_on_pickup')
+      // Fallback to deprecated payment_method_type for backward compatibility
+      let paymentMethodType = orderDetails.payment_method;
+
+      // Skip cash_on_pickup since it doesn't need online payment
+      if (paymentMethodType === 'cash_on_pickup') {
+        Alert.alert(
+          'Payment Method',
+          'This order uses cash on pickup. No online payment needed.',
+          [{ text: 'OK' }]
+        );
+        setRetrying(false);
+        return;
+      }
+
+      // Fallback to deprecated field if payment_method is not an e-wallet/card type
+      if (!['gcash', 'paymaya', 'card'].includes(paymentMethodType)) {
+        paymentMethodType = orderDetails.payment_method_type || 'gcash';
+      }
+
+      console.log('[PaymentCancel] Using payment method:', paymentMethodType);
 
       // Create Payment Intent using unified API
+      // This REUSES the existing order (no ghost data) - backend will:
+      // 1. Detect retry scenario if order status = failed_payment
+      // 2. Create new Payment Intent for the SAME order
+      // 3. Reset order status to 'pending' and re-deduct stock if needed
       const intentResponse = await createPaymentIntent({
         payment_for: 'order',
         reference_id: params.orderId,
-        payment_method_types: [paymentMethodType],
+        payment_method: paymentMethodType,
       });
 
       const paymentIntentId = intentResponse.data.payment_intent_id;
+      const clientKey = intentResponse.data.client_key;
 
-      // For card payments, navigate to card payment screen
+      // For card payments, navigate to card payment screen with NEW payment intent
+      // This reuses the existing order instead of creating a new one
       if (paymentMethodType === 'card') {
+        console.log('[PaymentCancel] Card payment - navigating to card-payment screen for retry');
         router.replace(
           Routes.checkout.cardPayment({
             orderId: params.orderId,
             orderNumber: orderDetails.order_number,
             arrivalCode: orderDetails.arrival_code,
             paymentIntentId,
-            clientKey: intentResponse.data.client_key,
+            clientKey,
             amount: intentResponse.data.amount.toString(),
             total: orderDetails.total_amount?.toString(),
           })
