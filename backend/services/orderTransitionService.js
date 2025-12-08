@@ -207,7 +207,7 @@ export function getCancelledByActor(actorRole, currentStatus) {
 
 /**
  * Validate cancellation request
- * @param {Object} order - Order object with status, created_at, payment_status
+ * @param {Object} order - Order object with status, created_at, payment_status, payment_method, payment_intent_id
  * @param {string} actorRole - Role of actor requesting cancellation
  * @param {number} graceSeconds - Grace period in seconds
  * @returns {Object} { allowed: boolean, reason: string, cancelled_by: string }
@@ -215,6 +215,15 @@ export function getCancelledByActor(actorRole, currentStatus) {
 export function validateCancellation(order, actorRole, graceSeconds = 10) {
   const currentStatus = order.status?.toLowerCase();
   const roleLower = actorRole?.toLowerCase();
+  const paymentStatus = order.payment_status?.toLowerCase();
+  const paymentMethod = order.payment_method?.toLowerCase();
+  
+  // PayMongo payment methods are: gcash, paymaya, card (NOT cash_on_pickup)
+  // We can also check if payment_intent_id exists as indicator of PayMongo flow
+  const isPaymongoPayment = paymentMethod && paymentMethod !== "cash_on_pickup";
+  const hasPaymentIntent = !!order.payment_intent_id;
+
+  console.log(`[OrderTransition] validateCancellation - status: ${currentStatus}, role: ${roleLower}, paymentStatus: ${paymentStatus}, paymentMethod: ${paymentMethod}, isPaymongo: ${isPaymongoPayment}, hasIntent: ${hasPaymentIntent}`);
 
   // Cannot cancel terminal states
   if (
@@ -242,7 +251,20 @@ export function validateCancellation(order, actorRole, graceSeconds = 10) {
       };
     }
 
-    // Check grace period
+    // Special case: Allow cancellation for PayMongo orders with pending/failed payment
+    // This handles the case where user abandons payment flow from card-payment screen
+    // or when 3DS authentication fails and payment was never completed
+    // PayMongo methods: card, gcash, paymaya (anything except cash_on_pickup)
+    if ((isPaymongoPayment || hasPaymentIntent) && ["pending", "failed"].includes(paymentStatus)) {
+      console.log(`[OrderTransition] Allowing cancellation for PayMongo order with pending/failed payment`);
+      return {
+        allowed: true,
+        reason: null,
+        cancelled_by: "user",
+      };
+    }
+
+    // Check grace period for non-PayMongo orders or paid PayMongo orders
     const graceCheck = canCancelWithinGrace(order.created_at, graceSeconds);
     if (!graceCheck.allowed) {
       return {

@@ -114,9 +114,9 @@ const CardPaymentScreen = () => {
         console.log('[CardPayment] Restored', orderDetails.items.length, 'items to cart');
       }
 
-      // Cancel the order
+      // Cancel the order with reason
       try {
-        await cancelOrder(params.orderId);
+        await cancelOrder(params.orderId, 'User cancelled from card payment screen');
         console.log('[CardPayment] Order cancelled successfully');
       } catch (cancelError: any) {
         // Order might have already been cancelled or in a non-cancellable state

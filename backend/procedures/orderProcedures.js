@@ -332,9 +332,14 @@ async function createOrderProcedures(knex) {
         updated_at = NOW() 
       WHERE id = p_orderId;
       
-      -- Update payment status to failed/refunded if applicable
+      -- Update payment status to failed when order is cancelled and payment is pending
+      -- If payment is 'pending' and order is cancelled (by any party), mark payment as 'failed'
+      -- If payment is 'paid', leave as-is (refund handled separately in controller)
       UPDATE payment 
-      SET status = IF(p_cancelled_by = 'system', 'failed', status),
+      SET status = CASE 
+          WHEN status = 'pending' THEN 'failed'
+          ELSE status
+        END,
           updated_at = NOW()
       WHERE payment_for = 'order' AND payment_for_id = p_orderId;
       
