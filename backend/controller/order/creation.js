@@ -169,15 +169,19 @@ export async function insertOrder(req, res) {
       });
     }
 
-    // 2. FIX: Convert to MySQL-friendly string format (YYYY-MM-DD HH:mm:ss)
-    // We use toISOString() to get the UTC time (e.g. 02:00:00)
-    // and strip the 'T' and 'Z' so MySQL doesn't get confused.
-    const pickupDateString = pickupDateObj
+    // 2. FIX: Convert UTC to PHT (Asia/Manila, UTC+8) for MySQL storage
+    // The DB server stores timestamps in PHT, so we must convert the UTC ISO string
+    // Example: User selects 10:00 AM PHT → Frontend sends "2024-12-10T02:00:00Z" (UTC)
+    //          We need to store "2024-12-10 10:00:00" (PHT) in the DB
+    const phtOffset = 8 * 60 * 60 * 1000; // 8 hours in milliseconds
+    const phtDate = new Date(pickupDateObj.getTime() + phtOffset);
+    const pickupDateString = phtDate
       .toISOString()
       .slice(0, 19)
       .replace("T", " ");
 
-    console.log("[insertOrder] Formatted for DB:", pickupDateString);
+    console.log("[insertOrder] Received UTC:", pickup_datetime);
+    console.log("[insertOrder] Converted to PHT for DB:", pickupDateString);
 
     // Generate order number and arrival code
     const orderNumber = generateOrderNumber();

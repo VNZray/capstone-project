@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -10,6 +10,8 @@ import {
   Platform,
   ScrollView,
   Image,
+  BackHandler,
+  Alert,
 } from 'react-native';
 import { Stack, router, useLocalSearchParams } from 'expo-router';
 import { Routes } from '@/routes/mainRoutes';
@@ -27,6 +29,8 @@ import {
 } from '@/services/PaymentIntentService';
 import { Ionicons } from '@expo/vector-icons';
 import API_URL from '@/services/api';
+import { cancelOrder, getOrderById } from '@/services/OrderService';
+import { useCart } from '@/context/CartContext';
 
 /**
  * Card Payment Screen
@@ -37,11 +41,13 @@ import API_URL from '@/services/api';
  * - Card brand detection in input
  * - Clean validation states
  * - Secure payment trust signals
+ * - Back button handling: cancels order and redirects to cart
  */
 const CardPaymentScreen = () => {
   const colorScheme = useColorScheme();
   const theme = Colors[colorScheme as keyof typeof Colors];
   const isDark = colorScheme === 'dark';
+  const { restoreFromOrder } = useCart();
 
   const params = useLocalSearchParams<{
     orderId: string;
@@ -63,6 +69,7 @@ const CardPaymentScreen = () => {
 
   // UI state
   const [loading, setLoading] = useState(false);
+  const [cancellingOrder, setCancellingOrder] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [focusedField, setFocusedField] = useState<string | null>(null);
 
@@ -73,6 +80,120 @@ const CardPaymentScreen = () => {
   const nameRef = useRef<TextInput>(null);
 
   const cardBrand = getCardBrand(cardNumber);
+
+  /**
+   * Cancel the order and redirect user to cart with restored items
+   */
+  const cancelOrderAndRedirect = useCallback(async () => {
+    if (!params.orderId) {
+      router.replace(Routes.checkout.cart({ fromPaymentFailed: 'true' }));
+      return;
+    }
+
+    try {
+      setCancellingOrder(true);
+      console.log('[CardPayment] Cancelling order:', params.orderId);
+
+      // Fetch order details to restore cart items
+      const orderDetails = await getOrderById(params.orderId);
+
+      // Restore items to cart before cancelling
+      if (orderDetails.items && orderDetails.items.length > 0) {
+        restoreFromOrder(
+          orderDetails.items.map((item) => ({
+            product_id: item.product_id,
+            product_name: item.product_name,
+            unit_price: item.unit_price,
+            quantity: item.quantity,
+            special_requests: item.special_requests,
+            product_image_url: item.product_image_url,
+          })),
+          orderDetails.business_id,
+          orderDetails.business_name
+        );
+        console.log('[CardPayment] Restored', orderDetails.items.length, 'items to cart');
+      }
+
+      // Cancel the order
+      try {
+        await cancelOrder(params.orderId);
+        console.log('[CardPayment] Order cancelled successfully');
+      } catch (cancelError: any) {
+        // Order might have already been cancelled or in a non-cancellable state
+        // Still proceed to cart since items are restored
+        console.warn('[CardPayment] Order cancel failed (may already be cancelled):', cancelError.message);
+      }
+
+      // Navigate to cart
+      router.replace(Routes.checkout.cart({ fromPaymentFailed: 'true' }));
+    } catch (error: any) {
+      console.error('[CardPayment] Failed to cancel order:', error);
+      Alert.alert(
+        'Error',
+        'Failed to cancel order. Please try again.',
+        [
+          {
+            text: 'Go to Cart Anyway',
+            onPress: () => router.replace(Routes.checkout.cart({ fromPaymentFailed: 'true' })),
+          },
+          {
+            text: 'Stay',
+            style: 'cancel',
+          },
+        ]
+      );
+    } finally {
+      setCancellingOrder(false);
+    }
+  }, [params.orderId, restoreFromOrder]);
+
+  /**
+   * Handle back navigation - cancel order and redirect to cart
+   * This prevents users from going back to stale order-grace-period screen
+   */
+  const handleBackNavigation = useCallback(() => {
+    if (loading || cancellingOrder) {
+      // Don't allow back during payment processing
+      return true;
+    }
+
+    // Show confirmation dialog
+    Alert.alert(
+      'Cancel Payment?',
+      'Going back will cancel this order. Your items will be restored to your cart.',
+      [
+        {
+          text: 'Stay',
+          style: 'cancel',
+        },
+        {
+          text: 'Cancel Order',
+          style: 'destructive',
+          onPress: () => {
+            cancelOrderAndRedirect();
+          },
+        },
+      ]
+    );
+
+    return true; // Prevent default back behavior
+  }, [loading, cancellingOrder, cancelOrderAndRedirect]);
+
+  /**
+   * Handle hardware back button press on Android
+   * Cancels the order and redirects to cart instead of going back to grace period
+   */
+  useEffect(() => {
+    const backHandler = BackHandler.addEventListener(
+      'hardwareBackPress',
+      () => {
+        handleBackNavigation();
+        return true; // Prevent default back behavior
+      }
+    );
+
+    return () => backHandler.remove();
+  }, [handleBackNavigation]);
 
   // Get card brand icon for input
   const getCardBrandIcon = () => {
@@ -372,7 +493,19 @@ const CardPaymentScreen = () => {
 
   return (
     <>
-      <Stack.Screen options={{ headerShown: false }} />
+      <Stack.Screen 
+        options={{ 
+          headerShown: false,
+          gestureEnabled: false, // Prevent iOS swipe-back gesture
+        }} 
+      />
+      {/* Loading overlay when cancelling order */}
+      {cancellingOrder && (
+        <View style={styles.cancelOverlay}>
+          <ActivityIndicator size="large" color="#FFF" />
+          <Text style={styles.cancelOverlayText}>Cancelling order...</Text>
+        </View>
+      )}
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         style={{ flex: 1 }}
@@ -381,11 +514,19 @@ const CardPaymentScreen = () => {
           <View
             style={[styles.container, { backgroundColor: theme.background }]}
           >
-            {/* Header */}
+            {/* Header with back button */}
             <View style={styles.header}>
+              <Pressable 
+                style={styles.backButton} 
+                onPress={handleBackNavigation}
+                disabled={loading || cancellingOrder}
+              >
+                <Ionicons name="arrow-back" size={24} color={theme.text} />
+              </Pressable>
               <Text style={[styles.headerTitle, { color: theme.text }]}>
                 Order #{params.orderNumber}
               </Text>
+              <View style={styles.headerSpacer} />
             </View>
 
             <ScrollView
@@ -666,21 +807,43 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+  cancelOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 999,
+  },
+  cancelOverlayText: {
+    color: '#FFF',
+    fontSize: 16,
+    marginTop: 12,
+    fontWeight: '500',
+  },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 20,
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
     paddingTop: 20,
     paddingBottom: 15,
   },
   headerTitle: {
     fontSize: 18,
     fontWeight: '600',
+    flex: 1,
+    textAlign: 'center',
   },
   backButton: {
     padding: 8,
-    marginLeft: -8,
+    width: 40,
+  },
+  headerSpacer: {
+    width: 40,
   },
   scrollView: {
     flex: 1,

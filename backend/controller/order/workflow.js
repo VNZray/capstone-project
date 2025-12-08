@@ -154,7 +154,7 @@ export async function updatePaymentStatus(req, res) {
  */
 export async function cancelOrder(req, res) {
   const { id } = req.params;
-  const { cancellation_reason } = req.body;
+  const { cancellation_reason } = req.body || {};
 
   try {
     const userRole = await ensureUserRole(req);
