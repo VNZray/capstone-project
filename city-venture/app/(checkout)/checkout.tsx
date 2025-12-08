@@ -162,7 +162,7 @@ const CheckoutScreen = () => {
   const [billingPhone, setBillingPhone] = useState(user?.phone_number || '');
 
   // Card payment form state (inline card entry)
-  const [cardNumber, setCardNumber] = useState('5200000000000197');
+  const [cardNumber, setCardNumber] = useState('4200000000000018');
   const [expMonth, setExpMonth] = useState('12');
   const [expYear, setExpYear] = useState('25');
   const [cvc, setCvc] = useState('123');
