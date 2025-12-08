@@ -689,23 +689,55 @@ export function getCardBrand(cardNumber: string): string {
 
 /**
  * Test card numbers for PayMongo sandbox
+ * @see https://developers.paymongo.com/docs/testing
+ * 
+ * Use any future expiration date and any 3-digit CVC
  */
 export const TEST_CARDS = {
-  // Successful payments
-  SUCCESS: '4343434343434345',
+  // ===== SUCCESSFUL PAYMENTS =====
+  SUCCESS_VISA: '4343434343434345',
+  SUCCESS_VISA_DEBIT: '4571736000000075',
+  SUCCESS_VISA_CREDIT_PH: '4009930000001421',
+  SUCCESS_VISA_DEBIT_PH: '4404520000001439',
   SUCCESS_MASTERCARD: '5555444444444457',
-  
-  // 3DS required
-  THREE_DS_REQUIRED: '4120000000000007',
-  
-  // Declined cards
-  DECLINED_GENERIC: '4000000000000010',
-  DECLINED_INSUFFICIENT_FUNDS: '4000000000000028',
-  DECLINED_STOLEN_CARD: '4000000000000036',
-  DECLINED_EXPIRED: '4000000000000044',
-  DECLINED_PROCESSING_ERROR: '4000000000000051',
-  
-  // Foreign cards (+1% fee)
+  SUCCESS_MASTERCARD_DEBIT: '5455590000000009',
+  SUCCESS_MASTERCARD_PREPAID: '5339080000000003',
+  SUCCESS_MASTERCARD_CREDIT_PH: '5240050000001440',
+  SUCCESS_MASTERCARD_DEBIT_PH: '5577510000001446',
+
+  // ===== 3DS REQUIRED =====
+  THREE_DS_REQUIRED: '4120000000000007', // Must complete 3DS to succeed
+  THREE_DS_DECLINE_BEFORE_AUTH: '4230000000000004', // Declines with generic_decline before 3DS
+  THREE_DS_DECLINE_AFTER_AUTH: '5234000000000106', // Declines with generic_decline after 3DS
+  THREE_DS_OPTIONAL: '5123000000000001', // 3DS supported but not required
+
+  // ===== DECLINED - CARD ERRORS =====
+  DECLINED_CARD_EXPIRED: '4200000000000018', // sub_code: card_expired
+  DECLINED_CVC_INVALID: '4300000000000017', // sub_code: cvc_invalid
+  DECLINED_GENERIC: '4400000000000016', // sub_code: generic_decline
+  DECLINED_GENERIC_PH: '4028220000001457', // sub_code: generic_decline (PH)
+  DECLINED_INSUFFICIENT_FUNDS: '5100000000000198', // sub_code: insufficient_funds
+  DECLINED_INSUFFICIENT_FUNDS_PH: '5240460000001466', // sub_code: insufficient_funds (PH)
+
+  // ===== DECLINED - BLOCKED (Security-sensitive - show generic message) =====
+  DECLINED_FRAUDULENT: '4500000000000015', // sub_code: fraudulent
+  DECLINED_PROCESSOR_BLOCKED: '5200000000000197', // sub_code: processor_blocked
+  DECLINED_LOST_CARD: '5300000000000196', // sub_code: lost_card
+  DECLINED_LOST_CARD_PH: '5483530000001462', // sub_code: lost_card (PH)
+  DECLINED_STOLEN_CARD: '5400000000000195', // sub_code: stolen_card
+  DECLINED_BLOCKED: '4600000000000014', // sub_code: blocked (fraud engine)
+
+  // ===== PROCESSOR ERRORS =====
+  DECLINED_PROCESSOR_UNAVAILABLE: '5500000000000194', // sub_code: processor_unavailable
+
+  // ===== SPECIAL SCENARIOS =====
+  CANCEL_AWAITING_CAPTURE_NON_3DS: '5417881844647288', // resource_failed_state on cancel
+  CANCEL_AWAITING_CAPTURE_3DS: '5417886761138807', // resource_failed_state on cancel (3DS)
+
+  // Legacy aliases for backward compatibility
+  SUCCESS: '4343434343434345',
+  DECLINED_EXPIRED: '4200000000000018',
+  DECLINED_PROCESSING_ERROR: '5500000000000194',
   FOREIGN_CARD: '4000000000000069'
 };
 

@@ -48,7 +48,7 @@ const CardPaymentScreen = () => {
   }>();
 
   // Card details state
-  const [cardNumber, setCardNumber] = useState('5123000000000001');
+  const [cardNumber, setCardNumber] = useState('4300000000000017');
   const [expMonth, setExpMonth] = useState('12');
   const [expYear, setExpYear] = useState('25');
   const [cvc, setCvc] = useState('123');

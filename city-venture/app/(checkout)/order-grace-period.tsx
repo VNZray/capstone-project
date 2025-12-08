@@ -394,9 +394,31 @@ const OrderGracePeriodScreen = () => {
       const getErrorMessage = (
         err: any
       ): { title: string; message: string; isCardError: boolean } => {
+        // Extract sub_code from multiple possible locations in the error structure:
+        // 1. err.response.data.errors[0].sub_code - From axios error response
+        // 2. err.sub_code - Directly attached by PaymentIntentService
+        // 3. err.response.data.last_payment_error.sub_code - From Payment Intent status
         const subCode =
-          err.response?.data?.errors?.[0]?.sub_code || err.sub_code;
-        const errorCode = err.response?.data?.errors?.[0]?.code || err.code;
+          err.response?.data?.errors?.[0]?.sub_code ||
+          err.sub_code ||
+          err.response?.data?.last_payment_error?.sub_code ||
+          err.last_payment_error?.sub_code;
+
+        // Extract error code similarly
+        const errorCode =
+          err.response?.data?.errors?.[0]?.code ||
+          err.code ||
+          err.response?.data?.last_payment_error?.code ||
+          err.last_payment_error?.code;
+
+        // Log for debugging (will help identify unmapped error codes)
+        if (subCode || errorCode) {
+          console.log('[GracePeriod] PayMongo error codes:', {
+            subCode,
+            errorCode,
+            fullError: err.response?.data || err.message,
+          });
+        }
 
         // Generic message for security-sensitive errors (fraud, lost/stolen cards)
         // PayMongo recommends NOT exposing these details to customers
@@ -448,6 +470,7 @@ const OrderGracePeriodScreen = () => {
         ];
 
         // ===== PROCESSOR ERRORS =====
+        // Note: 'processor_unavailable' is from test card 5500000000000194
         const processorMessages: Record<string, string> = {
           avs_failed:
             'Address verification failed. Please check your billing address and try again.',
@@ -465,6 +488,8 @@ const OrderGracePeriodScreen = () => {
             'Payment was declined. Please try a different card or payment method.',
           processor_timeout:
             'Payment timed out. Please try again or contact support.',
+          processor_unavailable:
+            'Payment processor unavailable. Please wait a few minutes and try again, or use a different card.',
           system_error:
             'System error. Please try again later or contact support.',
         };
@@ -477,6 +502,7 @@ const OrderGracePeriodScreen = () => {
         ];
 
         // ===== INVALID CARD DETAILS =====
+        // Note: PayMongo returns 'card_expired' (not 'expired_card') for test card 4200000000000018
         const invalidCardMessages: Record<string, string> = {
           card_number_invalid:
             'Invalid card number. Please verify your card details and try again.',
@@ -484,7 +510,10 @@ const OrderGracePeriodScreen = () => {
             'Invalid security code (CVC). Please check and try again.',
           cvc_incorrect:
             'Incorrect security code (CVC). Please check and try again.',
+          card_expired: 'Your card has expired. Please use a different card.',
           expired_card: 'Your card has expired. Please use a different card.',
+          card_type_mismatch:
+            'Card type mismatch. Please verify your card details and try again.',
         };
 
         // Check if it's a card-related error
