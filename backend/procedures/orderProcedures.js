@@ -122,7 +122,7 @@ async function createOrderProcedures(knex) {
       IN p_tax_amount DECIMAL(10,2),
       IN p_total_amount DECIMAL(10,2),
       IN p_discount_id CHAR(64),
-      IN p_pickup_datetime TIMESTAMP,
+      IN p_pickup_datetime DATETIME,
       IN p_special_instructions TEXT,
       IN p_arrival_code VARCHAR(10)
     )

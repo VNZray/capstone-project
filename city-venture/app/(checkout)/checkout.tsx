@@ -294,15 +294,32 @@ const CheckoutScreen = () => {
   const total = subtotal - discountAmount + taxAmount;
 
   const handleDateSelect = (date: Date) => {
+    console.log('[Checkout] handleDateSelect called with:', date);
     const newDate = new Date(pickupDate);
     newDate.setFullYear(date.getFullYear(), date.getMonth(), date.getDate());
+    console.log(
+      '[Checkout] Setting pickupDate to:',
+      newDate,
+      newDate.toISOString()
+    );
     setPickupDate(newDate);
     setShowDatePicker(false);
   };
 
   const handleTimeSelect = (hour: number, minute: number) => {
+    console.log(
+      '[Checkout] handleTimeSelect called with hour:',
+      hour,
+      'minute:',
+      minute
+    );
     const newDate = new Date(pickupDate);
     newDate.setHours(hour, minute, 0, 0);
+    console.log(
+      '[Checkout] Setting pickupDate to:',
+      newDate,
+      newDate.toISOString()
+    );
     setPickupDate(newDate);
     setShowTimePicker(false);
   };
@@ -449,6 +466,15 @@ const CheckoutScreen = () => {
     if (isPayMongoPayment) {
       console.log(
         '[Checkout] Navigating to grace period screen for PayMongo payment'
+      );
+      console.log('[Checkout] pickupDate state:', pickupDate);
+      console.log(
+        '[Checkout] pickupDate.toISOString():',
+        pickupDate.toISOString()
+      );
+      console.log(
+        '[Checkout] orderPayload.pickup_datetime:',
+        orderPayload.pickup_datetime
       );
 
       // Clear cart BEFORE navigating removed - we now clear it in the grace period screen AFTER successful order creation
