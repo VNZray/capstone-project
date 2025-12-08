@@ -91,10 +91,15 @@ export async function getUserOrders(userId: string): Promise<Order[]> {
  * Cancel an order (Tourist within grace period & PENDING)
  * POST /api/orders/:id/cancel
  * @param orderId - Order UUID
+ * @param reason - Optional cancellation reason
  */
-export async function cancelOrder(orderId: string): Promise<void> {
+export async function cancelOrder(orderId: string, reason?: string): Promise<void> {
   try {
-    await apiClient.post(`/orders/${orderId}/cancel`);
+    // Always send a body object to ensure proper Content-Type: application/json
+    // This prevents issues where req.body is undefined on the backend
+    await apiClient.post(`/orders/${orderId}/cancel`, {
+      cancellation_reason: reason || 'User cancelled order',
+    });
   } catch (error) {
     console.error('[OrderService] cancelOrder error:', error);
     throw error;

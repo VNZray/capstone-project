@@ -154,7 +154,10 @@ export async function updatePaymentStatus(req, res) {
  */
 export async function cancelOrder(req, res) {
   const { id } = req.params;
-  const { cancellation_reason } = req.body || {};
+  // Safely extract cancellation_reason with explicit null check
+  // This handles cases where req.body may be undefined (e.g., empty POST requests)
+  const body = req.body || {};
+  const cancellation_reason = body.cancellation_reason || null;
 
   try {
     const userRole = await ensureUserRole(req);
