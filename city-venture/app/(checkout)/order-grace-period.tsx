@@ -116,6 +116,11 @@ const OrderGracePeriodScreen = () => {
 
       // Step 1: Create the order in backend
       console.log('[GracePeriod] Creating order...');
+      console.log('[GracePeriod] orderData:', orderData);
+      console.log(
+        '[GracePeriod] orderData.pickup_datetime:',
+        orderData.pickup_datetime
+      );
       const orderResponse = await createOrder(orderData);
       console.log('[GracePeriod] Order created:', orderResponse.order_number);
 

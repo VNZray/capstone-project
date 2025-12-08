@@ -8,6 +8,8 @@ const db = mysql.createPool({
   user: DB_USER,
   password: DB_PASSWORD,
   database: DB_NAME,
+  timezone: "+00:00", // Use UTC timezone for consistent datetime handling
+  dateStrings: false, // Parse date strings to Date objects
 });
 
 console.log("✅ Connected to MariaDB (Promise Pool)");
