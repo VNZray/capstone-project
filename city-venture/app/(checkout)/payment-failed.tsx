@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -6,6 +6,7 @@ import {
   Pressable,
   Alert,
   ActivityIndicator,
+  BackHandler,
 } from 'react-native';
 import { Stack, router, useLocalSearchParams } from 'expo-router';
 import { Routes } from '@/routes/mainRoutes';
@@ -56,8 +57,9 @@ const PaymentFailedScreen = () => {
 
   /**
    * Handle "Go back to cart" - restore order items to cart and navigate
+   * Defined early so it can be used by the back button handler
    */
-  const handleGoToCart = async () => {
+  const handleGoToCart = useCallback(async () => {
     if (!params.orderId) {
       // No order - just go to cart
       router.replace(Routes.checkout.cart({ fromPaymentFailed: 'true' }));
@@ -115,7 +117,28 @@ const PaymentFailedScreen = () => {
     } finally {
       setGoingToCart(false);
     }
-  };
+  }, [params.orderId, restoreFromOrder]);
+
+  /**
+   * Handle hardware back button press on Android
+   * Instead of going back to the previous screen (order-grace-period),
+   * we redirect to cart which is the standard UX for payment failure flows
+   */
+  useEffect(() => {
+    const handleHardwareBackPress = () => {
+      // Return true to prevent default back behavior
+      // Trigger the same flow as "Go Back to Cart" button
+      handleGoToCart();
+      return true;
+    };
+
+    const backHandler = BackHandler.addEventListener(
+      'hardwareBackPress',
+      handleHardwareBackPress
+    );
+
+    return () => backHandler.remove();
+  }, [handleGoToCart]);
 
   /**
    * Handle retry payment for existing order
@@ -366,7 +389,7 @@ const PaymentFailedScreen = () => {
           headerTintColor: theme.text,
           headerShadowVisible: false,
           headerBackVisible: false,
-          gestureEnabled: false,
+          gestureEnabled: false, // Prevent iOS swipe-back gesture
         }}
       />
       <PageContainer padding={24}>
