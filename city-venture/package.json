@@ -1,5 +1,5 @@
 {
-  "name": "city-venture",
+  "name": "city-ventures",
   "main": "expo-router/entry",
   "version": "1.0.0",
   "scripts": {
@@ -26,6 +26,7 @@
     "expo": "~54.0.6",
     "expo-blur": "~15.0.8",
     "expo-constants": "~18.0.8",
+    "expo-dev-client": "~6.0.20",
     "expo-font": "~14.0.8",
     "expo-haptics": "~15.0.7",
     "expo-image": "~3.0.8",

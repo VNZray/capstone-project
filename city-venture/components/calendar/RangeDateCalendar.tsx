@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useCallback } from 'react';
-import { View, StyleSheet, Pressable } from 'react-native';
+import { View, StyleSheet, Pressable, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { ThemedText } from '@/components/themed-text';
 import { Colors } from '@/constants/color';
@@ -269,6 +269,7 @@ const RangeDateCalendar: React.FC<RangeDateCalendarProps> = ({
               <View
                 style={[
                   styles.dayContent,
+
                   // Marker background (only if not selected)
                   !isStartDate &&
                     !isEndDate &&
@@ -282,6 +283,8 @@ const RangeDateCalendar: React.FC<RangeDateCalendarProps> = ({
                   (isStartDate || isEndDate) && {
                     backgroundColor: theme.primary,
                     borderWidth: 0,
+                    borderRadius: Platform.OS === 'ios' ? '100%' : '100%',
+                    overflow: 'hidden',
                   },
                   // Today indicator
                   isToday &&
@@ -362,9 +365,10 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    borderRadius: 100,
+    borderRadius: Platform.OS === 'ios' ? '100%' : '100%',
+    overflow: 'hidden',
   },
   disabledContent: {
-    opacity: 0.3,
+    opacity: 0.4,
   },
 });

@@ -8,6 +8,7 @@ router.get("/", userController.getAllUsers);
 router.get("/:id", userController.getUserById);
 router.post("/", userController.insertUser);
 router.put("/:id", userController.updateUser);
+router.patch("/:id", userController.updateUser); // Support PATCH for partial updates
 router.delete("/:id", userController.deleteUser);
 
 // User role management

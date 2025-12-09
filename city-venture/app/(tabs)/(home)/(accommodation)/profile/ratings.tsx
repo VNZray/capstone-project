@@ -1,23 +1,22 @@
 import PageContainer from '@/components/PageContainer';
-import { ThemedText } from '@/components/themed-text';
 import AddReview from '@/components/reviews/AddReview';
 import RatingStatsCard from '@/components/reviews/RatingStatsCard';
 import ReviewCard from '@/components/reviews/ReviewCard';
+import { ThemedText } from '@/components/themed-text';
 import { colors } from '@/constants/color';
+import { useAccommodation } from '@/context/AccommodationContext';
 import { useAuth } from '@/context/AuthContext';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import FeedbackService from '@/services/FeedbackService';
 import type { CreateReviewPayload, ReviewWithAuthor } from '@/types/Feedback';
+import debugLogger from '@/utils/debugLogger';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams } from 'expo-router';
-import debugLogger from '@/utils/debugLogger';
-import { useAccommodation } from '@/context/AccommodationContext';
 import React, { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
   FlatList,
-  Pressable,
   RefreshControl,
   StyleSheet,
   View,
@@ -53,7 +52,8 @@ const Ratings = () => {
   });
 
   // Get accommodation/room ID from params or context
-  const businessId = (params.businessId as string) || accommodationDetails?.id || '';
+  const businessId =
+    (params.businessId as string) || accommodationDetails?.id || '';
   const roomId = (params.roomId as string) || '';
   const reviewTypeId = roomId || businessId; // Prefer room, fallback to business
 
@@ -104,25 +104,27 @@ const Ratings = () => {
         reviewTypeId,
         'accommodation'
       );
-      
+
       debugLogger({
         title: 'Reviews Fetched Successfully',
         data: {
           count: data.length,
           dataType: typeof data,
           isArray: Array.isArray(data),
-          firstReview: data[0] ? {
-            id: data[0].id,
-            rating: data[0].rating,
-            message: data[0].message?.substring(0, 50),
-            tourist_id: data[0].tourist_id,
-            created_at: data[0].created_at,
-            hasTourist: !!data[0].tourist,
-            hasUser: !!data[0].user,
-          } : null,
+          firstReview: data[0]
+            ? {
+                id: data[0].id,
+                rating: data[0].rating,
+                message: data[0].message?.substring(0, 50),
+                tourist_id: data[0].tourist_id,
+                created_at: data[0].created_at,
+                hasTourist: !!data[0].tourist,
+                hasUser: !!data[0].user,
+              }
+            : null,
         },
       });
-      
+
       console.log('Full reviews data:', JSON.stringify(data, null, 2));
       setReviews(data);
     } catch (error) {

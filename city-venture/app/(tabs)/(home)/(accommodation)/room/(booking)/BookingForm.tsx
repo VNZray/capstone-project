@@ -367,7 +367,6 @@ const BookingForm: React.FC<Props> = ({
 
   return (
     <>
-      <AppHeader backButton title="Booking Form" background="primary" />
       <ScrollView>
         <PageContainer padding={16} gap={16} style={{ paddingBottom: 180 }}>
           <RadioButton

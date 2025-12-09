@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useCallback } from 'react';
-import { View, StyleSheet, Pressable } from 'react-native';
+import { View, StyleSheet, Pressable, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { ThemedText } from '@/components/themed-text';
 import { Colors } from '@/constants/color';
@@ -223,6 +223,8 @@ const SingleDateCalendar: React.FC<SingleDateCalendarProps> = ({
                   isSelected && {
                     backgroundColor: theme.primary,
                     borderWidth: 0,
+                    borderRadius: Platform.OS === 'ios' ? '100%' : '100%',
+                    overflow: 'hidden',
                   },
                   // Today indicator (if not selected and no marker)
                   isToday &&
@@ -295,7 +297,8 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    borderRadius: 100,
+    borderRadius: Platform.OS === 'ios' ? '100%' : '100%',
+    overflow: 'hidden',
   },
   disabledContent: {
     opacity: 0.3,

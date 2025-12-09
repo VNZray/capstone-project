@@ -1,19 +1,16 @@
+import Container from '@/components/Container';
+import { AppHeader } from '@/components/header/AppHeader';
+import HeaderButton from '@/components/header/HeaderButton';
 import {
   AccommodationProvider,
   useAccommodation,
 } from '@/context/AccommodationContext';
 import { RoomProvider, useRoom } from '@/context/RoomContext';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import { Stack } from 'expo-router';
-import { StatusBar } from 'expo-status-bar';
-import { View, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { AppHeader } from '@/components/header/AppHeader';
-import HeaderButton from '@/components/header/HeaderButton';
-import { Colors } from '@/constants/color';
+import { Stack } from 'expo-router';
 import React from 'react';
-import Container from '@/components/Container';
+import { TouchableOpacity, View } from 'react-native';
 const AccommodationLayout = () => {
   const { accommodationDetails } = useAccommodation();
   const { roomDetails } = useRoom();
@@ -99,6 +96,14 @@ const AccommodationLayout = () => {
             options={{
               headerShown: false,
               animation: 'fade',
+              gestureEnabled: false,
+            }}
+          />
+          <Stack.Screen
+            name="room/(booking)"
+            options={{
+              headerShown: false,
+              animation: 'slide_from_right',
               gestureEnabled: false,
             }}
           />

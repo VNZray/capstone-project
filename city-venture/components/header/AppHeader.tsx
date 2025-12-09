@@ -1,13 +1,13 @@
 import { Colors } from '@/constants/color';
 import { useColorScheme } from '@/hooks';
 import { Ionicons } from '@expo/vector-icons';
+import { BlurView } from 'expo-blur';
 import { router } from 'expo-router';
-import { Pressable, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { StatusBar } from 'expo-status-bar';
+import { Platform, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ThemedText } from '../themed-text';
-import { IconSymbol } from '../ui/icon-symbol';
-import { StatusBar } from 'expo-status-bar';
-import { BlurView } from 'expo-blur';
+import AndroidHeaderButton from './AndroidHeaderButton';
 import HeaderButton from './HeaderButton';
 
 type Props = {
@@ -105,12 +105,23 @@ export const AppHeader = (props: Props) => {
                   </ThemedText>
                 </TouchableOpacity>
               ) : (
-                <HeaderButton
-                  isTransparent={isTransparent}
-                  icon="chevron.left"
-                  onPress={handleBackPress}
-                  iconColor={findTextColor(props.background, isDark)}
-                />
+                <>
+                  {Platform.OS === 'ios' ? (
+                    <HeaderButton
+                      isTransparent={isTransparent}
+                      icon="arrow.backward"
+                      onPress={handleBackPress}
+                      iconColor={findTextColor(props.background, isDark)}
+                    />
+                  ) : (
+                    <AndroidHeaderButton
+                      isTransparent={isTransparent}
+                      icon="arrow.backward"
+                      onPress={handleBackPress}
+                      iconColor={findTextColor(props.background, isDark)}
+                    />
+                  )}
+                </>
               )}
             </>
           ) : (

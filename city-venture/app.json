@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "city-venture",
-    "slug": "city-venture",
+    "name": "city-ventures",
+    "slug": "city-ventures",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/logo/city-ventures-main.png",
-    "scheme": "cityventure",
+    "icon": "./assets/logo/light-logo.png",
+    "scheme": "city-ventures",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
@@ -27,11 +27,12 @@
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "com.cityventure.cityventures"
     },
     "web": {
       "output": "static",
-      "favicon": "./assets/images/favicon.png",
+      "favicon": "./assets/logo/light-logo.png",
       "bundler": "metro",
       "display": "standalone",
       "scope": "/",
@@ -43,7 +44,7 @@
       [
         "expo-splash-screen",
         {
-          "image": "./assets/images/splash-icon.png",
+          "image": "./assets/logo/light-logo.png",
           "imageWidth": 200,
           "resizeMode": "contain",
           "backgroundColor": "#ffffff",
@@ -64,7 +65,7 @@
       "EXPO_PUBLIC_PAYMONGO_BASIC_AUTH": "Basic c2tfdGVzdF9wTGh3YVFHWmtITXRXaDhLb0pLaTRNeWI6",
       "router": {},
       "eas": {
-        "projectId": "43fb6de1-3017-4f36-9809-337b91a652f6"
+        "projectId": "64d860ff-0b48-441a-8f5a-966de12d8d46"
       }
     },
     "owner": "city-venture"

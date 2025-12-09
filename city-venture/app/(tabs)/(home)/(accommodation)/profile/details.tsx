@@ -12,9 +12,8 @@ import AboutSection from './components/AboutSection';
 import AmenitySection from './components/AmenitySection';
 import BusinessHoursSection from './components/BusinessHoursSection';
 import ContactSection from './components/ContactSection';
-import SocialsSection from './components/SocialsSection';
 import MapSection from './components/MapSection';
-import GallerySection from './components/GallerySection';
+import SocialsSection from './components/SocialsSection';
 
 const Details = () => {
   const colorScheme = useColorScheme();
@@ -68,15 +67,14 @@ const Details = () => {
       if (!accommodationDetails?.id) return;
       try {
         setLoadingHours(true);
-        const data = await fetchBusinessHours(
-          accommodationDetails.id
-        );
-        if (isMounted) setHours(
-          data.map((h) => ({
-            ...h,
-            id: h.id !== undefined ? Number(h.id) : undefined,
-          }))
-        );
+        const data = await fetchBusinessHours(accommodationDetails.id);
+        if (isMounted)
+          setHours(
+            data.map((h) => ({
+              ...h,
+              id: h.id !== undefined ? Number(h.id) : undefined,
+            }))
+          );
       } catch (e) {
         console.error('[Details] Failed to load business hours:', e);
       } finally {
@@ -120,7 +118,6 @@ const Details = () => {
         businessName={accommodationDetails.business_name}
         description={accommodationDetails.description}
       />
-
     </PageContainer>
   );
 };

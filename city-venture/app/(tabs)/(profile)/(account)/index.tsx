@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   StyleSheet,
   View,
@@ -79,7 +79,7 @@ const InfoRow: React.FC<InfoRowProps> = ({
 const ProfileInformation = () => {
   const scheme = useColorScheme();
   const isDark = scheme === 'dark';
-  const { user } = useAuth();
+  const { user, updateUser } = useAuth();
 
   const bg = Colors.light.background;
   const cardBg = isDark ? '#1E293B' : '#FFFFFF';
@@ -153,6 +153,9 @@ const ProfileInformation = () => {
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
   const [profileImageUri, setProfileImageUri] = useState<string | null>(null);
 
+  useEffect(() => {
+    console.log('User profile image URL:', user);
+  }, [user]);
   // Generate file name: User/User Full Name - Date
   const generateFileName = () => {
     const fullName =
@@ -236,7 +239,7 @@ const ProfileInformation = () => {
       // Convert blob to ArrayBuffer for Supabase
       const arrayBuffer = await new Response(blob).arrayBuffer();
 
-      // Upload to Supabase bucket "reviews"
+      // Upload to Supabase bucket "user"
       const { data, error: uploadError } = await supabase.storage
         .from('user')
         .upload(filePath, arrayBuffer, {
@@ -250,7 +253,7 @@ const ProfileInformation = () => {
 
       // Get public URL
       const { data: urlData } = supabase.storage
-        .from('room-profile')
+        .from('user')
         .getPublicUrl(filePath);
 
       if (!urlData?.publicUrl) {
@@ -258,12 +261,15 @@ const ProfileInformation = () => {
       }
 
       // Update user profile in backend
-      await apiClient.patch(`/users/${user?.id || user?.user_id}`, {
+      await apiClient.put(`/users/${user?.user_id}`, {
         user_profile: urlData.publicUrl,
       });
 
       // Update local state
       setProfileImageUri(urlData.publicUrl);
+
+      // Update AuthContext and secure storage
+      await updateUser({ user_profile: urlData.publicUrl });
 
       Alert.alert('Success', 'Profile photo updated successfully!');
     } catch (error: any) {
@@ -276,9 +282,6 @@ const ProfileInformation = () => {
       setIsUploadingPhoto(false);
     }
   };
-
-  // Use uploaded image or user profile
-  const displayProfileImage = profileImageUri || user?.user_profile;
 
   return (
     <PageContainer style={{ backgroundColor: bg }} padding={0}>
@@ -293,9 +296,9 @@ const ProfileInformation = () => {
             style={styles.avatarContainer}
             disabled={isUploadingPhoto}
           >
-            {displayProfileImage ? (
+            {user?.user_profile ? (
               <Image
-                source={{ uri: displayProfileImage }}
+                source={{ uri: user.user_profile }}
                 style={styles.avatar}
               />
             ) : (
@@ -348,6 +351,12 @@ const ProfileInformation = () => {
               Basic Information
             </ThemedText>
           </View>
+          <InfoRow
+            icon="person-outline"
+            label="Full Name"
+            value={user?.user_profile}
+            onEdit={handleEditName}
+          />
 
           <InfoRow
             icon="person-outline"

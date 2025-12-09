@@ -16,7 +16,7 @@ const BookingLayout = () => {
       <Stack.Screen
         name="index"
         options={{
-          headerShown: false,
+          headerShown: true,
           animation: 'slide_from_right',
           header() {
             return (

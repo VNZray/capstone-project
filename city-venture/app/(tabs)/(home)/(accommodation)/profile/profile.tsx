@@ -1,35 +1,33 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 // useNavigation is used for setOptions (header customization)
 // For navigation actions, use useRouter or usePreventDoubleNavigation hook
+import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from 'expo-router';
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Dimensions,
   FlatList,
   Image,
+  NativeScrollEvent,
+  NativeSyntheticEvent,
+  RefreshControl,
   StyleSheet,
   View,
-  RefreshControl,
-  NativeSyntheticEvent,
-  NativeScrollEvent,
-  Platform,
 } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
-import { BlurView } from 'expo-blur';
 
+import placeholder from '@/assets/images/placeholder.png';
+import Container from '@/components/Container';
 import Tabs from '@/components/Tabs';
 import { ThemedText } from '@/components/themed-text';
+import AccommodationProfileSkeleton from '@/components/skeleton/AccommodationProfileSkeleton';
 import { Colors } from '@/constants/color';
-import Container from '@/components/Container';
 import { useAccommodation } from '@/context/AccommodationContext';
 import { useAuth } from '@/context/AuthContext';
 import { Tab } from '@/types/Tab';
+import { ActivityIndicator } from 'react-native';
 import Details from './details';
 import Ratings from './ratings';
 import Rooms from './rooms';
-import placeholder from '@/assets/images/placeholder.png';
-import Chip from '@/components/Chip';
-import { ActivityIndicator } from 'react-native';
 
 const { width, height } = Dimensions.get('window');
 
@@ -107,16 +105,9 @@ const AccommodationProfile = () => {
     console.log('Filtering for:', tab.key);
   };
 
-  // Show loading indicator while fetching data
+  // Show skeleton while fetching data
   if (loading && !accommodationDetails) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={colors.primary} />
-        <ThemedText type="body-medium" style={{ marginTop: 16 }}>
-          Loading accommodation...
-        </ThemedText>
-      </View>
-    );
+    return <AccommodationProfileSkeleton />;
   }
 
   if (!accommodationDetails) {

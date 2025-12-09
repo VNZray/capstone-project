@@ -3,6 +3,7 @@ import { SymbolViewProps } from 'expo-symbols';
 import { ComponentProps } from 'react';
 import { StyleSheet, TouchableOpacity } from 'react-native';
 import { IconSymbol } from '../ui/icon-symbol';
+import { Ionicons } from '@expo/vector-icons';
 
 type IconMapping = Record<
   SymbolViewProps['name'],
@@ -28,7 +29,7 @@ type HeaderButtonProps = {
   iconColor?: string;
 };
 
-const HeaderButton = (props: HeaderButtonProps) => {
+const AndroidHeaderButton = (props: HeaderButtonProps) => {
   return (
     <TouchableOpacity
       activeOpacity={0.8}
@@ -42,16 +43,16 @@ const HeaderButton = (props: HeaderButtonProps) => {
         },
       ]}
     >
-      <IconSymbol
-        name={props.icon!}
-        color={props.iconColor ? props.iconColor : '#FFFFFF'}
+      <Ionicons
+        name="arrow-back"
         size={24}
+        color={props.iconColor ? props.iconColor : '#FFFFFF'}
       />
     </TouchableOpacity>
   );
 };
 
-export default HeaderButton;
+export default AndroidHeaderButton;
 
 const styles = StyleSheet.create({
   backButton: {

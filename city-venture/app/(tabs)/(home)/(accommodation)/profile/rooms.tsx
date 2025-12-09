@@ -1,44 +1,44 @@
 import PageContainer from '@/components/PageContainer';
-import React, {
-  useCallback,
-  useRef,
-  useState,
-  useMemo,
-  useEffect,
-} from 'react';
-import { getAverageRating, getTotalReviews } from '@/services/FeedbackService';
-import {
-  getFavoritesByTouristId,
-  addFavorite,
-  deleteFavorite,
-} from '@/services/FavoriteService';
 import { useAuth } from '@/context/AuthContext';
 import {
+  addFavorite,
+  deleteFavorite,
+  getFavoritesByTouristId,
+} from '@/services/FavoriteService';
+import { getAverageRating, getTotalReviews } from '@/services/FeedbackService';
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
+import {
+  NativeScrollEvent,
+  NativeSyntheticEvent,
   StyleSheet,
   Text,
   View,
-  ScrollView,
-  RefreshControl,
-  NativeSyntheticEvent,
-  NativeScrollEvent,
 } from 'react-native';
 
+import placeholder from '@/assets/images/room-placeholder.png';
 import Button from '@/components/Button';
 import Container from '@/components/Container';
 import DateInput from '@/components/DateInput';
 import Dropdown, { DropdownItem } from '@/components/Dropdown';
 import RoomCard from '@/components/accommodation/RoomCard';
+import { useAccommodation } from '@/context/AccommodationContext';
 import { useRoom } from '@/context/RoomContext';
 import { navigateToRoomProfile } from '@/routes/accommodationRoutes';
-import placeholder from '@/assets/images/room-placeholder.png';
-import { useAccommodation } from '@/context/AccommodationContext';
 import {
   fetchBookingsByBusinessId,
   filterAvailableRooms,
 } from '@/services/BookingService';
-import type { Booking } from '@/types/Booking';
 import * as PromotionService from '@/services/PromotionService';
+import type { Booking } from '@/types/Booking';
 import type { Promotion } from '@/types/Promotion';
+
+import RoomsSkeleton from '@/components/skeleton/RoomsSkeleton';
 
 // NOTE: We derive floor options dynamically from the room list.
 // Fallback options will only be used if no rooms are loaded yet.
@@ -321,6 +321,11 @@ const Rooms = () => {
     if (filteredRooms.length > 0) fetchRatings();
     else setRoomRatings({});
   }, [filteredRooms]);
+
+  // Show skeleton during initial load
+  if (loading && (!rooms || rooms.length === 0)) {
+    return <RoomsSkeleton />;
+  }
 
   return (
     <PageContainer style={{ paddingTop: 0, paddingBottom: 100 }}>

@@ -28,6 +28,7 @@ import { Routes } from '@/routes/mainRoutes';
 import HeroSection from '@/components/home/HeroSection';
 import NewsAndEventsSection from '@/components/home/NewsAndEventsSection';
 import { ThemedText } from '@/components/themed-text';
+import HomepageSkeleton from '@/components/skeleton/HomepageSkeleton';
 import CityListSection from '@/components/home/CityListSection';
 import PersonalRecommendationSection from '@/components/home/PersonalRecommendationSection';
 import VisitorsHandbookSection from '@/components/home/VisitorsHandbookSection';
@@ -266,6 +267,11 @@ const HomeScreen = () => {
   }, []);
 
   if (!user) return null;
+
+  // Show skeleton during initial load
+  if (eventState.loading && newsState.loading && eventState.data.length === 0) {
+    return <HomepageSkeleton />;
+  }
 
   return (
     <View style={[styles.root, { backgroundColor: palette.background }]}>

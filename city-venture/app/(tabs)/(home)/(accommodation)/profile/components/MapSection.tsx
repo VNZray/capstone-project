@@ -1,11 +1,10 @@
-import React from 'react';
-import { View, Pressable, Linking, Platform } from 'react-native';
-import { ThemedText } from '@/components/themed-text';
 import Container from '@/components/Container';
-import { FontAwesome5 } from '@expo/vector-icons';
-import { useColorScheme } from '@/hooks/use-color-scheme';
 import { MapView, Marker } from '@/components/map/MapWrapper';
-import Divider from '@/components/Divider';
+import { ThemedText } from '@/components/themed-text';
+import { useColorScheme } from '@/hooks/use-color-scheme';
+import { FontAwesome5 } from '@expo/vector-icons';
+import React from 'react';
+import { Linking, Platform, Pressable, View } from 'react-native';
 
 interface MapSectionProps {
   latitude?: string | number;
@@ -69,7 +68,6 @@ export default function MapSection({
           Location
         </ThemedText>
       </View>
-
 
       <Container
         style={{

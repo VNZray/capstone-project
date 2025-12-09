@@ -17,6 +17,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Button from '@/components/Button';
 import Tabs from '@/components/Tabs';
 import { ThemedText } from '@/components/themed-text';
+import RoomProfileSkeleton from '@/components/skeleton/RoomProfileSkeleton';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 
 import Container from '@/components/Container';
@@ -259,15 +260,9 @@ const AccommodationProfile = () => {
     fetchPromotions();
   }, [roomDetails?.id, ratingsRefreshKey, fetchFavorites, fetchPromotions]);
 
+  // Show skeleton while loading
   if (!roomDetails) {
-    return (
-      <View style={styles.notFoundContainer}>
-        <ThemedText type="title-large">Room not found.</ThemedText>
-        <ThemedText type="sub-title-large" style={{ textAlign: 'center' }}>
-          Please go back and select a valid room.
-        </ThemedText>
-      </View>
-    );
+    return <RoomProfileSkeleton />;
   }
 
   return (

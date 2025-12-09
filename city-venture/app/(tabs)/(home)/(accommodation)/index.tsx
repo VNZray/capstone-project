@@ -1,6 +1,6 @@
 import AccommodationCard from '@/components/accommodation/AccommodationCard';
 import PageContainer from '@/components/PageContainer';
-
+import AccommodationSkeleton from '@/components/skeleton/AccommodationSkeleton';
 import SearchBar from '@/components/SearchBar';
 import Chip from '@/components/Chip';
 import { ThemedText } from '@/components/themed-text';
@@ -321,7 +321,7 @@ const AccommodationDirectory = () => {
       });
     };
     load();
-  }, [filteredAccommodations]);
+  }, [filteredAccommodations, addressPartsByBarangay]);
   const [accommodationRatings, setAccommodationRatings] = useState<
     Record<string, { avg: number; total: number }>
   >({});
@@ -350,6 +350,11 @@ const AccommodationDirectory = () => {
     if (filteredAccommodations.length > 0) fetchRatings();
     else setAccommodationRatings({});
   }, [filteredAccommodations]);
+
+  // Show skeleton during initial load (after all hooks are called)
+  if (loading && allAccommodationDetails.length === 0) {
+    return <AccommodationSkeleton />;
+  }
 
   return (
     <View style={{ flex: 1, backgroundColor: bg }}>
