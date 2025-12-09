@@ -255,9 +255,60 @@ export async function createOrderRefundRequest({
       }
     });
 
-    // 6. Update order status
+    // 6. Update order based on refund result
     if (paymongoResult.success) {
-      await updateOrderForRefund(orderId, refundId, refundAmount);
+      // Get order details for socket emission
+      const [orderRows] = await db.query(
+        `SELECT * FROM \`order\` WHERE id = ?`,
+        [orderId]
+      );
+      const order = orderRows[0];
+      const previousStatus = order?.status;
+
+      // If refund succeeded immediately (common in test mode), update order status now
+      // NOTE: Stock restoration is handled ONLY by handleRefundWebhook to prevent duplicates
+      // The webhook will arrive shortly and restore stock there
+      if (paymongoResult.status === 'succeeded') {
+        await db.query(
+          `UPDATE \`order\`
+           SET status = 'cancelled_by_user',
+               cancelled_at = NOW(),
+               cancelled_by = 'user',
+               cancellation_reason = 'Refund completed',
+               refund_id = ?,
+               refund_requested_at = NOW(),
+               refund_amount = ?,
+               updated_at = NOW()
+           WHERE id = ?`,
+          [refundId, refundAmount, orderId]
+        );
+
+        // Update payment status
+        await db.query(
+          `UPDATE payment SET status = 'refunded', updated_at = NOW()
+           WHERE payment_for = 'order' AND payment_for_id = ?`,
+          [orderId]
+        );
+
+        // NOTE: Stock restoration removed from here - webhook handler will do it
+        // This prevents duplicate stock restoration when webhook arrives
+        console.log(`[RefundService] Refund succeeded immediately for order ${orderId}. Stock will be restored via webhook.`);
+
+        // Emit order updated event
+        try {
+          socketService.emitOrderUpdated({
+            id: orderId,
+            status: 'cancelled_by_user',
+            user_id: userId,
+            business_id: order?.business_id
+          }, previousStatus);
+        } catch (socketErr) {
+          console.error(`[RefundService] Failed to emit order updated:`, socketErr);
+        }
+      } else {
+        // Refund is processing - just track refund info
+        await updateOrderForRefund(orderId, refundId, refundAmount);
+      }
     }
 
     // 7. Emit real-time notifications
@@ -265,7 +316,8 @@ export async function createOrderRefundRequest({
       refundFor: REFUND_FOR.ORDER,
       refundForId: orderId,
       refundId,
-      status: paymongoResult.success ? REFUND_STATUS.PROCESSING : REFUND_STATUS.FAILED,
+      status: paymongoResult.status === 'succeeded' ? REFUND_STATUS.SUCCEEDED : 
+              paymongoResult.success ? REFUND_STATUS.PROCESSING : REFUND_STATUS.FAILED,
       amount: refundAmount,
       userId
     });
@@ -277,9 +329,11 @@ export async function createOrderRefundRequest({
         status: paymongoResult.status,
         amount: refundAmount,
         paymongoRefundId: paymongoResult.paymongoRefundId,
-        message: paymongoResult.success 
-          ? 'Refund request submitted successfully. You will be notified when it is processed.'
-          : 'Refund request created but PayMongo processing failed. Our team will handle this manually.'
+        message: paymongoResult.status === 'succeeded'
+          ? 'Refund completed successfully. Your order has been cancelled.'
+          : paymongoResult.success 
+            ? 'Refund request submitted successfully. You will be notified when it is processed.'
+            : 'Refund request created but PayMongo processing failed. Our team will handle this manually.'
       }
     };
 
@@ -491,7 +545,7 @@ export async function cancelCashOnPickupOrder({
       [notes || reason, orderId]
     );
 
-    // Restore stock for order items
+    // Restore stock for order items (use product_stock table)
     const [orderItems] = await connection.query(
       `SELECT product_id, quantity FROM order_item WHERE order_id = ?`,
       [orderId]
@@ -499,8 +553,14 @@ export async function cancelCashOnPickupOrder({
 
     for (const item of orderItems) {
       await connection.query(
-        `UPDATE product SET stock = stock + ? WHERE id = ?`,
+        `UPDATE product_stock SET current_stock = current_stock + ?, updated_at = NOW() WHERE product_id = ?`,
         [item.quantity, item.product_id]
+      );
+      
+      // Update product status back to 'active' if it was 'out_of_stock'
+      await connection.query(
+        `UPDATE product SET status = 'active', updated_at = NOW() WHERE id = ? AND status = 'out_of_stock'`,
+        [item.product_id]
       );
     }
 
@@ -534,13 +594,14 @@ export async function cancelCashOnPickupOrder({
         business_id: order.business_id
       }, order.status);
 
-      await notificationHelper.createNotification({
+      // Use sendNotification (the correct exported function)
+      await notificationHelper.sendNotification(
         userId,
-        type: 'order_cancelled',
-        title: 'Order Cancelled',
-        message: `Your order #${order.order_number} has been cancelled.`,
-        data: { orderId, orderNumber: order.order_number }
-      });
+        'Order Cancelled',
+        `Your order #${order.order_number} has been cancelled.`,
+        'order_cancelled',
+        { orderId, orderNumber: order.order_number }
+      );
     } catch (notifError) {
       console.error(`[RefundService] Failed to send notifications:`, notifError);
     }
@@ -714,6 +775,17 @@ export async function handleRefundWebhook({ refundId, status, eventData }) {
   // If refund succeeded, update order/booking status
   if (newStatus === REFUND_STATUS.SUCCEEDED) {
     if (refund.refund_for === 'order') {
+      // Get order details for socket emission
+      const [orderRows] = await db.query(
+        `SELECT o.*, p.status as payment_status 
+         FROM \`order\` o 
+         LEFT JOIN payment p ON p.payment_for = 'order' AND p.payment_for_id = o.id 
+         WHERE o.id = ?`,
+        [refund.refund_for_id]
+      );
+      const order = orderRows[0];
+      const previousStatus = order?.status;
+
       await db.query(
         `UPDATE \`order\`
          SET status = 'cancelled_by_user',
@@ -727,6 +799,18 @@ export async function handleRefundWebhook({ refundId, status, eventData }) {
 
       // Restore stock
       await restoreOrderStock(refund.refund_for_id);
+
+      // Emit order updated event so frontend refreshes
+      try {
+        socketService.emitOrderUpdated({
+          id: refund.refund_for_id,
+          status: 'cancelled_by_user',
+          user_id: refund.requested_by,
+          business_id: order?.business_id
+        }, previousStatus);
+      } catch (socketErr) {
+        console.error(`[RefundService] Failed to emit order updated:`, socketErr);
+      }
     }
 
     // Update payment status
@@ -750,6 +834,7 @@ export async function handleRefundWebhook({ refundId, status, eventData }) {
 
 /**
  * Restore stock for order items
+ * Also updates product status back to 'active' if stock was restored from 0
  */
 async function restoreOrderStock(orderId) {
   const connection = await db.getConnection();
@@ -763,9 +848,25 @@ async function restoreOrderStock(orderId) {
     );
 
     for (const item of orderItems) {
+      // Update product_stock table (current_stock column)
       await connection.query(
-        `UPDATE product SET stock = stock + ? WHERE id = ?`,
+        `UPDATE product_stock SET current_stock = current_stock + ?, updated_at = NOW() WHERE product_id = ?`,
         [item.quantity, item.product_id]
+      );
+      
+      // Update product status back to 'active' if it was 'out_of_stock'
+      // This ensures the product becomes purchasable again after refund
+      await connection.query(
+        `UPDATE product SET status = 'active', updated_at = NOW() WHERE id = ? AND status = 'out_of_stock'`,
+        [item.product_id]
+      );
+      
+      // Also log stock history
+      await connection.query(
+        `INSERT INTO stock_history (product_id, change_type, quantity_change, previous_stock, new_stock, notes)
+         SELECT ?, 'adjustment', ?, ps.current_stock - ?, ps.current_stock, 'Refund stock restoration'
+         FROM product_stock ps WHERE ps.product_id = ?`,
+        [item.product_id, item.quantity, item.quantity, item.product_id]
       );
     }
 
@@ -793,6 +894,9 @@ async function emitRefundNotifications({
   userId
 }) {
   try {
+    // Ensure amount is a number for formatting
+    const numericAmount = typeof amount === 'number' ? amount : parseFloat(amount) || 0;
+    
     // Emit to user
     socketService.emitPaymentUpdated({
       userId,
@@ -801,32 +905,33 @@ async function emitRefundNotifications({
       refundFor,
       refundForId,
       status,
-      amount
+      amount: numericAmount
     });
 
     // Create notification
     let message = '';
     switch (status) {
       case REFUND_STATUS.PROCESSING:
-        message = `Your refund of ₱${amount.toFixed(2)} is being processed.`;
+        message = `Your refund of ₱${numericAmount.toFixed(2)} is being processed.`;
         break;
       case REFUND_STATUS.SUCCEEDED:
-        message = `Your refund of ₱${amount.toFixed(2)} has been completed.`;
+        message = `Your refund of ₱${numericAmount.toFixed(2)} has been completed.`;
         break;
       case REFUND_STATUS.FAILED:
-        message = `Your refund of ₱${amount.toFixed(2)} failed. Please contact support.`;
+        message = `Your refund of ₱${numericAmount.toFixed(2)} failed. Please contact support.`;
         break;
       default:
         message = `Your refund request has been updated.`;
     }
 
-    await notificationHelper.createNotification({
+    // Use sendNotification (the correct exported function)
+    await notificationHelper.sendNotification(
       userId,
-      type: 'refund_update',
-      title: 'Refund Update',
+      'Refund Update',
       message,
-      data: { refundId, refundFor, refundForId, status, amount }
-    });
+      'refund_update',
+      { refundId, refundFor, refundForId, status, amount: numericAmount }
+    );
 
   } catch (error) {
     console.error(`[RefundService] Failed to emit notifications:`, error);

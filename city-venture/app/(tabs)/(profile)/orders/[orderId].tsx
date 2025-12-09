@@ -1,7 +1,8 @@
 // See spec.md §4 - Tourist can track orders
 // See spec.md §5 - Order Status enums
+// See spec.md §8 - Real-time updates via Socket.IO
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -35,6 +36,7 @@ import RefundStatusBadge from '@/components/RefundStatusBadge';
 import CustomerServicePrompt from '@/components/CustomerServicePrompt';
 import * as RefundService from '@/services/RefundService';
 import type { RefundEligibility, RefundRecord } from '@/services/RefundService';
+import { useOrderDetailSocket } from '@/hooks/useOrderDetailSocket';
 
 const ORDER_TIMELINE: OrderStatus[] = [
   'PENDING',
@@ -102,6 +104,13 @@ const STATUS_CONFIG: Record<
     color: '#EF4444',
     bgColor: 'rgba(239, 68, 68, 0.1)',
     description: 'Cancelled by the shop',
+  },
+  CANCELLED_BY_USER: {
+    label: 'Cancelled & Refunded',
+    icon: 'close-circle-outline',
+    color: '#10B981',
+    bgColor: 'rgba(16, 185, 129, 0.1)',
+    description: 'Order cancelled. Refund has been processed.',
   },
   FAILED_PAYMENT: {
     label: 'Payment Failed',
@@ -180,6 +189,43 @@ const OrderDetailScreen = () => {
   useEffect(() => {
     fetchOrder();
   }, [fetchOrder]);
+
+  // Real-time socket updates for order status and payment changes
+  // Debounce refresh to prevent multiple rapid fetches
+  const lastRefreshRef = useRef<number>(0);
+  const handleSocketRefresh = useCallback(() => {
+    const now = Date.now();
+    // Debounce: only refresh if at least 1 second has passed since last refresh
+    if (now - lastRefreshRef.current > 1000) {
+      lastRefreshRef.current = now;
+      console.log('[OrderDetail] 🔄 Socket triggered refresh');
+      fetchOrder();
+    }
+  }, [fetchOrder]);
+
+  const handleOrderSocketUpdate = useCallback((data: { id: string; status: string }) => {
+    console.log('[OrderDetail] 📡 Received order update via socket:', data);
+    // Provide haptic feedback for status changes
+    if (Platform.OS !== 'web' && data.status) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    }
+  }, []);
+
+  const handlePaymentSocketUpdate = useCallback((data: { status?: string; type?: string }) => {
+    console.log('[OrderDetail] 💳 Received payment update via socket:', data);
+    // Provide haptic feedback for refund completion
+    if (Platform.OS !== 'web' && (data.type === 'refund_update' || data.status === 'refunded')) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    }
+  }, []);
+
+  // Connect to socket for real-time updates
+  useOrderDetailSocket({
+    orderId,
+    onOrderUpdated: handleOrderSocketUpdate,
+    onPaymentUpdated: handlePaymentSocketUpdate,
+    onRefresh: handleSocketRefresh,
+  });
 
   const handleCancelOrder = async () => {
     if (!order) return;

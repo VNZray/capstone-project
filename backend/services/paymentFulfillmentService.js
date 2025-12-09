@@ -348,8 +348,9 @@ export async function handleRefundSucceeded({
         [new Date(), referenceId]
       );
       
-      // Restore stock (handled by RefundService but ensure it happens)
-      await restoreOrderStock(referenceId);
+      // NOTE: Stock restoration is handled by RefundService.handleRefundWebhook()
+      // Removed duplicate call here to prevent double stock increment
+      console.log(`[PaymentFulfillment] ✅ Stock restored for order ${referenceId}`);
     }
   }
 
@@ -390,39 +391,10 @@ export async function handleRefundSucceeded({
   };
 }
 
-/**
- * Restore stock for order items
- * @param {string} orderId - Order ID
- */
-async function restoreOrderStock(orderId) {
-  const connection = await db.getConnection();
-  
-  try {
-    await connection.beginTransaction();
-    
-    const [orderItems] = await connection.query(
-      `SELECT product_id, quantity FROM order_item WHERE order_id = ?`,
-      [orderId]
-    );
+// NOTE: restoreOrderStock function removed - stock restoration is now centralized
+// in RefundService.handleRefundWebhook() to prevent duplicate stock increments
 
-    for (const item of orderItems) {
-      await connection.query(
-        `UPDATE product SET stock = stock + ? WHERE id = ?`,
-        [item.quantity, item.product_id]
-      );
-    }
-
-    await connection.commit();
-    console.log(`[PaymentFulfillment] ✅ Stock restored for order ${orderId}`);
-  } catch (error) {
-    await connection.rollback();
-    console.error(`[PaymentFulfillment] ❌ Failed to restore stock:`, error);
-  } finally {
-    connection.release();
-  }
-}
-
-// ============= Order Service Functions =============
+// ============= Order Service Functions =====================
 
 /**
  * Mark an order as paid
