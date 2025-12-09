@@ -160,20 +160,6 @@ const NotificationCard: React.FC<NotificationCardProps> = ({
             {formatTime(notification.created_at)}
           </ThemedText>
         </View>
-
-        {/* Rate Us Button */}
-        {showRateButton && onRateUs && (
-          <View style={styles.buttonContainer}>
-            <Button
-              label="Rate Us"
-              size="small"
-              variant="soft"
-              color="secondary"
-              onPress={() => onRateUs(notification)}
-              style={styles.rateButton}
-            />
-          </View>
-        )}
       </View>
     </TouchableOpacity>
   );

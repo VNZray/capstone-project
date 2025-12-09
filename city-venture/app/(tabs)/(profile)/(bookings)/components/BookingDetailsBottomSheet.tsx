@@ -57,7 +57,7 @@ const BookingDetailsBottomSheet: React.FC<BookingDetailsBottomSheetProps> = ({
   const handleColor = isDark ? '#4B5563' : '#D1D5DB';
 
   // Snap points for different content heights
-  const snapPoints = useMemo(() => ['65%', '92%'], []);
+  const snapPoints = useMemo(() => ['92%'], []);
 
   // Present/dismiss modal based on isOpen prop
   useEffect(() => {
@@ -226,11 +226,15 @@ const BookingDetailsBottomSheet: React.FC<BookingDetailsBottomSheetProps> = ({
   return (
     <BottomSheetModal
       ref={bottomSheetRef}
-      index={1}
+      index={0}
       snapPoints={snapPoints}
       onChange={handleSheetChanges}
       backdropComponent={renderBackdrop}
       enablePanDownToClose
+      enableDynamicSizing={false}
+      keyboardBehavior="interactive"
+      keyboardBlurBehavior="restore"
+      android_keyboardInputMode="adjustResize"
       backgroundStyle={[styles.sheetBackground, { backgroundColor: surface }]}
       handleIndicatorStyle={[
         styles.handleIndicator,
@@ -546,21 +550,19 @@ const BookingDetailsBottomSheet: React.FC<BookingDetailsBottomSheetProps> = ({
             onPress={handleCancelBooking}
             variant="soft"
             color="error"
-            size="large"
             disabled={cancelling}
             fullWidth
           />
         )}
 
         {booking.booking_status === 'Checked-Out' && (
-          <View style={{ gap: 12 }}>
+          <View style={{ gap: 12, height: 120 }}>
             {!hasReviewed && (
               <Button
                 label="Rate Us"
                 onPress={handleRateBooking}
                 variant="solid"
                 color="warning"
-                size="large"
                 startIcon="star"
                 fullWidth
               />
@@ -570,7 +572,6 @@ const BookingDetailsBottomSheet: React.FC<BookingDetailsBottomSheetProps> = ({
               onPress={handleBookAgain}
               variant="outlined"
               color="primary"
-              size="large"
               fullWidth
             />
           </View>
@@ -707,5 +708,6 @@ const styles = StyleSheet.create({
     padding: 16,
     borderTopWidth: 1,
     marginTop: 8,
+    height: 160,
   },
 });

@@ -3,13 +3,15 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 // For navigation actions, use useRouter or usePreventDoubleNavigation hook
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from 'expo-router';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
+  Alert,
   Dimensions,
   FlatList,
   Image,
   NativeScrollEvent,
   NativeSyntheticEvent,
+  Platform,
   RefreshControl,
   StyleSheet,
   View,
@@ -28,12 +30,20 @@ import { ActivityIndicator } from 'react-native';
 import Details from './details';
 import Ratings from './ratings';
 import Rooms from './rooms';
+import { AppHeader } from '@/components/header/AppHeader';
+import HeaderButton from '@/components/header/HeaderButton';
+import Button from '@/components/Button';
+import { AddReview } from '@/components/reviews';
+import { createReview } from '@/services/FeedbackService';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const { width, height } = Dimensions.get('window');
 
 const AccommodationProfile = () => {
   const navigation = useNavigation();
   const [activeTab, setActiveTab] = useState<string>('details');
+  const insets = useSafeAreaInsets();
+
   const colors = Colors.light;
   const { user } = useAuth();
   const {
@@ -42,6 +52,8 @@ const AccommodationProfile = () => {
     refreshAccommodation,
     refreshAllAccommodations,
   } = useAccommodation();
+  const [favorite, setFavorite] = React.useState(false);
+  const [reviewModalVisible, setReviewModalVisible] = useState(false);
 
   // Refresh & scroll state
   const [refreshing, setRefreshing] = useState(false);
@@ -49,8 +61,11 @@ const AccommodationProfile = () => {
   const atTopRef = useRef(true);
   const wasScrollingUpRef = useRef(false);
 
+  const toggleFavorite = () => {
+    setFavorite(!favorite);
+  };
+
   const onRefresh = useCallback(async () => {
-    setRefreshing(true);
     try {
       // Refresh the focused accommodation + optionally the list (safe no-op if not needed)
       await Promise.all([
@@ -111,18 +126,33 @@ const AccommodationProfile = () => {
   }
 
   if (!accommodationDetails) {
-    return (
-      <View style={styles.notFoundContainer}>
-        <ThemedText type="title-large">Accommodation not found.</ThemedText>
-        <ThemedText type="sub-title-large" style={{ textAlign: 'center' }}>
-          Please go back and select a valid accommodation.
-        </ThemedText>
-      </View>
-    );
+    return <AccommodationProfileSkeleton />;
   }
 
   return (
     <View style={{ flex: 1 }}>
+      <AppHeader
+        backButton
+        title={accommodationDetails?.business_name}
+        background="transparent"
+        rightComponent={
+          <Container
+            padding={0}
+            direction="row"
+            backgroundColor="transparent"
+            align="center"
+            justify="flex-end"
+            gap={8}
+          >
+            <HeaderButton
+              onPress={toggleFavorite}
+              icon={favorite ? 'heart.fill' : 'heart'}
+            />
+
+            <HeaderButton icon="paperplane.fill" />
+          </Container>
+        }
+      />
       <FlatList
         data={[]}
         keyExtractor={() => 'header'}
@@ -264,10 +294,63 @@ const AccommodationProfile = () => {
             <View style={styles.tabContent}>
               {activeTab === 'details' && <Details />}
               {activeTab === 'rooms' && <Rooms />}
-              {activeTab === 'ratings' && <Ratings key={ratingsRefreshKey} />}
+              {activeTab === 'ratings' && (
+                <Ratings
+                  key={ratingsRefreshKey}
+                  onRefreshRequested={() =>
+                    setRatingsRefreshKey((prev) => prev + 1)
+                  }
+                />
+              )}
             </View>
           </>
         }
+      />
+
+      {activeTab === 'ratings' && (
+        <View
+          style={[
+            styles.fabBar,
+            {
+              paddingBottom: (Platform.OS === 'ios' ? 60 : 80) + insets.bottom,
+            },
+          ]}
+        >
+          <Button
+            label="Leave a Review"
+            fullWidth
+            color="primary"
+            variant="solid"
+            onPress={() => setReviewModalVisible(true)}
+            elevation={3}
+            style={{ flex: 1 }}
+          />
+        </View>
+      )}
+
+      <AddReview
+        visible={reviewModalVisible}
+        onClose={() => {
+          setReviewModalVisible(false);
+        }}
+        onSubmit={async (payload) => {
+          try {
+            await createReview(payload);
+
+            setReviewModalVisible(false);
+            setRatingsRefreshKey((prev) => prev + 1);
+            Alert.alert(
+              'Thank You!',
+              'Your review has been submitted successfully.'
+            );
+          } catch (error) {
+            console.error('Error submitting review:', error);
+            throw error;
+          }
+        }}
+        touristId={user?.id || ''}
+        reviewType="accommodation"
+        reviewTypeId={accommodationDetails.id || ''}
       />
     </View>
   );
@@ -305,6 +388,17 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
+  },
+  fabBar: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    paddingHorizontal: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    // subtle backdrop & blur alternative (blur not added by default RN)
   },
 });
 

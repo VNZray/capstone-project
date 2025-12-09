@@ -281,9 +281,7 @@ const Ratings = () => {
 export default Ratings;
 
 const styles = StyleSheet.create({
-  header: {
-    marginBottom: 12,
-  },
+  header: {},
   addButton: {
     flexDirection: 'row',
     alignItems: 'center',

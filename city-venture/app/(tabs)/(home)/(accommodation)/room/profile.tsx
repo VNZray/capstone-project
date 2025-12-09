@@ -41,6 +41,7 @@ import {
 import * as PromotionService from '@/services/PromotionService';
 import type { Promotion } from '@/types/Promotion';
 import { LinearGradient } from 'expo-linear-gradient';
+import { AppHeader } from '@/components/header/AppHeader';
 
 const { width, height } = Dimensions.get('window');
 
@@ -231,11 +232,34 @@ const AccommodationProfile = () => {
       console.log('[Room Profile] Fetched promotions:', promos);
       setPromotions(promos);
 
-      // Find best room discount (type 2)
-      const roomDiscounts = promos.filter(
-        (p) => p.promo_type === 2 && p.discount_percentage
-      );
-      console.log('[Room Profile] Room discounts (type 2):', roomDiscounts);
+      // Find best active room discount (type 2) with valid dates
+      const now = new Date();
+      const roomDiscounts = promos.filter((p) => {
+        const isRoomDiscount = p.promo_type === 2;
+        // Handle both boolean and integer values (database returns 1/0)
+        const isActive = p.is_active === true || p.is_active === 1;
+        const hasDiscount = p.discount_percentage && p.discount_percentage > 0;
+        const startDate = new Date(p.start_date);
+        const isStarted = startDate <= now;
+        const notExpired = !p.end_date || new Date(p.end_date) >= now;
+
+        console.log('[Room Profile] Checking promo:', {
+          title: p.title,
+          isRoomDiscount,
+          isActive,
+          is_active_raw: p.is_active,
+          hasDiscount,
+          isStarted,
+          notExpired,
+          start_date: p.start_date,
+          end_date: p.end_date,
+        });
+
+        return (
+          isRoomDiscount && isActive && hasDiscount && isStarted && notExpired
+        );
+      });
+      console.log('[Room Profile] Valid room discounts:', roomDiscounts);
 
       if (roomDiscounts.length > 0) {
         const bestDiscount = roomDiscounts.reduce((prev, current) =>
@@ -246,7 +270,7 @@ const AccommodationProfile = () => {
         console.log('[Room Profile] Best room discount:', bestDiscount);
         setRoomDiscount(bestDiscount);
       } else {
-        console.log('[Room Profile] No room discounts found');
+        console.log('[Room Profile] No valid room discounts found');
         setRoomDiscount(null);
       }
     } catch (error) {
@@ -267,6 +291,11 @@ const AccommodationProfile = () => {
 
   return (
     <PageContainer style={{ padding: 0 }}>
+      <AppHeader
+        backButton
+        title={roomDetails?.room_type}
+        background="transparent"
+      />
       <FlatList
         data={[]}
         keyExtractor={() => 'header'}

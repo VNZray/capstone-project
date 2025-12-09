@@ -30,7 +30,11 @@ type RatingBreakdown = {
   1: number;
 };
 
-const Ratings = () => {
+type Props = {
+  onRefreshRequested?: () => void;
+};
+
+const Ratings = ({ onRefreshRequested }: Props) => {
   const scheme = useColorScheme();
   const isDark = scheme === 'dark';
   const { user } = useAuth();
@@ -178,6 +182,7 @@ const Ratings = () => {
       setShowAddReview(false);
       setEditingReview(null);
       fetchReviews();
+      onRefreshRequested?.();
     } catch (error) {
       console.error('Error submitting review:', error);
       throw error;
@@ -275,11 +280,9 @@ const Ratings = () => {
 export default Ratings;
 
 const styles = StyleSheet.create({
-  header: {
-    marginBottom: 12,
-  },
+  header: {},
   addButton: {
-    flexDirection: 'row',
+    flexDirection: 'row',   
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,

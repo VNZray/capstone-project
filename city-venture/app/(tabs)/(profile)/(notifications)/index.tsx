@@ -203,21 +203,6 @@ const NotificationScreen = () => {
                 />
               )}
             </View>
-
-            {/* Rate Us button for completed bookings */}
-            {isBookingCompleted && (
-              <View style={styles.actionRow}>
-                <Button
-                  label="Rate Us"
-                  size="small"
-                  variant="solid"
-                  color="warning"
-                  startIcon="star"
-                  onPress={() => handleRateUs(item)}
-                  style={{ marginTop: 12 }}
-                />
-              </View>
-            )}
           </View>
         </View>
       </TouchableOpacity>

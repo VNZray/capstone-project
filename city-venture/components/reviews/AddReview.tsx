@@ -226,6 +226,7 @@ const AddReview = ({
       onChange={handleSheetChanges}
       backdropComponent={renderBackdrop}
       enablePanDownToClose
+      enableDynamicSizing={false}
       keyboardBehavior="interactive"
       keyboardBlurBehavior="restore"
       android_keyboardInputMode="adjustResize"
@@ -239,7 +240,7 @@ const AddReview = ({
       >
         <View style={styles.header}>
           <ThemedText type="card-title-medium" weight="medium">
-            {title}
+            {title || (editReview ? 'Edit Your Review' : 'How was your stay?')}
           </ThemedText>
         </View>
         <BottomSheetScrollView
@@ -439,6 +440,7 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     borderTopWidth: 1,
     borderTopColor: 'rgba(128,128,128,0.15)',
+    height: 80,
   },
   progressContainer: {
     flexDirection: 'row',

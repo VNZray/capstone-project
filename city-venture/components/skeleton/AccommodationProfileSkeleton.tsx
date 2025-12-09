@@ -21,12 +21,12 @@ const ShimmerBlock = ({ style }: { style?: any }) => {
       Animated.sequence([
         Animated.timing(shimmerAnim, {
           toValue: 1,
-          duration: 1000,
+          duration: 3000,
           useNativeDriver: true,
         }),
         Animated.timing(shimmerAnim, {
           toValue: 0,
-          duration: 1000,
+          duration: 3000,
           useNativeDriver: true,
         }),
       ])

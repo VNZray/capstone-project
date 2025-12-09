@@ -7,7 +7,10 @@ import { ThemedText } from '@/components/themed-text';
 import { useAccommodation } from '@/context/AccommodationContext';
 import { useAuth } from '@/context/AuthContext';
 import { navigateToAccommodationProfile } from '@/routes/accommodationRoutes';
-import { fetchAddress } from '@/services/AccommodationService';
+import {
+  clearStoredBusinessId,
+  fetchAddress,
+} from '@/services/AccommodationService';
 import { getAverageRating, getTotalReviews } from '@/services/FeedbackService';
 import {
   getFavoritesByTouristId,
@@ -31,6 +34,7 @@ import {
 } from 'react-native';
 import placeholder from '@/assets/images/placeholder.png';
 import { Colors } from '@/constants/color';
+import { clearStoredRoomId } from '@/services/RoomService';
 
 // ---- Category constants and helpers (module scope) ----
 const CATEGORY_ID_TO_KEY: Record<number, string> = {
@@ -321,6 +325,8 @@ const AccommodationDirectory = () => {
       });
     };
     load();
+    clearStoredBusinessId();
+    clearStoredRoomId();
   }, [filteredAccommodations, addressPartsByBarangay]);
   const [accommodationRatings, setAccommodationRatings] = useState<
     Record<string, { avg: number; total: number }>

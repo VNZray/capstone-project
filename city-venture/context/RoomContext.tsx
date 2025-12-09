@@ -14,7 +14,7 @@ import {
   fetchRoomDetails,
   fetchRoomsByBusinessId,
   getStoredRoomId,
-  setStoredRoomId
+  setStoredRoomId,
 } from '../services/RoomService';
 import { useAccommodation } from './AccommodationContext';
 interface RoomContextType {
@@ -39,11 +39,14 @@ interface RoomProviderProps {
 
 export const RoomProvider: React.FC<RoomProviderProps> = ({ children }) => {
   const [selectedRoomId, setSelectedRoomId] = useState<string | null>(null);
-  const [selectedDateRange, setSelectedDateRange] = useState<{ start: Date | null; end: Date | null }>({
+  const [selectedDateRange, setSelectedDateRange] = useState<{
+    start: Date | null;
+    end: Date | null;
+  }>({
     start: null,
     end: null,
   });
-  
+
   // Fetch stored room ID on mount
   useEffect(() => {
     const fetchStoredRoomId = async () => {
@@ -74,9 +77,12 @@ export const RoomProvider: React.FC<RoomProviderProps> = ({ children }) => {
   }, []);
 
   /** Set date range for booking */
-  const setDateRange = useCallback((range: { start: Date | null; end: Date | null }) => {
-    setSelectedDateRange(range);
-  }, []);
+  const setDateRange = useCallback(
+    (range: { start: Date | null; end: Date | null }) => {
+      setSelectedDateRange(range);
+    },
+    []
+  );
 
   /** Clear date range */
   const clearDateRange = useCallback(() => {
@@ -93,7 +99,7 @@ export const RoomProvider: React.FC<RoomProviderProps> = ({ children }) => {
     } catch (e) {
       debugLogger({
         title: 'RoomContext: Failed to fetch room details',
-        error: e
+        error: e,
       });
     } finally {
       setLoading(false);
@@ -101,40 +107,50 @@ export const RoomProvider: React.FC<RoomProviderProps> = ({ children }) => {
   }, [selectedRoomId]);
 
   /** Fetch rooms for the selected business */
-  const fetchRoomsForBusiness = useCallback(async (opts?: { force?: boolean }) => {
-    if (!selectedAccommodationId) {
-      setRooms(null);
-      setSelectedRoomId(null);
-      return;
-    }
-    setLoading(true);
-    const currentAccommodation = selectedAccommodationId;
-    try {
-      const data = await fetchRoomsByBusinessId(currentAccommodation, { noCache: opts?.force });
-      // Prevent stale overwrite if accommodation changed mid-fetch
-      if (currentAccommodation === selectedAccommodationId) {
-        setRooms(data);
-      }
-    } catch (e) {
-      debugLogger({
-        title: 'RoomContext: Failed to fetch rooms by business id',
-        error: e
-      });
-      if (currentAccommodation === selectedAccommodationId) {
+  const fetchRoomsForBusiness = useCallback(
+    async (opts?: { force?: boolean }) => {
+      if (!selectedAccommodationId) {
         setRooms(null);
+        setSelectedRoomId(null);
+        return;
       }
-    } finally {
-      if (currentAccommodation === selectedAccommodationId) {
-        setLoading(false);
+      setLoading(true);
+      const currentAccommodation = selectedAccommodationId;
+      try {
+        const data = await fetchRoomsByBusinessId(currentAccommodation, {
+          noCache: opts?.force,
+        });
+        // Prevent stale overwrite if accommodation changed mid-fetch
+        if (currentAccommodation === selectedAccommodationId) {
+          setRooms(data);
+        }
+      } catch (e) {
+        debugLogger({
+          title: 'RoomContext: Failed to fetch rooms by business id',
+          error: e,
+        });
+        if (currentAccommodation === selectedAccommodationId) {
+          setRooms(null);
+        }
+      } finally {
+        if (currentAccommodation === selectedAccommodationId) {
+          setLoading(false);
+        }
       }
-    }
-  }, [selectedAccommodationId]);
+    },
+    [selectedAccommodationId]
+  );
 
   /** Fetch when ID changes */
   // Fetch room details when a specific room is selected
   useEffect(() => {
+    // Clear old room data immediately when ID changes to prevent showing stale data
+    setRoomDetails(null);
+
     if (selectedRoomId) {
       fetchRoom();
+    } else {
+      setRoomDetails(null);
     }
   }, [selectedRoomId, fetchRoom]);
 

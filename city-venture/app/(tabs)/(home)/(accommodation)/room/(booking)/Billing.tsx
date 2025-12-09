@@ -237,6 +237,7 @@ const BillingPage: React.FC = () => {
         const promos = await PromotionService.fetchPromotionsByBusinessId(
           selectedAccommodationId
         );
+        console.log('[Billing] Fetched promotions:', promos);
         setPromotions(promos);
       } catch (error) {
         console.error('Failed to fetch promotions:', error);
@@ -373,22 +374,57 @@ const BillingPage: React.FC = () => {
   // Auto-apply room discounts when promotions and baseRoomPrice are ready
   useEffect(() => {
     if (!loadingPromotions && promotions.length > 0 && baseRoomPrice > 0) {
-      const roomDiscounts = promotions.filter(
-        (p) => p.promo_type === 2 && p.discount_percentage
-      );
+      // Filter for valid room discounts (type 2) with active status and valid dates
+      const now = new Date();
+      const validRoomDiscounts = promotions.filter((p) => {
+        const isRoomDiscount = p.promo_type === 2;
+        // Handle both boolean and integer values (database returns 1/0)
+        const isActive = p.is_active === true || p.is_active === 1;
+        const hasDiscount = p.discount_percentage && p.discount_percentage > 0;
+        const startDate = new Date(p.start_date);
+        const isStarted = startDate <= now;
+        const notExpired = !p.end_date || new Date(p.end_date) >= now;
+
+        console.log('[Billing Effect] Checking promo:', {
+          title: p.title,
+          isRoomDiscount,
+          isActive,
+          is_active_raw: p.is_active,
+          hasDiscount,
+          isStarted,
+          notExpired,
+          start_date: p.start_date,
+          end_date: p.end_date,
+        });
+
+        return (
+          isRoomDiscount && isActive && hasDiscount && isStarted && notExpired
+        );
+      });
+
+      console.log('[Billing Effect] Valid room discounts:', validRoomDiscounts);
 
       // Apply only if no room discount already applied
       const hasRoomDiscount = discounts.some((d) => d.type === 'room');
-      if (!hasRoomDiscount && roomDiscounts.length > 0) {
+      if (!hasRoomDiscount && validRoomDiscounts.length > 0) {
         // Apply the best room discount (highest percentage)
-        const bestDiscount = roomDiscounts.reduce((prev, current) =>
+        const bestDiscount = validRoomDiscounts.reduce((prev, current) =>
           (current.discount_percentage || 0) > (prev.discount_percentage || 0)
             ? current
             : prev
         );
 
+        console.log('[Billing Effect] Applying best discount:', bestDiscount);
+
         const discountAmount = Math.floor(
           baseRoomPrice * ((bestDiscount.discount_percentage || 0) / 100)
+        );
+
+        console.log(
+          '[Billing Effect] Discount amount:',
+          discountAmount,
+          'from baseRoomPrice:',
+          baseRoomPrice
         );
 
         setDiscounts((prev) => [
@@ -400,6 +436,8 @@ const BillingPage: React.FC = () => {
             promotionId: bestDiscount.id,
           },
         ]);
+      } else if (!hasRoomDiscount) {
+        console.log('[Billing Effect] No valid room discounts found to apply');
       }
     }
     // Only run when these specific dependencies change, not discounts to avoid loop

@@ -32,7 +32,7 @@ const AccommodationLayout = () => {
           <Stack.Screen
             name="profile/profile"
             options={{
-              headerShown: true,
+              headerShown: false,
               animation: 'slide_from_right',
               header: () => (
                 <AppHeader
@@ -63,7 +63,7 @@ const AccommodationLayout = () => {
             name="room/profile"
             options={{
               headerTransparent: true,
-              headerShown: true,
+              headerShown: false,
               animation: 'slide_from_right',
               headerTitleAlign: 'center',
               headerTitleStyle: {

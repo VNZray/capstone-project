@@ -3,7 +3,7 @@ import {
   fetchAllBusinessDetails,
   fetchBusinessData,
   getStoredBusinessId,
-  setStoredBusinessId
+  setStoredBusinessId,
 } from '@/services/AccommodationService';
 import type { Business, BusinessDetails } from '@/types/Business';
 import debugLogger from '@/utils/debugLogger';
@@ -62,7 +62,7 @@ export const AccommodationProvider: React.FC<AccommodationProviderProps> = ({
   const setAccommodationId = useCallback((id: string) => {
     debugLogger({
       title: 'AccommodationContext: setAccommodationId',
-      data: { id }
+      data: { id },
     });
     setSelectedAccommodationId(id);
     setStoredBusinessId(id);
@@ -72,7 +72,7 @@ export const AccommodationProvider: React.FC<AccommodationProviderProps> = ({
   const clearAccommodationId = useCallback(() => {
     debugLogger({
       title: 'AccommodationContext: clearAccommodationId',
-      successMessage: 'Cleared selected accommodation.'
+      successMessage: 'Cleared selected accommodation.',
     });
     setSelectedAccommodationId(null);
     setAccommodationDetails(null);
@@ -86,19 +86,19 @@ export const AccommodationProvider: React.FC<AccommodationProviderProps> = ({
     try {
       debugLogger({
         title: 'AccommodationContext: Fetching business data',
-        data: { id: selectedAccommodationId }
+        data: { id: selectedAccommodationId },
       });
       const data = await fetchBusinessData(selectedAccommodationId);
       debugLogger({
         title: 'AccommodationContext: Fetched business data',
         data: { id: data?.id, name: data?.business_name },
-        successMessage: 'Fetched business data.'
+        successMessage: 'Fetched business data.',
       });
       setAccommodationDetails(data);
     } catch (error) {
       debugLogger({
         title: 'AccommodationContext: Failed to fetch accommodation',
-        error
+        error,
       });
       setAccommodationDetails(null);
     } finally {
@@ -116,7 +116,7 @@ export const AccommodationProvider: React.FC<AccommodationProviderProps> = ({
       debugLogger({
         title: 'AccommodationContext: Total businesses',
         data: { count: data?.length ?? 0 },
-        successMessage: 'Fetched all businesses.'
+        successMessage: 'Fetched all businesses.',
       });
       setAllAccommodationDetails(data);
       if (data.length === 0) {
@@ -128,7 +128,7 @@ export const AccommodationProvider: React.FC<AccommodationProviderProps> = ({
     } catch (error) {
       debugLogger({
         title: 'AccommodationContext: Failed to fetch business listed',
-        error
+        error,
       });
       setAllAccommodationDetails([]);
     } finally {
@@ -138,10 +138,15 @@ export const AccommodationProvider: React.FC<AccommodationProviderProps> = ({
 
   /** Fetch when ID changes */
   useEffect(() => {
+    // Clear old data immediately when ID changes to prevent showing stale data
+    setAccommodationDetails(null);
+
     fetchAllAccommodations();
 
     if (selectedAccommodationId) {
       fetchAccommodation();
+    } else {
+      setAccommodationDetails(null);
     }
   }, [selectedAccommodationId, fetchAccommodation]);
 
