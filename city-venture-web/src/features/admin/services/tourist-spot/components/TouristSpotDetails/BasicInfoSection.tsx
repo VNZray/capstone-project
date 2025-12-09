@@ -76,11 +76,6 @@ const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({ spot, onEdit }) => 
             Type / Category
           </Typography>
           <Stack direction="row" spacing={1} sx={{ flexWrap: "wrap", gap: 1 }}>
-            {spot.type && (
-              <Chip size="md" variant="soft" color="neutral" sx={{ borderRadius: "20px", fontWeight: 500 }}>
-                {spot.type}
-              </Chip>
-            )}
             {Array.isArray(spot.categories) && spot.categories.length > 0 ? (
               spot.categories.map((cat, idx) => (
                 <Chip
@@ -90,7 +85,7 @@ const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({ spot, onEdit }) => 
                   color="neutral"
                   sx={{ borderRadius: "20px", fontWeight: 500 }}
                 >
-                  {(cat as any).category || String(cat)}
+                  {cat.category_title || (cat as any).category || String(cat)}
                 </Chip>
               ))
             ) : (

@@ -13,7 +13,14 @@ export const getAllTouristSpots = async (request, response) => {
     const catMap = new Map();
     for (const c of categories) {
       if (!catMap.has(c.tourist_spot_id)) catMap.set(c.tourist_spot_id, []);
-      catMap.get(c.tourist_spot_id).push({ id: c.id, category: c.category, parent_category: c.parent_category, level: c.level });
+      catMap.get(c.tourist_spot_id).push({ 
+        id: c.id, 
+        category_id: c.id,
+        category: c.category, 
+        category_title: c.category,
+        parent_category: c.parent_category, 
+        level: c.level 
+      });
     }
     const imgMap = new Map();
     for (const i of images) {
@@ -45,7 +52,10 @@ export const getTouristSpotById = async (request, response) => {
       return response.status(404).json({ success: false, message: "Tourist spot not found" });
     }
 
-    const categories = data[1] || [];
+    const categories = (data[1] || []).map(c => ({
+      ...c,
+      category_title: c.category
+    }));
     const images = data[2] || [];
     const touristSpot = { ...rows[0], categories, images };
 
@@ -153,13 +163,23 @@ export const getFeaturedTouristSpots = async (request, response) => {
   try {
     const [data] = await db.query("CALL GetFeaturedTouristSpots()");
     const spots = data[0] || [];
-    const categories = data[1] || [];
+    const categories = (data[1] || []).map(c => ({
+      ...c,
+      category_title: c.category
+    }));
     const images = data[2] || [];
 
     const catMap = new Map();
     for (const c of categories) {
       if (!catMap.has(c.tourist_spot_id)) catMap.set(c.tourist_spot_id, []);
-      catMap.get(c.tourist_spot_id).push({ id: c.id, category: c.category, parent_category: c.parent_category, level: c.level });
+      catMap.get(c.tourist_spot_id).push({ 
+        id: c.id, 
+        category_id: c.id,
+        category: c.category, 
+        category_title: c.category,
+        parent_category: c.parent_category, 
+        level: c.level 
+      });
     }
     const imgMap = new Map();
     for (const i of images) {

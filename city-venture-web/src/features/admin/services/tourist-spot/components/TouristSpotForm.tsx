@@ -14,7 +14,6 @@ import {
   ModalDialog,
 } from "@mui/joy";
 import type {
-  Category,
   Province,
   Municipality,
   Barangay,
@@ -23,6 +22,7 @@ import type {
   FormOption,
   DaySchedule,
 } from "@/src/types/TouristSpot";
+import type { Category } from "@/src/types/Category";
 
 interface TouristSpotFormProps {
   isVisible: boolean;
@@ -164,7 +164,11 @@ const TouristSpotForm: React.FC<TouristSpotFormProps> = ({
   );
 
   const categoryOptions = useMemo<FormOption[]>(
-    () => categories.map((c) => ({ id: c.id, label: c.title })),
+    () => categories.map((c) => ({ 
+      id: c.id, 
+      label: c.title,
+      group: c.parent_title || "Main Categories"
+    })),
     [categories]
   );
 
@@ -315,7 +319,11 @@ const TouristSpotForm: React.FC<TouristSpotFormProps> = ({
           apiService.getCategoriesAndTypes(),
           apiService.getLocationData(),
         ]);
-        setCategories(categoriesTypes.categories);
+        const allCategories = [
+          ...(categoriesTypes.types || []).map((t: any) => ({ ...t, parent_title: "Main Categories" })),
+          ...(categoriesTypes.categories || [])
+        ];
+        setCategories(allCategories);
         setProvinces(locationData.provinces);
         setMunicipalities(locationData.municipalities);
         setBarangays(locationData.barangays);
@@ -344,6 +352,12 @@ const TouristSpotForm: React.FC<TouristSpotFormProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (formData.category_ids.length === 0) {
+      alert("Please select at least one category.");
+      return;
+    }
+
     setLoading(true);
     try {
       const spotData: Record<string, unknown> = {
@@ -572,6 +586,7 @@ const TouristSpotForm: React.FC<TouristSpotFormProps> = ({
             selectedCategories={selectedCategories}
             onInputChange={handleInputChange}
             onFormDataChange={handleFormDataChange}
+            allCategories={categories}
           />
         );
 
