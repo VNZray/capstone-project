@@ -245,6 +245,35 @@ export async function insertOrder(req, res) {
       await connection.query("CALL UpdateDiscountUsage(?)", [finalDiscountId]);
     }
 
+    // ========== Create Payment Record ==========
+    // For cash_on_pickup orders, create a payment record with status 'pending'
+    // This ensures all orders have a payment record for consistent querying
+    const actualPaymentMethod = payment_method || "cash_on_pickup";
+    const isCashOnPickup = actualPaymentMethod === "cash_on_pickup";
+    
+    if (isCashOnPickup) {
+      const paymentId = uuidv4();
+      const paymentCreatedAt = new Date().toISOString().slice(0, 19).replace("T", " ");
+      
+      await connection.query(
+        "CALL InsertPayment(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        [
+          paymentId,           // p_id
+          "Tourist",           // p_payer_type
+          "Full Payment",      // p_payment_type
+          "cash_on_pickup",    // p_payment_method
+          totalAmount,         // p_amount
+          "pending",           // p_status - pending until customer pays at pickup
+          "order",             // p_payment_for
+          user_id,             // p_payer_id
+          orderId,             // p_payment_for_id
+          paymentCreatedAt     // p_created_at
+        ]
+      );
+      
+      console.log(`[insertOrder] Created payment record for cash_on_pickup order ${orderNumber}, paymentId: ${paymentId}`);
+    }
+
     await connection.commit();
 
     // ========== Audit Logging ==========

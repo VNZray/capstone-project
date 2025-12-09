@@ -30,6 +30,11 @@ import Animated, {
 } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import { AppHeader } from '@/components/header/AppHeader';
+import RefundRequestModal from '@/components/RefundRequestModal';
+import RefundStatusBadge from '@/components/RefundStatusBadge';
+import CustomerServicePrompt from '@/components/CustomerServicePrompt';
+import * as RefundService from '@/services/RefundService';
+import type { RefundEligibility, RefundRecord } from '@/services/RefundService';
 
 const ORDER_TIMELINE: OrderStatus[] = [
   'PENDING',
@@ -117,6 +122,12 @@ const OrderDetailScreen = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [cancelling, setCancelling] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  
+  // Refund state
+  const [showRefundModal, setShowRefundModal] = useState(false);
+  const [refundEligibility, setRefundEligibility] = useState<RefundEligibility | null>(null);
+  const [refundRecords, setRefundRecords] = useState<RefundRecord[]>([]);
+  const [showCustomerServicePrompt, setShowCustomerServicePrompt] = useState(false);
 
   // Animation
   const headerScale = useSharedValue(0.9);
@@ -143,6 +154,15 @@ const OrderDetailScreen = () => {
       const data = await getOrderById(orderId);
       setOrder(data);
       headerScale.value = withSpring(1, { damping: 12 });
+      
+      // Fetch refund status for this order
+      try {
+        const refunds = await RefundService.getOrderRefundStatus(orderId);
+        setRefundRecords(refunds);
+      } catch (refundErr) {
+        // Silently fail - order may not have refunds
+        setRefundRecords([]);
+      }
     } catch (err: any) {
       console.error('[OrderDetail] Fetch error:', err);
       setError(err.message || 'Failed to load order details');
@@ -208,6 +228,44 @@ const OrderDetailScreen = () => {
     Alert.alert('Contact Store', 'Store contact feature coming soon!');
   };
 
+  const handleRequestRefund = async () => {
+    if (!order) return;
+
+    try {
+      // Check eligibility first
+      const eligibility = await RefundService.checkOrderRefundEligibility(order.id);
+      setRefundEligibility(eligibility);
+
+      if (eligibility.requiresCustomerService) {
+        setShowCustomerServicePrompt(true);
+      } else if (eligibility.eligible || eligibility.canCancel) {
+        setShowRefundModal(true);
+      } else {
+        Alert.alert(
+          'Cannot Process Request',
+          eligibility.reason || 'This order is not eligible for refund or cancellation.'
+        );
+      }
+    } catch (err: any) {
+      console.error('[OrderDetail] Refund eligibility check failed:', err);
+      Alert.alert('Error', err.message || 'Failed to check refund eligibility');
+    }
+  };
+
+  const handleRefundSuccess = (result: any) => {
+    setShowRefundModal(false);
+    Alert.alert(
+      'Request Submitted',
+      result.message || 'Your request has been submitted successfully.',
+      [
+        {
+          text: 'OK',
+          onPress: () => fetchOrder(),
+        },
+      ]
+    );
+  };
+
   const handleGoBack = () => {
     router.replace('/(tabs)/(profile)/orders');
   };
@@ -256,18 +314,40 @@ const OrderDetailScreen = () => {
     return { label: 'Online Payment', icon: 'card-outline' as const };
   };
 
-  // Check if order is cancellable
-  const isCancellable = order?.status === 'PENDING';
+  // Normalize status for comparison (backend may return lowercase)
+  const normalizedStatus = order?.status?.toUpperCase();
+  const normalizedPaymentMethod = order?.payment_method?.toLowerCase();
+
+  // Debug: Log order data to verify values
+  console.log('[OrderDetail] Order status:', order?.status, '-> normalized:', normalizedStatus);
+  console.log('[OrderDetail] Payment method:', order?.payment_method, '-> normalized:', normalizedPaymentMethod);
+
+  // Check if order is cancellable (cash on pickup, pending)
+  const isCancellable = normalizedStatus === 'PENDING' && normalizedPaymentMethod === 'cash_on_pickup';
+
+  // Check if order is refundable (paid online, pending)
+  const isRefundable = normalizedStatus === 'PENDING' && normalizedPaymentMethod !== 'cash_on_pickup';
+
+  console.log('[OrderDetail] isCancellable:', isCancellable, 'isRefundable:', isRefundable);
+
+  // Check if there's a pending refund
+  const hasPendingRefund = refundRecords.some(
+    (r) => r.status === 'pending' || r.status === 'processing'
+  );
+
+  // Check if order has been refunded
+  const hasCompletedRefund = refundRecords.some((r) => r.status === 'succeeded');
 
   // Check if order is active (not completed/cancelled)
   const isActiveOrder =
-    order?.status &&
+    normalizedStatus &&
     ![
       'PICKED_UP',
       'CANCELLED',
+      'CANCELLED_BY_USER',
       'CANCELLED_BY_BUSINESS',
       'FAILED_PAYMENT',
-    ].includes(order.status);
+    ].includes(normalizedStatus);
 
   // Animated styles
   const headerAnimatedStyle = useAnimatedStyle(() => ({
@@ -848,37 +928,91 @@ const OrderDetailScreen = () => {
               )}
             </Animated.View>
 
-            {/* Cancel Button */}
-            {isCancellable && (
+            {/* Refund Status Badge - Show if there's any refund activity */}
+            {refundRecords.length > 0 && (
+              <Animated.View
+                entering={FadeInDown.delay(750).springify()}
+                style={[styles.card, { backgroundColor: palette.card }]}
+              >
+                <Text style={[styles.cardTitle, { color: palette.text }]}>
+                  Refund Status
+                </Text>
+                {refundRecords.map((refund) => (
+                  <RefundStatusBadge
+                    key={refund.id}
+                    status={refund.status}
+                    amount={refund.amount}
+                  />
+                ))}
+              </Animated.View>
+            )}
+
+            {/* Refund/Cancel Actions - Show for eligible pending orders */}
+            {(isRefundable || isCancellable) && !hasPendingRefund && !hasCompletedRefund && (
               <Animated.View
                 entering={FadeInDown.delay(800).springify()}
                 style={[styles.actionCard, { backgroundColor: palette.card }]}
               >
-                <Pressable
-                  style={[styles.cancelButton, { borderColor: palette.error }]}
-                  onPress={handleCancelOrder}
-                  disabled={cancelling}
-                >
-                  {cancelling ? (
-                    <ActivityIndicator color={palette.error} />
-                  ) : (
-                    <>
-                      <Ionicons
-                        name="close-circle-outline"
-                        size={20}
-                        color={palette.error}
-                      />
-                      <Text
-                        style={[
-                          styles.cancelButtonText,
-                          { color: palette.error },
-                        ]}
-                      >
-                        Cancel Order
-                      </Text>
-                    </>
-                  )}
-                </Pressable>
+                {isRefundable ? (
+                  <Pressable
+                    style={[styles.refundButton, { backgroundColor: palette.warning + '15', borderColor: palette.warning }]}
+                    onPress={handleRequestRefund}
+                  >
+                    <Ionicons
+                      name="refresh-circle-outline"
+                      size={20}
+                      color={palette.warning}
+                    />
+                    <Text
+                      style={[
+                        styles.refundButtonText,
+                        { color: palette.warning },
+                      ]}
+                    >
+                      Request Refund
+                    </Text>
+                  </Pressable>
+                ) : isCancellable ? (
+                  <Pressable
+                    style={[styles.cancelButton, { borderColor: palette.error }]}
+                    onPress={handleCancelOrder}
+                    disabled={cancelling}
+                  >
+                    {cancelling ? (
+                      <ActivityIndicator color={palette.error} />
+                    ) : (
+                      <>
+                        <Ionicons
+                          name="close-circle-outline"
+                          size={20}
+                          color={palette.error}
+                        />
+                        <Text
+                          style={[
+                            styles.cancelButtonText,
+                            { color: palette.error },
+                          ]}
+                        >
+                          Cancel Order
+                        </Text>
+                      </>
+                    )}
+                  </Pressable>
+                ) : null}
+              </Animated.View>
+            )}
+
+            {/* Customer Service Prompt for non-pending orders */}
+            {showCustomerServicePrompt && (
+              <Animated.View
+                entering={FadeInDown.delay(800).springify()}
+                style={styles.customerServiceContainer}
+              >
+                <CustomerServicePrompt
+                  reason={refundEligibility?.reason || 'This order cannot be refunded through the app.'}
+                  onClose={() => setShowCustomerServicePrompt(false)}
+                  showContactButton={true}
+                />
               </Animated.View>
             )}
 
@@ -913,6 +1047,14 @@ const OrderDetailScreen = () => {
           </ScrollView>
         </View>
       </PageContainer>
+
+      {/* Refund Request Modal */}
+      <RefundRequestModal
+        visible={showRefundModal}
+        orderId={orderId || ''}
+        onClose={() => setShowRefundModal(false)}
+        onSuccess={handleRefundSuccess}
+      />
     </>
   );
 };
@@ -1261,6 +1403,22 @@ const styles = StyleSheet.create({
   cancelButtonText: {
     fontSize: 16,
     fontWeight: '600',
+  },
+  refundButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 16,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    gap: 8,
+  },
+  refundButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  customerServiceContainer: {
+    marginHorizontal: -16,
   },
   helpButton: {
     flexDirection: 'row',

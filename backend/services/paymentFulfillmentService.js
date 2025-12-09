@@ -21,7 +21,7 @@ import * as socketService from './socketService.js';
 import * as notificationHelper from './notificationHelper.js';
 import * as auditService from './auditService.js';
 import * as paymongoService from './paymongoService.js';
-import expoPushService from './expoPushService.js';
+import * as refundService from './refundService.js';
 
 // ============= Constants =============
 
@@ -319,23 +319,37 @@ export async function handleRefundSucceeded({
   const attributes = eventData.attributes || {};
   const paymentId = attributes.payment_id;
   const refundAmount = attributes.amount || 0;
+  const refundStatus = attributes.status; // 'pending', 'processing', 'succeeded', 'failed'
 
   if (!paymentId) {
     console.warn(`[PaymentFulfillment] ❌ Missing payment_id in refund event`);
     return { success: false, reason: 'Missing payment_id in refund event' };
   }
 
-  // 1. Update payment status to refunded (Single Source of Truth)
-  await db.query(
-    `UPDATE payment
-     SET status = ?,
-         refund_reference = ?,
-         updated_at = ?
-     WHERE paymongo_payment_id = ?`,
-    [PAYMENT_STATUS.REFUNDED, refundId, new Date(), paymentId]
-  );
+  // 1. Delegate to RefundService to update our refund record
+  try {
+    await refundService.handleRefundWebhook({
+      refundId,
+      status: refundStatus,
+      eventData
+    });
+  } catch (refundErr) {
+    console.warn(`[PaymentFulfillment] ⚠️ RefundService handling skipped: ${refundErr.message}`);
+  }
 
-  // 2. Find the order/booking for notifications
+  // 2. Only update payment table if refund succeeded
+  if (refundStatus === 'succeeded') {
+    await db.query(
+      `UPDATE payment
+       SET status = ?,
+           refund_reference = ?,
+           updated_at = ?
+       WHERE paymongo_payment_id = ?`,
+      [PAYMENT_STATUS.REFUNDED, refundId, new Date(), paymentId]
+    );
+  }
+
+  // 3. Find the order/booking for notifications
   const [paymentRows] = await db.query(
     `SELECT payment_for_id, payment_for FROM payment
      WHERE paymongo_payment_id = ?`,
@@ -351,85 +365,92 @@ export async function handleRefundSucceeded({
   const referenceId = payment.payment_for_id;
   const paymentFor = payment.payment_for;
 
-  // 3. Update order/booking timestamp
-  if (paymentFor === PAYMENT_FOR.ORDER) {
-    await db.query(
-      `UPDATE \`order\` SET updated_at = ? WHERE id = ?`,
-      [new Date(), referenceId]
-    );
+  // 4. Update order/booking status if refund succeeded
+  if (refundStatus === 'succeeded') {
+    if (paymentFor === PAYMENT_FOR.ORDER) {
+      await db.query(
+        `UPDATE \`order\` 
+         SET status = 'cancelled_by_user',
+             cancelled_at = NOW(),
+             cancelled_by = 'user',
+             cancellation_reason = 'Refund completed',
+             updated_at = ?
+         WHERE id = ? AND status NOT IN ('cancelled_by_user', 'cancelled_by_business')`,
+        [new Date(), referenceId]
+      );
+      
+      // Restore stock (handled by RefundService but ensure it happens)
+      await restoreOrderStock(referenceId);
+    }
   }
 
-  // 4. Audit logging
-  await auditService.logOrderEvent({
-    orderId: referenceId,
-    eventType: auditService.EVENT_TYPES.REFUNDED,
-    oldValue: 'paid',
-    newValue: 'refunded',
-    actor: { id: null, role: 'system' },
-    metadata: {
-      refund_id: refundId,
-      refund_amount: refundAmount / 100,
-      webhook_event_type: 'refund.updated',
-      payment_for: paymentFor,
-    },
-  });
+  // 5. Audit logging
+  try {
+    await auditService.logOrderEvent({
+      orderId: referenceId,
+      eventType: auditService.EVENT_TYPES.REFUNDED,
+      oldValue: 'paid',
+      newValue: refundStatus === 'succeeded' ? 'refunded' : `refund_${refundStatus}`,
+      actor: { id: null, role: 'system' },
+      metadata: {
+        refund_id: refundId,
+        refund_amount: refundAmount / 100,
+        refund_status: refundStatus,
+        webhook_event_type: 'refund.updated',
+        payment_for: paymentFor,
+      },
+    });
+  } catch (auditErr) {
+    console.warn(`[PaymentFulfillment] ⚠️ Audit logging skipped: ${auditErr.message}`);
+  }
 
-  // 5. Emit real-time events and send refund notifications
-  if (paymentFor === PAYMENT_FOR.ORDER) {
+  // 6. Emit real-time events
+  if (refundStatus === 'succeeded' && paymentFor === PAYMENT_FOR.ORDER) {
     await emitPaymentEvents(referenceId, paymentId, PAYMENT_STATUS.REFUNDED, refundAmount);
-
-    // Send refund notification for order
-    try {
-      const [orderData] = await db.query(
-        `SELECT o.*, u.id as user_id FROM \`order\` o
-         JOIN user u ON u.id = o.user_id
-         WHERE o.id = ?`,
-        [referenceId]
-      );
-
-      if (orderData && orderData.length > 0) {
-        await notificationHelper.notifyRefundProcessed(
-          { id: paymentId, amount: refundAmount / 100 },
-          orderData[0],
-          'order'
-        );
-      }
-    } catch (notifError) {
-      console.error('[PaymentFulfillment] Failed to send refund notification:', notifError);
-    }
-  } else if (paymentFor === PAYMENT_FOR.BOOKING) {
-    // Send refund notification for booking
-    try {
-      const [bookingData] = await db.query(
-        `SELECT b.*, t.user_id, bus.business_name FROM booking b
-         JOIN tourist t ON t.id = b.tourist_id
-         JOIN business bus ON b.business_id = bus.id
-         WHERE b.id = ?`,
-        [referenceId]
-      );
-
-      if (bookingData && bookingData.length > 0) {
-        await notificationHelper.notifyRefundProcessed(
-          { id: paymentId, amount: refundAmount / 100 },
-          bookingData[0],
-          'booking'
-        );
-      }
-    } catch (notifError) {
-      console.error('[PaymentFulfillment] Failed to send refund notification:', notifError);
-    }
   }
 
-  console.log(`[PaymentFulfillment] ✅ Refund completed for ${paymentFor} ${referenceId}`);
+  console.log(`[PaymentFulfillment] ✅ Refund ${refundStatus} for ${paymentFor} ${referenceId}`);
 
   return {
     success: true,
     paymentFor,
     referenceId,
-    status: PAYMENT_STATUS.REFUNDED,
+    status: refundStatus === 'succeeded' ? PAYMENT_STATUS.REFUNDED : refundStatus,
     refundId,
     refundAmount: refundAmount / 100,
   };
+}
+
+/**
+ * Restore stock for order items
+ * @param {string} orderId - Order ID
+ */
+async function restoreOrderStock(orderId) {
+  const connection = await db.getConnection();
+  
+  try {
+    await connection.beginTransaction();
+    
+    const [orderItems] = await connection.query(
+      `SELECT product_id, quantity FROM order_item WHERE order_id = ?`,
+      [orderId]
+    );
+
+    for (const item of orderItems) {
+      await connection.query(
+        `UPDATE product SET stock = stock + ? WHERE id = ?`,
+        [item.quantity, item.product_id]
+      );
+    }
+
+    await connection.commit();
+    console.log(`[PaymentFulfillment] ✅ Stock restored for order ${orderId}`);
+  } catch (error) {
+    await connection.rollback();
+    console.error(`[PaymentFulfillment] ❌ Failed to restore stock:`, error);
+  } finally {
+    connection.release();
+  }
 }
 
 // ============= Order Service Functions =============

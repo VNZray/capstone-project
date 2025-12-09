@@ -220,10 +220,11 @@ export function validateCancellation(order, actorRole, graceSeconds = 10) {
   
   // PayMongo payment methods are: gcash, paymaya, card (NOT cash_on_pickup)
   // We can also check if payment_intent_id exists as indicator of PayMongo flow
+  const isCashOnPickup = paymentMethod === "cash_on_pickup";
   const isPaymongoPayment = paymentMethod && paymentMethod !== "cash_on_pickup";
   const hasPaymentIntent = !!order.payment_intent_id;
 
-  console.log(`[OrderTransition] validateCancellation - status: ${currentStatus}, role: ${roleLower}, paymentStatus: ${paymentStatus}, paymentMethod: ${paymentMethod}, isPaymongo: ${isPaymongoPayment}, hasIntent: ${hasPaymentIntent}`);
+  console.log(`[OrderTransition] validateCancellation - status: ${currentStatus}, role: ${roleLower}, paymentStatus: ${paymentStatus}, paymentMethod: ${paymentMethod}, isCashOnPickup: ${isCashOnPickup}, isPaymongo: ${isPaymongoPayment}, hasIntent: ${hasPaymentIntent}`);
 
   // Cannot cancel terminal states
   if (
@@ -248,6 +249,17 @@ export function validateCancellation(order, actorRole, graceSeconds = 10) {
         allowed: false,
         reason: 'Tourists can only cancel orders with status "pending"',
         cancelled_by: null,
+      };
+    }
+
+    // Cash on pickup orders: Allow cancellation without grace period for pending orders
+    // Since no payment has been made yet, user can freely cancel pending cash on pickup orders
+    if (isCashOnPickup) {
+      console.log(`[OrderTransition] Allowing cancellation for cash on pickup order (no payment made)`);
+      return {
+        allowed: true,
+        reason: null,
+        cancelled_by: "user",
       };
     }
 

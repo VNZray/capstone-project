@@ -38,14 +38,27 @@ export async function createOrder(
  * GET /api/orders/:id
  * Accessible by owner (tourist or business) and admin
  * @param orderId - Order UUID
- * @returns Order details with items
+ * @returns Order details with items (normalized)
  */
 export async function getOrderById(orderId: string): Promise<Order> {
   try {
     const { data } = await apiClient.get<Order>(
       `/orders/${orderId}`
     );
-    return data;
+    
+    // Normalize the order data to ensure consistent format
+    return {
+      ...data,
+      status: (data.status || 'PENDING').toUpperCase() as Order['status'],
+      payment_status: (data.payment_status || 'PENDING').toUpperCase() as Order['payment_status'],
+      payment_method: (data.payment_method || 'cash_on_pickup').toLowerCase() as Order['payment_method'],
+      order_number: data.order_number || 'N/A',
+      items: data.items || [],
+      total_amount: typeof data.total_amount === 'number' ? data.total_amount : parseFloat(String(data.total_amount)) || 0,
+      subtotal: typeof data.subtotal === 'number' ? data.subtotal : parseFloat(String(data.subtotal)) || 0,
+      discount_amount: typeof data.discount_amount === 'number' ? data.discount_amount : parseFloat(String(data.discount_amount)) || 0,
+      tax_amount: typeof data.tax_amount === 'number' ? data.tax_amount : parseFloat(String(data.tax_amount)) || 0,
+    };
   } catch (error) {
     console.error('[OrderService] getOrderById error:', error);
     throw error;
