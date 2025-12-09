@@ -22,8 +22,21 @@ export async function sendNotification(recipientId, title, message, type, metada
     console.log("[sendNotification] Called with:", { recipientId, title, type, metadata });
 
     // Extract related_id and related_type from metadata or derive from type
-    const relatedId = metadata.order_id || metadata.payment_id || metadata.booking_id;
-    const relatedType = metadata.booking_id ? 'service_booking' : (metadata.order_id ? 'order' : 'service_booking');
+    // Support refund metadata: refundForId maps to order_id or booking_id
+    let relatedId = metadata.order_id || metadata.payment_id || metadata.booking_id;
+    let relatedType = metadata.booking_id ? 'service_booking' : (metadata.order_id ? 'order' : 'service_booking');
+
+    // Handle refund notifications - use refundForId as the related resource
+    if (!relatedId && metadata.refundForId) {
+      relatedId = metadata.refundForId;
+      relatedType = metadata.refundFor === 'booking' ? 'service_booking' : 'order';
+    }
+
+    // Fallback for refund notifications - use refundId if nothing else available
+    if (!relatedId && metadata.refundId) {
+      relatedId = metadata.refundId;
+      relatedType = 'refund';
+    }
 
     // Map generic types to notification_type enum
     const notificationTypeMap = {
