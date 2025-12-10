@@ -382,29 +382,6 @@ const Spot = () => {
             <Typography.Header>Tourist Spot Management</Typography.Header>
           </div>
 
-            <Container direction="row" padding="0" gap="0.5rem" align="center">
-            <IconButton
-              size="sm"
-              variant={display === "cards" ? "solid" : "soft"}
-              colorScheme={display === "cards" ? "primary" : "secondary"}
-              aria-label="Cards view"
-              onClick={() => setDisplay("cards")}
-            >
-              {/* Dashboard icon substitute using Landmark */}
-              <DashboardRoundedIcon />
-            </IconButton>
-            <IconButton
-              size="sm"
-              variant={display === "table" ? "solid" : "soft"}
-              colorScheme={display === "table" ? "primary" : "secondary"}
-              aria-label="Table view"
-              onClick={() => setDisplay("table")}
-            >
-              {/* Table icon substitute */}
-              <TableRowsRoundedIcon />
-            </IconButton>
-          </Container>
-
           <div
             style={{
               position: "fixed",
@@ -454,6 +431,7 @@ const Spot = () => {
           />
           <Select
             value={statusFilter}
+            size="lg"
             onChange={(_, v) => setStatusFilter((v as any) ?? "all")}
             sx={{ ml: 1.5, minWidth: 160 }}
           >
@@ -461,6 +439,30 @@ const Spot = () => {
             <Option value="active">Active</Option>
             <Option value="inactive">Inactive</Option>
           </Select>
+
+          <Container direction="row" padding="0" gap="0.5rem" align="center">
+            <IconButton
+              size="lg"
+              variant={display === "cards" ? "solid" : "soft"}
+              colorScheme={display === "cards" ? "primary" : "secondary"}
+              aria-label="Cards view"
+              onClick={() => setDisplay("cards")}
+            >
+              {/* Dashboard icon substitute using Landmark */}
+              <DashboardRoundedIcon />
+            </IconButton>
+            <IconButton
+              size="lg"
+              variant={display === "table" ? "solid" : "soft"}
+              colorScheme={display === "table" ? "primary" : "secondary"}
+              aria-label="Table view"
+              onClick={() => setDisplay("table")}
+            >
+              {/* Table icon substitute */}
+              <TableRowsRoundedIcon />
+            </IconButton>
+          </Container>
+
         </Container>
 
         {/* Tabs */}
@@ -484,7 +486,7 @@ const Spot = () => {
           </Stack>
         </Container>
 
-      <Container background="transparent" padding="0">
+      <Container background="transparent" padding={display === "table" ? "20px" : "0"}>
         {loading ? (
           <Container
             align="center"
@@ -544,15 +546,37 @@ const Spot = () => {
               maxHeight="600px"
             />
           ) : (
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))",
-                gap: "20px",
-                padding: "20px",
-              }}
-            >
-              {filteredSpots.map((spot) => (
+            <>
+              <style>
+                {`
+                  .custom-scrollbar::-webkit-scrollbar {
+                    width: 6px;
+                    height: 6px;
+                  }
+                  .custom-scrollbar::-webkit-scrollbar-track {
+                    background: transparent;
+                  }
+                  .custom-scrollbar::-webkit-scrollbar-thumb {
+                    background: rgba(0, 0, 0, 0.2);
+                    border-radius: 3px;
+                  }
+                  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+                    background: rgba(0, 0, 0, 0.3);
+                  }
+                `}
+              </style>
+              <div
+                className="custom-scrollbar"
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))",
+                  gap: "10px",
+                  padding: "20px",
+                  maxHeight: "680px",
+                  overflowY: "auto",
+                }}
+              >
+                {filteredSpots.map((spot) => (
                 <Card
                   key={spot.id}
                   variant="grid"
@@ -597,6 +621,7 @@ const Spot = () => {
                 </Card>
               ))}
             </div>
+            </>
           )
         )}
       </Container>
