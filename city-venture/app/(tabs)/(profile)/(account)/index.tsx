@@ -20,6 +20,12 @@ import { supabase } from '@/utils/supabase';
 import apiClient from '@/services/apiClient';
 import SectionHeader from '@/components/ui/SectionHeader';
 import MenuItem from '@/components/ui/MenuItem';
+import ChangeName from './components/ChangeName';
+import ChangeBirthday from './components/ChangeBirthday';
+import ChangeGender from './components/ChangeGender';
+import ChangeNationality from './components/ChangeNationality';
+import ChangePhoneNumber from './components/ChangePhoneNumber';
+import ChangeAddress from './components/ChangeAddraess';
 
 const ProfileInformation = () => {
   const scheme = useColorScheme();
@@ -66,38 +72,47 @@ const ProfileInformation = () => {
 
   // Handle edit actions
   const handleEditName = () => {
-    Alert.alert('Edit Name', 'Name editing will be available soon.');
+    setIsNameModalVisible(true);
   };
 
   const handleEditBirthday = () => {
-    Alert.alert('Edit Birthday', 'Birthday editing will be available soon.');
+    setIsBirthdayModalVisible(true);
   };
 
   const handleEditGender = () => {
-    Alert.alert('Edit Gender', 'Gender editing will be available soon.');
+    setIsGenderModalVisible(true);
   };
 
   const handleEditNationality = () => {
-    Alert.alert(
-      'Edit Nationality',
-      'Nationality editing will be available soon.'
-    );
+    setIsNationalityModalVisible(true);
   };
 
   const handleEditPhone = () => {
-    Alert.alert(
-      'Edit Phone Number',
-      'Phone number editing will be available soon.'
-    );
+    setIsPhoneModalVisible(true);
   };
 
   const handleEditAddress = () => {
-    Alert.alert('Edit Address', 'Address editing will be available soon.');
+    setIsAddressModalVisible(true);
+  };
+
+  // Handle successful updates
+  const handleUpdateSuccess = () => {
+    // Data will be automatically updated through AuthContext
+    Alert.alert('Success', 'Your information has been updated successfully!');
   };
 
   // State for photo upload
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
   const [profileImageUri, setProfileImageUri] = useState<string | null>(null);
+
+  // State for modals
+  const [isNameModalVisible, setIsNameModalVisible] = useState(false);
+  const [isBirthdayModalVisible, setIsBirthdayModalVisible] = useState(false);
+  const [isGenderModalVisible, setIsGenderModalVisible] = useState(false);
+  const [isNationalityModalVisible, setIsNationalityModalVisible] =
+    useState(false);
+  const [isPhoneModalVisible, setIsPhoneModalVisible] = useState(false);
+  const [isAddressModalVisible, setIsAddressModalVisible] = useState(false);
 
   useEffect(() => {
     console.log('User profile image URL:', user);
@@ -395,6 +410,38 @@ const ProfileInformation = () => {
           </Container>
         </Container>
       </ScrollView>
+
+      {/* Edit Modals */}
+      <ChangeName
+        visible={isNameModalVisible}
+        onClose={() => setIsNameModalVisible(false)}
+        onSuccess={handleUpdateSuccess}
+      />
+      <ChangeBirthday
+        visible={isBirthdayModalVisible}
+        onClose={() => setIsBirthdayModalVisible(false)}
+        onSuccess={handleUpdateSuccess}
+      />
+      <ChangeGender
+        visible={isGenderModalVisible}
+        onClose={() => setIsGenderModalVisible(false)}
+        onSuccess={handleUpdateSuccess}
+      />
+      <ChangeNationality
+        visible={isNationalityModalVisible}
+        onClose={() => setIsNationalityModalVisible(false)}
+        onSuccess={handleUpdateSuccess}
+      />
+      <ChangePhoneNumber
+        visible={isPhoneModalVisible}
+        onClose={() => setIsPhoneModalVisible(false)}
+        onSuccess={handleUpdateSuccess}
+      />
+      <ChangeAddress
+        visible={isAddressModalVisible}
+        onClose={() => setIsAddressModalVisible(false)}
+        onSuccess={handleUpdateSuccess}
+      />
     </PageContainer>
   );
 };

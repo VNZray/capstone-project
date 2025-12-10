@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { StyleSheet, View, ScrollView, Pressable, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import PageContainer from '@/components/PageContainer';
@@ -12,88 +12,10 @@ import ChangePassword from './components/ChangesPassword';
 import SectionHeader from '@/components/ui/SectionHeader';
 import MenuItem from '@/components/ui/MenuItem';
 
-type SecurityRowProps = {
-  icon: keyof typeof Ionicons.glyphMap;
-  label: string;
-  value?: string;
-  description?: string;
-  onPress?: () => void;
-  showArrow?: boolean;
-  iconColor?: string;
-  danger?: boolean;
-};
-
-const SecurityRow: React.FC<SecurityRowProps> = ({
-  icon,
-  label,
-  value,
-  description,
-  onPress,
-  showArrow = true,
-  iconColor,
-  danger = false,
-}) => {
-  const scheme = useColorScheme();
-  const isDark = scheme === 'dark';
-
-  const textColor = danger
-    ? Colors.light.error
-    : isDark
-    ? '#ECEDEE'
-    : '#0D1B2A';
-  const subTextColor = isDark ? '#9BA1A6' : '#6B7280';
-  const borderColor = isDark ? '#262B3A' : '#E3E7EF';
-  const bgColor = danger
-    ? 'rgba(185, 28, 28, 0.08)'
-    : isDark
-    ? '#1a1f2e'
-    : '#f3f4f6';
-
-  return (
-    <Pressable
-      onPress={onPress}
-      style={[styles.securityRow, { borderBottomColor: borderColor }]}
-    >
-      <View style={styles.rowLeft}>
-        <View style={[styles.iconWrapper, { backgroundColor: bgColor }]}>
-          <Ionicons
-            name={icon}
-            size={20}
-            color={
-              iconColor || (danger ? Colors.light.error : Colors.light.primary)
-            }
-          />
-        </View>
-        <View style={styles.textContainer}>
-          <ThemedText
-            type="body-medium"
-            weight="medium"
-            style={{ color: textColor }}
-          >
-            {label}
-          </ThemedText>
-          {(value || description) && (
-            <ThemedText
-              type="label-small"
-              style={{ color: subTextColor, marginTop: 2 }}
-              numberOfLines={1}
-            >
-              {value || description}
-            </ThemedText>
-          )}
-        </View>
-      </View>
-      {showArrow && (
-        <Ionicons name="chevron-forward" size={20} color={subTextColor} />
-      )}
-    </Pressable>
-  );
-};
-
 const AccountSecurity = () => {
   const scheme = useColorScheme();
   const isDark = scheme === 'dark';
-  const { user, logout, refreshUserData } = useAuth();
+  const { user, logout, login } = useAuth();
 
   const bg = Colors.light.background;
   const cardBg = isDark ? '#1E293B' : '#FFFFFF';
@@ -120,7 +42,6 @@ const AccountSecurity = () => {
   const handleEmailChangeSuccess = async () => {
     try {
       // Refresh user data from server
-      await refreshUserData?.();
 
       Alert.alert(
         'Email Changed',
@@ -291,7 +212,7 @@ const AccountSecurity = () => {
         visible={showChangeEmail}
         onClose={() => setShowChangeEmail(false)}
         currentEmail={user?.email}
-        userId={user?.id || user?.user_id}
+        userId={user?.user_id}
         onSuccess={handleEmailChangeSuccess}
       />
 
@@ -300,7 +221,7 @@ const AccountSecurity = () => {
         visible={showChangePassword}
         onClose={() => setShowChangePassword(false)}
         userEmail={user?.email}
-        userId={user?.id || user?.user_id}
+        userId={user?.user_id}
         onSuccess={handlePasswordChangeSuccess}
       />
     </PageContainer>

@@ -5,7 +5,13 @@ import { ThemedText } from '@/components/themed-text';
 import { Colors } from '@/constants/color';
 import { useAuth } from '@/context/AuthContext';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import apiClient from '@/services/apiClient';
+import { generateOTP } from '@/services/emailService';
+import {
+  storeUserOtp,
+  clearUserOtp,
+  updateUserEmail,
+  getUserById,
+} from '@/services/UserService';
 import { Ionicons } from '@expo/vector-icons';
 import {
   BottomSheetBackdrop,
@@ -145,11 +151,25 @@ const ChangeEmail: React.FC<ChangeEmailProps> = ({
     setIsLoading(true);
 
     try {
+      // Generate OTP
+      const otpCode = generateOTP();
+      console.log('🔐 Generated OTP for email change:', otpCode);
+
+      // Store OTP in user database
+      if (userId) {
+        await storeUserOtp(userId, parseInt(otpCode));
+        console.log('✅ OTP stored in database for user:', userId);
+      }
+
+      // Send OTP email (currently disabled but structure ready)
+      // await sendOTP(newEmail, 'Email Change', 10);
+
       setStep('otp');
     } catch (err: any) {
       const message =
         err?.response?.data?.message || 'Failed to send verification code.';
       setError(message);
+      console.error('❌ Error sending OTP:', err);
     } finally {
       setIsLoading(false);
     }
@@ -171,6 +191,29 @@ const ChangeEmail: React.FC<ChangeEmailProps> = ({
     setIsLoading(true);
 
     try {
+      // Fetch user data to compare OTP
+      if (!userId) {
+        throw new Error('User ID is required');
+      }
+
+      const userData = await getUserById(userId);
+      console.log('🔍 Comparing OTPs - Input:', otp, 'Stored:', userData.otp);
+
+      // Verify OTP matches
+      if (userData.otp?.toString() !== otp) {
+        setError('Invalid verification code. Please try again.');
+        setIsLoading(false);
+        return;
+      }
+
+      console.log('✅ OTP verified successfully');
+
+      // Update email and clear OTP
+      await updateUserEmail(userId, newEmail, parseInt(otp));
+      await clearUserOtp(userId);
+
+      console.log('✅ Email updated successfully to:', newEmail);
+      login(newEmail, password);
       setStep('success');
 
       // Wait 2 seconds before closing and triggering success callback
@@ -180,8 +223,11 @@ const ChangeEmail: React.FC<ChangeEmailProps> = ({
       }, 2000);
     } catch (error: any) {
       const message =
-        error?.response?.data?.message || 'Invalid verification code.';
+        error?.response?.data?.message ||
+        error?.message ||
+        'Invalid verification code.';
       setError(message);
+      console.error('❌ Error verifying OTP:', error);
     } finally {
       setIsLoading(false);
     }
@@ -193,6 +239,18 @@ const ChangeEmail: React.FC<ChangeEmailProps> = ({
     setIsLoading(true);
 
     try {
+      // Generate new OTP
+      const otpCode = generateOTP();
+      console.log('🔐 Resent OTP for email change:', otpCode);
+
+      // Store new OTP in user database
+      if (userId) {
+        await storeUserOtp(userId, parseInt(otpCode));
+        console.log('✅ New OTP stored in database');
+      }
+
+      // Send OTP email (currently disabled but structure ready)
+      // await sendOTP(newEmail, 'Email Change', 10);
     } catch {
       setError('Failed to resend code. Please try again.');
     } finally {

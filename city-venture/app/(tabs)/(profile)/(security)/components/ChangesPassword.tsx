@@ -4,7 +4,13 @@ import { ThemedText } from '@/components/themed-text';
 import { Colors } from '@/constants/color';
 import { useAuth } from '@/context/AuthContext';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import apiClient from '@/services/apiClient';
+import { generateOTP } from '@/services/emailService';
+import {
+  storeUserOtp,
+  clearUserOtp,
+  updateUserPassword,
+  getUserById,
+} from '@/services/UserService';
 import { Ionicons } from '@expo/vector-icons';
 import {
   BottomSheetBackdrop,
@@ -125,11 +131,25 @@ const ChangePassword: React.FC<ChangePasswordProps> = ({
     setIsLoading(true);
 
     try {
+      // Generate OTP
+      const otpCode = generateOTP();
+      console.log('🔐 Generated OTP for password change:', otpCode);
+
+      // Store OTP in user database
+      if (userId) {
+        await storeUserOtp(userId, parseInt(otpCode));
+        console.log('✅ OTP stored in database for user:', userId);
+      }
+
+      // Send OTP email (currently disabled but structure ready)
+      // await sendOTP(userEmail || '', 'Password Reset', 10);
+
       setStep('verify-otp');
     } catch (err: any) {
       const message =
         err?.response?.data?.message || 'Failed to send verification code.';
       setError(message);
+      console.error('❌ Error sending OTP:', err);
     } finally {
       setIsLoading(false);
     }
@@ -150,11 +170,30 @@ const ChangePassword: React.FC<ChangePasswordProps> = ({
     setIsLoading(true);
 
     try {
+      // Fetch user data to compare OTP
+      if (!userId) {
+        throw new Error('User ID is required');
+      }
+
+      const userData = await getUserById(userId);
+      console.log('🔍 Comparing OTPs - Input:', otp, 'Stored:', userData.otp);
+
+      // Verify OTP matches
+      if (userData.otp?.toString() !== otp) {
+        setError('Invalid verification code. Please try again.');
+        setIsLoading(false);
+        return;
+      }
+
+      console.log('✅ OTP verified successfully');
       setStep('new-password');
     } catch (err: any) {
       const message =
-        err?.response?.data?.message || 'Invalid verification code.';
+        err?.response?.data?.message ||
+        err?.message ||
+        'Invalid verification code.';
       setError(message);
+      console.error('❌ Error verifying OTP:', err);
     } finally {
       setIsLoading(false);
     }
@@ -189,11 +228,15 @@ const ChangePassword: React.FC<ChangePasswordProps> = ({
     setIsLoading(true);
 
     try {
-      await apiClient.post('/auth/change-password', {
-        otp,
-        newPassword,
-        userId,
-      });
+      if (!userId) {
+        throw new Error('User ID is required');
+      }
+
+      // Update password and clear OTP
+      await updateUserPassword(userId, newPassword, parseInt(otp));
+      await clearUserOtp(userId);
+
+      console.log('✅ Password updated successfully');
 
       setStep('success');
       setTimeout(() => {
@@ -202,8 +245,11 @@ const ChangePassword: React.FC<ChangePasswordProps> = ({
       }, 2000);
     } catch (err: any) {
       const message =
-        err?.response?.data?.message || 'Failed to change password.';
+        err?.response?.data?.message ||
+        err?.message ||
+        'Failed to change password.';
       setError(message);
+      console.error('❌ Error changing password:', err);
     } finally {
       setIsLoading(false);
     }
@@ -214,6 +260,18 @@ const ChangePassword: React.FC<ChangePasswordProps> = ({
     setIsLoading(true);
 
     try {
+      // Generate new OTP
+      const otpCode = generateOTP();
+      console.log('🔐 Resent OTP for password change:', otpCode);
+
+      // Store new OTP in user database
+      if (userId) {
+        await storeUserOtp(userId, parseInt(otpCode));
+        console.log('✅ New OTP stored in database');
+      }
+
+      // Send OTP email (currently disabled but structure ready)
+      // await sendOTP(userEmail || '', 'Password Reset', 10);
     } catch {
       setError('Failed to resend code. Please try again.');
     } finally {

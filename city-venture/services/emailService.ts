@@ -1,9 +1,7 @@
-
-
-let OTP = null
+import { storeUserOtp } from "./UserService";
 
 export const generateOTP = (): string => {
-    OTP = Math.floor(100000 + Math.random() * 900000);
+    const OTP = Math.floor(100000 + Math.random() * 900000);
     return OTP.toString();
 }
 
@@ -15,11 +13,15 @@ export const generateOTP = (): string => {
  * @param time - Validity time of the OTP in minutes
  */
 export const sendOTP = async (
-    email: string,
-    type: string,
-    time: number
+    email?: string,
+    type?: string,
+    time?: number,
+    user_id?: string
 ): Promise<boolean> => {
     try {
+        const OTP = generateOTP();
+        storeUserOtp(user_id!, parseInt(OTP));
+
     } catch (error) {
         console.error("❌ Failed to send email:", error);
         return false;
