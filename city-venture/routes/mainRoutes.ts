@@ -50,7 +50,7 @@ export const Routes = {
     maps: '/(tabs)/maps',
     favorites: '/(tabs)/favorite',
     profile: '/(tabs)/(profile)',
-    notification: '/(tabs)/(home)/Notification',
+    notification: '/(tabs)/(home)/(notification)',
   },
 
   // ============================================================================

@@ -12,6 +12,10 @@
       "supportsTablet": true,
       "config": {
         "googleMapsApiKey": "AIzaSyCvrFJIDAgujket50Rr8CXQ-gR-_6dpLjs"
+      },
+      "bundleIdentifier": "com.cityventure.cityventures",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
@@ -28,7 +32,8 @@
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "package": "com.cityventure.cityventures"
+      "package": "com.cityventure.cityventures",
+      "googleServicesFile": "./google-services.json"
     },
     "web": {
       "output": "static",
@@ -53,7 +58,16 @@
           }
         }
       ],
-      "expo-secure-store"
+      "expo-secure-store",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/logo/light-logo.png",
+          "color": "#0A1B47",
+          "androidMode": "default",
+          "androidCollapsedTitle": "#{unread_notifications} new notifications"
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,

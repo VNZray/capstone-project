@@ -1,14 +1,7 @@
 import { Colors } from '@/constants/color';
 import React, { useEffect, useRef } from 'react';
-import {
-  Animated,
-  Dimensions,
-  StyleSheet,
-  View,
-  useColorScheme,
-} from 'react-native';
+import { Animated, StyleSheet, View, useColorScheme } from 'react-native';
 
-const { width } = Dimensions.get('window');
 const HERO_HEIGHT = 280;
 
 const ShimmerBlock = ({ style }: { style?: any }) => {

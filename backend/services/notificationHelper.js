@@ -1,5 +1,7 @@
 
+import e from "express";
 import db from "../db.js";
+import { sendPushNotification } from "./expoPushService.js";
 
 /**
  * Notification Helper Service
@@ -30,11 +32,16 @@ export async function sendNotification(recipientId, title, message, type, metada
       'order_updated': 'order_confirmed',
       'order_cancelled': 'order_cancelled',
       'payment_updated': 'payment_received',
+      'payment_received': 'payment_received',
+      'payment_failed': 'payment_failed',
+      'refund_processed': 'refund_processed',
       'booking_created': 'booking_created',
       'booking_completed': 'booking_completed',
       'booking_confirmed': 'booking_confirmed',
       'booking_cancelled': 'booking_cancelled',
-      'booking_reminder': 'booking_reminder'
+      'booking_reminder': 'booking_reminder',
+      "booking_in_progress": "booking_in_progress",
+      "booking_no_show": "booking_no_show"
     };
 
     const notificationType = notificationTypeMap[type] || 'order_created';
@@ -48,6 +55,13 @@ export async function sendNotification(recipientId, title, message, type, metada
     );
 
     console.log(`[sendNotification] SUCCESS - Notification sent to user ${recipientId}: ${title}`);
+
+    // Send push notification
+    if (title === 'Booking Confirmed') {
+        return; // Skip push for booking confirmed to avoid duplicates
+    } else {
+      await sendPushNotification(recipientId, title, message, metadata, notificationType);
+    }
   } catch (error) {
     console.error('[sendNotification] FAILED - Error creating notification:', error);
     // Don't throw - notifications should not break order flow
@@ -88,9 +102,6 @@ export async function notifyBusinessNewOrder(order) {
 
       // TODO: Send email notification
       // await sendEmail(user.email, title, message, metadata);
-
-      // TODO: Send push notification
-      // await sendPushNotification(user.id, title, message, metadata);
     }
   } catch (error) {
     console.error('Failed to notify business about new order:', error);
@@ -126,8 +137,6 @@ export async function notifyTouristOrderUpdated(order, previousStatus) {
   try {
     await sendNotification(order.user_id, title, message, 'order_updated', metadata);
 
-    // TODO: Send push notification to tourist mobile device
-    // await sendPushNotification(order.user_id, title, message, metadata);
   } catch (error) {
     console.error('Failed to notify tourist about order update:', error);
   }
@@ -156,13 +165,16 @@ export async function notifyPaymentUpdated(payment, order) {
   };
 
   try {
-    // Notify tourist
-    await sendNotification(order.user_id, title, message, 'payment_updated', metadata);
+    console.log('[notifyPaymentUpdated] Sending payment notification:', { user_id: order.user_id, status: payment.status, title });
+    // Use appropriate notification type based on payment status
+    const notificationType = payment.status === 'paid' ? 'payment_received' :
+                            payment.status === 'failed' ? 'payment_failed' :
+                            'payment_updated';
+    await sendNotification(order.user_id, title, message, notificationType, metadata);
 
-    // TODO: Send push notification
-    // await sendPushNotification(order.user_id, title, message, metadata);
+    console.log('[notifyPaymentUpdated] ✅ Payment notification sent successfully');
   } catch (error) {
-    console.error('Failed to notify about payment update:', error);
+    console.error('[notifyPaymentUpdated] Failed to notify about payment update:', error);
   }
 }
 
@@ -186,8 +198,8 @@ export async function triggerNewOrderNotifications(order) {
   };
 
   await sendNotification(order.user_id, title, message, 'order_created', metadata);
-}
 
+}
 /**
  * Trigger notifications for order status update
  * @param {Object} order - Updated order object
@@ -210,6 +222,7 @@ export async function triggerOrderUpdateNotifications(order, previousStatus) {
 
     if (businessOwner && businessOwner.length > 0) {
       await sendNotification(businessOwner[0].owner_id, title, message, 'order_cancelled', metadata);
+
     }
   }
 }
@@ -223,12 +236,144 @@ export async function triggerPaymentUpdateNotifications(payment, order) {
   await notifyPaymentUpdated(payment, order);
 }
 
+/**
+ * Notify user about booking confirmation
+ * @param {Object} booking - Booking object
+ */
+export async function notifyBookingConfirmed(booking) {
+  try {
+    console.log('[notifyBookingConfirmed] Sending booking confirmation:', { user_id: booking.user_id, booking_id: booking.id });
+    const title = `Booking Confirmed`;
+    const message = `Your booking at ${booking.business_name || 'the accommodation'} has been confirmed!`;
+    const metadata = {
+      booking_id: booking.id,
+      business_id: booking.business_id,
+      business_name: booking.business_name,
+      check_in: booking.check_in_date,
+      check_out: booking.check_out_date
+    };
+
+    await sendNotification(booking.user_id, title, message, 'booking_confirmed', metadata);
+
+    console.log('[notifyBookingConfirmed] ✅ Booking confirmation sent successfully');
+  } catch (error) {
+    console.error('[notifyBookingConfirmed] Failed to notify about booking confirmation:', error);
+  }
+}
+
+/**
+ * Notify user about booking cancellation
+ * @param {Object} booking - Booking object
+ * @param {string} cancelledBy - Who cancelled (user or business)
+ */
+export async function notifyBookingCancelled(booking, cancelledBy = 'business') {
+  try {
+    console.log('[notifyBookingCancelled] Sending cancellation notification:', { user_id: booking.user_id, booking_id: booking.id, cancelledBy });
+    const title = `Booking Cancelled`;
+    const message = cancelledBy === 'user'
+      ? 'Your booking has been cancelled successfully.'
+      : `Your booking at ${booking.business_name || 'the accommodation'} has been cancelled by the property.`;
+    const metadata = {
+      booking_id: booking.id,
+      business_id: booking.business_id,
+      business_name: booking.business_name,
+      cancelled_by: cancelledBy
+    };
+
+    await sendNotification(booking.user_id, title, message, 'booking_cancelled', metadata);
+
+    console.log('[notifyBookingCancelled] ✅ Cancellation notification sent successfully');
+  } catch (error) {
+    console.error('[notifyBookingCancelled] Failed to notify about booking cancellation:', error);
+  }
+}
+
+/**
+ * Notify user about booking reminder (1 day before check-in)
+ * @param {Object} booking - Booking object
+ */
+export async function notifyBookingReminder(booking) {
+  try {
+    const title = `Booking Reminder`;
+    const message = `Your check-in at ${booking.business_name || 'the accommodation'} is tomorrow!`;
+    const metadata = {
+      booking_id: booking.id,
+      business_id: booking.business_id,
+      check_in: booking.check_in_date
+    };
+
+    await sendNotification(booking.user_id, title, message, 'booking_reminder', metadata);
+  } catch (error) {
+    console.error('Failed to send booking reminder:', error);
+  }
+}
+
+/**
+ * Notify user about refund processed
+ * @param {Object} payment - Payment object
+ * @param {Object} booking - Booking/Order object
+ * @param {string} type - 'booking' or 'order'
+ */
+export async function notifyRefundProcessed(payment, booking, type = 'booking') {
+  try {
+    const title = `Refund Processed`;
+    const message = `Your refund of ₱${payment.amount} has been processed successfully.`;
+    const metadata = {
+      payment_id: payment.id,
+      amount: payment.amount,
+      type: type,
+      related_id: booking.id
+    };
+
+    await sendNotification(booking.user_id, title, message, 'refund_processed', metadata);
+
+  } catch (error) {
+    console.error('Failed to notify about refund:', error);
+  }
+}
+
+/**
+ * Notify business about new booking
+ * @param {Object} booking - Booking object
+ */
+export async function notifyBusinessNewBooking(booking) {
+  try {
+    const [businessUsers] = await db.query(
+      `SELECT u.id, u.email
+       FROM business b
+       JOIN user u ON u.id = b.owner_id
+       WHERE b.id = ?
+       UNION
+       SELECT u.id, u.email
+       FROM staff s
+       JOIN user u ON u.id = s.user_id
+       WHERE s.business_id = ?`,
+      [booking.business_id, booking.business_id]
+    );
+
+    const title = `New Booking Request`;
+    const message = `You have a new booking request for ${booking.room_number || 'a room'}.`;
+    const metadata = {
+      booking_id: booking.id,
+      business_id: booking.business_id,
+      check_in: booking.check_in_date,
+      check_out: booking.check_out_date
+    };
+
+    for (const user of businessUsers) {
+      await sendNotification(user.id, title, message, 'booking_created', metadata);
+
+    }
+  } catch (error) {
+    console.error('Failed to notify business about new booking:', error);
+  }
+}
+
 export default {
   sendNotification,
   notifyBusinessNewOrder,
   notifyTouristOrderUpdated,
   notifyPaymentUpdated,
-  triggerNewOrderNotifications,
-  triggerOrderUpdateNotifications,
-  triggerPaymentUpdateNotifications
+
+
 };

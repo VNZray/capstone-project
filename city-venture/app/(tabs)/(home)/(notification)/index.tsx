@@ -23,6 +23,7 @@ import {
   createReview,
   checkIfTouristHasReviewed,
 } from '@/services/FeedbackService';
+import Container from '@/components/Container';
 
 interface NotificationSection {
   title: string;
@@ -42,7 +43,7 @@ interface NotificationSectionWithReviewStatus {
 const NotificationScreen = () => {
   const scheme = useColorScheme();
   const isDark = scheme === 'dark';
-  const { user } = useAuth();
+  const { user, expoPushToken } = useAuth();
 
   const [notifications, setNotifications] = useState<
     NotificationWithReviewStatus[]
@@ -58,6 +59,12 @@ const NotificationScreen = () => {
   const sectionHeaderColor = isDark ? '#6B7280' : '#9CA3AF';
   const bgColor = isDark ? '#0D1B2A' : '#F8FAFC';
 
+  // Log push token for debugging
+  useEffect(() => {
+    if (expoPushToken) {
+      console.log('[NotificationScreen] Expo Push Token:', expoPushToken);
+    }
+  }, [expoPushToken]);
   // Group notifications by date
   const groupedNotifications =
     useMemo((): NotificationSectionWithReviewStatus[] => {
@@ -249,7 +256,7 @@ const NotificationScreen = () => {
           maxWidth: 280,
         }}
       >
-        You're all caught up! New notifications will appear here.
+        You&apos;re all caught up! New notifications will appear here.
       </ThemedText>
     </View>
   );

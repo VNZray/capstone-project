@@ -1,10 +1,16 @@
 import { ThemedText } from '@/components/themed-text';
 import { card, Colors, colors } from '@/constants/color';
+import { useAccommodation } from '@/context/AccommodationContext';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import type { CreateReviewPayload, ReviewWithAuthor } from '@/types/Feedback';
 import { uploadReviewImage } from '@/utils/uploadReviewImage';
-import { useAccommodation } from '@/context/AccommodationContext';
 import { Ionicons } from '@expo/vector-icons';
+import {
+  BottomSheetBackdrop,
+  BottomSheetModal,
+  BottomSheetScrollView,
+  BottomSheetTextInput,
+} from '@gorhom/bottom-sheet';
 import * as ImagePicker from 'expo-image-picker';
 import React, {
   useCallback,
@@ -21,15 +27,8 @@ import {
   Platform,
   Pressable,
   StyleSheet,
-  TextInput,
   View,
 } from 'react-native';
-import {
-  BottomSheetModal,
-  BottomSheetBackdrop,
-  BottomSheetScrollView,
-  BottomSheetTextInput,
-} from '@gorhom/bottom-sheet';
 import Button from '../Button';
 
 type Props = {

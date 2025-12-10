@@ -45,6 +45,7 @@ import serviceInquiryRoutes from "./routes/service-inquiries.js";
 import orderRoutes from "./routes/orders.js";
 import productReviewRoutes from "./routes/product-reviews.js";
 import notificationRoutes from "./routes/notifications.js";
+import notificationPreferencesRoutes from "./routes/notificationPreferences.js";
 import businessSettingsRoutes from "./routes/business-settings.js";
 import shopCategoryRoutes from "./routes/shop-categories.js";
 import feedbackReviewRoutes from "./routes/feedback-reviews.js";
@@ -53,6 +54,7 @@ import feedbackReviewPhotoRoutes from "./routes/feedback-review-photos.js";
 import roomPhotosRoutes from "./routes/room-photos.js";
 import tourismStaffManagementRoutes from "./routes/tourism_staff_management.js";
 import favoriteRoutes from "./routes/favorite.js";
+import testNotificationRoutes from "./routes/testNotification.js";
 
 const app = express();
 const PORT = 3000;
@@ -199,6 +201,11 @@ const routeSections = [
         label: "Notifications",
       },
       {
+        path: "/api/notification-preferences",
+        handler: notificationPreferencesRoutes,
+        label: "Notification Preferences & Push Tokens",
+      },
+      {
         path: "/api/business-settings",
         handler: businessSettingsRoutes,
         label: "Business Settings",
@@ -214,6 +221,12 @@ const routeSections = [
       { path: "/api/favorite", handler: favoriteRoutes, label: "Favorites" },
     ],
   },
+  {
+    section: "Development & Testing",
+    routes: [
+      { path: "/api/test", handler: testNotificationRoutes, label: "Test Notifications (Dev)" },
+    ],
+  },
 ];
 
 // Flattened list for registration
@@ -226,7 +239,7 @@ app.use(cors({
   origin: function(origin, callback) {
     // Allow requests with no origin (mobile apps, Postman, etc.)
     if (!origin) return callback(null, true);
-    
+
     // List of allowed origins
     const allowedOrigins = [
       'http://localhost:5173',
@@ -235,7 +248,7 @@ app.use(cors({
       process.env.FRONTEND_URL,
       process.env.FRONTEND_BASE_URL,
     ].filter(Boolean); // Remove undefined values
-    
+
     if (allowedOrigins.some(allowed => origin.startsWith(allowed))) {
       callback(null, true);
     } else {
@@ -279,17 +292,17 @@ const sendPaymongoRedirect = (res, referenceId, status, type = 'order') => {
   // Support both Expo Go (exp://) and production builds (cityventure://)
   const isExpoDev = process.env.EXPO_DEV === 'true';
   const expoHost = process.env.EXPO_DEV_HOST || '192.168.1.1:8081';
-  
+
   // Determine route path and query param based on type (order vs booking)
   // Route paths must match Expo Router file-based routes
   const isBooking = type === 'booking';
-  const routePath = isBooking 
-    ? '(tabs)/(home)/(accommodation)/room/booking' 
+  const routePath = isBooking
+    ? '(tabs)/(home)/(accommodation)/room/booking'
     : '(tabs)/(home)/(checkout)/payment';
-  const queryParam = isBooking 
-    ? `paymentSuccess=1&bookingId=${referenceId}` 
+  const queryParam = isBooking
+    ? `paymentSuccess=1&bookingId=${referenceId}`
     : `orderId=${referenceId}`;
-  
+
   // Expo Go deep link format: exp://HOST:PORT/--/path
   // For Expo Router, the path should match the file-based route
   let appUrl;
@@ -300,10 +313,10 @@ const sendPaymongoRedirect = (res, referenceId, status, type = 'order') => {
     // Production build with custom scheme
     appUrl = `cityventure://${routePath}-${status}?${queryParam}`;
   }
-  
+
   console.log(`[PayMongo Redirect] type: ${type}, isExpoDev: ${isExpoDev}, appUrl: ${appUrl}`);
-  
-  const webFallback = isBooking 
+
+  const webFallback = isBooking
     ? `${FRONTEND_BASE_URL}/bookings/${referenceId}/payment-${status}`
     : `${FRONTEND_BASE_URL}/orders/${referenceId}/payment-${status}`;
 
@@ -330,7 +343,7 @@ const sendPaymongoRedirect = (res, referenceId, status, type = 'order') => {
       if (!sessionStorage.getItem('payment_redirected_${referenceId}')) {
         sessionStorage.setItem('payment_redirected_${referenceId}', 'true');
         window.location.replace('${appUrl}');
-        
+
         // Fallback to web after 2 seconds if app doesn't open
         setTimeout(function() {
           if (document.visibilityState === 'visible') {
@@ -366,7 +379,7 @@ app.get("/bookings/:bookingId/payment-success", async (req, res) => {
   if (!bookingId) {
     return res.status(400).send("Missing bookingId");
   }
-  
+
   try {
     // Check the actual payment status from the database
     // The webhook may have already updated this to 'failed'
@@ -378,15 +391,15 @@ app.get("/bookings/:bookingId/payment-success", async (req, res) => {
        LIMIT 1`,
       [bookingId]
     );
-    
+
     const payment = rows?.[0];
-    
+
     // If payment exists and is marked as failed, redirect to cancel flow
     if (payment && (payment.payment_status === 'failed' || payment.payment_status === 'cancelled')) {
       console.log(`[PayMongo Redirect] Payment for booking ${bookingId} is ${payment.payment_status}, redirecting to cancel`);
       return sendPaymongoRedirect(res, bookingId, "cancel", "booking");
     }
-    
+
     // Otherwise proceed with success redirect
     // Note: The mobile app will still verify the actual PayMongo status
     sendPaymongoRedirect(res, bookingId, "success", "booking");
@@ -515,7 +528,7 @@ httpServer.listen(PORT, "0.0.0.0", async () => {
 // ========== GRACEFUL SHUTDOWN ==========
 async function gracefulShutdown(signal) {
   console.log(`\n${COLORS.yellow}${signal} received. Shutting down gracefully...${COLORS.reset}`);
-  
+
   try {
     // Close webhook queue
     await webhookQueueService.shutdownQueue();
@@ -523,13 +536,13 @@ async function gracefulShutdown(signal) {
   } catch (err) {
     console.error("Error closing webhook queue:", err);
   }
-  
+
   // Close HTTP server
   httpServer.close(() => {
     console.log(colorServer("✅ HTTP server closed"));
     process.exit(0);
   });
-  
+
   // Force exit after 10 seconds
   setTimeout(() => {
     console.error("Could not close connections in time, forcefully shutting down");

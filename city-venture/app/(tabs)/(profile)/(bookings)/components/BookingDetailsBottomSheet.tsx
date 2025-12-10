@@ -230,6 +230,7 @@ const BookingDetailsBottomSheet: React.FC<BookingDetailsBottomSheetProps> = ({
       snapPoints={snapPoints}
       onChange={handleSheetChanges}
       backdropComponent={renderBackdrop}
+      animateOnMount={true}
       enablePanDownToClose
       enableDynamicSizing={false}
       keyboardBehavior="interactive"
@@ -543,7 +544,15 @@ const BookingDetailsBottomSheet: React.FC<BookingDetailsBottomSheetProps> = ({
       </BottomSheetScrollView>
 
       {/* Action Buttons */}
-      <View style={[styles.actionSection, { borderTopColor: borderColor }]}>
+      <View
+        style={[
+          styles.actionSection,
+          {
+            borderTopColor: borderColor,
+            height: booking.booking_status === 'Reserved' ? 80 : 160,
+          },
+        ]}
+      >
         {booking.booking_status === 'Reserved' && (
           <Button
             label={cancelling ? 'Cancelling...' : 'Cancel Booking'}
@@ -708,6 +717,5 @@ const styles = StyleSheet.create({
     padding: 16,
     borderTopWidth: 1,
     marginTop: 8,
-    height: 160,
   },
 });

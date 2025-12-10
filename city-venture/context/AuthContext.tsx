@@ -14,6 +14,8 @@ import {
 } from '@/services/AuthService';
 import type { UserDetails } from '../types/User';
 import debugLogger from '@/utils/debugLogger';
+import PushNotificationService from '@/services/PushNotificationService';
+import type * as Notifications from 'expo-notifications';
 
 interface AuthContextType {
   user: UserDetails | null;
@@ -22,6 +24,8 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   updateUser: (updates: Partial<UserDetails>) => Promise<void>;
+  refreshUserData: () => Promise<UserDetails | undefined>;
+  expoPushToken: string | null;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -33,6 +37,54 @@ interface AuthProviderProps {
 export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [user, setUser] = useState<UserDetails | null>(null);
   const [loading, setLoading] = useState(true);
+  const [expoPushToken, setExpoPushToken] = useState<string | null>(null);
+
+  /** Initialize Push Notification Service */
+  const initializeNotifications = useCallback(async (userId?: string) => {
+    if (!userId) {
+      console.warn(
+        '[AuthContext] Cannot initialize notifications without userId'
+      );
+      return;
+    }
+
+    try {
+      await PushNotificationService.initialize({
+        userId,
+        onNotificationReceived: (notification: Notifications.Notification) => {
+          console.log(
+            '[AuthContext] 📱 Notification received in foreground:',
+            notification.request.content.title
+          );
+          // Notification is automatically added to the notification list by backend
+        },
+        onNotificationTapped: (
+          response: Notifications.NotificationResponse
+        ) => {
+          console.log(
+            '[AuthContext] 👆 User tapped notification:',
+            response.notification.request.content.title
+          );
+          // TODO: Navigate to appropriate screen based on notification type
+          const data = response.notification.request.content.data;
+          console.log('[AuthContext] Notification data:', data);
+        },
+      });
+
+      const token = PushNotificationService.getCurrentToken();
+      setExpoPushToken(token);
+
+      debugLogger({
+        title: 'AuthContext: Push notifications initialized',
+        data: { userId, hasToken: !!token },
+      });
+    } catch (error) {
+      console.error(
+        '[AuthContext] Failed to initialize push notifications:',
+        error
+      );
+    }
+  }, []);
 
   /** Initialize Auth on Mount */
   useEffect(() => {
@@ -53,6 +105,9 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
               data: { user_id: storedUser.user_id },
             });
             setUser(storedUser);
+
+            // Initialize notifications for restored user
+            await initializeNotifications(storedUser.user_id);
           } else {
             // If we have token but no user data, maybe fetch /auth/me?
             // For now, simpler to require login if data missing.
@@ -73,34 +128,40 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     };
 
     init();
-  }, []);
+  }, [initializeNotifications]);
 
   /** LOGIN */
-  const login = useCallback(async (email: string, password: string) => {
-    try {
-      debugLogger({
-        title: 'AuthContext: Login started',
-        data: { email },
-      });
+  const login = useCallback(
+    async (email: string, password: string) => {
+      try {
+        debugLogger({
+          title: 'AuthContext: Login started',
+          data: { email },
+        });
 
-      const loggedInUser = await loginUser(email, password);
-      setUser(loggedInUser);
+        const loggedInUser = await loginUser(email, password);
+        setUser(loggedInUser);
 
-      debugLogger({
-        title: 'AuthContext: ✅ Login successful',
-        data: {
-          user_id: loggedInUser.user_id,
-          role: loggedInUser.role_name,
-        },
-      });
-    } catch (error) {
-      debugLogger({
-        title: 'AuthContext: ❌ Login failed',
-        error: error instanceof Error ? error.message : String(error),
-      });
-      throw error;
-    }
-  }, []);
+        // Initialize notifications after successful login
+        await initializeNotifications(loggedInUser.user_id);
+
+        debugLogger({
+          title: 'AuthContext: ✅ Login successful',
+          data: {
+            user_id: loggedInUser.user_id,
+            role: loggedInUser.role_name,
+          },
+        });
+      } catch (error) {
+        debugLogger({
+          title: 'AuthContext: ❌ Login failed',
+          error: error instanceof Error ? error.message : String(error),
+        });
+        throw error;
+      }
+    },
+    [initializeNotifications]
+  );
 
   /** LOGOUT */
   const logout = useCallback(async () => {
@@ -110,6 +171,10 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       });
 
       await logoutUser();
+
+      // Cleanup push notification service
+      PushNotificationService.cleanup();
+      setExpoPushToken(null);
       setUser(null);
 
       debugLogger({
@@ -143,6 +208,38 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     [user]
   );
 
+  /** REFRESH USER DATA - Fetch latest user info from server */
+  const refreshUserData = useCallback(async () => {
+    try {
+      if (!user?.user_id) {
+        throw new Error('No user logged in');
+      }
+
+      const response = await import('@/services/apiClient').then((mod) =>
+        mod.default.get('/auth/me')
+      );
+
+      if (response.data?.user) {
+        const updatedUser = { ...user, ...response.data.user };
+        setUser(updatedUser);
+
+        // Update secure storage
+        const { saveUserData } = await import('@/utils/secureStorage');
+        await saveUserData(JSON.stringify(updatedUser));
+
+        debugLogger({
+          title: 'AuthContext: User data refreshed',
+          data: updatedUser,
+        });
+
+        return updatedUser;
+      }
+    } catch (error) {
+      console.error('[AuthContext] Failed to refresh user data:', error);
+      throw error;
+    }
+  }, [user]);
+
   const isAuthenticated = !!user;
 
   return (
@@ -154,6 +251,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         login,
         logout,
         updateUser,
+        refreshUserData,
+        expoPushToken,
       }}
     >
       {children}
@@ -161,7 +260,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   );
 };
 
-// eslint-disable-next-line react-refresh/only-export-components
 export const useAuth = (): AuthContextType => {
   const context = useContext(AuthContext);
   if (!context) throw new Error('useAuth must be used within an AuthProvider');

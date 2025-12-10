@@ -21,6 +21,7 @@ import * as socketService from './socketService.js';
 import * as notificationHelper from './notificationHelper.js';
 import * as auditService from './auditService.js';
 import * as paymongoService from './paymongoService.js';
+import expoPushService from './expoPushService.js';
 
 // ============= Constants =============
 
@@ -249,9 +250,40 @@ export async function handlePaymentFailed({
     console.warn(`[PaymentFulfillment] ⚠️ Audit logging skipped: ${auditErr.message}`);
   }
 
-  // 5. Emit real-time events
+  // 5. Emit real-time events and notifications
   if (paymentFor === PAYMENT_FOR.ORDER) {
     await emitPaymentEvents(referenceId, paymentId, PAYMENT_STATUS.FAILED, attributes.amount);
+  } else if (paymentFor === PAYMENT_FOR.BOOKING) {
+    // Send payment failed notification for booking
+    try {
+      const [bookingData] = await db.query(
+        `SELECT b.id, b.business_id, b.total_price, t.user_id, bus.business_name
+         FROM booking b
+         JOIN tourist t ON b.tourist_id = t.id
+         JOIN business bus ON b.business_id = bus.id
+         WHERE b.id = ?`,
+        [referenceId]
+      );
+
+      if (bookingData && bookingData.length > 0) {
+        const booking = bookingData[0];
+        await notificationHelper.sendNotification(
+          booking.user_id,
+          'Payment Failed',
+          `Your payment for ${booking.business_name} could not be processed. ${failedMessage}`,
+          'payment_failed',
+          {
+            booking_id: referenceId,
+            business_id: booking.business_id,
+            business_name: booking.business_name,
+            failed_code: failedCode,
+            failed_message: failedMessage
+          }
+        );
+      }
+    } catch (notifError) {
+      console.error('[PaymentFulfillment] Failed to send payment failed notification:', notifError);
+    }
   }
 
   console.log(`[PaymentFulfillment] 💔 Payment failed for ${paymentFor} ${referenceId}`);
@@ -338,9 +370,50 @@ export async function handleRefundSucceeded({
     },
   });
 
-  // 5. Emit real-time events
+  // 5. Emit real-time events and send refund notifications
   if (paymentFor === PAYMENT_FOR.ORDER) {
     await emitPaymentEvents(referenceId, paymentId, PAYMENT_STATUS.REFUNDED, refundAmount);
+
+    // Send refund notification for order
+    try {
+      const [orderData] = await db.query(
+        `SELECT o.*, u.id as user_id FROM \`order\` o
+         JOIN user u ON u.id = o.user_id
+         WHERE o.id = ?`,
+        [referenceId]
+      );
+
+      if (orderData && orderData.length > 0) {
+        await notificationHelper.notifyRefundProcessed(
+          { id: paymentId, amount: refundAmount / 100 },
+          orderData[0],
+          'order'
+        );
+      }
+    } catch (notifError) {
+      console.error('[PaymentFulfillment] Failed to send refund notification:', notifError);
+    }
+  } else if (paymentFor === PAYMENT_FOR.BOOKING) {
+    // Send refund notification for booking
+    try {
+      const [bookingData] = await db.query(
+        `SELECT b.*, t.user_id, bus.business_name FROM booking b
+         JOIN tourist t ON t.id = b.tourist_id
+         JOIN business bus ON b.business_id = bus.id
+         WHERE b.id = ?`,
+        [referenceId]
+      );
+
+      if (bookingData && bookingData.length > 0) {
+        await notificationHelper.notifyRefundProcessed(
+          { id: paymentId, amount: refundAmount / 100 },
+          bookingData[0],
+          'booking'
+        );
+      }
+    } catch (notifError) {
+      console.error('[PaymentFulfillment] Failed to send refund notification:', notifError);
+    }
   }
 
   console.log(`[PaymentFulfillment] ✅ Refund completed for ${paymentFor} ${referenceId}`);
@@ -398,6 +471,8 @@ async function markOrderAsFailedPayment(orderId) {
  * @param {number} paymentAmountCentavos - Payment amount in centavos
  */
 async function confirmBooking(bookingId, paymentAmountCentavos) {
+  console.log(`[PaymentFulfillment] 📝 Confirming booking ${bookingId} with payment ${paymentAmountCentavos / 100} PHP`);
+
   await db.query(
     `UPDATE booking
      SET booking_status = 'Reserved',
@@ -405,7 +480,48 @@ async function confirmBooking(bookingId, paymentAmountCentavos) {
      WHERE id = ?`,
     [paymentAmountCentavos / 100, bookingId]
   );
+
   console.log(`[PaymentFulfillment] ✅ Booking ${bookingId} confirmed (status: Reserved)`);
+
+  // Send payment received notification to user
+  try {
+    // Get booking details for notification
+    const [bookingData] = await db.query(
+      `SELECT b.id, b.business_id, b.total_price, b.check_in_date, b.check_out_date,
+              t.user_id, bus.business_name
+       FROM booking b
+       JOIN tourist t ON b.tourist_id = t.id
+       JOIN business bus ON b.business_id = bus.id
+       WHERE b.id = ?`,
+      [bookingId]
+    );
+
+    if (bookingData && bookingData.length > 0) {
+      const booking = bookingData[0];
+      console.log('[PaymentFulfillment] 📨 Sending payment notification for booking:', booking.id);
+
+      // Send payment received notification
+      await notificationHelper.sendNotification(
+        booking.user_id,
+        'Payment Received',
+        `Your payment of ₱${(paymentAmountCentavos / 100).toFixed(2)} for ${booking.business_name} has been received. Your booking is now confirmed!`,
+        'payment_received',
+        {
+          booking_id: bookingId,
+          business_id: booking.business_id,
+          business_name: booking.business_name,
+          amount: paymentAmountCentavos / 100,
+          check_in_date: booking.check_in_date,
+          check_out_date: booking.check_out_date
+        }
+      );
+
+      console.log('[PaymentFulfillment] ✅ Payment notification sent for booking:', bookingId);
+    }
+  } catch (notifError) {
+    console.error('[PaymentFulfillment] ⚠️ Failed to send payment notification:', notifError);
+    // Don't fail the booking if notification fails
+  }
 }
 
 /**

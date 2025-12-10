@@ -28,7 +28,8 @@ export { default as useEnhancedAuth } from './useAuth';
 export { useEnhancedAuth as useAuthHook } from './useAuth';
 
 // Feature hooks
-export { useCategoryAndType, useCategoriesAndTypesForBusinesses } from './use-category';
+
 export { useColorScheme } from './use-color-scheme';
 export { useUserBookings } from './use-user-bookings';
 export { useOrderSocket } from './useOrderSocket';
+export { usePushNotification } from './usePushNotification';

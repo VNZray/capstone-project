@@ -17,7 +17,7 @@ import { v4 as uuidv4 } from "uuid";
 import * as paymongoService from "../../services/paymongoService.js";
 import * as paymentFulfillmentService from "../../services/paymentFulfillmentService.js";
 import { ensureUserRole } from "../../utils/authHelpers.js";
-
+import { sendNotification } from "../../services/notificationHelper.js";
 // ============= Constants =============
 
 const VALID_PAYMENT_FOR = ['order', 'booking'];
@@ -396,6 +396,7 @@ export async function initiateUnifiedPayment(req, res) {
 
     console.log(`[PaymentWorkflow] ✅ Payment Intent created: ${paymentIntentId} for ${payment_for} ${reference_id}`);
 
+
     // 11. Return intent details to client
     res.status(201).json({
       success: true,
@@ -415,6 +416,31 @@ export async function initiateUnifiedPayment(req, res) {
         public_key: process.env.PAYMONGO_PUBLIC_KEY
       }
     });
+
+        // 12. Send payment successful notification (optional - informational only)
+
+    // add delay to ensure payment record is committed before sending notification
+    await new Promise(resolve => setTimeout(resolve, 6000));
+        try {
+      await sendNotification(
+        user_id,
+        "Payment Successful",
+        `Your payment for ${normalized.display_name} has been completed.`,
+        "payment_successful",
+        {
+          payment_id: payment_id,
+          booking_id: payment_for === 'booking' ? reference_id : undefined,
+          order_id: payment_for === 'order' ? reference_id : undefined,
+          payment_for,
+          reference_id,
+          amount: normalized.amount
+        }
+      );
+      console.log(`[PaymentWorkflow] 📧 Payment successful notification sent`);
+    } catch (notifError) {
+      console.error(`[PaymentWorkflow] ⚠️ Failed to send payment successful notification:`, notifError);
+      // Don't fail the payment initiation if notification fails
+    }
 
   } catch (error) {
     console.error("[PaymentWorkflow] Error initiating payment:", error);

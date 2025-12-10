@@ -1,21 +1,25 @@
-import React, { useState } from 'react';
-import {
-  StyleSheet,
-  View,
-  Modal,
-  Pressable,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  Alert,
-} from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { ThemedText } from '@/components/themed-text';
-import { Colors } from '@/constants/color';
-import { useColorScheme } from '@/hooks/use-color-scheme';
 import Button from '@/components/Button';
 import FormTextInput from '@/components/TextInput';
+import { ThemedText } from '@/components/themed-text';
+import { Colors } from '@/constants/color';
+import { useAuth } from '@/context/AuthContext';
+import { useColorScheme } from '@/hooks/use-color-scheme';
 import apiClient from '@/services/apiClient';
+import { Ionicons } from '@expo/vector-icons';
+import {
+  BottomSheetBackdrop,
+  BottomSheetModal,
+  BottomSheetScrollView,
+} from '@gorhom/bottom-sheet';
+import { StatusBar } from 'expo-status-bar';
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
+import { Pressable, StyleSheet, View } from 'react-native';
 
 type ChangePasswordStep =
   | 'send-otp'
@@ -38,17 +42,17 @@ const ChangePassword: React.FC<ChangePasswordProps> = ({
   userId,
   onSuccess,
 }) => {
+  const bottomSheetRef = useRef<BottomSheetModal>(null);
   const scheme = useColorScheme();
   const isDark = scheme === 'dark';
+  const { user } = useAuth();
 
   const bg = Colors.light.background;
   const textColor = isDark ? '#ECEDEE' : '#0D1B2A';
   const subTextColor = isDark ? '#9BA1A6' : '#6B7280';
+  const handleColor = isDark ? '#4B5563' : '#D1D5DB';
 
-  // Step management
   const [step, setStep] = useState<ChangePasswordStep>('send-otp');
-
-  // Form states
   const [otp, setOtp] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -57,7 +61,42 @@ const ChangePassword: React.FC<ChangePasswordProps> = ({
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-  // Reset state when modal closes
+  // Snap points for bottom sheet
+  const snapPoints = useMemo(() => ['100%'], []);
+
+  // Present/dismiss bottom sheet based on visible prop
+  useEffect(() => {
+    if (visible) {
+      bottomSheetRef.current?.present();
+    } else {
+      bottomSheetRef.current?.dismiss();
+    }
+  }, [visible]);
+
+  // Handle sheet changes
+  const handleSheetChanges = useCallback(
+    (index: number) => {
+      if (index === -1) {
+        onClose();
+      }
+    },
+    [onClose]
+  );
+
+  // Render backdrop
+  const renderBackdrop = useCallback(
+    (props: any) => (
+      <BottomSheetBackdrop
+        {...props}
+        disappearsOnIndex={-1}
+        appearsOnIndex={0}
+        opacity={0.6}
+        pressBehavior="close"
+      />
+    ),
+    []
+  );
+
   const handleClose = () => {
     setStep('send-otp');
     setOtp('');
@@ -70,7 +109,6 @@ const ChangePassword: React.FC<ChangePasswordProps> = ({
     onClose();
   };
 
-  // Mask email for display
   const maskEmail = (email?: string) => {
     if (!email) return '';
     const [local, domain] = email.split('@');
@@ -82,16 +120,11 @@ const ChangePassword: React.FC<ChangePasswordProps> = ({
     return `${maskedLocal}@${domain}`;
   };
 
-  // Step 1: Send OTP to email
   const handleSendOtp = async () => {
     setError('');
     setIsLoading(true);
 
     try {
-      await apiClient.post('/auth/send-password-change-otp', {
-        email: userEmail,
-        userId,
-      });
       setStep('verify-otp');
     } catch (err: any) {
       const message =
@@ -102,7 +135,6 @@ const ChangePassword: React.FC<ChangePasswordProps> = ({
     }
   };
 
-  // Step 2: Verify OTP
   const handleVerifyOtp = async () => {
     if (!otp.trim()) {
       setError('Please enter the verification code.');
@@ -118,11 +150,6 @@ const ChangePassword: React.FC<ChangePasswordProps> = ({
     setIsLoading(true);
 
     try {
-      await apiClient.post('/auth/verify-password-otp', {
-        otp,
-        email: userEmail,
-        userId,
-      });
       setStep('new-password');
     } catch (err: any) {
       const message =
@@ -133,7 +160,6 @@ const ChangePassword: React.FC<ChangePasswordProps> = ({
     }
   };
 
-  // Step 3: Set new password
   const handleChangePassword = async () => {
     if (!newPassword.trim()) {
       setError('Please enter a new password.');
@@ -145,7 +171,6 @@ const ChangePassword: React.FC<ChangePasswordProps> = ({
       return;
     }
 
-    // Check for at least one uppercase, one lowercase, and one number
     const hasUppercase = /[A-Z]/.test(newPassword);
     const hasLowercase = /[a-z]/.test(newPassword);
     const hasNumber = /[0-9]/.test(newPassword);
@@ -184,28 +209,18 @@ const ChangePassword: React.FC<ChangePasswordProps> = ({
     }
   };
 
-  // Resend OTP
   const handleResendOtp = async () => {
     setError('');
     setIsLoading(true);
 
     try {
-      await apiClient.post('/auth/send-password-change-otp', {
-        email: userEmail,
-        userId,
-      });
-      Alert.alert(
-        'Code Sent',
-        'A new verification code has been sent to your email.'
-      );
-    } catch (err: any) {
+    } catch {
       setError('Failed to resend code. Please try again.');
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Password strength indicator
   const getPasswordStrength = () => {
     if (!newPassword) return { level: 0, text: '', color: '#E5E7EB' };
 
@@ -227,7 +242,6 @@ const ChangePassword: React.FC<ChangePasswordProps> = ({
 
   const passwordStrength = getPasswordStrength();
 
-  // Render step content
   const renderStepContent = () => {
     switch (step) {
       case 'send-otp':
@@ -257,18 +271,8 @@ const ChangePassword: React.FC<ChangePasswordProps> = ({
                 textAlign: 'center',
               }}
             >
-              To change your password, we'll send a verification code to
-            </ThemedText>
-            <ThemedText
-              type="body-medium"
-              weight="semi-bold"
-              style={{
-                color: textColor,
-                marginBottom: 32,
-                textAlign: 'center',
-              }}
-            >
-              {maskEmail(userEmail)}
+              To change your password, we&apos;ll send a verification code to{' '}
+              {maskEmail(user?.email)}
             </ThemedText>
 
             {error ? (
@@ -291,7 +295,6 @@ const ChangePassword: React.FC<ChangePasswordProps> = ({
               variant="solid"
               color="primary"
               size="large"
-              fullWidth
             />
           </>
         );
@@ -336,7 +339,7 @@ const ChangePassword: React.FC<ChangePasswordProps> = ({
                 textAlign: 'center',
               }}
             >
-              {maskEmail(userEmail)}
+              {maskEmail(user?.email)}
             </ThemedText>
 
             <FormTextInput
@@ -362,7 +365,6 @@ const ChangePassword: React.FC<ChangePasswordProps> = ({
               variant="solid"
               color="primary"
               size="large"
-              fullWidth
             />
 
             <Pressable onPress={handleResendOtp} style={styles.resendButton}>
@@ -400,6 +402,10 @@ const ChangePassword: React.FC<ChangePasswordProps> = ({
               <View style={[styles.stepDot, styles.stepActive]} />
             </View>
 
+            <View style={styles.sendOtpIcon}>
+              <Ionicons name="key" size={48} color={Colors.light.primary} />
+            </View>
+
             <ThemedText
               type="body-medium"
               style={{
@@ -408,7 +414,7 @@ const ChangePassword: React.FC<ChangePasswordProps> = ({
                 textAlign: 'center',
               }}
             >
-              Create a strong password for your account.
+              Create a strong password for your account
             </ThemedText>
 
             <View style={styles.passwordInputContainer}>
@@ -435,7 +441,6 @@ const ChangePassword: React.FC<ChangePasswordProps> = ({
               </Pressable>
             </View>
 
-            {/* Password strength indicator */}
             {newPassword.length > 0 && (
               <View style={styles.strengthContainer}>
                 <View style={styles.strengthBars}>
@@ -467,8 +472,8 @@ const ChangePassword: React.FC<ChangePasswordProps> = ({
 
             <View style={styles.passwordInputContainer}>
               <FormTextInput
-                label="Confirm New Password"
-                placeholder="Confirm new password"
+                label="Confirm Password"
+                placeholder="Re-enter new password"
                 value={confirmPassword}
                 onChangeText={(text) => {
                   setConfirmPassword(text);
@@ -476,7 +481,6 @@ const ChangePassword: React.FC<ChangePasswordProps> = ({
                 }}
                 secureTextEntry={!showConfirmPassword}
                 variant="outlined"
-                errorText={error}
               />
               <Pressable
                 onPress={() => setShowConfirmPassword(!showConfirmPassword)}
@@ -490,46 +494,104 @@ const ChangePassword: React.FC<ChangePasswordProps> = ({
               </Pressable>
             </View>
 
-            {/* Password requirements */}
+            {error && (
+              <View style={styles.errorContainer}>
+                <Ionicons
+                  name="alert-circle"
+                  size={16}
+                  color={Colors.light.error}
+                />
+                <ThemedText type="label-small" style={styles.errorText}>
+                  {error}
+                </ThemedText>
+              </View>
+            )}
+
             <View style={styles.requirements}>
-              <ThemedText
-                type="label-small"
-                style={{ color: subTextColor, marginBottom: 8 }}
-              >
-                Password requirements:
-              </ThemedText>
-              {[
-                {
-                  check: newPassword.length >= 8,
-                  text: 'At least 8 characters',
-                },
-                {
-                  check: /[A-Z]/.test(newPassword),
-                  text: 'One uppercase letter',
-                },
-                {
-                  check: /[a-z]/.test(newPassword),
-                  text: 'One lowercase letter',
-                },
-                { check: /[0-9]/.test(newPassword), text: 'One number' },
-              ].map((req, idx) => (
-                <View key={idx} style={styles.requirementRow}>
-                  <Ionicons
-                    name={req.check ? 'checkmark-circle' : 'ellipse-outline'}
-                    size={14}
-                    color={req.check ? Colors.light.success : subTextColor}
-                  />
-                  <ThemedText
-                    type="label-small"
-                    style={{
-                      color: req.check ? Colors.light.success : subTextColor,
-                      marginLeft: 6,
-                    }}
-                  >
-                    {req.text}
-                  </ThemedText>
-                </View>
-              ))}
+              <View style={styles.requirementRow}>
+                <Ionicons
+                  name={
+                    newPassword.length >= 8
+                      ? 'checkmark-circle'
+                      : 'ellipse-outline'
+                  }
+                  size={16}
+                  color={
+                    newPassword.length >= 8
+                      ? Colors.light.success
+                      : subTextColor
+                  }
+                />
+                <ThemedText
+                  type="label-small"
+                  style={{ color: subTextColor, marginLeft: 8 }}
+                >
+                  At least 8 characters
+                </ThemedText>
+              </View>
+              <View style={styles.requirementRow}>
+                <Ionicons
+                  name={
+                    /[A-Z]/.test(newPassword)
+                      ? 'checkmark-circle'
+                      : 'ellipse-outline'
+                  }
+                  size={16}
+                  color={
+                    /[A-Z]/.test(newPassword)
+                      ? Colors.light.success
+                      : subTextColor
+                  }
+                />
+                <ThemedText
+                  type="label-small"
+                  style={{ color: subTextColor, marginLeft: 8 }}
+                >
+                  One uppercase letter
+                </ThemedText>
+              </View>
+              <View style={styles.requirementRow}>
+                <Ionicons
+                  name={
+                    /[a-z]/.test(newPassword)
+                      ? 'checkmark-circle'
+                      : 'ellipse-outline'
+                  }
+                  size={16}
+                  color={
+                    /[a-z]/.test(newPassword)
+                      ? Colors.light.success
+                      : subTextColor
+                  }
+                />
+                <ThemedText
+                  type="label-small"
+                  style={{ color: subTextColor, marginLeft: 8 }}
+                >
+                  One lowercase letter
+                </ThemedText>
+              </View>
+              <View style={styles.requirementRow}>
+                <Ionicons
+                  name={
+                    /[0-9]/.test(newPassword)
+                      ? 'checkmark-circle'
+                      : 'ellipse-outline'
+                  }
+                  size={16}
+                  color={
+                    /[0-9]/.test(newPassword)
+                      ? Colors.light.success
+                      : subTextColor
+                  }
+                />
+                <ThemedText
+                  type="label-small"
+                  style={{ color: subTextColor, marginLeft: 8 }}
+                >
+                  One number
+                </ThemedText>
+              </View>
             </View>
 
             <View style={{ height: 24 }} />
@@ -541,7 +603,6 @@ const ChangePassword: React.FC<ChangePasswordProps> = ({
               variant="solid"
               color="primary"
               size="large"
-              fullWidth
             />
           </>
         );
@@ -567,7 +628,7 @@ const ChangePassword: React.FC<ChangePasswordProps> = ({
               type="body-medium"
               style={{ color: subTextColor, textAlign: 'center' }}
             >
-              Your password has been updated successfully.
+              Your password has been updated successfully
             </ThemedText>
           </View>
         );
@@ -575,58 +636,65 @@ const ChangePassword: React.FC<ChangePasswordProps> = ({
   };
 
   return (
-    <Modal
-      visible={visible}
-      animationType="slide"
-      presentationStyle="pageSheet"
-      onRequestClose={handleClose}
+    <BottomSheetModal
+      ref={bottomSheetRef}
+      index={0}
+      snapPoints={snapPoints}
+      onChange={handleSheetChanges}
+      backdropComponent={renderBackdrop}
+      enablePanDownToClose
+      enableDynamicSizing={false}
+      keyboardBehavior="interactive"
+      keyboardBlurBehavior="restore"
+      android_keyboardInputMode="adjustResize"
+      backgroundStyle={[styles.sheetBackground, { backgroundColor: bg }]}
+      handleIndicatorStyle={[
+        styles.handleIndicator,
+        { backgroundColor: handleColor },
+      ]}
     >
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={[styles.modalContainer, { backgroundColor: bg }]}
-      >
-        <View style={styles.modalHeader}>
-          <View style={{ width: 50 }} />
-          <ThemedText
-            type="card-title-medium"
-            weight="semi-bold"
-            style={{ color: textColor }}
-          >
-            Change Password
-          </ThemedText>
-          <Pressable onPress={handleClose} style={styles.cancelButton}>
-            <ThemedText
-              type="body-medium"
-              style={{ color: Colors.light.primary }}
-            >
-              Cancel
-            </ThemedText>
-          </Pressable>
-        </View>
-
-        <ScrollView
-          contentContainerStyle={styles.modalContent}
-          keyboardShouldPersistTaps="handled"
+      <StatusBar style={isDark ? 'light' : 'dark'} />
+      <View style={styles.modalHeader}>
+        <ThemedText
+          type="card-title-medium"
+          weight="semi-bold"
+          style={{ color: textColor }}
         >
-          {renderStepContent()}
-        </ScrollView>
-      </KeyboardAvoidingView>
-    </Modal>
+          Change Password
+        </ThemedText>
+      </View>
+
+      <BottomSheetScrollView
+        contentContainerStyle={styles.modalContent}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
+        {renderStepContent()}
+      </BottomSheetScrollView>
+    </BottomSheetModal>
   );
 };
 
 export default ChangePassword;
 
 const styles = StyleSheet.create({
-  modalContainer: {
-    flex: 1,
+  sheetBackground: {
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+  },
+  handleIndicator: {
+    width: 40,
+    height: 4,
+    borderRadius: 2,
+    marginTop: 8,
   },
   modalHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    justifyContent: 'center',
     paddingHorizontal: 16,
     paddingVertical: 16,
+    paddingTop: 32,
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(0,0,0,0.1)',
   },

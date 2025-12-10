@@ -1,5 +1,5 @@
 import { Colors } from '@/constants/color';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View, Switch, Platform } from 'react-native';
 import { ThemedText } from '../themed-text';
 import FontAwesome5 from '@expo/vector-icons/build/FontAwesome5';
 import { Ionicons } from '@expo/vector-icons';
@@ -13,15 +13,23 @@ const MenuItem = ({
   border,
   iconColor,
   iconBg,
+  subLabel,
+  switch: hasSwitch = false,
+  activated = false,
+  onSwitchChange,
 }: {
-  icon: any;
+  icon?: any;
   label: string;
-  onPress: () => void;
+  onPress?: () => void;
   last?: boolean;
   color?: string;
   border?: string;
   iconColor?: string;
   iconBg?: string;
+  subLabel?: string;
+  switch?: boolean;
+  activated?: boolean;
+  onSwitchChange?: (value: boolean) => void;
 }) => {
   const textColor = color || Colors.light.text;
 
@@ -50,8 +58,31 @@ const MenuItem = ({
         >
           {label}
         </ThemedText>
+        {subLabel && (
+          <ThemedText
+            type="body-small"
+            style={{ color: Colors.light.textSecondary, marginTop: 2 }}
+          >
+            {subLabel}
+          </ThemedText>
+        )}
       </View>
-      <FontAwesome5 name="chevron-right" size={14} color="#C5A059" />
+      {hasSwitch ? (
+        <Switch
+          value={activated}
+          onValueChange={onSwitchChange}
+          trackColor={{ false: '#E2E8F0', true: Colors.light.primary }}
+          thumbColor={activated ? '#FFFFFF' : '#CBD5E0'}
+          ios_backgroundColor="#E2E8F0"
+          style={{ transform: [{ scale: Platform.OS === 'ios' ? 0.8 : 1.4 }] }}
+        />
+      ) : (
+        <>
+          {onPress && (
+            <FontAwesome5 name="chevron-right" size={14} color="#C5A059" />
+          )}
+        </>
+      )}
     </Pressable>
   );
 };

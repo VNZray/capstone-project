@@ -7,6 +7,7 @@ import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 import 'react-native-reanimated';
 
 import { AuthProvider } from '@/context/AuthContext';
+import { NotificationProvider } from '@/context/NotificationContext';
 import { CartProvider } from '@/context/CartContext';
 import { NavigationProvider } from '@/context/NavigationContext';
 import { NavigationTheme } from '@/constants/color';
@@ -67,15 +68,17 @@ export default function RootLayout() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
         <AuthProvider>
-          <NavigationProvider>
-            <CartProvider>
-              <ThemeProvider value={NavigationTheme}>
-                <BottomSheetModalProvider>
-                  <RootLayoutNav />
-                </BottomSheetModalProvider>
-              </ThemeProvider>
-            </CartProvider>
-          </NavigationProvider>
+          <NotificationProvider>
+            <NavigationProvider>
+              <CartProvider>
+                <ThemeProvider value={NavigationTheme}>
+                  <BottomSheetModalProvider>
+                    <RootLayoutNav />
+                  </BottomSheetModalProvider>
+                </ThemeProvider>
+              </CartProvider>
+            </NavigationProvider>
+          </NotificationProvider>
         </AuthProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "25930011722",
+    "project_id": "city-venture-b924b",
+    "storage_bucket": "city-venture-b924b.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:25930011722:android:576ef0ef862c07754b42b3",
+        "android_client_info": {
+          "package_name": "com.cityventure.cityventures"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCDsUzjDICU8dafl2YS2fgCs1VtHgmJJnQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

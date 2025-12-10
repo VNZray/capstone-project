@@ -154,7 +154,7 @@ const Profile = () => {
               icon="notifications-outline"
               iconColor="#8B5CF6"
               iconBg="#F3E8FF"
-              label="Notification Preferences"
+              label="Notification Settings"
               onPress={onNotifications}
               border={border}
             />

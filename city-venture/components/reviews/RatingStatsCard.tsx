@@ -24,8 +24,6 @@ const RatingStatsCard = ({ averageRating, totalReviews, breakdown }: Props) => {
   const scheme = useColorScheme();
   const isDark = scheme === 'dark';
 
-  const maxCount = Math.max(...Object.values(breakdown));
-
   const renderStarRow = (stars: number) => {
     const count = breakdown[stars as keyof RatingBreakdown];
     const percentage = totalReviews > 0 ? (count / totalReviews) * 100 : 0;
@@ -54,7 +52,12 @@ const RatingStatsCard = ({ averageRating, totalReviews, breakdown }: Props) => {
   };
 
   return (
-    <Container style={[styles.container, { backgroundColor: isDark ? card.dark : card.light }]}>
+    <Container
+      style={[
+        styles.container,
+        { backgroundColor: isDark ? card.dark : card.light },
+      ]}
+    >
       <View style={styles.content}>
         {/* Left side - Overall Rating */}
         <View style={styles.leftSection}>
@@ -65,7 +68,13 @@ const RatingStatsCard = ({ averageRating, totalReviews, breakdown }: Props) => {
             {[1, 2, 3, 4, 5].map((star) => (
               <Ionicons
                 key={star}
-                name={star <= averageRating ? 'star' : star - averageRating < 1 ? 'star-half' : 'star-outline'}
+                name={
+                  star <= averageRating
+                    ? 'star'
+                    : star - averageRating < 1
+                    ? 'star-half'
+                    : 'star-outline'
+                }
                 size={20}
                 color={colors.warning}
               />

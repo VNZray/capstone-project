@@ -1,11 +1,9 @@
-import React from 'react';
-import { StyleSheet, View, TouchableOpacity } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
 import { ThemedText } from '@/components/themed-text';
-import Button from '@/components/Button';
-import { Colors } from '@/constants/color';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import type { Notification } from '@/services/NotificationService';
+import { Ionicons } from '@expo/vector-icons';
+import React from 'react';
+import { StyleSheet, TouchableOpacity, View } from 'react-native';
 
 interface NotificationCardProps {
   notification: Notification;

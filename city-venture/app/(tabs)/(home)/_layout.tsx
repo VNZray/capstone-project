@@ -19,13 +19,13 @@ const HomeLayout = () => {
         }}
       />
       <Stack.Screen
-        name="Notification"
+        name="(notification)"
         options={{
           headerShown: true,
-          animation: 'slide_from_right',
+          animation: 'ios_from_right',
           header() {
             return (
-              <AppHeader backButton title="Notification" background="light" />
+              <AppHeader backButton title="Notifications" background="light" />
             );
           },
         }}

@@ -2,7 +2,13 @@ import db from "../../db.js";
 import { v4 as uuidv4 } from "uuid";
 import { handleDbError } from "../../utils/errorHandler.js";
 import { incrementPromotionUsage } from "../promotionController.js";
-import { sendNotification } from "../../services/notificationHelper.js";
+import {
+  sendNotification,
+  notifyBookingCancelled,
+  notifyBookingReminder
+} from "../../services/notificationHelper.js";
+
+import { sendPushNotification } from "../../services/expoPushService.js";
 
 // Booking fields in the order expected by the stored procedures after id
 const BOOKING_FIELDS = [
@@ -308,59 +314,132 @@ export async function updateBooking(req, res) {
       hasUpdatedBooking: !!updatedBooking,
     });
 
-    if (body.booking_status === "Checked-out" && previousStatus !== "Checked-out" && updatedBooking) {
-      console.log("[Checkout] Status changed to Checked-Out, sending notification...");
+    // Handle booking status notifications
+    if (updatedBooking && body.booking_status && body.booking_status !== previousStatus) {
       try {
-        // Get business, room, and tourist details for the notification
+        // Get business, room, and tourist details for notifications
         const [businessData] = await db.query("SELECT id, business_name FROM business WHERE id = ?", [updatedBooking.business_id]);
         const [roomData] = await db.query("SELECT id, room_number FROM room WHERE id = ?", [updatedBooking.room_id]);
         const [touristData] = await db.query("CALL GetTouristById(?)", [updatedBooking.tourist_id]);
-
-        console.log("[Checkout] Tourist data result:", JSON.stringify(touristData));
 
         const businessName = businessData[0]?.business_name || "the accommodation";
         const roomNumber = roomData[0]?.room_number || "";
         const userId = touristData[0]?.[0]?.user_id;
 
-        console.log("[Checkout] Notification details:", { businessName, roomNumber, userId, touristId: updatedBooking.tourist_id });
+        // Checked-out notification
+        if (body.booking_status === "Checked-out" && previousStatus !== "Checked-out") {
+          console.log("[Checkout] Status changed to Checked-Out, sending notification...");
+          console.log("[Checkout] Tourist data result:", JSON.stringify(touristData));
 
-        if (userId) {
-          console.log("[Checkout] Calling sendNotification for userId:", userId);
-          const notificationData = {
-            recipientId: userId,
-            title: "Booking Completed",
-            message: `Thank you for staying with us at ${businessName}! We hope you had a wonderful experience. We'd love to hear your feedback - please rate your stay.`,
-            type: "booking_completed",
-            metadata: {
-              booking_id: id,
+          if (userId) {
+            console.log("[Checkout] Calling sendNotification for userId:", userId);
+            const notificationData = {
+              recipientId: userId,
+              title: "Booking Completed",
+              message: `Thank you for staying with us at ${businessName}! We hope you had a wonderful experience. We'd love to hear your feedback - please rate your stay.`,
+              type: "booking_completed",
+              metadata: {
+                booking_id: updatedBooking.id,
+                business_id: updatedBooking.business_id,
+                business_name: businessName,
+                room_id: updatedBooking.room_id,
+                room_number: roomNumber,
+              }
+            };
+
+            console.log("[Checkout] ====== NOTIFICATION DETAILS ======");
+            console.log("[Checkout] Recipient User ID:", notificationData.recipientId);
+            console.log("[Checkout] Title:", notificationData.title);
+            console.log("[Checkout] Message:", notificationData.message);
+            console.log("[Checkout] Type:", notificationData.type);
+            console.log("[Checkout] Metadata:", JSON.stringify(notificationData.metadata, null, 2));
+            console.log("[Checkout] ===================================");
+
+            await sendNotification(
+              notificationData.recipientId,
+              notificationData.title,
+              notificationData.message,
+              notificationData.type,
+              notificationData.metadata
+            );
+
+            console.log("[Checkout] ✅ Notification sent successfully to user:", userId);
+          } else {
+            console.log("[Checkout] No userId found, skipping notification");
+          }
+        }
+
+        // Cancelled notification
+        if (body.booking_status === "Canceled" && previousStatus !== "Canceled" && userId) {
+          console.log("[Booking] Status changed to Canceled, sending notification...");
+
+          const cancelledBy = body.cancelled_by || 'business';
+          const cancelTitle = "Booking Canceled";
+          const cancelMessage = cancelledBy === 'user'
+            ? 'Your booking has been successfully canceled.'
+            : `${businessName} has canceled your booking.`;
+
+          // Send database notification with push notification
+          await sendNotification(
+            userId,
+            cancelTitle,
+            cancelMessage,
+            "booking_cancelled",
+            {
+              booking_id: updatedBooking.id,
               business_id: updatedBooking.business_id,
               business_name: businessName,
-              room_id: updatedBooking.room_id,
-              room_number: roomNumber,
+              cancelled_by: cancelledBy
             }
-          };
-
-          console.log("[Checkout] ====== NOTIFICATION DETAILS ======");
-          console.log("[Checkout] Recipient User ID:", notificationData.recipientId);
-          console.log("[Checkout] Title:", notificationData.title);
-          console.log("[Checkout] Message:", notificationData.message);
-          console.log("[Checkout] Type:", notificationData.type);
-          console.log("[Checkout] Metadata:", JSON.stringify(notificationData.metadata, null, 2));
-          console.log("[Checkout] ===================================");
-
-          await sendNotification(
-            notificationData.recipientId,
-            notificationData.title,
-            notificationData.message,
-            notificationData.type,
-            notificationData.metadata
           );
-          console.log("[Checkout] ✅ Notification sent successfully to user:", userId);
-        } else {
-          console.log("[Checkout] No userId found, skipping notification");
+
+          console.log("[Booking] ✅ Cancellation notification sent to user:", userId);
         }
+
+        if (body.booking_status === "Checked-in" && previousStatus !== "Checked-in") {
+          console.log("[Checkin] Status changed to Checked-In, sending notification...");
+          console.log("[Checkin] Tourist data result:", JSON.stringify(touristData));
+
+          if (userId) {
+            console.log("[Checkin] Calling sendNotification for userId:", userId);
+            const notificationData = {
+              recipientId: userId,
+              title: "Checked In",
+              message: `You have successfully checked in at ${businessName}. Enjoy your stay!`,
+              type: "booking_in_progress",
+              metadata: {
+                booking_id: updatedBooking.id,
+                business_id: updatedBooking.business_id,
+                business_name: businessName,
+                room_id: updatedBooking.room_id,
+                room_number: roomNumber,
+              }
+            };
+
+            console.log("[Checkout] ====== NOTIFICATION DETAILS ======");
+            console.log("[Checkout] Recipient User ID:", notificationData.recipientId);
+            console.log("[Checkout] Title:", notificationData.title);
+            console.log("[Checkout] Message:", notificationData.message);
+            console.log("[Checkout] Type:", notificationData.type);
+            console.log("[Checkout] Metadata:", JSON.stringify(notificationData.metadata, null, 2));
+            console.log("[Checkout] ===================================");
+
+            await sendNotification(
+              notificationData.recipientId,
+              notificationData.title,
+              notificationData.message,
+              notificationData.type,
+              notificationData.metadata
+            );
+
+            console.log("[Checkout] ✅ Notification sent successfully to user:", userId);
+          } else {
+            console.log("[Checkout] No userId found, skipping notification");
+          }
+        }
+
       } catch (notifError) {
-        console.error("[Checkout] Failed to send checkout notification:", notifError);
+        console.error("[Booking] Failed to send status change notification:", notifError);
         // Don't fail the update if notification fails
       }
     }
@@ -377,7 +456,48 @@ export async function updateBooking(req, res) {
 export async function deleteBooking(req, res) {
   try {
     const { id } = req.params;
-    await db.query("CALL DeleteBooking(?)", [id]);
+
+    // Get booking details before deletion for notification
+    const [bookingData] = await db.query("CALL GetBookingById(?)", [id]);
+    const booking = bookingData[0]?.[0];
+
+    if (booking) {
+      // Get business and tourist info
+      const [businessData] = await db.query("SELECT id, business_name FROM business WHERE id = ?", [booking.business_id]);
+      const [touristData] = await db.query("CALL GetTouristById(?)", [booking.tourist_id]);
+      const userId = touristData[0]?.[0]?.user_id;
+      const businessName = businessData[0]?.business_name || "the accommodation";
+
+      // Delete the booking
+      await db.query("CALL DeleteBooking(?)", [id]);
+
+      // Send cancellation notifications
+      if (userId) {
+        await notifyBookingCancelled({
+          id: booking.id,
+          user_id: userId,
+          business_id: booking.business_id,
+          business_name: businessName
+        }, 'user');
+
+        // Send push notification
+        await sendPushNotification(
+          userId,
+          "Booking Cancelled",
+          "Your booking has been cancelled successfully.",
+          {
+            booking_id: booking.id,
+            business_id: booking.business_id,
+            business_name: businessName,
+            cancelled_by: 'user'
+          },
+          "booking_cancelled"
+        );
+      }
+    } else {
+      await db.query("CALL DeleteBooking(?)", [id]);
+    }
+
     res.status(204).send();
   } catch (err) {
     res.status(500).json({ error: err.message });

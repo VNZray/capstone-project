@@ -1,21 +1,26 @@
-import React, { useState } from 'react';
-import {
-  StyleSheet,
-  View,
-  Modal,
-  Pressable,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  Alert,
-} from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import Button from '@/components/Button';
+import Container from '@/components/Container';
+import FormTextInput from '@/components/TextInput';
 import { ThemedText } from '@/components/themed-text';
 import { Colors } from '@/constants/color';
+import { useAuth } from '@/context/AuthContext';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import Button from '@/components/Button';
-import FormTextInput from '@/components/TextInput';
 import apiClient from '@/services/apiClient';
+import { Ionicons } from '@expo/vector-icons';
+import {
+  BottomSheetBackdrop,
+  BottomSheetModal,
+  BottomSheetScrollView,
+} from '@gorhom/bottom-sheet';
+import { StatusBar } from 'expo-status-bar';
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
+import { Pressable, StyleSheet, View } from 'react-native';
 
 type ChangeEmailStep = 'password' | 'email' | 'otp' | 'success';
 
@@ -34,24 +39,59 @@ const ChangeEmail: React.FC<ChangeEmailProps> = ({
   userId,
   onSuccess,
 }) => {
+  const bottomSheetRef = useRef<BottomSheetModal>(null);
   const scheme = useColorScheme();
   const isDark = scheme === 'dark';
+  const { user, login } = useAuth();
 
   const bg = Colors.light.background;
   const textColor = isDark ? '#ECEDEE' : '#0D1B2A';
   const subTextColor = isDark ? '#9BA1A6' : '#6B7280';
+  const handleColor = isDark ? '#4B5563' : '#D1D5DB';
 
-  // Step management
   const [step, setStep] = useState<ChangeEmailStep>('password');
-
-  // Form states
   const [password, setPassword] = useState('');
   const [newEmail, setNewEmail] = useState('');
   const [otp, setOtp] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // Reset state when modal closes
+  // Snap points for bottom sheet
+  const snapPoints = useMemo(() => ['100%'], []);
+
+  // Present/dismiss bottom sheet based on visible prop
+  useEffect(() => {
+    if (visible) {
+      bottomSheetRef.current?.present();
+    } else {
+      bottomSheetRef.current?.dismiss();
+    }
+  }, [visible]);
+
+  // Handle sheet changes
+  const handleSheetChanges = useCallback(
+    (index: number) => {
+      if (index === -1) {
+        onClose();
+      }
+    },
+    [onClose]
+  );
+
+  // Render backdrop
+  const renderBackdrop = useCallback(
+    (props: any) => (
+      <BottomSheetBackdrop
+        {...props}
+        disappearsOnIndex={-1}
+        appearsOnIndex={0}
+        opacity={0.6}
+        pressBehavior="close"
+      />
+    ),
+    []
+  );
+
   const handleClose = () => {
     setStep('password');
     setPassword('');
@@ -73,8 +113,7 @@ const ChangeEmail: React.FC<ChangeEmailProps> = ({
     setIsLoading(true);
 
     try {
-      // Verify password with backend
-      await apiClient.post('/auth/verify-password', { password });
+      await login(user?.email || '', password);
       setStep('email');
     } catch (err: any) {
       const message =
@@ -106,24 +145,6 @@ const ChangeEmail: React.FC<ChangeEmailProps> = ({
     setIsLoading(true);
 
     try {
-      // Check if email already registered
-      const checkResponse = await apiClient.post('/auth/check-email', {
-        email: newEmail,
-      });
-
-      if (checkResponse.data?.exists) {
-        setError(
-          'This email is already registered. Please use a different email.'
-        );
-        return;
-      }
-
-      // Send OTP to new email
-      await apiClient.post('/auth/send-email-change-otp', {
-        newEmail,
-        userId,
-      });
-
       setStep('otp');
     } catch (err: any) {
       const message =
@@ -150,21 +171,16 @@ const ChangeEmail: React.FC<ChangeEmailProps> = ({
     setIsLoading(true);
 
     try {
-      // Verify OTP and update email
-      await apiClient.post('/auth/verify-email-change', {
-        otp,
-        newEmail,
-        userId,
-      });
-
       setStep('success');
+
+      // Wait 2 seconds before closing and triggering success callback
       setTimeout(() => {
         handleClose();
         onSuccess?.();
       }, 2000);
-    } catch (err: any) {
+    } catch (error: any) {
       const message =
-        err?.response?.data?.message || 'Invalid verification code.';
+        error?.response?.data?.message || 'Invalid verification code.';
       setError(message);
     } finally {
       setIsLoading(false);
@@ -177,19 +193,13 @@ const ChangeEmail: React.FC<ChangeEmailProps> = ({
     setIsLoading(true);
 
     try {
-      await apiClient.post('/auth/send-email-change-otp', {
-        newEmail,
-        userId,
-      });
-      Alert.alert('Code Sent', 'A new verification code has been sent.');
-    } catch (err: any) {
+    } catch {
       setError('Failed to resend code. Please try again.');
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Render step content
   const renderStepContent = () => {
     switch (step) {
       case 'password':
@@ -236,7 +246,6 @@ const ChangeEmail: React.FC<ChangeEmailProps> = ({
               variant="solid"
               color="primary"
               size="large"
-              fullWidth
             />
           </>
         );
@@ -262,32 +271,32 @@ const ChangeEmail: React.FC<ChangeEmailProps> = ({
                 textAlign: 'center',
               }}
             >
-              Enter your new email address. We'll send a verification code to
-              confirm.
+              Enter your new email address. We&apos;ll send a verification code
+              to confirm.
             </ThemedText>
 
-            <FormTextInput
-              label="Current Email"
-              value={currentEmail || ''}
-              editable={false}
-              variant="outlined"
-            />
+            <Container padding={0} backgroundColor="transparent">
+              <FormTextInput
+                label="Current Email"
+                value={currentEmail || ''}
+                editable={false}
+                variant="outlined"
+              />
 
-            <View style={{ height: 16 }} />
-
-            <FormTextInput
-              label="New Email Address"
-              placeholder="Enter new email"
-              value={newEmail}
-              onChangeText={(text) => {
-                setNewEmail(text);
-                setError('');
-              }}
-              keyboardType="email-address"
-              autoCapitalize="none"
-              variant="outlined"
-              errorText={error}
-            />
+              <FormTextInput
+                label="New Email Address"
+                placeholder="Enter new email"
+                value={newEmail}
+                onChangeText={(text) => {
+                  setNewEmail(text);
+                  setError('');
+                }}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                variant="outlined"
+                errorText={error}
+              />
+            </Container>
 
             <View style={{ height: 24 }} />
 
@@ -298,7 +307,6 @@ const ChangeEmail: React.FC<ChangeEmailProps> = ({
               variant="solid"
               color="primary"
               size="large"
-              fullWidth
             />
 
             <Pressable
@@ -343,34 +351,35 @@ const ChangeEmail: React.FC<ChangeEmailProps> = ({
                 textAlign: 'center',
               }}
             >
-              We've sent a 6-digit verification code to
+              We&apos;ve sent a 6-digit verification code to
             </ThemedText>
-            <ThemedText
-              type="body-medium"
-              weight="semi-bold"
-              style={{
-                color: textColor,
-                marginBottom: 24,
-                textAlign: 'center',
-              }}
-            >
-              {newEmail}
-            </ThemedText>
+            <Container padding={0} backgroundColor="transparent">
+              <ThemedText
+                type="body-medium"
+                weight="semi-bold"
+                style={{
+                  color: textColor,
+                  marginBottom: 24,
+                  textAlign: 'center',
+                }}
+              >
+                {newEmail}
+              </ThemedText>
 
-            <FormTextInput
-              label="Verification Code"
-              placeholder="Enter 6-digit code"
-              value={otp}
-              onChangeText={(text) => {
-                setOtp(text.replace(/[^0-9]/g, '').slice(0, 6));
-                setError('');
-              }}
-              keyboardType="number-pad"
-              maxLength={6}
-              variant="outlined"
-              errorText={error}
-            />
-
+              <FormTextInput
+                label="Verification Code"
+                placeholder="Enter 6-digit code"
+                value={otp}
+                onChangeText={(text) => {
+                  setOtp(text.replace(/[^0-9]/g, '').slice(0, 6));
+                  setError('');
+                }}
+                keyboardType="number-pad"
+                maxLength={6}
+                variant="outlined"
+                errorText={error}
+              />
+            </Container>
             <View style={{ height: 24 }} />
 
             <Button
@@ -380,7 +389,6 @@ const ChangeEmail: React.FC<ChangeEmailProps> = ({
               variant="solid"
               color="primary"
               size="large"
-              fullWidth
             />
 
             <Pressable onPress={handleResendOtp} style={styles.resendButton}>
@@ -397,7 +405,7 @@ const ChangeEmail: React.FC<ChangeEmailProps> = ({
               style={styles.backButton}
             >
               <ThemedText type="body-medium" style={{ color: subTextColor }}>
-                Change Email
+                Back
               </ThemedText>
             </Pressable>
           </>
@@ -432,58 +440,66 @@ const ChangeEmail: React.FC<ChangeEmailProps> = ({
   };
 
   return (
-    <Modal
-      visible={visible}
-      animationType="slide"
-      presentationStyle="pageSheet"
-      onRequestClose={handleClose}
+    <BottomSheetModal
+      ref={bottomSheetRef}
+      index={0}
+      snapPoints={snapPoints}
+      onChange={handleSheetChanges}
+      backdropComponent={renderBackdrop}
+      enablePanDownToClose
+      enableDynamicSizing={false}
+      keyboardBehavior="interactive"
+      keyboardBlurBehavior="restore"
+      android_keyboardInputMode="adjustResize"
+      backgroundStyle={[styles.sheetBackground, { backgroundColor: bg }]}
+      handleIndicatorStyle={[
+        styles.handleIndicator,
+        { backgroundColor: handleColor },
+      ]}
     >
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={[styles.modalContainer, { backgroundColor: bg }]}
-      >
-        <View style={styles.modalHeader}>
-          <View style={{ width: 50 }} />
-          <ThemedText
-            type="card-title-medium"
-            weight="semi-bold"
-            style={{ color: textColor }}
-          >
-            Change Email
-          </ThemedText>
-          <Pressable onPress={handleClose} style={styles.cancelButton}>
-            <ThemedText
-              type="body-medium"
-              style={{ color: Colors.light.primary }}
-            >
-              Cancel
-            </ThemedText>
-          </Pressable>
-        </View>
+      <StatusBar style={isDark ? 'light' : 'dark'} />
 
-        <ScrollView
-          contentContainerStyle={styles.modalContent}
-          keyboardShouldPersistTaps="handled"
+      <View style={styles.modalHeader}>
+        <ThemedText
+          type="card-title-medium"
+          weight="semi-bold"
+          style={{ color: textColor }}
         >
-          {renderStepContent()}
-        </ScrollView>
-      </KeyboardAvoidingView>
-    </Modal>
+          Change Email
+        </ThemedText>
+      </View>
+
+      <BottomSheetScrollView
+        contentContainerStyle={styles.modalContent}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
+        {renderStepContent()}
+      </BottomSheetScrollView>
+    </BottomSheetModal>
   );
 };
 
 export default ChangeEmail;
 
 const styles = StyleSheet.create({
-  modalContainer: {
-    flex: 1,
+  sheetBackground: {
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+  },
+  handleIndicator: {
+    width: 40,
+    height: 4,
+    borderRadius: 2,
+    marginTop: 8,
   },
   modalHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    justifyContent: 'center',
     paddingHorizontal: 16,
     paddingVertical: 16,
+    paddingTop: 32,
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(0,0,0,0.1)',
   },
