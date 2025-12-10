@@ -2,9 +2,9 @@
 import db from "../../db.js";
 import { v4 as uuidv4 } from "uuid";
 import { handleDbError } from "../../utils/errorHandler.js";
-import { 
-  validateOrderCreation, 
-  sanitizeString
+import {
+  validateOrderCreation,
+  sanitizeString,
 } from "../../utils/orderValidation.js";
 import * as paymongoService from "../../services/paymongoService.js";
 import * as socketService from "../../services/socketService.js";
@@ -22,111 +22,130 @@ export async function insertOrder(req, res) {
   if (!validation.valid) {
     return res.status(400).json({
       message: "Validation failed",
-      errors: validation.errors
+      errors: validation.errors,
     });
   }
 
   const connection = await db.getConnection();
-  
+
   try {
     await connection.beginTransaction();
-    
+
     const orderId = uuidv4();
-    
+
     // Extract user_id from authenticated user (req.user set by authenticate middleware)
     const user_id = req.user?.id;
     if (!user_id) {
       await connection.rollback();
       return res.status(401).json({ message: "User authentication required" });
     }
-    
-    const { 
-      business_id, 
-      items, 
-      discount_id, 
-      pickup_datetime, 
+
+    const {
+      business_id,
+      items,
+      discount_id,
+      pickup_datetime,
       special_instructions,
-      payment_method        // The actual payment method: gcash, paymaya, card, cash_on_pickup
+      payment_method, // The actual payment method: gcash, paymaya, card, cash_on_pickup
     } = req.body;
 
+    // Debug: Log the received pickup_datetime
+    console.log("[insertOrder] Received pickup_datetime:", pickup_datetime);
+    console.log(
+      "[insertOrder] Type of pickup_datetime:",
+      typeof pickup_datetime
+    );
+
     // Sanitize string inputs
-    const sanitizedInstructions = special_instructions ? sanitizeString(special_instructions) : null;
+    const sanitizedInstructions = special_instructions
+      ? sanitizeString(special_instructions)
+      : null;
 
     // Calculate order totals
     let subtotal = 0;
     const orderItems = [];
-    
+
     for (const item of items) {
       // Use FOR UPDATE to lock the product row and prevent concurrent modifications
       const [product] = await connection.query(
-        "SELECT p.price, p.status, ps.current_stock FROM product p LEFT JOIN product_stock ps ON p.id = ps.product_id WHERE p.id = ? FOR UPDATE", 
+        "SELECT p.price, p.status, ps.current_stock FROM product p LEFT JOIN product_stock ps ON p.id = ps.product_id WHERE p.id = ? FOR UPDATE",
         [item.product_id]
       );
       if (!product || product.length === 0) {
         await connection.rollback();
-        return res.status(400).json({ 
-          message: `Product with ID ${item.product_id} not found` 
+        return res.status(400).json({
+          message: `Product with ID ${item.product_id} not found`,
         });
       }
-      
+
       // Check stock availability with locked row
       const currentStock = product[0].current_stock || 0;
       if (currentStock < item.quantity) {
         await connection.rollback();
-        return res.status(400).json({ 
+        return res.status(400).json({
           message: `Insufficient stock for product. Available: ${currentStock}, Requested: ${item.quantity}`,
           product_id: item.product_id,
           available_stock: currentStock,
-          requested_quantity: item.quantity
+          requested_quantity: item.quantity,
         });
       }
-      
+
       // Check if product is temporarily unavailable
       const productStatus = product[0].status;
-      const isUnavailable = product[0].is_unavailable || ['inactive', 'out_of_stock'].includes((productStatus || '').toLowerCase());
+      const isUnavailable =
+        product[0].is_unavailable ||
+        ["inactive", "out_of_stock"].includes(
+          (productStatus || "").toLowerCase()
+        );
       if (isUnavailable) {
         await connection.rollback();
-        return res.status(400).json({ 
+        return res.status(400).json({
           message: `Product is currently unavailable and cannot be ordered`,
-          product_id: item.product_id
+          product_id: item.product_id,
         });
       }
-      
+
       const unitPrice = product[0].price;
       const totalPrice = unitPrice * item.quantity;
       subtotal += totalPrice;
-      
+
       orderItems.push({
         product_id: item.product_id,
         quantity: item.quantity,
         unit_price: unitPrice,
         total_price: totalPrice,
-        special_requests: item.special_requests ? sanitizeString(item.special_requests) : null
+        special_requests: item.special_requests
+          ? sanitizeString(item.special_requests)
+          : null,
       });
     }
 
     // Apply discount if provided
     let discountAmount = 0;
     let finalDiscountId = discount_id || null;
-    
+
     if (discount_id) {
       try {
-        const [discountData] = await connection.query("CALL ValidateDiscount(?, ?, ?)", [
-          discount_id, subtotal, user_id
-        ]);
-        
+        const [discountData] = await connection.query(
+          "CALL ValidateDiscount(?, ?, ?)",
+          [discount_id, subtotal, user_id]
+        );
+
         if (discountData && discountData.length > 0) {
           const discount = discountData[0];
-          
-          if (discount.discount_type === 'percentage') {
+
+          if (discount.discount_type === "percentage") {
             discountAmount = (subtotal * discount.discount_value) / 100;
             if (discount.maximum_discount_amount) {
-              discountAmount = Math.min(discountAmount, discount.maximum_discount_amount);
+              discountAmount = Math.min(
+                discountAmount,
+                discount.maximum_discount_amount
+              );
             }
           } else {
             discountAmount = discount.discount_value;
           }
-          
+
           discountAmount = Math.min(discountAmount, subtotal);
         }
       } catch (discountError) {
@@ -139,58 +158,84 @@ export async function insertOrder(req, res) {
     const taxAmount = 0; // Tax calculation can be implemented here
     const totalAmount = subtotal - discountAmount + taxAmount;
 
-    // Normalize pickup datetime to Date object for MySQL
+    // 1. Normalize pickup datetime
     const pickupDateObj = new Date(pickup_datetime);
+
+    // CHECK: Ensure valid date
     if (isNaN(pickupDateObj.getTime())) {
       await connection.rollback();
-      return res.status(400).json({ 
-        message: "Invalid pickup datetime format" 
+      return res.status(400).json({
+        message: "Invalid pickup datetime format",
       });
     }
+
+    // 2. FIX: Convert UTC to PHT (Asia/Manila, UTC+8) for MySQL storage
+    // The DB server stores timestamps in PHT, so we must convert the UTC ISO string
+    // Example: User selects 10:00 AM PHT → Frontend sends "2024-12-10T02:00:00Z" (UTC)
+    //          We need to store "2024-12-10 10:00:00" (PHT) in the DB
+    const phtOffset = 8 * 60 * 60 * 1000; // 8 hours in milliseconds
+    const phtDate = new Date(pickupDateObj.getTime() + phtOffset);
+    const pickupDateString = phtDate
+      .toISOString()
+      .slice(0, 19)
+      .replace("T", " ");
+
+    console.log("[insertOrder] Received UTC:", pickup_datetime);
+    console.log("[insertOrder] Converted to PHT for DB:", pickupDateString);
 
     // Generate order number and arrival code
     const orderNumber = generateOrderNumber();
     const arrivalCode = generateArrivalCode();
 
-    // Insert order using stored procedure (without payment fields - those go to payment table)
+    // 3. Update the query to use pickupDateString
     await connection.query(
-      "CALL InsertOrder(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", 
+      "CALL InsertOrder(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
       [
-        orderId, 
-        business_id, 
-        user_id, 
-        orderNumber, 
-        subtotal, 
-        discountAmount, 
-        taxAmount, 
+        orderId,
+        business_id,
+        user_id,
+        orderNumber,
+        subtotal,
+        discountAmount,
+        taxAmount,
         totalAmount,
-        finalDiscountId, 
-        pickupDateObj, 
-        sanitizedInstructions, 
-        arrivalCode
+        finalDiscountId,
+        pickupDateString, // <--- PASS THE FORMATTED STRING HERE
+        sanitizedInstructions,
+        arrivalCode,
       ]
     );
 
     // Insert order items and update stock
     for (const item of orderItems) {
       const itemId = uuidv4();
-      
+
       // Insert order item using stored procedure
       await connection.query("CALL InsertOrderItem(?, ?, ?, ?, ?, ?, ?)", [
-        itemId, orderId, item.product_id, item.quantity, item.unit_price, item.total_price, item.special_requests
+        itemId,
+        orderId,
+        item.product_id,
+        item.quantity,
+        item.unit_price,
+        item.total_price,
+        item.special_requests,
       ]);
 
       // Update stock using stored procedure
       const historyId = uuidv4();
       try {
         await connection.query("CALL UpdateStockForOrder(?, ?, ?, ?, ?)", [
-          item.product_id, item.quantity, orderNumber, user_id, historyId
+          item.product_id,
+          item.quantity,
+          orderNumber,
+          user_id,
+          historyId,
         ]);
       } catch (stockError) {
         await connection.rollback();
-        return res.status(400).json({ 
+        return res.status(400).json({
           message: `Insufficient stock for product ${item.product_id}`,
-          error: stockError.message 
+          error: stockError.message,
         });
       }
     }
@@ -200,30 +245,64 @@ export async function insertOrder(req, res) {
       await connection.query("CALL UpdateDiscountUsage(?)", [finalDiscountId]);
     }
 
-    await connection.commit();
+    // ========== Create Payment Record ==========
+    // For cash_on_pickup orders, create a payment record with status 'pending'
+    // This ensures all orders have a payment record for consistent querying
+    const actualPaymentMethod = payment_method || "cash_on_pickup";
+    const isCashOnPickup = actualPaymentMethod === "cash_on_pickup";
     
+    if (isCashOnPickup) {
+      const paymentId = uuidv4();
+      const paymentCreatedAt = new Date().toISOString().slice(0, 19).replace("T", " ");
+      
+      await connection.query(
+        "CALL InsertPayment(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        [
+          paymentId,           // p_id
+          "Tourist",           // p_payer_type
+          "Full Payment",      // p_payment_type
+          "cash_on_pickup",    // p_payment_method
+          totalAmount,         // p_amount
+          "pending",           // p_status - pending until customer pays at pickup
+          "order",             // p_payment_for
+          user_id,             // p_payer_id
+          orderId,             // p_payment_for_id
+          paymentCreatedAt     // p_created_at
+        ]
+      );
+      
+      console.log(`[insertOrder] Created payment record for cash_on_pickup order ${orderNumber}, paymentId: ${paymentId}`);
+    }
+
+    await connection.commit();
+
     // ========== Audit Logging ==========
     // Log order creation event for audit trail
     const actor = {
       id: user_id,
-      role: 'Tourist',
-      ip: req.ip || req.headers['x-forwarded-for'] || req.connection?.remoteAddress
+      role: "Tourist",
+      ip:
+        req.ip ||
+        req.headers["x-forwarded-for"] ||
+        req.connection?.remoteAddress,
     };
-    
+
     await auditService.logOrderCreated({
       orderId,
       orderNumber,
       actor,
       orderDetails: {
-        payment_method: payment_method || 'cash_on_pickup',
+        payment_method: payment_method || "cash_on_pickup",
         total_amount: totalAmount,
         item_count: orderItems.length,
-        business_id
-      }
+        business_id,
+      },
     });
-    
-    console.log(`[insertOrder] Order ${orderNumber} created, payment_method: ${payment_method}`);
-    
+
+    console.log(
+      `[insertOrder] Order ${orderNumber} created, payment_method: ${payment_method}`
+    );
+
     // Return spec-compliant response (spec.md §7)
     const response = {
       order_id: orderId,
@@ -231,24 +310,28 @@ export async function insertOrder(req, res) {
       arrival_code: arrivalCode,
       status: "pending",
       payment_status: "pending",
-      total_amount: totalAmount
+      total_amount: totalAmount,
     };
 
     // ========== Real-time Notifications ==========
     // For PayMongo orders (gcash, paymaya, card): SKIP notifications until payment is confirmed via webhook
     // Payment Intent flow is initiated separately by the mobile app
     // For cash_on_pickup orders: Emit immediately since no payment confirmation needed
-    const isOnlinePayment = ['gcash', 'paymaya', 'card'].includes(payment_method);
-    
+    const isOnlinePayment = ["gcash", "paymaya", "card"].includes(
+      payment_method
+    );
+
     if (!isOnlinePayment) {
-      console.log(`[insertOrder] 📢 Emitting notifications for cash_on_pickup order ${orderNumber}`);
-      
+      console.log(
+        `[insertOrder] 📢 Emitting notifications for cash_on_pickup order ${orderNumber}`
+      );
+
       try {
         const [userEmailResult] = await db.query(
           "SELECT email FROM user WHERE id = ?",
           [user_id]
         );
-        const userEmail = userEmailResult?.[0]?.email || 'unknown@email.com';
+        const userEmail = userEmailResult?.[0]?.email || "unknown@email.com";
 
         const [itemsResult] = await db.query(
           "SELECT * FROM order_item WHERE order_id = ?",
@@ -262,9 +345,9 @@ export async function insertOrder(req, res) {
           business_id: business_id,
           user_id: user_id,
           user_email: userEmail,
-          status: 'pending',
-          payment_status: 'pending',
-          payment_method: payment_method || 'cash_on_pickup',
+          status: "pending",
+          payment_status: "pending",
+          payment_method: payment_method || "cash_on_pickup",
           subtotal: subtotal,
           discount_amount: discountAmount || 0,
           tax_amount: taxAmount || 0,
@@ -275,16 +358,20 @@ export async function insertOrder(req, res) {
           discount_name: null,
           item_count: itemsData.length,
           items: itemsData,
-          created_at: new Date()
+          created_at: new Date(),
         };
 
         socketService.emitNewOrder(completeOrderData);
-        await notificationHelper.triggerNewOrderNotifications(completeOrderData);
+        await notificationHelper.triggerNewOrderNotifications(
+          completeOrderData
+        );
       } catch (socketError) {
-        console.error('Failed to emit new order event:', socketError);
+        console.error("Failed to emit new order event:", socketError);
       }
     } else {
-      console.log(`[insertOrder] ⏳ PayMongo order ${orderNumber} - notifications deferred until payment confirmation via webhook`);
+      console.log(
+        `[insertOrder] ⏳ PayMongo order ${orderNumber} - notifications deferred until payment confirmation via webhook`
+      );
     }
 
     res.status(201).json(response);

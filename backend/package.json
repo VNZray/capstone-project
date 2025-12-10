@@ -18,7 +18,8 @@
     "resetdb": "node scripts/delete-db.js && node scripts/create-db.js && knex migrate:latest --knexfile knexfile.cjs --env development && knex seed:run --knexfile knexfile.cjs --env development && npm run dev",
     "test": "node --experimental-vm-modules ../node_modules/jest/bin/jest.js --forceExit",
     "test:watch": "node --experimental-vm-modules ../node_modules/jest/bin/jest.js --watch",
-    "test:coverage": "node --experimental-vm-modules ../node_modules/jest/bin/jest.js --coverage --forceExit"
+    "test:coverage": "node --experimental-vm-modules ../node_modules/jest/bin/jest.js --coverage --forceExit",
+    "test:abandoned": "node scripts/test-abandoned-cleanup.js"
   },
   "keywords": [],
   "author": "",

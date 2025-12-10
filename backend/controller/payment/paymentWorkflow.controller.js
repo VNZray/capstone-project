@@ -71,7 +71,8 @@ async function lookupOrderResource(referenceId, userId) {
       description: `Order #${order.order_number}`,
       display_name: order.order_number,
       is_paid: order.payment_status === 'paid',
-      can_pay: order.status === 'pending',
+      // Allow payment for pending orders OR failed_payment orders (retry scenario)
+      can_pay: order.status === 'pending' || order.status === 'failed_payment',
       status: order.status,
       payment_status: order.payment_status,
       existing_payment_id: order.existing_payment_id,
@@ -193,6 +194,8 @@ export async function initiateUnifiedPayment(req, res) {
     const { payment_for, reference_id, payment_method } = req.body;
     const user_id = req.user?.id;
 
+    console.log(`[PaymentWorkflow] 🚀 Initiate payment request - for: ${payment_for}, ref: ${reference_id}, method: ${payment_method}`);
+
     // 1. Validate input
     if (!user_id) {
       return res.status(401).json({
@@ -244,6 +247,8 @@ export async function initiateUnifiedPayment(req, res) {
     }
 
     // 4. Validate payment state
+    console.log(`[PaymentWorkflow] 📋 Order status: ${normalized.status}, can_pay: ${normalized.can_pay}, is_paid: ${normalized.is_paid}`);
+    
     if (normalized.is_paid) {
       return res.status(400).json({
         success: false,
@@ -252,6 +257,7 @@ export async function initiateUnifiedPayment(req, res) {
     }
 
     if (!normalized.can_pay) {
+      console.log(`[PaymentWorkflow] ❌ Cannot pay - order status: ${normalized.status}`);
       return res.status(400).json({
         success: false,
         message: `Cannot initiate payment for ${payment_for} with status: ${normalized.status}`
@@ -265,12 +271,16 @@ export async function initiateUnifiedPayment(req, res) {
       : VALID_PAYMENT_METHODS;
 
     // 6. Check for existing valid Payment Intent
-    if (normalized.existing_payment_intent_id) {
+    // IMPORTANT: For failed_payment orders, always create a NEW Payment Intent
+    // This ensures a fresh payment flow after a previous failure
+    const isRetryScenario = normalized.status === 'failed_payment';
+    
+    if (normalized.existing_payment_intent_id && !isRetryScenario) {
       try {
         const existingIntent = await paymongoService.getPaymentIntent(normalized.existing_payment_intent_id);
         const intentStatus = existingIntent.attributes.status;
 
-        // If intent is still valid, return it
+        // If intent is still valid and not a retry, return it
         if (['awaiting_payment_method', 'awaiting_next_action'].includes(intentStatus)) {
           console.log(`[PaymentWorkflow] Returning existing Payment Intent: ${normalized.existing_payment_intent_id}`);
 
@@ -296,6 +306,8 @@ export async function initiateUnifiedPayment(req, res) {
       } catch (err) {
         console.log('[PaymentWorkflow] Existing intent not found or invalid, creating new one...');
       }
+    } else if (isRetryScenario) {
+      console.log(`[PaymentWorkflow] 🔄 Retry scenario detected - creating NEW Payment Intent`);
     }
 
     // 7. Validate amount (minimum ₱20 for Payment Intents)
@@ -391,6 +403,87 @@ export async function initiateUnifiedPayment(req, res) {
           JSON.stringify({ ...metadata, client_key: clientKey }),
           payment_id
         ]
+      );
+    }
+
+    // 10b. For retry scenarios, reset order status back to 'pending' and re-deduct stock
+    // This maintains stock consistency: stock was restored on failure, re-deduct on retry
+    if (isRetryScenario && payment_for === 'order') {
+      // Get order items to re-deduct stock
+      const [orderItems] = await db.query(
+        `SELECT oi.product_id, oi.quantity
+         FROM order_item oi
+         WHERE oi.order_id = ?`,
+        [reference_id]
+      );
+      
+      // Get order number for logging
+      const [orderInfo] = await db.query(
+        `SELECT order_number FROM \`order\` WHERE id = ?`,
+        [reference_id]
+      );
+      const orderNumber = orderInfo[0]?.order_number || 'UNKNOWN';
+      
+      // Re-deduct stock for retry
+      for (const item of orderItems) {
+        // Check if there's enough stock
+        const [stockCheck] = await db.query(
+          `SELECT current_stock FROM product_stock WHERE product_id = ?`,
+          [item.product_id]
+        );
+        
+        if (!stockCheck[0] || stockCheck[0].current_stock < item.quantity) {
+          // Not enough stock - this is a problem
+          console.error(`[PaymentWorkflow] ❌ Insufficient stock for retry: product ${item.product_id}`);
+          return res.status(400).json({
+            success: false,
+            message: 'Product is now out of stock. Please create a new order.'
+          });
+        }
+        
+        // Deduct stock
+        await db.query(
+          `UPDATE product_stock 
+           SET current_stock = current_stock - ?,
+               updated_at = NOW()
+           WHERE product_id = ?`,
+          [item.quantity, item.product_id]
+        );
+        
+        // Log stock deduction in history
+        await db.query(
+          `INSERT INTO stock_history (id, product_id, change_type, quantity_change, previous_stock, new_stock, notes)
+           SELECT UUID(), ?, 'sale', ?, 
+                  current_stock + ?, current_stock, 
+                  ?
+           FROM product_stock WHERE product_id = ?`,
+          [
+            item.product_id,
+            -item.quantity,
+            item.quantity,
+            `Payment retry - stock re-deducted: Order ${orderNumber}`,
+            item.product_id,
+          ]
+        );
+      }
+      
+      // Reset order status to pending
+      await db.query(
+        `UPDATE \`order\`
+         SET status = 'pending',
+             cancelled_at = NULL,
+             cancelled_by = NULL,
+             cancellation_reason = NULL,
+             updated_at = ?
+         WHERE id = ? AND status = 'failed_payment'`,
+        [new Date(), reference_id]
+      );
+      console.log(`[PaymentWorkflow] ✅ Order ${reference_id} status reset to 'pending', stock re-deducted for payment retry`);
+      
+      // Also reset payment status to pending
+      await db.query(
+        `UPDATE payment SET status = 'pending', updated_at = ? WHERE id = ?`,
+        [new Date(), payment_id]
       );
     }
 

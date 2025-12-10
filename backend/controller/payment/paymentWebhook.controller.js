@@ -196,7 +196,7 @@ export async function processWebhookEvent(eventType, eventData, webhook_id) {
 
   // ========== Refund Events ==========
   
-  else if (eventType === 'refund.updated' && eventData.attributes?.status === 'succeeded') {
+  else if (eventType === 'refund.updated' || eventType === 'payment.refunded' || eventType === 'payment.refund.updated') {
     const refundId = eventData.id;
     await paymentFulfillmentService.handleRefundSucceeded({
       refundId,

@@ -18,7 +18,7 @@ import { getCompleteOrderForSocket } from "./utils.js";
 export async function updateOrderStatus(req, res) {
   const { id } = req.params;
   const { status } = req.body;
-  
+
   try {
     const userRole = await ensureUserRole(req);
 
@@ -27,49 +27,53 @@ export async function updateOrderStatus(req, res) {
     if (!statusValidation.valid) {
       return res.status(400).json({ message: statusValidation.error });
     }
-    
+
     // Get current order with payment info for validation
     const [currentOrder] = await db.query(
-      "SELECT * FROM `order` WHERE id = ?", 
+      "SELECT * FROM `order` WHERE id = ?",
       [id]
     );
-    
+
     if (!currentOrder || currentOrder.length === 0) {
       return res.status(404).json({ message: "Order not found" });
     }
-    
+
     const order = currentOrder[0];
     const currentStatus = order.status;
 
-    if (userRole !== 'Admin') {
-      const allowed = await hasBusinessAccess(order.business_id, req.user, userRole);
+    if (userRole !== "Admin") {
+      const allowed = await hasBusinessAccess(
+        order.business_id,
+        req.user,
+        userRole
+      );
       if (!allowed) {
         return res.status(403).json({
           message: "Forbidden: you do not manage this business",
         });
       }
     }
-    
+
     // Get actor role from authenticated user
-    const actorRole = userRole || 'tourist';
-    
+    const actorRole = userRole || "tourist";
+
     // Check if transition is allowed (with payment validation)
     const transitionCheck = orderTransitionService.canTransition(
-      currentStatus, 
-      status, 
+      currentStatus,
+      status,
       actorRole,
-      order  // Pass full order object for payment validation
+      order // Pass full order object for payment validation
     );
-    
+
     if (!transitionCheck.allowed) {
-      return res.status(403).json({ 
+      return res.status(403).json({
         message: "Status transition not allowed",
         reason: transitionCheck.reason,
         current_status: currentStatus,
-        requested_status: status
+        requested_status: status,
       });
     }
-    
+
     // Proceed with status update
     const [data] = await db.query("CALL UpdateOrderStatus(?, ?)", [id, status]);
 
@@ -83,28 +87,34 @@ export async function updateOrderStatus(req, res) {
     const actor = {
       id: req.user?.id,
       role: userRole,
-      ip: req.ip || req.headers['x-forwarded-for'] || req.connection?.remoteAddress
+      ip:
+        req.ip ||
+        req.headers["x-forwarded-for"] ||
+        req.connection?.remoteAddress,
     };
-    
+
     await auditService.logStatusChange({
       orderId: id,
       oldStatus: currentStatus,
       newStatus: status,
-      actor
+      actor,
     });
 
     // Fetch complete order for socket emission
     try {
       const completeOrderData = await getCompleteOrderForSocket(id);
       socketService.emitOrderUpdated(completeOrderData, currentStatus);
-      await notificationHelper.triggerOrderUpdateNotifications(completeOrderData, currentStatus);
+      await notificationHelper.triggerOrderUpdateNotifications(
+        completeOrderData,
+        currentStatus
+      );
     } catch (socketError) {
-      console.error('Failed to emit order updated event:', socketError);
+      console.error("Failed to emit order updated event:", socketError);
     }
 
     res.json({
       message: "Order status updated successfully",
-      data: updatedOrder
+      data: updatedOrder,
     });
   } catch (error) {
     return handleDbError(error, res);
@@ -118,9 +128,12 @@ export async function updateOrderStatus(req, res) {
 export async function updatePaymentStatus(req, res) {
   const { id } = req.params;
   const { payment_status } = req.body;
-  
+
   try {
-    const [data] = await db.query("CALL UpdatePaymentStatus(?, ?)", [id, payment_status]);
+    const [data] = await db.query("CALL UpdatePaymentStatus(?, ?)", [
+      id,
+      payment_status,
+    ]);
 
     if (!data || data.length === 0) {
       return res.status(404).json({ message: "Order not found" });
@@ -128,7 +141,7 @@ export async function updatePaymentStatus(req, res) {
 
     res.json({
       message: "Payment status updated successfully",
-      data: data[0]
+      data: data[0],
     });
   } catch (error) {
     return handleDbError(error, res);
@@ -141,8 +154,11 @@ export async function updatePaymentStatus(req, res) {
  */
 export async function cancelOrder(req, res) {
   const { id } = req.params;
-  const { cancellation_reason } = req.body;
-  
+  // Safely extract cancellation_reason with explicit null check
+  // This handles cases where req.body may be undefined (e.g., empty POST requests)
+  const body = req.body || {};
+  const cancellation_reason = body.cancellation_reason || null;
+
   try {
     const userRole = await ensureUserRole(req);
 
@@ -153,64 +169,71 @@ export async function cancelOrder(req, res) {
               p.id as payment_id, p.payment_intent_id, p.status as payment_status, p.payment_method
        FROM \`order\` o
        LEFT JOIN payment p ON p.payment_for = 'order' AND p.payment_for_id = o.id
-       WHERE o.id = ?`, 
+       WHERE o.id = ?`,
       [id]
     );
-    
+
     if (!orderData || orderData.length === 0) {
       return res.status(404).json({ message: "Order not found" });
     }
-    
+
     const order = orderData[0];
-    const actorRole = userRole || 'tourist';
+    const actorRole = userRole || "tourist";
 
     // Ownership checks
-    if (userRole === 'Tourist' && order.user_id !== req.user?.id) {
+    if (userRole === "Tourist" && order.user_id !== req.user?.id) {
       return res.status(403).json({
-        message: "Forbidden: you can only cancel your own orders"
+        message: "Forbidden: you can only cancel your own orders",
       });
     }
-    
-    if (['Business Owner', 'Staff'].includes(userRole)) {
-      const allowed = await hasBusinessAccess(order.business_id, req.user, userRole);
+
+    if (["Business Owner", "Staff"].includes(userRole)) {
+      const allowed = await hasBusinessAccess(
+        order.business_id,
+        req.user,
+        userRole
+      );
       if (!allowed) {
         return res.status(403).json({
-          message: "Forbidden: you do not manage this business"
+          message: "Forbidden: you do not manage this business",
         });
       }
     }
-    
+
     // Get grace period from environment (default 10 seconds)
-    const graceSeconds = parseInt(process.env.ORDER_GRACE_SECONDS || '10', 10);
-    
+    const graceSeconds = parseInt(process.env.ORDER_GRACE_SECONDS || "10", 10);
+
     // Validate cancellation using transition service
     const cancellationCheck = orderTransitionService.validateCancellation(
       order,
       actorRole,
       graceSeconds
     );
-    
+
     if (!cancellationCheck.allowed) {
-      return res.status(403).json({ 
+      return res.status(403).json({
         message: "Cancellation not allowed",
-        reason: cancellationCheck.reason
+        reason: cancellationCheck.reason,
       });
     }
-    
+
     // Sanitize cancellation reason
-    const sanitizedReason = cancellation_reason ? sanitizeString(cancellation_reason) : null;
-    
+    const sanitizedReason = cancellation_reason
+      ? sanitizeString(cancellation_reason)
+      : null;
+
     // ========== PayMongo Refund Integration ==========
     let refundData = null;
-    
-    if (order.payment_method === 'paymongo' && 
-        order.payment_status === 'paid' && 
-        order.payment_id && 
-        order.payment_intent_id) {
-      
+
+    if (
+      order.payment_method === "paymongo" &&
+      order.payment_status === "paid" &&
+      order.payment_id &&
+      order.payment_intent_id
+    ) {
       try {
         const refundAmount = Math.round(order.total_amount * 100); // Convert to centavos
-        
+
         const refundResponse = await paymongoService.createRefund(
           order.payment_intent_id,
           refundAmount,
@@ -218,7 +241,7 @@ export async function cancelOrder(req, res) {
           {
             order_id: id,
             order_number: order.order_number,
-            cancelled_by: cancellationCheck.cancelled_by
+            cancelled_by: cancellationCheck.cancelled_by,
           }
         );
 
@@ -226,7 +249,7 @@ export async function cancelOrder(req, res) {
           refund_id: refundResponse.id,
           amount: refundResponse.attributes.amount / 100,
           status: refundResponse.attributes.status,
-          reason: refundResponse.attributes.reason
+          reason: refundResponse.attributes.reason,
         };
 
         // Update payment record with refund info
@@ -238,58 +261,81 @@ export async function cancelOrder(req, res) {
           [refundResponse.id, order.payment_id]
         );
 
-        console.log(`[cancelOrder] ✅ Refund initiated for order ${order.order_number}`);
+        console.log(
+          `[cancelOrder] ✅ Refund initiated for order ${order.order_number}`
+        );
       } catch (refundError) {
-        console.error(`[cancelOrder] ❌ Refund failed for order ${order.order_number}:`, refundError.message);
+        console.error(
+          `[cancelOrder] ❌ Refund failed for order ${order.order_number}:`,
+          refundError.message
+        );
         // Continue with cancellation even if refund fails
         // Business can manually process refund later
       }
     }
-    
+
     // Call stored procedure with cancelled_by parameter
-    const [data] = await db.query(
-      "CALL CancelOrder(?, ?, ?)", 
-      [id, sanitizedReason, cancellationCheck.cancelled_by]
-    );
+    const [data] = await db.query("CALL CancelOrder(?, ?, ?)", [
+      id,
+      sanitizedReason,
+      cancellationCheck.cancelled_by,
+    ]);
 
     if (!data || data.length === 0) {
       return res.status(404).json({ message: "Order not found" });
     }
 
+    // Fetch order items to return with the cancelled order (so frontend can restore cart)
+    const [orderItems] = await db.query(
+      `SELECT oi.*, p.name as product_name, p.image_url as product_image
+       FROM order_item oi 
+       LEFT JOIN product p ON oi.product_id = p.id 
+       WHERE oi.order_id = ?`,
+      [id]
+    );
+
+    const cancelledOrderWithItems = {
+      ...data[0],
+      items: orderItems || [],
+    };
+
     // ========== Audit Logging ==========
     const actor = {
       id: req.user?.id,
       role: userRole,
-      ip: req.ip || req.headers['x-forwarded-for'] || req.connection?.remoteAddress
+      ip:
+        req.ip ||
+        req.headers["x-forwarded-for"] ||
+        req.connection?.remoteAddress,
     };
-    
+
     await auditService.logCancellation({
       orderId: id,
       previousStatus: order.status,
       cancelledBy: cancellationCheck.cancelled_by,
       actor,
-      reason: sanitizedReason
+      reason: sanitizedReason,
     });
 
     // Log refund if applicable
     if (refundData) {
       await auditService.logPaymentUpdate({
         orderId: id,
-        oldStatus: 'paid',
-        newStatus: 'refunded',
+        oldStatus: "paid",
+        newStatus: "refunded",
         actor,
         paymentDetails: {
           refund_id: refundData.refund_id,
           refund_amount: refundData.amount,
-          refund_status: refundData.status
-        }
+          refund_status: refundData.status,
+        },
       });
     }
 
     const response = {
       message: "Order cancelled successfully",
-      data: data[0],
-      cancelled_by: cancellationCheck.cancelled_by
+      data: cancelledOrderWithItems,
+      cancelled_by: cancellationCheck.cancelled_by,
     };
 
     if (refundData) {
@@ -299,16 +345,22 @@ export async function cancelOrder(req, res) {
     // Fetch complete order for socket emission
     try {
       const completeOrderData = await getCompleteOrderForSocket(id);
-      const cancelledStatus = cancellationCheck.cancelled_by === 'user' ? 'cancelled_by_user' : 'cancelled_by_business';
+      const cancelledStatus =
+        cancellationCheck.cancelled_by === "user"
+          ? "cancelled_by_user"
+          : "cancelled_by_business";
       completeOrderData.status = cancelledStatus;
       if (refundData) {
-        completeOrderData.payment_status = 'refunded';
+        completeOrderData.payment_status = "refunded";
       }
 
       socketService.emitOrderUpdated(completeOrderData, order.status);
-      await notificationHelper.triggerOrderUpdateNotifications(completeOrderData, order.status);
+      await notificationHelper.triggerOrderUpdateNotifications(
+        completeOrderData,
+        order.status
+      );
     } catch (socketError) {
-      console.error('Failed to emit order cancelled event:', socketError);
+      console.error("Failed to emit order cancelled event:", socketError);
     }
 
     res.json(response);
@@ -324,20 +376,25 @@ export async function cancelOrder(req, res) {
 export async function verifyArrivalCode(req, res) {
   const { businessId } = req.params;
   const { arrival_code } = req.body;
-  
+
   try {
     const userRole = await ensureUserRole(req);
     const allowed = await hasBusinessAccess(businessId, req.user, userRole);
     if (!allowed) {
       return res.status(403).json({
-        message: "Forbidden: you do not have access to this business"
+        message: "Forbidden: you do not have access to this business",
       });
     }
 
-    const [data] = await db.query("CALL VerifyArrivalCode(?, ?)", [businessId, arrival_code]);
+    const [data] = await db.query("CALL VerifyArrivalCode(?, ?)", [
+      businessId,
+      arrival_code,
+    ]);
 
     if (!data || data.length === 0) {
-      return res.status(404).json({ message: "Invalid arrival code or order not found" });
+      return res
+        .status(404)
+        .json({ message: "Invalid arrival code or order not found" });
     }
 
     res.json(data[0]);
@@ -352,7 +409,7 @@ export async function verifyArrivalCode(req, res) {
  */
 export async function markCustomerArrivedForOrder(req, res) {
   const { id } = req.params;
-  
+
   try {
     const userRole = await ensureUserRole(req);
 
@@ -367,11 +424,15 @@ export async function markCustomerArrivedForOrder(req, res) {
 
     const order = orderRows[0];
 
-    if (userRole !== 'Admin') {
-      const allowed = await hasBusinessAccess(order.business_id, req.user, userRole);
+    if (userRole !== "Admin") {
+      const allowed = await hasBusinessAccess(
+        order.business_id,
+        req.user,
+        userRole
+      );
       if (!allowed) {
         return res.status(403).json({
-          message: "Forbidden: you do not manage this business"
+          message: "Forbidden: you do not manage this business",
         });
       }
     }
@@ -384,7 +445,7 @@ export async function markCustomerArrivedForOrder(req, res) {
 
     res.json({
       message: "Customer arrival recorded successfully",
-      data: data[0]
+      data: data[0],
     });
   } catch (error) {
     return handleDbError(error, res);
@@ -397,7 +458,7 @@ export async function markCustomerArrivedForOrder(req, res) {
  */
 export async function markOrderAsReady(req, res) {
   const { id } = req.params;
-  
+
   try {
     const userRole = await ensureUserRole(req);
 
@@ -416,19 +477,23 @@ export async function markOrderAsReady(req, res) {
 
     const order = orderRows[0];
 
-    if (userRole !== 'Admin') {
-      const allowed = await hasBusinessAccess(order.business_id, req.user, userRole);
+    if (userRole !== "Admin") {
+      const allowed = await hasBusinessAccess(
+        order.business_id,
+        req.user,
+        userRole
+      );
       if (!allowed) {
         return res.status(403).json({
-          message: "Forbidden: you do not manage this business"
+          message: "Forbidden: you do not manage this business",
         });
       }
     }
 
     const transitionCheck = orderTransitionService.canTransition(
       order.status,
-      'ready_for_pickup',
-      userRole || 'tourist',
+      "ready_for_pickup",
+      userRole || "tourist",
       order
     );
 
@@ -437,7 +502,7 @@ export async function markOrderAsReady(req, res) {
         message: "Status transition not allowed",
         reason: transitionCheck.reason,
         current_status: order.status,
-        requested_status: 'ready_for_pickup'
+        requested_status: "ready_for_pickup",
       });
     }
 
@@ -453,28 +518,34 @@ export async function markOrderAsReady(req, res) {
     const actor = {
       id: req.user?.id,
       role: userRole,
-      ip: req.ip || req.headers['x-forwarded-for'] || req.connection?.remoteAddress
+      ip:
+        req.ip ||
+        req.headers["x-forwarded-for"] ||
+        req.connection?.remoteAddress,
     };
-    
+
     await auditService.logPickupEvent({
       orderId: id,
       eventType: auditService.EVENT_TYPES.MARKED_READY,
       actor,
-      metadata: { order_number: order.order_number }
+      metadata: { order_number: order.order_number },
     });
 
     // Fetch complete order for socket emission
     try {
       const completeOrderData = await getCompleteOrderForSocket(id);
       socketService.emitOrderUpdated(completeOrderData, order.status);
-      await notificationHelper.triggerOrderUpdateNotifications(completeOrderData, order.status);
+      await notificationHelper.triggerOrderUpdateNotifications(
+        completeOrderData,
+        order.status
+      );
     } catch (socketError) {
-      console.error('Failed to emit order ready event:', socketError);
+      console.error("Failed to emit order ready event:", socketError);
     }
 
     res.json({
       message: "Order marked as ready for pickup",
-      data: updatedOrder
+      data: updatedOrder,
     });
   } catch (error) {
     return handleDbError(error, res);
@@ -487,14 +558,13 @@ export async function markOrderAsReady(req, res) {
  */
 export async function markOrderAsPickedUp(req, res) {
   const { id } = req.params;
-  
+
   try {
     const userRole = await ensureUserRole(req);
 
-    const [orderRows] = await db.query(
-      "SELECT * FROM `order` WHERE id = ?",
-      [id]
-    );
+    const [orderRows] = await db.query("SELECT * FROM `order` WHERE id = ?", [
+      id,
+    ]);
 
     if (!orderRows || orderRows.length === 0) {
       return res.status(404).json({ message: "Order not found" });
@@ -502,19 +572,23 @@ export async function markOrderAsPickedUp(req, res) {
 
     const order = orderRows[0];
 
-    if (userRole !== 'Admin') {
-      const allowed = await hasBusinessAccess(order.business_id, req.user, userRole);
+    if (userRole !== "Admin") {
+      const allowed = await hasBusinessAccess(
+        order.business_id,
+        req.user,
+        userRole
+      );
       if (!allowed) {
         return res.status(403).json({
-          message: "Forbidden: you do not manage this business"
+          message: "Forbidden: you do not manage this business",
         });
       }
     }
 
     const transitionCheck = orderTransitionService.canTransition(
       order.status,
-      'picked_up',
-      userRole || 'tourist',
+      "picked_up",
+      userRole || "tourist",
       order
     );
 
@@ -523,7 +597,7 @@ export async function markOrderAsPickedUp(req, res) {
         message: "Status transition not allowed",
         reason: transitionCheck.reason,
         current_status: order.status,
-        requested_status: 'picked_up'
+        requested_status: "picked_up",
       });
     }
 
@@ -539,28 +613,34 @@ export async function markOrderAsPickedUp(req, res) {
     const actor = {
       id: req.user?.id,
       role: userRole,
-      ip: req.ip || req.headers['x-forwarded-for'] || req.connection?.remoteAddress
+      ip:
+        req.ip ||
+        req.headers["x-forwarded-for"] ||
+        req.connection?.remoteAddress,
     };
-    
+
     await auditService.logPickupEvent({
       orderId: id,
       eventType: auditService.EVENT_TYPES.PICKED_UP,
       actor,
-      metadata: { order_number: order.order_number }
+      metadata: { order_number: order.order_number },
     });
 
     // Fetch complete order for socket emission
     try {
       const completeOrderData = await getCompleteOrderForSocket(id);
       socketService.emitOrderUpdated(completeOrderData, order.status);
-      await notificationHelper.triggerOrderUpdateNotifications(completeOrderData, order.status);
+      await notificationHelper.triggerOrderUpdateNotifications(
+        completeOrderData,
+        order.status
+      );
     } catch (socketError) {
-      console.error('Failed to emit order picked up event:', socketError);
+      console.error("Failed to emit order picked up event:", socketError);
     }
 
     res.json({
       message: "Order marked as picked up and completed",
-      data: updatedOrder
+      data: updatedOrder,
     });
   } catch (error) {
     return handleDbError(error, res);

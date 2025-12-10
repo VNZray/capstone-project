@@ -1,6 +1,7 @@
 import express from "express";
 import rateLimit from "express-rate-limit";
 import * as orderController from "../controller/order/index.js";
+import * as refundController from "../controller/refund/index.js";
 import { authenticate } from "../middleware/authenticate.js";
 import { authorizeRole } from "../middleware/authorizeRole.js";
 
@@ -75,6 +76,39 @@ router.patch("/:id/payment-status", authenticate, authorizeRole("Admin"), orderC
 
 // Cancellation - tourist (within grace) or business
 router.post("/:id/cancel", authenticate, orderCancellationLimiter, orderController.cancelOrder); // Role check in controller
+
+// ==================== REFUND ROUTES ====================
+
+/**
+ * Rate limiter for refund requests
+ * Prevents refund abuse
+ * Limit: 5 refund requests per hour per user
+ */
+const refundRequestLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => req.user?.id || req.ip,
+  message: {
+    success: false,
+    error: 'Too many refund requests. Please try again later.',
+    code: 'RATE_LIMIT_EXCEEDED'
+  },
+  skip: (req) => req.user?.role === 'Admin'
+});
+
+// Check refund eligibility - Tourist only
+router.get("/:orderId/refund-eligibility", authenticate, authorizeRole("Tourist"), refundController.checkRefundEligibility);
+
+// Request refund for paid orders - Tourist only
+router.post("/:orderId/refund", authenticate, refundRequestLimiter, authorizeRole("Tourist"), refundController.requestOrderRefund);
+
+// Cancel cash on pickup orders - Tourist only
+router.post("/:orderId/cancel-request", authenticate, refundRequestLimiter, authorizeRole("Tourist"), refundController.cancelOrderRequest);
+
+// Get refund status - Tourist, Business Owner, Admin
+router.get("/:orderId/refund-status", authenticate, authorizeRole("Tourist", "Business Owner", "Admin"), refundController.getOrderRefundStatus);
 
 // Pickup workflow - business only
 router.post("/:id/arrived", authenticate, authorizeRole("Business Owner", "Staff", "Admin"), orderController.markCustomerArrivedForOrder);

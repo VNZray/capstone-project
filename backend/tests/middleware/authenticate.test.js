@@ -1,20 +1,26 @@
 /**
  * Unit Tests for Authentication Middleware
  * Tests JWT validation, token expiry handling, algorithm enforcement, and error cases
- * 
+ *
  * @module tests/middleware/authenticate.test
  */
 
-import { jest, describe, test, expect, beforeEach, afterEach } from '@jest/globals';
-import jwt from 'jsonwebtoken';
+import {
+  jest,
+  describe,
+  test,
+  expect,
+  beforeEach,
+  afterEach,
+} from "@jest/globals";
+import jwt from "jsonwebtoken";
 
-// Mock environment before importing authenticate
-process.env.JWT_ACCESS_SECRET = 'test_access_secret_for_testing_only_32chars!';
+// Middleware is imported below. It configures itself using process.env from setup.js
 
 // Now import the middleware (it will use the test secret)
-import { authenticate } from '../../middleware/authenticate.js';
+import { authenticate } from "../../middleware/authenticate.js";
 
-describe('authenticate middleware', () => {
+describe("authenticate middleware", () => {
   let mockReq;
   let mockRes;
   let nextFunction;
@@ -36,31 +42,31 @@ describe('authenticate middleware', () => {
     jest.clearAllMocks();
   });
 
-  describe('Authorization Header Validation', () => {
-    test('should return 401 if no authorization header is provided', () => {
+  describe("Authorization Header Validation", () => {
+    test("should return 401 if no authorization header is provided", () => {
       authenticate(mockReq, mockRes, nextFunction);
 
       expect(mockRes.status).toHaveBeenCalledWith(401);
       expect(mockRes.json).toHaveBeenCalledWith({
-        message: 'Authorization header required',
+        message: "Authorization header required",
       });
       expect(nextFunction).not.toHaveBeenCalled();
     });
 
-    test('should return 401 if authorization header does not start with Bearer', () => {
-      mockReq.headers['authorization'] = 'Basic sometoken';
+    test("should return 401 if authorization header does not start with Bearer", () => {
+      mockReq.headers["authorization"] = "Basic sometoken";
 
       authenticate(mockReq, mockRes, nextFunction);
 
       expect(mockRes.status).toHaveBeenCalledWith(401);
       expect(mockRes.json).toHaveBeenCalledWith({
-        message: 'Invalid token format (Bearer required)',
+        message: "Invalid token format (Bearer required)",
       });
       expect(nextFunction).not.toHaveBeenCalled();
     });
 
     test('should return 401 if authorization header is just "Bearer" without token', () => {
-      mockReq.headers['authorization'] = 'Bearer ';
+      mockReq.headers["authorization"] = "Bearer ";
 
       authenticate(mockReq, mockRes, nextFunction);
 
@@ -70,185 +76,214 @@ describe('authenticate middleware', () => {
     });
   });
 
-  describe('Token Validation', () => {
-    test('should call next() and set req.user for valid token', () => {
+  describe("Token Validation", () => {
+    test("should call next() and set req.user for valid token", () => {
       const payload = {
-        id: 'user-123',
-        email: 'test@example.com',
-        role: 'Admin',
+        id: "user-123",
+        email: "test@example.com",
+        role: "Admin",
       };
-      const token = jwt.sign(payload, JWT_SECRET, { expiresIn: '15m', algorithm: 'HS256' });
-      mockReq.headers['authorization'] = `Bearer ${token}`;
+      const token = jwt.sign(payload, JWT_SECRET, {
+        expiresIn: "15m",
+        algorithm: "HS256",
+      });
+      mockReq.headers["authorization"] = `Bearer ${token}`;
 
       authenticate(mockReq, mockRes, nextFunction);
 
       expect(nextFunction).toHaveBeenCalled();
       expect(mockReq.user).toEqual({
-        id: 'user-123',
-        email: 'test@example.com',
-        user_role_id: 'Admin',
-        role: 'Admin',
+        id: "user-123",
+        email: "test@example.com",
+        user_role_id: "Admin",
+        role: "Admin",
       });
     });
 
-    test('should return 401 for expired token', () => {
+    test("should return 401 for expired token", () => {
       const payload = {
-        id: 'user-123',
-        email: 'test@example.com',
-        role: 'Admin',
+        id: "user-123",
+        email: "test@example.com",
+        role: "Admin",
       };
       // Create an already-expired token
-      const token = jwt.sign(payload, JWT_SECRET, { expiresIn: '-1s', algorithm: 'HS256' });
-      mockReq.headers['authorization'] = `Bearer ${token}`;
+      const token = jwt.sign(payload, JWT_SECRET, {
+        expiresIn: "-1s",
+        algorithm: "HS256",
+      });
+      mockReq.headers["authorization"] = `Bearer ${token}`;
 
       authenticate(mockReq, mockRes, nextFunction);
 
       expect(mockRes.status).toHaveBeenCalledWith(401);
       expect(mockRes.json).toHaveBeenCalledWith({
-        message: 'Token expired',
+        message: "Token expired",
       });
       expect(nextFunction).not.toHaveBeenCalled();
     });
 
-    test('should return 403 for token signed with wrong secret', () => {
+    test("should return 403 for token signed with wrong secret", () => {
       const payload = {
-        id: 'user-123',
-        email: 'test@example.com',
-        role: 'Admin',
+        id: "user-123",
+        email: "test@example.com",
+        role: "Admin",
       };
-      const token = jwt.sign(payload, 'wrong_secret', { expiresIn: '15m', algorithm: 'HS256' });
-      mockReq.headers['authorization'] = `Bearer ${token}`;
+      const token = jwt.sign(payload, "wrong_secret", {
+        expiresIn: "15m",
+        algorithm: "HS256",
+      });
+      mockReq.headers["authorization"] = `Bearer ${token}`;
 
       authenticate(mockReq, mockRes, nextFunction);
 
       expect(mockRes.status).toHaveBeenCalledWith(403);
       expect(mockRes.json).toHaveBeenCalledWith({
-        message: 'Invalid token',
+        message: "Invalid token",
       });
       expect(nextFunction).not.toHaveBeenCalled();
     });
 
-    test('should return 403 for malformed token', () => {
-      mockReq.headers['authorization'] = 'Bearer not.a.valid.jwt.token';
+    test("should return 403 for malformed token", () => {
+      mockReq.headers["authorization"] = "Bearer not.a.valid.jwt.token";
 
       authenticate(mockReq, mockRes, nextFunction);
 
       expect(mockRes.status).toHaveBeenCalledWith(403);
       expect(mockRes.json).toHaveBeenCalledWith({
-        message: 'Invalid token',
+        message: "Invalid token",
       });
       expect(nextFunction).not.toHaveBeenCalled();
     });
 
-    test('should return 403 for tampered token payload', () => {
+    test("should return 403 for tampered token payload", () => {
       const payload = {
-        id: 'user-123',
-        email: 'test@example.com',
-        role: 'Admin',
+        id: "user-123",
+        email: "test@example.com",
+        role: "Admin",
       };
-      const token = jwt.sign(payload, JWT_SECRET, { expiresIn: '15m', algorithm: 'HS256' });
-      
+      const token = jwt.sign(payload, JWT_SECRET, {
+        expiresIn: "15m",
+        algorithm: "HS256",
+      });
+
       // Tamper with the payload portion of the token
-      const parts = token.split('.');
-      const tamperedPayload = Buffer.from(JSON.stringify({
-        id: 'hacker-999',
-        email: 'hacker@evil.com',
-        role: 'Admin',
-      })).toString('base64url');
+      const parts = token.split(".");
+      const tamperedPayload = Buffer.from(
+        JSON.stringify({
+          id: "hacker-999",
+          email: "hacker@evil.com",
+          role: "Admin",
+        })
+      ).toString("base64url");
       const tamperedToken = `${parts[0]}.${tamperedPayload}.${parts[2]}`;
-      
-      mockReq.headers['authorization'] = `Bearer ${tamperedToken}`;
+
+      mockReq.headers["authorization"] = `Bearer ${tamperedToken}`;
 
       authenticate(mockReq, mockRes, nextFunction);
 
       expect(mockRes.status).toHaveBeenCalledWith(403);
       expect(mockRes.json).toHaveBeenCalledWith({
-        message: 'Invalid token',
+        message: "Invalid token",
       });
       expect(nextFunction).not.toHaveBeenCalled();
     });
   });
 
-  describe('User Object Population', () => {
-    test('should correctly map role from token to user_role_id and role', () => {
+  describe("User Object Population", () => {
+    test("should correctly map role from token to user_role_id and role", () => {
       const payload = {
-        id: 'user-456',
-        email: 'manager@example.com',
-        role: 'Business Owner',
+        id: "user-456",
+        email: "manager@example.com",
+        role: "Business Owner",
       };
-      const token = jwt.sign(payload, JWT_SECRET, { expiresIn: '15m', algorithm: 'HS256' });
-      mockReq.headers['authorization'] = `Bearer ${token}`;
+      const token = jwt.sign(payload, JWT_SECRET, {
+        expiresIn: "15m",
+        algorithm: "HS256",
+      });
+      mockReq.headers["authorization"] = `Bearer ${token}`;
 
       authenticate(mockReq, mockRes, nextFunction);
 
       expect(mockReq.user).toEqual({
-        id: 'user-456',
-        email: 'manager@example.com',
-        user_role_id: 'Business Owner',
-        role: 'Business Owner',
+        id: "user-456",
+        email: "manager@example.com",
+        user_role_id: "Business Owner",
+        role: "Business Owner",
       });
     });
 
-    test('should handle tokens with additional claims', () => {
+    test("should handle tokens with additional claims", () => {
       const payload = {
-        id: 'user-789',
-        email: 'user@example.com',
-        role: 'Tourist',
+        id: "user-789",
+        email: "user@example.com",
+        role: "Tourist",
         iat: Math.floor(Date.now() / 1000),
-        customClaim: 'some value',
+        customClaim: "some value",
       };
-      const token = jwt.sign(payload, JWT_SECRET, { expiresIn: '15m', algorithm: 'HS256' });
-      mockReq.headers['authorization'] = `Bearer ${token}`;
+      const token = jwt.sign(payload, JWT_SECRET, {
+        expiresIn: "15m",
+        algorithm: "HS256",
+      });
+      mockReq.headers["authorization"] = `Bearer ${token}`;
 
       authenticate(mockReq, mockRes, nextFunction);
 
-      expect(mockReq.user.id).toBe('user-789');
-      expect(mockReq.user.email).toBe('user@example.com');
-      expect(mockReq.user.role).toBe('Tourist');
+      expect(mockReq.user.id).toBe("user-789");
+      expect(mockReq.user.email).toBe("user@example.com");
+      expect(mockReq.user.role).toBe("Tourist");
     });
   });
 
-  describe('Edge Cases', () => {
-    test('should handle token with minimal payload', () => {
+  describe("Edge Cases", () => {
+    test("should handle token with minimal payload", () => {
       // Token with just id (edge case - email and role might be missing)
-      const payload = { id: 'user-minimal' };
-      const token = jwt.sign(payload, JWT_SECRET, { expiresIn: '15m', algorithm: 'HS256' });
-      mockReq.headers['authorization'] = `Bearer ${token}`;
+      const payload = { id: "user-minimal" };
+      const token = jwt.sign(payload, JWT_SECRET, {
+        expiresIn: "15m",
+        algorithm: "HS256",
+      });
+      mockReq.headers["authorization"] = `Bearer ${token}`;
 
       authenticate(mockReq, mockRes, nextFunction);
 
       expect(nextFunction).toHaveBeenCalled();
-      expect(mockReq.user.id).toBe('user-minimal');
+      expect(mockReq.user.id).toBe("user-minimal");
       expect(mockReq.user.email).toBeUndefined();
       expect(mockReq.user.role).toBeUndefined();
     });
 
-    test('should handle lowercase bearer prefix', () => {
+    test("should handle lowercase bearer prefix", () => {
       const payload = {
-        id: 'user-123',
-        email: 'test@example.com',
-        role: 'Admin',
+        id: "user-123",
+        email: "test@example.com",
+        role: "Admin",
       };
-      const token = jwt.sign(payload, JWT_SECRET, { expiresIn: '15m', algorithm: 'HS256' });
-      mockReq.headers['authorization'] = `bearer ${token}`;
+      const token = jwt.sign(payload, JWT_SECRET, {
+        expiresIn: "15m",
+        algorithm: "HS256",
+      });
+      mockReq.headers["authorization"] = `bearer ${token}`;
 
       authenticate(mockReq, mockRes, nextFunction);
 
       // Should fail because Bearer is case-sensitive
       expect(mockRes.status).toHaveBeenCalledWith(401);
       expect(mockRes.json).toHaveBeenCalledWith({
-        message: 'Invalid token format (Bearer required)',
+        message: "Invalid token format (Bearer required)",
       });
     });
 
-    test('should handle authorization header with extra spaces', () => {
+    test("should handle authorization header with extra spaces", () => {
       const payload = {
-        id: 'user-123',
-        email: 'test@example.com',
-        role: 'Admin',
+        id: "user-123",
+        email: "test@example.com",
+        role: "Admin",
       };
-      const token = jwt.sign(payload, JWT_SECRET, { expiresIn: '15m', algorithm: 'HS256' });
-      mockReq.headers['authorization'] = `Bearer  ${token}`; // Two spaces
+      const token = jwt.sign(payload, JWT_SECRET, {
+        expiresIn: "15m",
+        algorithm: "HS256",
+      });
+      mockReq.headers["authorization"] = `Bearer  ${token}`; // Two spaces
 
       authenticate(mockReq, mockRes, nextFunction);
 
@@ -257,71 +292,82 @@ describe('authenticate middleware', () => {
     });
   });
 
-  describe('Algorithm Enforcement (Security)', () => {
-    test('should reject tokens signed with none algorithm', () => {
+  describe("Algorithm Enforcement (Security)", () => {
+    test("should reject tokens signed with none algorithm", () => {
       // Attempt to create a token with 'none' algorithm (algorithm confusion attack)
       const payload = {
-        id: 'attacker-123',
-        email: 'attacker@evil.com',
-        role: 'Admin',
+        id: "attacker-123",
+        email: "attacker@evil.com",
+        role: "Admin",
       };
       // Manually construct a token with 'none' algorithm
-      const header = Buffer.from(JSON.stringify({ alg: 'none', typ: 'JWT' })).toString('base64url');
-      const payloadB64 = Buffer.from(JSON.stringify(payload)).toString('base64url');
+      const header = Buffer.from(
+        JSON.stringify({ alg: "none", typ: "JWT" })
+      ).toString("base64url");
+      const payloadB64 = Buffer.from(JSON.stringify(payload)).toString(
+        "base64url"
+      );
       const noneToken = `${header}.${payloadB64}.`;
-      
-      mockReq.headers['authorization'] = `Bearer ${noneToken}`;
+
+      mockReq.headers["authorization"] = `Bearer ${noneToken}`;
 
       authenticate(mockReq, mockRes, nextFunction);
 
       expect(mockRes.status).toHaveBeenCalledWith(403);
       expect(mockRes.json).toHaveBeenCalledWith({
-        message: 'Invalid token',
+        message: "Invalid token",
       });
       expect(nextFunction).not.toHaveBeenCalled();
     });
 
-    test('should reject tokens signed with RS256 when HS256 is expected', () => {
+    test("should reject tokens signed with RS256 when HS256 is expected", () => {
       // This tests algorithm confusion - trying to use asymmetric algorithm
       // The middleware pins to HS256, so RS256 should be rejected
       const payload = {
-        id: 'user-123',
-        email: 'test@example.com',
-        role: 'Admin',
+        id: "user-123",
+        email: "test@example.com",
+        role: "Admin",
       };
-      
+
       // Create a fake RS256 header but sign with the secret as if it were a public key
       // This is a common attack vector when algorithm isn't pinned
-      const header = Buffer.from(JSON.stringify({ alg: 'RS256', typ: 'JWT' })).toString('base64url');
-      const payloadB64 = Buffer.from(JSON.stringify(payload)).toString('base64url');
-      const fakeSignature = Buffer.from('fake-signature').toString('base64url');
+      const header = Buffer.from(
+        JSON.stringify({ alg: "RS256", typ: "JWT" })
+      ).toString("base64url");
+      const payloadB64 = Buffer.from(JSON.stringify(payload)).toString(
+        "base64url"
+      );
+      const fakeSignature = Buffer.from("fake-signature").toString("base64url");
       const rs256Token = `${header}.${payloadB64}.${fakeSignature}`;
-      
-      mockReq.headers['authorization'] = `Bearer ${rs256Token}`;
+
+      mockReq.headers["authorization"] = `Bearer ${rs256Token}`;
 
       authenticate(mockReq, mockRes, nextFunction);
 
       expect(mockRes.status).toHaveBeenCalledWith(403);
       expect(mockRes.json).toHaveBeenCalledWith({
-        message: 'Invalid token',
+        message: "Invalid token",
       });
       expect(nextFunction).not.toHaveBeenCalled();
     });
 
-    test('should accept tokens signed with HS256 algorithm', () => {
+    test("should accept tokens signed with HS256 algorithm", () => {
       const payload = {
-        id: 'user-123',
-        email: 'test@example.com',
-        role: 'Admin',
+        id: "user-123",
+        email: "test@example.com",
+        role: "Admin",
       };
       // Explicitly use HS256 (which is what the middleware expects)
-      const token = jwt.sign(payload, JWT_SECRET, { expiresIn: '15m', algorithm: 'HS256' });
-      mockReq.headers['authorization'] = `Bearer ${token}`;
+      const token = jwt.sign(payload, JWT_SECRET, {
+        expiresIn: "15m",
+        algorithm: "HS256",
+      });
+      mockReq.headers["authorization"] = `Bearer ${token}`;
 
       authenticate(mockReq, mockRes, nextFunction);
 
       expect(nextFunction).toHaveBeenCalled();
-      expect(mockReq.user.id).toBe('user-123');
+      expect(mockReq.user.id).toBe("user-123");
     });
   });
 });
