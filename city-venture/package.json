@@ -4,8 +4,8 @@
   "version": "1.0.0",
   "scripts": {
     "start": "powershell -ExecutionPolicy Bypass -File ./update-ip.ps1 && expo start",
-    "android": "expo start --android",
-    "ios": "expo start --ios",
+    "android": "expo run:android",
+    "ios": "expo run:ios",
     "web": "expo start --web",
     "lint": "expo lint"
   },
@@ -35,6 +35,7 @@
     "expo-linear-gradient": "~15.0.7",
     "expo-linking": "~8.0.8",
     "expo-location": "^19.0.7",
+    "expo-maps": "~0.12.9",
     "expo-notifications": "~0.32.14",
     "expo-router": "~6.0.3",
     "expo-secure-store": "^15.0.7",
@@ -63,7 +64,6 @@
   },
   "devDependencies": {
     "@types/react": "~19.1.0",
-    "@types/react-native-maps": "^0.24.1",
     "babel-plugin-module-resolver": "^5.0.2",
     "baseline-browser-mapping": "^2.9.5",
     "eslint": "^9.25.0",

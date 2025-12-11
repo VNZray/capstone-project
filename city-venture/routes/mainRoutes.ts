@@ -51,8 +51,8 @@ export const Routes = {
   // ============================================================================
   tabs: {
     home: '/(tabs)/(home)',
-    maps: '/(tabs)/maps',
-    favorites: '/(tabs)/favorite',
+    maps: '/(tabs)/(maps)',
+    favorites: '/(tabs)/(favorite)',
     profile: '/(tabs)/(profile)',
     notification: '/(tabs)/(home)/(notification)',
   },

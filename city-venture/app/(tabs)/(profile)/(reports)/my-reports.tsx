@@ -152,7 +152,7 @@ export default function MyReports() {
           />
         }
       />
-      <PageContainer style={{ paddingBottom: 200 }}>
+      <PageContainer>
         {/* Header */}
         <View style={styles.headerSection}>
           <View>

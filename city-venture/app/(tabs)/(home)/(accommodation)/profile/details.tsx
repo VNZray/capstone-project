@@ -27,19 +27,9 @@ const Details = () => {
   const [loadingHours, setLoadingHours] = useState(false);
   const [rooms, setRooms] = useState<import('@/types/Business').Room[]>([]);
 
-  if (!accommodationDetails) {
-    return (
-      <View style={{ padding: 16 }}>
-        <ThemedText type="body-small">Accommodation not found.</ThemedText>
-        <Link href={'./(home)/(accommodation)'}>
-          <ThemedText type="link-medium">Go Home</ThemedText>
-        </Link>
-      </View>
-    );
-  }
-
   // Load amenities for this business
   useEffect(() => {
+    if (!accommodationDetails?.id) return;
     let isMounted = true;
     (async () => {
       if (!accommodationDetails?.id) return;
@@ -55,14 +45,7 @@ const Details = () => {
         if (isMounted) setLoadingAmenities(false);
       }
     })();
-    return () => {
-      isMounted = false;
-    };
-  }, [accommodationDetails?.id]);
 
-  // Load business hours for this business
-  useEffect(() => {
-    let isMounted = true;
     (async () => {
       if (!accommodationDetails?.id) return;
       try {
@@ -89,7 +72,7 @@ const Details = () => {
   return (
     <PageContainer gap={0} style={{ paddingTop: 0, paddingBottom: 100 }}>
       {/* About Section */}
-      <AboutSection description={accommodationDetails.description} />
+      <AboutSection description={accommodationDetails?.description} />
 
       {/* Amenities Section */}
       <AmenitySection amenities={amenities} loading={loadingAmenities} />
@@ -99,24 +82,23 @@ const Details = () => {
 
       {/* Contact Section */}
       <ContactSection
-        email={accommodationDetails.email}
-        phone={accommodationDetails.phone_number}
-        website={accommodationDetails.website_url}
+        email={accommodationDetails?.email}
+        phone={accommodationDetails?.phone_number}
+        website={accommodationDetails?.website_url}
       />
 
       {/* Socials Section */}
       <SocialsSection
-        facebookUrl={accommodationDetails.facebook_url}
-        twitterUrl={accommodationDetails.x_url}
-        instagramUrl={accommodationDetails.instagram_url}
+        facebookUrl={accommodationDetails?.facebook_url}
+        instagramUrl={accommodationDetails?.instagram_url}
       />
 
       {/* Map Section */}
       <MapSection
-        latitude={accommodationDetails.latitude}
-        longitude={accommodationDetails.longitude}
-        businessName={accommodationDetails.business_name}
-        description={accommodationDetails.description}
+        latitude={accommodationDetails?.latitude}
+        longitude={accommodationDetails?.longitude}
+        businessName={accommodationDetails?.business_name}
+        description={accommodationDetails?.description}
       />
     </PageContainer>
   );

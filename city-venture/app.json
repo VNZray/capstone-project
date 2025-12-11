@@ -11,7 +11,7 @@
     "ios": {
       "supportsTablet": true,
       "config": {
-        "googleMapsApiKey": "AIzaSyCvrFJIDAgujket50Rr8CXQ-gR-_6dpLjs"
+        "googleMapsApiKey": "process.env.EXPO_GOOGLE_MAPS_API_KEY"
       },
       "bundleIdentifier": "com.cityventure.cityventures",
       "infoPlist": {
@@ -21,7 +21,7 @@
     "android": {
       "config": {
         "googleMaps": {
-          "apiKey": "AIzaSyCvrFJIDAgujket50Rr8CXQ-gR-_6dpLjs"
+          "apiKey": "process.env.EXPO_GOOGLE_MAPS_API_KEY"
         }
       },
       "adaptiveIcon": {

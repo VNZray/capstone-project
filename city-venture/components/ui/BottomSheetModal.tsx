@@ -83,7 +83,11 @@ const BottomSheet: React.FC<Props> = ({
   // Present/dismiss modal based on isOpen prop
   useEffect(() => {
     if (isOpen) {
-      bottomSheetRef.current?.present();
+      // Small delay to ensure clean state before presenting
+      const timer = setTimeout(() => {
+        bottomSheetRef.current?.present();
+      }, 50);
+      return () => clearTimeout(timer);
     } else {
       bottomSheetRef.current?.dismiss();
     }

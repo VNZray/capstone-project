@@ -307,6 +307,7 @@ export default function ReportDetail() {
             {
               backgroundColor: isDark ? '#161A2E' : '#fff',
               borderColor: isDark ? '#28304a' : '#E2E8F0',
+              marginBottom: 100,
             },
           ]}
         >
