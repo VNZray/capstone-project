@@ -1,6 +1,4 @@
-import { apiService } from "@/src/utils/api";
 import apiClient from "../apiClient";
-import api from "../api";
 
 export interface StaffMember {
   id: string;
