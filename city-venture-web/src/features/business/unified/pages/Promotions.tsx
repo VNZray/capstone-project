@@ -16,6 +16,12 @@ import ShopPromotions from '../../has-store/promotion/ManagePromotion';
 
 /**
  * Unified Promotions - Routes to the correct promotion management based on business type
+ * 
+ * Business capability combinations:
+ * - hasBooking: true, hasStore: false  → Accommodation Promotions
+ * - hasBooking: false, hasStore: true  → Shop Promotions
+ * - hasBooking: true, hasStore: true   → Hybrid (shows both or primary)
+ * - hasBooking: false, hasStore: false → Fallback
  */
 const Promotions: React.FC = () => {
   const { businessDetails, loading } = useBusiness();
@@ -41,16 +47,23 @@ const Promotions: React.FC = () => {
     );
   }
 
-  // Route to appropriate promotions page based on capabilities
+  // Hybrid business - has both booking and store capabilities
+  // For now, prioritize Accommodation promotions (can add tabbed view later)
+  if (capabilities.canBook && capabilities.canSell) {
+    return <AccommodationPromotions />;
+  }
+
+  // Accommodation-only promotions
   if (capabilities.canBook) {
     return <AccommodationPromotions />;
   }
   
+  // Shop-only promotions
   if (capabilities.canSell) {
     return <ShopPromotions />;
   }
 
-  // Fallback
+  // Fallback - business with neither capability
   return (
     <PageContainer>
       <NoDataFound

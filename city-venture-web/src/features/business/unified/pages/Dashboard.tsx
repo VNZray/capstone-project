@@ -16,6 +16,12 @@ import ShopDashboard from './ShopDashboard';
 
 /**
  * Unified Dashboard - Routes to the correct dashboard based on business type
+ * 
+ * Business capability combinations:
+ * - hasBooking: true, hasStore: false  → Accommodation Dashboard
+ * - hasBooking: false, hasStore: true  → Shop Dashboard
+ * - hasBooking: true, hasStore: true   → Hybrid (shows Accommodation for now)
+ * - hasBooking: false, hasStore: false → Fallback
  */
 const Dashboard: React.FC = () => {
   const { businessDetails, loading } = useBusiness();
@@ -41,24 +47,29 @@ const Dashboard: React.FC = () => {
     );
   }
 
-  // Route to appropriate dashboard based on capabilities
+  // Hybrid business - has both booking and store capabilities
+  // For now, prioritize Accommodation dashboard (can add tabbed view later)
+  if (capabilities.canBook && capabilities.canSell) {
+    return <AccommodationDashboard />;
+  }
+
+  // Accommodation-only dashboard
   if (capabilities.canBook) {
-    // Accommodation dashboard
     return <AccommodationDashboard />;
   }
   
+  // Shop-only dashboard
   if (capabilities.canSell) {
-    // Shop dashboard
     return <ShopDashboard />;
   }
 
-  // Fallback - shouldn't happen but handle gracefully
+  // Fallback - business with neither capability
   return (
     <PageContainer>
       <NoDataFound
         icon="database"
         title="Dashboard Not Available"
-        message="Your business type is not yet supported."
+        message="Your business type is not yet supported. Please contact support."
       />
     </PageContainer>
   );

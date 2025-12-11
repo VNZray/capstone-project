@@ -19,6 +19,7 @@ export type Business = {
   status: string;
   business_image?: string | "";
   hasBooking?: boolean;
+  hasStore?: boolean;
   barangay_id: number;
   subscription_plan?: string;
   // New hierarchical category system
@@ -57,6 +58,7 @@ export type BusinessDetails = {
   status: string;
   business_image?: string | "";
   hasBooking?: boolean;
+  hasStore?: boolean;
   barangay_id: number;
   province_name?: string | "";
   municipality_name?: string | "";

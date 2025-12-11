@@ -7,8 +7,28 @@ import { useBusiness } from '@/src/context/BusinessContext';
 import type { BusinessCapabilities } from '../types';
 
 /**
+ * Normalize a boolean-like value from backend
+ * Handles boolean, string "true"/"false", number 1/0
+ */
+function normalizeBooleanValue(value: unknown): boolean {
+  if (value === null || value === undefined) return false;
+  if (typeof value === 'boolean') return value;
+  if (typeof value === 'number') return value === 1;
+  if (typeof value === 'string') {
+    return value === '1' || value.toLowerCase() === 'true';
+  }
+  return false;
+}
+
+/**
  * Derives business capabilities from the current business context
  * Capabilities determine which features/navigation items are available
+ * 
+ * Business capability combinations:
+ * - hasBooking: true, hasStore: false  → Accommodation only (canBook)
+ * - hasBooking: false, hasStore: true  → Shop only (canSell)
+ * - hasBooking: true, hasStore: true   → Both capabilities
+ * - hasBooking: false, hasStore: false → Neither (edge case, minimal features)
  */
 export function useBusinessCapabilities(): BusinessCapabilities {
   const { businessDetails } = useBusiness();
@@ -28,30 +48,20 @@ export function useBusinessCapabilities(): BusinessCapabilities {
       };
     }
     
-    // Derive capabilities from business details
-    // hasBooking can be boolean, string "true"/"false", or number 1/0
-    // Using explicit type coercion to handle all possible backend response types
-    const hasBookingValue = businessDetails.hasBooking;
-    
-    // Normalize the value to handle different data types from backend
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const rawValue = hasBookingValue as any;
-    const isAccommodation = rawValue === true || 
-                            rawValue === 1 || 
-                            rawValue === '1' || 
-                            rawValue === 'true';
-    const isShop = !isAccommodation;
+    // Normalize boolean values from backend
+    const hasBooking = normalizeBooleanValue(businessDetails.hasBooking);
+    const hasStore = normalizeBooleanValue(businessDetails.hasStore);
     
     // Debug logging
-    console.log('[useBusinessCapabilities] businessDetails.hasBooking:', hasBookingValue, 'isAccommodation:', isAccommodation);
+    console.log('[useBusinessCapabilities] hasBooking:', hasBooking, 'hasStore:', hasStore);
     
     return {
-      // Shop capabilities
-      canSell: isShop,
+      // Store capabilities (based on hasStore flag)
+      canSell: hasStore,
       
-      // Accommodation capabilities
-      canBook: isAccommodation,
-      canViewTransactions: isAccommodation,
+      // Booking capabilities (based on hasBooking flag)
+      canBook: hasBooking,
+      canViewTransactions: hasBooking,
       
       // Common capabilities (all businesses)
       canPromote: true,
