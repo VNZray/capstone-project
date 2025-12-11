@@ -168,8 +168,8 @@ const TermsAndConditions = () => {
               style={[styles.paragraph, { color: subTextColor }]}
             >
               All bookings made through City Venture are subject to availability
-              and confirmation. Payment must be made through the approved payment
-              methods within the application.
+              and confirmation. Payment must be made through the approved
+              payment methods within the application.
             </ThemedText>
             <ThemedText
               type="body-medium"
@@ -240,8 +240,8 @@ const TermsAndConditions = () => {
               style={[styles.paragraph, { color: subTextColor }]}
             >
               City Venture shall not be liable for any indirect, incidental,
-              special, consequential, or punitive damages resulting from your use
-              of or inability to use the service.
+              special, consequential, or punitive damages resulting from your
+              use of or inability to use the service.
             </ThemedText>
           </View>
 
@@ -259,8 +259,8 @@ const TermsAndConditions = () => {
               style={[styles.paragraph, { color: subTextColor }]}
             >
               We reserve the right to modify or replace these Terms at any time.
-              If a revision is material, we will provide at least 30 days' notice
-              prior to any new terms taking effect.
+              If a revision is material, we will provide at least 30 days'
+              notice prior to any new terms taking effect.
             </ThemedText>
           </View>
 
