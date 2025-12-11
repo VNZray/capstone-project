@@ -13,19 +13,8 @@ import {
   getUserById,
 } from '@/services/UserService';
 import { Ionicons } from '@expo/vector-icons';
-import {
-  BottomSheetBackdrop,
-  BottomSheetModal,
-  BottomSheetScrollView,
-} from '@gorhom/bottom-sheet';
-import { StatusBar } from 'expo-status-bar';
-import React, {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from 'react';
+import BottomSheetModal from '@/components/ui/BottomSheetModal';
+import React, { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 type ChangeEmailStep = 'password' | 'email' | 'otp' | 'success';
@@ -45,15 +34,12 @@ const ChangeEmail: React.FC<ChangeEmailProps> = ({
   userId,
   onSuccess,
 }) => {
-  const bottomSheetRef = useRef<BottomSheetModal>(null);
   const scheme = useColorScheme();
   const isDark = scheme === 'dark';
   const { user, login } = useAuth();
 
-  const bg = Colors.light.background;
   const textColor = isDark ? '#ECEDEE' : '#0D1B2A';
   const subTextColor = isDark ? '#9BA1A6' : '#6B7280';
-  const handleColor = isDark ? '#4B5563' : '#D1D5DB';
 
   const [step, setStep] = useState<ChangeEmailStep>('password');
   const [password, setPassword] = useState('');
@@ -61,42 +47,6 @@ const ChangeEmail: React.FC<ChangeEmailProps> = ({
   const [otp, setOtp] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
-
-  // Snap points for bottom sheet
-  const snapPoints = useMemo(() => ['100%'], []);
-
-  // Present/dismiss bottom sheet based on visible prop
-  useEffect(() => {
-    if (visible) {
-      bottomSheetRef.current?.present();
-    } else {
-      bottomSheetRef.current?.dismiss();
-    }
-  }, [visible]);
-
-  // Handle sheet changes
-  const handleSheetChanges = useCallback(
-    (index: number) => {
-      if (index === -1) {
-        onClose();
-      }
-    },
-    [onClose]
-  );
-
-  // Render backdrop
-  const renderBackdrop = useCallback(
-    (props: any) => (
-      <BottomSheetBackdrop
-        {...props}
-        disappearsOnIndex={-1}
-        appearsOnIndex={0}
-        opacity={0.6}
-        pressBehavior="close"
-      />
-    ),
-    []
-  );
 
   const handleClose = () => {
     setStep('password');
@@ -262,7 +212,7 @@ const ChangeEmail: React.FC<ChangeEmailProps> = ({
     switch (step) {
       case 'password':
         return (
-          <>
+          <Container backgroundColor="transparent">
             <View style={styles.stepIndicator}>
               <View style={[styles.stepDot, styles.stepActive]} />
               <View style={styles.stepLine} />
@@ -305,7 +255,7 @@ const ChangeEmail: React.FC<ChangeEmailProps> = ({
               color="primary"
               size="large"
             />
-          </>
+          </Container>
         );
 
       case 'email':
@@ -499,76 +449,18 @@ const ChangeEmail: React.FC<ChangeEmailProps> = ({
 
   return (
     <BottomSheetModal
-      ref={bottomSheetRef}
-      index={0}
-      snapPoints={snapPoints}
-      onChange={handleSheetChanges}
-      backdropComponent={renderBackdrop}
-      enablePanDownToClose
-      enableDynamicSizing={false}
-      keyboardBehavior="interactive"
-      keyboardBlurBehavior="restore"
-      android_keyboardInputMode="adjustResize"
-      backgroundStyle={[styles.sheetBackground, { backgroundColor: bg }]}
-      handleIndicatorStyle={[
-        styles.handleIndicator,
-        { backgroundColor: handleColor },
-      ]}
-    >
-      <StatusBar style={isDark ? 'light' : 'dark'} />
-
-      <View style={styles.modalHeader}>
-        <ThemedText
-          type="card-title-medium"
-          weight="semi-bold"
-          style={{ color: textColor }}
-        >
-          Change Email
-        </ThemedText>
-      </View>
-
-      <BottomSheetScrollView
-        contentContainerStyle={styles.modalContent}
-        keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}
-      >
-        {renderStepContent()}
-      </BottomSheetScrollView>
-    </BottomSheetModal>
+      isOpen={visible}
+      onClose={handleClose}
+      headerTitle="Change Email"
+      snapPoints={['100%']}
+      content={renderStepContent()}
+    />
   );
 };
 
 export default ChangeEmail;
 
 const styles = StyleSheet.create({
-  sheetBackground: {
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-  },
-  handleIndicator: {
-    width: 40,
-    height: 4,
-    borderRadius: 2,
-    marginTop: 8,
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 16,
-    paddingTop: 32,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(0,0,0,0.1)',
-  },
-  cancelButton: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-  },
-  modalContent: {
-    padding: 20,
-    flexGrow: 1,
-  },
   stepIndicator: {
     flexDirection: 'row',
     alignItems: 'center',

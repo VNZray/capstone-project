@@ -1,24 +1,14 @@
-import React, {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from 'react';
+import React, { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
-import {
-  BottomSheetBackdrop,
-  BottomSheetModal,
-  BottomSheetScrollView,
-} from '@gorhom/bottom-sheet';
+import BottomSheetModal from '@/components/ui/BottomSheetModal';
 import { Ionicons } from '@expo/vector-icons';
-import { StatusBar } from 'expo-status-bar';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { Colors } from '@/constants/color';
 import { ThemedText } from '@/components/themed-text';
 import Button from '@/components/Button';
 import { updateTourist, getTouristByUserId } from '@/services/TouristService';
 import { useAuth } from '@/context/AuthContext';
+import Container from '@/components/Container';
 
 interface ChangeGenderProps {
   visible: boolean;
@@ -42,29 +32,21 @@ const ChangeGender: React.FC<ChangeGenderProps> = ({
   onClose,
   onSuccess,
 }) => {
-  const bottomSheetRef = useRef<BottomSheetModal>(null);
   const scheme = useColorScheme();
   const isDark = scheme === 'dark';
   const { user, updateUser } = useAuth();
 
-  const bg = Colors.light.background;
   const textColor = isDark ? '#ECEDEE' : '#0D1B2A';
   const subTextColor = isDark ? '#9BA1A6' : '#6B7280';
-  const handleColor = isDark ? '#4B5563' : '#D1D5DB';
 
   const [selectedGender, setSelectedGender] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [touristId, setTouristId] = useState<string>('');
 
-  const snapPoints = useMemo(() => ['60%'], []);
-
   useEffect(() => {
     if (visible) {
-      bottomSheetRef.current?.present();
       loadCurrentData();
-    } else {
-      bottomSheetRef.current?.dismiss();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [visible]);
@@ -80,28 +62,6 @@ const ChangeGender: React.FC<ChangeGenderProps> = ({
       console.error('Error loading tourist data:', err);
     }
   };
-
-  const handleSheetChanges = useCallback(
-    (index: number) => {
-      if (index === -1) {
-        onClose();
-      }
-    },
-    [onClose]
-  );
-
-  const renderBackdrop = useCallback(
-    (props: any) => (
-      <BottomSheetBackdrop
-        {...props}
-        disappearsOnIndex={-1}
-        appearsOnIndex={0}
-        opacity={0.6}
-        pressBehavior="close"
-      />
-    ),
-    []
-  );
 
   const handleClose = () => {
     setError('');
@@ -144,113 +104,91 @@ const ChangeGender: React.FC<ChangeGenderProps> = ({
 
   return (
     <BottomSheetModal
-      ref={bottomSheetRef}
-      index={0}
-      snapPoints={snapPoints}
-      onChange={handleSheetChanges}
-      backdropComponent={renderBackdrop}
-      enablePanDownToClose
-      enableDynamicSizing={false}
-      backgroundStyle={[styles.sheetBackground, { backgroundColor: bg }]}
-      handleIndicatorStyle={[
-        styles.handleIndicator,
-        { backgroundColor: handleColor },
-      ]}
-    >
-      <StatusBar style={isDark ? 'light' : 'dark'} />
+      isOpen={visible}
+      onClose={handleClose}
+      headerTitle="Edit Gender"
+      snapPoints={['60%']}
+      content={
+        <Container backgroundColor="transparent">
+          <ThemedText
+            type="body-medium"
+            style={{
+              color: subTextColor,
+              marginBottom: 20,
+              textAlign: 'center',
+            }}
+          >
+            Select your gender
+          </ThemedText>
 
-      <View style={styles.modalHeader}>
-        <ThemedText
-          type="card-title-medium"
-          weight="semi-bold"
-          style={{ color: textColor }}
-        >
-          Edit Gender
-        </ThemedText>
-        <Pressable onPress={handleClose} style={styles.closeButton}>
-          <Ionicons name="close" size={24} color={subTextColor} />
-        </Pressable>
-      </View>
-
-      <BottomSheetScrollView
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
-        <ThemedText
-          type="body-medium"
-          style={{ color: subTextColor, marginBottom: 20, textAlign: 'center' }}
-        >
-          Select your gender
-        </ThemedText>
-
-        <View style={styles.optionsContainer}>
-          {GENDERS.map((gender) => (
-            <Pressable
-              key={gender.value}
-              style={[
-                styles.optionCard,
-                selectedGender === gender.value && styles.optionCardSelected,
-              ]}
-              onPress={() => setSelectedGender(gender.value)}
-            >
-              <View
+          <View style={styles.optionsContainer}>
+            {GENDERS.map((gender) => (
+              <Pressable
+                key={gender.value}
                 style={[
-                  styles.iconContainer,
-                  selectedGender === gender.value &&
-                    styles.iconContainerSelected,
+                  styles.optionCard,
+                  selectedGender === gender.value && styles.optionCardSelected,
                 ]}
+                onPress={() => setSelectedGender(gender.value)}
               >
-                <Ionicons
-                  name={gender.icon as any}
-                  size={24}
-                  color={
-                    selectedGender === gender.value
-                      ? '#FFFFFF'
-                      : Colors.light.primary
+                <View
+                  style={[
+                    styles.iconContainer,
+                    selectedGender === gender.value &&
+                      styles.iconContainerSelected,
+                  ]}
+                >
+                  <Ionicons
+                    name={gender.icon as any}
+                    size={24}
+                    color={
+                      selectedGender === gender.value
+                        ? '#FFFFFF'
+                        : Colors.light.primary
+                    }
+                  />
+                </View>
+                <ThemedText
+                  type="body-medium"
+                  weight={
+                    selectedGender === gender.value ? 'semi-bold' : 'normal'
                   }
-                />
-              </View>
-              <ThemedText
-                type="body-medium"
-                weight={
-                  selectedGender === gender.value ? 'semi-bold' : 'normal'
-                }
-                style={{
-                  color:
-                    selectedGender === gender.value
-                      ? Colors.light.primary
-                      : textColor,
-                }}
-              >
-                {gender.label}
-              </ThemedText>
-              {selectedGender === gender.value && (
-                <Ionicons
-                  name="checkmark-circle"
-                  size={24}
-                  color={Colors.light.primary}
-                  style={styles.checkIcon}
-                />
-              )}
-            </Pressable>
-          ))}
-        </View>
-
-        {error && (
-          <View style={styles.errorContainer}>
-            <Ionicons
-              name="alert-circle"
-              size={16}
-              color={Colors.light.error}
-            />
-            <ThemedText type="label-small" style={styles.errorText}>
-              {error}
-            </ThemedText>
+                  style={{
+                    color:
+                      selectedGender === gender.value
+                        ? Colors.light.primary
+                        : textColor,
+                  }}
+                >
+                  {gender.label}
+                </ThemedText>
+                {selectedGender === gender.value && (
+                  <Ionicons
+                    name="checkmark-circle"
+                    size={24}
+                    color={Colors.light.primary}
+                    style={styles.checkIcon}
+                  />
+                )}
+              </Pressable>
+            ))}
           </View>
-        )}
-      </BottomSheetScrollView>
 
-      <View style={styles.buttonContainer}>
+          {error && (
+            <View style={styles.errorContainer}>
+              <Ionicons
+                name="alert-circle"
+                size={16}
+                color={Colors.light.error}
+              />
+              <ThemedText type="label-small" style={styles.errorText}>
+                {error}
+              </ThemedText>
+            </View>
+          )}
+        </Container>
+      }
+      bottomActionButton={
         <Button
           label={isLoading ? 'Saving...' : 'Save Changes'}
           onPress={handleSave}
@@ -259,47 +197,14 @@ const ChangeGender: React.FC<ChangeGenderProps> = ({
           color="primary"
           size="large"
         />
-      </View>
-    </BottomSheetModal>
+      }
+    />
   );
 };
 
 export default ChangeGender;
 
 const styles = StyleSheet.create({
-  sheetBackground: {
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-  },
-  handleIndicator: {
-    width: 40,
-    height: 4,
-    borderRadius: 2,
-    marginTop: 8,
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 16,
-    paddingTop: 32,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(0,0,0,0.1)',
-  },
-  closeButton: {
-    padding: 8,
-  },
-  scrollContent: {
-    padding: 20,
-    paddingBottom: 100,
-  },
-  buttonContainer: {
-    padding: 20,
-    paddingTop: 12,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(0,0,0,0.1)',
-  },
   optionsContainer: {
     gap: 12,
   },

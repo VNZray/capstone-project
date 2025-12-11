@@ -34,6 +34,12 @@ function RootLayoutNav() {
 
       {/* Modal screens - cross-tab shared views */}
       <Stack.Screen
+        name="(test)"
+        options={{
+          animation: 'slide_from_bottom',
+        }}
+      />
+      <Stack.Screen
         name="(modals)"
         options={{
           presentation: 'modal',

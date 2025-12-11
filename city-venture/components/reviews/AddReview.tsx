@@ -1,35 +1,24 @@
 import { ThemedText } from '@/components/themed-text';
-import { card, Colors, colors } from '@/constants/color';
+import { Colors, colors } from '@/constants/color';
 import { useAccommodation } from '@/context/AccommodationContext';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import type { CreateReviewPayload, ReviewWithAuthor } from '@/types/Feedback';
 import { uploadReviewImage } from '@/utils/uploadReviewImage';
 import { Ionicons } from '@expo/vector-icons';
-import {
-  BottomSheetBackdrop,
-  BottomSheetModal,
-  BottomSheetScrollView,
-  BottomSheetTextInput,
-} from '@gorhom/bottom-sheet';
+import { BottomSheetTextInput } from '@gorhom/bottom-sheet';
 import * as ImagePicker from 'expo-image-picker';
-import React, {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
   Image,
-  KeyboardAvoidingView,
-  Platform,
   Pressable,
   StyleSheet,
   View,
 } from 'react-native';
 import Button from '../Button';
+import BottomSheetModal from '../ui/BottomSheetModal';
+import Container from '../Container';
 
 type Props = {
   visible: boolean;
@@ -52,7 +41,6 @@ const AddReview = ({
   reviewTypeId,
   title,
 }: Props) => {
-  const bottomSheetRef = useRef<BottomSheetModal>(null);
   const scheme = useColorScheme();
   const isDark = scheme === 'dark';
   const { accommodationDetails } = useAccommodation();
@@ -62,44 +50,6 @@ const AddReview = ({
   const [images, setImages] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<string>('');
-
-  // Bottom sheet snap points
-  const snapPoints = useMemo(() => ['60%', '60%'], []);
-
-  const surface = isDark ? card.dark : card.light;
-  const handleColor = isDark ? '#4B5563' : '#D1D5DB';
-
-  // Present/dismiss bottom sheet based on visible prop
-  useEffect(() => {
-    if (visible) {
-      bottomSheetRef.current?.present();
-    } else {
-      bottomSheetRef.current?.dismiss();
-    }
-  }, [visible]);
-
-  // Handle sheet changes
-  const handleSheetChanges = useCallback(
-    (index: number) => {
-      if (index === -1) {
-        onClose();
-      }
-    },
-    [onClose]
-  );
-
-  // Render backdrop
-  const renderBackdrop = useCallback(
-    (props: any) => (
-      <BottomSheetBackdrop
-        {...props}
-        disappearsOnIndex={-1}
-        appearsOnIndex={0}
-        opacity={0.5}
-      />
-    ),
-    []
-  );
 
   useEffect(() => {
     if (editReview) {
@@ -219,34 +169,19 @@ const AddReview = ({
 
   return (
     <BottomSheetModal
-      ref={bottomSheetRef}
-      index={1}
-      snapPoints={snapPoints}
-      onChange={handleSheetChanges}
-      backdropComponent={renderBackdrop}
-      enablePanDownToClose
-      enableDynamicSizing={false}
+      isOpen={visible}
+      onClose={onClose}
+      headerTitle={
+        title || (editReview ? 'Edit Your Review' : 'How was your stay?')
+      }
+      snapPoints={['60%']}
+      index={0}
       keyboardBehavior="interactive"
       keyboardBlurBehavior="restore"
       android_keyboardInputMode="adjustResize"
-      backgroundStyle={{ backgroundColor: surface }}
-      handleIndicatorStyle={{ backgroundColor: handleColor, width: 40 }}
-    >
-      <KeyboardAvoidingView
-        style={styles.keyboardAvoid}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 10 : 0}
-      >
-        <View style={styles.header}>
-          <ThemedText type="card-title-medium" weight="medium">
-            {title || (editReview ? 'Edit Your Review' : 'How was your stay?')}
-          </ThemedText>
-        </View>
-        <BottomSheetScrollView
-          style={styles.content}
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.scrollContent}
-        >
+      closeButton={false}
+      content={
+        <Container backgroundColor="transparent">
           {/* Star Rating */}
           <View style={styles.ratingSection}>
             <View style={styles.starsContainer}>
@@ -327,57 +262,37 @@ const AddReview = ({
               </View>
             )}
           </View>
-        </BottomSheetScrollView>
-      </KeyboardAvoidingView>
-      {/* Footer */}
-      <View style={styles.footer}>
-        {uploadProgress ? (
-          <View style={styles.progressContainer}>
-            <ActivityIndicator size="small" color={colors.primary} />
-            <ThemedText type="body-small" style={styles.progressText}>
-              {uploadProgress}
-            </ThemedText>
-          </View>
-        ) : null}
+        </Container>
+      }
+      bottomActionButton={
+        <>
+          {uploadProgress ? (
+            <View style={styles.progressContainer}>
+              <ActivityIndicator size="small" color={colors.primary} />
+              <ThemedText type="body-small" style={styles.progressText}>
+                {uploadProgress}
+              </ThemedText>
+            </View>
+          ) : null}
 
-        <Button fullWidth onPress={handleSubmit} disabled={loading}>
-          {loading && !uploadProgress ? (
-            <ActivityIndicator color="white" />
-          ) : editReview ? (
-            'Update Review'
-          ) : (
-            'Submit Review'
-          )}
-        </Button>
-      </View>
-    </BottomSheetModal>
+          <Button width={'100%'} onPress={handleSubmit} disabled={loading}>
+            {loading && !uploadProgress ? (
+              <ActivityIndicator color="white" />
+            ) : editReview ? (
+              'Update Review'
+            ) : (
+              'Submit Review'
+            )}
+          </Button>
+        </>
+      }
+    />
   );
 };
 
 export default AddReview;
 
 const styles = StyleSheet.create({
-  keyboardAvoid: {
-    flex: 1,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(128,128,128,0.15)',
-  },
-  closeButton: {
-    padding: 4,
-  },
-  content: {
-    flex: 1,
-  },
-  scrollContent: {
-    paddingHorizontal: 20,
-  },
   ratingSection: {
     alignItems: 'center',
     marginBottom: 24,
@@ -433,13 +348,6 @@ const styles = StyleSheet.create({
     right: -6,
     backgroundColor: 'white',
     borderRadius: 11,
-  },
-  footer: {
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(128,128,128,0.15)',
-    height: 80,
   },
   progressContainer: {
     flexDirection: 'row',

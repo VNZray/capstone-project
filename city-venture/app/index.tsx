@@ -88,6 +88,14 @@ const Main = () => {
               color="neutral"
               onPress={() => router.push(Routes.auth.register)}
             />
+
+            <Button
+              style={{ width: '100%' }}
+              label="Test Page"
+              size="large"
+              onPress={() => router.push(Routes.test.test)}
+              color="success"
+            />
           </View>
         </LinearGradient>
       </ImageBackground>

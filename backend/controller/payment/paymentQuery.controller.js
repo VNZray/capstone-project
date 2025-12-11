@@ -22,7 +22,16 @@ export async function getPaymentByPayerId(req, res) {
   const { payer_id } = req.params;
   try {
     const userRole = await ensureUserRole(req);
+
+    console.log('[getPaymentByPayerId] Request params:', { payer_id, userId: req.user?.id, userRole });
+
     if (userRole !== 'Admin' && req.user?.id !== payer_id) {
+      console.log('[getPaymentByPayerId] Access denied:', {
+        userRole,
+        userId: req.user?.id,
+        requestedPayerId: payer_id,
+        match: req.user?.id === payer_id,
+      });
       return res.status(403).json({ message: "Forbidden: you can only view your own payments" });
     }
 
@@ -30,6 +39,8 @@ export async function getPaymentByPayerId(req, res) {
     if (!data[0] || data[0].length === 0) {
       return res.status(404).json({ message: "Payment not found" });
     }
+
+    console.log('[getPaymentByPayerId] Returning', data[0].length, 'payments');
     res.json(data[0]);
   } catch (error) {
     return handleDbError(error, res);
@@ -44,40 +55,40 @@ export async function getPaymentById(req, res) {
     if (!data[0] || data[0].length === 0) {
       return res.status(404).json({ message: "Payment not found" });
     }
-    
+
     const payment = data[0][0];
-    
+
     // Ownership Validation (Phase 4)
     if (req.user) {
       const userId = req.user.id;
       const userRole = await ensureUserRole(req);
-      
+
       if (userRole !== 'Admin') {
         // For tourists: must own the payment (payer_id match)
         if (userRole === 'Tourist' && payment.payer_id !== userId) {
-          return res.status(403).json({ 
-            message: "Forbidden: you can only view your own payments" 
+          return res.status(403).json({
+            message: "Forbidden: you can only view your own payments"
           });
         }
-        
+
         // For business owners/staff: verify they own the business
         if (['Owner', 'Staff'].includes(userRole) && payment.payment_for === 'order') {
           const [orderCheck] = await db.query(
-            `SELECT b.owner_id FROM \`order\` o 
-             JOIN business b ON b.id = o.business_id 
+            `SELECT b.owner_id FROM \`order\` o
+             JOIN business b ON b.id = o.business_id
              WHERE o.id = ?`,
             [payment.payment_for_id]
           );
-          
+
           if (!orderCheck || orderCheck.length === 0 || orderCheck[0].owner_id !== userId) {
-            return res.status(403).json({ 
-              message: "Forbidden: you do not have access to this payment" 
+            return res.status(403).json({
+              message: "Forbidden: you do not have access to this payment"
             });
           }
         }
       }
     }
-    
+
     res.json(payment);
   } catch (error) {
     return handleDbError(error, res);
@@ -126,14 +137,14 @@ export async function getPaymentByOrderId(req, res) {
       `SELECT * FROM payment WHERE payment_for = 'order' AND payment_for_id = ?`,
       [order_id]
     );
-    
+
     if (!data || data.length === 0) {
-      return res.status(404).json({ 
+      return res.status(404).json({
         success: false,
-        message: "No payment found for this order" 
+        message: "No payment found for this order"
       });
     }
-    
+
     res.json({
       success: true,
       data: data[0]

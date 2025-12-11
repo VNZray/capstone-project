@@ -16,8 +16,11 @@ export default function ReportsHome() {
   const bg = isDark ? '#0F1222' : '#F5F7FB';
 
   return (
-    <PageContainer padding={0} style={{ paddingBottom: 100 }}>
-      <ScrollView style={{ padding: 16 }} showsVerticalScrollIndicator={false}>
+    <PageContainer padding={0} style={{}}>
+      <ScrollView
+        style={{ padding: 16, marginBottom: 240 }}
+        showsVerticalScrollIndicator={false}
+      >
         {/* Hero Section */}
         <View style={styles.hero}>
           <View
@@ -93,9 +96,7 @@ export default function ReportsHome() {
               style={{ marginTop: 20, backgroundColor: '#fff' }}
               textStyle={{ color: Colors.light.primary }}
               startIcon="plus"
-              onPress={() =>
-                router.push(Routes.profile.reports.submit)
-              }
+              onPress={() => router.push(Routes.profile.reports.submit)}
             />
           </View>
 
@@ -135,9 +136,7 @@ export default function ReportsHome() {
               color="info"
               style={{ marginTop: 20 }}
               startIcon="eye"
-              onPress={() =>
-                router.push(Routes.profile.reports.myReports)
-              }
+              onPress={() => router.push(Routes.profile.reports.myReports)}
             />
           </View>
         </View>

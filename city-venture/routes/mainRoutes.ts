@@ -42,6 +42,10 @@ export const Routes = {
     forgotPassword: '/(auth)/forgot-password',
   },
 
+  test: {
+    test: '/(test)',
+  },
+
   // ============================================================================
   // Tab Navigation - Main authenticated navigation structure
   // ============================================================================
@@ -180,6 +184,7 @@ export const Routes = {
     notifications: '/(tabs)/(profile)/(notifications)',
     transactions: '/(tabs)/(profile)/(transactions)',
     settings: '/(tabs)/(profile)/(settings)',
+    rateApp: '/(tabs)/(profile)/(rate-app)',
     bookings: {
       index: '/(tabs)/(profile)/(bookings)',
       detail: (id: string) => ({
@@ -199,6 +204,8 @@ export const Routes = {
       submit: '/(tabs)/(profile)/(reports)/submit',
       myReports: '/(tabs)/(profile)/(reports)/my-reports',
     },
+    terms: '/(tabs)/(profile)/(terms-and-conditions)',
+    privacy: '/(tabs)/(profile)/(privacy-policy)',
   },
 
   // ============================================================================

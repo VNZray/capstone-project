@@ -43,7 +43,7 @@ router.get("/", authenticate, authorizeRole("Admin", "Business Owner", "Staff", 
 router.get("/:id", authenticate, authorizeRole("Admin", "Business Owner", "Staff", "Tourist"), paymentController.getPaymentById);
 
 // Get payments by payer ID
-router.get("/payer/:payer_id", authenticate, authorizeRole("Admin", "Business Owner", "Staff", "Tourist"), paymentController.getPaymentByPayerId);
+router.get("/payer/:payer_id", authenticate, paymentController.getPaymentByPayerId);
 
 // Get payments by payment_for_id (order/booking/subscription ID)
 router.get("/for/:payment_for_id", authenticate, authorizeRole("Admin", "Business Owner", "Staff", "Tourist"), paymentController.getPaymentByPaymentForId);

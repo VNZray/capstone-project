@@ -12,20 +12,10 @@ import {
   getUserById,
 } from '@/services/UserService';
 import { Ionicons } from '@expo/vector-icons';
-import {
-  BottomSheetBackdrop,
-  BottomSheetModal,
-  BottomSheetScrollView,
-} from '@gorhom/bottom-sheet';
-import { StatusBar } from 'expo-status-bar';
-import React, {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from 'react';
+import BottomSheetModal from '@/components/ui/BottomSheetModal';
+import React, { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
+import Container from '@/components/Container';
 
 type ChangePasswordStep =
   | 'send-otp'
@@ -48,15 +38,12 @@ const ChangePassword: React.FC<ChangePasswordProps> = ({
   userId,
   onSuccess,
 }) => {
-  const bottomSheetRef = useRef<BottomSheetModal>(null);
   const scheme = useColorScheme();
   const isDark = scheme === 'dark';
   const { user } = useAuth();
 
-  const bg = Colors.light.background;
   const textColor = isDark ? '#ECEDEE' : '#0D1B2A';
   const subTextColor = isDark ? '#9BA1A6' : '#6B7280';
-  const handleColor = isDark ? '#4B5563' : '#D1D5DB';
 
   const [step, setStep] = useState<ChangePasswordStep>('send-otp');
   const [otp, setOtp] = useState('');
@@ -66,42 +53,6 @@ const ChangePassword: React.FC<ChangePasswordProps> = ({
   const [error, setError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-
-  // Snap points for bottom sheet
-  const snapPoints = useMemo(() => ['100%'], []);
-
-  // Present/dismiss bottom sheet based on visible prop
-  useEffect(() => {
-    if (visible) {
-      bottomSheetRef.current?.present();
-    } else {
-      bottomSheetRef.current?.dismiss();
-    }
-  }, [visible]);
-
-  // Handle sheet changes
-  const handleSheetChanges = useCallback(
-    (index: number) => {
-      if (index === -1) {
-        onClose();
-      }
-    },
-    [onClose]
-  );
-
-  // Render backdrop
-  const renderBackdrop = useCallback(
-    (props: any) => (
-      <BottomSheetBackdrop
-        {...props}
-        disappearsOnIndex={-1}
-        appearsOnIndex={0}
-        opacity={0.6}
-        pressBehavior="close"
-      />
-    ),
-    []
-  );
 
   const handleClose = () => {
     setStep('send-otp');
@@ -304,7 +255,7 @@ const ChangePassword: React.FC<ChangePasswordProps> = ({
     switch (step) {
       case 'send-otp':
         return (
-          <>
+          <Container backgroundColor="transparent">
             <View style={styles.stepIndicator}>
               <View style={[styles.stepDot, styles.stepActive]} />
               <View style={styles.stepLine} />
@@ -354,7 +305,7 @@ const ChangePassword: React.FC<ChangePasswordProps> = ({
               color="primary"
               size="large"
             />
-          </>
+          </Container>
         );
 
       case 'verify-otp':
@@ -695,75 +646,18 @@ const ChangePassword: React.FC<ChangePasswordProps> = ({
 
   return (
     <BottomSheetModal
-      ref={bottomSheetRef}
-      index={0}
-      snapPoints={snapPoints}
-      onChange={handleSheetChanges}
-      backdropComponent={renderBackdrop}
-      enablePanDownToClose
-      enableDynamicSizing={false}
-      keyboardBehavior="interactive"
-      keyboardBlurBehavior="restore"
-      android_keyboardInputMode="adjustResize"
-      backgroundStyle={[styles.sheetBackground, { backgroundColor: bg }]}
-      handleIndicatorStyle={[
-        styles.handleIndicator,
-        { backgroundColor: handleColor },
-      ]}
-    >
-      <StatusBar style={isDark ? 'light' : 'dark'} />
-      <View style={styles.modalHeader}>
-        <ThemedText
-          type="card-title-medium"
-          weight="semi-bold"
-          style={{ color: textColor }}
-        >
-          Change Password
-        </ThemedText>
-      </View>
-
-      <BottomSheetScrollView
-        contentContainerStyle={styles.modalContent}
-        keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}
-      >
-        {renderStepContent()}
-      </BottomSheetScrollView>
-    </BottomSheetModal>
+      isOpen={visible}
+      onClose={handleClose}
+      headerTitle="Change Password"
+      snapPoints={['100%']}
+      content={renderStepContent()}
+    />
   );
 };
 
 export default ChangePassword;
 
 const styles = StyleSheet.create({
-  sheetBackground: {
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-  },
-  handleIndicator: {
-    width: 40,
-    height: 4,
-    borderRadius: 2,
-    marginTop: 8,
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 16,
-    paddingTop: 32,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(0,0,0,0.1)',
-  },
-  cancelButton: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-  },
-  modalContent: {
-    padding: 20,
-    flexGrow: 1,
-  },
   stepIndicator: {
     flexDirection: 'row',
     alignItems: 'center',

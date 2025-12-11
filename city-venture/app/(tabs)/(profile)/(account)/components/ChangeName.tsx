@@ -1,27 +1,14 @@
-import React, {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from 'react';
-import { Pressable, StyleSheet, TouchableOpacity, View } from 'react-native';
-import {
-  BottomSheetBackdrop,
-  BottomSheetModal,
-  BottomSheetScrollView,
-  BottomSheetView,
-} from '@gorhom/bottom-sheet';
-import { Ionicons } from '@expo/vector-icons';
-import { StatusBar } from 'expo-status-bar';
-import { useColorScheme } from '@/hooks/use-color-scheme';
-import { Colors } from '@/constants/color';
-import { ThemedText } from '@/components/themed-text';
-import FormTextInput from '@/components/TextInput';
 import Button from '@/components/Button';
-import { updateTourist, getTouristByUserId } from '@/services/TouristService';
-import { useAuth } from '@/context/AuthContext';
 import Container from '@/components/Container';
+import FormTextInput from '@/components/TextInput';
+import { ThemedText } from '@/components/themed-text';
+import BottomSheetModal from '@/components/ui/BottomSheetModal';
+import { Colors } from '@/constants/color';
+import { useAuth } from '@/context/AuthContext';
+import { getTouristByUserId, updateTourist } from '@/services/TouristService';
+import { Ionicons } from '@expo/vector-icons';
+import React, { useEffect, useState } from 'react';
+import { StyleSheet, View } from 'react-native';
 
 interface ChangeNameProps {
   visible: boolean;
@@ -34,31 +21,18 @@ const ChangeName: React.FC<ChangeNameProps> = ({
   onClose,
   onSuccess,
 }) => {
-  const bottomSheetRef = useRef<BottomSheetModal>(null);
-  const scheme = useColorScheme();
-  const isDark = scheme === 'dark';
   const { user, updateUser } = useAuth();
 
-  const bg = Colors.light.background;
-  const textColor = isDark ? '#ECEDEE' : '#0D1B2A';
-  const subTextColor = isDark ? '#9BA1A6' : '#6B7280';
-  const handleColor = isDark ? '#4B5563' : '#D1D5DB';
-
-  const [firstName, setFirstName] = useState('');
-  const [middleName, setMiddleName] = useState('');
-  const [lastName, setLastName] = useState('');
+  const [firstName, setFirstName] = useState(user?.first_name || '');
+  const [middleName, setMiddleName] = useState(user?.middle_name || '');
+  const [lastName, setLastName] = useState(user?.last_name || '');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
-  const [touristId, setTouristId] = useState<string>('');
-
-  const snapPoints = useMemo(() => ['75%'], []);
+  const [touristId, setTouristId] = useState<string>(user?.id || '');
 
   useEffect(() => {
     if (visible) {
-      bottomSheetRef.current?.present();
       loadCurrentData();
-    } else {
-      bottomSheetRef.current?.dismiss();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [visible]);
@@ -76,28 +50,6 @@ const ChangeName: React.FC<ChangeNameProps> = ({
       console.error('Error loading tourist data:', err);
     }
   };
-
-  const handleSheetChanges = useCallback(
-    (index: number) => {
-      if (index === -1) {
-        onClose();
-      }
-    },
-    [onClose]
-  );
-
-  const renderBackdrop = useCallback(
-    (props: any) => (
-      <BottomSheetBackdrop
-        {...props}
-        disappearsOnIndex={-1}
-        appearsOnIndex={0}
-        opacity={0.6}
-        pressBehavior="close"
-      />
-    ),
-    []
-  );
 
   const handleClose = () => {
     setError('');
@@ -144,149 +96,84 @@ const ChangeName: React.FC<ChangeNameProps> = ({
 
   return (
     <BottomSheetModal
-      ref={bottomSheetRef}
-      index={0}
-      snapPoints={snapPoints}
-      onChange={handleSheetChanges}
-      backdropComponent={renderBackdrop}
-      enablePanDownToClose
-      enableDynamicSizing={false}
-      keyboardBehavior="interactive"
-      keyboardBlurBehavior="restore"
-      android_keyboardInputMode="adjustResize"
-      backgroundStyle={[styles.sheetBackground, { backgroundColor: bg }]}
-      handleIndicatorStyle={[
-        styles.handleIndicator,
-        { backgroundColor: handleColor },
-      ]}
-    >
-      <StatusBar style={isDark ? 'light' : 'dark'} />
-
-      <BottomSheetView>
-        <View style={styles.modalHeader}>
-          <ThemedText
-            type="card-title-medium"
-            weight="semi-bold"
-            style={{ color: textColor }}
-          >
-            Edit Full Name
-          </ThemedText>
-        </View>
-
-        <Container
-          padding={0}
-          backgroundColor="transparent"
-          direction="column"
-          justify="space-between"
-          align="center"
-          gap={0}
-        >
-          <Container backgroundColor="transparent">
-            <FormTextInput
-              label="First Name"
-              placeholder="Enter first name"
-              value={firstName}
-              onChangeText={(text) => {
-                setFirstName(text);
-                setError('');
-              }}
-              variant="outlined"
-              errorText={
-                error && !firstName.trim()
-                  ? 'First name is required'
-                  : undefined
-              }
-            />
-
-            <FormTextInput
-              label="Middle Name (Optional)"
-              placeholder="Enter middle name"
-              value={middleName}
-              onChangeText={(text) => {
-                setMiddleName(text);
-                setError('');
-              }}
-              variant="outlined"
-            />
-
-            <FormTextInput
-              label="Last Name"
-              placeholder="Enter last name"
-              value={lastName}
-              onChangeText={(text) => {
-                setLastName(text);
-                setError('');
-              }}
-              variant="outlined"
-              errorText={
-                error && !lastName.trim() ? 'Last name is required' : undefined
-              }
-            />
-
-            {error && (
-              <View style={styles.errorContainer}>
-                <Ionicons
-                  name="alert-circle"
-                  size={16}
-                  color={Colors.light.error}
-                />
-                <ThemedText type="label-small" style={styles.errorText}>
-                  {error}
-                </ThemedText>
-              </View>
-            )}
-          </Container>
-        </Container>
+      isOpen={visible}
+      onClose={handleClose}
+      headerTitle="Edit Full Name"
+      snapPoints={['75%']}
+      content={
         <Container backgroundColor="transparent">
-          <Button
-            label={isLoading ? 'Saving...' : 'Save Changes'}
-            onPress={handleSave}
-            disabled={isLoading}
-            variant="solid"
-            color="primary"
-            size="large"
+          <FormTextInput
+            label="First Name"
+            placeholder="Enter first name"
+            value={firstName}
+            onChangeText={(text) => {
+              setFirstName(text);
+              setError('');
+            }}
+            variant="outlined"
+            errorText={
+              error && !firstName.trim() ? 'First name is required' : undefined
+            }
+            required
           />
+
+          <FormTextInput
+            label="Middle Name"
+            placeholder="Enter middle name"
+            value={middleName}
+            onChangeText={(text) => {
+              setMiddleName(text);
+              setError('');
+            }}
+            variant="outlined"
+          />
+
+          <FormTextInput
+            label="Last Name"
+            placeholder="Enter last name"
+            value={lastName}
+            onChangeText={(text) => {
+              setLastName(text);
+              setError('');
+            }}
+            variant="outlined"
+            errorText={
+              error && !lastName.trim() ? 'Last name is required' : undefined
+            }
+            required
+          />
+
+          {error && (
+            <View style={styles.errorContainer}>
+              <Ionicons
+                name="alert-circle"
+                size={16}
+                color={Colors.light.error}
+              />
+              <ThemedText type="label-small" style={styles.errorText}>
+                {error}
+              </ThemedText>
+            </View>
+          )}
         </Container>
-      </BottomSheetView>
-    </BottomSheetModal>
+      }
+      bottomActionButton={
+        <Button
+          label={isLoading ? 'Saving...' : 'Save Changes'}
+          onPress={handleSave}
+          disabled={isLoading}
+          variant="solid"
+          color="primary"
+          size="large"
+        />
+      }
+    />
   );
 };
 
 export default ChangeName;
 
 const styles = StyleSheet.create({
-  sheetBackground: {
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-  },
-  handleIndicator: {
-    width: 40,
-    height: 4,
-    borderRadius: 2,
-    marginTop: 8,
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(0,0,0,0.1)',
-  },
-  closeButton: {
-    padding: 8,
-  },
-  scrollContent: {
-    padding: 20,
-    paddingBottom: 100,
-  },
-  buttonContainer: {
-    padding: 20,
-    paddingTop: 12,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(0,0,0,0.1)',
-  },
   errorContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -299,10 +186,5 @@ const styles = StyleSheet.create({
     color: Colors.light.error,
     marginLeft: 8,
     flex: 1,
-  },
-  modalContent: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
   },
 });

@@ -14,7 +14,7 @@ const SettingsLayout = () => {
           headerShown: false,
           animation: 'slide_from_right',
           headerTitleAlign: 'center',
-          headerTitle: 'Account Settings',
+          headerTitle: 'Rate App',
           headerBackTitle: 'Back',
         }}
       />

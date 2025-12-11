@@ -1,20 +1,10 @@
-import React, {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from 'react';
+import React, { useState } from 'react';
 import { Image, StyleSheet, View, Alert } from 'react-native';
-import {
-  BottomSheetModal,
-  BottomSheetBackdrop,
-  BottomSheetScrollView,
-} from '@gorhom/bottom-sheet';
+import BottomSheetModal from '@/components/ui/BottomSheetModal';
 import { Ionicons } from '@expo/vector-icons';
 import Button from '@/components/Button';
 import { ThemedText } from '@/components/themed-text';
-import { Colors, card } from '@/constants/color';
+import { card, Colors } from '@/constants/color';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import type { Booking } from '@/types/Booking';
 import Chip from '@/components/Chip';
@@ -45,7 +35,6 @@ const BookingDetailsBottomSheet: React.FC<BookingDetailsBottomSheetProps> = ({
   onRateBooking,
   hasReviewed = false,
 }) => {
-  const bottomSheetRef = useRef<BottomSheetModal>(null);
   const scheme = useColorScheme();
   const isDark = scheme === 'dark';
   const [cancelling, setCancelling] = useState(false);
@@ -54,43 +43,6 @@ const BookingDetailsBottomSheet: React.FC<BookingDetailsBottomSheetProps> = ({
   const textColor = isDark ? '#ECEDEE' : '#0D1B2A';
   const subTextColor = isDark ? '#9BA1A6' : '#6B7280';
   const borderColor = isDark ? '#262B3A' : '#E3E7EF';
-  const handleColor = isDark ? '#4B5563' : '#D1D5DB';
-
-  // Snap points for different content heights
-  const snapPoints = useMemo(() => ['92%'], []);
-
-  // Present/dismiss modal based on isOpen prop
-  useEffect(() => {
-    if (isOpen && booking) {
-      bottomSheetRef.current?.present();
-    } else {
-      bottomSheetRef.current?.dismiss();
-    }
-  }, [isOpen, booking]);
-
-  // Handle sheet changes
-  const handleSheetChanges = useCallback(
-    (index: number) => {
-      if (index === -1) {
-        onClose();
-      }
-    },
-    [onClose]
-  );
-
-  // Render backdrop
-  const renderBackdrop = useCallback(
-    (props: any) => (
-      <BottomSheetBackdrop
-        {...props}
-        disappearsOnIndex={-1}
-        appearsOnIndex={0}
-        opacity={0.6}
-        pressBehavior="close"
-      />
-    ),
-    []
-  );
 
   // Format date
   const formatDate = (dateString?: Date | string | String): string => {
@@ -225,222 +177,179 @@ const BookingDetailsBottomSheet: React.FC<BookingDetailsBottomSheetProps> = ({
 
   return (
     <BottomSheetModal
-      ref={bottomSheetRef}
-      index={0}
-      snapPoints={snapPoints}
-      onChange={handleSheetChanges}
-      backdropComponent={renderBackdrop}
-      animateOnMount={true}
-      enablePanDownToClose
-      enableDynamicSizing={false}
-      keyboardBehavior="interactive"
-      keyboardBlurBehavior="restore"
-      android_keyboardInputMode="adjustResize"
-      backgroundStyle={[styles.sheetBackground, { backgroundColor: surface }]}
-      handleIndicatorStyle={[
-        styles.handleIndicator,
-        { backgroundColor: handleColor },
-      ]}
-    >
-      <BottomSheetScrollView
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Room Image */}
-        <View style={styles.imageContainer}>
-          <Image
-            source={
-              booking.room_image ? { uri: booking.room_image } : placeholder
-            }
-            style={styles.detailImage}
-            resizeMode="cover"
-          />
-          {/* Status overlay */}
-          <View style={styles.imageOverlay}>
-            <Chip
-              label={booking.booking_status || 'Unknown'}
-              size="medium"
-              variant="solid"
-              color={getStatusColor(booking.booking_status)}
+      isOpen={isOpen}
+      onClose={onClose}
+      snapPoints={['92%']}
+      closeButton={false}
+      content={
+        <>
+          {/* Room Image */}
+          <View style={styles.imageContainer}>
+            <Image
+              source={
+                booking.room_image ? { uri: booking.room_image } : placeholder
+              }
+              style={styles.detailImage}
+              resizeMode="cover"
             />
-          </View>
-        </View>
-
-        {/* Room Info Header */}
-        <View style={[styles.headerSection, { backgroundColor: surface }]}>
-          <View style={styles.headerContent}>
-            <ThemedText
-              type="header-small"
-              weight="bold"
-              style={{ color: textColor }}
-            >
-              Room {booking.room_number || 'N/A'}
-            </ThemedText>
-            {booking.business_name && (
-              <View style={styles.businessRow}>
-                <Ionicons
-                  name="business-outline"
-                  size={14}
-                  color={subTextColor}
-                />
-                <ThemedText
-                  type="body-medium"
-                  style={{ color: subTextColor, marginLeft: 6 }}
-                >
-                  {booking.business_name}
-                </ThemedText>
-              </View>
-            )}
-          </View>
-          <View style={styles.priceContainer}>
-            <ThemedText type="label-small" style={{ color: subTextColor }}>
-              Total
-            </ThemedText>
-            <ThemedText
-              type="header-small"
-              weight="bold"
-              style={{ color: Colors.light.primary }}
-            >
-              {formatPrice(booking.total_price)}
-            </ThemedText>
-          </View>
-        </View>
-
-        {/* Date Range Card */}
-        <View
-          style={[
-            styles.dateCard,
-            { backgroundColor: isDark ? '#1a1f2e' : '#f8f9fa', borderColor },
-          ]}
-        >
-          <View style={styles.dateColumn}>
-            <View
-              style={[
-                styles.dateIconWrapper,
-                { backgroundColor: 'rgba(16, 185, 129, 0.1)' },
-              ]}
-            >
-              <Ionicons
-                name="enter-outline"
-                size={20}
-                color={Colors.light.success}
+            {/* Status overlay */}
+            <View style={styles.imageOverlay}>
+              <Chip
+                label={booking.booking_status || 'Unknown'}
+                size="medium"
+                variant="solid"
+                color={getStatusColor(booking.booking_status)}
               />
             </View>
-            <ThemedText
-              type="label-small"
-              style={{ color: subTextColor, marginTop: 6 }}
-            >
-              Check-in
-            </ThemedText>
-            <ThemedText
-              type="body-medium"
-              weight="semi-bold"
-              style={{ color: textColor, marginTop: 2 }}
-            >
-              {formatDate(booking.check_in_date)}
-            </ThemedText>
-            <ThemedText type="label-small" style={{ color: subTextColor }}>
-              {formatTime(booking.check_in_time)}
-            </ThemedText>
           </View>
 
-          <View style={styles.dateDivider}>
-            <View
-              style={[styles.dividerLine, { backgroundColor: borderColor }]}
-            />
-            <View
-              style={[
-                styles.nightsBadge,
-                { backgroundColor: surface, borderColor },
-              ]}
-            >
-              <Ionicons name="moon" size={12} color={Colors.light.primary} />
+          {/* Room Info Header */}
+          <View style={[styles.headerSection, { backgroundColor: surface }]}>
+            <View style={styles.headerContent}>
               <ThemedText
-                type="label-small"
-                weight="semi-bold"
-                style={{ color: textColor, marginLeft: 4 }}
+                type="header-small"
+                weight="bold"
+                style={{ color: textColor }}
               >
-                {nights}
+                Room {booking.room_number || 'N/A'}
+              </ThemedText>
+              {booking.business_name && (
+                <View style={styles.businessRow}>
+                  <Ionicons
+                    name="business-outline"
+                    size={14}
+                    color={subTextColor}
+                  />
+                  <ThemedText
+                    type="body-medium"
+                    style={{ color: subTextColor, marginLeft: 6 }}
+                  >
+                    {booking.business_name}
+                  </ThemedText>
+                </View>
+              )}
+            </View>
+            <View style={styles.priceContainer}>
+              <ThemedText type="label-small" style={{ color: subTextColor }}>
+                Total
+              </ThemedText>
+              <ThemedText
+                type="header-small"
+                weight="bold"
+                style={{ color: Colors.light.primary }}
+              >
+                {formatPrice(booking.total_price)}
               </ThemedText>
             </View>
-            <View
-              style={[styles.dividerLine, { backgroundColor: borderColor }]}
-            />
           </View>
 
-          <View style={styles.dateColumn}>
-            <View
-              style={[
-                styles.dateIconWrapper,
-                { backgroundColor: 'rgba(185, 28, 28, 0.1)' },
-              ]}
-            >
-              <Ionicons
-                name="exit-outline"
-                size={20}
-                color={Colors.light.error}
-              />
-            </View>
-            <ThemedText
-              type="label-small"
-              style={{ color: subTextColor, marginTop: 6 }}
-            >
-              Check-out
-            </ThemedText>
-            <ThemedText
-              type="body-medium"
-              weight="semi-bold"
-              style={{ color: textColor, marginTop: 2 }}
-            >
-              {formatDate(booking.check_out_date)}
-            </ThemedText>
-            <ThemedText type="label-small" style={{ color: subTextColor }}>
-              {formatTime(booking.check_out_time)}
-            </ThemedText>
-          </View>
-        </View>
-
-        {/* Details Section */}
-        <View style={styles.detailsSection}>
-          <ThemedText
-            type="card-title-medium"
-            weight="semi-bold"
-            style={{ color: textColor, marginBottom: 16 }}
+          {/* Date Range Card */}
+          <View
+            style={[
+              styles.dateCard,
+              { backgroundColor: isDark ? '#1a1f2e' : '#f8f9fa', borderColor },
+            ]}
           >
-            Booking Details
-          </ThemedText>
-
-          {/* Details Grid */}
-          <View style={styles.detailsGrid}>
-            {/* Guests */}
-            <View
-              style={[
-                styles.detailItem,
-                { backgroundColor: isDark ? '#1a1f2e' : '#f8f9fa' },
-              ]}
-            >
+            <View style={styles.dateColumn}>
               <View
                 style={[
-                  styles.detailIcon,
-                  { backgroundColor: 'rgba(59, 130, 246, 0.1)' },
+                  styles.dateIconWrapper,
+                  { backgroundColor: 'rgba(16, 185, 129, 0.1)' },
                 ]}
               >
-                <Ionicons name="people" size={18} color={Colors.light.info} />
+                <Ionicons
+                  name="enter-outline"
+                  size={20}
+                  color={Colors.light.success}
+                />
               </View>
-              <ThemedText type="label-small" style={{ color: subTextColor }}>
-                Guests
+              <ThemedText
+                type="label-small"
+                style={{ color: subTextColor, marginTop: 6 }}
+              >
+                Check-in
               </ThemedText>
               <ThemedText
                 type="body-medium"
                 weight="semi-bold"
-                style={{ color: textColor }}
+                style={{ color: textColor, marginTop: 2 }}
               >
-                {booking.pax || 0}
+                {formatDate(booking.check_in_date)}
+              </ThemedText>
+              <ThemedText type="label-small" style={{ color: subTextColor }}>
+                {formatTime(booking.check_in_time)}
               </ThemedText>
             </View>
 
-            {/* Booking Type */}
-            {booking.booking_type && (
+            <View style={styles.dateDivider}>
+              <View
+                style={[styles.dividerLine, { backgroundColor: borderColor }]}
+              />
+              <View
+                style={[
+                  styles.nightsBadge,
+                  { backgroundColor: surface, borderColor },
+                ]}
+              >
+                <Ionicons name="moon" size={12} color={Colors.light.primary} />
+                <ThemedText
+                  type="label-small"
+                  weight="semi-bold"
+                  style={{ color: textColor, marginLeft: 4 }}
+                >
+                  {nights}
+                </ThemedText>
+              </View>
+              <View
+                style={[styles.dividerLine, { backgroundColor: borderColor }]}
+              />
+            </View>
+
+            <View style={styles.dateColumn}>
+              <View
+                style={[
+                  styles.dateIconWrapper,
+                  { backgroundColor: 'rgba(185, 28, 28, 0.1)' },
+                ]}
+              >
+                <Ionicons
+                  name="exit-outline"
+                  size={20}
+                  color={Colors.light.error}
+                />
+              </View>
+              <ThemedText
+                type="label-small"
+                style={{ color: subTextColor, marginTop: 6 }}
+              >
+                Check-out
+              </ThemedText>
+              <ThemedText
+                type="body-medium"
+                weight="semi-bold"
+                style={{ color: textColor, marginTop: 2 }}
+              >
+                {formatDate(booking.check_out_date)}
+              </ThemedText>
+              <ThemedText type="label-small" style={{ color: subTextColor }}>
+                {formatTime(booking.check_out_time)}
+              </ThemedText>
+            </View>
+          </View>
+
+          {/* Details Section */}
+          <View style={styles.detailsSection}>
+            <ThemedText
+              type="card-title-medium"
+              weight="semi-bold"
+              style={{ color: textColor, marginBottom: 16 }}
+            >
+              Booking Details
+            </ThemedText>
+
+            {/* Details Grid */}
+            <View style={styles.detailsGrid}>
+              {/* Guests */}
               <View
                 style={[
                   styles.detailItem,
@@ -450,172 +359,191 @@ const BookingDetailsBottomSheet: React.FC<BookingDetailsBottomSheetProps> = ({
                 <View
                   style={[
                     styles.detailIcon,
-                    { backgroundColor: 'rgba(139, 92, 246, 0.1)' },
+                    { backgroundColor: 'rgba(59, 130, 246, 0.1)' },
                   ]}
                 >
-                  <Ionicons
-                    name={
-                      booking.booking_type === 'overnight' ? 'bed' : 'sunny'
-                    }
-                    size={18}
-                    color="#8B5CF6"
-                  />
+                  <Ionicons name="people" size={18} color={Colors.light.info} />
                 </View>
                 <ThemedText type="label-small" style={{ color: subTextColor }}>
-                  Type
+                  Guests
                 </ThemedText>
                 <ThemedText
                   type="body-medium"
                   weight="semi-bold"
                   style={{ color: textColor }}
                 >
-                  {booking.booking_type === 'overnight'
-                    ? 'Overnight'
-                    : 'Short Stay'}
+                  {booking.pax || 0}
                 </ThemedText>
               </View>
-            )}
 
-            {/* Payment Status */}
-            <View
-              style={[
-                styles.detailItem,
-                { backgroundColor: isDark ? '#1a1f2e' : '#f8f9fa' },
-              ]}
-            >
+              {/* Booking Type */}
+              {booking.booking_type && (
+                <View
+                  style={[
+                    styles.detailItem,
+                    { backgroundColor: isDark ? '#1a1f2e' : '#f8f9fa' },
+                  ]}
+                >
+                  <View
+                    style={[
+                      styles.detailIcon,
+                      { backgroundColor: 'rgba(139, 92, 246, 0.1)' },
+                    ]}
+                  >
+                    <Ionicons
+                      name={
+                        booking.booking_type === 'overnight' ? 'bed' : 'sunny'
+                      }
+                      size={18}
+                      color="#8B5CF6"
+                    />
+                  </View>
+                  <ThemedText
+                    type="label-small"
+                    style={{ color: subTextColor }}
+                  >
+                    Type
+                  </ThemedText>
+                  <ThemedText
+                    type="body-medium"
+                    weight="semi-bold"
+                    style={{ color: textColor }}
+                  >
+                    {booking.booking_type === 'overnight'
+                      ? 'Overnight'
+                      : 'Short Stay'}
+                  </ThemedText>
+                </View>
+              )}
+
+              {/* Payment Status */}
               <View
                 style={[
-                  styles.detailIcon,
-                  {
-                    backgroundColor:
-                      booking.balance === 0
-                        ? 'rgba(16, 185, 129, 0.1)'
-                        : 'rgba(249, 115, 22, 0.1)',
-                  },
+                  styles.detailItem,
+                  { backgroundColor: isDark ? '#1a1f2e' : '#f8f9fa' },
                 ]}
               >
-                <Ionicons
-                  name={booking.balance === 0 ? 'checkmark-circle' : 'wallet'}
-                  size={18}
-                  color={
-                    booking.balance === 0
-                      ? Colors.light.success
-                      : Colors.light.warning
-                  }
-                />
-              </View>
-              <ThemedText type="label-small" style={{ color: subTextColor }}>
-                Payment
-              </ThemedText>
-              <ThemedText
-                type="body-medium"
-                weight="semi-bold"
-                style={{ color: textColor }}
-              >
-                {booking.balance === 0 ? 'Paid' : 'Pending'}
-              </ThemedText>
-              {booking.balance !== undefined && booking.balance > 0 && (
-                <ThemedText
-                  type="label-extra-small"
-                  style={{ color: Colors.light.warning }}
+                <View
+                  style={[
+                    styles.detailIcon,
+                    {
+                      backgroundColor:
+                        booking.balance === 0
+                          ? 'rgba(16, 185, 129, 0.1)'
+                          : 'rgba(249, 115, 22, 0.1)',
+                    },
+                  ]}
                 >
-                  {formatPrice(booking.balance)}
+                  <Ionicons
+                    name={booking.balance === 0 ? 'checkmark-circle' : 'wallet'}
+                    size={18}
+                    color={
+                      booking.balance === 0
+                        ? Colors.light.success
+                        : Colors.light.warning
+                    }
+                  />
+                </View>
+                <ThemedText type="label-small" style={{ color: subTextColor }}>
+                  Payment
                 </ThemedText>
-              )}
+                <ThemedText
+                  type="body-medium"
+                  weight="semi-bold"
+                  style={{ color: textColor }}
+                >
+                  {booking.balance === 0 ? 'Paid' : 'Pending'}
+                </ThemedText>
+                {booking.balance !== undefined && booking.balance > 0 && (
+                  <ThemedText
+                    type="label-extra-small"
+                    style={{ color: Colors.light.warning }}
+                  >
+                    {formatPrice(booking.balance)}
+                  </ThemedText>
+                )}
+              </View>
             </View>
           </View>
-        </View>
 
-        {/* Trip Purpose */}
-        {booking.trip_purpose && (
-          <View style={styles.purposeSection}>
-            <ThemedText
-              type="card-title-medium"
-              weight="semi-bold"
-              style={{ color: textColor, marginBottom: 8 }}
-            >
-              Trip Purpose
-            </ThemedText>
-            <ThemedText type="body-medium" style={{ color: subTextColor }}>
-              {booking.trip_purpose}
-            </ThemedText>
-          </View>
-        )}
-      </BottomSheetScrollView>
-
-      {/* Action Buttons */}
-      <View
-        style={[
-          styles.actionSection,
-          {
-            borderTopColor: borderColor,
-            height: booking.booking_status === 'Reserved' ? 80 : 160,
-          },
-        ]}
-      >
-        {booking.booking_status === 'Reserved' && (
-          <Button
-            label={cancelling ? 'Cancelling...' : 'Cancel Booking'}
-            onPress={handleCancelBooking}
-            variant="soft"
-            color="error"
-            disabled={cancelling}
-            fullWidth
-          />
-        )}
-
-        {booking.booking_status === 'Checked-Out' && (
-          <View style={{ gap: 12, height: 120 }}>
-            {!hasReviewed && (
-              <Button
-                label="Rate Us"
-                onPress={handleRateBooking}
-                variant="solid"
-                color="warning"
-                startIcon="star"
-                fullWidth
-              />
-            )}
+          {/* Trip Purpose */}
+          {booking.trip_purpose && (
+            <View style={styles.purposeSection}>
+              <ThemedText
+                type="card-title-medium"
+                weight="semi-bold"
+                style={{ color: textColor, marginBottom: 8 }}
+              >
+                Trip Purpose
+              </ThemedText>
+              <ThemedText type="body-medium" style={{ color: subTextColor }}>
+                {booking.trip_purpose}
+              </ThemedText>
+            </View>
+          )}
+        </>
+      }
+      bottomActionButton={
+        <View
+          style={[
+            styles.actionSection,
+            {
+              borderTopColor: borderColor,
+            },
+          ]}
+        >
+          {booking.booking_status === 'Reserved' && (
             <Button
-              label="Book Again"
-              onPress={handleBookAgain}
-              variant="outlined"
-              color="primary"
-              fullWidth
-            />
-          </View>
-        )}
-
-        {booking.booking_status !== 'Reserved' &&
-          booking.booking_status !== 'Checked-Out' && (
-            <Button
-              label="Close"
-              onPress={onClose}
-              variant="outlined"
-              color="neutral"
-              size="large"
-              fullWidth
+              label={cancelling ? 'Cancelling...' : 'Cancel Booking'}
+              onPress={handleCancelBooking}
+              variant="soft"
+              color="error"
+              disabled={cancelling}
+              width={'100%'}
             />
           )}
-      </View>
-    </BottomSheetModal>
+
+          {booking.booking_status === 'Checked-Out' && (
+            <View style={{ gap: 12 }}>
+              {!hasReviewed && (
+                <Button
+                  label="Rate Us"
+                  onPress={handleRateBooking}
+                  variant="solid"
+                  color="warning"
+                  startIcon="star"
+                  width={'100%'}
+                />
+              )}
+              <Button
+                label="Book Again"
+                onPress={handleBookAgain}
+                variant="outlined"
+                color="primary"
+                width={'100%'}
+              />
+            </View>
+          )}
+
+          {booking.booking_status !== 'Reserved' &&
+            booking.booking_status !== 'Checked-Out' && (
+              <Button
+                label="Close"
+                onPress={onClose}
+                variant="outlined"
+                color="neutral"
+                size="large"
+                width={'100%'}
+              />
+            )}
+        </View>
+      }
+    />
   );
 };
-
 export default BookingDetailsBottomSheet;
 
 const styles = StyleSheet.create({
-  sheetBackground: {
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-  },
-  handleIndicator: {
-    width: 40,
-    height: 4,
-    borderRadius: 2,
-    marginTop: 8,
-  },
-  scrollContent: {},
   imageContainer: {
     position: 'relative',
     width: '100%',
@@ -714,8 +642,6 @@ const styles = StyleSheet.create({
     paddingBottom: 16,
   },
   actionSection: {
-    padding: 16,
     borderTopWidth: 1,
-    marginTop: 8,
   },
 });

@@ -74,8 +74,13 @@ const Profile = () => {
   const onBookings = () => push(Routes.profile.bookings.index);
   const onReports = () => push(Routes.profile.reports.index);
   const onSecurity = () => push(Routes.profile.security);
+  const onRateApp = () => push(Routes.profile.rateApp);
+
   const onNotifications = () => push(Routes.profile.notifications);
   const onTransactions = () => push(Routes.profile.transactions);
+
+  const onTerms = () => push(Routes.profile.terms);
+  const onPrivacy = () => push(Routes.profile.privacy);
 
   return (
     <View style={[styles.screen, { backgroundColor: Colors.light.primary }]}>
@@ -193,7 +198,7 @@ const Profile = () => {
               iconColor="#F59E0B"
               iconBg="#FFFBEB"
               label="Rate The App"
-              onPress={() => {}}
+              onPress={onRateApp}
               border={border}
             />
             <MenuItem
@@ -213,7 +218,7 @@ const Profile = () => {
               iconColor="#6366F1"
               iconBg="#EEF2FF"
               label="Terms and Conditions"
-              onPress={() => {}}
+              onPress={onTerms}
               border={border}
             />
             <MenuItem
@@ -221,7 +226,7 @@ const Profile = () => {
               iconColor="#14B8A6"
               iconBg="#F0FDFA"
               label="Privacy Policy"
-              onPress={() => {}}
+              onPress={onPrivacy}
               last
             />
           </View>

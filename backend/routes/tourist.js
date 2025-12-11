@@ -10,7 +10,7 @@ router.post("/", touristController.createTourist);
 
 // All other routes require authentication
 router.get("/", authenticate, authorizeRole("Admin", "Tourism Head", "Tourism Officer"), touristController.getAllTourists);
-router.get("/:id", authenticate, touristController.getTouristById);
+router.get("/:id", authenticate, authorizeRole("Tourist"), touristController.getTouristById);
 router.delete("/:id", authenticate, authorizeRole("Admin", "Tourist"), touristController.deleteTourist);
 router.put("/:id", authenticate, authorizeRole( "Tourist"), touristController.updateTourist);
 router.get("/user/:user_id", authenticate, authorizeRole("Tourist"), touristController.getTouristByUserId);
