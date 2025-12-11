@@ -16,6 +16,7 @@ import db from "./db.js";
 import userRoutes from "./routes/users.js";
 import authRoutes from "./routes/auth.js";
 import userRoleRoutes from "./routes/users_role.js";
+import rolesRoutes from "./routes/roles.js";
 
 import registrationRoutes from "./routes/registration.js";
 
@@ -119,6 +120,11 @@ const routeSections = [
         path: "/api/permissions",
         handler: permissionRoutes,
         label: "Permissions & Role Permissions",
+      },
+      {
+        path: "/api/roles",
+        handler: rolesRoutes,
+        label: "Role Management (Enhanced RBAC)",
       },
     ],
   },

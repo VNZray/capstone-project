@@ -1,10 +1,9 @@
 import { useState, useEffect } from "react";
-import apiClient from "@/src/services/apiClient";
 import Container from "@/src/components/Container";
 import PageContainer from "@/src/components/PageContainer";
 import Typography from "@/src/components/Typography";
 import StaffAddModal, {
-  type StaffRole,
+  type StaffFormData,
 } from "@/src/features/business/accommodation/Staff/components/StaffAddModal";
 import { Input } from "@mui/joy";
 import StaffCard from "./components/StaffCard";
@@ -18,17 +17,15 @@ import {
   fetchStaffByBusinessId,
   deleteStaffById,
   toggleStaffActive,
+  onboardStaff,
   type StaffMember,
 } from "@/src/services/manage-staff/StaffService";
+import {
+  initializeEmailJS,
+  sendStaffCredentials,
+} from "@/src/services/email/EmailService";
 
 type Staff = StaffMember;
-
-// Map staff roles to user_role_id based on database seed
-const ROLE_TO_USER_ROLE_ID: Record<StaffRole, number> = {
-  Manager: 5, // role_name: "Manager"
-  "Room Manager": 6, // role_name: "Room Manager"
-  Receptionist: 7, // role_name: "Receptionist"
-};
 
 const ManageStaff = () => {
   const { businessDetails } = useBusiness();
@@ -60,59 +57,51 @@ const ManageStaff = () => {
     loadStaff();
   }, [businessDetails?.id]);
 
-  // Add new staff member (Create user first, then staff)
-  const handleAddStaff = async (data: {
-    first_name: string;
-    middle_name?: string | "";
-    last_name?: string;
-    email: string;
-    phone_number?: string;
-    role: StaffRole;
-  }) => {
+  // Initialize EmailJS
+  useEffect(() => {
+    initializeEmailJS();
+  }, []);
+
+  // Add new staff member using the new onboard endpoint
+  const handleAddStaff = async (data: StaffFormData) => {
     try {
       setError(null);
 
-      // Get the user_role_id based on the selected staff role
-      const userRoleId = ROLE_TO_USER_ROLE_ID[data.role];
-
-      // Step 1: Create User Account
-      const userRes = await apiClient.post(`/users`, {
-        email: data.email,
-        phone_number: data.phone_number || "",
-        password: "staff123", // Default temporary password
-        barangay_id: 20,
-        user_role_id: userRoleId, // Assign role based on staff position
-      });
-
-      const userId = userRes?.data?.id;
-      if (!userId) throw new Error("Failed to create user account");
-
-      // Step 2: Create Staff Record
-      const staffRes = await apiClient.post(`/staff`, {
+      // Use the new onboard endpoint that creates user + staff in one transaction
+      const result = await onboardStaff({
         first_name: data.first_name,
         last_name: data.last_name,
-        user_id: userId,
-        business_id: businessDetails?.id,
+        email: data.email,
+        phone_number: data.phone_number || "",
+        password: data.password || "staff123",
+        business_id: businessDetails?.id as string,
+        role_id: data.role_id,
       });
 
       const newStaff: Staff = {
-        id: staffRes.data.id,
-        first_name: data.first_name,
-        middle_name: data.middle_name,
-        last_name: data.last_name,
-        email: data.email,
-        phone_number: data.phone_number,
-        role: data.role,
-        is_active: true,
-        user_id: userId,
+        id: result.id,
+        first_name: result.first_name,
+        last_name: result.last_name,
+        email: result.email,
+        phone_number: result.phone_number,
+        role: result.role_name || data.role_name,
+        is_active: result.is_active,
+        user_id: result.user_id,
         business_id: businessDetails?.id || "",
       };
 
+      // Send account credentials via email
+      await sendStaffCredentials(
+        data.email,
+        `${data.first_name} ${data.last_name || ""}`.trim(),
+        result.temp_password
+      );
+
       setStaff((prev) => [newStaff, ...prev]);
       setAddOpen(false);
-    } catch (err) {
-      const errorMsg =
-        err instanceof Error ? err.message : "Failed to add staff member";
+    } catch (err: any) {
+      const errorMsg = err?.response?.data?.message || 
+        (err instanceof Error ? err.message : "Failed to add staff member");
       setError(errorMsg);
       console.error("Error adding staff:", err);
     }
@@ -274,6 +263,7 @@ const ManageStaff = () => {
         open={addOpen}
         onClose={() => setAddOpen(false)}
         onSave={handleAddStaff}
+        businessId={businessDetails?.id as string}
       />
     </PageContainer>
   );

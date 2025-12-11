@@ -1,5 +1,5 @@
 // ProtectedRoute.tsx
-import { Navigate } from "react-router-dom";
+import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/src/context/AuthContext";
 import Loading from "../components/Loading";
 
@@ -12,6 +12,8 @@ interface ProtectedRouteProps {
   requiredAnyPermissions?: string[]; // user must have ANY (OR logic)
   // Redirect path on unauthorized access (default: "/")
   redirectTo?: string;
+  // Skip onboarding checks (for the change-password page itself)
+  skipOnboardingCheck?: boolean;
 }
 
 /**
@@ -22,6 +24,9 @@ interface ProtectedRouteProps {
  * 2. Permission checks:
  *    - requiredAllPermissions: User must have ALL permissions (AND)
  *    - requiredAnyPermissions: User must have ANY permission (OR)
+ * 3. Onboarding checks:
+ *    - must_change_password: Staff must change password before accessing app
+ *    - profile_completed: Staff must complete profile after password change
  * 
  * @example Role-based protection
  * <ProtectedRoute requiredRoles={["Business Owner", "Manager"]}>
@@ -47,8 +52,10 @@ export default function ProtectedRoute({
   requiredAllPermissions,
   requiredAnyPermissions,
   redirectTo = "/unauthorized",
+  skipOnboardingCheck = false,
 }: ProtectedRouteProps) {
   const { user, loading } = useAuth();
+  const location = useLocation();
 
   if (loading) {
     return <Loading />;
@@ -57,6 +64,27 @@ export default function ProtectedRoute({
   // Not authenticated - redirect to login
   if (!user) {
     return <Navigate to="/" replace />;
+  }
+
+  // Staff onboarding flow - redirect to change password if required
+  // Skip if we're already on the change-password or complete-profile page
+  if (!skipOnboardingCheck) {
+    const onboardingPaths = ['/change-password', '/complete-profile'];
+    const isOnboardingPath = onboardingPaths.some(path => location.pathname.startsWith(path));
+    
+    if (!isOnboardingPath) {
+      // Check if must change password
+      if (user.must_change_password) {
+        console.log('[ProtectedRoute] Staff must change password, redirecting...');
+        return <Navigate to="/change-password" replace state={{ from: location }} />;
+      }
+      
+      // Check if profile needs completion (after password change)
+      if (user.profile_completed === false) {
+        console.log('[ProtectedRoute] Staff must complete profile, redirecting...');
+        return <Navigate to="/complete-profile" replace state={{ from: location }} />;
+      }
+    }
   }
 
   // Role-based check (if provided)

@@ -19,6 +19,7 @@ import {
   Megaphone,
   Tag,
   CreditCard,
+  Users,
 } from "lucide-react";
 
 // Compact icon size
@@ -268,6 +269,15 @@ export default function Sidebar({
               to={`${route}/manage-staff`}
               label="Manage Staff"
               icon={<FaUserFriends />}
+              onClick={onClose}
+            />
+          )}
+          {/* TODO: Remove after testing - Temporary Staff Roles link */}
+          {hasRole("Business Owner") && (
+            <NavItem
+              to={`${route}/staff-roles`}
+              label="Staff Roles"
+              icon={<Users size={ICON_SIZE} />}
               onClick={onClose}
             />
           )}

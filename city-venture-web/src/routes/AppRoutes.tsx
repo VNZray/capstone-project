@@ -66,10 +66,12 @@ import TourismSettings from "../features/admin/settings/Settings";
 import Notification from "../features/business/accommodation/notfication/Notification";
 import AccommodationStaff from "../features/business/accommodation/Staff/ManageStaff";
 import ShopStaff from "../features/business/shop/Staff/ManageStaff";
+import { StaffRolesPage } from "../features/business/staff-roles";
 import Test from "../pages/Test";
 import OwnerProfile from "../features/business/profile/Profile";
 import TourismProfile from "../features/admin/profile/Profile";
 import TouristRegister from "../features/auth/TouristRegister";
+import ChangePassword from "../pages/ChangePassword";
 import axios from "axios";
 import api from "../services/api";
 import type { User } from "../types/User";
@@ -136,6 +138,8 @@ export default function AppRoutes() {
           <Route path={`${home}forget-password`} element={<ForgetPassword />} />
         </Route>
         <Route path={`/unauthorized`} element={<Unauthorized />} />
+        {/* Staff onboarding flow - password change required on first login */}
+        <Route path={`/change-password`} element={<ChangePassword />} />
         {/* <Route path={`/login`} element={<UnifiedLogin />} /> */}
         <Route
           element={
@@ -219,6 +223,15 @@ export default function AppRoutes() {
                   element={
                     <ProtectedRoute requiredRoles={["Business Owner"]}>
                       <AccommodationStaff />
+                    </ProtectedRoute>
+                  }
+                />
+                {/* TODO: Remove after testing - Temporary Staff Roles route */}
+                <Route
+                  path={`${business}/staff-roles`}
+                  element={
+                    <ProtectedRoute requiredRoles={["Business Owner"]}>
+                      <StaffRolesPage />
                     </ProtectedRoute>
                   }
                 />

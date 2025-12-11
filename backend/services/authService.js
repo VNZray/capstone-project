@@ -96,6 +96,22 @@ export async function loginUser(email, password) {
     throw new Error(GENERIC_AUTH_ERROR);
   }
 
+  // SECURITY: Check if account is verified
+  // Staff accounts require email verification before first login
+  if (user.is_verified === 0 || user.is_verified === false) {
+    const error = new Error('Account not verified. Please check your email for verification instructions.');
+    error.code = 'ACCOUNT_NOT_VERIFIED';
+    throw error;
+  }
+
+  // SECURITY: Check if account is active
+  // Disabled accounts cannot login
+  if (user.is_active === 0 || user.is_active === false) {
+    const error = new Error('Account is disabled. Please contact your administrator.');
+    error.code = 'ACCOUNT_DISABLED';
+    throw error;
+  }
+
   // 2. Generate tokens
   const { accessToken, refreshToken } = await generateTokens(user);
   const decodedRefresh = jwt.decode(refreshToken);
@@ -112,7 +128,16 @@ export async function loginUser(email, password) {
     decodedRefresh.familyId
   ]);
 
-  return { user, accessToken, refreshToken };
+  // Include flags for frontend to handle required actions
+  return { 
+    user: {
+      ...user,
+      must_change_password: user.must_change_password === 1 || user.must_change_password === true,
+      profile_completed: user.profile_completed === 1 || user.profile_completed === true,
+    }, 
+    accessToken, 
+    refreshToken 
+  };
 }
 
 export async function refreshAccessToken(incomingRefreshToken) {
