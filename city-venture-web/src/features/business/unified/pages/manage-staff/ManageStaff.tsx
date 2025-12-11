@@ -4,11 +4,11 @@ import PageContainer from "@/src/components/PageContainer";
 import Typography from "@/src/components/Typography";
 import StaffAddModal, {
   type StaffFormData,
-} from "@/src/features/business/accommodation/Staff/components/StaffAddModal";
+} from "./components/StaffAddModal";
 import StaffEditModal, {
   type StaffEditData,
-} from "@/src/features/business/accommodation/Staff/components/StaffEditModal";
-import RolePermissionModal from "@/src/features/business/accommodation/Staff/components/RolePermissionModal";
+} from "./components/StaffEditModal";
+import RolePermissionModal from "./components/RolePermissionModal";
 import { Input } from "@mui/joy";
 import Alert from "@/src/components/Alert";
 import { Search } from "lucide-react";

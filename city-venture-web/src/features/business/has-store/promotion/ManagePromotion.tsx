@@ -36,7 +36,7 @@ import {
 import PageContainer from "@/src/components/PageContainer";
 import { useBusiness } from "@/src/context/BusinessContext";
 import * as PromotionService from "@/src/services/PromotionService";
-import PromotionCard from "@/src/features/business/shop/promotion/PromotionCard";
+import PromotionCard from "@/src/features/business/has-store/promotion/PromotionCard";
 import type { Promotion } from "@/src/types/Promotion";
 
 type PromotionFilter = "all" | "active" | "scheduled" | "expired";
