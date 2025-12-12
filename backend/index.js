@@ -263,12 +263,7 @@ const routeSections = [
       { path: "/api/favorite", handler: favoriteRoutes, label: "Favorites" },
     ],
   },
-  {
-    section: "Development & Testing",
-    routes: [
-      { path: "/api/test", handler: testNotificationRoutes, label: "Test Notifications (Dev)" },
-    ],
-  },
+
 ];
 
 // Flattened list for registration
