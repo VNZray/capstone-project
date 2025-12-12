@@ -19,13 +19,11 @@ import {
 
 import placeholder from '@/assets/images/placeholder.png';
 import Container from '@/components/Container';
-import Tabs from '@/components/Tabs';
 import { ThemedText } from '@/components/themed-text';
 import AccommodationProfileSkeleton from '@/components/skeleton/AccommodationProfileSkeleton';
 import { Colors } from '@/constants/color';
 import { useAccommodation } from '@/context/AccommodationContext';
 import { useAuth } from '@/context/AuthContext';
-import { Tab } from '@/types/Tab';
 import { ActivityIndicator } from 'react-native';
 import Details from './details';
 import Ratings from './ratings';
@@ -36,6 +34,9 @@ import Button from '@/components/Button';
 import { AddReview } from '@/components/reviews';
 import { createReview } from '@/services/FeedbackService';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Tab, TabContainer } from '@/components/ui/Tabs';
+
+type TabType = 'details' | 'rooms' | 'ratings';
 
 const { width, height } = Dimensions.get('window');
 
@@ -109,15 +110,8 @@ const AccommodationProfile = () => {
     accommodationDetails?.id,
   ]);
 
-  const TABS: Tab[] = [
-    { key: 'details', label: 'Details', icon: '' },
-    { key: 'rooms', label: 'Rooms', icon: '' },
-    { key: 'ratings', label: 'Ratings', icon: '' },
-  ];
-
-  const handleTabChange = (tab: Tab) => {
-    setActiveTab(tab.key);
-    console.log('Filtering for:', tab.key);
+  const handleTabChange = (tab: string) => {
+    setActiveTab(tab as TabType);
   };
 
   // Show skeleton while fetching data
@@ -232,64 +226,11 @@ const AccommodationProfile = () => {
               </LinearGradient>
             </View>
 
-            <Container padding={16} backgroundColor={bg}>
-              {/* <Container
-                padding={0}
-                backgroundColor="transparent"
-                direction="row"
-                justify="space-between"
-              >
-                <View>
-                  <Container
-                    direction="row"
-                    backgroundColor="transparent"
-                    padding={0}
-                  >
-                    <ThemedText type="card-title-medium" weight="bold">
-                      {accommodationDetails?.business_name}{' '}
-                    </ThemedText>
-                  </Container>
-                  <ThemedText type="body-small">
-                    <MaterialCommunityIcons
-                      name="map-marker"
-                      size={16}
-                      color={colors.accent}
-                    />
-                    {accommodationDetails?.address}
-                  </ThemedText>
-                  <Chip
-                    size="small"
-                    variant="soft"
-                    color="secondary"
-                    style={{ marginTop: 8, alignItems: 'flex-start' }}
-                    label={accommodationDetails?.category}
-                    padding={0}
-                  />
-                </View>
-
-                <View>
-                  <Container
-                    direction="row"
-                    backgroundColor="transparent"
-                    padding={0}
-                    align="center"
-                    gap={4}
-                  >
-                    <MaterialCommunityIcons
-                      name="star"
-                      size={20}
-                      color={colors.accent}
-                    />
-                    <ThemedText type="body-small">
-                      {accommodationDetails.ratings} (
-                      {accommodationDetails.reviews})
-                    </ThemedText>
-                  </Container>
-                </View>
-              </Container> */}
-
-              <Tabs tabs={TABS} onTabChange={handleTabChange} />
-            </Container>
+            <TabContainer initialTab="details" onTabChange={handleTabChange}>
+              <Tab tab="details" label="Details" />
+              <Tab tab="rooms" label="Rooms" />
+              <Tab tab="ratings" label="Ratings" />
+            </TabContainer>
 
             <View style={styles.tabContent}>
               {activeTab === 'details' && <Details />}
@@ -375,6 +316,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   tabContent: {
+    paddingTop: 16,
     overflow: 'visible',
   },
   loadingContainer: {
