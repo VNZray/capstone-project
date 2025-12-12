@@ -1,4 +1,3 @@
-
 /**
  * Order State Transition Service
  * Enforces allowed status transitions based on current status and actor role
@@ -12,22 +11,22 @@
  */
 const TRANSITION_RULES = {
   pending: {
-    accepted: ['business owner', 'staff', 'admin'],
-    cancelled_by_business: ['business owner', 'staff', 'admin'],
-    cancelled_by_user: ['tourist', 'admin'],
-    failed_payment: ['system', 'admin']
+    accepted: ["business owner", "staff", "admin"],
+    cancelled_by_business: ["business owner", "staff", "admin"],
+    cancelled_by_user: ["tourist", "admin"],
+    failed_payment: ["system", "admin"],
   },
   accepted: {
-    preparing: ['business owner', 'staff', 'admin'],
-    cancelled_by_business: ['business owner', 'staff', 'admin']
+    preparing: ["business owner", "staff", "admin"],
+    cancelled_by_business: ["business owner", "staff", "admin"],
   },
   preparing: {
-    ready_for_pickup: ['business owner', 'staff', 'admin'],
-    cancelled_by_business: ['business owner', 'staff', 'admin']
+    ready_for_pickup: ["business owner", "staff", "admin"],
+    cancelled_by_business: ["business owner", "staff", "admin"],
   },
   ready_for_pickup: {
-    picked_up: ['business owner', 'staff', 'admin'],
-    cancelled_by_business: ['business owner', 'staff', 'admin']
+    picked_up: ["business owner", "staff", "admin"],
+    cancelled_by_business: ["business owner", "staff", "admin"],
   },
   picked_up: {
     // Terminal state - no transitions allowed
@@ -40,7 +39,7 @@ const TRANSITION_RULES = {
   },
   failed_payment: {
     // Terminal state - no transitions allowed
-  }
+  },
 };
 
 /**
@@ -52,7 +51,12 @@ const TRANSITION_RULES = {
  * @param {Object} order - Full order object with payment info (optional for payment validation)
  * @returns {Object} { allowed: boolean, reason: string }
  */
-export function canTransition(currentStatus, newStatus, actorRole, order = null) {
+export function canTransition(
+  currentStatus,
+  newStatus,
+  actorRole,
+  order = null
+) {
   // Normalize inputs
   currentStatus = currentStatus?.toLowerCase();
   newStatus = newStatus?.toLowerCase();
@@ -62,7 +66,7 @@ export function canTransition(currentStatus, newStatus, actorRole, order = null)
   if (!TRANSITION_RULES[currentStatus]) {
     return {
       allowed: false,
-      reason: `Invalid current status: ${currentStatus}`
+      reason: `Invalid current status: ${currentStatus}`,
     };
   }
 
@@ -72,7 +76,9 @@ export function canTransition(currentStatus, newStatus, actorRole, order = null)
     const validNextStates = Object.keys(allowedTransitions);
     return {
       allowed: false,
-      reason: `Cannot transition from ${currentStatus} to ${newStatus}. Valid next states: ${validNextStates.join(', ') || 'none (terminal state)'}`
+      reason: `Cannot transition from ${currentStatus} to ${newStatus}. Valid next states: ${
+        validNextStates.join(", ") || "none (terminal state)"
+      }`,
     };
   }
 
@@ -82,24 +88,27 @@ export function canTransition(currentStatus, newStatus, actorRole, order = null)
   if (!requiredRoles.includes(actorRole)) {
     return {
       allowed: false,
-      reason: `Role ${actorRole} is not authorized to transition from ${currentStatus} to ${newStatus}. Required roles: ${requiredRoles.join(', ')}`
+      reason: `Role ${actorRole} is not authorized to transition from ${currentStatus} to ${newStatus}. Required roles: ${requiredRoles.join(
+        ", "
+      )}`,
     };
   }
 
   // ========== Payment Status Validation (Phase 4) ==========
   // Block certain transitions for PayMongo orders until payment is confirmed
   // Payment status is tracked in the payment table (single source of truth)
-  if (order && order.payment_method === 'paymongo') {
+  if (order && order.payment_method === "paymongo") {
     // Fetch payment status from payment table
-    const paymentStatus = order.payment_status?.toLowerCase() || 
-                         (order.paymongo_payment_id ? 'paid' : 'pending');
+    const paymentStatus =
+      order.payment_status?.toLowerCase() ||
+      (order.paymongo_payment_id ? "paid" : "pending");
 
     // Block PREPARING and READY_FOR_PICKUP until payment is confirmed
-    if (['preparing', 'ready_for_pickup'].includes(newStatus)) {
-      if (paymentStatus !== 'paid') {
+    if (["preparing", "ready_for_pickup"].includes(newStatus)) {
+      if (paymentStatus !== "paid") {
         return {
           allowed: false,
-          reason: `Cannot transition to ${newStatus}: PayMongo payment not confirmed (payment_status: ${paymentStatus}). Order must be paid before preparation.`
+          reason: `Cannot transition to ${newStatus}: PayMongo payment not confirmed (payment_status: ${paymentStatus}). Order must be paid before preparation.`,
         };
       }
     }
@@ -107,7 +116,7 @@ export function canTransition(currentStatus, newStatus, actorRole, order = null)
 
   return {
     allowed: true,
-    reason: null
+    reason: null,
   };
 }
 
@@ -128,7 +137,9 @@ export function getAllowedNextStatuses(currentStatus, actorRole) {
   const allowedTransitions = TRANSITION_RULES[currentStatus];
   const nextStatuses = [];
 
-  for (const [nextStatus, requiredRoles] of Object.entries(allowedTransitions)) {
+  for (const [nextStatus, requiredRoles] of Object.entries(
+    allowedTransitions
+  )) {
     if (requiredRoles.includes(actorRole)) {
       nextStatuses.push(nextStatus);
     }
@@ -153,14 +164,16 @@ export function canCancelWithinGrace(orderCreatedAt, graceSeconds = 10) {
     return {
       allowed: true,
       reason: null,
-      remainingSeconds: Math.ceil(remainingSeconds)
+      remainingSeconds: Math.ceil(remainingSeconds),
     };
   }
 
   return {
     allowed: false,
-    reason: `Grace period of ${graceSeconds} seconds has expired. Order was created ${Math.floor(elapsedSeconds)} seconds ago.`,
-    remainingSeconds: 0
+    reason: `Grace period of ${graceSeconds} seconds has expired. Order was created ${Math.floor(
+      elapsedSeconds
+    )} seconds ago.`,
+    remainingSeconds: 0,
   };
 }
 
@@ -173,24 +186,28 @@ export function canCancelWithinGrace(orderCreatedAt, graceSeconds = 10) {
 export function getCancelledByActor(actorRole, currentStatus) {
   const roleLower = actorRole?.toLowerCase();
 
-  if (roleLower === 'tourist') {
-    return 'user';
-  } else if (actorRole === 'Business Owner' || roleLower === 'business owner' || roleLower === 'staff') {
-    return 'business';
-  } else if (roleLower === 'system' || currentStatus === 'failed_payment') {
-    return 'system';
-  } else if (roleLower === 'admin') {
+  if (roleLower === "tourist") {
+    return "user";
+  } else if (
+    actorRole === "Business Owner" ||
+    roleLower === "business owner" ||
+    roleLower === "staff"
+  ) {
+    return "business";
+  } else if (roleLower === "system" || currentStatus === "failed_payment") {
+    return "system";
+  } else if (roleLower === "admin") {
     // Admin can cancel on behalf of either party - need context
     // Default to system for admin-initiated cancellations
-    return 'system';
+    return "system";
   }
 
-  return 'system'; // fallback
+  return "system"; // fallback
 }
 
 /**
  * Validate cancellation request
- * @param {Object} order - Order object with status, created_at, payment_status
+ * @param {Object} order - Order object with status, created_at, payment_status, payment_method, payment_intent_id
  * @param {string} actorRole - Role of actor requesting cancellation
  * @param {number} graceSeconds - Grace period in seconds
  * @returns {Object} { allowed: boolean, reason: string, cancelled_by: string }
@@ -198,74 +215,119 @@ export function getCancelledByActor(actorRole, currentStatus) {
 export function validateCancellation(order, actorRole, graceSeconds = 10) {
   const currentStatus = order.status?.toLowerCase();
   const roleLower = actorRole?.toLowerCase();
+  const paymentStatus = order.payment_status?.toLowerCase();
+  const paymentMethod = order.payment_method?.toLowerCase();
+  
+  // PayMongo payment methods are: gcash, paymaya, card (NOT cash_on_pickup)
+  // We can also check if payment_intent_id exists as indicator of PayMongo flow
+  const isCashOnPickup = paymentMethod === "cash_on_pickup";
+  const isPaymongoPayment = paymentMethod && paymentMethod !== "cash_on_pickup";
+  const hasPaymentIntent = !!order.payment_intent_id;
+
+  console.log(`[OrderTransition] validateCancellation - status: ${currentStatus}, role: ${roleLower}, paymentStatus: ${paymentStatus}, paymentMethod: ${paymentMethod}, isCashOnPickup: ${isCashOnPickup}, isPaymongo: ${isPaymongoPayment}, hasIntent: ${hasPaymentIntent}`);
 
   // Cannot cancel terminal states
-  if (['picked_up', 'cancelled_by_user', 'cancelled_by_business', 'failed_payment'].includes(currentStatus)) {
+  if (
+    [
+      "picked_up",
+      "cancelled_by_user",
+      "cancelled_by_business",
+      "failed_payment",
+    ].includes(currentStatus)
+  ) {
     return {
       allowed: false,
       reason: `Cannot cancel order with status: ${currentStatus}`,
-      cancelled_by: null
+      cancelled_by: null,
     };
   }
 
   // Tourist cancellation rules
-  if (roleLower === 'tourist') {
-    if (currentStatus !== 'pending') {
+  if (roleLower === "tourist") {
+    if (currentStatus !== "pending") {
       return {
         allowed: false,
         reason: 'Tourists can only cancel orders with status "pending"',
-        cancelled_by: null
+        cancelled_by: null,
       };
     }
 
-    // Check grace period
+    // Cash on pickup orders: Allow cancellation without grace period for pending orders
+    // Since no payment has been made yet, user can freely cancel pending cash on pickup orders
+    if (isCashOnPickup) {
+      console.log(`[OrderTransition] Allowing cancellation for cash on pickup order (no payment made)`);
+      return {
+        allowed: true,
+        reason: null,
+        cancelled_by: "user",
+      };
+    }
+
+    // Special case: Allow cancellation for PayMongo orders with pending/failed payment
+    // This handles the case where user abandons payment flow from card-payment screen
+    // or when 3DS authentication fails and payment was never completed
+    // PayMongo methods: card, gcash, paymaya (anything except cash_on_pickup)
+    if ((isPaymongoPayment || hasPaymentIntent) && ["pending", "failed"].includes(paymentStatus)) {
+      console.log(`[OrderTransition] Allowing cancellation for PayMongo order with pending/failed payment`);
+      return {
+        allowed: true,
+        reason: null,
+        cancelled_by: "user",
+      };
+    }
+
+    // Check grace period for non-PayMongo orders or paid PayMongo orders
     const graceCheck = canCancelWithinGrace(order.created_at, graceSeconds);
     if (!graceCheck.allowed) {
       return {
         allowed: false,
         reason: `Grace period expired. ${graceCheck.reason}`,
-        cancelled_by: null
+        cancelled_by: null,
       };
     }
 
     return {
       allowed: true,
       reason: null,
-      cancelled_by: 'user'
+      cancelled_by: "user",
     };
   }
 
   // Business (Business Owner/staff) cancellation rules
-  if (actorRole === 'Business Owner' || roleLower === 'business owner' || roleLower === 'staff') {
+  if (
+    actorRole === "Business Owner" ||
+    roleLower === "business owner" ||
+    roleLower === "staff"
+  ) {
     // Business can cancel before picked_up
-    if (currentStatus === 'picked_up') {
+    if (currentStatus === "picked_up") {
       return {
         allowed: false,
-        reason: 'Cannot cancel order that has been picked up',
-        cancelled_by: null
+        reason: "Cannot cancel order that has been picked up",
+        cancelled_by: null,
       };
     }
 
     return {
       allowed: true,
       reason: null,
-      cancelled_by: 'business'
+      cancelled_by: "business",
     };
   }
 
   // Admin and system can cancel (with appropriate reason)
-  if (['admin', 'system'].includes(actorRole)) {
+  if (["admin", "system"].includes(actorRole)) {
     return {
       allowed: true,
       reason: null,
-      cancelled_by: getCancelledByActor(actorRole, currentStatus)
+      cancelled_by: getCancelledByActor(actorRole, currentStatus),
     };
   }
 
   return {
     allowed: false,
     reason: `Invalid actor role: ${actorRole}`,
-    cancelled_by: null
+    cancelled_by: null,
   };
 }
 
@@ -274,5 +336,5 @@ export default {
   getAllowedNextStatuses,
   canCancelWithinGrace,
   getCancelledByActor,
-  validateCancellation
+  validateCancellation,
 };

@@ -66,6 +66,7 @@ export async function insertBusiness(req, res) {
       req.body.facebook_url ?? null,
       req.body.instagram_url ?? null,
       req.body.hasBooking ?? null,
+      req.body.hasStore ?? null,
     ];
 
     // Dynamically build placeholders: "?,?,?,..."
@@ -120,6 +121,7 @@ export async function updateBusiness(req, res) {
       req.body.facebook_url ?? null,
       req.body.instagram_url ?? null,
       req.body.hasBooking ?? null,
+      req.body.hasStore ?? null,
     ];
 
     const placeholders = params.map(() => "?").join(",");

@@ -375,10 +375,14 @@ const BaseTypography = ({
     return levelMap[variant] as TypographyProps["level"];
   };
 
+  // Allow component prop to override semantic element
+  const componentProp = props.component || undefined;
+
   return (
     <JoyTypography
       ref={typographyRef}
       level={getLevelFromVariant(variant)}
+      component={componentProp}
       className={className}
       sx={{
         ...customStyles,

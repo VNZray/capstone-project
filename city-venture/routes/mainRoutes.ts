@@ -11,7 +11,7 @@
  * import { usePreventDoubleNavigation } from '@/hooks/usePreventDoubleNavigation';
  *
  * const { push } = usePreventDoubleNavigation();
- * push(Routes.shop.cart); // Type-safe, debounced navigation
+ * push(Routes.shop.cart()); // Type-safe, debounced navigation
  * ```
  */
 import { router } from 'expo-router';
@@ -148,7 +148,10 @@ export const Routes = {
   shop: {
     index: '/(tabs)/(home)/(shop)',
     categories: '/(tabs)/(home)/(shop)/categories',
-    cart: '/(checkout)/cart',
+    cart: (params?: { fromPaymentFailed?: string }) => ({
+      pathname: '/(checkout)/cart' as const,
+      params: params || {},
+    }),
     productDetails: '/(tabs)/(home)/(shop)/product-details',
   },
 
@@ -212,8 +215,23 @@ export const Routes = {
   // Checkout Domain - Payment/order flow (separate from tabs)
   // ============================================================================
   checkout: {
-    index: '/(checkout)/checkout',
-    cart: '/(checkout)/cart',
+    index: (params?: {
+      prefillOrderId?: string;
+      prefillPaymentMethod?: string;
+      prefillBillingName?: string;
+      prefillBillingEmail?: string;
+      prefillBillingPhone?: string;
+      prefillPickupDatetime?: string;
+      prefillSpecialInstructions?: string;
+      fromChangePaymentMethod?: string;
+    }) => ({
+      pathname: '/(checkout)/checkout' as const,
+      params: params || {},
+    }),
+    cart: (params?: { fromPaymentFailed?: string }) => ({
+      pathname: '/(checkout)/cart' as const,
+      params: params || {},
+    }),
     paymentProcessing: (params: {
       orderId: string;
       orderNumber?: string;
@@ -241,8 +259,12 @@ export const Routes = {
     paymentFailed: (params?: {
       orderId?: string;
       orderNumber?: string;
+      arrivalCode?: string;
+      total?: string;
       errorMessage?: string;
-      error?: string;
+      errorTitle?: string;
+      isCardError?: string;
+      orderCreated?: string;
     }) => ({
       pathname: '/(checkout)/payment-failed' as const,
       params: params || {},

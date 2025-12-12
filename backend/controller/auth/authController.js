@@ -21,6 +21,15 @@ export async function login(req, res) {
 
     const { user, accessToken, refreshToken } = await authService.loginUser(email, password);
 
+    // Build user response object with required action flags
+    const userResponse = {
+      id: user.id,
+      email: user.email,
+      user_role_id: user.user_role_id,
+      must_change_password: user.must_change_password || false,
+      profile_completed: user.profile_completed !== false, // Default to true if not set
+    };
+
     // Web Client: Set HttpOnly Cookie
     if (client === 'web') {
       res.cookie(COOKIE_NAME, refreshToken, cookieOptions);
@@ -28,12 +37,7 @@ export async function login(req, res) {
       return res.json({ 
         message: 'Login successful',
         accessToken, 
-        user: {
-            id: user.id,
-            email: user.email,
-            user_role_id: user.user_role_id,
-            // Add other safe fields
-        }
+        user: userResponse,
       });
     }
 
@@ -42,15 +46,27 @@ export async function login(req, res) {
       message: 'Login successful',
       accessToken,
       refreshToken, // Mobile needs this to store in SecureStore
-      user: {
-          id: user.id,
-          email: user.email,
-          user_role_id: user.user_role_id,
-      }
+      user: userResponse,
     });
 
   } catch (error) {
     console.error('Login error:', error);
+    
+    // Handle specific error codes
+    if (error.code === 'ACCOUNT_NOT_VERIFIED') {
+      return res.status(403).json({ 
+        message: error.message,
+        code: 'ACCOUNT_NOT_VERIFIED'
+      });
+    }
+    
+    if (error.code === 'ACCOUNT_DISABLED') {
+      return res.status(403).json({ 
+        message: error.message,
+        code: 'ACCOUNT_DISABLED'
+      });
+    }
+    
     // SECURITY: Always return 401 for auth failures with generic message
     // Do not reveal whether email exists or password was wrong
     const isAuthError = error.message === 'Invalid email or password';

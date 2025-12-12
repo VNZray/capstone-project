@@ -273,6 +273,9 @@ export const loginUser = async (
     created_at: userData.created_at || "",
     updated_at: userData.updated_at || "",
     last_login: userData.last_login || "",
+    // Staff onboarding flags from login response
+    must_change_password: loginUserSummary?.must_change_password || false,
+    profile_completed: loginUserSummary?.profile_completed !== false,
   };
 
   // ============================================
@@ -519,4 +522,39 @@ export const startSessionTracking = (): void => {
 
 export const stopSessionTracking = (): void => {
   stopTabActivityTracking();
+};
+
+/**
+ * CHANGE PASSWORD (First Login Flow)
+ * Called when must_change_password is true
+ * Clears the must_change_password flag on success
+ */
+export const changePassword = async (
+  currentPassword: string,
+  newPassword: string
+): Promise<{ success: boolean; message: string }> => {
+  try {
+    const { data } = await apiClient.post(`/users/change-password`, {
+      current_password: currentPassword,
+      new_password: newPassword,
+    });
+    return { success: true, message: data.message || "Password changed successfully" };
+  } catch (error: any) {
+    const message = error?.response?.data?.message || "Failed to change password";
+    return { success: false, message };
+  }
+};
+
+/**
+ * COMPLETE STAFF PROFILE
+ * Called after password change to mark profile as completed
+ */
+export const completeStaffProfile = async (): Promise<{ success: boolean; message: string }> => {
+  try {
+    const { data } = await apiClient.post(`/users/complete-profile`);
+    return { success: true, message: data.message || "Profile completed successfully" };
+  } catch (error: any) {
+    const message = error?.response?.data?.message || "Failed to complete profile";
+    return { success: false, message };
+  }
 };
