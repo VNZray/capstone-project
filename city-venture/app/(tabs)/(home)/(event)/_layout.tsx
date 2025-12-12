@@ -19,6 +19,7 @@ export default function EventLayout() {
         name="[id]"
         options={{
           title: 'Event Details',
+          headerShown: true,
         }}
       />
     </Stack>

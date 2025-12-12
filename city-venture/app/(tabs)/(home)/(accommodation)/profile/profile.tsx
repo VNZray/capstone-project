@@ -146,10 +146,10 @@ const AccommodationProfile = () => {
           >
             <HeaderButton
               onPress={toggleFavorite}
-              icon={favorite ? 'heart.fill' : 'heart'}
+              icon={favorite ? 'heart' : 'heart-outline'}
             />
 
-            <HeaderButton icon="paperplane.fill" />
+            <HeaderButton icon="share-social" />
           </Container>
         }
       />

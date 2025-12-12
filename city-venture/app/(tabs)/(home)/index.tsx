@@ -248,7 +248,7 @@ const HomeScreen = () => {
       case 'tours':
         navigateToTouristSpotHome();
         break;
-      case 'tickets':
+      case 'events':
         navigateToEventHome();
         break;
       default:
@@ -256,9 +256,8 @@ const HomeScreen = () => {
     }
   };
 
-  const handleEventPress = useCallback((_event: HomeEvent) => {
-    // TODO: Event detail route [id].tsx not yet implemented
-    router.push(Routes.event.index as any);
+  const handleEventPress = useCallback((event: HomeEvent) => {
+    router.push(Routes.event.detail(event.id) as any);
   }, []);
 
   const handleNewsPress = useCallback((_article: NewsArticle) => {

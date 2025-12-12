@@ -476,14 +476,6 @@ const Maps = () => {
           backgroundColor="transparent"
           style={{ overflow: 'visible' }}
         >
-          <SearchBar
-            shape="square"
-            containerStyle={{ flex: 1 }}
-            value={search}
-            onChangeText={(text) => setSearch(text)}
-            onSearch={() => {}}
-            placeholder={'Search location or business'}
-          />
           <ScrollableTab
             tabs={TABS}
             onTabChange={handleTabChange}

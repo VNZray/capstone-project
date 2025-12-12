@@ -18,6 +18,9 @@ import {
   deleteFavorite,
 } from '@/services/FavoriteService';
 import type { Business } from '@/types/Business';
+import BottomSheetFilter, {
+  type FilterState,
+} from './components/BottomSheetFilter';
 
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -31,6 +34,7 @@ import {
   View,
   Text,
   Alert,
+  TouchableOpacity,
 } from 'react-native';
 import placeholder from '@/assets/images/placeholder.png';
 import { Colors } from '@/constants/color';
@@ -96,6 +100,15 @@ const AccommodationDirectory = () => {
   const lastScrollOffset = useRef(0);
   const atTopRef = useRef(true);
   const wasScrollingUpRef = useRef(false);
+  const [openFilterModal, setOpenFilterModal] = useState(false);
+
+  // Filter state
+  const [appliedFilters, setAppliedFilters] = useState<FilterState>({
+    categories: [],
+    minRating: null,
+    priceRange: { min: 0, max: 10000 },
+    amenities: [],
+  });
 
   // Fetch user's favorites
   const fetchFavorites = useCallback(async () => {
@@ -258,6 +271,11 @@ const AccommodationDirectory = () => {
     return `${categoryName} • ${location}`;
   };
 
+  // Ratings state - declared before filteredAccommodations
+  const [accommodationRatings, setAccommodationRatings] = useState<
+    Record<string, { avg: number; total: number }>
+  >({});
+
   const filteredAccommodations = useMemo(() => {
     if (!Array.isArray(allAccommodationDetails)) return [];
     const term = toLowerSafe(search.trim());
@@ -278,11 +296,44 @@ const AccommodationDirectory = () => {
       const status = toLowerSafe(b.status);
       const isVisibleStatus = status === 'active' || status === 'pending';
 
-      return matchesSearch && isVisibleStatus;
+      // Apply category filter
+      const matchesCategory =
+        appliedFilters.categories.length === 0 ||
+        (b.categories &&
+          b.categories.some((cat) =>
+            appliedFilters.categories.includes(cat.category_id)
+          ));
+
+      // Apply rating filter
+      const businessRating = accommodationRatings[String(b.id)]?.avg || 0;
+      const matchesRating =
+        appliedFilters.minRating === null ||
+        businessRating >= appliedFilters.minRating;
+
+      // Apply price range filter
+      const minPrice = parseFloat(String(b.min_price)) || 0;
+      const maxPrice = parseFloat(String(b.max_price)) || 10000;
+      const matchesPriceRange =
+        minPrice >= appliedFilters.priceRange.min &&
+        maxPrice <= appliedFilters.priceRange.max;
+
+      return (
+        matchesSearch &&
+        isVisibleStatus &&
+        matchesCategory &&
+        matchesRating &&
+        matchesPriceRange
+      );
     });
 
     return results;
-  }, [allAccommodationDetails, search, getBarangayName]);
+  }, [
+    allAccommodationDetails,
+    search,
+    getBarangayName,
+    appliedFilters,
+    accommodationRatings,
+  ]);
 
   const fetchBusinessAddress = async (
     barangay_id: number
@@ -328,13 +379,19 @@ const AccommodationDirectory = () => {
     clearStoredBusinessId();
     clearStoredRoomId();
   }, [filteredAccommodations, addressPartsByBarangay]);
-  const [accommodationRatings, setAccommodationRatings] = useState<
-    Record<string, { avg: number; total: number }>
-  >({});
-  // Fetch ratings and total reviews for visible accommodations
+
+  // Fetch ratings and total reviews for all accommodations (once)
   useEffect(() => {
     const fetchRatings = async () => {
-      const ids = filteredAccommodations
+      if (
+        !Array.isArray(allAccommodationDetails) ||
+        allAccommodationDetails.length === 0
+      ) {
+        setAccommodationRatings({});
+        return;
+      }
+
+      const ids = allAccommodationDetails
         .map((r) => r.id)
         .filter((id): id is string => typeof id === 'string' && !!id);
       const newMap: Record<string, { avg: number; total: number }> = {};
@@ -353,9 +410,8 @@ const AccommodationDirectory = () => {
       );
       setAccommodationRatings(newMap);
     };
-    if (filteredAccommodations.length > 0) fetchRatings();
-    else setAccommodationRatings({});
-  }, [filteredAccommodations]);
+    fetchRatings();
+  }, [allAccommodationDetails]);
 
   // Show skeleton during initial load (after all hooks are called)
   if (loading && allAccommodationDetails.length === 0) {
@@ -393,12 +449,17 @@ const AccommodationDirectory = () => {
             size="md"
             containerStyle={{
               flex: 1,
-              backgroundColor: Colors.light.inputBackground,
-              borderRadius: 12,
-              borderWidth: 0,
             }}
             inputStyle={{ fontSize: 15 }}
-            enableFiltering={true}
+            rightIcon={
+              <TouchableOpacity onPress={() => setOpenFilterModal(true)}>
+                <Ionicons
+                  name="options-outline"
+                  size={20}
+                  color={primaryColor}
+                />
+              </TouchableOpacity>
+            }
           />
         </View>
 
@@ -505,6 +566,14 @@ const AccommodationDirectory = () => {
           />
         </Pressable>
       </View>
+
+      {/* Filter Modal */}
+      <BottomSheetFilter
+        isOpen={openFilterModal}
+        onClose={() => setOpenFilterModal(false)}
+        onApplyFilters={setAppliedFilters}
+        initialFilters={appliedFilters}
+      />
     </View>
   );
 };

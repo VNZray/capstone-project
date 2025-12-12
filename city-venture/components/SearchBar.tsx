@@ -18,7 +18,7 @@ import {
   ViewStyle,
 } from 'react-native';
 import { SearchFilters } from '@/components/SearchFilters';
-  
+
 export type Color =
   | 'primary'
   | 'secondary'
@@ -423,6 +423,7 @@ const styles = StyleSheet.create({
   },
   input: {
     flex: 1,
+    width: '100%',
   },
   iconContainer: {
     paddingVertical: 12,
