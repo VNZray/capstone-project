@@ -43,7 +43,6 @@ const EditStaffModal: React.FC<Props> = ({
   const [phone, setPhone] = useState("");
   const [roleId, setRoleId] = useState<number | undefined>(undefined);
   const [isActive, setIsActive] = useState(true);
-  const [isVerified, setIsVerified] = useState(false);
 
   useEffect(() => {
     if (open) {
@@ -55,7 +54,6 @@ const EditStaffModal: React.FC<Props> = ({
         setEmail(staff.email || "");
         setPhone(staff.phone_number || "");
         setIsActive(Boolean(staff.is_active));
-        setIsVerified(Boolean(staff.is_verified));
         const matched = roles.find(r => r.name.toLowerCase() === (staff.role_name || '').toLowerCase());
         setRoleId(matched?.id);
       } else {
@@ -67,7 +65,6 @@ const EditStaffModal: React.FC<Props> = ({
         setEmail("");
         setPhone("");
         setIsActive(true);
-        setIsVerified(false);
         setRoleId(undefined);
       }
     }
@@ -88,7 +85,7 @@ const EditStaffModal: React.FC<Props> = ({
       phone_number: phone.trim(),
       role_id: roleId,
       is_active: isActive,
-      is_verified: isVerified,
+      is_verified: true,
     });
   };
 
@@ -138,10 +135,11 @@ const EditStaffModal: React.FC<Props> = ({
               </Select>
             </FormControl>
 
-            <Stack direction="row" spacing={2}>
-              <Checkbox label="Active" checked={isActive} onChange={(e) => setIsActive(e.target.checked)} />
-              <Checkbox label="Verified" checked={isVerified} onChange={(e) => setIsVerified(e.target.checked)} />
-            </Stack>
+            {mode === 'edit' && (
+              <Stack direction="row" spacing={2}>
+                <Checkbox label="Active" checked={isActive} onChange={(e) => setIsActive(e.target.checked)} />
+              </Stack>
+            )}
           </Stack>
         </DialogContent>
         <DialogActions>

@@ -15,7 +15,7 @@ import Button from "@/src/components/Button";
 import IconButton from "@/src/components/IconButton";
 import NoDataFound from "@/src/components/NoDataFound";
 import DynamicTab from "@/src/components/ui/DynamicTab";
-import { Table as TableIcon, LayoutGrid, Search, ListChecks, CheckCircle, XCircle, UserCheck, UserX } from "lucide-react";
+import { Search, ListChecks, CheckCircle, XCircle, UserCheck, UserX } from "lucide-react";
 import { IoAdd } from "react-icons/io5";
 import DashboardRoundedIcon from "@mui/icons-material/DashboardRounded";
 import TableRowsRoundedIcon from "@mui/icons-material/TableRowsRounded";
@@ -28,7 +28,7 @@ const TourismStaffManagement: React.FC = () => {
   const [staff, setStaff] = useState<TourismStaff[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [display, setDisplay] = useState<DisplayMode>('table');
+  const [display, setDisplay] = useState<DisplayMode>('cards');
   const [roles, setRoles] = useState<UserRoles[]>([]);
 
   // Modals state
@@ -85,8 +85,6 @@ const TourismStaffManagement: React.FC = () => {
     { id: "all", label: "All", icon: <ListChecks size={16} /> },
     { id: "active", label: "Active", icon: <CheckCircle size={16} /> },
     { id: "inactive", label: "Inactive", icon: <XCircle size={16} /> },
-    { id: "verified", label: "Verified", icon: <UserCheck size={16} /> },
-    { id: "unverified", label: "Unverified", icon: <UserX size={16} /> },
   ];
 
   const handleSearch = (q: string) => { 
@@ -99,8 +97,6 @@ const TourismStaffManagement: React.FC = () => {
       rows = rows.filter((s) => {
         if (selectedStatus === 'active') return !!s.is_active;
         if (selectedStatus === 'inactive') return !s.is_active;
-        if (selectedStatus === 'verified') return !!s.is_verified;
-        if (selectedStatus === 'unverified') return !s.is_verified;
         return true;
       });
     }
