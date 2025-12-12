@@ -21,7 +21,6 @@ exports.up = async function (knex) {
       "booking_in_progress",
       "booking_completed",
       "booking_cancelled",
-      "booking_in_progress",
       "booking_no_show",
       // General
       "payment_received",
