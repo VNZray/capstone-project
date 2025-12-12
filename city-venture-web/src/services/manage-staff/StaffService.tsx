@@ -1,6 +1,4 @@
-import { apiService } from "@/src/utils/api";
 import apiClient from "../apiClient";
-import api from "../api";
 
 export interface StaffMember {
   id: string;
@@ -31,7 +29,15 @@ export interface Permission {
 export interface Role {
   id: number;
   role_name: string;
-  description: string;
+  role_description: string | null;
+  role_type?: 'system' | 'preset' | 'business';
+  role_for: string | null;
+  is_custom?: boolean;
+  is_immutable?: boolean;
+  based_on_role_id?: number | null;
+  based_on_name?: string;
+  permission_count?: number;
+  user_count?: number;
 }
 
 /**
@@ -114,11 +120,46 @@ export const fetchRolesByRoleFor = async (roleFor: string = 'Business'): Promise
 };
 
 /**
- * Fetch roles by business (custom roles created by business owner)
+ * Fetch roles by business (RBAC business roles)
+ * Uses the new RBAC endpoint that returns business-specific roles
  */
 export const fetchRolesByBusinessId = async (businessId: string): Promise<Role[]> => {
-  const { data } = await apiClient.get<Role[]>(`/user-roles/business/${businessId}`);
+  const { data } = await apiClient.get<Role[]>(`/roles/business/${businessId}`);
   return data;
+};
+
+/**
+ * Fetch preset roles (templates available to all businesses)
+ * These are standard role templates that can be assigned to staff
+ */
+export const fetchPresetRoles = async (): Promise<Role[]> => {
+  const { data } = await apiClient.get<Role[]>(`/roles/presets`);
+  return data;
+};
+
+/**
+ * Fetch both business roles and preset roles for staff assignment
+ * Returns a combined list with preset roles clearly marked
+ */
+export const fetchAvailableRolesForStaff = async (businessId: string): Promise<Role[]> => {
+  try {
+    const [businessRoles, presetRoles] = await Promise.all([
+      fetchRolesByBusinessId(businessId),
+      fetchPresetRoles(),
+    ]);
+    
+    // Combine: business roles first, then presets that aren't duplicated
+    const businessRoleNames = new Set(businessRoles.map(r => r.role_name.toLowerCase()));
+    const uniquePresets = presetRoles.filter(
+      preset => !businessRoleNames.has(preset.role_name.toLowerCase())
+    );
+    
+    return [...businessRoles, ...uniquePresets];
+  } catch (error) {
+    console.error("Error fetching available roles:", error);
+    // Fallback to just business roles if preset fetch fails
+    return fetchRolesByBusinessId(businessId);
+  }
 };
 
 /**
@@ -134,6 +175,24 @@ export const fetchAllPermissions = async (): Promise<Permission[]> => {
  */
 export const fetchRolePermissions = async (roleId: number): Promise<Permission[]> => {
   const { data } = await apiClient.get<Permission[]>(`/permissions/role/${roleId}`);
+  return data;
+};
+
+/**
+ * Onboard a new staff member
+ * Creates user account + staff record in one transaction
+ * Returns staff info with temp_password for email invitation
+ */
+export const onboardStaff = async (staffData: {
+  first_name: string;
+  last_name?: string;
+  email: string;
+  phone_number?: string;
+  password?: string;
+  business_id: string;
+  role_id: number;
+}): Promise<StaffMember & { temp_password: string; invitation_token: string }> => {
+  const { data } = await apiClient.post(`/staff/onboard`, staffData);
   return data;
 };
 

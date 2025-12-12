@@ -11,7 +11,7 @@
  * import { usePreventDoubleNavigation } from '@/hooks/usePreventDoubleNavigation';
  *
  * const { push } = usePreventDoubleNavigation();
- * push(Routes.shop.cart); // Type-safe, debounced navigation
+ * push(Routes.shop.cart()); // Type-safe, debounced navigation
  * ```
  */
 import { router } from 'expo-router';
@@ -42,14 +42,19 @@ export const Routes = {
     forgotPassword: '/(auth)/forgot-password',
   },
 
+  test: {
+    test: '/(test)',
+  },
+
   // ============================================================================
   // Tab Navigation - Main authenticated navigation structure
   // ============================================================================
   tabs: {
     home: '/(tabs)/(home)',
-    maps: '/(tabs)/maps',
-    favorites: '/(tabs)/favorite',
+    maps: '/(tabs)/(maps)',
+    favorites: '/(tabs)/(favorite)',
     profile: '/(tabs)/(profile)',
+    notification: '/(tabs)/(home)/(notification)',
   },
 
   // ============================================================================
@@ -66,28 +71,40 @@ export const Routes = {
         pathname: '/(tabs)/(home)/(accommodation)/room/profile' as const,
         params: { roomId },
       }),
-      booking: (userId: string, roomId: string) => ({
-        pathname: '/(tabs)/(home)/(accommodation)/room/booking' as const,
-        params: { userId, roomId },
-      }),
-      summary: (params?: {
-        bookingData?: string;
-        guests?: string;
-        paymentData?: string;
-      }) => ({
-        pathname:
-          '/(tabs)/(home)/(accommodation)/room/booking/Summary' as const,
-        params: params || {},
-      }),
-      billing: (params?: {
-        bookingData?: string;
-        guests?: string;
-        paymentData?: string;
-      }) => ({
-        pathname:
-          '/(tabs)/(home)/(accommodation)/room/booking/Billing' as const,
-        params: params || {},
-      }),
+      // Booking flow routes
+      booking: {
+        index: '/(tabs)/(home)/(accommodation)/room/(booking)' as const,
+        date: (params?: {
+          bookingType?: string;
+          initialStartDate?: string;
+          initialEndDate?: string;
+          initialStartTime?: string;
+          initialEndTime?: string;
+          availabilityData?: string;
+
+
+        }) => ({
+          pathname:
+            '/(tabs)/(home)/(accommodation)/room/(booking)/BookingDate' as const,
+          params: params || {},
+        }),
+        billing: (params?: {
+          bookingData?: string;
+          paymentData?: string;
+        }) => ({
+          pathname:
+            '/(tabs)/(home)/(accommodation)/room/(booking)/Billing' as const,
+          params: params || {},
+        }),
+        summary: (params?: {
+          bookingData?: string;
+          paymentData?: string;
+        }) => ({
+          pathname:
+            '/(tabs)/(home)/(accommodation)/room/(booking)/Summary' as const,
+          params: params || {},
+        }),
+      },
       // Payment result deep link handlers (for PayMongo redirects)
       paymentSuccess: (params?: {
         bookingId?: string;
@@ -131,7 +148,10 @@ export const Routes = {
   shop: {
     index: '/(tabs)/(home)/(shop)',
     categories: '/(tabs)/(home)/(shop)/categories',
-    cart: '/(checkout)/cart',
+    cart: (params?: { fromPaymentFailed?: string }) => ({
+      pathname: '/(checkout)/cart' as const,
+      params: params || {},
+    }),
     productDetails: '/(tabs)/(home)/(shop)/product-details',
   },
 
@@ -167,6 +187,7 @@ export const Routes = {
     notifications: '/(tabs)/(profile)/(notifications)',
     transactions: '/(tabs)/(profile)/(transactions)',
     settings: '/(tabs)/(profile)/(settings)',
+    rateApp: '/(tabs)/(profile)/(rate-app)',
     bookings: {
       index: '/(tabs)/(profile)/(bookings)',
       detail: (id: string) => ({
@@ -186,14 +207,31 @@ export const Routes = {
       submit: '/(tabs)/(profile)/(reports)/submit',
       myReports: '/(tabs)/(profile)/(reports)/my-reports',
     },
+    terms: '/(tabs)/(profile)/(terms-and-conditions)',
+    privacy: '/(tabs)/(profile)/(privacy-policy)',
   },
 
   // ============================================================================
   // Checkout Domain - Payment/order flow (separate from tabs)
   // ============================================================================
   checkout: {
-    index: '/(checkout)/checkout',
-    cart: '/(checkout)/cart',
+    index: (params?: {
+      prefillOrderId?: string;
+      prefillPaymentMethod?: string;
+      prefillBillingName?: string;
+      prefillBillingEmail?: string;
+      prefillBillingPhone?: string;
+      prefillPickupDatetime?: string;
+      prefillSpecialInstructions?: string;
+      fromChangePaymentMethod?: string;
+    }) => ({
+      pathname: '/(checkout)/checkout' as const,
+      params: params || {},
+    }),
+    cart: (params?: { fromPaymentFailed?: string }) => ({
+      pathname: '/(checkout)/cart' as const,
+      params: params || {},
+    }),
     paymentProcessing: (params: {
       orderId: string;
       orderNumber?: string;
@@ -221,8 +259,12 @@ export const Routes = {
     paymentFailed: (params?: {
       orderId?: string;
       orderNumber?: string;
+      arrivalCode?: string;
+      total?: string;
       errorMessage?: string;
-      error?: string;
+      errorTitle?: string;
+      isCardError?: string;
+      orderCreated?: string;
     }) => ({
       pathname: '/(checkout)/payment-failed' as const,
       params: params || {},

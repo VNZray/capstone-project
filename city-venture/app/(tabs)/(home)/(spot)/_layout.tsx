@@ -7,7 +7,7 @@ import { StatusBar } from 'expo-status-bar';
 
 export default function SpotLayout() {
   return (
-    <TouristSpotProvider>
+    <>
       <StatusBar style="light" />
       <Stack
         screenOptions={{
@@ -28,7 +28,11 @@ export default function SpotLayout() {
               <View style={{ flexDirection: 'row', gap: 16, marginRight: 16 }}>
                 <TouchableOpacity>
                   <View>
-                    <Ionicons name="notifications-outline" size={24} color="black" />
+                    <Ionicons
+                      name="notifications-outline"
+                      size={24}
+                      color="black"
+                    />
                     <View
                       style={{
                         position: 'absolute',
@@ -52,6 +56,6 @@ export default function SpotLayout() {
           }}
         />
       </Stack>
-    </TouristSpotProvider>
+    </>
   );
 }

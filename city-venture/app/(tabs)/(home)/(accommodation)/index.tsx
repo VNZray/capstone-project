@@ -1,13 +1,16 @@
 import AccommodationCard from '@/components/accommodation/AccommodationCard';
 import PageContainer from '@/components/PageContainer';
-
+import AccommodationSkeleton from '@/components/skeleton/AccommodationSkeleton';
 import SearchBar from '@/components/SearchBar';
 import Chip from '@/components/Chip';
 import { ThemedText } from '@/components/themed-text';
 import { useAccommodation } from '@/context/AccommodationContext';
 import { useAuth } from '@/context/AuthContext';
 import { navigateToAccommodationProfile } from '@/routes/accommodationRoutes';
-import { fetchAddress } from '@/services/AccommodationService';
+import {
+  clearStoredBusinessId,
+  fetchAddress,
+} from '@/services/AccommodationService';
 import { getAverageRating, getTotalReviews } from '@/services/FeedbackService';
 import {
   getFavoritesByTouristId,
@@ -31,6 +34,7 @@ import {
 } from 'react-native';
 import placeholder from '@/assets/images/placeholder.png';
 import { Colors } from '@/constants/color';
+import { clearStoredRoomId } from '@/services/RoomService';
 
 // ---- Category constants and helpers (module scope) ----
 const CATEGORY_ID_TO_KEY: Record<number, string> = {
@@ -246,9 +250,10 @@ const AccommodationDirectory = () => {
   const formatSubtitle = (b: Business) => {
     const barangay = getBarangayName(b.barangay_id);
     // Use category from entity_categories or fallback to "Accommodation"
-    const categoryName = b.categories && b.categories.length > 0 
-      ? b.categories[0].title 
-      : 'Accommodation';
+    const categoryName =
+      b.categories && b.categories.length > 0
+        ? b.categories[0].category_title
+        : 'Accommodation';
     const location = barangay || b.address || 'City Center';
     return `${categoryName} • ${location}`;
   };
@@ -260,7 +265,7 @@ const AccommodationDirectory = () => {
       // Check hasBooking - handle both boolean and number (MySQL returns 1/0)
       const hasBooking = b.hasBooking === true || b.hasBooking === 1;
       if (!hasBooking) return false;
-      
+
       const name = toLowerSafe(b.business_name);
       const addr = toLowerSafe(b.address);
       const brgy = toLowerSafe(getBarangayName(b.barangay_id));
@@ -320,7 +325,9 @@ const AccommodationDirectory = () => {
       });
     };
     load();
-  }, [filteredAccommodations]);
+    clearStoredBusinessId();
+    clearStoredRoomId();
+  }, [filteredAccommodations, addressPartsByBarangay]);
   const [accommodationRatings, setAccommodationRatings] = useState<
     Record<string, { avg: number; total: number }>
   >({});
@@ -349,6 +356,11 @@ const AccommodationDirectory = () => {
     if (filteredAccommodations.length > 0) fetchRatings();
     else setAccommodationRatings({});
   }, [filteredAccommodations]);
+
+  // Show skeleton during initial load (after all hooks are called)
+  if (loading && allAccommodationDetails.length === 0) {
+    return <AccommodationSkeleton />;
+  }
 
   return (
     <View style={{ flex: 1, backgroundColor: bg }}>

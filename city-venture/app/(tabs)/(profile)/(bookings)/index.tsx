@@ -27,8 +27,18 @@ import { Tab, TabContainer } from '@/components/ui/Tabs';
 import BookingCard, { type BookingWithDetails } from './components/BookingCard';
 import BookingDetailsBottomSheet from './components/BookingDetailsBottomSheet';
 import { useBookingsHeader } from './_layout';
+import AddReview from '@/components/reviews/AddReview';
+import {
+  createReview,
+  checkIfTouristHasReviewed,
+} from '@/services/FeedbackService';
 
 type TabType = 'reserved' | 'completed' | 'canceled';
+
+// Extended booking type with review status
+type BookingWithReviewStatus = BookingWithDetails & {
+  hasReviewed?: boolean;
+};
 
 const Bookings = () => {
   const { user } = useAuth();
@@ -38,14 +48,17 @@ const Bookings = () => {
   const { setAccommodationId } = useAccommodation();
   const { setOnRefresh, setIsRefreshing } = useBookingsHeader();
 
-  const [bookings, setBookings] = useState<BookingWithDetails[]>([]);
+  const [bookings, setBookings] = useState<BookingWithReviewStatus[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedBooking, setSelectedBooking] =
-    useState<BookingWithDetails | null>(null);
+    useState<BookingWithReviewStatus | null>(null);
   const [showDetails, setShowDetails] = useState(false);
   const [activeTab, setActiveTab] = useState<TabType>('reserved');
+  const [reviewModalVisible, setReviewModalVisible] = useState(false);
+  const [bookingToReview, setBookingToReview] =
+    useState<BookingWithReviewStatus | null>(null);
 
   const textColor = isDark ? '#ECEDEE' : '#0D1B2A';
   const subTextColor = isDark ? '#9BA1A6' : '#6B7280';
@@ -58,19 +71,45 @@ const Bookings = () => {
       setError(null);
       const data = await getBookingsByTourist(user.id);
 
-      // Fetch room details for each booking
+      // Fetch room details and check review status for each booking
       const bookingsWithDetails = await Promise.all(
         data.map(async (booking: Booking) => {
+          let roomDetails: Partial<Room> = {};
+          let hasReviewed = false;
+
+          // Fetch room details
           try {
             const room: Room = await fetchRoomDetails(booking.room_id || '');
-            return {
-              ...booking,
+            roomDetails = {
               room_number: room.room_number,
               room_image: room.room_image,
             };
           } catch {
-            return booking;
+            // Keep empty room details if fetch fails
           }
+
+          // Check review status for completed bookings
+          if (
+            booking.booking_status === 'Checked-Out' &&
+            booking.room_id &&
+            user.id
+          ) {
+            try {
+              hasReviewed = await checkIfTouristHasReviewed(
+                user.id,
+                'room',
+                booking.room_id
+              );
+            } catch {
+              // Default to false if check fails
+            }
+          }
+
+          return {
+            ...booking,
+            ...roomDetails,
+            hasReviewed,
+          };
         })
       );
 
@@ -148,7 +187,9 @@ const Bookings = () => {
   }, [bookings]);
 
   const handleCardPress = (booking: BookingWithDetails) => {
-    setSelectedBooking(booking);
+    // Find the full booking with review status
+    const fullBooking = bookings.find((b) => b.id === booking.id);
+    setSelectedBooking(fullBooking || (booking as BookingWithReviewStatus));
     setShowDetails(true);
   };
 
@@ -171,6 +212,11 @@ const Bookings = () => {
     } else {
       Alert.alert('Error', 'Unable to find room details for rebooking.');
     }
+  };
+
+  const handleRateBooking = (booking: Booking) => {
+    setBookingToReview(booking as BookingWithDetails);
+    setReviewModalVisible(true);
   };
 
   const handleTabChange = (tab: string) => {
@@ -325,7 +371,49 @@ const Bookings = () => {
         onClose={() => setShowDetails(false)}
         onCancelBooking={handleCancelBooking}
         onBookAgain={handleBookAgain}
+        onRateBooking={handleRateBooking}
+        hasReviewed={selectedBooking?.hasReviewed}
       />
+
+      {/* Review Modal for Rating Bookings */}
+      {user && bookingToReview && (
+        <AddReview
+          visible={reviewModalVisible}
+          onClose={() => {
+            setReviewModalVisible(false);
+            setBookingToReview(null);
+          }}
+          onSubmit={async (payload) => {
+            try {
+              await createReview(payload);
+              // Update local state to mark this booking as reviewed
+              setBookings((prev) =>
+                prev.map((b) =>
+                  b.id === bookingToReview.id ? { ...b, hasReviewed: true } : b
+                )
+              );
+              // Also update selected booking if it's the same one
+              if (selectedBooking?.id === bookingToReview.id) {
+                setSelectedBooking((prev) =>
+                  prev ? { ...prev, hasReviewed: true } : null
+                );
+              }
+              setReviewModalVisible(false);
+              setBookingToReview(null);
+              Alert.alert(
+                'Thank You!',
+                'Your review has been submitted successfully.'
+              );
+            } catch (error) {
+              console.error('Error submitting review:', error);
+              throw error;
+            }
+          }}
+          touristId={user.id || ''}
+          reviewType="room"
+          reviewTypeId={bookingToReview.room_id || ''}
+        />
+      )}
     </PageContainer>
   );
 };
@@ -335,7 +423,7 @@ export default Bookings;
 const styles = StyleSheet.create({
   scrollContent: {
     paddingTop: 16,
-    paddingBottom: 24,
+    paddingBottom: 240,
   },
   emptyScrollContent: {
     flex: 1,

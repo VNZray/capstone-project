@@ -54,6 +54,9 @@ export type UserDetails = {
   // RBAC: permissions from backend
   permissions?: string[];
   business_id?: string;
+  // Staff onboarding flags
+  must_change_password?: boolean;
+  profile_completed?: boolean;
 };
 
 export type TokenPayload = {

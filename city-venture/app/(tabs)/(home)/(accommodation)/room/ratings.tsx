@@ -239,7 +239,7 @@ const Ratings = () => {
 
   return (
     <>
-      <PageContainer style={{ paddingTop: 0, marginBottom: 40 }}>
+      <PageContainer style={{ paddingTop: 0 }}>
         <FlatList
           data={reviews}
           keyExtractor={(item) => item.id}
@@ -281,9 +281,7 @@ const Ratings = () => {
 export default Ratings;
 
 const styles = StyleSheet.create({
-  header: {
-    marginBottom: 12,
-  },
+  header: {},
   addButton: {
     flexDirection: 'row',
     alignItems: 'center',

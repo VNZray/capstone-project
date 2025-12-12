@@ -21,7 +21,9 @@ exports.up = async function (knex) {
       .references("id")
       .inTable("discount")
       .onDelete("SET NULL");
-    table.timestamp("pickup_datetime").notNullable();
+    // Use datetime instead of timestamp to avoid DEFAULT current_timestamp()
+    // and ON UPDATE current_timestamp() behaviors that cause bugs
+    table.datetime("pickup_datetime").notNullable();
     table.text("special_instructions").nullable();
     table.enu("status", [
       "pending", 

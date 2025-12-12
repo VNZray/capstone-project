@@ -1,6 +1,6 @@
 // See spec.md §4 - Tourist flow: Review cart → Proceed to checkout
 
-import React, { useRef } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -10,8 +10,9 @@ import {
   Alert,
   Animated,
   ActivityIndicator,
+  BackHandler,
 } from 'react-native';
-import { Stack } from 'expo-router';
+import { Stack, router, useLocalSearchParams } from 'expo-router';
 import { ShopColors, Brand, Slate } from '@/constants/color';
 import { useTypography } from '@/constants/typography';
 import { useCart } from '@/context/CartContext';
@@ -230,16 +231,85 @@ const CartScreen = () => {
   const insets = useSafeAreaInsets();
   const { push, back, isNavigating } = usePreventDoubleNavigation();
 
+  // Check if we came from payment-failed screen (need special back navigation)
+  const params = useLocalSearchParams<{ fromPaymentFailed?: string }>();
+  const fromPaymentFailed = params.fromPaymentFailed === 'true';
+
   const {
     items,
     businessName,
     isLoading,
+    isValidating,
     removeFromCart,
     updateQuantity,
     clearCart,
     getSubtotal,
     getTotalItems,
+    validateCart,
   } = useCart();
+
+  // Track if we've validated on mount
+  const [hasValidated, setHasValidated] = useState(false);
+
+  // Validate cart when screen opens (sync with database)
+  useEffect(() => {
+    const runValidation = async () => {
+      if (isLoading || hasValidated || items.length === 0) return;
+
+      setHasValidated(true);
+      const { removedCount, updatedCount } = await validateCart();
+
+      // Notify user if items were removed or updated
+      if (removedCount > 0) {
+        Alert.alert(
+          'Cart Updated',
+          `${removedCount} item${
+            removedCount > 1 ? 's were' : ' was'
+          } removed from your cart because ${
+            removedCount > 1 ? 'they are' : 'it is'
+          } no longer available.`,
+          [{ text: 'OK' }]
+        );
+      } else if (updatedCount > 0) {
+        Alert.alert(
+          'Cart Updated',
+          `${updatedCount} item${
+            updatedCount > 1 ? 's have' : ' has'
+          } been updated with the latest prices and availability.`,
+          [{ text: 'OK' }]
+        );
+      }
+    };
+
+    runValidation();
+  }, [isLoading, hasValidated, items.length, validateCart]);
+
+  // Handle back navigation
+  const handleBack = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    if (fromPaymentFailed) {
+      // Coming from payment-failed - go to home to break checkout stack
+      router.replace(Routes.tabs.home);
+    } else {
+      // Normal flow - use default back
+      back();
+    }
+  };
+
+  // Intercept Android back button - only override if from payment-failed
+  useEffect(() => {
+    if (!fromPaymentFailed) return; // Don't override normal flow
+
+    const backHandler = BackHandler.addEventListener(
+      'hardwareBackPress',
+      () => {
+        router.replace(Routes.tabs.home);
+        return true; // Prevent default back behavior
+      }
+    );
+
+    return () => backHandler.remove();
+  }, [fromPaymentFailed]);
 
   const handleQuantityChange = (
     productId: string,
@@ -319,7 +389,7 @@ const CartScreen = () => {
       return;
     }
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    push(Routes.checkout.index);
+    push(Routes.checkout.index());
   };
 
   const subtotal = getSubtotal();
@@ -334,6 +404,22 @@ const CartScreen = () => {
           headerShadowVisible: false,
           headerTintColor: Brand.deepNavy,
           headerStyle: { backgroundColor: Slate[50] },
+          // Custom back button - conditionally goes to home or uses normal back
+          headerLeft: () => (
+            <Pressable
+              onPress={handleBack}
+              style={({ pressed }) => [
+                {
+                  paddingHorizontal: 8,
+                  paddingVertical: 4,
+                  marginLeft: 8,
+                  opacity: pressed ? 0.7 : 1,
+                },
+              ]}
+            >
+              <Ionicons name="arrow-back" size={24} color={Brand.deepNavy} />
+            </Pressable>
+          ),
           headerRight: () =>
             items.length > 0 ? (
               <Pressable
@@ -364,12 +450,14 @@ const CartScreen = () => {
           style={StyleSheet.absoluteFill}
         />
 
-        {isLoading ? (
-          /* Loading State - Cart being restored from storage */
+        {isLoading || isValidating ? (
+          /* Loading State - Cart being restored from storage or validated */
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" color={Brand.deepNavy} />
             <Text style={[styles.loadingText, { fontSize: body }]}>
-              Loading your cart...
+              {isValidating
+                ? 'Checking availability...'
+                : 'Loading your cart...'}
             </Text>
           </View>
         ) : items.length === 0 ? (

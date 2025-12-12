@@ -28,6 +28,7 @@ import { Routes } from '@/routes/mainRoutes';
 import HeroSection from '@/components/home/HeroSection';
 import NewsAndEventsSection from '@/components/home/NewsAndEventsSection';
 import { ThemedText } from '@/components/themed-text';
+import HomepageSkeleton from '@/components/skeleton/HomepageSkeleton';
 import CityListSection from '@/components/home/CityListSection';
 import PersonalRecommendationSection from '@/components/home/PersonalRecommendationSection';
 import VisitorsHandbookSection from '@/components/home/VisitorsHandbookSection';
@@ -54,6 +55,7 @@ import {
   type ActionItem,
 } from '@/components/home/data';
 import { Image } from 'expo-image';
+import NotificationService from '@/services/NotificationService';
 
 // Enable LayoutAnimation for Android
 if (
@@ -85,6 +87,7 @@ const HomeScreen = () => {
   const [searchValue, setSearchValue] = useState('');
   const [refreshing, setRefreshing] = useState(false);
   const [greeting, setGreeting] = useState('Hello');
+  const [unreadCount, setUnreadCount] = useState(0);
 
   const [eventState, setEventState] = useState<{
     data: HomeEvent[];
@@ -129,9 +132,27 @@ const HomeScreen = () => {
     }
   }, [user]);
 
+  // Fetch unread notification count
+  const fetchUnreadCount = useCallback(async () => {
+    if (!user?.user_id) return;
+    try {
+      const count = await NotificationService.getUnreadNotificationCount(
+        user.user_id
+      );
+      setUnreadCount(count);
+    } catch (error) {
+      console.error('Failed to fetch unread count:', error);
+    }
+  }, [user?.user_id]);
+
+  useEffect(() => {
+    fetchUnreadCount();
+  }, [fetchUnreadCount]);
+
   const handleRefresh = useCallback(() => {
     loadHomeContent(true);
-  }, []);
+    fetchUnreadCount();
+  }, [fetchUnreadCount]);
 
   const loadHomeContent = useCallback(async (isRefresh = false) => {
     if (isRefresh) setRefreshing(true);
@@ -247,6 +268,11 @@ const HomeScreen = () => {
 
   if (!user) return null;
 
+  // Show skeleton during initial load
+  if (eventState.loading && newsState.loading && eventState.data.length === 0) {
+    return <HomepageSkeleton />;
+  }
+
   return (
     <View style={[styles.root, { backgroundColor: palette.background }]}>
       <StatusBar
@@ -293,8 +319,26 @@ const HomeScreen = () => {
           </View>
 
           <View style={styles.iconRow}>
-            <Pressable onPress={() => {}} style={styles.iconButton}>
+            <Pressable
+              onPress={() => {
+                router.push(Routes.tabs.notification);
+              }}
+              style={styles.iconButton}
+            >
               <Ionicons name="notifications-outline" size={24} color="#FFF" />
+              {unreadCount > 0 && (
+                <View style={styles.notificationBadge}>
+                  {unreadCount <= 9 ? (
+                    <ThemedText style={styles.notificationBadgeText}>
+                      {unreadCount}
+                    </ThemedText>
+                  ) : (
+                    <ThemedText style={styles.notificationBadgeText}>
+                      9+
+                    </ThemedText>
+                  )}
+                </View>
+              )}
             </Pressable>
             <Pressable
               onPress={() => navigateToCart()}
@@ -607,6 +651,25 @@ const styles = StyleSheet.create({
   },
   paginationDotActive: {
     width: 24,
+  },
+  notificationBadge: {
+    position: 'absolute',
+    top: -4,
+    right: -4,
+    backgroundColor: '#E74C3C',
+    minWidth: 18,
+    height: 18,
+    borderRadius: 9,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 4,
+    borderWidth: 2,
+    borderColor: '#FFF',
+  },
+  notificationBadgeText: {
+    color: '#FFF',
+    fontSize: 10,
+    fontWeight: '700',
   },
 });
 

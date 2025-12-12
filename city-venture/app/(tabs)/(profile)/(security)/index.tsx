@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { StyleSheet, View, ScrollView, Pressable, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import PageContainer from '@/components/PageContainer';
@@ -9,89 +9,13 @@ import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useAuth } from '@/context/AuthContext';
 import ChangeEmail from './components/ChangeEmail';
 import ChangePassword from './components/ChangesPassword';
-
-type SecurityRowProps = {
-  icon: keyof typeof Ionicons.glyphMap;
-  label: string;
-  value?: string;
-  description?: string;
-  onPress?: () => void;
-  showArrow?: boolean;
-  iconColor?: string;
-  danger?: boolean;
-};
-
-const SecurityRow: React.FC<SecurityRowProps> = ({
-  icon,
-  label,
-  value,
-  description,
-  onPress,
-  showArrow = true,
-  iconColor,
-  danger = false,
-}) => {
-  const scheme = useColorScheme();
-  const isDark = scheme === 'dark';
-
-  const textColor = danger
-    ? Colors.light.error
-    : isDark
-    ? '#ECEDEE'
-    : '#0D1B2A';
-  const subTextColor = isDark ? '#9BA1A6' : '#6B7280';
-  const borderColor = isDark ? '#262B3A' : '#E3E7EF';
-  const bgColor = danger
-    ? 'rgba(185, 28, 28, 0.08)'
-    : isDark
-    ? '#1a1f2e'
-    : '#f3f4f6';
-
-  return (
-    <Pressable
-      onPress={onPress}
-      style={[styles.securityRow, { borderBottomColor: borderColor }]}
-    >
-      <View style={styles.rowLeft}>
-        <View style={[styles.iconWrapper, { backgroundColor: bgColor }]}>
-          <Ionicons
-            name={icon}
-            size={20}
-            color={
-              iconColor || (danger ? Colors.light.error : Colors.light.primary)
-            }
-          />
-        </View>
-        <View style={styles.textContainer}>
-          <ThemedText
-            type="body-medium"
-            weight="medium"
-            style={{ color: textColor }}
-          >
-            {label}
-          </ThemedText>
-          {(value || description) && (
-            <ThemedText
-              type="label-small"
-              style={{ color: subTextColor, marginTop: 2 }}
-              numberOfLines={1}
-            >
-              {value || description}
-            </ThemedText>
-          )}
-        </View>
-      </View>
-      {showArrow && (
-        <Ionicons name="chevron-forward" size={20} color={subTextColor} />
-      )}
-    </Pressable>
-  );
-};
+import SectionHeader from '@/components/ui/SectionHeader';
+import MenuItem from '@/components/ui/MenuItem';
 
 const AccountSecurity = () => {
   const scheme = useColorScheme();
   const isDark = scheme === 'dark';
-  const { user, logout } = useAuth();
+  const { user, logout, login } = useAuth();
 
   const bg = Colors.light.background;
   const cardBg = isDark ? '#1E293B' : '#FFFFFF';
@@ -115,12 +39,23 @@ const AccountSecurity = () => {
   };
 
   // Handle successful email change
-  const handleEmailChangeSuccess = () => {
-    Alert.alert(
-      'Email Changed',
-      'Your email has been updated. Please log in again with your new email.',
-      [{ text: 'OK', onPress: () => logout?.() }]
-    );
+  const handleEmailChangeSuccess = async () => {
+    try {
+      // Refresh user data from server
+
+      Alert.alert(
+        'Email Changed',
+        'Your email has been updated successfully.',
+        [{ text: 'OK' }]
+      );
+    } catch (error) {
+      console.error('Failed to refresh user data:', error);
+      Alert.alert(
+        'Email Changed',
+        'Your email has been updated. Please log in again with your new email.',
+        [{ text: 'OK', onPress: () => logout?.() }]
+      );
+    }
   };
 
   // Handle successful password change
@@ -179,141 +114,97 @@ const AccountSecurity = () => {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {/* Email Section */}
-        <Container
-          style={[styles.section, { backgroundColor: cardBg }]}
-          elevation={1}
-          gap={0}
-          padding={0}
-        >
-          <View style={styles.sectionHeader}>
-            <ThemedText
-              type="card-title-medium"
-              weight="semi-bold"
-              style={{ color: textColor }}
-            >
-              Login Credentials
-            </ThemedText>
-          </View>
+        <Container gap={8} backgroundColor="transparent">
+          <SectionHeader title="Login Credentials" />
 
-          <SecurityRow
-            icon="mail-outline"
-            label="Email Address"
-            value={maskEmail(user?.email)}
-            onPress={() => setShowChangeEmail(true)}
-          />
-          <SecurityRow
-            icon="lock-closed-outline"
-            label="Password"
-            value="••••••••"
-            description="Last changed: Unknown"
-            onPress={() => setShowChangePassword(true)}
-          />
-        </Container>
-
-        {/* Security Status */}
-        <Container
-          style={[styles.section, { backgroundColor: cardBg }]}
-          elevation={1}
-          gap={0}
-          padding={0}
-        >
-          <View style={styles.sectionHeader}>
-            <ThemedText
-              type="card-title-medium"
-              weight="semi-bold"
-              style={{ color: textColor }}
-            >
-              Account Status
-            </ThemedText>
-          </View>
-
-          <SecurityRow
-            icon={user?.is_verified ? 'checkmark-circle' : 'alert-circle'}
-            label="Email Verification"
-            value={user?.is_verified ? 'Verified' : 'Not Verified'}
-            iconColor={
-              user?.is_verified ? Colors.light.success : Colors.light.warning
-            }
-            showArrow={!user?.is_verified}
-            onPress={
-              user?.is_verified
-                ? undefined
-                : () =>
-                    Alert.alert(
-                      'Verify Email',
-                      'A verification email will be sent to your email address.'
-                    )
-            }
-          />
-          <SecurityRow
-            icon={user?.is_active ? 'shield-checkmark' : 'shield'}
-            label="Account Status"
-            value={user?.is_active ? 'Active' : 'Inactive'}
-            iconColor={
-              user?.is_active ? Colors.light.success : Colors.light.error
-            }
-            showArrow={false}
-          />
-          <SecurityRow
-            icon="time-outline"
-            label="Last Login"
-            value={
-              user?.last_login
-                ? new Date(user.last_login).toLocaleString('en-US', {
-                    month: 'short',
-                    day: 'numeric',
-                    year: 'numeric',
-                    hour: 'numeric',
-                    minute: '2-digit',
-                  })
-                : 'Unknown'
-            }
-            showArrow={false}
-          />
-        </Container>
-
-        {/* Danger Zone */}
-        <Container
-          style={[styles.section, { backgroundColor: cardBg }]}
-          elevation={1}
-          gap={0}
-          padding={0}
-        >
-          <View style={styles.sectionHeader}>
-            <ThemedText
-              type="card-title-medium"
-              weight="semi-bold"
-              style={{ color: Colors.light.error }}
-            >
-              Danger Zone
-            </ThemedText>
-          </View>
-
-          <SecurityRow
-            icon="trash-outline"
-            label="Delete Account"
-            description="Permanently delete your account and all data"
-            onPress={handleDeleteAccount}
-            danger
-          />
-        </Container>
-
-        {/* Info Note */}
-        <View style={styles.infoNote}>
-          <Ionicons
-            name="information-circle-outline"
-            size={16}
-            color={subTextColor}
-          />
-          <ThemedText
-            type="label-small"
-            style={{ color: subTextColor, marginLeft: 8, flex: 1 }}
+          <Container
+            style={[styles.section, { backgroundColor: cardBg }]}
+            elevation={1}
+            gap={0}
+            padding={0}
           >
-            For security reasons, changing your email or password may require
-            you to log in again.
-          </ThemedText>
-        </View>
+            <MenuItem
+              icon="mail-outline"
+              label="Email Address"
+              subLabel={maskEmail(user?.email)}
+              onPress={() => setShowChangeEmail(true)}
+            />
+            <MenuItem
+              icon="lock-closed-outline"
+              label="Password"
+              subLabel="••••••••"
+              onPress={() => setShowChangePassword(true)}
+            />
+          </Container>
+
+          <SectionHeader title="Account Status" />
+
+          <Container
+            style={[styles.section, { backgroundColor: cardBg }]}
+            elevation={1}
+            gap={0}
+            padding={0}
+          >
+            <MenuItem
+              icon={user?.is_verified ? 'checkmark-circle' : 'alert-circle'}
+              iconColor={
+                user?.is_verified ? Colors.light.success : Colors.light.warning
+              }
+              label="Email Verification"
+              subLabel={user?.is_verified ? 'Verified' : 'Not Verified'}
+              onPress={
+                user?.is_verified
+                  ? undefined
+                  : () =>
+                      Alert.alert(
+                        'Verify Email',
+                        'A verification email will be sent to your email address.'
+                      )
+              }
+            />
+            <MenuItem
+              icon={user?.is_active ? 'shield-checkmark' : 'shield'}
+              label="Account Status"
+              subLabel={user?.is_active ? 'Active' : 'Inactive'}
+              iconColor={
+                user?.is_active ? Colors.light.success : Colors.light.error
+              }
+            />
+          </Container>
+
+          <SectionHeader title="Danger Zone" />
+
+          <Container
+            style={[styles.section, { backgroundColor: cardBg }]}
+            elevation={1}
+            gap={0}
+            padding={0}
+          >
+            <MenuItem
+              icon="trash-outline"
+              label="Delete Account"
+              onPress={handleDeleteAccount}
+              subLabel="Permanently delete your account and all data"
+              iconColor={Colors.light.error}
+            />
+          </Container>
+
+          {/* Info Note */}
+          <Container style={styles.infoNote}>
+            <Ionicons
+              name="information-circle-outline"
+              size={16}
+              color={subTextColor}
+            />
+            <ThemedText
+              type="label-small"
+              style={{ color: subTextColor, marginLeft: 8, flex: 1 }}
+            >
+              For security reasons, changing your email or password may require
+              you to log in again.
+            </ThemedText>
+          </Container>
+        </Container>
       </ScrollView>
 
       {/* Change Email Component */}
@@ -321,7 +212,7 @@ const AccountSecurity = () => {
         visible={showChangeEmail}
         onClose={() => setShowChangeEmail(false)}
         currentEmail={user?.email}
-        userId={user?.id || user?.user_id}
+        userId={user?.user_id}
         onSuccess={handleEmailChangeSuccess}
       />
 
@@ -330,7 +221,7 @@ const AccountSecurity = () => {
         visible={showChangePassword}
         onClose={() => setShowChangePassword(false)}
         userEmail={user?.email}
-        userId={user?.id || user?.user_id}
+        userId={user?.user_id}
         onSuccess={handlePasswordChangeSuccess}
       />
     </PageContainer>
@@ -381,9 +272,7 @@ const styles = StyleSheet.create({
   infoNote: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    marginHorizontal: 16,
     marginTop: 24,
-    padding: 12,
     backgroundColor: 'rgba(0,0,0,0.03)',
     borderRadius: 8,
   },

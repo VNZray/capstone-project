@@ -78,6 +78,7 @@ export type Room = {
   room_number?: string;
   room_type?: string;
   capacity?: string;
+  beds?: number;
   room_price?: string;
   description?: string;
   business_id?: string;

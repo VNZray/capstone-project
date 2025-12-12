@@ -10,7 +10,7 @@
  *
  * // Use type-safe routes
  * const { push } = usePreventDoubleNavigation();
- * push(Routes.shop.cart);
+ * push(Routes.shop.cart());
  *
  * // Check current route domain
  * const domain = getRouteDomain(pathname);

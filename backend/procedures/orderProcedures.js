@@ -2,7 +2,7 @@ async function createOrderProcedures(knex) {
   // ==================== ORDERS ====================
   // NOTE: Payment info is now fetched from the payment table via LEFT JOIN
   // Payment table is the single source of truth for payment status and PayMongo references
-  
+
   // Get all orders with business, user, and payment info
   await knex.raw(`
     CREATE PROCEDURE GetAllOrders()
@@ -122,7 +122,7 @@ async function createOrderProcedures(knex) {
       IN p_tax_amount DECIMAL(10,2),
       IN p_total_amount DECIMAL(10,2),
       IN p_discount_id CHAR(64),
-      IN p_pickup_datetime TIMESTAMP,
+      IN p_pickup_datetime DATETIME,
       IN p_special_instructions TEXT,
       IN p_arrival_code VARCHAR(10)
     )
@@ -314,11 +314,10 @@ async function createOrderProcedures(knex) {
       END LOOP;
       CLOSE order_items_cursor;
       
-      -- Restore discount usage if applicable
-      UPDATE discount d
-      JOIN \`order\` o ON d.id = o.discount_id 
-      SET d.current_usage_count = GREATEST(0, d.current_usage_count - 1)
-      WHERE o.id = p_orderId AND o.discount_amount > 0;
+      -- Note: Discount usage restoration removed
+      -- The discount table no longer has current_usage_count column (simplified MVP schema).
+      -- Per-product discount stock is tracked in discount_product.current_stock_used.
+      -- TODO: If needed, implement per-product discount stock restoration
       
       -- Update order with cancellation details
       UPDATE \`order\` SET 
@@ -333,9 +332,14 @@ async function createOrderProcedures(knex) {
         updated_at = NOW() 
       WHERE id = p_orderId;
       
-      -- Update payment status to failed/refunded if applicable
+      -- Update payment status to failed when order is cancelled and payment is pending
+      -- If payment is 'pending' and order is cancelled (by any party), mark payment as 'failed'
+      -- If payment is 'paid', leave as-is (refund handled separately in controller)
       UPDATE payment 
-      SET status = IF(p_cancelled_by = 'system', 'failed', status),
+      SET status = CASE 
+          WHEN status = 'pending' THEN 'failed'
+          ELSE status
+        END,
           updated_at = NOW()
       WHERE payment_for = 'order' AND payment_for_id = p_orderId;
       

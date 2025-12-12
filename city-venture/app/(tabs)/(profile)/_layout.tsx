@@ -123,6 +123,53 @@ const ProfileLayout = () => {
           },
         }}
       />
+      <Stack.Screen
+        name="(rate-app)"
+        options={{
+          headerShown: true,
+          animation: 'slide_from_right',
+          headerTitleAlign: 'center',
+          header() {
+            return (
+              <AppHeader backButton title="Rate App" background="primary" />
+            );
+          },
+        }}
+      />
+      <Stack.Screen
+        name="(terms-and-conditions)"
+        options={{
+          headerShown: true,
+          animation: 'slide_from_right',
+          headerTitleAlign: 'center',
+          header() {
+            return (
+              <AppHeader
+                backButton
+                title="Terms and Conditions"
+                background="primary"
+              />
+            );
+          },
+        }}
+      />
+      <Stack.Screen
+        name="(privacy-policy)"
+        options={{
+          headerShown: true,
+          animation: 'slide_from_right',
+          headerTitleAlign: 'center',
+          header() {
+            return (
+              <AppHeader
+                backButton
+                title="Privacy Policy"
+                background="primary"
+              />
+            );
+          },
+        }}
+      />
     </Stack>
   );
 };

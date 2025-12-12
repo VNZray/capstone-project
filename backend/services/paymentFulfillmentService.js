@@ -21,6 +21,7 @@ import * as socketService from './socketService.js';
 import * as notificationHelper from './notificationHelper.js';
 import * as auditService from './auditService.js';
 import * as paymongoService from './paymongoService.js';
+import * as refundService from './refundService.js';
 
 // ============= Constants =============
 
@@ -66,14 +67,14 @@ export async function handlePaymentPaid({
   const paymentAmount = attributes.amount || 0;
   const paymentFee = attributes.fee || 0;
   const paymentNetAmount = attributes.net_amount || 0;
-  
+
   // CRITICAL: Extract actual payment method from PayMongo event
   // This is the REAL method used (e.g., 'gcash'), not what we guessed during initiation
   // PayMongo stores method type in different locations depending on payment type:
   // - For e-wallets: attributes.source.type (e.g., 'gcash')
   // - Alternative: attributes.payment_method_type
   const actualPaymentMethodType = attributes.source?.type || attributes.payment_method_type;
-  
+
   // Payment method ID is in source.id (e.g., 'src_...' for e-wallets, 'tok_...' for cards)
   const actualPaymentMethodId = attributes.source?.id || attributes.payment_method_id || paymentId;
 
@@ -172,11 +173,15 @@ export async function handlePaymentFailed({
   eventData,
 }) {
   console.log(`[PaymentFulfillment] 💔 Processing payment.failed for intent: ${paymentIntentId}`);
+  console.log(`[PaymentFulfillment] 💔 PaymentId: ${paymentId}`);
 
   const attributes = eventData.attributes || {};
   const metadata = attributes.metadata || {};
   const failedCode = attributes.failed_code || 'UNKNOWN';
   const failedMessage = attributes.failed_message || 'Payment failed';
+
+  console.log(`[PaymentFulfillment] 💔 Failed code: ${failedCode}, message: ${failedMessage}`);
+  console.log(`[PaymentFulfillment] 💔 Metadata:`, JSON.stringify(metadata));
 
   // 1. Resolve reference from metadata or database lookup
   let referenceId = metadata.order_id || metadata.booking_id;
@@ -249,9 +254,40 @@ export async function handlePaymentFailed({
     console.warn(`[PaymentFulfillment] ⚠️ Audit logging skipped: ${auditErr.message}`);
   }
 
-  // 5. Emit real-time events
+  // 5. Emit real-time events and notifications
   if (paymentFor === PAYMENT_FOR.ORDER) {
     await emitPaymentEvents(referenceId, paymentId, PAYMENT_STATUS.FAILED, attributes.amount);
+  } else if (paymentFor === PAYMENT_FOR.BOOKING) {
+    // Send payment failed notification for booking
+    try {
+      const [bookingData] = await db.query(
+        `SELECT b.id, b.business_id, b.total_price, t.user_id, bus.business_name
+         FROM booking b
+         JOIN tourist t ON b.tourist_id = t.id
+         JOIN business bus ON b.business_id = bus.id
+         WHERE b.id = ?`,
+        [referenceId]
+      );
+
+      if (bookingData && bookingData.length > 0) {
+        const booking = bookingData[0];
+        await notificationHelper.sendNotification(
+          booking.user_id,
+          'Payment Failed',
+          `Your payment for ${booking.business_name} could not be processed. ${failedMessage}`,
+          'payment_failed',
+          {
+            booking_id: referenceId,
+            business_id: booking.business_id,
+            business_name: booking.business_name,
+            failed_code: failedCode,
+            failed_message: failedMessage
+          }
+        );
+      }
+    } catch (notifError) {
+      console.error('[PaymentFulfillment] Failed to send payment failed notification:', notifError);
+    }
   }
 
   console.log(`[PaymentFulfillment] 💔 Payment failed for ${paymentFor} ${referenceId}`);
@@ -283,25 +319,39 @@ export async function handleRefundSucceeded({
   const attributes = eventData.attributes || {};
   const paymentId = attributes.payment_id;
   const refundAmount = attributes.amount || 0;
+  const refundStatus = attributes.status; // 'pending', 'processing', 'succeeded', 'failed'
 
   if (!paymentId) {
     console.warn(`[PaymentFulfillment] ❌ Missing payment_id in refund event`);
     return { success: false, reason: 'Missing payment_id in refund event' };
   }
 
-  // 1. Update payment status to refunded (Single Source of Truth)
-  await db.query(
-    `UPDATE payment 
-     SET status = ?, 
-         refund_reference = ?, 
-         updated_at = ? 
-     WHERE paymongo_payment_id = ?`,
-    [PAYMENT_STATUS.REFUNDED, refundId, new Date(), paymentId]
-  );
+  // 1. Delegate to RefundService to update our refund record
+  try {
+    await refundService.handleRefundWebhook({
+      refundId,
+      status: refundStatus,
+      eventData
+    });
+  } catch (refundErr) {
+    console.warn(`[PaymentFulfillment] ⚠️ RefundService handling skipped: ${refundErr.message}`);
+  }
 
-  // 2. Find the order/booking for notifications
+  // 2. Only update payment table if refund succeeded
+  if (refundStatus === 'succeeded') {
+    await db.query(
+      `UPDATE payment
+       SET status = ?,
+           refund_reference = ?,
+           updated_at = ?
+       WHERE paymongo_payment_id = ?`,
+      [PAYMENT_STATUS.REFUNDED, refundId, new Date(), paymentId]
+    );
+  }
+
+  // 3. Find the order/booking for notifications
   const [paymentRows] = await db.query(
-    `SELECT payment_for_id, payment_for FROM payment 
+    `SELECT payment_for_id, payment_for FROM payment
      WHERE paymongo_payment_id = ?`,
     [paymentId]
   );
@@ -315,58 +365,97 @@ export async function handleRefundSucceeded({
   const referenceId = payment.payment_for_id;
   const paymentFor = payment.payment_for;
 
-  // 3. Update order/booking timestamp
-  if (paymentFor === PAYMENT_FOR.ORDER) {
-    await db.query(
-      `UPDATE \`order\` SET updated_at = ? WHERE id = ?`,
-      [new Date(), referenceId]
-    );
+  // 4. Update order/booking status if refund succeeded
+  if (refundStatus === 'succeeded') {
+    if (paymentFor === PAYMENT_FOR.ORDER) {
+      await db.query(
+        `UPDATE \`order\` 
+         SET status = 'cancelled_by_user',
+             cancelled_at = NOW(),
+             cancelled_by = 'user',
+             cancellation_reason = 'Refund completed',
+             updated_at = ?
+         WHERE id = ? AND status NOT IN ('cancelled_by_user', 'cancelled_by_business')`,
+        [new Date(), referenceId]
+      );
+      
+      // NOTE: Stock restoration is handled by RefundService.handleRefundWebhook()
+      // Removed duplicate call here to prevent double stock increment
+      console.log(`[PaymentFulfillment] ✅ Stock restored for order ${referenceId}`);
+    }
   }
 
-  // 4. Audit logging
-  await auditService.logOrderEvent({
-    orderId: referenceId,
-    eventType: auditService.EVENT_TYPES.REFUNDED,
-    oldValue: 'paid',
-    newValue: 'refunded',
-    actor: { id: null, role: 'system' },
-    metadata: {
-      refund_id: refundId,
-      refund_amount: refundAmount / 100,
-      webhook_event_type: 'refund.updated',
-      payment_for: paymentFor,
-    },
-  });
+  // 5. Audit logging
+  try {
+    await auditService.logOrderEvent({
+      orderId: referenceId,
+      eventType: auditService.EVENT_TYPES.REFUNDED,
+      oldValue: 'paid',
+      newValue: refundStatus === 'succeeded' ? 'refunded' : `refund_${refundStatus}`,
+      actor: { id: null, role: 'system' },
+      metadata: {
+        refund_id: refundId,
+        refund_amount: refundAmount / 100,
+        refund_status: refundStatus,
+        webhook_event_type: 'refund.updated',
+        payment_for: paymentFor,
+      },
+    });
+  } catch (auditErr) {
+    console.warn(`[PaymentFulfillment] ⚠️ Audit logging skipped: ${auditErr.message}`);
+  }
 
-  // 5. Emit real-time events
-  if (paymentFor === PAYMENT_FOR.ORDER) {
+  // 6. Emit real-time events
+  if (refundStatus === 'succeeded' && paymentFor === PAYMENT_FOR.ORDER) {
     await emitPaymentEvents(referenceId, paymentId, PAYMENT_STATUS.REFUNDED, refundAmount);
   }
 
-  console.log(`[PaymentFulfillment] ✅ Refund completed for ${paymentFor} ${referenceId}`);
+  console.log(`[PaymentFulfillment] ✅ Refund ${refundStatus} for ${paymentFor} ${referenceId}`);
 
   return {
     success: true,
     paymentFor,
     referenceId,
-    status: PAYMENT_STATUS.REFUNDED,
+    status: refundStatus === 'succeeded' ? PAYMENT_STATUS.REFUNDED : refundStatus,
     refundId,
     refundAmount: refundAmount / 100,
   };
 }
 
-// ============= Order Service Functions =============
+// NOTE: restoreOrderStock function removed - stock restoration is now centralized
+// in RefundService.handleRefundWebhook() to prevent duplicate stock increments
+
+// ============= Order Service Functions =====================
 
 /**
  * Mark an order as paid
- * Updates only the timestamp (payment table is single source of truth)
+ * Updates the order status back to 'pending' if it was in 'failed_payment' state
+ * (retry scenario). The payment table is the single source of truth for payment status.
  *
  * @param {string} orderId - Order ID
  */
 async function markOrderAsPaid(orderId) {
+  // Update order - reset status to 'pending' if it was 'failed_payment' (retry success)
+  // Clear any cancellation fields that were set during failure
   await db.query(
-    `UPDATE \`order\` 
-     SET updated_at = ?
+    `UPDATE \`order\`
+     SET status = CASE 
+           WHEN status = 'failed_payment' THEN 'pending'
+           ELSE status
+         END,
+         cancelled_at = CASE 
+           WHEN status = 'failed_payment' THEN NULL
+           ELSE cancelled_at
+         END,
+         cancelled_by = CASE 
+           WHEN status = 'failed_payment' THEN NULL
+           ELSE cancelled_by
+         END,
+         cancellation_reason = CASE 
+           WHEN status = 'failed_payment' THEN NULL
+           ELSE cancellation_reason
+         END,
+         updated_at = ?
      WHERE id = ?`,
     [new Date(), orderId]
   );
@@ -374,19 +463,124 @@ async function markOrderAsPaid(orderId) {
 }
 
 /**
- * Mark an order as failed payment
+ * Mark an order as failed payment and restore stock
+ * 
+ * IMPORTANT: This function restores stock immediately when payment fails.
+ * This prevents the issue where users lose items from cart and stock is
+ * decremented despite payment failure.
  *
  * @param {string} orderId - Order ID
  */
 async function markOrderAsFailedPayment(orderId) {
-  await db.query(
-    `UPDATE \`order\` 
-     SET status = 'failed_payment',
-         updated_at = ?
-     WHERE id = ?`,
-    [new Date(), orderId]
-  );
-  console.log(`[PaymentFulfillment] 💔 Order ${orderId} marked as failed_payment`);
+  const connection = await db.getConnection();
+  
+  try {
+    await connection.beginTransaction();
+    
+    // 1. Get order details for logging and status check
+    const [orderRows] = await connection.query(
+      `SELECT order_number, status FROM \`order\` WHERE id = ?`,
+      [orderId]
+    );
+    const orderNumber = orderRows[0]?.order_number || 'UNKNOWN';
+    const currentStatus = orderRows[0]?.status;
+    
+    // 2. Check if order is already in failed_payment status
+    // If so, stock was already restored - skip restoration to prevent double-crediting
+    if (currentStatus === 'failed_payment') {
+      console.log(`[PaymentFulfillment] ⏭️ Order ${orderId} (${orderNumber}) already in failed_payment status, skipping stock restoration`);
+      await connection.commit();
+      return;
+    }
+    
+    // 3. Update order status to failed_payment
+    await connection.query(
+      `UPDATE \`order\`
+       SET status = 'failed_payment',
+           cancelled_at = NOW(),
+           cancelled_by = 'system',
+           cancellation_reason = 'Payment failed via webhook',
+           updated_at = ?
+       WHERE id = ?`,
+      [new Date(), orderId]
+    );
+    
+    // 4. Restore stock for all order items
+    const [orderItems] = await connection.query(
+      `SELECT oi.product_id, oi.quantity
+       FROM order_item oi
+       WHERE oi.order_id = ?`,
+      [orderId]
+    );
+    
+    let itemsRestored = 0;
+    for (const item of orderItems) {
+      // Restore stock
+      await connection.query(
+        `UPDATE product_stock 
+         SET current_stock = current_stock + ?,
+             updated_at = NOW()
+         WHERE product_id = ?`,
+        [item.quantity, item.product_id]
+      );
+      
+      // Log stock restoration in history
+      await connection.query(
+        `INSERT INTO stock_history (id, product_id, change_type, quantity_change, previous_stock, new_stock, notes)
+         SELECT UUID(), ?, 'adjustment', ?, 
+                current_stock - ?, current_stock, 
+                ?
+         FROM product_stock WHERE product_id = ?`,
+        [
+          item.product_id,
+          item.quantity,
+          item.quantity,
+          `Payment failed - stock restored: Order ${orderNumber}`,
+          item.product_id,
+        ]
+      );
+      
+      // Update product status back to active if it was out_of_stock
+      await connection.query(
+        `UPDATE product 
+         SET status = IF(
+           (SELECT current_stock FROM product_stock WHERE product_id = ?) > 0,
+           'active',
+           status
+         )
+         WHERE id = ?`,
+        [item.product_id, item.product_id]
+      );
+      
+      itemsRestored++;
+    }
+    
+    await connection.commit();
+    
+    console.log(`[PaymentFulfillment] 💔 Order ${orderId} (${orderNumber}) marked as failed_payment, ${itemsRestored} items stock restored`);
+    
+  } catch (error) {
+    await connection.rollback();
+    console.error(`[PaymentFulfillment] ❌ Error marking order as failed:`, error.message);
+    
+    // Fallback: At least update the order status even if stock restoration fails
+    try {
+      await db.query(
+        `UPDATE \`order\`
+         SET status = 'failed_payment',
+             updated_at = ?
+         WHERE id = ?`,
+        [new Date(), orderId]
+      );
+      console.log(`[PaymentFulfillment] ⚠️ Order ${orderId} marked as failed (stock not restored due to error)`);
+    } catch (fallbackError) {
+      console.error(`[PaymentFulfillment] ❌ Fallback update also failed:`, fallbackError.message);
+    }
+    
+    throw error;
+  } finally {
+    connection.release();
+  }
 }
 
 // ============= Booking Service Functions =============
@@ -398,14 +592,57 @@ async function markOrderAsFailedPayment(orderId) {
  * @param {number} paymentAmountCentavos - Payment amount in centavos
  */
 async function confirmBooking(bookingId, paymentAmountCentavos) {
+  console.log(`[PaymentFulfillment] 📝 Confirming booking ${bookingId} with payment ${paymentAmountCentavos / 100} PHP`);
+
   await db.query(
-    `UPDATE booking 
-     SET booking_status = 'Confirmed',
+    `UPDATE booking
+     SET booking_status = 'Reserved',
          balance = GREATEST(0, balance - ?)
      WHERE id = ?`,
     [paymentAmountCentavos / 100, bookingId]
   );
-  console.log(`[PaymentFulfillment] ✅ Booking ${bookingId} confirmed`);
+
+  console.log(`[PaymentFulfillment] ✅ Booking ${bookingId} confirmed (status: Reserved)`);
+
+  // Send payment received notification to user
+  try {
+    // Get booking details for notification
+    const [bookingData] = await db.query(
+      `SELECT b.id, b.business_id, b.total_price, b.check_in_date, b.check_out_date,
+              t.user_id, bus.business_name
+       FROM booking b
+       JOIN tourist t ON b.tourist_id = t.id
+       JOIN business bus ON b.business_id = bus.id
+       WHERE b.id = ?`,
+      [bookingId]
+    );
+
+    if (bookingData && bookingData.length > 0) {
+      const booking = bookingData[0];
+      console.log('[PaymentFulfillment] 📨 Sending payment notification for booking:', booking.id);
+
+      // Send payment received notification
+      await notificationHelper.sendNotification(
+        booking.user_id,
+        'Payment Received',
+        `Your payment of ₱${(paymentAmountCentavos / 100).toFixed(2)} for ${booking.business_name} has been received. Your booking is now confirmed!`,
+        'payment_received',
+        {
+          booking_id: bookingId,
+          business_id: booking.business_id,
+          business_name: booking.business_name,
+          amount: paymentAmountCentavos / 100,
+          check_in_date: booking.check_in_date,
+          check_out_date: booking.check_out_date
+        }
+      );
+
+      console.log('[PaymentFulfillment] ✅ Payment notification sent for booking:', bookingId);
+    }
+  } catch (notifError) {
+    console.error('[PaymentFulfillment] ⚠️ Failed to send payment notification:', notifError);
+    // Don't fail the booking if notification fails
+  }
 }
 
 /**
@@ -415,10 +652,10 @@ async function confirmBooking(bookingId, paymentAmountCentavos) {
  */
 async function markBookingAsFailedPayment(bookingId) {
   await db.query(
-    `UPDATE booking SET booking_status = 'Payment Failed' WHERE id = ?`,
+    `UPDATE booking SET booking_status = 'Canceled' WHERE id = ?`,
     [bookingId]
   );
-  console.log(`[PaymentFulfillment] 💔 Booking ${bookingId} marked as Payment Failed`);
+  console.log(`[PaymentFulfillment] 💔 Booking ${bookingId} marked as Canceled (payment failed)`);
 }
 
 // ============= Helper Functions =============
@@ -499,14 +736,14 @@ async function updatePaymentRecordByPaymentId({
   const metadataValues = Object.values(metadata);
 
   await db.query(
-    `UPDATE payment 
-     SET status = ?, 
+    `UPDATE payment
+     SET status = ?,
          paymongo_payment_id = ?,
          metadata = JSON_SET(
            COALESCE(metadata, '{}'),
            ${metadataSetClauses}
          ),
-         updated_at = ? 
+         updated_at = ?
      WHERE paymongo_payment_id = ? OR payment_intent_id = ?`,
     [status, paymongoPaymentId, ...metadataValues, new Date(), paymongoPaymentId, paymentIntentId]
   );
@@ -539,7 +776,7 @@ async function lookupPaymentByPaymentId(paymentId) {
   if (!paymentId) return null;
 
   const [rows] = await db.query(
-    `SELECT payment_for_id, payment_for FROM payment 
+    `SELECT payment_for_id, payment_for FROM payment
      WHERE paymongo_payment_id = ? LIMIT 1`,
     [paymentId]
   );
@@ -597,8 +834,8 @@ async function emitPaymentEvents(orderId, paymentId, status, amountCentavos) {
 async function emitNewOrderNotification(orderId) {
   try {
     const [orderRows] = await db.query(
-      `SELECT o.*, u.email as user_email FROM \`order\` o 
-       JOIN user u ON u.id = o.user_id 
+      `SELECT o.*, u.email as user_email FROM \`order\` o
+       JOIN user u ON u.id = o.user_id
        WHERE o.id = ?`,
       [orderId]
     );
@@ -656,6 +893,9 @@ export async function verifyPaymentIntentStatus({ paymentIntentId }) {
       message: 'No payment intent ID provided',
       paymentIntentStatus: null,
       lastPaymentError: null,
+      paymongoPaymentId: null,
+      paymentMethodType: null,
+      paymentMethodId: null,
     };
   }
 
@@ -666,7 +906,26 @@ export async function verifyPaymentIntentStatus({ paymentIntentId }) {
     const piStatus = paymentIntent?.attributes?.status;
     const lastPaymentError = paymentIntent?.attributes?.last_payment_error;
 
+    // Extract payment details from the payments array
+    // The last payment in the array is the most recent successful one
+    const payments = paymentIntent?.attributes?.payments || [];
+    const lastPayment = payments.slice(-1)[0];
+
+    // Extract PayMongo payment ID (e.g., "pay_...")
+    const paymongoPaymentId = lastPayment?.id || null;
+
+    // Extract payment method type (e.g., "gcash", "card")
+    const paymentMethodType = lastPayment?.attributes?.source?.type ||
+                              lastPayment?.attributes?.payment_method_type ||
+                              null;
+
+    // Extract payment method ID (e.g., "src_..." for e-wallets, "pm_..." for cards)
+    const paymentMethodId = lastPayment?.attributes?.source?.id ||
+                            paymentIntent?.attributes?.payment_method ||
+                            null;
+
     console.log(`[PaymentFulfillment] 📊 PayMongo PI status: ${piStatus}`);
+    console.log(`[PaymentFulfillment] 💳 Payment details - ID: ${paymongoPaymentId}, Method: ${paymentMethodType}, MethodID: ${paymentMethodId}`);
 
     // Map PayMongo status to verification result
     // PayMongo Payment Intent statuses:
@@ -680,6 +939,9 @@ export async function verifyPaymentIntentStatus({ paymentIntentId }) {
       ...result,
       paymentIntentStatus: piStatus,
       lastPaymentError,
+      paymongoPaymentId,
+      paymentMethodType,
+      paymentMethodId,
     };
   } catch (error) {
     console.error(`[PaymentFulfillment] ❌ Error verifying payment intent:`, error);
@@ -772,18 +1034,42 @@ export async function verifyAndFulfillBookingPayment({
 
   // 2. Update local records based on verification result
   if (verificationResult.verified && currentPaymentStatus === 'pending') {
-    // Payment succeeded - update payment and booking
+    // Payment succeeded - update payment record with PayMongo details
+    // Build dynamic SET clause to include payment method if available
+    let setClauses = `status = 'paid', updated_at = ?`;
+    let params = [new Date()];
+
+    // Add paymongo_payment_id if available
+    if (verificationResult.paymongoPaymentId) {
+      setClauses += `, paymongo_payment_id = ?`;
+      params.push(verificationResult.paymongoPaymentId);
+    }
+
+    // Add payment_method (type) if available
+    if (verificationResult.paymentMethodType) {
+      setClauses += `, payment_method = ?`;
+      params.push(verificationResult.paymentMethodType);
+    }
+
+    // Add payment_method_id if available
+    if (verificationResult.paymentMethodId) {
+      setClauses += `, payment_method_id = ?`;
+      params.push(verificationResult.paymentMethodId);
+    }
+
+    params.push(paymentId); // WHERE clause
+
     await db.query(
-      `UPDATE payment SET status = 'paid', updated_at = ? WHERE id = ?`,
-      [new Date(), paymentId]
+      `UPDATE payment SET ${setClauses} WHERE id = ?`,
+      params
     );
 
     await db.query(
-      `UPDATE booking SET booking_status = 'Confirmed' WHERE id = ? AND booking_status IN ('Pending', 'Reserved')`,
+      `UPDATE booking SET booking_status = 'Reserved' WHERE id = ? AND booking_status IN ('Pending', 'Reserved')`,
       [bookingId]
     );
 
-    console.log(`[PaymentFulfillment] ✅ Booking payment ${paymentId} verified and marked as paid`);
+    console.log(`[PaymentFulfillment] ✅ Booking payment ${paymentId} verified and marked as paid (status: Reserved, paymongoId: ${verificationResult.paymongoPaymentId || 'N/A'})`);
 
     // Audit logging
     try {
@@ -844,10 +1130,34 @@ export async function verifyAndFulfillOrderPayment({
 
   // 2. Update local records based on verification result
   if (verificationResult.verified && currentPaymentStatus === 'pending') {
-    // Payment succeeded - update payment and order
+    // Payment succeeded - update payment record with PayMongo details
+    // Build dynamic SET clause to include payment method if available
+    let setClauses = `status = 'paid', updated_at = ?`;
+    let params = [new Date()];
+
+    // Add paymongo_payment_id if available
+    if (verificationResult.paymongoPaymentId) {
+      setClauses += `, paymongo_payment_id = ?`;
+      params.push(verificationResult.paymongoPaymentId);
+    }
+
+    // Add payment_method (type) if available
+    if (verificationResult.paymentMethodType) {
+      setClauses += `, payment_method = ?`;
+      params.push(verificationResult.paymentMethodType);
+    }
+
+    // Add payment_method_id if available
+    if (verificationResult.paymentMethodId) {
+      setClauses += `, payment_method_id = ?`;
+      params.push(verificationResult.paymentMethodId);
+    }
+
+    params.push(paymentId); // WHERE clause
+
     await db.query(
-      `UPDATE payment SET status = 'paid', updated_at = ? WHERE id = ?`,
-      [new Date(), paymentId]
+      `UPDATE payment SET ${setClauses} WHERE id = ?`,
+      params
     );
 
     await db.query(
@@ -855,7 +1165,7 @@ export async function verifyAndFulfillOrderPayment({
       [new Date(), orderId]
     );
 
-    console.log(`[PaymentFulfillment] ✅ Order payment ${paymentId} verified and marked as paid`);
+    console.log(`[PaymentFulfillment] ✅ Order payment ${paymentId} verified and marked as paid (paymongoId: ${verificationResult.paymongoPaymentId || 'N/A'})`);
 
     // Emit real-time events
     await emitPaymentEvents(orderId, paymentId, PAYMENT_STATUS.PAID, null);

@@ -17,6 +17,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Button from '@/components/Button';
 import Tabs from '@/components/Tabs';
 import { ThemedText } from '@/components/themed-text';
+import RoomProfileSkeleton from '@/components/skeleton/RoomProfileSkeleton';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 
 import Container from '@/components/Container';
@@ -31,11 +32,7 @@ import Details from './details';
 import Photos from './photos';
 import Ratings from './ratings';
 import placeholder from '@/assets/images/room-placeholder.png';
-import AddReview from '@/components/reviews/AddReview';
-import FeedbackService, {
-  getAverageRating,
-  getTotalReviews,
-} from '@/services/FeedbackService';
+import { getAverageRating, getTotalReviews } from '@/services/FeedbackService';
 import {
   getFavoritesByTouristId,
   addFavorite,
@@ -43,6 +40,8 @@ import {
 } from '@/services/FavoriteService';
 import * as PromotionService from '@/services/PromotionService';
 import type { Promotion } from '@/types/Promotion';
+import { LinearGradient } from 'expo-linear-gradient';
+import { AppHeader } from '@/components/header/AppHeader';
 
 const { width, height } = Dimensions.get('window');
 
@@ -55,9 +54,6 @@ const AccommodationProfile = () => {
   const { user } = useAuth();
   const { roomDetails } = useRoom();
   const { bookings } = useUserBookings();
-  const [modalVisible, setModalVisible] = useState(false);
-  const [reviewSubmitting, setReviewSubmitting] = useState(false);
-  const [reviewError, setReviewError] = useState<string | null>(null);
   const [ratingsRefreshKey, setRatingsRefreshKey] = useState(0);
   const bg = colorScheme === 'dark' ? background.dark : background.light;
   const [favoriteId, setFavoriteId] = useState<string | null>(null);
@@ -167,15 +163,9 @@ const AccommodationProfile = () => {
     setActiveTab(tab.key);
   };
 
-  const actionLabel = activeTab === 'ratings' ? 'Write a Review' : 'Book Now';
-  const primaryIcon = activeTab === 'ratings' ? 'comment' : 'calendar-check';
-  const handlePrimaryAction = () => {
-    if (activeTab === 'ratings') {
-      setModalVisible(true);
-      return;
-    }
+  const handleBookNow = () => {
     if (user?.id && roomDetails?.id) {
-      router.push(Routes.accommodation.room.booking(user.id, roomDetails.id));
+      router.push(Routes.accommodation.room.booking.index);
     } else {
       console.log('User or room details not available');
     }
@@ -242,11 +232,34 @@ const AccommodationProfile = () => {
       console.log('[Room Profile] Fetched promotions:', promos);
       setPromotions(promos);
 
-      // Find best room discount (type 2)
-      const roomDiscounts = promos.filter(
-        (p) => p.promo_type === 2 && p.discount_percentage
-      );
-      console.log('[Room Profile] Room discounts (type 2):', roomDiscounts);
+      // Find best active room discount (type 2) with valid dates
+      const now = new Date();
+      const roomDiscounts = promos.filter((p) => {
+        const isRoomDiscount = p.promo_type === 2;
+        // Handle both boolean and integer values (database returns 1/0)
+        const isActive = p.is_active === true || p.is_active === 1;
+        const hasDiscount = p.discount_percentage && p.discount_percentage > 0;
+        const startDate = new Date(p.start_date);
+        const isStarted = startDate <= now;
+        const notExpired = !p.end_date || new Date(p.end_date) >= now;
+
+        console.log('[Room Profile] Checking promo:', {
+          title: p.title,
+          isRoomDiscount,
+          isActive,
+          is_active_raw: p.is_active,
+          hasDiscount,
+          isStarted,
+          notExpired,
+          start_date: p.start_date,
+          end_date: p.end_date,
+        });
+
+        return (
+          isRoomDiscount && isActive && hasDiscount && isStarted && notExpired
+        );
+      });
+      console.log('[Room Profile] Valid room discounts:', roomDiscounts);
 
       if (roomDiscounts.length > 0) {
         const bestDiscount = roomDiscounts.reduce((prev, current) =>
@@ -257,7 +270,7 @@ const AccommodationProfile = () => {
         console.log('[Room Profile] Best room discount:', bestDiscount);
         setRoomDiscount(bestDiscount);
       } else {
-        console.log('[Room Profile] No room discounts found');
+        console.log('[Room Profile] No valid room discounts found');
         setRoomDiscount(null);
       }
     } catch (error) {
@@ -271,19 +284,18 @@ const AccommodationProfile = () => {
     fetchPromotions();
   }, [roomDetails?.id, ratingsRefreshKey, fetchFavorites, fetchPromotions]);
 
+  // Show skeleton while loading
   if (!roomDetails) {
-    return (
-      <View style={styles.notFoundContainer}>
-        <ThemedText type="title-large">Room not found.</ThemedText>
-        <ThemedText type="sub-title-large" style={{ textAlign: 'center' }}>
-          Please go back and select a valid room.
-        </ThemedText>
-      </View>
-    );
+    return <RoomProfileSkeleton />;
   }
 
   return (
     <PageContainer style={{ padding: 0 }}>
+      <AppHeader
+        backButton
+        title={roomDetails?.room_type}
+        background="transparent"
+      />
       <FlatList
         data={[]}
         keyExtractor={() => 'header'}
@@ -291,30 +303,60 @@ const AccommodationProfile = () => {
         contentContainerStyle={{ paddingBottom: 140 }}
         ListHeaderComponent={
           <>
-            <Image
-              source={
-                roomDetails?.room_image
-                  ? { uri: roomDetails.room_image }
-                  : placeholder
-              }
-              style={styles.image}
-              resizeMode="cover"
-            />
-
-            <Container padding={16} backgroundColor={bg}>
-              <Container
-                padding={0}
-                backgroundColor="transparent"
-                direction="row"
-                justify="space-between"
+            <View style={styles.imageContainer}>
+              <Image
+                source={
+                  roomDetails?.room_image
+                    ? { uri: roomDetails.room_image }
+                    : placeholder
+                }
+                style={styles.image}
+                resizeMode="cover"
+              />
+              <LinearGradient
+                colors={['transparent', 'rgba(0, 0, 0, 0.8)']}
+                style={{
+                  position: 'absolute',
+                  bottom: 0,
+                  left: 0,
+                  width: '100%',
+                  paddingTop: 40,
+                  paddingBottom: 12,
+                  paddingHorizontal: 16,
+                }}
               >
-                <View>
-                  <ThemedText type="card-title-medium" weight="bold">
-                    Room {roomDetails?.room_number}
-                  </ThemedText>
-                  <ThemedText type="body-small">
-                    Size: {roomDetails?.floor}sqm
-                  </ThemedText>
+                <Container
+                  padding={0}
+                  backgroundColor="transparent"
+                  direction="row"
+                  justify="space-between"
+                >
+                  <View>
+                    <ThemedText
+                      style={{ color: '#FFFFFF' }}
+                      type="card-title-medium"
+                      weight="bold"
+                    >
+                      Room {roomDetails?.room_number}
+                    </ThemedText>
+                    <ThemedText style={{ color: '#FFFFFF' }} type="body-small">
+                      Size: {roomDetails?.floor}sqm
+                    </ThemedText>
+
+                    <View>
+                      <ThemedText
+                        type="body-medium"
+                        style={{ color: '#FFFFFF' }}
+                      >
+                        <MaterialCommunityIcons
+                          name="star"
+                          size={20}
+                          color="#FFB007"
+                        />
+                        {headerRating} ({totalReviews} reviews)
+                      </ThemedText>
+                    </View>
+                  </View>
 
                   {formattedPrice.hasDiscount ? (
                     <View style={{ marginTop: 4 }}>
@@ -335,16 +377,16 @@ const AccommodationProfile = () => {
                         }}
                       >
                         <ThemedText
-                          darkColor={colors.secondary}
+                          darkColor={colors.light}
                           weight="bold"
-                          lightColor={colors.secondary}
+                          lightColor={colors.light}
                           type="sub-title-large"
                         >
                           {formattedPrice.discounted}
                         </ThemedText>
                         <View
                           style={{
-                            backgroundColor: colors.secondary,
+                            backgroundColor: colors.warning,
                             paddingHorizontal: 8,
                             paddingVertical: 2,
                             borderRadius: 4,
@@ -362,29 +404,20 @@ const AccommodationProfile = () => {
                     </View>
                   ) : (
                     <ThemedText
-                      darkColor={colors.warning}
+                      darkColor={colors.light}
                       weight="medium"
-                      lightColor={colors.warning}
+                      lightColor={colors.light}
                       type="sub-title-large"
                       style={{ marginTop: 4 }}
                     >
                       {formattedPrice.original}
                     </ThemedText>
                   )}
-                </View>
+                </Container>
+              </LinearGradient>
+            </View>
 
-                <View>
-                  <ThemedText type="body-medium">
-                    <MaterialCommunityIcons
-                      name="star"
-                      size={20}
-                      color="#FFB007"
-                    />
-                    {headerRating} ({totalReviews} reviews)
-                  </ThemedText>
-                </View>
-              </Container>
-
+            <Container padding={16} backgroundColor={bg}>
               <Tabs tabs={TABS} onTabChange={handleTabChange} />
             </Container>
 
@@ -396,63 +429,46 @@ const AccommodationProfile = () => {
           </>
         }
       />
-      {!modalVisible &&
-        (() => {
-          const baseBottom = Platform.OS === 'ios' ? 60 : 80;
-          return (
-            <View
-              style={[
-                styles.fabBar,
-                { paddingBottom: baseBottom + insets.bottom },
-              ]}
-            >
-              {activeTab !== 'ratings' &&
-                user?.role_name?.toLowerCase() === 'tourist' && (
-                  <Button
-                    icon
-                    variant={isFavorite ? 'soft' : 'soft'}
-                    color={isFavorite ? 'error' : 'secondary'}
-                    startIcon={isFavorite ? 'heart' : 'heart'}
-                    onPress={handleToggleFavorite}
-                  />
-                )}
-              <Button
-                label={actionLabel}
-                fullWidth
-                startIcon={primaryIcon}
-                color="primary"
-                variant="solid"
-                onPress={handlePrimaryAction}
-                elevation={3}
-                style={{ flex: 1 }}
-              />
-            </View>
-          );
-        })()}
-      {user && (
-        <AddReview
-          visible={modalVisible}
-          onClose={() => setModalVisible(false)}
-          onSubmit={async (payload) => {
-            try {
-              await FeedbackService.createReview(payload);
-              setModalVisible(false);
-              setRatingsRefreshKey((prev) => prev + 1);
-            } catch (error) {
-              console.error('Error submitting review:', error);
-              throw error;
-            }
-          }}
-          touristId={user.id || ''}
-          reviewType="room"
-          reviewTypeId={roomDetails?.id || ''}
-        />
+      {activeTab !== 'ratings' && (
+        <View
+          style={[
+            styles.fabBar,
+            {
+              paddingBottom: (Platform.OS === 'ios' ? 60 : 80) + insets.bottom,
+            },
+          ]}
+        >
+          {user?.role_name?.toLowerCase() === 'tourist' && (
+            <Button
+              icon
+              variant="soft"
+              color={isFavorite ? 'error' : 'secondary'}
+              startIcon="heart"
+              onPress={handleToggleFavorite}
+            />
+          )}
+          <Button
+            label="Book Now"
+            fullWidth
+            startIcon="calendar-check"
+            color="primary"
+            variant="solid"
+            onPress={handleBookNow}
+            elevation={3}
+            style={{ flex: 1 }}
+          />
+        </View>
       )}
     </PageContainer>
   );
 };
 
 const styles = StyleSheet.create({
+  imageContainer: {
+    position: 'relative',
+    width: width * 1,
+    height: height * 0.4,
+  },
   image: {
     width: width * 1,
     height: height * 0.4,

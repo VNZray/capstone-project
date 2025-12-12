@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   StyleSheet,
   View,
@@ -18,73 +18,25 @@ import { useAuth } from '@/context/AuthContext';
 import * as ImagePicker from 'expo-image-picker';
 import { supabase } from '@/utils/supabase';
 import apiClient from '@/services/apiClient';
-
-type InfoRowProps = {
-  icon: keyof typeof Ionicons.glyphMap;
-  label: string;
-  value?: string;
-  onEdit?: () => void;
-  editable?: boolean;
-};
-
-const InfoRow: React.FC<InfoRowProps> = ({
-  icon,
-  label,
-  value,
-  onEdit,
-  editable = true,
-}) => {
-  const scheme = useColorScheme();
-  const isDark = scheme === 'dark';
-
-  const textColor = isDark ? '#ECEDEE' : '#0D1B2A';
-  const subTextColor = isDark ? '#9BA1A6' : '#6B7280';
-  const borderColor = isDark ? '#262B3A' : '#E3E7EF';
-
-  return (
-    <Pressable
-      onPress={editable ? onEdit : undefined}
-      style={[styles.infoRow, { borderBottomColor: borderColor }]}
-      disabled={!editable}
-    >
-      <View style={styles.infoRowLeft}>
-        <View
-          style={[
-            styles.iconWrapper,
-            { backgroundColor: isDark ? '#1a1f2e' : '#f3f4f6' },
-          ]}
-        >
-          <Ionicons name={icon} size={18} color={Colors.light.primary} />
-        </View>
-        <View style={styles.infoTextContainer}>
-          <ThemedText type="label-small" style={{ color: subTextColor }}>
-            {label}
-          </ThemedText>
-          <ThemedText
-            type="body-medium"
-            weight="medium"
-            style={{ color: value ? textColor : subTextColor, marginTop: 2 }}
-          >
-            {value || 'Not set'}
-          </ThemedText>
-        </View>
-      </View>
-      {editable && (
-        <Ionicons name="chevron-forward" size={20} color={subTextColor} />
-      )}
-    </Pressable>
-  );
-};
+import SectionHeader from '@/components/ui/SectionHeader';
+import MenuItem from '@/components/ui/MenuItem';
+import ChangeName from './components/ChangeName';
+import ChangeBirthday from './components/ChangeBirthday';
+import ChangeGender from './components/ChangeGender';
+import ChangeNationality from './components/ChangeNationality';
+import ChangePhoneNumber from './components/ChangePhoneNumber';
+import ChangeAddress from './components/ChangeAddraess';
 
 const ProfileInformation = () => {
   const scheme = useColorScheme();
   const isDark = scheme === 'dark';
-  const { user } = useAuth();
+  const { user, updateUser } = useAuth();
 
   const bg = Colors.light.background;
   const cardBg = isDark ? '#1E293B' : '#FFFFFF';
   const textColor = isDark ? '#ECEDEE' : '#0D1B2A';
   const subTextColor = isDark ? '#9BA1A6' : '#6B7280';
+  const borderColor = isDark ? '#262B3A' : '#E3E7EF';
 
   // Format birthdate
   const formatBirthdate = (date?: string) => {
@@ -120,39 +72,51 @@ const ProfileInformation = () => {
 
   // Handle edit actions
   const handleEditName = () => {
-    Alert.alert('Edit Name', 'Name editing will be available soon.');
+    setIsNameModalVisible(true);
   };
 
   const handleEditBirthday = () => {
-    Alert.alert('Edit Birthday', 'Birthday editing will be available soon.');
+    setIsBirthdayModalVisible(true);
   };
 
   const handleEditGender = () => {
-    Alert.alert('Edit Gender', 'Gender editing will be available soon.');
+    setIsGenderModalVisible(true);
   };
 
   const handleEditNationality = () => {
-    Alert.alert(
-      'Edit Nationality',
-      'Nationality editing will be available soon.'
-    );
+    setIsNationalityModalVisible(true);
   };
 
   const handleEditPhone = () => {
-    Alert.alert(
-      'Edit Phone Number',
-      'Phone number editing will be available soon.'
-    );
+    setIsPhoneModalVisible(true);
   };
 
   const handleEditAddress = () => {
-    Alert.alert('Edit Address', 'Address editing will be available soon.');
+    setIsAddressModalVisible(true);
+  };
+
+  // Handle successful updates
+  const handleUpdateSuccess = () => {
+    // Data will be automatically updated through AuthContext
+    Alert.alert('Success', 'Your information has been updated successfully!');
   };
 
   // State for photo upload
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
   const [profileImageUri, setProfileImageUri] = useState<string | null>(null);
 
+  // State for modals
+  const [isNameModalVisible, setIsNameModalVisible] = useState(false);
+  const [isBirthdayModalVisible, setIsBirthdayModalVisible] = useState(false);
+  const [isGenderModalVisible, setIsGenderModalVisible] = useState(false);
+  const [isNationalityModalVisible, setIsNationalityModalVisible] =
+    useState(false);
+  const [isPhoneModalVisible, setIsPhoneModalVisible] = useState(false);
+  const [isAddressModalVisible, setIsAddressModalVisible] = useState(false);
+
+  useEffect(() => {
+    console.log('User profile image URL:', user);
+  }, [user]);
   // Generate file name: User/User Full Name - Date
   const generateFileName = () => {
     const fullName =
@@ -236,7 +200,7 @@ const ProfileInformation = () => {
       // Convert blob to ArrayBuffer for Supabase
       const arrayBuffer = await new Response(blob).arrayBuffer();
 
-      // Upload to Supabase bucket "reviews"
+      // Upload to Supabase bucket "user"
       const { data, error: uploadError } = await supabase.storage
         .from('user')
         .upload(filePath, arrayBuffer, {
@@ -250,7 +214,7 @@ const ProfileInformation = () => {
 
       // Get public URL
       const { data: urlData } = supabase.storage
-        .from('room-profile')
+        .from('user')
         .getPublicUrl(filePath);
 
       if (!urlData?.publicUrl) {
@@ -258,12 +222,15 @@ const ProfileInformation = () => {
       }
 
       // Update user profile in backend
-      await apiClient.patch(`/users/${user?.id || user?.user_id}`, {
+      await apiClient.put(`/users/${user?.user_id}`, {
         user_profile: urlData.publicUrl,
       });
 
       // Update local state
       setProfileImageUri(urlData.publicUrl);
+
+      // Update AuthContext and secure storage
+      await updateUser({ user_profile: urlData.publicUrl });
 
       Alert.alert('Success', 'Profile photo updated successfully!');
     } catch (error: any) {
@@ -276,9 +243,6 @@ const ProfileInformation = () => {
       setIsUploadingPhoto(false);
     }
   };
-
-  // Use uploaded image or user profile
-  const displayProfileImage = profileImageUri || user?.user_profile;
 
   return (
     <PageContainer style={{ backgroundColor: bg }} padding={0}>
@@ -293,9 +257,9 @@ const ProfileInformation = () => {
             style={styles.avatarContainer}
             disabled={isUploadingPhoto}
           >
-            {displayProfileImage ? (
+            {user?.user_profile ? (
               <Image
-                source={{ uri: displayProfileImage }}
+                source={{ uri: user.user_profile }}
                 style={styles.avatar}
               />
             ) : (
@@ -320,7 +284,7 @@ const ProfileInformation = () => {
               </View>
             ) : (
               <View style={styles.cameraButton}>
-                <Ionicons name="camera" size={16} color="#FFFFFF" />
+                <Ionicons name="camera" size={24} color="#FFFFFF" />
               </View>
             )}
           </Pressable>
@@ -331,129 +295,153 @@ const ProfileInformation = () => {
             {isUploadingPhoto ? 'Uploading...' : 'Change Photo'}
           </ThemedText>
         </View>
+        <Container gap={8} backgroundColor="transparent">
+          {/* Basic Information */}
+          <SectionHeader title="Personal Details" />
 
-        {/* Basic Information */}
-        <Container
-          style={[styles.section, { backgroundColor: cardBg }]}
-          elevation={1}
-          gap={0}
-          padding={0}
-        >
-          <View style={styles.sectionHeader}>
-            <ThemedText
-              type="card-title-medium"
-              weight="semi-bold"
-              style={{ color: textColor }}
-            >
-              Basic Information
-            </ThemedText>
-          </View>
+          <Container
+            style={[styles.section, { backgroundColor: cardBg }]}
+            elevation={1}
+            gap={0}
+            padding={0}
+          >
+            <MenuItem
+              icon="person-outline"
+              iconColor="#6366F1"
+              iconBg="#EEF2FF"
+              label="Full Name"
+              subLabel={getFullName()}
+              onPress={handleEditName}
+              border={borderColor}
+            />
 
-          <InfoRow
-            icon="person-outline"
-            label="Full Name"
-            value={getFullName()}
-            onEdit={handleEditName}
-          />
-          <InfoRow
-            icon="calendar-outline"
-            label="Birthday"
-            value={formatBirthdate(user?.birthdate)}
-            onEdit={handleEditBirthday}
-          />
-          <InfoRow
-            icon="male-female-outline"
-            label="Gender"
-            value={formatGender(user?.gender)}
-            onEdit={handleEditGender}
-          />
-          <InfoRow
-            icon="flag-outline"
-            label="Nationality"
-            value={user?.nationality}
-            onEdit={handleEditNationality}
-          />
-        </Container>
+            <MenuItem
+              icon="calendar-outline"
+              iconColor="#6366F1"
+              iconBg="#EEF2FF"
+              label="Birthday"
+              subLabel={formatBirthdate(user?.birthdate)}
+              onPress={handleEditBirthday}
+              border={borderColor}
+            />
+            <MenuItem
+              icon="male-female-outline"
+              iconColor="#6366F1"
+              iconBg="#EEF2FF"
+              label="Gender"
+              subLabel={formatGender(user?.gender)}
+              onPress={handleEditGender}
+              border={borderColor}
+            />
+            <MenuItem
+              icon="flag-outline"
+              iconColor="#6366F1"
+              iconBg="#EEF2FF"
+              label="Nationality"
+              subLabel={user?.nationality}
+              onPress={handleEditNationality}
+              border={borderColor}
+            />
+          </Container>
 
-        {/* Contact Information */}
-        <Container
-          style={[styles.section, { backgroundColor: cardBg }]}
-          elevation={1}
-          gap={0}
-          padding={0}
-        >
-          <View style={styles.sectionHeader}>
-            <ThemedText
-              type="card-title-medium"
-              weight="semi-bold"
-              style={{ color: textColor }}
-            >
-              Contact Information
-            </ThemedText>
-          </View>
+          {/* Contact Information */}
+          <SectionHeader title="Contact Information" />
 
-          <InfoRow
-            icon="call-outline"
-            label="Phone Number"
-            value={user?.phone_number}
-            onEdit={handleEditPhone}
-          />
-          <InfoRow
-            icon="location-outline"
-            label="Address"
-            value={
-              user?.address ||
-              [
-                user?.barangay_name,
-                user?.municipality_name,
-                user?.province_name,
-              ]
-                .filter(Boolean)
-                .join(', ') ||
-              undefined
-            }
-            onEdit={handleEditAddress}
-          />
-        </Container>
+          <Container
+            style={[styles.section, { backgroundColor: cardBg }]}
+            elevation={1}
+            gap={0}
+            padding={0}
+          >
+            <MenuItem
+              icon="call-outline"
+              iconColor="#6366F1"
+              iconBg="#EEF2FF"
+              label="Phone Number"
+              subLabel={user?.phone_number}
+              onPress={handleEditPhone}
+              border={borderColor}
+            />
+            <MenuItem
+              icon="location-outline"
+              label="Address"
+              iconColor="#6366F1"
+              iconBg="#EEF2FF"
+              subLabel={user?.address}
+              onPress={handleEditAddress}
+              border={borderColor}
+            />
+          </Container>
 
-        {/* Account Info */}
-        <Container
-          style={[styles.section, { backgroundColor: cardBg }]}
-          elevation={1}
-          gap={0}
-          padding={0}
-        >
-          <View style={styles.sectionHeader}>
-            <ThemedText
-              type="card-title-medium"
-              weight="semi-bold"
-              style={{ color: textColor }}
-            >
-              Account Details
-            </ThemedText>
-          </View>
+          {/* Account Info */}
+          <SectionHeader title="Account Details" />
 
-          <InfoRow
-            icon="id-card-outline"
-            label="Account ID"
-            value={user?.id || user?.user_id}
-            editable={false}
-          />
-          <InfoRow
-            icon="time-outline"
-            label="Member Since"
-            value={
-              user?.created_at
-                ? new Date(user.created_at).toLocaleDateString('en-US', {
-                    month: 'long',
-                    year: 'numeric',
-                  })
-                : undefined
-            }
-            editable={false}
-          />
+          <Container
+            style={[styles.section, { backgroundColor: cardBg }]}
+            elevation={1}
+            gap={0}
+            padding={0}
+          >
+            <MenuItem
+              icon="id-card-outline"
+              label="Account ID"
+              iconColor="#6366F1"
+              iconBg="#EEF2FF"
+              subLabel={user?.user_id}
+              border={borderColor}
+              last={false}
+            />
+            <MenuItem
+              icon="time-outline"
+              label="Member Since"
+              iconColor="#6366F1"
+              iconBg="#EEF2FF"
+              last={false}
+              subLabel={
+                user?.created_at
+                  ? new Date(user.created_at).toLocaleDateString('en-US', {
+                      month: 'long',
+                      year: 'numeric',
+                    })
+                  : undefined
+              }
+              border={borderColor}
+            />
+          </Container>
         </Container>
       </ScrollView>
+
+      {/* Edit Modals */}
+      <ChangeName
+        visible={isNameModalVisible}
+        onClose={() => setIsNameModalVisible(false)}
+        onSuccess={handleUpdateSuccess}
+      />
+      <ChangeBirthday
+        visible={isBirthdayModalVisible}
+        onClose={() => setIsBirthdayModalVisible(false)}
+        onSuccess={handleUpdateSuccess}
+      />
+      <ChangeGender
+        visible={isGenderModalVisible}
+        onClose={() => setIsGenderModalVisible(false)}
+        onSuccess={handleUpdateSuccess}
+      />
+      <ChangeNationality
+        visible={isNationalityModalVisible}
+        onClose={() => setIsNationalityModalVisible(false)}
+        onSuccess={handleUpdateSuccess}
+      />
+      <ChangePhoneNumber
+        visible={isPhoneModalVisible}
+        onClose={() => setIsPhoneModalVisible(false)}
+        onSuccess={handleUpdateSuccess}
+      />
+      <ChangeAddress
+        visible={isAddressModalVisible}
+        onClose={() => setIsAddressModalVisible(false)}
+        onSuccess={handleUpdateSuccess}
+      />
     </PageContainer>
   );
 };
@@ -472,14 +460,14 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   avatar: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
+    width: 120,
+    height: 120,
+    borderRadius: 60,
   },
   avatarPlaceholder: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
+    width: 120,
+    height: 120,
+    borderRadius: 60,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -487,9 +475,9 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: 0,
     right: 0,
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     backgroundColor: Colors.light.primary,
     alignItems: 'center',
     justifyContent: 'center',

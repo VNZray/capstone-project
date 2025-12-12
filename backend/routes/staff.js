@@ -5,12 +5,15 @@ import { authorizeRole } from '../middleware/authorizeRole.js';
 
 const router = express.Router();
 
+// Staff onboarding - creates user + staff in one transaction
+router.post("/onboard", authenticate, authorizeRole("Admin", "Business Owner", "Manager"), staffController.onboardStaff);
+
 // CRUD - All staff management requires authentication
 router.post("/", authenticate, authorizeRole("Admin", "Business Owner"), staffController.insertStaff);
 router.get("/", authenticate, authorizeRole("Admin"), staffController.getAllStaff);
 
 // Foreign key lookups (specific routes before generic :id)
-router.get("/business/:business_id", authenticate, authorizeRole("Admin", "Business Owner"), staffController.getStaffByBusinessId);
+router.get("/business/:business_id", authenticate, authorizeRole("Admin", "Business Owner", "Manager", "Staff"), staffController.getStaffByBusinessId);
 router.get("/user/:user_id", authenticate, staffController.getStaffByUserId);
 
 // Generic ID route (after specific routes)

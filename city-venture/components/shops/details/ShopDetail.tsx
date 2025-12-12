@@ -1,5 +1,8 @@
 import { ShopColors } from '@/constants/color';
-import type { BusinessProfileMenuItem, BusinessProfileView } from '@/components/shops/details/types';
+import type {
+  BusinessProfileMenuItem,
+  BusinessProfileView,
+} from '@/components/shops/details/types';
 import {
   ShopDetailInfoSection,
   ShopDetailMenuSection,
@@ -23,7 +26,10 @@ import {
   Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from 'react-native-safe-area-context';
 import { useCart } from '@/context/CartContext';
 import { usePreventDoubleNavigation } from '@/hooks/usePreventDoubleNavigation';
 import { Routes } from '@/routes/mainRoutes';
@@ -57,9 +63,8 @@ const ShopDetail: React.FC<ShopDetailProps> = ({
   const { addToCart, getTotalItems } = useCart();
   const { push, back, isNavigating } = usePreventDoubleNavigation();
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
-  const [selectedMenuItem, setSelectedMenuItem] = useState<BusinessProfileMenuItem | null>(
-    null
-  );
+  const [selectedMenuItem, setSelectedMenuItem] =
+    useState<BusinessProfileMenuItem | null>(null);
   const [quantity, setQuantity] = useState(1);
   const [specialRequests, setSpecialRequests] = useState('');
   const [index, setIndex] = useState(0);
@@ -73,7 +78,8 @@ const ShopDetail: React.FC<ShopDetailProps> = ({
 
   const insets = useSafeAreaInsets();
   const scrollY = useRef(new Animated.Value(0)).current;
-  const [isCollapsedHeaderVisible, setIsCollapsedHeaderVisible] = useState(false);
+  const [isCollapsedHeaderVisible, setIsCollapsedHeaderVisible] =
+    useState(false);
   const [isFavorited, setIsFavorited] = useState(shop.isFavorited ?? false);
 
   const handleFavoriteToggle = useCallback(() => {
@@ -92,13 +98,19 @@ const ShopDetail: React.FC<ShopDetailProps> = ({
     setSpecialRequests('');
   }, []);
 
-  const handleQuantityChange = useCallback((delta: number) => {
-    if (!selectedMenuItem?.productData) return;
-    const newQuantity = quantity + delta;
-    if (newQuantity >= 1 && newQuantity <= selectedMenuItem.productData.current_stock) {
-      setQuantity(newQuantity);
-    }
-  }, [quantity, selectedMenuItem]);
+  const handleQuantityChange = useCallback(
+    (delta: number) => {
+      if (!selectedMenuItem?.productData) return;
+      const newQuantity = quantity + delta;
+      if (
+        newQuantity >= 1 &&
+        newQuantity <= selectedMenuItem.productData.current_stock
+      ) {
+        setQuantity(newQuantity);
+      }
+    },
+    [quantity, selectedMenuItem]
+  );
 
   const handleAddToCart = useCallback(() => {
     if (!selectedMenuItem?.productData) return;
@@ -106,7 +118,10 @@ const ShopDetail: React.FC<ShopDetailProps> = ({
     const productData = selectedMenuItem.productData;
 
     if (!selectedMenuItem.isAvailable || productData.is_unavailable) {
-      Alert.alert('Unavailable', 'This product is currently not available for ordering.');
+      Alert.alert(
+        'Unavailable',
+        'This product is currently not available for ordering.'
+      );
       return;
     }
 
@@ -133,12 +148,16 @@ const ShopDetail: React.FC<ShopDetailProps> = ({
         'Added to Cart',
         `${quantity}x ${selectedMenuItem.item} added to your cart`,
         [
-          { text: 'Continue Shopping', style: 'cancel', onPress: () => setSelectedMenuItem(null) },
+          {
+            text: 'Continue Shopping',
+            style: 'cancel',
+            onPress: () => setSelectedMenuItem(null),
+          },
           {
             text: 'View Cart',
             onPress: () => {
               setSelectedMenuItem(null);
-              push(Routes.shop.cart);
+              push(Routes.shop.cart());
             },
           },
         ]
@@ -216,19 +235,34 @@ const ShopDetail: React.FC<ShopDetailProps> = ({
         );
       case 4:
         return (
-          <ShopDetailPhotosSection shop={shop} onImagePress={handleImagePress} />
+          <ShopDetailPhotosSection
+            shop={shop}
+            onImagePress={handleImagePress}
+          />
         );
       default:
         return <View />;
     }
-  }, [handleDirections, handleImagePress, handleMenuItemPress, handleReviewHelpful, index, shop]);
+  }, [
+    handleDirections,
+    handleImagePress,
+    handleMenuItemPress,
+    handleReviewHelpful,
+    index,
+    shop,
+  ]);
 
   const renderListHeader = useMemo(
     () => (
       <>
         <View style={styles.heroContainer}>
           <Image
-            source={{ uri: shop.coverImage || shop.image || 'https://images.unsplash.com/photo-1540189549336-e6e99c3679fe?w=1200' }}
+            source={{
+              uri:
+                shop.coverImage ||
+                shop.image ||
+                'https://images.unsplash.com/photo-1540189549336-e6e99c3679fe?w=1200',
+            }}
             style={styles.heroImage}
             resizeMode="cover"
           />
@@ -240,7 +274,9 @@ const ShopDetail: React.FC<ShopDetailProps> = ({
             <View style={styles.shopMainInfo}>
               <View style={styles.shopTitleContainer}>
                 <Text style={styles.shopName}>{shop.name}</Text>
-                {shop.tagline && <Text style={styles.shopTagline}>{shop.tagline}</Text>}
+                {shop.tagline && (
+                  <Text style={styles.shopTagline}>{shop.tagline}</Text>
+                )}
               </View>
             </View>
 
@@ -255,7 +291,9 @@ const ShopDetail: React.FC<ShopDetailProps> = ({
               {typeof shop.distance === 'number' && shop.distance > 0 && (
                 <View style={styles.metric}>
                   <Ionicons name="location" size={16} color="#FFFFFF" />
-                  <Text style={styles.metricText}>{shop.distance.toFixed(1)} km</Text>
+                  <Text style={styles.metricText}>
+                    {shop.distance.toFixed(1)} km
+                  </Text>
                 </View>
               )}
             </View>
@@ -264,7 +302,10 @@ const ShopDetail: React.FC<ShopDetailProps> = ({
 
         <View style={styles.quickActionsBar}>
           {shop.contact && (
-            <TouchableOpacity style={styles.quickActionButton} onPress={handleCall}>
+            <TouchableOpacity
+              style={styles.quickActionButton}
+              onPress={handleCall}
+            >
               <Ionicons name="call" size={20} color={ShopColors.accent} />
               <Text style={styles.quickActionText}>Call</Text>
             </TouchableOpacity>
@@ -290,7 +331,10 @@ const ShopDetail: React.FC<ShopDetailProps> = ({
             </TouchableOpacity>
           )}
 
-          <TouchableOpacity style={styles.quickActionButton} onPress={handleShare}>
+          <TouchableOpacity
+            style={styles.quickActionButton}
+            onPress={handleShare}
+          >
             <Ionicons name="share-social" size={20} color={ShopColors.accent} />
             <Text style={styles.quickActionText}>Share</Text>
           </TouchableOpacity>
@@ -316,7 +360,15 @@ const ShopDetail: React.FC<ShopDetailProps> = ({
         </View>
       </>
     ),
-    [handleCall, handleDirections, handleShare, handleWebsite, index, routes, shop]
+    [
+      handleCall,
+      handleDirections,
+      handleShare,
+      handleWebsite,
+      index,
+      routes,
+      shop,
+    ]
   );
 
   const flatListData: TabContentItem[] = useMemo(
@@ -359,9 +411,9 @@ const ShopDetail: React.FC<ShopDetailProps> = ({
           <TouchableOpacity style={styles.headerButton} onPress={handleShare}>
             <Ionicons name="share-outline" size={24} color="#FFFFFF" />
           </TouchableOpacity>
-          <TouchableOpacity 
-            style={styles.headerButton} 
-            onPress={() => push(Routes.shop.cart)}
+          <TouchableOpacity
+            style={styles.headerButton}
+            onPress={() => push(Routes.shop.cart())}
             disabled={isNavigating}
           >
             <Ionicons name="cart-outline" size={24} color="#FFFFFF" />
@@ -371,7 +423,10 @@ const ShopDetail: React.FC<ShopDetailProps> = ({
               </View>
             )}
           </TouchableOpacity>
-          <TouchableOpacity style={styles.headerButton} onPress={handleFavoriteToggle}>
+          <TouchableOpacity
+            style={styles.headerButton}
+            onPress={handleFavoriteToggle}
+          >
             <Ionicons
               name={isFavorited ? 'heart' : 'heart-outline'}
               size={24}
@@ -397,7 +452,11 @@ const ShopDetail: React.FC<ShopDetailProps> = ({
               style={styles.collapsedBackButton}
               onPress={() => back()}
             >
-              <Ionicons name="arrow-back" size={24} color={ShopColors.textPrimary} />
+              <Ionicons
+                name="arrow-back"
+                size={24}
+                color={ShopColors.textPrimary}
+              />
             </TouchableOpacity>
 
             <View style={styles.collapsedShopInfo}>
@@ -419,7 +478,7 @@ const ShopDetail: React.FC<ShopDetailProps> = ({
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.collapsedActionButton}
-                onPress={() => push(Routes.shop.cart)}
+                onPress={() => push(Routes.shop.cart())}
                 disabled={isNavigating}
               >
                 <Ionicons
@@ -429,7 +488,9 @@ const ShopDetail: React.FC<ShopDetailProps> = ({
                 />
                 {getTotalItems() > 0 && (
                   <View style={styles.cartBadgeSmall}>
-                    <Text style={styles.cartBadgeTextSmall}>{getTotalItems()}</Text>
+                    <Text style={styles.cartBadgeTextSmall}>
+                      {getTotalItems()}
+                    </Text>
                   </View>
                 )}
               </TouchableOpacity>
@@ -440,7 +501,9 @@ const ShopDetail: React.FC<ShopDetailProps> = ({
                 <Ionicons
                   name={isFavorited ? 'heart' : 'heart-outline'}
                   size={20}
-                  color={isFavorited ? ShopColors.error : ShopColors.textSecondary}
+                  color={
+                    isFavorited ? ShopColors.error : ShopColors.textSecondary
+                  }
                 />
               </TouchableOpacity>
             </View>
@@ -483,7 +546,11 @@ const ShopDetail: React.FC<ShopDetailProps> = ({
               style={styles.menuModalClose}
               onPress={() => setSelectedMenuItem(null)}
             >
-              <Ionicons name="close-circle" size={32} color={ShopColors.textSecondary} />
+              <Ionicons
+                name="close-circle"
+                size={32}
+                color={ShopColors.textSecondary}
+              />
             </TouchableOpacity>
 
             {selectedMenuItem && (
@@ -497,27 +564,36 @@ const ShopDetail: React.FC<ShopDetailProps> = ({
                     />
                     {!selectedMenuItem.isAvailable && (
                       <View style={styles.unavailableBadge}>
-                        <Text style={styles.unavailableBadgeText}>Out of Stock</Text>
+                        <Text style={styles.unavailableBadgeText}>
+                          Out of Stock
+                        </Text>
                       </View>
                     )}
                   </View>
                 )}
-                
+
                 <View style={styles.menuModalInfo}>
                   <View style={styles.menuModalHeader}>
                     <View style={styles.menuModalTitleContainer}>
-                      <Text style={styles.menuModalName}>{selectedMenuItem.item}</Text>
-                      {selectedMenuItem.tags && selectedMenuItem.tags.length > 0 && (
-                        <View style={styles.menuModalTags}>
-                          {selectedMenuItem.tags.slice(0, 2).map((tag) => (
-                            <View key={tag} style={styles.menuModalTag}>
-                              <Text style={styles.menuModalTagText}>{tag}</Text>
-                            </View>
-                          ))}
-                        </View>
-                      )}
+                      <Text style={styles.menuModalName}>
+                        {selectedMenuItem.item}
+                      </Text>
+                      {selectedMenuItem.tags &&
+                        selectedMenuItem.tags.length > 0 && (
+                          <View style={styles.menuModalTags}>
+                            {selectedMenuItem.tags.slice(0, 2).map((tag) => (
+                              <View key={tag} style={styles.menuModalTag}>
+                                <Text style={styles.menuModalTagText}>
+                                  {tag}
+                                </Text>
+                              </View>
+                            ))}
+                          </View>
+                        )}
                     </View>
-                    <Text style={styles.menuModalPrice}>{selectedMenuItem.price}</Text>
+                    <Text style={styles.menuModalPrice}>
+                      {selectedMenuItem.price}
+                    </Text>
                   </View>
 
                   {selectedMenuItem.description && (
@@ -528,9 +604,14 @@ const ShopDetail: React.FC<ShopDetailProps> = ({
 
                   {selectedMenuItem.productData && (
                     <View style={styles.stockInfo}>
-                      <Ionicons name="cube-outline" size={16} color={ShopColors.textSecondary} />
+                      <Ionicons
+                        name="cube-outline"
+                        size={16}
+                        color={ShopColors.textSecondary}
+                      />
                       <Text style={styles.stockInfoText}>
-                        {selectedMenuItem.productData.current_stock} units available
+                        {selectedMenuItem.productData.current_stock} units
+                        available
                       </Text>
                     </View>
                   )}
@@ -539,34 +620,57 @@ const ShopDetail: React.FC<ShopDetailProps> = ({
                     <Text style={styles.quantitySectionLabel}>Quantity</Text>
                     <View style={styles.quantityControls}>
                       <TouchableOpacity
-                        style={[styles.quantityButton, quantity <= 1 && styles.quantityButtonDisabled]}
+                        style={[
+                          styles.quantityButton,
+                          quantity <= 1 && styles.quantityButtonDisabled,
+                        ]}
                         onPress={() => handleQuantityChange(-1)}
                         disabled={quantity <= 1}
                       >
-                        <Ionicons name="remove" size={20} color={quantity <= 1 ? ShopColors.textSecondary : ShopColors.accent} />
+                        <Ionicons
+                          name="remove"
+                          size={20}
+                          color={
+                            quantity <= 1
+                              ? ShopColors.textSecondary
+                              : ShopColors.accent
+                          }
+                        />
                       </TouchableOpacity>
                       <Text style={styles.quantityValue}>{quantity}</Text>
                       <TouchableOpacity
                         style={[
                           styles.quantityButton,
-                          (!selectedMenuItem.productData || quantity >= selectedMenuItem.productData.current_stock) && styles.quantityButtonDisabled
+                          (!selectedMenuItem.productData ||
+                            quantity >=
+                              selectedMenuItem.productData.current_stock) &&
+                            styles.quantityButtonDisabled,
                         ]}
                         onPress={() => handleQuantityChange(1)}
-                        disabled={!selectedMenuItem.productData || quantity >= selectedMenuItem.productData.current_stock}
+                        disabled={
+                          !selectedMenuItem.productData ||
+                          quantity >= selectedMenuItem.productData.current_stock
+                        }
                       >
-                        <Ionicons 
-                          name="add" 
-                          size={20} 
-                          color={(!selectedMenuItem.productData || quantity >= selectedMenuItem.productData.current_stock) 
-                            ? ShopColors.textSecondary 
-                            : ShopColors.accent} 
+                        <Ionicons
+                          name="add"
+                          size={20}
+                          color={
+                            !selectedMenuItem.productData ||
+                            quantity >=
+                              selectedMenuItem.productData.current_stock
+                              ? ShopColors.textSecondary
+                              : ShopColors.accent
+                          }
                         />
                       </TouchableOpacity>
                     </View>
                   </View>
 
                   <View style={styles.notesSection}>
-                    <Text style={styles.notesSectionLabel}>Special Requests (Optional)</Text>
+                    <Text style={styles.notesSectionLabel}>
+                      Special Requests (Optional)
+                    </Text>
                     <View style={styles.notesInputContainer}>
                       <TextInput
                         style={styles.notesInput}
@@ -584,14 +688,17 @@ const ShopDetail: React.FC<ShopDetailProps> = ({
                   <TouchableOpacity
                     style={[
                       styles.addToCartButton,
-                      !selectedMenuItem.isAvailable && styles.addToCartButtonDisabled
+                      !selectedMenuItem.isAvailable &&
+                        styles.addToCartButtonDisabled,
                     ]}
                     onPress={handleAddToCart}
                     disabled={!selectedMenuItem.isAvailable}
                   >
                     <Ionicons name="cart" size={20} color="#FFFFFF" />
                     <Text style={styles.addToCartButtonText}>
-                      {selectedMenuItem.isAvailable ? 'Add to Cart' : 'Out of Stock'}
+                      {selectedMenuItem.isAvailable
+                        ? 'Add to Cart'
+                        : 'Out of Stock'}
                     </Text>
                   </TouchableOpacity>
                 </View>

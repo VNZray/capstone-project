@@ -2,7 +2,7 @@
  * Booking Payment Success Deep Link Handler
  * This screen handles the deep link redirect from PayMongo via backend.
  * Shows the success modal and provides navigation options.
- * 
+ *
  * Route: /(accommodation)/room/booking-success
  * Deep Link: cityventure://(accommodation)/room/booking-success?paymentSuccess=1&bookingId=xxx
  */
@@ -13,7 +13,7 @@ import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { Colors, colors } from '@/constants/color';
 import { getBookingById } from '@/query/accommodationQuery';
-import { BookingPaymentSuccessModal } from './booking/modal';
+import { BookingPaymentSuccessModal } from './(booking)/modal';
 import debugLogger from '@/utils/debugLogger';
 
 interface BookingDetails {
@@ -29,13 +29,15 @@ const BookingSuccessScreen = () => {
   const router = useRouter();
   const colorScheme = useColorScheme();
   const theme = Colors[colorScheme as keyof typeof Colors];
-  
+
   const { bookingId } = useLocalSearchParams<{
     bookingId?: string;
   }>();
 
   const [loading, setLoading] = useState(true);
-  const [bookingDetails, setBookingDetails] = useState<BookingDetails | null>(null);
+  const [bookingDetails, setBookingDetails] = useState<BookingDetails | null>(
+    null
+  );
   const [showModal, setShowModal] = useState(false);
 
   // Fetch booking details when screen loads
@@ -54,7 +56,7 @@ const BookingSuccessScreen = () => {
         });
 
         const booking = await getBookingById(bookingId);
-        
+
         if (booking) {
           setBookingDetails({
             id: booking.id,

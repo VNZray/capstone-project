@@ -1,13 +1,13 @@
 /**
  * Universal Payment Workflow Controller
- * 
+ *
  * Unified payment initiation and verification for both Orders and Bookings.
  * This controller replaces the hardcoded order-only logic with a dynamic
  * resource lookup based on payment_for parameter.
- * 
+ *
  * Architecture: THIN controller - handles HTTP concerns only.
  * Business logic delegated to PaymentFulfillmentService.
- * 
+ *
  * @see services/paymentFulfillmentService.js
  * @see services/paymongoService.js
  */
@@ -17,7 +17,7 @@ import { v4 as uuidv4 } from "uuid";
 import * as paymongoService from "../../services/paymongoService.js";
 import * as paymentFulfillmentService from "../../services/paymentFulfillmentService.js";
 import { ensureUserRole } from "../../utils/authHelpers.js";
-
+import { sendNotification } from "../../services/notificationHelper.js";
 // ============= Constants =============
 
 const VALID_PAYMENT_FOR = ['order', 'booking'];
@@ -25,8 +25,8 @@ const VALID_PAYMENT_METHODS = ['card', 'gcash', 'paymaya'];
 
 // Environment configuration
 const PAYMONGO_REDIRECT_BASE = (
-  process.env.PAYMONGO_REDIRECT_BASE || 
-  process.env.FRONTEND_BASE_URL || 
+  process.env.PAYMONGO_REDIRECT_BASE ||
+  process.env.FRONTEND_BASE_URL ||
   "http://localhost:5173"
 ).replace(/\/$/, "");
 
@@ -34,14 +34,14 @@ const PAYMONGO_REDIRECT_BASE = (
 
 /**
  * Lookup order resource and normalize to common structure
- * 
+ *
  * @param {string} referenceId - Order ID
  * @param {string} userId - Authenticated user ID
  * @returns {Promise<Object>} Normalized resource data
  */
 async function lookupOrderResource(referenceId, userId) {
   const [rows] = await db.query(
-    `SELECT 
+    `SELECT
       o.id, o.order_number, o.user_id, o.business_id, o.total_amount, o.status,
       p.status as payment_status,
       p.payment_method as existing_payment_method,
@@ -71,7 +71,8 @@ async function lookupOrderResource(referenceId, userId) {
       description: `Order #${order.order_number}`,
       display_name: order.order_number,
       is_paid: order.payment_status === 'paid',
-      can_pay: order.status === 'pending',
+      // Allow payment for pending orders OR failed_payment orders (retry scenario)
+      can_pay: order.status === 'pending' || order.status === 'failed_payment',
       status: order.status,
       payment_status: order.payment_status,
       existing_payment_id: order.existing_payment_id,
@@ -86,14 +87,14 @@ async function lookupOrderResource(referenceId, userId) {
 
 /**
  * Lookup booking resource and normalize to common structure
- * 
+ *
  * @param {string} referenceId - Booking ID
  * @param {string} userId - Authenticated user ID
  * @returns {Promise<Object>} Normalized resource data
  */
 async function lookupBookingResource(referenceId, userId) {
   const [rows] = await db.query(
-    `SELECT 
+    `SELECT
       b.id, b.tourist_id, b.business_id, b.total_price, b.balance, b.booking_status,
       b.room_id, b.check_in_date, b.check_out_date,
       t.user_id as tourist_user_id,
@@ -118,8 +119,8 @@ async function lookupBookingResource(referenceId, userId) {
   }
 
   const booking = rows[0];
-  const roomName = booking.room_type && booking.room_number 
-    ? `${booking.room_type} - ${booking.room_number}` 
+  const roomName = booking.room_type && booking.room_number
+    ? `${booking.room_type} - ${booking.room_number}`
     : 'Room';
   const shortId = booking.id.substring(0, 8);
 
@@ -134,8 +135,8 @@ async function lookupBookingResource(referenceId, userId) {
       amount: booking.balance || booking.total_price,
       description: `Booking ${shortId} - ${roomName} at ${booking.business_name || 'Accommodation'}`,
       display_name: `Booking ${shortId}`,
-      is_paid: ['Confirmed', 'Paid'].includes(booking.booking_status),
-      can_pay: ['Pending', 'Reserved'].includes(booking.booking_status),
+      is_paid: ['Reserved', 'Checked-In', 'Checked-Out'].includes(booking.booking_status),
+      can_pay: ['Pending'].includes(booking.booking_status),
       status: booking.booking_status,
       payment_status: booking.payment_status,
       existing_payment_id: booking.existing_payment_id,
@@ -155,7 +156,7 @@ async function lookupBookingResource(referenceId, userId) {
 
 /**
  * Dynamic resource lookup based on payment_for type
- * 
+ *
  * @param {string} paymentFor - 'order' or 'booking'
  * @param {string} referenceId - Resource ID
  * @param {string} userId - Authenticated user ID
@@ -167,7 +168,7 @@ async function lookupResource(paymentFor, referenceId, userId) {
   } else if (paymentFor === 'booking') {
     return lookupBookingResource(referenceId, userId);
   }
-  
+
   return { found: false, error: `Invalid payment_for: ${paymentFor}` };
 }
 
@@ -176,15 +177,15 @@ async function lookupResource(paymentFor, referenceId, userId) {
 /**
  * Unified Payment Initiation
  * POST /api/payments/workflow/initiate
- * 
- * Body: { 
- *   payment_for: 'order' | 'booking', 
- *   reference_id: string, 
- *   payment_method?: 'card' | 'gcash' | 'paymaya' 
+ *
+ * Body: {
+ *   payment_for: 'order' | 'booking',
+ *   reference_id: string,
+ *   payment_method?: 'card' | 'gcash' | 'paymaya'
  * }
- * 
+ *
  * Auth: Required (Tourist role)
- * 
+ *
  * This endpoint dynamically looks up the target resource (Order or Booking)
  * and creates a PayMongo Payment Intent for it.
  */
@@ -192,6 +193,8 @@ export async function initiateUnifiedPayment(req, res) {
   try {
     const { payment_for, reference_id, payment_method } = req.body;
     const user_id = req.user?.id;
+
+    console.log(`[PaymentWorkflow] 🚀 Initiate payment request - for: ${payment_for}, ref: ${reference_id}, method: ${payment_method}`);
 
     // 1. Validate input
     if (!user_id) {
@@ -244,6 +247,8 @@ export async function initiateUnifiedPayment(req, res) {
     }
 
     // 4. Validate payment state
+    console.log(`[PaymentWorkflow] 📋 Order status: ${normalized.status}, can_pay: ${normalized.can_pay}, is_paid: ${normalized.is_paid}`);
+    
     if (normalized.is_paid) {
       return res.status(400).json({
         success: false,
@@ -252,6 +257,7 @@ export async function initiateUnifiedPayment(req, res) {
     }
 
     if (!normalized.can_pay) {
+      console.log(`[PaymentWorkflow] ❌ Cannot pay - order status: ${normalized.status}`);
       return res.status(400).json({
         success: false,
         message: `Cannot initiate payment for ${payment_for} with status: ${normalized.status}`
@@ -265,15 +271,19 @@ export async function initiateUnifiedPayment(req, res) {
       : VALID_PAYMENT_METHODS;
 
     // 6. Check for existing valid Payment Intent
-    if (normalized.existing_payment_intent_id) {
+    // IMPORTANT: For failed_payment orders, always create a NEW Payment Intent
+    // This ensures a fresh payment flow after a previous failure
+    const isRetryScenario = normalized.status === 'failed_payment';
+    
+    if (normalized.existing_payment_intent_id && !isRetryScenario) {
       try {
         const existingIntent = await paymongoService.getPaymentIntent(normalized.existing_payment_intent_id);
         const intentStatus = existingIntent.attributes.status;
 
-        // If intent is still valid, return it
+        // If intent is still valid and not a retry, return it
         if (['awaiting_payment_method', 'awaiting_next_action'].includes(intentStatus)) {
           console.log(`[PaymentWorkflow] Returning existing Payment Intent: ${normalized.existing_payment_intent_id}`);
-          
+
           return res.status(200).json({
             success: true,
             message: "Existing Payment Intent retrieved",
@@ -296,6 +306,8 @@ export async function initiateUnifiedPayment(req, res) {
       } catch (err) {
         console.log('[PaymentWorkflow] Existing intent not found or invalid, creating new one...');
       }
+    } else if (isRetryScenario) {
+      console.log(`[PaymentWorkflow] 🔄 Retry scenario detected - creating NEW Payment Intent`);
     }
 
     // 7. Validate amount (minimum ₱20 for Payment Intents)
@@ -351,7 +363,7 @@ export async function initiateUnifiedPayment(req, res) {
     if (normalized.existing_payment_id) {
       // Update existing payment record with new intent
       await db.query(
-        `UPDATE payment 
+        `UPDATE payment
          SET payment_intent_id = ?, client_key = ?, metadata = ?, updated_at = ?
          WHERE id = ?`,
         [
@@ -382,7 +394,7 @@ export async function initiateUnifiedPayment(req, res) {
 
       // Update with PayMongo intent details
       await db.query(
-        `UPDATE payment 
+        `UPDATE payment
          SET payment_intent_id = ?, client_key = ?, currency = 'PHP', metadata = ?
          WHERE id = ?`,
         [
@@ -394,7 +406,89 @@ export async function initiateUnifiedPayment(req, res) {
       );
     }
 
+    // 10b. For retry scenarios, reset order status back to 'pending' and re-deduct stock
+    // This maintains stock consistency: stock was restored on failure, re-deduct on retry
+    if (isRetryScenario && payment_for === 'order') {
+      // Get order items to re-deduct stock
+      const [orderItems] = await db.query(
+        `SELECT oi.product_id, oi.quantity
+         FROM order_item oi
+         WHERE oi.order_id = ?`,
+        [reference_id]
+      );
+      
+      // Get order number for logging
+      const [orderInfo] = await db.query(
+        `SELECT order_number FROM \`order\` WHERE id = ?`,
+        [reference_id]
+      );
+      const orderNumber = orderInfo[0]?.order_number || 'UNKNOWN';
+      
+      // Re-deduct stock for retry
+      for (const item of orderItems) {
+        // Check if there's enough stock
+        const [stockCheck] = await db.query(
+          `SELECT current_stock FROM product_stock WHERE product_id = ?`,
+          [item.product_id]
+        );
+        
+        if (!stockCheck[0] || stockCheck[0].current_stock < item.quantity) {
+          // Not enough stock - this is a problem
+          console.error(`[PaymentWorkflow] ❌ Insufficient stock for retry: product ${item.product_id}`);
+          return res.status(400).json({
+            success: false,
+            message: 'Product is now out of stock. Please create a new order.'
+          });
+        }
+        
+        // Deduct stock
+        await db.query(
+          `UPDATE product_stock 
+           SET current_stock = current_stock - ?,
+               updated_at = NOW()
+           WHERE product_id = ?`,
+          [item.quantity, item.product_id]
+        );
+        
+        // Log stock deduction in history
+        await db.query(
+          `INSERT INTO stock_history (id, product_id, change_type, quantity_change, previous_stock, new_stock, notes)
+           SELECT UUID(), ?, 'sale', ?, 
+                  current_stock + ?, current_stock, 
+                  ?
+           FROM product_stock WHERE product_id = ?`,
+          [
+            item.product_id,
+            -item.quantity,
+            item.quantity,
+            `Payment retry - stock re-deducted: Order ${orderNumber}`,
+            item.product_id,
+          ]
+        );
+      }
+      
+      // Reset order status to pending
+      await db.query(
+        `UPDATE \`order\`
+         SET status = 'pending',
+             cancelled_at = NULL,
+             cancelled_by = NULL,
+             cancellation_reason = NULL,
+             updated_at = ?
+         WHERE id = ? AND status = 'failed_payment'`,
+        [new Date(), reference_id]
+      );
+      console.log(`[PaymentWorkflow] ✅ Order ${reference_id} status reset to 'pending', stock re-deducted for payment retry`);
+      
+      // Also reset payment status to pending
+      await db.query(
+        `UPDATE payment SET status = 'pending', updated_at = ? WHERE id = ?`,
+        [new Date(), payment_id]
+      );
+    }
+
     console.log(`[PaymentWorkflow] ✅ Payment Intent created: ${paymentIntentId} for ${payment_for} ${reference_id}`);
+
 
     // 11. Return intent details to client
     res.status(201).json({
@@ -415,6 +509,31 @@ export async function initiateUnifiedPayment(req, res) {
         public_key: process.env.PAYMONGO_PUBLIC_KEY
       }
     });
+
+        // 12. Send payment successful notification (optional - informational only)
+
+    // add delay to ensure payment record is committed before sending notification
+    await new Promise(resolve => setTimeout(resolve, 6000));
+        try {
+      await sendNotification(
+        user_id,
+        "Payment Successful",
+        `Your payment for ${normalized.display_name} has been completed.`,
+        "payment_successful",
+        {
+          payment_id: payment_id,
+          booking_id: payment_for === 'booking' ? reference_id : undefined,
+          order_id: payment_for === 'order' ? reference_id : undefined,
+          payment_for,
+          reference_id,
+          amount: normalized.amount
+        }
+      );
+      console.log(`[PaymentWorkflow] 📧 Payment successful notification sent`);
+    } catch (notifError) {
+      console.error(`[PaymentWorkflow] ⚠️ Failed to send payment successful notification:`, notifError);
+      // Don't fail the payment initiation if notification fails
+    }
 
   } catch (error) {
     console.error("[PaymentWorkflow] Error initiating payment:", error);
@@ -437,11 +556,11 @@ export async function initiateUnifiedPayment(req, res) {
 /**
  * Get Payment Intent Status (Unified)
  * GET /api/payments/workflow/status/:paymentIntentId
- * 
+ *
  * Query: { payment_for?: 'order' | 'booking' }
- * 
+ *
  * Auth: Required
- * 
+ *
  * Retrieves the current status of a Payment Intent from PayMongo
  * and returns it along with the associated resource status.
  */
@@ -467,7 +586,7 @@ export async function getUnifiedPaymentStatus(req, res) {
 
     // 1. Find the payment record by payment_intent_id
     let query = `
-      SELECT p.*, 
+      SELECT p.*,
              CASE WHEN p.payment_for = 'order' THEN o.user_id
                   WHEN p.payment_for = 'booking' THEN t.user_id
                   ELSE NULL END as owner_user_id
@@ -509,25 +628,25 @@ export async function getUnifiedPaymentStatus(req, res) {
     let paymongoIntent = null;
     let actualPaymentMethod = null;
     let actualPaymentMethodId = null;
-    
+
     try {
       paymongoIntent = await paymongoService.getPaymentIntent(paymentIntentId);
-      
+
       // Extract actual payment method from PayMongo
       // The payment intent has a 'payments' array - the last one is the most recent
       const lastPayment = paymongoIntent.attributes?.payments?.slice(-1)[0];
       actualPaymentMethod = lastPayment?.attributes?.source?.type || lastPayment?.attributes?.payment_method_type;
-      
+
       // Payment method ID can be in different locations depending on payment type:
       // - For e-wallets: lastPayment.attributes.source.id (e.g., "src_...")
       // - For cards: paymongoIntent.attributes.payment_method (e.g., "pm_...")
       // - Alternative: lastPayment.id is the payment ID (e.g., "pay_...")
-      actualPaymentMethodId = lastPayment?.attributes?.source?.id 
-        || paymongoIntent.attributes?.payment_method 
+      actualPaymentMethodId = lastPayment?.attributes?.source?.id
+        || paymongoIntent.attributes?.payment_method
         || lastPayment?.id;
-      
+
       console.log(`[PaymentWorkflow] PayMongo data - Method: ${actualPaymentMethod}, ID: ${actualPaymentMethodId}`);
-      
+
     } catch (err) {
       console.warn("[PaymentWorkflow] Failed to fetch from PayMongo, relying on local DB:", err.message);
     }
@@ -536,7 +655,7 @@ export async function getUnifiedPaymentStatus(req, res) {
     // This handles the case where webhook hasn't fired yet but PayMongo shows the actual method
     const needsMethodSync = actualPaymentMethod && payment.payment_method !== actualPaymentMethod;
     const needsIdSync = actualPaymentMethodId && !payment.payment_method_id;
-    
+
     if (needsMethodSync || needsIdSync) {
       console.log(`[PaymentWorkflow] Syncing payment data:`);
       if (needsMethodSync) {
@@ -545,16 +664,16 @@ export async function getUnifiedPaymentStatus(req, res) {
       if (needsIdSync) {
         console.log(`  - ID: NULL -> ${actualPaymentMethodId}`);
       }
-      
+
       await db.query(
-        `UPDATE payment 
-         SET payment_method = COALESCE(?, payment_method), 
+        `UPDATE payment
+         SET payment_method = COALESCE(?, payment_method),
              payment_method_id = COALESCE(?, payment_method_id),
              updated_at = ?
          WHERE id = ?`,
         [actualPaymentMethod, actualPaymentMethodId, new Date(), payment.id]
       );
-      
+
       // Update local variables so response is correct immediately
       if (actualPaymentMethod) payment.payment_method = actualPaymentMethod;
       if (actualPaymentMethodId) payment.payment_method_id = actualPaymentMethodId;
@@ -570,18 +689,18 @@ export async function getUnifiedPaymentStatus(req, res) {
         payment_intent_id: paymentIntentId,
         payment_for: payment.payment_for,
         reference_id: payment.payment_for_id,
-        
+
         // PayMongo status (e.g., 'succeeded', 'processing', 'awaiting_next_action')
         status: paymongoIntent?.attributes?.status || 'unknown',
-        
+
         // Local DB status - CRITICAL for frontend poll loop exit
         // Frontend checks: status.data.order_payment_status === 'paid'
         order_payment_status: payment.status,
-        
+
         // Payment method info (synced from PayMongo)
         payment_method: payment.payment_method,
         payment_method_id: payment.payment_method_id,
-        
+
         amount: paymongoIntent ? paymongoIntent.attributes.amount / 100 : payment.amount,
         currency: paymongoIntent?.attributes?.currency || payment.currency || 'PHP',
         client_key: payment.client_key,
@@ -606,15 +725,15 @@ export async function getUnifiedPaymentStatus(req, res) {
 /**
  * Verify and Fulfill Payment (Unified)
  * POST /api/payments/workflow/verify
- * 
- * Body: { 
- *   payment_for: 'order' | 'booking', 
+ *
+ * Body: {
+ *   payment_for: 'order' | 'booking',
  *   reference_id: string,
  *   payment_id: string
  * }
- * 
+ *
  * Auth: Required (Tourist role)
- * 
+ *
  * Verifies payment status with PayMongo and fulfills the payment
  * by updating local records if successful.
  */
