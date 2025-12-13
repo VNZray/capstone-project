@@ -21,6 +21,7 @@ import type { Business } from '@/types/Business';
 import BottomSheetFilter, {
   type FilterState,
 } from './components/BottomSheetFilter';
+import LoginPromptModal from '@/components/LoginPromptModal';
 
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -90,7 +91,8 @@ const AccommodationDirectory = () => {
     setAccommodationId,
     refreshAllAccommodations,
   } = useAccommodation();
-  const { user } = useAuth();
+  const { user, isAuthenticated } = useAuth();
+  const [showLoginPrompt, setShowLoginPrompt] = useState(false);
 
   const [refreshing, setRefreshing] = useState(false);
   const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set());
@@ -188,8 +190,8 @@ const AccommodationDirectory = () => {
 
   const handleToggleFavorite = useCallback(
     async (accommodationId: string, isFavorite: boolean) => {
-      if (!user?.id) {
-        Alert.alert('Sign In Required', 'Please sign in to add favorites.');
+      if (!isAuthenticated || !user?.id) {
+        setShowLoginPrompt(true);
         return;
       }
 
@@ -573,6 +575,15 @@ const AccommodationDirectory = () => {
         onClose={() => setOpenFilterModal(false)}
         onApplyFilters={setAppliedFilters}
         initialFilters={appliedFilters}
+      />
+
+      {/* Login Prompt Modal */}
+      <LoginPromptModal
+        visible={showLoginPrompt}
+        onClose={() => setShowLoginPrompt(false)}
+        actionName="add to favorites"
+        title="Login to Save Favorites"
+        message="Sign in to save your favorite accommodations and access them anytime."
       />
     </View>
   );

@@ -32,6 +32,7 @@ import {
 } from 'react-native-safe-area-context';
 import { useCart } from '@/context/CartContext';
 import { usePreventDoubleNavigation } from '@/hooks/usePreventDoubleNavigation';
+import { useRequireAuth } from '@/hooks/useRequireAuth';
 import { Routes } from '@/routes/mainRoutes';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
@@ -62,6 +63,7 @@ const ShopDetail: React.FC<ShopDetailProps> = ({
 }) => {
   const { addToCart, getTotalItems } = useCart();
   const { push, back, isNavigating } = usePreventDoubleNavigation();
+  const requireAuth = useRequireAuth();
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [selectedMenuItem, setSelectedMenuItem] =
     useState<BusinessProfileMenuItem | null>(null);
@@ -125,50 +127,63 @@ const ShopDetail: React.FC<ShopDetailProps> = ({
       return;
     }
 
-    try {
-      // Create a Product object compatible with CartContext
-      const product = {
-        id: selectedMenuItem.id,
-        business_id: productData.business_id,
-        name: productData.name,
-        price: productData.price,
-        status: productData.status as 'active' | 'inactive' | 'out_of_stock',
-        current_stock: productData.current_stock,
-        image_url: productData.image_url || null,
-        is_unavailable: productData.is_unavailable,
-        description: selectedMenuItem.description || null,
-        product_category_id: undefined,
-        created_at: '',
-        updated_at: '',
-      };
+    // Require authentication before adding to cart
+    requireAuth(() => {
+      try {
+        // Create a Product object compatible with CartContext
+        const product = {
+          id: selectedMenuItem.id,
+          business_id: productData.business_id,
+          name: productData.name,
+          price: productData.price,
+          status: productData.status as 'active' | 'inactive' | 'out_of_stock',
+          current_stock: productData.current_stock,
+          image_url: productData.image_url || null,
+          is_unavailable: productData.is_unavailable,
+          description: selectedMenuItem.description || null,
+          product_category_id: undefined,
+          created_at: '',
+          updated_at: '',
+        };
 
-      addToCart(product, quantity, specialRequests || undefined);
+        addToCart(product, quantity, specialRequests || undefined);
 
-      Alert.alert(
-        'Added to Cart',
-        `${quantity}x ${selectedMenuItem.item} added to your cart`,
-        [
-          {
-            text: 'Continue Shopping',
-            style: 'cancel',
-            onPress: () => setSelectedMenuItem(null),
-          },
-          {
-            text: 'View Cart',
-            onPress: () => {
-              setSelectedMenuItem(null);
-              push(Routes.shop.cart());
+        Alert.alert(
+          'Added to Cart',
+          `${quantity}x ${selectedMenuItem.item} added to your cart`,
+          [
+            {
+              text: 'Continue Shopping',
+              style: 'cancel',
+              onPress: () => setSelectedMenuItem(null),
             },
-          },
-        ]
-      );
+            {
+              text: 'View Cart',
+              onPress: () => {
+                setSelectedMenuItem(null);
+                push(Routes.shop.cart());
+              },
+            },
+          ]
+        );
 
-      setQuantity(1);
-      setSpecialRequests('');
-    } catch (error: any) {
-      Alert.alert('Error', error.message || 'Failed to add to cart');
-    }
-  }, [selectedMenuItem, quantity, specialRequests, addToCart]);
+        setQuantity(1);
+        setSpecialRequests('');
+      } catch (error: any) {
+        Alert.alert('Error', error.message || 'Failed to add to cart');
+      }
+    }, 'add items to cart');
+  }, [
+    selectedMenuItem,
+    quantity,
+    specialRequests,
+    addToCart,
+    requireAuth,
+    push,
+    setSelectedMenuItem,
+    setQuantity,
+    setSpecialRequests,
+  ]);
 
   const handleImagePress = useCallback((imageUrl: string) => {
     setSelectedImage(imageUrl);

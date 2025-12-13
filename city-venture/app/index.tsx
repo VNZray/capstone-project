@@ -19,11 +19,8 @@ const Main = () => {
 
   const { user, loading } = useAuth();
 
-  useEffect(() => {
-    if (!loading && user) {
-      router.replace(Routes.tabs.home);
-    }
-  }, [user, loading]);
+  // Don't auto-redirect - let users choose to sign in, sign up, or continue as guest
+  // The welcome screen is the entry point for all users
 
   if (!fontsLoaded) {
     return null;

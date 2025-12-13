@@ -19,6 +19,7 @@ import Tabs from '@/components/Tabs';
 import { ThemedText } from '@/components/themed-text';
 import RoomProfileSkeleton from '@/components/skeleton/RoomProfileSkeleton';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { useRequireAuth } from '@/hooks/useRequireAuth';
 
 import Container from '@/components/Container';
 import PageContainer from '@/components/PageContainer';
@@ -52,6 +53,7 @@ const AccommodationProfile = () => {
   const [activeTab, setActiveTab] = useState<string>('details');
   const colorScheme = useColorScheme();
   const { user } = useAuth();
+  const requireAuth = useRequireAuth();
   const { roomDetails } = useRoom();
   const { bookings } = useUserBookings();
   const [ratingsRefreshKey, setRatingsRefreshKey] = useState(0);
@@ -69,10 +71,14 @@ const AccommodationProfile = () => {
   }, [navigation, roomDetails?.room_type, bookings]);
 
   const handleToggleFavorite = async () => {
-    if (!user?.id || !roomDetails?.id) {
-      alert('Please log in to add favorites');
-      return;
-    }
+    // Check if user is authenticated before toggling favorite
+    requireAuth(() => {
+      toggleFavorite();
+    }, 'add to favorites');
+  };
+
+  const toggleFavorite = async () => {
+    if (!user?.id || !roomDetails?.id) return;
 
     // Optimistic UI update
     const wasOptimisticAdd = !isFavorite;
@@ -164,11 +170,14 @@ const AccommodationProfile = () => {
   };
 
   const handleBookNow = () => {
-    if (user?.id && roomDetails?.id) {
-      router.push(Routes.accommodation.room.booking.index);
-    } else {
-      console.log('User or room details not available');
-    }
+    // Require authentication before allowing booking
+    requireAuth(() => {
+      if (roomDetails?.id) {
+        router.push(Routes.accommodation.room.booking.index);
+      } else {
+        console.log('Room details not available');
+      }
+    }, 'book a room');
   };
 
   const [headerRating, setHeaderRating] = useState<string>('0.0');

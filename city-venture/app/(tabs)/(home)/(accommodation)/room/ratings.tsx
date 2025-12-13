@@ -5,6 +5,7 @@ import RatingStatsCard from '@/components/reviews/RatingStatsCard';
 import ReviewCard from '@/components/reviews/ReviewCard';
 import { colors } from '@/constants/color';
 import { useAuth } from '@/context/AuthContext';
+import { useRequireAuth } from '@/hooks/useRequireAuth';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import FeedbackService, {
   getAverageRating,
@@ -39,6 +40,7 @@ const Ratings = () => {
   const scheme = useColorScheme();
   const isDark = scheme === 'dark';
   const { user } = useAuth();
+  const requireAuth = useRequireAuth();
   const params = useLocalSearchParams();
   const { accommodationDetails } = useAccommodation();
   const { roomDetails } = useRoom();
@@ -157,8 +159,11 @@ const Ratings = () => {
   };
 
   const handleAddReview = () => {
-    setEditingReview(null);
-    setShowAddReview(true);
+    // Require authentication before allowing review submission
+    requireAuth(() => {
+      setEditingReview(null);
+      setShowAddReview(true);
+    }, 'write a review');
   };
 
   const handleEditReview = (review: ReviewWithAuthor) => {

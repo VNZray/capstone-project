@@ -15,6 +15,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { ThemedText } from '@/components/themed-text';
 import { Colors } from '@/constants/color';
 import Button from '@/components/Button';
+import { useRequireAuth } from '@/hooks/useRequireAuth';
 
 /**
  * ProductDetailsModal - Modal screen for viewing product details.
@@ -24,6 +25,7 @@ export default function ProductDetailsModal() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const requireAuth = useRequireAuth();
   const [loading, setLoading] = useState(true);
   const [product, setProduct] = useState<{
     id: string;
@@ -70,12 +72,15 @@ export default function ProductDetailsModal() {
   const handleAddToCart = () => {
     if (!product) return;
 
-    // TODO: Integrate with actual cart context when product data structure is aligned
-    // For now, show a placeholder message
-    console.log('[ProductDetails] Add to cart:', product.id, product.name);
-    
-    // Close modal after action
-    router.back();
+    // Require authentication before adding to cart
+    requireAuth(() => {
+      // TODO: Integrate with actual cart context when product data structure is aligned
+      // For now, show a placeholder message
+      console.log('[ProductDetails] Add to cart:', product.id, product.name);
+
+      // Close modal after action
+      router.back();
+    }, 'add items to cart');
   };
 
   const formatPrice = (price: number) => {
@@ -100,7 +105,11 @@ export default function ProductDetailsModal() {
   if (!product) {
     return (
       <View style={styles.errorContainer}>
-        <MaterialCommunityIcons name="package-variant-remove" size={64} color="#666" />
+        <MaterialCommunityIcons
+          name="package-variant-remove"
+          size={64}
+          color="#666"
+        />
         <ThemedText type="title-large" style={styles.errorTitle}>
           Product Not Found
         </ThemedText>
@@ -126,7 +135,11 @@ export default function ProductDetailsModal() {
             <Image source={{ uri: product.image }} style={styles.image} />
           ) : (
             <View style={styles.imagePlaceholder}>
-              <MaterialCommunityIcons name="package-variant" size={64} color="#ccc" />
+              <MaterialCommunityIcons
+                name="package-variant"
+                size={64}
+                color="#ccc"
+              />
             </View>
           )}
         </View>
@@ -144,11 +157,7 @@ export default function ProductDetailsModal() {
                 </View>
               )}
             </View>
-            <ThemedText
-              type="title-medium"
-              weight="bold"
-              style={styles.price}
-            >
+            <ThemedText type="title-medium" weight="bold" style={styles.price}>
               {formatPrice(product.price)}
             </ThemedText>
           </View>
@@ -176,7 +185,9 @@ export default function ProductDetailsModal() {
                   { color: product.stock > 0 ? '#4CAF50' : '#F44336' },
                 ]}
               >
-                {product.stock > 0 ? `${product.stock} in stock` : 'Out of stock'}
+                {product.stock > 0
+                  ? `${product.stock} in stock`
+                  : 'Out of stock'}
               </ThemedText>
             </View>
           )}

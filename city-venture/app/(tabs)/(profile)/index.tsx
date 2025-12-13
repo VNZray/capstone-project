@@ -2,9 +2,10 @@ import Button from '@/components/Button';
 import { ThemedText } from '@/components/themed-text';
 import { colors, Colors } from '@/constants/color';
 import { useAuth } from '@/context/AuthContext';
+import LoginPromptModal from '@/components/LoginPromptModal';
 import { FontAwesome5, Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Image, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { usePreventDoubleNavigation } from '@/hooks/usePreventDoubleNavigation';
@@ -13,9 +14,10 @@ import MenuItem from '@/components/ui/MenuItem';
 import SectionHeader from '@/components/ui/SectionHeader';
 
 const Profile = () => {
-  const { user, logout } = useAuth();
+  const { user, logout, isAuthenticated } = useAuth();
   const insets = useSafeAreaInsets();
   const { push, replace, isNavigating } = usePreventDoubleNavigation();
+  const [showLoginPrompt, setShowLoginPrompt] = useState(false);
 
   // Colors (Light Mode Only)
   const bg = Colors.light.background;
@@ -33,7 +35,8 @@ const Profile = () => {
     [user?.email]
   );
 
-  if (!user) {
+  // Guest mode: Show login prompt
+  if (!isAuthenticated) {
     return (
       <View
         style={[
@@ -42,29 +45,47 @@ const Profile = () => {
             alignItems: 'center',
             justifyContent: 'center',
             backgroundColor: bg,
+            paddingHorizontal: 32,
           },
         ]}
       >
-        <ThemedText type="sub-title-medium" weight="bold">
-          You&apos;re not signed in
+        <ThemedText
+          type="title-large"
+          weight="bold"
+          style={{ marginBottom: 12 }}
+        >
+          Your Profile Awaits
         </ThemedText>
         <ThemedText
-          type="label-medium"
-          style={{ color: textSecondary, marginTop: 6 }}
+          type="body-medium"
+          style={{
+            color: textSecondary,
+            marginBottom: 32,
+            textAlign: 'center',
+            lineHeight: 22,
+          }}
         >
-          Please sign in to view your profile.
+          Sign in to access your bookings, orders, and personalized travel
+          experience.
         </ThemedText>
-        <View style={{ marginTop: 24, width: '60%' }}>
+        <View style={{ width: '100%', maxWidth: 300 }}>
           <Button
-            label="Go to Home"
+            label="Log In"
             variant="solid"
             color="primary"
             size="large"
-            fullWidth
-            radius={16}
-            onPress={() => replace(Routes.tabs.home)}
+            radius={12}
+            onPress={() => setShowLoginPrompt(true)}
           />
         </View>
+
+        <LoginPromptModal
+          visible={showLoginPrompt}
+          onClose={() => setShowLoginPrompt(false)}
+          actionName="access your profile"
+          title="Login to View Profile"
+          message="Sign in to manage your bookings, orders, and account settings."
+        />
       </View>
     );
   }
@@ -103,7 +124,7 @@ const Profile = () => {
               <View style={styles.avatarContainer}>
                 <Image
                   source={
-                    user.user_profile
+                    user?.user_profile
                       ? { uri: user.user_profile }
                       : require('@/assets/images/react-logo.png')
                   }
