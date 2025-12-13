@@ -91,7 +91,7 @@ const Main = () => {
 
             <Button
               style={{ width: '100%' }}
-              label="Test Page"
+              label="Test"
               size="large"
               onPress={() => router.push(Routes.test.test)}
               color="success"
