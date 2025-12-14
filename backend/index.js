@@ -62,7 +62,7 @@ import favoriteRoutes from "./routes/favorite.js";
 import refundRoutes from "./routes/refunds.js";
 
 const app = express();
-const PORT = 3001;
+const PORT = 3000;
 
 // Create HTTP server for Socket.IO
 const httpServer = createServer(app);
