@@ -25,11 +25,11 @@ import type { NavItemConfig } from '../types';
 
 /**
  * Main navigation items for the unified business sidebar
- * 
+ *
  * CONDITIONAL FEATURES (capability-based):
  * - Transactions, Bookings, Rooms: Accommodation only (canBook)
  * - Store section: Shop only (canSell)
- * 
+ *
  * SHARED FEATURES (all business types):
  * - Dashboard, Business Profile, Promotions, Reviews, Subscription, Staff, Settings
  */
@@ -37,7 +37,7 @@ export const navigationConfig: NavItemConfig[] = [
   // ============================================
   // SHARED FEATURES - All business types
   // ============================================
-  
+
   // Dashboard - visible to all business roles
   {
     id: 'dashboard',
@@ -46,11 +46,11 @@ export const navigationConfig: NavItemConfig[] = [
     icon: LayoutDashboard,
     requiredRoles: ['Business Owner', 'Manager', 'Room Manager', 'Receptionist', 'Sales Associate'],
   },
-  
+
   // ============================================
   // ACCOMMODATION ONLY - Requires canBook
   // ============================================
-  
+
   // Transactions - Accommodation only
   {
     id: 'transactions',
@@ -60,7 +60,7 @@ export const navigationConfig: NavItemConfig[] = [
     requiredCapabilities: ['canBook'],
     requiredRoles: ['Business Owner', 'Manager', 'Receptionist'],
   },
-  
+
   // Bookings - Accommodation only
   {
     id: 'bookings',
@@ -70,11 +70,11 @@ export const navigationConfig: NavItemConfig[] = [
     requiredCapabilities: ['canBook'],
     requiredRoles: ['Business Owner', 'Manager', 'Receptionist'],
   },
-  
+
   // ============================================
   // SHARED FEATURES - All business types
   // ============================================
-  
+
   // Business Profile - All businesses
   {
     id: 'business-profile',
@@ -83,7 +83,7 @@ export const navigationConfig: NavItemConfig[] = [
     icon: Store,
     requiredRoles: ['Business Owner', 'Manager'],
   },
-  
+
   // Manage Promotions - All businesses (no capability requirement)
   {
     id: 'promotions',
@@ -92,11 +92,11 @@ export const navigationConfig: NavItemConfig[] = [
     icon: Megaphone,
     requiredRoles: ['Business Owner', 'Manager', 'Sales Associate'],
   },
-  
+
   // ============================================
   // ACCOMMODATION ONLY - Requires canBook
   // ============================================
-  
+
   // Manage Rooms - Accommodation only
   {
     id: 'rooms',
@@ -106,11 +106,11 @@ export const navigationConfig: NavItemConfig[] = [
     requiredCapabilities: ['canBook'],
     requiredRoles: ['Business Owner', 'Manager', 'Room Manager', 'Receptionist'],
   },
-  
+
   // ============================================
   // SHOP ONLY - Requires canSell
   // ============================================
-  
+
   // Store Section - Shop only (expandable)
   {
     id: 'store',
@@ -159,11 +159,11 @@ export const navigationConfig: NavItemConfig[] = [
       },
     ],
   },
-  
+
   // ============================================
   // SHARED FEATURES - All business types
   // ============================================
-  
+
   // Reviews - All businesses (no capability requirement)
   {
     id: 'reviews',
@@ -172,7 +172,7 @@ export const navigationConfig: NavItemConfig[] = [
     icon: Star,
     requiredRoles: ['Business Owner', 'Manager'],
   },
-  
+
   // Subscription - All businesses (no capability requirement)
   {
     id: 'subscription',
@@ -181,25 +181,35 @@ export const navigationConfig: NavItemConfig[] = [
     icon: CreditCard,
     requiredRoles: ['Business Owner'],
   },
-  
-  // Manage Staff - All businesses (no capability requirement)
+
+  // ============================================
+  // STAFF MANAGEMENT SECTION - All businesses
+  // ============================================
+
+  // Staffs Section - All businesses (expandable)
   {
-    id: 'manage-staff',
-    label: 'Manage Staff',
+    id: 'staffs',
+    label: 'Staffs',
     path: '/business/manage-staff',
     icon: Users,
     requiredRoles: ['Business Owner'],
+    isSection: true,
+    children: [
+      {
+        id: 'manage-staff',
+        label: 'Manage Staff',
+        path: '/business/manage-staff',
+        icon: Users,
+      },
+      {
+        id: 'staff-roles',
+        label: 'Manage Roles',
+        path: '/business/staff-roles',
+        icon: Users,
+      },
+    ],
   },
-  
-  // Staff Roles - All businesses (no capability requirement)
-  {
-    id: 'staff-roles',
-    label: 'Staff Roles',
-    path: '/business/staff-roles',
-    icon: Users,
-    requiredRoles: ['Business Owner'],
-  },
-  
+
   // Settings - All businesses
   {
     id: 'settings',
@@ -225,13 +235,13 @@ export function getFilteredNavigation(
       const hasCapabilities = item.requiredCapabilities.every(cap => capabilities[cap]);
       if (!hasCapabilities) return false;
     }
-    
+
     // Check role requirements
     if (item.requiredRoles) {
       const hasRequiredRole = hasRole(...item.requiredRoles);
       if (!hasRequiredRole) return false;
     }
-    
+
     return true;
   });
 }

@@ -17,6 +17,7 @@ import { Colors } from '@/constants/color';
 import { useTypography } from '@/constants/typography';
 import PageContainer from '@/components/PageContainer';
 import { useCart } from '@/context/CartContext';
+import { useRequireAuth } from '@/hooks/useRequireAuth';
 import type { Product } from '@/types/Product';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -30,6 +31,7 @@ const ProductDetails = () => {
   const type = useTypography();
   const { h3, h4, body, bodySmall } = type;
   const { addToCart } = useCart();
+  const requireAuth = useRequireAuth();
 
   const [quantity, setQuantity] = useState(1);
   const [specialRequests, setSpecialRequests] = useState('');
@@ -90,30 +92,33 @@ const ProductDetails = () => {
       return;
     }
 
-    try {
-      setLoading(true);
-      addToCart(product, quantity, specialRequests || undefined);
+    // Require authentication before adding to cart
+    requireAuth(() => {
+      try {
+        setLoading(true);
+        addToCart(product, quantity, specialRequests || undefined);
 
-      Alert.alert(
-        'Added to Cart',
-        `${quantity}x ${product.name} added to your cart`,
-        [
-          { text: 'Continue Shopping', style: 'cancel' },
-          {
-            text: 'View Cart',
-            onPress: () => router.push(Routes.shop.cart()),
-          },
-        ]
-      );
+        Alert.alert(
+          'Added to Cart',
+          `${quantity}x ${product.name} added to your cart`,
+          [
+            { text: 'Continue Shopping', style: 'cancel' },
+            {
+              text: 'View Cart',
+              onPress: () => router.push(Routes.shop.cart()),
+            },
+          ]
+        );
 
-      // Reset form
-      setQuantity(1);
-      setSpecialRequests('');
-    } catch (error: any) {
-      Alert.alert('Error', error.message || 'Failed to add item to cart');
-    } finally {
-      setLoading(false);
-    }
+        // Reset form
+        setQuantity(1);
+        setSpecialRequests('');
+      } catch (error: any) {
+        Alert.alert('Error', error.message || 'Failed to add item to cart');
+      } finally {
+        setLoading(false);
+      }
+    }, 'add items to cart');
   };
 
   return (

@@ -87,7 +87,7 @@ const LocationBottomSheet: React.FC<LocationBottomSheetProps> = ({
     <BottomSheet
       isOpen={isOpen}
       onClose={onClose}
-      snapPoints={['85%']}
+      snapPoints={['70%']}
       enablePanDownToClose
       closeButton={false}
       content={

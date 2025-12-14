@@ -9,7 +9,7 @@ import { useAuth } from '@/context/AuthContext';
 import { Routes } from '@/routes/mainRoutes';
 import { usePreventDoubleNavigation } from '@/hooks/usePreventDoubleNavigation';
 import Entypo from '@expo/vector-icons/Entypo';
-import { Link } from 'expo-router';
+import { Link, router } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
@@ -220,6 +220,17 @@ const LoginPage = () => {
                   onPress={handleLogin}
                   disabled={isLoading}
                   style={{ marginTop: 10 }}
+                />
+
+                {/* Continue as Guest Button */}
+                <Button
+                  size="large"
+                  label="Continue as Guest"
+                  color="secondary"
+                  variant="outlined"
+                  onPress={() => router.push(Routes.tabs.home)}
+                  disabled={isLoading}
+                  style={{ marginTop: 8 }}
                 />
 
                 {/* Footer */}

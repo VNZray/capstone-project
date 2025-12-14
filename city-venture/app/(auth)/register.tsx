@@ -10,6 +10,7 @@ import { Tourist } from '@/types/Tourist';
 import { User } from '@/types/User';
 import axios from 'axios';
 import { StatusBar } from 'expo-status-bar';
+import { router } from 'expo-router';
 import React, { useState, useRef, useEffect } from 'react';
 import { Alert, ScrollView, StyleSheet, View, Animated } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
@@ -459,6 +460,18 @@ const RegistrationPage = () => {
                       : '📍 We use this information to provide personalized recommendations'}
                   </ThemedText>
                 </View>
+              )}
+
+              {/* Continue as Guest Button - Show only on first step */}
+              {currentStep === 1 && (
+                <Button
+                  size="large"
+                  label="Continue as Guest"
+                  color="secondary"
+                  variant="outline"
+                  onPress={() => router.push(Routes.tabs.home)}
+                  style={{ marginTop: 8 }}
+                />
               )}
 
               <View

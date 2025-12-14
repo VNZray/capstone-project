@@ -43,6 +43,7 @@ type Props = {
   index?: number;
   enablePanDownToClose?: boolean;
   closeButton?: boolean;
+  modalKey?: string | number;
 };
 
 const BottomSheet: React.FC<Props> = ({
@@ -64,8 +65,10 @@ const BottomSheet: React.FC<Props> = ({
   index: initialIndex = 0,
   enablePanDownToClose = true,
   closeButton = true,
+  modalKey,
 }) => {
   const bottomSheetRef = useRef<BottomSheetModal>(null);
+  const isClosingRef = useRef(false);
   const scheme = useColorScheme();
   const isDark = scheme === 'dark';
 
@@ -83,12 +86,14 @@ const BottomSheet: React.FC<Props> = ({
   // Present/dismiss modal based on isOpen prop
   useEffect(() => {
     if (isOpen) {
+      isClosingRef.current = false;
       // Small delay to ensure clean state before presenting
       const timer = setTimeout(() => {
         bottomSheetRef.current?.present();
-      }, 50);
+      }, 100);
       return () => clearTimeout(timer);
-    } else {
+    } else if (!isClosingRef.current) {
+      // Only dismiss if we didn't already close via pan down
       bottomSheetRef.current?.dismiss();
     }
   }, [isOpen]);
@@ -97,7 +102,16 @@ const BottomSheet: React.FC<Props> = ({
   const handleSheetChanges = useCallback(
     (index: number) => {
       if (index === -1) {
-        onClose();
+        // Mark that we're closing via user action (pan down/backdrop)
+        isClosingRef.current = true;
+        // Add small delay before calling onClose to ensure dismissal completes
+        setTimeout(() => {
+          onClose();
+          // Reset the flag after a bit to allow programmatic closes
+          setTimeout(() => {
+            isClosingRef.current = false;
+          }, 50);
+        }, 50);
       }
     },
     [onClose]
@@ -119,6 +133,7 @@ const BottomSheet: React.FC<Props> = ({
 
   return (
     <BottomSheetModal
+      key={modalKey}
       ref={bottomSheetRef}
       index={initialIndex}
       snapPoints={snapPoints}

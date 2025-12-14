@@ -31,6 +31,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { usePreventDoubleNavigation } from '@/hooks/usePreventDoubleNavigation';
 import { Routes } from '@/routes/mainRoutes';
 import { useHideTabs } from '@/hooks/useHideTabs';
+import LoginPromptModal from '@/components/LoginPromptModal';
 import {
   validateCardNumber,
   formatCardNumber,
@@ -71,13 +72,22 @@ const CheckoutScreen = () => {
     fromChangePaymentMethod?: string;
   }>();
 
-  const isFromChangePaymentMethod = prefillParams.fromChangePaymentMethod === 'true';
+  const isFromChangePaymentMethod =
+    prefillParams.fromChangePaymentMethod === 'true';
 
   // Hide tabs during checkout flow
   useHideTabs();
 
   const { items, businessId, clearCart, getSubtotal } = useCart();
-  const { user } = useAuth();
+  const { user, isAuthenticated } = useAuth();
+  const [showLoginPrompt, setShowLoginPrompt] = useState(false);
+
+  // Check authentication on mount
+  useEffect(() => {
+    if (!isAuthenticated) {
+      setShowLoginPrompt(true);
+    }
+  }, [isAuthenticated]);
 
   // Calculate pickup time boundaries
   const pickupBoundaries = useMemo(() => {
@@ -305,8 +315,11 @@ const CheckoutScreen = () => {
   // Prefill form values when coming from change payment method flow
   useEffect(() => {
     if (isFromChangePaymentMethod) {
-      console.log('[Checkout] Prefilling from change payment method:', prefillParams);
-      
+      console.log(
+        '[Checkout] Prefilling from change payment method:',
+        prefillParams
+      );
+
       // Prefill billing info
       if (prefillParams.prefillBillingName) {
         setBillingName(prefillParams.prefillBillingName);
@@ -317,12 +330,12 @@ const CheckoutScreen = () => {
       if (prefillParams.prefillBillingPhone) {
         setBillingPhone(prefillParams.prefillBillingPhone);
       }
-      
+
       // Prefill special instructions
       if (prefillParams.prefillSpecialInstructions) {
         setSpecialInstructions(prefillParams.prefillSpecialInstructions);
       }
-      
+
       // Prefill pickup datetime if valid
       if (prefillParams.prefillPickupDatetime) {
         const prefillDate = new Date(prefillParams.prefillPickupDatetime);
@@ -332,7 +345,7 @@ const CheckoutScreen = () => {
           setPickupDate(prefillDate);
         }
       }
-      
+
       // Don't prefill payment method - user is changing it
       // Payment method stays at default 'cash_on_pickup' so user can choose new one
     }
@@ -1851,6 +1864,19 @@ const CheckoutScreen = () => {
           </View>
         </PageContainer>
       </KeyboardAvoidingView>
+
+      {/* Login Prompt Modal for guest users */}
+      <LoginPromptModal
+        visible={showLoginPrompt}
+        onClose={() => {
+          setShowLoginPrompt(false);
+          // Redirect to home when user closes the prompt
+          replace(Routes.tabs.home);
+        }}
+        actionName="complete checkout"
+        title="Login to Checkout"
+        message="Sign in to place your order and complete the checkout process."
+      />
     </>
   );
 };

@@ -1,6 +1,6 @@
 /**
  * Role Service - Frontend API for Enhanced RBAC
- * 
+ *
  * Provides methods for managing roles in the three-tier RBAC system:
  * - System roles (view only for non-admins)
  * - Preset roles (templates for cloning)
@@ -296,6 +296,58 @@ export async function createPresetRole(params: {
 }
 
 // ============================================================
+// TOURISM-SPECIFIC API CALLS
+// ============================================================
+
+/**
+ * Clone a preset role for tourism system
+ */
+export async function cloneTourismPresetRole(params: {
+  presetRoleId: number;
+  customName?: string;
+}): Promise<Role> {
+  const response = await apiClient.post('/roles/tourism/clone', params);
+  return response.data;
+}
+
+/**
+ * Create a fully custom tourism role
+ */
+export async function createCustomTourismRole(params: {
+  roleName: string;
+  roleDescription?: string;
+  permissionIds?: number[];
+}): Promise<Role> {
+  const response = await apiClient.post('/roles/tourism/custom', params);
+  return response.data;
+}
+
+/**
+ * Update a tourism role
+ */
+export async function updateTourismRole(
+  roleId: number,
+  params: {
+    roleName?: string;
+    roleDescription?: string;
+    permissionIds?: number[];
+  }
+): Promise<RoleWithPermissions> {
+  const response = await apiClient.put(`/roles/tourism/${roleId}`, params);
+  return response.data;
+}
+
+/**
+ * Delete a tourism role
+ */
+export async function deleteTourismRole(
+  roleId: number
+): Promise<{ message: string }> {
+  const response = await apiClient.delete(`/roles/tourism/${roleId}`);
+  return response.data;
+}
+
+// ============================================================
 // UTILITY FUNCTIONS
 // ============================================================
 
@@ -366,6 +418,10 @@ export default {
   getRoleAuditLog,
   createSystemRole,
   createPresetRole,
+  cloneTourismPresetRole,
+  createCustomTourismRole,
+  updateTourismRole,
+  deleteTourismRole,
   canEditRole,
   canDeleteRole,
   getRoleTypeLabel,

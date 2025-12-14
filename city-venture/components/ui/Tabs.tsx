@@ -1,4 +1,4 @@
-import { colors } from '@/constants/color';
+import { Colors, colors } from '@/constants/color';
 import React, { createContext, useContext, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { ThemedText } from '../themed-text';
@@ -7,6 +7,7 @@ type TabContainerProps = {
   children: React.ReactNode;
   initialTab?: string;
   onTabChange?: (tab: string) => void;
+  backgroundColor?: string;
 };
 
 type TabsContextType = {
@@ -20,12 +21,14 @@ type TabProps = {
   tab: string;
   label: string;
   activeTab?: string;
+  backgroundColor?: string;
 };
 
 export const TabContainer = ({
   children,
   initialTab,
   onTabChange,
+  backgroundColor,
 }: TabContainerProps) => {
   // Find the first Tab child to set as default if initialTab is not provided
   let defaultTab = initialTab;
@@ -55,7 +58,7 @@ export const TabContainer = ({
         style={[
           styles.tabsContainer,
           {
-            backgroundColor: 'white',
+            backgroundColor: backgroundColor || 'white',
             borderBottomColor: '#E5E8EC',
           },
         ]}
@@ -78,7 +81,7 @@ export const Tab: React.FC<TabProps> = (props) => {
       style={[
         styles.tab,
         isActive && {
-          borderBottomColor: colors.primary,
+          borderBottomColor: props.backgroundColor || Colors.light.primary,
           borderBottomWidth: 2,
         },
       ]}
@@ -88,7 +91,7 @@ export const Tab: React.FC<TabProps> = (props) => {
       <ThemedText
         type="body-small"
         weight={isActive ? 'medium' : 'normal'}
-        style={[{ color: isActive ? colors.primary : 'black' }]}
+        style={[{ color: isActive ? Colors.light.primary : 'black' }]}
       >
         {props.label}
       </ThemedText>

@@ -7,6 +7,8 @@ import { colors } from '@/constants/color';
 import { useAccommodation } from '@/context/AccommodationContext';
 import { useAuth } from '@/context/AuthContext';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { useRequireAuthWithModal } from '@/hooks/useRequireAuth';
+import LoginPromptModal from '@/components/LoginPromptModal';
 import FeedbackService from '@/services/FeedbackService';
 import type { CreateReviewPayload, ReviewWithAuthor } from '@/types/Feedback';
 import debugLogger from '@/utils/debugLogger';
@@ -40,6 +42,8 @@ const Ratings = ({ onRefreshRequested }: Props) => {
   const { user } = useAuth();
   const params = useLocalSearchParams();
   const { accommodationDetails } = useAccommodation();
+  const { checkAuth, showLoginPrompt, setShowLoginPrompt, actionName } =
+    useRequireAuthWithModal();
 
   debugLogger({
     title: 'Ratings Component Mounted',
@@ -155,6 +159,7 @@ const Ratings = ({ onRefreshRequested }: Props) => {
   };
 
   const handleAddReview = () => {
+    if (!checkAuth('leave a review')) return;
     setEditingReview(null);
     setShowAddReview(true);
   };
@@ -273,6 +278,15 @@ const Ratings = ({ onRefreshRequested }: Props) => {
           reviewTypeId={reviewTypeId}
         />
       )}
+
+      {/* Login Prompt Modal */}
+      <LoginPromptModal
+        visible={showLoginPrompt}
+        onClose={() => setShowLoginPrompt(false)}
+        actionName={actionName}
+        title="Login to Leave a Review"
+        message="Sign in to share your experience and help other travelers."
+      />
     </>
   );
 };
@@ -282,7 +296,7 @@ export default Ratings;
 const styles = StyleSheet.create({
   header: {},
   addButton: {
-    flexDirection: 'row',   
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,

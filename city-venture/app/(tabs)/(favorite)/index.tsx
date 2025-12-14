@@ -12,6 +12,8 @@ import { ThemedText } from '@/components/themed-text';
 import { Colors } from '@/constants/color';
 import { Stack } from 'expo-router';
 import { useAuth } from '@/context/AuthContext';
+import LoginPromptModal from '@/components/LoginPromptModal';
+import Button from '@/components/Button';
 import {
   GridCard,
   ListCard,
@@ -28,12 +30,13 @@ import { CATEGORIES, type Category } from './types';
 const MyFavorite = () => {
   const scheme = useColorScheme() ?? 'light';
   const colors = Colors[scheme];
-  const { user } = useAuth();
+  const { user, isAuthenticated } = useAuth();
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
   const [activeCategory, setActiveCategory] = useState<Category>('All');
   const [searchQuery, setSearchQuery] = useState('');
+  const [showLoginPrompt, setShowLoginPrompt] = useState(false);
 
-  // Use custom hook for favorites data
+  // Use custom hook for favorites data (only if authenticated)
   const { favorites, loading, refreshing, onRefresh, handleRemoveFavorite } =
     useFavorites(user?.id);
 
@@ -47,6 +50,52 @@ const MyFavorite = () => {
       return matchesCategory && matchesSearch;
     });
   }, [favorites, activeCategory, searchQuery]);
+
+  // Guest mode: Show login prompt
+  if (!isAuthenticated) {
+    return (
+      <SafeAreaView
+        style={[styles.container, { backgroundColor: colors.background }]}
+        edges={['top']}
+      >
+        <Stack.Screen options={{ headerShown: false }} />
+
+        <View style={styles.guestContainer}>
+          <ThemedText
+            type="title-large"
+            weight="bold"
+            style={styles.guestTitle}
+          >
+            Save Your Favorites
+          </ThemedText>
+          <ThemedText
+            type="body-medium"
+            style={[styles.guestMessage, { color: colors.textSecondary }]}
+          >
+            Sign in to save your favorite places and access them anytime.
+          </ThemedText>
+          <View style={styles.guestActions}>
+            <Button
+              label="Log In"
+              variant="solid"
+              color="primary"
+              size="large"
+              radius={12}
+              onPress={() => setShowLoginPrompt(true)}
+            />
+          </View>
+        </View>
+
+        <LoginPromptModal
+          visible={showLoginPrompt}
+          onClose={() => setShowLoginPrompt(false)}
+          actionName="view your favorites"
+          title="Login to View Favorites"
+          message="Sign in to save and view your favorite places, accommodations, and events."
+        />
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView
@@ -67,7 +116,6 @@ const MyFavorite = () => {
         categories={CATEGORIES}
         activeCategory={activeCategory}
         onCategoryChange={setActiveCategory}
-        colors={colors}
       />
 
       {loading ? (
@@ -138,6 +186,25 @@ const styles = StyleSheet.create({
   },
   columnWrapper: {
     gap: 16,
+  },
+  guestContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 32,
+  },
+  guestTitle: {
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  guestMessage: {
+    textAlign: 'center',
+    marginBottom: 32,
+    lineHeight: 22,
+  },
+  guestActions: {
+    width: '100%',
+    maxWidth: 300,
   },
 });
 

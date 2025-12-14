@@ -1,6 +1,5 @@
 import { Colors } from '@/constants/color';
 import { useColorScheme } from '@/hooks';
-import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
 import { router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -9,6 +8,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { ThemedText } from '../themed-text';
 import AndroidHeaderButton from './AndroidHeaderButton';
 import HeaderButton from './HeaderButton';
+import CustomIonIcon from '../ui/CustomIonIcon';
 
 type Props = {
   background?: 'dark' | 'light' | 'primary' | 'secondary' | 'transparent';
@@ -91,7 +91,7 @@ export const AppHeader = (props: Props) => {
                 >
                   <ThemedText
                     startIcon={
-                      <Ionicons
+                      <CustomIonIcon
                         name="arrow-back"
                         size={24}
                         color={findTextColor(props.background, isDark)}
@@ -109,14 +109,14 @@ export const AppHeader = (props: Props) => {
                   {Platform.OS === 'ios' ? (
                     <HeaderButton
                       isTransparent={isTransparent}
-                      icon="arrow.backward"
+                      icon="arrow-back"
                       onPress={handleBackPress}
                       iconColor={findTextColor(props.background, isDark)}
                     />
                   ) : (
                     <AndroidHeaderButton
                       isTransparent={isTransparent}
-                      icon="arrow.backward"
+                      icon="arrow-back"
                       onPress={handleBackPress}
                       iconColor={findTextColor(props.background, isDark)}
                     />

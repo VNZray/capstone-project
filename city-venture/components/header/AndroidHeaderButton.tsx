@@ -1,31 +1,14 @@
-import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import { SymbolViewProps } from 'expo-symbols';
 import { ComponentProps } from 'react';
 import { StyleSheet, TouchableOpacity } from 'react-native';
-import { IconSymbol } from '../ui/icon-symbol';
-import { Ionicons } from '@expo/vector-icons';
+import CustomIonIcon from '../ui/CustomIonIcon';
 
-type IconMapping = Record<
-  SymbolViewProps['name'],
-  ComponentProps<typeof MaterialIcons>['name']
->;
-type IconSymbolName = keyof typeof MAPPING;
-
-const MAPPING = {
-  'house.fill': 'home',
-  'paperplane.fill': 'send',
-  'chevron.left.forwardslash.chevron.right': 'code',
-  'chevron.right': 'chevron-right',
-  'map.fill': 'map',
-  'heart.fill': 'favorite',
-  'person.crop.circle': 'account-circle',
-} as IconMapping;
+type IonIconName = ComponentProps<typeof CustomIonIcon>['name'];
 
 type HeaderButtonProps = {
   onPress?: () => void;
   isTransparent?: boolean;
   style?: any;
-  icon?: IconSymbolName;
+  icon?: IonIconName;
   iconColor?: string;
 };
 
@@ -43,8 +26,8 @@ const AndroidHeaderButton = (props: HeaderButtonProps) => {
         },
       ]}
     >
-      <Ionicons
-        name="arrow-back"
+      <CustomIonIcon
+        name={props.icon || 'arrow-back'}
         size={24}
         color={props.iconColor ? props.iconColor : '#FFFFFF'}
       />

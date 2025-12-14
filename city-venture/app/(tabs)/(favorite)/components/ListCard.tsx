@@ -1,5 +1,5 @@
-import React from 'react';
-import { View, StyleSheet, Image, Pressable } from 'react-native';
+import React, { useEffect, useRef } from 'react';
+import { View, StyleSheet, Image, Pressable, Animated } from 'react-native';
 import { ThemedText } from '@/components/themed-text';
 import { Colors } from '@/constants/color';
 import { MaterialCommunityIcons, Feather } from '@expo/vector-icons';
@@ -18,6 +18,27 @@ export const ListCard: React.FC<ListCardProps> = ({
   colors,
   onRemove,
 }) => {
+  // Animation values
+  const slideAnim = useRef(new Animated.Value(50)).current;
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    // Entry animation - slide from right and fade in
+    Animated.parallel([
+      Animated.spring(slideAnim, {
+        toValue: 0,
+        tension: 50,
+        friction: 8,
+        useNativeDriver: true,
+      }),
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 400,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, []);
+
   const handlePress = () => {
     // Navigate based on category type and favoriteType
     if (item.favoriteType === 'accommodation') {
@@ -38,93 +59,118 @@ export const ListCard: React.FC<ListCardProps> = ({
     }
   };
 
+  const handleRemove = () => {
+    // Exit animation - slide out to right and fade out
+    Animated.parallel([
+      Animated.timing(slideAnim, {
+        toValue: 100,
+        duration: 250,
+        useNativeDriver: true,
+      }),
+      Animated.timing(fadeAnim, {
+        toValue: 0,
+        duration: 250,
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
+      onRemove(item.favoriteId);
+    });
+  };
+
   return (
-    <Pressable
-      onPress={handlePress}
-      style={[styles.listCard, { backgroundColor: colors.surface }]}
+    <Animated.View
+      style={{
+        transform: [{ translateX: slideAnim }],
+        opacity: fadeAnim,
+      }}
     >
-      {/* Image */}
-      <View style={styles.listImageContainer}>
-        <Image
-          source={item.image ? { uri: item.image } : placeholder}
-          style={styles.listImage}
-        />
-        <Pressable
-          style={styles.listHeartButton}
-          onPress={() => onRemove(item.favoriteId)}
-        >
-          <MaterialCommunityIcons name="heart" size={14} color="#D4AF37" />
-        </Pressable>
-      </View>
+      <Pressable
+        onPress={handlePress}
+        style={[styles.listCard, { backgroundColor: colors.surface }]}
+      >
+        {/* Image */}
+        <View style={styles.listImageContainer}>
+          <Image
+            source={item.image ? { uri: item.image } : placeholder}
+            style={styles.listImage}
+          />
+          <Pressable style={styles.listHeartButton} onPress={handleRemove}>
+            <MaterialCommunityIcons name="heart" size={14} color="#D4AF37" />
+          </Pressable>
+        </View>
 
-      {/* Content */}
-      <View style={styles.listCardContent}>
-        <View style={styles.listHeader}>
+        {/* Content */}
+        <View style={styles.listCardContent}>
+          <View style={styles.listHeader}>
+            <ThemedText
+              type="label-extra-small"
+              weight="bold"
+              style={{ color: '#D4AF37', letterSpacing: 1 }}
+            >
+              {item.category}
+            </ThemedText>
+            {item.price && (
+              <ThemedText type="label-small" weight="bold">
+                {item.price}
+              </ThemedText>
+            )}
+          </View>
+
           <ThemedText
-            type="label-extra-small"
+            type="card-title-medium"
             weight="bold"
-            style={{ color: '#D4AF37', letterSpacing: 1 }}
+            style={{ marginTop: 4 }}
           >
-            {item.category}
+            {item.title}
           </ThemedText>
-          {item.price && (
-            <ThemedText type="label-small" weight="bold">
-              {item.price}
+
+          <View style={styles.ratingRow}>
+            <MaterialCommunityIcons name="star" size={14} color="#D4AF37" />
+            <ThemedText
+              type="label-small"
+              weight="semi-bold"
+              style={{ marginLeft: 4 }}
+            >
+              {item.rating}
             </ThemedText>
-          )}
-        </View>
-
-        <ThemedText
-          type="card-title-medium"
-          weight="bold"
-          style={{ marginTop: 4 }}
-        >
-          {item.title}
-        </ThemedText>
-
-        <View style={styles.ratingRow}>
-          <MaterialCommunityIcons name="star" size={14} color="#D4AF37" />
-          <ThemedText
-            type="label-small"
-            weight="semi-bold"
-            style={{ marginLeft: 4 }}
-          >
-            {item.rating}
-          </ThemedText>
-          <ThemedText
-            type="label-small"
-            style={{ color: colors.textSecondary, marginLeft: 4 }}
-            numberOfLines={1}
-          >
-            • {item.location}
-          </ThemedText>
-        </View>
-
-        <View style={[styles.actionRow, { marginTop: 'auto' }]}>
-          <Pressable
-            onPress={handlePress}
-            style={[
-              styles.visitButton,
-              { backgroundColor: colors.background, flex: 1 },
-            ]}
-          >
-            <ThemedText type="label-small" weight="semi-bold">
-              Visit
+            <ThemedText
+              type="label-small"
+              style={{ color: colors.textSecondary, marginLeft: 4 }}
+              numberOfLines={1}
+            >
+              • {item.location}
             </ThemedText>
-            <MaterialCommunityIcons
-              name="arrow-right"
-              size={14}
-              color={colors.text}
-            />
-          </Pressable>
-          <Pressable
-            style={[styles.iconButton, { backgroundColor: colors.background }]}
-          >
-            <Feather name="send" size={14} color={colors.text} />
-          </Pressable>
+          </View>
+
+          <View style={[styles.actionRow, { marginTop: 'auto' }]}>
+            <Pressable
+              onPress={handlePress}
+              style={[
+                styles.visitButton,
+                { backgroundColor: colors.background, flex: 1 },
+              ]}
+            >
+              <ThemedText type="label-small" weight="semi-bold">
+                Visit
+              </ThemedText>
+              <MaterialCommunityIcons
+                name="arrow-right"
+                size={14}
+                color={colors.text}
+              />
+            </Pressable>
+            <Pressable
+              style={[
+                styles.iconButton,
+                { backgroundColor: colors.background },
+              ]}
+            >
+              <Feather name="send" size={14} color={colors.text} />
+            </Pressable>
+          </View>
         </View>
-      </View>
-    </Pressable>
+      </Pressable>
+    </Animated.View>
   );
 };
 

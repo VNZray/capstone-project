@@ -55,7 +55,7 @@ import {
   type ActionItem,
 } from '@/components/home/data';
 import { Image } from 'expo-image';
-import NotificationService from '@/services/NotificationService';
+import { getUnreadNotificationCount } from '@/services/NotificationService';
 
 // Enable LayoutAnimation for Android
 if (
@@ -76,7 +76,9 @@ const HomeScreen = () => {
   const { top: insetsTop, bottom } = useSafeAreaInsets();
   const colorScheme = useColorScheme() ?? 'light';
   const palette = Colors[colorScheme];
-  const didRedirect = useRef(false);
+
+  // Extract user_id to a stable reference to prevent unnecessary re-renders
+  const userId = user?.user_id;
 
   // --- Animation Values ---
   const scrollY = useSharedValue(0);
@@ -125,32 +127,21 @@ const HomeScreen = () => {
     return () => clearInterval(interval);
   }, []);
 
-  useEffect(() => {
-    if (!user && !didRedirect.current) {
-      didRedirect.current = true;
-      router.replace(Routes.auth.login as any);
-    }
-  }, [user]);
+  // Guest mode enabled - no auto-redirect to login
+  // Users can browse as guests and will be prompted to login when accessing protected features
 
   // Fetch unread notification count
   const fetchUnreadCount = useCallback(async () => {
-    if (!user?.user_id) return;
+    if (!userId) return;
     try {
-      const count = await NotificationService.getUnreadNotificationCount(
-        user.user_id
-      );
+      const count = await getUnreadNotificationCount(userId);
       setUnreadCount(count);
     } catch (error) {
       console.error('Failed to fetch unread count:', error);
     }
-  }, [user?.user_id]);
+  }, [userId]);
 
   useEffect(() => {
-    fetchUnreadCount();
-  }, [fetchUnreadCount]);
-
-  const handleRefresh = useCallback(() => {
-    loadHomeContent(true);
     fetchUnreadCount();
   }, [fetchUnreadCount]);
 
@@ -165,6 +156,11 @@ const HomeScreen = () => {
     setNewsState({ data: PLACEHOLDER_NEWS, loading: false });
     setRefreshing(false);
   }, []);
+
+  const handleRefresh = useCallback(() => {
+    loadHomeContent(true);
+    fetchUnreadCount();
+  }, [loadHomeContent, fetchUnreadCount]);
 
   useEffect(() => {
     loadHomeContent();
@@ -248,7 +244,7 @@ const HomeScreen = () => {
       case 'tours':
         navigateToTouristSpotHome();
         break;
-      case 'tickets':
+      case 'events':
         navigateToEventHome();
         break;
       default:
@@ -256,17 +252,14 @@ const HomeScreen = () => {
     }
   };
 
-  const handleEventPress = useCallback((_event: HomeEvent) => {
-    // TODO: Event detail route [id].tsx not yet implemented
-    router.push(Routes.event.index as any);
+  const handleEventPress = useCallback((event: HomeEvent) => {
+    router.push(Routes.event.detail(event.id) as any);
   }, []);
 
   const handleNewsPress = useCallback((_article: NewsArticle) => {
     // TODO: News detail not yet implemented
     router.push(Routes.tabs.home);
   }, []);
-
-  if (!user) return null;
 
   // Show skeleton during initial load
   if (eventState.loading && newsState.loading && eventState.data.length === 0) {
@@ -292,7 +285,7 @@ const HomeScreen = () => {
         <Animated.View style={[styles.topRow, topRowAnimatedStyle]}>
           <View style={styles.profileSection}>
             <View style={styles.profileIcon}>
-              {user.user_profile ? (
+              {user?.user_profile ? (
                 <Image
                   source={{ uri: user.user_profile }}
                   style={{ width: 40, height: 40, borderRadius: 20 }}
@@ -313,7 +306,7 @@ const HomeScreen = () => {
                 weight="bold"
                 style={{ color: '#FFF' }}
               >
-                {user.first_name}!
+                {user?.first_name || 'Guest'}!
               </ThemedText>
             </View>
           </View>

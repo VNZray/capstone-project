@@ -1,5 +1,12 @@
-import React from 'react';
-import { View, StyleSheet, Image, Pressable, Dimensions } from 'react-native';
+import React, { useEffect, useRef } from 'react';
+import {
+  View,
+  StyleSheet,
+  Image,
+  Pressable,
+  Dimensions,
+  Animated,
+} from 'react-native';
 import { ThemedText } from '@/components/themed-text';
 import { Colors } from '@/constants/color';
 import { MaterialCommunityIcons, Feather } from '@expo/vector-icons';
@@ -18,6 +25,27 @@ export const GridCard: React.FC<GridCardProps> = ({
   colors,
   onRemove,
 }) => {
+  // Animation values
+  const scaleAnim = useRef(new Animated.Value(0)).current;
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    // Entry animation
+    Animated.parallel([
+      Animated.spring(scaleAnim, {
+        toValue: 1,
+        tension: 50,
+        friction: 7,
+        useNativeDriver: true,
+      }),
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 400,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, []);
+
   const handlePress = () => {
     // Navigate based on category type and favoriteType
     if (item.favoriteType === 'accommodation') {
@@ -38,108 +66,137 @@ export const GridCard: React.FC<GridCardProps> = ({
     }
   };
 
+  const handleRemove = () => {
+    // Exit animation before removal
+    Animated.parallel([
+      Animated.spring(scaleAnim, {
+        toValue: 0,
+        tension: 50,
+        friction: 7,
+        useNativeDriver: true,
+      }),
+      Animated.timing(fadeAnim, {
+        toValue: 0,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
+      onRemove(item.favoriteId);
+    });
+  };
+
   return (
-    <Pressable
-      onPress={handlePress}
-      style={[styles.gridCard, { backgroundColor: colors.surface }]}
+    <Animated.View
+      style={{
+        transform: [{ scale: scaleAnim }],
+        opacity: fadeAnim,
+      }}
     >
-      {/* Image Container */}
-      <View style={styles.gridImageContainer}>
-        <Image
-          source={item.image ? { uri: item.image } : placeholder}
-          style={styles.gridImage}
-        />
+      <Pressable
+        onPress={handlePress}
+        style={[styles.gridCard, { backgroundColor: colors.surface }]}
+      >
+        {/* Image Container */}
+        <View style={styles.gridImageContainer}>
+          <Image
+            source={item.image ? { uri: item.image } : placeholder}
+            style={styles.gridImage}
+          />
 
-        {/* Heart Icon */}
-        <Pressable
-          style={styles.heartButton}
-          onPress={() => onRemove(item.favoriteId)}
-        >
-          <MaterialCommunityIcons name="heart" size={16} color="#D4AF37" />
-        </Pressable>
+          {/* Heart Icon */}
+          <Pressable style={styles.heartButton} onPress={handleRemove}>
+            <MaterialCommunityIcons name="heart" size={16} color="#D4AF37" />
+          </Pressable>
 
-        {/* Category Badge */}
-        <View style={styles.categoryBadge}>
-          <ThemedText
-            type="label-extra-small"
-            weight="bold"
-            style={styles.categoryBadgeText}
-          >
-            {item.category}
-          </ThemedText>
+          {/* Category Badge */}
+          <View style={styles.categoryBadge}>
+            <ThemedText
+              type="label-extra-small"
+              weight="bold"
+              style={styles.categoryBadgeText}
+            >
+              {item.category}
+            </ThemedText>
+          </View>
         </View>
-      </View>
 
-      {/* Content */}
-      <View style={styles.gridContent}>
-        <View
-          style={{
-            flexDirection: 'row',
-            justifyContent: 'space-between',
-            alignItems: 'flex-start',
-            marginBottom: 4,
-          }}
-        >
-          <ThemedText
-            type="card-title-medium"
-            weight="bold"
-            numberOfLines={1}
-            style={{ flex: 1, marginRight: 8 }}
+        {/* Content */}
+        <View style={styles.gridContent}>
+          <View
+            style={{
+              flexDirection: 'row',
+              justifyContent: 'space-between',
+              alignItems: 'flex-start',
+              marginBottom: 4,
+            }}
           >
-            {item.title}
-          </ThemedText>
-          {item.price && (
+            <ThemedText
+              type="card-title-medium"
+              weight="bold"
+              numberOfLines={1}
+              style={{ flex: 1, marginRight: 8 }}
+            >
+              {item.title}
+            </ThemedText>
+            {item.price && (
+              <ThemedText
+                type="label-small"
+                weight="bold"
+                style={{ color: colors.primary }}
+              >
+                {item.price}
+              </ThemedText>
+            )}
+          </View>
+
+          <View style={styles.ratingRow}>
+            <MaterialCommunityIcons name="star" size={14} color="#D4AF37" />
             <ThemedText
               type="label-small"
-              weight="bold"
-              style={{ color: colors.primary }}
+              weight="semi-bold"
+              style={{ marginLeft: 4 }}
             >
-              {item.price}
+              {item.rating}
             </ThemedText>
-          )}
-        </View>
-
-        <View style={styles.ratingRow}>
-          <MaterialCommunityIcons name="star" size={14} color="#D4AF37" />
-          <ThemedText
-            type="label-small"
-            weight="semi-bold"
-            style={{ marginLeft: 4 }}
-          >
-            {item.rating}
-          </ThemedText>
-          <ThemedText
-            type="label-small"
-            style={{ color: colors.textSecondary, marginLeft: 4 }}
-            numberOfLines={1}
-          >
-            • {item.location}
-          </ThemedText>
-        </View>
-
-        {/* Actions */}
-        <View style={styles.actionRow}>
-          <Pressable
-            onPress={handlePress}
-            style={[styles.visitButton, { backgroundColor: colors.background }]}
-          >
-            <ThemedText type="label-small" weight="semi-bold">
-              Visit
+            <ThemedText
+              type="label-small"
+              style={{ color: colors.textSecondary, marginLeft: 4 }}
+              numberOfLines={1}
+            >
+              • {item.location}
             </ThemedText>
-            <MaterialCommunityIcons
-              name="arrow-right"
-              size={14}
-              color={colors.text}
-            />
-          </Pressable>
-          <Pressable
-            style={[styles.iconButton, { backgroundColor: colors.background }]}
-          >
-            <Feather name="send" size={14} color={colors.text} />
-          </Pressable>
+          </View>
+
+          {/* Actions */}
+          <View style={styles.actionRow}>
+            <Pressable
+              onPress={handlePress}
+              style={[
+                styles.visitButton,
+                { backgroundColor: colors.background },
+              ]}
+            >
+              <ThemedText type="label-small" weight="semi-bold">
+                Visit
+              </ThemedText>
+              <MaterialCommunityIcons
+                name="arrow-right"
+                size={14}
+                color={colors.text}
+              />
+            </Pressable>
+            <Pressable
+              style={[
+                styles.iconButton,
+                { backgroundColor: colors.background },
+              ]}
+            >
+              <Feather name="send" size={14} color={colors.text} />
+            </Pressable>
+          </View>
         </View>
-      </View>
-    </Pressable>
+      </Pressable>
+    </Animated.View>
   );
 };
 
