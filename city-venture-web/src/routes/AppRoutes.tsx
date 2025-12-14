@@ -68,6 +68,7 @@ import { TouristSpotProvider } from "@/src/context/TouristSpotContext";
 import { BusinessProvider } from "../context/BusinessContext";
 import ReportDetailsScreen from "@/src/features/admin/report/ReportDetailsScreen";
 import TourismStaffManagement from "@/src/features/admin/tourism-staff/TourismStaffManagement";
+import TourismRolesPage from "@/src/features/admin/tourism-roles/TourismRolesPage";
 import TourismSettings from "../features/admin/settings/Settings";
 
 // Other imports
@@ -141,10 +142,10 @@ export default function AppRoutes() {
           <Route path={`${home}about`} element={<About />} />
           <Route path={`${home}forget-password`} element={<ForgetPassword />} />
         </Route>
-        
+
         <Route path={`/unauthorized`} element={<Unauthorized />} />
         <Route path={`/change-password`} element={<ChangePassword />} />
-        
+
         {/* Business Provider wrapper for login */}
         <Route
           element={
@@ -155,7 +156,7 @@ export default function AppRoutes() {
         >
           <Route path={`/login`} element={<BusinessPortalLogin />} />
         </Route>
-        
+
         <Route path={`business-registration`} element={<Registration />} />
         <Route path={`/test`} element={<Test />} />
         <Route path={`user/profile`} element={<OwnerProfile />} />
@@ -478,6 +479,14 @@ export default function AppRoutes() {
             element={
               <ProtectedRoute requiredRoles={["Admin"]}>
                 <TourismStaffManagement />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path={`${tourism}/staff-roles`}
+            element={
+              <ProtectedRoute requiredRoles={["Admin"]}>
+                <TourismRolesPage />
               </ProtectedRoute>
             }
           />

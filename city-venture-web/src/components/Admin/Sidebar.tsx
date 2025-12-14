@@ -16,6 +16,7 @@ import {
   Users,
   BriefcaseBusiness,
   Settings,
+  Shield,
 } from "lucide-react";
 import "@/src/components/Admin/Sidebar.css";
 import logo from "@/src/assets/images/light-logo.png";
@@ -127,13 +128,25 @@ export default function Sidebar({
             icon={<BarChart size={24} />}
             onClick={onClose}
           />
+          {/* Dropdown for Staff */}
           {canAny("manage_users", "manage_tourism_staff") && (
-            <NavItem
-              to="/tourism/staff"
-              label="Manage Tourism Staff"
-              icon={<Users size={24} />}
-              onClick={onClose}
-            />
+            <DropdownNavItem
+              label="Staffs"
+              icon={<Users size={24} color="white" />}
+            >
+              <NavItem
+                to="/tourism/staff"
+                label="Manage Staff"
+                icon={<Users size={24} color="white" />}
+                onClick={onClose}
+              />
+              <NavItem
+                to="/tourism/staff-roles"
+                label="Manage Roles"
+                icon={<Shield size={24} />}
+                onClick={onClose}
+              />
+            </DropdownNavItem>
           )}
           <NavItem
             to="/tourism/profile"
