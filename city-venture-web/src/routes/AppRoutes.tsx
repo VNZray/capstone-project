@@ -70,6 +70,7 @@ import ReportDetailsScreen from "@/src/features/admin/report/ReportDetailsScreen
 import TourismStaffManagement from "@/src/features/admin/tourism-staff/TourismStaffManagement";
 import TourismRolesPage from "@/src/features/admin/tourism-roles/TourismRolesPage";
 import TourismSettings from "../features/admin/settings/Settings";
+import UserAccounts from "../features/admin/users/UserAccounts";
 
 // Other imports
 import Test from "../pages/Test";
@@ -487,6 +488,14 @@ export default function AppRoutes() {
             element={
               <ProtectedRoute requiredRoles={["Admin"]}>
                 <TourismRolesPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path={`${tourism}/users`}
+            element={
+              <ProtectedRoute requiredRoles={["Admin"]}>
+                <UserAccounts />
               </ProtectedRoute>
             }
           />

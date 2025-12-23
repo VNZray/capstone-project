@@ -65,6 +65,7 @@ export type BusinessDetails = {
   barangay_name?: string | "";
   // New hierarchical category system
   categories?: EntityCategory[];
+  category_ids?: number[];
   primary_category?: string;
 };
 

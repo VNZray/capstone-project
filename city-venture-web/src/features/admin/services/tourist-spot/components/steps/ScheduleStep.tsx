@@ -1,5 +1,7 @@
 import React from "react";
-import { Stack, Typography, Box, Card } from "@mui/joy";
+import { Box, Card, Grid } from "@mui/joy";
+import Typography from "@/src/components/Typography";
+import { colors } from "@/src/utils/Colors";
 import type { DaySchedule } from "@/src/types/TouristSpot";
 
 interface ScheduleStepProps {
@@ -14,129 +16,148 @@ const ScheduleStep: React.FC<ScheduleStepProps> = ({
   onScheduleChange,
 }) => {
   return (
-    <Stack spacing={1.5}>
-      <Typography
-        fontFamily={"poppins"}
-        level="title-lg"
-        fontWeight={700}
-        sx={{ color: "#1e293b" }}
-      >
-        Operating Schedule
-      </Typography>
-      <Typography level="body-sm" sx={{ color: "text.secondary" }}>
+    <Box>
+      <Typography.Body size="sm" sx={{ color: colors.gray, mb: 2 }}>
         Configure opening hours for each day
-      </Typography>
+      </Typography.Body>
 
-      <Card variant="outlined" sx={{ p: 1 }}>
-        <Stack spacing={0}>
+      <Card variant="outlined" sx={{ p: 2 }}>
+        <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
           {schedules.map((sched) => (
-            <Box
+            <Grid
+              container
               key={sched.dayIndex}
+              spacing={2}
               sx={{
-                display: "flex",
                 alignItems: "center",
-                gap: 2,
-                flexWrap: "wrap",
-                py: 1,
+                py: 1.5,
                 borderBottom: sched.dayIndex < 6 ? "1px solid" : "none",
                 borderColor: "divider",
               }}
             >
               {/* Day name */}
-              <div
-                style={{
-                  width: 120,
-                  color: "var(--primary-color)",
-                  fontWeight: 600,
-                }}
-              >
-                {daysOfWeek[sched.dayIndex]}
-              </div>
+              <Grid xs={12} sm={3}>
+                <Typography.Label
+                  sx={{ color: colors.primary, fontWeight: 600 }}
+                >
+                  {daysOfWeek[sched.dayIndex]}
+                </Typography.Label>
+              </Grid>
 
-              {/* Time inputs (read-only when closed) */}
-              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                <input
-                  type="time"
-                  value={sched.open_time}
-                  readOnly={sched.is_closed}
-                  onChange={(e) => {
-                    const newTime = e.target.value;
-                    onScheduleChange((prev) =>
-                      prev.map((s) =>
-                        s.dayIndex === sched.dayIndex
-                          ? { ...s, open_time: newTime }
-                          : s
-                      )
-                    );
+              {/* Time inputs */}
+              <Grid xs={12} sm={5}>
+                <Box
+                  sx={{
+                    display: "flex",
+                    gap: 1.5,
+                    flexWrap: "wrap",
+                    alignItems: "center",
                   }}
-                  style={{
-                    padding: 8,
-                    borderRadius: 6,
-                    border: "1px solid #e5e7eb",
-                    width: 120,
-                    background: sched.is_closed ? "#f9fafb" : "#fff",
-                  }}
-                />
-
-                <input
-                  type="time"
-                  value={sched.close_time}
-                  readOnly={sched.is_closed}
-                  onChange={(e) => {
-                    const newTime = e.target.value;
-                    onScheduleChange((prev) =>
-                      prev.map((s) =>
-                        s.dayIndex === sched.dayIndex
-                          ? { ...s, close_time: newTime }
-                          : s
-                      )
-                    );
-                  }}
-                  style={{
-                    padding: 8,
-                    borderRadius: 6,
-                    border: "1px solid #e5e7eb",
-                    width: 120,
-                    background: sched.is_closed ? "#f9fafb" : "#fff",
-                  }}
-                />
-              </div>
+                >
+                  <input
+                    type="time"
+                    value={sched.open_time}
+                    readOnly={sched.is_closed}
+                    onChange={(e) => {
+                      const newTime = e.target.value;
+                      onScheduleChange((prev) =>
+                        prev.map((s) =>
+                          s.dayIndex === sched.dayIndex
+                            ? { ...s, open_time: newTime }
+                            : s
+                        )
+                      );
+                    }}
+                    style={{
+                      padding: "8px 12px",
+                      borderRadius: 8,
+                      border: `1px solid ${colors.offWhite}`,
+                      minWidth: 120,
+                      background: sched.is_closed ? colors.offWhite : "#fff",
+                      fontFamily: "inherit",
+                    }}
+                  />
+                  <Typography.Body sx={{ fontSize: "0.875rem" }}>
+                    to
+                  </Typography.Body>
+                  <input
+                    type="time"
+                    value={sched.close_time}
+                    readOnly={sched.is_closed}
+                    onChange={(e) => {
+                      const newTime = e.target.value;
+                      onScheduleChange((prev) =>
+                        prev.map((s) =>
+                          s.dayIndex === sched.dayIndex
+                            ? { ...s, close_time: newTime }
+                            : s
+                        )
+                      );
+                    }}
+                    style={{
+                      padding: "8px 12px",
+                      borderRadius: 8,
+                      border: `1px solid ${colors.offWhite}`,
+                      minWidth: 120,
+                      background: sched.is_closed ? colors.offWhite : "#fff",
+                      fontFamily: "inherit",
+                    }}
+                  />
+                </Box>
+              </Grid>
 
               {/* Status + toggle */}
-              <div style={{ minWidth: 100, display: "flex", alignItems: "center", gap: 8 }}>
-                <span
-                  style={{
-                    display: "inline-block",
-                    width: 10,
-                    height: 10,
-                    borderRadius: 999,
-                    background: sched.is_closed ? "#d1d5db" : "var(--primary-color)",
+              <Grid xs={12} sm={4}>
+                <Box
+                  sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 1.5,
+                    justifyContent: { xs: "flex-start", sm: "flex-end" },
                   }}
-                />
-                <span style={{ color: "var(--primary-color)", fontWeight: 600 }}>
-                  {sched.is_closed ? "Closed" : "Open"}
-                </span>
-              </div>
-              <input
-                type="checkbox"
-                checked={!sched.is_closed}
-                onChange={(e) => {
-                  const checked = e.target.checked;
-                  onScheduleChange((prev) =>
-                    prev.map((s) =>
-                      s.dayIndex === sched.dayIndex
-                        ? { ...s, is_closed: !checked }
-                        : s
-                    )
-                  );
-                }}
-                style={{ accentColor: "var(--primary-color)" }}
-              />
-            </Box>
+                >
+                  <Box
+                    sx={{
+                      display: "inline-block",
+                      width: 10,
+                      height: 10,
+                      borderRadius: "50%",
+                      background: sched.is_closed
+                        ? colors.gray
+                        : colors.success,
+                    }}
+                  />
+                  <Typography.Body
+                    sx={{
+                      color: sched.is_closed ? colors.gray : colors.success,
+                      fontWeight: 600,
+                      fontSize: "0.875rem",
+                    }}
+                  >
+                    {sched.is_closed ? "Closed" : "Open"}
+                  </Typography.Body>
+                  <input
+                    type="checkbox"
+                    checked={!sched.is_closed}
+                    onChange={(e) => {
+                      const checked = e.target.checked;
+                      onScheduleChange((prev) =>
+                        prev.map((s) =>
+                          s.dayIndex === sched.dayIndex
+                            ? { ...s, is_closed: !checked }
+                            : s
+                        )
+                      );
+                    }}
+                    style={{ accentColor: colors.primary, cursor: "pointer" }}
+                  />
+                </Box>
+              </Grid>
+            </Grid>
           ))}
-        </Stack>
+        </Box>
       </Card>
-    </Stack>
+    </Box>
   );
 };
 
