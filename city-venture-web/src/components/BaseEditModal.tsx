@@ -64,9 +64,10 @@ export default function BaseEditModal({
       >
         <ModalClose />
 
-
         <DialogTitle sx={{ px: 3, pt: 3, pb: 1 }}>
-          <Typography.Header size="sm" component="div">{title}</Typography.Header>
+          <Typography.Header size="sm" component="div">
+            {title}
+          </Typography.Header>
         </DialogTitle>
 
         {description && (

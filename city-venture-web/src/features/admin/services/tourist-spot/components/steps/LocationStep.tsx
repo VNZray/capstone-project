@@ -1,12 +1,6 @@
 import React from "react";
-import {
-  Stack,
-  Typography,
-  FormControl,
-  FormLabel,
-  Autocomplete,
-  Grid,
-} from "@mui/joy";
+import { FormControl, FormLabel, Autocomplete, Grid, Box } from "@mui/joy";
+import Typography from "@/src/components/Typography";
 import MapInput from "../MapInput";
 import type { FormOption, TouristSpotFormData } from "@/src/types/TouristSpot";
 
@@ -18,7 +12,9 @@ interface LocationStepProps {
   selectedProvince: FormOption | null;
   selectedMunicipality: FormOption | null;
   selectedBarangay: FormOption | null;
-  onFormDataChange: (updater: (prev: TouristSpotFormData) => TouristSpotFormData) => void;
+  onFormDataChange: (
+    updater: (prev: TouristSpotFormData) => TouristSpotFormData
+  ) => void;
 }
 
 const LocationStep: React.FC<LocationStepProps> = ({
@@ -32,9 +28,7 @@ const LocationStep: React.FC<LocationStepProps> = ({
   onFormDataChange,
 }) => {
   return (
-    <Stack spacing={1}>
-      <Typography level="h4">Location</Typography>
-      
+    <Box>
       <Grid container spacing={2}>
         <Grid xs={12} md={4}>
           <FormControl required>
@@ -57,7 +51,7 @@ const LocationStep: React.FC<LocationStepProps> = ({
             />
           </FormControl>
         </Grid>
-        
+
         <Grid xs={12} md={4}>
           <FormControl required>
             <FormLabel>Municipality</FormLabel>
@@ -79,7 +73,7 @@ const LocationStep: React.FC<LocationStepProps> = ({
             />
           </FormControl>
         </Grid>
-        
+
         <Grid xs={12} md={4}>
           <FormControl required>
             <FormLabel>Barangay</FormLabel>
@@ -102,19 +96,23 @@ const LocationStep: React.FC<LocationStepProps> = ({
         </Grid>
       </Grid>
 
-      <Typography level="title-md">Location on Map</Typography>
-      <MapInput
-        latitude={formData.latitude}
-        longitude={formData.longitude}
-        onChange={(lat, lng) =>
-          onFormDataChange((prev) => ({
-            ...prev,
-            latitude: lat,
-            longitude: lng,
-          }))
-        }
-      />
-    </Stack>
+      <Box sx={{ mt: 3 }}>
+        <Typography.Label sx={{ mb: 1, display: "block" }}>
+          Location on Map
+        </Typography.Label>
+        <MapInput
+          latitude={formData.latitude}
+          longitude={formData.longitude}
+          onChange={(lat, lng) =>
+            onFormDataChange((prev) => ({
+              ...prev,
+              latitude: lat,
+              longitude: lng,
+            }))
+          }
+        />
+      </Box>
+    </Box>
   );
 };
 

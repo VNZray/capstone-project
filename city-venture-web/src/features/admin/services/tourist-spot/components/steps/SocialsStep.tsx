@@ -1,12 +1,5 @@
 import React from "react";
-import {
-  Stack,
-  Typography,
-  FormControl,
-  FormLabel,
-  Input,
-  Grid,
-} from "@mui/joy";
+import { FormControl, FormLabel, Input, Grid, Box } from "@mui/joy";
 import type { TouristSpotFormData } from "@/src/types/TouristSpot";
 
 interface SocialsStepProps {
@@ -14,12 +7,13 @@ interface SocialsStepProps {
   onInputChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
 }
 
-const SocialsStep: React.FC<SocialsStepProps> = ({ formData, onInputChange }) => {
+const SocialsStep: React.FC<SocialsStepProps> = ({
+  formData,
+  onInputChange,
+}) => {
   return (
-    <Stack spacing={1}>
-      <Typography level="h4">Social Media & Contact</Typography>
-
-      <Grid container spacing={1}>
+    <Box>
+      <Grid container spacing={2}>
         <Grid xs={12}>
           <FormControl>
             <FormLabel>Contact Phone</FormLabel>
@@ -59,7 +53,7 @@ const SocialsStep: React.FC<SocialsStepProps> = ({ formData, onInputChange }) =>
           </FormControl>
         </Grid>
       </Grid>
-    </Stack>
+    </Box>
   );
 };
 

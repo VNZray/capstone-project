@@ -148,6 +148,14 @@ export default function Sidebar({
               />
             </DropdownNavItem>
           )}
+          {canAny("manage_users") && (
+            <NavItem
+              to="/tourism/users"
+              label="User Accounts"
+              icon={<Users size={24} />}
+              onClick={onClose}
+            />
+          )}
           <NavItem
             to="/tourism/profile"
             label="Profile"

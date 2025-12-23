@@ -1,8 +1,5 @@
 import React from "react";
-import {
-  Stack,
-  Typography,
-} from "@mui/joy";
+import { Box } from "@mui/joy";
 import TouristSpotImageManager from "../TouristSpotImageManager";
 import type { PendingImage } from "@/src/types/TouristSpot";
 
@@ -22,16 +19,15 @@ const ImagesStep: React.FC<ImagesStepProps> = ({
   initialSpotName,
 }) => {
   return (
-    <Stack spacing={1}>
-      <Typography level="h4">Images</Typography>
-      <TouristSpotImageManager 
+    <Box>
+      <TouristSpotImageManager
         touristSpotId={touristSpotId}
         mode={mode}
         pendingImages={pendingImages}
         onPendingImagesChange={onPendingImagesChange}
         initialSpotName={initialSpotName}
       />
-    </Stack>
+    </Box>
   );
 };
 
