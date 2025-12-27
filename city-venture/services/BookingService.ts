@@ -15,10 +15,10 @@ export async function fetchBookingsByBusinessId(
     {
       headers: opts?.noCache
         ? {
-            'Cache-Control': 'no-cache',
-            Pragma: 'no-cache',
-            Expires: '0',
-          }
+          'Cache-Control': 'no-cache',
+          Pragma: 'no-cache',
+          Expires: '0',
+        }
         : undefined,
     }
   );
@@ -38,10 +38,10 @@ export async function fetchBookingsByRoomId(
     {
       headers: opts?.noCache
         ? {
-            'Cache-Control': 'no-cache',
-            Pragma: 'no-cache',
-            Expires: '0',
-          }
+          'Cache-Control': 'no-cache',
+          Pragma: 'no-cache',
+          Expires: '0',
+        }
         : undefined,
     }
   );
@@ -69,13 +69,13 @@ export function isRoomAvailableForDateRange(
   for (const booking of activeBookings) {
     const bookingCheckIn = new Date(
       typeof booking.check_in_date === 'string' ||
-      booking.check_in_date instanceof String
+        booking.check_in_date instanceof String
         ? booking.check_in_date.toString()
         : booking.check_in_date!
     );
     const bookingCheckOut = new Date(
       typeof booking.check_out_date === 'string' ||
-      booking.check_out_date instanceof String
+        booking.check_out_date instanceof String
         ? booking.check_out_date.toString()
         : booking.check_out_date!
     );
@@ -121,7 +121,7 @@ export function generateBookingDateMarkers(bookings: Booking[]): Array<{
   label: string;
 }> {
   const markers: Array<{ date: Date; status: 'warning' | 'error'; label: string }> = [];
-  
+
   // Filter for active bookings
   const activeBookings = bookings.filter(
     (booking) =>
@@ -130,16 +130,16 @@ export function generateBookingDateMarkers(bookings: Booking[]): Array<{
       booking.check_in_date &&
       booking.check_out_date
   );
-  
+
   activeBookings.forEach((booking) => {
     const start = new Date(booking.check_in_date!);
     const end = new Date(booking.check_out_date!);
-    
+
     // Determine status based on booking status
-    const status: 'warning' | 'error' = 
+    const status: 'warning' | 'error' =
       booking.booking_status === 'Checked-In' ? 'error' : 'warning';
     const label = booking.booking_status === 'Checked-In' ? 'Occupied' : 'Reserved';
-    
+
     // Generate a marker for each day in the booking range
     const current = new Date(start);
     while (current <= end) {
@@ -151,7 +151,7 @@ export function generateBookingDateMarkers(bookings: Booking[]): Array<{
       current.setDate(current.getDate() + 1);
     }
   });
-  
+
   return markers;
 }
 

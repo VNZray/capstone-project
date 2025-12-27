@@ -20,8 +20,14 @@ import {
   SingleDateCalendar,
 } from '@/components/calendar';
 import type { DateMarker } from '@/components/calendar';
-import { fetchBookingsByRoomId, generateBookingDateMarkers } from '@/services/BookingService';
-import { fetchBlockedDatesByRoomId, generateBlockedDateMarkers } from '@/services/RoomService';
+import {
+  fetchBookingsByRoomId,
+  generateBookingDateMarkers,
+} from '@/services/BookingService';
+import {
+  fetchBlockedDatesByRoomId,
+  generateBlockedDateMarkers,
+} from '@/services/RoomService';
 
 // Booking type
 export type BookingType = 'overnight' | 'short-stay';
@@ -107,14 +113,14 @@ const BookingDateModal: React.FC<BookingDateModalProps> = ({
   useEffect(() => {
     const fetchRoomAvailability = async () => {
       if (!roomId || !visible) return;
-      
+
       setLoadingMarkers(true);
       try {
         const [bookings, blockedDates] = await Promise.all([
           fetchBookingsByRoomId(roomId),
           fetchBlockedDatesByRoomId(roomId),
         ]);
-        
+
         setBookingMarkers(generateBookingDateMarkers(bookings));
         setBlockedMarkers(generateBlockedDateMarkers(blockedDates));
       } catch (error) {
@@ -123,7 +129,7 @@ const BookingDateModal: React.FC<BookingDateModalProps> = ({
         setLoadingMarkers(false);
       }
     };
-    
+
     fetchRoomAvailability();
   }, [roomId, visible]);
 
@@ -171,7 +177,7 @@ const BookingDateModal: React.FC<BookingDateModalProps> = ({
         status: availabilityToMarkerStatus(item.status),
         label: item.status,
       }));
-    
+
     return [...bookingMarkers, ...blockedMarkers, ...paramMarkers];
   }, [availabilityData, bookingMarkers, blockedMarkers]);
 

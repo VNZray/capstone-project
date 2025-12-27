@@ -30,13 +30,13 @@ export async function fetchRoomsByBusinessId(
   opts?: { noCache?: boolean }
 ): Promise<Room[]> {
   const cacheSuffix = opts?.noCache ? `?ts=${Date.now()}` : '';
-  const { data } = await apiClient.get(`/room/${businessId}${cacheSuffix}` , {
+  const { data } = await apiClient.get(`/room/${businessId}${cacheSuffix}`, {
     headers: opts?.noCache
       ? {
-          'Cache-Control': 'no-cache',
-          Pragma: 'no-cache',
-          Expires: '0',
-        }
+        'Cache-Control': 'no-cache',
+        Pragma: 'no-cache',
+        Expires: '0',
+      }
       : undefined,
   });
   return Array.isArray(data) ? data : [data];
@@ -84,11 +84,11 @@ export const generateBlockedDateMarkers = (blockedDates: RoomBlockedDate[]): Arr
   label: string;
 }> => {
   const markers: Array<{ date: Date; status: 'error'; label: string }> = [];
-  
+
   blockedDates.forEach((block) => {
     const start = new Date(block.start_date);
     const end = new Date(block.end_date);
-    
+
     // Generate a marker for each day in the range
     const current = new Date(start);
     while (current <= end) {
@@ -100,6 +100,6 @@ export const generateBlockedDateMarkers = (blockedDates: RoomBlockedDate[]): Arr
       current.setDate(current.getDate() + 1);
     }
   });
-  
+
   return markers;
 };

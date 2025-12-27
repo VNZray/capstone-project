@@ -26,8 +26,14 @@ import {
 import type { DateMarker } from '@/components/calendar';
 import { AppHeader } from '@/components/header/AppHeader';
 import { useRoom } from '@/context/RoomContext';
-import { fetchBookingsByRoomId, generateBookingDateMarkers } from '@/services/BookingService';
-import { fetchBlockedDatesByRoomId, generateBlockedDateMarkers } from '@/services/RoomService';
+import {
+  fetchBookingsByRoomId,
+  generateBookingDateMarkers,
+} from '@/services/BookingService';
+import {
+  fetchBlockedDatesByRoomId,
+  generateBlockedDateMarkers,
+} from '@/services/RoomService';
 
 // Booking type
 export type BookingType = 'overnight' | 'short-stay';
@@ -103,7 +109,7 @@ const BookingDatePage: React.FC = () => {
   useEffect(() => {
     const fetchRoomAvailability = async () => {
       if (!roomDetails?.id) return;
-      
+
       setLoadingMarkers(true);
       try {
         // Fetch both bookings and blocked dates in parallel
@@ -111,11 +117,11 @@ const BookingDatePage: React.FC = () => {
           fetchBookingsByRoomId(roomDetails.id),
           fetchBlockedDatesByRoomId(roomDetails.id),
         ]);
-        
+
         // Generate markers from bookings
         const bookingDateMarkers = generateBookingDateMarkers(bookings);
         setBookingMarkers(bookingDateMarkers);
-        
+
         // Generate markers from blocked dates
         const blockedDateMarkers = generateBlockedDateMarkers(blockedDates);
         setBlockedMarkers(blockedDateMarkers);
@@ -125,7 +131,7 @@ const BookingDatePage: React.FC = () => {
         setLoadingMarkers(false);
       }
     };
-    
+
     fetchRoomAvailability();
   }, [roomDetails?.id]);
 
@@ -196,7 +202,7 @@ const BookingDatePage: React.FC = () => {
         status: availabilityToMarkerStatus(item.status),
         label: item.status,
       }));
-    
+
     // Combine all markers: bookings + blocked dates + param-based
     return [...bookingMarkers, ...blockedMarkers, ...paramMarkers];
   }, [availabilityData, bookingMarkers, blockedMarkers]);

@@ -320,19 +320,32 @@ const RangeDateCalendar: React.FC<RangeDateCalendarProps> = ({
       {/* Legend - only show if there are markers */}
       {markers.length > 0 && (
         <View style={styles.legend}>
-          <ThemedText type="body-extra-small" style={{ color: theme.textSecondary, marginBottom: 8 }}>
+          <ThemedText
+            type="body-extra-small"
+            style={{ color: theme.textSecondary, marginBottom: 8 }}
+          >
             Status Legend
           </ThemedText>
           <View style={styles.legendRow}>
             <View style={styles.legendItem}>
-              <View style={[styles.legendDot, { backgroundColor: theme.warning }]} />
-              <ThemedText type="body-extra-small" style={{ color: theme.textSecondary }}>
+              <View
+                style={[styles.legendDot, { backgroundColor: theme.warning }]}
+              />
+              <ThemedText
+                type="body-extra-small"
+                style={{ color: theme.textSecondary }}
+              >
                 Reserved
               </ThemedText>
             </View>
             <View style={styles.legendItem}>
-              <View style={[styles.legendDot, { backgroundColor: theme.error }]} />
-              <ThemedText type="body-extra-small" style={{ color: theme.textSecondary }}>
+              <View
+                style={[styles.legendDot, { backgroundColor: theme.error }]}
+              />
+              <ThemedText
+                type="body-extra-small"
+                style={{ color: theme.textSecondary }}
+              >
                 Occupied/Blocked
               </ThemedText>
             </View>

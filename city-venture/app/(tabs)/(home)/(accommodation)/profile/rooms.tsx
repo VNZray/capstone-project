@@ -42,7 +42,10 @@ import {
   filterAvailableRooms,
   generateBookingDateMarkers,
 } from '@/services/BookingService';
-import { fetchBlockedDatesByBusinessId, generateBlockedDateMarkers } from '@/services/RoomService';
+import {
+  fetchBlockedDatesByBusinessId,
+  generateBlockedDateMarkers,
+} from '@/services/RoomService';
 import * as PromotionService from '@/services/PromotionService';
 import type { Booking } from '@/types/Booking';
 import type { Promotion } from '@/types/Promotion';
@@ -226,7 +229,7 @@ const Rooms = () => {
           fetchBlockedDatesByBusinessId(selectedAccommodationId),
         ]);
         setBookings(bookingsData);
-        
+
         // Generate calendar markers from bookings and blocked dates
         const bookingMarkers = generateBookingDateMarkers(bookingsData);
         const blockedMarkers = generateBlockedDateMarkers(blockedDates);

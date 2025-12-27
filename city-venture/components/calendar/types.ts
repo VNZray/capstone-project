@@ -3,7 +3,7 @@
 // Date marker status for styling
 // - none: no special styling
 // - primary: selected/active state (blue)
-// - warning: reserved/pending booking (yellow/orange) 
+// - warning: reserved/pending booking (yellow/orange)
 // - error: occupied/blocked/unavailable (red)
 export type DateMarkerStatus = 'none' | 'primary' | 'warning' | 'error';
 

@@ -40,7 +40,10 @@ import HotelIcon from "@mui/icons-material/Hotel";
 import BuildIcon from "@mui/icons-material/Build";
 import Calendar from "@/src/components/ui/Calendar";
 import type { Amenity } from "@/src/types/Amenity";
-import { fetchBlockedDatesByRoomId, generateBlockedCalendarEvents } from "@/src/services/RoomBlockedDatesService";
+import {
+  fetchBlockedDatesByRoomId,
+  generateBlockedCalendarEvents,
+} from "@/src/services/RoomBlockedDatesService";
 import type { RoomBlockedDate } from "@/src/types/RoomBlockedDates";
 import Reviews from "./Reviews";
 const RoomProfile = () => {
@@ -896,11 +899,11 @@ const RoomProfile = () => {
                     date: new Date(booking.check_in_date),
                     status:
                       booking.booking_status === "Reserved"
-                        ? "Reserved" as const
+                        ? ("Reserved" as const)
                         : booking.booking_status === "Checked-In"
-                        ? "Occupied" as const
-                        : "Available" as const,
-                    label: `Booking #${booking.id?.slice(0, 8) || 'N/A'}`,
+                        ? ("Occupied" as const)
+                        : ("Available" as const),
+                    label: `Booking #${booking.id?.slice(0, 8) || "N/A"}`,
                     bookingId: booking.id,
                   })),
                   // Blocked date events
