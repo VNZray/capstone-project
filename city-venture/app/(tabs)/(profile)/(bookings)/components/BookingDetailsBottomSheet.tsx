@@ -1,12 +1,15 @@
-import React, { useState } from 'react';
-import { Image, StyleSheet, View, Alert } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { Image, StyleSheet, View, Alert, Pressable } from 'react-native';
 import BottomSheetModal from '@/components/ui/BottomSheetModal';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, FontAwesome5 } from '@expo/vector-icons';
 import Button from '@/components/Button';
 import { ThemedText } from '@/components/themed-text';
-import { card, Colors } from '@/constants/color';
+import { card, Colors, colors } from '@/constants/color';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import type { Booking } from '@/types/Booking';
+import type { BusinessPolicies } from '@/types/BusinessPolicies';
+import { formatTimeFor12Hour } from '@/types/BusinessPolicies';
+import { fetchBusinessPolicies } from '@/services/BusinessPoliciesService';
 import Chip from '@/components/Chip';
 import placeholder from '@/assets/images/room-placeholder.png';
 
@@ -14,6 +17,7 @@ type BookingWithDetails = Booking & {
   room_number?: string;
   business_name?: string;
   room_image?: string;
+  business_id?: string;
 };
 
 type BookingDetailsBottomSheetProps = {
@@ -38,11 +42,25 @@ const BookingDetailsBottomSheet: React.FC<BookingDetailsBottomSheetProps> = ({
   const scheme = useColorScheme();
   const isDark = scheme === 'dark';
   const [cancelling, setCancelling] = useState(false);
+  const [policies, setPolicies] = useState<BusinessPolicies | null>(null);
+  const [expandedPolicy, setExpandedPolicy] = useState<string | null>(null);
 
   const surface = isDark ? card.dark : card.light;
   const textColor = isDark ? '#ECEDEE' : '#0D1B2A';
   const subTextColor = isDark ? '#9BA1A6' : '#6B7280';
   const borderColor = isDark ? '#262B3A' : '#E3E7EF';
+  const iconColor = isDark ? '#60A5FA' : '#0077B6';
+
+  // Fetch policies when booking changes
+  useEffect(() => {
+    if (booking?.business_id && isOpen) {
+      fetchBusinessPolicies(booking.business_id)
+        .then(setPolicies)
+        .catch((err) =>
+          console.error('[BookingDetails] Failed to load policies:', err)
+        );
+    }
+  }, [booking?.business_id, isOpen]);
 
   // Format date
   const formatDate = (dateString?: Date | string | String): string => {
@@ -481,6 +499,158 @@ const BookingDetailsBottomSheet: React.FC<BookingDetailsBottomSheetProps> = ({
               </ThemedText>
             </View>
           )}
+
+          {/* Policies Section */}
+          {policies &&
+            (policies.cancellation_policy || policies.refund_policy) && (
+              <View style={styles.policiesSection}>
+                <ThemedText
+                  type="card-title-medium"
+                  weight="semi-bold"
+                  style={{ color: textColor, marginBottom: 12 }}
+                >
+                  Policies
+                </ThemedText>
+
+                {/* Cancellation Policy */}
+                {policies.cancellation_policy && (
+                  <Pressable
+                    onPress={() =>
+                      setExpandedPolicy(
+                        expandedPolicy === 'cancellation'
+                          ? null
+                          : 'cancellation'
+                      )
+                    }
+                    style={[styles.policyItem, { borderColor }]}
+                  >
+                    <View style={styles.policyHeader}>
+                      <FontAwesome5 name="ban" size={16} color={iconColor} />
+                      <ThemedText
+                        type="body-medium"
+                        weight="semi-bold"
+                        style={{ flex: 1, marginLeft: 10 }}
+                      >
+                        Cancellation Policy
+                      </ThemedText>
+                      <FontAwesome5
+                        name={
+                          expandedPolicy === 'cancellation'
+                            ? 'chevron-up'
+                            : 'chevron-down'
+                        }
+                        size={12}
+                        color={iconColor}
+                      />
+                    </View>
+                    {expandedPolicy === 'cancellation' && (
+                      <ThemedText
+                        type="body-small"
+                        style={{
+                          color: subTextColor,
+                          marginTop: 8,
+                          lineHeight: 20,
+                        }}
+                      >
+                        {policies.cancellation_policy}
+                      </ThemedText>
+                    )}
+                  </Pressable>
+                )}
+
+                {/* Refund Policy */}
+                {policies.refund_policy && (
+                  <Pressable
+                    onPress={() =>
+                      setExpandedPolicy(
+                        expandedPolicy === 'refund' ? null : 'refund'
+                      )
+                    }
+                    style={[styles.policyItem, { borderColor }]}
+                  >
+                    <View style={styles.policyHeader}>
+                      <FontAwesome5 name="undo" size={16} color={iconColor} />
+                      <ThemedText
+                        type="body-medium"
+                        weight="semi-bold"
+                        style={{ flex: 1, marginLeft: 10 }}
+                      >
+                        Refund Policy
+                      </ThemedText>
+                      <FontAwesome5
+                        name={
+                          expandedPolicy === 'refund'
+                            ? 'chevron-up'
+                            : 'chevron-down'
+                        }
+                        size={12}
+                        color={iconColor}
+                      />
+                    </View>
+                    {expandedPolicy === 'refund' && (
+                      <ThemedText
+                        type="body-small"
+                        style={{
+                          color: subTextColor,
+                          marginTop: 8,
+                          lineHeight: 20,
+                        }}
+                      >
+                        {policies.refund_policy}
+                      </ThemedText>
+                    )}
+                  </Pressable>
+                )}
+
+                {/* Payment Policy */}
+                {policies.payment_policy && (
+                  <Pressable
+                    onPress={() =>
+                      setExpandedPolicy(
+                        expandedPolicy === 'payment' ? null : 'payment'
+                      )
+                    }
+                    style={[styles.policyItem, { borderColor }]}
+                  >
+                    <View style={styles.policyHeader}>
+                      <FontAwesome5
+                        name="credit-card"
+                        size={16}
+                        color={iconColor}
+                      />
+                      <ThemedText
+                        type="body-medium"
+                        weight="semi-bold"
+                        style={{ flex: 1, marginLeft: 10 }}
+                      >
+                        Payment Policy
+                      </ThemedText>
+                      <FontAwesome5
+                        name={
+                          expandedPolicy === 'payment'
+                            ? 'chevron-up'
+                            : 'chevron-down'
+                        }
+                        size={12}
+                        color={iconColor}
+                      />
+                    </View>
+                    {expandedPolicy === 'payment' && (
+                      <ThemedText
+                        type="body-small"
+                        style={{
+                          color: subTextColor,
+                          marginTop: 8,
+                          lineHeight: 20,
+                        }}
+                      >
+                        {policies.payment_policy}
+                      </ThemedText>
+                    )}
+                  </Pressable>
+                )}
+              </View>
+            )}
         </>
       }
       bottomActionButton={
@@ -640,6 +810,20 @@ const styles = StyleSheet.create({
   purposeSection: {
     paddingHorizontal: 16,
     paddingBottom: 16,
+  },
+  policiesSection: {
+    paddingHorizontal: 16,
+    paddingBottom: 16,
+  },
+  policyItem: {
+    borderWidth: 1,
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 8,
+  },
+  policyHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   actionSection: {
     borderTopWidth: 1,

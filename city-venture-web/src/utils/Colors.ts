@@ -4,15 +4,15 @@ export const colors = {
   primary: "#0A1B47",
   secondary: "#0077B6",
   tertiary: "#DEE3F2",
-  background: "#ffffff", // from --white
-  white: "#ffffff", // from --white
+  background: "#ffffff",
+  white: "#ffffff",
   error: "#c70030	",
   success: "#28a745",
   warningBackground: "#ffc107",
   warning: "#ff4545",
-  dark: "#1a1a1a", // replaced with CSS var value
+  dark: "#1a1a1a",
   black: "#111111",
-  text: "#1a1a1a", // --text-color
+  text: "#1a1a1a",
   gray: "#6B7280",
   yellow: "#FFB007",
   orange: "#FF5310",

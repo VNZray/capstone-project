@@ -230,7 +230,7 @@ const styles = StyleSheet.create({
   container: {
     paddingHorizontal: 16,
     paddingVertical: 16,
-    marginBottom: 8,
+    marginBottom: 16,
     ...Platform.select({
       android: {
         elevation: 3,
