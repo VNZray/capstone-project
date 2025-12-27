@@ -1,19 +1,238 @@
-import { StyleSheet, View, ScrollView } from 'react-native';
-import React from 'react';
+import { StyleSheet, View, ScrollView, ActivityIndicator } from 'react-native';
+import React, { useEffect, useState } from 'react';
 import PageContainer from '@/components/PageContainer';
 import { ThemedText } from '@/components/themed-text';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/constants/color';
+import {
+  fetchAppLegalPolicies,
+  type AppLegalPolicies,
+} from '@/services/AppLegalPoliciesService';
+
+/**
+ * Simple markdown parser that converts markdown to styled sections
+ */
+const parseMarkdown = (markdown: string) => {
+  if (!markdown) return [];
+
+  const lines = markdown.split('\n');
+  const sections: Array<{
+    type:
+      | 'h1'
+      | 'h2'
+      | 'h3'
+      | 'paragraph'
+      | 'bullet'
+      | 'divider'
+      | 'bold'
+      | 'empty';
+    content: string;
+  }> = [];
+
+  lines.forEach((line) => {
+    const trimmed = line.trim();
+
+    if (!trimmed) {
+      sections.push({ type: 'empty', content: '' });
+    } else if (trimmed.startsWith('# ')) {
+      sections.push({ type: 'h1', content: trimmed.substring(2) });
+    } else if (trimmed.startsWith('## ')) {
+      sections.push({ type: 'h2', content: trimmed.substring(3) });
+    } else if (trimmed.startsWith('### ')) {
+      sections.push({ type: 'h3', content: trimmed.substring(4) });
+    } else if (trimmed.startsWith('- ')) {
+      sections.push({ type: 'bullet', content: trimmed.substring(2) });
+    } else if (trimmed.startsWith('---')) {
+      sections.push({ type: 'divider', content: '' });
+    } else if (trimmed.startsWith('**') && trimmed.endsWith('**')) {
+      sections.push({ type: 'bold', content: trimmed.slice(2, -2) });
+    } else if (trimmed.startsWith('*') && trimmed.endsWith('*')) {
+      sections.push({ type: 'paragraph', content: trimmed.slice(1, -1) });
+    } else {
+      sections.push({ type: 'paragraph', content: trimmed });
+    }
+  });
+
+  return sections;
+};
 
 const PrivacyPolicy = () => {
   const scheme = useColorScheme();
+  const [policies, setPolicies] = useState<AppLegalPolicies | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const isDark = scheme === 'dark';
 
   const textColor = isDark ? '#ECEDEE' : '#0D1B2A';
   const subTextColor = isDark ? '#9BA1A6' : '#6B7280';
   const sectionBg = isDark ? '#1F2937' : '#F9FAFB';
   const borderColor = isDark ? '#374151' : '#E5E7EB';
+
+  useEffect(() => {
+    const loadPolicies = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const data = await fetchAppLegalPolicies();
+        setPolicies(data);
+      } catch (err) {
+        console.error('[PrivacyPolicy] Failed to fetch policies:', err);
+        setError('Failed to load privacy policy. Please try again later.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadPolicies();
+  }, []);
+
+  const parsedContent = policies?.privacy_policy
+    ? parseMarkdown(policies.privacy_policy)
+    : [];
+
+  const lastUpdated = policies?.updated_at
+    ? new Date(policies.updated_at).toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+      })
+    : 'December 27, 2025';
+
+  const renderContent = () => {
+    if (loading) {
+      return (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={Colors.light.primary} />
+          <ThemedText
+            type="body-medium"
+            style={{ color: subTextColor, marginTop: 16 }}
+          >
+            Loading privacy policy...
+          </ThemedText>
+        </View>
+      );
+    }
+
+    if (error || !policies?.privacy_policy) {
+      return (
+        <View style={styles.errorContainer}>
+          <Ionicons
+            name="alert-circle-outline"
+            size={48}
+            color={subTextColor}
+          />
+          <ThemedText
+            type="body-medium"
+            style={{ color: subTextColor, marginTop: 16, textAlign: 'center' }}
+          >
+            {error || 'Privacy policy not available. Please check back later.'}
+          </ThemedText>
+        </View>
+      );
+    }
+
+    return (
+      <View style={styles.content}>
+        {parsedContent.map((section, index) => {
+          switch (section.type) {
+            case 'h1':
+              return null; // Skip h1 as we have a header
+            case 'h2':
+              return (
+                <View key={index} style={styles.section}>
+                  <ThemedText
+                    type="body-large"
+                    weight="semi-bold"
+                    style={{ color: textColor, marginBottom: 8, marginTop: 16 }}
+                  >
+                    {section.content}
+                  </ThemedText>
+                </View>
+              );
+            case 'h3':
+              return (
+                <ThemedText
+                  key={index}
+                  type="body-medium"
+                  weight="semi-bold"
+                  style={{ color: textColor, marginTop: 12, marginBottom: 8 }}
+                >
+                  {section.content}
+                </ThemedText>
+              );
+            case 'bullet':
+              return (
+                <ThemedText
+                  key={index}
+                  type="body-medium"
+                  style={[styles.bulletItem, { color: subTextColor }]}
+                >
+                  • {section.content}
+                </ThemedText>
+              );
+            case 'bold':
+              return (
+                <ThemedText
+                  key={index}
+                  type="body-medium"
+                  weight="semi-bold"
+                  style={{ color: textColor, marginTop: 8, marginBottom: 4 }}
+                >
+                  {section.content}
+                </ThemedText>
+              );
+            case 'paragraph':
+              return (
+                <ThemedText
+                  key={index}
+                  type="body-medium"
+                  style={[styles.paragraph, { color: subTextColor }]}
+                >
+                  {section.content}
+                </ThemedText>
+              );
+            case 'divider':
+              return (
+                <View
+                  key={index}
+                  style={[styles.divider, { backgroundColor: borderColor }]}
+                />
+              );
+            case 'empty':
+              return <View key={index} style={{ height: 8 }} />;
+            default:
+              return null;
+          }
+        })}
+
+        {/* Footer */}
+        <View
+          style={[
+            styles.footer,
+            {
+              backgroundColor: sectionBg,
+              borderColor: borderColor,
+            },
+          ]}
+        >
+          <Ionicons
+            name="shield-checkmark"
+            size={20}
+            color={Colors.light.success}
+            style={{ marginRight: 8 }}
+          />
+          <ThemedText
+            type="body-small"
+            style={{ color: subTextColor, flex: 1, lineHeight: 20 }}
+          >
+            Your privacy is important to us. We are committed to protecting your
+            personal information and being transparent about our data practices.
+          </ThemedText>
+        </View>
+      </View>
+    );
+  };
 
   return (
     <PageContainer padding={0} gap={0}>
@@ -41,390 +260,11 @@ const PrivacyPolicy = () => {
             type="body-small"
             style={{ color: subTextColor, marginTop: 4 }}
           >
-            Last updated: December 11, 2025
+            Last updated: {lastUpdated}
           </ThemedText>
         </View>
 
-        {/* Content */}
-        <View style={styles.content}>
-          {/* Introduction */}
-          <View style={styles.section}>
-            <ThemedText
-              type="body-medium"
-              style={[styles.paragraph, { color: subTextColor }]}
-            >
-              City Venture ("we", "our", or "us") is committed to protecting
-              your privacy. This Privacy Policy explains how we collect, use,
-              disclose, and safeguard your information when you use our mobile
-              application.
-            </ThemedText>
-          </View>
-
-          {/* Section 1 */}
-          <View style={styles.section}>
-            <ThemedText
-              type="body-large"
-              weight="semi-bold"
-              style={{ color: textColor, marginBottom: 8 }}
-            >
-              1. Information We Collect
-            </ThemedText>
-            <ThemedText
-              type="body-medium"
-              weight="semi-bold"
-              style={{ color: textColor, marginTop: 12, marginBottom: 8 }}
-            >
-              Personal Information
-            </ThemedText>
-            <ThemedText
-              type="body-medium"
-              style={[styles.paragraph, { color: subTextColor }]}
-            >
-              We collect information that you provide directly to us when you:
-            </ThemedText>
-            <View style={styles.bulletList}>
-              <ThemedText
-                type="body-medium"
-                style={[styles.bulletItem, { color: subTextColor }]}
-              >
-                • Create an account (name, email, phone number)
-              </ThemedText>
-              <ThemedText
-                type="body-medium"
-                style={[styles.bulletItem, { color: subTextColor }]}
-              >
-                • Make a booking or purchase
-              </ThemedText>
-              <ThemedText
-                type="body-medium"
-                style={[styles.bulletItem, { color: subTextColor }]}
-              >
-                • Complete your profile information
-              </ThemedText>
-              <ThemedText
-                type="body-medium"
-                style={[styles.bulletItem, { color: subTextColor }]}
-              >
-                • Contact our support team
-              </ThemedText>
-              <ThemedText
-                type="body-medium"
-                style={[styles.bulletItem, { color: subTextColor }]}
-              >
-                • Submit reviews or ratings
-              </ThemedText>
-            </View>
-
-            <ThemedText
-              type="body-medium"
-              weight="semi-bold"
-              style={{ color: textColor, marginTop: 16, marginBottom: 8 }}
-            >
-              Automatically Collected Information
-            </ThemedText>
-            <View style={styles.bulletList}>
-              <ThemedText
-                type="body-medium"
-                style={[styles.bulletItem, { color: subTextColor }]}
-              >
-                • Device information (model, operating system, unique
-                identifiers)
-              </ThemedText>
-              <ThemedText
-                type="body-medium"
-                style={[styles.bulletItem, { color: subTextColor }]}
-              >
-                • Usage data (pages viewed, features used, time spent)
-              </ThemedText>
-              <ThemedText
-                type="body-medium"
-                style={[styles.bulletItem, { color: subTextColor }]}
-              >
-                • Location data (with your permission)
-              </ThemedText>
-              <ThemedText
-                type="body-medium"
-                style={[styles.bulletItem, { color: subTextColor }]}
-              >
-                • App performance and crash data
-              </ThemedText>
-            </View>
-          </View>
-
-          {/* Section 2 */}
-          <View style={styles.section}>
-            <ThemedText
-              type="body-large"
-              weight="semi-bold"
-              style={{ color: textColor, marginBottom: 8 }}
-            >
-              2. How We Use Your Information
-            </ThemedText>
-            <ThemedText
-              type="body-medium"
-              style={[styles.paragraph, { color: subTextColor }]}
-            >
-              We use the information we collect to:
-            </ThemedText>
-            <View style={styles.bulletList}>
-              <ThemedText
-                type="body-medium"
-                style={[styles.bulletItem, { color: subTextColor }]}
-              >
-                • Provide, maintain, and improve our services
-              </ThemedText>
-              <ThemedText
-                type="body-medium"
-                style={[styles.bulletItem, { color: subTextColor }]}
-              >
-                • Process your bookings and payments
-              </ThemedText>
-              <ThemedText
-                type="body-medium"
-                style={[styles.bulletItem, { color: subTextColor }]}
-              >
-                • Send you confirmations, updates, and notifications
-              </ThemedText>
-              <ThemedText
-                type="body-medium"
-                style={[styles.bulletItem, { color: subTextColor }]}
-              >
-                • Respond to your comments and questions
-              </ThemedText>
-              <ThemedText
-                type="body-medium"
-                style={[styles.bulletItem, { color: subTextColor }]}
-              >
-                • Personalize your experience
-              </ThemedText>
-              <ThemedText
-                type="body-medium"
-                style={[styles.bulletItem, { color: subTextColor }]}
-              >
-                • Prevent fraud and enhance security
-              </ThemedText>
-              <ThemedText
-                type="body-medium"
-                style={[styles.bulletItem, { color: subTextColor }]}
-              >
-                • Analyze usage and improve app performance
-              </ThemedText>
-            </View>
-          </View>
-
-          {/* Section 3 */}
-          <View style={styles.section}>
-            <ThemedText
-              type="body-large"
-              weight="semi-bold"
-              style={{ color: textColor, marginBottom: 8 }}
-            >
-              3. Information Sharing and Disclosure
-            </ThemedText>
-            <ThemedText
-              type="body-medium"
-              style={[styles.paragraph, { color: subTextColor }]}
-            >
-              We may share your information with:
-            </ThemedText>
-            <View style={styles.bulletList}>
-              <ThemedText
-                type="body-medium"
-                style={[styles.bulletItem, { color: subTextColor }]}
-              >
-                • Service providers who assist in operating our app
-              </ThemedText>
-              <ThemedText
-                type="body-medium"
-                style={[styles.bulletItem, { color: subTextColor }]}
-              >
-                • Business partners for bookings you make
-              </ThemedText>
-              <ThemedText
-                type="body-medium"
-                style={[styles.bulletItem, { color: subTextColor }]}
-              >
-                • Law enforcement when required by law
-              </ThemedText>
-            </View>
-            <ThemedText
-              type="body-medium"
-              style={[styles.paragraph, { color: subTextColor }]}
-            >
-              We do not sell your personal information to third parties.
-            </ThemedText>
-          </View>
-
-          {/* Section 4 */}
-          <View style={styles.section}>
-            <ThemedText
-              type="body-large"
-              weight="semi-bold"
-              style={{ color: textColor, marginBottom: 8 }}
-            >
-              4. Data Security
-            </ThemedText>
-            <ThemedText
-              type="body-medium"
-              style={[styles.paragraph, { color: subTextColor }]}
-            >
-              We implement appropriate technical and organizational measures to
-              protect your personal information. However, no method of
-              transmission over the internet is 100% secure, and we cannot
-              guarantee absolute security.
-            </ThemedText>
-          </View>
-
-          {/* Section 5 */}
-          <View style={styles.section}>
-            <ThemedText
-              type="body-large"
-              weight="semi-bold"
-              style={{ color: textColor, marginBottom: 8 }}
-            >
-              5. Your Rights and Choices
-            </ThemedText>
-            <ThemedText
-              type="body-medium"
-              style={[styles.paragraph, { color: subTextColor }]}
-            >
-              You have the right to:
-            </ThemedText>
-            <View style={styles.bulletList}>
-              <ThemedText
-                type="body-medium"
-                style={[styles.bulletItem, { color: subTextColor }]}
-              >
-                • Access and update your personal information
-              </ThemedText>
-              <ThemedText
-                type="body-medium"
-                style={[styles.bulletItem, { color: subTextColor }]}
-              >
-                • Delete your account and associated data
-              </ThemedText>
-              <ThemedText
-                type="body-medium"
-                style={[styles.bulletItem, { color: subTextColor }]}
-              >
-                • Opt-out of marketing communications
-              </ThemedText>
-              <ThemedText
-                type="body-medium"
-                style={[styles.bulletItem, { color: subTextColor }]}
-              >
-                • Disable location services
-              </ThemedText>
-              <ThemedText
-                type="body-medium"
-                style={[styles.bulletItem, { color: subTextColor }]}
-              >
-                • Request a copy of your data
-              </ThemedText>
-            </View>
-          </View>
-
-          {/* Section 6 */}
-          <View style={styles.section}>
-            <ThemedText
-              type="body-large"
-              weight="semi-bold"
-              style={{ color: textColor, marginBottom: 8 }}
-            >
-              6. Data Retention
-            </ThemedText>
-            <ThemedText
-              type="body-medium"
-              style={[styles.paragraph, { color: subTextColor }]}
-            >
-              We retain your information for as long as necessary to provide our
-              services and comply with legal obligations. You may request
-              deletion of your account at any time.
-            </ThemedText>
-          </View>
-
-          {/* Section 7 */}
-          <View style={styles.section}>
-            <ThemedText
-              type="body-large"
-              weight="semi-bold"
-              style={{ color: textColor, marginBottom: 8 }}
-            >
-              7. Children's Privacy
-            </ThemedText>
-            <ThemedText
-              type="body-medium"
-              style={[styles.paragraph, { color: subTextColor }]}
-            >
-              Our service is not intended for children under 13 years of age. We
-              do not knowingly collect personal information from children under
-              13.
-            </ThemedText>
-          </View>
-
-          {/* Section 8 */}
-          <View style={styles.section}>
-            <ThemedText
-              type="body-large"
-              weight="semi-bold"
-              style={{ color: textColor, marginBottom: 8 }}
-            >
-              8. Changes to This Privacy Policy
-            </ThemedText>
-            <ThemedText
-              type="body-medium"
-              style={[styles.paragraph, { color: subTextColor }]}
-            >
-              We may update this Privacy Policy from time to time. We will
-              notify you of any changes by posting the new Privacy Policy in the
-              app and updating the "Last updated" date.
-            </ThemedText>
-          </View>
-
-          {/* Section 9 */}
-          <View style={styles.section}>
-            <ThemedText
-              type="body-large"
-              weight="semi-bold"
-              style={{ color: textColor, marginBottom: 8 }}
-            >
-              9. Contact Us
-            </ThemedText>
-            <ThemedText
-              type="body-medium"
-              style={[styles.paragraph, { color: subTextColor }]}
-            >
-              If you have any questions about this Privacy Policy, please
-              contact us through the app's support section.
-            </ThemedText>
-          </View>
-
-          {/* Footer */}
-          <View
-            style={[
-              styles.footer,
-              {
-                backgroundColor: sectionBg,
-                borderColor: borderColor,
-              },
-            ]}
-          >
-            <Ionicons
-              name="shield-checkmark"
-              size={20}
-              color={Colors.light.success}
-              style={{ marginRight: 8 }}
-            />
-            <ThemedText
-              type="body-small"
-              style={{ color: subTextColor, flex: 1, lineHeight: 20 }}
-            >
-              Your privacy is important to us. We are committed to protecting
-              your personal information and being transparent about our data
-              practices.
-            </ThemedText>
-          </View>
-        </View>
+        {renderContent()}
       </ScrollView>
     </PageContainer>
   );
@@ -456,25 +296,40 @@ const styles = StyleSheet.create({
     paddingTop: 24,
   },
   section: {
-    marginBottom: 24,
+    marginBottom: 8,
   },
   paragraph: {
     lineHeight: 22,
-    marginBottom: 12,
-  },
-  bulletList: {
-    marginLeft: 8,
+    marginBottom: 8,
   },
   bulletItem: {
     lineHeight: 24,
     marginBottom: 4,
+    marginLeft: 8,
   },
   footer: {
-    marginTop: 16,
+    marginTop: 24,
     padding: 16,
     borderRadius: 12,
     borderWidth: 1,
     flexDirection: 'row',
     alignItems: 'flex-start',
+  },
+  loadingContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 64,
+  },
+  errorContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 64,
+    paddingHorizontal: 32,
+  },
+  divider: {
+    height: 1,
+    marginVertical: 16,
   },
 });

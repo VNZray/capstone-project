@@ -1,19 +1,241 @@
-import { StyleSheet, View, ScrollView } from 'react-native';
-import React from 'react';
+import { StyleSheet, View, ScrollView, ActivityIndicator } from 'react-native';
+import React, { useEffect, useState } from 'react';
 import PageContainer from '@/components/PageContainer';
 import { ThemedText } from '@/components/themed-text';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/constants/color';
+import {
+  fetchAppLegalPolicies,
+  type AppLegalPolicies,
+} from '@/services/AppLegalPoliciesService';
+
+/**
+ * Simple markdown parser that converts markdown to styled sections
+ */
+const parseMarkdown = (markdown: string) => {
+  if (!markdown) return [];
+
+  const lines = markdown.split('\n');
+  const sections: Array<{
+    type:
+      | 'h1'
+      | 'h2'
+      | 'h3'
+      | 'paragraph'
+      | 'bullet'
+      | 'divider'
+      | 'bold'
+      | 'empty';
+    content: string;
+  }> = [];
+
+  lines.forEach((line) => {
+    const trimmed = line.trim();
+
+    if (!trimmed) {
+      sections.push({ type: 'empty', content: '' });
+    } else if (trimmed.startsWith('# ')) {
+      sections.push({ type: 'h1', content: trimmed.substring(2) });
+    } else if (trimmed.startsWith('## ')) {
+      sections.push({ type: 'h2', content: trimmed.substring(3) });
+    } else if (trimmed.startsWith('### ')) {
+      sections.push({ type: 'h3', content: trimmed.substring(4) });
+    } else if (trimmed.startsWith('- ')) {
+      sections.push({ type: 'bullet', content: trimmed.substring(2) });
+    } else if (trimmed.startsWith('---')) {
+      sections.push({ type: 'divider', content: '' });
+    } else if (trimmed.startsWith('**') && trimmed.endsWith('**')) {
+      sections.push({ type: 'bold', content: trimmed.slice(2, -2) });
+    } else if (trimmed.startsWith('*') && trimmed.endsWith('*')) {
+      sections.push({ type: 'paragraph', content: trimmed.slice(1, -1) });
+    } else {
+      sections.push({ type: 'paragraph', content: trimmed });
+    }
+  });
+
+  return sections;
+};
 
 const TermsAndConditions = () => {
   const scheme = useColorScheme();
+  const [policies, setPolicies] = useState<AppLegalPolicies | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const isDark = scheme === 'dark';
 
   const textColor = isDark ? '#ECEDEE' : '#0D1B2A';
   const subTextColor = isDark ? '#9BA1A6' : '#6B7280';
   const sectionBg = isDark ? '#1F2937' : '#F9FAFB';
   const borderColor = isDark ? '#374151' : '#E5E7EB';
+
+  useEffect(() => {
+    const loadPolicies = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const data = await fetchAppLegalPolicies();
+        setPolicies(data);
+      } catch (err) {
+        console.error('[TermsAndConditions] Failed to fetch policies:', err);
+        setError(
+          'Failed to load terms and conditions. Please try again later.'
+        );
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadPolicies();
+  }, []);
+
+  const parsedContent = policies?.terms_and_conditions
+    ? parseMarkdown(policies.terms_and_conditions)
+    : [];
+
+  const lastUpdated = policies?.updated_at
+    ? new Date(policies.updated_at).toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+      })
+    : 'December 27, 2025';
+
+  const renderContent = () => {
+    if (loading) {
+      return (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={Colors.light.primary} />
+          <ThemedText
+            type="body-medium"
+            style={{ color: subTextColor, marginTop: 16 }}
+          >
+            Loading terms and conditions...
+          </ThemedText>
+        </View>
+      );
+    }
+
+    if (error || !policies?.terms_and_conditions) {
+      return (
+        <View style={styles.errorContainer}>
+          <Ionicons
+            name="alert-circle-outline"
+            size={48}
+            color={subTextColor}
+          />
+          <ThemedText
+            type="body-medium"
+            style={{ color: subTextColor, marginTop: 16, textAlign: 'center' }}
+          >
+            {error ||
+              'Terms and conditions not available. Please check back later.'}
+          </ThemedText>
+        </View>
+      );
+    }
+
+    return (
+      <View style={styles.content}>
+        {parsedContent.map((section, index) => {
+          switch (section.type) {
+            case 'h1':
+              return null; // Skip h1 as we have a header
+            case 'h2':
+              return (
+                <View key={index} style={styles.section}>
+                  <ThemedText
+                    type="body-large"
+                    weight="semi-bold"
+                    style={{ color: textColor, marginBottom: 8, marginTop: 16 }}
+                  >
+                    {section.content}
+                  </ThemedText>
+                </View>
+              );
+            case 'h3':
+              return (
+                <ThemedText
+                  key={index}
+                  type="body-medium"
+                  weight="semi-bold"
+                  style={{ color: textColor, marginTop: 12, marginBottom: 8 }}
+                >
+                  {section.content}
+                </ThemedText>
+              );
+            case 'bullet':
+              return (
+                <ThemedText
+                  key={index}
+                  type="body-medium"
+                  style={[styles.bulletItem, { color: subTextColor }]}
+                >
+                  • {section.content}
+                </ThemedText>
+              );
+            case 'bold':
+              return (
+                <ThemedText
+                  key={index}
+                  type="body-medium"
+                  weight="semi-bold"
+                  style={{ color: textColor, marginTop: 8, marginBottom: 4 }}
+                >
+                  {section.content}
+                </ThemedText>
+              );
+            case 'paragraph':
+              return (
+                <ThemedText
+                  key={index}
+                  type="body-medium"
+                  style={[styles.paragraph, { color: subTextColor }]}
+                >
+                  {section.content}
+                </ThemedText>
+              );
+            case 'divider':
+              return (
+                <View
+                  key={index}
+                  style={[styles.divider, { backgroundColor: borderColor }]}
+                />
+              );
+            case 'empty':
+              return <View key={index} style={{ height: 8 }} />;
+            default:
+              return null;
+          }
+        })}
+
+        {/* Footer */}
+        <View
+          style={[
+            styles.footer,
+            {
+              backgroundColor: sectionBg,
+              borderColor: borderColor,
+            },
+          ]}
+        >
+          <Ionicons
+            name="shield-checkmark"
+            size={20}
+            color={Colors.light.success}
+            style={{ marginRight: 8 }}
+          />
+          <ThemedText
+            type="body-small"
+            style={{ color: subTextColor, flex: 1, lineHeight: 20 }}
+          >
+            By using City Venture, you acknowledge that you have read,
+            understood, and agree to be bound by these Terms and Conditions.
+          </ThemedText>
+        </View>
+      </View>
+    );
+  };
 
   return (
     <PageContainer padding={0} gap={0}>
@@ -41,272 +263,11 @@ const TermsAndConditions = () => {
             type="body-small"
             style={{ color: subTextColor, marginTop: 4 }}
           >
-            Last updated: December 11, 2025
+            Last updated: {lastUpdated}
           </ThemedText>
         </View>
 
-        {/* Content */}
-        <View style={styles.content}>
-          {/* Section 1 */}
-          <View style={styles.section}>
-            <ThemedText
-              type="body-large"
-              weight="semi-bold"
-              style={{ color: textColor, marginBottom: 8 }}
-            >
-              1. Acceptance of Terms
-            </ThemedText>
-            <ThemedText
-              type="body-medium"
-              style={[styles.paragraph, { color: subTextColor }]}
-            >
-              By accessing and using City Venture mobile application, you accept
-              and agree to be bound by the terms and provisions of this
-              agreement. If you do not agree to these Terms and Conditions,
-              please do not use this application.
-            </ThemedText>
-          </View>
-
-          {/* Section 2 */}
-          <View style={styles.section}>
-            <ThemedText
-              type="body-large"
-              weight="semi-bold"
-              style={{ color: textColor, marginBottom: 8 }}
-            >
-              2. User Accounts
-            </ThemedText>
-            <ThemedText
-              type="body-medium"
-              style={[styles.paragraph, { color: subTextColor }]}
-            >
-              When you create an account with us, you must provide accurate,
-              complete, and current information. Failure to do so constitutes a
-              breach of the Terms, which may result in immediate termination of
-              your account.
-            </ThemedText>
-            <ThemedText
-              type="body-medium"
-              style={[styles.paragraph, { color: subTextColor }]}
-            >
-              You are responsible for safeguarding the password and for all
-              activities that occur under your account. You must notify us
-              immediately upon becoming aware of any breach of security or
-              unauthorized use of your account.
-            </ThemedText>
-          </View>
-
-          {/* Section 3 */}
-          <View style={styles.section}>
-            <ThemedText
-              type="body-large"
-              weight="semi-bold"
-              style={{ color: textColor, marginBottom: 8 }}
-            >
-              3. Use of Service
-            </ThemedText>
-            <ThemedText
-              type="body-medium"
-              style={[styles.paragraph, { color: subTextColor }]}
-            >
-              City Venture provides a platform for discovering and booking
-              tourism-related services. You agree to use the service only for
-              lawful purposes and in accordance with these Terms.
-            </ThemedText>
-            <ThemedText
-              type="body-medium"
-              weight="semi-bold"
-              style={{ color: textColor, marginTop: 12, marginBottom: 8 }}
-            >
-              You agree not to:
-            </ThemedText>
-            <View style={styles.bulletList}>
-              <ThemedText
-                type="body-medium"
-                style={[styles.bulletItem, { color: subTextColor }]}
-              >
-                • Use the service for any illegal or unauthorized purpose
-              </ThemedText>
-              <ThemedText
-                type="body-medium"
-                style={[styles.bulletItem, { color: subTextColor }]}
-              >
-                • Violate any laws in your jurisdiction
-              </ThemedText>
-              <ThemedText
-                type="body-medium"
-                style={[styles.bulletItem, { color: subTextColor }]}
-              >
-                • Infringe upon or violate intellectual property rights
-              </ThemedText>
-              <ThemedText
-                type="body-medium"
-                style={[styles.bulletItem, { color: subTextColor }]}
-              >
-                • Submit false or misleading information
-              </ThemedText>
-              <ThemedText
-                type="body-medium"
-                style={[styles.bulletItem, { color: subTextColor }]}
-              >
-                • Interfere with or disrupt the service or servers
-              </ThemedText>
-            </View>
-          </View>
-
-          {/* Section 4 */}
-          <View style={styles.section}>
-            <ThemedText
-              type="body-large"
-              weight="semi-bold"
-              style={{ color: textColor, marginBottom: 8 }}
-            >
-              4. Bookings and Payments
-            </ThemedText>
-            <ThemedText
-              type="body-medium"
-              style={[styles.paragraph, { color: subTextColor }]}
-            >
-              All bookings made through City Venture are subject to availability
-              and confirmation. Payment must be made through the approved
-              payment methods within the application.
-            </ThemedText>
-            <ThemedText
-              type="body-medium"
-              style={[styles.paragraph, { color: subTextColor }]}
-            >
-              Prices are subject to change without notice. We reserve the right
-              to refuse or cancel any booking at any time for any reason.
-            </ThemedText>
-          </View>
-
-          {/* Section 5 */}
-          <View style={styles.section}>
-            <ThemedText
-              type="body-large"
-              weight="semi-bold"
-              style={{ color: textColor, marginBottom: 8 }}
-            >
-              5. Cancellation and Refund Policy
-            </ThemedText>
-            <ThemedText
-              type="body-medium"
-              style={[styles.paragraph, { color: subTextColor }]}
-            >
-              Cancellation and refund policies vary by service provider. Please
-              review the specific cancellation policy for each booking before
-              confirming your reservation.
-            </ThemedText>
-            <ThemedText
-              type="body-medium"
-              style={[styles.paragraph, { color: subTextColor }]}
-            >
-              Refunds, if applicable, will be processed within 7-14 business
-              days to the original payment method.
-            </ThemedText>
-          </View>
-
-          {/* Section 6 */}
-          <View style={styles.section}>
-            <ThemedText
-              type="body-large"
-              weight="semi-bold"
-              style={{ color: textColor, marginBottom: 8 }}
-            >
-              6. Intellectual Property
-            </ThemedText>
-            <ThemedText
-              type="body-medium"
-              style={[styles.paragraph, { color: subTextColor }]}
-            >
-              The service and its original content, features, and functionality
-              are owned by City Venture and are protected by international
-              copyright, trademark, patent, trade secret, and other intellectual
-              property laws.
-            </ThemedText>
-          </View>
-
-          {/* Section 7 */}
-          <View style={styles.section}>
-            <ThemedText
-              type="body-large"
-              weight="semi-bold"
-              style={{ color: textColor, marginBottom: 8 }}
-            >
-              7. Limitation of Liability
-            </ThemedText>
-            <ThemedText
-              type="body-medium"
-              style={[styles.paragraph, { color: subTextColor }]}
-            >
-              City Venture shall not be liable for any indirect, incidental,
-              special, consequential, or punitive damages resulting from your
-              use of or inability to use the service.
-            </ThemedText>
-          </View>
-
-          {/* Section 8 */}
-          <View style={styles.section}>
-            <ThemedText
-              type="body-large"
-              weight="semi-bold"
-              style={{ color: textColor, marginBottom: 8 }}
-            >
-              8. Changes to Terms
-            </ThemedText>
-            <ThemedText
-              type="body-medium"
-              style={[styles.paragraph, { color: subTextColor }]}
-            >
-              We reserve the right to modify or replace these Terms at any time.
-              If a revision is material, we will provide at least 30 days'
-              notice prior to any new terms taking effect.
-            </ThemedText>
-          </View>
-
-          {/* Section 9 */}
-          <View style={styles.section}>
-            <ThemedText
-              type="body-large"
-              weight="semi-bold"
-              style={{ color: textColor, marginBottom: 8 }}
-            >
-              9. Contact Information
-            </ThemedText>
-            <ThemedText
-              type="body-medium"
-              style={[styles.paragraph, { color: subTextColor }]}
-            >
-              If you have any questions about these Terms and Conditions, please
-              contact us through the app's support section.
-            </ThemedText>
-          </View>
-
-          {/* Footer */}
-          <View
-            style={[
-              styles.footer,
-              {
-                backgroundColor: sectionBg,
-                borderColor: borderColor,
-              },
-            ]}
-          >
-            <Ionicons
-              name="shield-checkmark"
-              size={20}
-              color={Colors.light.success}
-              style={{ marginRight: 8 }}
-            />
-            <ThemedText
-              type="body-small"
-              style={{ color: subTextColor, flex: 1, lineHeight: 20 }}
-            >
-              By using City Venture, you acknowledge that you have read,
-              understood, and agree to be bound by these Terms and Conditions.
-            </ThemedText>
-          </View>
-        </View>
+        {renderContent()}
       </ScrollView>
     </PageContainer>
   );
@@ -338,25 +299,40 @@ const styles = StyleSheet.create({
     paddingTop: 24,
   },
   section: {
-    marginBottom: 24,
+    marginBottom: 8,
   },
   paragraph: {
     lineHeight: 22,
-    marginBottom: 12,
-  },
-  bulletList: {
-    marginLeft: 8,
+    marginBottom: 8,
   },
   bulletItem: {
     lineHeight: 24,
     marginBottom: 4,
+    marginLeft: 8,
   },
   footer: {
-    marginTop: 16,
+    marginTop: 24,
     padding: 16,
     borderRadius: 12,
     borderWidth: 1,
     flexDirection: 'row',
     alignItems: 'flex-start',
+  },
+  loadingContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 64,
+  },
+  errorContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 64,
+    paddingHorizontal: 32,
+  },
+  divider: {
+    height: 1,
+    marginVertical: 16,
   },
 });

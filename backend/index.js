@@ -52,6 +52,8 @@ import productReviewRoutes from "./routes/product-reviews.js";
 import notificationRoutes from "./routes/notifications.js";
 import notificationPreferencesRoutes from "./routes/notificationPreferences.js";
 import businessSettingsRoutes from "./routes/business-settings.js";
+import businessPoliciesRoutes from "./routes/business-policies.js";
+import appLegalPoliciesRoutes from "./routes/app-legal-policies.js";
 import shopCategoryRoutes from "./routes/shop-categories.js";
 import feedbackReviewRoutes from "./routes/feedback-reviews.js";
 import feedbackReplyRoutes from "./routes/feedback-replies.js";
@@ -243,6 +245,16 @@ const routeSections = [
         path: "/api/business-settings",
         handler: businessSettingsRoutes,
         label: "Business Settings",
+      },
+      {
+        path: "/api/business-policies",
+        handler: businessPoliciesRoutes,
+        label: "Business Policies & House Rules",
+      },
+      {
+        path: "/api/app-legal-policies",
+        handler: appLegalPoliciesRoutes,
+        label: "App Legal Policies (Terms & Privacy)",
       },
     ],
   },
