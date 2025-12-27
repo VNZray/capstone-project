@@ -4,7 +4,7 @@ import { AspectRatio, Box, Chip, Grid, Divider } from "@mui/joy";
 import { useRoom } from "@/src/context/RoomContext";
 import { useBusiness } from "@/src/context/BusinessContext";
 import DynamicTab from "@/src/components/ui/DynamicTab";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Container from "@/src/components/Container";
 import NoDataFound from "@/src/components/NoDataFound";
 import Button from "@/src/components/Button";
@@ -40,6 +40,8 @@ import HotelIcon from "@mui/icons-material/Hotel";
 import BuildIcon from "@mui/icons-material/Build";
 import Calendar from "@/src/components/ui/Calendar";
 import type { Amenity } from "@/src/types/Amenity";
+import { fetchBlockedDatesByRoomId, generateBlockedCalendarEvents } from "@/src/services/RoomBlockedDatesService";
+import type { RoomBlockedDate } from "@/src/types/RoomBlockedDates";
 import Reviews from "./Reviews";
 const RoomProfile = () => {
   const { roomDetails } = useRoom();
@@ -49,6 +51,7 @@ const RoomProfile = () => {
   const [isDeleting, setIsDeleting] = useState(false);
   const [amenities, setAmenities] = useState<Amenity[]>([]);
   const [bookings, setBookings] = useState<any[]>([]);
+  const [blockedDates, setBlockedDates] = useState<RoomBlockedDate[]>([]);
   const [photos, setPhotos] = useState<string[]>([]);
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
 
@@ -99,9 +102,21 @@ const RoomProfile = () => {
     if (roomDetails) {
       fetchAmenities();
       fetchBookings();
+      fetchBlockedDates();
       fetchPhotos();
     }
   }, [roomDetails?.id]);
+
+  const fetchBlockedDates = async () => {
+    if (!roomDetails?.id) return;
+    try {
+      const dates = await fetchBlockedDatesByRoomId(roomDetails.id);
+      setBlockedDates(dates);
+    } catch (error) {
+      console.error("Failed to fetch blocked dates:", error);
+      setBlockedDates([]);
+    }
+  };
 
   const fetchPhotos = async () => {
     if (!roomDetails?.id) return;
@@ -875,16 +890,22 @@ const RoomProfile = () => {
             <Container elevation={2}>
               <Typography.CardTitle>Availability</Typography.CardTitle>
               <Calendar
-                events={bookings.map((booking) => ({
-                  date: new Date(booking.check_in_date),
-                  status:
-                    booking.booking_status === "Reserved"
-                      ? "Reserved"
-                      : booking.booking_status === "Checked-In"
-                      ? "Occupied"
-                      : "Available",
-                  label: `Booking #${booking.id.slice(0, 8)}`,
-                }))}
+                events={[
+                  // Booking events
+                  ...bookings.map((booking) => ({
+                    date: new Date(booking.check_in_date),
+                    status:
+                      booking.booking_status === "Reserved"
+                        ? "Reserved" as const
+                        : booking.booking_status === "Checked-In"
+                        ? "Occupied" as const
+                        : "Available" as const,
+                    label: `Booking #${booking.id?.slice(0, 8) || 'N/A'}`,
+                    bookingId: booking.id,
+                  })),
+                  // Blocked date events
+                  ...generateBlockedCalendarEvents(blockedDates),
+                ]}
               />
             </Container>
 

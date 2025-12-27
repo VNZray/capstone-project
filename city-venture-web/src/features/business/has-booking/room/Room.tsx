@@ -14,10 +14,12 @@ import {
   PlayCircle,
   Search,
   TimerOff,
+  Lock,
 } from "lucide-react";
 import { Add, SortRounded } from "@mui/icons-material";
 import { useEffect, useState } from "react";
 import AddRoomModal from "./components/AddRoomModal";
+import BlockDatesModal from "./components/BlockDatesModal";
 import RoomCard from "./components/RoomCard";
 type Status = "All" | "Available" | "Occupied" | "Maintenance";
 import { useBusiness } from "@/src/context/BusinessContext";
@@ -38,15 +40,21 @@ import IconButton from "@/src/components/IconButton";
 import DynamicTab from "@/src/components/ui/DynamicTab";
 import Typography from "@/src/components/Typography";
 
+import Alert from "@/src/components/Alert";
+
 const RoomPage = () => {
   const navigate = useNavigate();
   const [status, setStatus] = useState<Status>("All");
   const [openModal, setOpenModal] = useState(false);
+  const [blockDatesModalOpen, setBlockDatesModalOpen] = useState(false);
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [startDate, setStartDate] = useState<Dayjs | null>(null);
   const [endDate, setEndDate] = useState<Dayjs | null>(null);
   const [isFilteringByDate, setIsFilteringByDate] = useState(false);
   const [availableRoomIds, setAvailableRoomIds] = useState<string[]>([]);
+
+  // Alert state for block dates success
+  const [blockSuccessOpen, setBlockSuccessOpen] = useState(false);
 
   const { businessDetails } = useBusiness();
 
@@ -173,6 +181,14 @@ const RoomPage = () => {
               onClick={() => setCalendarOpen(true)}
             >
               {isFilteringByDate ? "Change Dates" : "Filter by Date"}
+            </Button>
+            <Button
+              startDecorator={<Lock size={16} />}
+              colorScheme="warning"
+              variant="solid"
+              onClick={() => setBlockDatesModalOpen(true)}
+            >
+              Block Dates
             </Button>
             {isFilteringByDate && (
               <Button
@@ -384,6 +400,33 @@ const RoomPage = () => {
           </div>
         )}
       </Container>
+
+      {/* Block Dates Modal */}
+      <BlockDatesModal
+        open={blockDatesModalOpen}
+        onClose={() => setBlockDatesModalOpen(false)}
+        rooms={rooms.map((r) => ({
+          id: r.id,
+          room_number: r.room_number || "",
+          room_type: r.room_type || "",
+        }))}
+        businessId={businessDetails?.id || ""}
+        onSuccess={() => {
+          setBlockSuccessOpen(true);
+          fetchRooms();
+        }}
+      />
+
+      {/* Block Dates Success Alert */}
+      <Alert
+        open={blockSuccessOpen}
+        onClose={() => setBlockSuccessOpen(false)}
+        type="success"
+        title="Dates Blocked"
+        message="Selected dates have been successfully blocked for the room(s)."
+        confirmText="OK"
+        showCancel={false}
+      />
     </PageContainer>
   );
 };

@@ -62,6 +62,7 @@ import roomPhotosRoutes from "./routes/room-photos.js";
 import tourismStaffManagementRoutes from "./routes/tourism_staff_management.js";
 import favoriteRoutes from "./routes/favorite.js";
 import refundRoutes from "./routes/refunds.js";
+import roomBlockedDatesRoutes from "./routes/room-blocked-dates.js";
 
 const app = express();
 const PORT = 3000;
@@ -197,6 +198,11 @@ const routeSections = [
       },
       { path: "/api/payment", handler: paymentRoutes, label: "Payments" },
       { path: "/api/refunds", handler: refundRoutes, label: "Refunds" },
+      {
+        path: "/api/room-blocked-dates",
+        handler: roomBlockedDatesRoutes,
+        label: "Room Blocked Dates",
+      },
       // REMOVED: { path: "/api/payments", handler: paymentRoutes } - duplicate route removed per ORDERING_SYSTEM_AUDIT.md Phase 1
     ],
   },

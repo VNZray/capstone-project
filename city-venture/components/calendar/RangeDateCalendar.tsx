@@ -316,6 +316,29 @@ const RangeDateCalendar: React.FC<RangeDateCalendarProps> = ({
           );
         })}
       </View>
+
+      {/* Legend - only show if there are markers */}
+      {markers.length > 0 && (
+        <View style={styles.legend}>
+          <ThemedText type="body-extra-small" style={{ color: theme.textSecondary, marginBottom: 8 }}>
+            Status Legend
+          </ThemedText>
+          <View style={styles.legendRow}>
+            <View style={styles.legendItem}>
+              <View style={[styles.legendDot, { backgroundColor: theme.warning }]} />
+              <ThemedText type="body-extra-small" style={{ color: theme.textSecondary }}>
+                Reserved
+              </ThemedText>
+            </View>
+            <View style={styles.legendItem}>
+              <View style={[styles.legendDot, { backgroundColor: theme.error }]} />
+              <ThemedText type="body-extra-small" style={{ color: theme.textSecondary }}>
+                Occupied/Blocked
+              </ThemedText>
+            </View>
+          </View>
+        </View>
+      )}
     </View>
   );
 };
@@ -370,5 +393,26 @@ const styles = StyleSheet.create({
   },
   disabledContent: {
     opacity: 0.4,
+  },
+  legend: {
+    marginTop: 16,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(0,0,0,0.1)',
+  },
+  legendRow: {
+    flexDirection: 'row',
+    justifyContent: 'flex-start',
+    gap: 16,
+  },
+  legendItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  legendDot: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
   },
 });

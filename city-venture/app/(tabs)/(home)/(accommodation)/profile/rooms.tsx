@@ -40,10 +40,13 @@ import { navigateToRoomProfile } from '@/routes/accommodationRoutes';
 import {
   fetchBookingsByBusinessId,
   filterAvailableRooms,
+  generateBookingDateMarkers,
 } from '@/services/BookingService';
+import { fetchBlockedDatesByBusinessId, generateBlockedDateMarkers } from '@/services/RoomService';
 import * as PromotionService from '@/services/PromotionService';
 import type { Booking } from '@/types/Booking';
 import type { Promotion } from '@/types/Promotion';
+import type { DateMarker } from '@/components/calendar/types';
 
 import RoomsSkeleton from '@/components/skeleton/RoomsSkeleton';
 
@@ -78,6 +81,7 @@ const Rooms = () => {
   });
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loadingBookings, setLoadingBookings] = useState(false);
+  const [calendarMarkers, setCalendarMarkers] = useState<DateMarker[]>([]);
 
   const [refreshing, setRefreshing] = useState(false);
   const lastOffset = useRef(0);
@@ -211,15 +215,26 @@ const Rooms = () => {
     const loadBookings = async () => {
       if (!selectedAccommodationId) {
         setBookings([]);
+        setCalendarMarkers([]);
         return;
       }
       setLoadingBookings(true);
       try {
-        const data = await fetchBookingsByBusinessId(selectedAccommodationId);
-        setBookings(data);
+        // Fetch bookings and blocked dates in parallel
+        const [bookingsData, blockedDates] = await Promise.all([
+          fetchBookingsByBusinessId(selectedAccommodationId),
+          fetchBlockedDatesByBusinessId(selectedAccommodationId),
+        ]);
+        setBookings(bookingsData);
+        
+        // Generate calendar markers from bookings and blocked dates
+        const bookingMarkers = generateBookingDateMarkers(bookingsData);
+        const blockedMarkers = generateBlockedDateMarkers(blockedDates);
+        setCalendarMarkers([...bookingMarkers, ...blockedMarkers]);
       } catch (error) {
         console.error('Failed to load bookings:', error);
         setBookings([]);
+        setCalendarMarkers([]);
       } finally {
         setLoadingBookings(false);
       }
@@ -566,6 +581,7 @@ const Rooms = () => {
               setRange(newRange);
               setDateRange(newRange);
             }}
+            markers={calendarMarkers}
             allowSameDay={false}
           />
           <Container backgroundColor="transparent" direction="row" padding={0}>

@@ -20,6 +20,8 @@ import {
   SingleDateCalendar,
 } from '@/components/calendar';
 import type { DateMarker } from '@/components/calendar';
+import { fetchBookingsByRoomId, generateBookingDateMarkers } from '@/services/BookingService';
+import { fetchBlockedDatesByRoomId, generateBlockedDateMarkers } from '@/services/RoomService';
 
 // Booking type
 export type BookingType = 'overnight' | 'short-stay';
@@ -40,6 +42,7 @@ export type BookingDateModalProps = {
   onClose: () => void;
   onConfirm: (data: BookingDateResult) => void;
   bookingType: BookingType;
+  roomId?: string;
   initialStartDate?: Date;
   initialEndDate?: Date;
   initialStartTime?: Date;
@@ -77,6 +80,7 @@ const BookingDateModal: React.FC<BookingDateModalProps> = ({
   onClose,
   onConfirm,
   bookingType,
+  roomId,
   initialStartDate,
   initialEndDate,
   initialStartTime,
@@ -93,6 +97,35 @@ const BookingDateModal: React.FC<BookingDateModalProps> = ({
   const textColor = isDark ? '#ECEDEE' : '#0D1B2A';
   const subTextColor = isDark ? '#9BA1A6' : '#6B7280';
   const borderColor = isDark ? '#262B3A' : '#E3E7EF';
+
+  // State for fetched markers
+  const [bookingMarkers, setBookingMarkers] = useState<DateMarker[]>([]);
+  const [blockedMarkers, setBlockedMarkers] = useState<DateMarker[]>([]);
+  const [loadingMarkers, setLoadingMarkers] = useState(false);
+
+  // Fetch bookings and blocked dates for the room
+  useEffect(() => {
+    const fetchRoomAvailability = async () => {
+      if (!roomId || !visible) return;
+      
+      setLoadingMarkers(true);
+      try {
+        const [bookings, blockedDates] = await Promise.all([
+          fetchBookingsByRoomId(roomId),
+          fetchBlockedDatesByRoomId(roomId),
+        ]);
+        
+        setBookingMarkers(generateBookingDateMarkers(bookings));
+        setBlockedMarkers(generateBlockedDateMarkers(blockedDates));
+      } catch (error) {
+        console.error('Failed to fetch room availability:', error);
+      } finally {
+        setLoadingMarkers(false);
+      }
+    };
+    
+    fetchRoomAvailability();
+  }, [roomId, visible]);
 
   // Default times based on booking type
   const getDefaultStartTime = () => {
@@ -129,16 +162,18 @@ const BookingDateModal: React.FC<BookingDateModalProps> = ({
     initialEndTime || getDefaultEndTime()
   );
 
-  // Convert availability data to date markers
+  // Convert availability data to date markers and combine with fetched markers
   const dateMarkers: DateMarker[] = useMemo(() => {
-    return availabilityData
+    const paramMarkers = availabilityData
       .filter((item) => item.status !== 'available')
       .map((item) => ({
         date: item.date,
         status: availabilityToMarkerStatus(item.status),
         label: item.status,
       }));
-  }, [availabilityData]);
+    
+    return [...bookingMarkers, ...blockedMarkers, ...paramMarkers];
+  }, [availabilityData, bookingMarkers, blockedMarkers]);
 
   // Reset state when modal opens
   useEffect(() => {

@@ -110,3 +110,48 @@ export function filterAvailableRooms(
     return isRoomAvailableForDateRange(roomBookings, checkInDate, checkOutDate);
   });
 }
+
+/**
+ * Generate date markers from bookings for calendar display
+ * Reserved bookings show as warning (yellow), Checked-In as error (red/occupied)
+ */
+export function generateBookingDateMarkers(bookings: Booking[]): Array<{
+  date: Date;
+  status: 'warning' | 'error';
+  label: string;
+}> {
+  const markers: Array<{ date: Date; status: 'warning' | 'error'; label: string }> = [];
+  
+  // Filter for active bookings
+  const activeBookings = bookings.filter(
+    (booking) =>
+      booking.booking_status !== 'Canceled' &&
+      booking.booking_status !== 'Checked-Out' &&
+      booking.check_in_date &&
+      booking.check_out_date
+  );
+  
+  activeBookings.forEach((booking) => {
+    const start = new Date(booking.check_in_date!);
+    const end = new Date(booking.check_out_date!);
+    
+    // Determine status based on booking status
+    const status: 'warning' | 'error' = 
+      booking.booking_status === 'Checked-In' ? 'error' : 'warning';
+    const label = booking.booking_status === 'Checked-In' ? 'Occupied' : 'Reserved';
+    
+    // Generate a marker for each day in the booking range
+    const current = new Date(start);
+    while (current <= end) {
+      markers.push({
+        date: new Date(current),
+        status,
+        label,
+      });
+      current.setDate(current.getDate() + 1);
+    }
+  });
+  
+  return markers;
+}
+
