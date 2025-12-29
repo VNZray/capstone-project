@@ -16,19 +16,15 @@ router.get(
   roomBlockedDatesController.getAllBlockedDates
 );
 
-// Get blocked dates by business ID
+// Get blocked dates by business ID (public - for mobile calendar display)
 router.get(
   "/business/:business_id",
-  authenticate,
-  authorizeRole(...businessRoles),
   roomBlockedDatesController.getBlockedDatesByBusinessId
 );
 
-// Get blocked dates by room ID
+// Get blocked dates by room ID (public - for booking calendar display)
 router.get(
   "/room/:room_id",
-  authenticate,
-  authorizeRole(...businessRoles),
   roomBlockedDatesController.getBlockedDatesByRoomId
 );
 

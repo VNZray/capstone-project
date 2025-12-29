@@ -654,59 +654,63 @@ const BookingDetailsBottomSheet: React.FC<BookingDetailsBottomSheetProps> = ({
         </>
       }
       bottomActionButton={
-        <View
-          style={[
-            styles.actionSection,
-            {
-              borderTopColor: borderColor,
-            },
-          ]}
-        >
-          {booking.booking_status === 'Reserved' && (
-            <Button
-              label={cancelling ? 'Cancelling...' : 'Cancel Booking'}
-              onPress={handleCancelBooking}
-              variant="soft"
-              color="error"
-              disabled={cancelling}
-              width={'100%'}
-            />
-          )}
-
-          {booking.booking_status === 'Checked-Out' && (
-            <View style={{ gap: 12 }}>
-              {!hasReviewed && (
+        <>
+          {booking.booking_status !== 'Canceled' ? (
+            <View
+              style={[
+                styles.actionSection,
+                {
+                  borderTopColor: borderColor,
+                },
+              ]}
+            >
+              {booking.booking_status === 'Reserved' && (
                 <Button
-                  label="Rate Us"
-                  onPress={handleRateBooking}
-                  variant="solid"
-                  color="warning"
-                  startIcon="star"
+                  label={cancelling ? 'Cancelling...' : 'Cancel Booking'}
+                  onPress={handleCancelBooking}
+                  variant="soft"
+                  color="error"
+                  disabled={cancelling}
                   width={'100%'}
                 />
               )}
-              <Button
-                label="Book Again"
-                onPress={handleBookAgain}
-                variant="outlined"
-                color="primary"
-                width={'100%'}
-              />
-            </View>
-          )}
 
-          {booking.booking_status !== 'Reserved' &&
-            booking.booking_status !== 'Checked-Out' && (
-              <Button
-                label="Close"
-                onPress={onClose}
-                variant="outlined"
-                color="neutral"
-                size="large"
-                width={'100%'}
-              />
-            )}
-        </View>
+              {booking.booking_status === 'Checked-Out' && (
+                <View style={{ gap: 12 }}>
+                  {!hasReviewed && (
+                    <Button
+                      label="Rate Us"
+                      onPress={handleRateBooking}
+                      variant="solid"
+                      color="warning"
+                      startIcon="star"
+                      width={'100%'}
+                    />
+                  )}
+                  <Button
+                    label="Book Again"
+                    onPress={handleBookAgain}
+                    variant="outlined"
+                    color="primary"
+                    width={'100%'}
+                  />
+                </View>
+              )}
+
+              {booking.booking_status !== 'Reserved' &&
+                booking.booking_status !== 'Checked-Out' && (
+                  <Button
+                    label="Close"
+                    onPress={onClose}
+                    variant="outlined"
+                    color="secondary"
+                    size="large"
+                    width={'100%'}
+                  />
+                )}
+            </View>
+          ) : null}
+        </>
       }
     />
   );

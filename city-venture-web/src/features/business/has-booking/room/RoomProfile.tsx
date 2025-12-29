@@ -23,6 +23,8 @@ import {
   Star,
   X,
   Upload,
+  Lock,
+  Unlock,
 } from "lucide-react";
 import {
   deleteData,
@@ -43,9 +45,17 @@ import type { Amenity } from "@/src/types/Amenity";
 import {
   fetchBlockedDatesByRoomId,
   generateBlockedCalendarEvents,
+  deleteBlockedDate,
 } from "@/src/services/RoomBlockedDatesService";
 import type { RoomBlockedDate } from "@/src/types/RoomBlockedDates";
 import Reviews from "./Reviews";
+import BlockDatesModal from "./components/BlockDatesModal";
+import UnblockDatesModal from "./components/UnblockDatesModal";
+import {
+  SeasonalPricingDisplay,
+  SeasonalPricingForm,
+} from "./components/SeasonalPricing";
+
 const RoomProfile = () => {
   const { roomDetails } = useRoom();
   const { businessDetails } = useBusiness();
@@ -57,6 +67,14 @@ const RoomProfile = () => {
   const [blockedDates, setBlockedDates] = useState<RoomBlockedDate[]>([]);
   const [photos, setPhotos] = useState<string[]>([]);
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
+
+  // Modal states
+  const [blockDatesModalOpen, setBlockDatesModalOpen] = useState(false);
+  const [unblockDatesModalOpen, setUnblockDatesModalOpen] = useState(false);
+  const [selectedDateRange, setSelectedDateRange] = useState<
+    { start: string; end: string } | undefined
+  >();
+  const [editingPricing, setEditingPricing] = useState(false);
 
   const [alertConfig, setAlertConfig] = useState<{
     open: boolean;
@@ -664,146 +682,23 @@ const RoomProfile = () => {
 
           {/* Pricing Tab */}
           {activeTab === "pricing" && (
-            <Container elevation={2}>
-              {/* Base & Weekend Pricing Cards */}
-              <Grid container spacing={2} sx={{ mb: 3 }}>
-                <Grid xs={12} md={6}>
-                  <Box
-                    sx={{
-                      p: 3,
-                      border: "1px solid",
-                      borderColor: "divider",
-                      borderRadius: "12px",
-                      bgcolor: "background.surface",
-                    }}
-                  >
-                    <Typography.Label
-                      size="sm"
-                      sx={{ color: "text.secondary", mb: 1 }}
-                    >
-                      Base Price
-                    </Typography.Label>
-                    <Typography.Title
-                      sx={{ fontSize: "2rem", fontWeight: 600, mb: 0.5 }}
-                    >
-                      ₱{roomDetails?.room_price || 250}
-                    </Typography.Title>
-                    <Typography.Body size="sm" sx={{ color: "text.secondary" }}>
-                      per night
-                    </Typography.Body>
-                  </Box>
-                </Grid>
-
-                <Grid xs={12} md={6}>
-                  <Box
-                    sx={{
-                      p: 3,
-                      border: "1px solid",
-                      borderColor: "divider",
-                      borderRadius: "12px",
-                      bgcolor: "background.surface",
-                    }}
-                  >
-                    <Typography.Label
-                      size="sm"
-                      sx={{ color: "text.secondary", mb: 1 }}
-                    >
-                      Weekend Price
-                    </Typography.Label>
-                    <Typography.Title
-                      sx={{ fontSize: "2rem", fontWeight: 600, mb: 0.5 }}
-                    >
-                      ₱320
-                    </Typography.Title>
-                    <Typography.Body size="sm" sx={{ color: "text.secondary" }}>
-                      Fri-Sun nights
-                    </Typography.Body>
-                  </Box>
-                </Grid>
-              </Grid>
-
-              <Divider sx={{ my: 3 }} />
-
-              {/* Seasonal Pricing */}
-              <Box>
-                <Typography.CardTitle sx={{ mb: 2 }}>
-                  Seasonal Pricing
-                </Typography.CardTitle>
-                <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-                  <Box
-                    sx={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                      p: 2,
-                      border: "1px solid",
-                      borderColor: "divider",
-                      borderRadius: "8px",
-                    }}
-                  >
-                    <Box>
-                      <Typography.Body weight="semibold">
-                        Peak Season (Jun-Aug)
-                      </Typography.Body>
-                    </Box>
-                    <Typography.Body
-                      weight="bold"
-                      sx={{ fontSize: "1.125rem" }}
-                    >
-                      ₱380/night
-                    </Typography.Body>
-                  </Box>
-
-                  <Box
-                    sx={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                      p: 2,
-                      border: "1px solid",
-                      borderColor: "divider",
-                      borderRadius: "8px",
-                    }}
-                  >
-                    <Box>
-                      <Typography.Body weight="semibold">
-                        High Season (Dec-Feb)
-                      </Typography.Body>
-                    </Box>
-                    <Typography.Body
-                      weight="bold"
-                      sx={{ fontSize: "1.125rem" }}
-                    >
-                      ₱320/night
-                    </Typography.Body>
-                  </Box>
-
-                  <Box
-                    sx={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                      p: 2,
-                      border: "1px solid",
-                      borderColor: "divider",
-                      borderRadius: "8px",
-                    }}
-                  >
-                    <Box>
-                      <Typography.Body weight="semibold">
-                        Low Season (Mar-May, Sep-Nov)
-                      </Typography.Body>
-                    </Box>
-                    <Typography.Body
-                      weight="bold"
-                      sx={{ fontSize: "1.125rem" }}
-                    >
-                      ₱250/night
-                    </Typography.Body>
-                  </Box>
-                </Box>
-              </Box>
-            </Container>
+            <>
+              {editingPricing ? (
+                <SeasonalPricingForm
+                  businessId={businessDetails?.id || ""}
+                  roomId={roomDetails?.id || ""}
+                  defaultPrice={Number(roomDetails?.room_price) || 0}
+                  onSuccess={() => setEditingPricing(false)}
+                  onCancel={() => setEditingPricing(false)}
+                />
+              ) : (
+                <SeasonalPricingDisplay
+                  roomId={roomDetails?.id || ""}
+                  defaultPrice={Number(roomDetails?.room_price) || 0}
+                  onEditClick={() => setEditingPricing(true)}
+                />
+              )}
+            </>
           )}
 
           {/* Photos Tab */}
@@ -891,7 +786,36 @@ const RoomProfile = () => {
           <Container padding="0" gap="20px">
             {/* Availability Calendar */}
             <Container elevation={2}>
-              <Typography.CardTitle>Availability</Typography.CardTitle>
+              <Box
+                sx={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  mb: 2,
+                }}
+              >
+                <Typography.CardTitle>Availability</Typography.CardTitle>
+                <Box sx={{ display: "flex", gap: 1 }}>
+                  <Button
+                    size="sm"
+                    variant="outlined"
+                    colorScheme="secondary"
+                    startDecorator={<Lock size={14} />}
+                    onClick={() => setBlockDatesModalOpen(true)}
+                  >
+                    Block
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outlined"
+                    colorScheme="primary"
+                    startDecorator={<Unlock size={14} />}
+                    onClick={() => setUnblockDatesModalOpen(true)}
+                  >
+                    Unblock
+                  </Button>
+                </Box>
+              </Box>
               <Calendar
                 events={[
                   // Booking events
@@ -909,32 +833,61 @@ const RoomProfile = () => {
                   // Blocked date events
                   ...generateBlockedCalendarEvents(blockedDates),
                 ]}
-              />
-            </Container>
+                onDateClick={(date) => {
+                  const dateStr = date.toISOString().split("T")[0];
+                  // Check if date is blocked
+                  const isBlocked = blockedDates.some((block) => {
+                    const start = new Date(block.start_date);
+                    const end = new Date(block.end_date);
+                    return date >= start && date <= end;
+                  });
 
-            {/* Quick Actions */}
-            {/* <Container elevation={2}>
-              <Typography.CardTitle sx={{ mb: 2 }}>
-                Quick Actions
-              </Typography.CardTitle>
-              <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
-                <Button fullWidth variant="outlined" colorScheme="secondary">
-                  Block Dates
-                </Button>
-                <Button fullWidth variant="outlined" colorScheme="secondary">
-                  Update Pricing
-                </Button>
-                <Button fullWidth variant="outlined" colorScheme="secondary">
-                  Manage Amenities
-                </Button>
-                <Button fullWidth variant="outlined" colorScheme="error">
-                  Deactivate Room
-                </Button>
-              </Box>
-            </Container> */}
+                  if (isBlocked) {
+                    // Open unblock modal
+                    setUnblockDatesModalOpen(true);
+                  } else {
+                    // Open block modal with date pre-selected
+                    setSelectedDateRange({ start: dateStr, end: dateStr });
+                    setBlockDatesModalOpen(true);
+                  }
+                }}
+              />
+              <Typography.Body
+                size="sm"
+                sx={{ color: "text.secondary", mt: 2, textAlign: "center" }}
+              >
+                Click on a date to block/unblock
+              </Typography.Body>
+            </Container>
           </Container>
         </Grid>
       </Grid>
+
+      {/* Block Dates Modal */}
+      <BlockDatesModal
+        open={blockDatesModalOpen}
+        onClose={() => {
+          setBlockDatesModalOpen(false);
+          setSelectedDateRange(undefined);
+        }}
+        onSuccess={() => {
+          fetchBlockedDates();
+          setBlockDatesModalOpen(false);
+          setSelectedDateRange(undefined);
+        }}
+        rooms={roomDetails ? [roomDetails as any] : []}
+        preselectedRoomId={roomDetails?.id}
+        preselectedDates={selectedDateRange}
+      />
+
+      {/* Unblock Dates Modal */}
+      <UnblockDatesModal
+        open={unblockDatesModalOpen}
+        onClose={() => setUnblockDatesModalOpen(false)}
+        onSuccess={() => fetchBlockedDates()}
+        roomId={roomDetails?.id || ""}
+        roomNumber={roomDetails?.room_number}
+      />
 
       {/* Alert Dialog */}
       <Alert

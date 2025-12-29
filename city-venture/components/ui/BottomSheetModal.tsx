@@ -186,7 +186,7 @@ const BottomSheet: React.FC<Props> = ({
       </BottomSheetScrollView>
       {bottomActionButton && (
         <View style={[styles.actionContainer, actionStyle]}>
-          <Container backgroundColor="transparent">
+          <Container elevation={0} backgroundColor="transparent">
             {bottomActionButton}
           </Container>
         </View>

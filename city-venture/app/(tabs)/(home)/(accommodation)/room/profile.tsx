@@ -43,6 +43,12 @@ import * as PromotionService from '@/services/PromotionService';
 import type { Promotion } from '@/types/Promotion';
 import { LinearGradient } from 'expo-linear-gradient';
 import { AppHeader } from '@/components/header/AppHeader';
+import {
+  fetchSeasonalPricingByRoomId,
+  getLocalPriceForDate,
+} from '@/services/SeasonalPricingService';
+import type { SeasonalPricing } from '@/types/SeasonalPricing';
+import { format } from 'date-fns';
 
 const { width, height } = Dimensions.get('window');
 
@@ -62,6 +68,23 @@ const AccommodationProfile = () => {
   const [isFavorite, setIsFavorite] = useState(false);
   const [promotions, setPromotions] = useState<Promotion[]>([]);
   const [roomDiscount, setRoomDiscount] = useState<Promotion | null>(null);
+  const [seasonalPricing, setSeasonalPricing] =
+    useState<SeasonalPricing | null>(null);
+
+  // Fetch seasonal pricing
+  useEffect(() => {
+    const fetchPricing = async () => {
+      if (!roomDetails?.id) return;
+      try {
+        const pricing = await fetchSeasonalPricingByRoomId(roomDetails.id);
+        setSeasonalPricing(pricing);
+      } catch (error) {
+        console.log('[Room Profile] Failed to fetch seasonal pricing:', error);
+        setSeasonalPricing(null);
+      }
+    };
+    fetchPricing();
+  }, [roomDetails?.id]);
 
   useEffect(() => {
     if (roomDetails?.room_type) {
@@ -106,26 +129,59 @@ const AccommodationProfile = () => {
   };
 
   const formattedPrice = useMemo(() => {
-    const raw = roomDetails?.room_price as any;
-    console.log('[Room Profile] formattedPrice - raw price:', raw);
-    console.log('[Room Profile] formattedPrice - roomDiscount:', roomDiscount);
-
-    if (raw == null)
-      return { original: '', discounted: '', hasDiscount: false };
-
+    // Get today's price from seasonal pricing, or fall back to room_price
+    const today = format(new Date(), 'yyyy-MM-dd');
     let price = 0;
-    if (typeof raw === 'number') {
-      price = raw;
-    } else {
-      const str = String(raw).trim();
-      const numeric = str.replace(/[^0-9.]/g, '');
-      if (!numeric)
-        return { original: str, discounted: str, hasDiscount: false };
-      const num = Number(numeric);
-      if (isNaN(num))
-        return { original: str, discounted: str, hasDiscount: false };
-      price = num;
+    let usesSeasonalPricing = false;
+
+    // Try seasonal pricing first
+    if (seasonalPricing && seasonalPricing.base_price > 0) {
+      // Use today's seasonal price
+      price = getLocalPriceForDate(seasonalPricing, today);
+      if (price > 0) {
+        usesSeasonalPricing = true;
+        console.log('[Room Profile] Using seasonal price for today:', price);
+      }
     }
+
+    // Fall back to room_price if no valid seasonal price
+    if (price <= 0) {
+      const raw = roomDetails?.room_price as any;
+      console.log('[Room Profile] formattedPrice - raw price:', raw);
+
+      if (raw == null)
+        return {
+          original: '',
+          discounted: '',
+          hasDiscount: false,
+          usesSeasonalPricing: false,
+        };
+
+      if (typeof raw === 'number') {
+        price = raw;
+      } else {
+        const str = String(raw).trim();
+        const numeric = str.replace(/[^0-9.]/g, '');
+        if (!numeric)
+          return {
+            original: str,
+            discounted: str,
+            hasDiscount: false,
+            usesSeasonalPricing: false,
+          };
+        const num = Number(numeric);
+        if (isNaN(num))
+          return {
+            original: str,
+            discounted: str,
+            hasDiscount: false,
+            usesSeasonalPricing: false,
+          };
+        price = num;
+      }
+    }
+
+    console.log('[Room Profile] formattedPrice - roomDiscount:', roomDiscount);
 
     const formatPrice = (p: number) =>
       '₱' +
@@ -152,12 +208,18 @@ const AccommodationProfile = () => {
         discounted: formatPrice(discountedPrice),
         hasDiscount: true,
         discountPercentage: roomDiscount.discount_percentage,
+        usesSeasonalPricing,
       };
     }
 
     console.log('[Room Profile] No discount applied');
-    return { original, discounted: original, hasDiscount: false };
-  }, [roomDetails?.room_price, roomDiscount]);
+    return {
+      original,
+      discounted: original,
+      hasDiscount: false,
+      usesSeasonalPricing,
+    };
+  }, [roomDetails?.room_price, roomDiscount, seasonalPricing]);
 
   const TABS: Tab[] = [
     { key: 'details', label: 'Details', icon: '' },

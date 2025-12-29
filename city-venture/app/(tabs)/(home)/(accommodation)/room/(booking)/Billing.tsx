@@ -22,7 +22,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
-import { parse } from 'date-fns';
+import { parse, format } from 'date-fns';
 import * as PromotionService from '@/services/PromotionService';
 import type { Promotion } from '@/types/Promotion';
 import { createFullBooking } from '@/query/accommodationQuery';
@@ -37,6 +37,11 @@ import { Routes } from '@/routes/mainRoutes';
 import API_URL from '@/services/api';
 import debugLogger from '@/utils/debugLogger';
 import { AppHeader } from '@/components/header/AppHeader';
+import {
+  fetchSeasonalPricingByRoomId,
+  calculateLocalPriceForDateRange,
+} from '@/services/SeasonalPricingService';
+import type { SeasonalPricing } from '@/types/SeasonalPricing';
 
 /**
  * Billing Page - Payment method selection and processing
@@ -88,6 +93,29 @@ const BillingPage: React.FC = () => {
   const [submitting, setSubmitting] = useState(false);
   const [promotions, setPromotions] = useState<Promotion[]>([]);
   const [loadingPromotions, setLoadingPromotions] = useState(true);
+  const [seasonalPricing, setSeasonalPricing] =
+    useState<SeasonalPricing | null>(null);
+  const [loadingSeasonalPricing, setLoadingSeasonalPricing] = useState(true);
+
+  // Fetch seasonal pricing for the room
+  useEffect(() => {
+    const fetchPricing = async () => {
+      if (!roomDetails?.id) {
+        setLoadingSeasonalPricing(false);
+        return;
+      }
+      try {
+        const pricing = await fetchSeasonalPricingByRoomId(roomDetails.id);
+        setSeasonalPricing(pricing);
+      } catch (error) {
+        console.log('[Billing] Failed to fetch seasonal pricing:', error);
+        setSeasonalPricing(null);
+      } finally {
+        setLoadingSeasonalPricing(false);
+      }
+    };
+    fetchPricing();
+  }, [roomDetails?.id]);
 
   // Helper to parse 'YYYY-MM-DD HH:mm:ss' to Date
   const parseDateTime = (dt: string | Date | null | undefined) => {
@@ -331,15 +359,56 @@ const BillingPage: React.FC = () => {
   };
 
   // Base room price (without fees) only when date range valid
+  // Uses seasonal pricing if available and valid, otherwise falls back to flat room_price
+  // For short-stay: uses per_hour_rate if available
   const baseRoomPrice = useMemo(() => {
-    if (!roomDetails?.room_price) return 0;
     if (isShortStay) {
-      // For short stay, charge 1 day price regardless of hours
-      return hours > 0 ? Number(roomDetails.room_price) : 0;
+      // For short stay, charge per hour using per_hour_rate
+      if (hours <= 0) return 0;
+      const hourlyRate = roomDetails?.per_hour_rate;
+      if (!hourlyRate || hourlyRate <= 0) {
+        // Fallback to daily rate if per_hour_rate not set (shouldn't happen)
+        const fallbackPrice = Number(roomDetails?.room_price) || 0;
+        return fallbackPrice;
+      }
+      return hourlyRate * hours;
     }
-    // For overnight, charge per day
-    return days > 0 ? Number(roomDetails.room_price) * days : 0;
-  }, [roomDetails?.room_price, days, hours, isShortStay]);
+
+    // For overnight stays
+    if (!roomDetails?.room_price) return 0;
+    const fallbackPrice = Number(roomDetails.room_price);
+    if (days <= 0) return 0;
+
+    if (
+      seasonalPricing &&
+      seasonalPricing.base_price > 0 &&
+      checkIn &&
+      checkOut
+    ) {
+      // Use local calculation with seasonal pricing
+      const startDateStr = format(checkIn, 'yyyy-MM-dd');
+      const endDateStr = format(checkOut, 'yyyy-MM-dd');
+      const seasonalTotal = calculateLocalPriceForDateRange(
+        seasonalPricing,
+        startDateStr,
+        endDateStr
+      );
+      // If seasonal calculation returns valid price, use it; otherwise fallback
+      return seasonalTotal > 0 ? seasonalTotal : fallbackPrice * days;
+    }
+
+    // Fallback to flat rate
+    return fallbackPrice * days;
+  }, [
+    roomDetails?.room_price,
+    roomDetails?.per_hour_rate,
+    days,
+    hours,
+    isShortStay,
+    seasonalPricing,
+    checkIn,
+    checkOut,
+  ]);
 
   // Fixed booking fee (apply only if base price exists)
   const bookingFee = baseRoomPrice > 0 ? 50 : 0;
@@ -356,7 +425,8 @@ const BillingPage: React.FC = () => {
     [discounts]
   );
 
-  const subtotal = baseRoomPrice + bookingFee + transactionFee;
+  const subtotal =
+    Number(baseRoomPrice) + Number(bookingFee) + Number(transactionFee);
   // Total payable after discounts (full amount owed for the booking)
   const totalPayable = Math.max(subtotal - discountTotal, 0);
 
