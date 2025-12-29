@@ -26,6 +26,7 @@ import {
 import type { DateMarker } from '@/components/calendar';
 import { AppHeader } from '@/components/header/AppHeader';
 import { useRoom } from '@/context/RoomContext';
+import { useAccommodation } from '@/context/AccommodationContext';
 import {
   fetchBookingsByRoomId,
   generateBookingDateMarkers,
@@ -34,6 +35,8 @@ import {
   fetchBlockedDatesByRoomId,
   generateBlockedDateMarkers,
 } from '@/services/RoomService';
+import { fetchBusinessPolicies } from '@/services/BusinessPoliciesService';
+import type { BusinessPolicies } from '@/types/BusinessPolicies';
 
 // Booking type
 export type BookingType = 'overnight' | 'short-stay';
@@ -77,6 +80,7 @@ const BookingDatePage: React.FC = () => {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { roomDetails } = useRoom();
+  const { selectedAccommodationId } = useAccommodation();
   const params = useLocalSearchParams<{
     bookingType?: string;
     initialStartDate?: string;
@@ -104,6 +108,23 @@ const BookingDatePage: React.FC = () => {
   const [bookingMarkers, setBookingMarkers] = useState<DateMarker[]>([]);
   const [blockedMarkers, setBlockedMarkers] = useState<DateMarker[]>([]);
   const [loadingMarkers, setLoadingMarkers] = useState(false);
+  const [businessPolicies, setBusinessPolicies] =
+    useState<BusinessPolicies | null>(null);
+
+  // Fetch business policies for check-in/check-out times
+  useEffect(() => {
+    const loadBusinessPolicies = async () => {
+      if (!selectedAccommodationId) return;
+      try {
+        const policies = await fetchBusinessPolicies(selectedAccommodationId);
+        setBusinessPolicies(policies);
+      } catch (error) {
+        console.error('Failed to load business policies:', error);
+      }
+    };
+
+    loadBusinessPolicies();
+  }, [selectedAccommodationId]);
 
   // Fetch bookings and blocked dates for the room
   useEffect(() => {
@@ -149,26 +170,59 @@ const BookingDatePage: React.FC = () => {
     }
   }, [params.availabilityData]);
 
-  // Default times based on booking type
-  const getDefaultStartTime = () => {
-    const time = new Date();
-    if (bookingType === 'overnight') {
-      time.setHours(14, 0, 0, 0); // 2:00 PM check-in
-    } else {
-      time.setHours(8, 0, 0, 0); // 8:00 AM
+  // Parse time string (HH:MM:SS) to hours and minutes
+  const parseTimeString = (
+    timeStr: string | null
+  ): { hours: number; minutes: number } | null => {
+    if (!timeStr) return null;
+    const parts = timeStr.split(':');
+    if (parts.length >= 2) {
+      return {
+        hours: parseInt(parts[0], 10) || 0,
+        minutes: parseInt(parts[1], 10) || 0,
+      };
     }
-    return time;
+    return null;
   };
 
-  const getDefaultEndTime = () => {
+  // Default times based on booking type and business policies
+  const getDefaultStartTime = useCallback(() => {
     const time = new Date();
+
     if (bookingType === 'overnight') {
-      time.setHours(12, 0, 0, 0); // 12:00 PM check-out
+      // Use business check-in time if available
+      const checkInTime = parseTimeString(
+        businessPolicies?.check_in_time ?? null
+      );
+      if (checkInTime) {
+        time.setHours(checkInTime.hours, checkInTime.minutes, 0, 0);
+      } else {
+        time.setHours(14, 0, 0, 0); // Default: 2:00 PM check-in
+      }
     } else {
-      time.setHours(17, 0, 0, 0); // 5:00 PM
+      time.setHours(8, 0, 0, 0); // 8:00 AM for short-stay
     }
     return time;
-  };
+  }, [bookingType, businessPolicies?.check_in_time]);
+
+  const getDefaultEndTime = useCallback(() => {
+    const time = new Date();
+
+    if (bookingType === 'overnight') {
+      // Use business check-out time if available
+      const checkOutTime = parseTimeString(
+        businessPolicies?.check_out_time ?? null
+      );
+      if (checkOutTime) {
+        time.setHours(checkOutTime.hours, checkOutTime.minutes, 0, 0);
+      } else {
+        time.setHours(12, 0, 0, 0); // Default: 12:00 PM check-out
+      }
+    } else {
+      time.setHours(17, 0, 0, 0); // 5:00 PM for short-stay
+    }
+    return time;
+  }, [bookingType, businessPolicies?.check_out_time]);
 
   // Parse initial dates from params
   const parseInitialDate = (dateStr?: string): Date | null => {
@@ -191,6 +245,22 @@ const BookingDatePage: React.FC = () => {
   const [endTime, setEndTime] = useState<Date>(
     parseInitialDate(params.initialEndTime) || getDefaultEndTime()
   );
+
+  // Update times when business policies are loaded
+  useEffect(() => {
+    if (businessPolicies && !params.initialStartTime) {
+      setStartTime(getDefaultStartTime());
+    }
+    if (businessPolicies && !params.initialEndTime) {
+      setEndTime(getDefaultEndTime());
+    }
+  }, [
+    businessPolicies,
+    getDefaultStartTime,
+    getDefaultEndTime,
+    params.initialStartTime,
+    params.initialEndTime,
+  ]);
 
   // Convert availability data to date markers
   const dateMarkers: DateMarker[] = useMemo(() => {

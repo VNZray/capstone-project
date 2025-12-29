@@ -6,6 +6,12 @@ import {
   getFavoritesByTouristId,
 } from '@/services/FavoriteService';
 import { getAverageRating, getTotalReviews } from '@/services/FeedbackService';
+import {
+  fetchSeasonalPricingByRoomId,
+  getLocalPriceForDate,
+} from '@/services/SeasonalPricingService';
+import type { SeasonalPricing } from '@/types/SeasonalPricing';
+import { format } from 'date-fns';
 import React, {
   useCallback,
   useEffect,
@@ -68,7 +74,7 @@ const Rooms = () => {
   const bottomSheetRef = useRef<BottomSheetModal>(null);
   const scheme = useColorScheme();
   const isDark = scheme === 'dark';
-  const snapPoints = useMemo(() => ['60%'], []);
+  const snapPoints = useMemo(() => ['65%'], []);
   const surface = isDark ? card.dark : card.light;
   const handleColor = isDark ? '#4B5563' : '#D1D5DB';
   const [cardView, setCardView] = useState('card');
@@ -96,6 +102,9 @@ const Rooms = () => {
   const [promotions, setPromotions] = useState<Promotion[]>([]);
   const [roomDiscount, setRoomDiscount] = useState<Promotion | null>(null);
   const [showCalendar, setShowCalendar] = useState(false);
+  const [roomSeasonalPricing, setRoomSeasonalPricing] = useState<
+    Record<string, SeasonalPricing>
+  >({});
 
   // Control bottom sheet visibility
   useEffect(() => {
@@ -406,6 +415,31 @@ const Rooms = () => {
     else setRoomRatings({});
   }, [filteredRooms]);
 
+  // Fetch seasonal pricing for visible rooms
+  useEffect(() => {
+    const fetchSeasonalPricing = async () => {
+      const ids = filteredRooms
+        .map((r) => r.id)
+        .filter((id): id is string => typeof id === 'string' && !!id);
+      const newMap: Record<string, SeasonalPricing> = {};
+      await Promise.all(
+        ids.map(async (id) => {
+          try {
+            const pricing = await fetchSeasonalPricingByRoomId(id);
+            if (pricing && pricing.base_price > 0) {
+              newMap[String(id)] = pricing;
+            }
+          } catch {
+            // No seasonal pricing for this room
+          }
+        })
+      );
+      setRoomSeasonalPricing(newMap);
+    };
+    if (filteredRooms.length > 0) fetchSeasonalPricing();
+    else setRoomSeasonalPricing({});
+  }, [filteredRooms]);
+
   // Show skeleton during initial load
   if (loading && (!rooms || rooms.length === 0)) {
     return <RoomsSkeleton />;
@@ -487,31 +521,43 @@ const Rooms = () => {
                   total: 0,
                 };
 
+                // Calculate price: use seasonal pricing if available, otherwise room_price
+                const seasonalPricing = room.id
+                  ? roomSeasonalPricing[String(room.id)]
+                  : null;
+                const today = format(new Date(), 'yyyy-MM-dd');
+
+                // Get base price: seasonal price for today or fallback to room_price
+                let basePrice: number = 0;
+                if (seasonalPricing) {
+                  basePrice = getLocalPriceForDate(seasonalPricing, today);
+                }
+                if (basePrice <= 0 && room.room_price) {
+                  basePrice =
+                    typeof room.room_price === 'number'
+                      ? room.room_price
+                      : parseFloat(
+                          String(room.room_price).replace(/[^0-9.]/g, '')
+                        ) || 0;
+                }
+
                 // Calculate discounted price if room discount exists
-                let displayPrice: string | number | undefined = room.room_price;
+                let displayPrice: string | number | undefined =
+                  basePrice > 0 ? basePrice : room.room_price;
                 let originalPriceValue: number | undefined = undefined;
                 let discountPercent: number | undefined = undefined;
 
                 if (
                   roomDiscount &&
                   roomDiscount.discount_percentage &&
-                  room.room_price
+                  basePrice > 0
                 ) {
-                  const originalPrice =
-                    typeof room.room_price === 'number'
-                      ? room.room_price
-                      : parseFloat(
-                          String(room.room_price).replace(/[^0-9.]/g, '')
-                        );
-
-                  if (!isNaN(originalPrice)) {
-                    originalPriceValue = originalPrice;
-                    discountPercent = roomDiscount.discount_percentage;
-                    const discountAmount = Math.floor(
-                      originalPrice * (roomDiscount.discount_percentage / 100)
-                    );
-                    displayPrice = originalPrice - discountAmount;
-                  }
+                  originalPriceValue = basePrice;
+                  discountPercent = roomDiscount.discount_percentage;
+                  const discountAmount = Math.floor(
+                    basePrice * (roomDiscount.discount_percentage / 100)
+                  );
+                  displayPrice = basePrice - discountAmount;
                 }
 
                 return (

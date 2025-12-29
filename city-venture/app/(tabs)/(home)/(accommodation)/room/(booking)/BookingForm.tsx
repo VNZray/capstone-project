@@ -33,10 +33,16 @@ const tripPurpose: RadioItem[] = [
   { id: '5', label: 'Other' },
 ];
 
-const bookingTypes: RadioItem[] = [
-  { id: 'overnight', label: 'Overnight Stay (One or more nights)' },
-  { id: 'short-stay', label: 'Short Stay (1 hour or more)' },
-];
+// Booking type options - short-stay only available if room has per_hour_rate set
+const getBookingTypeOptions = (hasHourlyRate: boolean): RadioItem[] => {
+  const options: RadioItem[] = [
+    { id: 'overnight', label: 'Overnight Stay (One or more nights)' },
+  ];
+  if (hasHourlyRate) {
+    options.push({ id: 'short-stay', label: 'Short Stay (1 hour or more)' });
+  }
+  return options;
+};
 
 const hourlyOptions: RadioItem[] = [
   { id: '1', label: '1 Hour' },
@@ -370,14 +376,17 @@ const BookingForm: React.FC<Props> = ({
       <AppHeader backButton title="Booking Form" background="primary" />
       <ScrollView>
         <PageContainer padding={16} gap={16} style={{ paddingBottom: 180 }}>
-          <RadioButton
-            label="Booking Type"
-            items={bookingTypes}
-            value={bookingType}
-            onChange={(item) =>
-              setBookingType(item?.id?.toString() || 'overnight')
-            }
-          />
+          {/* Only show booking type selector if short-stay is available (per_hour_rate is set) */}
+          {roomDetails?.per_hour_rate ? (
+            <RadioButton
+              label="Booking Type"
+              items={getBookingTypeOptions(true)}
+              value={bookingType}
+              onChange={(item) =>
+                setBookingType(item?.id?.toString() || 'overnight')
+              }
+            />
+          ) : null}
 
           {/* Booking Date/Time Display Card */}
           <Pressable style={styles.bookingCard} onPress={navigateToBookingDate}>

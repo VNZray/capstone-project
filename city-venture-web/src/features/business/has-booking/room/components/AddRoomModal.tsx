@@ -109,6 +109,7 @@ export default function AddRoomModal({
     room_type: "",
     capacity: "",
     room_price: "",
+    per_hour_rate: null,
     description: "",
     business_id: businessDetails?.id ?? "",
     status: "Available",
@@ -186,6 +187,7 @@ export default function AddRoomModal({
         room_type: "",
         capacity: "",
         room_price: "",
+        per_hour_rate: null,
         description: "",
         business_id: businessDetails?.id ?? "", // keep it
         status: "Available",
@@ -197,7 +199,7 @@ export default function AddRoomModal({
       setError("");
 
       if (onRoomAdded) onRoomAdded();
-      
+
       // Close modal after a short delay to show success message
       setTimeout(() => {
         onClose();
@@ -207,7 +209,9 @@ export default function AddRoomModal({
         open: true,
         type: "error",
         title: "Failed to Add Room",
-        message: `An unexpected error occurred: ${error instanceof Error ? error.message : "Unknown error"}`,
+        message: `An unexpected error occurred: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`,
       });
     }
   };
@@ -242,7 +246,10 @@ export default function AddRoomModal({
 
             <Grid container spacing={2}>
               <Grid sx={{ paddingLeft: "0" }} xs={4}>
-                <FormControl required error={!!error && error.includes("Room number")}>
+                <FormControl
+                  required
+                  error={!!error && error.includes("Room number")}
+                >
                   <FormLabel>Room Number</FormLabel>
                   <Input
                     size="md"
@@ -416,6 +423,26 @@ export default function AddRoomModal({
                     value={roomData.room_price}
                     onChange={(e) =>
                       setRoomData({ ...roomData, room_price: e.target.value })
+                    }
+                  />
+                </FormControl>
+              </Grid>
+
+              <Grid sx={{ paddingRight: "0" }} xs={6}>
+                <FormControl>
+                  <FormLabel>Per Hour Rate (Short Stay)</FormLabel>
+                  <Input
+                    type="number"
+                    size="md"
+                    placeholder="Leave empty to disable"
+                    value={roomData.per_hour_rate || ""}
+                    onChange={(e) =>
+                      setRoomData({
+                        ...roomData,
+                        per_hour_rate: e.target.value
+                          ? parseFloat(e.target.value)
+                          : null,
+                      })
                     }
                   />
                 </FormControl>

@@ -48,6 +48,7 @@ import {
 import { uploadRoomPhoto } from "@/src/utils/uploadRoomPhoto";
 import type { Amenity } from "@/src/types/Amenity";
 import NoDataFound from "@/src/components/NoDataFound";
+import { SeasonalPricingForm } from "./components/SeasonalPricing";
 
 const RoomEdit = () => {
   const navigate = useNavigate();
@@ -67,6 +68,7 @@ const RoomEdit = () => {
     capacity: "",
     description: "",
     room_price: "",
+    per_hour_rate: "",
   });
 
   const [profileImage, setProfileImage] = useState<string>("");
@@ -102,6 +104,7 @@ const RoomEdit = () => {
         capacity: roomDetails.capacity?.toString() || "",
         description: roomDetails.description || "",
         room_price: roomDetails.room_price?.toString() || "",
+        per_hour_rate: roomDetails.per_hour_rate?.toString() || "",
       });
       if (roomDetails.room_image) {
         setProfileImage(roomDetails.room_image);
@@ -282,6 +285,9 @@ const RoomEdit = () => {
         capacity: parseInt(formData.capacity),
         description: formData.description,
         room_price: parseFloat(formData.room_price),
+        per_hour_rate: formData.per_hour_rate
+          ? parseFloat(formData.per_hour_rate)
+          : null,
         room_image: uploadedPhotoUrl,
       };
 
@@ -860,103 +866,79 @@ const RoomEdit = () => {
 
             {/* Pricing Section */}
             {currentSection === "pricing" && (
-              <Grid container spacing={3}>
-                <Grid xs={12} md={6}>
-                  <FormControl>
-                    <FormLabel>
-                      <Typography.Label size="sm">
-                        Base Price (per night)
-                      </Typography.Label>
-                    </FormLabel>
-                    <Input
-                      type="number"
-                      value={formData.room_price}
-                      onChange={(e) =>
-                        handleInputChange("room_price", e.target.value)
-                      }
-                      placeholder="250"
-                      size="lg"
-                      startDecorator="₱"
-                      endDecorator="per night"
-                    />
-                  </FormControl>
+              <Box>
+                {/* Base Pricing Fields */}
+                <Grid container spacing={3} sx={{ mb: 3 }}>
+                  <Grid xs={12} md={6}>
+                    <FormControl>
+                      <FormLabel>
+                        <Typography.Label size="sm">
+                          Base Price (per night)
+                        </Typography.Label>
+                      </FormLabel>
+                      <Input
+                        type="number"
+                        value={formData.room_price}
+                        onChange={(e) =>
+                          handleInputChange("room_price", e.target.value)
+                        }
+                        placeholder="250"
+                        size="lg"
+                        startDecorator="₱"
+                        endDecorator="per night"
+                      />
+                    </FormControl>
+                  </Grid>
+
+                  <Grid xs={12} md={6}>
+                    <FormControl>
+                      <FormLabel>
+                        <Typography.Label size="sm">
+                          Per Hour Rate (Short Stay)
+                        </Typography.Label>
+                      </FormLabel>
+                      <Input
+                        type="number"
+                        value={formData.per_hour_rate}
+                        onChange={(e) =>
+                          handleInputChange("per_hour_rate", e.target.value)
+                        }
+                        placeholder="Leave empty to disable short stay"
+                        size="lg"
+                        startDecorator="₱"
+                        endDecorator="per hour"
+                      />
+                      <Typography.Body
+                        size="xs"
+                        sx={{ color: "text.secondary", mt: 0.5 }}
+                      >
+                        Set this to enable short-stay (hourly) bookings for this
+                        room
+                      </Typography.Body>
+                    </FormControl>
+                  </Grid>
                 </Grid>
 
-                <Grid xs={12} md={6}>
-                  <FormControl>
-                    <FormLabel>
-                      <Typography.Label size="sm">
-                        Weekend Price (Fri-Sun)
-                      </Typography.Label>
-                    </FormLabel>
-                    <Input
-                      type="number"
-                      placeholder="320"
-                      size="lg"
-                      startDecorator="₱"
-                      endDecorator="per night"
-                    />
-                  </FormControl>
-                </Grid>
+                <Divider sx={{ my: 3 }} />
 
-                <Grid xs={12}>
-                  <Divider sx={{ my: 2 }} />
-                  <Typography.CardSubTitle sx={{ mb: 2 }}>
-                    Seasonal Pricing
-                  </Typography.CardSubTitle>
-                </Grid>
-
-                <Grid xs={12} md={4}>
-                  <FormControl>
-                    <FormLabel>
-                      <Typography.Label size="sm">
-                        Peak Season (Jun-Aug)
-                      </Typography.Label>
-                    </FormLabel>
-                    <Input
-                      type="number"
-                      placeholder="380"
-                      size="lg"
-                      startDecorator="₱"
-                      endDecorator="/night"
-                    />
-                  </FormControl>
-                </Grid>
-
-                <Grid xs={12} md={4}>
-                  <FormControl>
-                    <FormLabel>
-                      <Typography.Label size="sm">
-                        High Season (Dec-Feb)
-                      </Typography.Label>
-                    </FormLabel>
-                    <Input
-                      type="number"
-                      placeholder="320"
-                      size="lg"
-                      startDecorator="₱"
-                      endDecorator="/night"
-                    />
-                  </FormControl>
-                </Grid>
-
-                <Grid xs={12} md={4}>
-                  <FormControl>
-                    <FormLabel>
-                      <Typography.Label size="sm">
-                        Low Season (Mar-May, Sep-Nov)
-                      </Typography.Label>
-                    </FormLabel>
-                    <Input
-                      type="number"
-                      placeholder="250"
-                      size="lg"
-                      startDecorator="₱"
-                      endDecorator="/night"
-                    />
-                  </FormControl>
-                </Grid>
-              </Grid>
+                {/* Seasonal Pricing Form */}
+                {roomDetails?.id && businessDetails?.id && (
+                  <SeasonalPricingForm
+                    businessId={businessDetails.id}
+                    roomId={roomDetails.id}
+                    defaultPrice={Number(formData.room_price) || 0}
+                    onSuccess={() => {
+                      setAlertConfig({
+                        open: true,
+                        type: "success",
+                        title: "Pricing Updated",
+                        message:
+                          "Seasonal pricing has been saved successfully.",
+                      });
+                    }}
+                  />
+                )}
+              </Box>
             )}
 
             {/* Photos Section */}
