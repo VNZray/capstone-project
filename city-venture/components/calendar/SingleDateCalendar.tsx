@@ -255,6 +255,24 @@ const SingleDateCalendar: React.FC<SingleDateCalendarProps> = ({
           );
         })}
       </View>
+
+      {/* Legend */}
+      <View style={styles.legend}>
+        <View style={styles.legendRow}>
+          <View style={styles.legendItem}>
+            <View
+              style={[styles.legendDot, { backgroundColor: theme.warning }]}
+            />
+            <ThemedText type="body-extra-small">Reserved</ThemedText>
+          </View>
+          <View style={styles.legendItem}>
+            <View
+              style={[styles.legendDot, { backgroundColor: theme.error }]}
+            />
+            <ThemedText type="body-extra-small">Occupied / Blocked</ThemedText>
+          </View>
+        </View>
+      </View>
     </View>
   );
 };
@@ -302,5 +320,24 @@ const styles = StyleSheet.create({
   },
   disabledContent: {
     opacity: 0.3,
+  },
+  legend: {
+    marginTop: 16,
+    paddingHorizontal: 8,
+  },
+  legendRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 24,
+  },
+  legendItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  legendDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
   },
 });

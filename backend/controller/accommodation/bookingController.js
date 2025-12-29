@@ -32,6 +32,10 @@ const BOOKING_FIELDS = [
   "room_id",
   "tourist_id",
   "business_id",
+  "booking_source",
+  "guest_name",
+  "guest_phone",
+  "guest_email",
 ];
 
 const makePlaceholders = (n) => Array(n).fill("?").join(", ");
@@ -501,5 +505,337 @@ export async function deleteBooking(req, res) {
     res.status(204).send();
   } catch (err) {
     res.status(500).json({ error: err.message });
+  }
+}
+
+/**
+ * Create a walk-in booking (onsite check-in)
+ * This endpoint allows staff to create a booking for guests who arrive without prior reservation
+ */
+export async function createWalkInBooking(req, res) {
+  try {
+    const {
+      id = uuidv4(),
+      pax,
+      num_children = 0,
+      num_adults = 0,
+      num_infants = 0,
+      foreign_counts = 0,
+      domestic_counts = 0,
+      overseas_counts = 0,
+      local_counts = 0,
+      trip_purpose = "Leisure",
+      booking_type = "overnight",
+      check_in_date,
+      check_out_date,
+      check_in_time = "14:00:00",
+      check_out_time = "12:00:00",
+      total_price,
+      balance = 0,
+      room_id,
+      business_id,
+      // Walk-in specific fields
+      guest_name,
+      guest_phone,
+      guest_email,
+      tourist_id = null, // Optional - if guest has an existing account
+      immediate_checkin = true, // Default to immediate check-in for walk-ins
+    } = req.body;
+
+    // Validation
+    const missing = [];
+    if (pax === undefined) missing.push("pax");
+    if (!check_in_date) missing.push("check_in_date");
+    if (!check_out_date) missing.push("check_out_date");
+    if (!room_id) missing.push("room_id");
+    if (!business_id) missing.push("business_id");
+    if (total_price === undefined) missing.push("total_price");
+    // For walk-ins without tourist_id, require guest_name
+    if (!tourist_id && !guest_name) missing.push("guest_name (required for walk-in without tourist account)");
+
+    if (missing.length) {
+      return res.status(400).json({ error: "Missing required fields", fields: missing });
+    }
+
+    // Check room availability
+    const [availCheck] = await db.query("CALL CheckRoomAvailability(?, ?, ?)", [
+      room_id,
+      check_in_date,
+      check_out_date,
+    ]);
+    const availStatus = availCheck[0]?.[0]?.availability_status;
+    if (availStatus !== "AVAILABLE") {
+      return res.status(409).json({
+        error: "Room is not available for the selected dates",
+        status: availStatus,
+      });
+    }
+
+    // Set booking status based on immediate_checkin flag
+    const booking_status = immediate_checkin ? "Checked-In" : "Reserved";
+    const booking_source = "walk-in";
+
+    const bodyWithDefaults = {
+      pax,
+      num_children,
+      num_adults,
+      num_infants,
+      foreign_counts,
+      domestic_counts,
+      overseas_counts,
+      local_counts,
+      trip_purpose,
+      booking_type,
+      check_in_date,
+      check_out_date,
+      check_in_time,
+      check_out_time,
+      total_price,
+      balance,
+      booking_status,
+      room_id,
+      tourist_id,
+      business_id,
+      booking_source,
+      guest_name,
+      guest_phone,
+      guest_email,
+    };
+
+    const params = buildBookingParams(id, bodyWithDefaults);
+    const placeholders = makePlaceholders(params.length);
+    const [rows] = await db.query(`CALL InsertBooking(${placeholders})`, params);
+
+    const createdBooking = rows[0][0];
+
+    // Update room status to Occupied if immediate check-in
+    if (immediate_checkin && createdBooking) {
+      await db.query("UPDATE room SET status = 'Occupied' WHERE id = ?", [room_id]);
+    }
+
+    // Send notification to tourist if they have an account
+    if (createdBooking && tourist_id) {
+      try {
+        const [businessData] = await db.query("SELECT id, business_name FROM business WHERE id = ?", [business_id]);
+        const [roomData] = await db.query("SELECT id, room_number FROM room WHERE id = ?", [room_id]);
+        const [touristData] = await db.query("CALL GetTouristById(?)", [tourist_id]);
+
+        const businessName = businessData[0]?.business_name || "the accommodation";
+        const roomNumber = roomData[0]?.room_number || "";
+        const touristUserId = touristData[0]?.[0]?.user_id;
+
+        if (touristUserId) {
+          const notifTitle = immediate_checkin ? "Walk-In Check-In Completed" : "Walk-In Booking Confirmed";
+          const notifMessage = immediate_checkin
+            ? `You have been checked in at ${businessName}${roomNumber ? ` (Room ${roomNumber})` : ""}. Enjoy your stay!`
+            : `Your walk-in booking at ${businessName}${roomNumber ? ` (Room ${roomNumber})` : ""} has been confirmed.`;
+
+          await sendNotification(
+            touristUserId,
+            notifTitle,
+            notifMessage,
+            immediate_checkin ? "booking_in_progress" : "booking_confirmed",
+            {
+              booking_id: id,
+              business_id,
+              business_name: businessName,
+              room_id,
+              room_number: roomNumber,
+              check_in_date,
+              check_out_date,
+              booking_source: "walk-in",
+            }
+          );
+        }
+      } catch (notifError) {
+        console.error("Failed to send walk-in booking notification:", notifError);
+      }
+    }
+
+    return res.status(201).json({
+      ...createdBooking,
+      message: immediate_checkin
+        ? "Walk-in guest checked in successfully"
+        : "Walk-in booking created successfully",
+    });
+  } catch (error) {
+    return handleDbError(error, res);
+  }
+}
+
+/**
+ * Search for guests (tourists) by name, phone, or email
+ * Used for walk-in bookings to find existing guest accounts
+ */
+export async function searchGuests(req, res) {
+  try {
+    const { query, business_id } = req.query;
+
+    if (!query || query.length < 2) {
+      return res.status(400).json({ error: "Search query must be at least 2 characters" });
+    }
+
+    const searchTerm = `%${query}%`;
+
+    // Search in tourist and users tables
+    const [rows] = await db.query(`
+      SELECT
+        t.id as tourist_id,
+        t.user_id,
+        t.first_name,
+        t.last_name,
+        CONCAT(t.first_name, ' ', t.last_name) as full_name,
+        u.email,
+        u.phone_number,
+        u.user_profile
+      FROM tourist t
+      JOIN users u ON t.user_id = u.id
+      WHERE
+        CONCAT(t.first_name, ' ', t.last_name) LIKE ?
+        OR t.first_name LIKE ?
+        OR t.last_name LIKE ?
+        OR u.email LIKE ?
+        OR u.phone_number LIKE ?
+      ORDER BY t.first_name, t.last_name
+      LIMIT 20
+    `, [searchTerm, searchTerm, searchTerm, searchTerm, searchTerm]);
+
+    // Optionally get booking history for each guest at this business
+    if (business_id) {
+      for (const guest of rows) {
+        const [bookings] = await db.query(`
+          SELECT COUNT(*) as total_bookings, MAX(created_at) as last_booking
+          FROM booking
+          WHERE tourist_id = ? AND business_id = ?
+        `, [guest.tourist_id, business_id]);
+        guest.booking_history = bookings[0];
+      }
+    }
+
+    res.json(rows);
+  } catch (err) {
+    handleDbError(err, res);
+  }
+}
+
+/**
+ * Get today's arrivals (bookings with check-in date today)
+ */
+export async function getTodaysArrivals(req, res) {
+  try {
+    const { business_id } = req.params;
+
+    if (!business_id) {
+      return res.status(400).json({ error: "business_id is required" });
+    }
+
+    const today = new Date().toISOString().split('T')[0];
+
+    const [rows] = await db.query(`
+      SELECT
+        b.*,
+        r.room_number,
+        r.room_type,
+        t.first_name as tourist_first_name,
+        t.last_name as tourist_last_name,
+        u.email as tourist_email,
+        u.phone_number as tourist_phone
+      FROM booking b
+      LEFT JOIN room r ON b.room_id = r.id
+      LEFT JOIN tourist t ON b.tourist_id = t.id
+      LEFT JOIN users u ON t.user_id = u.id
+      WHERE b.business_id = ?
+        AND b.check_in_date = ?
+        AND b.booking_status IN ('Pending', 'Reserved')
+      ORDER BY b.check_in_time ASC
+    `, [business_id, today]);
+
+    res.json({
+      date: today,
+      total: rows.length,
+      arrivals: rows,
+    });
+  } catch (err) {
+    handleDbError(err, res);
+  }
+}
+
+/**
+ * Get today's departures (bookings with check-out date today)
+ */
+export async function getTodaysDepartures(req, res) {
+  try {
+    const { business_id } = req.params;
+
+    if (!business_id) {
+      return res.status(400).json({ error: "business_id is required" });
+    }
+
+    const today = new Date().toISOString().split('T')[0];
+
+    const [rows] = await db.query(`
+      SELECT
+        b.*,
+        r.room_number,
+        r.room_type,
+        t.first_name as tourist_first_name,
+        t.last_name as tourist_last_name,
+        u.email as tourist_email,
+        u.phone_number as tourist_phone
+      FROM booking b
+      LEFT JOIN room r ON b.room_id = r.id
+      LEFT JOIN tourist t ON b.tourist_id = t.id
+      LEFT JOIN users u ON t.user_id = u.id
+      WHERE b.business_id = ?
+        AND b.check_out_date = ?
+        AND b.booking_status = 'Checked-In'
+      ORDER BY b.check_out_time ASC
+    `, [business_id, today]);
+
+    res.json({
+      date: today,
+      total: rows.length,
+      departures: rows,
+    });
+  } catch (err) {
+    handleDbError(err, res);
+  }
+}
+
+/**
+ * Get currently occupied rooms for a business
+ */
+export async function getCurrentlyOccupied(req, res) {
+  try {
+    const { business_id } = req.params;
+
+    if (!business_id) {
+      return res.status(400).json({ error: "business_id is required" });
+    }
+
+    const [rows] = await db.query(`
+      SELECT
+        b.*,
+        r.room_number,
+        r.room_type,
+        r.floor,
+        COALESCE(CONCAT(t.first_name, ' ', t.last_name), b.guest_name) as guest_name,
+        COALESCE(u.phone_number, b.guest_phone) as guest_phone,
+        DATEDIFF(b.check_out_date, CURDATE()) as nights_remaining
+      FROM booking b
+      LEFT JOIN room r ON b.room_id = r.id
+      LEFT JOIN tourist t ON b.tourist_id = t.id
+      LEFT JOIN users u ON t.user_id = u.id
+      WHERE b.business_id = ?
+        AND b.booking_status = 'Checked-In'
+      ORDER BY r.room_number ASC
+    `, [business_id]);
+
+    res.json({
+      total: rows.length,
+      occupied: rows,
+    });
+  } catch (err) {
+    handleDbError(err, res);
   }
 }

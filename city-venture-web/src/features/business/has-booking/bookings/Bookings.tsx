@@ -3,6 +3,7 @@ import Typography from "@/src/components/Typography";
 import NoDataFound from "@/src/components/NoDataFound";
 import PageContainer from "@/src/components/PageContainer";
 import Alert from "@/src/components/Alert";
+import Button from "@/src/components/Button";
 import {
   Search,
   Check,
@@ -11,8 +12,10 @@ import {
   Clock,
   LogIn,
   LogOut,
+  UserPlus,
 } from "lucide-react";
 import BookingDetails from "./components/BookingDetails";
+import WalkInBookingModal from "./components/WalkInBookingModal";
 import { Input, Box, Typography as JoyTypography } from "@mui/joy"; // Added Box and JoyTypography
 import Container from "@/src/components/Container";
 import { Select, Option } from "@mui/joy";
@@ -83,6 +86,11 @@ const Bookings = () => {
   // State for checkout success alert
   const [checkoutAlertOpen, setCheckoutAlertOpen] = useState(false);
   const [checkoutGuestName, setCheckoutGuestName] = useState<string>("");
+
+  // State for walk-in booking modal
+  const [walkInModalOpen, setWalkInModalOpen] = useState(false);
+  const [walkInSuccessOpen, setWalkInSuccessOpen] = useState(false);
+  const [walkInGuestName, setWalkInGuestName] = useState<string>("");
 
   // Fetch room and guest info for all bookings
   useEffect(() => {
@@ -223,6 +231,31 @@ const Bookings = () => {
     if (!id) return;
     setSelectedBookingId(id);
     setDetailsOpen(true);
+  };
+
+  const handleWalkInSuccess = async (guestName: string) => {
+    setWalkInGuestName(guestName);
+    setWalkInSuccessOpen(true);
+    // Reload bookings to show the new walk-in booking
+    if (businessDetails?.id) {
+      try {
+        const data = await fetchBookingsByBusinessId(businessDetails.id);
+        setBookings(
+          data.map((b) => ({
+            ...b,
+            pax: b.pax ?? 0,
+            total_price: b.total_price ?? 0,
+            balance: b.balance ?? 0,
+            booking_status: normalizeStatus(
+              b.booking_status
+            ) as Booking["booking_status"],
+            trip_purpose: b.trip_purpose || "—",
+          }))
+        );
+      } catch (e) {
+        console.error("Failed to reload bookings after walk-in", e);
+      }
+    }
   };
 
   const selectedBooking = useMemo(
@@ -420,6 +453,15 @@ const Bookings = () => {
           padding="16px 16px 0 16px"
         >
           <Typography.Header>Manage Reservation</Typography.Header>
+          <Button
+            variant="filled"
+            colorScheme="primary"
+            size="md"
+            leftIcon={<UserPlus size={18} />}
+            onClick={() => setWalkInModalOpen(true)}
+          >
+            Walk-In Booking
+          </Button>
         </Container>
 
         {/* Search + Filters */}
@@ -531,6 +573,25 @@ const Bookings = () => {
         type="success"
         title="Booking Completed"
         message={`${checkoutGuestName} has been successfully checked out. A notification has been sent to the tourist thanking them for their stay.`}
+        confirmText="OK"
+        showCancel={false}
+      />
+
+      {/* Walk-In Booking Modal */}
+      <WalkInBookingModal
+        open={walkInModalOpen}
+        onClose={() => setWalkInModalOpen(false)}
+        businessId={businessDetails?.id || ""}
+        onSuccess={handleWalkInSuccess}
+      />
+
+      {/* Walk-In Success Alert */}
+      <Alert
+        open={walkInSuccessOpen}
+        onClose={() => setWalkInSuccessOpen(false)}
+        type="success"
+        title="Walk-In Booking Created"
+        message={`Walk-in booking for ${walkInGuestName} has been successfully created.`}
         confirmText="OK"
         showCancel={false}
       />

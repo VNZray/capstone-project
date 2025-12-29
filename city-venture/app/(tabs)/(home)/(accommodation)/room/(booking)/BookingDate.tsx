@@ -25,6 +25,15 @@ import {
 } from '@/components/calendar';
 import type { DateMarker } from '@/components/calendar';
 import { AppHeader } from '@/components/header/AppHeader';
+import { useRoom } from '@/context/RoomContext';
+import {
+  fetchBookingsByRoomId,
+  generateBookingDateMarkers,
+} from '@/services/BookingService';
+import {
+  fetchBlockedDatesByRoomId,
+  generateBlockedDateMarkers,
+} from '@/services/RoomService';
 
 // Booking type
 export type BookingType = 'overnight' | 'short-stay';
@@ -67,6 +76,7 @@ const TAB_BAR_HEIGHT = 60;
 const BookingDatePage: React.FC = () => {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { roomDetails } = useRoom();
   const params = useLocalSearchParams<{
     bookingType?: string;
     initialStartDate?: string;
@@ -90,7 +100,42 @@ const BookingDatePage: React.FC = () => {
   const minDate = new Date();
   const maxDate = addDays(new Date(), 365);
 
-  // Parse availability data from params
+  // State for fetched markers
+  const [bookingMarkers, setBookingMarkers] = useState<DateMarker[]>([]);
+  const [blockedMarkers, setBlockedMarkers] = useState<DateMarker[]>([]);
+  const [loadingMarkers, setLoadingMarkers] = useState(false);
+
+  // Fetch bookings and blocked dates for the room
+  useEffect(() => {
+    const fetchRoomAvailability = async () => {
+      if (!roomDetails?.id) return;
+
+      setLoadingMarkers(true);
+      try {
+        // Fetch both bookings and blocked dates in parallel
+        const [bookings, blockedDates] = await Promise.all([
+          fetchBookingsByRoomId(roomDetails.id),
+          fetchBlockedDatesByRoomId(roomDetails.id),
+        ]);
+
+        // Generate markers from bookings
+        const bookingDateMarkers = generateBookingDateMarkers(bookings);
+        setBookingMarkers(bookingDateMarkers);
+
+        // Generate markers from blocked dates
+        const blockedDateMarkers = generateBlockedDateMarkers(blockedDates);
+        setBlockedMarkers(blockedDateMarkers);
+      } catch (error) {
+        console.error('Failed to fetch room availability:', error);
+      } finally {
+        setLoadingMarkers(false);
+      }
+    };
+
+    fetchRoomAvailability();
+  }, [roomDetails?.id]);
+
+  // Parse availability data from params (legacy support)
   const availabilityData: DateAvailabilityInfo[] = useMemo(() => {
     if (!params.availabilityData) return [];
     try {
@@ -149,14 +194,18 @@ const BookingDatePage: React.FC = () => {
 
   // Convert availability data to date markers
   const dateMarkers: DateMarker[] = useMemo(() => {
-    return availabilityData
+    // Start with param-based availability data (legacy support)
+    const paramMarkers = availabilityData
       .filter((item) => item.status !== 'available')
       .map((item) => ({
         date: item.date,
         status: availabilityToMarkerStatus(item.status),
         label: item.status,
       }));
-  }, [availabilityData]);
+
+    // Combine all markers: bookings + blocked dates + param-based
+    return [...bookingMarkers, ...blockedMarkers, ...paramMarkers];
+  }, [availabilityData, bookingMarkers, blockedMarkers]);
 
   // Handle date range selection (for overnight)
   const handleRangeSelect = useCallback((start: Date, end: Date | null) => {
