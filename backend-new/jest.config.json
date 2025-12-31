@@ -1,0 +1,27 @@
+{
+  "testEnvironment": "node",
+  "testMatch": ["**/tests/**/*.test.js"],
+  "setupFilesAfterEnv": ["<rootDir>/tests/setup.test.js"],
+  "moduleFileExtensions": ["js", "json"],
+  "collectCoverageFrom": [
+    "src/**/*.js",
+    "!src/migrations/**",
+    "!src/seeders/**",
+    "!src/scripts/**"
+  ],
+  "coverageDirectory": "coverage",
+  "coverageReporters": ["text", "lcov", "html"],
+  "coverageThreshold": {
+    "global": {
+      "branches": 50,
+      "functions": 50,
+      "lines": 50,
+      "statements": 50
+    }
+  },
+  "verbose": true,
+  "detectOpenHandles": true,
+  "forceExit": true,
+  "testTimeout": 30000,
+  "transform": {}
+}

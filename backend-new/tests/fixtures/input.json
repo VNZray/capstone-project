@@ -1,0 +1,85 @@
+{
+  "users": {
+    "tourist": {
+      "email": "test.tourist@example.com",
+      "phone_number": "+639111111111",
+      "password": "TestPassword123!",
+      "first_name": "Test",
+      "last_name": "Tourist"
+    },
+    "owner": {
+      "email": "test.owner@example.com",
+      "phone_number": "+639222222222",
+      "password": "OwnerPassword123!",
+      "first_name": "Test",
+      "last_name": "Owner"
+    },
+    "admin": {
+      "email": "test.admin@example.com",
+      "phone_number": "+639333333333",
+      "password": "AdminPassword123!",
+      "first_name": "Test",
+      "last_name": "Admin"
+    }
+  },
+  "businesses": {
+    "hotel": {
+      "business_name": "Test Hotel",
+      "description": "A test hotel for testing",
+      "email": "test.hotel@example.com",
+      "phone_number": "+639444444444",
+      "address": "123 Test St, Lagao",
+      "latitude": "6.1164",
+      "longitude": "125.1716",
+      "has_booking": true,
+      "has_store": false,
+      "has_services": true
+    },
+    "shop": {
+      "business_name": "Test Shop",
+      "description": "A test shop for testing",
+      "email": "test.shop@example.com",
+      "phone_number": "+639555555555",
+      "address": "456 Shop St, Bula",
+      "latitude": "6.1200",
+      "longitude": "125.1800",
+      "has_booking": false,
+      "has_store": true,
+      "has_services": false
+    }
+  },
+  "rooms": {
+    "standard": {
+      "room_name": "Test Standard Room",
+      "room_number": "101",
+      "room_type": "Standard",
+      "max_occupancy": 2,
+      "base_price": 1500.0,
+      "status": "Available"
+    },
+    "deluxe": {
+      "room_name": "Test Deluxe Room",
+      "room_number": "201",
+      "room_type": "Deluxe",
+      "max_occupancy": 3,
+      "base_price": 2500.0,
+      "status": "Available"
+    }
+  },
+  "bookings": {
+    "upcoming": {
+      "check_in_date": "2025-02-01",
+      "check_out_date": "2025-02-03",
+      "guest_count": 2,
+      "total_amount": 3000.0,
+      "status": "Confirmed"
+    },
+    "past": {
+      "check_in_date": "2024-12-01",
+      "check_out_date": "2024-12-03",
+      "guest_count": 1,
+      "total_amount": 3000.0,
+      "status": "CheckedOut"
+    }
+  }
+}
