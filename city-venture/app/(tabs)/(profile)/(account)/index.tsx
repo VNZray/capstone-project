@@ -25,7 +25,7 @@ import ChangeBirthday from './components/ChangeBirthday';
 import ChangeGender from './components/ChangeGender';
 import ChangeNationality from './components/ChangeNationality';
 import ChangePhoneNumber from './components/ChangePhoneNumber';
-import ChangeAddress from './components/ChangeAddraess';
+import ChangeAddress from './components/ChangeAddress';
 
 const ProfileInformation = () => {
   const scheme = useColorScheme();

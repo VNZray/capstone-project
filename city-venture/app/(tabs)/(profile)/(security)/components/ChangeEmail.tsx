@@ -260,7 +260,7 @@ const ChangeEmail: React.FC<ChangeEmailProps> = ({
 
       case 'email':
         return (
-          <>
+          <Container backgroundColor="transparent">
             <View style={styles.stepIndicator}>
               <View style={[styles.stepDot, styles.stepCompleted]}>
                 <Ionicons name="checkmark" size={12} color="#FFFFFF" />
@@ -325,12 +325,12 @@ const ChangeEmail: React.FC<ChangeEmailProps> = ({
                 Back
               </ThemedText>
             </Pressable>
-          </>
+          </Container>
         );
 
       case 'otp':
         return (
-          <>
+          <Container backgroundColor="transparent">
             <View style={styles.stepIndicator}>
               <View style={[styles.stepDot, styles.stepCompleted]}>
                 <Ionicons name="checkmark" size={12} color="#FFFFFF" />
@@ -416,7 +416,7 @@ const ChangeEmail: React.FC<ChangeEmailProps> = ({
                 Back
               </ThemedText>
             </Pressable>
-          </>
+          </Container>
         );
 
       case 'success':

@@ -52,3 +52,22 @@ export const deleteFavorite = async (
   );
   return data;
 };
+
+/** Check if a favorite exists */
+export const checkFavoriteExists = async (
+  touristId: string,
+  favoriteType: FavoriteType,
+  myFavoriteId: string
+): Promise<{ exists: boolean; favoriteId: string | null }> => {
+  const { data } = await apiClient.get<{
+    exists: boolean;
+    favoriteId: string | null;
+  }>('/favorite/check', {
+    params: {
+      tourist_id: touristId,
+      favorite_type: favoriteType,
+      my_favorite_id: myFavoriteId,
+    },
+  });
+  return data;
+};

@@ -63,7 +63,7 @@ export const Routes = {
   accommodation: {
     index: '/(tabs)/(home)/(accommodation)',
     profile: (id: string) => ({
-      pathname: '/(tabs)/(home)/(accommodation)/profile' as const,
+      pathname: '/(tabs)/(home)/(accommodation)/profile/profile' as const,
       params: { id },
     }),
     room: {
@@ -161,7 +161,7 @@ export const Routes = {
   spot: {
     index: '/(tabs)/(home)/(spot)',
     profile: (id: string) => ({
-      pathname: '/(tabs)/(home)/(spot)/[id]' as const,
+      pathname: '/(tabs)/(home)/(spot)/profile/profile' as const,
       params: { id },
     }),
   },
@@ -207,6 +207,7 @@ export const Routes = {
       submit: '/(tabs)/(profile)/(reports)/submit',
       myReports: '/(tabs)/(profile)/(reports)/my-reports',
     },
+    reviews: '/(tabs)/(profile)/(reviews)',
     terms: '/(tabs)/(profile)/(terms-and-conditions)',
     privacy: '/(tabs)/(profile)/(privacy-policy)',
   },

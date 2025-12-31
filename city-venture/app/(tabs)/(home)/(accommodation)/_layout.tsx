@@ -50,9 +50,9 @@ const AccommodationLayout = () => {
                     >
                       <HeaderButton
                         onPress={toggleFavorite}
-                        icon={favorite ? 'heart.fill' : 'heart'}
+                        icon={favorite ? 'heart' : 'heart'}
                       />
-                      <HeaderButton icon="paperplane.fill" />
+                      <HeaderButton icon="heart" />
                     </Container>
                   }
                 />

@@ -3,6 +3,7 @@ import {
   getAllReviews,
   getReviewById,
   getReviewsByTypeAndEntityId,
+  getReviewsByTouristId,
   insertReview,
   updateReview,
   deleteReview,
@@ -16,6 +17,7 @@ const router = express.Router();
 // Reviews CRUD
 router.get("/", getAllReviews);
 router.get("/type/:review_type/:review_type_id", getReviewsByTypeAndEntityId);
+router.get("/tourist/:touristId", authenticate, getReviewsByTouristId);
 router.get("/:id", getReviewById);
 router.post("/", authenticate, insertReview);
 router.patch("/:id", authenticate, updateReview);

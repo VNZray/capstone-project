@@ -10,9 +10,13 @@ router.post("/", touristController.createTourist);
 
 // All other routes require authentication
 router.get("/", authenticate, touristController.getAllTourists);
-router.get("/:id", authenticate,touristController.getTouristById);
-router.delete("/:id", authenticate,  touristController.deleteTourist);
-router.put("/:id", authenticate, touristController.updateTourist);
+
+// Specific routes MUST come before parameterized routes
 router.get("/user/:user_id", authenticate, touristController.getTouristByUserId);
+
+// Parameterized routes
+router.get("/:id", authenticate, touristController.getTouristById);
+router.delete("/:id", authenticate, touristController.deleteTourist);
+router.put("/:id", authenticate, touristController.updateTourist);
 
 export default router;

@@ -19,20 +19,24 @@ type LocationType = 'accommodation' | 'shop' | 'tourist-spot';
 interface CustomMarkerProps {
   location: LocationData;
   locationType: LocationType;
+  displayCoords?: { latitude: number; longitude: number };
   onPress: () => void;
 }
 
 const CustomMarker: React.FC<CustomMarkerProps> = ({
   location,
   locationType,
+  displayCoords,
   onPress,
 }) => {
   const isBusiness = (loc: LocationData): loc is Business => {
     return 'business_name' in loc;
   };
 
-  const latitude = Number(location.latitude) || 0;
-  const longitude = Number(location.longitude) || 0;
+  // Use displayCoords if provided, otherwise fall back to location coords
+  const latitude = displayCoords?.latitude ?? (Number(location.latitude) || 0);
+  const longitude =
+    displayCoords?.longitude ?? (Number(location.longitude) || 0);
 
   const image = isBusiness(location)
     ? location.business_image

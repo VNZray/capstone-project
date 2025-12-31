@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { Pressable, StyleSheet, View, TextInput } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import BottomSheetModal from '@/components/ui/BottomSheetModal';
 import { Ionicons } from '@expo/vector-icons';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { Colors } from '@/constants/color';
 import { ThemedText } from '@/components/themed-text';
 import Button from '@/components/Button';
+import Dropdown from '@/components/Dropdown';
 import { updateTourist, getTouristByUserId } from '@/services/TouristService';
 import { useAuth } from '@/context/AuthContext';
 import Container from '@/components/Container';
@@ -40,6 +41,12 @@ const NATIONALITIES = [
   'Vietnamese',
 ].sort();
 
+// Convert to dropdown items format
+const NATIONALITY_ITEMS = NATIONALITIES.map((nationality) => ({
+  id: nationality,
+  label: nationality,
+}));
+
 const ChangeNationality: React.FC<ChangeNationalityProps> = ({
   visible,
   onClose,
@@ -51,18 +58,15 @@ const ChangeNationality: React.FC<ChangeNationalityProps> = ({
 
   const textColor = isDark ? '#ECEDEE' : '#0D1B2A';
   const subTextColor = isDark ? '#9BA1A6' : '#6B7280';
+  const cardBg = isDark ? '#1E293B' : '#F8FAFC';
+  const borderColor = isDark ? '#374151' : '#E5E7EB';
 
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedNationality, setSelectedNationality] = useState('');
+  const [selectedNationality, setSelectedNationality] = useState<string | null>(
+    null
+  );
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [touristId, setTouristId] = useState<string>('');
-
-  const filteredNationalities = !searchQuery.trim()
-    ? NATIONALITIES
-    : NATIONALITIES.filter((nationality) =>
-        nationality.toLowerCase().includes(searchQuery.toLowerCase())
-      );
 
   useEffect(() => {
     if (visible) {
@@ -76,8 +80,7 @@ const ChangeNationality: React.FC<ChangeNationalityProps> = ({
       if (user?.user_id) {
         const tourist = await getTouristByUserId(user.user_id);
         setTouristId(tourist.id || '');
-        setSelectedNationality(tourist.nationality || '');
-        setSearchQuery(tourist.nationality || '');
+        setSelectedNationality(tourist.nationality || null);
       }
     } catch (err) {
       console.error('Error loading tourist data:', err);
@@ -86,20 +89,17 @@ const ChangeNationality: React.FC<ChangeNationalityProps> = ({
 
   const handleClose = () => {
     setError('');
-    setSearchQuery('');
     onClose();
   };
 
-  const handleSelectNationality = (nationality: string) => {
-    setSelectedNationality(nationality);
-    setSearchQuery(nationality);
+  const handleNationalitySelect = (item: { id: string | number } | null) => {
+    setSelectedNationality(item?.id as string | null);
+    setError('');
   };
 
   const handleSave = async () => {
-    const nationality = selectedNationality || searchQuery.trim();
-
-    if (!nationality) {
-      setError('Please select or enter a nationality.');
+    if (!selectedNationality) {
+      setError('Please select a nationality.');
       return;
     }
 
@@ -108,12 +108,12 @@ const ChangeNationality: React.FC<ChangeNationalityProps> = ({
 
     try {
       await updateTourist(touristId, {
-        nationality,
+        nationality: selectedNationality,
       });
 
       // Update auth context
       await updateUser({
-        nationality,
+        nationality: selectedNationality,
       });
 
       console.log('✅ Nationality updated successfully');
@@ -136,84 +136,52 @@ const ChangeNationality: React.FC<ChangeNationalityProps> = ({
       isOpen={visible}
       onClose={handleClose}
       headerTitle="Edit Nationality"
-      snapPoints={['75%']}
+      snapPoints={['55%']}
       content={
         <Container backgroundColor="transparent">
-          <View style={styles.searchContainer}>
-            <Ionicons
-              name="search"
-              size={20}
-              color={subTextColor}
-              style={styles.searchIcon}
-            />
-            <TextInput
-              style={[styles.searchInput, { color: textColor }]}
-              placeholder="Search or type nationality..."
-              placeholderTextColor={subTextColor}
-              value={searchQuery}
-              onChangeText={setSearchQuery}
-              autoCorrect={false}
-            />
-            {searchQuery.length > 0 && (
-              <Pressable
-                onPress={() => setSearchQuery('')}
-                style={styles.clearButton}
-              >
-                <Ionicons name="close-circle" size={20} color={subTextColor} />
-              </Pressable>
-            )}
-          </View>
-
-          {filteredNationalities.map((item) => (
-            <Pressable
-              key={item}
+          {/* Current Nationality Display */}
+          {user?.nationality && (
+            <View
               style={[
-                styles.nationalityItem,
-                selectedNationality === item && styles.nationalityItemSelected,
+                styles.currentValueContainer,
+                { backgroundColor: cardBg, borderColor },
               ]}
-              onPress={() => handleSelectNationality(item)}
             >
-              <ThemedText
-                type="body-medium"
-                weight={selectedNationality === item ? 'semi-bold' : 'normal'}
-                style={{
-                  color:
-                    selectedNationality === item
-                      ? Colors.light.primary
-                      : textColor,
-                }}
-              >
-                {item}
-              </ThemedText>
-              {selectedNationality === item && (
-                <Ionicons
-                  name="checkmark-circle"
-                  size={24}
-                  color={Colors.light.primary}
-                />
-              )}
-            </Pressable>
-          ))}
-
-          {filteredNationalities.length === 0 && (
-            <View style={styles.emptyContainer}>
-              <Ionicons name="search-outline" size={48} color={subTextColor} />
-              <ThemedText
-                type="body-medium"
-                style={{ color: subTextColor, marginTop: 8 }}
-              >
-                No matching nationalities found
-              </ThemedText>
-              {searchQuery.trim() && (
+              <View style={styles.currentValueIcon}>
+                <Ionicons name="globe" size={20} color={Colors.light.primary} />
+              </View>
+              <View style={styles.currentValueContent}>
                 <ThemedText
-                  type="body-small"
-                  style={{ color: subTextColor, marginTop: 4 }}
+                  type="label-small"
+                  style={{ color: subTextColor, marginBottom: 2 }}
                 >
-                  You can still save &ldquo;{searchQuery.trim()}&rdquo;
+                  Current Nationality
                 </ThemedText>
-              )}
+                <ThemedText
+                  type="body-medium"
+                  weight="semi-bold"
+                  style={{ color: textColor }}
+                >
+                  {user.nationality}
+                </ThemedText>
+              </View>
             </View>
           )}
+
+          {/* Nationality Dropdown */}
+          <Dropdown
+            label="Nationality"
+            placeholder="Search and select nationality..."
+            items={NATIONALITY_ITEMS}
+            value={selectedNationality}
+            onSelect={handleNationalitySelect}
+            searchable
+            searchPlaceholder="Search nationalities..."
+            variant="outlined"
+            elevation={2}
+            clearable
+            required
+          />
 
           {error && (
             <View style={styles.errorContainer}>
@@ -246,49 +214,25 @@ const ChangeNationality: React.FC<ChangeNationalityProps> = ({
 export default ChangeNationality;
 
 const styles = StyleSheet.create({
-  searchContainer: {
+  currentValueContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F3F4F6',
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    marginBottom: 16,
-  },
-  searchIcon: {
-    marginRight: 8,
-  },
-  searchInput: {
-    flex: 1,
-    paddingVertical: 12,
-    fontSize: 16,
-  },
-  clearButton: {
-    padding: 4,
-  },
-  listContent: {
-    flexGrow: 1,
-    paddingBottom: 16,
-  },
-  nationalityItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
     padding: 16,
     borderRadius: 12,
-    marginBottom: 8,
-    borderWidth: 2,
-    borderColor: '#E3E7EF',
-    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    marginBottom: 20,
+    gap: 12,
   },
-  nationalityItemSelected: {
-    borderColor: Colors.light.primary,
-    backgroundColor: 'rgba(99, 102, 241, 0.05)',
-  },
-  emptyContainer: {
-    flex: 1,
+  currentValueIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(99, 102, 241, 0.1)',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 40,
+  },
+  currentValueContent: {
+    flex: 1,
   },
   errorContainer: {
     flexDirection: 'row',
@@ -296,7 +240,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(185, 28, 28, 0.1)',
     padding: 12,
     borderRadius: 8,
-    marginBottom: 12,
+    marginTop: 12,
   },
   errorText: {
     color: Colors.light.error,

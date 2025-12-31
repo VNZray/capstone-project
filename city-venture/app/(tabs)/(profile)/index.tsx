@@ -94,6 +94,7 @@ const Profile = () => {
   const onSettings = () => push(Routes.profile.settings);
   const onBookings = () => push(Routes.profile.bookings.index);
   const onReports = () => push(Routes.profile.reports.index);
+  const onReviews = () => push(Routes.profile.reviews);
   const onSecurity = () => push(Routes.profile.security);
   const onRateApp = () => push(Routes.profile.rateApp);
 
@@ -191,6 +192,15 @@ const Profile = () => {
               iconBg="#FEF3C7"
               label="Transaction History"
               onPress={onTransactions}
+              border={border}
+            />
+
+            <MenuItem
+              icon="chatbubble-ellipses-outline"
+              iconColor="#EC4899"
+              iconBg="#FCE7F3"
+              label="My Reviews"
+              onPress={onReviews}
               border={border}
             />
 

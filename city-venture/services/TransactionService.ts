@@ -39,7 +39,7 @@ export interface PaymentResponse {
     payer_type: PayerType;
     payment_type?: PaymentType;
     payment_method: PaymentMethod;
-    amount: number; // Amount in cents (backend stores as decimal but API returns cents)
+    amount: number; // Amount in PHP pesos (backend stores as decimal(10,2))
     status: PaymentStatus;
     payment_for?: PaymentFor;
     payer_id: string;
@@ -340,7 +340,7 @@ class TransactionService {
             title: this.formatPaymentTitle(payment),
             date: payment.created_at,
             status: payment.status,
-            amount: payment.amount / 100, // Convert cents to PHP
+            amount: payment.amount, // Amount already in PHP pesos from backend
             payment_method:
                 payment.payment_method?.replace('_', ' ').toUpperCase() || 'Unknown',
             payment_for: payment.payment_for || 'order',
@@ -382,11 +382,13 @@ class TransactionService {
     }
 
     /**
-     * Format amount from cents to PHP with currency symbol
+     * Format amount to PHP with currency symbol
      */
-    formatAmount(amountInCents: number): string {
-        const amount = amountInCents / 100;
-        return `₱${amount.toFixed(2)}`;
+    formatAmount(amount: number): string {
+        return `₱${amount.toLocaleString('en-PH', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+        })}`;
     }
 
     /**
