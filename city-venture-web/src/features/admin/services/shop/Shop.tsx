@@ -133,7 +133,7 @@ const Shop: React.FC = () => {
   const fetchShops = async () => {
     setLoading(true);
     try {
-      const response = await getData("business");
+      const response = await getData("businesses");
       console.log("All businesses fetched:", response);
 
       // Filter for shop type businesses (hasStore = true or 1, or hasBooking = false/0)

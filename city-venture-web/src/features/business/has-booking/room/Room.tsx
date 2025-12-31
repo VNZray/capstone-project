@@ -97,7 +97,7 @@ const RoomPage = () => {
 
   const fetchRooms = async () => {
     if (!businessDetails?.id) return;
-    const response = await getData("room");
+    const response = await getData("rooms");
     const filtered = Array.isArray(response)
       ? response.filter((room) => room.business_id === businessDetails.id)
       : [];

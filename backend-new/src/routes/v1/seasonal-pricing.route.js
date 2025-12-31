@@ -10,19 +10,28 @@ import { authorizeRoles } from '../../middlewares/authorize.js';
 
 const router = Router();
 
-// Public routes
+// Public routes - specific routes BEFORE parameterized routes
 router.get('/', asyncHandler(seasonalPricingController.getAllSeasonalPricing));
-router.get('/:id', asyncHandler(seasonalPricingController.getSeasonalPricingById));
 router.get('/business/:businessId', asyncHandler(seasonalPricingController.getSeasonalPricingByBusinessId));
 router.get('/room/:roomId', asyncHandler(seasonalPricingController.getSeasonalPricingByRoomId));
 router.get('/room/:roomId/calculate', asyncHandler(seasonalPricingController.calculatePriceForDate));
 router.get('/room/:roomId/calculate-range', asyncHandler(seasonalPricingController.calculatePriceForRange));
+router.get('/:id', asyncHandler(seasonalPricingController.getSeasonalPricingById));
 
-// Protected routes
+// Protected routes - specific routes BEFORE parameterized routes
+
+// Upsert (create or update) seasonal pricing - MUST be before /:id routes
+router.post(
+  '/upsert',
+  authenticate,
+  authorizeRoles('Tourism Admin', 'Admin', 'Business Owner', 'Manager', 'Room Manager'),
+  asyncHandler(seasonalPricingController.upsertSeasonalPricing)
+);
+
 router.post(
   '/',
   authenticate,
-  authorizeRoles('Tourism Admin', 'Admin', 'Business Owner'),
+  authorizeRoles('Tourism Admin', 'Admin', 'Business Owner', 'Manager', 'Room Manager'),
   asyncHandler(seasonalPricingController.createSeasonalPricing)
 );
 

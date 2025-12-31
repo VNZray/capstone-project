@@ -52,8 +52,7 @@ import { AuthProvider } from "../context/AuthContext";
 import { BusinessProvider } from "../context/BusinessContext";
 
 // Services & Types
-import api from "../services/api";
-import type { User } from "../types/User";
+import { apiV1 } from "../services/api";
 import Loading from "../components/ui/Loading";
 
 export default function AppRoutes() {
@@ -64,10 +63,17 @@ export default function AppRoutes() {
 
   const checkServerStatus = async () => {
     try {
-      const { data } = await axios.get<User[]>(`${api}/users`, {
+      // Use the new backend health endpoint
+      // apiV1 is like http://localhost:3000/api/v1, we need http://localhost:3000/health
+      const baseUrl = apiV1.replace(/\/api\/v1$/, "").replace(/\/api$/, "");
+      const { data } = await axios.get<{
+        success?: boolean;
+        data?: { status: string };
+      }>(`${baseUrl}/health`, {
         timeout: 5000,
       });
-      setIsServerUp(Array.isArray(data));
+      // New backend returns { success: true, data: { status: 'healthy' } }
+      setIsServerUp(data?.success === true || data?.data?.status === "healthy");
     } catch (error) {
       console.error("Server status check failed:", error);
       setIsServerUp(false);

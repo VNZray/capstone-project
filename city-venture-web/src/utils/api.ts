@@ -40,22 +40,22 @@ class ApiService {
 
   // Featured management
   async getFeaturedTouristSpots(): Promise<TouristSpot[]> {
-    const response: AxiosResponse<ApiResponse<TouristSpot[]>> = await api.get('/tourist-spots/featured/list');
+    const response: AxiosResponse<ApiResponse<TouristSpot[]>> = await api.get('/tourist-spots/featured');
     return response.data.data || [];
   }
 
   async getNonFeaturedTouristSpots(): Promise<TouristSpot[]> {
-    const response: AxiosResponse<ApiResponse<TouristSpot[]>> = await api.get('/tourist-spots/featured/non-featured');
+    const response: AxiosResponse<ApiResponse<TouristSpot[]>> = await api.get('/tourist-spots?featured=false');
     return response.data.data || [];
   }
 
   async featureTouristSpot(id: string): Promise<ApiResponse<void>> {
-    const response: AxiosResponse<ApiResponse<void>> = await api.put(`/tourist-spots/featured/${id}`);
+    const response: AxiosResponse<ApiResponse<void>> = await api.patch(`/tourist-spots/${id}`, { is_featured: true });
     return response.data;
   }
 
   async unfeatureTouristSpot(id: string): Promise<ApiResponse<void>> {
-    const response: AxiosResponse<ApiResponse<void>> = await api.delete(`/tourist-spots/featured/${id}`);
+    const response: AxiosResponse<ApiResponse<void>> = await api.patch(`/tourist-spots/${id}`, { is_featured: false });
     return response.data;
   }
 
@@ -141,36 +141,15 @@ class ApiService {
 
 
   private approvalPathsFor(entity: EntityType) {
-    switch (entity) {
-      case 'tourist_spots':
-        return {
-          pendingNew: '/approval/pending-spots',
-          pendingEdits: '/approval/pending-edits',
-          approveNew: (id: string) => `/approval/approve-spot/${id}`,
-          approveEdit: (id: string) => `/approval/approve-edit/${id}`,
-          rejectNew: (id: string) => `/approval/reject-spot/${id}`,
-          rejectEdit: (id: string) => `/approval/reject-edit/${id}`,
-        } as const;
-      case 'businesses':
-        return {
-          pendingNew: '/approval/pending-businesses',
-          pendingEdits: '/approval/businesses/pending-edits',
-          approveNew: (id: string) => `/approval/approve-business/${id}`,
-          approveEdit: (id: string) => `/approval/businesses/approve-edit/${id}`,
-          rejectNew: (id: string) => `/approval/reject-business/${id}`,
-          rejectEdit: (id: string) => `/approval/businesses/reject-edit/${id}`,
-        } as const;
-      case 'events':
-      default:
-        return {
-          pendingNew: `/approval/${entity}/pending`,
-          pendingEdits: `/approval/${entity}/pending-edits`,
-          approveNew: (id: string) => `/approval/${entity}/approve/${id}`,
-          approveEdit: (id: string) => `/approval/${entity}/approve-edit/${id}`,
-          rejectNew: (id: string) => `/approval/${entity}/reject/${id}`,
-          rejectEdit: (id: string) => `/approval/${entity}/reject-edit/${id}`,
-        } as const;
-    }
+    // New v1 API uses unified approval endpoints with entityType parameter
+    return {
+      pendingNew: `/approvals/pending?entityType=${entity}`,
+      pendingEdits: `/approvals/pending?entityType=${entity}&editOnly=true`,
+      approveNew: (id: string) => `/approvals/${entity}/${id}/approve`,
+      approveEdit: (id: string) => `/approvals/${entity}/${id}/approve`,
+      rejectNew: (id: string) => `/approvals/${entity}/${id}/reject`,
+      rejectEdit: (id: string) => `/approvals/${entity}/${id}/reject`,
+    } as const;
   }
 
   async getPendingItems(entity: EntityType): Promise<unknown[]> {
@@ -187,25 +166,25 @@ class ApiService {
 
   async approveNewEntity(entity: EntityType, id: string): Promise<ApiResponse<void>> {
     const paths = this.approvalPathsFor(entity);
-    const response: AxiosResponse<ApiResponse<void>> = await api.put(paths.approveNew(id));
+    const response: AxiosResponse<ApiResponse<void>> = await api.post(paths.approveNew(id));
     return response.data;
   }
 
   async approveEditEntity(entity: EntityType, id: string): Promise<ApiResponse<void>> {
     const paths = this.approvalPathsFor(entity);
-    const response: AxiosResponse<ApiResponse<void>> = await api.put(paths.approveEdit(id));
+    const response: AxiosResponse<ApiResponse<void>> = await api.post(paths.approveEdit(id));
     return response.data;
   }
 
   async rejectNewEntity(entity: EntityType, id: string, reason?: string): Promise<ApiResponse<void>> {
     const paths = this.approvalPathsFor(entity);
-    const response: AxiosResponse<ApiResponse<void>> = await api.put(paths.rejectNew(id), { reason });
+    const response: AxiosResponse<ApiResponse<void>> = await api.post(paths.rejectNew(id), { reason });
     return response.data;
   }
 
   async rejectEditEntity(entity: EntityType, id: string, reason?: string): Promise<ApiResponse<void>> {
     const paths = this.approvalPathsFor(entity);
-    const response: AxiosResponse<ApiResponse<void>> = await api.put(paths.rejectEdit(id), { reason });
+    const response: AxiosResponse<ApiResponse<void>> = await api.post(paths.rejectEdit(id), { reason });
     return response.data;
   }
 
@@ -246,7 +225,7 @@ class ApiService {
       switch (targetType) {
         case 'business':
           try {
-            const res = await api.get(`/business/${targetId}`);
+            const res = await api.get(`/businesses/${targetId}`);
             const b = (res.data?.data || res.data) as { business_name?: string };
             return { name: b.business_name || `Business ${targetId}`, type: 'Business' };
           } catch {
@@ -261,7 +240,7 @@ class ApiService {
           return { name: `Event ${targetId}`, type: 'Event' };
         case 'accommodation':
           try {
-            const res = await api.get(`/business/${targetId}`);
+            const res = await api.get(`/businesses/${targetId}`);
             const b = (res.data?.data || res.data) as { business_name?: string };
             return { name: b.business_name || `Accommodation ${targetId}`, type: 'Accommodation' };
           } catch {
@@ -378,11 +357,11 @@ class ApiService {
   // ===== BUSINESS MANAGEMENT =====
   async getBusinesses(): Promise<any[]> {
     try {
-      console.debug('[apiService] GET /business');
-      const response: AxiosResponse<ApiResponse<any[]>> = await api.get('/business');
+      console.debug('[apiService] GET /businesses');
+      const response: AxiosResponse<ApiResponse<any[]>> = await api.get('/businesses');
       return (response.data as any).data ?? (response.data as any);
     } catch (err: any) {
-      console.error('[apiService] Failed GET /business', {
+      console.error('[apiService] Failed GET /businesses', {
         message: err?.message,
         status: err?.response?.status,
         data: err?.response?.data,
@@ -394,11 +373,11 @@ class ApiService {
   // ===== ROLES =====
   async getUserRoles(): Promise<UserRoles[]> {
     try {
-      console.debug('[apiService] GET /user-roles');
-      const response: AxiosResponse<ApiResponse<UserRoles[]>> = await api.get('/user-roles');
+      console.debug('[apiService] GET /roles');
+      const response: AxiosResponse<ApiResponse<UserRoles[]>> = await api.get('/roles');
       return (response.data as any).data ?? (response.data as any);
     } catch (err: any) {
-      console.error('[apiService] Failed GET /user-roles', {
+      console.error('[apiService] Failed GET /roles', {
         message: err?.message,
         status: err?.response?.status,
         data: err?.response?.data,

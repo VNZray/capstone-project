@@ -2,6 +2,7 @@
  * Seasonal Pricing Types
  *
  * Defines types for seasonal and weekend pricing configurations
+ * Uses month-based seasons (peak, high, low) and weekend day pricing
  */
 
 export type SeasonType = 'peak' | 'high' | 'low' | 'base';

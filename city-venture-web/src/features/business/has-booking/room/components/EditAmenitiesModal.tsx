@@ -1,10 +1,5 @@
 import * as React from "react";
-import {
-  FormLabel,
-  FormControl,
-  Autocomplete,
-  Chip,
-} from "@mui/joy";
+import { FormLabel, FormControl, Autocomplete, Chip } from "@mui/joy";
 import { deleteData, getData, insertData } from "@/src/services/Service";
 import type { Amenity } from "@/src/types/Amenity";
 import BaseEditModal from "@/src/components/BaseEditModal";
@@ -43,8 +38,10 @@ const EditAmenitiesModal: React.FC<EditBusinessModalProps> = ({
   // get amenities
   const fetchAmenities = async () => {
     const response = await getData("amenities");
-    if (response) {
+    if (response && Array.isArray(response)) {
       setAmenities(response);
+    } else {
+      setAmenities([]);
     }
   };
 
@@ -153,93 +150,92 @@ const EditAmenitiesModal: React.FC<EditBusinessModalProps> = ({
         ]}
       >
         <FormControl>
-              <FormLabel>Update Amenities</FormLabel>
-              <Autocomplete
-                size="lg"
-                multiple
-                freeSolo
-                placeholder="Amenities"
-                limitTags={6}
-                options={amenities}
-                value={selectedAmenities}
-                getOptionLabel={(option) =>
-                  typeof option === "string" ? option : option.name
-                }
-                renderTags={(value, getTagProps) =>
-                  value.map((option, index) => (
-                    <span key={option.id} style={{ margin: 2 }}>
-                      <Chip
-                        {...getTagProps({ index })}
-                        color="primary"
-                        variant="outlined"
-                        size="lg"
-                      >
-                        {option.name}
-                      </Chip>
-                    </span>
-                  ))
-                }
-                filterOptions={(options, state) => {
-                  const inputValue = state.inputValue.trim().toLowerCase();
-                  const filtered = options.filter(
-                    (option) =>
-                      typeof option !== "string" &&
-                      option.name.toLowerCase().includes(inputValue)
-                  );
+          <FormLabel>Update Amenities</FormLabel>
+          <Autocomplete
+            size="lg"
+            multiple
+            freeSolo
+            placeholder="Amenities"
+            limitTags={6}
+            options={amenities}
+            value={selectedAmenities}
+            getOptionLabel={(option) =>
+              typeof option === "string" ? option : option.name
+            }
+            renderTags={(value, getTagProps) =>
+              value.map((option, index) => (
+                <span key={option.id} style={{ margin: 2 }}>
+                  <Chip
+                    {...getTagProps({ index })}
+                    color="primary"
+                    variant="outlined"
+                    size="lg"
+                  >
+                    {option.name}
+                  </Chip>
+                </span>
+              ))
+            }
+            filterOptions={(options, state) => {
+              const inputValue = state.inputValue.trim().toLowerCase();
+              const filtered = options.filter(
+                (option) =>
+                  typeof option !== "string" &&
+                  option.name.toLowerCase().includes(inputValue)
+              );
 
-                  // If user typed something not in list → add “Add …”
-                  if (
-                    inputValue !== "" &&
-                    !options.some(
-                      (opt) =>
-                        typeof opt !== "string" &&
-                        opt.name.toLowerCase() === inputValue
-                    )
-                  ) {
-                    return [
-                      ...filtered,
-                      { id: -1, name: `Add "${state.inputValue}"` },
-                    ];
-                  }
+              // If user typed something not in list → add “Add …”
+              if (
+                inputValue !== "" &&
+                !options.some(
+                  (opt) =>
+                    typeof opt !== "string" &&
+                    opt.name.toLowerCase() === inputValue
+                )
+              ) {
+                return [
+                  ...filtered,
+                  { id: -1, name: `Add "${state.inputValue}"` },
+                ];
+              }
 
-                  return filtered;
-                }}
-                onChange={async (_, newValue) => {
-                  const last = newValue[newValue.length - 1];
+              return filtered;
+            }}
+            onChange={async (_, newValue) => {
+              const last = newValue[newValue.length - 1];
 
-                  // User chose "Add ..."
-                  if (last && typeof last !== "string" && last.id === -1) {
-                    const newAmenityName = last.name
-                      .replace(/^Add\s+"|"$/g, "")
-                      .trim();
-                    addAmenity(newAmenityName);
-                    await fetchAmenities();
+              // User chose "Add ..."
+              if (last && typeof last !== "string" && last.id === -1) {
+                const newAmenityName = last.name
+                  .replace(/^Add\s+"|"$/g, "")
+                  .trim();
+                addAmenity(newAmenityName);
+                await fetchAmenities();
 
-                    // Find inserted amenity (assumes fetchAmenities updates amenities)
-                    const inserted = amenities.find(
-                      (a) =>
-                        a.name.toLowerCase() === newAmenityName.toLowerCase()
-                    );
-                    if (inserted) {
-                      setSelectedAmenities([
-                        ...newValue
-                          .slice(0, -1)
-                          .filter(
-                            (item): item is Amenity => typeof item !== "string"
-                          ),
-                        inserted,
-                      ]);
-                    }
-                  } else {
-                    setSelectedAmenities(
-                      newValue.filter(
+                // Find inserted amenity (assumes fetchAmenities updates amenities)
+                const inserted = amenities.find(
+                  (a) => a.name.toLowerCase() === newAmenityName.toLowerCase()
+                );
+                if (inserted) {
+                  setSelectedAmenities([
+                    ...newValue
+                      .slice(0, -1)
+                      .filter(
                         (item): item is Amenity => typeof item !== "string"
-                      )
-                    );
-                  }
-                }}
-              />
-            </FormControl>
+                      ),
+                    inserted,
+                  ]);
+                }
+              } else {
+                setSelectedAmenities(
+                  newValue.filter(
+                    (item): item is Amenity => typeof item !== "string"
+                  )
+                );
+              }
+            }}
+          />
+        </FormControl>
       </BaseEditModal>
 
       <Alert

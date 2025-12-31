@@ -1,4 +1,4 @@
-import apiClient from './apiClient';
+import apiClient from "./apiClient";
 import type {
   Discount,
   DiscountStats,
@@ -6,22 +6,26 @@ import type {
   UpdateDiscountPayload,
   ValidateDiscountPayload,
   ValidateDiscountResponse,
-} from '@/src/types/Discount';
+} from "@/src/types/Discount";
 
 function normalizeArrayResponse<T>(payload: unknown): T[] {
   if (Array.isArray(payload)) {
-    if (payload.length === 2 && Array.isArray(payload[0]) && typeof payload[1] === 'object') {
+    if (
+      payload.length === 2 &&
+      Array.isArray(payload[0]) &&
+      typeof payload[1] === "object"
+    ) {
       return normalizeArrayResponse<T>(payload[0]);
     }
     return payload as T[];
   }
 
-  if (payload && typeof payload === 'object') {
+  if (payload && typeof payload === "object") {
     const dataField = (payload as { data?: unknown }).data;
     if (Array.isArray(dataField)) {
       return normalizeArrayResponse<T>(dataField);
     }
-    if (dataField && typeof dataField === 'object') {
+    if (dataField && typeof dataField === "object") {
       const rows = (dataField as { rows?: unknown }).rows;
       if (Array.isArray(rows)) {
         return normalizeArrayResponse<T>(rows);
@@ -48,7 +52,7 @@ export const updateExpiredDiscounts = async (): Promise<void> => {
 export const fetchAllDiscounts = async (): Promise<Discount[]> => {
   // First, update expired discounts in database
   await updateExpiredDiscounts();
-  
+
   const { data } = await apiClient.get<Discount[]>(`/discounts`);
   return normalizeArrayResponse<Discount>(data);
 };
@@ -59,7 +63,7 @@ export const fetchDiscountsByBusinessId = async (
 ): Promise<Discount[]> => {
   // First, update expired discounts in database
   await updateExpiredDiscounts();
-  
+
   const { data } = await apiClient.get<Discount[]>(
     `/discounts/business/${businessId}`
   );
@@ -72,7 +76,7 @@ export const fetchActiveDiscountsByBusinessId = async (
 ): Promise<Discount[]> => {
   // First, update expired discounts in database
   await updateExpiredDiscounts();
-  
+
   const { data } = await apiClient.get<Discount[]>(
     `/discounts/business/${businessId}/active`
   );
@@ -80,7 +84,9 @@ export const fetchActiveDiscountsByBusinessId = async (
 };
 
 /** Get discount by ID */
-export const fetchDiscountById = async (discountId: string): Promise<Discount> => {
+export const fetchDiscountById = async (
+  discountId: string
+): Promise<Discount> => {
   const { data } = await apiClient.get<Discount>(`/discounts/${discountId}`);
   return data;
 };
@@ -101,11 +107,11 @@ export const updateDiscount = async (
   discountId: string,
   payload: UpdateDiscountPayload
 ): Promise<Discount> => {
-  const { data } = await apiClient.put<{ message: string; data: Discount }>(
+  const { data } = await apiClient.patch<{ message: string; data: Discount }>(
     `/discounts/${discountId}`,
     payload
   );
-  return data.data;
+  return data.data ?? (data as unknown as Discount);
 };
 
 /** Delete discount */
@@ -128,8 +134,10 @@ export const validateDiscount = async (
 };
 
 /** Update discount usage count */
-export const updateDiscountUsage = async (discountId: string): Promise<void> => {
-  await apiClient.put(`/discounts/${discountId}/usage`);
+export const updateDiscountUsage = async (
+  discountId: string
+): Promise<void> => {
+  await apiClient.patch(`/discounts/${discountId}/usage`);
 };
 
 /** Get discount statistics */

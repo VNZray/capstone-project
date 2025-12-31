@@ -1,4 +1,4 @@
-import { getData } from "@/src/services/Service";
+import { fetchRoomsByBusinessId } from "@/src/services/RoomService";
 import { fetchBookingsByBusinessId } from "@/src/services/BookingService";
 import { fetchPaymentsByBusinessId } from "@/src/services/PaymentService";
 import type { Room } from "@/src/types/Business";
@@ -90,14 +90,12 @@ export const fetchDashboardData = async (
   businessId: string
 ): Promise<DashboardData> => {
   const [roomsData, bookingsData, paymentsData] = await Promise.all([
-    getData("room"),
+    fetchRoomsByBusinessId(businessId),
     fetchBookingsByBusinessId(businessId),
     fetchPaymentsByBusinessId(String(businessId)),
   ]);
 
-  const filteredRooms = Array.isArray(roomsData)
-    ? roomsData.filter((room) => room.business_id === businessId)
-    : [];
+  const filteredRooms = Array.isArray(roomsData) ? roomsData : [];
 
   return {
     rooms: filteredRooms,
@@ -108,7 +106,9 @@ export const fetchDashboardData = async (
 
 // ==================== Date Filtering ====================
 
-const filterByDatePeriod = <T extends { created_at?: string | Date; check_in_date?: string | Date }>(
+const filterByDatePeriod = <
+  T extends { created_at?: string | Date; check_in_date?: string | Date }
+>(
   items: T[],
   filter: FilterPeriod,
   dateField: "created_at" | "check_in_date" = "created_at"
@@ -145,7 +145,10 @@ const getPreviousPeriodFilter = (filter: FilterPeriod): FilterPeriod => {
   return filter;
 };
 
-const calculatePercentageChange = (current: number, previous: number): number => {
+const calculatePercentageChange = (
+  current: number,
+  previous: number
+): number => {
   if (previous === 0) return 0;
   return ((current - previous) / previous) * 100;
 };
@@ -161,11 +164,22 @@ export const calculateKPIStats = (
   console.log("📊 calculateKPIStats - Total bookings:", bookings.length);
   console.log("📊 calculateKPIStats - Filter:", filter);
 
-  const filteredBookings = filterByDatePeriod(bookings, filter, "check_in_date");
-  console.log("📊 calculateKPIStats - Filtered bookings:", filteredBookings.length);
-  
+  const filteredBookings = filterByDatePeriod(
+    bookings,
+    filter,
+    "check_in_date"
+  );
+  console.log(
+    "📊 calculateKPIStats - Filtered bookings:",
+    filteredBookings.length
+  );
+
   const previousFilter = getPreviousPeriodFilter(filter);
-  const previousBookings = filterByDatePeriod(bookings, previousFilter, "check_in_date");
+  const previousBookings = filterByDatePeriod(
+    bookings,
+    previousFilter,
+    "check_in_date"
+  );
 
   const bookingsChange = calculatePercentageChange(
     filteredBookings.length,
@@ -174,74 +188,114 @@ export const calculateKPIStats = (
 
   // Calculate occupancy rate based on bookings
   let occupancyRate = 0;
-  
+
   if (rooms.length > 0) {
-    if (filter.period === "month" && filter.month !== undefined && filter.year !== undefined) {
+    if (
+      filter.period === "month" &&
+      filter.month !== undefined &&
+      filter.year !== undefined
+    ) {
       // Calculate days in the selected month
       const daysInMonth = new Date(filter.year, filter.month + 1, 0).getDate();
       const totalRoomDays = rooms.length * daysInMonth;
-      
+
       // Calculate total booked days (only for Checked-In and Checked-Out bookings)
       const bookedDays = filteredBookings
-        .filter(b => b.booking_status === "Checked-In" || b.booking_status === "Checked-Out")
+        .filter(
+          (b) =>
+            b.booking_status === "Checked-In" ||
+            b.booking_status === "Checked-Out"
+        )
         .reduce((sum, booking) => {
           const checkIn = new Date(booking.check_in_date || "");
           const checkOut = new Date(booking.check_out_date || "");
-          const nights = Math.ceil((checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60 * 24));
+          const nights = Math.ceil(
+            (checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60 * 24)
+          );
           return sum + (nights > 0 ? nights : 0);
         }, 0);
-      
-      occupancyRate = totalRoomDays > 0 ? (bookedDays / totalRoomDays) * 100 : 0;
+
+      occupancyRate =
+        totalRoomDays > 0 ? (bookedDays / totalRoomDays) * 100 : 0;
     } else if (filter.period === "year" && filter.year !== undefined) {
       // Calculate days in the year
-      const daysInYear = ((filter.year % 4 === 0 && filter.year % 100 !== 0) || filter.year % 400 === 0) ? 366 : 365;
+      const daysInYear =
+        (filter.year % 4 === 0 && filter.year % 100 !== 0) ||
+        filter.year % 400 === 0
+          ? 366
+          : 365;
       const totalRoomDays = rooms.length * daysInYear;
-      
+
       // Calculate total booked days
       const bookedDays = filteredBookings
-        .filter(b => b.booking_status === "Checked-In" || b.booking_status === "Checked-Out")
+        .filter(
+          (b) =>
+            b.booking_status === "Checked-In" ||
+            b.booking_status === "Checked-Out"
+        )
         .reduce((sum, booking) => {
           const checkIn = new Date(booking.check_in_date || "");
           const checkOut = new Date(booking.check_out_date || "");
-          const nights = Math.ceil((checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60 * 24));
+          const nights = Math.ceil(
+            (checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60 * 24)
+          );
           return sum + (nights > 0 ? nights : 0);
         }, 0);
-      
-      occupancyRate = totalRoomDays > 0 ? (bookedDays / totalRoomDays) * 100 : 0;
+
+      occupancyRate =
+        totalRoomDays > 0 ? (bookedDays / totalRoomDays) * 100 : 0;
     } else if (filter.period === "week") {
       // Calculate for the last 7 days
       const totalRoomDays = rooms.length * 7;
-      
+
       const bookedDays = filteredBookings
-        .filter(b => b.booking_status === "Checked-In" || b.booking_status === "Checked-Out")
+        .filter(
+          (b) =>
+            b.booking_status === "Checked-In" ||
+            b.booking_status === "Checked-Out"
+        )
         .reduce((sum, booking) => {
           const checkIn = new Date(booking.check_in_date || "");
           const checkOut = new Date(booking.check_out_date || "");
-          const nights = Math.ceil((checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60 * 24));
+          const nights = Math.ceil(
+            (checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60 * 24)
+          );
           return sum + (nights > 0 ? nights : 0);
         }, 0);
-      
-      occupancyRate = totalRoomDays > 0 ? (bookedDays / totalRoomDays) * 100 : 0;
+
+      occupancyRate =
+        totalRoomDays > 0 ? (bookedDays / totalRoomDays) * 100 : 0;
     } else {
       // For "all" period, calculate based on available date range
       if (bookings.length > 0) {
-        const allDates = bookings.map(b => new Date(b.check_in_date || "").getTime()).filter(d => !isNaN(d));
+        const allDates = bookings
+          .map((b) => new Date(b.check_in_date || "").getTime())
+          .filter((d) => !isNaN(d));
         if (allDates.length > 0) {
           const minDate = new Date(Math.min(...allDates));
           const maxDate = new Date();
-          const totalDays = Math.ceil((maxDate.getTime() - minDate.getTime()) / (1000 * 60 * 60 * 24));
+          const totalDays = Math.ceil(
+            (maxDate.getTime() - minDate.getTime()) / (1000 * 60 * 60 * 24)
+          );
           const totalRoomDays = rooms.length * totalDays;
-          
+
           const bookedDays = filteredBookings
-            .filter(b => b.booking_status === "Checked-In" || b.booking_status === "Checked-Out")
+            .filter(
+              (b) =>
+                b.booking_status === "Checked-In" ||
+                b.booking_status === "Checked-Out"
+            )
             .reduce((sum, booking) => {
               const checkIn = new Date(booking.check_in_date || "");
               const checkOut = new Date(booking.check_out_date || "");
-              const nights = Math.ceil((checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60 * 24));
+              const nights = Math.ceil(
+                (checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60 * 24)
+              );
               return sum + (nights > 0 ? nights : 0);
             }, 0);
-          
-          occupancyRate = totalRoomDays > 0 ? (bookedDays / totalRoomDays) * 100 : 0;
+
+          occupancyRate =
+            totalRoomDays > 0 ? (bookedDays / totalRoomDays) * 100 : 0;
         }
       }
     }
@@ -250,37 +304,57 @@ export const calculateKPIStats = (
   // Calculate previous period occupancy rate for comparison
   let previousOccupancyRate = 0;
   if (rooms.length > 0) {
-    if (previousFilter.period === "month" && previousFilter.month !== undefined && previousFilter.year !== undefined) {
-      const daysInMonth = new Date(previousFilter.year, previousFilter.month + 1, 0).getDate();
+    if (
+      previousFilter.period === "month" &&
+      previousFilter.month !== undefined &&
+      previousFilter.year !== undefined
+    ) {
+      const daysInMonth = new Date(
+        previousFilter.year,
+        previousFilter.month + 1,
+        0
+      ).getDate();
       const totalRoomDays = rooms.length * daysInMonth;
-      
+
       const bookedDays = previousBookings
-        .filter(b => b.booking_status === "Checked-In" || b.booking_status === "Checked-Out")
+        .filter(
+          (b) =>
+            b.booking_status === "Checked-In" ||
+            b.booking_status === "Checked-Out"
+        )
         .reduce((sum, booking) => {
           const checkIn = new Date(booking.check_in_date || "");
           const checkOut = new Date(booking.check_out_date || "");
-          const nights = Math.ceil((checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60 * 24));
+          const nights = Math.ceil(
+            (checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60 * 24)
+          );
           return sum + (nights > 0 ? nights : 0);
         }, 0);
-      
-      previousOccupancyRate = totalRoomDays > 0 ? (bookedDays / totalRoomDays) * 100 : 0;
+
+      previousOccupancyRate =
+        totalRoomDays > 0 ? (bookedDays / totalRoomDays) * 100 : 0;
     }
   }
 
-  const occupancyRateChange = previousOccupancyRate > 0 
-    ? ((occupancyRate - previousOccupancyRate) / previousOccupancyRate) * 100 
-    : 0;
+  const occupancyRateChange =
+    previousOccupancyRate > 0
+      ? ((occupancyRate - previousOccupancyRate) / previousOccupancyRate) * 100
+      : 0;
 
   // Room statistics
   const availableRooms = rooms.filter((r) => r.status === "Available").length;
   const occupiedRooms = rooms.filter((r) => r.status === "Occupied").length;
-  const maintenanceRooms = rooms.filter((r) => r.status === "Maintenance").length;
+  const maintenanceRooms = rooms.filter(
+    (r) => r.status === "Maintenance"
+  ).length;
 
   // Average booking value
   const averageBookingValue =
     filteredBookings.length > 0
-      ? filteredBookings.reduce((sum, b) => sum + (Number(b.total_price) || 0), 0) /
-        filteredBookings.length
+      ? filteredBookings.reduce(
+          (sum, b) => sum + (Number(b.total_price) || 0),
+          0
+        ) / filteredBookings.length
       : 0;
 
   // Mock profile views (would come from analytics API)
@@ -320,7 +394,10 @@ export const calculateRevenueStats = (
     0
   );
 
-  const revenueChange = calculatePercentageChange(currentRevenue, previousRevenue);
+  const revenueChange = calculatePercentageChange(
+    currentRevenue,
+    previousRevenue
+  );
 
   // Calculate annual revenue
   const currentYear = new Date().getFullYear();
@@ -342,18 +419,32 @@ export const calculateBookingStatusStats = (
   bookings: Booking[],
   filter: FilterPeriod
 ): BookingStatusStats => {
-  console.log("📊 calculateBookingStatusStats - Total bookings:", bookings.length);
-  const filteredBookings = filterByDatePeriod(bookings, filter, "check_in_date");
-  console.log("📊 calculateBookingStatusStats - Filtered bookings:", filteredBookings.length);
+  console.log(
+    "📊 calculateBookingStatusStats - Total bookings:",
+    bookings.length
+  );
+  const filteredBookings = filterByDatePeriod(
+    bookings,
+    filter,
+    "check_in_date"
+  );
+  console.log(
+    "📊 calculateBookingStatusStats - Filtered bookings:",
+    filteredBookings.length
+  );
 
   const stats = {
-    reserved: filteredBookings.filter((b) => b.booking_status === "Reserved").length,
-    checkedIn: filteredBookings.filter((b) => b.booking_status === "Checked-In").length,
-    checkedOut: filteredBookings.filter((b) => b.booking_status === "Checked-Out")
+    reserved: filteredBookings.filter((b) => b.booking_status === "Reserved")
       .length,
-    canceled: filteredBookings.filter((b) => b.booking_status === "Canceled").length,
+    checkedIn: filteredBookings.filter((b) => b.booking_status === "Checked-In")
+      .length,
+    checkedOut: filteredBookings.filter(
+      (b) => b.booking_status === "Checked-Out"
+    ).length,
+    canceled: filteredBookings.filter((b) => b.booking_status === "Canceled")
+      .length,
   };
-  
+
   console.log("📊 calculateBookingStatusStats - Stats:", stats);
   return stats;
 };
@@ -384,7 +475,8 @@ export const getRecentBookings = (
         roomType: room?.room_type || "Unknown",
         checkIn: String(booking.check_in_date || ""),
         checkOut: String(booking.check_out_date || ""),
-        status: (booking.booking_status || "Pending") as RecentBooking["status"],
+        status: (booking.booking_status ||
+          "Pending") as RecentBooking["status"],
         amount: Number(booking.total_price) || 0,
         touristId: booking.tourist_id || "",
         createdAt: booking.created_at ? String(booking.created_at) : undefined,
@@ -503,7 +595,11 @@ export const calculateTouristStats = (
   bookings: Booking[],
   filter: FilterPeriod
 ): TouristStats => {
-  const filteredBookings = filterByDatePeriod(bookings, filter, "check_in_date");
+  const filteredBookings = filterByDatePeriod(
+    bookings,
+    filter,
+    "check_in_date"
+  );
 
   const local = filteredBookings.reduce(
     (sum, b) => sum + (Number(b.local_counts) || 0),

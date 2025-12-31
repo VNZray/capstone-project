@@ -1,11 +1,10 @@
 /**
  * App Legal Policies Service
  * Handles API calls for platform-wide Terms & Conditions and Privacy Policy
+ * Updated to use new backend v1 API endpoints
  */
 
-import axios from "axios";
-
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000/api";
+import apiClient from "./apiClient";
 
 export interface AppLegalPolicies {
   id?: string;
@@ -27,24 +26,24 @@ export interface UpdateAppLegalPoliciesPayload {
  * Get current active legal policies
  */
 export async function fetchAppLegalPolicies(): Promise<AppLegalPolicies> {
-  const response = await axios.get(`${API_URL}/app-legal-policies`);
-  return response.data;
+  const { data } = await apiClient.get<AppLegalPolicies>(`/app-legal-policies`);
+  return data;
 }
 
 /**
  * Get legal policies history (all versions)
  */
 export async function fetchAppLegalPoliciesHistory(): Promise<AppLegalPolicies[]> {
-  const response = await axios.get(`${API_URL}/app-legal-policies/history`);
-  return response.data;
+  const { data } = await apiClient.get<AppLegalPolicies[]>(`/app-legal-policies/history`);
+  return data;
 }
 
 /**
  * Get specific version of legal policies
  */
 export async function fetchAppLegalPoliciesByVersion(version: number): Promise<AppLegalPolicies> {
-  const response = await axios.get(`${API_URL}/app-legal-policies/version/${version}`);
-  return response.data;
+  const { data } = await apiClient.get<AppLegalPolicies>(`/app-legal-policies/version/${version}`);
+  return data;
 }
 
 /**
@@ -53,6 +52,6 @@ export async function fetchAppLegalPoliciesByVersion(version: number): Promise<A
 export async function updateAppLegalPolicies(
   payload: UpdateAppLegalPoliciesPayload
 ): Promise<AppLegalPolicies> {
-  const response = await axios.put(`${API_URL}/app-legal-policies`, payload);
-  return response.data.data;
+  const { data } = await apiClient.put<{ data: AppLegalPolicies }>(`/app-legal-policies`, payload);
+  return data.data ?? data as unknown as AppLegalPolicies;
 }

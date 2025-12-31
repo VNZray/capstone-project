@@ -41,9 +41,10 @@ const RoomCard: React.FC<RoomCardProps> = ({
 }) => {
   // local state (initialize with prop)
   const [room_status] = React.useState(status);
-  
+
   // Calculate discounted price if discount exists
-  const originalPrice = parseFloat(price.toString().replace(/,/g, ""));
+  const priceString = price?.toString() ?? "0";
+  const originalPrice = parseFloat(priceString.replace(/,/g, "")) || 0;
   const hasDiscount = discountPercentage && discountPercentage > 0;
   const discountedPrice = hasDiscount
     ? originalPrice * (1 - discountPercentage / 100)
@@ -123,7 +124,7 @@ const RoomCard: React.FC<RoomCardProps> = ({
         >
           Floor {floor}
         </Chip>
-        
+
         {/* Discount Badge */}
         {hasDiscount && (
           <Chip

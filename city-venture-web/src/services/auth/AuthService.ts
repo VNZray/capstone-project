@@ -1,4 +1,3 @@
-import axios from "axios"; // Keep axios for type definitions if needed, but use apiClient for calls
 import apiClient, { setAccessToken, refreshTokens } from "../apiClient";
 
 import type {
@@ -7,20 +6,25 @@ import type {
   UserDetails,
   UserRoles,
 } from "../../types/User";
-import type {
-  Address,
-  Municipality,
-  Barangay,
-  Province,
-} from "../../types/Address";
+import type { Municipality, Barangay, Province } from "../../types/Address";
 import type { Owner } from "../../types/Owner";
 import type { Tourist } from "../../types/Tourist";
 import type { Tourism } from "../../types/Tourism";
 import type { Staff } from "../../types/Staff";
 
+/**
+ * Login response from new backend
+ */
 interface LoginResponse {
   accessToken: string;
-  user: any;
+  user: {
+    id: string;
+    email: string;
+    role: string;
+    permissions: string[];
+    must_change_password?: boolean;
+    profile_completed?: boolean;
+  };
 }
 
 /**
@@ -132,7 +136,7 @@ export const loginUser = async (
   console.debug("[AuthService] GET /user-roles/:id", userData.user_role_id);
   const { data: userRole } = await apiClient
     .get<UserRoles>(`/user-roles/${userData.user_role_id}`)
-    .catch((err) => {
+    .catch(() => {
       // Fallback logic preserved...
       const id = userData.user_role_id;
       const fallbackRoleName =
@@ -142,10 +146,8 @@ export const loginUser = async (
       };
     });
 
-  const myPermissions: string[] = await apiClient
-    .get<{ permissions: string[] }>(`/permissions/me`)
-    .then((r) => r.data?.permissions || [])
-    .catch(() => []);
+  // Use permissions from login response (new backend includes these)
+  const myPermissions: string[] = loginUserSummary?.permissions || [];
 
   // Normalize role name
   const rawRoleName = (userRole?.role_name ?? "").toString();
@@ -188,12 +190,12 @@ export const loginUser = async (
 
   if (ownerRoles.includes(normalizedRoleName)) {
     ownerData = await apiClient
-      .get<Owner>(`/owner/user/${user_id}`)
+      .get<Owner>(`/owners/user/${user_id}`)
       .then((r) => r.data)
       .catch(() => null);
   } else if (touristRoles.includes(normalizedRoleName)) {
     touristData = await apiClient
-      .get<Tourist>(`/tourist/user/${user_id}`)
+      .get<Tourist>(`/tourists/user/${user_id}`)
       .then((r) => r.data)
       .catch(() => null);
   } else if (tourismRoles.includes(normalizedRoleName)) {
@@ -202,8 +204,9 @@ export const loginUser = async (
       .then((r) => r.data)
       .catch(() => null);
   } else if (staffRoles.includes(normalizedRoleName)) {
+    // Staff uses my-profile endpoint for authenticated user
     staffData = await apiClient
-      .get<Staff>(`/staff/user/${user_id}`)
+      .get<Staff>(`/staff/my-profile`)
       .then((r) => r.data)
       .catch(() => null);
   }
@@ -211,31 +214,25 @@ export const loginUser = async (
   // ============================================
   // STEP 6: Fetch Address Details
   // ============================================
-  let addressData: Address | null = null;
   let barangay: Partial<Barangay> = {};
   let municipality: Partial<Municipality> = {};
   let province: Partial<Province> = {};
 
   if (userData?.barangay_id != null) {
-    addressData = await apiClient
-      .get<Address>(`/address/${userData.barangay_id}`)
+    // Use optimized full-address endpoint
+    const fullAddress = await apiClient
+      .get<{
+        barangay: Barangay;
+        municipality: Municipality;
+        province: Province;
+      }>(`/addresses/barangays/${userData.barangay_id}/full-address`)
       .then((r) => r.data)
       .catch(() => null);
-    if (addressData) {
-      barangay = await apiClient
-        .get<Barangay>(`/address/barangay/${addressData.barangay_id}`)
-        .then((r) => r.data)
-        .catch(() => ({}));
-      municipality = await apiClient
-        .get<Municipality>(
-          `/address/municipality/${addressData.municipality_id}`
-        )
-        .then((r) => r.data)
-        .catch(() => ({}));
-      province = await apiClient
-        .get<Province>(`/address/province/${addressData.province_id}`)
-        .then((r) => r.data)
-        .catch(() => ({}));
+
+    if (fullAddress) {
+      barangay = fullAddress.barangay || {};
+      municipality = fullAddress.municipality || {};
+      province = fullAddress.province || {};
     }
   }
 
@@ -329,8 +326,8 @@ export const logoutUser = async () => {
 };
 
 /**
- * FETCH CURRENT USER (New Method)
- * Fetches the current user profile from the API.
+ * FETCH CURRENT USER (Optimized for new backend)
+ * Uses /auth/me endpoint which returns complete user profile with role and permissions.
  * Used for re-hydrating the session on page reload.
  */
 export const fetchCurrentUser = async (): Promise<UserDetails> => {
@@ -341,44 +338,36 @@ export const fetchCurrentUser = async (): Promise<UserDetails> => {
   if (!token) throw new Error("No access token available");
 
   // ============================================
-  // STEP 1: Decode Token
+  // STEP 1: Fetch complete user profile from auth/me
   // ============================================
-  let payload: TokenPayload;
-  try {
-    payload = JSON.parse(atob(token.split(".")[1]));
-  } catch {
-    throw new Error("Invalid authentication token");
+  interface AuthMeResponse {
+    id: string;
+    email: string;
+    phone_number: string;
+    user_role_id: number;
+    barangay_id?: number;
+    user_profile?: string;
+    is_active: boolean;
+    is_verified: boolean;
+    created_at: string;
+    updated_at: string;
+    last_login: string;
+    role?: {
+      id: number;
+      role_name: string;
+      permissions?: string[];
+    };
+    tourist?: Tourist;
+    owner?: Owner;
   }
 
-  const user_id = payload.id;
-  if (!user_id) throw new Error("User ID not found in token");
+  const { data: meData } = await apiClient.get<AuthMeResponse>(`/auth/me`);
 
-  // ============================================
-  // STEP 2: Fetch Core User Data
-  // ============================================
-  const { data: userData } = await apiClient.get<User>(`/users/${user_id}`);
-
-  // ============================================
-  // STEP 3: Fetch User Role & Permissions
-  // ============================================
-  const { data: userRole } = await apiClient
-    .get<UserRoles>(`/user-roles/${userData.user_role_id}`)
-    .catch(() => {
-      const id = userData.user_role_id;
-      const fallbackRoleName =
-        id === 1 ? "Admin" : id === 4 ? "Owner" : "Tourist";
-      return {
-        data: { role_name: fallbackRoleName, description: "" } as UserRoles,
-      };
-    });
-
-  const myPermissions: string[] = await apiClient
-    .get<{ permissions: string[] }>(`/permissions/me`)
-    .then((r) => r.data?.permissions || [])
-    .catch(() => []);
+  // Extract role info and permissions
+  const rawRoleName = (meData.role?.role_name ?? "").toString();
+  const myPermissions: string[] = meData.role?.permissions || [];
 
   // Normalize role name
-  const rawRoleName = (userRole?.role_name ?? "").toString();
   const normalizedRoleName = (() => {
     const r = rawRoleName.toLowerCase();
     if (r.includes("tourism head")) return "Tourism Head";
@@ -394,10 +383,8 @@ export const fetchCurrentUser = async (): Promise<UserDetails> => {
   })();
 
   // ============================================
-  // STEP 4: Fetch Role-Specific User Details
+  // STEP 2: Extract role-specific data from response
   // ============================================
-  const touristRoles = ["Tourist"];
-  const ownerRoles = ["Business Owner"];
   const tourismRoles = [
     "Admin",
     "Tourism Officer",
@@ -411,78 +398,62 @@ export const fetchCurrentUser = async (): Promise<UserDetails> => {
     "Sales Associate",
   ];
 
-  let ownerData: Partial<Owner> | null = null;
-  let touristData: Partial<Tourist> | null = null;
+  let ownerData: Partial<Owner> | null = meData.owner || null;
+  let touristData: Partial<Tourist> | null = meData.tourist || null;
   let tourismData: Partial<Tourism> | null = null;
   let staffData: Partial<Staff> | null = null;
 
-  if (ownerRoles.includes(normalizedRoleName)) {
-    ownerData = await apiClient
-      .get<Owner>(`/owner/user/${user_id}`)
-      .then((r) => r.data)
-      .catch(() => null);
-  } else if (touristRoles.includes(normalizedRoleName)) {
-    touristData = await apiClient
-      .get<Tourist>(`/tourist/user/${user_id}`)
-      .then((r) => r.data)
-      .catch(() => null);
-  } else if (tourismRoles.includes(normalizedRoleName)) {
+  // Fetch tourism/staff data if not included in auth/me response
+  if (tourismRoles.includes(normalizedRoleName) && !tourismData) {
     tourismData = await apiClient
-      .get<Tourism>(`/tourism/user/${user_id}`)
+      .get<Tourism>(`/tourism/user/${meData.id}`)
       .then((r) => r.data)
       .catch(() => null);
-  } else if (staffRoles.includes(normalizedRoleName)) {
+  } else if (staffRoles.includes(normalizedRoleName) && !staffData) {
     staffData = await apiClient
-      .get<Staff>(`/staff/user/${user_id}`)
+      .get<Staff>(`/staff/my-profile`)
       .then((r) => r.data)
       .catch(() => null);
   }
 
   // ============================================
-  // STEP 5: Fetch Address Details
+  // STEP 3: Fetch Address Details
   // ============================================
-  let addressData: Address | null = null;
   let barangay: Partial<Barangay> = {};
   let municipality: Partial<Municipality> = {};
   let province: Partial<Province> = {};
 
-  if (userData?.barangay_id != null) {
-    addressData = await apiClient
-      .get<Address>(`/address/${userData.barangay_id}`)
+  if (meData.barangay_id != null) {
+    const fullAddress = await apiClient
+      .get<{
+        barangay: Barangay;
+        municipality: Municipality;
+        province: Province;
+      }>(`/addresses/barangays/${meData.barangay_id}/full-address`)
       .then((r) => r.data)
       .catch(() => null);
-    if (addressData) {
-      barangay = await apiClient
-        .get<Barangay>(`/address/barangay/${addressData.barangay_id}`)
-        .then((r) => r.data)
-        .catch(() => ({}));
-      municipality = await apiClient
-        .get<Municipality>(
-          `/address/municipality/${addressData.municipality_id}`
-        )
-        .then((r) => r.data)
-        .catch(() => ({}));
-      province = await apiClient
-        .get<Province>(`/address/province/${addressData.province_id}`)
-        .then((r) => r.data)
-        .catch(() => ({}));
+
+    if (fullAddress) {
+      barangay = fullAddress.barangay || {};
+      municipality = fullAddress.municipality || {};
+      province = fullAddress.province || {};
     }
   }
 
   // ============================================
-  // STEP 6: Build Unified User Details Object
+  // STEP 4: Build Unified User Details Object
   // ============================================
   const roleData = ownerData || touristData || tourismData || staffData || {};
 
   return {
-    id: roleData?.id || userData.id,
-    user_id: userData.id || "",
-    email: userData.email || "",
+    id: roleData?.id || meData.id,
+    user_id: meData.id || "",
+    email: meData.email || "",
     // SECURITY: password intentionally omitted - never store plaintext passwords in client state
-    phone_number: userData.phone_number,
-    user_role_id: userData.user_role_id,
+    phone_number: meData.phone_number,
+    user_role_id: meData.user_role_id,
     role_name: normalizedRoleName,
-    description: userRole?.description || "",
+    description: meData.role?.role_name || "",
     permissions: myPermissions,
     first_name: roleData?.first_name || "",
     middle_name: roleData?.middle_name || "",
@@ -493,16 +464,16 @@ export const fetchCurrentUser = async (): Promise<UserDetails> => {
     ethnicity: (touristData as any)?.ethnicity || "",
     category: (touristData as any)?.category || "",
     business_id: (staffData as any)?.business_id || "",
-    barangay_id: userData?.barangay_id ?? "",
+    barangay_id: meData.barangay_id ?? "",
     barangay_name: barangay?.barangay || "",
     municipality_name: municipality?.municipality || "",
     province_name: province?.province || "",
-    user_profile: userData.user_profile,
-    is_active: Boolean(userData.is_active),
-    is_verified: Boolean(userData.is_verified),
-    created_at: userData.created_at || "",
-    updated_at: userData.updated_at || "",
-    last_login: userData.last_login || "",
+    user_profile: meData.user_profile,
+    is_active: Boolean(meData.is_active),
+    is_verified: Boolean(meData.is_verified),
+    created_at: meData.created_at || "",
+    updated_at: meData.updated_at || "",
+    last_login: meData.last_login || "",
   };
 };
 
@@ -538,9 +509,13 @@ export const changePassword = async (
       current_password: currentPassword,
       new_password: newPassword,
     });
-    return { success: true, message: data.message || "Password changed successfully" };
+    return {
+      success: true,
+      message: data.message || "Password changed successfully",
+    };
   } catch (error: any) {
-    const message = error?.response?.data?.message || "Failed to change password";
+    const message =
+      error?.response?.data?.message || "Failed to change password";
     return { success: false, message };
   }
 };
@@ -549,12 +524,19 @@ export const changePassword = async (
  * COMPLETE STAFF PROFILE
  * Called after password change to mark profile as completed
  */
-export const completeStaffProfile = async (): Promise<{ success: boolean; message: string }> => {
+export const completeStaffProfile = async (): Promise<{
+  success: boolean;
+  message: string;
+}> => {
   try {
     const { data } = await apiClient.post(`/users/complete-profile`);
-    return { success: true, message: data.message || "Profile completed successfully" };
+    return {
+      success: true,
+      message: data.message || "Profile completed successfully",
+    };
   } catch (error: any) {
-    const message = error?.response?.data?.message || "Failed to complete profile";
+    const message =
+      error?.response?.data?.message || "Failed to complete profile";
     return { success: false, message };
   }
 };

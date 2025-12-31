@@ -2,6 +2,7 @@
  * Seasonal Pricing Form
  *
  * Main form component for configuring seasonal and weekend pricing
+ * Uses month-based seasons (peak, high, low) and weekend day pricing
  */
 
 import React, { useState, useEffect } from "react";
@@ -37,6 +38,7 @@ import {
 import {
   fetchSeasonalPricingByRoomId,
   upsertSeasonalPricing,
+  parseArrayField,
 } from "@/src/services/SeasonalPricingService";
 
 interface SeasonalPricingFormProps {
@@ -87,23 +89,6 @@ const SeasonalPricingForm: React.FC<SeasonalPricingFormProps> = ({
     message: "",
   });
 
-  // Helper to safely parse array from JSON string or return as-is
-  const parseArrayField = <T,>(
-    field: T[] | string | null | undefined,
-    defaultValue: T[]
-  ): T[] => {
-    if (!field) return defaultValue;
-    if (typeof field === "string") {
-      try {
-        const parsed = JSON.parse(field);
-        return Array.isArray(parsed) ? parsed : defaultValue;
-      } catch {
-        return defaultValue;
-      }
-    }
-    return Array.isArray(field) ? field : defaultValue;
-  };
-
   // Load existing pricing
   useEffect(() => {
     const loadPricing = async () => {
@@ -112,22 +97,42 @@ const SeasonalPricingForm: React.FC<SeasonalPricingFormProps> = ({
         const pricing = await fetchSeasonalPricingByRoomId(roomId);
         if (pricing) {
           setExistingPricing(pricing);
-          setBasePrice(pricing.base_price);
-          setWeekendPrice(pricing.weekend_price);
+          setBasePrice(Number(pricing.base_price) || defaultPrice);
+          setWeekendPrice(
+            pricing.weekend_price ? Number(pricing.weekend_price) : null
+          );
           setWeekendDays(
-            parseArrayField(pricing.weekend_days, DEFAULT_WEEKEND_DAYS)
+            parseArrayField<DayOfWeek>(
+              pricing.weekend_days as DayOfWeek[] | string,
+              DEFAULT_WEEKEND_DAYS
+            )
           );
-          setPeakSeasonPrice(pricing.peak_season_price);
+          setPeakSeasonPrice(
+            pricing.peak_season_price ? Number(pricing.peak_season_price) : null
+          );
           setPeakSeasonMonths(
-            parseArrayField(pricing.peak_season_months, DEFAULT_PEAK_MONTHS)
+            parseArrayField<number>(
+              pricing.peak_season_months as number[] | string,
+              DEFAULT_PEAK_MONTHS
+            )
           );
-          setHighSeasonPrice(pricing.high_season_price);
+          setHighSeasonPrice(
+            pricing.high_season_price ? Number(pricing.high_season_price) : null
+          );
           setHighSeasonMonths(
-            parseArrayField(pricing.high_season_months, DEFAULT_HIGH_MONTHS)
+            parseArrayField<number>(
+              pricing.high_season_months as number[] | string,
+              DEFAULT_HIGH_MONTHS
+            )
           );
-          setLowSeasonPrice(pricing.low_season_price);
+          setLowSeasonPrice(
+            pricing.low_season_price ? Number(pricing.low_season_price) : null
+          );
           setLowSeasonMonths(
-            parseArrayField(pricing.low_season_months, DEFAULT_LOW_MONTHS)
+            parseArrayField<number>(
+              pricing.low_season_months as number[] | string,
+              DEFAULT_LOW_MONTHS
+            )
           );
         }
       } catch (error) {
@@ -140,7 +145,7 @@ const SeasonalPricingForm: React.FC<SeasonalPricingFormProps> = ({
     if (roomId) {
       loadPricing();
     }
-  }, [roomId]);
+  }, [roomId, defaultPrice]);
 
   // Toggle day selection
   const toggleDay = (day: DayOfWeek) => {

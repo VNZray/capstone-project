@@ -120,6 +120,11 @@ export default (sequelize, DataTypes) => {
       otherKey: 'amenity_id',
       as: 'amenities'
     });
+
+    Room.hasMany(models.RoomPhoto, {
+      foreignKey: 'room_id',
+      as: 'photos'
+    });
   };
 
   return Room;

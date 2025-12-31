@@ -1,10 +1,9 @@
 // src/hooks/useBusinessBasics.ts
 import { useEffect, useState } from "react";
-import axios from "axios";
 import { supabase } from "@/src/lib/supabase";
 import type { Business } from "@/src/types/Business";
 import type { Category } from "@/src/types/Category";
-import api from "../services/api";
+import apiClient from "@/src/services/apiClient";
 
 export const useBusinessBasics = (data: Business, setData: React.Dispatch<React.SetStateAction<Business>>) => {
   const [rootCategories, setRootCategories] = useState<Category[]>([]);
@@ -15,15 +14,16 @@ export const useBusinessBasics = (data: Business, setData: React.Dispatch<React.
   // Fetch root-level categories for businesses
   const getBusinessCategories = async () => {
     try {
-      const response = await axios.get(`${api}/category-and-type/categories`, {
+      const response = await apiClient.get(`/categories`, {
         params: {
           applicable_to: 'business',
           parent_id: 'root'
         }
       });
-      if (Array.isArray(response.data)) {
+      const data = response.data?.data || response.data || [];
+      if (Array.isArray(data)) {
         // Filter to only root categories (no parent)
-        const roots = response.data.filter((c: Category) => c.parent_category === null);
+        const roots = data.filter((c: Category) => c.parent_category === null);
         setRootCategories(roots);
       }
     } catch (error) {
@@ -34,8 +34,9 @@ export const useBusinessBasics = (data: Business, setData: React.Dispatch<React.
   // Get child categories of a parent
   const getChildCategories = async (parentId: number): Promise<Category[]> => {
     try {
-      const response = await axios.get(`${api}/category-and-type/categories/${parentId}/children`);
-      return Array.isArray(response.data) ? response.data : [];
+      const response = await apiClient.get(`/categories/${parentId}/children`);
+      const data = response.data?.data || response.data || [];
+      return Array.isArray(data) ? data : [];
     } catch (error) {
       console.error("Error fetching child categories:", error);
       return [];

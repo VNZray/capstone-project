@@ -1,16 +1,19 @@
-import axios from "axios";
+/**
+ * Tourism Dashboard Service
+ * Handles dashboard data aggregation for tourism admin
+ * Updated to use new backend v1 API endpoints
+ */
+import apiClient from "@/src/services/apiClient";
 import type { BusinessRegistration } from "@/src/features/admin/dashboard/components/NewRegistrationsTable";
 import type { SubscriptionPayment } from "@/src/features/admin/dashboard/components/SubscriptionPaymentsTable";
 
-const API_BASE_URL = 'http://localhost:3000/api';
-
 export interface TourismDashboardData {
-  businesses: any[];
+  businesses: unknown[];
   registrations: BusinessRegistration[];
   payments: SubscriptionPayment[];
-  tourists: any[];
-  touristSpots: any[];
-  bookings: any[];
+  tourists: unknown[];
+  touristSpots: unknown[];
+  bookings: unknown[];
 }
 
 export interface BusinessStats {
@@ -42,10 +45,10 @@ export interface FilterPeriod {
 /**
  * Fetch all tourist spots
  */
-export const fetchAllTouristSpots = async (): Promise<any[]> => {
+export const fetchAllTouristSpots = async (): Promise<unknown[]> => {
   try {
-    const response = await axios.get(`${API_BASE_URL}/tourist-spots`);
-    return response.data?.data || response.data || [];
+    const { data } = await apiClient.get(`/tourist-spots`);
+    return Array.isArray(data) ? data : [];
   } catch (error) {
     console.error("Failed to fetch tourist spots:", error);
     return [];
@@ -55,10 +58,10 @@ export const fetchAllTouristSpots = async (): Promise<any[]> => {
 /**
  * Fetch all businesses
  */
-export const fetchAllBusinesses = async (): Promise<any[]> => {
+export const fetchAllBusinesses = async (): Promise<unknown[]> => {
   try {
-    const response = await axios.get(`${API_BASE_URL}/business`);
-    return response.data?.data || response.data || [];
+    const { data } = await apiClient.get(`/businesses`);
+    return Array.isArray(data) ? data : [];
   } catch (error) {
     console.error("Failed to fetch businesses:", error);
     return [];
@@ -68,9 +71,9 @@ export const fetchAllBusinesses = async (): Promise<any[]> => {
 /**
  * Fetch all accommodations (hasBooking === true)
  */
-export const fetchAllAccommodations = async (): Promise<any[]> => {
+export const fetchAllAccommodations = async (): Promise<unknown[]> => {
   try {
-    const businesses = await fetchAllBusinesses();
+    const businesses = await fetchAllBusinesses() as { hasBooking?: boolean | number }[];
     return businesses.filter((b) => b.hasBooking === true || b.hasBooking === 1);
   } catch (error) {
     console.error("Failed to fetch accommodations:", error);
@@ -81,9 +84,9 @@ export const fetchAllAccommodations = async (): Promise<any[]> => {
 /**
  * Fetch all shops (hasBooking === false or not set)
  */
-export const fetchAllShops = async (): Promise<any[]> => {
+export const fetchAllShops = async (): Promise<unknown[]> => {
   try {
-    const businesses = await fetchAllBusinesses();
+    const businesses = await fetchAllBusinesses() as { hasBooking?: boolean | number }[];
     return businesses.filter((b) => !b.hasBooking || b.hasBooking === false || b.hasBooking === 0);
   } catch (error) {
     console.error("Failed to fetch shops:", error);
@@ -94,10 +97,10 @@ export const fetchAllShops = async (): Promise<any[]> => {
 /**
  * Fetch all bookings from all businesses
  */
-export const fetchAllBookings = async (): Promise<any[]> => {
+export const fetchAllBookings = async (): Promise<unknown[]> => {
   try {
-    const response = await axios.get(`${API_BASE_URL}/booking`);
-    return response.data?.data || response.data || [];
+    const { data } = await apiClient.get(`/bookings`);
+    return Array.isArray(data) ? data : [];
   } catch (error) {
     console.error("Failed to fetch bookings:", error);
     return [];
@@ -111,7 +114,7 @@ export const fetchAllBookings = async (): Promise<any[]> => {
 export const fetchTouristDemographics = async (): Promise<TouristStats> => {
   try {
     const bookings = await fetchAllBookings();
-    
+
     const stats: TouristStats = {
       total: 0,
       local: 0,
@@ -331,20 +334,20 @@ export const getRecentPayments = (
 // Calculate revenue statistics
 export const calculateRevenueStats = (payments: SubscriptionPayment[]) => {
   const completedPayments = payments.filter((p) => p.status === "completed");
-  
+
   const totalRevenue = completedPayments.reduce((sum, p) => sum + p.amount, 0);
-  
+
   const now = new Date();
   const currentMonth = now.getMonth();
   const currentYear = now.getFullYear();
-  
+
   const monthlyRevenue = completedPayments
     .filter((p) => {
       const date = new Date(p.paidAt);
       return date.getMonth() === currentMonth && date.getFullYear() === currentYear;
     })
     .reduce((sum, p) => sum + p.amount, 0);
-  
+
   const yearlyRevenue = completedPayments
     .filter((p) => {
       const date = new Date(p.paidAt);

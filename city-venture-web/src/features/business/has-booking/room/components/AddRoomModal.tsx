@@ -78,7 +78,7 @@ export default function AddRoomModal({
 
   // Fetch existing room numbers for this business
   const fetchExistingRoomNumbers = async () => {
-    const rooms = await getData("room");
+    const rooms = await getData("rooms");
     if (rooms) {
       const businessRooms = rooms.filter(
         (room: Room) => room.business_id === businessDetails?.id

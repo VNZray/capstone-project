@@ -7,7 +7,11 @@ import type {
 
 function normalizeArrayResponse<T>(payload: unknown): T[] {
   if (Array.isArray(payload)) {
-    if (payload.length === 2 && Array.isArray(payload[0]) && typeof payload[1] === "object") {
+    if (
+      payload.length === 2 &&
+      Array.isArray(payload[0]) &&
+      typeof payload[1] === "object"
+    ) {
       return normalizeArrayResponse<T>(payload[0]);
     }
     return payload as T[];
@@ -34,9 +38,13 @@ function isNotFound(error: unknown): boolean {
 }
 
 // Service APIs
-export const fetchServicesByBusinessId = async (businessId: string): Promise<Service[]> => {
+export const fetchServicesByBusinessId = async (
+  businessId: string
+): Promise<Service[]> => {
   try {
-    const { data } = await apiClient.get<Service[]>(`/services/business/${businessId}`);
+    const { data } = await apiClient.get<Service[]>(
+      `/services/business/${businessId}`
+    );
     return normalizeArrayResponse<Service>(data);
   } catch (error) {
     if (isNotFound(error)) {
@@ -51,7 +59,9 @@ export const fetchServiceById = async (id: string): Promise<Service> => {
   return data;
 };
 
-export const createService = async (payload: CreateServicePayload): Promise<Service> => {
+export const createService = async (
+  payload: CreateServicePayload
+): Promise<Service> => {
   const { data } = await apiClient.post<Service>(`/services`, payload);
   return data;
 };
@@ -60,7 +70,7 @@ export const updateService = async (
   id: string,
   payload: UpdateServicePayload
 ): Promise<Service> => {
-  const { data } = await apiClient.put<Service>(`/services/${id}`, payload);
+  const { data } = await apiClient.patch<Service>(`/services/${id}`, payload);
   return data;
 };
 

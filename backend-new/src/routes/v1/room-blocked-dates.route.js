@@ -22,21 +22,21 @@ router.get('/room/:roomId/availability', asyncHandler(roomBlockedDatesController
 router.post(
   '/',
   authenticate,
-  authorizeRoles('Tourism Admin', 'Admin', 'Business Owner'),
+  authorizeRoles('Tourism Admin', 'Admin', 'Business Owner', 'Manager', 'Room Manager', 'Receptionist'),
   asyncHandler(roomBlockedDatesController.createBlockedDate)
 );
 
 router.put(
   '/:id',
   authenticate,
-  authorizeRoles('Tourism Admin', 'Admin', 'Business Owner'),
+  authorizeRoles('Tourism Admin', 'Admin', 'Business Owner', 'Manager', 'Room Manager', 'Receptionist'),
   asyncHandler(roomBlockedDatesController.updateBlockedDate)
 );
 
 router.delete(
   '/:id',
   authenticate,
-  authorizeRoles('Tourism Admin', 'Admin', 'Business Owner'),
+  authorizeRoles('Tourism Admin', 'Admin', 'Business Owner', 'Manager', 'Room Manager'),
   asyncHandler(roomBlockedDatesController.deleteBlockedDate)
 );
 

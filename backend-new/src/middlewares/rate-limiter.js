@@ -8,10 +8,11 @@ import logger from '../config/logger.js';
 
 /**
  * Default rate limiter configuration
+ * In development mode, use much higher limits
  */
 export const rateLimiter = rateLimit({
   windowMs: config.rateLimit.windowMs,
-  max: config.rateLimit.maxRequests,
+  max: config.isDev ? 1000 : config.rateLimit.maxRequests, // 1000 in dev, configured value in prod
   standardHeaders: true,
   legacyHeaders: false,
   validate: { xForwardedForHeader: false },
@@ -24,7 +25,8 @@ export const rateLimiter = rateLimit({
     });
   },
   skip: (req) => {
-    // Skip rate limiting for health checks
+    // Skip rate limiting for health checks and in development
+    if (config.isDev) return true;
     return req.path === '/health' || req.path === '/api/health';
   }
 });

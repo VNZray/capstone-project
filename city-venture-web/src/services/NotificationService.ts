@@ -29,36 +29,28 @@ export interface Notification {
     created_at: string;
 }
 
+export interface NotificationPreferences {
+    push_enabled: boolean;
+    email_enabled: boolean;
+    sms_enabled: boolean;
+    in_app_enabled: boolean;
+}
+
 /**
- * Fetch all notifications for a user
+ * Fetch all notifications for the current user
+ * Uses the new v1 API which authenticates based on JWT
  */
-export const getNotificationsByUserId = async (
-    userId: string
-): Promise<Notification[]> => {
-    const response = await apiClient.get(`/notifications/user/${userId}`);
-    return response.data[0] || [];
+export const getNotifications = async (): Promise<Notification[]> => {
+    const response = await apiClient.get<Notification[]>(`/notifications`);
+    return Array.isArray(response.data) ? response.data : [];
 };
 
 /**
- * Fetch unread notifications for a user
+ * Get count of unread notifications for the current user
  */
-export const getUnreadNotifications = async (
-    userId: string
-): Promise<Notification[]> => {
-    const response = await apiClient.get(`/notifications/user/${userId}/unread`);
-    return response.data[0] || [];
-};
-
-/**
- * Get count of unread notifications
- */
-export const getUnreadNotificationCount = async (
-    userId: string
-): Promise<number> => {
-    const response = await apiClient.get(
-        `/notifications/user/${userId}/unread/count`
-    );
-    return response.data[0]?.unread_count || 0;
+export const getUnreadNotificationCount = async (): Promise<number> => {
+    const response = await apiClient.get<{ count: number }>(`/notifications/unread-count`);
+    return response.data?.count ?? 0;
 };
 
 /**
@@ -67,16 +59,14 @@ export const getUnreadNotificationCount = async (
 export const markNotificationAsRead = async (
     notificationId: string
 ): Promise<void> => {
-    await apiClient.put(`/notifications/${notificationId}/read`);
+    await apiClient.patch(`/notifications/${notificationId}/read`);
 };
 
 /**
- * Mark all notifications as read for a user
+ * Mark all notifications as read for the current user
  */
-export const markAllNotificationsAsRead = async (
-    userId: string
-): Promise<void> => {
-    await apiClient.post(`/notifications/user/${userId}/mark-all-read`);
+export const markAllNotificationsAsRead = async (): Promise<void> => {
+    await apiClient.patch(`/notifications/read-all`);
 };
 
 /**
@@ -88,11 +78,43 @@ export const deleteNotification = async (
     await apiClient.delete(`/notifications/${notificationId}`);
 };
 
+/**
+ * Get notification preferences for the current user
+ */
+export const getNotificationPreferences = async (): Promise<NotificationPreferences> => {
+    const response = await apiClient.get<NotificationPreferences>(`/notifications/preferences`);
+    return response.data;
+};
+
+/**
+ * Update notification preferences for the current user
+ */
+export const updateNotificationPreferences = async (
+    preferences: Partial<NotificationPreferences>
+): Promise<NotificationPreferences> => {
+    const response = await apiClient.put<NotificationPreferences>(`/notifications/preferences`, preferences);
+    return response.data;
+};
+
+// Legacy functions for backward compatibility
+// @deprecated Use getNotifications() instead
+export const getNotificationsByUserId = getNotifications;
+
+// @deprecated Use getUnreadNotificationCount() instead
+export const getUnreadNotifications = async (): Promise<Notification[]> => {
+    const notifications = await getNotifications();
+    return notifications.filter(n => !n.is_read);
+};
+
 export default {
-    getNotificationsByUserId,
-    getUnreadNotifications,
+    getNotifications,
     getUnreadNotificationCount,
     markNotificationAsRead,
     markAllNotificationsAsRead,
     deleteNotification,
+    getNotificationPreferences,
+    updateNotificationPreferences,
+    // Legacy exports
+    getNotificationsByUserId,
+    getUnreadNotifications,
 };

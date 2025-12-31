@@ -1,4 +1,4 @@
-import apiClient from './apiClient';
+import apiClient from "./apiClient";
 import type {
   Product,
   ProductStock,
@@ -6,22 +6,26 @@ import type {
   CreateProductPayload,
   UpdateProductPayload,
   UpdateStockPayload,
-} from '@/src/types/Product';
+} from "@/src/types/Product";
 
 function normalizeArrayResponse<T>(payload: unknown): T[] {
   if (Array.isArray(payload)) {
-    if (payload.length === 2 && Array.isArray(payload[0]) && typeof payload[1] === 'object') {
+    if (
+      payload.length === 2 &&
+      Array.isArray(payload[0]) &&
+      typeof payload[1] === "object"
+    ) {
       return normalizeArrayResponse<T>(payload[0]);
     }
     return payload as T[];
   }
 
-  if (payload && typeof payload === 'object') {
+  if (payload && typeof payload === "object") {
     const dataField = (payload as { data?: unknown }).data;
     if (Array.isArray(dataField)) {
       return normalizeArrayResponse<T>(dataField);
     }
-    if (dataField && typeof dataField === 'object') {
+    if (dataField && typeof dataField === "object") {
       const rows = (dataField as { rows?: unknown }).rows;
       if (Array.isArray(rows)) {
         return normalizeArrayResponse<T>(rows);
@@ -44,7 +48,9 @@ export const fetchAllProducts = async (): Promise<Product[]> => {
 export const fetchProductsByBusinessId = async (
   businessId: string
 ): Promise<Product[]> => {
-  const { data } = await apiClient.get<Product[]>(`/products/business/${businessId}`);
+  const { data } = await apiClient.get<Product[]>(
+    `/products/business/${businessId}`
+  );
   return normalizeArrayResponse<Product>(data);
 };
 
@@ -52,7 +58,9 @@ export const fetchProductsByBusinessId = async (
 export const fetchProductsByCategoryId = async (
   categoryId: string
 ): Promise<Product[]> => {
-  const { data } = await apiClient.get<Product[]>(`/products/category/${categoryId}`);
+  const { data } = await apiClient.get<Product[]>(
+    `/products/category/${categoryId}`
+  );
   return normalizeArrayResponse<Product>(data);
 };
 
@@ -78,11 +86,11 @@ export const updateProduct = async (
   productId: string,
   payload: UpdateProductPayload
 ): Promise<Product> => {
-  const { data } = await apiClient.put<{ message: string; data: Product }>(
+  const { data } = await apiClient.patch<{ message: string; data: Product }>(
     `/products/${productId}`,
     payload
   );
-  return data.data;
+  return data.data ?? (data as unknown as Product);
 };
 
 /** Delete product */
@@ -96,7 +104,9 @@ export const deleteProduct = async (productId: string): Promise<void> => {
 export const fetchProductStock = async (
   productId: string
 ): Promise<ProductStock> => {
-  const { data } = await apiClient.get<ProductStock>(`/products/${productId}/stock`);
+  const { data } = await apiClient.get<ProductStock>(
+    `/products/${productId}/stock`
+  );
   return data;
 };
 
@@ -105,11 +115,11 @@ export const updateProductStock = async (
   productId: string,
   payload: UpdateStockPayload
 ): Promise<ProductStock> => {
-  const { data } = await apiClient.put<{ message: string; data: ProductStock }>(
-    `/products/${productId}/stock`,
-    payload
-  );
-  return data.data;
+  const { data } = await apiClient.patch<{
+    message: string;
+    data: ProductStock;
+  }>(`/products/${productId}/stock`, payload);
+  return data.data ?? (data as unknown as ProductStock);
 };
 
 /** Get stock history */

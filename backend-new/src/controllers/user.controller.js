@@ -1,10 +1,9 @@
 /**
  * User Controller
- * User management via stored procedures
+ * User management using Sequelize models
  */
-import { sequelize } from '../models/index.js';
+import { sequelize, User, UserRole, Owner, Tourist } from '../models/index.js';
 import { ApiError } from '../utils/api-error.js';
-import { extractProcedureResult, extractSingleResult } from '../utils/helpers.js';
 import logger from '../config/logger.js';
 import bcrypt from 'bcrypt';
 import crypto from 'crypto';
@@ -15,9 +14,16 @@ import { v4 as uuidv4 } from 'uuid';
  */
 export const getAllUsers = async (req, res, next) => {
   try {
-    const queryResult = await sequelize.query('CALL GetAllUsers()');
-    const results = extractProcedureResult(queryResult);
-    res.success(results);
+    const users = await User.findAll({
+      include: [
+        { model: UserRole, as: 'role' },
+        { model: Tourist, as: 'tourist' },
+        { model: Owner, as: 'owner' }
+      ],
+      attributes: { exclude: ['password'] },
+      order: [['created_at', 'DESC']]
+    });
+    res.success(users);
   } catch (error) {
     logger.error('Error fetching users:', error);
     next(error);
@@ -30,16 +36,20 @@ export const getAllUsers = async (req, res, next) => {
 export const getUserById = async (req, res, next) => {
   const { id } = req.params;
   try {
-    const queryResult = await sequelize.query('CALL GetUserById(?)', {
-      replacements: [id]
+    const user = await User.findByPk(id, {
+      include: [
+        { model: UserRole, as: 'role' },
+        { model: Tourist, as: 'tourist' },
+        { model: Owner, as: 'owner' }
+      ],
+      attributes: { exclude: ['password'] }
     });
-    const result = extractSingleResult(queryResult);
 
-    if (!result) {
+    if (!user) {
       throw ApiError.notFound('User not found');
     }
 
-    res.success(result);
+    res.success(user);
   } catch (error) {
     next(error);
   }
@@ -51,16 +61,21 @@ export const getUserById = async (req, res, next) => {
 export const getUserByEmail = async (req, res, next) => {
   const { email } = req.params;
   try {
-    const queryResult = await sequelize.query('CALL GetUserByEmail(?)', {
-      replacements: [email]
+    const user = await User.findOne({
+      where: { email },
+      include: [
+        { model: UserRole, as: 'role' },
+        { model: Tourist, as: 'tourist' },
+        { model: Owner, as: 'owner' }
+      ],
+      attributes: { exclude: ['password'] }
     });
-    const result = extractSingleResult(queryResult);
 
-    if (!result) {
+    if (!user) {
       throw ApiError.notFound('User not found');
     }
 
-    res.success(result);
+    res.success(user);
   } catch (error) {
     next(error);
   }
@@ -72,11 +87,16 @@ export const getUserByEmail = async (req, res, next) => {
 export const getUsersByRole = async (req, res, next) => {
   const { role_id } = req.params;
   try {
-    const queryResult = await sequelize.query('CALL GetUsersByRole(?)', {
-      replacements: [role_id]
+    const users = await User.findAll({
+      where: { user_role_id: role_id },
+      include: [
+        { model: UserRole, as: 'role' },
+        { model: Tourist, as: 'tourist' },
+        { model: Owner, as: 'owner' }
+      ],
+      attributes: { exclude: ['password'] }
     });
-    const results = extractProcedureResult(queryResult);
-    res.success(results);
+    res.success(users);
   } catch (error) {
     next(error);
   }
@@ -88,31 +108,31 @@ export const getUsersByRole = async (req, res, next) => {
 export const updateUser = async (req, res, next) => {
   const { id } = req.params;
   try {
-    const params = [
-      id,
-      req.body.email ?? null,
-      req.body.phone_number ?? null,
-      req.body.first_name ?? null,
-      req.body.last_name ?? null,
-      req.body.is_active ?? null,
-      req.body.role_id ?? null
-    ];
+    const user = await User.findByPk(id);
 
-    const queryResult = await sequelize.query(
-      'CALL UpdateUser(?, ?, ?, ?, ?, ?, ?)',
-      { replacements: params }
-    );
-    const result = extractSingleResult(queryResult);
-
-    if (!result) {
+    if (!user) {
       throw ApiError.notFound('User not found');
     }
+
+    const updateData = {
+      email: req.body.email,
+      phone_number: req.body.phone_number,
+      is_active: req.body.is_active,
+      user_role_id: req.body.role_id || req.body.user_role_id
+    };
+
+    // Remove undefined values
+    Object.keys(updateData).forEach(key =>
+      updateData[key] === undefined && delete updateData[key]
+    );
+
+    await user.update(updateData);
 
     logger.info(`User updated: ${id}`);
 
     res.success({
       message: 'User updated successfully',
-      ...result
+      ...user.toJSON()
     });
   } catch (error) {
     next(error);
@@ -125,9 +145,13 @@ export const updateUser = async (req, res, next) => {
 export const deleteUser = async (req, res, next) => {
   const { id } = req.params;
   try {
-    await sequelize.query('CALL DeleteUser(?)', {
-      replacements: [id]
-    });
+    const user = await User.findByPk(id);
+
+    if (!user) {
+      throw ApiError.notFound('User not found');
+    }
+
+    await user.destroy();
 
     logger.info(`User deleted: ${id}`);
 
@@ -142,9 +166,10 @@ export const deleteUser = async (req, res, next) => {
  */
 export const getAllRoles = async (req, res, next) => {
   try {
-    const queryResult = await sequelize.query('CALL GetAllRoles()');
-    const results = extractProcedureResult(queryResult);
-    res.success(results);
+    const roles = await UserRole.findAll({
+      order: [['id', 'ASC']]
+    });
+    res.success(roles);
   } catch (error) {
     next(error);
   }
@@ -157,20 +182,19 @@ export const toggleUserStatus = async (req, res, next) => {
   const { id } = req.params;
   const { is_active } = req.body;
   try {
-    const queryResult = await sequelize.query('CALL ToggleUserStatus(?, ?)', {
-      replacements: [id, is_active]
-    });
-    const result = extractSingleResult(queryResult);
+    const user = await User.findByPk(id);
 
-    if (!result) {
+    if (!user) {
       throw ApiError.notFound('User not found');
     }
+
+    await user.update({ is_active });
 
     logger.info(`User ${id} status toggled to ${is_active}`);
 
     res.success({
       message: 'User status updated successfully',
-      ...result
+      ...user.toJSON()
     });
   } catch (error) {
     next(error);
@@ -190,33 +214,26 @@ export const insertUser = async (req, res, next) => {
     const rawPassword = req.body.password ?? null;
     const hashedPassword = rawPassword ? await bcrypt.hash(rawPassword, 10) : null;
 
-    const params = [
+    const user = await User.create({
       id,
-      req.body.email ?? null,
-      req.body.phone_number ?? null,
-      hashedPassword,
-      req.body.user_profile ?? null,
-      req.body.otp ?? null,
-      req.body.is_verified ?? false,
-      req.body.is_active ?? false,
-      req.body.last_login ?? null,
-      req.body.user_role_id ?? null,
-      req.body.barangay_id ?? null
-    ];
-
-    const queryResult = await sequelize.query(
-      'CALL InsertUser(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-      { replacements: params }
-    );
-    const result = extractSingleResult(queryResult);
-
-    if (!result) {
-      throw ApiError.internalError('Failed to create user');
-    }
+      email: req.body.email,
+      phone_number: req.body.phone_number,
+      password: hashedPassword,
+      user_profile: req.body.user_profile,
+      is_verified: req.body.is_verified ?? false,
+      is_active: req.body.is_active ?? false,
+      last_login: req.body.last_login,
+      user_role_id: req.body.user_role_id,
+      barangay_id: req.body.barangay_id
+    });
 
     logger.info(`User created: ${id}`);
 
-    res.created(result, 'User created successfully');
+    // Remove password from response
+    const userResponse = user.toJSON();
+    delete userResponse.password;
+
+    res.created(userResponse, 'User created successfully');
   } catch (error) {
     next(error);
   }
@@ -231,9 +248,10 @@ export const insertUser = async (req, res, next) => {
  */
 export const getAllUserRoles = async (req, res, next) => {
   try {
-    const queryResult = await sequelize.query('CALL GetAllUserRoles()');
-    const results = extractProcedureResult(queryResult);
-    res.success(results);
+    const roles = await UserRole.findAll({
+      order: [['id', 'ASC']]
+    });
+    res.success(roles);
   } catch (error) {
     next(error);
   }
@@ -245,16 +263,13 @@ export const getAllUserRoles = async (req, res, next) => {
 export const getUserRoleById = async (req, res, next) => {
   const { id } = req.params;
   try {
-    const queryResult = await sequelize.query('CALL GetUserRoleById(?)', {
-      replacements: [id]
-    });
-    const result = extractSingleResult(queryResult);
+    const role = await UserRole.findByPk(id);
 
-    if (!result) {
+    if (!role) {
       throw ApiError.notFound('User role not found');
     }
 
-    res.success(result);
+    res.success(role);
   } catch (error) {
     next(error);
   }
@@ -266,11 +281,16 @@ export const getUserRoleById = async (req, res, next) => {
 export const getUsersByRoleId = async (req, res, next) => {
   const { user_role_id } = req.params;
   try {
-    const queryResult = await sequelize.query('CALL GetUsersByRoleId(?)', {
-      replacements: [user_role_id]
+    const users = await User.findAll({
+      where: { user_role_id },
+      include: [
+        { model: UserRole, as: 'role' },
+        { model: Tourist, as: 'tourist' },
+        { model: Owner, as: 'owner' }
+      ],
+      attributes: { exclude: ['password'] }
     });
-    const results = extractProcedureResult(queryResult);
-    res.success(results);
+    res.success(users);
   } catch (error) {
     next(error);
   }
@@ -281,23 +301,19 @@ export const getUsersByRoleId = async (req, res, next) => {
  */
 export const insertUserRole = async (req, res, next) => {
   try {
-    const params = [
-      req.body.role_name ?? null,
-      req.body.role_description ?? null
-    ];
-
-    const queryResult = await sequelize.query('CALL InsertUserRole(?, ?)', {
-      replacements: params
+    const role = await UserRole.create({
+      role_name: req.body.role_name,
+      role_description: req.body.role_description,
+      role_type: req.body.role_type || 'custom',
+      is_custom: true,
+      role_for: req.body.role_for,
+      role_for_type: req.body.role_for_type,
+      permissions: req.body.permissions || []
     });
-    const result = extractSingleResult(queryResult);
 
-    if (!result) {
-      throw ApiError.internalError('Failed to create user role');
-    }
+    logger.info(`User role created: ${role.id}`);
 
-    logger.info(`User role created: ${result.id}`);
-
-    res.created(result, 'User role created successfully');
+    res.created(role, 'User role created successfully');
   } catch (error) {
     next(error);
   }
@@ -309,24 +325,21 @@ export const insertUserRole = async (req, res, next) => {
 export const updateUserRole = async (req, res, next) => {
   const { id } = req.params;
   try {
-    const params = [
-      id,
-      req.body.role_name ?? null,
-      req.body.role_description ?? null
-    ];
+    const role = await UserRole.findByPk(id);
 
-    const queryResult = await sequelize.query('CALL UpdateUserRole(?, ?, ?)', {
-      replacements: params
-    });
-    const result = extractSingleResult(queryResult);
-
-    if (!result) {
+    if (!role) {
       throw ApiError.notFound('User role not found');
     }
 
+    await role.update({
+      role_name: req.body.role_name,
+      role_description: req.body.role_description,
+      permissions: req.body.permissions
+    });
+
     logger.info(`User role updated: ${id}`);
 
-    res.success(result, 'User role updated successfully');
+    res.success(role, 'User role updated successfully');
   } catch (error) {
     next(error);
   }
@@ -337,22 +350,20 @@ export const updateUserRole = async (req, res, next) => {
  */
 export const updateUserRoleByName = async (req, res, next) => {
   try {
-    const params = [
-      req.body.role_name ?? null,
-      req.body.new_role_name ?? null,
-      req.body.role_description ?? null
-    ];
-
-    const queryResult = await sequelize.query('CALL UpdateUserRoleByName(?, ?, ?)', {
-      replacements: params
+    const role = await UserRole.findOne({
+      where: { role_name: req.body.role_name }
     });
-    const result = extractSingleResult(queryResult);
 
-    if (!result) {
+    if (!role) {
       throw ApiError.notFound('User role not found');
     }
 
-    res.success(result, 'User role updated successfully');
+    await role.update({
+      role_name: req.body.new_role_name || role.role_name,
+      role_description: req.body.role_description
+    });
+
+    res.success(role, 'User role updated successfully');
   } catch (error) {
     next(error);
   }
@@ -379,26 +390,20 @@ export const insertStaffUser = async (req, res, next) => {
     const invitationToken = crypto.randomBytes(32).toString('hex');
     const invitationExpiresAt = new Date(Date.now() + 48 * 60 * 60 * 1000); // 48 hours
 
-    const params = [
+    const user = await User.create({
       id,
-      req.body.email ?? null,
-      req.body.phone_number ?? '',
-      hashedPassword,
-      req.body.user_role_id ?? null,
-      req.body.barangay_id ?? null,
-      invitationToken,
-      invitationExpiresAt
-    ];
-
-    const queryResult = await sequelize.query(
-      'CALL InsertStaffUser(?, ?, ?, ?, ?, ?, ?, ?)',
-      { replacements: params }
-    );
-    const user = extractSingleResult(queryResult);
-
-    if (!user) {
-      throw ApiError.internalError('Failed to create staff user');
-    }
+      email: req.body.email,
+      phone_number: req.body.phone_number || '',
+      password: hashedPassword,
+      user_role_id: req.body.user_role_id,
+      barangay_id: req.body.barangay_id,
+      is_verified: true,
+      is_active: true,
+      must_change_password: true,
+      profile_completed: false,
+      invitation_token: invitationToken,
+      invitation_expires_at: invitationExpiresAt
+    });
 
     logger.info(`Staff user created: ${id}`);
 
@@ -442,10 +447,7 @@ export const changePassword = async (req, res, next) => {
     }
 
     // Get current user with password
-    const userQueryResult = await sequelize.query('CALL GetUserById(?)', {
-      replacements: [userId]
-    });
-    const user = extractSingleResult(userQueryResult);
+    const user = await User.findByPk(userId);
 
     if (!user) {
       throw ApiError.notFound('User not found');
@@ -461,8 +463,10 @@ export const changePassword = async (req, res, next) => {
     const hashedPassword = await bcrypt.hash(new_password, 10);
 
     // Update password and clear must_change_password flag
-    await sequelize.query('CALL CompletePasswordChange(?, ?)', {
-      replacements: [userId, hashedPassword]
+    await user.update({
+      password: hashedPassword,
+      must_change_password: false,
+      password_changed_at: new Date()
     });
 
     logger.info(`User ${userId} changed password`);
@@ -488,14 +492,17 @@ export const completeStaffProfile = async (req, res, next) => {
   }
 
   try {
-    const queryResult = await sequelize.query('CALL CompleteStaffProfile(?)', {
-      replacements: [userId]
-    });
-    const result = extractSingleResult(queryResult);
+    const user = await User.findByPk(userId);
 
-    if (!result) {
+    if (!user) {
       throw ApiError.notFound('User not found');
     }
+
+    await user.update({
+      profile_completed: true,
+      invitation_token: null,
+      invitation_expires_at: null
+    });
 
     logger.info(`Staff profile completed: ${userId}`);
 

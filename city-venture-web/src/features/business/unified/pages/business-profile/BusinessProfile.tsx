@@ -21,6 +21,7 @@ import EditMapCoordinatesModal from "./components/EditMapCoordinatesModal";
 import EditBusinessModal from "./components/EditBusinessModal";
 import { FaInstagram } from "react-icons/fa";
 import { getData } from "@/src/services/Service";
+import apiClient from "@/src/services/apiClient";
 import EditBusinessHoursModal from "./components/EditBusinessHoursModal";
 import type { Amenity } from "@/src/types/Amenity";
 import EditAmenitiesModal from "./components/EditAmenitiesModal";
@@ -50,11 +51,16 @@ const BusinessProfile = () => {
 
   const getBusinessHours = useCallback(async () => {
     if (!businessDetails?.id) return;
-    const response = await getData("business-hours");
-    const filtered = Array.isArray(response)
-      ? response.filter((hours) => hours.business_id === businessDetails.id)
-      : [];
-    setBusinessHours(filtered);
+    try {
+      const response = await apiClient.get(
+        `/business-hours/business/${businessDetails.id}`
+      );
+      const hours = response.data?.data || response.data || [];
+      setBusinessHours(Array.isArray(hours) ? hours : []);
+    } catch (error) {
+      console.error("Failed to fetch business hours:", error);
+      setBusinessHours([]);
+    }
   }, [businessDetails?.id]);
 
   const fetchBusinessAmenities = useCallback(async () => {
@@ -80,7 +86,7 @@ const BusinessProfile = () => {
   const fetchRooms = useCallback(async () => {
     if (!businessDetails?.id) return;
 
-    const response = await getData("room");
+    const response = await getData("rooms");
     const filtered = Array.isArray(response)
       ? response.filter((room: Room) => room.business_id === businessDetails.id)
       : [];

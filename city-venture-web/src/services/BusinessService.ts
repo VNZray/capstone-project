@@ -25,7 +25,7 @@ export const clearStoredBusinessId = async () => {
 
 /** Fetch All Listed Business Details from API */
 export const fetchAllBusinessDetails = async (): Promise<Business[]> => {
-  const { data } = await apiClient.get<Business[]>(`/business`);
+  const { data } = await apiClient.get<Business[]>(`/businesses`);
   return data;
 };
 
@@ -33,14 +33,14 @@ export const fetchAllBusinessDetails = async (): Promise<Business[]> => {
 export const fetchBusinessDetails = async (
   business_id: string
 ): Promise<Business> => {
-  const { data } = await apiClient.get<Business>(`/business/${business_id}`);
+  const { data } = await apiClient.get<Business>(`/businesses/${business_id}`);
   return data;
 };
 
 export const fetchBusinessesByOwner = async (
   owner_id: string
 ): Promise<Business[]> => {
-  const { data } = await apiClient.get(`/business/owner/${owner_id}`);
+  const { data } = await apiClient.get(`/businesses/owner/${owner_id}`);
   return Array.isArray(data) ? data : [data]; // ensure it's always an array
 };
 
@@ -52,10 +52,7 @@ export const fetchCategories = async (params?: {
   status?: "active" | "inactive";
   parent_id?: number | "root";
 }): Promise<Category[]> => {
-  const { data } = await apiClient.get<Category[]>(
-    "/category-and-type/categories",
-    { params }
-  );
+  const { data } = await apiClient.get<Category[]>("/categories", { params });
   return data;
 };
 
@@ -63,20 +60,15 @@ export const fetchCategories = async (params?: {
 export const fetchCategoryTree = async (
   applicable_to?: "business" | "tourist_spot" | "event"
 ): Promise<CategoryTree[]> => {
-  const { data } = await apiClient.get<CategoryTree[]>(
-    "/category-and-type/categories/tree",
-    {
-      params: applicable_to ? { applicable_to } : undefined,
-    }
-  );
+  const { data } = await apiClient.get<CategoryTree[]>("/categories/tree", {
+    params: applicable_to ? { applicable_to } : undefined,
+  });
   return data;
 };
 
 /** Fetch single category by ID */
 export const fetchCategoryById = async (id: number): Promise<Category> => {
-  const { data } = await apiClient.get<Category>(
-    `/category-and-type/categories/${id}`
-  );
+  const { data } = await apiClient.get<Category>(`/categories/${id}`);
   return data;
 };
 
@@ -85,7 +77,7 @@ export const fetchCategoryChildren = async (
   parentId: number
 ): Promise<Category[]> => {
   const { data } = await apiClient.get<Category[]>(
-    `/category-and-type/categories/${parentId}/children`
+    `/categories/${parentId}/children`
   );
   return data;
 };
@@ -95,7 +87,7 @@ export const createCategory = async (
   category: Partial<Category>
 ): Promise<{ id: number }> => {
   const { data } = await apiClient.post<{ id: number }>(
-    "/category-and-type/categories",
+    "/categories",
     category
   );
   return data;
@@ -106,12 +98,12 @@ export const updateCategoryService = async (
   id: number,
   category: Partial<Category>
 ): Promise<void> => {
-  await apiClient.put(`/category-and-type/categories/${id}`, category);
+  await apiClient.put(`/categories/${id}`, category);
 };
 
 /** Delete a category */
 export const deleteCategoryService = async (id: number): Promise<void> => {
-  await apiClient.delete(`/category-and-type/categories/${id}`);
+  await apiClient.delete(`/categories/${id}`);
 };
 
 // ==================== ENTITY CATEGORIES FUNCTIONS ====================
@@ -122,7 +114,7 @@ export const fetchEntityCategories = async (
   entityId: string
 ): Promise<EntityCategory[]> => {
   const { data } = await apiClient.get<EntityCategory[]>(
-    `/category-and-type/entity-categories/${entityType}/${entityId}`
+    `/categories/entity/${entityType}/${entityId}`
   );
   return data;
 };
@@ -136,7 +128,7 @@ export const addEntityCategory = async (
   isPrimary?: boolean
 ): Promise<{ id: number }> => {
   const { data } = await apiClient.post<{ id: number }>(
-    `/category-and-type/entity-categories/${entityType}/${entityId}`,
+    `/categories/entity/${entityType}/${entityId}`,
     { category_id: categoryId, level, is_primary: isPrimary }
   );
   return data;
@@ -149,7 +141,7 @@ export const removeEntityCategory = async (
   categoryId: number
 ): Promise<void> => {
   await apiClient.delete(
-    `/category-and-type/entity-categories/${entityType}/${entityId}/${categoryId}`
+    `/categories/entity/${entityType}/${entityId}/${categoryId}`
   );
 };
 
@@ -159,8 +151,8 @@ export const setEntityPrimaryCategory = async (
   entityId: string,
   categoryId: number
 ): Promise<void> => {
-  await apiClient.put(
-    `/category-and-type/entity-categories/${entityType}/${entityId}/${categoryId}/primary`
+  await apiClient.patch(
+    `/categories/entity/${entityType}/${entityId}/${categoryId}/primary`
   );
 };
 
@@ -177,19 +169,18 @@ export const fetchEntitiesByCategory = async (
     level: number;
   }[]
 > => {
-  const { data } = await apiClient.get(
-    `/category-and-type/categories/${categoryId}/entities`,
-    {
-      params: { entity_type: entityType, include_children: includeChildren },
-    }
-  );
+  const { data } = await apiClient.get(`/categories/${categoryId}/entities`, {
+    params: { entity_type: entityType, include_children: includeChildren },
+  });
   return data;
 };
 
 // ==================== ADDRESS & BUSINESS DATA ====================
 
 export const fetchAddress = async (barangay_id: number): Promise<Address> => {
-  const res = await apiClient.get<Address>(`/address/${barangay_id}`);
+  const res = await apiClient.get<Address>(
+    `/addresses/barangays/${barangay_id}/full-address`
+  );
   return res.data;
 };
 

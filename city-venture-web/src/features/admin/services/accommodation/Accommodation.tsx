@@ -122,7 +122,7 @@ const Accommodation: React.FC = () => {
   const fetchAccommodations = async () => {
     setLoading(true);
     try {
-      const response = await getData("business");
+      const response = await getData("businesses");
       console.log("All businesses fetched:", response);
 
       // Filter for accommodation type businesses (hasBooking = true or 1)

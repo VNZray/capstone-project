@@ -27,6 +27,7 @@ import RoomModel from './room.model.js';
 import RoomPhotoModel from './room-photo.model.js';
 import RoomAmenityModel from './room-amenity.model.js';
 import RoomBlockedDatesModel from './room-blocked-dates.model.js';
+import { initSeasonalPricing } from './seasonal-pricing.model.js';
 
 // Import booking models
 import BookingModel from './booking.model.js';
@@ -106,6 +107,7 @@ const Room = RoomModel(sequelize, DataTypes);
 const RoomPhoto = RoomPhotoModel(sequelize, DataTypes);
 const RoomAmenity = RoomAmenityModel(sequelize, DataTypes);
 const RoomBlockedDates = RoomBlockedDatesModel(sequelize, DataTypes);
+const SeasonalPricing = initSeasonalPricing(sequelize);
 
 // Initialize booking models
 const Booking = BookingModel(sequelize, DataTypes);
@@ -185,6 +187,7 @@ const models = {
   RoomPhoto,
   RoomAmenity,
   RoomBlockedDates,
+  SeasonalPricing,
   // Booking
   Booking,
   ExternalBooking,
@@ -263,6 +266,7 @@ export {
   RoomPhoto,
   RoomAmenity,
   RoomBlockedDates,
+  SeasonalPricing,
   // Booking
   Booking,
   ExternalBooking,

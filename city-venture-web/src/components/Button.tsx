@@ -1,6 +1,6 @@
 import { Button as JoyButton } from "@mui/joy";
 import type { ButtonProps as JoyButtonProps } from "@mui/joy";
-import type { CSSProperties } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import { colors } from "../utils/Colors";
 import { getColorStyles } from "../utils/buttonColorStyles";
 
@@ -10,6 +10,10 @@ interface CustomButtonProps extends Omit<JoyButtonProps, "color" | "variant"> {
   variant?: "solid" | "outlined" | "soft" | "plain";
   colorScheme?: ColorScheme;
   children: React.ReactNode;
+  /** @deprecated Use startDecorator instead */
+  leftIcon?: ReactNode;
+  /** @deprecated Use endDecorator instead */
+  rightIcon?: ReactNode;
 }
 
 const Button = ({
@@ -17,6 +21,10 @@ const Button = ({
   colorScheme = "primary",
   children,
   sx,
+  leftIcon,
+  rightIcon,
+  startDecorator,
+  endDecorator,
   ...props
 }: CustomButtonProps) => {
   const buttonStyles = getColorStyles(colorScheme, variant);
@@ -30,6 +38,8 @@ const Button = ({
           ? "outlined"
           : "soft"
       }
+      startDecorator={startDecorator ?? leftIcon}
+      endDecorator={endDecorator ?? rightIcon}
       sx={
         {
           ...buttonStyles,

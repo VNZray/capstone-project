@@ -1,8 +1,8 @@
 import * as React from "react";
-import BaseEditModal from '@/src/components/BaseEditModal';
+import BaseEditModal from "@/src/components/BaseEditModal";
 import { deleteData, getData, insertData } from "@/src/services/Service";
 import type { Amenity } from "@/src/types/Amenity";
-import * as Icons from 'lucide-react';
+import * as Icons from "lucide-react";
 /* eslint-disable @typescript-eslint/no-explicit-any */
 const icons = Icons as unknown as Record<string, React.ComponentType<any>>;
 /* eslint-enable @typescript-eslint/no-explicit-any */
@@ -30,7 +30,11 @@ const EditAmenitiesModal: React.FC<EditBusinessModalProps> = ({
   // get amenities
   const fetchAmenities = async () => {
     const response = await getData("amenities");
-    if (response) setAmenities(response);
+    if (response && Array.isArray(response)) {
+      setAmenities(response);
+    } else {
+      setAmenities([]);
+    }
   };
 
   React.useEffect(() => {
@@ -105,8 +109,8 @@ const EditAmenitiesModal: React.FC<EditBusinessModalProps> = ({
       title="Edit Amenities"
       description="Select amenities for this business"
       actions={[
-        { label: 'Cancel', onClick: onClose },
-        { label: 'Save', onClick: handleSave, variant: 'primary' },
+        { label: "Cancel", onClick: onClose },
+        { label: "Save", onClick: handleSave, variant: "primary" },
       ]}
     >
       <div style={{ padding: 8 }}>
@@ -115,30 +119,77 @@ const EditAmenitiesModal: React.FC<EditBusinessModalProps> = ({
             placeholder="Search amenities..."
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            style={{ width: '100%', padding: 8, boxSizing: 'border-box', borderRadius: 6, border: '1px solid #e5e7eb' }}
+            style={{
+              width: "100%",
+              padding: 8,
+              boxSizing: "border-box",
+              borderRadius: 6,
+              border: "1px solid #e5e7eb",
+            }}
           />
         </div>
 
-        <div style={{ maxHeight: 300, overflow: 'auto', paddingRight: 4 }}>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 4 }}>
+        <div style={{ maxHeight: 300, overflow: "auto", paddingRight: 4 }}>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+              gap: 4,
+            }}
+          >
             {amenities
-              .filter((a) => a.name.toLowerCase().includes(query.trim().toLowerCase()))
+              .filter((a) =>
+                a.name.toLowerCase().includes(query.trim().toLowerCase())
+              )
               .map((amenity) => {
-                const checked = selectedAmenities.some((s) => s.id === amenity.id);
-                const IconComp = amenity.icon && icons[amenity.icon] ? icons[amenity.icon] : icons.Tag;
+                const checked = selectedAmenities.some(
+                  (s) => s.id === amenity.id
+                );
+                const IconComp =
+                  amenity.icon && icons[amenity.icon]
+                    ? icons[amenity.icon]
+                    : icons.Tag;
                 return (
-                  <label key={amenity.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 8px' }}>
+                  <label
+                    key={amenity.id}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 8,
+                      padding: "6px 8px",
+                    }}
+                  >
                     <input
                       type="checkbox"
                       checked={checked}
                       onChange={(e) => {
-                        if (e.target.checked) setSelectedAmenities((s) => [...s, amenity]);
-                        else setSelectedAmenities((s) => s.filter((x) => x.id !== amenity.id));
+                        if (e.target.checked)
+                          setSelectedAmenities((s) => [...s, amenity]);
+                        else
+                          setSelectedAmenities((s) =>
+                            s.filter((x) => x.id !== amenity.id)
+                          );
                       }}
                     />
-                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-                      <IconComp size={16} style={{ color: 'var(--primary-color)' }} />
-                      <span style={{ color: 'var(--primary-color)', fontWeight: 500 }}>{amenity.name}</span>
+                    <span
+                      style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: 8,
+                      }}
+                    >
+                      <IconComp
+                        size={16}
+                        style={{ color: "var(--primary-color)" }}
+                      />
+                      <span
+                        style={{
+                          color: "var(--primary-color)",
+                          fontWeight: 500,
+                        }}
+                      >
+                        {amenity.name}
+                      </span>
                     </span>
                   </label>
                 );

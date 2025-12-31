@@ -19,10 +19,11 @@ export function useEntityCategories(entityType?: string, entityId?: string) {
       setLoading(true);
       try {
         const { data } = await apiClient.get<EntityCategory[]>(
-          `/category-and-type/entity-categories/${entityType}/${entityId}`
+          `/categories/entity/${entityType}/${entityId}`
         );
-        setCategories(data);
-        const primary = data.find(c => c.is_primary) || data[0] || null;
+        const cats = data || [];
+        setCategories(Array.isArray(cats) ? cats : []);
+        const primary = (Array.isArray(cats) ? cats : []).find((c: EntityCategory) => c.is_primary) || (Array.isArray(cats) ? cats[0] : null) || null;
         setPrimaryCategory(primary);
       } catch (err) {
         console.error("Failed to fetch entity categories", err);

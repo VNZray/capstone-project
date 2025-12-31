@@ -93,11 +93,10 @@ const EditBasicInfo: React.FC<EditDescriptionModalProps> = ({
   // Fetch existing room numbers for this business (excluding current room)
   const fetchExistingRoomNumbers = async () => {
     if (!businessId) return;
-    const rooms = await getData("room");
+    const rooms = await getData("rooms");
     if (rooms) {
       const businessRooms = (rooms as Room[]).filter(
-        (room: Room) =>
-          room.business_id === businessId && room.id !== roomId
+        (room: Room) => room.business_id === businessId && room.id !== roomId
       );
       setExistingRoomNumbers(
         businessRooms.map((room: Room) =>
@@ -140,9 +139,7 @@ const EditBasicInfo: React.FC<EditDescriptionModalProps> = ({
     // Check for duplicate room number within this business
     const roomNumberLower = (room_number || "").trim().toLowerCase();
     if (existingRoomNumbers.includes(roomNumberLower)) {
-      setError(
-        `Room number "${room_number}" already exists for this business`
-      );
+      setError(`Room number "${room_number}" already exists for this business`);
       return;
     }
 
@@ -157,7 +154,7 @@ const EditBasicInfo: React.FC<EditDescriptionModalProps> = ({
           status,
         };
         await updateData(roomId, updatePayload, "room");
-        
+
         // Show success alert
         setAlertConfig({
           open: true,
@@ -165,20 +162,19 @@ const EditBasicInfo: React.FC<EditDescriptionModalProps> = ({
           title: "Room Updated",
           message: `Room ${room_number} has been successfully updated with new information.`,
         });
-        
+
         setError("");
         onSave(room_number, room_type, floor, capacity, room_price, status);
-        
+
         // Close modal and reload after showing success
         setTimeout(() => {
           onClose();
           if (onUpdate) onUpdate();
         }, 1500);
-        
       } catch (err) {
         const errorMessage =
           err instanceof Error ? err.message : "Failed to update room";
-        
+
         let alertMessage = errorMessage;
         if (
           errorMessage.includes("Duplicate entry") ||
@@ -186,14 +182,14 @@ const EditBasicInfo: React.FC<EditDescriptionModalProps> = ({
         ) {
           alertMessage = `Room number "${room_number}" already exists for this business. Please use a different room number.`;
         }
-        
+
         setAlertConfig({
           open: true,
           type: "error",
           title: "Update Failed",
           message: alertMessage,
         });
-        
+
         setError(alertMessage);
         return;
       }
@@ -287,17 +283,17 @@ const EditBasicInfo: React.FC<EditDescriptionModalProps> = ({
           </FormControl>
         </Stack>
       </BaseEditModal>
-    
-    <Alert
-      open={alertConfig.open}
-      onClose={() => setAlertConfig((prev) => ({ ...prev, open: false }))}
-      onConfirm={() => setAlertConfig((prev) => ({ ...prev, open: false }))}
-      type={alertConfig.type}
-      title={alertConfig.title}
-      message={alertConfig.message}
-      confirmText="OK"
-      showCancel={false}
-    />
+
+      <Alert
+        open={alertConfig.open}
+        onClose={() => setAlertConfig((prev) => ({ ...prev, open: false }))}
+        onConfirm={() => setAlertConfig((prev) => ({ ...prev, open: false }))}
+        type={alertConfig.type}
+        title={alertConfig.title}
+        message={alertConfig.message}
+        confirmText="OK"
+        showCancel={false}
+      />
     </>
   );
 };

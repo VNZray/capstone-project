@@ -6,7 +6,7 @@ import type { User } from "@/src/types/User";
 export const fetchBookingsByRoomId = async (
   room_id: string
 ): Promise<Bookings[]> => {
-  const { data } = await apiClient.get<Bookings[]>(`/booking/room/${room_id}`);
+  const { data } = await apiClient.get<Bookings[]>(`/bookings/room/${room_id}`);
   return Array.isArray(data) ? data : [data]; // ensure it's always an array
 };
 
@@ -19,7 +19,7 @@ export const fetchBookingsByBusinessId = async (
   if (!business_id) return [];
   // Get rooms for the business
   const { data: roomsData } = await apiClient.get<Room[] | Room>(
-    `/room/${business_id}`
+    `/rooms/business/${business_id}`
   );
   const rooms: Room[] = Array.isArray(roomsData) ? roomsData : [roomsData];
   if (rooms.length === 0) return [];
@@ -29,7 +29,7 @@ export const fetchBookingsByBusinessId = async (
     rooms.map(
       (room) =>
         apiClient
-          .get<Bookings | Bookings[number]>(`/booking/room/${room.id}`)
+          .get<Bookings | Bookings[number]>(`/bookings/room/${room.id}`)
           .then((res) => (Array.isArray(res.data) ? res.data : [res.data]))
           .catch(() => []) // fail-soft per room
     )
@@ -40,7 +40,7 @@ export const fetchBookingsByBusinessId = async (
 
 /** Update booking status */
 export const updateBookingStatus = async (id: string, status: string) => {
-  const { data } = await apiClient.put(`/booking/${id}`, {
+  const { data } = await apiClient.put(`/bookings/${id}`, {
     booking_status: status,
   });
   return data;
@@ -50,12 +50,12 @@ export const updateBookingStatus = async (id: string, status: string) => {
 export const fetchBookingById = async (
   id: string
 ): Promise<Bookings[number]> => {
-  const { data } = await apiClient.get<Bookings[number]>(`/booking/${id}`);
+  const { data } = await apiClient.get<Bookings[number]>(`/bookings/${id}`);
   return data;
 };
 
 export const fetchTourist = async (tourist_id: string) => {
-  const { data } = await apiClient.get(`/tourist/${tourist_id}`);
+  const { data } = await apiClient.get(`/tourists/${tourist_id}`);
   return data;
 };
 
@@ -122,7 +122,7 @@ export const createWalkInBooking = async (
   request: WalkInBookingRequest
 ): Promise<Booking & { message: string }> => {
   const { data } = await apiClient.post<Booking & { message: string }>(
-    "/booking/walk-in",
+    "/bookings/walk-in",
     request
   );
   return data;
@@ -140,7 +140,7 @@ export const searchGuests = async (
   if (businessId) params.business_id = businessId;
 
   const { data } = await apiClient.get<GuestSearchResult[]>(
-    "/booking/search/guests",
+    "/bookings/search-guests",
     { params }
   );
   return Array.isArray(data) ? data : [];
@@ -153,7 +153,7 @@ export const fetchTodaysArrivals = async (
   businessId: string
 ): Promise<TodaysArrivalsResponse> => {
   const { data } = await apiClient.get<TodaysArrivalsResponse>(
-    `/booking/business/${businessId}/arrivals`
+    `/bookings/arrivals/${businessId}`
   );
   return data;
 };
@@ -165,7 +165,7 @@ export const fetchTodaysDepartures = async (
   businessId: string
 ): Promise<TodaysDeparturesResponse> => {
   const { data } = await apiClient.get<TodaysDeparturesResponse>(
-    `/booking/business/${businessId}/departures`
+    `/bookings/departures/${businessId}`
   );
   return data;
 };
@@ -177,7 +177,7 @@ export const fetchCurrentlyOccupied = async (
   businessId: string
 ): Promise<CurrentlyOccupiedResponse> => {
   const { data } = await apiClient.get<CurrentlyOccupiedResponse>(
-    `/booking/business/${businessId}/occupied`
+    `/bookings/occupied/${businessId}`
   );
   return data;
 };

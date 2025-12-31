@@ -2,6 +2,7 @@
  * Seasonal Pricing Service
  *
  * Handles API calls for seasonal and weekend pricing configurations
+ * Uses month-based seasons (peak, high, low) and weekend day pricing
  */
 
 import apiClient from './apiClient';
@@ -10,6 +11,7 @@ import type {
     PriceCalculation,
     PriceRangeResult,
     PriceBreakdown,
+    DayOfWeek,
 } from '@/types/SeasonalPricing';
 
 const BASE_PATH = '/seasonal-pricing';
@@ -53,7 +55,7 @@ export const calculatePriceForDate = async (
     date: string
 ): Promise<PriceCalculation> => {
     const { data } = await apiClient.get<PriceCalculation>(
-        `${BASE_PATH}/calculate/${roomId}/date`,
+        `${BASE_PATH}/room/${roomId}/calculate`,
         { params: { date } }
     );
     return data;
@@ -68,7 +70,7 @@ export const calculatePriceForDateRange = async (
     endDate: string
 ): Promise<PriceRangeResult> => {
     const { data } = await apiClient.get<PriceRangeResult>(
-        `${BASE_PATH}/calculate/${roomId}/range`,
+        `${BASE_PATH}/room/${roomId}/calculate-range`,
         { params: { start_date: startDate, end_date: endDate } }
     );
     return data;
@@ -91,9 +93,6 @@ const parseArrayField = <T>(field: T[] | string | null | undefined): T[] => {
 /**
  * Helper: Get the effective price for a date based on local calculation
  * Used when we have seasonal pricing configured
- * @param pricing - The seasonal pricing configuration
- * @param dateStr - Date string in 'yyyy-MM-dd' format
- * @returns The calculated price for that date
  */
 export const getLocalPriceForDate = (
     pricing: SeasonalPricing,
@@ -101,18 +100,18 @@ export const getLocalPriceForDate = (
 ): number => {
     const date = new Date(dateStr + 'T00:00:00');
     const month = date.getMonth() + 1; // getMonth() is 0-indexed
-    const dayName = date.toLocaleDateString('en-US', { weekday: 'long' });
+    const dayName = date.toLocaleDateString('en-US', { weekday: 'long' }) as DayOfWeek;
 
-    // Ensure all prices are numbers (DB may return strings)
+    // Ensure all prices are numbers
     let price = Number(pricing.base_price) || 0;
 
-    // Parse month arrays (may come as JSON strings from DB)
+    // Parse month arrays
     const peakMonths = parseArrayField(pricing.peak_season_months);
     const highMonths = parseArrayField(pricing.high_season_months);
     const lowMonths = parseArrayField(pricing.low_season_months);
     const weekendDays = parseArrayField(pricing.weekend_days);
 
-    // Check seasonal pricing (first match wins - peak > high > low)
+    // Check seasonal pricing (priority: peak > high > low)
     if (peakMonths.includes(month) && pricing.peak_season_price) {
         price = Number(pricing.peak_season_price) || price;
     } else if (highMonths.includes(month) && pricing.high_season_price) {
@@ -123,7 +122,7 @@ export const getLocalPriceForDate = (
 
     // Weekend pricing overrides if higher
     const weekendPrice = Number(pricing.weekend_price) || 0;
-    if (weekendDays.includes(dayName as any) && weekendPrice > 0) {
+    if (weekendDays.includes(dayName) && weekendPrice > 0) {
         if (weekendPrice > price) {
             price = weekendPrice;
         }
@@ -134,11 +133,6 @@ export const getLocalPriceForDate = (
 
 /**
  * Helper: Calculate total price for a date range locally
- * Used for booking price calculation
- * @param pricing - The seasonal pricing configuration
- * @param startDateStr - Start date string in 'yyyy-MM-dd' format
- * @param endDateStr - End date string in 'yyyy-MM-dd' format
- * @returns Total price for the date range
  */
 export const calculateLocalPriceForDateRange = (
     pricing: SeasonalPricing,
@@ -162,10 +156,6 @@ export const calculateLocalPriceForDateRange = (
 
 /**
  * Helper: Get detailed price breakdown for a date range
- * @param pricing - The seasonal pricing configuration
- * @param startDateStr - Start date string in 'yyyy-MM-dd' format
- * @param endDateStr - End date string in 'yyyy-MM-dd' format
- * @returns Breakdown of prices per day
  */
 export const getDetailedPriceBreakdown = (
     pricing: SeasonalPricing,
@@ -200,8 +190,8 @@ export const getDetailedPriceBreakdown = (
         const price = getLocalPriceForDate(pricing, dateStr);
 
         // Check if weekend override applied
-        if (weekendDays.includes(dayName as any) && pricing.weekend_price) {
-            if (pricing.weekend_price >= price) {
+        if (weekendDays.includes(dayName as DayOfWeek) && pricing.weekend_price) {
+            if (Number(pricing.weekend_price) >= price) {
                 priceType = 'weekend';
             }
         }
@@ -280,4 +270,17 @@ export const getHighestPrice = (
     ].filter((p): p is number => p !== null && p !== undefined && p > 0);
 
     return prices.length > 0 ? Math.max(...prices) : defaultPrice;
+};
+
+export default {
+    fetchSeasonalPricingByBusinessId,
+    fetchSeasonalPricingByRoomId,
+    calculatePriceForDate,
+    calculatePriceForDateRange,
+    getLocalPriceForDate,
+    calculateLocalPriceForDateRange,
+    getDetailedPriceBreakdown,
+    formatPriceBreakdown,
+    getLowestPrice,
+    getHighestPrice,
 };

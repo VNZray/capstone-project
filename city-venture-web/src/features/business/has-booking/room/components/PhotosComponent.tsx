@@ -46,13 +46,10 @@ export default function PhotosComponent() {
 
     try {
       setIsLoading(true);
-      const response = await getData("room-photos");
+      const response = await getData(`room-photos/room/${roomDetails.id}`);
 
       if (Array.isArray(response)) {
-        const roomPhotos = response.filter(
-          (photo: RoomPhoto) => photo.room_id === roomDetails.id
-        );
-        setPhotos(roomPhotos);
+        setPhotos(response);
       }
     } catch (error) {
       console.error("Error fetching room photos:", error);

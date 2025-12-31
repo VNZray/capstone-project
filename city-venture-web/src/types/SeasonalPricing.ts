@@ -2,6 +2,7 @@
  * Seasonal Pricing Types
  *
  * Defines types for seasonal and weekend pricing configurations
+ * Uses month-based seasons (peak, high, low) and weekend day pricing
  */
 
 export type SeasonType = 'peak' | 'high' | 'low' | 'base';
@@ -13,13 +14,13 @@ export interface SeasonalPricing {
     room_id: string | null;
     base_price: number;
     weekend_price: number | null;
-    weekend_days: DayOfWeek[] | null;
+    weekend_days: DayOfWeek[] | string | null;
     peak_season_price: number | null;
-    peak_season_months: number[] | null;
+    peak_season_months: number[] | string | null;
     high_season_price: number | null;
-    high_season_months: number[] | null;
+    high_season_months: number[] | string | null;
     low_season_price: number | null;
-    low_season_months: number[] | null;
+    low_season_months: number[] | string | null;
     is_active: boolean;
     created_at: string;
     updated_at: string;
@@ -84,20 +85,20 @@ export interface PriceRangeResult {
     summary: PriceRangeSummary;
 }
 
-// Constants for UI
+// Constants for the seasonal pricing form
 export const MONTHS = [
-    { value: 1, label: 'January' },
-    { value: 2, label: 'February' },
-    { value: 3, label: 'March' },
-    { value: 4, label: 'April' },
-    { value: 5, label: 'May' },
-    { value: 6, label: 'June' },
-    { value: 7, label: 'July' },
-    { value: 8, label: 'August' },
-    { value: 9, label: 'September' },
-    { value: 10, label: 'October' },
-    { value: 11, label: 'November' },
-    { value: 12, label: 'December' },
+    { value: 1, label: 'January', short: 'Jan' },
+    { value: 2, label: 'February', short: 'Feb' },
+    { value: 3, label: 'March', short: 'Mar' },
+    { value: 4, label: 'April', short: 'Apr' },
+    { value: 5, label: 'May', short: 'May' },
+    { value: 6, label: 'June', short: 'Jun' },
+    { value: 7, label: 'July', short: 'Jul' },
+    { value: 8, label: 'August', short: 'Aug' },
+    { value: 9, label: 'September', short: 'Sep' },
+    { value: 10, label: 'October', short: 'Oct' },
+    { value: 11, label: 'November', short: 'Nov' },
+    { value: 12, label: 'December', short: 'Dec' },
 ];
 
 export const DAYS_OF_WEEK: DayOfWeek[] = [
@@ -110,27 +111,27 @@ export const DAYS_OF_WEEK: DayOfWeek[] = [
     'Saturday',
 ];
 
-export const SEASON_COLORS = {
-    peak: '#ef4444', // red
-    high: '#f97316', // orange
-    low: '#22c55e', // green
-    base: '#6b7280', // gray
-    weekend: '#8b5cf6', // purple
-} as const;
+// Default selections for form
+export const DEFAULT_WEEKEND_DAYS: DayOfWeek[] = ['Friday', 'Saturday'];
+export const DEFAULT_PEAK_MONTHS: number[] = [12, 1, 2]; // Dec, Jan, Feb (holiday season)
+export const DEFAULT_HIGH_MONTHS: number[] = [3, 4, 5]; // Mar, Apr, May (spring)
+export const DEFAULT_LOW_MONTHS: number[] = [6, 7, 8]; // Jun, Jul, Aug (summer off-season)
 
-export const PRICE_TYPE_LABELS = {
-    default: 'Default',
+// Price type display labels
+export const PRICE_TYPE_LABELS: Record<string, string> = {
+    default: 'Standard Rate',
     base: 'Base Rate',
     weekend: 'Weekend Rate',
     peak_season: 'Peak Season',
     high_season: 'High Season',
     low_season: 'Low Season',
+};
+
+// Season display colors
+export const SEASON_COLORS = {
+    peak: '#ef4444',   // Red
+    high: '#f59e0b',   // Amber
+    low: '#22c55e',    // Green
+    base: '#6b7280',   // Gray
+    weekend: '#8b5cf6', // Purple
 } as const;
-
-// Default weekend days (Friday, Saturday, Sunday)
-export const DEFAULT_WEEKEND_DAYS: DayOfWeek[] = ['Friday', 'Saturday', 'Sunday'];
-
-// Default season months
-export const DEFAULT_PEAK_MONTHS = [6, 7, 8]; // Jun-Aug
-export const DEFAULT_HIGH_MONTHS = [12, 1, 2]; // Dec-Feb
-export const DEFAULT_LOW_MONTHS = [3, 4, 5, 9, 10, 11]; // Mar-May, Sep-Nov

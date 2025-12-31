@@ -45,7 +45,7 @@ const DetailsComponent = () => {
     if (!roomDetails?.id) return;
 
     try {
-      const bookingResponse = await getData(`booking/room/${roomDetails.id}`);
+      const bookingResponse = await getData(`bookings/room/${roomDetails.id}`);
       console.log("Fetched bookings:", bookingResponse);
       setBookings(Array.isArray(bookingResponse) ? bookingResponse : []);
     } catch (error) {

@@ -142,11 +142,11 @@ const RoomProfile = () => {
   const fetchPhotos = async () => {
     if (!roomDetails?.id) return;
     try {
-      // First try to get from room_photos table
-      const photosResponse = await getData(`room-photos`);
-      const roomPhotos = Array.isArray(photosResponse)
-        ? photosResponse.filter((p: any) => p.room_id === roomDetails.id)
-        : [];
+      // Get photos for this specific room
+      const photosResponse = await getData(
+        `room-photos/room/${roomDetails.id}`
+      );
+      const roomPhotos = Array.isArray(photosResponse) ? photosResponse : [];
 
       const photoUrls = roomPhotos.map((p: any) => p.file_url);
 
@@ -193,7 +193,7 @@ const RoomProfile = () => {
   const fetchBookings = async () => {
     if (!roomDetails?.id) return;
     try {
-      const response = await getData(`booking/room/${roomDetails.id}`);
+      const response = await getData(`bookings/room/${roomDetails.id}`);
       setBookings(Array.isArray(response) ? response : []);
     } catch (error) {
       console.error("Failed to fetch bookings:", error);
@@ -310,11 +310,11 @@ const RoomProfile = () => {
     }
 
     try {
-      const photosResponse = await getData(`room-photos`);
+      const photosResponse = await getData(
+        `room-photos/room/${roomDetails.id}`
+      );
       const photoRecord = Array.isArray(photosResponse)
-        ? photosResponse.find(
-            (p: any) => p.file_url === photoUrl && p.room_id === roomDetails.id
-          )
+        ? photosResponse.find((p: any) => p.file_url === photoUrl)
         : null;
 
       if (photoRecord) {

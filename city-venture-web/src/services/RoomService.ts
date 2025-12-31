@@ -18,7 +18,7 @@ export const clearStoredRoomId = () => {
 
 /** Fetch Room Details from API */
 export const fetchRoomDetails = async (room_id: string): Promise<Room> => {
-  const { data } = await apiClient.get<Room>(`/room/profile/${room_id}`);
+  const { data } = await apiClient.get<Room>(`/rooms/${room_id}`);
   return data;
 };
 
@@ -26,7 +26,7 @@ export const fetchRoomDetails = async (room_id: string): Promise<Room> => {
 export const fetchRoomsByBusinessId = async (
   business_id: string
 ): Promise<Room[]> => {
-  const { data } = await apiClient.get(`/room/${business_id}`);
+  const { data } = await apiClient.get(`/rooms/business/${business_id}`);
   return Array.isArray(data) ? data : [data]; // ensure it's always an array
 };
 
@@ -91,15 +91,12 @@ export const fetchAvailableRoomsByDateRange = async (
   endDate: string
 ): Promise<Room[]> => {
   try {
-    const { data } = await apiClient.get(
-      `/booking/business/${businessId}/available-rooms`,
-      {
-        params: {
-          start_date: startDate,
-          end_date: endDate,
-        },
-      }
-    );
+    const { data } = await apiClient.get(`/rooms/available/${businessId}`, {
+      params: {
+        start_date: startDate,
+        end_date: endDate,
+      },
+    });
     return Array.isArray(data) ? data : [];
   } catch (error) {
     console.error("Error fetching available rooms:", error);

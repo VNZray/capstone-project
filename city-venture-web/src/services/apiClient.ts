@@ -1,9 +1,26 @@
 import axios, { AxiosError } from 'axios';
-import type { InternalAxiosRequestConfig } from 'axios';
-import api from './api'; // String URL
+import type { InternalAxiosRequestConfig, AxiosResponse } from 'axios';
+import { apiV1 } from './api'; // v1 API URL
+
+/**
+ * Standard API Response format from the new backend
+ */
+interface ApiResponse<T = unknown> {
+  success: boolean;
+  message: string;
+  data: T;
+  pagination?: {
+    page: number;
+    limit: number;
+    totalItems: number;
+    totalPages: number;
+    hasNextPage: boolean;
+    hasPrevPage: boolean;
+  };
+}
 
 const apiClient = axios.create({
-  baseURL: api,
+  baseURL: apiV1, // Use v1 API routes
   headers: {
     'Content-Type': 'application/json',
   },
@@ -36,14 +53,20 @@ export const refreshTokens = async (): Promise<string | null> => {
   isRefreshing = true;
   refreshPromise = (async () => {
     try {
-      const response = await axios.post(`${api}/auth/refresh`, {}, {
+      // Use v1 auth refresh endpoint
+      const response = await axios.post<ApiResponse<{ accessToken: string }>>(`${apiV1}/auth/refresh`, {}, {
         withCredentials: true
       });
 
-      const { accessToken: newAccessToken } = response.data;
+      // Handle new response format
+      const responseData = response.data as ApiResponse<{ accessToken: string }>;
+      const newAccessToken = responseData.data?.accessToken;
+      if (!newAccessToken) {
+        throw new Error('No access token in response');
+      }
       setAccessToken(newAccessToken);
       return newAccessToken;
-    } catch (error) {
+    } catch {
       setAccessToken(null);
       return null;
     } finally {
@@ -66,10 +89,25 @@ apiClient.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// Response Interceptor
+// Response Interceptor - unwrap standardized response format
 apiClient.interceptors.response.use(
-  (response) => response,
-  async (error: AxiosError) => {
+  (response: AxiosResponse<ApiResponse>) => {
+    // If response follows the new format { success, message, data }, unwrap it
+    if (response.data && typeof response.data === 'object' && 'success' in response.data) {
+      // Keep pagination info if present
+      if (response.data.pagination) {
+        const dataValue = response.data.data;
+        response.data = {
+          ...(typeof dataValue === 'object' && dataValue !== null ? dataValue : {}),
+          _pagination: response.data.pagination
+        } as unknown as ApiResponse;
+      } else if (response.data.data !== undefined) {
+        response.data = response.data.data as unknown as ApiResponse;
+      }
+    }
+    return response;
+  },
+  async (error: AxiosError<ApiResponse>) => {
     const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
 
     if (error.response?.status === 401 && !originalRequest._retry) {
@@ -78,7 +116,7 @@ apiClient.interceptors.response.use(
       try {
         // Use centralized refresh with lock
         const newAccessToken = await refreshTokens();
-        
+
         if (!newAccessToken) {
           return Promise.reject(error);
         }
@@ -90,6 +128,11 @@ apiClient.interceptors.response.use(
       } catch (refreshError) {
         return Promise.reject(refreshError);
       }
+    }
+
+    // Extract error message from standardized response
+    if (error.response?.data?.message) {
+      error.message = error.response.data.message;
     }
 
     return Promise.reject(error);
