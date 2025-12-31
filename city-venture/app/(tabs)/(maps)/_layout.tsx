@@ -13,7 +13,7 @@ const MapsLayout = () => {
       <Stack.Screen
         name="index"
         options={{
-          headerShown: true,
+          headerShown: false,
           animation: 'default',
           headerTitleAlign: 'center',
           headerTitle: 'Maps',

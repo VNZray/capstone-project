@@ -5,6 +5,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from 'expo-router';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
+  ActivityIndicator,
   Alert,
   Dimensions,
   FlatList,
@@ -24,7 +25,6 @@ import AccommodationProfileSkeleton from '@/components/skeleton/AccommodationPro
 import { Colors } from '@/constants/color';
 import { useAccommodation } from '@/context/AccommodationContext';
 import { useAuth } from '@/context/AuthContext';
-import { ActivityIndicator } from 'react-native';
 import Details from './details';
 import Ratings from './ratings';
 import Rooms from './rooms';
@@ -33,6 +33,11 @@ import HeaderButton from '@/components/header/HeaderButton';
 import Button from '@/components/Button';
 import { AddReview } from '@/components/reviews';
 import { createReview } from '@/services/FeedbackService';
+import {
+  checkFavoriteExists,
+  addFavorite,
+  deleteFavorite,
+} from '@/services/FavoriteService';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Tab, TabContainer } from '@/components/ui/Tabs';
 
@@ -54,6 +59,8 @@ const AccommodationProfile = () => {
     refreshAllAccommodations,
   } = useAccommodation();
   const [favorite, setFavorite] = React.useState(false);
+  const [favoriteId, setFavoriteId] = React.useState<string | null>(null);
+  const [favoriteLoading, setFavoriteLoading] = React.useState(false);
   const [reviewModalVisible, setReviewModalVisible] = useState(false);
 
   // Refresh & scroll state
@@ -62,8 +69,59 @@ const AccommodationProfile = () => {
   const atTopRef = useRef(true);
   const wasScrollingUpRef = useRef(false);
 
-  const toggleFavorite = () => {
-    setFavorite(!favorite);
+  // Check if accommodation is favorited on mount
+  useEffect(() => {
+    const checkFavoriteStatus = async () => {
+      if (!user?.id || !accommodationDetails?.id) return;
+
+      try {
+        const result = await checkFavoriteExists(
+          user.id,
+          'accommodation',
+          accommodationDetails.id
+        );
+        setFavorite(result.exists);
+        setFavoriteId(result.favoriteId);
+      } catch (error) {
+        console.error('Error checking favorite status:', error);
+      }
+    };
+
+    checkFavoriteStatus();
+  }, [user?.id, accommodationDetails?.id]);
+
+  const toggleFavorite = async () => {
+    if (!user?.id) {
+      Alert.alert('Login Required', 'Please log in to add favorites');
+      return;
+    }
+
+    if (!accommodationDetails?.id) return;
+
+    setFavoriteLoading(true);
+
+    try {
+      if (favorite && favoriteId) {
+        // Remove from favorites
+        await deleteFavorite(favoriteId);
+        setFavorite(false);
+        setFavoriteId(null);
+      } else {
+        // Add to favorites
+        const result = await addFavorite(
+          user.id,
+          'accommodation',
+          accommodationDetails.id
+        );
+        setFavorite(true);
+        setFavoriteId(result.id);
+      }
+    } catch (error) {
+      console.error('Error toggling favorite:', error);
+      Alert.alert('Error', 'Failed to update favorite. Please try again.');
+    } finally {
+      setFavoriteLoading(false);
+    }
   };
 
   const onRefresh = useCallback(async () => {
@@ -195,7 +253,7 @@ const AccommodationProfile = () => {
                     color={colors.accent}
                   />
                   <ThemedText
-                    type="body-large"
+                    type="body-small"
                     weight="semi-bold"
                     style={{ color: '#FFFFFF' }}
                   >
@@ -215,7 +273,7 @@ const AccommodationProfile = () => {
                     color={colors.accent}
                   />
                   <ThemedText
-                    type="body-medium"
+                    type="body-small"
                     weight="normal"
                     style={{ color: '#FFFFFF' }}
                   >

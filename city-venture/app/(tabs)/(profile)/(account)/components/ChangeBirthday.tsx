@@ -5,7 +5,7 @@ import { useColorScheme } from '@/hooks/use-color-scheme';
 import { Colors } from '@/constants/color';
 import { ThemedText } from '@/components/themed-text';
 import Button from '@/components/Button';
-import SingleDateCalendar from '@/components/calendar/SingleDateCalendar';
+import DateInput from '@/components/DateInput';
 import { updateTourist, getTouristByUserId } from '@/services/TouristService';
 import { useAuth } from '@/context/AuthContext';
 import { format, subYears } from 'date-fns';
@@ -29,8 +29,12 @@ const ChangeBirthday: React.FC<ChangeBirthdayProps> = ({
 
   const textColor = isDark ? '#ECEDEE' : '#0D1B2A';
   const subTextColor = isDark ? '#9BA1A6' : '#6B7280';
+  const cardBg = isDark ? '#1E293B' : '#FFFFFF';
+  const borderColor = isDark ? '#374151' : '#E5E7EB';
 
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
+  const [selectedDate, setSelectedDate] = useState<Date>(
+    subYears(new Date(), 18)
+  );
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [touristId, setTouristId] = useState<string>(user?.id || '');
@@ -78,6 +82,11 @@ const ChangeBirthday: React.FC<ChangeBirthdayProps> = ({
     return age;
   };
 
+  const handleDateChange = (date: Date) => {
+    setSelectedDate(date);
+    setError('');
+  };
+
   const handleSave = async () => {
     if (!selectedDate) {
       setError('Please select your birthdate.');
@@ -121,31 +130,53 @@ const ChangeBirthday: React.FC<ChangeBirthdayProps> = ({
       isOpen={visible}
       onClose={handleClose}
       headerTitle="Edit Birthdate"
-      snapPoints={['75%']}
+      snapPoints={['55%']}
       content={
         <Container backgroundColor="transparent">
-          <SingleDateCalendar
-            selectedDate={selectedDate}
-            onDateSelect={setSelectedDate}
-            minDate={minDate}
-            maxDate={maxDate}
-            initialMonth={selectedDate || maxDate}
+          {/* Date Input - Same as Registration */}
+          <DateInput
+            label="Date of Birth"
+            placeholder="Select your birthdate"
+            variant="outlined"
+            mode="single"
+            size="medium"
+            showStatusLegend={false}
+            requireConfirmation
+            selectionVariant="filled"
+            value={selectedDate}
+            disableFuture
+            onChange={(d) => {
+              if (d) handleDateChange(d);
+            }}
           />
 
-          {selectedDate && (
-            <View style={styles.selectedDateContainer}>
+          {/* Age Display */}
+          <View
+            style={[
+              styles.ageContainer,
+              { backgroundColor: cardBg, borderColor },
+            ]}
+          >
+            <View style={styles.ageIconContainer}>
+              <Ionicons
+                name="person-outline"
+                size={20}
+                color={Colors.light.primary}
+              />
+            </View>
+            <View>
+              <ThemedText type="label-small" style={{ color: subTextColor }}>
+                Calculated Age
+              </ThemedText>
               <ThemedText
                 type="body-medium"
                 weight="semi-bold"
                 style={{ color: textColor }}
               >
-                Selected: {format(selectedDate, 'MMMM dd, yyyy')}
-              </ThemedText>
-              <ThemedText type="body-small" style={{ color: subTextColor }}>
-                Age: {calculateAge(selectedDate)} years old
+                {calculateAge(selectedDate)} years old
               </ThemedText>
             </View>
-          )}
+          </View>
 
           {error && (
             <View style={styles.errorContainer}>
@@ -165,7 +196,7 @@ const ChangeBirthday: React.FC<ChangeBirthdayProps> = ({
         <Button
           label={isLoading ? 'Saving...' : 'Save Changes'}
           onPress={handleSave}
-          disabled={isLoading || !selectedDate}
+          disabled={isLoading}
           variant="solid"
           color="primary"
           size="large"
@@ -178,12 +209,23 @@ const ChangeBirthday: React.FC<ChangeBirthdayProps> = ({
 export default ChangeBirthday;
 
 const styles = StyleSheet.create({
-  selectedDateContainer: {
-    marginTop: 16,
-    padding: 16,
-    backgroundColor: 'rgba(99, 102, 241, 0.1)',
-    borderRadius: 12,
+  ageContainer: {
+    flexDirection: 'row',
     alignItems: 'center',
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    marginTop: 16,
+    marginBottom: 16,
+    gap: 12,
+  },
+  ageIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(99, 102, 241, 0.1)',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   errorContainer: {
     flexDirection: 'row',

@@ -98,7 +98,7 @@ export const loginUser = async (
 
     // Validate user ID from login response
     const user_id = loginUserSummary?.id;
-    
+
     if (!user_id) {
       debugLogger({
         title: 'AuthService: ❌ Login response missing user ID',
@@ -113,8 +113,8 @@ export const loginUser = async (
 
     debugLogger({
       title: 'AuthService: User ID validated',
-      data: { 
-        user_id, 
+      data: {
+        user_id,
         user_id_type: typeof user_id,
         user_id_length: typeof user_id === 'string' ? user_id.length : 'N/A',
       },
@@ -138,7 +138,7 @@ export const loginUser = async (
           },
           errorCode: err?.response?.status,
         });
-        
+
         // Provide more helpful error message for 404
         if (err?.response?.status === 404) {
           const error = new Error(`User account not found. Please try logging in again or contact support.`);
@@ -146,7 +146,7 @@ export const loginUser = async (
           (error as any).status = 404;
           throw error;
         }
-        
+
         throw err;
       });
 

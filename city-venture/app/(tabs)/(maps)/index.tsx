@@ -20,13 +20,18 @@ import ScrollableTab from '@/components/ScrollableTab';
 import type { Tab } from '@/types/Tab';
 import type { Business } from '@/types/Business';
 import type { TouristSpot } from '@/types/TouristSpot';
+import type { EmergencyFacility } from '@/types/EmergencyFacility';
 import Container from '@/components/Container';
 import CustomMarker from './components/CustomMarker';
 import LocationBottomSheet from './components/LocationBottomSheet';
+import EmergencyFacilityMarker from './components/EmergencyFacilityMarker';
+import EmergencyFacilityBottomSheet from './components/EmergencyFacilityBottomSheet';
+import { fetchActiveEmergencyFacilities } from '@/services/EmergencyFacilityService';
 import { usePreventDoubleNavigation } from '@/hooks/usePreventDoubleNavigation';
 import { Routes } from '@/routes/mainRoutes';
 import placeholder from '@/assets/images/placeholder.png';
 import MapView, { Callout, MapMarker, Marker } from 'react-native-maps';
+import { AppHeader } from '@/components/header/AppHeader';
 
 type LocationData = Business | TouristSpot;
 type LocationType = 'accommodation' | 'shop' | 'tourist-spot';
@@ -53,6 +58,29 @@ const Maps = () => {
   const [search, setSearch] = useState('');
   const [activeTab, setActiveTab] = useState<string>('all');
 
+  // Emergency facilities state
+  const [emergencyFacilities, setEmergencyFacilities] = useState<
+    EmergencyFacility[]
+  >([]);
+  const [selectedEmergencyFacility, setSelectedEmergencyFacility] =
+    useState<EmergencyFacility | null>(null);
+  const [isEmergencyBottomSheetOpen, setIsEmergencyBottomSheetOpen] =
+    useState(false);
+
+  // Load emergency facilities
+  useEffect(() => {
+    const loadEmergencyFacilities = async () => {
+      try {
+        const data = await fetchActiveEmergencyFacilities();
+        setEmergencyFacilities(data);
+        console.log('[Maps] Emergency facilities loaded:', data.length);
+      } catch (error) {
+        console.error('[Maps] Error loading emergency facilities:', error);
+      }
+    };
+    loadEmergencyFacilities();
+  }, []);
+
   // Bottom sheet state
   const [selectedLocation, setSelectedLocation] = useState<LocationData | null>(
     null
@@ -63,6 +91,27 @@ const Maps = () => {
 
   const handleTabChange = (tab: Tab) => {
     setActiveTab(tab.key);
+  };
+
+  // Handle emergency facility marker press
+  const handleEmergencyMarkerPress = (facility: EmergencyFacility) => {
+    if (isEmergencyBottomSheetOpen) {
+      setIsEmergencyBottomSheetOpen(false);
+      setTimeout(() => {
+        setSelectedEmergencyFacility(facility);
+        setIsEmergencyBottomSheetOpen(true);
+      }, 300);
+    } else {
+      setSelectedEmergencyFacility(facility);
+      setIsEmergencyBottomSheetOpen(true);
+    }
+  };
+
+  const handleCloseEmergencyBottomSheet = () => {
+    setIsEmergencyBottomSheetOpen(false);
+    setTimeout(() => {
+      setSelectedEmergencyFacility(null);
+    }, 300);
   };
 
   // Combine all locations - safely handle undefined/null
@@ -76,30 +125,36 @@ const Maps = () => {
       sample: allAccommodationDetails?.[0],
     });
 
-    // Add accommodations
+    // Add all businesses (accommodations and shops)
     if (allAccommodationDetails && Array.isArray(allAccommodationDetails)) {
+      console.log(
+        '[Maps] Total businesses from context:',
+        allAccommodationDetails.length
+      );
+
+      // Log each business's hasBooking value for debugging
+      allAccommodationDetails.forEach((b, i) => {
+        console.log(
+          `[Maps] Business ${i}: ${b.business_name}, hasBooking: ${
+            b.hasBooking
+          } (${typeof b.hasBooking}), lat: ${b.latitude}, lng: ${b.longitude}`
+        );
+      });
+
+      // Accommodations: businesses with booking capability (hasBooking is truthy: true or 1)
       const accommodations = allAccommodationDetails
         .filter((b) => b.hasBooking === true || b.hasBooking === 1)
         .map((b) => ({ data: b, type: 'accommodation' as LocationType }));
 
-      console.log('[Maps] Accommodations found:', {
-        total: allAccommodationDetails.length,
-        withBooking: accommodations.length,
-        sampleHasBooking: allAccommodationDetails[0]?.hasBooking,
-      });
-
+      console.log('[Maps] Accommodations found:', accommodations.length);
       locations.push(...accommodations);
 
-      // Add shops
+      // Shops: businesses without booking capability (hasBooking is false, 0, null, or undefined)
       const shops = allAccommodationDetails
-        .filter((b) => b.hasBooking === false || b.hasBooking === 0)
+        .filter((b) => b.hasBooking !== true && b.hasBooking !== 1)
         .map((b) => ({ data: b, type: 'shop' as LocationType }));
 
-      console.log('[Maps] Shops found:', {
-        total: allAccommodationDetails.length,
-        withoutBooking: shops.length,
-      });
-
+      console.log('[Maps] Shops found:', shops.length);
       locations.push(...shops);
     }
 
@@ -175,11 +230,33 @@ const Maps = () => {
       return hasValidCoords;
     });
 
-    console.log(
-      '[Maps] Final locations with valid coords:',
-      withValidCoords.length
-    );
-    return withValidCoords;
+    // Apply small offset to markers at same coordinates to prevent overlap
+    const coordMap = new Map<string, number>();
+    const withOffset = withValidCoords.map((loc) => {
+      const lat = Number(loc.data.latitude);
+      const lng = Number(loc.data.longitude);
+      const coordKey = `${lat.toFixed(4)},${lng.toFixed(4)}`;
+
+      // Count how many markers are at this location
+      const count = coordMap.get(coordKey) || 0;
+      coordMap.set(coordKey, count + 1);
+
+      // Apply offset if there are duplicates (offset by ~50 meters)
+      const offset = count * 0.0005;
+      const offsetLat = lat + offset;
+      const offsetLng = lng + offset;
+
+      return {
+        ...loc,
+        displayCoords: {
+          latitude: offsetLat,
+          longitude: offsetLng,
+        },
+      };
+    });
+
+    console.log('[Maps] Final locations with valid coords:', withOffset.length);
+    return withOffset;
   }, [allLocations, activeTab, search]);
 
   const handleMarkerPress = (location: LocationData, type: LocationType) => {
@@ -224,14 +301,22 @@ const Maps = () => {
       switch (selectedLocationType) {
         case 'accommodation':
           setAccommodationId(id);
-          push(Routes.accommodation.profile(id) as any);
+          // Use correct path: profile/profile matches Stack.Screen name
+          push({
+            pathname: '/(tabs)/(home)/(accommodation)/profile/profile',
+            params: { id },
+          } as any);
           break;
         case 'shop':
           push(Routes.modals.businessProfile(id));
           break;
         case 'tourist-spot':
           setSpotId(id);
-          push(Routes.spot.profile(id) as any);
+          // Use correct path: profile/profile matches Stack.Screen name
+          push({
+            pathname: '/(tabs)/(home)/(spot)/profile/profile',
+            params: { id },
+          } as any);
           break;
       }
     }, 300);
@@ -349,11 +434,11 @@ const Maps = () => {
         <MapView
           rotateEnabled
           showsTraffic
-          showsBuildings={false}
-          showsIndoors={false}
+          showsBuildings={true}
+          showsIndoors={true}
           showsMyLocationButton={true}
           showsScale={false}
-          showsCompass={true}
+          showsCompass={false}
           showsIndoorLevelPicker={false}
           showsPointsOfInterest={false}
           style={{ width: '100%', height: '100%' }}
@@ -366,6 +451,22 @@ const Maps = () => {
             longitudeDelta: 0.5,
           }}
         >
+          <AppHeader
+            title="Interactive Map"
+            background="primary"
+            bottomComponent={
+              <>
+                <SearchBar
+                  placeholder="Search locations..."
+                  value={search}
+                  onChangeText={setSearch}
+                  variant="plain"
+                  shape="square"
+                />
+              </>
+            }
+          />
+
           {/* Render all location markers */}
           {Platform.OS === 'ios' ? (
             <>
@@ -378,6 +479,7 @@ const Maps = () => {
                   }-${index}`}
                   location={loc.data}
                   locationType={loc.type}
+                  displayCoords={loc.displayCoords}
                   onPress={() => handleMarkerPress(loc.data, loc.type)}
                 />
               ))}
@@ -392,8 +494,8 @@ const Maps = () => {
                       : (loc.data as TouristSpot).id
                   }-${index}`}
                   coordinate={{
-                    latitude: Number(loc.data.latitude) || 0,
-                    longitude: Number(loc.data.longitude) || 0,
+                    latitude: loc.displayCoords.latitude,
+                    longitude: loc.displayCoords.longitude,
                   }}
                   pinColor={
                     loc.type === 'accommodation'
@@ -449,6 +551,22 @@ const Maps = () => {
               )}
             </>
           )}
+
+          {/* Emergency Facility Markers - Always visible regardless of filter */}
+          {emergencyFacilities
+            .filter((facility) => {
+              // Only show facilities with valid coordinates
+              const lat = Number(facility.latitude);
+              const lng = Number(facility.longitude);
+              return lat && lng && !isNaN(lat) && !isNaN(lng);
+            })
+            .map((facility) => (
+              <EmergencyFacilityMarker
+                key={`emergency-${facility.id}`}
+                facility={facility}
+                onPress={() => handleEmergencyMarkerPress(facility)}
+              />
+            ))}
         </MapView>
       )}
 
@@ -466,6 +584,14 @@ const Maps = () => {
         location={selectedLocation}
         locationType={selectedLocationType}
         onViewMore={handleViewMore}
+      />
+
+      {/* Emergency Facility Bottom Sheet */}
+      <EmergencyFacilityBottomSheet
+        key={selectedEmergencyFacility?.id || 'emergency-empty'}
+        isOpen={isEmergencyBottomSheetOpen}
+        onClose={handleCloseEmergencyBottomSheet}
+        facility={selectedEmergencyFacility}
       />
 
       {/* Floating Search Bar and Tabs */}
@@ -497,6 +623,7 @@ const styles = StyleSheet.create({
   searchContainer: {
     position: 'absolute',
     zIndex: 1000,
+    marginTop: 160,
   },
   userMarkerContainer: {
     alignItems: 'center',

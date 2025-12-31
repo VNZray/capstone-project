@@ -63,6 +63,16 @@ export const GridCard: React.FC<GridCardProps> = ({
         pathname: '/(tabs)/(home)/(spot)/profile/profile',
         params: { id: item.itemId },
       });
+    } else if (item.favoriteType === 'shop') {
+      router.push({
+        pathname: '/(modals)/business-profile/[id]',
+        params: { id: item.itemId },
+      });
+    } else if (item.favoriteType === 'event') {
+      router.push({
+        pathname: '/(tabs)/(home)/(event)/[id]',
+        params: { id: item.itemId },
+      });
     }
   };
 

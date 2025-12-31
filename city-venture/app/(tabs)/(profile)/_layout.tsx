@@ -77,6 +77,16 @@ const ProfileLayout = () => {
         }}
       />
       <Stack.Screen
+        name="(reviews)"
+        options={{
+          headerShown: false,
+          animation: 'slide_from_right',
+          headerTitleAlign: 'center',
+          headerTitle: 'My Reviews',
+          headerBackTitle: 'Back',
+        }}
+      />
+      <Stack.Screen
         name="(settings)"
         options={{
           headerShown: false,

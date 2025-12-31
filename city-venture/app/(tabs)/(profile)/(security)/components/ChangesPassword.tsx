@@ -310,7 +310,7 @@ const ChangePassword: React.FC<ChangePasswordProps> = ({
 
       case 'verify-otp':
         return (
-          <>
+          <Container backgroundColor="transparent">
             <View style={styles.stepIndicator}>
               <View style={[styles.stepDot, styles.stepCompleted]}>
                 <Ionicons name="checkmark" size={12} color="#FFFFFF" />
@@ -393,12 +393,12 @@ const ChangePassword: React.FC<ChangePasswordProps> = ({
                 Back
               </ThemedText>
             </Pressable>
-          </>
+          </Container>
         );
 
       case 'new-password':
         return (
-          <>
+          <Container backgroundColor="transparent">
             <View style={styles.stepIndicator}>
               <View style={[styles.stepDot, styles.stepCompleted]}>
                 <Ionicons name="checkmark" size={12} color="#FFFFFF" />
@@ -613,7 +613,7 @@ const ChangePassword: React.FC<ChangePasswordProps> = ({
               color="primary"
               size="large"
             />
-          </>
+          </Container>
         );
 
       case 'success':

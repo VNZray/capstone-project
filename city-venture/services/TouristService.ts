@@ -1,9 +1,14 @@
+import apiClient from './apiClient';
 import api from './api';
 import { Tourist } from '../types/Tourist';
 
 /**
  * Tourist Service
  * Handles tourist profile-related API operations
+ *
+ * Note: Most endpoints require authentication and use apiClient which
+ * automatically includes the Authorization header with the Bearer token.
+ * Only public endpoints (like tourist registration) use plain fetch.
  */
 
 /**
@@ -17,20 +22,11 @@ export const updateTourist = async (
     touristData: Partial<Tourist>
 ): Promise<Tourist> => {
     try {
-        const response = await fetch(`${api}/tourist/${touristId}`, {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(touristData),
-        });
-
-        if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.message || 'Failed to update tourist profile');
-        }
-
-        return await response.json();
+        const { data } = await apiClient.put<Tourist>(
+            `/tourist/${touristId}`,
+            touristData
+        );
+        return data;
     } catch (error) {
         console.error('Error updating tourist profile:', error);
         throw error;
@@ -44,19 +40,8 @@ export const updateTourist = async (
  */
 export const getTouristById = async (touristId: string): Promise<Tourist> => {
     try {
-        const response = await fetch(`${api}/tourist/${touristId}`, {
-            method: 'GET',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-        });
-
-        if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.message || 'Failed to fetch tourist profile');
-        }
-
-        return await response.json();
+        const { data } = await apiClient.get<Tourist>(`/tourist/${touristId}`);
+        return data;
     } catch (error) {
         console.error('Error fetching tourist profile:', error);
         throw error;
@@ -70,19 +55,8 @@ export const getTouristById = async (touristId: string): Promise<Tourist> => {
  */
 export const getTouristByUserId = async (userId: string): Promise<Tourist> => {
     try {
-        const response = await fetch(`${api}/tourist/user/${userId}`, {
-            method: 'GET',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-        });
-
-        if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.message || 'Failed to fetch tourist profile');
-        }
-
-        return await response.json();
+        const { data } = await apiClient.get<Tourist>(`/tourist/user/${userId}`);
+        return data;
     } catch (error) {
         console.error('Error fetching tourist profile:', error);
         throw error;
@@ -90,7 +64,7 @@ export const getTouristByUserId = async (userId: string): Promise<Tourist> => {
 };
 
 /**
- * Create new tourist profile
+ * Create new tourist profile (public endpoint - no auth required)
  * @param touristData - Tourist data
  * @returns Created tourist object
  */
@@ -98,6 +72,7 @@ export const createTourist = async (
     touristData: Omit<Tourist, 'id'>
 ): Promise<Tourist> => {
     try {
+        // Tourist registration is a public endpoint, uses plain fetch
         const response = await fetch(`${api}/tourist`, {
             method: 'POST',
             headers: {
@@ -127,19 +102,10 @@ export const deleteTourist = async (
     touristId: string
 ): Promise<{ message: string }> => {
     try {
-        const response = await fetch(`${api}/tourist/${touristId}`, {
-            method: 'DELETE',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-        });
-
-        if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.message || 'Failed to delete tourist profile');
-        }
-
-        return await response.json();
+        const { data } = await apiClient.delete<{ message: string }>(
+            `/tourist/${touristId}`
+        );
+        return data;
     } catch (error) {
         console.error('Error deleting tourist profile:', error);
         throw error;
@@ -164,22 +130,11 @@ export const updateTouristPersonalInfo = async (
     }
 ): Promise<Tourist> => {
     try {
-        const response = await fetch(`${api}/tourist/${touristId}`, {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(personalInfo),
-        });
-
-        if (!response.ok) {
-            const error = await response.json();
-            throw new Error(
-                error.message || 'Failed to update tourist personal information'
-            );
-        }
-
-        return await response.json();
+        const { data } = await apiClient.put<Tourist>(
+            `/tourist/${touristId}`,
+            personalInfo
+        );
+        return data;
     } catch (error) {
         console.error('Error updating tourist personal information:', error);
         throw error;
@@ -201,22 +156,11 @@ export const updateTouristLocationInfo = async (
     }
 ): Promise<Tourist> => {
     try {
-        const response = await fetch(`${api}/tourist/${touristId}`, {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(locationInfo),
-        });
-
-        if (!response.ok) {
-            const error = await response.json();
-            throw new Error(
-                error.message || 'Failed to update tourist location information'
-            );
-        }
-
-        return await response.json();
+        const { data } = await apiClient.put<Tourist>(
+            `/tourist/${touristId}`,
+            locationInfo
+        );
+        return data;
     } catch (error) {
         console.error('Error updating tourist location information:', error);
         throw error;

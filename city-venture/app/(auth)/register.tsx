@@ -275,12 +275,7 @@ const RegistrationPage = () => {
         <StatusBar style={isDark ? 'light' : 'dark'} />
 
         {/* Progress Bar - Top Fixed Position */}
-        <View
-          style={[
-            styles.progressBarContainer,
-            { backgroundColor: isDark ? '#161B22' : '#FFFFFF' },
-          ]}
-        >
+        <View style={[styles.progressBarContainer]}>
           <View style={styles.progressHeader}>
             <ThemedText
               type="label-small"
@@ -468,7 +463,7 @@ const RegistrationPage = () => {
                   size="large"
                   label="Continue as Guest"
                   color="secondary"
-                  variant="outline"
+                  variant="outlined"
                   onPress={() => router.push(Routes.tabs.home)}
                   style={{ marginTop: 8 }}
                 />

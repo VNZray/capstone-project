@@ -17,6 +17,7 @@ import {
   BriefcaseBusiness,
   Settings,
   Shield,
+  AlertCircle,
 } from "lucide-react";
 import "@/src/components/Admin/Sidebar.css";
 import logo from "@/src/assets/images/light-logo.png";
@@ -126,6 +127,12 @@ export default function Sidebar({
             to="/tourism/reports"
             label="Reports"
             icon={<BarChart size={24} />}
+            onClick={onClose}
+          />
+          <NavItem
+            to="/tourism/emergency-facilities"
+            label="Emergency Facilities"
+            icon={<AlertCircle size={24} />}
             onClick={onClose}
           />
           {/* Dropdown for Staff */}
