@@ -20,9 +20,13 @@ import ScrollableTab from '@/components/ScrollableTab';
 import type { Tab } from '@/types/Tab';
 import type { Business } from '@/types/Business';
 import type { TouristSpot } from '@/types/TouristSpot';
+import type { EmergencyFacility } from '@/types/EmergencyFacility';
 import Container from '@/components/Container';
 import CustomMarker from './components/CustomMarker';
 import LocationBottomSheet from './components/LocationBottomSheet';
+import EmergencyFacilityMarker from './components/EmergencyFacilityMarker';
+import EmergencyFacilityBottomSheet from './components/EmergencyFacilityBottomSheet';
+import { fetchActiveEmergencyFacilities } from '@/services/EmergencyFacilityService';
 import { usePreventDoubleNavigation } from '@/hooks/usePreventDoubleNavigation';
 import { Routes } from '@/routes/mainRoutes';
 import placeholder from '@/assets/images/placeholder.png';
@@ -54,6 +58,29 @@ const Maps = () => {
   const [search, setSearch] = useState('');
   const [activeTab, setActiveTab] = useState<string>('all');
 
+  // Emergency facilities state
+  const [emergencyFacilities, setEmergencyFacilities] = useState<
+    EmergencyFacility[]
+  >([]);
+  const [selectedEmergencyFacility, setSelectedEmergencyFacility] =
+    useState<EmergencyFacility | null>(null);
+  const [isEmergencyBottomSheetOpen, setIsEmergencyBottomSheetOpen] =
+    useState(false);
+
+  // Load emergency facilities
+  useEffect(() => {
+    const loadEmergencyFacilities = async () => {
+      try {
+        const data = await fetchActiveEmergencyFacilities();
+        setEmergencyFacilities(data);
+        console.log('[Maps] Emergency facilities loaded:', data.length);
+      } catch (error) {
+        console.error('[Maps] Error loading emergency facilities:', error);
+      }
+    };
+    loadEmergencyFacilities();
+  }, []);
+
   // Bottom sheet state
   const [selectedLocation, setSelectedLocation] = useState<LocationData | null>(
     null
@@ -64,6 +91,27 @@ const Maps = () => {
 
   const handleTabChange = (tab: Tab) => {
     setActiveTab(tab.key);
+  };
+
+  // Handle emergency facility marker press
+  const handleEmergencyMarkerPress = (facility: EmergencyFacility) => {
+    if (isEmergencyBottomSheetOpen) {
+      setIsEmergencyBottomSheetOpen(false);
+      setTimeout(() => {
+        setSelectedEmergencyFacility(facility);
+        setIsEmergencyBottomSheetOpen(true);
+      }, 300);
+    } else {
+      setSelectedEmergencyFacility(facility);
+      setIsEmergencyBottomSheetOpen(true);
+    }
+  };
+
+  const handleCloseEmergencyBottomSheet = () => {
+    setIsEmergencyBottomSheetOpen(false);
+    setTimeout(() => {
+      setSelectedEmergencyFacility(null);
+    }, 300);
   };
 
   // Combine all locations - safely handle undefined/null
@@ -503,6 +551,22 @@ const Maps = () => {
               )}
             </>
           )}
+
+          {/* Emergency Facility Markers - Always visible regardless of filter */}
+          {emergencyFacilities
+            .filter((facility) => {
+              // Only show facilities with valid coordinates
+              const lat = Number(facility.latitude);
+              const lng = Number(facility.longitude);
+              return lat && lng && !isNaN(lat) && !isNaN(lng);
+            })
+            .map((facility) => (
+              <EmergencyFacilityMarker
+                key={`emergency-${facility.id}`}
+                facility={facility}
+                onPress={() => handleEmergencyMarkerPress(facility)}
+              />
+            ))}
         </MapView>
       )}
 
@@ -520,6 +584,14 @@ const Maps = () => {
         location={selectedLocation}
         locationType={selectedLocationType}
         onViewMore={handleViewMore}
+      />
+
+      {/* Emergency Facility Bottom Sheet */}
+      <EmergencyFacilityBottomSheet
+        key={selectedEmergencyFacility?.id || 'emergency-empty'}
+        isOpen={isEmergencyBottomSheetOpen}
+        onClose={handleCloseEmergencyBottomSheet}
+        facility={selectedEmergencyFacility}
       />
 
       {/* Floating Search Bar and Tabs */}

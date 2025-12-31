@@ -64,6 +64,7 @@ import favoriteRoutes from "./routes/favorite.js";
 import refundRoutes from "./routes/refunds.js";
 import roomBlockedDatesRoutes from "./routes/room-blocked-dates.js";
 import seasonalPricingRoutes from "./routes/seasonal-pricing.js";
+import emergencyFacilitiesRoutes from "./routes/emergency-facilities.js";
 
 const app = express();
 const PORT = 3000;
@@ -185,6 +186,11 @@ const routeSections = [
         path: "/api/approval",
         handler: approvalRoutes,
         label: "Approval Workflow",
+      },
+      {
+        path: "/api/emergency-facilities",
+        handler: emergencyFacilitiesRoutes,
+        label: "Emergency Facilities",
       },
     ],
   },

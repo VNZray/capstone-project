@@ -19,6 +19,7 @@ import TourismRolesPage from "@/src/features/admin/tourism-roles/TourismRolesPag
 import TourismSettings from "../features/admin/settings/Settings";
 import UserAccounts from "../features/admin/users/UserAccounts";
 import TourismProfile from "../features/admin/profile/Profile";
+import { EmergencyFacilities } from "../features/admin/emergency-facilities";
 
 interface TourismRoutesProps {
   tourismRoles: string[];
@@ -183,6 +184,16 @@ export default function TourismRoutes({ tourismRoles }: TourismRoutesProps) {
         element={
           <ProtectedRoute requiredRoles={tourismRoles}>
             <TourismSettings />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Emergency Facilities */}
+      <Route
+        path={`${tourism}/emergency-facilities`}
+        element={
+          <ProtectedRoute requiredRoles={tourismRoles}>
+            <EmergencyFacilities />
           </ProtectedRoute>
         }
       />
