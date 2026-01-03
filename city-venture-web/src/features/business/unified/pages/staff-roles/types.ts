@@ -3,7 +3,7 @@
  * Shared types for the role management feature
  */
 
-export type RoleType = 'system' | 'preset' | 'business';
+export type RoleType = 'system' | 'business';
 
 export interface Permission {
   id: number;
@@ -47,11 +47,6 @@ export interface PermissionOverride {
   permission_id: number;
   permission_name: string;
   permission_description: string;
-}
-
-export interface CreateRoleFromPresetParams {
-  presetRoleId: number;
-  customName?: string;
 }
 
 export interface CreateCustomRoleParams {

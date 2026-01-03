@@ -99,10 +99,14 @@ export default function MainHeader({ onMenuClick }: MainHeaderProps) {
       "Sales Associate",
     ];
     const userRole = user?.role_name || "";
+    const roleType = user?.role_type;
+    const isCustomBusinessRole = roleType === 'business';
+    const isStaff = isCustomBusinessRole || staffRoles.includes(userRole);
 
     if (userRole === "Business Owner") {
       navigate("/business");
-    } else if (staffRoles.includes(userRole)) {
+    } else if (isStaff) {
+      // Staff and custom business roles go to dashboard
       navigate("/business/dashboard");
     } else {
       navigate("/business");

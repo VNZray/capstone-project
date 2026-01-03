@@ -243,7 +243,7 @@ async function createRoleProcedures(knex) {
   // PERMISSION OVERRIDE PROCEDURES
   // ============================================================
 
-  // Add permission override (for preset-based roles)
+  // Add permission override (for business roles)
   await knex.raw(`
     CREATE PROCEDURE AddPermissionOverride(
       IN p_role_id INT,
@@ -314,7 +314,7 @@ async function createRoleProcedures(knex) {
         JOIN permissions p ON p.id = rp.permission_id
         WHERE rp.user_role_id = p_role_id;
       ELSE
-        -- For preset-based roles, merge direct + inherited with overrides
+        -- For roles with a base role, merge direct + inherited with overrides
         SELECT 
           p.id,
           p.name,
@@ -369,7 +369,7 @@ async function createRoleProcedures(knex) {
           JOIN permissions p ON p.id = rp.permission_id
           WHERE rp.user_role_id = v_role_id;
         ELSE
-          -- For preset-based roles, merge with inheritance and overrides
+          -- For roles with a base role, merge with inheritance and overrides
           SELECT DISTINCT
             p.id,
             p.name,

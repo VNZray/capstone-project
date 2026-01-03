@@ -3,8 +3,6 @@
  * 
  * Custom hook for managing business roles.
  * Provides data fetching, mutations, and state management for RBAC.
- * 
- * Note: Preset roles have been removed. All business roles are now custom.
  */
 
 import { useState, useEffect, useCallback } from 'react';
@@ -50,19 +48,6 @@ export function useBusinessRoles(businessId: string | undefined) {
   }, [fetchRoles]);
 
   return { ...state, refetch: fetchRoles };
-}
-
-/**
- * Hook for fetching preset roles (templates)
- * @deprecated Preset roles have been removed. Returns empty array.
- */
-export function usePresetRoles() {
-  // Preset roles removed - return empty state immediately
-  return {
-    data: [] as Role[],
-    isLoading: false,
-    error: null,
-  };
 }
 
 /**
@@ -242,7 +227,6 @@ export function useRoleManagement(options: UseRoleManagementOptions = {}) {
 
 export default {
   useBusinessRoles,
-  usePresetRoles,
   useRole,
   usePermissionsGrouped,
   useEffectivePermissions,

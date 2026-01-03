@@ -51,19 +51,6 @@ export function useTourismRoles() {
 }
 
 /**
- * Hook for fetching preset roles (templates)
- * @deprecated Preset roles have been removed. Returns empty array for backwards compatibility.
- */
-export function usePresetRoles() {
-    // Presets have been deprecated - return static empty state
-    return {
-        data: [] as Role[],
-        isLoading: false,
-        error: null,
-    };
-}
-
-/**
  * Hook for fetching a single role with permissions
  */
 export function useRole(roleId: number | undefined) {
@@ -230,7 +217,6 @@ export function useRoleManagement(options: UseRoleManagementOptions = {}) {
 
 export default {
     useTourismRoles,
-    usePresetRoles,
     useRole,
     usePermissionsGrouped,
     useEffectivePermissions,

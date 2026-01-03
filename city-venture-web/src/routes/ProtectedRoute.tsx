@@ -90,11 +90,32 @@ export default function ProtectedRoute({
   // Role-based check (if provided)
   if (requiredRoles && requiredRoles.length > 0) {
     const userRole = (user.role_name || '').toString();
-    const roleOk = requiredRoles.includes(userRole);
+    const userRoleType = user.role_type || 'system';
+    const isCustomBusinessRole = userRoleType === 'business';
+    
+    // Check if user's role matches any required role
+    let roleOk = requiredRoles.includes(userRole);
+    
+    // RBAC Enhancement: Custom business roles should be treated as staff roles
+    // If the route requires staff-like roles and user has a business role, allow access
+    if (!roleOk && isCustomBusinessRole) {
+      const staffLikeRoles = [
+        "Manager", "Room Manager", "Receptionist", "Sales Associate", 
+        "Staff", "Business Owner"
+      ];
+      const requiresStaffAccess = requiredRoles.some(r => 
+        staffLikeRoles.includes(r) || r.toLowerCase().includes('staff')
+      );
+      
+      if (requiresStaffAccess) {
+        roleOk = true;
+        console.log('[ProtectedRoute] Custom business role granted staff access:', userRole);
+      }
+    }
     
     if (!roleOk) {
       console.warn(
-        `[ProtectedRoute] Access denied. Required roles: ${requiredRoles.join(', ')}, Current role: ${userRole}`
+        `[ProtectedRoute] Access denied. Required roles: ${requiredRoles.join(', ')}, Current role: ${userRole} (type: ${userRoleType})`
       );
       return <Navigate to={redirectTo} replace />;
     }

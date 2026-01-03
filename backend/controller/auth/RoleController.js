@@ -514,7 +514,7 @@ export async function removeRolePermissions(req, res) {
 
 /**
  * POST /api/roles/:id/overrides
- * Add a permission override to a preset-based role
+ * Add a permission override to a business role
  */
 export async function addPermissionOverride(req, res) {
   const { id } = req.params;
@@ -535,10 +535,6 @@ export async function addPermissionOverride(req, res) {
   
   if (existingRole.role_type !== roleService.ROLE_TYPES.BUSINESS) {
     return res.status(400).json({ message: 'Overrides only apply to business roles' });
-  }
-  
-  if (!existingRole.based_on_role_id) {
-    return res.status(400).json({ message: 'Overrides only apply to preset-based roles' });
   }
   
   const actualBusinessId = businessId || existingRole.role_for;

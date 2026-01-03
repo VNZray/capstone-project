@@ -30,7 +30,7 @@ export interface Role {
   id: number;
   role_name: string;
   role_description: string | null;
-  role_type?: 'system' | 'preset' | 'business';
+  role_type?: 'system' | 'business';
   role_for: string | null;
   is_custom?: boolean;
   is_immutable?: boolean;
@@ -129,36 +129,15 @@ export const fetchRolesByBusinessId = async (businessId: string): Promise<Role[]
 };
 
 /**
- * Fetch preset roles (templates available to all businesses)
- * These are standard role templates that can be assigned to staff
- */
-export const fetchPresetRoles = async (): Promise<Role[]> => {
-  const { data } = await apiClient.get<Role[]>(`/roles/presets`);
-  return data;
-};
-
-/**
- * Fetch both business roles and preset roles for staff assignment
- * Returns a combined list with preset roles clearly marked
+ * Fetch available roles for staff assignment
+ * Returns business-specific roles for the given business
  */
 export const fetchAvailableRolesForStaff = async (businessId: string): Promise<Role[]> => {
   try {
-    const [businessRoles, presetRoles] = await Promise.all([
-      fetchRolesByBusinessId(businessId),
-      fetchPresetRoles(),
-    ]);
-    
-    // Combine: business roles first, then presets that aren't duplicated
-    const businessRoleNames = new Set(businessRoles.map(r => r.role_name.toLowerCase()));
-    const uniquePresets = presetRoles.filter(
-      preset => !businessRoleNames.has(preset.role_name.toLowerCase())
-    );
-    
-    return [...businessRoles, ...uniquePresets];
+    return await fetchRolesByBusinessId(businessId);
   } catch (error) {
     console.error("Error fetching available roles:", error);
-    // Fallback to just business roles if preset fetch fails
-    return fetchRolesByBusinessId(businessId);
+    return [];
   }
 };
 

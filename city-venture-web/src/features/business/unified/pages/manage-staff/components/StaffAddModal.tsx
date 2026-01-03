@@ -47,7 +47,7 @@ export default function StaffAddModal({
   const [businessRoles, setBusinessRoles] = React.useState<Role[]>([]);
   const [loading, setLoading] = React.useState(false);
 
-  // Load business roles and preset roles when modal opens
+  // Load business roles when modal opens
   React.useEffect(() => {
     if (!open || !businessId) return;
     loadAvailableRoles();
@@ -56,7 +56,7 @@ export default function StaffAddModal({
   const loadAvailableRoles = async () => {
     setLoading(true);
     try {
-      // Fetch both business roles and preset roles
+      // Fetch business roles
       const roles = await fetchAvailableRolesForStaff(businessId);
       setBusinessRoles(roles);
       // Set default role to first available
@@ -182,13 +182,6 @@ export default function StaffAddModal({
             >
               {businessRoles.map((r) => (
                 <Option key={r.id} value={r.id}>
-                  {r.role_type === 'preset' && (
-                    <ListItemDecorator>
-                      <Chip size="sm" variant="soft" color="primary" sx={{ mr: 1 }}>
-                        Template
-                      </Chip>
-                    </ListItemDecorator>
-                  )}
                   {r.role_type === 'business' && r.is_custom && (
                     <ListItemDecorator>
                       <Chip size="sm" variant="soft" color="success" sx={{ mr: 1 }}>
@@ -209,7 +202,7 @@ export default function StaffAddModal({
             </Select>
           )}
           <FormHelperText>
-            Template roles are standard presets. Custom roles are specific to your business.
+            Custom roles are specific to your business.
           </FormHelperText>
         </FormControl>
       </Container>

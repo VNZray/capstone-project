@@ -49,6 +49,7 @@ const Login: React.FC = () => {
       }
 
       // Check if user is staff (not Business Owner) and redirect to dashboard
+      // RBAC Enhancement: Check role_type for custom business roles
       const staffRoles = [
         "Manager",
         "Room Manager",
@@ -61,9 +62,12 @@ const Login: React.FC = () => {
       const owner = "Business Owner";
 
       const userRole = loggedInUser.role_name || "";
+      const roleType = loggedInUser.role_type;
+      const isCustomBusinessRole = roleType === 'business';
 
-      if (staffRoles.includes(userRole)) {
-        // Staff members go directly to business dashboard
+      // Custom business roles should be treated as staff
+      if (isCustomBusinessRole || staffRoles.includes(userRole)) {
+        // Staff members and custom roles go directly to business dashboard
         navigate("/business/dashboard");
       } else if (userRole === tourist) {
         // Tourist to landing page

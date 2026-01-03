@@ -39,6 +39,7 @@ const Login: React.FC = () => {
       await new Promise((resolve) => setTimeout(resolve, 4500));
 
       // Check if user is staff (not Business Owner) and redirect to dashboard
+      // RBAC Enhancement: Check role_type for custom business roles
       const staffRoles = [
         "Manager",
         "Room Manager",
@@ -50,9 +51,12 @@ const Login: React.FC = () => {
       const owner = "Business Owner";
 
       const userRole = loggedInUser.role_name || "";
+      const roleType = loggedInUser.role_type;
+      const isCustomBusinessRole = roleType === 'business';
 
-      if (staffRoles.includes(userRole)) {
-        // Staff members: Set their assigned business_id and go to dashboard
+      // Custom business roles should be treated as staff
+      if (isCustomBusinessRole || staffRoles.includes(userRole)) {
+        // Staff members (including custom roles): Set their assigned business_id and go to dashboard
         if (loggedInUser.business_id) {
           setBusinessId(loggedInUser.business_id);
         }

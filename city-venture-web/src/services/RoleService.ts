@@ -185,7 +185,7 @@ export async function getEffectivePermissions(roleId: number): Promise<Permissio
 }
 
 /**
- * Add a permission override to a preset-based role
+ * Add a permission override to a business role
  */
 export async function addPermissionOverride(
   roleId: number,

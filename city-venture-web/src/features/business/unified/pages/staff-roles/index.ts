@@ -14,7 +14,6 @@ export { StaffRolesPage } from './StaffRolesPage';
 // Hooks
 export {
   useBusinessRoles,
-  usePresetRoles,
   useRole,
   usePermissionsGrouped,
   useEffectivePermissions,
@@ -29,7 +28,6 @@ export type {
   Permission,
   PermissionCategory,
   PermissionOverride,
-  CreateRoleFromPresetParams,
   CreateCustomRoleParams,
   UpdateRoleParams,
 } from './types';

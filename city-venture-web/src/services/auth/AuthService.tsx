@@ -1,4 +1,3 @@
-import axios from "axios"; // Keep axios for type definitions if needed, but use apiClient for calls
 import apiClient, { setAccessToken, refreshTokens } from "../apiClient";
 
 import type {
@@ -132,13 +131,13 @@ export const loginUser = async (
   console.debug("[AuthService] GET /user-roles/:id", userData.user_role_id);
   const { data: userRole } = await apiClient
     .get<UserRoles>(`/user-roles/${userData.user_role_id}`)
-    .catch((err) => {
+    .catch(() => {
       // Fallback logic preserved...
       const id = userData.user_role_id;
       const fallbackRoleName =
         id === 1 ? "Admin" : id === 4 ? "Owner" : "Tourist"; // Simplified for brevity
       return {
-        data: { role_name: fallbackRoleName, description: "" } as UserRoles,
+        data: { role_name: fallbackRoleName, description: "", role_type: 'system' as const } as UserRoles,
       };
     });
 
@@ -147,10 +146,17 @@ export const loginUser = async (
     .then((r) => r.data?.permissions || [])
     .catch(() => []);
 
-  // Normalize role name
+  // Get role metadata for proper categorization
+  const roleType = userRole?.role_type || 'system';
+  const roleFor = userRole?.role_for || null;
+  const isCustomRole = userRole?.is_custom || false;
   const rawRoleName = (userRole?.role_name ?? "").toString();
+
+  // Normalize role name - preserve custom role names, normalize known system roles
   const normalizedRoleName = (() => {
     const r = rawRoleName.toLowerCase();
+    
+    // System roles get normalized to standard names
     if (r.includes("tourism head")) return "Tourism Head";
     if (r.includes("tourism officer")) return "Tourism Officer";
     if (r.includes("admin")) return "Admin";
@@ -160,13 +166,24 @@ export const loginUser = async (
     if (r.includes("room manager")) return "Room Manager";
     if (r.includes("receptionist")) return "Receptionist";
     if (r.includes("sales associate")) return "Sales Associate";
+    if (r.includes("tourist")) return "Tourist";
+    
+    // For business/custom roles, keep the original name
+    // These are custom roles created by business owners
+    if (roleType === 'business') {
+      return rawRoleName; // Keep original custom role name
+    }
+    
+    // Unknown system roles default to Tourist
     return "Tourist";
   })();
 
   // ============================================
   // STEP 5: Fetch Role-Specific User Details
   // ============================================
-  const touristRoles = ["Tourist"];
+  // RBAC: Role categorization is now data-driven using role_type
+  // - Business roles (role_type === 'business') are always staff roles
+  // - System roles use hardcoded categorization for backwards compatibility
   const ownerRoles = ["Business Owner"];
   const tourismRoles = [
     "Admin",
@@ -181,27 +198,34 @@ export const loginUser = async (
     "Sales Associate",
   ];
 
+  // Determine role category based on role_type first, then fallback to name matching
+  const isBusinessRole = roleType === 'business';
+  const isStaffRole = isBusinessRole || staffRoles.includes(normalizedRoleName);
+  const isOwnerRole = !isBusinessRole && ownerRoles.includes(normalizedRoleName);
+  const isTourismRole = !isBusinessRole && tourismRoles.includes(normalizedRoleName);
+  const isTouristRole = !isBusinessRole && !isStaffRole && !isOwnerRole && !isTourismRole;
+
   let ownerData: Partial<Owner> | null = null;
   let touristData: Partial<Tourist> | null = null;
   let tourismData: Partial<Tourism> | null = null;
   let staffData: Partial<Staff> | null = null;
 
-  if (ownerRoles.includes(normalizedRoleName)) {
+  if (isOwnerRole) {
     ownerData = await apiClient
       .get<Owner>(`/owner/user/${user_id}`)
       .then((r) => r.data)
       .catch(() => null);
-  } else if (touristRoles.includes(normalizedRoleName)) {
+  } else if (isTouristRole) {
     touristData = await apiClient
       .get<Tourist>(`/tourist/user/${user_id}`)
       .then((r) => r.data)
       .catch(() => null);
-  } else if (tourismRoles.includes(normalizedRoleName)) {
+  } else if (isTourismRole) {
     tourismData = await apiClient
       .get<Tourism>(`/tourism/user/${user_id}`)
       .then((r) => r.data)
       .catch(() => null);
-  } else if (staffRoles.includes(normalizedRoleName)) {
+  } else if (isStaffRole) {
     staffData = await apiClient
       .get<Staff>(`/staff/user/${user_id}`)
       .then((r) => r.data)
@@ -252,8 +276,12 @@ export const loginUser = async (
     phone_number: userData.phone_number,
     user_role_id: userData.user_role_id,
     role_name: normalizedRoleName,
-    description: userRole?.description || "",
+    description: userRole?.description || userRole?.role_description || "",
     permissions: myPermissions,
+    // RBAC: Include role metadata for proper access control
+    role_type: roleType,
+    role_for: roleFor,
+    is_custom_role: isCustomRole || roleType === 'business',
     first_name: roleData?.first_name || "",
     middle_name: roleData?.middle_name || "",
     last_name: roleData?.last_name || "",
@@ -262,7 +290,7 @@ export const loginUser = async (
     nationality: (touristData as any)?.nationality || "",
     ethnicity: (touristData as any)?.ethnicity || "",
     category: (touristData as any)?.category || "",
-    business_id: (staffData as any)?.business_id || "",
+    business_id: (staffData as any)?.business_id || roleFor || "",
     barangay_id: userData?.barangay_id ?? "",
     barangay_name: barangay?.barangay || "",
     municipality_name: municipality?.municipality || "",
@@ -368,7 +396,7 @@ export const fetchCurrentUser = async (): Promise<UserDetails> => {
       const fallbackRoleName =
         id === 1 ? "Admin" : id === 4 ? "Owner" : "Tourist";
       return {
-        data: { role_name: fallbackRoleName, description: "" } as UserRoles,
+        data: { role_name: fallbackRoleName, description: "", role_type: 'system' as const } as UserRoles,
       };
     });
 
@@ -377,10 +405,17 @@ export const fetchCurrentUser = async (): Promise<UserDetails> => {
     .then((r) => r.data?.permissions || [])
     .catch(() => []);
 
-  // Normalize role name
+  // Get role metadata for proper categorization
+  const roleType = userRole?.role_type || 'system';
+  const roleFor = userRole?.role_for || null;
+  const isCustomRole = userRole?.is_custom || false;
   const rawRoleName = (userRole?.role_name ?? "").toString();
+
+  // Normalize role name - preserve custom role names, normalize known system roles
   const normalizedRoleName = (() => {
     const r = rawRoleName.toLowerCase();
+    
+    // System roles get normalized to standard names
     if (r.includes("tourism head")) return "Tourism Head";
     if (r.includes("tourism officer")) return "Tourism Officer";
     if (r.includes("admin")) return "Admin";
@@ -390,13 +425,24 @@ export const fetchCurrentUser = async (): Promise<UserDetails> => {
     if (r.includes("room manager")) return "Room Manager";
     if (r.includes("receptionist")) return "Receptionist";
     if (r.includes("sales associate")) return "Sales Associate";
+    if (r.includes("tourist")) return "Tourist";
+    
+    // For business/custom roles, keep the original name
+    // These are custom roles created by business owners
+    if (roleType === 'business') {
+      return rawRoleName; // Keep original custom role name
+    }
+    
+    // Unknown system roles default to Tourist
     return "Tourist";
   })();
 
   // ============================================
   // STEP 4: Fetch Role-Specific User Details
   // ============================================
-  const touristRoles = ["Tourist"];
+  // RBAC: Role categorization is now data-driven using role_type
+  // - Business roles (role_type === 'business') are always staff roles
+  // - System roles use hardcoded categorization for backwards compatibility
   const ownerRoles = ["Business Owner"];
   const tourismRoles = [
     "Admin",
@@ -411,27 +457,34 @@ export const fetchCurrentUser = async (): Promise<UserDetails> => {
     "Sales Associate",
   ];
 
+  // Determine role category based on role_type first, then fallback to name matching
+  const isBusinessRole = roleType === 'business';
+  const isStaffRole = isBusinessRole || staffRoles.includes(normalizedRoleName);
+  const isOwnerRole = !isBusinessRole && ownerRoles.includes(normalizedRoleName);
+  const isTourismRole = !isBusinessRole && tourismRoles.includes(normalizedRoleName);
+  const isTouristRole = !isBusinessRole && !isStaffRole && !isOwnerRole && !isTourismRole;
+
   let ownerData: Partial<Owner> | null = null;
   let touristData: Partial<Tourist> | null = null;
   let tourismData: Partial<Tourism> | null = null;
   let staffData: Partial<Staff> | null = null;
 
-  if (ownerRoles.includes(normalizedRoleName)) {
+  if (isOwnerRole) {
     ownerData = await apiClient
       .get<Owner>(`/owner/user/${user_id}`)
       .then((r) => r.data)
       .catch(() => null);
-  } else if (touristRoles.includes(normalizedRoleName)) {
+  } else if (isTouristRole) {
     touristData = await apiClient
       .get<Tourist>(`/tourist/user/${user_id}`)
       .then((r) => r.data)
       .catch(() => null);
-  } else if (tourismRoles.includes(normalizedRoleName)) {
+  } else if (isTourismRole) {
     tourismData = await apiClient
       .get<Tourism>(`/tourism/user/${user_id}`)
       .then((r) => r.data)
       .catch(() => null);
-  } else if (staffRoles.includes(normalizedRoleName)) {
+  } else if (isStaffRole) {
     staffData = await apiClient
       .get<Staff>(`/staff/user/${user_id}`)
       .then((r) => r.data)
@@ -482,8 +535,12 @@ export const fetchCurrentUser = async (): Promise<UserDetails> => {
     phone_number: userData.phone_number,
     user_role_id: userData.user_role_id,
     role_name: normalizedRoleName,
-    description: userRole?.description || "",
+    description: userRole?.description || userRole?.role_description || "",
     permissions: myPermissions,
+    // RBAC: Include role metadata for proper access control
+    role_type: roleType,
+    role_for: roleFor,
+    is_custom_role: isCustomRole || roleType === 'business',
     first_name: roleData?.first_name || "",
     middle_name: roleData?.middle_name || "",
     last_name: roleData?.last_name || "",
@@ -492,7 +549,7 @@ export const fetchCurrentUser = async (): Promise<UserDetails> => {
     nationality: (touristData as any)?.nationality || "",
     ethnicity: (touristData as any)?.ethnicity || "",
     category: (touristData as any)?.category || "",
-    business_id: (staffData as any)?.business_id || "",
+    business_id: (staffData as any)?.business_id || roleFor || "",
     barangay_id: userData?.barangay_id ?? "",
     barangay_name: barangay?.barangay || "",
     municipality_name: municipality?.municipality || "",

@@ -44,8 +44,11 @@ const Navbar: React.FC<NavbarProps> = ({
   }, []);
 
   const { user, logout } = useAuth();
-  const role = user?.role_name ?? ""; // Now normalized by AuthService: "Owner" | "Admin" | "Tourist"
+  const role = user?.role_name ?? ""; // Now normalized by AuthService: "Owner" | "Admin" | "Tourist" or custom role name
+  const roleType = user?.role_type; // RBAC: 'system' | 'business'
+  const isCustomBusinessRole = roleType === 'business';
   const isOwner = role === "Business Owner";
+  const isStaff = isCustomBusinessRole || ["Manager", "Room Manager", "Receptionist", "Sales Associate"].includes(role);
   const isTourism = role === "Admin";
   const displayRole = role;
   const nameOnly = `${user?.first_name ?? ""} ${user?.last_name ?? ""}`.trim();
@@ -216,29 +219,11 @@ const Navbar: React.FC<NavbarProps> = ({
                 )}
                 <ListDivider />
 
-                {(isOwner ||
-                  [
-                    "Manager",
-                    "Room Manager",
-                    "Receptionist",
-                    "Sales Associate",
-                  ].includes(role)) && (
+                {/* Profile menu item for business owners and staff (including custom roles) */}
+                {(isOwner || isStaff) && (
                   <MenuItem
                     onClick={() => {
-                      const staffRoles = [
-                        "Manager",
-                        "Room Manager",
-                        "Receptionist",
-                        "Sales Associate",
-                      ];
-                      if (
-                        role === "Business Owner" ||
-                        staffRoles.includes(role)
-                      ) {
-                        navigate("/user/profile");
-                      } else {
-                        navigate("/tourist/profile");
-                      }
+                      navigate("/user/profile");
                     }}
                   >
                     Profile
@@ -259,24 +244,14 @@ const Navbar: React.FC<NavbarProps> = ({
                     Admin Dashboard
                   </MenuItem>
                 )}
-                {(isOwner ||
-                  [
-                    "Manager",
-                    "Room Manager",
-                    "Receptionist",
-                    "Sales Associate",
-                  ].includes(role)) && (
+                {/* My Business menu item for owners and staff (including custom roles) */}
+                {(isOwner || isStaff) && (
                   <MenuItem
                     onClick={() => {
-                      const staffRoles = [
-                        "Manager",
-                        "Room Manager",
-                        "Receptionist",
-                        "Sales Associate",
-                      ];
                       if (role === "Business Owner") {
                         navigate("/business");
-                      } else if (staffRoles.includes(role)) {
+                      } else {
+                        // Staff and custom roles go to dashboard
                         navigate("/business/dashboard");
                       }
                     }}
@@ -527,27 +502,17 @@ const Navbar: React.FC<NavbarProps> = ({
                       Admin Dashboard
                     </Button>
                   )}
-                  {(isOwner ||
-                    [
-                      "Manager",
-                      "Room Manager",
-                      "Receptionist",
-                      "Sales Associate",
-                    ].includes(role)) && (
+                  {/* Mobile: My Business button for owners and staff (including custom roles) */}
+                  {(isOwner || isStaff) && (
                     <Button
                       variant="outlined"
                       color="neutral"
                       onClick={() => {
                         setOpen(false);
-                        const staffRoles = [
-                          "Manager",
-                          "Room Manager",
-                          "Receptionist",
-                          "Sales Associate",
-                        ];
                         if (role === "Business Owner") {
                           navigate("/business");
-                        } else if (staffRoles.includes(role)) {
+                        } else {
+                          // Staff and custom roles go to dashboard
                           navigate("/business/dashboard");
                         }
                       }}
