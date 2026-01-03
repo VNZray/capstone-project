@@ -221,12 +221,30 @@ export async function createTouristSpotProcedures(knex) {
       SELECT ROW_COUNT() AS affected_rows;
     END;
   `);
+
+  await knex.raw(`
+    CREATE PROCEDURE DeleteTouristSpot(IN p_id CHAR(36))
+    BEGIN
+      -- Delete related images
+      DELETE FROM tourist_spot_images WHERE tourist_spot_id = p_id;
+      
+      -- Delete related schedules
+      DELETE FROM tourist_spot_schedules WHERE tourist_spot_id = p_id;
+      
+      -- Delete related categories mapping
+      DELETE FROM entity_categories WHERE entity_id = p_id AND entity_type = 'tourist_spot';
+      
+      -- Delete the tourist spot
+      DELETE FROM tourist_spots WHERE id = p_id;
+    END;
+  `);
 }
 
 export async function dropTouristSpotProcedures(knex) {
   const names = [
     'GetAllTouristSpots', 'GetTouristSpotById', 'InsertTouristSpot', 'UpdateTouristSpot',
-    'GetFeaturedTouristSpots', 'GetNonFeaturedTouristSpots', 'FeatureTouristSpot', 'UnfeatureTouristSpot'
+    'GetFeaturedTouristSpots', 'GetNonFeaturedTouristSpots', 'FeatureTouristSpot', 'UnfeatureTouristSpot',
+    'DeleteTouristSpot'
   ];
   for (const n of names) {
     await knex.raw(`DROP PROCEDURE IF EXISTS ${n};`);

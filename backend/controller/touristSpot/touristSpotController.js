@@ -235,3 +235,13 @@ export const unfeatureTouristSpot = async (request, response) => {
     return handleDbError(error, response);
   }
 };
+
+export const deleteTouristSpot = async (request, response) => {
+  try {
+    const { id } = request.params;
+    await db.query("CALL DeleteTouristSpot(?)", [id]);
+    response.json({ success: true, message: "Tourist spot deleted successfully" });
+  } catch (error) {
+    return handleDbError(error, response);
+  }
+};

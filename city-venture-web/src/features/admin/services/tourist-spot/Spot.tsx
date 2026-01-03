@@ -10,6 +10,7 @@ import type { Category } from "@/src/types/Category";
 import { apiService } from "@/src/utils/api";
 import Container from "@/src/components/Container";
 import FeaturedSpotsModal from "@/src/features/admin/services/tourist-spot/components/FeaturedSpotsModal";
+import ConfirmDialog from "@/src/components/modals/ConfirmDialog";
 import PageContainer from "@/src/components/PageContainer";
 import Table, { type TableColumn } from "@/src/components/ui/Table";
 import DynamicTab from "@/src/components/ui/DynamicTab";
@@ -32,6 +33,8 @@ const Spot = () => {
   const [isAddSpotModalVisible, setAddSpotModalVisible] = useState(false);
   const [isEditSpotModalVisible, setEditSpotModalVisible] = useState(false);
   const [isFeaturedModalOpen, setFeaturedModalOpen] = useState(false);
+  const [showDelete, setShowDelete] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
   const [selectedSpotForEdit, setSelectedSpotForEdit] = useState<
     TouristSpot | undefined
   >(undefined);
@@ -160,6 +163,26 @@ const Spot = () => {
   const handleEditSpot = (spot: TouristSpot) => {
     setSelectedSpotForEdit(spot);
     setEditSpotModalVisible(true);
+  };
+
+  const handleDeleteSpot = (spot: TouristSpot) => {
+    setSelectedSpotForEdit(spot);
+    setShowDelete(true);
+  };
+
+  const doDeleteSpot = async () => {
+    if (!selectedSpotForEdit) return;
+    setDeleteLoading(true);
+    try {
+      await apiService.deleteTouristSpot(selectedSpotForEdit.id);
+      setShowDelete(false);
+      setSelectedSpotForEdit(undefined);
+      fetchSpotsAndCategories();
+    } catch (e: any) {
+      console.error("Failed to delete spot", e);
+    } finally {
+      setDeleteLoading(false);
+    }
   };
 
   const handleCloseEditModal = () => {
@@ -328,6 +351,17 @@ const Spot = () => {
             }}
           >
             Reviews
+          </Button>
+          <Button
+            variant="outlined"
+            colorScheme="error"
+            size="sm"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleDeleteSpot(row);
+            }}
+          >
+            Delete
           </Button>
         </Stack>
       ),
@@ -613,8 +647,13 @@ const Spot = () => {
                       variant: 'outlined',
                       colorScheme: 'primary',
                       fullWidth: true,
-                    },
-                    {
+                    },                    {
+                      label: 'Delete',
+                      onClick: () => handleDeleteSpot(spot),
+                      variant: 'outlined',
+                      colorScheme: 'error',
+                      fullWidth: true,
+                    },                    {
                       label: 'Reviews',
                       onClick: () => handleViewReviews(spot),
                       variant: 'outlined',
@@ -658,6 +697,16 @@ const Spot = () => {
       <FeaturedSpotsModal
         open={isFeaturedModalOpen}
         onClose={() => setFeaturedModalOpen(false)}
+      />
+
+      <ConfirmDialog
+        open={showDelete}
+        title="Delete Tourist Spot"
+        description={`Are you sure you want to delete "${selectedSpotForEdit?.name}"? This action cannot be undone.`}
+        confirmLabel="Delete"
+        loading={deleteLoading}
+        onClose={() => setShowDelete(false)}
+        onConfirm={doDeleteSpot}
       />
     </PageContainer>
   );

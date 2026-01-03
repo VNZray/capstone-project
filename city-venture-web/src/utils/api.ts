@@ -375,6 +375,21 @@ class ApiService {
     }
   }
 
+  async deleteTourismStaff(id: string): Promise<void> {
+    try {
+      console.debug('[apiService] DELETE /tourism-staff/:id', id);
+      await apiClient.delete(`/tourism-staff/${id}`);
+    } catch (err: any) {
+      console.error('[apiService] Failed DELETE /tourism-staff/:id', {
+        id,
+        message: err?.message,
+        status: err?.response?.status,
+        data: err?.response?.data,
+      });
+      throw err;
+    }
+  }
+
   // ===== BUSINESS MANAGEMENT =====
   async getBusinesses(): Promise<any[]> {
     try {

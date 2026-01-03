@@ -1,9 +1,10 @@
 import React from "react";
 import { Stack, Chip, Box } from "@mui/joy";
-import { CheckCircle, MinusCircle, ShieldCheck, ShieldAlert, Briefcase, Mail } from "lucide-react";
+import { CheckCircle, MinusCircle, ShieldCheck, ShieldAlert, Briefcase, Mail, Trash2 } from "lucide-react";
 import Container from "@/src/components/Container";
 import Typography from "@/src/components/Typography";
 import Button from "@/src/components/Button";
+import IconButton from "@/src/components/IconButton";
 import type { TourismStaff } from "@/src/types/TourismStaff";
 import placeholderImage from "@/src/assets/images/placeholder-image.png";
 
@@ -11,12 +12,14 @@ interface TourismStaffCardsProps {
   staff: TourismStaff[];
   onEdit: (s: TourismStaff) => void;
   onResetPassword: (s: TourismStaff) => void;
+  onDelete: (s: TourismStaff) => void;
 }
 
 const TourismStaffCards: React.FC<TourismStaffCardsProps> = ({
   staff,
   onEdit,
   onResetPassword,
+  onDelete,
 }) => {
   if (staff.length === 0) {
     return (
@@ -120,6 +123,7 @@ const TourismStaffCards: React.FC<TourismStaffCardsProps> = ({
                 display: "flex",
                 gap: "8px",
                 marginTop: "auto",
+                alignItems: "center",
               }}
             >
               <Button
@@ -133,13 +137,21 @@ const TourismStaffCards: React.FC<TourismStaffCardsProps> = ({
               </Button>
               <Button
                 variant="outlined"
-                colorScheme="error"
+                colorScheme="warning"
                 onClick={() => onResetPassword(s)}
                 size="sm"
                 sx={{ flex: 1 }}
               >
-                Reset Password
+                Reset
               </Button>
+              <IconButton
+                variant="plain"
+                colorScheme="error"
+                onClick={() => onDelete(s)}
+                size="sm"
+              >
+                <Trash2 size={18} />
+              </IconButton>
             </Box>
           </Box>
         </Container>

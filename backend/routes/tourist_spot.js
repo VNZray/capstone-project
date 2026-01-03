@@ -48,4 +48,7 @@ router.post('/', touristSpotController.createTouristSpot);
 // Submit edit request for existing tourist spot
 router.put('/:id', touristSpotController.submitEditRequest);
 
+// Delete tourist spot
+router.delete('/:id', touristSpotController.deleteTouristSpot);
+
 export default router;

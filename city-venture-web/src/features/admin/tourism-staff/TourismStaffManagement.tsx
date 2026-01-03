@@ -9,6 +9,7 @@ import type { TourismStaff } from "@/src/types/TourismStaff";
 import { apiService } from "@/src/utils/api";
 import ResetPasswordModal from "@/src/features/admin/tourism-staff/components/ResetPasswordModal";
 import EditStaffModal from "@/src/features/admin/tourism-staff/components/EditStaffModal";
+import ConfirmDialog from "@/src/components/modals/ConfirmDialog";
 import type { UserRoles } from "@/src/types/User";
 import StaffSkeleton from "@/src/features/admin/tourism-staff/components/StaffSkeleton";
 import Button from "@/src/components/Button";
@@ -40,6 +41,10 @@ const TourismStaffManagement: React.FC = () => {
   const [resetLoading, setResetLoading] = useState(false);
   const [resetTempPassword, setResetTempPassword] = useState<string | undefined>(undefined);
   const [resetEmail, setResetEmail] = useState<string | undefined>(undefined);
+
+  // Delete state
+  const [showDelete, setShowDelete] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   const fetchStaff = useCallback(async () => {
     setLoading(true);
@@ -133,6 +138,26 @@ const TourismStaffManagement: React.FC = () => {
     setSelected(s);
     setResetTempPassword(undefined);
     setShowReset(true);
+  };
+
+  const handleDelete = (s: TourismStaff) => {
+    setSelected(s);
+    setShowDelete(true);
+  };
+
+  const doDelete = async () => {
+    if (!selected) return;
+    setDeleteLoading(true);
+    try {
+      await apiService.deleteTourismStaff(selected.tourism_id);
+      setShowDelete(false);
+      setSelected(null);
+      fetchStaff();
+    } catch (e: any) {
+      console.error("Failed to delete staff", e);
+    } finally {
+      setDeleteLoading(false);
+    }
   };
 
   const doResetPassword = async () => {
@@ -315,6 +340,7 @@ const TourismStaffManagement: React.FC = () => {
             staff={filtered}
             onEdit={handleEdit}
             onResetPassword={handleResetPassword}
+            onDelete={handleDelete}
           />
         ) : (
           <>
@@ -351,6 +377,7 @@ const TourismStaffManagement: React.FC = () => {
                 staff={filtered}
                 onEdit={handleEdit}
                 onResetPassword={handleResetPassword}
+                onDelete={handleDelete}
               />
             </div>
           </>
@@ -366,6 +393,17 @@ const TourismStaffManagement: React.FC = () => {
         loading={resetLoading}
         onClose={() => { setShowReset(false); setSelected(null); setResetTempPassword(undefined); setResetEmail(undefined); }}
         onConfirm={doResetPassword}
+      />
+
+      {/* Delete Confirmation */}
+      <ConfirmDialog
+        open={showDelete}
+        title="Delete Staff Member"
+        description={`Are you sure you want to delete ${selected?.first_name} ${selected?.last_name}? This action cannot be undone.`}
+        confirmLabel="Delete"
+        loading={deleteLoading}
+        onClose={() => setShowDelete(false)}
+        onConfirm={doDelete}
       />
 
       {/* Create/Edit */}

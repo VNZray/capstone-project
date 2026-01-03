@@ -53,9 +53,30 @@ export async function createTourismCompositeProcedures(knex) {
       LIMIT 1;
     END;
   `);
+
+  await knex.raw("DROP PROCEDURE IF EXISTS DeleteTourismStaff;");
+
+  await knex.raw(`
+    CREATE PROCEDURE DeleteTourismStaff(IN p_id CHAR(64))
+    BEGIN
+      DECLARE v_user_id CHAR(64);
+      
+      -- Get user_id before deleting tourism record
+      SELECT user_id INTO v_user_id FROM tourism WHERE id = p_id;
+      
+      -- Delete tourism record
+      DELETE FROM tourism WHERE id = p_id;
+      
+      -- Delete user record if found
+      IF v_user_id IS NOT NULL THEN
+        DELETE FROM user WHERE id = v_user_id;
+      END IF;
+    END;
+  `);
 }
 
 export async function dropTourismCompositeProcedures(knex) {
   await knex.raw("DROP PROCEDURE IF EXISTS GetTourismListWithUserRole;");
   await knex.raw("DROP PROCEDURE IF EXISTS GetTourismWithUserRoleById;");
+  await knex.raw("DROP PROCEDURE IF EXISTS DeleteTourismStaff;");
 }
