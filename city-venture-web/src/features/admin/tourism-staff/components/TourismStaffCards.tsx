@@ -1,8 +1,11 @@
 import React from "react";
-import { Card, CardContent, Typography, Stack, Chip, Grid } from "@mui/joy";
+import { Stack, Chip, Box } from "@mui/joy";
 import { CheckCircle, MinusCircle, ShieldCheck, ShieldAlert, Briefcase, Mail } from "lucide-react";
+import Container from "@/src/components/Container";
+import Typography from "@/src/components/Typography";
 import Button from "@/src/components/Button";
 import type { TourismStaff } from "@/src/types/TourismStaff";
+import placeholderImage from "@/src/assets/images/placeholder-image.png";
 
 interface TourismStaffCardsProps {
   staff: TourismStaff[];
@@ -15,62 +18,133 @@ const TourismStaffCards: React.FC<TourismStaffCardsProps> = ({
   onEdit,
   onResetPassword,
 }) => {
+  if (staff.length === 0) {
+    return (
+      <div style={{ gridColumn: "1 / -1", textAlign: "center", padding: "2rem", opacity: 0.8 }}>
+        <Typography.Body size="md">No staff found</Typography.Body>
+      </div>
+    );
+  }
+
   return (
-    <Grid container spacing={2}>
+    <>
       {staff.map((s) => (
-        <Grid key={s.tourism_id} xs={12} sm={6} md={4} lg={3}>
-          <Card variant="outlined" sx={{ height: "100%" }}>
-            <CardContent>
-              <Stack spacing={1}>
-                <Typography level="title-md" sx={{ fontWeight: 700 }}>
-                  {s.first_name} {s.middle_name || ""} {s.last_name}
-                </Typography>
-                <Typography level="body-sm" sx={{ opacity: 0.8 }}>
-                  {s.position || "-"}
-                </Typography>
+        <Container
+          key={s.tourism_id}
+          elevation={2}
+          padding="0"
+          gap="0"
+          hover={true}
+          hoverEffect="lift"
+          style={{
+            margin: 0,
+            overflow: "hidden",
+            display: "flex",
+            flexDirection: "column",
+          }}
+        >
+          {/* Image */}
+          <Box
+            sx={{
+              width: "100%",
+              aspectRatio: "2/1",
+              overflow: "hidden",
+              backgroundColor: "#f0f0f0",
+              position: "relative",
+            }}
+          >
+            <img
+              src={placeholderImage}
+              alt={`${s.first_name} ${s.last_name}`}
+              style={{
+                width: "100%",
+                height: "100%",
+                objectFit: "cover",
+                display: "block",
+              }}
+            />
+          </Box>
 
-                <Stack direction="row" spacing={1}>
-                  <Chip variant="soft" color={s.is_active ? "success" : "neutral"} size="sm" startDecorator={s.is_active ? <CheckCircle size={14} /> : <MinusCircle size={14} /> }>
-                    {s.is_active ? "Active" : "Inactive"}
-                  </Chip>
-                  <Chip variant="soft" color={s.is_verified ? "primary" : "warning"} size="sm" startDecorator={s.is_verified ? <ShieldCheck size={14} /> : <ShieldAlert size={14} /> }>
-                    {s.is_verified ? "Verified" : "Unverified"}
-                  </Chip>
-                </Stack>
+          {/* Content */}
+          <Box
+            sx={{
+              padding: "12px",
+              display: "flex",
+              flexDirection: "column",
+              gap: "10px",
+              flex: 1,
+            }}
+          >
+            {/* Title and Subtitle */}
+            <Box>
+              <Typography.CardTitle
+                size="sm"
+                sx={{
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {`${s.first_name} ${s.middle_name || ""} ${s.last_name}`}
+              </Typography.CardTitle>
+              <Typography.CardSubTitle
+                size="xs"
+                sx={{
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap",
+                  mt: 0.5,
+                }}
+              >
+                {s.position || "-"}
+              </Typography.CardSubTitle>
+            </Box>
 
+            {/* Details (Chips, Email, Role) */}
+              <Stack spacing={0.5}>
                 <Stack direction="row" spacing={1} alignItems="center">
-                  <Mail size={14} />
-                  <Typography level="body-sm">{s.email}</Typography>
+                  <Mail size={14} style={{ opacity: 0.6 }} />
+                  <Typography.Body size="sm" sx={{ wordBreak: "break-all" }}>{s.email}</Typography.Body>
                 </Stack>
                 <Stack direction="row" spacing={1} alignItems="center">
-                  <Briefcase size={14} />
-                  <Typography level="body-sm" sx={{ opacity: 0.8 }}>
+                  <Briefcase size={14} style={{ opacity: 0.6 }} />
+                  <Typography.Body size="sm" sx={{ opacity: 0.8 }}>
                     {s.role_name || "-"}
-                  </Typography>
-                </Stack>
-
-                <Stack direction="row" spacing={1} sx={{ mt: 1 }}>
-                  <Button size="sm" variant="outlined" colorScheme="primary" onClick={() => onEdit(s)}>
-                    Edit
-                  </Button>
-                  <Button size="sm" variant="outlined" colorScheme="error" onClick={() => onResetPassword(s)}>
-                    Reset
-                  </Button>
+                  </Typography.Body>
                 </Stack>
               </Stack>
-            </CardContent>
-          </Card>
-        </Grid>
-      ))}
 
-      {staff.length === 0 && (
-        <Grid xs={12}>
-          <Typography level="body-md" sx={{ textAlign: "center", p: 3, opacity: 0.8 }}>
-            No staff found
-          </Typography>
-        </Grid>
-      )}
-    </Grid>
+            {/* Action Buttons */}
+            <Box
+              sx={{
+                display: "flex",
+                gap: "8px",
+                marginTop: "auto",
+              }}
+            >
+              <Button
+                variant="outlined"
+                colorScheme="primary"
+                onClick={() => onEdit(s)}
+                size="sm"
+                sx={{ flex: 1 }}
+              >
+                Edit
+              </Button>
+              <Button
+                variant="outlined"
+                colorScheme="error"
+                onClick={() => onResetPassword(s)}
+                size="sm"
+                sx={{ flex: 1 }}
+              >
+                Reset Password
+              </Button>
+            </Box>
+          </Box>
+        </Container>
+      ))}
+    </>
   );
 };
 

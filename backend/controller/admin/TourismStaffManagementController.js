@@ -45,7 +45,7 @@ export async function createTourismStaff(req, res) {
     position,
     user_role_id,
     role_name,
-    is_verified = false,
+    is_verified = true,
     is_active = true,
     barangay_id = null,
   } = req.body || {};

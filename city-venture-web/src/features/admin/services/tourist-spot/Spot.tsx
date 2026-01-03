@@ -1,22 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { IoAdd } from "react-icons/io5";
-import {
-  Star,
-  Search,
-  Landmark,
-  Church,
-  History,
-  Trees,
-  Building2,
-  Eye,
-  Edit,
-  ListChecks,
-} from "lucide-react";
+import { Star, Search, Landmark, Church, History, Trees, Building2 } from "lucide-react";
 import Typography from "@/src/components/Typography";
 import Button from "@/src/components/Button";
 import TouristSpotForm from "@/src/features/admin/services/tourist-spot/components/TouristSpotForm";
 import type { TouristSpot } from "@/src/types/TouristSpot";
+import type { Category } from "@/src/types/Category";
 import { apiService } from "@/src/utils/api";
 import Container from "@/src/components/Container";
 import FeaturedSpotsModal from "@/src/features/admin/services/tourist-spot/components/FeaturedSpotsModal";
@@ -25,18 +15,12 @@ import Table, { type TableColumn } from "@/src/components/ui/Table";
 import DynamicTab from "@/src/components/ui/DynamicTab";
 import NoDataFound from "@/src/components/NoDataFound";
 import IconButton from "@/src/components/IconButton";
-import { MoreVert } from "@mui/icons-material";
 import {
   Input,
   Chip,
   Stack,
   Select,
   Option,
-  Dropdown,
-  Menu,
-  MenuButton,
-  MenuItem,
-  ListItemDecorator,
 } from "@mui/joy";
 import Card from "@/src/components/Card";
 import placeholderImage from "@/src/assets/images/placeholder-image.png";
@@ -52,12 +36,12 @@ const Spot = () => {
     TouristSpot | undefined
   >(undefined);
   const [spots, setSpots] = useState<TouristSpot[]>([]);
+  const [allCategories, setAllCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [categoryTab, setCategoryTab] = useState<string>("All");
-  const [categoryTabs, setCategoryTabs] = useState<
-    Array<{ id: string; label: string; icon?: React.ReactNode }>
-  >([{ id: "All", label: "All", icon: <Landmark size={16} /> }]);
+  const [mainCategoryTab, setMainCategoryTab] = useState<string>("All");
+  const [subCategoryTab, setSubCategoryTab] = useState<string>("All");
+  
   type DisplayMode = "cards" | "table";
   const [display, setDisplay] = useState<DisplayMode>("cards");
   const [statusFilter, setStatusFilter] = useState<
@@ -73,30 +57,11 @@ const Spot = () => {
       const spotsData = await apiService.getTouristSpots();
       setSpots(spotsData);
       try {
-        const { categories } = await apiService.getCategoriesAndTypes();
-        const list = [
-          "All",
-          ...Array.from(
-            new Set(categories.map((c: any) => c.category).filter(Boolean))
-          ),
-        ];
-        setCategoryTabs(
-          list.map((c) => ({ id: c, label: c, icon: categoryIconFor(c) }))
-        );
+        const { categories, types } = await apiService.getCategoriesAndTypes();
+        // Merge root categories (types) and subcategories
+        setAllCategories([...(types as unknown as Category[]), ...categories]);
       } catch {
-        const fromSpots = Array.from(
-          new Set(
-            spotsData.flatMap((s) =>
-              Array.isArray(s.categories)
-                ? s.categories.map((c: any) => c.category || String(c))
-                : []
-            )
-          )
-        );
-        const list = ["All", ...fromSpots];
-        setCategoryTabs(
-          list.map((c) => ({ id: c, label: c, icon: categoryIconFor(c) }))
-        );
+        console.warn("Failed to fetch full category tree, filtering might be limited.");
       }
     } catch (error) {
       console.error("Error:", error);
@@ -122,6 +87,64 @@ const Spot = () => {
   useEffect(() => {
     fetchSpotsAndCategories();
   }, [fetchSpotsAndCategories]);
+
+  // Compute available Main Categories based on existing spots
+  const mainTabs = useMemo(() => {
+    const usedMainIds = new Set<number>();
+    
+    spots.forEach(spot => {
+      spot.categories?.forEach(cat => {
+        // Find the category definition
+        const def = allCategories.find(c => c.id === Number(cat.category_id));
+        if (def) {
+          if (def.parent_category) {
+            usedMainIds.add(def.parent_category);
+          } else {
+            usedMainIds.add(def.id);
+          }
+        }
+      });
+    });
+
+    const tabs = Array.from(usedMainIds).map(id => {
+      const cat = allCategories.find(c => c.id === id);
+      return cat ? { id: String(cat.id), label: cat.title, icon: categoryIconFor(cat.title) } : null;
+    }).filter((t): t is { id: string; label: string; icon: React.ReactNode } => t !== null);
+
+    return [{ id: "All", label: "All", icon: <Landmark size={16} /> }, ...tabs.sort((a, b) => a.label.localeCompare(b.label))];
+  }, [spots, allCategories]);
+
+  // Compute available Subcategories based on selected Main Category and existing spots
+  const subTabs = useMemo(() => {
+    if (mainCategoryTab === "All") return [];
+
+    const mainId = Number(mainCategoryTab);
+    const usedSubIds = new Set<number>();
+
+    spots.forEach(spot => {
+      spot.categories?.forEach(cat => {
+        const def = allCategories.find(c => c.id === Number(cat.category_id));
+        // Check if this category is a child of the selected main category
+        if (def && def.parent_category === mainId) {
+          usedSubIds.add(def.id);
+        }
+      });
+    });
+
+    const tabs = Array.from(usedSubIds).map(id => {
+      const cat = allCategories.find(c => c.id === id);
+      return cat ? { id: String(cat.id), label: cat.title, icon: categoryIconFor(cat.title) } : null;
+    }).filter((t): t is { id: string; label: string; icon: React.ReactNode } => t !== null);
+
+    if (tabs.length === 0) return [];
+    
+    return [{ id: "All", label: "All", icon: <Landmark size={16} /> }, ...tabs.sort((a, b) => a.label.localeCompare(b.label))];
+  }, [spots, allCategories, mainCategoryTab]);
+
+  // Reset subcategory when main category changes
+  useEffect(() => {
+    setSubCategoryTab("All");
+  }, [mainCategoryTab]);
 
   const handleSearch = (query: string) => {
     setSearchQuery(query);
@@ -155,13 +178,26 @@ const Spot = () => {
   const filteredSpots = useMemo(() => {
     let filtered = spots;
 
-    // Filter by category tab
-    if (categoryTab && categoryTab !== "All") {
+    // Filter by Main Category
+    if (mainCategoryTab && mainCategoryTab !== "All") {
+      const mainId = Number(mainCategoryTab);
       filtered = filtered.filter((spot) =>
         Array.isArray(spot.categories)
-          ? spot.categories.some(
-              (cat: any) => (cat.category || String(cat)) === categoryTab
-            )
+          ? spot.categories.some((cat) => {
+              const def = allCategories.find(c => c.id === Number(cat.category_id));
+              // Match if category is the main category OR its parent is the main category
+              return def && (def.id === mainId || def.parent_category === mainId);
+            })
+          : false
+      );
+    }
+
+    // Filter by Subcategory
+    if (subCategoryTab && subCategoryTab !== "All") {
+      const subId = Number(subCategoryTab);
+      filtered = filtered.filter((spot) =>
+        Array.isArray(spot.categories)
+          ? spot.categories.some((cat) => Number(cat.category_id) === subId)
           : false
       );
     }
@@ -183,7 +219,7 @@ const Spot = () => {
     }
 
     return filtered;
-  }, [spots, searchQuery, categoryTab, statusFilter]);
+  }, [spots, searchQuery, mainCategoryTab, subCategoryTab, statusFilter, allCategories]);
 
   const getPrimaryImageUrl = (spot: TouristSpot): string => {
     const img = spot.images?.find((i) => i.is_primary) || spot.images?.[0];
@@ -231,7 +267,7 @@ const Spot = () => {
           {Array.isArray(row.categories)
             ? row.categories.slice(0, 2).map((cat, idx) => (
                 <Chip key={idx} color="primary" variant="soft" size="md">
-                  {(cat as any).category || String(cat)}
+                  {cat.category_title || String(cat)}
                 </Chip>
               ))
             : null}
@@ -356,29 +392,6 @@ const Spot = () => {
             <Typography.Header>Tourist Spot Management</Typography.Header>
           </div>
 
-          <Container direction="row" padding="0" gap="0.5rem" align="center">
-            <IconButton
-              size="sm"
-              variant={display === "cards" ? "solid" : "soft"}
-              colorScheme={display === "cards" ? "primary" : "secondary"}
-              aria-label="Cards view"
-              onClick={() => setDisplay("cards")}
-            >
-              {/* Dashboard icon substitute using Landmark */}
-              <DashboardRoundedIcon />
-            </IconButton>
-            <IconButton
-              size="sm"
-              variant={display === "table" ? "solid" : "soft"}
-              colorScheme={display === "table" ? "primary" : "secondary"}
-              aria-label="Table view"
-              onClick={() => setDisplay("table")}
-            >
-              {/* Table icon substitute */}
-              <TableRowsRoundedIcon />
-            </IconButton>
-          </Container>
-
           <div
             style={{
               position: "fixed",
@@ -427,11 +440,9 @@ const Spot = () => {
             onChange={(e) => handleSearch(e.target.value)}
             sx={{ flex: 1 }}
           />
-
-          {/* Status Filter */}
           <Select
-            size="lg"
             value={statusFilter}
+            size="lg"
             onChange={(_, v) => setStatusFilter((v as any) ?? "all")}
             sx={{ ml: 1.5, minWidth: 160 }}
           >
@@ -439,17 +450,54 @@ const Spot = () => {
             <Option value="active">Active</Option>
             <Option value="inactive">Inactive</Option>
           </Select>
+
+          <Container direction="row" padding="0" gap="0.5rem" align="center">
+            <IconButton
+              size="lg"
+              variant={display === "cards" ? "solid" : "soft"}
+              colorScheme={display === "cards" ? "primary" : "secondary"}
+              aria-label="Cards view"
+              onClick={() => setDisplay("cards")}
+            >
+              {/* Dashboard icon substitute using Landmark */}
+              <DashboardRoundedIcon />
+            </IconButton>
+            <IconButton
+              size="lg"
+              variant={display === "table" ? "solid" : "soft"}
+              colorScheme={display === "table" ? "primary" : "secondary"}
+              aria-label="Table view"
+              onClick={() => setDisplay("table")}
+            >
+              {/* Table icon substitute */}
+              <TableRowsRoundedIcon />
+            </IconButton>
+          </Container>
+
         </Container>
 
         {/* Tabs */}
-        <DynamicTab
-          tabs={categoryTabs}
-          activeTabId={categoryTab}
-          onChange={(tabId) => setCategoryTab(String(tabId))}
-        />
-      </Container>
+        <Container padding="0">
+          <Stack spacing={0} sx={{ width: '100%' }}>
+            <DynamicTab
+              tabs={mainTabs}
+              activeTabId={mainCategoryTab}
+              onChange={(tabId) => setMainCategoryTab(String(tabId))}
+              padding="16px 20px 4px 20px"
+            />
+            
+            {subTabs.length > 0 && (
+              <DynamicTab
+                tabs={subTabs}
+                activeTabId={subCategoryTab}
+                onChange={(tabId) => setSubCategoryTab(String(tabId))}
+                padding="4px 20px 16px 48px"
+              />
+            )}
+          </Stack>
+        </Container>
 
-      <Container background="transparent" padding="0">
+      <Container background="transparent" padding={display === "table" ? "20px" : "0"}>
         {loading ? (
           <Container
             align="center"
@@ -511,26 +559,82 @@ const Spot = () => {
             maxHeight="600px"
           />
         ) : (
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))",
-              gap: "20px",
-            }}
-          >
-            {filteredSpots.map((spot) => (
-              <Card
-                key={spot.id}
-                variant="grid"
-                image={getPrimaryImageUrl(spot)}
-                aspectRatio="16/9"
-                title={spot.name}
-                subtitle={getAddressLine(spot)}
-                size="default"
-                elevation={2}
+          display === "table" ? (
+            <Table
+              columns={columns}
+              data={filteredSpots}
+              rowKey="id"
+              onRowClick={(row) => handleViewDetails(row)}
+              rowsPerPage={10}
+              loading={loading}
+              emptyMessage="No tourist spots found"
+              stickyHeader
+              maxHeight="600px"
+            />
+          ) : (
+            <>
+              <style>
+                {`
+                  .custom-scrollbar::-webkit-scrollbar {
+                    width: 6px;
+                    height: 6px;
+                  }
+                  .custom-scrollbar::-webkit-scrollbar-track {
+                    background: transparent;
+                  }
+                  .custom-scrollbar::-webkit-scrollbar-thumb {
+                    background: rgba(0, 0, 0, 0.2);
+                    border-radius: 3px;
+                  }
+                  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+                    background: rgba(0, 0, 0, 0.3);
+                  }
+                `}
+              </style>
+              <div
+                className="custom-scrollbar"
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))",
+                  gap: "10px",
+                  padding: "20px",
+                  maxHeight: "680px",
+                  overflowY: "auto",
+                }}
               >
-                <div
-                  style={{ display: "flex", alignItems: "center", gap: "8px" }}
+                {filteredSpots.map((spot) => (
+                <Card
+                  key={spot.id}
+                  variant="grid"
+                  image={getPrimaryImageUrl(spot)}
+                  aspectRatio="16/9"
+                  title={spot.name}
+                  subtitle={getAddressLine(spot)}
+                  size="default"
+                  elevation={2}
+                  actions={[
+                    {
+                      label: 'View Details',
+                      onClick: () => handleViewDetails(spot),
+                      variant: 'solid',
+                      colorScheme: 'primary',
+                      fullWidth: true,
+                    },
+                    {
+                      label: 'Edit',
+                      onClick: () => handleEditSpot(spot),
+                      variant: 'outlined',
+                      colorScheme: 'primary',
+                      fullWidth: true,
+                    },
+                    {
+                      label: 'Reviews',
+                      onClick: () => handleViewReviews(spot),
+                      variant: 'outlined',
+                      colorScheme: 'secondary',
+                      fullWidth: true,
+                    },
+                  ]}
                 >
                   <Chip
                     size="sm"
@@ -557,46 +661,16 @@ const Spot = () => {
                       placement="bottom-end"
                       onClick={(e) => e.stopPropagation()}
                     >
-                      <MenuItem
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleViewDetails(spot);
-                        }}
-                      >
-                        <ListItemDecorator>
-                          <Eye />
-                        </ListItemDecorator>
-                        View Details
-                      </MenuItem>
-                      <MenuItem
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleEditSpot(spot);
-                        }}
-                      >
-                        <ListItemDecorator>
-                          <Edit />
-                        </ListItemDecorator>
-                        Edit
-                      </MenuItem>
-                      <MenuItem
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleViewReviews(spot);
-                        }}
-                      >
-                        <ListItemDecorator>
-                          <ListChecks />
-                        </ListItemDecorator>
-                        Reviews
-                      </MenuItem>
-                    </Menu>
-                  </Dropdown>
-                </div>
-              </Card>
-            ))}
-          </div>
+                      {spot.spot_status}
+                    </Chip>
+                  </div>
+                </Card>
+              ))}
+            </div>
+            </>
+          )
         )}
+      </Container>
       </Container>
 
       <TouristSpotForm

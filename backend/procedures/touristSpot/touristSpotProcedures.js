@@ -24,6 +24,7 @@ export async function createTouristSpotProcedures(knex) {
       SELECT 
         ec.entity_id AS tourist_spot_id,
         c.id,
+        c.id AS category_id,
         c.title AS category,
         c.parent_category,
         GetCategoryTreeDepth(c.id) AS level
@@ -62,6 +63,7 @@ export async function createTouristSpotProcedures(knex) {
 
       SELECT 
         c.id, 
+        c.id AS category_id,
         c.title AS category, 
         c.parent_category,
         GetCategoryTreeDepth(c.id) AS level,
@@ -160,6 +162,7 @@ export async function createTouristSpotProcedures(knex) {
       SELECT 
         ec.entity_id AS tourist_spot_id,
         c.id,
+        c.id AS category_id,
         c.title AS category,
         c.parent_category,
         GetCategoryTreeDepth(c.id) AS level
