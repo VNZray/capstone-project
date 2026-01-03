@@ -13,7 +13,9 @@ export interface TouristSpot {
   contact_email: string | null;
   website: string | null;
   entry_fee: number | null;
-  spot_status: 'pending' | 'active' | 'inactive';
+  spot_status: 'pending' | 'active' | 'inactive' | 'rejected' | 'pending_deletion';
+  submitted_by?: string;
+  deletion_requested_by?: string;
   is_featured: boolean;
   categories: EntityCategory[];
   created_at: string;
@@ -22,6 +24,7 @@ export interface TouristSpot {
   municipality: string;
   barangay: string;
   images?: TouristSpotImage[];
+  rejection_reason?: string;
 }
 
 export interface Province {
@@ -64,7 +67,7 @@ export interface TouristSpotFormData {
   website: string;
   entry_fee: string;
   category_ids: number[];
-  spot_status: "" | "pending" | "active" | "inactive";
+  spot_status: "" | "pending" | "active" | "inactive" | "rejected" | "pending_deletion";
   is_featured: boolean;
 }
 

@@ -49,6 +49,11 @@ class ApiService {
     return response.data.data || [];
   }
 
+  async getMySubmittedTouristSpots(): Promise<TouristSpot[]> {
+    const response: AxiosResponse<ApiResponse<TouristSpot[]>> = await api.get('/tourist-spots/my-submissions');
+    return response.data.data || [];
+  }
+
   async featureTouristSpot(id: string): Promise<ApiResponse<void>> {
     const response: AxiosResponse<ApiResponse<void>> = await api.put(`/tourist-spots/featured/${id}`);
     return response.data;

@@ -10,6 +10,7 @@ import type { Category } from "@/src/types/Category";
 import { apiService } from "@/src/utils/api";
 import Container from "@/src/components/Container";
 import FeaturedSpotsModal from "@/src/features/admin/services/tourist-spot/components/FeaturedSpotsModal";
+import MySubmissionsModal from "@/src/features/admin/services/tourist-spot/components/MySubmissionsModal";
 import ConfirmDialog from "@/src/components/modals/ConfirmDialog";
 import PageContainer from "@/src/components/PageContainer";
 import Table, { type TableColumn } from "@/src/components/ui/Table";
@@ -44,6 +45,7 @@ const Spot = () => {
   const [error, setError] = useState<string | null>(null);
   const [mainCategoryTab, setMainCategoryTab] = useState<string>("All");
   const [subCategoryTab, setSubCategoryTab] = useState<string>("All");
+  const [isMySubmissionsModalOpen, setMySubmissionsModalOpen] = useState(false);
   
   type DisplayMode = "cards" | "table";
   const [display, setDisplay] = useState<DisplayMode>("cards");
@@ -438,6 +440,15 @@ const Spot = () => {
             }}
           >
             <Button
+              variant="outlined"
+              colorScheme="primary"
+              size="lg"
+              onClick={() => setMySubmissionsModalOpen(true)}
+            >
+              My Submissions
+            </Button>
+
+            <Button
               variant="solid"
               colorScheme="secondary"
               size="lg"
@@ -446,15 +457,15 @@ const Spot = () => {
               Manage Featured
             </Button>
 
-            <IconButton
+            <Button
               onClick={() => setAddSpotModalVisible(true)}
               size="lg"
               variant="solid"
               colorScheme="primary"
-              aria-label="Add tourist spot"
+              startDecorator={<IoAdd />}
             >
-              <IoAdd />
-            </IconButton>
+              Add Spot
+            </Button>
           </div>
         </Container>
 
@@ -631,11 +642,11 @@ const Spot = () => {
                   aspectRatio="16/9"
                   title={spot.name}
                   subtitle={getAddressLine(spot)}
-                  size="default"
+                  size="sm"
                   elevation={2}
                   actions={[
                     {
-                      label: 'View Details',
+                      label: 'View',
                       onClick: () => handleViewDetails(spot),
                       variant: 'solid',
                       colorScheme: 'primary',
@@ -697,6 +708,11 @@ const Spot = () => {
       <FeaturedSpotsModal
         open={isFeaturedModalOpen}
         onClose={() => setFeaturedModalOpen(false)}
+      />
+
+      <MySubmissionsModal
+        open={isMySubmissionsModalOpen}
+        onClose={() => setMySubmissionsModalOpen(false)}
       />
 
       <ConfirmDialog

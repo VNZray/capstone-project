@@ -92,18 +92,20 @@ export async function createTouristSpotProcedures(knex) {
     IN p_contact_phone VARCHAR(20),
     IN p_contact_email VARCHAR(255),
     IN p_website VARCHAR(255),
-    IN p_entry_fee DECIMAL(10,2)
+    IN p_entry_fee DECIMAL(10,2),
+    IN p_submitted_by CHAR(36),
+    IN p_spot_status VARCHAR(20)
     )
     BEGIN
       SET @newId = UUID();
       INSERT INTO tourist_spots (
         id, name, description, barangay_id,
         latitude, longitude, contact_phone, contact_email, website, entry_fee,
-        spot_status
+        spot_status, submitted_by
       ) VALUES (
         @newId, p_name, p_description, p_barangay_id,
         p_latitude, p_longitude, p_contact_phone, p_contact_email, p_website, p_entry_fee,
-        'pending'
+        p_spot_status, p_submitted_by
       );
       SELECT @newId AS id;
     END;
@@ -121,7 +123,9 @@ export async function createTouristSpotProcedures(knex) {
     IN p_contact_phone VARCHAR(20),
     IN p_contact_email VARCHAR(255),
     IN p_website VARCHAR(255),
-    IN p_entry_fee DECIMAL(10,2)
+    IN p_entry_fee DECIMAL(10,2),
+    IN p_spot_status VARCHAR(20),
+    IN p_is_featured BOOLEAN
     )
     BEGIN
       UPDATE tourist_spots SET
@@ -134,6 +138,8 @@ export async function createTouristSpotProcedures(knex) {
         contact_email = p_contact_email,
         website = p_website,
         entry_fee = p_entry_fee,
+        spot_status = p_spot_status,
+        is_featured = p_is_featured,
         updated_at = CURRENT_TIMESTAMP
       WHERE id = p_id;
       SELECT ROW_COUNT() AS affected_rows;
@@ -238,13 +244,44 @@ export async function createTouristSpotProcedures(knex) {
       DELETE FROM tourist_spots WHERE id = p_id;
     END;
   `);
+
+  await knex.raw(`
+    CREATE PROCEDURE RequestDeleteTouristSpot(IN p_id CHAR(36), IN p_requested_by CHAR(36))
+    BEGIN
+      UPDATE tourist_spots
+      SET spot_status = 'pending_deletion', deletion_requested_by = p_requested_by
+      WHERE id = p_id;
+    END;
+  `);
+
+  await knex.raw(`
+    CREATE PROCEDURE GetMySubmittedTouristSpots(IN p_user_id CHAR(36))
+    BEGIN
+      SELECT 
+        ts.*, 
+        p.province, m.municipality, b.barangay,
+        (SELECT remarks 
+         FROM approval_records ar 
+         WHERE ar.subject_id = ts.id 
+           AND ar.subject_type = 'tourist_spot' 
+           AND ar.decision = 'rejected' 
+         ORDER BY ar.decided_at DESC 
+         LIMIT 1) as rejection_reason
+      FROM tourist_spots ts
+      LEFT JOIN barangay b ON ts.barangay_id = b.id
+      LEFT JOIN municipality m ON b.municipality_id = m.id
+      LEFT JOIN province p ON m.province_id = p.id
+      WHERE ts.submitted_by = p_user_id OR ts.deletion_requested_by = p_user_id
+      ORDER BY ts.updated_at DESC;
+    END;
+  `);
 }
 
 export async function dropTouristSpotProcedures(knex) {
   const names = [
     'GetAllTouristSpots', 'GetTouristSpotById', 'InsertTouristSpot', 'UpdateTouristSpot',
     'GetFeaturedTouristSpots', 'GetNonFeaturedTouristSpots', 'FeatureTouristSpot', 'UnfeatureTouristSpot',
-    'DeleteTouristSpot'
+    'DeleteTouristSpot', 'RequestDeleteTouristSpot', 'GetMySubmittedTouristSpots'
   ];
   for (const n of names) {
     await knex.raw(`DROP PROCEDURE IF EXISTS ${n};`);

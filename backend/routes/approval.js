@@ -20,6 +20,10 @@ router.get('/pending-edits', approvalController.getPendingEditRequests);
 router.put('/approve-edit/:id', approvalController.approveEditRequest);
 router.put('/reject-edit/:id', approvalController.rejectEditRequest);
 
+// Deletion request endpoints
+router.get('/pending-deletions', approvalController.getPendingDeletionRequests);
+router.put('/approve-deletion/:id', approvalController.approveDeletionRequest);
+router.put('/reject-deletion/:id', approvalController.rejectDeletionRequest);
 
 // Approval records log endpoint
 router.get('/records', getApprovalRecords);
