@@ -32,6 +32,14 @@ import { PermissionSelector } from './PermissionSelector';
 import { useRole, usePermissionsGrouped } from './useRoleManagement';
 import { canEditRole } from '@/src/services/RoleService';
 
+/**
+ * Business capabilities for filtering permissions
+ */
+interface BusinessCapabilities {
+  hasStore?: boolean;
+  hasBooking?: boolean;
+}
+
 interface EditRoleModalProps {
   open: boolean;
   roleId: number | null;
@@ -42,6 +50,18 @@ interface EditRoleModalProps {
     permissionIds?: number[];
   }) => Promise<void>;
   isLoading?: boolean;
+  /**
+   * Permission scope to filter which permissions are shown:
+   * - 'business': Only business-related permissions (for business owners editing staff roles)
+   * - 'system': Only system-level permissions (for admins editing tourism staff roles)
+   * - undefined: Show all permissions
+   */
+  permissionScope?: 'business' | 'system';
+  /**
+   * Business capabilities to filter permissions.
+   * Only shows permissions relevant to the business type.
+   */
+  businessCapabilities?: BusinessCapabilities;
 }
 
 export function EditRoleModal({
@@ -50,6 +70,8 @@ export function EditRoleModal({
   onClose,
   onSave,
   isLoading = false,
+  permissionScope = 'business',
+  businessCapabilities,
 }: EditRoleModalProps) {
   const [roleName, setRoleName] = useState('');
   const [roleDescription, setRoleDescription] = useState('');
@@ -59,7 +81,7 @@ export function EditRoleModal({
 
   // Fetch role data
   const { data: role, isLoading: roleLoading } = useRole(roleId || undefined);
-  const { data: permissionCategories, isLoading: permissionsLoading } = usePermissionsGrouped('business');
+  const { data: permissionCategories, isLoading: permissionsLoading } = usePermissionsGrouped(permissionScope);
 
   // Initialize form when role data loads
   useEffect(() => {
@@ -186,7 +208,8 @@ export function EditRoleModal({
                     categories={permissionCategories || []}
                     selectedIds={selectedPermissions}
                     onChange={setSelectedPermissions}
-                    scope="business"
+                    scope={permissionScope}
+                    businessCapabilities={businessCapabilities}
                   />
                 </Box>
               </Box>

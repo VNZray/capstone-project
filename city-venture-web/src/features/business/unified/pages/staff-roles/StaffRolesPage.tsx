@@ -51,11 +51,9 @@ export function StaffRolesPage({ businessId: propBusinessId }: StaffRolesPagePro
 
   // Role management mutations
   const {
-    clonePresetAsync,
     createCustomAsync,
     updateRoleAsync,
     deleteRole: deleteRoleMutation,
-    isCloning,
     isCreating,
     isUpdating,
     isDeleting,
@@ -71,14 +69,6 @@ export function StaffRolesPage({ businessId: propBusinessId }: StaffRolesPagePro
   });
 
   // Handlers
-  const handleCreateFromPreset = async (presetRoleId: number, customName?: string) => {
-    try {
-      await clonePresetAsync({ presetRoleId, customName });
-    } catch (err) {
-      console.error('Failed to clone preset role:', err);
-    }
-  };
-
   const handleCreateCustom = async (
     roleName: string,
     roleDescription: string,
@@ -172,9 +162,12 @@ export function StaffRolesPage({ businessId: propBusinessId }: StaffRolesPagePro
       <CreateRoleModal
         open={createModalOpen}
         onClose={() => setCreateModalOpen(false)}
-        onCreateFromPreset={handleCreateFromPreset}
         onCreateCustom={handleCreateCustom}
-        isLoading={isCloning || isCreating}
+        isLoading={isCreating}
+        businessCapabilities={{
+          hasStore: businessDetails?.hasStore,
+          hasBooking: businessDetails?.hasBooking,
+        }}
       />
 
       {/* Edit Role Modal */}
@@ -184,6 +177,10 @@ export function StaffRolesPage({ businessId: propBusinessId }: StaffRolesPagePro
         onClose={() => setEditRoleId(null)}
         onSave={handleUpdateRole}
         isLoading={isUpdating}
+        businessCapabilities={{
+          hasStore: businessDetails?.hasStore,
+          hasBooking: businessDetails?.hasBooking,
+        }}
       />
 
       {/* Delete Confirmation Modal */}

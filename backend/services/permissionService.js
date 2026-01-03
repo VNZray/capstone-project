@@ -8,7 +8,6 @@ const TTL_MS = 5 * 60 * 1000; // 5 minutes
  * Get user permissions using the enhanced RBAC system
  * Supports:
  * - Direct permissions assigned to user's role
- * - Inherited permissions from preset-based roles
  * - Permission overrides (grants and revokes)
  * 
  * @param {string} userId - User ID

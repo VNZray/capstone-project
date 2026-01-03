@@ -1,8 +1,8 @@
 /**
- * RBAC Enhancement Seed - Business Permissions
+ * RBAC Seed - Business Permissions
  * 
  * Seeds comprehensive permissions for business operations.
- * These permissions can be assigned to roles (system, preset, or business).
+ * These permissions can be assigned to roles (system or business).
  * 
  * @param { import("knex").Knex } knex
  */
@@ -81,7 +81,6 @@ export async function seed(knex) {
     { name: 'approve_tourist_spots', description: 'Approve tourist spot submissions', scope: 'system', category_id: 10 },
     { name: 'manage_platform_settings', description: 'Configure platform-wide settings', scope: 'system', category_id: 10 },
     { name: 'view_platform_analytics', description: 'Access platform-wide analytics', scope: 'system', category_id: 10 },
-    { name: 'manage_preset_roles', description: 'Create and edit preset role templates', scope: 'system', category_id: 10 },
   ];
 
   // Insert or update permissions
@@ -110,7 +109,8 @@ export async function seed(knex) {
   console.log('[Seed] Business permissions seeded/updated.');
 
   // ============================================================
-  // Assign default permissions to preset roles
+  // Define default permission sets for common role types
+  // These serve as documentation - actual roles are custom per-business
   // ============================================================
   
   // Get all permission IDs
@@ -118,7 +118,7 @@ export async function seed(knex) {
   const permMap = {};
   allPerms.forEach(p => { permMap[p.name] = p.id; });
 
-  // Define permission sets for each preset role
+  // Define permission sets for reference (used when creating custom roles)
   const rolePermissions = {
     'Manager': [
       'view_orders', 'create_orders', 'update_orders', 'cancel_orders', 'manage_order_payments',
@@ -181,37 +181,10 @@ export async function seed(knex) {
     ],
   };
 
-  // Assign permissions to preset roles
-  for (const [roleName, permNames] of Object.entries(rolePermissions)) {
-    const role = await knex('user_role').where({ role_name: roleName }).first();
-    
-    if (!role) {
-      console.log(`[Seed] Role ${roleName} not found, skipping permissions...`);
-      continue;
-    }
-
-    // Get valid permission IDs
-    const permIds = permNames
-      .filter(name => permMap[name])
-      .map(name => permMap[name]);
-
-    // Insert permissions (ignore duplicates)
-    for (const permId of permIds) {
-      try {
-        await knex('role_permissions')
-          .insert({ user_role_id: role.id, permission_id: permId })
-          .onConflict(['user_role_id', 'permission_id'])
-          .ignore();
-      } catch (err) {
-        // Ignore duplicate errors
-        if (!err.message.includes('Duplicate')) {
-          console.error(`[Seed] Error assigning permission ${permId} to role ${roleName}:`, err.message);
-        }
-      }
-    }
-
-    console.log(`[Seed] Assigned ${permIds.length} permissions to ${roleName}`);
-  }
+  // NOTE: These permission sets are for reference only.
+  // Preset roles have been removed - business owners create custom roles.
+  // We skip assigning these permissions since presets no longer exist.
+  console.log('[Seed] Permission sets defined for reference (presets removed).');
 
   // ============================================================
   // Assign system permissions to Admin and Tourism Officer
@@ -219,7 +192,7 @@ export async function seed(knex) {
   const systemPermissions = [
     'manage_users', 'manage_all_businesses', 'approve_businesses',
     'manage_tourist_spots', 'approve_tourist_spots',
-    'manage_platform_settings', 'view_platform_analytics', 'manage_preset_roles',
+    'manage_platform_settings', 'view_platform_analytics',
   ];
 
   const adminRole = await knex('user_role').where({ role_name: 'Admin' }).first();

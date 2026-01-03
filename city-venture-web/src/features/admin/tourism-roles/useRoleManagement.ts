@@ -52,29 +52,15 @@ export function useTourismRoles() {
 
 /**
  * Hook for fetching preset roles (templates)
+ * @deprecated Preset roles have been removed. Returns empty array for backwards compatibility.
  */
 export function usePresetRoles() {
-    const [state, setState] = useState<UseAsyncState<Role[]>>({
-        data: null,
+    // Presets have been deprecated - return static empty state
+    return {
+        data: [] as Role[],
         isLoading: false,
         error: null,
-    });
-
-    useEffect(() => {
-        const fetchPresets = async () => {
-            setState((prev) => ({ ...prev, isLoading: true, error: null }));
-            try {
-                const presets = await roleService.getPresetRoles();
-                setState({ data: presets, isLoading: false, error: null });
-            } catch (err) {
-                setState({ data: null, isLoading: false, error: err as Error });
-            }
-        };
-
-        fetchPresets();
-    }, []);
-
-    return state;
+    };
 }
 
 /**
@@ -168,25 +154,9 @@ export function useEffectivePermissions(roleId: number | undefined) {
 export function useRoleManagement(options: UseRoleManagementOptions = {}) {
     const { onSuccess, onError } = options;
 
-    const [isCloning, setIsCloning] = useState(false);
     const [isCreating, setIsCreating] = useState(false);
     const [isUpdating, setIsUpdating] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
-
-    // Clone preset role for tourism
-    const clonePresetAsync = useCallback(async (params: { presetRoleId: number; customName?: string }) => {
-        setIsCloning(true);
-        try {
-            const result = await roleService.cloneTourismPresetRole(params);
-            onSuccess?.();
-            return result;
-        } catch (err) {
-            onError?.(err as Error);
-            throw err;
-        } finally {
-            setIsCloning(false);
-        }
-    }, [onSuccess, onError]);
 
     // Create custom tourism role
     const createCustomAsync = useCallback(async (params: {
@@ -246,17 +216,15 @@ export function useRoleManagement(options: UseRoleManagementOptions = {}) {
 
     return {
         // Mutations
-        clonePresetAsync,
         createCustomAsync,
         updateRoleAsync,
         deleteRole: deleteRoleAsync,
 
         // Loading states
-        isCloning,
         isCreating,
         isUpdating,
         isDeleting,
-        isLoading: isCloning || isCreating || isUpdating || isDeleting,
+        isLoading: isCreating || isUpdating || isDeleting,
     };
 }
 

@@ -1,10 +1,9 @@
 /**
  * Role Routes - Enhanced RBAC API Endpoints
  * 
- * Provides routes for the three-tier RBAC system:
+ * Provides routes for the two-tier RBAC system:
  * - System roles (Admin only)
- * - Preset roles (Admin only for create, all authenticated for read)
- * - Business roles (Business owners)
+ * - Business roles (Business owners and Tourism Admins/Officers)
  * 
  * @module routes/roles
  */
@@ -19,9 +18,6 @@ const router = express.Router();
 // ============================================================
 // PUBLIC / READ-ONLY ENDPOINTS
 // ============================================================
-
-// Get all preset roles (templates) - accessible to authenticated users
-router.get("/presets", authenticate, roleController.getPresetRoles);
 
 // Get all system roles - accessible to authenticated users
 router.get("/system", authenticate, roleController.getSystemRoles);
@@ -46,19 +42,11 @@ router.get(
   roleController.getBusinessRoles
 );
 
-// Clone a preset role for a business
-router.post(
-  "/business/clone",
-  authenticate,
-  authorizeRole("Admin", "Business Owner"),
-  roleController.clonePresetRole
-);
-
-// Create a fully custom business role
+// Create a custom business role
 router.post(
   "/business/custom",
   authenticate,
-  authorizeRole("Admin", "Business Owner"),
+  authorizeRole("Admin", "Business Owner", "Tourism Officer"),
   roleController.createCustomBusinessRole
 );
 
@@ -66,7 +54,7 @@ router.post(
 router.put(
   "/business/:id",
   authenticate,
-  authorizeRole("Admin", "Business Owner"),
+  authorizeRole("Admin", "Business Owner", "Tourism Officer"),
   roleController.updateBusinessRole
 );
 
@@ -74,7 +62,7 @@ router.put(
 router.delete(
   "/business/:id",
   authenticate,
-  authorizeRole("Admin", "Business Owner"),
+  authorizeRole("Admin", "Business Owner", "Tourism Officer"),
   roleController.deleteBusinessRole
 );
 
@@ -86,7 +74,7 @@ router.delete(
 router.post(
   "/:id/permissions",
   authenticate,
-  authorizeRole("Admin", "Business Owner"),
+  authorizeRole("Admin", "Business Owner", "Tourism Officer"),
   roleController.addRolePermissions
 );
 
@@ -94,7 +82,7 @@ router.post(
 router.delete(
   "/:id/permissions",
   authenticate,
-  authorizeRole("Admin", "Business Owner"),
+  authorizeRole("Admin", "Business Owner", "Tourism Officer"),
   roleController.removeRolePermissions
 );
 
@@ -106,14 +94,14 @@ router.get(
 );
 
 // ============================================================
-// PERMISSION OVERRIDES (for preset-based roles)
+// PERMISSION OVERRIDES (for fine-grained control on business roles)
 // ============================================================
 
 // Add a permission override
 router.post(
   "/:id/overrides",
   authenticate,
-  authorizeRole("Admin", "Business Owner"),
+  authorizeRole("Admin", "Business Owner", "Tourism Officer"),
   roleController.addPermissionOverride
 );
 
@@ -121,7 +109,7 @@ router.post(
 router.delete(
   "/:id/overrides/:permissionId",
   authenticate,
-  authorizeRole("Admin", "Business Owner"),
+  authorizeRole("Admin", "Business Owner", "Tourism Officer"),
   roleController.removePermissionOverride
 );
 
@@ -157,14 +145,6 @@ router.post(
   authenticate,
   authorizeRole("Admin"),
   roleController.createSystemRole
-);
-
-// Create a new preset role (template)
-router.post(
-  "/preset",
-  authenticate,
-  authorizeRole("Admin"),
-  roleController.createPresetRole
 );
 
 // ============================================================

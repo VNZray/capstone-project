@@ -1,10 +1,9 @@
 /**
  * Role Service - Enhanced RBAC Business Logic
  * 
- * Implements the three-tier RBAC system:
+ * Implements a two-tier RBAC system:
  * - System roles: Platform-wide, immutable (Tourist, Admin, Tourism Officer, Business Owner)
- * - Preset roles: Templates available for businesses to clone (Receptionist, Manager, etc.)
- * - Business roles: Business-specific instances (cloned from presets or fully custom)
+ * - Business roles: Custom roles created by Business Owners or Tourism Admins/Officers
  * 
  * @module services/roleService
  */
@@ -17,7 +16,6 @@ import db from '../db.js';
 
 export const ROLE_TYPES = {
   SYSTEM: 'system',
-  PRESET: 'preset',
   BUSINESS: 'business'
 };
 
@@ -55,7 +53,7 @@ export function clearRoleCache(roleId = null) {
 
 /**
  * Get all roles by type
- * @param {string} roleType - 'system', 'preset', or 'business'
+ * @param {string} roleType - 'system' or 'business'
  * @returns {Promise<Array>} List of roles
  */
 export async function getRolesByType(roleType) {
@@ -64,15 +62,6 @@ export async function getRolesByType(roleType) {
   }
   
   const [rows] = await db.query('CALL GetRolesByType(?)', [roleType]);
-  return rows[0] || [];
-}
-
-/**
- * Get all preset roles (templates for business roles)
- * @returns {Promise<Array>} List of preset roles
- */
-export async function getPresetRoles() {
-  const [rows] = await db.query('CALL GetPresetRoles()');
   return rows[0] || [];
 }
 
@@ -147,66 +136,6 @@ export async function createSystemRole({ roleName, roleDescription, isImmutable 
   
   if (role && createdBy) {
     await logRoleAction(role.id, 'created', null, role, createdBy);
-  }
-  
-  return role;
-}
-
-/**
- * Create a new preset role (admin only)
- * @param {Object} params - Role parameters
- * @param {string} params.roleName - Role name
- * @param {string} params.roleDescription - Role description
- * @param {string} params.createdBy - User ID of creator
- * @returns {Promise<Object>} Created role
- */
-export async function createPresetRole({ roleName, roleDescription, createdBy }) {
-  const [rows] = await db.query(
-    'CALL CreatePresetRole(?, ?)',
-    [roleName, roleDescription]
-  );
-  
-  const role = rows[0]?.[0];
-  
-  if (role && createdBy) {
-    await logRoleAction(role.id, 'created', null, role, createdBy);
-  }
-  
-  return role;
-}
-
-/**
- * Clone a preset role for a business
- * @param {Object} params - Clone parameters
- * @param {number} params.presetRoleId - ID of the preset role to clone
- * @param {string} params.businessId - Business ID
- * @param {string} params.customName - Optional custom name for the cloned role
- * @param {string} params.createdBy - User ID of creator
- * @returns {Promise<Object>} Created business role
- */
-export async function clonePresetRole({ presetRoleId, businessId, customName = null, createdBy }) {
-  if (!presetRoleId || !businessId) {
-    throw new Error('Preset role ID and business ID are required');
-  }
-  
-  // Verify the preset exists and is actually a preset
-  const preset = await getRoleById(presetRoleId);
-  if (!preset) {
-    throw new Error('Preset role not found');
-  }
-  if (preset.role_type !== ROLE_TYPES.PRESET) {
-    throw new Error('Can only clone preset roles');
-  }
-  
-  const [rows] = await db.query(
-    'CALL ClonePresetRole(?, ?, ?)',
-    [presetRoleId, businessId, customName]
-  );
-  
-  const role = rows[0]?.[0];
-  
-  if (role && createdBy) {
-    await logRoleAction(role.id, 'created', null, { ...role, cloned_from: presetRoleId }, createdBy);
   }
   
   return role;
@@ -421,7 +350,7 @@ export async function setRolePermissions(roleId, permissionIds, updatedBy) {
 // ============================================================
 
 /**
- * Add a permission override (for preset-based roles)
+ * Add a permission override for a role
  * @param {Object} params - Override parameters
  * @param {number} params.roleId - Role ID
  * @param {number} params.permissionId - Permission ID
@@ -664,13 +593,10 @@ export default {
   SYSTEM_ROLES,
   clearRoleCache,
   getRolesByType,
-  getPresetRoles,
   getBusinessRoles,
   getRoleWithPermissions,
   getRoleById,
   createSystemRole,
-  createPresetRole,
-  clonePresetRole,
   createCustomBusinessRole,
   updateBusinessRole,
   deleteBusinessRole,

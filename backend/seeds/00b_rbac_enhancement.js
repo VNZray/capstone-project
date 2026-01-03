@@ -1,12 +1,12 @@
 /**
- * RBAC Enhancement Seed - Enhanced User Roles
+ * RBAC Enhancement Seed - System Roles Setup
  * 
- * Updates existing user_role entries with the new three-tier RBAC fields:
- * - role_type: system, preset, or business
+ * Updates existing user_role entries with the two-tier RBAC fields:
+ * - role_type: system or business
  * - is_custom: whether role is custom-created
  * - is_immutable: whether role can be modified
  * 
- * Also adds preset roles that businesses can clone.
+ * Business owners create custom roles directly (no presets).
  * 
  * @param { import("knex").Knex } knex
  */
@@ -19,11 +19,12 @@ export async function seed(knex) {
   }
 
   // ============================================================
-  // STEP 1: Update existing system roles
+  // Update system roles with proper RBAC flags
   // ============================================================
   const systemRoles = [
     { id: 1, role_name: 'Admin', role_type: 'system', is_immutable: true, is_custom: false, role_for: null },
     { id: 2, role_name: 'Tourism Officer', role_type: 'system', is_immutable: true, is_custom: false, role_for: null },
+    { id: 4, role_name: 'Business Owner', role_type: 'system', is_immutable: false, is_custom: false, role_for: null },
     { id: 9, role_name: 'Tourist', role_type: 'system', is_immutable: true, is_custom: false, role_for: null },
   ];
 
@@ -38,141 +39,40 @@ export async function seed(knex) {
       });
   }
 
-  // Business Owner is system but not immutable (for potential customization)
-  await knex('user_role')
-    .where({ id: 4 })
-    .update({
-      role_type: 'system',
-      is_immutable: false,
-      is_custom: false,
-      role_for: null,
-    });
-
   console.log('[Seed] System roles updated with RBAC enhancements.');
 
   // ============================================================
-  // STEP 2: Convert existing business-specific roles to presets
+  // Clean up legacy preset roles (if any exist without users)
   // ============================================================
-  // These are the template roles that businesses can clone
-  const presetRoles = [
-    { 
-      id: 3, 
-      role_name: 'Event Manager', 
-      role_description: 'Manages event listings, participant data, and schedules.',
-      role_type: 'preset',
-      is_immutable: false,
-      is_custom: false,
-      role_for: null
-    },
-    { 
-      id: 5, 
-      role_name: 'Manager', 
-      role_description: 'Handles daily business operations such as bookings, rooms, and transactions.',
-      role_type: 'preset',
-      is_immutable: false,
-      is_custom: false,
-      role_for: null
-    },
-    { 
-      id: 6, 
-      role_name: 'Room Manager', 
-      role_description: 'Responsible for managing room listings, availability, maintenance, and pricing.',
-      role_type: 'preset',
-      is_immutable: false,
-      is_custom: false,
-      role_for: null
-    },
-    { 
-      id: 7, 
-      role_name: 'Receptionist', 
-      role_description: 'Front desk staff responsible for booking confirmation and guest check-ins.',
-      role_type: 'preset',
-      is_immutable: false,
-      is_custom: false,
-      role_for: null
-    },
-    { 
-      id: 8, 
-      role_name: 'Sales Associate', 
-      role_description: 'Manages shop products, prices, and promotions.',
-      role_type: 'preset',
-      is_immutable: false,
-      is_custom: false,
-      role_for: null
-    },
-  ];
-
-  for (const role of presetRoles) {
-    await knex('user_role')
-      .where({ id: role.id })
-      .update({
-        role_description: role.role_description,
-        role_type: role.role_type,
-        is_immutable: role.is_immutable,
-        is_custom: role.is_custom,
-        role_for: role.role_for,
-      });
-  }
-
-  console.log('[Seed] Preset roles (templates) configured.');
-
-  // ============================================================
-  // STEP 3: Add additional preset roles for common business needs
-  // ============================================================
-  const additionalPresets = [
-    {
-      role_name: 'Cook',
-      role_description: 'Kitchen staff responsible for food preparation and order fulfillment.',
-      role_type: 'preset',
-      is_immutable: false,
-      is_custom: false,
-      role_for: null,
-    },
-    {
-      role_name: 'Housekeeper',
-      role_description: 'Responsible for room cleanliness and maintenance status updates.',
-      role_type: 'preset',
-      is_immutable: false,
-      is_custom: false,
-      role_for: null,
-    },
-    {
-      role_name: 'Cashier',
-      role_description: 'Handles payments, refunds, and point-of-sale operations.',
-      role_type: 'preset',
-      is_immutable: false,
-      is_custom: false,
-      role_for: null,
-    },
-    {
-      role_name: 'Tour Guide',
-      role_description: 'Leads tours and manages tourist group activities.',
-      role_type: 'preset',
-      is_immutable: false,
-      is_custom: false,
-      role_for: null,
-    },
-    {
-      role_name: 'Inventory Clerk',
-      role_description: 'Manages product inventory, stock levels, and supplier orders.',
-      role_type: 'preset',
-      is_immutable: false,
-      is_custom: false,
-      role_for: null,
-    },
-  ];
-
-  // Insert only if they don't exist (by role_name)
-  for (const preset of additionalPresets) {
-    const existing = await knex('user_role')
-      .where({ role_name: preset.role_name })
-      .first();
-    
-    if (!existing) {
-      await knex('user_role').insert(preset);
-      console.log(`[Seed] Added preset role: ${preset.role_name}`);
+  const legacyPresetIds = [3, 5, 6, 7, 8]; // Event Manager, Manager, Room Manager, Receptionist, Sales Associate
+  
+  for (const roleId of legacyPresetIds) {
+    // Check if role exists and has no users assigned
+    const role = await knex('user_role').where({ id: roleId }).first();
+    if (role && role.role_type === 'preset') {
+      const userCount = await knex('user').where({ user_role_id: roleId }).count('id as count').first();
+      if (userCount.count === 0) {
+        // Delete permissions first, then role
+        await knex('role_permissions').where({ user_role_id: roleId }).del();
+        await knex('user_role').where({ id: roleId }).del();
+        console.log(`[Seed] Removed unused preset role: ${role.role_name}`);
+      }
     }
   }
 
-  console.log('[Seed] Additional preset roles added.');
+  // Also clean up any other preset roles that were added later
+  const otherPresets = await knex('user_role')
+    .where({ role_type: 'preset' })
+    .select('id', 'role_name');
+  
+  for (const preset of otherPresets) {
+    const userCount = await knex('user').where({ user_role_id: preset.id }).count('id as count').first();
+    if (userCount.count === 0) {
+      await knex('role_permissions').where({ user_role_id: preset.id }).del();
+      await knex('user_role').where({ id: preset.id }).del();
+      console.log(`[Seed] Removed unused preset role: ${preset.role_name}`);
+    }
+  }
+
+  console.log('[Seed] RBAC enhancement complete - two-tier system active.');
 }

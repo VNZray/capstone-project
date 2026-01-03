@@ -3,6 +3,8 @@
  * 
  * Custom hook for managing business roles.
  * Provides data fetching, mutations, and state management for RBAC.
+ * 
+ * Note: Preset roles have been removed. All business roles are now custom.
  */
 
 import { useState, useEffect, useCallback } from 'react';
@@ -52,29 +54,15 @@ export function useBusinessRoles(businessId: string | undefined) {
 
 /**
  * Hook for fetching preset roles (templates)
+ * @deprecated Preset roles have been removed. Returns empty array.
  */
 export function usePresetRoles() {
-  const [state, setState] = useState<UseAsyncState<Role[]>>({
-    data: null,
+  // Preset roles removed - return empty state immediately
+  return {
+    data: [] as Role[],
     isLoading: false,
     error: null,
-  });
-
-  useEffect(() => {
-    const fetchPresets = async () => {
-      setState((prev) => ({ ...prev, isLoading: true, error: null }));
-      try {
-        const presets = await roleService.getPresetRoles();
-        setState({ data: presets, isLoading: false, error: null });
-      } catch (err) {
-        setState({ data: null, isLoading: false, error: err as Error });
-      }
-    };
-
-    fetchPresets();
-  }, []);
-
-  return state;
+  };
 }
 
 /**
@@ -168,30 +156,9 @@ export function useEffectivePermissions(roleId: number | undefined) {
 export function useRoleManagement(options: UseRoleManagementOptions = {}) {
   const { businessId, onSuccess, onError } = options;
   
-  const [isCloning, setIsCloning] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
-
-  // Clone preset role
-  const clonePresetAsync = useCallback(async (params: { presetRoleId: number; customName?: string }) => {
-    if (!businessId) throw new Error('Business ID is required');
-    
-    setIsCloning(true);
-    try {
-      const result = await roleService.clonePresetRole({
-        ...params,
-        businessId,
-      });
-      onSuccess?.();
-      return result;
-    } catch (err) {
-      onError?.(err as Error);
-      throw err;
-    } finally {
-      setIsCloning(false);
-    }
-  }, [businessId, onSuccess, onError]);
 
   // Create custom role
   const createCustomAsync = useCallback(async (params: { 
@@ -261,17 +228,15 @@ export function useRoleManagement(options: UseRoleManagementOptions = {}) {
 
   return {
     // Mutations
-    clonePresetAsync,
     createCustomAsync,
     updateRoleAsync,
     deleteRole: deleteRoleAsync,
     
     // Loading states
-    isCloning,
     isCreating,
     isUpdating,
     isDeleting,
-    isLoading: isCloning || isCreating || isUpdating || isDeleting,
+    isLoading: isCreating || isUpdating || isDeleting,
   };
 }
 

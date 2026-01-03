@@ -1,10 +1,9 @@
 /**
  * Role Service - Frontend API for Enhanced RBAC
  *
- * Provides methods for managing roles in the three-tier RBAC system:
+ * Provides methods for managing roles in the two-tier RBAC system:
  * - System roles (view only for non-admins)
- * - Preset roles (templates for cloning)
- * - Business roles (business-specific instances)
+ * - Business roles (custom roles created by Business Owners or Tourism Officers)
  */
 
 import apiClient from './apiClient';
@@ -13,7 +12,7 @@ import apiClient from './apiClient';
 // TYPES
 // ============================================================
 
-export type RoleType = 'system' | 'preset' | 'business';
+export type RoleType = 'system' | 'business';
 
 export interface Permission {
   id: number;
@@ -75,14 +74,6 @@ export interface AuditLogEntry {
 // ============================================================
 
 /**
- * Get all preset roles (templates)
- */
-export async function getPresetRoles(): Promise<Role[]> {
-  const response = await apiClient.get('/roles/presets');
-  return response.data;
-}
-
-/**
  * Get all system roles
  */
 export async function getSystemRoles(): Promise<Role[]> {
@@ -111,18 +102,6 @@ export async function getBusinessRoles(businessId: string): Promise<Role[]> {
  */
 export async function getRoleById(roleId: number): Promise<RoleWithPermissions> {
   const response = await apiClient.get(`/roles/${roleId}`);
-  return response.data;
-}
-
-/**
- * Clone a preset role for a business
- */
-export async function clonePresetRole(params: {
-  presetRoleId: number;
-  businessId: string;
-  customName?: string;
-}): Promise<Role> {
-  const response = await apiClient.post('/roles/business/clone', params);
   return response.data;
 }
 
@@ -283,32 +262,9 @@ export async function createSystemRole(params: {
   return response.data;
 }
 
-/**
- * Create a new preset role template (admin only)
- */
-export async function createPresetRole(params: {
-  roleName: string;
-  roleDescription?: string;
-  permissionIds?: number[];
-}): Promise<RoleWithPermissions> {
-  const response = await apiClient.post('/roles/preset', params);
-  return response.data;
-}
-
 // ============================================================
 // TOURISM-SPECIFIC API CALLS
 // ============================================================
-
-/**
- * Clone a preset role for tourism system
- */
-export async function cloneTourismPresetRole(params: {
-  presetRoleId: number;
-  customName?: string;
-}): Promise<Role> {
-  const response = await apiClient.post('/roles/tourism/clone', params);
-  return response.data;
-}
 
 /**
  * Create a fully custom tourism role
@@ -372,8 +328,6 @@ export function getRoleTypeLabel(type: RoleType): string {
   switch (type) {
     case 'system':
       return 'System Role';
-    case 'preset':
-      return 'Template';
     case 'business':
       return 'Business Role';
     default:
@@ -388,8 +342,6 @@ export function getRoleTypeColor(type: RoleType): 'primary' | 'success' | 'warni
   switch (type) {
     case 'system':
       return 'primary';
-    case 'preset':
-      return 'success';
     case 'business':
       return 'warning';
     default:
@@ -398,12 +350,10 @@ export function getRoleTypeColor(type: RoleType): 'primary' | 'success' | 'warni
 }
 
 export default {
-  getPresetRoles,
   getSystemRoles,
   getRolesByType,
   getBusinessRoles,
   getRoleById,
-  clonePresetRole,
   createCustomBusinessRole,
   updateBusinessRole,
   deleteBusinessRole,
@@ -417,8 +367,6 @@ export default {
   getPermissionsGrouped,
   getRoleAuditLog,
   createSystemRole,
-  createPresetRole,
-  cloneTourismPresetRole,
   createCustomTourismRole,
   updateTourismRole,
   deleteTourismRole,

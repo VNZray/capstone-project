@@ -1,8 +1,8 @@
 /**
  * RBAC Enhancement Seed - Updated User Roles with Role Types
  * 
- * Updates existing user roles to include the new role_type, is_custom,
- * and is_immutable fields. Also adds new preset roles for businesses.
+ * Updates existing user roles to include the new role_type and is_immutable fields.
+ * Preset roles have been removed - all staff roles are now custom per-business.
  * 
  * This seed should run after the RBAC enhancement migration.
  * 
@@ -42,128 +42,48 @@ export async function seed(knex) {
   console.log('[Seed] Updated system roles with role_type');
 
   // ============================================================
-  // Convert existing business roles (5-8) to presets
-  // These become templates that businesses can clone
+  // Delete old preset roles (5-8) if they exist
+  // These are no longer needed - business owners create custom roles
   // ============================================================
-  const presetRoles = [
-    { 
-      id: 5, 
-      role_name: 'Manager',
-      role_description: 'Handles daily business operations such as bookings, rooms, and transactions.',
-      role_type: 'preset',
-      is_immutable: false,
-      is_custom: false,
-      role_for: null
-    },
-    { 
-      id: 6, 
-      role_name: 'Room Manager',
-      role_description: 'Responsible for managing room listings, availability, maintenance, and pricing.',
-      role_type: 'preset',
-      is_immutable: false,
-      is_custom: false,
-      role_for: null
-    },
-    { 
-      id: 7, 
-      role_name: 'Receptionist',
-      role_description: 'Front desk staff responsible for booking confirmation and guest check-ins.',
-      role_type: 'preset',
-      is_immutable: false,
-      is_custom: false,
-      role_for: null
-    },
-    { 
-      id: 8, 
-      role_name: 'Sales Associate',
-      role_description: 'Manages shop products, prices, and promotions.',
-      role_type: 'preset',
-      is_immutable: false,
-      is_custom: false,
-      role_for: null
-    },
-  ];
-
-  for (const role of presetRoles) {
-    await knex('user_role')
-      .where({ id: role.id })
-      .update({
-        role_name: role.role_name,
-        role_description: role.role_description,
-        role_type: role.role_type,
-        is_immutable: role.is_immutable,
-        is_custom: role.is_custom,
-        role_for: role.role_for,
-      });
+  const oldPresetIds = [5, 6, 7, 8];
+  
+  // Check if any users are assigned to these roles before deleting
+  const usersWithOldRoles = await knex('user')
+    .whereIn('user_role_id', oldPresetIds)
+    .count('id as count')
+    .first();
+  
+  if (usersWithOldRoles && usersWithOldRoles.count > 0) {
+    console.log(`[Seed] Warning: ${usersWithOldRoles.count} users still assigned to old preset roles (5-8). Skipping deletion.`);
+    console.log('[Seed] Please migrate these users to custom business roles first.');
+  } else {
+    // Safe to delete - no users assigned
+    await knex('role_permissions').whereIn('user_role_id', oldPresetIds).del();
+    await knex('user_role').whereIn('id', oldPresetIds).del();
+    console.log('[Seed] Deleted old preset roles (5-8) - not needed in new RBAC system');
   }
 
-  console.log('[Seed] Updated business roles to preset templates');
-
   // ============================================================
-  // Add new preset roles for common business positions
+  // Delete other preset roles that may have been created
   // ============================================================
-  const newPresets = [
-    {
-      role_name: 'Cook',
-      role_description: 'Kitchen staff responsible for food preparation and order fulfillment.',
-      role_type: 'preset',
-      is_custom: false,
-      is_immutable: false,
-      role_for: null,
-    },
-    {
-      role_name: 'Housekeeper',
-      role_description: 'Responsible for room cleaning and maintenance tasks.',
-      role_type: 'preset',
-      is_custom: false,
-      is_immutable: false,
-      role_for: null,
-    },
-    {
-      role_name: 'Cashier',
-      role_description: 'Handles payments, refunds, and cash management.',
-      role_type: 'preset',
-      is_custom: false,
-      is_immutable: false,
-      role_for: null,
-    },
-    {
-      role_name: 'Tour Guide',
-      role_description: 'Leads tours and assists guests with local information.',
-      role_type: 'preset',
-      is_custom: false,
-      is_immutable: false,
-      role_for: null,
-    },
-    {
-      role_name: 'Inventory Clerk',
-      role_description: 'Manages product inventory levels and stock updates.',
-      role_type: 'preset',
-      is_custom: false,
-      is_immutable: false,
-      role_for: null,
-    },
-  ];
-
-  for (const preset of newPresets) {
-    // Check if already exists
-    const existing = await knex('user_role').where({ role_name: preset.role_name }).first();
+  const otherPresets = ['Cook', 'Housekeeper', 'Cashier', 'Tour Guide', 'Inventory Clerk'];
+  
+  for (const presetName of otherPresets) {
+    const preset = await knex('user_role').where({ role_name: presetName, role_type: 'preset' }).first();
     
-    if (!existing) {
-      await knex('user_role').insert(preset);
-      console.log(`[Seed] Created new preset role: ${preset.role_name}`);
-    } else {
-      // Update to preset type if exists
-      await knex('user_role')
-        .where({ role_name: preset.role_name })
-        .update({
-          role_type: 'preset',
-          is_custom: false,
-          is_immutable: false,
-          role_for: null,
-        });
+    if (preset) {
+      // Check if any users are assigned
+      const usersAssigned = await knex('user').where({ user_role_id: preset.id }).count('id as count').first();
+      
+      if (!usersAssigned || usersAssigned.count === 0) {
+        await knex('role_permissions').where({ user_role_id: preset.id }).del();
+        await knex('user_role').where({ id: preset.id }).del();
+        console.log(`[Seed] Deleted unused preset role: ${presetName}`);
+      } else {
+        console.log(`[Seed] Warning: Preset role ${presetName} has users assigned, skipping deletion`);
+      }
     }
   }
 
-  console.log('[Seed] RBAC user roles seed completed.');
+  console.log('[Seed] RBAC user roles seed completed - preset roles removed.');
 }

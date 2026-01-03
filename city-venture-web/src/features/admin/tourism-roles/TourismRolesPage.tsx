@@ -42,11 +42,9 @@ export function TourismRolesPage() {
 
   // Role management mutations
   const {
-    clonePresetAsync,
     createCustomAsync,
     updateRoleAsync,
     deleteRole: deleteRoleMutation,
-    isCloning,
     isCreating,
     isUpdating,
     isDeleting,
@@ -61,17 +59,6 @@ export function TourismRolesPage() {
   });
 
   // Handlers
-  const handleCreateFromPreset = async (
-    presetRoleId: number,
-    customName?: string
-  ) => {
-    try {
-      await clonePresetAsync({ presetRoleId, customName });
-    } catch (err) {
-      console.error("Failed to clone preset role:", err);
-    }
-  };
-
   const handleCreateCustom = async (
     roleName: string,
     roleDescription: string,
@@ -177,9 +164,8 @@ export function TourismRolesPage() {
       <CreateRoleModal
         open={createModalOpen}
         onClose={() => setCreateModalOpen(false)}
-        onCreateFromPreset={handleCreateFromPreset}
         onCreateCustom={handleCreateCustom}
-        isLoading={isCloning || isCreating}
+        isLoading={isCreating}
       />
 
       {/* Edit Role Modal */}

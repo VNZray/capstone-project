@@ -3,6 +3,10 @@
  * 
  * A grouped checkbox interface for selecting permissions.
  * Permissions are organized by category for better UX.
+ * 
+ * Filters permissions based on:
+ * - scope: 'system' | 'business' | 'all' (role type)
+ * - businessCapabilities: filters by hasStore/hasBooking to show relevant permissions
  */
 
 import { useMemo } from 'react';
@@ -19,12 +23,96 @@ import {
 import { ChevronDown, Shield } from 'lucide-react';
 import type { PermissionCategory, Permission } from './types';
 
+/**
+ * Business capabilities for filtering permissions
+ */
+interface BusinessCapabilities {
+  hasStore?: boolean;
+  hasBooking?: boolean;
+}
+
+/**
+ * Permission names that are only relevant to businesses with hasStore capability
+ */
+const STORE_ONLY_PERMISSIONS = [
+  // Order Management (shop orders)
+  'view_orders',
+  'create_orders',
+  'update_orders',
+  'cancel_orders',
+  'manage_orders',
+  'manage_order_payments',
+  // Product Management
+  'view_products',
+  'create_products',
+  'update_products',
+  'delete_products',
+  'manage_inventory',
+  'manage_discounts',
+  // Shop
+  'view_shop',
+  'manage_shop',
+];
+
+/**
+ * Permission names that are only relevant to businesses with hasBooking capability
+ */
+const BOOKING_ONLY_PERMISSIONS = [
+  // Booking Management
+  'view_bookings',
+  'create_bookings',
+  'update_bookings',
+  'cancel_bookings',
+  'manage_bookings',
+  'check_in_guests',
+  'check_out_guests',
+  // Room Management
+  'view_rooms',
+  'add_room',
+  'edit_room',
+  'delete_room',
+  'manage_rooms',
+  'manage_room_amenities',
+];
+
+/**
+ * Check if a permission should be shown based on business capabilities
+ */
+function shouldShowPermission(
+  permission: Permission,
+  capabilities?: BusinessCapabilities
+): boolean {
+  // If no capabilities provided (e.g., for admin), show all
+  if (!capabilities) return true;
+
+  const permName = permission.name.toLowerCase();
+  
+  // Check store-only permissions
+  if (STORE_ONLY_PERMISSIONS.includes(permName) && !capabilities.hasStore) {
+    return false;
+  }
+  
+  // Check booking-only permissions
+  if (BOOKING_ONLY_PERMISSIONS.includes(permName) && !capabilities.hasBooking) {
+    return false;
+  }
+  
+  return true;
+}
+
 interface PermissionSelectorProps {
   categories: PermissionCategory[];
   selectedIds: number[];
   onChange: (selectedIds: number[]) => void;
   disabled?: boolean;
   scope?: 'system' | 'business' | 'all';
+  /**
+   * Business capabilities to filter permissions.
+   * If provided, only shows permissions relevant to the business type.
+   * - hasStore: true → shows shop/product/order permissions
+   * - hasBooking: true → shows room/booking permissions
+   */
+  businessCapabilities?: BusinessCapabilities;
 }
 
 export function PermissionSelector({
@@ -33,16 +121,22 @@ export function PermissionSelector({
   onChange,
   disabled = false,
   scope = 'business',
+  businessCapabilities,
 }: PermissionSelectorProps) {
-  // Filter categories based on scope
+  // Filter categories based on scope and business capabilities
   const filteredCategories = useMemo(() => {
     return categories.map((category) => ({
       ...category,
-      permissions: category.permissions.filter(
-        (p) => scope === 'all' || p.scope === 'all' || p.scope === scope
-      ),
+      permissions: category.permissions.filter((p) => {
+        // First filter by scope
+        const scopeMatch = scope === 'all' || p.scope === 'all' || p.scope === scope;
+        if (!scopeMatch) return false;
+        
+        // Then filter by business capabilities
+        return shouldShowPermission(p, businessCapabilities);
+      }),
     })).filter((c) => c.permissions.length > 0);
-  }, [categories, scope]);
+  }, [categories, scope, businessCapabilities]);
 
   const handleTogglePermission = (permId: number) => {
     if (disabled) return;

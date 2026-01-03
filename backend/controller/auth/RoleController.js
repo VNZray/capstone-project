@@ -1,10 +1,9 @@
 /**
  * Role Controller - Enhanced RBAC HTTP Endpoints
  * 
- * Provides REST API endpoints for the three-tier RBAC system:
+ * Provides REST API endpoints for the two-tier RBAC system:
  * - System role management (admin only)
- * - Preset role management (admin only)
- * - Business role management (business owners)
+ * - Business role management (business owners and tourism admins/officers)
  * 
  * @module controller/auth/RoleController
  */
@@ -95,19 +94,6 @@ export async function getRolesByType(req, res) {
 }
 
 /**
- * GET /api/roles/presets
- * Get all preset roles (available templates)
- */
-export async function getPresetRoles(req, res) {
-  try {
-    const roles = await roleService.getPresetRoles();
-    return res.json(roles);
-  } catch (error) {
-    return handleDbError(error, res);
-  }
-}
-
-/**
  * GET /api/roles/system
  * Get all system roles
  */
@@ -184,54 +170,6 @@ export async function getRoleById(req, res) {
     
     return res.json(role);
   } catch (error) {
-    return handleDbError(error, res);
-  }
-}
-
-/**
- * POST /api/roles/business/clone
- * Clone a preset role for a business
- */
-export async function clonePresetRole(req, res) {
-  const { presetRoleId, businessId, customName } = req.body;
-  
-  if (!presetRoleId || !businessId) {
-    return res.status(400).json({ message: 'Preset role ID and business ID are required' });
-  }
-  
-  // Validate custom name if provided
-  if (customName) {
-    const nameError = validateRoleName(customName);
-    if (nameError) {
-      return res.status(400).json({ message: nameError });
-    }
-  }
-  
-  // Authorization: user must be the business owner or admin
-  const userId = req.user?.id;
-  const userRole = req.user?.role;
-  
-  if (!['Admin'].includes(userRole)) {
-    const hasAccess = await hasBusinessAccess(businessId, req.user, userRole);
-    
-    if (!hasAccess) {
-      return res.status(403).json({ message: 'Not authorized to create roles for this business' });
-    }
-  }
-  
-  try {
-    const role = await roleService.clonePresetRole({
-      presetRoleId: parseInt(presetRoleId, 10),
-      businessId,
-      customName: customName ? sanitizeString(customName) : null,
-      createdBy: userId
-    });
-    
-    return res.status(201).json(role);
-  } catch (error) {
-    if (error.message.includes('Preset role not found') || error.message.includes('Can only clone')) {
-      return res.status(400).json({ message: error.message });
-    }
     return handleDbError(error, res);
   }
 }
@@ -847,53 +785,11 @@ export async function createSystemRole(req, res) {
   }
 }
 
-/**
- * POST /api/roles/preset
- * Create a new preset role (admin only)
- */
-export async function createPresetRole(req, res) {
-  const { roleName, roleDescription, permissionIds } = req.body;
-  
-  const nameError = validateRoleName(roleName);
-  if (nameError) {
-    return res.status(400).json({ message: nameError });
-  }
-  
-  const permError = validatePermissionIds(permissionIds);
-  if (permError) {
-    return res.status(400).json({ message: permError });
-  }
-  
-  const userId = req.user?.id;
-  
-  try {
-    const role = await roleService.createPresetRole({
-      roleName: sanitizeString(roleName),
-      roleDescription: roleDescription ? sanitizeString(roleDescription) : null,
-      createdBy: userId
-    });
-    
-    // Assign permissions if provided
-    if (permissionIds && permissionIds.length > 0) {
-      await roleService.assignPermissionsToRole(role.id, permissionIds);
-    }
-    
-    // Return with permissions
-    const roleWithPermissions = await roleService.getRoleWithPermissions(role.id);
-    
-    return res.status(201).json(roleWithPermissions);
-  } catch (error) {
-    return handleDbError(error, res);
-  }
-}
-
 export default {
   getRolesByType,
-  getPresetRoles,
   getSystemRoles,
   getBusinessRoles,
   getRoleById,
-  clonePresetRole,
   createCustomBusinessRole,
   updateBusinessRole,
   deleteBusinessRole,
@@ -906,6 +802,5 @@ export default {
   getPermissionCategories,
   getPermissionsGrouped,
   getRoleAuditLog,
-  createSystemRole,
-  createPresetRole
+  createSystemRole
 };

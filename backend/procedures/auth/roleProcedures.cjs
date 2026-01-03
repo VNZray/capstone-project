@@ -1,10 +1,9 @@
 /**
- * RBAC Enhancement Stored Procedures
+ * RBAC Stored Procedures
  * 
- * Provides database-level operations for the three-tier RBAC system:
+ * Provides database-level operations for the two-tier RBAC system:
  * - System roles (platform-wide, immutable)
- * - Preset roles (templates for business roles)
- * - Business roles (instances created from presets or custom)
+ * - Business roles (custom roles created by business owners)
  */
 
 async function createRoleProcedures(knex) {
@@ -28,23 +27,7 @@ async function createRoleProcedures(knex) {
     END;
   `);
 
-  // Get all preset roles (templates available for cloning)
-  await knex.raw(`
-    CREATE PROCEDURE GetPresetRoles()
-    BEGIN
-      SELECT 
-        ur.*,
-        COALESCE(
-          (SELECT COUNT(*) FROM role_permissions WHERE user_role_id = ur.id),
-          0
-        ) AS permission_count
-      FROM user_role ur
-      WHERE ur.role_type = 'preset'
-      ORDER BY ur.role_name ASC;
-    END;
-  `);
-
-  // Get roles for a specific business (both from presets and custom)
+  // Get roles for a specific business
   await knex.raw(`
     CREATE PROCEDURE GetBusinessRoles(IN p_business_id VARCHAR(255))
     BEGIN
@@ -137,93 +120,6 @@ async function createRoleProcedures(knex) {
       );
       
       SELECT * FROM user_role WHERE id = LAST_INSERT_ID();
-    END;
-  `);
-
-  // Create a new preset role (admin only)
-  await knex.raw(`
-    CREATE PROCEDURE CreatePresetRole(
-      IN p_role_name VARCHAR(20),
-      IN p_role_description TEXT
-    )
-    BEGIN
-      INSERT INTO user_role (
-        role_name, 
-        role_description, 
-        role_type, 
-        role_for, 
-        is_custom, 
-        is_immutable,
-        based_on_role_id
-      ) VALUES (
-        p_role_name, 
-        p_role_description, 
-        'preset', 
-        NULL, 
-        FALSE, 
-        FALSE,
-        NULL
-      );
-      
-      SELECT * FROM user_role WHERE id = LAST_INSERT_ID();
-    END;
-  `);
-
-  // Clone a preset role for a business
-  await knex.raw(`
-    CREATE PROCEDURE ClonePresetRole(
-      IN p_preset_role_id INT,
-      IN p_business_id VARCHAR(255),
-      IN p_custom_name VARCHAR(20)
-    )
-    BEGIN
-      DECLARE v_preset_name VARCHAR(20);
-      DECLARE v_preset_desc TEXT;
-      DECLARE v_new_role_id INT;
-      
-      -- Get preset details
-      SELECT role_name, role_description 
-      INTO v_preset_name, v_preset_desc
-      FROM user_role 
-      WHERE id = p_preset_role_id AND role_type = 'preset';
-      
-      IF v_preset_name IS NULL THEN
-        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Preset role not found';
-      END IF;
-      
-      -- Create the business role instance
-      INSERT INTO user_role (
-        role_name,
-        role_description,
-        role_type,
-        role_for,
-        is_custom,
-        is_immutable,
-        based_on_role_id
-      ) VALUES (
-        IFNULL(p_custom_name, v_preset_name),
-        v_preset_desc,
-        'business',
-        p_business_id,
-        FALSE,
-        FALSE,
-        p_preset_role_id
-      );
-      
-      SET v_new_role_id = LAST_INSERT_ID();
-      
-      -- Copy all permissions from preset to new role
-      INSERT INTO role_permissions (user_role_id, permission_id)
-      SELECT v_new_role_id, permission_id
-      FROM role_permissions
-      WHERE user_role_id = p_preset_role_id;
-      
-      -- Return the new role with permission count
-      SELECT 
-        ur.*,
-        (SELECT COUNT(*) FROM role_permissions WHERE user_role_id = ur.id) AS permission_count
-      FROM user_role ur
-      WHERE ur.id = v_new_role_id;
     END;
   `);
 
@@ -591,13 +487,10 @@ async function dropRoleProcedures(knex) {
   const procedures = [
     // Role retrieval
     "GetRolesByType",
-    "GetPresetRoles",
     "GetBusinessRoles",
     "GetRoleWithPermissions",
     // Role creation
     "CreateSystemRole",
-    "CreatePresetRole",
-    "ClonePresetRole",
     "CreateCustomBusinessRole",
     // Role update/delete
     "UpdateBusinessRole",
@@ -613,7 +506,11 @@ async function dropRoleProcedures(knex) {
     "GetRoleAuditLog",
     // Permission categories
     "GetPermissionCategories",
-    "GetPermissionsGroupedByCategory"
+    "GetPermissionsGroupedByCategory",
+    // Legacy (cleanup on reset)
+    "GetPresetRoles",
+    "CreatePresetRole",
+    "ClonePresetRole"
   ];
 
   for (const proc of procedures) {
