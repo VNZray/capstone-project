@@ -559,19 +559,6 @@ const Spot = () => {
             maxHeight="600px"
           />
         ) : (
-          display === "table" ? (
-            <Table
-              columns={columns}
-              data={filteredSpots}
-              rowKey="id"
-              onRowClick={(row) => handleViewDetails(row)}
-              rowsPerPage={10}
-              loading={loading}
-              emptyMessage="No tourist spots found"
-              stickyHeader
-              maxHeight="600px"
-            />
-          ) : (
             <>
               <style>
                 {`
@@ -644,31 +631,10 @@ const Spot = () => {
                   >
                     {spot.spot_status}
                   </Chip>
-                  <Dropdown>
-                    <MenuButton
-                      slots={{ root: IconButton }}
-                      slotProps={{
-                        root: {
-                          variant: "plain",
-                          size: "sm",
-                          onClick: (e: React.MouseEvent) => e.stopPropagation(),
-                        } as any,
-                      }}
-                    >
-                      <MoreVert />
-                    </MenuButton>
-                    <Menu
-                      placement="bottom-end"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      {spot.spot_status}
-                    </Chip>
-                  </div>
                 </Card>
               ))}
             </div>
             </>
-          )
         )}
       </Container>
       </Container>
