@@ -2,7 +2,7 @@
  * EditRoleModal Component
  * 
  * Modal dialog for editing business roles.
- * Allows modifying role name, description, and permissions.
+ * Shopify-inspired compact design matching CreateRoleModal.
  */
 
 import { useState, useEffect } from 'react';
@@ -10,12 +10,8 @@ import {
   Modal,
   ModalDialog,
   ModalClose,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
   Button,
   FormControl,
-  FormLabel,
   Input,
   Textarea,
   Stack,
@@ -23,7 +19,6 @@ import {
   CircularProgress,
   Alert,
   Box,
-  Chip,
   Divider,
 } from '@mui/joy';
 import { Info } from 'lucide-react';
@@ -70,7 +65,7 @@ export function EditRoleModal({
   onClose,
   onSave,
   isLoading = false,
-  permissionScope = 'business',
+  permissionScope,
   businessCapabilities,
 }: EditRoleModalProps) {
   const [roleName, setRoleName] = useState('');
@@ -134,74 +129,119 @@ export function EditRoleModal({
   };
 
   const isEditable = role ? canEditRole(role) : false;
+  const isDataLoading = roleLoading || permissionsLoading;
+
+  // Count total permissions available
+  const totalPermissions = permissionCategories?.reduce(
+    (acc, cat) => acc + cat.permissions.length, 0
+  ) || 0;
 
   return (
     <Modal open={open} onClose={onClose}>
-      <ModalDialog size="lg" sx={{ maxWidth: 600, maxHeight: '90vh', overflow: 'auto' }}>
-        <ModalClose />
-        <DialogTitle>
-          {roleLoading ? 'Loading...' : `Edit Role: ${role?.role_name || ''}`}
-        </DialogTitle>
+      <ModalDialog 
+        sx={{ 
+          width: 480,
+          maxWidth: '95vw',
+          maxHeight: '85vh',
+          p: 0,
+          overflow: 'hidden',
+          borderRadius: 'lg',
+          boxShadow: 'lg',
+        }}
+      >
+        {/* Header */}
+        <Box sx={{ px: 3, py: 2, borderBottom: '1px solid', borderColor: 'divider' }}>
+          <Typography level="title-lg" sx={{ fontWeight: 600 }}>
+            {isDataLoading ? 'Loading...' : 'Edit role'}
+          </Typography>
+          <ModalClose sx={{ top: 12, right: 12 }} />
+        </Box>
 
-        <DialogContent>
-          {roleLoading || permissionsLoading ? (
-            <Box sx={{ textAlign: 'center', py: 4 }}>
-              <CircularProgress />
-              <Typography level="body-sm" sx={{ mt: 1 }}>Loading role data...</Typography>
+        {/* Content */}
+        <Box sx={{ flex: 1, overflow: 'auto', px: 3, py: 2.5 }}>
+          {isDataLoading ? (
+            <Box sx={{ textAlign: 'center', py: 6 }}>
+              <CircularProgress size="sm" />
+              <Typography level="body-sm" color="neutral" sx={{ mt: 1 }}>
+                Loading role data...
+              </Typography>
             </Box>
           ) : !role ? (
-            <Alert color="danger">Role not found</Alert>
+            <Alert color="danger" size="sm" sx={{ borderRadius: 'md' }}>
+              Role not found
+            </Alert>
           ) : !isEditable ? (
-            <Alert color="warning" startDecorator={<Info size={16} />}>
-              This role cannot be edited because it is {role.is_immutable ? 'immutable' : 'a system or preset role'}.
+            <Alert 
+              color="warning" 
+              size="sm" 
+              startDecorator={<Info size={16} />}
+              sx={{ borderRadius: 'md' }}
+            >
+              This role cannot be edited because it is {role.is_immutable ? 'immutable' : 'a system role'}.
             </Alert>
           ) : (
-            <Stack spacing={3}>
-              {/* Role Info */}
+            <Stack spacing={2.5}>
+              {/* Based on info */}
               {role.based_on_name && (
-                <Alert color="neutral" size="sm">
-                  This role is based on the "{role.based_on_name}" template
+                <Alert color="neutral" size="sm" sx={{ borderRadius: 'md' }}>
+                  Based on "{role.based_on_name}" template
                 </Alert>
               )}
 
-              <FormControl required>
-                <FormLabel>Role Name</FormLabel>
+              {/* Role Name */}
+              <FormControl>
+                <Typography level="body-sm" fontWeight={500} sx={{ mb: 0.5 }}>
+                  Name
+                </Typography>
                 <Input
                   value={roleName}
                   onChange={(e) => setRoleName(e.target.value)}
                   slotProps={{ input: { maxLength: 20 } }}
+                  sx={{
+                    '--Input-focusedThickness': '1px',
+                    '--Input-radius': '8px',
+                  }}
                 />
               </FormControl>
 
+              {/* Description */}
               <FormControl>
-                <FormLabel>Description</FormLabel>
+                <Typography level="body-sm" fontWeight={500} sx={{ mb: 0.5 }}>
+                  Description <Typography component="span" color="neutral">(optional)</Typography>
+                </Typography>
                 <Textarea
                   value={roleDescription}
                   onChange={(e) => setRoleDescription(e.target.value)}
                   minRows={2}
+                  maxRows={3}
+                  sx={{
+                    '--Textarea-focusedThickness': '1px',
+                    '--Textarea-radius': '8px',
+                  }}
                 />
               </FormControl>
 
               <Divider />
 
-              {/* Permissions */}
+              {/* Permissions Section */}
               <Box>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                  <Typography level="title-sm">
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
+                  <Typography level="body-sm" fontWeight={500}>
                     Permissions
                   </Typography>
-                  <Chip size="sm" variant="soft">
-                    {selectedPermissions.length} selected
-                  </Chip>
+                  <Typography level="body-xs" color="neutral">
+                    {selectedPermissions.length} of {totalPermissions} selected
+                  </Typography>
                 </Box>
                 
                 <Box 
                   sx={{ 
-                    maxHeight: 300, 
-                    overflow: 'auto', 
-                    border: '1px solid', 
-                    borderColor: 'divider', 
-                    borderRadius: 'sm' 
+                    maxHeight: 280, 
+                    overflow: 'auto',
+                    border: '1px solid',
+                    borderColor: 'neutral.200',
+                    borderRadius: 'md',
+                    bgcolor: 'background.surface',
                   }}
                 >
                   <PermissionSelector
@@ -213,28 +253,54 @@ export function EditRoleModal({
                   />
                 </Box>
               </Box>
+
+              {error && (
+                <Alert 
+                  color="danger" 
+                  size="sm"
+                  sx={{ borderRadius: 'md' }}
+                >
+                  {error}
+                </Alert>
+              )}
             </Stack>
           )}
+        </Box>
 
-          {error && (
-            <Alert color="danger" sx={{ mt: 2 }}>
-              {error}
-            </Alert>
-          )}
-        </DialogContent>
-
-        <DialogActions>
-          <Button variant="plain" color="neutral" onClick={onClose} disabled={isLoading}>
+        {/* Footer */}
+        <Box 
+          sx={{ 
+            px: 3, 
+            py: 2, 
+            borderTop: '1px solid', 
+            borderColor: 'divider',
+            display: 'flex',
+            justifyContent: 'flex-end',
+            gap: 1.5,
+            bgcolor: 'background.level1',
+          }}
+        >
+          <Button 
+            variant="plain" 
+            color="neutral" 
+            onClick={onClose} 
+            disabled={isLoading}
+            sx={{ fontWeight: 500 }}
+          >
             Cancel
           </Button>
           <Button
             onClick={handleSubmit}
             loading={isLoading}
-            disabled={!isEditable || !hasChanges || roleLoading}
+            disabled={!isEditable || !hasChanges || isDataLoading}
+            sx={{ 
+              fontWeight: 500,
+              px: 2.5,
+            }}
           >
-            Save Changes
+            Save changes
           </Button>
-        </DialogActions>
+        </Box>
       </ModalDialog>
     </Modal>
   );

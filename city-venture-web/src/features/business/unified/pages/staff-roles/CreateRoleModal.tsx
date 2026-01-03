@@ -2,8 +2,7 @@
  * CreateRoleModal Component
  * 
  * Modal dialog for creating new custom business roles.
- * Business owners and Tourism Officers can create custom roles
- * with specific permissions for their staff.
+ * Shopify-inspired compact design with clean visual hierarchy.
  */
 
 import { useState, useEffect } from 'react';
@@ -11,12 +10,8 @@ import {
   Modal,
   ModalDialog,
   ModalClose,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
   Button,
   FormControl,
-  FormLabel,
   Input,
   Textarea,
   Stack,
@@ -24,9 +19,8 @@ import {
   CircularProgress,
   Alert,
   Box,
-  Chip,
+  Divider,
 } from '@mui/joy';
-import { Shield, Plus } from 'lucide-react';
 import { PermissionSelector } from './PermissionSelector';
 import { usePermissionsGrouped } from './useRoleManagement';
 
@@ -62,7 +56,7 @@ export function CreateRoleModal({
   onClose,
   onCreateCustom,
   isLoading = false,
-  permissionScope = 'business',
+  permissionScope,
   businessCapabilities,
 }: CreateRoleModalProps) {
   const [roleName, setRoleName] = useState('');
@@ -70,7 +64,7 @@ export function CreateRoleModal({
   const [selectedPermissions, setSelectedPermissions] = useState<number[]>([]);
   const [error, setError] = useState<string | null>(null);
 
-  // Fetch permissions based on scope
+  // Fetch permissions based on scope (undefined = all permissions for admins)
   const { data: permissionCategories, isLoading: permissionsLoading } = usePermissionsGrouped(permissionScope);
 
   // Reset form when modal opens
@@ -102,58 +96,98 @@ export function CreateRoleModal({
     }
   };
 
+  // Count total permissions available
+  const totalPermissions = permissionCategories?.reduce(
+    (acc, cat) => acc + cat.permissions.length, 0
+  ) || 0;
+
   return (
     <Modal open={open} onClose={onClose}>
-      <ModalDialog size="lg" sx={{ maxWidth: 600, maxHeight: '90vh', overflow: 'auto' }}>
-        <ModalClose />
-        <DialogTitle>
-          <Stack direction="row" alignItems="center" spacing={1}>
-            <Plus size={20} />
-            <span>Create Staff Role</span>
-          </Stack>
-        </DialogTitle>
-        
-        <DialogContent>
-          <Stack spacing={2} sx={{ pt: 1 }}>
-            <FormControl required>
-              <FormLabel>Role Name</FormLabel>
+      <ModalDialog 
+        sx={{ 
+          width: 480,
+          maxWidth: '95vw',
+          maxHeight: '85vh',
+          p: 0,
+          overflow: 'hidden',
+          borderRadius: 'lg',
+          boxShadow: 'lg',
+        }}
+      >
+        {/* Header */}
+        <Box sx={{ px: 3, py: 2, borderBottom: '1px solid', borderColor: 'divider' }}>
+          <Typography level="title-lg" sx={{ fontWeight: 600 }}>
+            Create role
+          </Typography>
+          <ModalClose sx={{ top: 12, right: 12 }} />
+        </Box>
+
+        {/* Content */}
+        <Box sx={{ flex: 1, overflow: 'auto', px: 3, py: 2.5 }}>
+          <Stack spacing={2.5}>
+            {/* Role Name */}
+            <FormControl>
+              <Typography level="body-sm" fontWeight={500} sx={{ mb: 0.5 }}>
+                Name
+              </Typography>
               <Input
-                placeholder="e.g., Senior Receptionist, Kitchen Manager"
+                placeholder="e.g., Store Manager"
                 value={roleName}
                 onChange={(e) => setRoleName(e.target.value)}
                 slotProps={{ input: { maxLength: 20 } }}
+                sx={{
+                  '--Input-focusedThickness': '1px',
+                  '--Input-radius': '8px',
+                }}
               />
             </FormControl>
 
+            {/* Description */}
             <FormControl>
-              <FormLabel>Description</FormLabel>
+              <Typography level="body-sm" fontWeight={500} sx={{ mb: 0.5 }}>
+                Description <Typography component="span" color="neutral">(optional)</Typography>
+              </Typography>
               <Textarea
-                placeholder="Describe what this role does and their responsibilities..."
+                placeholder="Brief description of this role's responsibilities"
                 value={roleDescription}
                 onChange={(e) => setRoleDescription(e.target.value)}
                 minRows={2}
+                maxRows={3}
+                sx={{
+                  '--Textarea-focusedThickness': '1px',
+                  '--Textarea-radius': '8px',
+                }}
               />
             </FormControl>
 
+            <Divider />
+
+            {/* Permissions Section */}
             <Box>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                <Shield size={16} />
-                <Typography level="title-sm" component="span">
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
+                <Typography level="body-sm" fontWeight={500}>
                   Permissions
                 </Typography>
-                <Chip size="sm" variant="soft" color={selectedPermissions.length > 0 ? 'success' : 'neutral'}>
-                  {selectedPermissions.length} selected
-                </Chip>
+                <Typography level="body-xs" color="neutral">
+                  {selectedPermissions.length} of {totalPermissions} selected
+                </Typography>
               </Box>
-              <Typography level="body-xs" color="neutral" sx={{ mb: 1 }}>
-                Select which actions staff with this role can perform.
-              </Typography>
+
               {permissionsLoading ? (
-                <Box sx={{ textAlign: 'center', py: 4 }}>
+                <Box sx={{ textAlign: 'center', py: 6 }}>
                   <CircularProgress size="sm" />
                 </Box>
               ) : (
-                <Box sx={{ maxHeight: 300, overflow: 'auto', border: '1px solid', borderColor: 'divider', borderRadius: 'sm' }}>
+                <Box 
+                  sx={{ 
+                    maxHeight: 280, 
+                    overflow: 'auto',
+                    border: '1px solid',
+                    borderColor: 'neutral.200',
+                    borderRadius: 'md',
+                    bgcolor: 'background.surface',
+                  }}
+                >
                   <PermissionSelector
                     categories={permissionCategories || []}
                     selectedIds={selectedPermissions}
@@ -164,28 +198,53 @@ export function CreateRoleModal({
                 </Box>
               )}
             </Box>
+
+            {error && (
+              <Alert 
+                color="danger" 
+                size="sm"
+                sx={{ borderRadius: 'md' }}
+              >
+                {error}
+              </Alert>
+            )}
           </Stack>
+        </Box>
 
-          {error && (
-            <Alert color="danger" sx={{ mt: 2 }}>
-              {error}
-            </Alert>
-          )}
-        </DialogContent>
-
-        <DialogActions>
-          <Button variant="plain" color="neutral" onClick={onClose} disabled={isLoading}>
+        {/* Footer */}
+        <Box 
+          sx={{ 
+            px: 3, 
+            py: 2, 
+            borderTop: '1px solid', 
+            borderColor: 'divider',
+            display: 'flex',
+            justifyContent: 'flex-end',
+            gap: 1.5,
+            bgcolor: 'background.level1',
+          }}
+        >
+          <Button 
+            variant="plain" 
+            color="neutral" 
+            onClick={onClose} 
+            disabled={isLoading}
+            sx={{ fontWeight: 500 }}
+          >
             Cancel
           </Button>
           <Button
             onClick={handleSubmit}
             loading={isLoading}
             disabled={!roleName.trim()}
-            startDecorator={<Plus size={16} />}
+            sx={{ 
+              fontWeight: 500,
+              px: 2.5,
+            }}
           >
-            Create Role
+            Create role
           </Button>
-        </DialogActions>
+        </Box>
       </ModalDialog>
     </Modal>
   );

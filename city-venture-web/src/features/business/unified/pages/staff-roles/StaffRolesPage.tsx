@@ -164,6 +164,7 @@ export function StaffRolesPage({ businessId: propBusinessId }: StaffRolesPagePro
         onClose={() => setCreateModalOpen(false)}
         onCreateCustom={handleCreateCustom}
         isLoading={isCreating}
+        permissionScope="business"
         businessCapabilities={{
           hasStore: businessDetails?.hasStore,
           hasBooking: businessDetails?.hasBooking,
@@ -177,6 +178,7 @@ export function StaffRolesPage({ businessId: propBusinessId }: StaffRolesPagePro
         onClose={() => setEditRoleId(null)}
         onSave={handleUpdateRole}
         isLoading={isUpdating}
+        permissionScope="business"
         businessCapabilities={{
           hasStore: businessDetails?.hasStore,
           hasBooking: businessDetails?.hasBooking,

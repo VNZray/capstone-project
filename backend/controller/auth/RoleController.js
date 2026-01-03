@@ -683,7 +683,7 @@ export async function getPermissionsGrouped(req, res) {
     // Group into categories for easier frontend consumption
     const grouped = {};
     for (const perm of permissions) {
-      const category = perm.category_name || 'Uncategorized';
+      const category = perm.category_name || 'General';
       if (!grouped[category]) {
         grouped[category] = {
           name: category,

@@ -475,7 +475,10 @@ async function createRoleProcedures(knex) {
         pc.sort_order AS category_sort
       FROM permissions p
       LEFT JOIN permission_categories pc ON pc.id = p.category_id
-      WHERE p_scope IS NULL OR p.scope = p_scope OR p.scope = 'all'
+      WHERE p_scope IS NULL 
+         OR p_scope = '' 
+         OR p.scope = p_scope 
+         OR p.scope = 'all'
       ORDER BY pc.sort_order, pc.name, p.name;
     END;
   `);

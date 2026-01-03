@@ -1,8 +1,8 @@
 /**
  * CreateRoleModal Component (Tourism)
  * 
- * Wraps the business version with 'system' scope so tourism admins
- * can assign system-level permissions to tourism staff roles.
+ * Wraps the business version so tourism admins can create roles
+ * with access to all permissions (system, business, and shared).
  * No businessCapabilities filter is applied since system roles aren't business-specific.
  */
 
@@ -27,8 +27,7 @@ export function CreateRoleModal({
       onClose={onClose}
       onCreateCustom={onCreateCustom}
       isLoading={isLoading}
-      permissionScope="system"
-      // No businessCapabilities - tourism staff sees all system permissions
+      permissionScope={undefined} // Admins see all permissions
     />
   );
 }
