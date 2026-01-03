@@ -21,6 +21,7 @@ import { useTypography } from '@/constants/typography';
 import PageContainer from '@/components/PageContainer';
 import { Ionicons } from '@expo/vector-icons';
 import { getOrderById } from '@/services/OrderService';
+import { useCart } from '@/context/CartContext';
 import {
   createPaymentIntent,
   attachEwalletPaymentMethod,
@@ -46,6 +47,8 @@ const PaymentCancelScreen = () => {
   const type = useTypography();
   const { h1, h2, body, bodySmall } = type;
   const [retrying, setRetrying] = useState(false);
+  const [changingPaymentMethod, setChangingPaymentMethod] = useState(false);
+  const { restoreFromOrder } = useCart();
 
   // Animations
   const scale = useSharedValue(0);
@@ -87,25 +90,54 @@ const PaymentCancelScreen = () => {
 
       // Get order details to determine payment method type
       const orderDetails = await getOrderById(params.orderId);
-      const paymentMethodType = orderDetails.payment_method_type || 'gcash';
+      
+      // Use payment_method as the primary field (stores 'gcash', 'paymaya', 'card', 'cash_on_pickup')
+      // Fallback to deprecated payment_method_type for backward compatibility
+      let paymentMethodType = orderDetails.payment_method;
 
-      // Create Payment Intent
+      // Skip cash_on_pickup since it doesn't need online payment
+      if (paymentMethodType === 'cash_on_pickup') {
+        Alert.alert(
+          'Payment Method',
+          'This order uses cash on pickup. No online payment needed.',
+          [{ text: 'OK' }]
+        );
+        setRetrying(false);
+        return;
+      }
+
+      // Fallback to deprecated field if payment_method is not an e-wallet/card type
+      if (!['gcash', 'paymaya', 'card'].includes(paymentMethodType)) {
+        paymentMethodType = orderDetails.payment_method_type || 'gcash';
+      }
+
+      console.log('[PaymentCancel] Using payment method:', paymentMethodType);
+
+      // Create Payment Intent using unified API
+      // This REUSES the existing order (no ghost data) - backend will:
+      // 1. Detect retry scenario if order status = failed_payment
+      // 2. Create new Payment Intent for the SAME order
+      // 3. Reset order status to 'pending' and re-deduct stock if needed
       const intentResponse = await createPaymentIntent({
-        order_id: params.orderId,
-        payment_method_types: [paymentMethodType],
+        payment_for: 'order',
+        reference_id: params.orderId,
+        payment_method: paymentMethodType,
       });
 
       const paymentIntentId = intentResponse.data.payment_intent_id;
+      const clientKey = intentResponse.data.client_key;
 
-      // For card payments, navigate to card payment screen
+      // For card payments, navigate to card payment screen with NEW payment intent
+      // This reuses the existing order instead of creating a new one
       if (paymentMethodType === 'card') {
+        console.log('[PaymentCancel] Card payment - navigating to card-payment screen for retry');
         router.replace(
           Routes.checkout.cardPayment({
             orderId: params.orderId,
             orderNumber: orderDetails.order_number,
             arrivalCode: orderDetails.arrival_code,
             paymentIntentId,
-            clientKey: intentResponse.data.client_key,
+            clientKey,
             amount: intentResponse.data.amount.toString(),
             total: orderDetails.total_amount?.toString(),
           })
@@ -113,19 +145,21 @@ const PaymentCancelScreen = () => {
         return;
       }
 
-      // For e-wallets, attach payment method and redirect
+      // For e-wallets, attach payment method and redirect (Client-Side)
       const backendBaseUrl = (API_URL || '').replace('/api', '');
       const returnUrl = `${backendBaseUrl}/orders/${params.orderId}/payment-success`;
 
       const attachResponse = await attachEwalletPaymentMethod(
         paymentIntentId,
-        paymentMethodType as 'gcash' | 'paymaya' | 'grab_pay',
-        returnUrl
+        paymentMethodType as 'gcash' | 'paymaya',
+        returnUrl,
+        intentResponse.data.client_key // Pass client_key for direct PayMongo call
       );
 
-      if (attachResponse.data.redirect_url) {
+      const nextAction = attachResponse.data.attributes.next_action;
+      if (nextAction?.redirect?.url) {
         const authResult = await open3DSAuthentication(
-          attachResponse.data.redirect_url,
+          nextAction.redirect.url,
           returnUrl
         );
 
@@ -170,6 +204,77 @@ const PaymentCancelScreen = () => {
 
   const handleBackToHome = () => {
     router.replace(Routes.tabs.home);
+  };
+
+  /**
+   * Handle "Change Payment Method" - restore order items to cart and navigate to checkout
+   * with prefilled data so user can select a different payment method
+   */
+  const handleChangePaymentMethod = async () => {
+    if (!params.orderId) {
+      router.replace(Routes.checkout.index({ fromChangePaymentMethod: 'true' }));
+      return;
+    }
+
+    try {
+      setChangingPaymentMethod(true);
+      console.log(
+        '[PaymentCancel] Changing payment method for order:',
+        params.orderId
+      );
+
+      // Fetch order details to get items and restore to cart
+      const orderDetails = await getOrderById(params.orderId);
+
+      if (orderDetails.items && orderDetails.items.length > 0) {
+        // Restore items to cart
+        restoreFromOrder(
+          orderDetails.items.map((item: any) => ({
+            product_id: item.product_id,
+            product_name: item.product_name,
+            unit_price: item.unit_price,
+            quantity: item.quantity,
+            special_requests: item.special_requests,
+            product_image_url: item.product_image_url,
+          })),
+          orderDetails.business_id,
+          orderDetails.business_name
+        );
+        console.log(
+          '[PaymentCancel] Restored',
+          orderDetails.items.length,
+          'items to cart'
+        );
+      }
+
+      // Navigate to checkout with prefilled order info (excluding payment method so user can choose new one)
+      router.replace(
+        Routes.checkout.index({
+          prefillOrderId: params.orderId,
+          prefillBillingName: orderDetails.billing_name || undefined,
+          prefillBillingEmail: orderDetails.billing_email || undefined,
+          prefillBillingPhone: orderDetails.billing_phone || undefined,
+          prefillPickupDatetime: orderDetails.pickup_datetime || undefined,
+          prefillSpecialInstructions: orderDetails.special_instructions || undefined,
+          fromChangePaymentMethod: 'true',
+        })
+      );
+    } catch (error: any) {
+      console.error('[PaymentCancel] Failed to change payment method:', error);
+      Alert.alert(
+        'Error',
+        'Unable to change payment method. Please try again.',
+        [
+          {
+            text: 'OK',
+            onPress: () =>
+              router.replace(Routes.checkout.index({ fromChangePaymentMethod: 'true' })),
+          },
+        ]
+      );
+    } finally {
+      setChangingPaymentMethod(false);
+    }
   };
 
   const animatedIconStyle = useAnimatedStyle(() => ({
@@ -280,9 +385,10 @@ const PaymentCancelScreen = () => {
                   style={[
                     styles.primaryButton,
                     { backgroundColor: colors.primary },
+                    (retrying || changingPaymentMethod) && styles.disabledButton,
                   ]}
                   onPress={handleRetryPayment}
-                  disabled={retrying}
+                  disabled={retrying || changingPaymentMethod}
                 >
                   {retrying ? (
                     <ActivityIndicator size="small" color="#FFF" />
@@ -295,8 +401,35 @@ const PaymentCancelScreen = () => {
                   style={[
                     styles.secondaryButton,
                     { borderColor: palette.border },
+                    changingPaymentMethod && styles.disabledButton,
+                  ]}
+                  onPress={handleChangePaymentMethod}
+                  disabled={retrying || changingPaymentMethod}
+                >
+                  {changingPaymentMethod ? (
+                    <ActivityIndicator size="small" color={palette.text} />
+                  ) : (
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                      <Ionicons name="swap-horizontal" size={18} color={palette.text} />
+                      <Text
+                        style={[
+                          styles.secondaryButtonText,
+                          { color: palette.text },
+                        ]}
+                      >
+                        Change Payment Method
+                      </Text>
+                    </View>
+                  )}
+                </Pressable>
+
+                <Pressable
+                  style={[
+                    styles.secondaryButton,
+                    { borderColor: palette.border },
                   ]}
                   onPress={handleViewOrder}
+                  disabled={retrying || changingPaymentMethod}
                 >
                   <Text
                     style={[
@@ -412,6 +545,9 @@ const styles = StyleSheet.create({
   textButtonText: {
     fontSize: 14,
     fontWeight: '500',
+  },
+  disabledButton: {
+    opacity: 0.6,
   },
 });
 

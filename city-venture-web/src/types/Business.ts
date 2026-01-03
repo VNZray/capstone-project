@@ -19,6 +19,7 @@ export type Business = {
   status: string;
   business_image?: string | "";
   hasBooking?: boolean;
+  hasStore?: boolean;
   barangay_id: number;
   subscription_plan?: string;
   // New hierarchical category system
@@ -57,12 +58,14 @@ export type BusinessDetails = {
   status: string;
   business_image?: string | "";
   hasBooking?: boolean;
+  hasStore?: boolean;
   barangay_id: number;
   province_name?: string | "";
   municipality_name?: string | "";
   barangay_name?: string | "";
   // New hierarchical category system
   categories?: EntityCategory[];
+  category_ids?: number[];
   primary_category?: string;
 };
 
@@ -72,6 +75,7 @@ export type Room = {
   room_type?: string;
   capacity?: string;
   room_price?: string;
+  per_hour_rate?: number | null;
   description?: string;
   business_id?: string;
   status?: string;

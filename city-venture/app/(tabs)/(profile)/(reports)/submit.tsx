@@ -200,8 +200,7 @@ export default function SubmitReport() {
         [
           {
             text: 'View My Reports',
-            onPress: () =>
-              router.replace(Routes.profile.reports.myReports),
+            onPress: () => router.replace(Routes.profile.reports.myReports),
           },
           {
             text: 'OK',
@@ -221,7 +220,7 @@ export default function SubmitReport() {
   };
 
   return (
-    <PageContainer padding={0} style={{ paddingBottom: 100 }}>
+    <PageContainer padding={0} style={{ paddingBottom: 200 }}>
       <ScrollView
         contentContainerStyle={styles.container}
         showsVerticalScrollIndicator={false}

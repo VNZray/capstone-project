@@ -35,7 +35,7 @@ export default function AuthLayout() {
           options={{
             headerBackTitle: 'Back',
             headerTintColor: color,
-            headerShown: true,
+            headerShown: false,
             title: 'Sign Up',
           }}
         />

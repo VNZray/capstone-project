@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -16,7 +16,7 @@ import {
   Modal,
   FlatList,
 } from 'react-native';
-import { Stack } from 'expo-router';
+import { Stack, useLocalSearchParams } from 'expo-router';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { Colors } from '@/constants/color';
 import { useTypography } from '@/constants/typography';
@@ -31,6 +31,12 @@ import { Ionicons } from '@expo/vector-icons';
 import { usePreventDoubleNavigation } from '@/hooks/usePreventDoubleNavigation';
 import { Routes } from '@/routes/mainRoutes';
 import { useHideTabs } from '@/hooks/useHideTabs';
+import LoginPromptModal from '@/components/LoginPromptModal';
+import {
+  validateCardNumber,
+  formatCardNumber,
+  getCardBrand,
+} from '@/services/PaymentIntentService';
 
 // Enable LayoutAnimation for Android
 if (
@@ -43,7 +49,7 @@ if (
 // Pickup time constraints (must match backend validation in orderValidation.js)
 const PICKUP_CONSTRAINTS = {
   MIN_MINUTES: 30, // Minimum 30 minutes from now (preparation time)
-  MAX_HOURS: 72,   // Maximum 72 hours (3 days) for advance ordering
+  MAX_HOURS: 72, // Maximum 72 hours (3 days) for advance ordering
   DEFAULT_MINUTES: 60, // Default to 1 hour from now
 };
 
@@ -54,19 +60,46 @@ const CheckoutScreen = () => {
   const type = useTypography();
   const { push, replace, back, isNavigating } = usePreventDoubleNavigation();
 
+  // Get prefill params from navigation (used when changing payment method from failed screen)
+  const prefillParams = useLocalSearchParams<{
+    prefillOrderId?: string;
+    prefillPaymentMethod?: string;
+    prefillBillingName?: string;
+    prefillBillingEmail?: string;
+    prefillBillingPhone?: string;
+    prefillPickupDatetime?: string;
+    prefillSpecialInstructions?: string;
+    fromChangePaymentMethod?: string;
+  }>();
+
+  const isFromChangePaymentMethod =
+    prefillParams.fromChangePaymentMethod === 'true';
+
   // Hide tabs during checkout flow
   useHideTabs();
 
   const { items, businessId, clearCart, getSubtotal } = useCart();
-  const { user } = useAuth();
+  const { user, isAuthenticated } = useAuth();
+  const [showLoginPrompt, setShowLoginPrompt] = useState(false);
+
+  // Check authentication on mount
+  useEffect(() => {
+    if (!isAuthenticated) {
+      setShowLoginPrompt(true);
+    }
+  }, [isAuthenticated]);
 
   // Calculate pickup time boundaries
   const pickupBoundaries = useMemo(() => {
     const now = new Date();
     return {
       min: new Date(now.getTime() + PICKUP_CONSTRAINTS.MIN_MINUTES * 60 * 1000),
-      max: new Date(now.getTime() + PICKUP_CONSTRAINTS.MAX_HOURS * 60 * 60 * 1000),
-      default: new Date(now.getTime() + PICKUP_CONSTRAINTS.DEFAULT_MINUTES * 60 * 1000),
+      max: new Date(
+        now.getTime() + PICKUP_CONSTRAINTS.MAX_HOURS * 60 * 60 * 1000
+      ),
+      default: new Date(
+        now.getTime() + PICKUP_CONSTRAINTS.DEFAULT_MINUTES * 60 * 1000
+      ),
     };
   }, []);
 
@@ -82,7 +115,16 @@ const CheckoutScreen = () => {
       const date = new Date(now);
       date.setDate(date.getDate() + i);
       date.setHours(0, 0, 0, 0);
-      const label = i === 0 ? 'Today' : i === 1 ? 'Tomorrow' : date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+      const label =
+        i === 0
+          ? 'Today'
+          : i === 1
+          ? 'Tomorrow'
+          : date.toLocaleDateString('en-US', {
+              weekday: 'short',
+              month: 'short',
+              day: 'numeric',
+            });
       dates.push({ label, value: date });
     }
     return dates;
@@ -115,25 +157,150 @@ const CheckoutScreen = () => {
         if (hour === 22 && minute > 0) continue;
         const period = hour >= 12 ? 'PM' : 'AM';
         const displayHour = hour > 12 ? hour - 12 : hour === 0 ? 12 : hour;
-        const label = `${displayHour}:${minute.toString().padStart(2, '0')} ${period}`;
+        const label = `${displayHour}:${minute
+          .toString()
+          .padStart(2, '0')} ${period}`;
         slots.push({ label, hour, minute });
       }
     }
     return slots;
   }, [pickupDate]);
   const [specialInstructions, setSpecialInstructions] = useState('');
+  // Payment selection: 'cash_on_pickup' or PayMongo type ('gcash', 'paymaya', 'card')
   const [paymentMethod, setPaymentMethod] = useState<
-    'cash_on_pickup' | 'paymongo'
+    'cash_on_pickup' | 'gcash' | 'paymaya' | 'card'
   >('cash_on_pickup');
-  const [paymentMethodType, setPaymentMethodType] = useState<
-    'gcash' | 'card' | 'paymaya' | 'grab_pay'
-  >('gcash');
+
+  // Derived: is this an online payment?
+  const isOnlinePayment = ['gcash', 'paymaya', 'card'].includes(paymentMethod);
+
   const [loading, setLoading] = useState(false);
 
   // Billing information for PayMongo payments
-  const [billingName, setBillingName] = useState(user?.first_name && user?.last_name ? `${user.first_name} ${user.last_name}` : '');
+  const [billingName, setBillingName] = useState(
+    user?.first_name && user?.last_name
+      ? `${user.first_name} ${user.last_name}`
+      : ''
+  );
   const [billingEmail, setBillingEmail] = useState(user?.email || '');
   const [billingPhone, setBillingPhone] = useState(user?.phone_number || '');
+
+  // Card payment form state (inline card entry)
+  const [cardNumber, setCardNumber] = useState('5234000000000106');
+  const [expMonth, setExpMonth] = useState('12');
+  const [expYear, setExpYear] = useState('25');
+  const [cvc, setCvc] = useState('123');
+  const [cardErrors, setCardErrors] = useState<Record<string, string>>({});
+
+  // Input refs for auto-focus between card fields
+  const expMonthRef = useRef<TextInput>(null);
+  const expYearRef = useRef<TextInput>(null);
+  const cvcRef = useRef<TextInput>(null);
+
+  // Get card brand for icon display
+  const cardBrand = getCardBrand(cardNumber);
+
+  // Format card number as user types
+  const handleCardNumberChange = (text: string) => {
+    const formatted = formatCardNumber(text);
+    setCardNumber(formatted);
+    if (cardErrors.cardNumber) {
+      setCardErrors((prev) => ({ ...prev, cardNumber: '' }));
+    }
+    // Auto-focus to expiry when card number is complete (16 digits + 3 spaces)
+    if (formatted.replace(/\s/g, '').length === 16) {
+      expMonthRef.current?.focus();
+    }
+  };
+
+  // Handle expiry month input
+  const handleExpMonthChange = (text: string) => {
+    const digits = text.replace(/\D/g, '');
+    if (digits.length <= 2) {
+      setExpMonth(digits);
+      if (cardErrors.expMonth) {
+        setCardErrors((prev) => ({ ...prev, expMonth: '' }));
+      }
+      // Auto-focus to year when month is complete
+      if (digits.length === 2) {
+        expYearRef.current?.focus();
+      }
+    }
+  };
+
+  // Handle expiry year input
+  const handleExpYearChange = (text: string) => {
+    const digits = text.replace(/\D/g, '');
+    if (digits.length <= 2) {
+      setExpYear(digits);
+      if (cardErrors.expYear) {
+        setCardErrors((prev) => ({ ...prev, expYear: '' }));
+      }
+      // Auto-focus to CVC when year is complete
+      if (digits.length === 2) {
+        cvcRef.current?.focus();
+      }
+    }
+  };
+
+  // Handle CVC input
+  const handleCvcChange = (text: string) => {
+    const digits = text.replace(/\D/g, '');
+    if (digits.length <= 4) {
+      setCvc(digits);
+      if (cardErrors.cvc) {
+        setCardErrors((prev) => ({ ...prev, cvc: '' }));
+      }
+    }
+  };
+
+  // Validate card form
+  const validateCardForm = (): boolean => {
+    const newErrors: Record<string, string> = {};
+
+    // Card number validation
+    const cleanCardNumber = cardNumber.replace(/\s/g, '');
+    if (!cleanCardNumber) {
+      newErrors.cardNumber = 'Card number is required';
+    } else if (!validateCardNumber(cleanCardNumber)) {
+      newErrors.cardNumber = 'Invalid card number';
+    }
+
+    // Expiry validation
+    const month = parseInt(expMonth, 10);
+    if (!expMonth) {
+      newErrors.expMonth = 'Required';
+    } else if (month < 1 || month > 12) {
+      newErrors.expMonth = 'Invalid';
+    }
+
+    const year = parseInt(expYear, 10);
+    const currentYear = new Date().getFullYear() % 100;
+    if (!expYear) {
+      newErrors.expYear = 'Required';
+    } else if (year < currentYear) {
+      newErrors.expYear = 'Expired';
+    }
+
+    // Check if card is expired
+    if (expMonth && expYear && !newErrors.expMonth && !newErrors.expYear) {
+      const now = new Date();
+      const expDate = new Date(2000 + year, month, 0);
+      if (expDate < now) {
+        newErrors.expMonth = 'Card expired';
+      }
+    }
+
+    // CVC validation
+    if (!cvc) {
+      newErrors.cvc = 'Required';
+    } else if (cvc.length < 3) {
+      newErrors.cvc = 'Invalid';
+    }
+
+    setCardErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
   // Warm up browser for faster payment flow (Android optimization)
   useEffect(() => {
@@ -145,26 +312,84 @@ const CheckoutScreen = () => {
     }
   }, []);
 
+  // Prefill form values when coming from change payment method flow
+  useEffect(() => {
+    if (isFromChangePaymentMethod) {
+      console.log(
+        '[Checkout] Prefilling from change payment method:',
+        prefillParams
+      );
+
+      // Prefill billing info
+      if (prefillParams.prefillBillingName) {
+        setBillingName(prefillParams.prefillBillingName);
+      }
+      if (prefillParams.prefillBillingEmail) {
+        setBillingEmail(prefillParams.prefillBillingEmail);
+      }
+      if (prefillParams.prefillBillingPhone) {
+        setBillingPhone(prefillParams.prefillBillingPhone);
+      }
+
+      // Prefill special instructions
+      if (prefillParams.prefillSpecialInstructions) {
+        setSpecialInstructions(prefillParams.prefillSpecialInstructions);
+      }
+
+      // Prefill pickup datetime if valid
+      if (prefillParams.prefillPickupDatetime) {
+        const prefillDate = new Date(prefillParams.prefillPickupDatetime);
+        const now = new Date();
+        // Only use prefilled date if it's still in the future
+        if (prefillDate > now) {
+          setPickupDate(prefillDate);
+        }
+      }
+
+      // Don't prefill payment method - user is changing it
+      // Payment method stays at default 'cash_on_pickup' so user can choose new one
+    }
+  }, [isFromChangePaymentMethod]); // Only run once on mount
+
   const subtotal = getSubtotal();
   const taxAmount = 0; // Per spec.md - currently taxAmount=0
   const discountAmount = 0; // No discount for Phase 1
   const total = subtotal - discountAmount + taxAmount;
 
   const handleDateSelect = (date: Date) => {
+    console.log('[Checkout] handleDateSelect called with:', date);
     const newDate = new Date(pickupDate);
     newDate.setFullYear(date.getFullYear(), date.getMonth(), date.getDate());
+    console.log(
+      '[Checkout] Setting pickupDate to:',
+      newDate,
+      newDate.toISOString()
+    );
     setPickupDate(newDate);
     setShowDatePicker(false);
   };
 
   const handleTimeSelect = (hour: number, minute: number) => {
+    console.log(
+      '[Checkout] handleTimeSelect called with hour:',
+      hour,
+      'minute:',
+      minute
+    );
     const newDate = new Date(pickupDate);
     newDate.setHours(hour, minute, 0, 0);
+    console.log(
+      '[Checkout] Setting pickupDate to:',
+      newDate,
+      newDate.toISOString()
+    );
     setPickupDate(newDate);
     setShowTimePicker(false);
   };
 
-  const togglePaymentMethod = (method: 'cash_on_pickup' | 'paymongo') => {
+  const togglePaymentMethod = (
+    method: 'cash_on_pickup' | 'gcash' | 'paymaya' | 'card'
+  ) => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     setPaymentMethod(method);
   };
@@ -187,8 +412,12 @@ const CheckoutScreen = () => {
 
     // Validate pickup datetime using same constraints as defined at top of file
     const now = new Date();
-    const minPickupTime = new Date(now.getTime() + PICKUP_CONSTRAINTS.MIN_MINUTES * 60 * 1000);
-    const maxPickupTime = new Date(now.getTime() + PICKUP_CONSTRAINTS.MAX_HOURS * 60 * 60 * 1000);
+    const minPickupTime = new Date(
+      now.getTime() + PICKUP_CONSTRAINTS.MIN_MINUTES * 60 * 1000
+    );
+    const maxPickupTime = new Date(
+      now.getTime() + PICKUP_CONSTRAINTS.MAX_HOURS * 60 * 60 * 1000
+    );
 
     if (pickupDate <= now) {
       Alert.alert('Invalid Time', 'Pickup time must be in the future');
@@ -206,13 +435,15 @@ const CheckoutScreen = () => {
     if (pickupDate > maxPickupTime) {
       Alert.alert(
         'Too Far Ahead',
-        `Pickup time cannot be more than ${PICKUP_CONSTRAINTS.MAX_HOURS / 24} days from now.`
+        `Pickup time cannot be more than ${
+          PICKUP_CONSTRAINTS.MAX_HOURS / 24
+        } days from now.`
       );
       return;
     }
 
     // Validate minimum amount for PayMongo Payment Intents (₱20.00)
-    if (paymentMethod === 'paymongo' && total < 20) {
+    if (isOnlinePayment && total < 20) {
       Alert.alert(
         'Minimum Amount',
         'Online payment requires a minimum order of ₱20.00. Please add more items or choose Cash on Pickup.',
@@ -222,14 +453,47 @@ const CheckoutScreen = () => {
     }
 
     // Validate billing information for PayMongo payments
-    if (paymentMethod === 'paymongo') {
-      if (!billingName.trim()) {
-        Alert.alert('Missing Information', 'Please enter your full name for billing.');
-        return;
-      }
-      if (!billingEmail.trim()) {
-        Alert.alert('Missing Information', 'Please enter your email address for billing.');
-        return;
+    if (isOnlinePayment) {
+      if (paymentMethod === 'card') {
+        // For card payments, validate card form
+        if (!validateCardForm()) {
+          Alert.alert(
+            'Card Error',
+            'Please check your card details and try again.'
+          );
+          return;
+        }
+        // Card payments use card form fields for billing
+        if (!billingName.trim()) {
+          Alert.alert(
+            'Missing Information',
+            'Please enter your full name for billing.'
+          );
+          return;
+        }
+        if (!billingEmail.trim()) {
+          Alert.alert(
+            'Missing Information',
+            'Please enter your email address for billing.'
+          );
+          return;
+        }
+      } else {
+        // For e-wallets (GCash, Maya), use billing section fields
+        if (!billingName.trim()) {
+          Alert.alert(
+            'Missing Information',
+            'Please enter your full name for billing.'
+          );
+          return;
+        }
+        if (!billingEmail.trim()) {
+          Alert.alert(
+            'Missing Information',
+            'Please enter your email address for billing.'
+          );
+          return;
+        }
       }
       // Basic email validation
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -252,39 +516,64 @@ const CheckoutScreen = () => {
       pickup_datetime: pickupDate.toISOString(),
       special_instructions: specialInstructions || undefined,
       payment_method: paymentMethod,
-      payment_method_type:
-        paymentMethod === 'paymongo' ? paymentMethodType : undefined,
     };
+
+    // Check if using PayMongo (any online payment method)
+    const isPayMongoPayment = ['gcash', 'paymaya', 'card'].includes(
+      paymentMethod
+    );
 
     // ========== FoodPanda/GrabFood Style Flow ==========
     // For PayMongo payments: Show grace period screen BEFORE creating order
     // This allows user to cancel within 10 seconds without creating any records
-    if (paymentMethod === 'paymongo') {
-      console.log('[Checkout] Navigating to grace period screen for PayMongo payment');
-      
-      // Prepare billing info for payment
-      const billingInfo = {
-        name: billingName.trim(),
-        email: billingEmail.trim().toLowerCase(),
-        phone: billingPhone.trim() || undefined,
-      };
+    if (isPayMongoPayment) {
+      console.log(
+        '[Checkout] Navigating to grace period screen for PayMongo payment'
+      );
+      console.log('[Checkout] pickupDate state:', pickupDate);
+      console.log(
+        '[Checkout] pickupDate.toISOString():',
+        pickupDate.toISOString()
+      );
+      console.log(
+        '[Checkout] orderPayload.pickup_datetime:',
+        orderPayload.pickup_datetime
+      );
 
-      // Clear cart before navigating (order will be created after grace period)
-      clearCart();
+      // Clear cart BEFORE navigating removed - we now clear it in the grace period screen AFTER successful order creation
+      // This allows the user to cancel in grace period and have their items back
+      // clearCart();
+
+      // Prepare billing info - include card details if card payment
+      const billingInfoPayload =
+        paymentMethod === 'card'
+          ? {
+              name: billingName.trim(),
+              email: billingEmail.trim().toLowerCase(),
+              phone: billingPhone.trim() || undefined,
+              // Card details for processing
+              cardNumber: cardNumber.replace(/\s/g, ''),
+              expMonth: parseInt(expMonth, 10),
+              expYear: 2000 + parseInt(expYear, 10),
+              cvc: cvc,
+            }
+          : {
+              name: billingName.trim(),
+              email: billingEmail.trim().toLowerCase(),
+              phone: billingPhone.trim() || undefined,
+            };
 
       // Navigate to grace period screen with order data
       // Order is NOT created yet - will be created after countdown ends
       // Use replace() to prevent back navigation through checkout flow
-      replace(Routes.checkout.orderGracePeriod({
-        orderData: JSON.stringify(orderPayload),
-        paymentMethodType: paymentMethodType,
-        billingInfo: JSON.stringify({
-          name: billingName.trim(),
-          email: billingEmail.trim().toLowerCase(),
-          phone: billingPhone.trim() || undefined,
-        }),
-        total: total.toString(),
-      }));
+      replace(
+        Routes.checkout.orderGracePeriod({
+          orderData: JSON.stringify(orderPayload),
+          paymentMethodType: paymentMethod, // Now contains actual type: gcash, paymaya, card
+          billingInfo: JSON.stringify(billingInfoPayload),
+          total: total.toString(),
+        })
+      );
       return;
     }
 
@@ -302,10 +591,12 @@ const CheckoutScreen = () => {
       clearCart();
 
       // Go directly to confirmation
-      replace(Routes.checkout.orderConfirmation({
-        orderId: orderResponse.order_id,
-        businessId: orderPayload.business_id,
-      }));
+      replace(
+        Routes.checkout.orderConfirmation({
+          orderId: orderResponse.order_id,
+          businessId: orderPayload.business_id,
+        })
+      );
     } catch (error: any) {
       console.error('[Checkout] Order creation failed:', error);
 
@@ -490,7 +781,12 @@ const CheckoutScreen = () => {
               {items.slice(0, 3).map((item) => (
                 <View key={item.product_id} style={styles.itemRow}>
                   {/* Product Image */}
-                  <View style={[styles.itemImageContainer, { backgroundColor: theme.background }]}>
+                  <View
+                    style={[
+                      styles.itemImageContainer,
+                      { backgroundColor: theme.background },
+                    ]}
+                  >
                     {item.image_url ? (
                       <Image
                         source={{ uri: item.image_url }}
@@ -498,7 +794,11 @@ const CheckoutScreen = () => {
                         resizeMode="cover"
                       />
                     ) : (
-                      <Ionicons name="image-outline" size={24} color={theme.textSecondary} />
+                      <Ionicons
+                        name="image-outline"
+                        size={24}
+                        color={theme.textSecondary}
+                      />
                     )}
                   </View>
                   <View style={styles.itemDetails}>
@@ -508,7 +808,12 @@ const CheckoutScreen = () => {
                     >
                       {item.product_name}
                     </Text>
-                    <Text style={[styles.itemQuantity, { color: theme.textSecondary }]}>
+                    <Text
+                      style={[
+                        styles.itemQuantity,
+                        { color: theme.textSecondary },
+                      ]}
+                    >
                       Qty: {item.quantity}
                     </Text>
                   </View>
@@ -519,9 +824,7 @@ const CheckoutScreen = () => {
               ))}
               {items.length > 3 && (
                 <Pressable onPress={() => back()}>
-                  <Text
-                    style={[styles.moreItems, { color: theme.active }]}
-                  >
+                  <Text style={[styles.moreItems, { color: theme.active }]}>
                     +{items.length - 3} more items →
                   </Text>
                 </Pressable>
@@ -630,15 +933,26 @@ const CheckoutScreen = () => {
                 animationType="fade"
                 onRequestClose={() => setShowDatePicker(false)}
               >
-                <Pressable 
-                  style={styles.modalOverlay} 
+                <Pressable
+                  style={styles.modalOverlay}
                   onPress={() => setShowDatePicker(false)}
                 >
-                  <View style={[styles.pickerModal, { backgroundColor: theme.surface }]}>
+                  <View
+                    style={[
+                      styles.pickerModal,
+                      { backgroundColor: theme.surface },
+                    ]}
+                  >
                     <View style={styles.pickerHeader}>
-                      <Text style={[styles.pickerTitle, { color: theme.text }]}>Select Date</Text>
+                      <Text style={[styles.pickerTitle, { color: theme.text }]}>
+                        Select Date
+                      </Text>
                       <Pressable onPress={() => setShowDatePicker(false)}>
-                        <Ionicons name="close" size={24} color={theme.textSecondary} />
+                        <Ionicons
+                          name="close"
+                          size={24}
+                          color={theme.textSecondary}
+                        />
                       </Pressable>
                     </View>
                     <View style={styles.pickerOptions}>
@@ -647,10 +961,12 @@ const CheckoutScreen = () => {
                           key={index}
                           style={[
                             styles.pickerOption,
-                            { 
-                              backgroundColor: pickupDate.toDateString() === dateOption.value.toDateString()
-                                ? theme.primary
-                                : theme.background,
+                            {
+                              backgroundColor:
+                                pickupDate.toDateString() ===
+                                dateOption.value.toDateString()
+                                  ? theme.primary
+                                  : theme.background,
                               borderColor: theme.border,
                             },
                           ]}
@@ -659,10 +975,12 @@ const CheckoutScreen = () => {
                           <Text
                             style={[
                               styles.pickerOptionText,
-                              { 
-                                color: pickupDate.toDateString() === dateOption.value.toDateString()
-                                  ? '#FFF'
-                                  : theme.text,
+                              {
+                                color:
+                                  pickupDate.toDateString() ===
+                                  dateOption.value.toDateString()
+                                    ? '#FFF'
+                                    : theme.text,
                               },
                             ]}
                           >
@@ -671,14 +989,19 @@ const CheckoutScreen = () => {
                           <Text
                             style={[
                               styles.pickerOptionSubtext,
-                              { 
-                                color: pickupDate.toDateString() === dateOption.value.toDateString()
-                                  ? 'rgba(255,255,255,0.8)'
-                                  : theme.textSecondary,
+                              {
+                                color:
+                                  pickupDate.toDateString() ===
+                                  dateOption.value.toDateString()
+                                    ? 'rgba(255,255,255,0.8)'
+                                    : theme.textSecondary,
                               },
                             ]}
                           >
-                            {dateOption.value.toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}
+                            {dateOption.value.toLocaleDateString('en-US', {
+                              month: 'long',
+                              day: 'numeric',
+                            })}
                           </Text>
                         </Pressable>
                       ))}
@@ -694,15 +1017,26 @@ const CheckoutScreen = () => {
                 animationType="fade"
                 onRequestClose={() => setShowTimePicker(false)}
               >
-                <Pressable 
-                  style={styles.modalOverlay} 
+                <Pressable
+                  style={styles.modalOverlay}
                   onPress={() => setShowTimePicker(false)}
                 >
-                  <View style={[styles.pickerModal, { backgroundColor: theme.surface }]}>
+                  <View
+                    style={[
+                      styles.pickerModal,
+                      { backgroundColor: theme.surface },
+                    ]}
+                  >
                     <View style={styles.pickerHeader}>
-                      <Text style={[styles.pickerTitle, { color: theme.text }]}>Select Time</Text>
+                      <Text style={[styles.pickerTitle, { color: theme.text }]}>
+                        Select Time
+                      </Text>
                       <Pressable onPress={() => setShowTimePicker(false)}>
-                        <Ionicons name="close" size={24} color={theme.textSecondary} />
+                        <Ionicons
+                          name="close"
+                          size={24}
+                          color={theme.textSecondary}
+                        />
                       </Pressable>
                     </View>
                     <FlatList
@@ -711,17 +1045,25 @@ const CheckoutScreen = () => {
                       style={styles.timeScrollList}
                       showsVerticalScrollIndicator={false}
                       renderItem={({ item: slot }) => {
-                        const isSelected = pickupDate.getHours() === slot.hour && pickupDate.getMinutes() === slot.minute;
+                        const isSelected =
+                          pickupDate.getHours() === slot.hour &&
+                          pickupDate.getMinutes() === slot.minute;
                         return (
                           <Pressable
                             style={[
                               styles.timeSlotOption,
-                              { 
-                                backgroundColor: isSelected ? theme.primary : 'transparent',
-                                borderColor: isSelected ? theme.primary : theme.border,
+                              {
+                                backgroundColor: isSelected
+                                  ? theme.primary
+                                  : 'transparent',
+                                borderColor: isSelected
+                                  ? theme.primary
+                                  : theme.border,
                               },
                             ]}
-                            onPress={() => handleTimeSelect(slot.hour, slot.minute)}
+                            onPress={() =>
+                              handleTimeSelect(slot.hour, slot.minute)
+                            }
                           >
                             <Text
                               style={[
@@ -732,7 +1074,11 @@ const CheckoutScreen = () => {
                               {slot.label}
                             </Text>
                             {isSelected && (
-                              <Ionicons name="checkmark-circle" size={20} color="#FFF" />
+                              <Ionicons
+                                name="checkmark-circle"
+                                size={20}
+                                color="#FFF"
+                              />
                             )}
                           </Pressable>
                         );
@@ -847,19 +1193,15 @@ const CheckoutScreen = () => {
                 style={[
                   styles.paymentOption,
                   {
-                    borderColor:
-                      paymentMethod === 'paymongo'
-                        ? theme.accent
-                        : theme.border,
-                    backgroundColor:
-                      paymentMethod === 'paymongo'
-                        ? isDark
-                          ? 'rgba(255, 183, 3, 0.1)'
-                          : '#FFF9E6'
-                        : theme.background,
+                    borderColor: isOnlinePayment ? theme.accent : theme.border,
+                    backgroundColor: isOnlinePayment
+                      ? isDark
+                        ? 'rgba(255, 183, 3, 0.1)'
+                        : '#FFF9E6'
+                      : theme.background,
                   },
                 ]}
-                onPress={() => togglePaymentMethod('paymongo')}
+                onPress={() => setPaymentMethod('gcash')} // Default to gcash when selecting online
               >
                 <View style={styles.paymentOptionHeader}>
                   <View
@@ -889,20 +1231,14 @@ const CheckoutScreen = () => {
                   </View>
                   <Ionicons
                     name={
-                      paymentMethod === 'paymongo'
-                        ? 'radio-button-on'
-                        : 'radio-button-off'
+                      isOnlinePayment ? 'radio-button-on' : 'radio-button-off'
                     }
                     size={24}
-                    color={
-                      paymentMethod === 'paymongo'
-                        ? theme.accent
-                        : theme.textSecondary
-                    }
+                    color={isOnlinePayment ? theme.accent : theme.textSecondary}
                   />
                 </View>
 
-                {paymentMethod === 'paymongo' && (
+                {isOnlinePayment && (
                   <View style={styles.subPaymentMethods}>
                     <View
                       style={[
@@ -916,74 +1252,444 @@ const CheckoutScreen = () => {
                         { color: theme.textSecondary },
                       ]}
                     >
-                      Select Provider
+                      Select Payment Provider
                     </Text>
-                    <ScrollView
-                      horizontal
-                      showsHorizontalScrollIndicator={false}
-                      contentContainerStyle={styles.providerScroll}
-                    >
-                      {['gcash', 'card', 'paymaya', 'grab_pay'].map((type) => (
-                        <Pressable
-                          key={type}
+                    <View style={styles.providerGrid}>
+                      {/* GCash Option */}
+                      <Pressable
+                        style={[
+                          styles.providerCard,
+                          {
+                            backgroundColor: theme.background,
+                            borderColor:
+                              paymentMethod === 'gcash'
+                                ? '#007DFE'
+                                : theme.border,
+                            borderWidth: paymentMethod === 'gcash' ? 2 : 1,
+                            opacity: paymentMethod === 'gcash' ? 1 : 0.7,
+                          },
+                        ]}
+                        onPress={() => setPaymentMethod('gcash')}
+                      >
+                        <Image
+                          source={require('@/assets/images/gcash.png')}
+                          style={styles.providerLogo}
+                          resizeMode="contain"
+                        />
+                        {paymentMethod === 'gcash' && (
+                          <View style={styles.providerCheckmark}>
+                            <Ionicons
+                              name="checkmark-circle"
+                              size={20}
+                              color="#007DFE"
+                            />
+                          </View>
+                        )}
+                      </Pressable>
+
+                      {/* PayMaya Option */}
+                      <Pressable
+                        style={[
+                          styles.providerCard,
+                          {
+                            backgroundColor: theme.background,
+                            borderColor:
+                              paymentMethod === 'paymaya'
+                                ? '#00C853'
+                                : theme.border,
+                            borderWidth: paymentMethod === 'paymaya' ? 2 : 1,
+                            opacity: paymentMethod === 'paymaya' ? 1 : 0.7,
+                          },
+                        ]}
+                        onPress={() => setPaymentMethod('paymaya')}
+                      >
+                        <Image
+                          source={require('@/assets/images/maya.jpg')}
+                          style={styles.providerLogo}
+                          resizeMode="contain"
+                        />
+                        {paymentMethod === 'paymaya' && (
+                          <View style={styles.providerCheckmark}>
+                            <Ionicons
+                              name="checkmark-circle"
+                              size={20}
+                              color="#00C853"
+                            />
+                          </View>
+                        )}
+                      </Pressable>
+
+                      {/* Credit/Debit Card Option */}
+                      <Pressable
+                        style={[
+                          styles.providerCard,
+                          {
+                            backgroundColor: theme.background,
+                            borderColor:
+                              paymentMethod === 'card'
+                                ? '#6366F1'
+                                : theme.border,
+                            borderWidth: paymentMethod === 'card' ? 2 : 1,
+                            opacity: paymentMethod === 'card' ? 1 : 0.7,
+                          },
+                        ]}
+                        onPress={() => setPaymentMethod('card')}
+                      >
+                        <View
                           style={[
-                            styles.providerChip,
+                            styles.providerIconBg,
                             {
-                              backgroundColor:
-                                paymentMethodType === type
-                                  ? theme.primary
-                                  : theme.background,
-                              borderColor:
-                                paymentMethodType === type
-                                  ? theme.primary
-                                  : theme.border,
+                              backgroundColor: '#EEF2FF',
+                              marginBottom: 4,
                             },
                           ]}
-                          onPress={() => setPaymentMethodType(type as any)}
                         >
+                          <Ionicons name="card" size={20} color="#6366F1" />
+                        </View>
+                        <Text
+                          style={[
+                            styles.providerCardTitle,
+                            {
+                              color: theme.text,
+                              fontSize: 10,
+                              textAlign: 'center',
+                            },
+                          ]}
+                        >
+                          Visa/Mastercard
+                        </Text>
+                        {paymentMethod === 'card' && (
+                          <View style={styles.providerCheckmark}>
+                            <Ionicons
+                              name="checkmark-circle"
+                              size={20}
+                              color="#6366F1"
+                            />
+                          </View>
+                        )}
+                      </Pressable>
+                    </View>
+
+                    {/* Inline Card Payment Form */}
+                    {paymentMethod === 'card' && (
+                      <View style={styles.cardFormSection}>
+                        <View
+                          style={[
+                            styles.divider,
+                            {
+                              backgroundColor: theme.border,
+                              marginVertical: 12,
+                            },
+                          ]}
+                        />
+
+                        <View style={styles.cardFormHeader}>
+                          <Ionicons
+                            name="lock-closed"
+                            size={14}
+                            color={theme.success}
+                          />
                           <Text
                             style={[
-                              styles.providerText,
+                              styles.cardFormSecureText,
+                              { color: theme.success },
+                            ]}
+                          >
+                            Secure Card Entry
+                          </Text>
+                        </View>
+
+                        {/* Card Number */}
+                        <View style={styles.cardFormGroup}>
+                          <Text
+                            style={[
+                              styles.cardFormLabel,
+                              { color: theme.textSecondary },
+                            ]}
+                          >
+                            Card Number
+                          </Text>
+                          <View
+                            style={[
+                              styles.cardInputContainer,
                               {
-                                color:
-                                  paymentMethodType === type
-                                    ? '#FFF'
-                                    : theme.text,
+                                backgroundColor: theme.background,
+                                borderColor: cardErrors.cardNumber
+                                  ? theme.error
+                                  : theme.border,
                               },
                             ]}
                           >
-                            {type === 'grab_pay'
-                              ? 'GrabPay'
-                              : type.charAt(0).toUpperCase() + type.slice(1)}
+                            <Ionicons
+                              name={
+                                cardBrand === 'visa'
+                                  ? 'card'
+                                  : cardBrand === 'mastercard'
+                                  ? 'card'
+                                  : 'card-outline'
+                              }
+                              size={20}
+                              color={theme.textSecondary}
+                              style={{ marginRight: 10 }}
+                            />
+                            <TextInput
+                              style={[styles.cardInput, { color: theme.text }]}
+                              placeholder="1234 5678 9012 3456"
+                              placeholderTextColor={theme.textSecondary}
+                              value={cardNumber}
+                              onChangeText={handleCardNumberChange}
+                              keyboardType="numeric"
+                              maxLength={19}
+                              returnKeyType="next"
+                            />
+                          </View>
+                          {cardErrors.cardNumber && (
+                            <Text
+                              style={[
+                                styles.cardErrorText,
+                                { color: theme.error },
+                              ]}
+                            >
+                              {cardErrors.cardNumber}
+                            </Text>
+                          )}
+                        </View>
+
+                        {/* Expiry and CVC Row */}
+                        <View style={styles.cardFormRow}>
+                          <View
+                            style={[
+                              styles.cardFormGroup,
+                              { flex: 1, marginRight: 8 },
+                            ]}
+                          >
+                            <Text
+                              style={[
+                                styles.cardFormLabel,
+                                { color: theme.textSecondary },
+                              ]}
+                            >
+                              Expiry
+                            </Text>
+                            <View style={styles.expiryContainer}>
+                              <TextInput
+                                ref={expMonthRef}
+                                style={[
+                                  styles.expiryInput,
+                                  {
+                                    backgroundColor: theme.background,
+                                    color: theme.text,
+                                    borderColor: cardErrors.expMonth
+                                      ? theme.error
+                                      : theme.border,
+                                  },
+                                ]}
+                                placeholder="MM"
+                                placeholderTextColor={theme.textSecondary}
+                                value={expMonth}
+                                onChangeText={handleExpMonthChange}
+                                keyboardType="numeric"
+                                maxLength={2}
+                              />
+                              <Text
+                                style={[
+                                  styles.expirySeparator,
+                                  { color: theme.textSecondary },
+                                ]}
+                              >
+                                /
+                              </Text>
+                              <TextInput
+                                ref={expYearRef}
+                                style={[
+                                  styles.expiryInput,
+                                  {
+                                    backgroundColor: theme.background,
+                                    color: theme.text,
+                                    borderColor: cardErrors.expYear
+                                      ? theme.error
+                                      : theme.border,
+                                  },
+                                ]}
+                                placeholder="YY"
+                                placeholderTextColor={theme.textSecondary}
+                                value={expYear}
+                                onChangeText={handleExpYearChange}
+                                keyboardType="numeric"
+                                maxLength={2}
+                              />
+                            </View>
+                            {(cardErrors.expMonth || cardErrors.expYear) && (
+                              <Text
+                                style={[
+                                  styles.cardErrorText,
+                                  { color: theme.error },
+                                ]}
+                              >
+                                {cardErrors.expMonth || cardErrors.expYear}
+                              </Text>
+                            )}
+                          </View>
+
+                          <View
+                            style={[
+                              styles.cardFormGroup,
+                              { flex: 1, marginLeft: 8 },
+                            ]}
+                          >
+                            <Text
+                              style={[
+                                styles.cardFormLabel,
+                                { color: theme.textSecondary },
+                              ]}
+                            >
+                              CVC
+                            </Text>
+                            <TextInput
+                              ref={cvcRef}
+                              style={[
+                                styles.cvcInput,
+                                {
+                                  backgroundColor: theme.background,
+                                  color: theme.text,
+                                  borderColor: cardErrors.cvc
+                                    ? theme.error
+                                    : theme.border,
+                                },
+                              ]}
+                              placeholder="123"
+                              placeholderTextColor={theme.textSecondary}
+                              value={cvc}
+                              onChangeText={handleCvcChange}
+                              keyboardType="numeric"
+                              maxLength={4}
+                              secureTextEntry
+                            />
+                            {cardErrors.cvc && (
+                              <Text
+                                style={[
+                                  styles.cardErrorText,
+                                  { color: theme.error },
+                                ]}
+                              >
+                                {cardErrors.cvc}
+                              </Text>
+                            )}
+                          </View>
+                        </View>
+
+                        {/* Cardholder Name */}
+                        <View style={styles.cardFormGroup}>
+                          <Text
+                            style={[
+                              styles.cardFormLabel,
+                              { color: theme.textSecondary },
+                            ]}
+                          >
+                            Cardholder Name
                           </Text>
-                        </Pressable>
-                      ))}
-                    </ScrollView>
+                          <TextInput
+                            style={[
+                              styles.cardTextInput,
+                              {
+                                backgroundColor: theme.background,
+                                color: theme.text,
+                                borderColor: theme.border,
+                              },
+                            ]}
+                            placeholder="Juan Dela Cruz"
+                            placeholderTextColor={theme.textSecondary}
+                            value={billingName}
+                            onChangeText={setBillingName}
+                            autoCapitalize="words"
+                          />
+                        </View>
+
+                        {/* Email */}
+                        <View style={styles.cardFormGroup}>
+                          <Text
+                            style={[
+                              styles.cardFormLabel,
+                              { color: theme.textSecondary },
+                            ]}
+                          >
+                            Email (for receipt)
+                          </Text>
+                          <TextInput
+                            style={[
+                              styles.cardTextInput,
+                              {
+                                backgroundColor: theme.background,
+                                color: theme.text,
+                                borderColor: theme.border,
+                              },
+                            ]}
+                            placeholder="email@example.com"
+                            placeholderTextColor={theme.textSecondary}
+                            value={billingEmail}
+                            onChangeText={setBillingEmail}
+                            keyboardType="email-address"
+                            autoCapitalize="none"
+                            autoCorrect={false}
+                          />
+                        </View>
+
+                        {/* Security Badge */}
+                        <View style={styles.cardSecurityBadge}>
+                          <Ionicons
+                            name="shield-checkmark"
+                            size={14}
+                            color={theme.success}
+                          />
+                          <Text
+                            style={[
+                              styles.cardSecurityText,
+                              { color: theme.success },
+                            ]}
+                          >
+                            256-bit SSL Encryption • PCI DSS Compliant
+                          </Text>
+                        </View>
+                      </View>
+                    )}
                   </View>
                 )}
               </Pressable>
 
-              {/* Billing Information - Only show for PayMongo */}
-              {paymentMethod === 'paymongo' && (
+              {/* Billing Information - Only show for GCash/PayMaya (Card collects on dedicated page) */}
+              {isOnlinePayment && paymentMethod !== 'card' && (
                 <View style={styles.billingSection}>
                   <View
-                    style={[styles.divider, { backgroundColor: theme.border, marginVertical: 16 }]}
+                    style={[
+                      styles.divider,
+                      { backgroundColor: theme.border, marginVertical: 16 },
+                    ]}
                   />
                   <Text
                     style={[
                       styles.cardTitle,
-                      { color: theme.text, fontSize: type.h4, marginBottom: 12 },
+                      {
+                        color: theme.text,
+                        fontSize: type.h4,
+                        marginBottom: 12,
+                      },
                     ]}
                   >
                     Billing Information
                   </Text>
                   <Text
-                    style={[styles.billingHint, { color: theme.textSecondary, marginBottom: 16 }]}
+                    style={[
+                      styles.billingHint,
+                      { color: theme.textSecondary, marginBottom: 16 },
+                    ]}
                   >
-                    Required for online payment processing
+                    Required for {paymentMethod === 'gcash' ? 'GCash' : 'Maya'}{' '}
+                    payment
                   </Text>
 
-                  <Text style={[styles.inputLabel, { color: theme.textSecondary }]}>
+                  <Text
+                    style={[styles.inputLabel, { color: theme.textSecondary }]}
+                  >
                     Full Name *
                   </Text>
                   <TextInput
@@ -1002,7 +1708,12 @@ const CheckoutScreen = () => {
                     autoCapitalize="words"
                   />
 
-                  <Text style={[styles.inputLabel, { color: theme.textSecondary, marginTop: 12 }]}>
+                  <Text
+                    style={[
+                      styles.inputLabel,
+                      { color: theme.textSecondary, marginTop: 12 },
+                    ]}
+                  >
                     Email Address *
                   </Text>
                   <TextInput
@@ -1023,7 +1734,12 @@ const CheckoutScreen = () => {
                     autoCorrect={false}
                   />
 
-                  <Text style={[styles.inputLabel, { color: theme.textSecondary, marginTop: 12 }]}>
+                  <Text
+                    style={[
+                      styles.inputLabel,
+                      { color: theme.textSecondary, marginTop: 12 },
+                    ]}
+                  >
                     Phone Number (Optional)
                   </Text>
                   <TextInput
@@ -1148,6 +1864,19 @@ const CheckoutScreen = () => {
           </View>
         </PageContainer>
       </KeyboardAvoidingView>
+
+      {/* Login Prompt Modal for guest users */}
+      <LoginPromptModal
+        visible={showLoginPrompt}
+        onClose={() => {
+          setShowLoginPrompt(false);
+          // Redirect to home when user closes the prompt
+          replace(Routes.tabs.home);
+        }}
+        actionName="complete checkout"
+        title="Login to Checkout"
+        message="Sign in to place your order and complete the checkout process."
+      />
     </>
   );
 };
@@ -1400,10 +2129,58 @@ const styles = StyleSheet.create({
     paddingBottom: 16,
   },
   subPaymentLabel: {
-    fontSize: 12,
+    fontSize: 13,
+    marginBottom: 12,
+    fontWeight: '600',
+  },
+  providerGrid: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  providerCard: {
+    flex: 1,
+    padding: 12,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    alignItems: 'center',
+    position: 'relative',
+  },
+  providerIconBg: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
     marginBottom: 8,
+  },
+  providerCardTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    marginBottom: 2,
+  },
+  providerCardSubtitle: {
+    fontSize: 11,
     fontWeight: '500',
   },
+  providerCheckmark: {
+    position: 'absolute',
+    top: 6,
+    right: 6,
+  },
+  cardPaymentNote: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 12,
+    padding: 10,
+    borderRadius: 8,
+  },
+  cardPaymentNoteText: {
+    fontSize: 12,
+    fontWeight: '500',
+    flex: 1,
+  },
+  // Legacy styles kept for compatibility
   providerScroll: {
     gap: 8,
   },
@@ -1504,6 +2281,95 @@ const styles = StyleSheet.create({
     padding: 12,
     fontSize: 14,
     height: 48,
+  },
+  providerLogo: {
+    width: '90%',
+    height: 32,
+  },
+  // Inline Card Form Styles
+  cardFormSection: {
+    marginTop: 4,
+  },
+  cardFormHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 12,
+  },
+  cardFormSecureText: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  cardFormGroup: {
+    marginBottom: 12,
+  },
+  cardFormLabel: {
+    fontSize: 13,
+    fontWeight: '500',
+    marginBottom: 6,
+  },
+  cardFormRow: {
+    flexDirection: 'row',
+  },
+  cardInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+  },
+  cardInput: {
+    flex: 1,
+    fontSize: 15,
+    paddingVertical: 12,
+    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
+  },
+  expiryContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  expiryInput: {
+    flex: 1,
+    borderWidth: 1,
+    borderRadius: 10,
+    padding: 12,
+    fontSize: 15,
+    textAlign: 'center',
+    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
+  },
+  expirySeparator: {
+    fontSize: 18,
+    marginHorizontal: 6,
+    fontWeight: '300',
+  },
+  cvcInput: {
+    borderWidth: 1,
+    borderRadius: 10,
+    padding: 12,
+    fontSize: 15,
+    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
+  },
+  cardTextInput: {
+    borderWidth: 1,
+    borderRadius: 10,
+    padding: 12,
+    fontSize: 14,
+  },
+  cardErrorText: {
+    fontSize: 11,
+    marginTop: 4,
+    fontWeight: '500',
+  },
+  cardSecurityBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 8,
+    gap: 6,
+  },
+  cardSecurityText: {
+    fontSize: 11,
+    fontWeight: '500',
   },
 });
 

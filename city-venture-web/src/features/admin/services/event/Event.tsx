@@ -6,8 +6,31 @@ import DynamicTab from "@/src/components/ui/DynamicTab";
 import Card from "@/src/components/Card";
 import NoDataFound from "@/src/components/NoDataFound";
 import { Refresh, MoreVert } from "@mui/icons-material";
-import { Input, Option, Select, Menu, MenuItem, Dropdown, MenuButton, ListItemDecorator, Chip } from "@mui/joy";
-import { Search, Edit, Eye, Trash2, ListChecks, Calendar, Music, Utensils, PartyPopper, Theater, Trophy, Heart } from "lucide-react";
+import {
+  Input,
+  Option,
+  Select,
+  Menu,
+  MenuItem,
+  Dropdown,
+  MenuButton,
+  ListItemDecorator,
+  Chip,
+} from "@mui/joy";
+import {
+  Search,
+  Edit,
+  Eye,
+  Trash2,
+  ListChecks,
+  Calendar,
+  Music,
+  Utensils,
+  PartyPopper,
+  Theater,
+  Trophy,
+  Heart,
+} from "lucide-react";
 import { useState, useEffect } from "react";
 import { getData } from "@/src/services/Service";
 import type { BusinessDetails } from "@/src/types/Business";
@@ -22,7 +45,7 @@ const Event: React.FC = () => {
   const [events, setEvents] = useState<BusinessDetails[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
-  
+
   // Category icon mapping for event types
   const categoryIcons: Record<number, React.ReactNode> = {
     26: <Calendar size={16} />,
@@ -51,20 +74,29 @@ const Event: React.FC = () => {
 
   // Get category name by ID
   const getCategoryName = (id: number): string => {
-    const cat = flatCategories.find(c => c.id === id);
+    const cat = flatCategories.find((c) => c.id === id);
     return cat?.title || `Category ${id}`;
   };
 
-  // Generate dynamic tabs based on available categories in events
+  // Find event parent categories and get their children for tabs
+  // Event categories include: festivals, sports-events, cultural-events
+  const eventParentAliases = ["festivals", "sports-events", "cultural-events"];
+  const eventCategories = categories.filter((cat) =>
+    eventParentAliases.includes(cat.alias || "")
+  );
+  const eventSubcategories = eventCategories.flatMap(
+    (cat) => cat.children || []
+  );
+
+  // Generate dynamic tabs based on database categories (not filtered data)
   const tabs = [
     { id: "all", label: "All", icon: <ListChecks size={16} /> },
-    ...Array.from(new Set(events.flatMap((event) => event.category_ids || [])))
-      .filter((categoryId) => categoryId !== undefined && categoryId !== null)
-      .sort((a, b) => a - b)
-      .map((categoryId) => ({
-        id: String(categoryId),
-        label: getCategoryName(categoryId),
-        icon: categoryIcons[categoryId] || <Calendar size={16} />,
+    ...eventSubcategories
+      .sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0))
+      .map((category) => ({
+        id: String(category.id),
+        label: category.title,
+        icon: categoryIcons[category.id] || <Calendar size={16} />,
       })),
   ];
 
@@ -110,7 +142,8 @@ const Event: React.FC = () => {
         : event.status?.toLowerCase() === "inactive";
 
     const matchesCategory =
-      activeTab === "all" || (event.category_ids || []).includes(parseInt(activeTab));
+      activeTab === "all" ||
+      (event.category_ids || []).includes(parseInt(activeTab));
 
     return matchesSearch && matchesStatus && matchesCategory;
   });
@@ -235,12 +268,16 @@ const Event: React.FC = () => {
                 title={event.business_name}
                 subtitle={
                   event.address ||
-                  `${event.barangay_name || ""}, ${event.municipality_name || ""}`
+                  `${event.barangay_name || ""}, ${
+                    event.municipality_name || ""
+                  }`
                 }
                 size="default"
                 elevation={2}
               >
-                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                <div
+                  style={{ display: "flex", alignItems: "center", gap: "8px" }}
+                >
                   <Chip
                     size="sm"
                     color={event.status === "active" ? "success" : "neutral"}

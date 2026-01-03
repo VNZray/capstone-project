@@ -30,8 +30,8 @@ export async function getFavoriteById(req, res) {
   try {
     const { id } = req.params;
     const [data] = await db.query("CALL GetFavoriteById(?)", [id]);
-    res.json(data); 
-    } catch (error) {   
+    res.json(data);
+    } catch (error) {
     return handleDbError(error, res);
   }
 }
@@ -45,7 +45,7 @@ export async function getFavoritesByTouristId(req, res) {
     res.json(Array.isArray(data[0]) ? data[0] : data);
   } catch (error) {
     return handleDbError(error, res);
-  }     
+  }
 }
 
 // Add a new favorite
@@ -77,7 +77,7 @@ export async function updateFavorite(req, res) {
     await db.query(
       `CALL UpdateFavorite(${placeholders})`,
       params
-    );  
+    );
     res.json({ message: "Favorite updated successfully" });
   } catch (error) {
     return handleDbError(error, res);
@@ -90,6 +90,52 @@ export async function deleteFavorite(req, res) {
     const { id } = req.params;
     await db.query("CALL DeleteFavoriteById(?)", [id]);
     res.json({ message: "Favorite deleted successfully" });
+  } catch (error) {
+    return handleDbError(error, res);
+  }
+}
+
+// Delete a favorite by tourist and item (alternative deletion method)
+export async function deleteFavoriteByItem(req, res) {
+  try {
+    const { tourist_id, favorite_type, my_favorite_id } = req.body;
+
+    if (!tourist_id || !favorite_type || !my_favorite_id) {
+      return res.status(400).json({
+        error: "Missing required fields: tourist_id, favorite_type, my_favorite_id"
+      });
+    }
+
+    await db.query(
+      "CALL DeleteFavoriteByItem(?, ?, ?)",
+      [tourist_id, favorite_type, my_favorite_id]
+    );
+    res.json({ message: "Favorite deleted successfully" });
+  } catch (error) {
+    return handleDbError(error, res);
+  }
+}
+
+// Check if a favorite exists
+export async function checkFavoriteExists(req, res) {
+  try {
+    const { tourist_id, favorite_type, my_favorite_id } = req.query;
+
+    if (!tourist_id || !favorite_type || !my_favorite_id) {
+      return res.status(400).json({
+        error: "Missing required query parameters: tourist_id, favorite_type, my_favorite_id"
+      });
+    }
+
+    const [data] = await db.query(
+      "CALL CheckFavoriteExists(?, ?, ?)",
+      [tourist_id, favorite_type, my_favorite_id]
+    );
+
+    const exists = data && data[0] && data[0].length > 0;
+    const favoriteId = exists ? data[0][0].id : null;
+
+    res.json({ exists, favoriteId });
   } catch (error) {
     return handleDbError(error, res);
   }

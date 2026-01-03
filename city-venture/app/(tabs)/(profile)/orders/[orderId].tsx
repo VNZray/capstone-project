@@ -1,7 +1,8 @@
 // See spec.md §4 - Tourist can track orders
 // See spec.md §5 - Order Status enums
+// See spec.md §8 - Real-time updates via Socket.IO
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -29,6 +30,13 @@ import Animated, {
   withSpring,
 } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
+import { AppHeader } from '@/components/header/AppHeader';
+import RefundRequestModal from '@/components/RefundRequestModal';
+import RefundStatusBadge from '@/components/RefundStatusBadge';
+import CustomerServicePrompt from '@/components/CustomerServicePrompt';
+import * as RefundService from '@/services/RefundService';
+import type { RefundEligibility, RefundRecord } from '@/services/RefundService';
+import { useOrderDetailSocket } from '@/hooks/useOrderDetailSocket';
 
 const ORDER_TIMELINE: OrderStatus[] = [
   'PENDING',
@@ -38,13 +46,16 @@ const ORDER_TIMELINE: OrderStatus[] = [
   'PICKED_UP',
 ];
 
-const STATUS_CONFIG: Record<string, { 
-  label: string; 
-  icon: keyof typeof Ionicons.glyphMap; 
-  color: string;
-  bgColor: string;
-  description: string;
-}> = {
+const STATUS_CONFIG: Record<
+  string,
+  {
+    label: string;
+    icon: keyof typeof Ionicons.glyphMap;
+    color: string;
+    bgColor: string;
+    description: string;
+  }
+> = {
   PENDING: {
     label: 'Pending',
     icon: 'time-outline',
@@ -94,6 +105,13 @@ const STATUS_CONFIG: Record<string, {
     bgColor: 'rgba(239, 68, 68, 0.1)',
     description: 'Cancelled by the shop',
   },
+  CANCELLED_BY_USER: {
+    label: 'Cancelled & Refunded',
+    icon: 'close-circle-outline',
+    color: '#10B981',
+    bgColor: 'rgba(16, 185, 129, 0.1)',
+    description: 'Order cancelled. Refund has been processed.',
+  },
   FAILED_PAYMENT: {
     label: 'Payment Failed',
     icon: 'card-outline',
@@ -113,6 +131,12 @@ const OrderDetailScreen = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [cancelling, setCancelling] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  
+  // Refund state
+  const [showRefundModal, setShowRefundModal] = useState(false);
+  const [refundEligibility, setRefundEligibility] = useState<RefundEligibility | null>(null);
+  const [refundRecords, setRefundRecords] = useState<RefundRecord[]>([]);
+  const [showCustomerServicePrompt, setShowCustomerServicePrompt] = useState(false);
 
   // Animation
   const headerScale = useSharedValue(0.9);
@@ -139,6 +163,15 @@ const OrderDetailScreen = () => {
       const data = await getOrderById(orderId);
       setOrder(data);
       headerScale.value = withSpring(1, { damping: 12 });
+      
+      // Fetch refund status for this order
+      try {
+        const refunds = await RefundService.getOrderRefundStatus(orderId);
+        setRefundRecords(refunds);
+      } catch (refundErr) {
+        // Silently fail - order may not have refunds
+        setRefundRecords([]);
+      }
     } catch (err: any) {
       console.error('[OrderDetail] Fetch error:', err);
       setError(err.message || 'Failed to load order details');
@@ -157,6 +190,43 @@ const OrderDetailScreen = () => {
     fetchOrder();
   }, [fetchOrder]);
 
+  // Real-time socket updates for order status and payment changes
+  // Debounce refresh to prevent multiple rapid fetches
+  const lastRefreshRef = useRef<number>(0);
+  const handleSocketRefresh = useCallback(() => {
+    const now = Date.now();
+    // Debounce: only refresh if at least 1 second has passed since last refresh
+    if (now - lastRefreshRef.current > 1000) {
+      lastRefreshRef.current = now;
+      console.log('[OrderDetail] 🔄 Socket triggered refresh');
+      fetchOrder();
+    }
+  }, [fetchOrder]);
+
+  const handleOrderSocketUpdate = useCallback((data: { id: string; status: string }) => {
+    console.log('[OrderDetail] 📡 Received order update via socket:', data);
+    // Provide haptic feedback for status changes
+    if (Platform.OS !== 'web' && data.status) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    }
+  }, []);
+
+  const handlePaymentSocketUpdate = useCallback((data: { status?: string; type?: string }) => {
+    console.log('[OrderDetail] 💳 Received payment update via socket:', data);
+    // Provide haptic feedback for refund completion
+    if (Platform.OS !== 'web' && (data.type === 'refund_update' || data.status === 'refunded')) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    }
+  }, []);
+
+  // Connect to socket for real-time updates
+  useOrderDetailSocket({
+    orderId,
+    onOrderUpdated: handleOrderSocketUpdate,
+    onPaymentUpdated: handlePaymentSocketUpdate,
+    onRefresh: handleSocketRefresh,
+  });
+
   const handleCancelOrder = async () => {
     if (!order) return;
 
@@ -172,10 +242,15 @@ const OrderDetailScreen = () => {
             try {
               setCancelling(true);
               if (Platform.OS !== 'web') {
-                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+                Haptics.notificationAsync(
+                  Haptics.NotificationFeedbackType.Warning
+                );
               }
               await cancelOrder(order.id);
-              Alert.alert('Order Cancelled', 'Your order has been cancelled successfully.');
+              Alert.alert(
+                'Order Cancelled',
+                'Your order has been cancelled successfully.'
+              );
               fetchOrder();
             } catch (err: any) {
               Alert.alert('Error', err.message || 'Failed to cancel order');
@@ -189,11 +264,52 @@ const OrderDetailScreen = () => {
   };
 
   const handleContactSupport = () => {
-    Linking.openURL('mailto:support@cityventure.com?subject=Order Support - ' + order?.order_number);
+    Linking.openURL(
+      'mailto:support@cityventure.com?subject=Order Support - ' +
+        order?.order_number
+    );
   };
 
   const handleCallStore = () => {
     Alert.alert('Contact Store', 'Store contact feature coming soon!');
+  };
+
+  const handleRequestRefund = async () => {
+    if (!order) return;
+
+    try {
+      // Check eligibility first
+      const eligibility = await RefundService.checkOrderRefundEligibility(order.id);
+      setRefundEligibility(eligibility);
+
+      if (eligibility.requiresCustomerService) {
+        setShowCustomerServicePrompt(true);
+      } else if (eligibility.eligible || eligibility.canCancel) {
+        setShowRefundModal(true);
+      } else {
+        Alert.alert(
+          'Cannot Process Request',
+          eligibility.reason || 'This order is not eligible for refund or cancellation.'
+        );
+      }
+    } catch (err: any) {
+      console.error('[OrderDetail] Refund eligibility check failed:', err);
+      Alert.alert('Error', err.message || 'Failed to check refund eligibility');
+    }
+  };
+
+  const handleRefundSuccess = (result: any) => {
+    setShowRefundModal(false);
+    Alert.alert(
+      'Request Submitted',
+      result.message || 'Your request has been submitted successfully.',
+      [
+        {
+          text: 'OK',
+          onPress: () => fetchOrder(),
+        },
+      ]
+    );
   };
 
   const handleGoBack = () => {
@@ -233,18 +349,51 @@ const OrderDetailScreen = () => {
     if (method === 'cash_on_pickup') {
       return { label: 'Cash on Pickup', icon: 'cash-outline' as const };
     }
-    if (methodType === 'gcash') return { label: 'GCash', icon: 'wallet-outline' as const };
-    if (methodType === 'paymaya') return { label: 'PayMaya', icon: 'wallet-outline' as const };
-    if (methodType === 'grab_pay') return { label: 'GrabPay', icon: 'wallet-outline' as const };
-    if (methodType === 'card') return { label: 'Card', icon: 'card-outline' as const };
+    if (methodType === 'gcash')
+      return { label: 'GCash', icon: 'wallet-outline' as const };
+    if (methodType === 'paymaya')
+      return { label: 'PayMaya', icon: 'wallet-outline' as const };
+    if (methodType === 'grab_pay')
+      return { label: 'GrabPay', icon: 'wallet-outline' as const };
+    if (methodType === 'card')
+      return { label: 'Card', icon: 'card-outline' as const };
     return { label: 'Online Payment', icon: 'card-outline' as const };
   };
 
-  // Check if order is cancellable
-  const isCancellable = order?.status === 'PENDING';
+  // Normalize status for comparison (backend may return lowercase)
+  const normalizedStatus = order?.status?.toUpperCase();
+  const normalizedPaymentMethod = order?.payment_method?.toLowerCase();
+
+  // Debug: Log order data to verify values
+  console.log('[OrderDetail] Order status:', order?.status, '-> normalized:', normalizedStatus);
+  console.log('[OrderDetail] Payment method:', order?.payment_method, '-> normalized:', normalizedPaymentMethod);
+
+  // Check if order is cancellable (cash on pickup, pending)
+  const isCancellable = normalizedStatus === 'PENDING' && normalizedPaymentMethod === 'cash_on_pickup';
+
+  // Check if order is refundable (paid online, pending)
+  const isRefundable = normalizedStatus === 'PENDING' && normalizedPaymentMethod !== 'cash_on_pickup';
+
+  console.log('[OrderDetail] isCancellable:', isCancellable, 'isRefundable:', isRefundable);
+
+  // Check if there's a pending refund
+  const hasPendingRefund = refundRecords.some(
+    (r) => r.status === 'pending' || r.status === 'processing'
+  );
+
+  // Check if order has been refunded
+  const hasCompletedRefund = refundRecords.some((r) => r.status === 'succeeded');
 
   // Check if order is active (not completed/cancelled)
-  const isActiveOrder = order?.status && !['PICKED_UP', 'CANCELLED', 'CANCELLED_BY_BUSINESS', 'FAILED_PAYMENT'].includes(order.status);
+  const isActiveOrder =
+    normalizedStatus &&
+    ![
+      'PICKED_UP',
+      'CANCELLED',
+      'CANCELLED_BY_USER',
+      'CANCELLED_BY_BUSINESS',
+      'FAILED_PAYMENT',
+    ].includes(normalizedStatus);
 
   // Animated styles
   const headerAnimatedStyle = useAnimatedStyle(() => ({
@@ -255,13 +404,18 @@ const OrderDetailScreen = () => {
   const renderTimeline = () => {
     if (!order) return null;
 
-    const currentStatusIndex = ORDER_TIMELINE.indexOf(order.status as OrderStatus);
-    const isCancelled = order.status.includes('CANCELLED') || order.status === 'FAILED_PAYMENT';
+    const currentStatusIndex = ORDER_TIMELINE.indexOf(
+      order.status as OrderStatus
+    );
+    const isCancelled =
+      order.status.includes('CANCELLED') || order.status === 'FAILED_PAYMENT';
 
     if (isCancelled) {
       const config = getStatusConfig(order.status);
       return (
-        <View style={[styles.cancelledBanner, { backgroundColor: config.bgColor }]}>
+        <View
+          style={[styles.cancelledBanner, { backgroundColor: config.bgColor }]}
+        >
           <Ionicons name={config.icon} size={24} color={config.color} />
           <View style={{ marginLeft: 12, flex: 1 }}>
             <Text style={[styles.cancelledTitle, { color: config.color }]}>
@@ -290,14 +444,15 @@ const OrderDetailScreen = () => {
                   style={[
                     styles.timelineConnector,
                     {
-                      backgroundColor: isCompleted || isCurrent
-                        ? palette.primary
-                        : palette.border,
+                      backgroundColor:
+                        isCompleted || isCurrent
+                          ? palette.primary
+                          : palette.border,
                     },
                   ]}
                 />
               )}
-              
+
               {/* Step Icon */}
               <View
                 style={[
@@ -309,7 +464,9 @@ const OrderDetailScreen = () => {
                       ? palette.primary
                       : palette.border,
                     borderWidth: isCurrent ? 3 : 0,
-                    borderColor: isCurrent ? `${config.color}30` : 'transparent',
+                    borderColor: isCurrent
+                      ? `${config.color}30`
+                      : 'transparent',
                   },
                 ]}
               >
@@ -326,7 +483,11 @@ const OrderDetailScreen = () => {
                   style={[
                     styles.timelineLabel,
                     {
-                      color: isCurrent ? config.color : isCompleted ? palette.text : palette.subText,
+                      color: isCurrent
+                        ? config.color
+                        : isCompleted
+                        ? palette.text
+                        : palette.subText,
                       fontWeight: isCurrent ? '700' : '500',
                     },
                   ]}
@@ -334,7 +495,9 @@ const OrderDetailScreen = () => {
                   {config.label}
                 </Text>
                 {isCurrent && (
-                  <Text style={[styles.timelineDesc, { color: palette.subText }]}>
+                  <Text
+                    style={[styles.timelineDesc, { color: palette.subText }]}
+                  >
                     {config.description}
                   </Text>
                 )}
@@ -349,18 +512,10 @@ const OrderDetailScreen = () => {
   if (loading) {
     return (
       <>
-        <Stack.Screen
-          options={{
-            headerShown: true,
-            title: 'Order Details',
-            headerBackTitle: 'Orders',
-            headerStyle: { backgroundColor: palette.bg },
-            headerTintColor: palette.text,
-            headerShadowVisible: false,
-          }}
-        />
         <PageContainer>
-          <View style={[styles.loadingContainer, { backgroundColor: palette.bg }]}>
+          <View
+            style={[styles.loadingContainer, { backgroundColor: palette.bg }]}
+          >
             <ActivityIndicator size="large" color={palette.primary} />
             <Text style={[styles.loadingText, { color: palette.subText }]}>
               Loading order...
@@ -374,20 +529,21 @@ const OrderDetailScreen = () => {
   if (error || !order) {
     return (
       <>
-        <Stack.Screen
-          options={{
-            headerShown: true,
-            title: 'Order Details',
-            headerBackTitle: 'Orders',
-            headerStyle: { backgroundColor: palette.bg },
-            headerTintColor: palette.text,
-            headerShadowVisible: false,
-          }}
-        />
         <PageContainer>
-          <View style={[styles.errorContainer, { backgroundColor: palette.bg }]}>
-            <View style={[styles.errorIconContainer, { backgroundColor: palette.error + '15' }]}>
-              <Ionicons name="alert-circle-outline" size={48} color={palette.error} />
+          <View
+            style={[styles.errorContainer, { backgroundColor: palette.bg }]}
+          >
+            <View
+              style={[
+                styles.errorIconContainer,
+                { backgroundColor: palette.error + '15' },
+              ]}
+            >
+              <Ionicons
+                name="alert-circle-outline"
+                size={48}
+                color={palette.error}
+              />
             </View>
             <Text style={[styles.errorTitle, { color: palette.text }]}>
               {error || 'Order not found'}
@@ -397,17 +553,28 @@ const OrderDetailScreen = () => {
             </Text>
             <View style={styles.errorActions}>
               <Pressable
-                style={[styles.errorButton, { backgroundColor: palette.primary }]}
+                style={[
+                  styles.errorButton,
+                  { backgroundColor: palette.primary },
+                ]}
                 onPress={fetchOrder}
               >
                 <Ionicons name="refresh-outline" size={20} color="#FFF" />
                 <Text style={styles.errorButtonText}>Try Again</Text>
               </Pressable>
               <Pressable
-                style={[styles.errorButtonOutline, { borderColor: palette.border }]}
+                style={[
+                  styles.errorButtonOutline,
+                  { borderColor: palette.border },
+                ]}
                 onPress={handleGoBack}
               >
-                <Text style={[styles.errorButtonOutlineText, { color: palette.text }]}>
+                <Text
+                  style={[
+                    styles.errorButtonOutlineText,
+                    { color: palette.text },
+                  ]}
+                >
                   Go Back
                 </Text>
               </Pressable>
@@ -419,32 +586,23 @@ const OrderDetailScreen = () => {
   }
 
   const statusConfig = getStatusConfig(order.status);
-  const paymentDisplay = getPaymentMethodDisplay(order.payment_method, (order as any).payment_method_type);
+  const paymentDisplay = getPaymentMethodDisplay(
+    order.payment_method,
+    (order as any).payment_method_type
+  );
 
   return (
     <>
-      <Stack.Screen
-        options={{
-          headerShown: true,
-          title: `#${order.order_number}`,
-          headerBackTitle: 'Orders',
-          headerStyle: { backgroundColor: palette.bg },
-          headerTintColor: palette.text,
-          headerShadowVisible: false,
-          headerRight: () => (
-            <TouchableOpacity
-              onPress={handleRefresh}
-              style={styles.headerRefreshButton}
-              disabled={refreshing}
-            >
-              {refreshing ? (
-                <ActivityIndicator size="small" color={palette.primary} />
-              ) : (
-                <Ionicons name="refresh-outline" size={22} color={palette.primary} />
-              )}
-            </TouchableOpacity>
-          ),
-        }}
+      <AppHeader
+        backButton
+        title={`#${order?.order_number}`}
+        background="primary"
+        headerBackTitle="Orders"
+        rightComponent={
+          <Pressable onPress={fetchOrder}>
+            <Ionicons name="refresh" size={24} color="white" />
+          </Pressable>
+        }
       />
       <PageContainer>
         <View style={[styles.container, { backgroundColor: palette.bg }]}>
@@ -461,46 +619,66 @@ const OrderDetailScreen = () => {
             }
           >
             {/* Status Card */}
-            <Animated.View 
+            <Animated.View
               entering={FadeInDown.delay(100).springify()}
-              style={[styles.statusCard, { backgroundColor: statusConfig.bgColor }]}
+              style={[
+                styles.statusCard,
+                { backgroundColor: statusConfig.bgColor },
+              ]}
             >
               <Animated.View style={headerAnimatedStyle}>
-                <View style={[styles.statusIconLarge, { backgroundColor: statusConfig.color }]}>
+                <View
+                  style={[
+                    styles.statusIconLarge,
+                    { backgroundColor: statusConfig.color },
+                  ]}
+                >
                   <Ionicons name={statusConfig.icon} size={32} color="#FFF" />
                 </View>
               </Animated.View>
               <Text style={[styles.statusTitle, { color: statusConfig.color }]}>
                 {statusConfig.label}
               </Text>
-              <Text style={[styles.statusDescription, { color: palette.subText }]}>
+              <Text
+                style={[styles.statusDescription, { color: palette.subText }]}
+              >
                 {statusConfig.description}
               </Text>
             </Animated.View>
 
             {/* Pickup Code - Show for active orders */}
             {isActiveOrder && order.arrival_code && (
-              <Animated.View 
+              <Animated.View
                 entering={FadeInDown.delay(200).springify()}
                 style={[styles.card, { backgroundColor: palette.card }]}
               >
                 <View style={styles.pickupCodeHeader}>
-                  <Ionicons name="qr-code-outline" size={20} color={palette.primary} />
-                  <Text style={[styles.pickupCodeLabel, { color: palette.subText }]}>
+                  <Ionicons
+                    name="qr-code-outline"
+                    size={20}
+                    color={palette.primary}
+                  />
+                  <Text
+                    style={[styles.pickupCodeLabel, { color: palette.subText }]}
+                  >
                     Pickup Code
                   </Text>
                 </View>
-                <Text style={[styles.pickupCodeValue, { color: palette.primary }]}>
+                <Text
+                  style={[styles.pickupCodeValue, { color: palette.primary }]}
+                >
                   {order.arrival_code}
                 </Text>
-                <Text style={[styles.pickupCodeHint, { color: palette.subText }]}>
+                <Text
+                  style={[styles.pickupCodeHint, { color: palette.subText }]}
+                >
                   Show this code when collecting your order
                 </Text>
               </Animated.View>
             )}
 
             {/* Timeline */}
-            <Animated.View 
+            <Animated.View
               entering={FadeInDown.delay(300).springify()}
               style={[styles.card, { backgroundColor: palette.card }]}
             >
@@ -511,45 +689,78 @@ const OrderDetailScreen = () => {
             </Animated.View>
 
             {/* Store Info */}
-            <Animated.View 
+            <Animated.View
               entering={FadeInDown.delay(400).springify()}
               style={[styles.card, { backgroundColor: palette.card }]}
             >
               <View style={styles.storeHeader}>
-                <View style={[styles.storeIcon, { backgroundColor: palette.primaryLight }]}>
-                  <Ionicons name="storefront" size={24} color={palette.primary} />
+                <View
+                  style={[
+                    styles.storeIcon,
+                    { backgroundColor: palette.primaryLight },
+                  ]}
+                >
+                  <Ionicons
+                    name="storefront"
+                    size={24}
+                    color={palette.primary}
+                  />
                 </View>
                 <View style={styles.storeInfo}>
                   <Text style={[styles.storeName, { color: palette.text }]}>
                     {order.business_name || 'Store'}
                   </Text>
-                  <Text style={[styles.storeAddress, { color: palette.subText }]}>
+                  <Text
+                    style={[styles.storeAddress, { color: palette.subText }]}
+                  >
                     Pickup Location
                   </Text>
                 </View>
               </View>
-              
+
               {/* Quick Actions */}
               <View style={styles.storeActions}>
-                <Pressable 
-                  style={[styles.storeActionButton, { backgroundColor: palette.bg }]}
+                <Pressable
+                  style={[
+                    styles.storeActionButton,
+                    { backgroundColor: palette.bg },
+                  ]}
                   onPress={handleCallStore}
                 >
-                  <Ionicons name="call-outline" size={18} color={palette.primary} />
-                  <Text style={[styles.storeActionText, { color: palette.primary }]}>Call</Text>
+                  <Ionicons
+                    name="call-outline"
+                    size={18}
+                    color={palette.primary}
+                  />
+                  <Text
+                    style={[styles.storeActionText, { color: palette.primary }]}
+                  >
+                    Call
+                  </Text>
                 </Pressable>
-                <Pressable 
-                  style={[styles.storeActionButton, { backgroundColor: palette.bg }]}
+                <Pressable
+                  style={[
+                    styles.storeActionButton,
+                    { backgroundColor: palette.bg },
+                  ]}
                   onPress={handleContactSupport}
                 >
-                  <Ionicons name="chatbubble-outline" size={18} color={palette.primary} />
-                  <Text style={[styles.storeActionText, { color: palette.primary }]}>Support</Text>
+                  <Ionicons
+                    name="chatbubble-outline"
+                    size={18}
+                    color={palette.primary}
+                  />
+                  <Text
+                    style={[styles.storeActionText, { color: palette.primary }]}
+                  >
+                    Support
+                  </Text>
                 </Pressable>
               </View>
             </Animated.View>
 
             {/* Order Items */}
-            <Animated.View 
+            <Animated.View
               entering={FadeInDown.delay(500).springify()}
               style={[styles.card, { backgroundColor: palette.card }]}
             >
@@ -567,17 +778,30 @@ const OrderDetailScreen = () => {
                     },
                   ]}
                 >
-                  <View style={[styles.itemQty, { backgroundColor: palette.primaryLight }]}>
-                    <Text style={[styles.itemQtyText, { color: palette.primary }]}>
+                  <View
+                    style={[
+                      styles.itemQty,
+                      { backgroundColor: palette.primaryLight },
+                    ]}
+                  >
+                    <Text
+                      style={[styles.itemQtyText, { color: palette.primary }]}
+                    >
                       {item.quantity}x
                     </Text>
                   </View>
                   <View style={styles.itemDetails}>
-                    <Text style={[styles.itemName, { color: palette.text }]} numberOfLines={2}>
+                    <Text
+                      style={[styles.itemName, { color: palette.text }]}
+                      numberOfLines={2}
+                    >
                       {item.product_name}
                     </Text>
                     {item.special_requests && (
-                      <Text style={[styles.itemNote, { color: palette.subText }]} numberOfLines={1}>
+                      <Text
+                        style={[styles.itemNote, { color: palette.subText }]}
+                        numberOfLines={1}
+                      >
                         Note: {item.special_requests}
                       </Text>
                     )}
@@ -590,51 +814,84 @@ const OrderDetailScreen = () => {
             </Animated.View>
 
             {/* Payment Summary */}
-            <Animated.View 
+            <Animated.View
               entering={FadeInDown.delay(600).springify()}
               style={[styles.card, { backgroundColor: palette.card }]}
             >
               <Text style={[styles.cardTitle, { color: palette.text }]}>
                 Payment Summary
               </Text>
-              
+
               <View style={styles.summaryRow}>
-                <Text style={[styles.summaryLabel, { color: palette.subText }]}>Subtotal</Text>
+                <Text style={[styles.summaryLabel, { color: palette.subText }]}>
+                  Subtotal
+                </Text>
                 <Text style={[styles.summaryValue, { color: palette.text }]}>
                   ₱{(order.total_amount || 0).toFixed(2)}
                 </Text>
               </View>
-              
+
               <View style={styles.summaryRow}>
-                <Text style={[styles.summaryLabel, { color: palette.subText }]}>Discount</Text>
+                <Text style={[styles.summaryLabel, { color: palette.subText }]}>
+                  Discount
+                </Text>
                 <Text style={[styles.summaryValue, { color: palette.success }]}>
                   -₱0.00
                 </Text>
               </View>
 
-              <View style={[styles.divider, { backgroundColor: palette.border }]} />
+              <View
+                style={[styles.divider, { backgroundColor: palette.border }]}
+              />
 
               <View style={styles.totalRow}>
-                <Text style={[styles.totalLabel, { color: palette.text }]}>Total</Text>
+                <Text style={[styles.totalLabel, { color: palette.text }]}>
+                  Total
+                </Text>
                 <Text style={[styles.totalValue, { color: palette.primary }]}>
                   ₱{(order.total_amount || 0).toFixed(2)}
                 </Text>
               </View>
 
               {/* Payment Method */}
-              <View style={[styles.paymentMethodRow, { backgroundColor: palette.bg }]}>
-                <Ionicons name={paymentDisplay.icon} size={20} color={palette.subText} />
-                <Text style={[styles.paymentMethodText, { color: palette.text }]}>
+              <View
+                style={[
+                  styles.paymentMethodRow,
+                  { backgroundColor: palette.bg },
+                ]}
+              >
+                <Ionicons
+                  name={paymentDisplay.icon}
+                  size={20}
+                  color={palette.subText}
+                />
+                <Text
+                  style={[styles.paymentMethodText, { color: palette.text }]}
+                >
                   {paymentDisplay.label}
                 </Text>
-                <View style={[
-                  styles.paymentStatusBadge,
-                  { backgroundColor: order.payment_status === 'PAID' ? palette.success + '15' : palette.warning + '15' }
-                ]}>
-                  <Text style={[
-                    styles.paymentStatusText,
-                    { color: order.payment_status === 'PAID' ? palette.success : palette.warning }
-                  ]}>
+                <View
+                  style={[
+                    styles.paymentStatusBadge,
+                    {
+                      backgroundColor:
+                        order.payment_status === 'PAID'
+                          ? palette.success + '15'
+                          : palette.warning + '15',
+                    },
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.paymentStatusText,
+                      {
+                        color:
+                          order.payment_status === 'PAID'
+                            ? palette.success
+                            : palette.warning,
+                      },
+                    ]}
+                  >
                     {order.payment_status === 'PAID' ? 'Paid' : 'Pending'}
                   </Text>
                 </View>
@@ -642,45 +899,73 @@ const OrderDetailScreen = () => {
             </Animated.View>
 
             {/* Order Info */}
-            <Animated.View 
+            <Animated.View
               entering={FadeInDown.delay(700).springify()}
               style={[styles.card, { backgroundColor: palette.card }]}
             >
               <Text style={[styles.cardTitle, { color: palette.text }]}>
                 Order Information
               </Text>
-              
+
               <View style={styles.infoRow}>
-                <View style={[styles.infoIcon, { backgroundColor: palette.bg }]}>
-                  <Ionicons name="calendar-outline" size={16} color={palette.primary} />
+                <View
+                  style={[styles.infoIcon, { backgroundColor: palette.bg }]}
+                >
+                  <Ionicons
+                    name="calendar-outline"
+                    size={16}
+                    color={palette.primary}
+                  />
                 </View>
                 <View style={styles.infoContent}>
-                  <Text style={[styles.infoLabel, { color: palette.subText }]}>Order Placed</Text>
+                  <Text style={[styles.infoLabel, { color: palette.subText }]}>
+                    Order Placed
+                  </Text>
                   <Text style={[styles.infoValue, { color: palette.text }]}>
-                    {formatDate(order.created_at)} at {formatTime(order.created_at)}
+                    {formatDate(order.created_at)} at{' '}
+                    {formatTime(order.created_at)}
                   </Text>
                 </View>
               </View>
 
               <View style={styles.infoRow}>
-                <View style={[styles.infoIcon, { backgroundColor: palette.bg }]}>
-                  <Ionicons name="time-outline" size={16} color={palette.primary} />
+                <View
+                  style={[styles.infoIcon, { backgroundColor: palette.bg }]}
+                >
+                  <Ionicons
+                    name="time-outline"
+                    size={16}
+                    color={palette.primary}
+                  />
                 </View>
                 <View style={styles.infoContent}>
-                  <Text style={[styles.infoLabel, { color: palette.subText }]}>Pickup Time</Text>
+                  <Text style={[styles.infoLabel, { color: palette.subText }]}>
+                    Pickup Time
+                  </Text>
                   <Text style={[styles.infoValue, { color: palette.text }]}>
-                    {formatDate(order.pickup_datetime)} at {formatTime(order.pickup_datetime)}
+                    {formatDate(order.pickup_datetime)} at{' '}
+                    {formatTime(order.pickup_datetime)}
                   </Text>
                 </View>
               </View>
 
               {order.special_instructions && (
                 <View style={styles.infoRow}>
-                  <View style={[styles.infoIcon, { backgroundColor: palette.bg }]}>
-                    <Ionicons name="document-text-outline" size={16} color={palette.primary} />
+                  <View
+                    style={[styles.infoIcon, { backgroundColor: palette.bg }]}
+                  >
+                    <Ionicons
+                      name="document-text-outline"
+                      size={16}
+                      color={palette.primary}
+                    />
                   </View>
                   <View style={styles.infoContent}>
-                    <Text style={[styles.infoLabel, { color: palette.subText }]}>Special Instructions</Text>
+                    <Text
+                      style={[styles.infoLabel, { color: palette.subText }]}
+                    >
+                      Special Instructions
+                    </Text>
                     <Text style={[styles.infoValue, { color: palette.text }]}>
                       {order.special_instructions}
                     </Text>
@@ -689,33 +974,96 @@ const OrderDetailScreen = () => {
               )}
             </Animated.View>
 
-            {/* Cancel Button */}
-            {isCancellable && (
-              <Animated.View 
+            {/* Refund Status Badge - Show if there's any refund activity */}
+            {refundRecords.length > 0 && (
+              <Animated.View
+                entering={FadeInDown.delay(750).springify()}
+                style={[styles.card, { backgroundColor: palette.card }]}
+              >
+                <Text style={[styles.cardTitle, { color: palette.text }]}>
+                  Refund Status
+                </Text>
+                {refundRecords.map((refund) => (
+                  <RefundStatusBadge
+                    key={refund.id}
+                    status={refund.status}
+                    amount={refund.amount}
+                  />
+                ))}
+              </Animated.View>
+            )}
+
+            {/* Refund/Cancel Actions - Show for eligible pending orders */}
+            {(isRefundable || isCancellable) && !hasPendingRefund && !hasCompletedRefund && (
+              <Animated.View
                 entering={FadeInDown.delay(800).springify()}
                 style={[styles.actionCard, { backgroundColor: palette.card }]}
               >
-                <Pressable
-                  style={[styles.cancelButton, { borderColor: palette.error }]}
-                  onPress={handleCancelOrder}
-                  disabled={cancelling}
-                >
-                  {cancelling ? (
-                    <ActivityIndicator color={palette.error} />
-                  ) : (
-                    <>
-                      <Ionicons name="close-circle-outline" size={20} color={palette.error} />
-                      <Text style={[styles.cancelButtonText, { color: palette.error }]}>
-                        Cancel Order
-                      </Text>
-                    </>
-                  )}
-                </Pressable>
+                {isRefundable ? (
+                  <Pressable
+                    style={[styles.refundButton, { backgroundColor: palette.warning + '15', borderColor: palette.warning }]}
+                    onPress={handleRequestRefund}
+                  >
+                    <Ionicons
+                      name="refresh-circle-outline"
+                      size={20}
+                      color={palette.warning}
+                    />
+                    <Text
+                      style={[
+                        styles.refundButtonText,
+                        { color: palette.warning },
+                      ]}
+                    >
+                      Request Refund
+                    </Text>
+                  </Pressable>
+                ) : isCancellable ? (
+                  <Pressable
+                    style={[styles.cancelButton, { borderColor: palette.error }]}
+                    onPress={handleCancelOrder}
+                    disabled={cancelling}
+                  >
+                    {cancelling ? (
+                      <ActivityIndicator color={palette.error} />
+                    ) : (
+                      <>
+                        <Ionicons
+                          name="close-circle-outline"
+                          size={20}
+                          color={palette.error}
+                        />
+                        <Text
+                          style={[
+                            styles.cancelButtonText,
+                            { color: palette.error },
+                          ]}
+                        >
+                          Cancel Order
+                        </Text>
+                      </>
+                    )}
+                  </Pressable>
+                ) : null}
+              </Animated.View>
+            )}
+
+            {/* Customer Service Prompt for non-pending orders */}
+            {showCustomerServicePrompt && (
+              <Animated.View
+                entering={FadeInDown.delay(800).springify()}
+                style={styles.customerServiceContainer}
+              >
+                <CustomerServicePrompt
+                  reason={refundEligibility?.reason || 'This order cannot be refunded through the app.'}
+                  onClose={() => setShowCustomerServicePrompt(false)}
+                  showContactButton={true}
+                />
               </Animated.View>
             )}
 
             {/* Help Section */}
-            <Animated.View 
+            <Animated.View
               entering={FadeInDown.delay(900).springify()}
               style={[styles.card, { backgroundColor: palette.card }]}
             >
@@ -723,11 +1071,21 @@ const OrderDetailScreen = () => {
                 style={styles.helpButton}
                 onPress={handleContactSupport}
               >
-                <Ionicons name="help-circle-outline" size={20} color={palette.primary} />
-                <Text style={[styles.helpButtonText, { color: palette.primary }]}>
+                <Ionicons
+                  name="help-circle-outline"
+                  size={20}
+                  color={palette.primary}
+                />
+                <Text
+                  style={[styles.helpButtonText, { color: palette.primary }]}
+                >
                   Need Help with this Order?
                 </Text>
-                <Ionicons name="chevron-forward" size={16} color={palette.subText} />
+                <Ionicons
+                  name="chevron-forward"
+                  size={16}
+                  color={palette.subText}
+                />
               </Pressable>
             </Animated.View>
 
@@ -735,6 +1093,14 @@ const OrderDetailScreen = () => {
           </ScrollView>
         </View>
       </PageContainer>
+
+      {/* Refund Request Modal */}
+      <RefundRequestModal
+        visible={showRefundModal}
+        orderId={orderId || ''}
+        onClose={() => setShowRefundModal(false)}
+        onSuccess={handleRefundSuccess}
+      />
     </>
   );
 };
@@ -1083,6 +1449,22 @@ const styles = StyleSheet.create({
   cancelButtonText: {
     fontSize: 16,
     fontWeight: '600',
+  },
+  refundButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 16,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    gap: 8,
+  },
+  refundButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  customerServiceContainer: {
+    marginHorizontal: -16,
   },
   helpButton: {
     flexDirection: 'row',

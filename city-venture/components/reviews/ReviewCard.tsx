@@ -7,6 +7,7 @@ import { Ionicons } from '@expo/vector-icons';
 import React, { useState } from 'react';
 import {
   Alert,
+  Dimensions,
   Image,
   Modal,
   Pressable,
@@ -17,6 +18,8 @@ import {
 import { format, isValid, parseISO } from 'date-fns';
 import Chip from '../Chip';
 import { useAccommodation } from '@/context/AccommodationContext';
+
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 const formatDate = (dateString?: string): string => {
   if (!dateString) return 'Date unknown';
@@ -54,8 +57,21 @@ const ReviewCard = ({
   const scheme = useColorScheme();
   const isDark = scheme === 'dark';
   const [showMenu, setShowMenu] = useState(false);
-  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(
+    null
+  );
+  const [isGalleryOpen, setIsGalleryOpen] = useState(false);
   const { accommodationDetails } = useAccommodation();
+
+  const openGallery = (index: number) => {
+    setSelectedImageIndex(index);
+    setIsGalleryOpen(true);
+  };
+
+  const closeGallery = () => {
+    setIsGalleryOpen(false);
+    setSelectedImageIndex(null);
+  };
 
   // Check if this review belongs to the current user
   // Compare tourist_id with currentUserId since user.id is the tourist_id
@@ -204,11 +220,8 @@ const ReviewCard = ({
         {review.photos && review.photos.length > 0 && (
           <View style={styles.imagesContainer}>
             <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-              {review.photos.map((photo) => (
-                <Pressable
-                  key={photo.id}
-                  onPress={() => setSelectedImage(photo.photo_url)}
-                >
+              {review.photos.map((photo, index) => (
+                <Pressable key={photo.id} onPress={() => openGallery(index)}>
                   <Image
                     source={{ uri: photo.photo_url }}
                     style={styles.reviewImage}
@@ -217,6 +230,18 @@ const ReviewCard = ({
                 </Pressable>
               ))}
             </ScrollView>
+            {/* Photo count badge */}
+            {review.photos.length > 1 && (
+              <View style={styles.photoCountBadge}>
+                <Ionicons name="images-outline" size={12} color="#fff" />
+                <ThemedText
+                  type="body-extra-small"
+                  style={styles.photoCountText}
+                >
+                  {review.photos.length}
+                </ThemedText>
+              </View>
+            )}
           </View>
         )}
 
@@ -319,29 +344,87 @@ const ReviewCard = ({
         </Pressable>
       </Modal>
 
-      {/* Image Preview Modal */}
+      {/* Image Gallery Modal */}
       <Modal
-        visible={!!selectedImage}
+        visible={isGalleryOpen}
         transparent
         animationType="fade"
-        onRequestClose={() => setSelectedImage(null)}
+        onRequestClose={closeGallery}
       >
-        <Pressable
-          style={styles.imageModalOverlay}
-          onPress={() => setSelectedImage(null)}
-        >
-          <Image
-            source={{ uri: selectedImage || '' }}
-            style={styles.fullImage}
-            resizeMode="contain"
-          />
-          <Pressable
-            style={styles.closeButton}
-            onPress={() => setSelectedImage(null)}
-          >
+        <View style={styles.imageModalOverlay}>
+          {/* Close button */}
+          <Pressable style={styles.closeButton} onPress={closeGallery}>
             <Ionicons name="close" size={30} color="white" />
           </Pressable>
-        </Pressable>
+
+          {/* Photo counter */}
+          {review.photos &&
+            review.photos.length > 1 &&
+            selectedImageIndex !== null && (
+              <View style={styles.galleryCounter}>
+                <ThemedText type="body-small" style={styles.galleryCounterText}>
+                  {selectedImageIndex + 1} / {review.photos.length}
+                </ThemedText>
+              </View>
+            )}
+
+          {/* Scrollable photo gallery */}
+          <ScrollView
+            horizontal
+            pagingEnabled
+            showsHorizontalScrollIndicator={false}
+            contentOffset={{
+              x: (selectedImageIndex || 0) * SCREEN_WIDTH,
+              y: 0,
+            }}
+            onMomentumScrollEnd={(e) => {
+              if (!isGalleryOpen) return;
+              const newIndex = Math.round(
+                e.nativeEvent.contentOffset.x / SCREEN_WIDTH
+              );
+              setSelectedImageIndex(newIndex);
+            }}
+            style={styles.galleryScrollView}
+          >
+            {review.photos?.map((photo, index) => (
+              <View key={photo.id || index} style={styles.gallerySlide}>
+                <Image
+                  source={{ uri: photo.photo_url }}
+                  style={styles.fullImage}
+                  resizeMode="contain"
+                />
+              </View>
+            ))}
+          </ScrollView>
+
+          {/* Navigation arrows */}
+          {review.photos &&
+            review.photos.length > 1 &&
+            selectedImageIndex !== null && (
+              <>
+                {selectedImageIndex > 0 && (
+                  <Pressable
+                    style={[styles.navArrow, styles.navArrowLeft]}
+                    onPress={() =>
+                      setSelectedImageIndex(selectedImageIndex - 1)
+                    }
+                  >
+                    <Ionicons name="chevron-back" size={32} color="#fff" />
+                  </Pressable>
+                )}
+                {selectedImageIndex < review.photos.length - 1 && (
+                  <Pressable
+                    style={[styles.navArrow, styles.navArrowRight]}
+                    onPress={() =>
+                      setSelectedImageIndex(selectedImageIndex + 1)
+                    }
+                  >
+                    <Ionicons name="chevron-forward" size={32} color="#fff" />
+                  </Pressable>
+                )}
+              </>
+            )}
+        </View>
       </Modal>
     </>
   );
@@ -466,18 +549,73 @@ const styles = StyleSheet.create({
   },
   imageModalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.9)',
+    backgroundColor: 'rgba(0,0,0,0.95)',
     justifyContent: 'center',
     alignItems: 'center',
   },
   fullImage: {
-    width: '90%',
-    height: '80%',
+    width: SCREEN_WIDTH,
+    height: SCREEN_WIDTH,
   },
   closeButton: {
     position: 'absolute',
-    top: 40,
+    top: 50,
     right: 20,
+    padding: 10,
+    zIndex: 10,
+  },
+  photoCountBadge: {
+    position: 'absolute',
+    bottom: 8,
+    right: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  photoCountText: {
+    color: '#fff',
+    fontWeight: '600',
+  },
+  galleryCounter: {
+    position: 'absolute',
+    top: 50,
+    left: 20,
+    zIndex: 10,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+  },
+  galleryCounterText: {
+    color: '#fff',
+    fontWeight: '600',
+  },
+  galleryScrollView: {
+    flex: 1,
+  },
+  gallerySlide: {
+    width: SCREEN_WIDTH,
+    height: SCREEN_HEIGHT,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  navArrow: {
+    position: 'absolute',
+    top: '50%',
+    marginTop: -24,
     padding: 8,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    borderRadius: 24,
+    zIndex: 10,
+  },
+  navArrowLeft: {
+    left: 16,
+  },
+  navArrowRight: {
+    right: 16,
   },
 });

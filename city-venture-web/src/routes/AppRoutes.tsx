@@ -1,88 +1,65 @@
 import { Routes, Route, Outlet } from "react-router-dom";
+import { useEffect, useState } from "react";
+import axios from "axios";
+
+// Route Components
+import AccommodationRoutes from "./AccommodationRoutes";
+import ShopRoutes from "./ShopRoutes";
+import TourismRoutes from "./TourismRoutes";
+import ProtectedRoute from "./ProtectedRoute";
 
 // Pages
 import NotFound from "../pages/NotFound";
+import About from "../pages/About";
+import Registration from "../pages/BusinessRegistration";
+import Unauthorized from "@/src/pages/Unauthorized";
+import Test from "../pages/Test";
+import ChangePassword from "../pages/ChangePassword";
+import ServerDown from "../pages/ServerDown";
 
 // Layouts
 import MainLayout from "../layout/MainLayout";
+import BusinessLayout from "../layout/BusinessLayout";
+import BusinessManagementLayout from "../layout/BusinessManagementLayout";
 
+// Features - Landing & Auth
 import LandingPage from "@/src/features/landing-page/LandingPage";
-import About from "../pages/About";
-import Registration from "../pages/BusinessRegistration";
-
 import BusinessPortalLogin from "../features/auth/LoginPage";
 import AdminLogin from "../features/auth/old-page/AdminLogin";
 import AdminRegister from "../features/auth/old-page/AdminRegister";
-import Unauthorized from "@/src/pages/Unauthorized";
-import BusinessLayout from "../layout/BusinessLayout";
-import MyBusiness from "../features/business/listing/MyBusiness";
-import { AuthProvider } from "../context/AuthContext";
-import ProtectedRoute from "./ProtectedRoute";
-import BusinessRegistration from "../features/business/listing/BusinessRegistration";
-import BusinessManagementLayout from "../layout/BusinessManagementLayout";
-import Transactions from "../features/business/accommodation/transaction/Transactions";
-import Bookings from "../features/business/accommodation/bookings/Bookings";
-import { RoomProvider } from "../context/RoomContext";
-import BusinessProfile from "../features/business/accommodation/business-profile/BusinessProfile";
-import ManagePromotion from "../features/business/accommodation/promotion/ManagePromotion";
-import RoomPage from "../features/business/accommodation/room/Room";
-import RoomProfile from "../features/business/accommodation/room/RoomProfile";
-import RoomEdit from "../features/business/accommodation/room/RoomEdit";
-import Products from "../features/business/shop/store/Products";
-import Categories from "../features/business/shop/store/Categories";
-import Services from "../features/business/shop/store/Services";
-import Orders from "../features/business/shop/store/Orders";
-import Discount from "../features/business/shop/store/Discount";
-import DiscountForm from "../features/business/shop/store/DiscountForm";
-import ShopSettings from "../features/business/shop/store/Settings";
-import ManageShopPromotion from "../features/business/shop/promotion/ManagePromotion";
-import PromotionForm from "../features/business/shop/promotion/PromotionForm";
-
-import AccommodationDashboard from "../features/business/accommodation/dashboard/Dashboard";
-import ShopDashboard from "../features/business/shop/dashboard/Dashboard";
-import ManageShop from "../features/business/shop/manage-business/ManageBusiness";
-import AdminLayout from "../layout/AdminLayout";
-import Reviews from "../features/business/accommodation/reviews/Reviews";
-import Settings from "../features/business/settings/Settings";
-import AccommodationPromotionForm from "../features/business/accommodation/promotion/components/PromotionForm";
-// Tourism
-import Dashboard from "@/src/features/admin/dashboard/Dashboard";
-import Approval from "@/src/features/admin/approval/Approval";
-import Report from "@/src/features/admin/report/Report";
-import Accommodation from "@/src/features/admin/services/accommodation/Accommodation";
-import Shop from "@/src/features/admin/services/shop/Shop";
-import Event from "@/src/features/admin/services/event/Event";
-import Spot from "@/src/features/admin/services/tourist-spot/Spot";
-import TouristSpotDetailsScreen from "@/src/features/admin/services/tourist-spot/TouristSpotDetailsScreen";
-import TouristSpotReviews from "@/src/features/admin/services/tourist-spot/reviews/Reviews";
-import { TouristSpotProvider } from "@/src/context/TouristSpotContext";
-import { BusinessProvider } from "../context/BusinessContext";
-import ReportDetailsScreen from "@/src/features/admin/report/ReportDetailsScreen";
-import AccommodationSubscription from "@/src/features/business/accommodation/subscription/Subscription";
-import ShopSubscription from "@/src/features/business/shop/subscription/Subscription";
-import TourismStaffManagement from "@/src/features/admin/tourism-staff/TourismStaffManagement";
-import TourismSettings from "../features/admin/settings/Settings";
-
-import Notification from "../features/business/accommodation/notfication/Notification";
-import AccommodationStaff from "../features/business/accommodation/Staff/ManageStaff";
-import ShopStaff from "../features/business/shop/Staff/ManageStaff";
-import Test from "../pages/Test";
-import OwnerProfile from "../features/business/profile/Profile";
-import TourismProfile from "../features/admin/profile/Profile";
 import TouristRegister from "../features/auth/TouristRegister";
-import axios from "axios";
+import ForgetPassword from "../features/auth/ForgetPassword";
+
+// Features - Business
+import MyBusiness from "../features/business/listing/MyBusiness";
+import BusinessRegistration from "../features/business/listing/BusinessRegistration";
+import OwnerProfile from "../features/business/profile/Profile";
+
+// Unified Business CMS - Shared features across all business types
+import {
+  Dashboard as UnifiedDashboard,
+  BusinessProfile as UnifiedBusinessProfile,
+  Reviews as UnifiedReviews,
+  Promotions as UnifiedPromotions,
+  Subscription as UnifiedSubscription,
+  ManageStaff as UnifiedManageStaff,
+  Settings,
+  StaffRoles as StaffRolesPage,
+} from "../features/business/unified";
+
+// Context Providers
+import { AuthProvider } from "../context/AuthContext";
+import { BusinessProvider } from "../context/BusinessContext";
+
+// Services & Types
 import api from "../services/api";
 import type { User } from "../types/User";
-import { useEffect, useState } from "react";
-import ServerDown from "../pages/ServerDown";
 import Loading from "../components/ui/Loading";
-import ForgetPassword from "../features/auth/ForgetPassword";
 
 export default function AppRoutes() {
   const home = "/";
   const business = "/business";
   const tourism = "/tourism";
-  const business_type = "Accommodation";
   const [isServerUp, setIsServerUp] = useState<boolean | null>(null);
 
   const checkServerStatus = async () => {
@@ -102,7 +79,7 @@ export default function AppRoutes() {
   }, []);
 
   // Normalized role names as produced by AuthService
-  const TOURISM_ROLES = ["Admin", "Tourism Officer"]; // Officer has restricted pages handled per-route
+  const TOURISM_ROLES = ["Admin", "Tourism Officer"];
   const BUSINESS_ROLES = [
     "Business Owner",
     "Manager",
@@ -129,14 +106,18 @@ export default function AppRoutes() {
           </AuthProvider>
         }
       >
+        {/* Public routes */}
         <Route element={<MainLayout />}>
           <Route index element={<LandingPage />} />
           <Route path={`${home}`} element={<LandingPage />} />
           <Route path={`${home}about`} element={<About />} />
           <Route path={`${home}forget-password`} element={<ForgetPassword />} />
         </Route>
+
         <Route path={`/unauthorized`} element={<Unauthorized />} />
-        {/* <Route path={`/login`} element={<UnifiedLogin />} /> */}
+        <Route path={`/change-password`} element={<ChangePassword />} />
+
+        {/* Business Provider wrapper for login */}
         <Route
           element={
             <BusinessProvider>
@@ -146,12 +127,15 @@ export default function AppRoutes() {
         >
           <Route path={`/login`} element={<BusinessPortalLogin />} />
         </Route>
+
         <Route path={`business-registration`} element={<Registration />} />
         <Route path={`/test`} element={<Test />} />
         <Route path={`user/profile`} element={<OwnerProfile />} />
         <Route path={`/register`} element={<TouristRegister />} />
         <Route path={`${tourism}/login`} element={<AdminLogin />} />
         <Route path={`${tourism}/signup`} element={<AdminRegister />} />
+
+        {/* Business Portal Routes */}
         <Route
           element={
             <BusinessProvider>
@@ -159,6 +143,7 @@ export default function AppRoutes() {
             </BusinessProvider>
           }
         >
+          {/* Business listing/registration routes */}
           <Route element={<BusinessLayout />}>
             <Route
               path={`${business}`}
@@ -168,7 +153,6 @@ export default function AppRoutes() {
                 </ProtectedRoute>
               }
             />
-
             <Route
               path={`${business}/register`}
               element={
@@ -178,218 +162,80 @@ export default function AppRoutes() {
               }
             />
           </Route>
+
+          {/* Business Management Routes - Using Unified CMS */}
           <Route element={<BusinessManagementLayout />}>
+            {/* Unified Dashboard - dynamically renders based on business type */}
             <Route
-              path={`${business}/transactions`}
+              path={`${business}/dashboard`}
               element={
                 <ProtectedRoute requiredRoles={BUSINESS_ROLES}>
-                  <Transactions />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path={`${business}/bookings`}
-              element={
-                <ProtectedRoute requiredRoles={BUSINESS_ROLES}>
-                  <Bookings />
+                  <UnifiedDashboard />
                 </ProtectedRoute>
               }
             />
 
-            {business_type === "Accommodation" ? (
-              <>
-                <Route
-                  path={`${business}/business-profile`}
-                  element={
-                    <ProtectedRoute requiredRoles={BUSINESS_ROLES}>
-                      <BusinessProfile />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path={`${business}/dashboard`}
-                  element={
-                    <ProtectedRoute requiredRoles={BUSINESS_ROLES}>
-                      <AccommodationDashboard />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path={`${business}/manage-staff`}
-                  element={
-                    <ProtectedRoute requiredRoles={["Business Owner"]}>
-                      <AccommodationStaff />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path={`${business}/subscription`}
-                  element={
-                    <ProtectedRoute requiredRoles={["Business Owner"]}>
-                      <AccommodationSubscription />
-                    </ProtectedRoute>
-                  }
-                />
-              </>
-            ) : (
-              <>
-                <Route
-                  path={`${business}/manage-business`}
-                  element={
-                    <ProtectedRoute requiredRoles={BUSINESS_ROLES}>
-                      <ManageShop />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path={`${business}/dashboard`}
-                  element={
-                    <ProtectedRoute requiredRoles={BUSINESS_ROLES}>
-                      <ShopDashboard />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path={`${business}/subscription`}
-                  element={
-                    <ProtectedRoute requiredRoles={["Business Owner"]}>
-                      <ShopSubscription />
-                    </ProtectedRoute>
-                  }
-                />
-              </>
-            )}
+            {/* Unified Business Profile */}
+            <Route
+              path={`${business}/business-profile`}
+              element={
+                <ProtectedRoute requiredRoles={BUSINESS_ROLES}>
+                  <UnifiedBusinessProfile />
+                </ProtectedRoute>
+              }
+            />
 
-            {/* Offers removed from business portal */}
-            <Route
-              path={`${business}/manage-promotion`}
-              element={
-                <ProtectedRoute requiredRoles={BUSINESS_ROLES}>
-                  <ManagePromotion />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path={`${business}/create-promotion`}
-              element={
-                <ProtectedRoute requiredRoles={BUSINESS_ROLES}>
-                  <AccommodationPromotionForm />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path={`${business}/edit-promotion/:id`}
-              element={
-                <ProtectedRoute requiredRoles={BUSINESS_ROLES}>
-                  <AccommodationPromotionForm />
-                </ProtectedRoute>
-              }
-            />
+            {/* Unified Reviews */}
             <Route
               path={`${business}/reviews`}
               element={
                 <ProtectedRoute requiredRoles={BUSINESS_ROLES}>
-                  <Reviews />
+                  <UnifiedReviews />
                 </ProtectedRoute>
               }
             />
-            {/* Store routes (shop) */}
+
+            {/* Unified Promotions */}
             <Route
-              path={`${business}/store/products`}
+              path={`${business}/promotions`}
               element={
                 <ProtectedRoute requiredRoles={BUSINESS_ROLES}>
-                  <Products />
+                  <UnifiedPromotions />
                 </ProtectedRoute>
               }
             />
+
+            {/* Unified Subscription */}
             <Route
-              path={`${business}/store/categories`}
+              path={`${business}/subscription`}
               element={
-                <ProtectedRoute requiredRoles={BUSINESS_ROLES}>
-                  <Categories />
+                <ProtectedRoute requiredRoles={["Business Owner"]}>
+                  <UnifiedSubscription />
                 </ProtectedRoute>
               }
             />
+
+            {/* Unified Staff Management */}
             <Route
-              path={`${business}/store/services`}
+              path={`${business}/manage-staff`}
               element={
-                <ProtectedRoute requiredRoles={BUSINESS_ROLES}>
-                  <Services />
+                <ProtectedRoute requiredRoles={["Business Owner"]}>
+                  <UnifiedManageStaff />
                 </ProtectedRoute>
               }
             />
+
+            {/* Staff Roles */}
             <Route
-              path={`${business}/store/orders`}
+              path={`${business}/staff-roles`}
               element={
-                <ProtectedRoute requiredRoles={BUSINESS_ROLES}>
-                  <Orders />
+                <ProtectedRoute requiredRoles={["Business Owner"]}>
+                  <StaffRolesPage />
                 </ProtectedRoute>
               }
             />
-            <Route
-              path={`${business}/store/discount`}
-              element={
-                <ProtectedRoute requiredRoles={BUSINESS_ROLES}>
-                  <Discount />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path={`${business}/store/discount/create`}
-              element={
-                <ProtectedRoute requiredRoles={BUSINESS_ROLES}>
-                  <DiscountForm />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path={`${business}/store/discount/:id/edit`}
-              element={
-                <ProtectedRoute requiredRoles={BUSINESS_ROLES}>
-                  <DiscountForm />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path={`${business}/promotion`}
-              element={
-                <ProtectedRoute requiredRoles={BUSINESS_ROLES}>
-                  <ManageShopPromotion />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path={`${business}/promotion/create`}
-              element={
-                <ProtectedRoute requiredRoles={BUSINESS_ROLES}>
-                  <PromotionForm />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path={`${business}/promotion/:id/edit`}
-              element={
-                <ProtectedRoute requiredRoles={BUSINESS_ROLES}>
-                  <PromotionForm />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path={`${business}/store/settings`}
-              element={
-                <ProtectedRoute requiredRoles={BUSINESS_ROLES}>
-                  <ShopSettings />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path={`${business}/store/manage-staff`}
-              element={
-                <ProtectedRoute requiredRoles={BUSINESS_ROLES}>
-                  <ShopStaff />
-                </ProtectedRoute>
-              }
-            />
+
+            {/* Settings */}
             <Route
               path={`${business}/settings`}
               element={
@@ -399,180 +245,18 @@ export default function AppRoutes() {
               }
             />
 
-            {/* Room routes: inside RoomProvider (and still inside BusinessProvider) */}
-            <Route
-              element={
-                <RoomProvider>
-                  <Outlet />
-                </RoomProvider>
-              }
-            >
-              <Route
-                path={`${business}/rooms`}
-                element={
-                  <ProtectedRoute requiredRoles={BUSINESS_ROLES}>
-                    <RoomPage />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path={`${business}/room-profile`}
-                element={
-                  <ProtectedRoute requiredRoles={BUSINESS_ROLES}>
-                    <RoomProfile />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path={`${business}/room-edit`}
-                element={
-                  <ProtectedRoute requiredRoles={BUSINESS_ROLES}>
-                    <RoomEdit />
-                  </ProtectedRoute>
-                }
-              />
-            </Route>
+            {/* Accommodation-specific routes */}
+            {AccommodationRoutes({ businessRoles: BUSINESS_ROLES })}
 
-            <Route
-              element={
-                <RoomProvider>
-                  <Outlet />
-                </RoomProvider>
-              }
-            >
-              <Route
-                path={`${business}/notification`}
-                element={
-                  <ProtectedRoute requiredRoles={BUSINESS_ROLES}>
-                    <Notification />
-                  </ProtectedRoute>
-                }
-              />
-            </Route>
+            {/* Shop-specific routes */}
+            {ShopRoutes({ businessRoles: BUSINESS_ROLES })}
           </Route>
         </Route>
-        <Route element={<AdminLayout />}>
-          <Route
-            path={`${tourism}/dashboard`}
-            element={
-              <ProtectedRoute requiredRoles={TOURISM_ROLES}>
-                <Dashboard />
-              </ProtectedRoute>
-            }
-          />
-          {/* Approval: Admin only */}
-          <Route
-            path={`${tourism}/approval`}
-            element={
-              <ProtectedRoute requiredRoles={["Admin"]}>
-                <Approval />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path={`${tourism}/reports`}
-            element={
-              <ProtectedRoute requiredRoles={TOURISM_ROLES}>
-                <Report />
-              </ProtectedRoute>
-            }
-          />
-          {/* Manage Tourism Staff: Admin only */}
-          <Route
-            path={`${tourism}/staff`}
-            element={
-              <ProtectedRoute requiredRoles={["Admin"]}>
-                <TourismStaffManagement />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path={`${tourism}/reports/:id`}
-            element={
-              <ProtectedRoute requiredRoles={TOURISM_ROLES}>
-                <ReportDetailsScreen />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path={`${tourism}/services/accommodation`}
-            element={
-              <ProtectedRoute requiredRoles={TOURISM_ROLES}>
-                <Accommodation />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path={`tourism/profile`}
-            element={
-              <ProtectedRoute requiredRoles={TOURISM_ROLES}>
-                <TourismProfile />
-              </ProtectedRoute>
-            }
-          />
 
-          <Route
-            path={`${tourism}/services/shop`}
-            element={
-              <ProtectedRoute requiredRoles={TOURISM_ROLES}>
-                <Shop />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path={`${tourism}/services/event`}
-            element={
-              <ProtectedRoute requiredRoles={TOURISM_ROLES}>
-                <Event />
-              </ProtectedRoute>
-            }
-          />
-          {/* Tourist Spot routes wrapped with TouristSpotProvider */}
-          <Route
-            element={
-              <TouristSpotProvider>
-                <Outlet />
-              </TouristSpotProvider>
-            }
-          >
-            <Route
-              path={`${tourism}/services/tourist-spot`}
-              element={
-                <ProtectedRoute requiredRoles={TOURISM_ROLES}>
-                  <Spot />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path={`${tourism}/services/tourist-spot/:id`}
-              element={
-                <ProtectedRoute requiredRoles={TOURISM_ROLES}>
-                  <TouristSpotDetailsScreen />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path={`${tourism}/services/tourist-spot/:id/reviews`}
-              element={
-                <ProtectedRoute requiredRoles={TOURISM_ROLES}>
-                  <TouristSpotReviews />
-                </ProtectedRoute>
-              }
-            />
-          </Route>
-
-          {/* Public offer pages removed */}
-          <Route
-            path={`${tourism}/settings`}
-            element={
-              <ProtectedRoute requiredRoles={TOURISM_ROLES}>
-                <TourismSettings />
-              </ProtectedRoute>
-            }
-          />
-          {/* Admin offer pages removed */}
-        </Route>
+        {/* Tourism/Admin Portal Routes */}
+        {TourismRoutes({ tourismRoles: TOURISM_ROLES })}
       </Route>
+
       {/* 404 */}
       <Route path="*" element={<NotFound />} />
     </Routes>

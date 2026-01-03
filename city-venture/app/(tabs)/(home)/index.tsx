@@ -28,6 +28,7 @@ import { Routes } from '@/routes/mainRoutes';
 import HeroSection from '@/components/home/HeroSection';
 import NewsAndEventsSection from '@/components/home/NewsAndEventsSection';
 import { ThemedText } from '@/components/themed-text';
+import HomepageSkeleton from '@/components/skeleton/HomepageSkeleton';
 import CityListSection from '@/components/home/CityListSection';
 import PersonalRecommendationSection from '@/components/home/PersonalRecommendationSection';
 import VisitorsHandbookSection from '@/components/home/VisitorsHandbookSection';
@@ -54,6 +55,7 @@ import {
   type ActionItem,
 } from '@/components/home/data';
 import { Image } from 'expo-image';
+import { getUnreadNotificationCount } from '@/services/NotificationService';
 
 // Enable LayoutAnimation for Android
 if (
@@ -74,7 +76,9 @@ const HomeScreen = () => {
   const { top: insetsTop, bottom } = useSafeAreaInsets();
   const colorScheme = useColorScheme() ?? 'light';
   const palette = Colors[colorScheme];
-  const didRedirect = useRef(false);
+
+  // Extract user_id to a stable reference to prevent unnecessary re-renders
+  const userId = user?.user_id;
 
   // --- Animation Values ---
   const scrollY = useSharedValue(0);
@@ -85,6 +89,7 @@ const HomeScreen = () => {
   const [searchValue, setSearchValue] = useState('');
   const [refreshing, setRefreshing] = useState(false);
   const [greeting, setGreeting] = useState('Hello');
+  const [unreadCount, setUnreadCount] = useState(0);
 
   const [eventState, setEventState] = useState<{
     data: HomeEvent[];
@@ -122,16 +127,23 @@ const HomeScreen = () => {
     return () => clearInterval(interval);
   }, []);
 
-  useEffect(() => {
-    if (!user && !didRedirect.current) {
-      didRedirect.current = true;
-      router.replace(Routes.auth.login as any);
-    }
-  }, [user]);
+  // Guest mode enabled - no auto-redirect to login
+  // Users can browse as guests and will be prompted to login when accessing protected features
 
-  const handleRefresh = useCallback(() => {
-    loadHomeContent(true);
-  }, []);
+  // Fetch unread notification count
+  const fetchUnreadCount = useCallback(async () => {
+    if (!userId) return;
+    try {
+      const count = await getUnreadNotificationCount(userId);
+      setUnreadCount(count);
+    } catch (error) {
+      console.error('Failed to fetch unread count:', error);
+    }
+  }, [userId]);
+
+  useEffect(() => {
+    fetchUnreadCount();
+  }, [fetchUnreadCount]);
 
   const loadHomeContent = useCallback(async (isRefresh = false) => {
     if (isRefresh) setRefreshing(true);
@@ -144,6 +156,11 @@ const HomeScreen = () => {
     setNewsState({ data: PLACEHOLDER_NEWS, loading: false });
     setRefreshing(false);
   }, []);
+
+  const handleRefresh = useCallback(() => {
+    loadHomeContent(true);
+    fetchUnreadCount();
+  }, [loadHomeContent, fetchUnreadCount]);
 
   useEffect(() => {
     loadHomeContent();
@@ -227,7 +244,7 @@ const HomeScreen = () => {
       case 'tours':
         navigateToTouristSpotHome();
         break;
-      case 'tickets':
+      case 'events':
         navigateToEventHome();
         break;
       default:
@@ -235,9 +252,8 @@ const HomeScreen = () => {
     }
   };
 
-  const handleEventPress = useCallback((_event: HomeEvent) => {
-    // TODO: Event detail route [id].tsx not yet implemented
-    router.push(Routes.event.index as any);
+  const handleEventPress = useCallback((event: HomeEvent) => {
+    router.push(Routes.event.detail(event.id) as any);
   }, []);
 
   const handleNewsPress = useCallback((_article: NewsArticle) => {
@@ -245,7 +261,10 @@ const HomeScreen = () => {
     router.push(Routes.tabs.home);
   }, []);
 
-  if (!user) return null;
+  // Show skeleton during initial load
+  if (eventState.loading && newsState.loading && eventState.data.length === 0) {
+    return <HomepageSkeleton />;
+  }
 
   return (
     <View style={[styles.root, { backgroundColor: palette.background }]}>
@@ -266,7 +285,7 @@ const HomeScreen = () => {
         <Animated.View style={[styles.topRow, topRowAnimatedStyle]}>
           <View style={styles.profileSection}>
             <View style={styles.profileIcon}>
-              {user.user_profile ? (
+              {user?.user_profile ? (
                 <Image
                   source={{ uri: user.user_profile }}
                   style={{ width: 40, height: 40, borderRadius: 20 }}
@@ -287,14 +306,32 @@ const HomeScreen = () => {
                 weight="bold"
                 style={{ color: '#FFF' }}
               >
-                {user.first_name}!
+                {user?.first_name || 'Guest'}!
               </ThemedText>
             </View>
           </View>
 
           <View style={styles.iconRow}>
-            <Pressable onPress={() => {}} style={styles.iconButton}>
+            <Pressable
+              onPress={() => {
+                router.push(Routes.tabs.notification);
+              }}
+              style={styles.iconButton}
+            >
               <Ionicons name="notifications-outline" size={24} color="#FFF" />
+              {unreadCount > 0 && (
+                <View style={styles.notificationBadge}>
+                  {unreadCount <= 9 ? (
+                    <ThemedText style={styles.notificationBadgeText}>
+                      {unreadCount}
+                    </ThemedText>
+                  ) : (
+                    <ThemedText style={styles.notificationBadgeText}>
+                      9+
+                    </ThemedText>
+                  )}
+                </View>
+              )}
             </Pressable>
             <Pressable
               onPress={() => navigateToCart()}
@@ -607,6 +644,25 @@ const styles = StyleSheet.create({
   },
   paginationDotActive: {
     width: 24,
+  },
+  notificationBadge: {
+    position: 'absolute',
+    top: -4,
+    right: -4,
+    backgroundColor: '#E74C3C',
+    minWidth: 18,
+    height: 18,
+    borderRadius: 9,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 4,
+    borderWidth: 2,
+    borderColor: '#FFF',
+  },
+  notificationBadgeText: {
+    color: '#FFF',
+    fontSize: 10,
+    fontWeight: '700',
   },
 });
 

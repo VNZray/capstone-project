@@ -183,7 +183,6 @@ const OrderConfirmationScreen = () => {
     if (method === 'cash_on_pickup') return 'Cash on Pickup';
     if (methodType === 'gcash') return 'GCash';
     if (methodType === 'paymaya') return 'PayMaya';
-    if (methodType === 'grab_pay') return 'GrabPay';
     if (methodType === 'card') return 'Credit/Debit Card';
     return 'Online Payment';
   };

@@ -1,6 +1,6 @@
 import { Outlet } from "react-router-dom";
 import { useState } from "react";
-import Sidebar from "../components/Business/Sidebar";
+import { UnifiedSidebar } from "../features/business/unified";
 import "../styles/Layout.css"; // Import CSS file
 import MainHeader from "../components/Business/MainHeader";
 
@@ -11,7 +11,7 @@ export default function BusinessManagementLayout() {
 
   return (
     <div className="main-layout">
-      <Sidebar isOpen={isSidebarOpen} onClose={handleCloseSidebar} />
+      <UnifiedSidebar isOpen={isSidebarOpen} onClose={handleCloseSidebar} />
       <div className="main-content">
         <MainHeader onMenuClick={handleToggleSidebar} />
         <main className="main-outlet">

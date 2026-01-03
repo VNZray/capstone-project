@@ -24,9 +24,15 @@ const PAYMONGO_PUBLIC_KEY = process.env.EXPO_PUBLIC_PAYMONGO_PUBLIC_KEY || '';
 // Types
 // =============================================================================
 
+/**
+ * Unified payment request - works for both orders and bookings
+ * Uses the new /payment/initiate endpoint
+ */
 export interface CreatePaymentIntentRequest {
-  order_id: string;
-  payment_method_types?: string[]; // Default: ['card', 'paymaya', 'gcash', 'grab_pay']
+  payment_for: 'order' | 'booking';  // Specify the resource type
+  reference_id: string;               // Order ID or Booking ID
+  payment_method?: 'card' | 'gcash' | 'paymaya' | 'grab_pay'; // Optional: simplified payment method
+  payment_method_types?: string[];    // Default: ['card', 'paymaya', 'gcash', 'grab_pay']
 }
 
 export interface CreatePaymentIntentResponse {
@@ -36,14 +42,18 @@ export interface CreatePaymentIntentResponse {
     payment_id: string;
     payment_intent_id: string;
     client_key: string;
-    order_id: string;
-    order_number: string;
+    payment_for: 'order' | 'booking';  // Resource type
+    reference_id: string;               // Order ID or Booking ID
+    display_name: string;               // e.g., "Order #12345" or "Booking #..."
     amount: number;
     amount_centavos: number;
     currency: string;
     payment_method_allowed: string[];
     status: string; // 'awaiting_payment_method'
     public_key: string;
+    // Legacy compatibility - may be included for orders
+    order_id?: string;
+    order_number?: string;
   };
 }
 
@@ -138,18 +148,27 @@ export interface PaymentIntentStatus {
 // =============================================================================
 
 /**
- * Create a Payment Intent for an order
- * Call this from your checkout screen when user confirms order
+ * Create a Payment Intent for an order or booking
+ * Call this from your checkout screen when user confirms payment
  * 
- * @param request - Payment Intent creation request
+ * Uses the unified /payment/initiate endpoint
+ * 
+ * @param request - Payment Intent creation request with payment_for and reference_id
  * @returns Payment Intent with client_key for client-side operations
+ * 
+ * @example
+ * // For orders:
+ * createPaymentIntent({ payment_for: 'order', reference_id: orderId })
+ * 
+ * // For bookings:
+ * createPaymentIntent({ payment_for: 'booking', reference_id: bookingId })
  */
 export async function createPaymentIntent(
   request: CreatePaymentIntentRequest
 ): Promise<CreatePaymentIntentResponse> {
   try {
     const response = await apiClient.post<CreatePaymentIntentResponse>(
-      '/payment/intent',
+      '/payment/initiate',  // Unified endpoint
       request
     );
 
@@ -210,9 +229,14 @@ export async function createPaymentMethod(
     });
 
     if (!response.ok) {
-      const error = await response.json();
-      console.error('[PaymentIntentService] PayMongo error:', error);
-      throw new Error(error.errors?.[0]?.detail || 'Failed to create payment method');
+      const errorData = await response.json();
+      console.error('[PaymentIntentService] PayMongo error:', errorData);
+      // Create an error with the PayMongo error structure preserved
+      const paymongoError = new Error(errorData.errors?.[0]?.detail || 'Failed to create payment method');
+      (paymongoError as any).response = { data: errorData };
+      (paymongoError as any).sub_code = errorData.errors?.[0]?.sub_code;
+      (paymongoError as any).code = errorData.errors?.[0]?.code;
+      throw paymongoError;
     }
 
     return response.json();
@@ -281,9 +305,15 @@ export async function attachPaymentMethodClient(
     );
 
     if (!response.ok) {
-      const error = await response.json();
-      console.error('[PaymentIntentService] Attach error:', error);
-      throw new Error(error.errors?.[0]?.detail || 'Failed to attach payment method');
+      const errorData = await response.json();
+      console.error('[PaymentIntentService] Attach error:', errorData);
+      // Create an error with the PayMongo error structure preserved
+      // so the error handler can map sub_code to user-friendly messages
+      const paymongoError = new Error(errorData.errors?.[0]?.detail || 'Failed to attach payment method');
+      (paymongoError as any).response = { data: errorData };
+      (paymongoError as any).sub_code = errorData.errors?.[0]?.sub_code;
+      (paymongoError as any).code = errorData.errors?.[0]?.code;
+      throw paymongoError;
     }
 
     return response.json();
@@ -294,40 +324,75 @@ export async function attachPaymentMethodClient(
 }
 
 /**
- * Attach e-wallet Payment Method to Payment Intent (server-side)
- * For e-wallets like GCash, Maya, GrabPay - goes through backend
+ * Attach e-wallet Payment Method to Payment Intent (Client-Side)
+ * Communicates directly with PayMongo, bypassing the backend.
+ * 
+ * This is the recommended approach for e-wallets (GCash, PayMaya)
+ * as it keeps the backend clean and follows the same pattern as card payments.
  * 
  * @param paymentIntentId - Payment Intent ID
- * @param paymentMethodType - E-wallet type ('gcash', 'paymaya', 'grab_pay')
+ * @param paymentMethodType - E-wallet type ('gcash', 'paymaya')
  * @param returnUrl - URL to return after wallet authorization
+ * @param clientKey - Client key from createPaymentIntent response (REQUIRED)
  * @param billing - Optional billing information
  * @returns Response with redirect URL for e-wallet authorization
  */
 export async function attachEwalletPaymentMethod(
   paymentIntentId: string,
-  paymentMethodType: 'gcash' | 'paymaya' | 'grab_pay' | 'shopee_pay',
+  paymentMethodType: 'gcash' | 'paymaya',
   returnUrl: string,
+  clientKey: string,
   billing?: BillingDetails
-): Promise<AttachPaymentMethodResponse> {
+): Promise<{
+  data: {
+    id: string;
+    type: 'payment_intent';
+    attributes: {
+      status: string;
+      next_action: {
+        type: 'redirect';
+        redirect: {
+          url: string;
+          return_url: string;
+        };
+      } | null;
+      payments: { id: string }[];
+    };
+  };
+}> {
+  console.log('[PaymentIntentService] Attaching e-wallet (Client-Side)...');
+
   try {
-    const response = await apiClient.post<AttachPaymentMethodResponse>(
-      `/payment/intent/${paymentIntentId}/attach`,
-      {
-        payment_method_type: paymentMethodType,
-        return_url: returnUrl,
-        billing
-      }
+    // 1. Create the Payment Method (Direct to PayMongo)
+    const methodResponse = await createPaymentMethod(
+      paymentMethodType,
+      undefined, // No card details for e-wallets
+      billing
+    );
+    const paymentMethodId = methodResponse.data.id;
+    console.log('[PaymentIntentService] E-wallet payment method created:', paymentMethodId);
+
+    // 2. Attach to the Intent (Direct to PayMongo)
+    // Reuses the existing client-side attachment function
+    const attachResult = await attachPaymentMethodClient(
+      paymentIntentId,
+      paymentMethodId,
+      clientKey,
+      returnUrl
     );
 
-    return response.data;
+    console.log('[PaymentIntentService] E-wallet attached, status:', attachResult.data.attributes.status);
+    return attachResult;
+
   } catch (error: any) {
-    console.error('[PaymentIntentService] Attach e-wallet failed:', error.response?.data || error.message);
+    console.error('[PaymentIntentService] Attach e-wallet failed:', error.message);
     throw error;
   }
 }
 
 /**
  * Get Payment Intent status
+ * Uses the unified /payment/intent/:id endpoint
  * 
  * @param paymentIntentId - Payment Intent ID
  * @returns Payment Intent status details
@@ -337,7 +402,7 @@ export async function getPaymentIntentStatus(
 ): Promise<PaymentIntentStatus> {
   try {
     const response = await apiClient.get<PaymentIntentStatus>(
-      `/payment/intent/${paymentIntentId}`
+      `/payment/intent/${paymentIntentId}`  // Unified endpoint
     );
 
     return response.data;
@@ -394,7 +459,7 @@ export async function open3DSAuthentication(
 export function dismissBrowser(): void {
   try {
     WebBrowser.dismissBrowser();
-  } catch (error) {
+  } catch {
     // Browser might not be open, ignore
   }
 }
@@ -426,10 +491,11 @@ export async function processCardPayment(
   status: string;
 }> {
   try {
-    // Step 1: Create Payment Intent via backend
+    // Step 1: Create Payment Intent via backend (unified endpoint)
     console.log('[PaymentIntentService] Step 1: Creating Payment Intent...');
     const intentResponse = await createPaymentIntent({
-      order_id: orderId,
+      payment_for: 'order',
+      reference_id: orderId,
       payment_method_types: ['card']
     });
 
@@ -600,23 +666,55 @@ export function getCardBrand(cardNumber: string): string {
 
 /**
  * Test card numbers for PayMongo sandbox
+ * @see https://developers.paymongo.com/docs/testing
+ * 
+ * Use any future expiration date and any 3-digit CVC
  */
 export const TEST_CARDS = {
-  // Successful payments
-  SUCCESS: '4343434343434345',
+  // ===== SUCCESSFUL PAYMENTS =====
+  SUCCESS_VISA: '4343434343434345',
+  SUCCESS_VISA_DEBIT: '4571736000000075',
+  SUCCESS_VISA_CREDIT_PH: '4009930000001421',
+  SUCCESS_VISA_DEBIT_PH: '4404520000001439',
   SUCCESS_MASTERCARD: '5555444444444457',
-  
-  // 3DS required
-  THREE_DS_REQUIRED: '4120000000000007',
-  
-  // Declined cards
-  DECLINED_GENERIC: '4000000000000010',
-  DECLINED_INSUFFICIENT_FUNDS: '4000000000000028',
-  DECLINED_STOLEN_CARD: '4000000000000036',
-  DECLINED_EXPIRED: '4000000000000044',
-  DECLINED_PROCESSING_ERROR: '4000000000000051',
-  
-  // Foreign cards (+1% fee)
+  SUCCESS_MASTERCARD_DEBIT: '5455590000000009',
+  SUCCESS_MASTERCARD_PREPAID: '5339080000000003',
+  SUCCESS_MASTERCARD_CREDIT_PH: '5240050000001440',
+  SUCCESS_MASTERCARD_DEBIT_PH: '5577510000001446',
+
+  // ===== 3DS REQUIRED =====
+  THREE_DS_REQUIRED: '4120000000000007', // Must complete 3DS to succeed
+  THREE_DS_DECLINE_BEFORE_AUTH: '4230000000000004', // Declines with generic_decline before 3DS
+  THREE_DS_DECLINE_AFTER_AUTH: '5234000000000106', // Declines with generic_decline after 3DS
+  THREE_DS_OPTIONAL: '5123000000000001', // 3DS supported but not required
+
+  // ===== DECLINED - CARD ERRORS =====
+  DECLINED_CARD_EXPIRED: '4200000000000018', // sub_code: card_expired
+  DECLINED_CVC_INVALID: '4300000000000017', // sub_code: cvc_invalid
+  DECLINED_GENERIC: '4400000000000016', // sub_code: generic_decline
+  DECLINED_GENERIC_PH: '4028220000001457', // sub_code: generic_decline (PH)
+  DECLINED_INSUFFICIENT_FUNDS: '5100000000000198', // sub_code: insufficient_funds
+  DECLINED_INSUFFICIENT_FUNDS_PH: '5240460000001466', // sub_code: insufficient_funds (PH)
+
+  // ===== DECLINED - BLOCKED (Security-sensitive - show generic message) =====
+  DECLINED_FRAUDULENT: '4500000000000015', // sub_code: fraudulent
+  DECLINED_PROCESSOR_BLOCKED: '5200000000000197', // sub_code: processor_blocked
+  DECLINED_LOST_CARD: '5300000000000196', // sub_code: lost_card
+  DECLINED_LOST_CARD_PH: '5483530000001462', // sub_code: lost_card (PH)
+  DECLINED_STOLEN_CARD: '5400000000000195', // sub_code: stolen_card
+  DECLINED_BLOCKED: '4600000000000014', // sub_code: blocked (fraud engine)
+
+  // ===== PROCESSOR ERRORS =====
+  DECLINED_PROCESSOR_UNAVAILABLE: '5500000000000194', // sub_code: processor_unavailable
+
+  // ===== SPECIAL SCENARIOS =====
+  CANCEL_AWAITING_CAPTURE_NON_3DS: '5417881844647288', // resource_failed_state on cancel
+  CANCEL_AWAITING_CAPTURE_3DS: '5417886761138807', // resource_failed_state on cancel (3DS)
+
+  // Legacy aliases for backward compatibility
+  SUCCESS: '4343434343434345',
+  DECLINED_EXPIRED: '4200000000000018',
+  DECLINED_PROCESSING_ERROR: '5500000000000194',
   FOREIGN_CARD: '4000000000000069'
 };
 

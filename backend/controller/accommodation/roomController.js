@@ -8,6 +8,7 @@ const ROOM_FIELDS = [
   "room_type",
   "description",
   "room_price",
+  "per_hour_rate",
   "room_image",
   "status",
   "capacity",

@@ -2,18 +2,18 @@ import React, { useEffect, useState } from 'react';
 import { Dimensions, FlatList, Image, StyleSheet, View } from 'react-native';
 // useNavigation is used for setOptions (header customization)
 // For navigation actions, use useRouter or usePreventDoubleNavigation hook
-import { useNavigation } from 'expo-router';
-import Tabs from '@/components/Tabs';
-import { ThemedText } from '@/components/themed-text';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
 import Container from '@/components/Container';
+import { ThemedText } from '@/components/themed-text';
+import { Tab, TabContainer } from '@/components/ui/Tabs';
 import { Colors } from '@/constants/color';
 import { useTouristSpot } from '@/context/TouristSpotContext';
-import type { Tab } from '@/types/Tab';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { useNavigation } from 'expo-router';
 import Details from './details';
 import Ratings from './ratings';
 
 const { width, height } = Dimensions.get('window');
+type TabType = 'details' | 'ratings';
 
 const TouristSpotProfile = () => {
   const navigation = useNavigation();
@@ -21,7 +21,7 @@ const TouristSpotProfile = () => {
   const averageRating = 0;
   const [activeTab, setActiveTab] = useState('details');
   const colors = Colors.light;
-  const bg = colors.background;
+  const bg = '#fff';
 
   useEffect(() => {
     if (selectedSpot?.name && selectedSpot?.id) {
@@ -29,10 +29,9 @@ const TouristSpotProfile = () => {
     }
   }, [navigation, selectedSpot?.name, selectedSpot?.id]);
 
-  const TABS: Tab[] = [
-    { key: 'details', label: 'Details', icon: '' },
-    { key: 'reviews', label: 'Reviews', icon: '' },
-  ];
+  const handleTabChange = (tab: string) => {
+    setActiveTab(tab as TabType);
+  };
 
   if (!selectedSpot) {
     return (
@@ -100,8 +99,15 @@ const TouristSpotProfile = () => {
                   </ThemedText>
                 </View>
               </Container>
-              <Tabs tabs={TABS} onTabChange={(t) => setActiveTab(t.key)} />
             </Container>
+            <TabContainer
+              backgroundColor={bg}
+              initialTab="details"
+              onTabChange={handleTabChange}
+            >
+              <Tab tab="details" label="Details" />
+              <Tab tab="ratings" label="Ratings" />
+            </TabContainer>
             <View style={styles.tabContent}>
               {activeTab === 'details' && <Details />}
               {activeTab === 'reviews' && <Ratings />}
@@ -115,7 +121,7 @@ const TouristSpotProfile = () => {
 
 const styles = StyleSheet.create({
   image: { width: width * 1, height: height * 0.4 },
-  tabContent: { marginBottom: 150, overflow: 'visible' },
+  tabContent: { marginBottom: 150, overflow: 'visible', marginTop: 16 },
   notFoundContainer: {
     flex: 1,
     justifyContent: 'center',

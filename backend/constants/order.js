@@ -16,15 +16,17 @@
 export const MIN_AMOUNT_CASH_ON_PICKUP = 100; // ₱1.00
 
 /**
- * Minimum amount for PayMongo Payment Intents
+ * Minimum amount for PayMongo Payment Intents (PIPM workflow)
  * Payment Intents require ₱20.00 minimum
  */
 export const MIN_AMOUNT_PAYMONGO = 2000; // ₱20.00
+export const MIN_AMOUNT_PIPM = 2000; // Alias for MIN_AMOUNT_PAYMONGO
 
 /**
- * Minimum amount for PayMongo Checkout Sessions
+ * @deprecated Use MIN_AMOUNT_PIPM instead
+ * Kept for backward compatibility
  */
-export const MIN_AMOUNT_CHECKOUT_SESSION = 100; // ₱1.00
+export const MIN_AMOUNT_CHECKOUT_SESSION = MIN_AMOUNT_PIPM;
 
 // =============================================================================
 // Time Limits
@@ -121,11 +123,15 @@ export const VALID_PAYMENT_STATUSES = Object.values(PAYMENT_STATUS);
 // =============================================================================
 
 /**
- * Valid payment methods
+ * Valid payment methods (actual payment methods used)
+ * - gcash, paymaya, card: PayMongo online payments
+ * - cash_on_pickup: Pay at the business location
  */
 export const PAYMENT_METHOD = {
-  CASH_ON_PICKUP: 'cash_on_pickup',
-  PAYMONGO: 'paymongo'
+  GCASH: 'gcash',
+  PAYMAYA: 'paymaya',
+  CARD: 'card',
+  CASH_ON_PICKUP: 'cash_on_pickup'
 };
 
 /**
@@ -134,9 +140,9 @@ export const PAYMENT_METHOD = {
 export const VALID_PAYMENT_METHODS = Object.values(PAYMENT_METHOD);
 
 /**
- * Valid PayMongo payment types
+ * PayMongo payment methods (online payments)
  */
-export const PAYMONGO_PAYMENT_TYPES = ['gcash', 'card', 'paymaya', 'grab_pay', 'qrph', 'billease'];
+export const PAYMONGO_PAYMENT_TYPES = ['gcash', 'card', 'paymaya'];
 
 // =============================================================================
 // Status Transition Rules
@@ -236,7 +242,8 @@ export default {
   // Amounts
   MIN_AMOUNT_CASH_ON_PICKUP,
   MIN_AMOUNT_PAYMONGO,
-  MIN_AMOUNT_CHECKOUT_SESSION,
+  MIN_AMOUNT_PIPM,
+  MIN_AMOUNT_CHECKOUT_SESSION, // @deprecated - use MIN_AMOUNT_PIPM
   
   // Time limits
   MIN_PICKUP_MINUTES,

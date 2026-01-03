@@ -1,44 +1,63 @@
 import PageContainer from '@/components/PageContainer';
-import React, {
-  useCallback,
-  useRef,
-  useState,
-  useMemo,
-  useEffect,
-} from 'react';
-import { getAverageRating, getTotalReviews } from '@/services/FeedbackService';
-import {
-  getFavoritesByTouristId,
-  addFavorite,
-  deleteFavorite,
-} from '@/services/FavoriteService';
 import { useAuth } from '@/context/AuthContext';
 import {
+  addFavorite,
+  deleteFavorite,
+  getFavoritesByTouristId,
+} from '@/services/FavoriteService';
+import { getAverageRating, getTotalReviews } from '@/services/FeedbackService';
+import {
+  fetchSeasonalPricingByRoomId,
+  getLocalPriceForDate,
+} from '@/services/SeasonalPricingService';
+import type { SeasonalPricing } from '@/types/SeasonalPricing';
+import { format } from 'date-fns';
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
+import { useColorScheme } from '@/hooks/use-color-scheme';
+import { card } from '@/constants/color';
+import {
+  NativeScrollEvent,
+  NativeSyntheticEvent,
   StyleSheet,
   Text,
   View,
-  ScrollView,
-  RefreshControl,
-  NativeSyntheticEvent,
-  NativeScrollEvent,
 } from 'react-native';
 
+import placeholder from '@/assets/images/room-placeholder.png';
 import Button from '@/components/Button';
 import Container from '@/components/Container';
-import DateInput from '@/components/DateInput';
+import RangeDateCalendar from '@/components/calendar/RangeDateCalendar';
 import Dropdown, { DropdownItem } from '@/components/Dropdown';
+import {
+  BottomSheetModal,
+  BottomSheetBackdrop,
+  BottomSheetView,
+} from '@gorhom/bottom-sheet';
 import RoomCard from '@/components/accommodation/RoomCard';
+import { useAccommodation } from '@/context/AccommodationContext';
 import { useRoom } from '@/context/RoomContext';
 import { navigateToRoomProfile } from '@/routes/accommodationRoutes';
-import placeholder from '@/assets/images/room-placeholder.png';
-import { useAccommodation } from '@/context/AccommodationContext';
 import {
   fetchBookingsByBusinessId,
   filterAvailableRooms,
+  generateBookingDateMarkers,
 } from '@/services/BookingService';
-import type { Booking } from '@/types/Booking';
+import {
+  fetchBlockedDatesByBusinessId,
+  generateBlockedDateMarkers,
+} from '@/services/RoomService';
 import * as PromotionService from '@/services/PromotionService';
+import type { Booking } from '@/types/Booking';
 import type { Promotion } from '@/types/Promotion';
+import type { DateMarker } from '@/components/calendar/types';
+
+import RoomsSkeleton from '@/components/skeleton/RoomsSkeleton';
 
 // NOTE: We derive floor options dynamically from the room list.
 // Fallback options will only be used if no rooms are loaded yet.
@@ -52,6 +71,12 @@ const Rooms = () => {
   const { rooms, loading, setRoomId, refreshRooms, setDateRange } = useRoom();
   const { selectedAccommodationId } = useAccommodation();
   const { user } = useAuth();
+  const bottomSheetRef = useRef<BottomSheetModal>(null);
+  const scheme = useColorScheme();
+  const isDark = scheme === 'dark';
+  const snapPoints = useMemo(() => ['65%'], []);
+  const surface = isDark ? card.dark : card.light;
+  const handleColor = isDark ? '#4B5563' : '#D1D5DB';
   const [cardView, setCardView] = useState('card');
   const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set());
   const [favoriteRecords, setFavoriteRecords] = useState<Map<string, string>>(
@@ -65,6 +90,7 @@ const Rooms = () => {
   });
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loadingBookings, setLoadingBookings] = useState(false);
+  const [calendarMarkers, setCalendarMarkers] = useState<DateMarker[]>([]);
 
   const [refreshing, setRefreshing] = useState(false);
   const lastOffset = useRef(0);
@@ -75,6 +101,39 @@ const Rooms = () => {
   >({});
   const [promotions, setPromotions] = useState<Promotion[]>([]);
   const [roomDiscount, setRoomDiscount] = useState<Promotion | null>(null);
+  const [showCalendar, setShowCalendar] = useState(false);
+  const [roomSeasonalPricing, setRoomSeasonalPricing] = useState<
+    Record<string, SeasonalPricing>
+  >({});
+
+  // Control bottom sheet visibility
+  useEffect(() => {
+    if (showCalendar) {
+      bottomSheetRef.current?.present();
+    } else {
+      bottomSheetRef.current?.dismiss();
+    }
+  }, [showCalendar]);
+
+  // Render backdrop
+  const renderBackdrop = useCallback(
+    (props: any) => (
+      <BottomSheetBackdrop
+        {...props}
+        disappearsOnIndex={-1}
+        appearsOnIndex={0}
+        opacity={0.5}
+      />
+    ),
+    []
+  );
+
+  // Handle sheet changes
+  const handleSheetChanges = useCallback((index: number) => {
+    if (index === -1) {
+      setShowCalendar(false);
+    }
+  }, []);
 
   // Fetch favorites when user changes
   const fetchFavorites = useCallback(async () => {
@@ -117,11 +176,34 @@ const Rooms = () => {
       console.log('[Rooms Listing] Fetched promotions:', promos);
       setPromotions(promos);
 
-      // Find best room discount (type 2)
-      const roomDiscounts = promos.filter(
-        (p) => p.promo_type === 2 && p.discount_percentage
-      );
-      console.log('[Rooms Listing] Room discounts (type 2):', roomDiscounts);
+      // Find best active room discount (type 2) with valid dates
+      const now = new Date();
+      const roomDiscounts = promos.filter((p) => {
+        const isRoomDiscount = p.promo_type === 2;
+        // Handle both boolean and integer values (database returns 1/0)
+        const isActive = p.is_active === true || p.is_active === 1;
+        const hasDiscount = p.discount_percentage && p.discount_percentage > 0;
+        const startDate = new Date(p.start_date);
+        const isStarted = startDate <= now;
+        const notExpired = !p.end_date || new Date(p.end_date) >= now;
+
+        console.log('[Rooms Listing] Checking promo:', {
+          title: p.title,
+          isRoomDiscount,
+          isActive,
+          is_active_raw: p.is_active,
+          hasDiscount,
+          isStarted,
+          notExpired,
+          start_date: p.start_date,
+          end_date: p.end_date,
+        });
+
+        return (
+          isRoomDiscount && isActive && hasDiscount && isStarted && notExpired
+        );
+      });
+      console.log('[Rooms Listing] Valid room discounts:', roomDiscounts);
 
       if (roomDiscounts.length > 0) {
         const bestDiscount = roomDiscounts.reduce((prev, current) =>
@@ -132,7 +214,7 @@ const Rooms = () => {
         console.log('[Rooms Listing] Best room discount:', bestDiscount);
         setRoomDiscount(bestDiscount);
       } else {
-        console.log('[Rooms Listing] No room discounts found');
+        console.log('[Rooms Listing] No valid room discounts found');
         setRoomDiscount(null);
       }
     } catch (error) {
@@ -145,15 +227,26 @@ const Rooms = () => {
     const loadBookings = async () => {
       if (!selectedAccommodationId) {
         setBookings([]);
+        setCalendarMarkers([]);
         return;
       }
       setLoadingBookings(true);
       try {
-        const data = await fetchBookingsByBusinessId(selectedAccommodationId);
-        setBookings(data);
+        // Fetch bookings and blocked dates in parallel
+        const [bookingsData, blockedDates] = await Promise.all([
+          fetchBookingsByBusinessId(selectedAccommodationId),
+          fetchBlockedDatesByBusinessId(selectedAccommodationId),
+        ]);
+        setBookings(bookingsData);
+
+        // Generate calendar markers from bookings and blocked dates
+        const bookingMarkers = generateBookingDateMarkers(bookingsData);
+        const blockedMarkers = generateBlockedDateMarkers(blockedDates);
+        setCalendarMarkers([...bookingMarkers, ...blockedMarkers]);
       } catch (error) {
         console.error('Failed to load bookings:', error);
         setBookings([]);
+        setCalendarMarkers([]);
       } finally {
         setLoadingBookings(false);
       }
@@ -322,6 +415,36 @@ const Rooms = () => {
     else setRoomRatings({});
   }, [filteredRooms]);
 
+  // Fetch seasonal pricing for visible rooms
+  useEffect(() => {
+    const fetchSeasonalPricing = async () => {
+      const ids = filteredRooms
+        .map((r) => r.id)
+        .filter((id): id is string => typeof id === 'string' && !!id);
+      const newMap: Record<string, SeasonalPricing> = {};
+      await Promise.all(
+        ids.map(async (id) => {
+          try {
+            const pricing = await fetchSeasonalPricingByRoomId(id);
+            if (pricing && pricing.base_price > 0) {
+              newMap[String(id)] = pricing;
+            }
+          } catch {
+            // No seasonal pricing for this room
+          }
+        })
+      );
+      setRoomSeasonalPricing(newMap);
+    };
+    if (filteredRooms.length > 0) fetchSeasonalPricing();
+    else setRoomSeasonalPricing({});
+  }, [filteredRooms]);
+
+  // Show skeleton during initial load
+  if (loading && (!rooms || rooms.length === 0)) {
+    return <RoomsSkeleton />;
+  }
+
   return (
     <PageContainer style={{ paddingTop: 0, paddingBottom: 100 }}>
       <Container
@@ -354,24 +477,21 @@ const Rooms = () => {
           clearable={false}
         />
 
-        <DateInput
+        <Button
           style={{ flex: 1 }}
-          size="medium"
-          mode="range"
-          selectionVariant="filled"
+          label={
+            range.start && range.end
+              ? `${range.start.toLocaleDateString()} - ${range.end.toLocaleDateString()}`
+              : 'Select Dates'
+          }
           variant="solid"
-          disablePast
-          disablePastNavigation
-          requireConfirmation
-          showStatusLegend={false}
-          rangeValue={range}
-          onRangeChange={(newRange) => {
-            setRange(newRange);
-            setDateRange(newRange); // Save to context
-          }}
+          color="white"
+          elevation={1}
+          startIcon="calendar"
+          onPress={() => setShowCalendar(true)}
         />
         <Button
-          elevation={2}
+          elevation={1}
           color="white"
           startIcon={cardView === 'card' ? 'list' : 'th-large'}
           icon
@@ -401,31 +521,43 @@ const Rooms = () => {
                   total: 0,
                 };
 
+                // Calculate price: use seasonal pricing if available, otherwise room_price
+                const seasonalPricing = room.id
+                  ? roomSeasonalPricing[String(room.id)]
+                  : null;
+                const today = format(new Date(), 'yyyy-MM-dd');
+
+                // Get base price: seasonal price for today or fallback to room_price
+                let basePrice: number = 0;
+                if (seasonalPricing) {
+                  basePrice = getLocalPriceForDate(seasonalPricing, today);
+                }
+                if (basePrice <= 0 && room.room_price) {
+                  basePrice =
+                    typeof room.room_price === 'number'
+                      ? room.room_price
+                      : parseFloat(
+                          String(room.room_price).replace(/[^0-9.]/g, '')
+                        ) || 0;
+                }
+
                 // Calculate discounted price if room discount exists
-                let displayPrice: string | number | undefined = room.room_price;
+                let displayPrice: string | number | undefined =
+                  basePrice > 0 ? basePrice : room.room_price;
                 let originalPriceValue: number | undefined = undefined;
                 let discountPercent: number | undefined = undefined;
 
                 if (
                   roomDiscount &&
                   roomDiscount.discount_percentage &&
-                  room.room_price
+                  basePrice > 0
                 ) {
-                  const originalPrice =
-                    typeof room.room_price === 'number'
-                      ? room.room_price
-                      : parseFloat(
-                          String(room.room_price).replace(/[^0-9.]/g, '')
-                        );
-
-                  if (!isNaN(originalPrice)) {
-                    originalPriceValue = originalPrice;
-                    discountPercent = roomDiscount.discount_percentage;
-                    const discountAmount = Math.floor(
-                      originalPrice * (roomDiscount.discount_percentage / 100)
-                    );
-                    displayPrice = originalPrice - discountAmount;
-                  }
+                  originalPriceValue = basePrice;
+                  discountPercent = roomDiscount.discount_percentage;
+                  const discountAmount = Math.floor(
+                    basePrice * (roomDiscount.discount_percentage / 100)
+                  );
+                  displayPrice = basePrice - discountAmount;
                 }
 
                 return (
@@ -436,6 +568,7 @@ const Rooms = () => {
                     title={room.room_number || 'Room'}
                     subtitle={room.description || room.room_type || ''}
                     capacity={room.capacity || undefined}
+                    beds={room.beds || undefined}
                     price={displayPrice || undefined}
                     originalPrice={originalPriceValue}
                     discountPercentage={discountPercent}
@@ -456,7 +589,7 @@ const Rooms = () => {
                     }
                     view={cardView}
                     variant="solid"
-                    size="large"
+                    size="medium"
                     onClick={() => {
                       if (room.id) {
                         setRoomId(room.id);
@@ -478,6 +611,53 @@ const Rooms = () => {
           </View>
         )}
       </View>
+
+      <BottomSheetModal
+        ref={bottomSheetRef}
+        snapPoints={snapPoints}
+        enableDynamicSizing={false}
+        backdropComponent={renderBackdrop}
+        onChange={handleSheetChanges}
+        backgroundStyle={{ backgroundColor: surface }}
+        handleIndicatorStyle={{ backgroundColor: handleColor }}
+      >
+        <BottomSheetView style={{ padding: 16 }}>
+          <RangeDateCalendar
+            startDate={range.start || undefined}
+            endDate={range.end || undefined}
+            onRangeSelect={(start, end) => {
+              const newRange = { start, end };
+              setRange(newRange);
+              setDateRange(newRange);
+            }}
+            markers={calendarMarkers}
+            allowSameDay={false}
+          />
+          <Container backgroundColor="transparent" direction="row" padding={0}>
+            <Button
+              fullWidth
+              label="Clear Dates"
+              variant="outlined"
+              color="secondary"
+              onPress={() => {
+                setRange({ start: null, end: null });
+                setDateRange({ start: null, end: null });
+              }}
+              style={{ marginTop: 16 }}
+            />
+            <Button
+              fullWidth
+              label="Confirm"
+              variant="solid"
+              color="primary"
+              onPress={() => {
+                setShowCalendar(false);
+              }}
+              style={{ marginTop: 16 }}
+            />
+          </Container>
+        </BottomSheetView>
+      </BottomSheetModal>
     </PageContainer>
   );
 };

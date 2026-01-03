@@ -21,6 +21,7 @@ exports.up = async function (knex) {
       "booking_in_progress",
       "booking_completed",
       "booking_cancelled",
+      "booking_no_show",
       // General
       "payment_received",
       "payment_failed",
@@ -37,7 +38,6 @@ exports.up = async function (knex) {
     table.timestamp("sent_at").nullable();
     table.timestamp("read_at").nullable();
     table.timestamp("created_at").defaultTo(knex.fn.now());
-    
     table.index("user_id", "idx_notification_user");
     table.index(["related_id", "related_type"], "idx_notification_related");
     table.index("is_read", "idx_notification_read");

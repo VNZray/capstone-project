@@ -14,7 +14,7 @@ type Variant = 'solid' | 'soft' | 'outlined';
 type ContainerProps = {
   children: ReactNode;
   style?: StyleProp<ViewStyle>;
-  elevation?: 1 | 2 | 3 | 4 | 5 | 6;
+  elevation?: 0 | 1 | 2 | 3 | 4 | 5 | 6;
   width?: number | string;
   height?: number | string;
   direction?: 'row' | 'column';
@@ -42,7 +42,7 @@ const Container = ({
   display,
   children,
   style,
-  elevation = 1,
+  elevation = 0,
   width = '100%',
   height,
   direction = 'column',
@@ -51,8 +51,8 @@ const Container = ({
   gap = 20,
   flex,
   backgroundColor,
-  lightColor = card.light, 
-  darkColor = card.dark, 
+  lightColor = card.light,
+  darkColor = card.dark,
   variant = 'solid',
   justify,
   align,
@@ -70,10 +70,11 @@ const Container = ({
 
   const isDark = scheme === 'dark';
   const bgColor = backgroundColor ?? (isDark ? darkColor : lightColor);
-  
+
   // Hide elevation on Android when background is transparent
   const isTransparent = backgroundColor === 'transparent';
-  const effectiveElevation = Platform.OS === 'android' && isTransparent ? 0 : elevation;
+  const effectiveElevation =
+    Platform.OS === 'android' && isTransparent ? 0 : elevation;
 
   const variantStyle = getVariantStyle(variant, bgColor, isDark);
 
@@ -130,15 +131,15 @@ function getPlatformElevation(level: number): ViewStyle {
     const elevationStyles: ViewStyle = {
       elevation: level,
     };
-    
+
     // Add subtle shadow overlay for better depth perception on Android
     if (level > 0) {
       elevationStyles.shadowColor = '#000';
       elevationStyles.shadowOffset = { width: 0, height: level / 2 };
-      elevationStyles.shadowOpacity = 0.1 + (level * 0.02);
+      elevationStyles.shadowOpacity = 0.1 + level * 0.02;
       elevationStyles.shadowRadius = level * 0.8;
     }
-    
+
     return elevationStyles;
   }
 
@@ -196,7 +197,7 @@ function getVariantStyle(
   isDark: boolean
 ): ViewStyle {
   const baseStyle: ViewStyle = {};
-  
+
   switch (variant) {
     case 'solid':
       baseStyle.backgroundColor = bgColor;
@@ -221,7 +222,8 @@ function getVariantStyle(
       borderStyle: 'solid',
       // Ensure proper rendering of borders and backgrounds
       ...(variant === 'outlined' && {
-        borderWidth: StyleSheet.hairlineWidth > 1 ? 1 : StyleSheet.hairlineWidth,
+        borderWidth:
+          StyleSheet.hairlineWidth > 1 ? 1 : StyleSheet.hairlineWidth,
       }),
     };
   }

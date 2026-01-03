@@ -2,9 +2,12 @@ import { ThemeProvider } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 import 'react-native-reanimated';
 
 import { AuthProvider } from '@/context/AuthContext';
+import { NotificationProvider } from '@/context/NotificationContext';
 import { CartProvider } from '@/context/CartContext';
 import { NavigationProvider } from '@/context/NavigationContext';
 import { NavigationTheme } from '@/constants/color';
@@ -30,6 +33,12 @@ function RootLayoutNav() {
       <Stack.Screen name="(checkout)" />
 
       {/* Modal screens - cross-tab shared views */}
+      <Stack.Screen
+        name="(test)"
+        options={{
+          animation: 'slide_from_bottom',
+        }}
+      />
       <Stack.Screen
         name="(modals)"
         options={{
@@ -62,16 +71,22 @@ export default function RootLayout() {
   }
 
   return (
-    <SafeAreaProvider>
-      <AuthProvider>
-        <NavigationProvider>
-          <CartProvider>
-            <ThemeProvider value={NavigationTheme}>
-              <RootLayoutNav />
-            </ThemeProvider>
-          </CartProvider>
-        </NavigationProvider>
-      </AuthProvider>
-    </SafeAreaProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <SafeAreaProvider>
+        <AuthProvider>
+          <NotificationProvider>
+            <NavigationProvider>
+              <CartProvider>
+                <ThemeProvider value={NavigationTheme}>
+                  <BottomSheetModalProvider>
+                    <RootLayoutNav />
+                  </BottomSheetModalProvider>
+                </ThemeProvider>
+              </CartProvider>
+            </NavigationProvider>
+          </NotificationProvider>
+        </AuthProvider>
+      </SafeAreaProvider>
+    </GestureHandlerRootView>
   );
 }

@@ -137,6 +137,7 @@ const PaymentProcessingScreen = () => {
                 orderId: params.orderId,
                 orderNumber: params.orderNumber,
                 errorMessage: 'Payment was not completed. Please try again.',
+                orderCreated: 'true',
               }));
             }
           }, 2000);
@@ -155,6 +156,7 @@ const PaymentProcessingScreen = () => {
                 orderId: params.orderId,
                 orderNumber: params.orderNumber,
                 errorMessage: result.data.last_payment_error?.message || 'Payment failed',
+                orderCreated: 'true',
               }));
             }
           }, 2000);
@@ -196,6 +198,7 @@ const PaymentProcessingScreen = () => {
               orderId: params.orderId,
               orderNumber: params.orderNumber,
               errorMessage: errorMessage,
+              orderCreated: 'true',
             }));
           }
         }, 2000);

@@ -19,7 +19,7 @@ export const useEnhancedAuth = () => {
     throw new Error('useAuth must be used within an AuthProvider');
   }
 
-  const { user, loading: contextLoading, isAuthenticated, login: contextLogin, logout: contextLogout, refreshToken } = context;
+  const { user, loading: contextLoading, isAuthenticated, login: contextLogin, logout: contextLogout } = context;
 
   /**
    * Login with built-in validation and error handling
@@ -153,22 +153,21 @@ export const useEnhancedAuth = () => {
     // User state
     user,
     isAuthenticated,
-    
+
     // Loading states
     loading: contextLoading,
     loginLoading,
     logoutLoading,
     isLoading: contextLoading || loginLoading || logoutLoading,
-    
+
     // Error state
     error,
     clearError,
-    
+
     // Auth actions
     login,
     logout,
-    refreshToken,
-    
+
     // User helpers
     hasRole,
     isTourist,

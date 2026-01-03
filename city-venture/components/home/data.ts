@@ -69,9 +69,9 @@ export const ACTIONS: ActionItem[] = [
     icon: 'island',
   },
   {
-    id: 'tickets',
-    label: 'Tickets',
-    icon: 'ticket-confirmation-outline',
+    id: 'events',
+    label: 'Events',
+    icon: 'calendar-star',
   },
   {
     id: 'guides',

@@ -34,7 +34,15 @@ export type OrderStatus =
  */
 export type PaymentStatus = 'PENDING' | 'UNPAID' | 'PAID' | 'REFUNDED' | 'FAILED';
 
-export type PaymentMethod = 'cash_on_pickup' | 'paymongo';
+/**
+ * Payment methods - actual types sent to backend
+ * Backend validates: ['gcash', 'paymaya', 'card', 'cash_on_pickup']
+ * Note: 'paymongo' is deprecated - use specific types instead
+ */
+export type PaymentMethod = 'cash_on_pickup' | 'gcash' | 'paymaya' | 'card';
+
+/** @deprecated Use PaymentMethod instead - backend now expects actual payment types */
+export type LegacyPaymentMethod = 'cash_on_pickup' | 'paymongo';
 
 export interface Order {
   id: string;
@@ -50,7 +58,8 @@ export interface Order {
   special_instructions?: string;
   payment_method: PaymentMethod;
   payment_status: PaymentStatus;
-  payment_method_type?: 'gcash' | 'card' | 'paymaya' | 'grab_pay' | 'qrph';
+  /** @deprecated payment_method now contains the actual type */
+  payment_method_type?: 'gcash' | 'card' | 'paymaya';
   status: OrderStatus;
   arrival_code: string;
   created_at: string;
@@ -84,13 +93,11 @@ export interface CreateOrderPayload {
   discount_id?: string | null;
   pickup_datetime: string; // ISO 8601
   special_instructions?: string;
-  payment_method: PaymentMethod;
-  payment_method_type?: 'gcash' | 'card' | 'paymaya' | 'grab_pay' | 'qrph';
   /**
-   * When true, skips checkout session creation for PayMongo payments.
-   * Use this when implementing Payment Intent workflow instead of hosted checkout.
+   * Payment method - actual type sent to backend
+   * Backend validates: ['gcash', 'paymaya', 'card', 'cash_on_pickup']
    */
-  skip_checkout_session?: boolean;
+  payment_method: PaymentMethod;
 }
 
 // Response from POST /api/orders (spec.md §7)
@@ -101,5 +108,9 @@ export interface CreateOrderResponse {
   status: string;
   payment_status: string;
   total_amount: number;
-  checkout_url?: string; // PayMongo checkout URL (when payment_method=paymongo)
+  // PIPM Flow fields (recommended)
+  payment_intent_id?: string;  // PayMongo Payment Intent ID
+  client_key?: string;         // Client key for attaching payment method
+  // Legacy field - kept for backward compatibility
+  checkout_url?: string;       // @deprecated - use Payment Intent flow instead
 }

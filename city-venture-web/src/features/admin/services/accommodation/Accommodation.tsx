@@ -6,12 +6,38 @@ import DynamicTab from "@/src/components/ui/DynamicTab";
 import Card from "@/src/components/Card";
 import NoDataFound from "@/src/components/NoDataFound";
 import { Refresh, MoreVert } from "@mui/icons-material";
-import { Input, Option, Select, Menu, MenuItem, Dropdown, MenuButton, ListItemDecorator, Chip } from "@mui/joy";
-import { Search, Edit, Eye, Trash2, ListChecks, Home, Building2, Hotel, TreePine, Palmtree, House, Bed, Coffee, Castle, Mountain } from "lucide-react";
+import {
+  Input,
+  Option,
+  Select,
+  Menu,
+  MenuItem,
+  Dropdown,
+  MenuButton,
+  ListItemDecorator,
+  Chip,
+} from "@mui/joy";
+import {
+  Search,
+  Edit,
+  Eye,
+  Trash2,
+  ListChecks,
+  Home,
+  Building2,
+  Hotel,
+  TreePine,
+  Palmtree,
+  House,
+  Bed,
+  Coffee,
+  Castle,
+  Mountain,
+} from "lucide-react";
 import { useState, useEffect } from "react";
 import { getData } from "@/src/services/Service";
 import type { BusinessDetails } from "@/src/types/Business";
-import type { Category } from "@/src/types/TypeAndCategeory";
+import type { CategoryTree } from "@/src/types/Category";
 import { fetchCategoryTree } from "@/src/services/BusinessService";
 import placeholderImage from "@/src/assets/images/placeholder-image.png";
 
@@ -20,9 +46,9 @@ const Accommodation: React.FC = () => {
   const [activeTab, setActiveTab] = useState("all");
   const [filter, setFilter] = useState<"active" | "inactive">("active");
   const [accommodations, setAccommodations] = useState<BusinessDetails[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
+  const [categories, setCategories] = useState<CategoryTree[]>([]);
   const [loading, setLoading] = useState(true);
-  
+
   // Category icon mapping
   const categoryIcons: Record<number, React.ReactNode> = {
     1: <Building2 size={16} />,
@@ -43,12 +69,12 @@ const Accommodation: React.FC = () => {
   };
 
   // Flatten category tree to get all categories
-  const flattenCategories = (cats: Category[]): Category[] => {
-    const result: Category[] = [];
-    const flatten = (items: Category[]) => {
+  const flattenCategories = (cats: CategoryTree[]): CategoryTree[] => {
+    const result: CategoryTree[] = [];
+    const flatten = (items: CategoryTree[]) => {
       for (const cat of items) {
         result.push(cat);
-        if (cat.children) flatten(cat.children);
+        if (cat.children && cat.children.length > 0) flatten(cat.children);
       }
     };
     flatten(cats);
@@ -59,14 +85,16 @@ const Accommodation: React.FC = () => {
 
   // Get category name by ID
   const getCategoryName = (id: number): string => {
-    const cat = flatCategories.find(c => c.id === id);
+    const cat = flatCategories.find((c) => c.id === id);
     return cat?.title || `Category ${id}`;
   };
 
   // Generate dynamic tabs based on available categories in accommodations
   const tabs = [
     { id: "all", label: "All", icon: <ListChecks size={16} /> },
-    ...Array.from(new Set(accommodations.flatMap((acc) => acc.category_ids || [])))
+    ...Array.from(
+      new Set(accommodations.flatMap((acc) => acc.category_ids || []))
+    )
       .filter((categoryId) => categoryId !== undefined && categoryId !== null)
       .sort((a, b) => a - b)
       .map((categoryId) => ({
@@ -84,7 +112,7 @@ const Accommodation: React.FC = () => {
 
   const loadCategories = async () => {
     try {
-      const tree = await fetchCategoryTree();
+      const tree = await fetchCategoryTree("business");
       setCategories(tree);
     } catch (error) {
       console.error("Error fetching categories:", error);
@@ -95,10 +123,24 @@ const Accommodation: React.FC = () => {
     setLoading(true);
     try {
       const response = await getData("business");
-      // Filter for accommodation type businesses (hasBooking = true)
+      console.log("All businesses fetched:", response);
+
+      // Filter for accommodation type businesses (hasBooking = true or 1)
       const accommodationData = Array.isArray(response)
-        ? response.filter((business: BusinessDetails) => business.hasBooking === true)
+        ? response.filter((business: BusinessDetails) => {
+            const hasBooking =
+              business.hasBooking === true || Number(business.hasBooking) === 1;
+            console.log(
+              `Business ${business.business_name}: hasBooking=${business.hasBooking}, filtered=${hasBooking}`
+            );
+            return hasBooking;
+          })
         : [];
+
+      console.log(
+        `Found ${accommodationData.length} accommodations:`,
+        accommodationData
+      );
       setAccommodations(accommodationData);
     } catch (error) {
       console.error("Error fetching accommodations:", error);
@@ -120,7 +162,8 @@ const Accommodation: React.FC = () => {
         : acc.status?.toLowerCase() === "inactive";
 
     const matchesCategory =
-      activeTab === "all" || (acc.category_ids || []).includes(parseInt(activeTab));
+      activeTab === "all" ||
+      (acc.category_ids || []).includes(parseInt(activeTab));
 
     return matchesSearch && matchesStatus && matchesCategory;
   });
@@ -245,15 +288,21 @@ const Accommodation: React.FC = () => {
                 title={accommodation.business_name}
                 subtitle={
                   accommodation.address ||
-                  `${accommodation.barangay_name || ""}, ${accommodation.municipality_name || ""}`
+                  `${accommodation.barangay_name || ""}, ${
+                    accommodation.municipality_name || ""
+                  }`
                 }
                 size="default"
                 elevation={2}
               >
-                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                <div
+                  style={{ display: "flex", alignItems: "center", gap: "8px" }}
+                >
                   <Chip
                     size="sm"
-                    color={accommodation.status === "active" ? "success" : "neutral"}
+                    color={
+                      accommodation.status === "active" ? "success" : "neutral"
+                    }
                   >
                     {accommodation.status}
                   </Chip>
@@ -270,13 +319,17 @@ const Accommodation: React.FC = () => {
                       <MoreVert />
                     </MenuButton>
                     <Menu placement="bottom-end">
-                      <MenuItem onClick={() => handleView(accommodation.id || "")}>
+                      <MenuItem
+                        onClick={() => handleView(accommodation.id || "")}
+                      >
                         <ListItemDecorator>
                           <Eye size={18} />
                         </ListItemDecorator>
                         View Details
                       </MenuItem>
-                      <MenuItem onClick={() => handleEdit(accommodation.id || "")}>
+                      <MenuItem
+                        onClick={() => handleEdit(accommodation.id || "")}
+                      >
                         <ListItemDecorator>
                           <Edit size={18} />
                         </ListItemDecorator>

@@ -8,7 +8,7 @@ export interface Promotion {
   external_link_url?: string;
   start_date: string;
   end_date?: string;
-  is_active: boolean;
+  is_active: boolean | number; // Database returns 1/0 (number), TypeScript expects boolean
   terms_conditions?: string;
   promo_type: 1 | 2 | 3; // 1 = Discount Coupon, 2 = Room Discount, 3 = Promo Code
   promo_code?: string | null;

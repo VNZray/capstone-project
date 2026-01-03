@@ -2,11 +2,13 @@ import db from "../../db.js";
 import { v4 as uuidv4 } from "uuid";
 import { handleDbError } from "../../utils/errorHandler.js";
 import { incrementPromotionUsage } from "../promotionController.js";
-import * as paymongoService from "../../services/paymongoService.js";
+import {
+  sendNotification,
+  notifyBookingCancelled,
+  notifyBookingReminder
+} from "../../services/notificationHelper.js";
 
-// Environment configuration for payment redirects
-const FRONTEND_BASE_URL = (process.env.FRONTEND_BASE_URL || "http://localhost:5173").replace(/\/$/, "");
-const PAYMONGO_REDIRECT_BASE = (process.env.PAYMONGO_REDIRECT_BASE || FRONTEND_BASE_URL).trim();
+import { sendPushNotification } from "../../services/expoPushService.js";
 
 // Booking fields in the order expected by the stored procedures after id
 const BOOKING_FIELDS = [
@@ -30,6 +32,10 @@ const BOOKING_FIELDS = [
   "room_id",
   "tourist_id",
   "business_id",
+  "booking_source",
+  "guest_name",
+  "guest_phone",
+  "guest_email",
 ];
 
 const makePlaceholders = (n) => Array(n).fill("?").join(", ");
@@ -209,7 +215,77 @@ export async function insertBooking(req, res) {
       }
     }
 
-    return res.status(201).json(rows[0][0]);
+    const createdBooking = rows[0][0];
+
+    // Send system-generated notification to the tourist after successful booking
+    if (createdBooking) {
+      try {
+        // Get business and room details for the notification
+        const [businessData] = await db.query(
+          `SELECT b.id, b.business_name, b.owner_id, o.user_id as owner_user_id, o.first_name as owner_first_name
+           FROM business b
+           JOIN owner o ON b.owner_id = o.id
+           WHERE b.id = ?`,
+          [business_id]
+        );
+        const [roomData] = await db.query("SELECT id, room_number FROM room WHERE id = ?", [room_id]);
+        const [touristData] = await db.query("CALL GetTouristById(?)", [tourist_id]);
+        const [userData] = await db.query("CALL GetUserById(?)", [touristData[0]?.[0]?.user_id]);
+
+        const businessName = businessData[0]?.business_name || "the accommodation";
+        const roomNumber = roomData[0]?.room_number || "";
+        const touristUserId = touristData[0]?.[0]?.user_id;
+        const touristName = `${touristData[0]?.[0]?.first_name || ""} ${touristData[0]?.[0]?.last_name || ""}`.trim();
+        const ownerUserId = businessData[0]?.owner_user_id;
+        const userProfile = userData[0]?.[0].user_profile || null;
+
+        // Send notification to tourist - Booking Confirmed
+        if (touristUserId) {
+          await sendNotification(
+            touristUserId,
+            "Booking Confirmed",
+            `Your booking at ${businessName}${roomNumber ? ` (Room ${roomNumber})` : ""} has been successfully secured.`,
+            "booking_confirmed",
+            {
+              booking_id: id,
+              business_id: business_id,
+              business_name: businessName,
+              room_id: room_id,
+              room_number: roomNumber,
+              check_in_date: check_in_date,
+              check_out_date: check_out_date,
+            }
+          );
+        }
+
+        // Send notification to business owner - New Booking
+        if (ownerUserId) {
+          await sendNotification(
+            ownerUserId,
+            "New Booking Received",
+            `${touristName || "A guest"} has booked ${roomNumber ? `Room ${roomNumber}` : "a room"}. Check-in: ${check_in_date}.`,
+            "booking_created",
+            {
+              booking_id: id,
+              business_id: business_id,
+              business_name: businessName,
+              room_id: room_id,
+              room_number: roomNumber,
+              check_in_date: check_in_date,
+              check_out_date: check_out_date,
+              guest_name: touristName,
+              total_price: total_price,
+              user_profile: userProfile,
+            }
+          );
+        }
+      } catch (notifError) {
+        console.error("Failed to send booking notification:", notifError);
+        // Don't fail the booking if notification fails
+      }
+    }
+
+    return res.status(201).json(createdBooking);
   } catch (error) {
     return handleDbError(error, res);
   }
@@ -221,19 +297,158 @@ export async function updateBooking(req, res) {
     const { id } = req.params;
     if (!id) return res.status(400).json({ error: "id parameter is required" });
 
-    const [rows] = await db.query(
-      // build params for update, coalescing undefined to null
-      (() => {
-        const body = req.body || {};
-        const params = [
-          id,
-          ...BOOKING_FIELDS.map((f) => (Object.prototype.hasOwnProperty.call(body, f) ? body[f] : null)),
-        ];
-        const placeholders = makePlaceholders(params.length);
-        return db.query(`CALL UpdateBooking(${placeholders})`, params);
-      })()
-    );
-    return res.json(rows[0][0]);
+    // Get the current booking to check for status change
+    const [currentBooking] = await db.query("CALL GetBookingById(?)", [id]);
+    const previousStatus = currentBooking[0]?.[0]?.booking_status;
+
+    const body = req.body || {};
+    const params = [
+      id,
+      ...BOOKING_FIELDS.map((f) => (Object.prototype.hasOwnProperty.call(body, f) ? body[f] : null)),
+    ];
+    const placeholders = makePlaceholders(params.length);
+    const [rows] = await db.query(`CALL UpdateBooking(${placeholders})`, params);
+
+    const updatedBooking = rows[0]?.[0];
+
+    // Send notification if status changed to "Checked-out"
+    console.log("[Checkout] Checking notification conditions:", {
+      newStatus: body.booking_status,
+      previousStatus,
+      hasUpdatedBooking: !!updatedBooking,
+    });
+
+    // Handle booking status notifications
+    if (updatedBooking && body.booking_status && body.booking_status !== previousStatus) {
+      try {
+        // Get business, room, and tourist details for notifications
+        const [businessData] = await db.query("SELECT id, business_name FROM business WHERE id = ?", [updatedBooking.business_id]);
+        const [roomData] = await db.query("SELECT id, room_number FROM room WHERE id = ?", [updatedBooking.room_id]);
+        const [touristData] = await db.query("CALL GetTouristById(?)", [updatedBooking.tourist_id]);
+
+        const businessName = businessData[0]?.business_name || "the accommodation";
+        const roomNumber = roomData[0]?.room_number || "";
+        const userId = touristData[0]?.[0]?.user_id;
+
+        // Checked-out notification
+        if (body.booking_status === "Checked-out" && previousStatus !== "Checked-out") {
+          console.log("[Checkout] Status changed to Checked-Out, sending notification...");
+          console.log("[Checkout] Tourist data result:", JSON.stringify(touristData));
+
+          if (userId) {
+            console.log("[Checkout] Calling sendNotification for userId:", userId);
+            const notificationData = {
+              recipientId: userId,
+              title: "Booking Completed",
+              message: `Thank you for staying with us at ${businessName}! We hope you had a wonderful experience. We'd love to hear your feedback - please rate your stay.`,
+              type: "booking_completed",
+              metadata: {
+                booking_id: updatedBooking.id,
+                business_id: updatedBooking.business_id,
+                business_name: businessName,
+                room_id: updatedBooking.room_id,
+                room_number: roomNumber,
+              }
+            };
+
+            console.log("[Checkout] ====== NOTIFICATION DETAILS ======");
+            console.log("[Checkout] Recipient User ID:", notificationData.recipientId);
+            console.log("[Checkout] Title:", notificationData.title);
+            console.log("[Checkout] Message:", notificationData.message);
+            console.log("[Checkout] Type:", notificationData.type);
+            console.log("[Checkout] Metadata:", JSON.stringify(notificationData.metadata, null, 2));
+            console.log("[Checkout] ===================================");
+
+            await sendNotification(
+              notificationData.recipientId,
+              notificationData.title,
+              notificationData.message,
+              notificationData.type,
+              notificationData.metadata
+            );
+
+            console.log("[Checkout] ✅ Notification sent successfully to user:", userId);
+          } else {
+            console.log("[Checkout] No userId found, skipping notification");
+          }
+        }
+
+        // Cancelled notification
+        if (body.booking_status === "Canceled" && previousStatus !== "Canceled" && userId) {
+          console.log("[Booking] Status changed to Canceled, sending notification...");
+
+          const cancelledBy = body.cancelled_by || 'business';
+          const cancelTitle = "Booking Canceled";
+          const cancelMessage = cancelledBy === 'user'
+            ? 'Your booking has been successfully canceled.'
+            : `${businessName} has canceled your booking.`;
+
+          // Send database notification with push notification
+          await sendNotification(
+            userId,
+            cancelTitle,
+            cancelMessage,
+            "booking_cancelled",
+            {
+              booking_id: updatedBooking.id,
+              business_id: updatedBooking.business_id,
+              business_name: businessName,
+              cancelled_by: cancelledBy
+            }
+          );
+
+          console.log("[Booking] ✅ Cancellation notification sent to user:", userId);
+        }
+
+        if (body.booking_status === "Checked-in" && previousStatus !== "Checked-in") {
+          console.log("[Checkin] Status changed to Checked-In, sending notification...");
+          console.log("[Checkin] Tourist data result:", JSON.stringify(touristData));
+
+          if (userId) {
+            console.log("[Checkin] Calling sendNotification for userId:", userId);
+            const notificationData = {
+              recipientId: userId,
+              title: "Checked In",
+              message: `You have successfully checked in at ${businessName}. Enjoy your stay!`,
+              type: "booking_in_progress",
+              metadata: {
+                booking_id: updatedBooking.id,
+                business_id: updatedBooking.business_id,
+                business_name: businessName,
+                room_id: updatedBooking.room_id,
+                room_number: roomNumber,
+              }
+            };
+
+            console.log("[Checkout] ====== NOTIFICATION DETAILS ======");
+            console.log("[Checkout] Recipient User ID:", notificationData.recipientId);
+            console.log("[Checkout] Title:", notificationData.title);
+            console.log("[Checkout] Message:", notificationData.message);
+            console.log("[Checkout] Type:", notificationData.type);
+            console.log("[Checkout] Metadata:", JSON.stringify(notificationData.metadata, null, 2));
+            console.log("[Checkout] ===================================");
+
+            await sendNotification(
+              notificationData.recipientId,
+              notificationData.title,
+              notificationData.message,
+              notificationData.type,
+              notificationData.metadata
+            );
+
+            console.log("[Checkout] ✅ Notification sent successfully to user:", userId);
+          } else {
+            console.log("[Checkout] No userId found, skipping notification");
+          }
+        }
+
+      } catch (notifError) {
+        console.error("[Booking] Failed to send status change notification:", notifError);
+        // Don't fail the update if notification fails
+      }
+    }
+
+    return res.json(updatedBooking);
   } catch (err) {
     return handleDbError
       ? handleDbError(res, err)
@@ -245,563 +460,382 @@ export async function updateBooking(req, res) {
 export async function deleteBooking(req, res) {
   try {
     const { id } = req.params;
-    await db.query("CALL DeleteBooking(?)", [id]);
+
+    // Get booking details before deletion for notification
+    const [bookingData] = await db.query("CALL GetBookingById(?)", [id]);
+    const booking = bookingData[0]?.[0];
+
+    if (booking) {
+      // Get business and tourist info
+      const [businessData] = await db.query("SELECT id, business_name FROM business WHERE id = ?", [booking.business_id]);
+      const [touristData] = await db.query("CALL GetTouristById(?)", [booking.tourist_id]);
+      const userId = touristData[0]?.[0]?.user_id;
+      const businessName = businessData[0]?.business_name || "the accommodation";
+
+      // Delete the booking
+      await db.query("CALL DeleteBooking(?)", [id]);
+
+      // Send cancellation notifications
+      if (userId) {
+        await notifyBookingCancelled({
+          id: booking.id,
+          user_id: userId,
+          business_id: booking.business_id,
+          business_name: businessName
+        }, 'user');
+
+        // Send push notification
+        await sendPushNotification(
+          userId,
+          "Booking Cancelled",
+          "Your booking has been cancelled successfully.",
+          {
+            booking_id: booking.id,
+            business_id: booking.business_id,
+            business_name: businessName,
+            cancelled_by: 'user'
+          },
+          "booking_cancelled"
+        );
+      }
+    } else {
+      await db.query("CALL DeleteBooking(?)", [id]);
+    }
+
     res.status(204).send();
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 }
 
-// ================== PayMongo Integration for Bookings ==================
-
 /**
- * Initiate payment for a booking using PayMongo Checkout Session
- * POST /api/bookings/:id/initiate-payment
- * Body: {
- *   payment_method_type: 'gcash' | 'paymaya' | 'grab_pay' | 'card' | etc.,
- *   payment_type?: 'Full Payment' | 'Partial Payment',
- *   amount?: number (optional - defaults to booking total_price or balance),
- *   bookingData?: object (optional - if booking doesn't exist yet, create it first)
- * }
- * Auth: Required (Tourist role)
+ * Create a walk-in booking (onsite check-in)
+ * This endpoint allows staff to create a booking for guests who arrive without prior reservation
  */
-export async function initiateBookingPayment(req, res) {
+export async function createWalkInBooking(req, res) {
   try {
-    const { id: booking_id } = req.params;
-    const { payment_method_type = 'gcash', payment_type = 'Full Payment', amount, bookingData } = req.body;
-    const user_id = req.user?.id;
+    const {
+      id = uuidv4(),
+      pax,
+      num_children = 0,
+      num_adults = 0,
+      num_infants = 0,
+      foreign_counts = 0,
+      domestic_counts = 0,
+      overseas_counts = 0,
+      local_counts = 0,
+      trip_purpose = "Leisure",
+      booking_type = "overnight",
+      check_in_date,
+      check_out_date,
+      check_in_time = "14:00:00",
+      check_out_time = "12:00:00",
+      total_price,
+      balance = 0,
+      room_id,
+      business_id,
+      // Walk-in specific fields
+      guest_name,
+      guest_phone,
+      guest_email,
+      tourist_id = null, // Optional - if guest has an existing account
+      immediate_checkin = true, // Default to immediate check-in for walk-ins
+    } = req.body;
 
-    // Validate user authentication
-    if (!user_id) {
-      return res.status(401).json({
-        success: false,
-        message: "Authentication required"
+    // Validation
+    const missing = [];
+    if (pax === undefined) missing.push("pax");
+    if (!check_in_date) missing.push("check_in_date");
+    if (!check_out_date) missing.push("check_out_date");
+    if (!room_id) missing.push("room_id");
+    if (!business_id) missing.push("business_id");
+    if (total_price === undefined) missing.push("total_price");
+    // For walk-ins without tourist_id, require guest_name
+    if (!tourist_id && !guest_name) missing.push("guest_name (required for walk-in without tourist account)");
+
+    if (missing.length) {
+      return res.status(400).json({ error: "Missing required fields", fields: missing });
+    }
+
+    // Check room availability
+    const [availCheck] = await db.query("CALL CheckRoomAvailability(?, ?, ?)", [
+      room_id,
+      check_in_date,
+      check_out_date,
+    ]);
+    const availStatus = availCheck[0]?.[0]?.availability_status;
+    if (availStatus !== "AVAILABLE") {
+      return res.status(409).json({
+        error: "Room is not available for the selected dates",
+        status: availStatus,
       });
     }
 
-    let booking;
-    let bookingCreated = false;
+    // Set booking status based on immediate_checkin flag
+    const booking_status = immediate_checkin ? "Checked-In" : "Reserved";
+    const booking_source = "walk-in";
 
-    // Check if booking exists, or create it from bookingData
-    if (booking_id && booking_id !== 'pending' && !booking_id.startsWith('pending_')) {
-      // 1. Fetch existing booking details
-      const [bookingRows] = await db.query(
-        `SELECT
-          b.id, b.total_price, b.balance, b.booking_status, b.tourist_id, b.business_id, b.room_id,
-          b.check_in_date, b.check_out_date, b.pax,
-          CONCAT(r.room_type, ' - ', r.room_number) as room_name, r.room_price as price_per_night,
-          bus.business_name,
-          t.id as tourist_user_id
-         FROM booking b
-         LEFT JOIN room r ON b.room_id = r.id
-         LEFT JOIN business bus ON b.business_id = bus.id
-         LEFT JOIN tourist t ON b.tourist_id = t.id
-         WHERE b.id = ?`,
-        [booking_id]
-      );
-
-      if (!bookingRows || bookingRows.length === 0) {
-        return res.status(404).json({
-          success: false,
-          message: "Booking not found"
-        });
-      }
-
-      booking = bookingRows[0];
-
-      // 2. Validate ownership - tourist_id should match the authenticated user's tourist record
-      const [touristRows] = await db.query(
-        `SELECT id FROM tourist WHERE user_id = ?`,
-        [user_id]
-      );
-
-      if (!touristRows || touristRows.length === 0 || touristRows[0].id !== booking.tourist_id) {
-        return res.status(403).json({
-          success: false,
-          message: "You are not authorized to initiate payment for this booking"
-        });
-      }
-
-      // 3. Validate booking status
-      if (!['Pending', 'Reserved'].includes(booking.booking_status)) {
-        return res.status(400).json({
-          success: false,
-          message: `Cannot initiate payment for booking with status: ${booking.booking_status}`
-        });
-      }
-    } else if (bookingData) {
-      // CREATE NEW BOOKING from provided data
-      console.log('[BookingPayment] Creating new booking before payment initiation');
-
-      const id = uuidv4();
-      const {
-        pax,
-        num_children = 0,
-        num_adults = 0,
-        num_infants = 0,
-        foreign_counts = 0,
-        domestic_counts = 0,
-        overseas_counts = 0,
-        local_counts = 0,
-        trip_purpose,
-        booking_type = 'overnight',
-        check_in_date,
-        check_out_date,
-        check_in_time = '14:00:00',
-        check_out_time = '12:00:00',
-        total_price,
-        balance,
-        room_id,
-        tourist_id,
-        business_id,
-      } = bookingData;
-
-      // If tourist_id is actually a user_id, fetch the tourist_id
-      let actualTouristId = tourist_id;
-      if (tourist_id) {
-        // Check if this is a user_id by querying the tourist table
-        const [touristCheck] = await db.query(
-          `SELECT id FROM tourist WHERE user_id = ? OR id = ?`,
-          [tourist_id, tourist_id]
-        );
-        if (touristCheck && touristCheck.length > 0) {
-          actualTouristId = touristCheck[0].id;
-        }
-      }
-
-      // Validate required fields
-      const missing = [];
-      if (pax === undefined) missing.push('pax');
-      if (!trip_purpose) missing.push('trip_purpose');
-      if (!check_in_date) missing.push('check_in_date');
-      if (!check_out_date) missing.push('check_out_date');
-      if (!room_id) missing.push('room_id');
-      if (!actualTouristId) missing.push('tourist_id');
-      if (total_price === undefined) missing.push('total_price');
-      if (missing.length) {
-        return res.status(400).json({
-          success: false,
-          error: 'Missing required booking fields',
-          fields: missing
-        });
-      }
-
-      const effectiveBalance = balance ?? total_price;
-      const effectiveStatus = 'Reserved'; // Reserved until payment completes
-
-      const params = buildBookingParams(id, {
-        ...bookingData,
-        tourist_id: actualTouristId, // Use the actual tourist_id
-        check_in_time: bookingData.check_in_time || check_in_time,
-        check_out_time: bookingData.check_out_time || check_out_time,
-      }, {
-        defaultBalanceFor: 'balance',
-        defaultBalanceValue: effectiveBalance,
-        defaultStatusFor: 'booking_status',
-        defaultStatusValue: effectiveStatus,
-      });
-
-      const placeholders = makePlaceholders(params.length);
-
-      try {
-        await db.query(`CALL InsertBooking(${placeholders})`, params);
-        bookingCreated = true;
-
-        // Fetch the created booking
-        const [newBookingRows] = await db.query(
-          `SELECT
-            b.id, b.total_price, b.balance, b.booking_status, b.tourist_id, b.business_id, b.room_id,
-            b.check_in_date, b.check_out_date, b.pax,
-            CONCAT(r.room_type, ' - ', r.room_number) as room_name, r.room_price as price_per_night,
-            bus.business_name
-           FROM booking b
-           LEFT JOIN room r ON b.room_id = r.id
-           LEFT JOIN business bus ON b.business_id = bus.id
-           WHERE b.id = ?`,
-          [id]
-        );
-
-        booking = newBookingRows[0];
-        console.log(`[BookingPayment] ✅ Booking ${id} created successfully`);
-      } catch (createErr) {
-        console.error('[BookingPayment] Failed to create booking:', createErr);
-        return res.status(500).json({
-          success: false,
-          message: "Failed to create booking"
-        });
-      }
-    } else {
-      return res.status(400).json({
-        success: false,
-        message: "Either provide a valid booking_id or bookingData to create a new booking"
-      });
-    }
-
-    // 4. Determine payment amount
-    let paymentAmount = amount;
-    if (!paymentAmount || paymentAmount <= 0) {
-      // Default to balance if available, otherwise total_price
-      paymentAmount = booking.balance || booking.total_price;
-    }
-
-    const amountInCentavos = Math.round(paymentAmount * 100);
-
-    if (amountInCentavos < 100) {
-      // If booking was just created, delete it
-      if (bookingCreated) {
-        await db.query(`CALL DeleteBooking(?)`, [booking.id]);
-      }
-      return res.status(400).json({
-        success: false,
-        message: "Payment amount too low (minimum 1.00 PHP)"
-      });
-    }
-
-    // 5. Prepare payment metadata
-    const metadata = {
-      booking_id: booking.id,
-      business_id: booking.business_id,
-      tourist_id: booking.tourist_id,
-      user_id: user_id,
-      room_id: booking.room_id,
-      room_name: booking.room_name || 'Room',
-      total_price: booking.total_price.toString(),
-      payment_amount: paymentAmount.toString(),
-      payment_type: payment_type,
-      payment_method_type: payment_method_type,
-      check_in_date: booking.check_in_date,
-      check_out_date: booking.check_out_date,
-      source: 'mobile_app',
-      payment_for: 'booking'
+    const bodyWithDefaults = {
+      pax,
+      num_children,
+      num_adults,
+      num_infants,
+      foreign_counts,
+      domestic_counts,
+      overseas_counts,
+      local_counts,
+      trip_purpose,
+      booking_type,
+      check_in_date,
+      check_out_date,
+      check_in_time,
+      check_out_time,
+      total_price,
+      balance,
+      booking_status,
+      room_id,
+      tourist_id,
+      business_id,
+      booking_source,
+      guest_name,
+      guest_phone,
+      guest_email,
     };
 
-    // 6. Build return URL for PIPM flow (user redirected here after payment auth)
-    const returnUrl = `${PAYMONGO_REDIRECT_BASE}/bookings/${booking.id}/payment-success`;
+    const params = buildBookingParams(id, bodyWithDefaults);
+    const placeholders = makePlaceholders(params.length);
+    const [rows] = await db.query(`CALL InsertBooking(${placeholders})`, params);
 
-    let pipmResult;
-    try {
-      // 7. Create payment using PIPM flow (Payment Intent + Payment Method)
-      pipmResult = await paymongoService.createPIPMPayment({
-        referenceId: booking.id,
-        amount: amountInCentavos,
-        paymentMethodType: payment_method_type,
-        description: `Booking Payment - ${booking.room_name || 'Room'} at ${booking.business_name || 'Accommodation'}`,
-        returnUrl,
-        billing: {
-          name: metadata.tourist_id || 'Guest',
-          email: req.user?.email
-        },
-        metadata
-      });
-    } catch (paymentError) {
-      console.error('[BookingPayment] Payment initiation failed:', paymentError);
+    const createdBooking = rows[0][0];
 
-      // If booking was just created and payment failed, delete the booking
-      if (bookingCreated) {
-        try {
-          await db.query(`CALL DeleteBooking(?)`, [booking.id]);
-          console.log(`[BookingPayment] 🗑️ Deleted booking ${booking.id} due to payment initiation failure`);
-        } catch (deleteErr) {
-          console.error(`[BookingPayment] Failed to delete booking ${booking.id}:`, deleteErr);
-        }
-      }
-
-      return res.status(502).json({
-        success: false,
-        message: "Payment provider error. Please try again later."
-      });
+    // Update room status to Occupied if immediate check-in
+    if (immediate_checkin && createdBooking) {
+      await db.query("UPDATE room SET status = 'Occupied' WHERE id = ?", [room_id]);
     }
 
-    const provider_reference = pipmResult.paymentIntentId;
-    const checkout_url = pipmResult.redirectUrl;
+    // Send notification to tourist if they have an account
+    if (createdBooking && tourist_id) {
+      try {
+        const [businessData] = await db.query("SELECT id, business_name FROM business WHERE id = ?", [business_id]);
+        const [roomData] = await db.query("SELECT id, room_number FROM room WHERE id = ?", [room_id]);
+        const [touristData] = await db.query("CALL GetTouristById(?)", [tourist_id]);
 
-    // 8. Create payment record
-    const payment_id = uuidv4();
-    const created_at = new Date();
+        const businessName = businessData[0]?.business_name || "the accommodation";
+        const roomNumber = roomData[0]?.room_number || "";
+        const touristUserId = touristData[0]?.[0]?.user_id;
 
-    // Determine payment type: Full Payment if amount >= total_price, else Partial Payment
-    const isFullPayment = paymentAmount >= booking.total_price;
-    const actualPaymentType = isFullPayment ? 'Full Payment' : 'Partial Payment';
+        if (touristUserId) {
+          const notifTitle = immediate_checkin ? "Walk-In Check-In Completed" : "Walk-In Booking Confirmed";
+          const notifMessage = immediate_checkin
+            ? `You have been checked in at ${businessName}${roomNumber ? ` (Room ${roomNumber})` : ""}. Enjoy your stay!`
+            : `Your walk-in booking at ${businessName}${roomNumber ? ` (Room ${roomNumber})` : ""} has been confirmed.`;
 
-    await db.query(
-      `CALL InsertPayment(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [
-        payment_id,
-        'Tourist',                  // payer_type
-        actualPaymentType,          // payment_type (Full Payment or Partial Payment)
-        payment_method_type,        // payment_method
-        paymentAmount,              // amount in PHP
-        'pending',                  // status
-        'booking',                  // payment_for
-        user_id,                    // payer_id
-        booking.id,                 // payment_for_id
-        created_at
-      ]
-    );
-
-    // Store provider reference (Payment Intent ID) and metadata
-    await db.query(
-      `UPDATE payment
-       SET provider_reference = ?,
-           currency = 'PHP',
-           metadata = ?
-       WHERE id = ?`,
-      [provider_reference, JSON.stringify({
-        ...metadata,
-        payment_method_id: pipmResult.paymentMethodId,
-        client_key: pipmResult.clientKey,
-        status: pipmResult.status,
-        booking_created_in_flow: bookingCreated
-      }), payment_id]
-    );
-
-    console.log(`[BookingPayment] ✅ PIPM payment created for booking ${booking.id}`);
-    console.log(`[BookingPayment] 🔗 Redirect URL: ${checkout_url}`);
-
-    // 9. Return redirect URL to client
-    res.status(201).json({
-      success: true,
-      message: "Payment initiated successfully",
-      data: {
-        payment_id,
-        booking_id: booking.id,
-        amount: paymentAmount,
-        currency: 'PHP',
-        payment_method_type,
-        payment_type,
-        provider_reference,
-        checkout_url,
-        status: 'pending',
-        booking_created: bookingCreated
+          await sendNotification(
+            touristUserId,
+            notifTitle,
+            notifMessage,
+            immediate_checkin ? "booking_in_progress" : "booking_confirmed",
+            {
+              booking_id: id,
+              business_id,
+              business_name: businessName,
+              room_id,
+              room_number: roomNumber,
+              check_in_date,
+              check_out_date,
+              booking_source: "walk-in",
+            }
+          );
+        }
+      } catch (notifError) {
+        console.error("Failed to send walk-in booking notification:", notifError);
       }
-    });
+    }
 
+    return res.status(201).json({
+      ...createdBooking,
+      message: immediate_checkin
+        ? "Walk-in guest checked in successfully"
+        : "Walk-in booking created successfully",
+    });
   } catch (error) {
-    console.error("[BookingPayment] Error initiating payment:", error);
-    console.error("[BookingPayment] Error stack:", error.stack);
-    console.error("[BookingPayment] Error details:", {
-      message: error.message,
-      code: error.code,
-      response: error.response?.data
-    });
-
-    // If payment creation failed and booking was just created, clean up the booking
-    try {
-      const { id: booking_id } = req.params;
-      // Only attempt cleanup if we have a valid booking_id (not 'pending_*')
-      if (booking_id && booking_id !== 'pending' && !booking_id.startsWith('pending_')) {
-        const [bookingRows] = await db.query(
-          `SELECT id, booking_status FROM booking WHERE id = ?`,
-          [booking_id]
-        );
-
-        if (bookingRows && bookingRows.length > 0) {
-          const booking = bookingRows[0];
-          // Only delete if booking is still in Reserved or Pending status (not yet confirmed)
-          if (['Reserved', 'Pending'].includes(booking.booking_status)) {
-            await db.query(`CALL DeleteBooking(?)`, [booking_id]);
-            console.log(`[BookingPayment] 🗑️ Deleted booking ${booking_id} due to payment failure`);
-          }
-        }
-      }
-    } catch (cleanupError) {
-      console.error("[BookingPayment] Error cleaning up booking:", cleanupError);
-    }
-
-    if (error.message && error.message.includes('PayMongo')) {
-      return res.status(502).json({
-        success: false,
-        message: "Payment provider error. Please try again later.",
-        error: process.env.NODE_ENV === 'development' ? error.message : undefined
-      });
-    }
-
-    return res.status(500).json({
-      success: false,
-      message: "Failed to initiate payment",
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined,
-      details: process.env.NODE_ENV === 'development' ? {
-        stack: error.stack,
-        code: error.code
-      } : undefined
-    });
+    return handleDbError(error, res);
   }
 }
 
 /**
- * Verify payment status for a booking
- * GET /api/bookings/:id/verify-payment/:paymentId
- *
- * This endpoint checks the actual PayMongo Payment Intent status
- * to confirm whether a payment was successful or failed.
- *
- * Auth: Required (Tourist role)
+ * Search for guests (tourists) by name, phone, or email
+ * Used for walk-in bookings to find existing guest accounts
  */
-export async function verifyBookingPayment(req, res) {
+export async function searchGuests(req, res) {
   try {
-    const { id: booking_id, paymentId } = req.params;
-    const user_id = req.user?.id;
+    const { query, business_id } = req.query;
 
-    // Validate user authentication
-    if (!user_id) {
-      return res.status(401).json({
-        success: false,
-        message: "Authentication required"
-      });
+    if (!query || query.length < 2) {
+      return res.status(400).json({ error: "Search query must be at least 2 characters" });
     }
 
-    // 1. Fetch booking and payment details
-    const [rows] = await db.query(
-      `SELECT
-        b.id as booking_id, b.tourist_id, b.booking_status, b.total_price, b.balance,
-        p.id as payment_id, p.provider_reference, p.status as payment_status, p.amount,
-        t.user_id as tourist_user_id
-       FROM booking b
-       LEFT JOIN payment p ON p.payment_for_id = b.id AND p.payment_for = 'booking'
-       LEFT JOIN tourist t ON b.tourist_id = t.id
-       WHERE b.id = ? AND p.id = ?`,
-      [booking_id, paymentId]
-    );
+    const searchTerm = `%${query}%`;
 
-    if (!rows || rows.length === 0) {
-      return res.status(404).json({
-        success: false,
-        message: "Booking or payment not found"
-      });
-    }
+    // Search in tourist and users tables
+    const [rows] = await db.query(`
+      SELECT
+        t.id as tourist_id,
+        t.user_id,
+        t.first_name,
+        t.last_name,
+        CONCAT(t.first_name, ' ', t.last_name) as full_name,
+        u.email,
+        u.phone_number,
+        u.user_profile
+      FROM tourist t
+      JOIN users u ON t.user_id = u.id
+      WHERE
+        CONCAT(t.first_name, ' ', t.last_name) LIKE ?
+        OR t.first_name LIKE ?
+        OR t.last_name LIKE ?
+        OR u.email LIKE ?
+        OR u.phone_number LIKE ?
+      ORDER BY t.first_name, t.last_name
+      LIMIT 20
+    `, [searchTerm, searchTerm, searchTerm, searchTerm, searchTerm]);
 
-    const record = rows[0];
-
-    // 2. Validate ownership
-    if (record.tourist_user_id !== user_id) {
-      return res.status(403).json({
-        success: false,
-        message: "You are not authorized to verify this payment"
-      });
-    }
-
-    // 3. Check if we have a PayMongo Payment Intent ID
-    const paymentIntentId = record.provider_reference;
-
-    if (!paymentIntentId) {
-      return res.status(400).json({
-        success: false,
-        message: "No payment provider reference found"
-      });
-    }
-
-    // 4. Query PayMongo for actual payment status
-    console.log(`[VerifyPayment] Checking PayMongo status for PI: ${paymentIntentId}`);
-    const paymentIntent = await paymongoService.getPaymentIntent(paymentIntentId);
-    const piStatus = paymentIntent?.attributes?.status;
-    const lastPaymentError = paymentIntent?.attributes?.last_payment_error;
-
-    console.log(`[VerifyPayment] PayMongo status: ${piStatus}`);
-
-    // 5. Determine payment outcome
-    // PayMongo Payment Intent statuses:
-    // - awaiting_payment_method: Payment method not yet attached or failed
-    // - awaiting_next_action: Waiting for 3DS or redirect completion
-    // - processing: Payment is being processed
-    // - succeeded: Payment was successful
-
-    let verified = false;
-    let paymentVerified = 'pending';
-    let message = '';
-
-    switch (piStatus) {
-      case 'succeeded':
-        verified = true;
-        paymentVerified = 'success';
-        message = 'Payment verified successfully';
-        break;
-
-      case 'awaiting_payment_method':
-        // Payment failed or was cancelled - need new payment method
-        verified = false;
-        paymentVerified = 'failed';
-        message = lastPaymentError?.message || 'Payment was cancelled or declined. Please try again.';
-        break;
-
-      case 'awaiting_next_action':
-        // Still waiting for user action
-        verified = false;
-        paymentVerified = 'pending';
-        message = 'Payment is still pending user authorization';
-        break;
-
-      case 'processing':
-        // Payment is processing
-        verified = false;
-        paymentVerified = 'processing';
-        message = 'Payment is being processed. Please wait...';
-        break;
-
-      default:
-        verified = false;
-        paymentVerified = 'unknown';
-        message = `Unexpected payment status: ${piStatus}`;
-    }
-
-    // 6. Update local payment record if verified successful
-    if (verified && record.payment_status === 'pending') {
-      await db.query(
-        `UPDATE payment SET status = 'paid' WHERE id = ?`,
-        [paymentId]
-      );
-
-      // Update booking status to Confirmed
-      await db.query(
-        `UPDATE booking SET booking_status = 'Confirmed' WHERE id = ? AND booking_status IN ('Pending', 'Reserved')`,
-        [booking_id]
-      );
-
-      console.log(`[VerifyPayment] ✅ Payment ${paymentId} verified and marked as paid`);
-      console.log(`[VerifyPayment] ✅ Booking ${booking_id} confirmed`);
-    } else if (paymentVerified === 'failed' && record.payment_status === 'pending') {
-      // Mark local payment as failed
-      await db.query(
-        `UPDATE payment SET status = 'failed' WHERE id = ?`,
-        [paymentId]
-      );
-
-      // Delete the booking if payment failed (only if still in Reserved/Pending status)
-      if (['Reserved', 'Pending'].includes(record.booking_status)) {
-        await db.query(`CALL DeleteBooking(?)`, [booking_id]);
-        console.log(`[VerifyPayment] ❌ Payment ${paymentId} marked as failed`);
-        console.log(`[VerifyPayment] 🗑️ Booking ${booking_id} deleted due to payment failure`);
+    // Optionally get booking history for each guest at this business
+    if (business_id) {
+      for (const guest of rows) {
+        const [bookings] = await db.query(`
+          SELECT COUNT(*) as total_bookings, MAX(created_at) as last_booking
+          FROM booking
+          WHERE tourist_id = ? AND business_id = ?
+        `, [guest.tourist_id, business_id]);
+        guest.booking_history = bookings[0];
       }
     }
 
-    return res.status(200).json({
-      success: true,
-      data: {
-        verified,
-        payment_status: paymentVerified,
-        message,
-        payment_intent_status: piStatus,
-        booking_id,
-        payment_id: paymentId,
-        amount: record.amount,
-        last_payment_error: lastPaymentError
-      }
-    });
+    res.json(rows);
+  } catch (err) {
+    handleDbError(err, res);
+  }
+}
 
-  } catch (error) {
-    console.error("[VerifyPayment] Error:", error);
+/**
+ * Get today's arrivals (bookings with check-in date today)
+ */
+export async function getTodaysArrivals(req, res) {
+  try {
+    const { business_id } = req.params;
 
-    // Handle PayMongo API errors
-    if (error.response?.status === 404) {
-      return res.status(404).json({
-        success: false,
-        message: "Payment intent not found on PayMongo"
-      });
+    if (!business_id) {
+      return res.status(400).json({ error: "business_id is required" });
     }
 
-    return res.status(500).json({
-      success: false,
-      message: "Failed to verify payment",
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    const today = new Date().toISOString().split('T')[0];
+
+    const [rows] = await db.query(`
+      SELECT
+        b.*,
+        r.room_number,
+        r.room_type,
+        t.first_name as tourist_first_name,
+        t.last_name as tourist_last_name,
+        u.email as tourist_email,
+        u.phone_number as tourist_phone
+      FROM booking b
+      LEFT JOIN room r ON b.room_id = r.id
+      LEFT JOIN tourist t ON b.tourist_id = t.id
+      LEFT JOIN users u ON t.user_id = u.id
+      WHERE b.business_id = ?
+        AND b.check_in_date = ?
+        AND b.booking_status IN ('Pending', 'Reserved')
+      ORDER BY b.check_in_time ASC
+    `, [business_id, today]);
+
+    res.json({
+      date: today,
+      total: rows.length,
+      arrivals: rows,
     });
+  } catch (err) {
+    handleDbError(err, res);
+  }
+}
+
+/**
+ * Get today's departures (bookings with check-out date today)
+ */
+export async function getTodaysDepartures(req, res) {
+  try {
+    const { business_id } = req.params;
+
+    if (!business_id) {
+      return res.status(400).json({ error: "business_id is required" });
+    }
+
+    const today = new Date().toISOString().split('T')[0];
+
+    const [rows] = await db.query(`
+      SELECT
+        b.*,
+        r.room_number,
+        r.room_type,
+        t.first_name as tourist_first_name,
+        t.last_name as tourist_last_name,
+        u.email as tourist_email,
+        u.phone_number as tourist_phone
+      FROM booking b
+      LEFT JOIN room r ON b.room_id = r.id
+      LEFT JOIN tourist t ON b.tourist_id = t.id
+      LEFT JOIN users u ON t.user_id = u.id
+      WHERE b.business_id = ?
+        AND b.check_out_date = ?
+        AND b.booking_status = 'Checked-In'
+      ORDER BY b.check_out_time ASC
+    `, [business_id, today]);
+
+    res.json({
+      date: today,
+      total: rows.length,
+      departures: rows,
+    });
+  } catch (err) {
+    handleDbError(err, res);
+  }
+}
+
+/**
+ * Get currently occupied rooms for a business
+ */
+export async function getCurrentlyOccupied(req, res) {
+  try {
+    const { business_id } = req.params;
+
+    if (!business_id) {
+      return res.status(400).json({ error: "business_id is required" });
+    }
+
+    const [rows] = await db.query(`
+      SELECT
+        b.*,
+        r.room_number,
+        r.room_type,
+        r.floor,
+        COALESCE(CONCAT(t.first_name, ' ', t.last_name), b.guest_name) as guest_name,
+        COALESCE(u.phone_number, b.guest_phone) as guest_phone,
+        DATEDIFF(b.check_out_date, CURDATE()) as nights_remaining
+      FROM booking b
+      LEFT JOIN room r ON b.room_id = r.id
+      LEFT JOIN tourist t ON b.tourist_id = t.id
+      LEFT JOIN users u ON t.user_id = u.id
+      WHERE b.business_id = ?
+        AND b.booking_status = 'Checked-In'
+      ORDER BY r.room_number ASC
+    `, [business_id]);
+
+    res.json({
+      total: rows.length,
+      occupied: rows,
+    });
+  } catch (err) {
+    handleDbError(err, res);
   }
 }

@@ -1,4 +1,5 @@
 import apiClient from '@/services/apiClient';
+import { supabase } from '@/utils/supabase';
 import type {
   ReviewAndRating,
   ReviewAndRatings,
@@ -12,6 +13,7 @@ import type {
   CreateReplyPayload,
   UpdateReplyPayload,
   ReviewWithAuthor,
+  ReviewWithEntityDetails,
 } from '@/types/Feedback';
 import type { Tourist } from '@/types/Tourist';
 import type { User } from '@/types/User';
@@ -78,6 +80,45 @@ function normalizeList<T>(raw: any): T[] {
   return [src as T];
 }
 
+/**
+ * Normalize review_type from backend (PascalCase) to frontend format (snake_case/lowercase)
+ * Backend: 'Accommodation', 'Room', 'Shop', 'Tourist Spot', 'Product', 'Service'
+ * Frontend: 'accommodation', 'room', 'shop', 'tourist_spot', 'product', 'service'
+ */
+function normalizeReviewType(type: string): ReviewType {
+  const typeMap: Record<string, ReviewType> = {
+    Accommodation: 'accommodation',
+    accommodation: 'accommodation',
+    Room: 'room',
+    room: 'room',
+    Shop: 'shop',
+    shop: 'shop',
+    'Tourist Spot': 'tourist_spot',
+    Tourist_Spot: 'tourist_spot',
+    tourist_spot: 'tourist_spot',
+    Product: 'service', // Map Product to service for now
+    product: 'service',
+    Service: 'service',
+    service: 'service',
+    Event: 'service', // Map Event to service for now
+    event: 'service',
+  };
+  return typeMap[type] || 'accommodation';
+}
+
+/**
+ * Normalize a single review object's review_type field
+ */
+function normalizeReviewData<T extends { review_type?: string }>(review: T): T {
+  if (review && review.review_type) {
+    return {
+      ...review,
+      review_type: normalizeReviewType(review.review_type),
+    };
+  }
+  return review;
+}
+
 // ===== Reviews =====
 
 export async function getAllReviews(): Promise<ReviewAndRatings> {
@@ -98,6 +139,19 @@ export async function getReviewsByTypeAndEntityId(
     `/reviews/type/${review_type}/${review_type_id}`
   );
   return normalizeList<ReviewAndRating>(data);
+}
+
+/**
+ * Get all reviews made by a specific tourist
+ * Returns reviews with entity details (business name, room number, etc.)
+ */
+export async function getReviewsByTouristId(
+  touristId: string
+): Promise<ReviewWithEntityDetails[]> {
+  const { data } = await apiClient.get(`/reviews/tourist/${touristId}`);
+  const reviews = normalizeList<ReviewWithEntityDetails>(data);
+  // Normalize review_type from backend format to frontend format
+  return reviews.map(normalizeReviewData);
 }
 
 export async function getBusinessReviews(
@@ -268,13 +322,66 @@ export async function getReviewPhotos(reviewId: string): Promise<ReviewPhotos> {
   return normalizeList<ReviewPhoto>(data);
 }
 
+/**
+ * Upload a single photo to Supabase storage and return the public URL
+ */
+async function uploadPhotoToSupabase(
+  localUri: string,
+  reviewId: string
+): Promise<string> {
+  // Fetch the file as blob
+  const response = await fetch(localUri);
+  const blob = await response.blob();
+
+  // Generate unique filename
+  const timestamp = Date.now();
+  const random = Math.random().toString(36).substring(7);
+  const extension = localUri.split('.').pop() || 'jpg';
+  const fileName = `${timestamp}-${random}.${extension}`;
+  const filePath = `reviews/${reviewId}/${fileName}`;
+
+  // Upload to Supabase
+  const { data: uploadData, error: uploadError } = await supabase.storage
+    .from('reviews')
+    .upload(filePath, blob, {
+      contentType: blob.type || 'image/jpeg',
+      upsert: false,
+    });
+
+  if (uploadError) {
+    console.error('[FeedbackService] Photo upload failed:', uploadError);
+    throw uploadError;
+  }
+
+  // Get public URL
+  const { data: publicData } = supabase.storage
+    .from('reviews')
+    .getPublicUrl(filePath);
+
+  return publicData.publicUrl;
+}
+
 export async function addReviewPhotos(
   reviewId: string,
   photos: string[]
 ): Promise<ReviewPhotos> {
+  // First, upload all photos to Supabase storage
+  const uploadedUrls: string[] = [];
+  for (const photoUri of photos) {
+    // Skip if already a URL (not a local file)
+    if (photoUri.startsWith('http://') || photoUri.startsWith('https://')) {
+      uploadedUrls.push(photoUri);
+    } else {
+      // Upload local file to Supabase
+      const publicUrl = await uploadPhotoToSupabase(photoUri, reviewId);
+      uploadedUrls.push(publicUrl);
+    }
+  }
+
+  // Then send the URLs to the backend
   const { data } = await apiClient.post(
     `/review-photos/reviews/${reviewId}/photos`,
-    { photos }
+    { photos: uploadedUrls }
   );
   // Endpoint returns { message, data }
   return unwrap<ReviewPhotos>(data);
@@ -345,15 +452,39 @@ export async function getTotalReviews(
   return isNaN(total) ? 0 : total;
 }
 
+/**
+ * Check if a tourist has already reviewed a specific entity (room, accommodation, etc.)
+ * Returns true if a review exists, false otherwise
+ */
+export async function checkIfTouristHasReviewed(
+  touristId: string,
+  reviewType: ReviewType,
+  reviewTypeId: string
+): Promise<boolean> {
+  try {
+    const reviews = await getReviewsByTypeAndEntityId(reviewType, reviewTypeId);
+    // Filter out invalid entries and check if tourist has reviewed
+    const validReviews = reviews.filter(
+      (r) => r && typeof r === 'object' && 'id' in r && 'tourist_id' in r
+    );
+    return validReviews.some((r) => String(r.tourist_id) === String(touristId));
+  } catch (error) {
+    console.error('Error checking if tourist has reviewed:', error);
+    return false;
+  }
+}
+
 export default {
   // reviews
   getAllReviews,
   getReviewById,
   getReviewsByTypeAndEntityId,
+  getReviewsByTouristId,
   getBusinessReviews,
   createReview,
   updateReview,
   deleteReview,
+  checkIfTouristHasReviewed,
   // replies
   getAllReplies,
   getReplyById,

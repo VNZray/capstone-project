@@ -56,6 +56,7 @@ export default function CheckoutLayout() {
         options={{
           title: 'Payment Failed',
           headerShown: false,
+          gestureEnabled: false, // Prevent back gesture - user must use explicit navigation options
         }}
       />
       <Stack.Screen

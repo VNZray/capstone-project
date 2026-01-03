@@ -1,6 +1,9 @@
 import db from "../../db.js";
+import bcrypt from "bcrypt";
+import crypto from "crypto";
 import { handleDbError } from "../../utils/errorHandler.js";
 import { v4 as uuidv4 } from "uuid";
+import { hasBusinessAccess } from "../../utils/authHelpers.js";
 
 const STAFF_FIELDS = [
 	"first_name",
@@ -13,7 +16,88 @@ const STAFF_FIELDS = [
 const makePlaceholders = (n) => Array(n).fill("?").join(",");
 const buildStaffParams = (id, body) => [id, ...STAFF_FIELDS.map((f) => body?.[f] ?? null)];
 
-// Create staff (InsertStaff)
+/**
+ * Onboard a new staff member
+ * Creates user account + staff record in a single transaction
+ * Staff is instantly active and verified for simplified onboarding
+ */
+export async function onboardStaff(req, res) {
+	try {
+		const {
+			first_name,
+			last_name,
+			email,
+			phone_number,
+			password,
+			business_id,
+			role_id,
+		} = req.body;
+
+		// Validate required fields
+		if (!first_name || !email || !business_id || !role_id) {
+			return res.status(400).json({
+				message: "First name, email, business ID, and role are required",
+			});
+		}
+
+		// Check authorization - user must have access to this business
+		const userRole = req.user?.role;
+		if (!["Admin", "Tourism Officer"].includes(userRole)) {
+			const hasAccess = await hasBusinessAccess(business_id, req.user, userRole);
+			if (!hasAccess) {
+				return res.status(403).json({
+					message: "Not authorized to add staff to this business",
+				});
+			}
+		}
+
+		// Check if email already exists
+		const [existingUser] = await db.query("SELECT id FROM user WHERE email = ?", [email]);
+		if (existingUser && existingUser.length > 0) {
+			return res.status(409).json({
+				message: "A user with this email already exists",
+			});
+		}
+
+		// Generate IDs and password
+		const userId = uuidv4();
+		const staffId = uuidv4();
+		const tempPassword = password || crypto.randomBytes(8).toString("hex");
+		const hashedPassword = await bcrypt.hash(tempPassword, 10);
+
+		// Call the simplified onboarding procedure (no invitation tokens)
+		const [rows] = await db.query(
+			"CALL OnboardStaff(?,?,?,?,?,?,?,?,?)",
+			[
+				userId,
+				staffId,
+				email,
+				phone_number || "",
+				hashedPassword,
+				first_name,
+				last_name || "",
+				business_id,
+				role_id,
+			]
+		);
+
+		if (!rows[0] || rows[0].length === 0) {
+			return res.status(500).json({ error: "Failed to create staff member" });
+		}
+
+		const staff = rows[0][0];
+
+		// Return staff info with temp password for email sending
+		return res.status(201).json({
+			...staff,
+			temp_password: tempPassword, // For email invitation
+		});
+	} catch (error) {
+		return handleDbError(error, res);
+	}
+}
+
+// Legacy: Create staff (InsertStaff) - kept for backwards compatibility
 export async function insertStaff(req, res) {
 	try {
 		const id = uuidv4();

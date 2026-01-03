@@ -1,13 +1,16 @@
 import AccommodationCard from '@/components/accommodation/AccommodationCard';
 import PageContainer from '@/components/PageContainer';
-
+import AccommodationSkeleton from '@/components/skeleton/AccommodationSkeleton';
 import SearchBar from '@/components/SearchBar';
 import Chip from '@/components/Chip';
 import { ThemedText } from '@/components/themed-text';
 import { useAccommodation } from '@/context/AccommodationContext';
 import { useAuth } from '@/context/AuthContext';
 import { navigateToAccommodationProfile } from '@/routes/accommodationRoutes';
-import { fetchAddress } from '@/services/AccommodationService';
+import {
+  clearStoredBusinessId,
+  fetchAddress,
+} from '@/services/AccommodationService';
 import { getAverageRating, getTotalReviews } from '@/services/FeedbackService';
 import {
   getFavoritesByTouristId,
@@ -15,6 +18,10 @@ import {
   deleteFavorite,
 } from '@/services/FavoriteService';
 import type { Business } from '@/types/Business';
+import BottomSheetFilter, {
+  type FilterState,
+} from './components/BottomSheetFilter';
+import LoginPromptModal from '@/components/LoginPromptModal';
 
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -28,9 +35,11 @@ import {
   View,
   Text,
   Alert,
+  TouchableOpacity,
 } from 'react-native';
 import placeholder from '@/assets/images/placeholder.png';
 import { Colors } from '@/constants/color';
+import { clearStoredRoomId } from '@/services/RoomService';
 
 // ---- Category constants and helpers (module scope) ----
 const CATEGORY_ID_TO_KEY: Record<number, string> = {
@@ -82,7 +91,8 @@ const AccommodationDirectory = () => {
     setAccommodationId,
     refreshAllAccommodations,
   } = useAccommodation();
-  const { user } = useAuth();
+  const { user, isAuthenticated } = useAuth();
+  const [showLoginPrompt, setShowLoginPrompt] = useState(false);
 
   const [refreshing, setRefreshing] = useState(false);
   const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set());
@@ -92,6 +102,15 @@ const AccommodationDirectory = () => {
   const lastScrollOffset = useRef(0);
   const atTopRef = useRef(true);
   const wasScrollingUpRef = useRef(false);
+  const [openFilterModal, setOpenFilterModal] = useState(false);
+
+  // Filter state
+  const [appliedFilters, setAppliedFilters] = useState<FilterState>({
+    categories: [],
+    minRating: null,
+    priceRange: { min: 0, max: 10000 },
+    amenities: [],
+  });
 
   // Fetch user's favorites
   const fetchFavorites = useCallback(async () => {
@@ -171,8 +190,8 @@ const AccommodationDirectory = () => {
 
   const handleToggleFavorite = useCallback(
     async (accommodationId: string, isFavorite: boolean) => {
-      if (!user?.id) {
-        Alert.alert('Sign In Required', 'Please sign in to add favorites.');
+      if (!isAuthenticated || !user?.id) {
+        setShowLoginPrompt(true);
         return;
       }
 
@@ -246,12 +265,18 @@ const AccommodationDirectory = () => {
   const formatSubtitle = (b: Business) => {
     const barangay = getBarangayName(b.barangay_id);
     // Use category from entity_categories or fallback to "Accommodation"
-    const categoryName = b.categories && b.categories.length > 0 
-      ? b.categories[0].title 
-      : 'Accommodation';
+    const categoryName =
+      b.categories && b.categories.length > 0
+        ? b.categories[0].category_title
+        : 'Accommodation';
     const location = barangay || b.address || 'City Center';
     return `${categoryName} • ${location}`;
   };
+
+  // Ratings state - declared before filteredAccommodations
+  const [accommodationRatings, setAccommodationRatings] = useState<
+    Record<string, { avg: number; total: number }>
+  >({});
 
   const filteredAccommodations = useMemo(() => {
     if (!Array.isArray(allAccommodationDetails)) return [];
@@ -260,7 +285,7 @@ const AccommodationDirectory = () => {
       // Check hasBooking - handle both boolean and number (MySQL returns 1/0)
       const hasBooking = b.hasBooking === true || b.hasBooking === 1;
       if (!hasBooking) return false;
-      
+
       const name = toLowerSafe(b.business_name);
       const addr = toLowerSafe(b.address);
       const brgy = toLowerSafe(getBarangayName(b.barangay_id));
@@ -273,11 +298,44 @@ const AccommodationDirectory = () => {
       const status = toLowerSafe(b.status);
       const isVisibleStatus = status === 'active' || status === 'pending';
 
-      return matchesSearch && isVisibleStatus;
+      // Apply category filter
+      const matchesCategory =
+        appliedFilters.categories.length === 0 ||
+        (b.categories &&
+          b.categories.some((cat) =>
+            appliedFilters.categories.includes(cat.category_id)
+          ));
+
+      // Apply rating filter
+      const businessRating = accommodationRatings[String(b.id)]?.avg || 0;
+      const matchesRating =
+        appliedFilters.minRating === null ||
+        businessRating >= appliedFilters.minRating;
+
+      // Apply price range filter
+      const minPrice = parseFloat(String(b.min_price)) || 0;
+      const maxPrice = parseFloat(String(b.max_price)) || 10000;
+      const matchesPriceRange =
+        minPrice >= appliedFilters.priceRange.min &&
+        maxPrice <= appliedFilters.priceRange.max;
+
+      return (
+        matchesSearch &&
+        isVisibleStatus &&
+        matchesCategory &&
+        matchesRating &&
+        matchesPriceRange
+      );
     });
 
     return results;
-  }, [allAccommodationDetails, search, getBarangayName]);
+  }, [
+    allAccommodationDetails,
+    search,
+    getBarangayName,
+    appliedFilters,
+    accommodationRatings,
+  ]);
 
   const fetchBusinessAddress = async (
     barangay_id: number
@@ -320,14 +378,22 @@ const AccommodationDirectory = () => {
       });
     };
     load();
-  }, [filteredAccommodations]);
-  const [accommodationRatings, setAccommodationRatings] = useState<
-    Record<string, { avg: number; total: number }>
-  >({});
-  // Fetch ratings and total reviews for visible accommodations
+    clearStoredBusinessId();
+    clearStoredRoomId();
+  }, [filteredAccommodations, addressPartsByBarangay]);
+
+  // Fetch ratings and total reviews for all accommodations (once)
   useEffect(() => {
     const fetchRatings = async () => {
-      const ids = filteredAccommodations
+      if (
+        !Array.isArray(allAccommodationDetails) ||
+        allAccommodationDetails.length === 0
+      ) {
+        setAccommodationRatings({});
+        return;
+      }
+
+      const ids = allAccommodationDetails
         .map((r) => r.id)
         .filter((id): id is string => typeof id === 'string' && !!id);
       const newMap: Record<string, { avg: number; total: number }> = {};
@@ -346,9 +412,13 @@ const AccommodationDirectory = () => {
       );
       setAccommodationRatings(newMap);
     };
-    if (filteredAccommodations.length > 0) fetchRatings();
-    else setAccommodationRatings({});
-  }, [filteredAccommodations]);
+    fetchRatings();
+  }, [allAccommodationDetails]);
+
+  // Show skeleton during initial load (after all hooks are called)
+  if (loading && allAccommodationDetails.length === 0) {
+    return <AccommodationSkeleton />;
+  }
 
   return (
     <View style={{ flex: 1, backgroundColor: bg }}>
@@ -381,12 +451,17 @@ const AccommodationDirectory = () => {
             size="md"
             containerStyle={{
               flex: 1,
-              backgroundColor: Colors.light.inputBackground,
-              borderRadius: 12,
-              borderWidth: 0,
             }}
             inputStyle={{ fontSize: 15 }}
-            enableFiltering={true}
+            rightIcon={
+              <TouchableOpacity onPress={() => setOpenFilterModal(true)}>
+                <Ionicons
+                  name="options-outline"
+                  size={20}
+                  color={primaryColor}
+                />
+              </TouchableOpacity>
+            }
           />
         </View>
 
@@ -493,6 +568,23 @@ const AccommodationDirectory = () => {
           />
         </Pressable>
       </View>
+
+      {/* Filter Modal */}
+      <BottomSheetFilter
+        isOpen={openFilterModal}
+        onClose={() => setOpenFilterModal(false)}
+        onApplyFilters={setAppliedFilters}
+        initialFilters={appliedFilters}
+      />
+
+      {/* Login Prompt Modal */}
+      <LoginPromptModal
+        visible={showLoginPrompt}
+        onClose={() => setShowLoginPrompt(false)}
+        actionName="add to favorites"
+        title="Login to Save Favorites"
+        message="Sign in to save your favorite accommodations and access them anytime."
+      />
     </View>
   );
 };

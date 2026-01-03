@@ -79,6 +79,13 @@ export type UpdateReplyPayload = {
   message: string;
 };
 
+// Extended review type with entity details (from GetReviewsByTouristId)
+export type ReviewWithEntityDetails = ReviewAndRating & {
+  entity_name?: string | null;
+  business_id?: string | null;
+  accommodation_name?: string | null;
+};
+
 // Legacy alias for backward compatibility
 export type Review = ReviewAndRating;
 export type Reviews = ReviewAndRatings;

@@ -1,24 +1,24 @@
 import { ThemedText } from '@/components/themed-text';
-import { card, Colors, colors } from '@/constants/color';
+import { Colors, colors } from '@/constants/color';
+import { useAccommodation } from '@/context/AccommodationContext';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import type { CreateReviewPayload, ReviewWithAuthor } from '@/types/Feedback';
 import { uploadReviewImage } from '@/utils/uploadReviewImage';
-import { useAccommodation } from '@/context/AccommodationContext';
 import { Ionicons } from '@expo/vector-icons';
+import { BottomSheetTextInput } from '@gorhom/bottom-sheet';
 import * as ImagePicker from 'expo-image-picker';
 import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
   Image,
-  Modal,
   Pressable,
-  ScrollView,
   StyleSheet,
-  TextInput,
   View,
 } from 'react-native';
 import Button from '../Button';
+import BottomSheetModal from '../ui/BottomSheetModal';
+import Container from '../Container';
 
 type Props = {
   visible: boolean;
@@ -28,6 +28,7 @@ type Props = {
   touristId: string;
   reviewType: string;
   reviewTypeId: string;
+  title?: string;
 };
 
 const AddReview = ({
@@ -38,6 +39,7 @@ const AddReview = ({
   touristId,
   reviewType,
   reviewTypeId,
+  title,
 }: Props) => {
   const scheme = useColorScheme();
   const isDark = scheme === 'dark';
@@ -166,191 +168,142 @@ const AddReview = ({
   };
 
   return (
-    <Modal
-      visible={visible}
-      transparent
-      animationType="fade"
-      onRequestClose={onClose}
-    >
-      <View style={styles.floatingOverlay}>
-        <View
-          style={[
-            styles.floatingContainer,
-            { backgroundColor: isDark ? card.dark : card.light },
-          ]}
-        >
-          {/* Header */}
-          <View style={styles.header}>
-            <ThemedText type="card-title-large" weight="medium">
-              {editReview ? 'Edit Review' : 'Write a Review'}
+    <BottomSheetModal
+      isOpen={visible}
+      onClose={onClose}
+      headerTitle={
+        title || (editReview ? 'Edit Your Review' : 'How was your stay?')
+      }
+      snapPoints={['60%']}
+      index={0}
+      keyboardBehavior="interactive"
+      keyboardBlurBehavior="restore"
+      android_keyboardInputMode="adjustResize"
+      closeButton={false}
+      content={
+        <Container backgroundColor="transparent">
+          {/* Star Rating */}
+          <View style={styles.ratingSection}>
+            <View style={styles.starsContainer}>
+              {[1, 2, 3, 4, 5].map((star) => (
+                <Pressable
+                  key={star}
+                  onPress={() => setRating(star)}
+                  style={styles.starButton}
+                >
+                  <Ionicons
+                    name={star <= rating ? 'star' : 'star-outline'}
+                    size={44}
+                    color={
+                      star <= rating ? colors.secondary : colors.placeholder
+                    }
+                  />
+                </Pressable>
+              ))}
+            </View>
+          </View>
+
+          {/* Message Input */}
+          <View style={styles.section}>
+            <ThemedText type="label-medium" style={styles.label}>
+              Your Review
             </ThemedText>
-            <Pressable onPress={onClose}>
+            <BottomSheetTextInput
+              style={[
+                styles.textInput,
+                {
+                  backgroundColor: isDark
+                    ? 'rgba(255,255,255,0.05)'
+                    : 'rgba(0,0,0,0.05)',
+                  color: isDark ? Colors.dark.text : Colors.light.text,
+                },
+              ]}
+              placeholder="Share your experience..."
+              placeholderTextColor={colors.placeholder}
+              value={message}
+              onChangeText={setMessage}
+              multiline
+              numberOfLines={4}
+              textAlignVertical="top"
+            />
+          </View>
+
+          {/* Images */}
+          <View style={styles.section}>
+            <ThemedText type="label-medium" style={styles.label}>
+              Photos (Optional)
+            </ThemedText>
+            <Pressable style={styles.imageButton} onPress={pickImage}>
               <Ionicons
-                name="close"
+                name="camera-outline"
                 size={24}
                 color={isDark ? Colors.dark.text : Colors.light.text}
               />
+              <ThemedText type="body-medium">Add Photos</ThemedText>
             </Pressable>
-          </View>
 
-          <ScrollView
-            style={styles.content}
-            showsVerticalScrollIndicator={false}
-          >
-            {/* Rating */}
-            <View style={styles.section}>
-              <ThemedText type="label-medium" style={styles.label}>
-                Rating
-              </ThemedText>
-              <View style={styles.starsContainer}>
-                {[1, 2, 3, 4, 5].map((star) => (
-                  <Pressable key={star} onPress={() => setRating(star)}>
-                    <Ionicons
-                      name={star <= rating ? 'star' : 'star-outline'}
-                      size={40}
-                      color={colors.warning}
-                    />
-                  </Pressable>
+            {images.length > 0 && (
+              <View style={styles.imagesRow}>
+                {images.map((uri, index) => (
+                  <View key={index} style={styles.imageWrapper}>
+                    <Image source={{ uri }} style={styles.image} />
+                    <Pressable
+                      style={styles.removeButton}
+                      onPress={() => removeImage(index)}
+                    >
+                      <Ionicons
+                        name="close-circle"
+                        size={22}
+                        color={colors.error}
+                      />
+                    </Pressable>
+                  </View>
                 ))}
               </View>
-            </View>
-
-            {/* Message */}
-            <View style={styles.section}>
-              <ThemedText type="label-medium" style={styles.label}>
-                Your Review
-              </ThemedText>
-              <TextInput
-                style={[
-                  styles.textInput,
-                  {
-                    backgroundColor: isDark
-                      ? 'rgba(255,255,255,0.05)'
-                      : 'rgba(0,0,0,0.05)',
-                    color: isDark ? Colors.dark.text : Colors.light.text,
-                  },
-                ]}
-                placeholder="Share your experience..."
-                placeholderTextColor={colors.placeholder}
-                value={message}
-                onChangeText={setMessage}
-                multiline
-                numberOfLines={6}
-                textAlignVertical="top"
-              />
-            </View>
-
-            {/* Images */}
-            <View style={styles.section}>
-              <ThemedText type="label-medium" style={styles.label}>
-                Photos (Optional)
-              </ThemedText>
-              <Pressable style={styles.imageButton} onPress={pickImage}>
-                <Ionicons
-                  name="camera-outline"
-                  size={24}
-                  color={isDark ? Colors.dark.text : Colors.light.text}
-                />
-                <ThemedText type="body-medium">Add Photos</ThemedText>
-              </Pressable>
-
-              {images.length > 0 && (
-                <ScrollView
-                  horizontal
-                  style={styles.imagesContainer}
-                  showsHorizontalScrollIndicator={false}
-                >
-                  {images.map((uri, index) => (
-                    <View key={index} style={styles.imageWrapper}>
-                      <Image source={{ uri }} style={styles.image} />
-                      <Pressable
-                        style={styles.removeButton}
-                        onPress={() => removeImage(index)}
-                      >
-                        <Ionicons
-                          name="close-circle"
-                          size={24}
-                          color={colors.error}
-                        />
-                      </Pressable>
-                    </View>
-                  ))}
-                </ScrollView>
-              )}
-            </View>
-          </ScrollView>
-
-          {/* Footer */}
-          <View style={styles.footer}>
-            {uploadProgress ? (
-              <View style={styles.progressContainer}>
-                <ActivityIndicator size="small" color={colors.primary} />
-                <ThemedText type="body-small" style={styles.progressText}>
-                  {uploadProgress}
-                </ThemedText>
-              </View>
-            ) : null}
-
-            <View style={styles.buttonRow}>
-              <Button
-                fullWidth
-                color="secondary"
-                onPress={onClose}
-                disabled={loading}
-              >
-                Cancel
-              </Button>
-              <Button fullWidth onPress={handleSubmit} disabled={loading}>
-                {loading && !uploadProgress ? (
-                  <ActivityIndicator color="white" />
-                ) : editReview ? (
-                  'Update Review'
-                ) : (
-                  'Submit Review'
-                )}
-              </Button>
-            </View>
+            )}
           </View>
-        </View>
-      </View>
-    </Modal>
+        </Container>
+      }
+      bottomActionButton={
+        <>
+          {uploadProgress ? (
+            <View style={styles.progressContainer}>
+              <ActivityIndicator size="small" color={colors.primary} />
+              <ThemedText type="body-small" style={styles.progressText}>
+                {uploadProgress}
+              </ThemedText>
+            </View>
+          ) : null}
+
+          <Button width={'100%'} onPress={handleSubmit} disabled={loading}>
+            {loading && !uploadProgress ? (
+              <ActivityIndicator color="white" />
+            ) : editReview ? (
+              'Update Review'
+            ) : (
+              'Submit Review'
+            )}
+          </Button>
+        </>
+      }
+    />
   );
 };
 
 export default AddReview;
 
 const styles = StyleSheet.create({
-  floatingOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.25)',
-    justifyContent: 'center',
+  ratingSection: {
     alignItems: 'center',
-    padding: 16,
+    marginBottom: 24,
+    paddingVertical: 8,
   },
-  floatingContainer: {
-    width: '100%',
-    maxWidth: 400,
-    borderRadius: 20,
-    maxHeight: '90%',
-    paddingBottom: 20,
-    // Shadow for iOS
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.18,
-    shadowRadius: 16,
-    // Shadow for Android
-    elevation: 12,
-  },
-  header: {
+  starsContainer: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(128,128,128,0.2)',
+    gap: 8,
   },
-  content: {
-    padding: 16,
+  starButton: {
+    padding: 4,
   },
   section: {
     marginBottom: 20,
@@ -358,51 +311,43 @@ const styles = StyleSheet.create({
   label: {
     marginBottom: 10,
   },
-  starsContainer: {
-    flexDirection: 'row',
-    gap: 6,
-    flexWrap: 'wrap',
-  },
   textInput: {
-    borderRadius: 8,
-    padding: 12,
+    borderRadius: 12,
+    padding: 14,
     fontSize: 15,
-    minHeight: 110,
+    minHeight: 100,
   },
   imageButton: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     gap: 8,
-    padding: 12,
+    padding: 14,
     borderWidth: 1,
     borderColor: 'rgba(128,128,128,0.3)',
-    borderRadius: 8,
+    borderRadius: 12,
     borderStyle: 'dashed',
   },
-  imagesContainer: {
+  imagesRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
     marginTop: 12,
   },
   imageWrapper: {
     position: 'relative',
-    marginRight: 8,
   },
   image: {
-    width: 90,
-    height: 90,
-    borderRadius: 8,
+    width: 80,
+    height: 80,
+    borderRadius: 10,
   },
   removeButton: {
     position: 'absolute',
-    top: -8,
-    right: -8,
+    top: -6,
+    right: -6,
     backgroundColor: 'white',
-    borderRadius: 12,
-  },
-  footer: {
-    paddingHorizontal: 16,
-    paddingTop: 14,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(128,128,128,0.2)',
+    borderRadius: 11,
   },
   progressContainer: {
     flexDirection: 'row',
@@ -413,25 +358,5 @@ const styles = StyleSheet.create({
   },
   progressText: {
     opacity: 0.7,
-  },
-  buttonRow: {
-    flexDirection: 'row',
-    gap: 10,
-  },
-  button: {
-    flex: 1,
-    padding: 14,
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  cancelButton: {
-    backgroundColor: 'rgba(128,128,128,0.2)',
-  },
-  submitButton: {
-    minHeight: 48,
-  },
-  buttonDisabled: {
-    opacity: 0.5,
   },
 });

@@ -6,7 +6,6 @@ import type { UserRoles } from '@/src/types/User';
 import type { TourismStaff, CreateTourismStaffRequest, UpdateTourismStaffRequest } from '@/src/types/TourismStaff';
 import type { EntityType } from '../types/approval';
 
-
 // Use apiClient instead of creating a new axios instance
 const api = apiClient;
 
@@ -400,6 +399,22 @@ class ApiService {
       return (response.data as any).data ?? (response.data as any);
     } catch (err: any) {
       console.error('[apiService] Failed GET /user-roles', {
+        message: err?.message,
+        status: err?.response?.status,
+        data: err?.response?.data,
+      });
+      throw err;
+    }
+  }
+
+  // ===== USER ACCOUNTS =====
+  async getUsers(): Promise<any[]> {
+    try {
+      console.debug('[apiService] GET /users');
+      const response: AxiosResponse<ApiResponse<any[]>> = await api.get('/users');
+      return (response.data as any).data ?? (response.data as any);
+    } catch (err: any) {
+      console.error('[apiService] Failed GET /users', {
         message: err?.message,
         status: err?.response?.status,
         data: err?.response?.data,

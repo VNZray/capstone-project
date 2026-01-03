@@ -43,10 +43,10 @@ Utility functions for formatting, validation, and other helper logic.
 
 ## Getting Started
 
-1. **Install dependencies:**  
+1. **Install dependencies:**
    `npm install`
 
-2. **Run the app:**  
+2. **Run the app:**
    `npm start dev`
 
 
@@ -77,3 +77,9 @@ Utility functions for formatting, validation, and other helper logic.
 - Tourist → `/`
 - Business Owner → `/business`
 - Admin (Tourism) → `/tourism`
+
+### Commands for builds
+
+- eas build
+- eas build -p android --profile preview
+- npx expo start --tunnel

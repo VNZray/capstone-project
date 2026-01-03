@@ -8,7 +8,19 @@ import { handleDbError } from "../utils/errorHandler.js";
 export async function getAllBusiness(req, res) {
   try {
     const [data] = await db.query("CALL GetAllBusiness()");
-    res.json(data[0]);
+    const businesses = data[0];
+
+    // Fetch categories for each business
+    for (const business of businesses) {
+      const [categoriesData] = await db.query(
+        "CALL GetEntityCategories(?, ?)",
+        [business.id, 'business']
+      );
+      business.categories = categoriesData[0] || [];
+      business.category_ids = business.categories.map(c => c.category_id);
+    }
+
+    res.json(businesses);
   } catch (error) {
     return handleDbError(error, res);
   }
@@ -66,6 +78,7 @@ export async function insertBusiness(req, res) {
       req.body.facebook_url ?? null,
       req.body.instagram_url ?? null,
       req.body.hasBooking ?? null,
+      req.body.hasStore ?? null,
     ];
 
     // Dynamically build placeholders: "?,?,?,..."
@@ -120,6 +133,7 @@ export async function updateBusiness(req, res) {
       req.body.facebook_url ?? null,
       req.body.instagram_url ?? null,
       req.body.hasBooking ?? null,
+      req.body.hasStore ?? null,
     ];
 
     const placeholders = params.map(() => "?").join(",");
@@ -140,7 +154,7 @@ export async function updateBusiness(req, res) {
         "DELETE FROM entity_categories WHERE entity_id = ? AND entity_type = 'business'",
         [id]
       );
-      
+
       // Add new categories
       for (const categoryId of req.body.category_ids) {
         await db.query(

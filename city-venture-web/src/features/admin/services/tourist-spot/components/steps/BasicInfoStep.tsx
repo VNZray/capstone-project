@@ -1,7 +1,5 @@
 import React, { useMemo } from "react";
 import {
-  Stack,
-  Typography,
   FormControl,
   FormLabel,
   Input,
@@ -120,10 +118,8 @@ const BasicInfoStep: React.FC<BasicInfoStepProps> = ({
   };
 
   return (
-    <Stack spacing={1}>
-      <Typography level="h4">Basic Information</Typography>
-
-      <Grid container spacing={1}>
+    <Box>
+      <Grid container spacing={2}>
         <Grid xs={12}>
           <FormControl required>
             <FormLabel>Name</FormLabel>
@@ -135,7 +131,7 @@ const BasicInfoStep: React.FC<BasicInfoStepProps> = ({
             />
           </FormControl>
         </Grid>
-        
+
         <Grid xs={12}>
           <FormControl required>
             <FormLabel>Description</FormLabel>
@@ -159,7 +155,7 @@ const BasicInfoStep: React.FC<BasicInfoStepProps> = ({
               getOptionLabel={(opt) => opt?.label ?? ""}
               onChange={handleMainCategoryChange}
               renderTags={(tags, getTagProps) => (
-                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5 }}>
                   {tags.map((option, index) => (
                     <Chip
                       variant="soft"
@@ -223,7 +219,7 @@ const BasicInfoStep: React.FC<BasicInfoStepProps> = ({
           </FormControl>
         </Grid>
       </Grid>
-    </Stack>
+    </Box>
   );
 };
 

@@ -1,5 +1,6 @@
 import db from "../../db.js";
 import bcrypt from "bcrypt";
+import crypto from "crypto";
 import { handleDbError } from "../../utils/errorHandler.js";
 import { v4 as uuidv4 } from "uuid";
 
@@ -207,6 +208,150 @@ export async function getUserRoleById(req, res) {
       return res.status(404).json({ message: "User role not found" });
     }
     res.json(data[0][0]);
+  } catch (error) {
+    return handleDbError(error, res);
+  }
+}
+
+// ============================================================
+// STAFF USER MANAGEMENT
+// ============================================================
+
+/**
+ * Insert a staff user with proper onboarding flags
+ * Sets: is_verified=true, is_active=true, must_change_password=true, profile_completed=false
+ * Generates an invitation token for email verification
+ */
+export async function insertStaffUser(req, res) {
+  try {
+    const id = uuidv4();
+    
+    // Hash password
+    const rawPassword = req.body.password ?? "staff123"; // Default temp password
+    const hashedPassword = await bcrypt.hash(rawPassword, 10);
+    
+    // Generate invitation token (expires in 48 hours)
+    const invitationToken = crypto.randomBytes(32).toString('hex');
+    const invitationExpiresAt = new Date(Date.now() + 48 * 60 * 60 * 1000); // 48 hours
+    
+    const params = [
+      id,
+      req.body.email ?? null,
+      req.body.phone_number ?? "",
+      hashedPassword,
+      req.body.user_role_id ?? null,
+      req.body.barangay_id ?? null,
+      invitationToken,
+      invitationExpiresAt,
+    ];
+    
+    const [data] = await db.query(
+      "CALL InsertStaffUser(?,?,?,?,?,?,?,?)",
+      params
+    );
+    
+    if (!data[0] || data[0].length === 0) {
+      return res.status(404).json({ error: "Failed to create staff user" });
+    }
+    
+    // Return user info without password, include invitation token for email
+    const user = data[0][0];
+    res.status(201).json({
+      id: user.id,
+      email: user.email,
+      phone_number: user.phone_number,
+      user_role_id: user.user_role_id,
+      is_verified: user.is_verified,
+      is_active: user.is_active,
+      must_change_password: user.must_change_password,
+      profile_completed: user.profile_completed,
+      invitation_token: invitationToken, // For email sending
+      temp_password: rawPassword, // For email sending (only used in invitation)
+    });
+  } catch (error) {
+    return handleDbError(error, res);
+  }
+}
+
+/**
+ * Change password for a user (typically after first login)
+ * Clears the must_change_password flag
+ */
+export async function changePassword(req, res) {
+  const userId = req.user?.id; // From JWT middleware
+  
+  if (!userId) {
+    return res.status(401).json({ message: "Authentication required" });
+  }
+  
+  try {
+    const { current_password, new_password } = req.body;
+    
+    if (!current_password || !new_password) {
+      return res.status(400).json({ message: "Current and new password are required" });
+    }
+    
+    if (new_password.length < 8) {
+      return res.status(400).json({ message: "New password must be at least 8 characters" });
+    }
+    
+    // Get current user
+    const [userRows] = await db.query("CALL GetUserById(?)", [userId]);
+    if (!userRows[0] || userRows[0].length === 0) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    
+    const user = userRows[0][0];
+    
+    // Verify current password
+    const isMatch = await bcrypt.compare(current_password, user.password);
+    if (!isMatch) {
+      return res.status(401).json({ message: "Current password is incorrect" });
+    }
+    
+    // Hash new password
+    const hashedPassword = await bcrypt.hash(new_password, 10);
+    
+    // Update password and clear must_change_password flag
+    const [data] = await db.query("CALL CompletePasswordChange(?, ?)", [
+      userId,
+      hashedPassword,
+    ]);
+    
+    res.json({ 
+      message: "Password changed successfully",
+      must_change_password: false,
+    });
+  } catch (error) {
+    return handleDbError(error, res);
+  }
+}
+
+/**
+ * Complete staff profile after first login
+ * Clears invitation token and sets profile_completed=true
+ */
+export async function completeStaffProfile(req, res) {
+  const userId = req.user?.id; // From JWT middleware
+  
+  if (!userId) {
+    return res.status(401).json({ message: "Authentication required" });
+  }
+  
+  try {
+    // Optional: Update additional profile fields if provided
+    // For now, just mark profile as completed
+    
+    const [data] = await db.query("CALL CompleteStaffProfile(?)", [userId]);
+    
+    if (!data[0] || data[0].length === 0) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    
+    res.json({ 
+      message: "Profile completed successfully",
+      profile_completed: true,
+    });
   } catch (error) {
     return handleDbError(error, res);
   }

@@ -2,18 +2,22 @@ import Button from '@/components/Button';
 import { ThemedText } from '@/components/themed-text';
 import { colors, Colors } from '@/constants/color';
 import { useAuth } from '@/context/AuthContext';
+import LoginPromptModal from '@/components/LoginPromptModal';
 import { FontAwesome5, Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Image, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { usePreventDoubleNavigation } from '@/hooks/usePreventDoubleNavigation';
 import { Routes } from '@/routes/mainRoutes';
+import MenuItem from '@/components/ui/MenuItem';
+import SectionHeader from '@/components/ui/SectionHeader';
 
 const Profile = () => {
-  const { user, logout } = useAuth();
+  const { user, logout, isAuthenticated } = useAuth();
   const insets = useSafeAreaInsets();
   const { push, replace, isNavigating } = usePreventDoubleNavigation();
+  const [showLoginPrompt, setShowLoginPrompt] = useState(false);
 
   // Colors (Light Mode Only)
   const bg = Colors.light.background;
@@ -31,7 +35,8 @@ const Profile = () => {
     [user?.email]
   );
 
-  if (!user) {
+  // Guest mode: Show login prompt
+  if (!isAuthenticated) {
     return (
       <View
         style={[
@@ -40,89 +45,95 @@ const Profile = () => {
             alignItems: 'center',
             justifyContent: 'center',
             backgroundColor: bg,
+            paddingHorizontal: 32,
           },
         ]}
       >
-        <ThemedText type="sub-title-medium" weight="bold">
-          You&apos;re not signed in
+        <ThemedText
+          type="title-large"
+          weight="bold"
+          style={{ marginBottom: 12 }}
+        >
+          Your Profile Awaits
         </ThemedText>
         <ThemedText
-          type="label-medium"
-          style={{ color: textSecondary, marginTop: 6 }}
+          type="body-medium"
+          style={{
+            color: textSecondary,
+            marginBottom: 32,
+            textAlign: 'center',
+            lineHeight: 22,
+          }}
         >
-          Please sign in to view your profile.
+          Sign in to access your bookings, orders, and personalized travel
+          experience.
         </ThemedText>
-        <View style={{ marginTop: 24, width: '60%' }}>
+        <View style={{ width: '100%', maxWidth: 300 }}>
           <Button
-            label="Go to Home"
+            label="Log In"
             variant="solid"
             color="primary"
             size="large"
-            fullWidth
-            radius={16}
-            onPress={() => replace(Routes.tabs.home)}
+            radius={12}
+            onPress={() => setShowLoginPrompt(true)}
           />
         </View>
+
+        <LoginPromptModal
+          visible={showLoginPrompt}
+          onClose={() => setShowLoginPrompt(false)}
+          actionName="access your profile"
+          title="Login to View Profile"
+          message="Sign in to manage your bookings, orders, and account settings."
+        />
       </View>
     );
   }
 
-  const onEdit = () => push(Routes.profile.edit);
-  const onSettings = () => push('/(tabs)/(profile)/(settings)');
-  const onBookings = () => push('/(tabs)/(profile)/(bookings)');
+  const onAccount = () => push(Routes.profile.account);
+  const onSettings = () => push(Routes.profile.settings);
+  const onBookings = () => push(Routes.profile.bookings.index);
   const onReports = () => push(Routes.profile.reports.index);
+  const onReviews = () => push(Routes.profile.reviews);
+  const onSecurity = () => push(Routes.profile.security);
+  const onRateApp = () => push(Routes.profile.rateApp);
+
+  const onNotifications = () => push(Routes.profile.notifications);
+  const onTransactions = () => push(Routes.profile.transactions);
+
+  const onTerms = () => push(Routes.profile.terms);
+  const onPrivacy = () => push(Routes.profile.privacy);
 
   return (
-    <View style={[styles.screen, { backgroundColor: bg }]}>
+    <View style={[styles.screen, { backgroundColor: Colors.light.primary }]}>
       <ScrollView
-        contentContainerStyle={{ paddingBottom: 100 }}
+        contentContainerStyle={{ paddingBottom: 80 }}
         showsVerticalScrollIndicator={false}
       >
         {/* Header Section with Gradient */}
-        <View style={styles.headerContainer}>
+        <View
+          style={[
+            styles.headerContainer,
+            { backgroundColor: Colors.light.primary },
+          ]}
+        >
           <LinearGradient
             colors={[Colors.light.primary, '#142860']}
-            style={[styles.headerGradient, { paddingTop: insets.top + 12 }]}
+            style={[styles.headerGradient]}
           >
-            <View style={styles.headerTop}>
-              <ThemedText
-                type="title-small"
-                weight="bold"
-                style={{ color: 'white' }}
-              >
-                Profile
-              </ThemedText>
-              <Pressable
-                onPress={onSettings}
-                style={({ pressed }) => [
-                  styles.iconBtn,
-                  {
-                    opacity: pressed ? 0.7 : 1,
-                    backgroundColor: '#FFFFFF',
-                  },
-                ]}
-              >
-                <Ionicons
-                  name="settings-outline"
-                  size={20}
-                  color={textPrimary}
-                />
-              </Pressable>
-            </View>
-
             <View style={styles.profileInfo}>
               <View style={styles.avatarContainer}>
                 <Image
                   source={
-                    user.user_profile
+                    user?.user_profile
                       ? { uri: user.user_profile }
                       : require('@/assets/images/react-logo.png')
                   }
                   style={styles.avatar}
                   resizeMode="cover"
                 />
-                <Pressable style={styles.editBadge} onPress={onEdit}>
-                  <FontAwesome5 name="pen" size={10} color="#fff" />
+                <Pressable style={styles.editBadge} onPress={onAccount}>
+                  <FontAwesome5 name="camera" size={10} color="#fff" />
                 </Pressable>
               </View>
 
@@ -165,36 +176,48 @@ const Profile = () => {
               onPress={onBookings}
               border={border}
             />
-            <MenuItem
-              icon="wallet-outline"
-              iconColor="#10B981"
-              iconBg="#ECFDF5"
-              label="Payment Methods"
-              onPress={() => {}}
-              border={border}
-            />
+
             <MenuItem
               icon="notifications-outline"
               iconColor="#8B5CF6"
               iconBg="#F3E8FF"
-              label="Notification Preferences"
-              onPress={() => {}}
+              label="Notification Settings"
+              onPress={onNotifications}
               border={border}
             />
+
             <MenuItem
-              icon="heart-outline"
-              iconColor="#EF4444"
-              iconBg="#FEF2F2"
-              label="Favorites"
-              onPress={() => {}}
+              icon="notifications-outline"
+              iconColor={Colors.light.warning}
+              iconBg="#FEF3C7"
+              label="Transaction History"
+              onPress={onTransactions}
               border={border}
             />
+
+            <MenuItem
+              icon="chatbubble-ellipses-outline"
+              iconColor="#EC4899"
+              iconBg="#FCE7F3"
+              label="My Reviews"
+              onPress={onReviews}
+              border={border}
+            />
+
             <MenuItem
               icon="person-outline"
               iconColor="#6366F1"
               iconBg="#EEF2FF"
-              label="Edit Profile"
-              onPress={onEdit}
+              label="Personnal Information"
+              onPress={onAccount}
+              last
+            />
+            <MenuItem
+              icon="shield-outline"
+              iconColor="#10B981"
+              iconBg="#ECFDF5"
+              label="Account Security"
+              onPress={onSecurity}
               last
             />
           </View>
@@ -206,7 +229,7 @@ const Profile = () => {
               iconColor="#F59E0B"
               iconBg="#FFFBEB"
               label="Rate The App"
-              onPress={() => {}}
+              onPress={onRateApp}
               border={border}
             />
             <MenuItem
@@ -226,7 +249,7 @@ const Profile = () => {
               iconColor="#6366F1"
               iconBg="#EEF2FF"
               label="Terms and Conditions"
-              onPress={() => {}}
+              onPress={onTerms}
               border={border}
             />
             <MenuItem
@@ -234,7 +257,7 @@ const Profile = () => {
               iconColor="#14B8A6"
               iconBg="#F0FDFA"
               label="Privacy Policy"
-              onPress={() => {}}
+              onPress={onPrivacy}
               last
             />
           </View>
@@ -260,93 +283,6 @@ const Profile = () => {
 };
 
 export default Profile;
-
-// --- Components ---
-
-const SectionHeader = ({ title }: { title: string }) => (
-  <View style={styles.sectionHeader}>
-    <View style={styles.sectionIndicator} />
-    <ThemedText type="label-small" weight="bold" style={styles.sectionTitle}>
-      {title}
-    </ThemedText>
-  </View>
-);
-
-const StatItem = ({
-  label,
-  value,
-  color,
-}: {
-  label: string;
-  value: string;
-  color?: string;
-}) => (
-  <View style={{ alignItems: 'center', flex: 1 }}>
-    <ThemedText type="title-small" weight="bold" style={{ color }}>
-      {value}
-    </ThemedText>
-    <ThemedText
-      type="label-small"
-      style={{
-        color: color ? 'rgba(255,255,255,0.7)' : Colors.light.textSecondary,
-      }}
-    >
-      {label}
-    </ThemedText>
-  </View>
-);
-
-const MenuItem = ({
-  icon,
-  label,
-  onPress,
-  last,
-  color,
-  border,
-  iconColor,
-  iconBg,
-}: {
-  icon: any;
-  label: string;
-  onPress: () => void;
-  last?: boolean;
-  color?: string;
-  border?: string;
-  iconColor?: string;
-  iconBg?: string;
-}) => {
-  const textColor = color || Colors.light.text;
-
-  return (
-    <Pressable
-      onPress={onPress}
-      style={({ pressed }) => [
-        styles.menuItem,
-        {
-          backgroundColor: pressed ? '#F7FAFC' : 'transparent',
-          borderBottomWidth: last ? 0 : StyleSheet.hairlineWidth,
-          borderBottomColor: border || '#EDF2F7',
-        },
-      ]}
-    >
-      <View
-        style={[styles.menuIconBox, { backgroundColor: iconBg || '#F3F4F6' }]}
-      >
-        <Ionicons name={icon} size={20} color={iconColor || '#718096'} />
-      </View>
-      <View style={{ flex: 1 }}>
-        <ThemedText
-          type="body-medium"
-          weight="medium"
-          style={{ color: textColor }}
-        >
-          {label}
-        </ThemedText>
-      </View>
-      <FontAwesome5 name="chevron-right" size={14} color="#C5A059" />
-    </Pressable>
-  );
-};
 
 const styles = StyleSheet.create({
   screen: { flex: 1 },
@@ -383,10 +319,10 @@ const styles = StyleSheet.create({
   avatarContainer: {
     position: 'relative',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 10 },
+    shadowOffset: { width: 0, height: 5 },
     shadowOpacity: 0.1,
     shadowRadius: 20,
-    elevation: 10,
+    elevation: 5,
   },
   avatar: {
     width: 80,
@@ -430,20 +366,6 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     marginBottom: 8,
   },
-  menuItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-  },
-  menuIconBox: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 14,
-  },
   chevronContainer: {
     width: 24,
     height: 24,
@@ -457,23 +379,5 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingVertical: 10,
     borderRadius: 16,
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 12,
-    marginTop: 8,
-  },
-  sectionIndicator: {
-    width: 4,
-    height: 18,
-    backgroundColor: Colors.light.accent,
-    marginRight: 10,
-    borderRadius: 2,
-  },
-  sectionTitle: {
-    color: Colors.light.textSecondary,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
   },
 });

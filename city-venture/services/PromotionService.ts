@@ -8,25 +8,30 @@ import type { Promotion } from '@/types/Promotion';
  */
 export const fetchPromotionsByBusinessId = async (businessId: string): Promise<Promotion[]> => {
   try {
+    console.log('[PromotionService] Fetching promotions for business:', businessId);
     const { data } = await apiClient.get<Promotion[]>(
       `/promotions/business/${businessId}`
     );
 
-    // Filter only active promotions
-    const now = new Date();
-    return data.filter(promo => {
-      if (!promo.is_active) return false;
+    console.log('[PromotionService] Raw promotions from API:', data);
+    console.log('[PromotionService] Total promotions received:', data?.length || 0);
 
-      const startDate = new Date(promo.start_date);
-      if (startDate > now) return false; // Not started yet
-
-      if (promo.end_date) {
-        const endDate = new Date(promo.end_date);
-        if (endDate < now) return false; // Already ended
-      }
-
-      return true;
+    // Log each promotion's details
+    data?.forEach((promo, index) => {
+      console.log(`[PromotionService] Promotion ${index + 1}:`, {
+        id: promo.id,
+        title: promo.title,
+        promo_type: promo.promo_type,
+        is_active: promo.is_active,
+        discount_percentage: promo.discount_percentage,
+        start_date: promo.start_date,
+        end_date: promo.end_date,
+      });
     });
+
+    // Return ALL promotions - let components do their own filtering
+    // This allows components to have full control over validation logic
+    return data || [];
   } catch (error) {
     console.error('[PromotionService] fetchPromotionsByBusinessId error:', error);
     return []; // Return empty array instead of throwing

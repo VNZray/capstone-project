@@ -1,5 +1,19 @@
-import React, { createContext, ReactNode, useCallback, useContext, useEffect, useState } from 'react';
-import type { TouristSpot, TouristSpotCategoriesAndTypes, TouristSpotImage, TouristSpotLocationData, TouristSpotSchedule, TouristSpotAddressDetails } from '@/types/TouristSpot';
+import React, {
+  createContext,
+  ReactNode,
+  useCallback,
+  useContext,
+  useEffect,
+  useState,
+} from 'react';
+import type {
+  TouristSpot,
+  TouristSpotCategoriesAndTypes,
+  TouristSpotImage,
+  TouristSpotLocationData,
+  TouristSpotSchedule,
+  TouristSpotAddressDetails,
+} from '@/types/TouristSpot';
 import {
   clearStoredTouristSpotId,
   fetchAllTouristSpots,
@@ -34,21 +48,28 @@ interface TouristSpotContextType {
   loadMeta: () => Promise<void>;
 }
 
-const TouristSpotContext = createContext<TouristSpotContextType | undefined>(undefined);
+const TouristSpotContext = createContext<TouristSpotContextType | undefined>(
+  undefined
+);
 
-interface ProviderProps { children: ReactNode; }
+interface ProviderProps {
+  children: ReactNode;
+}
 
 export const TouristSpotProvider: React.FC<ProviderProps> = ({ children }) => {
   const [spots, setSpots] = useState<TouristSpot[]>([]);
   const [selectedSpotId, setSelectedSpotId] = useState<string | null>(null);
   const [selectedSpot, setSelectedSpot] = useState<TouristSpot | null>(null);
   const [loading, setLoading] = useState(false);
-  const [categoriesAndTypes, setCategoriesAndTypes] = useState<TouristSpotCategoriesAndTypes | null>(null);
-  const [locationData, setLocationData] = useState<TouristSpotLocationData | null>(null);
+  const [categoriesAndTypes, setCategoriesAndTypes] =
+    useState<TouristSpotCategoriesAndTypes | null>(null);
+  const [locationData, setLocationData] =
+    useState<TouristSpotLocationData | null>(null);
   const [schedules, setSchedules] = useState<TouristSpotSchedule[]>([]);
   const [images, setImages] = useState<TouristSpotImage[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
-  const [addressDetails, setAddressDetails] = useState<TouristSpotAddressDetails | null>(null);
+  const [addressDetails, setAddressDetails] =
+    useState<TouristSpotAddressDetails | null>(null);
 
   // Initialize stored selection
   useEffect(() => {
@@ -74,8 +95,12 @@ export const TouristSpotProvider: React.FC<ProviderProps> = ({ children }) => {
     try {
       const list = await fetchAllTouristSpots();
       setSpots(list);
-    } catch (e) {
-      console.error('Failed to fetch tourist spots', e);
+    } catch (e: any) {
+      console.error(
+        'Failed to fetch tourist spots',
+        e?.response?.status,
+        e?.message
+      );
       setSpots([]);
     } finally {
       setLoading(false);
@@ -101,8 +126,12 @@ export const TouristSpotProvider: React.FC<ProviderProps> = ({ children }) => {
           province: spot.province ?? null,
         });
       } else setAddressDetails(null);
-    } catch (e) {
-      console.error('Failed to fetch tourist spot', e);
+    } catch (e: any) {
+      console.error(
+        'Failed to fetch tourist spot',
+        e?.response?.status,
+        e?.message
+      );
       setSelectedSpot(null);
     } finally {
       setLoading(false);
@@ -114,18 +143,22 @@ export const TouristSpotProvider: React.FC<ProviderProps> = ({ children }) => {
     try {
       const imgs = await fetchTouristSpotImages(selectedSpotId);
       setImages(imgs);
-    } catch (e) {
-      console.error('Failed to fetch images', e);
+    } catch (e: any) {
+      console.error('Failed to fetch images', e?.response?.status, e?.message);
     }
   }, [selectedSpotId]);
 
-  const refreshSchedules = useCallback( async () => {
+  const refreshSchedules = useCallback(async () => {
     if (!selectedSpotId) return;
     try {
       const scheds = await fetchTouristSpotSchedules(selectedSpotId);
       setSchedules(scheds);
-    } catch (e) {
-      console.error('Failed to fetch schedules', e);
+    } catch (e: any) {
+      console.error(
+        'Failed to fetch schedules',
+        e?.response?.status,
+        e?.message
+      );
     }
   }, [selectedSpotId]);
 
@@ -134,8 +167,12 @@ export const TouristSpotProvider: React.FC<ProviderProps> = ({ children }) => {
     try {
       const cats = await fetchTouristSpotCategories(selectedSpotId);
       setCategories(cats);
-    } catch (e) {
-      console.error('Failed to fetch categories', e);
+    } catch (e: any) {
+      console.error(
+        'Failed to fetch categories',
+        e?.response?.status,
+        e?.message
+      );
     }
   }, [selectedSpotId]);
 
@@ -147,8 +184,12 @@ export const TouristSpotProvider: React.FC<ProviderProps> = ({ children }) => {
       ]);
       setCategoriesAndTypes(meta);
       setLocationData(loc);
-    } catch (e) {
-      console.error('Failed loading meta data', e);
+    } catch (e: any) {
+      console.error(
+        'Failed loading meta data',
+        e?.response?.status,
+        e?.message
+      );
     }
   }, []);
 

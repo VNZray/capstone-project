@@ -4,7 +4,9 @@ import { useAccommodation } from '@/context/AccommodationContext';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { fetchBusinessAmenities } from '@/services/AmenityService';
 import { fetchBusinessHours } from '@/services/BusinessHoursService';
+import { fetchBusinessPolicies } from '@/services/BusinessPoliciesService';
 import type { BusinessSchedule } from '@/types/Business';
+import type { BusinessPolicies } from '@/types/BusinessPolicies';
 import { Link } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { View } from 'react-native';
@@ -12,9 +14,9 @@ import AboutSection from './components/AboutSection';
 import AmenitySection from './components/AmenitySection';
 import BusinessHoursSection from './components/BusinessHoursSection';
 import ContactSection from './components/ContactSection';
-import SocialsSection from './components/SocialsSection';
 import MapSection from './components/MapSection';
-import GallerySection from './components/GallerySection';
+import PoliciesSection from './components/PoliciesSection';
+import SocialsSection from './components/SocialsSection';
 
 const Details = () => {
   const colorScheme = useColorScheme();
@@ -26,21 +28,13 @@ const Details = () => {
   const [loadingAmenities, setLoadingAmenities] = useState(false);
   const [hours, setHours] = useState<BusinessSchedule>([]);
   const [loadingHours, setLoadingHours] = useState(false);
+  const [policies, setPolicies] = useState<BusinessPolicies | null>(null);
+  const [loadingPolicies, setLoadingPolicies] = useState(false);
   const [rooms, setRooms] = useState<import('@/types/Business').Room[]>([]);
-
-  if (!accommodationDetails) {
-    return (
-      <View style={{ padding: 16 }}>
-        <ThemedText type="body-small">Accommodation not found.</ThemedText>
-        <Link href={'./(home)/(accommodation)'}>
-          <ThemedText type="link-medium">Go Home</ThemedText>
-        </Link>
-      </View>
-    );
-  }
 
   // Load amenities for this business
   useEffect(() => {
+    if (!accommodationDetails?.id) return;
     let isMounted = true;
     (async () => {
       if (!accommodationDetails?.id) return;
@@ -56,33 +50,40 @@ const Details = () => {
         if (isMounted) setLoadingAmenities(false);
       }
     })();
-    return () => {
-      isMounted = false;
-    };
-  }, [accommodationDetails?.id]);
 
-  // Load business hours for this business
-  useEffect(() => {
-    let isMounted = true;
     (async () => {
       if (!accommodationDetails?.id) return;
       try {
         setLoadingHours(true);
-        const data = await fetchBusinessHours(
-          accommodationDetails.id
-        );
-        if (isMounted) setHours(
-          data.map((h) => ({
-            ...h,
-            id: h.id !== undefined ? Number(h.id) : undefined,
-          }))
-        );
+        const data = await fetchBusinessHours(accommodationDetails.id);
+        if (isMounted)
+          setHours(
+            data.map((h) => ({
+              ...h,
+              id: h.id !== undefined ? Number(h.id) : undefined,
+            }))
+          );
       } catch (e) {
         console.error('[Details] Failed to load business hours:', e);
       } finally {
         if (isMounted) setLoadingHours(false);
       }
     })();
+
+    // Fetch business policies
+    (async () => {
+      if (!accommodationDetails?.id) return;
+      try {
+        setLoadingPolicies(true);
+        const data = await fetchBusinessPolicies(accommodationDetails.id);
+        if (isMounted) setPolicies(data);
+      } catch (e) {
+        console.error('[Details] Failed to load policies:', e);
+      } finally {
+        if (isMounted) setLoadingPolicies(false);
+      }
+    })();
+
     return () => {
       isMounted = false;
     };
@@ -90,37 +91,38 @@ const Details = () => {
 
   return (
     <PageContainer gap={0} style={{ paddingTop: 0, paddingBottom: 100 }}>
-      {/* About Section */}
-      <AboutSection description={accommodationDetails.description} />
+      {/* About Section - What is this place? */}
+      <AboutSection description={accommodationDetails?.description} />
 
-      {/* Amenities Section */}
+      {/* Policies & House Rules - Critical booking info (check-in/out, cancellation) */}
+      <PoliciesSection policies={policies} loading={loadingPolicies} />
+
+      {/* Amenities Section - What facilities are available? */}
       <AmenitySection amenities={amenities} loading={loadingAmenities} />
 
-      {/* Business Hours Section */}
+      {/* Business Hours Section - Operating hours */}
       <BusinessHoursSection hours={hours} loading={loadingHours} />
 
-      {/* Contact Section */}
-      <ContactSection
-        email={accommodationDetails.email}
-        phone={accommodationDetails.phone_number}
-        website={accommodationDetails.website_url}
-      />
-
-      {/* Socials Section */}
-      <SocialsSection
-        facebookUrl={accommodationDetails.facebook_url}
-        twitterUrl={accommodationDetails.x_url}
-        instagramUrl={accommodationDetails.instagram_url}
-      />
-
-      {/* Map Section */}
+      {/* Map Section - Where is it located? */}
       <MapSection
-        latitude={accommodationDetails.latitude}
-        longitude={accommodationDetails.longitude}
-        businessName={accommodationDetails.business_name}
-        description={accommodationDetails.description}
+        latitude={accommodationDetails?.latitude}
+        longitude={accommodationDetails?.longitude}
+        businessName={accommodationDetails?.business_name}
+        description={accommodationDetails?.description}
       />
 
+      {/* Contact Section - How to reach them */}
+      <ContactSection
+        email={accommodationDetails?.email}
+        phone={accommodationDetails?.phone_number}
+        website={accommodationDetails?.website_url}
+      />
+
+      {/* Socials Section - Follow on social media */}
+      <SocialsSection
+        facebookUrl={accommodationDetails?.facebook_url}
+        instagramUrl={accommodationDetails?.instagram_url}
+      />
     </PageContainer>
   );
 };

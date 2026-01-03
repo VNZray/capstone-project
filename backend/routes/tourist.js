@@ -9,10 +9,14 @@ const router = express.Router();
 router.post("/", touristController.createTourist);
 
 // All other routes require authentication
-router.get("/", authenticate, authorizeRole("Admin", "Tourism Head", "Tourism Officer"), touristController.getAllTourists);
-router.get("/:id", authenticate, touristController.getTouristById);
-router.delete("/:id", authenticate, authorizeRole("Admin"), touristController.deleteTourist);
-router.put("/:id", authenticate, touristController.updateTourist);
+router.get("/", authenticate, touristController.getAllTourists);
+
+// Specific routes MUST come before parameterized routes
 router.get("/user/:user_id", authenticate, touristController.getTouristByUserId);
+
+// Parameterized routes
+router.get("/:id", authenticate, touristController.getTouristById);
+router.delete("/:id", authenticate, touristController.deleteTourist);
+router.put("/:id", authenticate, touristController.updateTourist);
 
 export default router;

@@ -1,25 +1,23 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { apiService } from "@/src/utils/api";
-import OverviewCard from "./components/OverviewCard";
 import ViewModal from "./components/ViewModal";
-import NavCard from "./components/NavCard";
-import { Divider, Grid, IconButton, CircularProgress, Stack, Button, Select, Option } from "@mui/joy";
-import RefreshRoundedIcon from "@mui/icons-material/RefreshRounded";
-import PlaceRoundedIcon from "@mui/icons-material/PlaceRounded";
-import EventRoundedIcon from "@mui/icons-material/EventRounded";
-import BusinessRoundedIcon from "@mui/icons-material/BusinessRounded";
-import DashboardRoundedIcon from "@mui/icons-material/DashboardRounded";
-import TableRowsRoundedIcon from "@mui/icons-material/TableRowsRounded";
-import UnifiedApprovalCard from "./components/UnifiedApprovalCard"
+import StatCard from "./components/StatCard";
+import SubmissionCard from "./components/SubmissionCard";
+import { Box, Grid, Chip, Input, CircularProgress } from "@mui/joy";
+import SearchIcon from "@mui/icons-material/Search";
+import DescriptionIcon from "@mui/icons-material/Description";
+import PlaceIcon from "@mui/icons-material/Place";
+import EventIcon from "@mui/icons-material/Event";
+import BusinessIcon from "@mui/icons-material/Business";
+import FileDownloadIcon from "@mui/icons-material/FileDownload";
+import BarChartIcon from "@mui/icons-material/BarChart";
+import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import type { EntityType } from "@/src/types/approval";
-import Container from "@/src/components/Container";
-import PageContainer from "@/src/components/PageContainer";
 import Typography from "@/src/components/Typography";
-import SearchBar from "@/src/components/SearchBar";
+import Button from "@/src/components/Button";
 import { colors } from "@/src/utils/Colors";
-import DataTable, { type TableColumn } from "@/src/components/ui/Table";
-import AppButton from "@/src/components/Button";
 import placeholderImage from "@/src/assets/images/placeholder-image.png";
+import { useNavigate } from "react-router-dom";
 
 interface PendingItem {
   id: string;
@@ -83,32 +81,60 @@ const ApprovalDashboard: React.FC = () => {
   const [query, setQuery] = useState("");
   type DisplayMode = "cards" | "table";
   const [display, setDisplay] = useState<DisplayMode>("cards");
-  const [touristStatus, setTouristStatus] = useState<'all'|'new'|'edit'>('all');
-  const [touristCategory, setTouristCategory] = useState<string>('all');
-  const [businessCategory, setBusinessCategory] = useState<string>('all');
+  const [touristStatus, setTouristStatus] = useState<"all" | "new" | "edit">(
+    "all"
+  );
+  const [touristCategory, setTouristCategory] = useState<string>("all");
+  const [businessCategory, setBusinessCategory] = useState<string>("all");
 
   // Load persisted UI state
   useEffect(() => {
     try {
-      const savedDisplay = localStorage.getItem('approval.display');
-      const savedTab = localStorage.getItem('approval.activeTab');
-      const savedTStatus = localStorage.getItem('approval.touristStatus');
-      const savedTCategory = localStorage.getItem('approval.touristCategory');
-      const savedBCategory = localStorage.getItem('approval.businessCategory');
-      if (savedDisplay === 'cards' || savedDisplay === 'table') setDisplay(savedDisplay);
+      const savedDisplay = localStorage.getItem("approval.display");
+      const savedTab = localStorage.getItem("approval.activeTab");
+      const savedTStatus = localStorage.getItem("approval.touristStatus");
+      const savedTCategory = localStorage.getItem("approval.touristCategory");
+      const savedBCategory = localStorage.getItem("approval.businessCategory");
+      if (savedDisplay === "cards" || savedDisplay === "table")
+        setDisplay(savedDisplay);
       if (savedTab) setActiveTab(savedTab as TabType);
-      if (savedTStatus === 'all' || savedTStatus === 'new' || savedTStatus === 'edit') setTouristStatus(savedTStatus);
+      if (
+        savedTStatus === "all" ||
+        savedTStatus === "new" ||
+        savedTStatus === "edit"
+      )
+        setTouristStatus(savedTStatus);
       if (savedTCategory) setTouristCategory(savedTCategory);
       if (savedBCategory) setBusinessCategory(savedBCategory);
     } catch {}
   }, []);
 
   // Persist relevant state changes
-  useEffect(() => { try { localStorage.setItem('approval.display', display); } catch {} }, [display]);
-  useEffect(() => { try { localStorage.setItem('approval.activeTab', activeTab); } catch {} }, [activeTab]);
-  useEffect(() => { try { localStorage.setItem('approval.touristStatus', touristStatus); } catch {} }, [touristStatus]);
-  useEffect(() => { try { localStorage.setItem('approval.touristCategory', touristCategory); } catch {} }, [touristCategory]);
-  useEffect(() => { try { localStorage.setItem('approval.businessCategory', businessCategory); } catch {} }, [businessCategory]);
+  useEffect(() => {
+    try {
+      localStorage.setItem("approval.display", display);
+    } catch {}
+  }, [display]);
+  useEffect(() => {
+    try {
+      localStorage.setItem("approval.activeTab", activeTab);
+    } catch {}
+  }, [activeTab]);
+  useEffect(() => {
+    try {
+      localStorage.setItem("approval.touristStatus", touristStatus);
+    } catch {}
+  }, [touristStatus]);
+  useEffect(() => {
+    try {
+      localStorage.setItem("approval.touristCategory", touristCategory);
+    } catch {}
+  }, [touristCategory]);
+  useEffect(() => {
+    try {
+      localStorage.setItem("approval.businessCategory", businessCategory);
+    } catch {}
+  }, [businessCategory]);
 
   useEffect(() => {
     (async () => {
@@ -359,17 +385,31 @@ const ApprovalDashboard: React.FC = () => {
 
   const mockEvents = makeMock("Event");
 
-  const allPendingItems = [...pendingSpots, ...pendingEdits, ...pendingBusinesses];
+  const allPendingItems = [
+    ...pendingSpots,
+    ...pendingEdits,
+    ...pendingBusinesses,
+  ];
   const allItems: PendingItem[] = allPendingItems as PendingItem[];
 
   const filteredTouristSpots = useMemo(() => {
     const q = query.trim().toLowerCase();
-    let base = pendingSpots.filter((i) => !q || String(i.name ?? '').toLowerCase().includes(q));
-    if (touristCategory !== 'all') {
-      base = base.filter((i: any) => Array.isArray(i.categories) && i.categories.some((c: any) => c.category === touristCategory));
+    let base = pendingSpots.filter(
+      (i) =>
+        !q ||
+        String(i.name ?? "")
+          .toLowerCase()
+          .includes(q)
+    );
+    if (touristCategory !== "all") {
+      base = base.filter(
+        (i: any) =>
+          Array.isArray(i.categories) &&
+          i.categories.some((c: any) => c.category === touristCategory)
+      );
     }
-    if (touristStatus === 'new') return base;
-    if (touristStatus === 'edit') {
+    if (touristStatus === "new") return base;
+    if (touristStatus === "edit") {
       // only edits that pass search and category (category currently only on new items; keep edits when status=edit regardless of category filter)
       return [];
     }
@@ -378,396 +418,538 @@ const ApprovalDashboard: React.FC = () => {
 
   const filteredTouristEdits = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return pendingEdits.filter(e => !q || String(e.name ?? '').toLowerCase().includes(q));
+    return pendingEdits.filter(
+      (e) =>
+        !q ||
+        String(e.name ?? "")
+          .toLowerCase()
+          .includes(q)
+    );
   }, [pendingEdits, query]);
 
   const filteredBusinesses = useMemo(() => {
     const q = query.trim().toLowerCase();
-    let base = pendingBusinesses.filter(b => !q || String(b.name ?? '').toLowerCase().includes(q));
-    if (businessCategory !== 'all') base = base.filter((b: any) => (b.business_category_name || '—') === businessCategory);
+    let base = pendingBusinesses.filter(
+      (b) =>
+        !q ||
+        String(b.name ?? "")
+          .toLowerCase()
+          .includes(q)
+    );
+    if (businessCategory !== "all")
+      base = base.filter(
+        (b: any) => (b.business_category_name || "—") === businessCategory
+      );
     return base;
   }, [pendingBusinesses, query, businessCategory]);
 
   // Helper to extract a display image for tourist spots (new or edits)
   const getTouristSpotImage = (item: any): string | null => {
-    if (!item || typeof item !== 'object') return null;
+    if (!item || typeof item !== "object") return null;
     // Direct properties
     const directPrimary = item.primary_image || item.image_url;
     // Images array on pending item
     const imagesArr = Array.isArray(item.images) ? item.images : [];
-    const primaryFromArray = imagesArr.find((i: any) => i && (i.is_primary || i.isPrimary));
+    const primaryFromArray = imagesArr.find(
+      (i: any) => i && (i.is_primary || i.isPrimary)
+    );
     const firstImage = imagesArr[0];
     // If this is an edit, inspect existingSpot container
     const existing = item.existingSpot || item.original || null;
-    const existingImages = existing && Array.isArray(existing.images) ? existing.images : [];
-    const existingPrimary = existingImages.find((i: any) => i && (i.is_primary || i.isPrimary));
+    const existingImages =
+      existing && Array.isArray(existing.images) ? existing.images : [];
+    const existingPrimary = existingImages.find(
+      (i: any) => i && (i.is_primary || i.isPrimary)
+    );
     const existingFirst = existingImages[0];
-    const existingPrimaryImageField = existing ? (existing.primary_image || existing.image_url) : null;
+    const existingPrimaryImageField = existing
+      ? existing.primary_image || existing.image_url
+      : null;
     return (
       directPrimary ||
-      (primaryFromArray && (primaryFromArray.file_url || primaryFromArray.url)) ||
+      (primaryFromArray &&
+        (primaryFromArray.file_url || primaryFromArray.url)) ||
       (firstImage && (firstImage.file_url || firstImage.url)) ||
       existingPrimaryImageField ||
       (existingPrimary && (existingPrimary.file_url || existingPrimary.url)) ||
       (existingFirst && (existingFirst.file_url || existingFirst.url)) ||
+      null ||
       null
-    ) || null;
+    );
   };
+
+  const navigate = useNavigate();
+  const [currentView, setCurrentView] = useState<"all" | EntityType>("all");
 
   if (loading)
     return (
-      <PageContainer padding={20}>
-        <Container
-          align="center"
-          justify="center"
-          padding="4rem"
-          style={{ minHeight: "60vh" }}
-        >
+      <Box
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          minHeight: "60vh",
+        }}
+      >
+        <Box sx={{ textAlign: "center" }}>
           <CircularProgress size="lg" />
           <Typography.Body size="sm" sx={{ marginTop: "1rem" }}>
             Loading approval data...
           </Typography.Body>
-        </Container>
-      </PageContainer>
+        </Box>
+      </Box>
     );
 
   return (
-    <PageContainer padding={20} style={{ height: "100vh" }}>
+    <Box
+      sx={{
+        padding: "clamp(1rem, 3vw, 2rem)",
+        margin: "0 auto",
+        backgroundColor: colors.background,
+      }}
+    >
       {/* Header Section */}
-      <Container
-        direction="row"
-        justify="space-between"
-        align="center"
-        padding="0"
-        gap="1rem"
-        style={{ marginBottom: "2rem" }}
+      <Box
+        sx={{
+          display: "flex",
+          flexDirection: { xs: "column", sm: "row" },
+          justifyContent: "space-between",
+          alignItems: { xs: "flex-start", sm: "center" },
+          gap: 2,
+          marginBottom: "clamp(1.5rem, 4vw, 2.5rem)",
+        }}
       >
-        <Container padding="0" gap="0.5rem">
-          <Typography.Header size="lg" color="primary">
-            Content Approvals
-          </Typography.Header>
-          <Typography.Body size="sm" color="default">
-            Review and manage submissions from the public and partners
-          </Typography.Body>
-        </Container>
-        <Container direction="row" padding="0" gap="0.5rem" align="center">
-          <IconButton
-            size="sm"
-            variant={display === "cards" ? "solid" : "soft"}
-            color={display === "cards" ? "primary" : "neutral"}
-            aria-label="Cards view"
-            onClick={() => setDisplay("cards")}
-          >
-            <DashboardRoundedIcon />
-          </IconButton>
-          <IconButton
-            size="sm"
-            variant={display === "table" ? "solid" : "soft"}
-            color={display === "table" ? "primary" : "neutral"}
-            aria-label="Table view"
-            onClick={() => setDisplay("table")}
-          >
-            <TableRowsRoundedIcon />
-          </IconButton>
-          <IconButton
-            size="sm"
-            variant="soft"
-            color="neutral"
-            onClick={refresh}
-            aria-label="Refresh"
-            sx={{
-              "&:hover": { backgroundColor: colors.primary + "20" },
-            }}
-          >
-            <RefreshRoundedIcon />
-          </IconButton>
-        </Container>
-      </Container>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+          <Box>
+            <Typography.Header size="md" weight="bold">
+              Content Approvals
+            </Typography.Header>
+            <Typography.Body size="xs" sx={{ opacity: 0.7, marginTop: "4px" }}>
+              Review and manage submissions from the public and partners
+            </Typography.Body>
+          </Box>
+        </Box>
+      </Box>
 
-      {/* Navigation Cards */}
-      <Grid container spacing={1}>
-        {(
-          [
-            {
-              key: "overview",
-              label: "Overview",
-              count: allItems.length,
-              icon: <DashboardRoundedIcon />,
-              tab: "overview" as TabType,
-            },
-            {
-              key: "tourist_spots",
-              label: "Tourist Spots",
-              count: pendingSpots.length + pendingEdits.length,
-              icon: <PlaceRoundedIcon />,
-              tab: "tourist_spots" as TabType,
-            },
-            {
-              key: "events",
-              label: "Events",
-              count: mockEvents.length,
-              icon: <EventRoundedIcon />,
-              tab: "events" as TabType,
-            },
-            {
-              key: "businesses",
-              label: "Businesses",
-              count: pendingBusinesses.length,
-              icon: <BusinessRoundedIcon />,
-              tab: "businesses" as TabType,
-            },
-          ] as const
-        ).map((n) => (
-          <Grid key={n.key} xs={12} sm={6} md={3} lg={3} xl={3}>
-            <NavCard
-              label={n.label}
-              count={n.count}
-              icon={n.icon}
-              active={activeTab === n.tab}
-              onClick={() => setActiveTab(n.tab)}
-            />
-          </Grid>
-        ))}
+      {/* Stats Overview Cards */}
+      <Grid
+        container
+        spacing={{ xs: 1.5, sm: 2 }}
+        sx={{ marginBottom: "clamp(1.5rem, 4vw, 2.5rem)" }}
+      >
+        <Grid xs={12} sm={6} md={3}>
+          <StatCard
+            icon={<DescriptionIcon sx={{ color: colors.primary }} />}
+            title="Pending Reviews"
+            count={allItems.length}
+            badge="+3 this week"
+            iconBgColor={colors.primary + "20"}
+          />
+        </Grid>
+        <Grid xs={12} sm={6} md={3}>
+          <StatCard
+            icon={<PlaceIcon sx={{ color: colors.success }} />}
+            title="Tourist Spots"
+            count={pendingSpots.length + pendingEdits.length}
+            iconBgColor={colors.success + "20"}
+          />
+        </Grid>
+        <Grid xs={12} sm={6} md={3}>
+          <StatCard
+            icon={<EventIcon sx={{ color: colors.warning }} />}
+            title="Events"
+            count={mockEvents.length}
+            iconBgColor={colors.warning + "20"}
+          />
+        </Grid>
+        <Grid xs={12} sm={6} md={3}>
+          <StatCard
+            icon={<BusinessIcon sx={{ color: colors.info }} />}
+            title="Businesses"
+            count={pendingBusinesses.length}
+            iconBgColor={colors.info + "20"}
+          />
+        </Grid>
       </Grid>
 
-      <Divider />
+      {/* Search and Filter Section */}
+      <Box
+        sx={{
+          display: "flex",
+          flexDirection: { xs: "column", sm: "row" },
+          gap: 2,
+          marginBottom: "clamp(1.5rem, 4vw, 2rem)",
+          alignItems: { xs: "stretch", sm: "center" },
+          justifyContent: "space-between",
+        }}
+      >
+        {/* Search Bar */}
+        <Input
+          placeholder="Search submissions..."
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          startDecorator={<SearchIcon />}
+          size="lg"
+          sx={{
+            flex: 1,
+            maxWidth: { xs: "100%", sm: "500px" },
+            fontSize: "clamp(0.875rem, 2vw, 1rem)",
+            "--Input-focusedThickness": "2px",
+          }}
+        />
 
-      {/* Content Sections */}
-      {activeTab === "overview" && (
-        <Grid container spacing={2}>
-          <Grid xs={12} md={4} lg={4}>
-            <OverviewCard
-              title="Tourist Spots"
-              count={pendingSpots.length + pendingEdits.length}
-              icon="📍"
-              items={[...pendingSpots, ...pendingEdits]}
-              onApprove={handleApprove}
-              onView={handleView}
-            />
-          </Grid>
-          <Grid xs={12} md={4} lg={4}>
-            <OverviewCard
-              title="Events"
-              count={mockEvents.length}
-              icon="📅"
-              items={mockEvents}
-              onView={handleView}
-            />
-          </Grid>
-          <Grid xs={12} md={4} lg={4}>
-            <OverviewCard
-              title="Businesses"
-              count={pendingBusinesses.length}
-              icon="🏢"
-              items={pendingBusinesses}
-              onView={handleView}
-            />
-          </Grid>
-        </Grid>
-      )}
-
-      {activeTab === "tourist_spots" && (
-        <>
-          <Stack direction={{ xs:'column', md:'row'}} spacing={1} alignItems={{ xs:'stretch', md:'center'}} justifyContent="space-between" sx={{ mb: 2 }}>
-            <div style={{ minWidth: 320, width: 560, maxWidth: '100%' }}>
-              <SearchBar value={query} onChangeText={setQuery} onSearch={() => {}} placeholder="Search tourist spots..." />
-            </div>
-            <Stack direction="row" spacing={0.75} alignItems="center">
-              <Button size="sm" variant={touristStatus==='all'?'solid':'soft'} onClick={() => setTouristStatus('all')}>All</Button>
-              <Button size="sm" variant={touristStatus==='new'?'solid':'soft'} onClick={() => setTouristStatus('new')}>New</Button>
-              <Button size="sm" variant={touristStatus==='edit'?'solid':'soft'} onClick={() => setTouristStatus('edit')}>Edit</Button>
-              <Select
-                size="sm"
-                value={touristCategory}
-                onChange={(_, v) => setTouristCategory(String(v ?? 'all'))}
-                placeholder="Category"
-                sx={{ minWidth: 160 }}
-              >
-                <Option value="all">All Categories</Option>
-                {Array.from(new Set(pendingSpots.flatMap((s: any) => (Array.isArray(s.categories)? s.categories.map((c: any) => c.category):[]))))
-                  .filter(Boolean)
-                  .sort()
-                  .map(cat => <Option key={cat} value={cat}>{cat}</Option>)}
-              </Select>
-            </Stack>
-          </Stack>
-          {display === "cards" ? (
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))",
-                gap: "20px",
-                padding: "8px 0",
-              }}
-            >
-              {(
-                touristStatus === 'edit' ? filteredTouristEdits : touristStatus === 'new' ? filteredTouristSpots : [...filteredTouristSpots, ...filteredTouristEdits]
-              ).map((item) => {
-                const unified = {
-                  id: item.id,
-                  entityType: "tourist_spots" as const,
-                  actionType: item.action_type,
-                  name: item.name,
-                  typeLabel: "tourist spot",
-                  categoryLabel: (item as any).categories?.[0]?.category || "—",
-                  submittedDate: (item as any).submitted_at || (item as any).created_at || "",
-                  image: getTouristSpotImage(item) || placeholderImage,
-                  raw: item as any,
-                };
-                return (
-                  <UnifiedApprovalCard
-                    key={`ts-${item.id}`}
-                    item={unified}
-                    onView={(u) => handleView(u.raw)}
-                    onApprove={(u) => handleApprove(String(u.id))}
-                    onReject={(u) => handleReject(String(u.id))}
-                  />
-                );
-              })}
-              {(!loading && ((touristStatus==='edit' ? filteredTouristEdits.length : touristStatus==='new' ? filteredTouristSpots.length : (filteredTouristSpots.length + filteredTouristEdits.length))) === 0) && (
-                <div style={{ gridColumn: '1 / -1', textAlign: 'center', opacity: 0.7 }}>No pending tourist spots</div>
-              )}
-            </div>
-          ) : (
-            (() => {
-              const list = (touristStatus==='edit' ? filteredTouristEdits : touristStatus==='new' ? filteredTouristSpots : [...filteredTouristSpots, ...filteredTouristEdits]) as any[];
-              const columns: TableColumn<any>[] = [
-                { id: 'name', label: 'Name', minWidth: 200, render: (row) => row.name },
-                { id: 'type', label: 'Type', render: () => 'tourist spot' },
-                { id: 'category', label: 'Category', render: (row: any) => row.categories?.[0]?.category || '—' },
-                { id: 'submitted', label: 'Submitted', render: (row: any) => (row.submitted_at || row.created_at) ? new Date(row.submitted_at || row.created_at).toLocaleDateString() : '—' },
-                { id: 'kind', label: 'Kind', render: (row: any) => row.action_type || (filteredTouristEdits.includes(row) ? 'edit' : 'new') },
-                { id: 'actions', label: 'Actions', align: 'right', render: (row: any) => (
-                  <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-                    <AppButton size="sm" variant="soft" onClick={(e: React.MouseEvent) => { e.stopPropagation(); handleView(row); }}>View</AppButton>
-                    <AppButton size="sm" variant="outlined" colorScheme="success" onClick={(e: React.MouseEvent) => { e.stopPropagation(); handleApprove(String(row.id)); }}>Approve</AppButton>
-                    <AppButton size="sm" variant="outlined" colorScheme="error" onClick={(e: React.MouseEvent) => { e.stopPropagation(); handleReject(String(row.id)); }}>Reject</AppButton>
-                  </div>
-                ) },
-              ];
-              return (
-                <DataTable
-                  columns={columns}
-                  data={list}
-                  rowsPerPage={10}
-                  rowKey={(r: any) => r.id}
-                  emptyMessage="No pending tourist spots"
-                />
-              );
-            })()
-          )}
-        </>
-      )}
-
-      {activeTab === "events" && (
-        (() => {
-          const columns: TableColumn<any>[] = [
-            { id: 'name', label: 'Name', minWidth: 220, render: (row) => row.name },
-            { id: 'type', label: 'Type', render: () => 'event' },
-            { id: 'submitted', label: 'Submitted', render: (row: any) => row.submitted_at ? new Date(row.submitted_at).toLocaleDateString() : '—' },
-            { id: 'actions', label: 'Actions', align: 'right', render: (row: any) => (
-              <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-                <AppButton size="sm" variant="soft" onClick={(e: React.MouseEvent) => { e.stopPropagation(); handleView(row); }}>View</AppButton>
-                <AppButton size="sm" variant="outlined" colorScheme="success" onClick={(e: React.MouseEvent) => { e.stopPropagation(); alert('Events approval not yet implemented'); }}>Approve</AppButton>
-                <AppButton size="sm" variant="outlined" colorScheme="error" onClick={(e: React.MouseEvent) => { e.stopPropagation(); alert('Events rejection not yet implemented'); }}>Reject</AppButton>
-              </div>
-            ) },
-          ];
-          return (
-            <DataTable
-              columns={columns}
-              data={mockEvents as any[]}
-              rowsPerPage={10}
-              rowKey={(r: any) => r.id}
-              emptyMessage="No events"
-            />
-          );
-        })()
-      )}
-
-      {activeTab === "businesses" && (
-        <>
-          <Stack direction={{ xs:'column', md:'row'}} spacing={1} alignItems={{ xs:'stretch', md:'center'}} justifyContent="space-between" sx={{ mb: 2 }}>
-            <div style={{ minWidth: 320, width: 560, maxWidth: '100%' }}>
-              <SearchBar value={query} onChangeText={setQuery} onSearch={() => {}} placeholder="Search businesses..." />
-            </div>
-            <Select
-              size="sm"
-              value={businessCategory}
-              onChange={(_, v) => setBusinessCategory(String(v ?? 'all'))}
-              placeholder="Category"
-              sx={{ minWidth: 180 }}
-            >
-              <Option value="all">All Categories</Option>
-              {Array.from(new Set(pendingBusinesses.map((b: any) => b.business_category_name).filter(Boolean))).sort().map(cat => <Option key={cat} value={cat}>{cat}</Option>)}
-            </Select>
-          </Stack>
-        {display === "cards" ? (
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))",
-              gap: "20px",
-              padding: "8px 0",
+        {/* Filter Tabs */}
+        <Box
+          sx={{
+            display: "flex",
+            gap: 1,
+            flexWrap: "wrap",
+          }}
+        >
+          <Chip
+            variant={currentView === "all" ? "solid" : "soft"}
+            color={currentView === "all" ? "primary" : "neutral"}
+            onClick={() => setCurrentView("all")}
+            sx={{
+              cursor: "pointer",
+              fontSize: "clamp(0.75rem, 2vw, 0.875rem)",
+              padding: "0.5rem 1rem",
+              "&:hover": {
+                backgroundColor:
+                  currentView === "all" ? undefined : colors.primary + "10",
+              },
             }}
           >
-            {filteredBusinesses
-              .map((biz) => {
-                const unified = {
-                  id: biz.id,
-                  entityType: "businesses" as const,
-                  actionType: biz.action_type,
-                  name: biz.name,
-                  typeLabel: (biz as any).business_type_name || 'business',
-                  categoryLabel: (biz as any).business_category_name || '—',
-                  submittedDate: biz.created_at || '',
-                  image: (biz as any).business_image || null,
-                  raw: biz as any,
-                };
-                return (
-                  <UnifiedApprovalCard
-                    key={`biz-${biz.id}`}
-                    item={unified}
-                    onView={(u) => handleView(u.raw)}
-                    onApprove={(u) => handleApprove(String(u.id))}
-                    onReject={(u) => handleReject(String(u.id))}
-                  />
-                );
-              })}
-            {filteredBusinesses.length === 0 && (
-              <div style={{ gridColumn: '1 / -1', textAlign: 'center', opacity: 0.7 }}>No pending businesses</div>
-            )}
-          </div>
-        ) : (
-          (() => {
-            const columns: TableColumn<any>[] = [
-              { id: 'name', label: 'Name', minWidth: 200, render: (row) => row.name },
-              { id: 'type', label: 'Type', render: (row: any) => row.business_type_name || 'business' },
-              { id: 'category', label: 'Category', render: (row: any) => row.business_category_name || '—' },
-              { id: 'submitted', label: 'Submitted', render: (row: any) => row.created_at ? new Date(row.created_at).toLocaleDateString() : '—' },
-              { id: 'actions', label: 'Actions', align: 'right', render: (row: any) => (
-                <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-                  <AppButton size="sm" variant="soft" onClick={(e: React.MouseEvent) => { e.stopPropagation(); handleView(row); }}>View</AppButton>
-                  <AppButton size="sm" variant="outlined" colorScheme="success" onClick={(e: React.MouseEvent) => { e.stopPropagation(); handleApprove(String(row.id)); }}>Approve</AppButton>
-                  <AppButton size="sm" variant="outlined" colorScheme="error" onClick={(e: React.MouseEvent) => { e.stopPropagation(); handleReject(String(row.id)); }}>Reject</AppButton>
-                </div>
-              ) },
-            ];
-            return (
-              <DataTable
-                columns={columns}
-                data={filteredBusinesses as any[]}
-                rowsPerPage={10}
-                rowKey={(r: any) => r.id}
-                emptyMessage="No pending businesses"
+            All
+          </Chip>
+          <Chip
+            variant={currentView === "tourist_spots" ? "solid" : "soft"}
+            color={currentView === "tourist_spots" ? "primary" : "neutral"}
+            onClick={() => setCurrentView("tourist_spots")}
+            sx={{
+              cursor: "pointer",
+              fontSize: "clamp(0.75rem, 2vw, 0.875rem)",
+              padding: "0.5rem 1rem",
+              "&:hover": {
+                backgroundColor:
+                  currentView === "tourist_spots"
+                    ? undefined
+                    : colors.primary + "10",
+              },
+            }}
+          >
+            Tourist Spots
+          </Chip>
+          <Chip
+            variant={currentView === "events" ? "solid" : "soft"}
+            color={currentView === "events" ? "primary" : "neutral"}
+            onClick={() => setCurrentView("events")}
+            sx={{
+              cursor: "pointer",
+              fontSize: "clamp(0.75rem, 2vw, 0.875rem)",
+              padding: "0.5rem 1rem",
+              "&:hover": {
+                backgroundColor:
+                  currentView === "events" ? undefined : colors.primary + "10",
+              },
+            }}
+          >
+            Events
+          </Chip>
+          <Chip
+            variant={currentView === "businesses" ? "solid" : "soft"}
+            color={currentView === "businesses" ? "primary" : "neutral"}
+            onClick={() => setCurrentView("businesses")}
+            sx={{
+              cursor: "pointer",
+              fontSize: "clamp(0.75rem, 2vw, 0.875rem)",
+              padding: "0.5rem 1rem",
+              "&:hover": {
+                backgroundColor:
+                  currentView === "businesses"
+                    ? undefined
+                    : colors.primary + "10",
+              },
+            }}
+          >
+            Businesses
+          </Chip>
+        </Box>
+      </Box>
+
+      {/* Submissions List */}
+      <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+        {currentView === "all" && (
+          <>
+            {/* Tourist Spots */}
+            {[...filteredTouristSpots, ...filteredTouristEdits].map((item) => {
+              const img = getTouristSpotImage(item) || placeholderImage;
+              const categoryLabel =
+                (item as any).categories?.[0]?.category || "—";
+              return (
+                <SubmissionCard
+                  key={`spot-${item.id}`}
+                  image={img}
+                  typeBadge="Tourist Spot"
+                  typeBadgeColor="success"
+                  categoryBadge={
+                    categoryLabel !== "—" ? categoryLabel : undefined
+                  }
+                  title={item.name}
+                  description={item.description || "No description available"}
+                  submitterName={(item as any).submitted_by || "Admin"}
+                  submittedDate={
+                    (item as any).submitted_at || (item as any).created_at
+                      ? new Date(
+                          (item as any).submitted_at || (item as any).created_at
+                        ).toLocaleDateString("en-US", {
+                          month: "short",
+                          day: "numeric",
+                          year: "numeric",
+                        })
+                      : undefined
+                  }
+                  location={
+                    [
+                      (item as any).municipality_name,
+                      (item as any).province_name,
+                    ]
+                      .filter(Boolean)
+                      .join(", ") || undefined
+                  }
+                  actionType={item.action_type}
+                  onView={() => handleView(item as any)}
+                  onApprove={() => handleApprove(String(item.id))}
+                  onReject={() => handleReject(String(item.id))}
+                />
+              );
+            })}
+
+            {/* Events */}
+            {mockEvents.map((event) => (
+              <SubmissionCard
+                key={`event-${event.id}`}
+                image={placeholderImage}
+                typeBadge="Event"
+                typeBadgeColor="warning"
+                categoryBadge="Food & Culture"
+                title={event.name}
+                description="Annual food festival showcasing local cuisine and culinary traditions"
+                submitterName="Maria Santos"
+                submittedDate="Dec 5, 2025"
+                location="Plaza Rizal, Naga City"
+                actionType={event.action_type}
+                onView={() => handleView(event as any)}
+                onApprove={() => alert("Events approval not yet implemented")}
+                onReject={() => alert("Events rejection not yet implemented")}
               />
-            );
-          })()
+            ))}
+
+            {/* Businesses */}
+            {filteredBusinesses.map((biz) => {
+              const img = (biz as any).business_image || placeholderImage;
+              const categoryLabel = (biz as any).business_category_name;
+              return (
+                <SubmissionCard
+                  key={`biz-${biz.id}`}
+                  image={img}
+                  typeBadge="Business"
+                  typeBadgeColor="primary"
+                  categoryBadge={categoryLabel || undefined}
+                  title={biz.name}
+                  description={biz.description || "No description available"}
+                  submitterName={(biz as any).owner_name || "Business Owner"}
+                  submittedDate={
+                    biz.created_at
+                      ? new Date(biz.created_at).toLocaleDateString("en-US", {
+                          month: "short",
+                          day: "numeric",
+                          year: "numeric",
+                        })
+                      : undefined
+                  }
+                  location={
+                    [(biz as any).municipality_name, (biz as any).province_name]
+                      .filter(Boolean)
+                      .join(", ") || undefined
+                  }
+                  actionType={biz.action_type}
+                  onView={() => handleView(biz as any)}
+                  onApprove={() => handleApprove(String(biz.id))}
+                  onReject={() => handleReject(String(biz.id))}
+                />
+              );
+            })}
+
+            {/* Empty State */}
+            {filteredTouristSpots.length === 0 &&
+              filteredTouristEdits.length === 0 &&
+              mockEvents.length === 0 &&
+              filteredBusinesses.length === 0 && (
+                <Box
+                  sx={{
+                    textAlign: "center",
+                    padding: "4rem 2rem",
+                    opacity: 0.6,
+                  }}
+                >
+                  <Typography.Body size="sm">
+                    No pending submissions found
+                  </Typography.Body>
+                </Box>
+              )}
+          </>
         )}
-        </>
-      )}
 
+        {currentView === "tourist_spots" && (
+          <>
+            {[...filteredTouristSpots, ...filteredTouristEdits].map((item) => {
+              const img = getTouristSpotImage(item) || placeholderImage;
+              const categoryLabel =
+                (item as any).categories?.[0]?.category || "—";
+              return (
+                <SubmissionCard
+                  key={`spot-${item.id}`}
+                  image={img}
+                  typeBadge="Tourist Spot"
+                  typeBadgeColor="success"
+                  categoryBadge={
+                    categoryLabel !== "—" ? categoryLabel : undefined
+                  }
+                  title={item.name}
+                  description={item.description || "No description available"}
+                  submitterName={(item as any).submitted_by || "Admin"}
+                  submittedDate={
+                    (item as any).submitted_at || (item as any).created_at
+                      ? new Date(
+                          (item as any).submitted_at || (item as any).created_at
+                        ).toLocaleDateString("en-US", {
+                          month: "short",
+                          day: "numeric",
+                          year: "numeric",
+                        })
+                      : undefined
+                  }
+                  location={
+                    [
+                      (item as any).municipality_name,
+                      (item as any).province_name,
+                    ]
+                      .filter(Boolean)
+                      .join(", ") || undefined
+                  }
+                  actionType={item.action_type}
+                  onView={() => handleView(item as any)}
+                  onApprove={() => handleApprove(String(item.id))}
+                  onReject={() => handleReject(String(item.id))}
+                />
+              );
+            })}
+            {filteredTouristSpots.length === 0 &&
+              filteredTouristEdits.length === 0 && (
+                <Box
+                  sx={{
+                    textAlign: "center",
+                    padding: "4rem 2rem",
+                    opacity: 0.6,
+                  }}
+                >
+                  <Typography.Body size="sm">
+                    No pending tourist spots
+                  </Typography.Body>
+                </Box>
+              )}
+          </>
+        )}
 
+        {currentView === "events" && (
+          <>
+            {mockEvents.map((event) => (
+              <SubmissionCard
+                key={`event-${event.id}`}
+                image={placeholderImage}
+                typeBadge="Event"
+                typeBadgeColor="warning"
+                categoryBadge="Food & Culture"
+                title={event.name}
+                description="Annual food festival showcasing local cuisine and culinary traditions"
+                submitterName="Maria Santos"
+                submittedDate="Dec 5, 2025"
+                location="Plaza Rizal, Naga City"
+                actionType={event.action_type}
+                onView={() => handleView(event as any)}
+                onApprove={() => alert("Events approval not yet implemented")}
+                onReject={() => alert("Events rejection not yet implemented")}
+              />
+            ))}
+            {mockEvents.length === 0 && (
+              <Box
+                sx={{
+                  textAlign: "center",
+                  padding: "4rem 2rem",
+                  opacity: 0.6,
+                }}
+              >
+                <Typography.Body size="sm">No pending events</Typography.Body>
+              </Box>
+            )}
+          </>
+        )}
+
+        {currentView === "businesses" && (
+          <>
+            {filteredBusinesses.map((biz) => {
+              const img = (biz as any).business_image || placeholderImage;
+              const categoryLabel = (biz as any).business_category_name;
+              return (
+                <SubmissionCard
+                  key={`biz-${biz.id}`}
+                  image={img}
+                  typeBadge="Business"
+                  typeBadgeColor="primary"
+                  categoryBadge={categoryLabel || undefined}
+                  title={biz.name}
+                  description={biz.description || "No description available"}
+                  submitterName={(biz as any).owner_name || "Business Owner"}
+                  submittedDate={
+                    biz.created_at
+                      ? new Date(biz.created_at).toLocaleDateString("en-US", {
+                          month: "short",
+                          day: "numeric",
+                          year: "numeric",
+                        })
+                      : undefined
+                  }
+                  location={
+                    [(biz as any).municipality_name, (biz as any).province_name]
+                      .filter(Boolean)
+                      .join(", ") || undefined
+                  }
+                  actionType={biz.action_type}
+                  onView={() => handleView(biz as any)}
+                  onApprove={() => handleApprove(String(biz.id))}
+                  onReject={() => handleReject(String(biz.id))}
+                />
+              );
+            })}
+            {filteredBusinesses.length === 0 && (
+              <Box
+                sx={{
+                  textAlign: "center",
+                  padding: "4rem 2rem",
+                  opacity: 0.6,
+                }}
+              >
+                <Typography.Body size="sm">
+                  No pending businesses
+                </Typography.Body>
+              </Box>
+            )}
+          </>
+        )}
+      </Box>
+
+      {/* View Modal */}
       <ViewModal
         isOpen={!!selectedItem}
         onClose={closeModal}
@@ -776,7 +958,7 @@ const ApprovalDashboard: React.FC = () => {
         onReject={handleReject}
         processingId={processingId}
       />
-    </PageContainer>
+    </Box>
   );
 };
 
