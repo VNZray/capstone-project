@@ -1,14 +1,14 @@
 import express from "express";
 import * as serviceInquiryController from "../controller/serviceInquiryController.js";
 import { authenticate } from "../middleware/authenticate.js";
-import { authorizeScope, authorize, authorizeBusinessAccess } from "../middleware/authorizeRole.js";
+import { authorizeRole, authorize, authorizeBusinessAccess } from "../middleware/authorizeRole.js";
 
 const router = express.Router();
 
 // ==================== SERVICE INQUIRY ROUTES ====================
 
 // Get all inquiries (platform admin only)
-router.get("/", authenticate, authorizeScope('platform'), authorize('view_all_profiles'), serviceInquiryController.getAllServiceInquiries);
+router.get("/", authenticate, authorizeRole('Admin', 'Tourism Officer'), authorize('view_all_profiles'), serviceInquiryController.getAllServiceInquiries);
 
 // Create new inquiry (public)
 router.post("/", serviceInquiryController.createServiceInquiry);

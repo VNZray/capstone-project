@@ -1,6 +1,6 @@
 import express from "express";
 import { authenticate } from "../middleware/authenticate.js";
-import { authorizeAny } from "../middleware/authorize.js";
+import { authorizeAny } from "../middleware/authorizeRole.js";
 import {
   listTourismStaff,
   getTourismStaffById,

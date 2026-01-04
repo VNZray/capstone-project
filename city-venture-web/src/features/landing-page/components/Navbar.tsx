@@ -44,12 +44,10 @@ const Navbar: React.FC<NavbarProps> = ({
   }, []);
 
   const { user, logout } = useAuth();
-  const role = user?.role_name ?? ""; // Now normalized by AuthService: "Owner" | "Admin" | "Tourist" or custom role name
-  const roleType = user?.role_type; // RBAC: 'system' | 'business'
-  const isCustomBusinessRole = roleType === 'business';
+  const role = user?.role_name ?? "";
   const isOwner = role === "Business Owner";
-  const isStaff = isCustomBusinessRole || ["Manager", "Room Manager", "Receptionist", "Sales Associate"].includes(role);
-  const isTourism = role === "Admin";
+  const isStaff = role === "Staff";
+  const isTourism = role === "Admin" || role === "Tourism Officer";
   const displayRole = role;
   const nameOnly = `${user?.first_name ?? ""} ${user?.last_name ?? ""}`.trim();
   const displayName = nameOnly || ""; // do not fallback to email for display name per requirement

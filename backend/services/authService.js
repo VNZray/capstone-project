@@ -23,20 +23,16 @@ function hashToken(token) {
 }
 
 export async function generateTokens(user) {
-  // Fetch role info from user_role table (name, type, scope)
+  // Fetch role info from user_role table
   let roleName = user.role_name;
-  let roleType = user.role_type;
-  let roleFor = user.role_for;
   
-  if (user.user_role_id && (!roleName || roleType === undefined)) {
+  if (user.user_role_id && !roleName) {
     const [roleRows] = await db.query(
-      'SELECT role_name, role_type, role_for FROM user_role WHERE id = ?',
+      'SELECT role_name FROM user_role WHERE id = ?',
       [user.user_role_id]
     );
     if (roleRows && roleRows.length > 0) {
-      roleName = roleName || roleRows[0].role_name;
-      roleType = roleRows[0].role_type;
-      roleFor = roleRows[0].role_for;
+      roleName = roleRows[0].role_name;
     }
   }
 
@@ -44,9 +40,7 @@ export async function generateTokens(user) {
     {
       id: user.id,
       email: user.email,
-      role: roleName, // Use role name instead of ID
-      role_type: roleType || 'system', // 'system' or 'business'
-      role_for: roleFor || null, // business_id for business roles
+      role: roleName, // Role name: Admin, Staff, Business Owner, etc.
     },
     JWT_ACCESS_SECRET,
     {
@@ -89,16 +83,14 @@ export async function loginUser(email, password) {
 
   const user = users[0];
 
-  // Fetch role info (name, type, scope)
+  // Fetch role name
   if (user.user_role_id) {
     const [roleRows] = await db.query(
-      'SELECT role_name, role_type, role_for FROM user_role WHERE id = ?',
+      'SELECT role_name FROM user_role WHERE id = ?',
       [user.user_role_id]
     );
     if (roleRows && roleRows.length > 0) {
       user.role_name = user.role_name || roleRows[0].role_name;
-      user.role_type = roleRows[0].role_type;
-      user.role_for = roleRows[0].role_for;
     }
   }
   const isMatch = await bcrypt.compare(password, user.password);
@@ -221,20 +213,16 @@ export async function refreshAccessToken(incomingRefreshToken) {
       throw new Error('User not found during refresh');
   }
 
-  // Fetch role info (name, type, scope)
+  // Fetch role name
   let roleName = user.role_name;
-  let roleType = 'system';
-  let roleFor = null;
   
   if (user.user_role_id) {
     const [roleRows] = await db.query(
-      'SELECT role_name, role_type, role_for FROM user_role WHERE id = ?',
+      'SELECT role_name FROM user_role WHERE id = ?',
       [user.user_role_id]
     );
     if (roleRows && roleRows.length > 0) {
       roleName = roleName || roleRows[0].role_name;
-      roleType = roleRows[0].role_type || 'system';
-      roleFor = roleRows[0].role_for;
     }
   }
 
@@ -244,8 +232,6 @@ export async function refreshAccessToken(incomingRefreshToken) {
       id: user.id,
       email: user.email,
       role: roleName,
-      role_type: roleType,
-      role_for: roleFor,
     },
     JWT_ACCESS_SECRET,
     {

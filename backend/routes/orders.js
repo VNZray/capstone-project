@@ -3,7 +3,7 @@ import rateLimit from "express-rate-limit";
 import * as orderController from "../controller/order/index.js";
 import * as refundController from "../controller/refund/index.js";
 import { authenticate } from "../middleware/authenticate.js";
-import { authorizeScope, authorize, authorizeAny, authorizeBusinessAccess } from "../middleware/authorizeRole.js";
+import { authorizeRole, authorize, authorizeAny, authorizeBusinessAccess } from "../middleware/authorizeRole.js";
 import { hasAnyPermission } from "../utils/authHelpers.js";
 
 const router = express.Router();
@@ -57,7 +57,7 @@ const orderCancellationLimiter = rateLimit({
 // ==================== ORDER ROUTES ====================
 
 // Platform admin: Get all orders
-router.get("/", authenticate, authorizeScope('platform'), authorize('manage_orders'), orderController.getAllOrders);
+router.get("/", authenticate, authorizeRole('Admin', 'Tourism Officer'), authorize('manage_orders'), orderController.getAllOrders);
 
 // Any authenticated user can create orders
 router.post("/", authenticate, orderCreationLimiter, orderController.insertOrder);
@@ -76,7 +76,7 @@ router.get("/:id", authenticate, orderController.getOrderById);
 // Status updates - requires manage_orders permission
 router.patch("/:id/status", authenticate, authorize('manage_orders'), orderController.updateOrderStatus);
 // Payment status updates - platform admin only
-router.patch("/:id/payment-status", authenticate, authorizeScope('platform'), authorize('manage_orders'), orderController.updatePaymentStatus);
+router.patch("/:id/payment-status", authenticate, authorizeRole('Admin', 'Tourism Officer'), authorize('manage_orders'), orderController.updatePaymentStatus);
 
 // Cancellation - role check in controller for flexibility
 router.post("/:id/cancel", authenticate, orderCancellationLimiter, orderController.cancelOrder);

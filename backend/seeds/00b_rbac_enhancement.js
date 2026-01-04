@@ -1,12 +1,11 @@
 /**
  * RBAC Enhancement Seed - System Roles Setup
  * 
- * Updates existing user_role entries with the two-tier RBAC fields:
- * - role_type: system or business
- * - is_custom: whether role is custom-created
+ * Updates existing user_role entries with the simplified RBAC fields:
+ * - role_type: system (all roles are now system roles)
  * - is_immutable: whether role can be modified
  * 
- * Business owners create custom roles directly (no presets).
+ * No more per-business roles. Staff use the single "Staff" role.
  * 
  * @param { import("knex").Knex } knex
  */
@@ -22,10 +21,11 @@ export async function seed(knex) {
   // Update system roles with proper RBAC flags
   // ============================================================
   const systemRoles = [
-    { id: 1, role_name: 'Admin', role_type: 'system', is_immutable: true, is_custom: false, role_for: null },
-    { id: 2, role_name: 'Tourism Officer', role_type: 'system', is_immutable: true, is_custom: false, role_for: null },
-    { id: 4, role_name: 'Business Owner', role_type: 'system', is_immutable: false, is_custom: false, role_for: null },
-    { id: 9, role_name: 'Tourist', role_type: 'system', is_immutable: true, is_custom: false, role_for: null },
+    { id: 1, role_name: 'Admin', role_type: 'system', is_immutable: true },
+    { id: 2, role_name: 'Tourism Officer', role_type: 'system', is_immutable: true },
+    { id: 4, role_name: 'Business Owner', role_type: 'system', is_immutable: true },
+    { id: 5, role_name: 'Tourist', role_type: 'system', is_immutable: true },
+    { id: 6, role_name: 'Staff', role_type: 'system', is_immutable: true },
   ];
 
   for (const role of systemRoles) {
@@ -34,8 +34,6 @@ export async function seed(knex) {
       .update({
         role_type: role.role_type,
         is_immutable: role.is_immutable,
-        is_custom: role.is_custom,
-        role_for: role.role_for,
       });
   }
 
@@ -44,7 +42,7 @@ export async function seed(knex) {
   // ============================================================
   // Clean up legacy preset roles (if any exist without users)
   // ============================================================
-  const legacyPresetIds = [3, 5, 6, 7, 8]; // Event Manager, Manager, Room Manager, Receptionist, Sales Associate
+  const legacyPresetIds = [3, 7, 8]; // Event Manager and any other legacy roles
   
   for (const roleId of legacyPresetIds) {
     // Check if role exists and has no users assigned
@@ -60,19 +58,5 @@ export async function seed(knex) {
     }
   }
 
-  // Also clean up any other preset roles that were added later
-  const otherPresets = await knex('user_role')
-    .where({ role_type: 'preset' })
-    .select('id', 'role_name');
-  
-  for (const preset of otherPresets) {
-    const userCount = await knex('user').where({ user_role_id: preset.id }).count('id as count').first();
-    if (userCount.count === 0) {
-      await knex('role_permissions').where({ user_role_id: preset.id }).del();
-      await knex('user_role').where({ id: preset.id }).del();
-      console.log(`[Seed] Removed unused preset role: ${preset.role_name}`);
-    }
-  }
-
-  console.log('[Seed] RBAC enhancement complete - two-tier system active.');
+  console.log('[Seed] RBAC enhancement complete - simplified system active.');
 }

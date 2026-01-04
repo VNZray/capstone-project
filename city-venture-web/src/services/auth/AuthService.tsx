@@ -132,14 +132,11 @@ export const loginUser = async (
   const { data: userRole } = await apiClient
     .get<UserRoles>(`/user-roles/${userData.user_role_id}`)
     .catch(() => {
-      // Fallback to basic role info - use role properties, not hardcoded names
+      // Fallback to basic role info
       return {
         data: { 
           role_name: "Unknown", 
-          description: "", 
-          role_type: 'system' as const,
-          role_for: null,
-          is_custom: false
+          description: ""
         } as UserRoles,
       };
     });
@@ -149,78 +146,39 @@ export const loginUser = async (
     .then((r) => r.data?.permissions || [])
     .catch(() => []);
 
-  // Get role metadata for proper categorization (NO HARDCODED ROLE NAMES)
-  const roleType = userRole?.role_type || 'system';
-  const roleFor = userRole?.role_for || null;
-  const isCustomRole = userRole?.is_custom || false;
-  const rawRoleName = (userRole?.role_name ?? "").toString();
-
-  // Use the role name as-is - no normalization needed
-  // Role access is determined by role_type + permissions, not by name
-  const normalizedRoleName = rawRoleName;
+  const roleName = (userRole?.role_name ?? "").toString();
 
   // ============================================
   // STEP 5: Fetch Role-Specific User Details
   // ============================================
-  // RBAC: Role categorization uses role properties + permissions
-  // We try to fetch profile data based on role scope, with fallbacks
+  // Simple role-based categorization using fixed role names
+  // 5 roles: Admin, Tourism Officer, Business Owner, Tourist, Staff
   
-  const permissionSet = new Set(myPermissions);
-  
-  // Determine scope by role properties
-  const isBusinessRole = roleType === 'business';
-  const hasPlatformScope = roleType === 'system' && !roleFor;
-  const hasBusinessScope = isBusinessRole || !!roleFor;
-  
-  // Determine user category by permissions (no hardcoded role names!)
-  // Platform admin: has platform-level management permissions
-  const hasPlatformAdminPerms = hasPlatformScope && (
-    permissionSet.has('manage_users') || 
-    permissionSet.has('approve_business') ||
-    permissionSet.has('view_all_profiles') ||
-    permissionSet.has('view_reports')
-  );
-  
-  // Has business management permissions (owner-like)
-  const hasOwnerPerms = 
-    permissionSet.has('view_business_profile') &&
-    permissionSet.has('edit_business_profile');
-
   let ownerData: Partial<Owner> | null = null;
   let touristData: Partial<Tourist> | null = null;
   let tourismData: Partial<Tourism> | null = null;
   let staffData: Partial<Staff> | null = null;
 
-  // Try to fetch profile data based on role scope
-  // Use parallel fetches with fallback logic - the one that succeeds determines the category
-  if (hasPlatformScope) {
-    // System role: could be admin/tourism, owner, or tourist
-    // Try in order of specificity
-    if (hasPlatformAdminPerms) {
-      tourismData = await apiClient
-        .get<Tourism>(`/tourism/user/${user_id}`)
-        .then((r) => r.data)
-        .catch(() => null);
-    }
-    
-    if (!tourismData && hasOwnerPerms) {
-      ownerData = await apiClient
-        .get<Owner>(`/owner/user/${user_id}`)
-        .then((r) => r.data)
-        .catch(() => null);
-    }
-    
-    // Default to tourist for system roles with no special access
-    if (!tourismData && !ownerData) {
-      touristData = await apiClient
-        .get<Tourist>(`/tourist/user/${user_id}`)
-        .then((r) => r.data)
-        .catch(() => null);
-    }
-  } else if (hasBusinessScope) {
-    // Business role or system role with business binding: staff member
+  // Fetch profile based on role name
+  if (roleName === 'Admin' || roleName === 'Tourism Officer') {
+    tourismData = await apiClient
+      .get<Tourism>(`/tourism/user/${user_id}`)
+      .then((r) => r.data)
+      .catch(() => null);
+  } else if (roleName === 'Business Owner') {
+    ownerData = await apiClient
+      .get<Owner>(`/owner/user/${user_id}`)
+      .then((r) => r.data)
+      .catch(() => null);
+  } else if (roleName === 'Staff') {
     staffData = await apiClient
       .get<Staff>(`/staff/user/${user_id}`)
+      .then((r) => r.data)
+      .catch(() => null);
+  } else {
+    // Default to tourist
+    touristData = await apiClient
+      .get<Tourist>(`/tourist/user/${user_id}`)
       .then((r) => r.data)
       .catch(() => null);
   }
@@ -268,13 +226,9 @@ export const loginUser = async (
     // SECURITY: password intentionally omitted - never store plaintext passwords in client state
     phone_number: userData.phone_number,
     user_role_id: userData.user_role_id,
-    role_name: normalizedRoleName,
+    role_name: roleName,
     description: userRole?.description || userRole?.role_description || "",
     permissions: myPermissions,
-    // RBAC: Include role metadata for proper access control
-    role_type: roleType,
-    role_for: roleFor,
-    is_custom_role: isCustomRole || roleType === 'business',
     first_name: roleData?.first_name || "",
     middle_name: roleData?.middle_name || "",
     last_name: roleData?.last_name || "",
@@ -283,7 +237,8 @@ export const loginUser = async (
     nationality: (touristData as any)?.nationality || "",
     ethnicity: (touristData as any)?.ethnicity || "",
     category: (touristData as any)?.category || "",
-    business_id: (staffData as any)?.business_id || roleFor || "",
+    // For Staff, business_id comes from staffData
+    business_id: (staffData as any)?.business_id || "",
     barangay_id: userData?.barangay_id ?? "",
     barangay_name: barangay?.barangay || "",
     municipality_name: municipality?.municipality || "",
@@ -386,14 +341,11 @@ export const fetchCurrentUser = async (): Promise<UserDetails> => {
   const { data: userRole } = await apiClient
     .get<UserRoles>(`/user-roles/${userData.user_role_id}`)
     .catch(() => {
-      // Fallback to basic role info - use role properties, not hardcoded names
+      // Fallback to basic role info
       return {
         data: { 
           role_name: "Unknown", 
-          description: "", 
-          role_type: 'system' as const,
-          role_for: null,
-          is_custom: false
+          description: ""
         } as UserRoles,
       };
     });
@@ -403,74 +355,39 @@ export const fetchCurrentUser = async (): Promise<UserDetails> => {
     .then((r) => r.data?.permissions || [])
     .catch(() => []);
 
-  // Get role metadata for proper categorization (NO HARDCODED ROLE NAMES)
-  const roleType = userRole?.role_type || 'system';
-  const roleFor = userRole?.role_for || null;
-  const isCustomRole = userRole?.is_custom || false;
-  const rawRoleName = (userRole?.role_name ?? "").toString();
-
-  // Use the role name as-is - no normalization needed
-  // Role access is determined by role_type + permissions, not by name
-  const normalizedRoleName = rawRoleName;
+  const roleName = (userRole?.role_name ?? "").toString();
 
   // ============================================
   // STEP 4: Fetch Role-Specific User Details
   // ============================================
-  // RBAC: Role categorization uses role properties + permissions
-  // We try to fetch profile data based on role scope, with fallbacks
+  // Simple role-based categorization using fixed role names
+  // 5 roles: Admin, Tourism Officer, Business Owner, Tourist, Staff
   
-  const permissionSet = new Set(myPermissions);
-  
-  // Determine scope by role properties
-  const isBusinessRole = roleType === 'business';
-  const hasPlatformScope = roleType === 'system' && !roleFor;
-  const hasBusinessScope = isBusinessRole || !!roleFor;
-  
-  // Determine user category by permissions (no hardcoded role names!)
-  const hasPlatformAdminPerms = hasPlatformScope && (
-    permissionSet.has('manage_users') || 
-    permissionSet.has('approve_business') ||
-    permissionSet.has('view_all_profiles') ||
-    permissionSet.has('view_reports')
-  );
-  
-  const hasOwnerPerms = 
-    permissionSet.has('view_business_profile') &&
-    permissionSet.has('edit_business_profile');
-
   let ownerData: Partial<Owner> | null = null;
   let touristData: Partial<Tourist> | null = null;
   let tourismData: Partial<Tourism> | null = null;
   let staffData: Partial<Staff> | null = null;
 
-  // Try to fetch profile data based on role scope
-  if (hasPlatformScope) {
-    // System role: could be admin/tourism, owner, or tourist
-    if (hasPlatformAdminPerms) {
-      tourismData = await apiClient
-        .get<Tourism>(`/tourism/user/${user_id}`)
-        .then((r) => r.data)
-        .catch(() => null);
-    }
-    
-    if (!tourismData && hasOwnerPerms) {
-      ownerData = await apiClient
-        .get<Owner>(`/owner/user/${user_id}`)
-        .then((r) => r.data)
-        .catch(() => null);
-    }
-    
-    // Default to tourist for system roles with no special access
-    if (!tourismData && !ownerData) {
-      touristData = await apiClient
-        .get<Tourist>(`/tourist/user/${user_id}`)
-        .then((r) => r.data)
-        .catch(() => null);
-    }
-  } else if (hasBusinessScope) {
-    // Business role or system role with business binding: staff member
+  // Fetch profile based on role name
+  if (roleName === 'Admin' || roleName === 'Tourism Officer') {
+    tourismData = await apiClient
+      .get<Tourism>(`/tourism/user/${user_id}`)
+      .then((r) => r.data)
+      .catch(() => null);
+  } else if (roleName === 'Business Owner') {
+    ownerData = await apiClient
+      .get<Owner>(`/owner/user/${user_id}`)
+      .then((r) => r.data)
+      .catch(() => null);
+  } else if (roleName === 'Staff') {
     staffData = await apiClient
       .get<Staff>(`/staff/user/${user_id}`)
+      .then((r) => r.data)
+      .catch(() => null);
+  } else {
+    // Default to tourist
+    touristData = await apiClient
+      .get<Tourist>(`/tourist/user/${user_id}`)
       .then((r) => r.data)
       .catch(() => null);
   }
@@ -518,13 +435,9 @@ export const fetchCurrentUser = async (): Promise<UserDetails> => {
     // SECURITY: password intentionally omitted - never store plaintext passwords in client state
     phone_number: userData.phone_number,
     user_role_id: userData.user_role_id,
-    role_name: normalizedRoleName,
+    role_name: roleName,
     description: userRole?.description || userRole?.role_description || "",
     permissions: myPermissions,
-    // RBAC: Include role metadata for proper access control
-    role_type: roleType,
-    role_for: roleFor,
-    is_custom_role: isCustomRole || roleType === 'business',
     first_name: roleData?.first_name || "",
     middle_name: roleData?.middle_name || "",
     last_name: roleData?.last_name || "",
@@ -533,7 +446,8 @@ export const fetchCurrentUser = async (): Promise<UserDetails> => {
     nationality: (touristData as any)?.nationality || "",
     ethnicity: (touristData as any)?.ethnicity || "",
     category: (touristData as any)?.category || "",
-    business_id: (staffData as any)?.business_id || roleFor || "",
+    // For Staff, business_id comes from staffData
+    business_id: (staffData as any)?.business_id || "",
     barangay_id: userData?.barangay_id ?? "",
     barangay_name: barangay?.barangay || "",
     municipality_name: municipality?.municipality || "",

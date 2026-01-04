@@ -1,7 +1,7 @@
 import express from "express";
 import * as paymentController from "../controller/payment/index.js";
 import { authenticate } from "../middleware/authenticate.js";
-import { authorizeScope, authorize, authorizeBusinessAccess } from "../middleware/authorizeRole.js";
+import { authorizeRole, authorize, authorizeBusinessAccess } from "../middleware/authorizeRole.js";
 
 const router = express.Router();
 
@@ -45,7 +45,7 @@ router.post("/webhook", paymentController.handleWebhook);
 router.post(
   "/:id/refund",
   authenticate,
-  authorizeScope('platform'),
+  authorizeRole('Admin', 'Tourism Officer'),
   authorize('manage_payments'),
   paymentController.initiateRefund
 );
@@ -101,7 +101,7 @@ router.get(
 router.post(
   "/admin/cleanup-abandoned",
   authenticate,
-  authorizeScope('platform'),
+  authorizeRole('Admin', 'Tourism Officer'),
   authorize('manage_payments'),
   paymentController.triggerAbandonedOrderCleanup
 );
@@ -110,7 +110,7 @@ router.post(
 router.get(
   "/admin/abandoned-stats",
   authenticate,
-  authorizeScope('platform'),
+  authorizeRole('Admin', 'Tourism Officer'),
   authorize('manage_payments'),
   paymentController.getAbandonedOrderStats
 );

@@ -6,7 +6,7 @@
 import express from "express";
 import * as emergencyFacilityController from "../controller/emergencyFacilityController.js";
 import { authenticate } from "../middleware/authenticate.js";
-import { authorizeScope, authorize, authorizeAny } from "../middleware/authorizeRole.js";
+import { authorizeRole, authorize, authorizeAny } from "../middleware/authorizeRole.js";
 
 const router = express.Router();
 
@@ -18,7 +18,7 @@ router.get("/barangay/:barangayId", emergencyFacilityController.getEmergencyFaci
 router.get("/:id", emergencyFacilityController.getEmergencyFacilityById);
 
 // Protected routes - Platform scope (Admin/Tourism roles)
-router.get("/", authenticate, authorizeScope('platform'), authorizeAny('view_all_profiles', 'manage_services'), emergencyFacilityController.getAllEmergencyFacilities);
+router.get("/", authenticate, authorizeRole('Admin', 'Tourism Officer'), authorizeAny('view_all_profiles', 'manage_services'), emergencyFacilityController.getAllEmergencyFacilities);
 router.post("/", authenticate, authorize('manage_services'), emergencyFacilityController.createEmergencyFacility);
 router.put("/:id", authenticate, authorize('manage_services'), emergencyFacilityController.updateEmergencyFacility);
 router.patch("/:id/status", authenticate, authorize('manage_services'), emergencyFacilityController.updateEmergencyFacilityStatus);

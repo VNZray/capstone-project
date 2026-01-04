@@ -8,7 +8,6 @@ import StaffAddModal, {
 import StaffEditModal, {
   type StaffEditData,
 } from "./components/StaffEditModal";
-import RolePermissionModal from "./components/RolePermissionModal";
 import { Input } from "@mui/joy";
 import Alert from "@/src/components/Alert";
 import { Search } from "lucide-react";
@@ -43,7 +42,6 @@ const ManageStaff = () => {
   const [staff, setStaff] = useState<Staff[]>([]);
   const [addOpen, setAddOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
-  const [rolePermissionOpen, setRolePermissionOpen] = useState(false);
   const [selectedStaff, setSelectedStaff] = useState<Staff | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(false);
@@ -324,17 +322,6 @@ const ManageStaff = () => {
     setAlertOpen(true);
   };
 
-  // Handle role creation success
-  const handleRoleSuccess = () => {
-    setAlertConfig({
-      type: "success",
-      title: "Role Created",
-      message: "Custom role has been created successfully!",
-      showCancel: false,
-    });
-    setAlertOpen(true);
-  };
-
   // Filter staff based on search term
   const filteredStaff = staff.filter((s) => {
     const searchLower = searchTerm.toLowerCase();
@@ -460,14 +447,6 @@ const ManageStaff = () => {
           padding="16px 16px 0 16px"
         >
           <Typography.Header>Manage Staff</Typography.Header>
-          {/* <Button
-            variant="outlined"
-            colorScheme="primary"
-            size="sm"
-            onClick={() => setRolePermissionOpen(true)}
-          >
-            Manage Roles & Permissions
-          </Button> */}
         </Container>
 
         <IconButton
@@ -564,11 +543,6 @@ const ManageStaff = () => {
               }
             : undefined
         }
-      />
-      <RolePermissionModal
-        open={rolePermissionOpen}
-        onClose={() => setRolePermissionOpen(false)}
-        onSuccess={handleRoleSuccess}
       />
       <Alert
         open={alertOpen}

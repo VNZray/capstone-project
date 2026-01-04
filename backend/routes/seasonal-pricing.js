@@ -1,7 +1,7 @@
 import express from "express";
 import * as seasonalPricingController from "../controller/accommodation/seasonalPricingController.js";
 import { authenticate } from "../middleware/authenticate.js";
-import { authorizeScope, authorize, authorizeBusinessAccess } from "../middleware/authorizeRole.js";
+import { authorizeRole, authorize, authorizeBusinessAccess } from "../middleware/authorizeRole.js";
 
 const router = express.Router();
 
@@ -9,7 +9,7 @@ const router = express.Router();
 router.get(
   "/",
   authenticate,
-  authorizeScope('platform'),
+  authorizeRole('Admin', 'Tourism Officer'),
   authorize('view_all_profiles'),
   seasonalPricingController.getAllSeasonalPricing
 );

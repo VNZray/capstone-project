@@ -1,7 +1,7 @@
 import express from "express";
 import * as userController from "../controller/auth/UserController.js";
 import { authenticate } from "../middleware/authenticate.js";
-import { authorizeAny, authorizeScope, authorize } from "../middleware/authorizeRole.js";
+import { authorizeAny, authorizeRole, authorize } from "../middleware/authorizeRole.js";
 
 const router = express.Router();
 
@@ -38,42 +38,42 @@ router.post(
 router.get(
   "/",
   authenticate,
-  authorizeScope('platform'),
+  authorizeRole('Admin', 'Tourism Officer'),
   authorize('manage_users'),
   userController.getAllUsers
 );
 router.get(
   "/:id",
   authenticate,
-  authorizeScope('platform'),
+  authorizeRole('Admin', 'Tourism Officer'),
   authorize('manage_users'),
   userController.getUserById
 );
 router.post(
   "/",
   authenticate,
-  authorizeScope('platform'),
+  authorizeRole('Admin', 'Tourism Officer'),
   authorize('manage_users'),
   userController.insertUser
 );
 router.put(
   "/:id",
   authenticate,
-  authorizeScope('platform'),
+  authorizeRole('Admin', 'Tourism Officer'),
   authorize('manage_users'),
   userController.updateUser
 );
 router.patch(
   "/:id",
   authenticate,
-  authorizeScope('platform'),
+  authorizeRole('Admin', 'Tourism Officer'),
   authorize('manage_users'),
   userController.updateUser
 );
 router.delete(
   "/:id",
   authenticate,
-  authorizeScope('platform'),
+  authorizeRole('Admin', 'Tourism Officer'),
   authorize('manage_users'),
   userController.deleteUser
 );

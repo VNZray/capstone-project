@@ -48,34 +48,20 @@ const Login: React.FC = () => {
         localStorage.removeItem("rememberedPassword");
       }
 
-      // Check if user is staff (not Business Owner) and redirect to dashboard
-      // RBAC Enhancement: Check role_type for custom business roles
-      const staffRoles = [
-        "Manager",
-        "Room Manager",
-        "Receptionist",
-        "Sales Associate",
-      ];
-
-      const tourism = ["Admin", "Tourism Office"];
-      const tourist = "Tourist";
-      const owner = "Business Owner";
-
+      // Route based on role name (simplified RBAC: 5 fixed roles)
       const userRole = loggedInUser.role_name || "";
-      const roleType = loggedInUser.role_type;
-      const isCustomBusinessRole = roleType === 'business';
+      const isStaff = userRole === 'Staff';
 
-      // Custom business roles should be treated as staff
-      if (isCustomBusinessRole || staffRoles.includes(userRole)) {
-        // Staff members and custom roles go directly to business dashboard
+      if (isStaff) {
+        // Staff members go directly to business dashboard
         navigate("/business/dashboard");
-      } else if (userRole === tourist) {
+      } else if (userRole === "Tourist") {
         // Tourist to landing page
         navigate("/");
-      } else if (tourism.includes(userRole)) {
-        // Tourism
+      } else if (userRole === "Admin" || userRole === "Tourism Officer") {
+        // Tourism/Admin
         navigate("/tourism/dashboard");
-      } else if (userRole === owner) {
+      } else if (userRole === "Business Owner") {
         // Business Owners go to business listing page
         navigate("/business");
       } else {

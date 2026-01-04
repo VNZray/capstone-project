@@ -4,12 +4,6 @@ export type UserRoles = {
   // Some APIs may return `role_description`; keep both for compatibility
   description?: string;
   role_description?: string;
-  // RBAC: Role type from enhanced RBAC system
-  role_type?: 'system' | 'business';
-  // RBAC: Business ID this role belongs to (for business roles)
-  role_for?: string | null;
-  // RBAC: Whether this is a custom role
-  is_custom?: boolean;
   created_at?: string;
 };
 
@@ -60,12 +54,6 @@ export type UserDetails = {
   // RBAC: permissions from backend
   permissions?: string[];
   business_id?: string;
-  // RBAC: Role type from enhanced RBAC system
-  role_type?: 'system' | 'business';
-  // RBAC: Business ID this role belongs to (for business roles)
-  role_for?: string | null;
-  // RBAC: Whether this is a custom role
-  is_custom_role?: boolean;
   // Staff onboarding flags
   must_change_password?: boolean;
   profile_completed?: boolean;

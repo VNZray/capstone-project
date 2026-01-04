@@ -26,7 +26,7 @@ import express from 'express';
 import rateLimit from 'express-rate-limit';
 import * as refundController from '../controller/refund/index.js';
 import { authenticate } from '../middleware/authenticate.js';
-import { authorizeScope, authorizeAny, authorizeBusinessAccess } from '../middleware/authorizeRole.js';
+import { authorizeRole, authorizeAny, authorizeBusinessAccess } from '../middleware/authorizeRole.js';
 import { hasAnyPermission } from '../utils/authHelpers.js';
 
 const router = express.Router();

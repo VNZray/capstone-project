@@ -1,11 +1,12 @@
 /**
  * Role Service - Simplified RBAC
  * 
- * Two-tier RBAC system:
- * - System roles: Platform-wide roles (Admin, Tourist, Business Owner, etc.)
- * - Business roles: Single "Staff" role per business with per-user permissions
+ * Simple role system with 5 fixed roles:
+ * - Admin, Tourism Officer, Business Owner, Tourist, Staff
  * 
- * Staff permissions are managed at the USER level, not role level.
+ * All roles are system roles. Staff permissions are managed at the USER level,
+ * not role level. Business access is determined by staff.business_id.
+ * 
  * See permissionService.js for user permission management.
  * 
  * @module services/roleService
@@ -17,58 +18,46 @@ import db from '../db.js';
 // CONSTANTS
 // ============================================================
 
-export const ROLE_TYPES = {
-  SYSTEM: 'system',
-  BUSINESS: 'business'
+export const STAFF_ROLE_ID = 6; // ID of the single Staff role
+
+export const ROLE_NAMES = {
+  ADMIN: 'Admin',
+  TOURISM_OFFICER: 'Tourism Officer',
+  BUSINESS_OWNER: 'Business Owner',
+  TOURIST: 'Tourist',
+  STAFF: 'Staff',
 };
 
 // ============================================================
-// ROLE SCOPE HELPERS
+// ROLE HELPERS
 // ============================================================
 
 /**
- * Determine if a role has platform-level scope
- * @param {Object} role - Role object with role_type and role_for properties
+ * Check if a role is a platform role (Admin or Tourism Officer)
+ * @param {Object|string} role - Role object or role name
  * @returns {boolean}
  */
-export function hasPlatformScope(role) {
-  return role?.role_type === 'system' && !role?.role_for;
+export function isPlatformRole(role) {
+  const roleName = typeof role === 'string' ? role : role?.role_name;
+  return [ROLE_NAMES.ADMIN, ROLE_NAMES.TOURISM_OFFICER].includes(roleName);
 }
 
 /**
- * Determine if a role has business-level scope
- * @param {Object} role - Role object
+ * Check if a role is Staff
+ * @param {Object|string} role - Role object or role name
  * @returns {boolean}
  */
-export function hasBusinessScope(role) {
-  return role?.role_type === 'business' || !!role?.role_for;
+export function isStaffRole(role) {
+  const roleName = typeof role === 'string' ? role : role?.role_name;
+  return roleName === ROLE_NAMES.STAFF;
 }
 
 /**
- * Check if a role is a system role
- * @param {Object} role - Role object
- * @returns {boolean}
+ * Get the Staff role ID (constant)
+ * @returns {number}
  */
-export function isSystemRole(role) {
-  return role?.role_type === 'system';
-}
-
-/**
- * Check if a role is a business-specific role
- * @param {Object} role - Role object
- * @returns {boolean}
- */
-export function isBusinessRole(role) {
-  return role?.role_type === 'business';
-}
-
-/**
- * Get the business ID a role is associated with
- * @param {Object} role - Role object
- * @returns {string|null}
- */
-export function getRoleBusinessId(role) {
-  return role?.role_for || null;
+export function getStaffRoleId() {
+  return STAFF_ROLE_ID;
 }
 
 // ============================================================
@@ -76,59 +65,14 @@ export function getRoleBusinessId(role) {
 // ============================================================
 
 /**
- * Get all roles by type
- * @param {string} roleType - 'system' or 'business'
- * @returns {Promise<Array>}
- */
-export async function getRolesByType(roleType) {
-  if (!Object.values(ROLE_TYPES).includes(roleType)) {
-    throw new Error(`Invalid role type: ${roleType}`);
-  }
-  
-  const [rows] = await db.query(
-    `SELECT * FROM user_role WHERE role_type = ? ORDER BY role_name`,
-    [roleType]
-  );
-  return rows || [];
-}
-
-/**
  * Get all system roles
  * @returns {Promise<Array>}
  */
 export async function getSystemRoles() {
-  return getRolesByType(ROLE_TYPES.SYSTEM);
-}
-
-/**
- * Get the Staff role for a business (creates if doesn't exist)
- * @param {string} businessId - Business ID
- * @returns {Promise<Object>} Staff role
- */
-export async function getOrCreateBusinessStaffRole(businessId) {
-  if (!businessId) {
-    throw new Error('Business ID is required');
-  }
-  
-  // Check if Staff role exists
-  const [existing] = await db.query(
-    `SELECT * FROM user_role WHERE role_for = ? AND role_type = 'business' LIMIT 1`,
-    [businessId]
+  const [rows] = await db.query(
+    `SELECT * FROM user_role ORDER BY role_name`
   );
-  
-  if (existing && existing.length > 0) {
-    return existing[0];
-  }
-  
-  // Create new Staff role for this business
-  const [result] = await db.query(
-    `INSERT INTO user_role (role_name, role_description, role_for, role_type, is_immutable)
-     VALUES ('Staff', 'Staff member of this business', ?, 'business', FALSE)`,
-    [businessId]
-  );
-  
-  const [newRole] = await db.query(`SELECT * FROM user_role WHERE id = ?`, [result.insertId]);
-  return newRole[0];
+  return rows || [];
 }
 
 /**
@@ -142,7 +86,7 @@ export async function getRoleById(roleId) {
 }
 
 /**
- * Get role with its permissions (for system roles)
+ * Get role with its permissions (for system roles - not Staff)
  * @param {number} roleId - Role ID
  * @returns {Promise<Object|null>}
  */
@@ -281,19 +225,16 @@ export async function setRolePermissions(roleId, permissionIds) {
 
 export default {
   // Constants
-  ROLE_TYPES,
+  STAFF_ROLE_ID,
+  ROLE_NAMES,
   
-  // Role scope helpers
-  hasPlatformScope,
-  hasBusinessScope,
-  isSystemRole,
-  isBusinessRole,
-  getRoleBusinessId,
+  // Role helpers
+  isPlatformRole,
+  isStaffRole,
+  getStaffRoleId,
   
   // Role retrieval
-  getRolesByType,
   getSystemRoles,
-  getOrCreateBusinessStaffRole,
   getRoleById,
   getRoleWithPermissions,
   
@@ -301,7 +242,7 @@ export default {
   getPermissionCategories,
   getPermissionsGroupedByCategory,
   
-  // Role permission management (system roles only)
+  // Role permission management (system roles only - not Staff)
   assignPermissionsToRole,
   removePermissionsFromRole,
   setRolePermissions,

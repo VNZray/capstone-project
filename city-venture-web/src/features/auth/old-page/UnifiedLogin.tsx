@@ -61,16 +61,12 @@ export default function UnifiedLogin() {
       } else if (role === "Owner") {
         const loggedInUser = await login(email, password);
         
-        // Check if user is staff (not Business Owner) and redirect to dashboard
-        // RBAC Enhancement: Check role_type for custom business roles
-        const staffRoles = ["Manager", "Room Manager", "Receptionist", "Sales Associate"];
+        // Route based on role name (simplified RBAC: 5 fixed roles)
         const userRole = loggedInUser.role_name || "";
-        const roleType = loggedInUser.role_type;
-        const isCustomBusinessRole = roleType === 'business';
+        const isStaff = userRole === 'Staff';
         
-        // Custom business roles should be treated as staff
-        if (isCustomBusinessRole || staffRoles.includes(userRole)) {
-          // Staff members and custom roles go directly to business dashboard
+        if (isStaff) {
+          // Staff members go directly to business dashboard
           navigate("/business/dashboard");
         } else {
           // Business Owners go to business listing page

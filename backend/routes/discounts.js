@@ -1,7 +1,7 @@
 import express from "express";
 import * as discountController from "../controller/discountController.js";
 import { authenticate } from "../middleware/authenticate.js";
-import { authorizeScope, authorize } from "../middleware/authorizeRole.js";
+import { authorizeRole, authorize } from "../middleware/authorizeRole.js";
 
 const router = express.Router();
 
@@ -14,7 +14,7 @@ router.post("/", authenticate, authorize('manage_promotions'), discountControlle
 router.get("/business/:businessId", discountController.getDiscountsByBusinessId);
 router.get("/business/:businessId/active", discountController.getActiveDiscountsByBusinessId);
 // Maintenance - platform admin only
-router.post("/maintenance/update-expired", authenticate, authorizeScope('platform'), discountController.updateExpiredDiscounts);
+router.post("/maintenance/update-expired", authenticate, authorizeRole('Admin', 'Tourism Officer'), discountController.updateExpiredDiscounts);
 router.get("/:id", discountController.getDiscountById);
 router.put("/:id", authenticate, authorize('manage_promotions'), discountController.updateDiscount);
 router.delete("/:id", authenticate, authorize('manage_promotions'), discountController.deleteDiscount);

@@ -1,12 +1,12 @@
 import express from "express";
 import * as reportController from "../controller/reportController.js";
 import { authenticate } from "../middleware/authenticate.js";
-import { authorizeScope, authorize, authorizeAny } from "../middleware/authorizeRole.js";
+import { authorizeRole, authorize, authorizeAny } from "../middleware/authorizeRole.js";
 
 const router = express.Router();
 
 // Get all reports - platform scope with view_reports permission
-router.get("/", authenticate, authorizeScope('platform'), authorizeAny('view_reports', 'manage_services'), reportController.getAllReports);
+router.get("/", authenticate, authorizeRole('Admin', 'Tourism Officer'), authorizeAny('view_reports', 'manage_services'), reportController.getAllReports);
 
 // Create a new report
 router.post("/", reportController.createReport);
@@ -15,7 +15,7 @@ router.post("/", reportController.createReport);
 router.get("/:id", reportController.getReportById);
 
 // Update report status - platform scope with report management
-router.put("/:id/status", authenticate, authorizeScope('platform'), authorizeAny('view_reports', 'manage_services'), reportController.updateReportStatus);
+router.put("/:id/status", authenticate, authorizeRole('Admin', 'Tourism Officer'), authorizeAny('view_reports', 'manage_services'), reportController.updateReportStatus);
 
 // Delete report - requires manage_users (admin-level)
 router.delete("/:id", authenticate, authorize('manage_users'), reportController.deleteReport);

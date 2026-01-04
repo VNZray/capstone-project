@@ -1,7 +1,7 @@
 import express from "express";
 import * as bookingController from '../controller/accommodation/bookingController.js'
 import { authenticate } from '../middleware/authenticate.js';
-import { authorizeScope, authorize, authorizeAny, authorizeBusinessAccess } from '../middleware/authorizeRole.js';
+import { authorizeRole, authorize, authorizeAny, authorizeBusinessAccess } from '../middleware/authorizeRole.js';
 
 const router = express.Router();
 

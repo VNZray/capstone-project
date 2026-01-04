@@ -9,7 +9,8 @@ import db from "../db.js";
  * 
  * Simplified model:
  * - System roles: permissions from role_permissions table
- * - Business roles (Staff): permissions from user_permissions table (per-user)
+ * - Staff role: permissions from user_permissions table (per-user)
+ * - Business access determined by staff.business_id (not role_for)
  * 
  * @param {string} userId 
  * @returns {Promise<Object|null>} Role context
@@ -21,8 +22,6 @@ async function getRoleContext(userId) {
     `SELECT 
        ur.id AS role_id,
        ur.role_name,
-       ur.role_type,
-       ur.role_for,
        ur.is_immutable
      FROM user u
      JOIN user_role ur ON ur.id = u.user_role_id
@@ -35,7 +34,17 @@ async function getRoleContext(userId) {
   const role = roleRows[0];
   let permissions;
 
-  if (role.role_type === 'system') {
+  if (role.role_name === 'Staff') {
+    // Staff: get permissions from user_permissions (per-user)
+    const [permRows] = await db.query(
+      `SELECT p.name
+       FROM user_permissions up
+       JOIN permissions p ON p.id = up.permission_id
+       WHERE up.user_id = ?`,
+      [userId]
+    );
+    permissions = new Set(permRows.map(r => r.name));
+  } else {
     // System roles: get permissions from role_permissions
     const [permRows] = await db.query(
       `SELECT p.name
@@ -45,29 +54,18 @@ async function getRoleContext(userId) {
       [role.role_id]
     );
     permissions = new Set(permRows.map(r => r.name));
-  } else {
-    // Business roles (Staff): get permissions from user_permissions (per-user)
-    const [permRows] = await db.query(
-      `SELECT p.name
-       FROM user_permissions up
-       JOIN permissions p ON p.id = up.permission_id
-       WHERE up.user_id = ?`,
-      [userId]
-    );
-    permissions = new Set(permRows.map(r => r.name));
   }
+
+  const isStaff = role.role_name === 'Staff';
+  const isPlatformRole = ['Admin', 'Tourism Officer'].includes(role.role_name);
 
   return {
     roleId: role.role_id,
     roleName: role.role_name,
-    roleType: role.role_type,
-    roleFor: role.role_for,
     isImmutable: role.is_immutable,
     permissions,
-    isSystemRole: role.role_type === 'system',
-    isBusinessRole: role.role_type === 'business',
-    hasPlatformScope: role.role_type === 'system' && !role.role_for,
-    hasBusinessScope: role.role_type === 'business' || !!role.role_for,
+    isStaff,
+    isPlatformRole,
   };
 }
 
@@ -121,10 +119,8 @@ export async function ensureUserRole(req) {
       req.roleContext = context;
       req.user.role = context.roleName;
       req.user.roleRaw = context.roleName;
-      req.user.roleType = context.roleType;
-      req.user.roleFor = context.roleFor;
       req.user.permissions = context.permissions;
-      console.log('[ensureUserRole] Role context resolved for user', req.user.id, ':', context.roleName, `(${context.roleType})`);
+      console.log('[ensureUserRole] Role context resolved for user', req.user.id, ':', context.roleName);
     } else {
       console.error('[ensureUserRole] No role found in DB for user:', req.user.id);
     }
@@ -137,13 +133,11 @@ export async function ensureUserRole(req) {
 
 /**
  * Check if a user has access to a business.
- * Uses role properties and permissions instead of hardcoded role names.
  * 
  * Access is granted if:
- * 1. User has platform scope with business viewing permissions (e.g., Admin)
+ * 1. User is Admin (can access any business)
  * 2. User is the owner of the business
- * 3. User is staff assigned to the business
- * 4. User has a business role (role_for) matching the business
+ * 3. User is staff assigned to the business (via staff.business_id)
  * 
  * @param {string} businessId
  * @param {Object} user - User object with id property
@@ -157,17 +151,8 @@ export async function hasBusinessAccess(businessId, user, roleContext = null) {
   const context = roleContext || await getRoleContext(user.id);
   if (!context) return false;
 
-  // Platform-scope system roles with appropriate permissions can access any business
-  if (context.isSystemRole && context.hasPlatformScope) {
-    const platformBusinessPerms = ['view_all_profiles', 'approve_business', 'manage_services', 'manage_users'];
-    const hasPlatformAccess = platformBusinessPerms.some(p => context.permissions.has(p));
-    if (hasPlatformAccess) {
-      return true;
-    }
-  }
-
-  // Business roles: check if role_for matches the business
-  if (context.isBusinessRole && context.roleFor === businessId) {
+  // Admin can access any business
+  if (context.roleName === 'Admin') {
     return true;
   }
 

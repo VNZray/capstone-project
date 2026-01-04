@@ -57,30 +57,6 @@ async function createRoleProcedures(knex) {
     END;
   `);
 
-  // Get or create Staff role for a business
-  await knex.raw(`
-    CREATE PROCEDURE GetOrCreateBusinessStaffRole(IN p_business_id VARCHAR(255))
-    BEGIN
-      DECLARE v_role_id INT;
-      
-      -- Check if Staff role exists
-      SELECT id INTO v_role_id
-      FROM user_role 
-      WHERE role_for = p_business_id AND role_type = 'business' 
-      LIMIT 1;
-      
-      -- If not, create it
-      IF v_role_id IS NULL THEN
-        INSERT INTO user_role (role_name, role_description, role_for, role_type, is_immutable)
-        VALUES ('Staff', 'Staff member of this business', p_business_id, 'business', FALSE);
-        
-        SET v_role_id = LAST_INSERT_ID();
-      END IF;
-      
-      SELECT * FROM user_role WHERE id = v_role_id;
-    END;
-  `);
-
   // ============================================================
   // PERMISSION CATEGORY PROCEDURES
   // ============================================================
@@ -171,6 +147,7 @@ async function createRoleProcedures(knex) {
   `);
 
   // Set all permissions for a user (replaces existing)
+  // MariaDB-compatible: uses JSON_VALUE with a loop instead of JSON_TABLE
   await knex.raw(`
     CREATE PROCEDURE SetUserPermissions(
       IN p_user_id CHAR(36),
@@ -178,22 +155,34 @@ async function createRoleProcedures(knex) {
       IN p_granted_by CHAR(36)
     )
     BEGIN
+      DECLARE v_idx INT DEFAULT 0;
+      DECLARE v_length INT;
+      DECLARE v_permission_id INT;
+      DECLARE v_inserted INT DEFAULT 0;
+      
       -- Remove existing permissions
       DELETE FROM user_permissions WHERE user_id = p_user_id;
       
-      -- Insert new permissions from JSON array
-      INSERT INTO user_permissions (user_id, permission_id, granted_by)
-      SELECT p_user_id, perm_id.id, p_granted_by
-      FROM JSON_TABLE(
-        p_permission_ids, 
-        '$[*]' COLUMNS (id INT PATH '$')
-      ) AS perm_id;
+      -- Get the length of the JSON array
+      SET v_length = JSON_LENGTH(p_permission_ids);
       
-      SELECT ROW_COUNT() AS permissions_set;
+      -- Loop through the JSON array and insert each permission
+      WHILE v_idx < v_length DO
+        SET v_permission_id = JSON_VALUE(p_permission_ids, CONCAT('$[', v_idx, ']'));
+        
+        INSERT IGNORE INTO user_permissions (user_id, permission_id, granted_by)
+        VALUES (p_user_id, v_permission_id, p_granted_by);
+        
+        SET v_inserted = v_inserted + ROW_COUNT();
+        SET v_idx = v_idx + 1;
+      END WHILE;
+      
+      SELECT v_inserted AS permissions_set;
     END;
   `);
 
   // Get all staff members for a business with their permissions
+  // MariaDB-compatible: uses GROUP_CONCAT for JSON-like array building
   await knex.raw(`
     CREATE PROCEDURE GetBusinessStaffWithPermissions(IN p_business_id VARCHAR(255))
     BEGIN
@@ -204,9 +193,13 @@ async function createRoleProcedures(knex) {
         u.firstname,
         u.lastname,
         u.email,
-        (SELECT JSON_ARRAYAGG(
-          JSON_OBJECT('id', p.id, 'name', p.name)
-        ) FROM user_permissions up
+        (SELECT CONCAT('[', 
+          COALESCE(GROUP_CONCAT(
+            JSON_OBJECT('id', p.id, 'name', p.name)
+            SEPARATOR ','
+          ), ''),
+        ']')
+         FROM user_permissions up
          JOIN permissions p ON p.id = up.permission_id
          WHERE up.user_id = s.user_id
         ) AS permissions
