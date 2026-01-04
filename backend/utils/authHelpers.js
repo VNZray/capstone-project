@@ -1,11 +1,16 @@
 import db from "../db.js";
 
 // ============================================================
-// ROLE CONTEXT (import from middleware for consistency)
+// ROLE CONTEXT (Simplified RBAC)
 // ============================================================
 
 /**
  * Fetch complete role context for a user (role properties + permissions)
+ * 
+ * Simplified model:
+ * - System roles: permissions from role_permissions table
+ * - Business roles (Staff): permissions from user_permissions table (per-user)
+ * 
  * @param {string} userId 
  * @returns {Promise<Object|null>} Role context
  */
@@ -18,7 +23,6 @@ async function getRoleContext(userId) {
        ur.role_name,
        ur.role_type,
        ur.role_for,
-       ur.is_custom,
        ur.is_immutable
      FROM user u
      JOIN user_role ur ON ur.id = u.user_role_id
@@ -29,23 +33,35 @@ async function getRoleContext(userId) {
   if (!roleRows || roleRows.length === 0) return null;
 
   const role = roleRows[0];
+  let permissions;
 
-  const [permRows] = await db.query(
-    `SELECT p.name
-     FROM role_permissions rp
-     JOIN permissions p ON p.id = rp.permission_id
-     WHERE rp.user_role_id = ?`,
-    [role.role_id]
-  );
-
-  const permissions = new Set(permRows.map(r => r.name));
+  if (role.role_type === 'system') {
+    // System roles: get permissions from role_permissions
+    const [permRows] = await db.query(
+      `SELECT p.name
+       FROM role_permissions rp
+       JOIN permissions p ON p.id = rp.permission_id
+       WHERE rp.user_role_id = ?`,
+      [role.role_id]
+    );
+    permissions = new Set(permRows.map(r => r.name));
+  } else {
+    // Business roles (Staff): get permissions from user_permissions (per-user)
+    const [permRows] = await db.query(
+      `SELECT p.name
+       FROM user_permissions up
+       JOIN permissions p ON p.id = up.permission_id
+       WHERE up.user_id = ?`,
+      [userId]
+    );
+    permissions = new Set(permRows.map(r => r.name));
+  }
 
   return {
     roleId: role.role_id,
     roleName: role.role_name,
     roleType: role.role_type,
     roleFor: role.role_for,
-    isCustom: role.is_custom,
     isImmutable: role.is_immutable,
     permissions,
     isSystemRole: role.role_type === 'system',

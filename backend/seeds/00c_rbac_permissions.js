@@ -195,15 +195,28 @@ export async function seed(knex) {
     'manage_platform_settings', 'view_platform_analytics',
   ];
 
+  // Business Owner gets ALL business-scope permissions
+  const businessOwnerPermissions = [
+    'view_orders', 'create_orders', 'update_orders', 'cancel_orders', 'manage_order_payments',
+    'view_products', 'create_products', 'update_products', 'delete_products', 'manage_inventory', 'manage_discounts', 'manage_promotions',
+    'view_services', 'create_services', 'update_services', 'delete_services', 'manage_service_inquiries',
+    'view_staff', 'create_staff', 'update_staff', 'delete_staff', 'manage_staff_roles',
+    'view_customers', 'manage_customer_reviews', 'send_notifications',
+    'view_payments', 'process_refunds', 'view_financial_reports',
+    'view_reports', 'export_reports', 'view_analytics',
+    'manage_business_settings', 'manage_business_hours', 'manage_business_amenities', 'manage_business_profile',
+    'view_bookings', 'create_bookings', 'update_bookings', 'cancel_bookings', 'manage_rooms', 'manage_room_amenities', 'check_in_guests', 'check_out_guests',
+  ];
+
   const adminRole = await knex('user_role').where({ role_name: 'Admin' }).first();
   const tourismOfficerRole = await knex('user_role').where({ role_name: 'Tourism Officer' }).first();
+  const businessOwnerRole = await knex('user_role').where({ role_name: 'Business Owner' }).first();
 
   if (adminRole) {
-    const adminPermIds = systemPermissions
-      .filter(name => permMap[name])
-      .map(name => permMap[name]);
+    // Admin gets ALL permissions (system + business)
+    const allPermIds = Object.values(permMap);
     
-    for (const permId of adminPermIds) {
+    for (const permId of allPermIds) {
       try {
         await knex('role_permissions')
           .insert({ user_role_id: adminRole.id, permission_id: permId })
@@ -215,7 +228,7 @@ export async function seed(knex) {
         }
       }
     }
-    console.log(`[Seed] Assigned system permissions to Admin`);
+    console.log(`[Seed] Assigned ALL permissions to Admin`);
   }
 
   if (tourismOfficerRole) {
@@ -238,6 +251,27 @@ export async function seed(knex) {
       }
     }
     console.log(`[Seed] Assigned system permissions to Tourism Officer`);
+  }
+
+  if (businessOwnerRole) {
+    // Business Owner gets all business-scope permissions
+    const ownerPermIds = businessOwnerPermissions
+      .filter(name => permMap[name])
+      .map(name => permMap[name]);
+    
+    for (const permId of ownerPermIds) {
+      try {
+        await knex('role_permissions')
+          .insert({ user_role_id: businessOwnerRole.id, permission_id: permId })
+          .onConflict(['user_role_id', 'permission_id'])
+          .ignore();
+      } catch (err) {
+        if (!err.message.includes('Duplicate')) {
+          console.error(`[Seed] Error assigning permission to Business Owner:`, err.message);
+        }
+      }
+    }
+    console.log(`[Seed] Assigned business permissions to Business Owner`);
   }
 
   console.log('[Seed] RBAC permissions seed completed.');

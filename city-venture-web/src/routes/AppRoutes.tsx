@@ -44,7 +44,6 @@ import {
   Subscription as UnifiedSubscription,
   ManageStaff as UnifiedManageStaff,
   Settings,
-  StaffRoles as StaffRolesPage,
 } from "../features/business/unified";
 
 // Context Providers
@@ -234,18 +233,6 @@ export default function AppRoutes() {
                   requiredAnyPermissions={['view_staff', 'create_staff', 'manage_staff_roles']}
                 >
                   <UnifiedManageStaff />
-                </ProtectedRoute>
-              }
-            />
-
-            {/* Staff Roles - requires staff role management permission */}
-            <Route
-              path={`${business}/staff-roles`}
-              element={
-                <ProtectedRoute 
-                  requiredAnyPermissions={['manage_staff_roles']}
-                >
-                  <StaffRolesPage />
                 </ProtectedRoute>
               }
             />

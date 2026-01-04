@@ -272,15 +272,6 @@ export default function Sidebar({
               onClick={onClose}
             />
           )}
-          {/* TODO: Remove after testing - Temporary Staff Roles link */}
-          {hasRole("Business Owner") && (
-            <NavItem
-              to={`${route}/staff-roles`}
-              label="Staff Roles"
-              icon={<Users size={ICON_SIZE} />}
-              onClick={onClose}
-            />
-          )}
           {hasRole("Business Owner") && (
             <NavItem
               to={`${route}/settings`}

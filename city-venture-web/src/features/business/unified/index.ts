@@ -47,5 +47,4 @@ export {
   Subscription,
   ManageStaff,
   Settings,
-  StaffRoles,
 } from './pages';

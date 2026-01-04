@@ -32,6 +32,7 @@ import {
 import Table, { type TableColumn, StatusChip } from "@/src/components/ui/Table";
 import { Edit, Trash2 } from "lucide-react";
 import { Box } from "@mui/joy";
+import apiClient from "@/src/services/apiClient";
 
 type Staff = StaffMember;
 
@@ -93,6 +94,7 @@ const ManageStaff = () => {
       setError(null);
 
       // Use the new onboard endpoint that creates user + staff in one transaction
+      // Staff automatically gets the "Staff" role; permissions are assigned separately
       const result = await onboardStaff({
         first_name: data.first_name,
         last_name: data.last_name,
@@ -100,7 +102,8 @@ const ManageStaff = () => {
         phone_number: data.phone_number || "",
         password: data.password || "staff123",
         business_id: businessDetails?.id as string,
-        role_id: data.role_id,
+        title: data.title,
+        permission_ids: data.permission_ids,
       });
 
       const newStaff: Staff = {
@@ -109,7 +112,7 @@ const ManageStaff = () => {
         last_name: result.last_name,
         email: result.email,
         phone_number: result.phone_number,
-        role: result.role_name || data.role_name,
+        title: data.title,
         is_active: result.is_active,
         user_id: result.user_id,
         business_id: businessDetails?.id || "",
@@ -145,14 +148,21 @@ const ManageStaff = () => {
     if (!selectedStaff) return;
 
     try {
+      // Update staff info
       await updateStaffById(selectedStaff.id, {
         first_name: data.first_name,
         middle_name: data.middle_name,
         last_name: data.last_name,
         email: data.email,
         phone_number: data.phone_number,
-        role: data.role,
+        title: data.title,
       });
+
+      // Update permissions separately if changed
+      if (data.permission_ids) {
+        const { updateStaffPermissions } = await import("@/src/services/manage-staff/StaffService");
+        await updateStaffPermissions(selectedStaff.id, data.permission_ids);
+      }
 
       setAlertConfig({
         type: "success",
@@ -333,7 +343,7 @@ const ManageStaff = () => {
       s.last_name?.toLowerCase().includes(searchLower) ||
       s.email.toLowerCase().includes(searchLower) ||
       s.phone_number?.toLowerCase().includes(searchLower) ||
-      (s.role?.toLowerCase() || "").includes(searchLower)
+      (s.title?.toLowerCase() || "").includes(searchLower)
     );
   });
 
@@ -365,11 +375,11 @@ const ManageStaff = () => {
       render: (row) => row.phone_number || "—",
     },
     {
-      id: "role",
-      label: "Role",
+      id: "title",
+      label: "Title/Position",
       minWidth: 150,
       align: "center",
-      render: (row) => <Typography.Body>{row.role || "—"}</Typography.Body>,
+      render: (row) => <Typography.Body>{row.title || "Staff"}</Typography.Body>,
     },
     {
       id: "is_active",

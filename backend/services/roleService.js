@@ -1,12 +1,12 @@
 /**
- * Role Service - Enhanced RBAC Business Logic
+ * Role Service - Simplified RBAC
  * 
- * Implements a two-tier RBAC system:
- * - System roles: Platform-wide roles (role_type = 'system', role_for = null)
- * - Business roles: Custom roles created by Business Owners (role_type = 'business', role_for = business_id)
+ * Two-tier RBAC system:
+ * - System roles: Platform-wide roles (Admin, Tourist, Business Owner, etc.)
+ * - Business roles: Single "Staff" role per business with per-user permissions
  * 
- * IMPORTANT: Role access should be determined by role properties, NOT role names.
- * Use role_type, role_for, and permissions to determine access scope.
+ * Staff permissions are managed at the USER level, not role level.
+ * See permissionService.js for user permission management.
  * 
  * @module services/roleService
  */
@@ -22,30 +22,12 @@ export const ROLE_TYPES = {
   BUSINESS: 'business'
 };
 
-/**
- * @deprecated SYSTEM_ROLES is deprecated. Do not use hardcoded role names for access control.
- * Instead, use role properties (role_type, role_for) and permissions.
- * 
- * For backward compatibility only - will be removed in future versions.
- */
-export const SYSTEM_ROLES = {
-  ADMIN: 'Admin',
-  TOURISM_OFFICER: 'Tourism Officer',
-  BUSINESS_OWNER: 'Business Owner',
-  TOURIST: 'Tourist',
-  EVENT_MANAGER: 'Event Manager'
-};
-
-// In-memory cache for role permissions with TTL
-const rolePermissionCache = new Map();
-const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
-
 // ============================================================
-// ROLE SCOPE HELPERS (USE THESE INSTEAD OF HARDCODED NAMES)
+// ROLE SCOPE HELPERS
 // ============================================================
 
 /**
- * Determine if a role has platform-level scope (can access platform-wide features)
+ * Determine if a role has platform-level scope
  * @param {Object} role - Role object with role_type and role_for properties
  * @returns {boolean}
  */
@@ -55,7 +37,7 @@ export function hasPlatformScope(role) {
 
 /**
  * Determine if a role has business-level scope
- * @param {Object} role - Role object with role_type and role_for properties
+ * @param {Object} role - Role object
  * @returns {boolean}
  */
 export function hasBusinessScope(role) {
@@ -81,29 +63,12 @@ export function isBusinessRole(role) {
 }
 
 /**
- * Get the business ID a role is associated with (if any)
+ * Get the business ID a role is associated with
  * @param {Object} role - Role object
  * @returns {string|null}
  */
 export function getRoleBusinessId(role) {
   return role?.role_for || null;
-}
-
-// ============================================================
-// CACHE MANAGEMENT
-// ============================================================
-
-/**
- * Clear the role permission cache
- * @param {number|null} roleId - Specific role ID to clear, or null for all
- */
-export function clearRoleCache(roleId = null) {
-  if (roleId) {
-    rolePermissionCache.delete(roleId);
-    // Also clear any user-level caches that might reference this role
-  } else {
-    rolePermissionCache.clear();
-  }
 }
 
 // ============================================================
@@ -113,588 +78,231 @@ export function clearRoleCache(roleId = null) {
 /**
  * Get all roles by type
  * @param {string} roleType - 'system' or 'business'
- * @returns {Promise<Array>} List of roles
+ * @returns {Promise<Array>}
  */
 export async function getRolesByType(roleType) {
   if (!Object.values(ROLE_TYPES).includes(roleType)) {
     throw new Error(`Invalid role type: ${roleType}`);
   }
   
-  const [rows] = await db.query('CALL GetRolesByType(?)', [roleType]);
-  return rows[0] || [];
+  const [rows] = await db.query(
+    `SELECT * FROM user_role WHERE role_type = ? ORDER BY role_name`,
+    [roleType]
+  );
+  return rows || [];
 }
 
 /**
- * Get all roles for a specific business
- * @param {string} businessId - Business ID
- * @returns {Promise<Array>} List of business roles
+ * Get all system roles
+ * @returns {Promise<Array>}
  */
-export async function getBusinessRoles(businessId) {
+export async function getSystemRoles() {
+  return getRolesByType(ROLE_TYPES.SYSTEM);
+}
+
+/**
+ * Get the Staff role for a business (creates if doesn't exist)
+ * @param {string} businessId - Business ID
+ * @returns {Promise<Object>} Staff role
+ */
+export async function getOrCreateBusinessStaffRole(businessId) {
   if (!businessId) {
     throw new Error('Business ID is required');
   }
   
-  const [rows] = await db.query('CALL GetBusinessRoles(?)', [businessId]);
-  return rows[0] || [];
+  // Check if Staff role exists
+  const [existing] = await db.query(
+    `SELECT * FROM user_role WHERE role_for = ? AND role_type = 'business' LIMIT 1`,
+    [businessId]
+  );
+  
+  if (existing && existing.length > 0) {
+    return existing[0];
+  }
+  
+  // Create new Staff role for this business
+  const [result] = await db.query(
+    `INSERT INTO user_role (role_name, role_description, role_for, role_type, is_immutable)
+     VALUES ('Staff', 'Staff member of this business', ?, 'business', FALSE)`,
+    [businessId]
+  );
+  
+  const [newRole] = await db.query(`SELECT * FROM user_role WHERE id = ?`, [result.insertId]);
+  return newRole[0];
 }
 
 /**
- * Get role with full permission details
+ * Get a role by ID
  * @param {number} roleId - Role ID
- * @returns {Promise<Object>} Role with permissions
+ * @returns {Promise<Object|null>}
+ */
+export async function getRoleById(roleId) {
+  const [rows] = await db.query(`SELECT * FROM user_role WHERE id = ?`, [roleId]);
+  return rows?.[0] || null;
+}
+
+/**
+ * Get role with its permissions (for system roles)
+ * @param {number} roleId - Role ID
+ * @returns {Promise<Object|null>}
  */
 export async function getRoleWithPermissions(roleId) {
-  const [results] = await db.query('CALL GetRoleWithPermissions(?)', [roleId]);
+  const role = await getRoleById(roleId);
+  if (!role) return null;
   
-  // SP returns multiple result sets
-  const role = results[0]?.[0] || null;
-  const permissions = results[1] || [];
-  const overrides = results[2] || [];
-  
-  if (!role) {
-    return null;
-  }
+  const [permissions] = await db.query(
+    `SELECT p.id, p.name, p.description, p.scope, pc.name AS category_name
+     FROM role_permissions rp
+     JOIN permissions p ON p.id = rp.permission_id
+     LEFT JOIN permission_categories pc ON pc.id = p.category_id
+     WHERE rp.user_role_id = ?
+     ORDER BY pc.sort_order, p.name`,
+    [roleId]
+  );
   
   return {
     ...role,
-    permissions,
-    overrides
+    permissions: permissions || []
   };
 }
 
-/**
- * Get a role by ID (basic info)
- * @param {number} roleId - Role ID
- * @returns {Promise<Object|null>} Role or null
- */
-export async function getRoleById(roleId) {
-  const [rows] = await db.query('CALL GetUserRoleById(?)', [roleId]);
-  return rows[0]?.[0] || null;
-}
-
 // ============================================================
-// ROLE CREATION
+// PERMISSION CATEGORIES (for UI)
 // ============================================================
 
 /**
- * Create a new system role (admin only)
- * @param {Object} params - Role parameters
- * @param {string} params.roleName - Role name
- * @param {string} params.roleDescription - Role description
- * @param {boolean} params.isImmutable - Whether role is immutable
- * @param {string} params.createdBy - User ID of creator
- * @returns {Promise<Object>} Created role
+ * Get all permission categories
+ * @returns {Promise<Array>}
  */
-export async function createSystemRole({ roleName, roleDescription, isImmutable = true, createdBy }) {
+export async function getPermissionCategories() {
   const [rows] = await db.query(
-    'CALL CreateSystemRole(?, ?, ?)',
-    [roleName, roleDescription, isImmutable]
+    `SELECT * FROM permission_categories ORDER BY sort_order`
   );
-  
-  const role = rows[0]?.[0];
-  
-  if (role && createdBy) {
-    await logRoleAction(role.id, 'created', null, role, createdBy);
-  }
-  
-  return role;
+  return rows || [];
 }
 
 /**
- * Create a fully custom business role
- * @param {Object} params - Role parameters
- * @param {string} params.businessId - Business ID
- * @param {string} params.roleName - Role name
- * @param {string} params.roleDescription - Role description
- * @param {number[]} params.permissionIds - Array of permission IDs to assign
- * @param {string} params.createdBy - User ID of creator
- * @returns {Promise<Object>} Created role
+ * Get permissions grouped by category
+ * @param {string|null} scope - Filter by scope ('system', 'business', or null for all)
+ * @returns {Promise<Array>}
  */
-export async function createCustomBusinessRole({ businessId, roleName, roleDescription, permissionIds = [], createdBy }) {
-  if (!businessId || !roleName) {
-    throw new Error('Business ID and role name are required');
+export async function getPermissionsGroupedByCategory(scope = null) {
+  let query = `
+    SELECT p.id, p.name, p.description, p.scope,
+           pc.id AS category_id, pc.name AS category_name, pc.sort_order
+    FROM permissions p
+    LEFT JOIN permission_categories pc ON pc.id = p.category_id
+  `;
+  
+  const params = [];
+  if (scope && scope !== 'all') {
+    query += ` WHERE p.scope = ? OR p.scope = 'all'`;
+    params.push(scope);
   }
   
-  // Validate role name length
-  if (roleName.length > 20) {
-    throw new Error('Role name must be 20 characters or less');
+  query += ` ORDER BY pc.sort_order, p.name`;
+  
+  const [rows] = await db.query(query, params);
+  
+  // Group by category
+  const grouped = {};
+  for (const row of rows) {
+    const catName = row.category_name || 'Other';
+    if (!grouped[catName]) {
+      grouped[catName] = {
+        category_id: row.category_id,
+        category_name: catName,
+        sort_order: row.sort_order || 999,
+        permissions: []
+      };
+    }
+    grouped[catName].permissions.push({
+      id: row.id,
+      name: row.name,
+      description: row.description,
+      scope: row.scope
+    });
   }
   
-  // Create the role
-  const [rows] = await db.query(
-    'CALL CreateCustomBusinessRole(?, ?, ?)',
-    [businessId, roleName, roleDescription]
-  );
-  
-  const role = rows[0]?.[0];
-  
-  if (!role) {
-    throw new Error('Failed to create custom role');
-  }
-  
-  // Assign permissions if provided
-  if (permissionIds.length > 0) {
-    await assignPermissionsToRole(role.id, permissionIds);
-  }
-  
-  if (createdBy) {
-    await logRoleAction(role.id, 'created', null, { ...role, permissions: permissionIds }, createdBy);
-  }
-  
-  return role;
+  return Object.values(grouped).sort((a, b) => a.sort_order - b.sort_order);
 }
 
 // ============================================================
-// ROLE UPDATE
+// ROLE PERMISSION MANAGEMENT (for system roles only)
 // ============================================================
 
 /**
- * Update a business role
- * @param {Object} params - Update parameters
- * @param {number} params.roleId - Role ID
- * @param {string} params.businessId - Business ID (for ownership verification)
- * @param {string} params.roleName - New role name
- * @param {string} params.roleDescription - New role description
- * @param {string} params.updatedBy - User ID of updater
- * @returns {Promise<Object>} Updated role
- */
-export async function updateBusinessRole({ roleId, businessId, roleName, roleDescription, updatedBy }) {
-  // Get current state for audit
-  const oldRole = await getRoleById(roleId);
-  
-  if (!oldRole) {
-    throw new Error('Role not found');
-  }
-  
-  const [rows] = await db.query(
-    'CALL UpdateBusinessRole(?, ?, ?, ?)',
-    [roleId, roleName, roleDescription, businessId]
-  );
-  
-  const role = rows[0]?.[0];
-  
-  if (role && updatedBy) {
-    await logRoleAction(roleId, 'updated', oldRole, role, updatedBy);
-  }
-  
-  // Clear cache
-  clearRoleCache(roleId);
-  
-  return role;
-}
-
-// ============================================================
-// ROLE DELETION
-// ============================================================
-
-/**
- * Delete a business role
- * @param {Object} params - Delete parameters
- * @param {number} params.roleId - Role ID
- * @param {string} params.businessId - Business ID (for ownership verification)
- * @param {string} params.deletedBy - User ID of deleter
- * @returns {Promise<boolean>} Success status
- */
-export async function deleteBusinessRole({ roleId, businessId, deletedBy }) {
-  // Get current state for audit
-  const oldRole = await getRoleWithPermissions(roleId);
-  
-  if (!oldRole) {
-    throw new Error('Role not found');
-  }
-  
-  const [rows] = await db.query(
-    'CALL DeleteBusinessRole(?, ?)',
-    [roleId, businessId]
-  );
-  
-  const deleted = rows[0]?.[0]?.deleted_count > 0;
-  
-  if (deleted && deletedBy) {
-    // Note: Can't log to role_audit_log since role is deleted
-    // Could log to a separate deletion audit table if needed
-    console.log(`[RoleService] Role ${roleId} deleted by ${deletedBy}`);
-  }
-  
-  // Clear cache
-  clearRoleCache(roleId);
-  
-  return deleted;
-}
-
-// ============================================================
-// PERMISSION MANAGEMENT
-// ============================================================
-
-/**
- * Assign permissions to a role
+ * Assign permissions to a system role
+ * Note: Staff permissions are managed per-user via permissionService
  * @param {number} roleId - Role ID
  * @param {number[]} permissionIds - Array of permission IDs
- * @returns {Promise<void>}
  */
 export async function assignPermissionsToRole(roleId, permissionIds) {
-  if (!permissionIds || permissionIds.length === 0) {
-    return;
-  }
+  if (!permissionIds || permissionIds.length === 0) return;
   
-  // Batch insert, ignore duplicates
-  const values = permissionIds.map(permId => `(${roleId}, ${permId})`).join(',');
-  
-  await db.query(`
-    INSERT IGNORE INTO role_permissions (user_role_id, permission_id)
-    VALUES ${values}
-  `);
-  
-  // Clear cache
-  clearRoleCache(roleId);
+  const values = permissionIds.map(pid => [roleId, pid]);
+  await db.query(
+    `INSERT IGNORE INTO role_permissions (user_role_id, permission_id) VALUES ?`,
+    [values]
+  );
 }
 
 /**
  * Remove permissions from a role
  * @param {number} roleId - Role ID
- * @param {number[]} permissionIds - Array of permission IDs to remove
- * @returns {Promise<void>}
+ * @param {number[]} permissionIds - Permission IDs to remove
  */
 export async function removePermissionsFromRole(roleId, permissionIds) {
-  if (!permissionIds || permissionIds.length === 0) {
-    return;
-  }
+  if (!permissionIds || permissionIds.length === 0) return;
   
   const placeholders = permissionIds.map(() => '?').join(',');
-  
   await db.query(
     `DELETE FROM role_permissions WHERE user_role_id = ? AND permission_id IN (${placeholders})`,
     [roleId, ...permissionIds]
   );
-  
-  // Clear cache
-  clearRoleCache(roleId);
 }
 
 /**
- * Set permissions for a role (replace all existing)
+ * Set all permissions for a role (replaces existing)
  * @param {number} roleId - Role ID
- * @param {number[]} permissionIds - Array of permission IDs
- * @param {string} updatedBy - User ID of updater
- * @returns {Promise<void>}
+ * @param {number[]} permissionIds - Permission IDs to set
  */
-export async function setRolePermissions(roleId, permissionIds, updatedBy) {
-  // Get old permissions for audit
-  const oldPerms = await getRoleWithPermissions(roleId);
+export async function setRolePermissions(roleId, permissionIds) {
+  await db.query(`DELETE FROM role_permissions WHERE user_role_id = ?`, [roleId]);
   
-  // Delete all existing permissions
-  await db.query('DELETE FROM role_permissions WHERE user_role_id = ?', [roleId]);
-  
-  // Add new permissions
   if (permissionIds && permissionIds.length > 0) {
     await assignPermissionsToRole(roleId, permissionIds);
   }
-  
-  if (updatedBy) {
-    await logRoleAction(
-      roleId,
-      'updated',
-      { permissions: oldPerms?.permissions?.map(p => p.id) },
-      { permissions: permissionIds },
-      updatedBy
-    );
-  }
-  
-  // Clear cache
-  clearRoleCache(roleId);
 }
 
 // ============================================================
-// PERMISSION OVERRIDES
+// EXPORTS
 // ============================================================
-
-/**
- * Add a permission override for a role
- * @param {Object} params - Override parameters
- * @param {number} params.roleId - Role ID
- * @param {number} params.permissionId - Permission ID
- * @param {boolean} params.isGranted - true to grant, false to revoke
- * @param {string} params.createdBy - User ID of creator
- * @returns {Promise<Object>} Created override
- */
-export async function addPermissionOverride({ roleId, permissionId, isGranted, createdBy }) {
-  const [rows] = await db.query(
-    'CALL AddPermissionOverride(?, ?, ?, ?)',
-    [roleId, permissionId, isGranted, createdBy]
-  );
-  
-  const override = rows[0]?.[0];
-  
-  if (override && createdBy) {
-    await logRoleAction(
-      roleId,
-      isGranted ? 'override_added' : 'override_removed',
-      null,
-      { permission_id: permissionId, is_granted: isGranted },
-      createdBy
-    );
-  }
-  
-  // Clear cache
-  clearRoleCache(roleId);
-  
-  return override;
-}
-
-/**
- * Remove a permission override
- * @param {number} roleId - Role ID
- * @param {number} permissionId - Permission ID
- * @returns {Promise<boolean>} Success status
- */
-export async function removePermissionOverride(roleId, permissionId) {
-  const [rows] = await db.query(
-    'CALL RemovePermissionOverride(?, ?)',
-    [roleId, permissionId]
-  );
-  
-  // Clear cache
-  clearRoleCache(roleId);
-  
-  return rows[0]?.[0]?.deleted_count > 0;
-}
-
-// ============================================================
-// EFFECTIVE PERMISSIONS
-// ============================================================
-
-/**
- * Get effective permissions for a role (with inheritance and overrides)
- * @param {number} roleId - Role ID
- * @returns {Promise<Array>} List of effective permissions
- */
-export async function getEffectivePermissions(roleId) {
-  const now = Date.now();
-  const cached = rolePermissionCache.get(roleId);
-  
-  if (cached && cached.expires > now) {
-    return cached.permissions;
-  }
-  
-  const [rows] = await db.query('CALL GetEffectivePermissions(?)', [roleId]);
-  const permissions = rows[0] || [];
-  
-  rolePermissionCache.set(roleId, {
-    permissions,
-    expires: now + CACHE_TTL_MS
-  });
-  
-  return permissions;
-}
-
-/**
- * Get effective permissions for a user
- * @param {string} userId - User ID
- * @returns {Promise<Set<string>>} Set of permission names
- */
-export async function getUserEffectivePermissions(userId) {
-  if (!userId) {
-    return new Set();
-  }
-  
-  const [rows] = await db.query('CALL GetUserEffectivePermissions(?)', [userId]);
-  const permissions = rows[0] || [];
-  
-  return new Set(permissions.map(p => p.name));
-}
-
-/**
- * Check if a user has a specific permission
- * @param {string} userId - User ID
- * @param {string} permissionName - Permission name to check
- * @returns {Promise<boolean>} Whether user has the permission
- */
-export async function userHasPermission(userId, permissionName) {
-  const permissions = await getUserEffectivePermissions(userId);
-  return permissions.has(permissionName);
-}
-
-/**
- * Check if a user has all specified permissions
- * @param {string} userId - User ID
- * @param {string[]} permissionNames - Permission names to check
- * @returns {Promise<boolean>} Whether user has all permissions
- */
-export async function userHasAllPermissions(userId, permissionNames) {
-  const permissions = await getUserEffectivePermissions(userId);
-  return permissionNames.every(p => permissions.has(p));
-}
-
-/**
- * Check if a user has any of the specified permissions
- * @param {string} userId - User ID
- * @param {string[]} permissionNames - Permission names to check
- * @returns {Promise<boolean>} Whether user has any permission
- */
-export async function userHasAnyPermission(userId, permissionNames) {
-  const permissions = await getUserEffectivePermissions(userId);
-  return permissionNames.some(p => permissions.has(p));
-}
-
-// ============================================================
-// PERMISSION CATEGORIES
-// ============================================================
-
-/**
- * Get all permission categories
- * @returns {Promise<Array>} List of categories
- */
-export async function getPermissionCategories() {
-  const [rows] = await db.query('CALL GetPermissionCategories()');
-  return rows[0] || [];
-}
-
-/**
- * Get permissions grouped by category
- * @param {string|null} scope - Filter by scope ('system', 'business', 'all', or null for all)
- * @returns {Promise<Array>} Permissions with category info
- */
-export async function getPermissionsGroupedByCategory(scope = null) {
-  const [rows] = await db.query('CALL GetPermissionsGroupedByCategory(?)', [scope]);
-  return rows[0] || [];
-}
-
-// ============================================================
-// AUDIT LOGGING
-// ============================================================
-
-/**
- * Log a role action to the audit log
- * @param {number} roleId - Role ID
- * @param {string} action - Action type
- * @param {Object|null} oldValues - Previous values
- * @param {Object|null} newValues - New values
- * @param {string} performedBy - User ID who performed the action
- * @returns {Promise<number>} Audit log ID
- */
-export async function logRoleAction(roleId, action, oldValues, newValues, performedBy) {
-  try {
-    const [rows] = await db.query(
-      'CALL LogRoleAction(?, ?, ?, ?, ?)',
-      [
-        roleId,
-        action,
-        oldValues ? JSON.stringify(oldValues) : null,
-        newValues ? JSON.stringify(newValues) : null,
-        performedBy
-      ]
-    );
-    return rows[0]?.[0]?.audit_id;
-  } catch (error) {
-    // Log but don't fail the main operation
-    console.error('[RoleService] Failed to log audit:', error.message);
-    return null;
-  }
-}
-
-/**
- * Get audit log for a role
- * @param {number} roleId - Role ID
- * @param {number} limit - Max records to return
- * @returns {Promise<Array>} Audit log entries
- */
-export async function getRoleAuditLog(roleId, limit = 50) {
-  const [rows] = await db.query('CALL GetRoleAuditLog(?, ?)', [roleId, limit]);
-  return rows[0] || [];
-}
-
-// ============================================================
-// VALIDATION HELPERS
-// ============================================================
-
-/**
- * Check if a business can manage a specific role
- * @param {number} roleId - Role ID
- * @param {string} businessId - Business ID
- * @returns {Promise<boolean>} Whether business can manage the role
- */
-export async function canBusinessManageRole(roleId, businessId) {
-  const role = await getRoleById(roleId);
-  
-  if (!role) {
-    return false;
-  }
-  
-  // Can only manage business-type roles that belong to this business
-  return role.role_type === ROLE_TYPES.BUSINESS && role.role_for === businessId;
-}
-
-/**
- * Validate that a role name is unique within a business
- * @param {string} roleName - Role name to check
- * @param {string} businessId - Business ID
- * @param {number|null} excludeRoleId - Role ID to exclude (for updates)
- * @returns {Promise<boolean>} Whether name is available
- */
-export async function isRoleNameAvailable(roleName, businessId, excludeRoleId = null) {
-  let query = `
-    SELECT COUNT(*) as count FROM user_role 
-    WHERE role_name = ? AND role_for = ?
-  `;
-  const params = [roleName, businessId];
-  
-  if (excludeRoleId) {
-    query += ' AND id != ?';
-    params.push(excludeRoleId);
-  }
-  
-  const [rows] = await db.query(query, params);
-  return rows[0].count === 0;
-}
 
 export default {
   // Constants
   ROLE_TYPES,
-  SYSTEM_ROLES, // @deprecated - use role properties instead
   
-  // Role scope helpers (USE THESE!)
+  // Role scope helpers
   hasPlatformScope,
   hasBusinessScope,
   isSystemRole,
   isBusinessRole,
   getRoleBusinessId,
   
-  // Cache management
-  clearRoleCache,
-  
   // Role retrieval
   getRolesByType,
-  getBusinessRoles,
-  getRoleWithPermissions,
+  getSystemRoles,
+  getOrCreateBusinessStaffRole,
   getRoleById,
+  getRoleWithPermissions,
   
-  // Role creation
-  createSystemRole,
-  createCustomBusinessRole,
-  
-  // Role update
-  updateBusinessRole,
-  deleteBusinessRole,
-  
-  // Permission management
-  assignPermissionsToRole,
-  removePermissionsFromRole,
-  setRolePermissions,
-  addPermissionOverride,
-  removePermissionOverride,
-  getEffectivePermissions,
-  getUserEffectivePermissions,
-  userHasPermission,
-  userHasAllPermissions,
-  userHasAnyPermission,
+  // Permission categories
   getPermissionCategories,
   getPermissionsGroupedByCategory,
   
-  // Audit
-  logRoleAction,
-  getRoleAuditLog,
-  
-  // Validation
-  canBusinessManageRole,
-  isRoleNameAvailable
+  // Role permission management (system roles only)
+  assignPermissionsToRole,
+  removePermissionsFromRole,
+  setRolePermissions,
 };

@@ -4,15 +4,23 @@ import {
   FormControl,
   FormLabel,
   Input,
-  Select,
-  Option,
   FormHelperText,
   CircularProgress,
-  Chip,
-  ListItemDecorator,
+  Checkbox,
+  Box,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
+  Sheet,
 } from "@mui/joy";
 import Container from "@/src/components/Container";
-import { fetchAvailableRolesForStaff, type Role } from "@/src/services/manage-staff/StaffService";
+import Typography from "@/src/components/Typography";
+import { ChevronDown } from "lucide-react";
+import { 
+  fetchAvailableStaffPermissions, 
+  type PermissionCategory,
+  type Permission 
+} from "@/src/services/manage-staff/StaffService";
 
 export type StaffFormData = {
   first_name: string;
@@ -20,8 +28,8 @@ export type StaffFormData = {
   email: string;
   password: string;
   phone_number?: string;
-  role_id: number;
-  role_name?: string;
+  title?: string;
+  permission_ids: number[];
 };
 
 type StaffAddModalProps = {
@@ -42,52 +50,76 @@ export default function StaffAddModal({
   const [email, setEmail] = React.useState("");
   const [phone, setPhone] = React.useState("");
   const [password, setPassword] = React.useState("123456");
-  const [roleId, setRoleId] = React.useState<number | null>(null);
+  const [title, setTitle] = React.useState("");
+  const [selectedPermissions, setSelectedPermissions] = React.useState<Set<number>>(new Set());
   const [error, setError] = React.useState<string>("");
-  const [businessRoles, setBusinessRoles] = React.useState<Role[]>([]);
+  const [permissionCategories, setPermissionCategories] = React.useState<PermissionCategory[]>([]);
   const [loading, setLoading] = React.useState(false);
 
-  // Load business roles when modal opens
+  // Load available permissions when modal opens
   React.useEffect(() => {
     if (!open || !businessId) return;
-    loadAvailableRoles();
+    loadAvailablePermissions();
   }, [open, businessId]);
 
-  const loadAvailableRoles = async () => {
+  const loadAvailablePermissions = async () => {
     setLoading(true);
     try {
-      // Fetch business roles
-      const roles = await fetchAvailableRolesForStaff(businessId);
-      setBusinessRoles(roles);
-      // Set default role to first available
-      if (roles.length > 0 && !roleId) {
-        setRoleId(roles[0].id);
-      }
+      const categories = await fetchAvailableStaffPermissions(businessId);
+      setPermissionCategories(categories);
     } catch (err) {
-      console.error("Failed to load roles:", err);
-      setError("Failed to load roles. Please try again.");
+      console.error("Failed to load permissions:", err);
+      setError("Failed to load permissions. Please try again.");
     } finally {
       setLoading(false);
     }
   };
 
+  // Reset form when modal opens
   React.useEffect(() => {
     if (!open) return;
-    // reset on open to always start clean
     setFirstName("");
     setLastName("");
     setEmail("");
     setPhone("");
     setPassword("123456");
-    setRoleId(null);
+    setTitle("");
+    setSelectedPermissions(new Set());
     setError("");
   }, [open]);
 
-  const canSubmit = firstName.trim().length > 0 && email.trim().length > 0 && roleId !== null;
+  const togglePermission = (permissionId: number) => {
+    setSelectedPermissions(prev => {
+      const next = new Set(prev);
+      if (next.has(permissionId)) {
+        next.delete(permissionId);
+      } else {
+        next.add(permissionId);
+      }
+      return next;
+    });
+  };
+
+  const toggleCategory = (permissions: Permission[]) => {
+    const allSelected = permissions.every(p => selectedPermissions.has(p.id));
+    setSelectedPermissions(prev => {
+      const next = new Set(prev);
+      permissions.forEach(p => {
+        if (allSelected) {
+          next.delete(p.id);
+        } else {
+          next.add(p.id);
+        }
+      });
+      return next;
+    });
+  };
+
+  const canSubmit = firstName.trim().length > 0 && email.trim().length > 0;
 
   const handleSave = () => {
-    if (!canSubmit || roleId === null) {
-      setError("First name, email, and role are required.");
+    if (!canSubmit) {
+      setError("First name and email are required.");
       return;
     }
     if (!email.includes("@")) {
@@ -95,15 +127,14 @@ export default function StaffAddModal({
       return;
     }
     
-    const selectedRole = businessRoles.find(r => r.id === roleId);
     onSave({
       first_name: firstName.trim(),
       last_name: lastName.trim() || undefined,
       email: email.trim(),
       password: password.trim(),
       phone_number: phone.trim() || undefined,
-      role_id: roleId,
-      role_name: selectedRole?.role_name,
+      title: title.trim() || undefined,
+      permission_ids: Array.from(selectedPermissions),
     });
 
     onClose();
@@ -113,12 +144,12 @@ export default function StaffAddModal({
     <BaseEditModal
       open={open}
       onClose={onClose}
-      title="Add Staff"
-      description="Create a new staff member and assign a role"
+      title="Add Staff Member"
+      description="Create a new staff member and assign permissions"
       actions={[
         { label: "Cancel", onClick: onClose },
         {
-          label: "Add",
+          label: "Add Staff",
           onClick: handleSave,
           variant: "primary",
           disabled: !canSubmit,
@@ -127,7 +158,7 @@ export default function StaffAddModal({
     >
       <Container padding="0">
         <FormControl>
-          <FormLabel>First Name</FormLabel>
+          <FormLabel>First Name *</FormLabel>
           <Input
             placeholder="John"
             type="text"
@@ -147,7 +178,7 @@ export default function StaffAddModal({
           />
         </FormControl>
         <FormControl>
-          <FormLabel>Email</FormLabel>
+          <FormLabel>Email *</FormLabel>
           <Input
             placeholder="example@gmail.com"
             type="email"
@@ -167,47 +198,105 @@ export default function StaffAddModal({
           />
         </FormControl>
         <FormControl>
-          <FormLabel>Assign Role</FormLabel>
-          {loading ? (
-            <CircularProgress size="sm" />
-          ) : businessRoles.length === 0 ? (
-            <FormHelperText>
-              No roles available. Please create a role in Staff Roles first.
-            </FormHelperText>
-          ) : (
-            <Select
-              value={roleId}
-              onChange={(_e, val) => val !== null && setRoleId(val)}
-              placeholder="Select a role"
-            >
-              {businessRoles.map((r) => (
-                <Option key={r.id} value={r.id}>
-                  {r.role_type === 'business' && r.is_custom && (
-                    <ListItemDecorator>
-                      <Chip size="sm" variant="soft" color="success" sx={{ mr: 1 }}>
-                        Custom
-                      </Chip>
-                    </ListItemDecorator>
-                  )}
-                  <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                    <span>{r.role_name}</span>
-                    {r.role_description && (
-                      <span style={{ color: '#888', fontSize: '0.85em' }}>
-                        – {r.role_description}
-                      </span>
-                    )}
-                  </div>
-                </Option>
-              ))}
-            </Select>
-          )}
+          <FormLabel>Title / Position</FormLabel>
+          <Input
+            placeholder="e.g., Manager, Receptionist, Front Desk"
+            type="text"
+            size="md"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+          />
           <FormHelperText>
-            Custom roles are specific to your business.
+            Optional title to describe this staff member's role
           </FormHelperText>
         </FormControl>
+
+        <Box sx={{ mt: 2 }}>
+          <Typography.Label>Assign Permissions</Typography.Label>
+          <Typography.Body size="sm" sx={{ color: "text.secondary", mb: 1 }}>
+            Select the permissions this staff member should have
+          </Typography.Body>
+          
+          {loading ? (
+            <Box sx={{ display: "flex", justifyContent: "center", py: 3 }}>
+              <CircularProgress size="sm" />
+            </Box>
+          ) : permissionCategories.length === 0 ? (
+            <FormHelperText>
+              No permissions available.
+            </FormHelperText>
+          ) : (
+            <Sheet variant="outlined" sx={{ borderRadius: "sm", overflow: "hidden" }}>
+              {permissionCategories.map((category) => {
+                const allSelected = category.permissions.every(p => selectedPermissions.has(p.id));
+                const someSelected = category.permissions.some(p => selectedPermissions.has(p.id));
+                
+                return (
+                  <Accordion key={category.category_name}>
+                    <AccordionSummary
+                      indicator={<ChevronDown size={16} />}
+                      sx={{ 
+                        "& .MuiAccordionSummary-button": { 
+                          justifyContent: "space-between" 
+                        }
+                      }}
+                    >
+                      <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                        <Checkbox
+                          checked={allSelected}
+                          indeterminate={someSelected && !allSelected}
+                          onChange={() => toggleCategory(category.permissions)}
+                          onClick={(e) => e.stopPropagation()}
+                          size="sm"
+                        />
+                        <Typography.Label>{category.category_name}</Typography.Label>
+                        <Typography.Body size="sm" sx={{ color: "text.tertiary" }}>
+                          ({category.permissions.filter(p => selectedPermissions.has(p.id)).length}/{category.permissions.length})
+                        </Typography.Body>
+                      </Box>
+                    </AccordionSummary>
+                    <AccordionDetails>
+                      <Box sx={{ pl: 4, display: "flex", flexDirection: "column", gap: 1 }}>
+                        {category.permissions.map((permission) => (
+                          <Box 
+                            key={permission.id} 
+                            sx={{ 
+                              display: "flex", 
+                              alignItems: "flex-start", 
+                              gap: 1,
+                              cursor: "pointer",
+                              "&:hover": { bgcolor: "background.level1" },
+                              p: 0.5,
+                              borderRadius: "sm"
+                            }}
+                            onClick={() => togglePermission(permission.id)}
+                          >
+                            <Checkbox
+                              checked={selectedPermissions.has(permission.id)}
+                              onChange={() => togglePermission(permission.id)}
+                              size="sm"
+                            />
+                            <Box>
+                              <Typography.Body size="sm">{permission.name}</Typography.Body>
+                              {permission.description && (
+                                <Typography.Body size="sm" sx={{ color: "text.tertiary" }}>
+                                  {permission.description}
+                                </Typography.Body>
+                              )}
+                            </Box>
+                          </Box>
+                        ))}
+                      </Box>
+                    </AccordionDetails>
+                  </Accordion>
+                );
+              })}
+            </Sheet>
+          )}
+        </Box>
       </Container>
       {error ? (
-        <FormHelperText color="danger" sx={{ mt: 1 }}>
+        <FormHelperText sx={{ color: "danger.500", mt: 1 }}>
           {error}
         </FormHelperText>
       ) : null}

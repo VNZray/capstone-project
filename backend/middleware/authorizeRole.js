@@ -1,12 +1,16 @@
 import db from '../db.js';
 
 // ============================================================
-// ROLE CONTEXT HELPERS
+// ROLE CONTEXT HELPERS (Simplified RBAC)
 // ============================================================
 
 /**
  * Fetch complete role context for a user (role properties + permissions)
- * This is the foundation for property-based authorization without hardcoded role names
+ * 
+ * Simplified model:
+ * - System roles: permissions from role_permissions table
+ * - Business roles (Staff): permissions from user_permissions table (per-user)
+ * 
  * @param {string} userId 
  * @returns {Promise<Object|null>} Role context with properties and permissions
  */
@@ -20,7 +24,6 @@ async function getRoleContext(userId) {
        ur.role_name,
        ur.role_type,
        ur.role_for,
-       ur.is_custom,
        ur.is_immutable
      FROM user u
      JOIN user_role ur ON ur.id = u.user_role_id
@@ -31,29 +34,38 @@ async function getRoleContext(userId) {
   if (!roleRows || roleRows.length === 0) return null;
 
   const role = roleRows[0];
+  let permissions;
 
-  // Get permissions for this role
-  const [permRows] = await db.query(
-    `SELECT p.name, p.scope
-     FROM role_permissions rp
-     JOIN permissions p ON p.id = rp.permission_id
-     WHERE rp.user_role_id = ?`,
-    [role.role_id]
-  );
-
-  const permissions = new Set(permRows.map(r => r.name));
-  const permissionScopes = new Set(permRows.map(r => r.scope));
+  if (role.role_type === 'system') {
+    // System roles: get permissions from role_permissions
+    const [permRows] = await db.query(
+      `SELECT p.name, p.scope
+       FROM role_permissions rp
+       JOIN permissions p ON p.id = rp.permission_id
+       WHERE rp.user_role_id = ?`,
+      [role.role_id]
+    );
+    permissions = new Set(permRows.map(r => r.name));
+  } else {
+    // Business roles (Staff): get permissions from user_permissions (per-user)
+    const [permRows] = await db.query(
+      `SELECT p.name, p.scope
+       FROM user_permissions up
+       JOIN permissions p ON p.id = up.permission_id
+       WHERE up.user_id = ?`,
+      [userId]
+    );
+    permissions = new Set(permRows.map(r => r.name));
+  }
 
   return {
     roleId: role.role_id,
     roleName: role.role_name,
     roleType: role.role_type,        // 'system' or 'business'
     roleFor: role.role_for,          // business_id if business role, null otherwise
-    isCustom: role.is_custom,
     isImmutable: role.is_immutable,
     permissions,
-    permissionScopes,
-    // Derived scope indicators (no hardcoded role names!)
+    // Derived scope indicators
     isSystemRole: role.role_type === 'system',
     isBusinessRole: role.role_type === 'business',
     hasPlatformScope: role.role_type === 'system' && !role.role_for,

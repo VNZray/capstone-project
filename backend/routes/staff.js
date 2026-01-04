@@ -5,6 +5,20 @@ import { authorizeScope, authorize, authorizeBusinessAccess } from '../middlewar
 
 const router = express.Router();
 
+// ============================================================
+// STAFF PERMISSION MANAGEMENT (Simplified RBAC)
+// ============================================================
+
+// Get available permissions for staff assignment (must be before :id routes)
+router.get("/permissions/available", authenticate, staffController.getAvailableStaffPermissions);
+
+// Get staff with permissions for a business
+router.get("/business/:business_id/with-permissions", authenticate, authorizeBusinessAccess('business_id'), staffController.getStaffWithPermissions);
+
+// ============================================================
+// STAFF CRUD OPERATIONS
+// ============================================================
+
 // Staff onboarding - creates user + staff in one transaction (requires add_staff permission)
 router.post("/onboard", authenticate, authorize('add_staff'), staffController.onboardStaff);
 
@@ -18,7 +32,18 @@ router.get("/", authenticate, authorizeScope('platform'), authorize('view_all_pr
 router.get("/business/:business_id", authenticate, authorizeBusinessAccess('business_id'), staffController.getStaffByBusinessId);
 router.get("/user/:user_id", authenticate, staffController.getStaffByUserId);
 
-// Generic ID route (after specific routes)
+// ============================================================
+// INDIVIDUAL STAFF OPERATIONS
+// ============================================================
+
+// Get staff permissions
+router.get("/:id/permissions", authenticate, staffController.getStaffPermissions);
+// Update staff permissions
+router.put("/:id/permissions", authenticate, staffController.updateStaffPermissions);
+// Update staff title (display name)
+router.patch("/:id/title", authenticate, staffController.updateStaffTitle);
+
+// Generic CRUD by ID (after specific routes)
 router.get("/:id", authenticate, staffController.getStaffById);
 router.put("/:id", authenticate, authorize('add_staff'), staffController.updateStaffById);
 router.delete("/:id", authenticate, authorize('add_staff'), staffController.deleteStaffById);
