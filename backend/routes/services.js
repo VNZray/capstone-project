@@ -28,13 +28,13 @@ router.get("/:id", serviceController.getServiceById);
 
 // ==================== SERVICE MANAGEMENT (BUSINESS OWNER) ====================
 
-// Create new service (requires manage_services permission)
-router.post("/", authenticate, authorize('manage_services'), serviceController.insertService);
+// Create new service (requires manage_business_services permission)
+router.post("/", authenticate, authorize('manage_business_services'), serviceController.insertService);
 
 // Update service
-router.put("/:id", authenticate, authorize('manage_services'), serviceController.updateService);
+router.put("/:id", authenticate, authorize('manage_business_services'), serviceController.updateService);
 
 // Delete service
-router.delete("/:id", authenticate, authorize('manage_services'), serviceController.deleteService);
+router.delete("/:id", authenticate, authorize('manage_business_services'), serviceController.deleteService);
 
 export default router;

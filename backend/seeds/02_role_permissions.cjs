@@ -110,12 +110,10 @@ exports.seed = async function (knex) {
       'manage_staff_roles',
       // Services
       'view_services',
+      'manage_business_services',
       'manage_service_inquiries',
       // Notifications
       'send_notifications',
-      // Events
-      'view_events',
-      'manage_events',
       // Subscription
       'manage_subscriptions',
     ])],

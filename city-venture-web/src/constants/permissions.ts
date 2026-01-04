@@ -72,7 +72,8 @@ export const MANAGE_STAFF_ROLES = 'manage_staff_roles';
 // SERVICES & INQUIRIES
 // ============================================================
 export const VIEW_SERVICES = 'view_services';
-export const MANAGE_SERVICES = 'manage_services';
+export const MANAGE_BUSINESS_SERVICES = 'manage_business_services';
+export const MANAGE_SERVICES = 'manage_services'; // System-level only
 export const MANAGE_SERVICE_INQUIRIES = 'manage_service_inquiries';
 
 // ============================================================
@@ -81,7 +82,7 @@ export const MANAGE_SERVICE_INQUIRIES = 'manage_service_inquiries';
 export const SEND_NOTIFICATIONS = 'send_notifications';
 
 // ============================================================
-// EVENTS
+// EVENTS (System-level - Admin/Tourism Officer only)
 // ============================================================
 export const VIEW_EVENTS = 'view_events';
 export const MANAGE_EVENTS = 'manage_events';
@@ -188,10 +189,9 @@ export const ALL_BUSINESS_PERMISSIONS = [
   MANAGE_REVIEWS,
   ...STAFF_PERMISSIONS,
   VIEW_SERVICES,
+  MANAGE_BUSINESS_SERVICES,
   MANAGE_SERVICE_INQUIRIES,
   SEND_NOTIFICATIONS,
-  VIEW_EVENTS,
-  MANAGE_EVENTS,
   MANAGE_SUBSCRIPTIONS,
 ] as const;
 
@@ -209,6 +209,8 @@ export const SYSTEM_PERMISSIONS = [
   APPROVE_TOURIST_SPOT,
   MANAGE_TOURISM_STAFF,
   MANAGE_SERVICES,
+  VIEW_EVENTS,
+  MANAGE_EVENTS,
 ] as const;
 
 // ============================================================
@@ -242,6 +244,7 @@ export type Permission =
   | typeof ADD_STAFF
   | typeof MANAGE_STAFF_ROLES
   | typeof VIEW_SERVICES
+  | typeof MANAGE_BUSINESS_SERVICES
   | typeof MANAGE_SERVICES
   | typeof MANAGE_SERVICE_INQUIRIES
   | typeof SEND_NOTIFICATIONS

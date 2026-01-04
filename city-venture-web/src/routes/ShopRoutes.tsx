@@ -52,12 +52,12 @@ export default function ShopRoutes({ businessRoles: _businessRoles }: ShopRoutes
         }
       />
 
-      {/* Services - requires service view permissions */}
+      {/* Services - requires service management permissions */}
       <Route
         path={`${business}/store/services`}
         element={
           <ProtectedRoute 
-            requiredAnyPermissions={[P.VIEW_SERVICES, P.MANAGE_SERVICE_INQUIRIES]}
+            requiredAnyPermissions={[P.VIEW_SERVICES, P.MANAGE_BUSINESS_SERVICES]}
           >
             <Services />
           </ProtectedRoute>

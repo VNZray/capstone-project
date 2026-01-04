@@ -92,7 +92,8 @@ exports.seed = async function (knex) {
     // SERVICES & INQUIRIES (scope: business)
     // --------------------------------------------------------
     { name: 'view_services', description: 'View service offerings', scope: 'business', category_id: 3 },
-    { name: 'manage_services', description: 'Manage service categories (system level)', scope: 'system', category_id: 3 },
+    { name: 'manage_business_services', description: 'Add, edit, delete business services', scope: 'business', category_id: 3 },
+    { name: 'manage_services', description: 'Manage service categories (system level)', scope: 'system', category_id: 10 },
     { name: 'manage_service_inquiries', description: 'Respond to service inquiries', scope: 'business', category_id: 3 },
 
     // --------------------------------------------------------
@@ -101,10 +102,10 @@ exports.seed = async function (knex) {
     { name: 'send_notifications', description: 'Send notifications to customers', scope: 'business', category_id: 5 },
 
     // --------------------------------------------------------
-    // EVENTS (scope: business)
+    // EVENTS (scope: system - managed by Admin/Tourism Officer)
     // --------------------------------------------------------
-    { name: 'view_events', description: 'View event listings', scope: 'business', category_id: 3 },
-    { name: 'manage_events', description: 'Create, update, delete events', scope: 'business', category_id: 3 },
+    { name: 'view_events', description: 'View event listings', scope: 'system', category_id: 10 },
+    { name: 'manage_events', description: 'Create, update, delete events', scope: 'system', category_id: 10 },
 
     // --------------------------------------------------------
     // SYSTEM ADMINISTRATION (scope: system)
