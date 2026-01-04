@@ -137,6 +137,9 @@ export const toggleStaffActive = async (
   await apiClient.put(`/users/${user_id}`, { is_active: !is_active });
 };
 
+// Staff role ID constant (matches backend/services/roleService.js)
+const STAFF_ROLE_ID = 6;
+
 /**
  * Onboard a new staff member
  * Creates user account + staff record in one transaction
@@ -152,7 +155,12 @@ export const onboardStaff = async (staffData: {
   title?: string;
   permission_ids?: number[];
 }): Promise<StaffMember & { temp_password: string; invitation_token: string }> => {
-  const { data } = await apiClient.post(`/staff/onboard`, staffData);
+  // Always assign the Staff role (role_id: 6)
+  const payload = {
+    ...staffData,
+    role_id: STAFF_ROLE_ID,
+  };
+  const { data } = await apiClient.post(`/staff/onboard`, payload);
   return data;
 };
 
@@ -166,10 +174,10 @@ export const onboardStaff = async (staffData: {
 export const fetchStaffPermissions = async (
   staffId: string
 ): Promise<StaffPermission[]> => {
-  const { data } = await apiClient.get<StaffPermission[]>(
+  const { data } = await apiClient.get<{ staff_id: string; user_id: string; permissions: StaffPermission[] }>(
     `/staff/${staffId}/permissions`
   );
-  return data;
+  return data.permissions || [];
 };
 
 /**
@@ -188,10 +196,10 @@ export const updateStaffPermissions = async (
  * Returns permissions grouped by category, filtered for business scope
  */
 export const fetchAvailableStaffPermissions = async (
-  businessId: string
+  _businessId: string
 ): Promise<PermissionCategory[]> => {
   const { data } = await apiClient.get<PermissionCategory[]>(
-    `/staff/business/${businessId}/available-permissions`
+    `/staff/permissions/available`
   );
   return data;
 };

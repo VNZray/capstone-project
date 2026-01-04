@@ -22,6 +22,7 @@ import {
   toggleStaffActive,
   updateStaffById,
   onboardStaff,
+  updateStaffPermissions,
   type StaffMember,
 } from "@/src/services/manage-staff/StaffService";
 import {
@@ -103,6 +104,11 @@ const ManageStaff = () => {
         title: data.title,
         permission_ids: data.permission_ids,
       });
+
+      // Assign permissions to the newly created staff member
+      if (data.permission_ids && data.permission_ids.length > 0) {
+        await updateStaffPermissions(result.id, data.permission_ids);
+      }
 
       const newStaff: Staff = {
         id: result.id,
@@ -534,12 +540,13 @@ const ManageStaff = () => {
         initialData={
           selectedStaff
             ? {
+                id: selectedStaff.id,
                 first_name: selectedStaff.first_name,
                 middle_name: selectedStaff.middle_name,
                 last_name: selectedStaff.last_name,
                 email: selectedStaff.email,
                 phone_number: selectedStaff.phone_number,
-                role: selectedStaff.role || "Manager",
+                title: selectedStaff.title,
               }
             : undefined
         }

@@ -230,7 +230,7 @@ export async function setUserPermissions(userId, permissionIds, grantedBy) {
  */
 export async function getUserPermissionsList(userId) {
   const [rows] = await db.query(
-    `SELECT up.*, p.name, p.description, p.scope, pc.name AS category_name
+    `SELECT up.permission_id AS id, p.name, p.description, p.scope, pc.name AS category_name
      FROM user_permissions up
      JOIN permissions p ON p.id = up.permission_id
      LEFT JOIN permission_categories pc ON pc.id = p.category_id

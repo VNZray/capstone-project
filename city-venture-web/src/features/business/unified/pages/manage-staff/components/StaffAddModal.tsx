@@ -8,14 +8,11 @@ import {
   CircularProgress,
   Checkbox,
   Box,
-  Accordion,
-  AccordionSummary,
-  AccordionDetails,
-  Sheet,
+  Chip,
+  Tooltip,
 } from "@mui/joy";
-import Container from "@/src/components/Container";
 import Typography from "@/src/components/Typography";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, ChevronUp, Mail, Phone, User, Briefcase, Shield, AlertCircle } from "lucide-react";
 import { 
   fetchAvailableStaffPermissions, 
   type PermissionCategory,
@@ -55,6 +52,7 @@ export default function StaffAddModal({
   const [error, setError] = React.useState<string>("");
   const [permissionCategories, setPermissionCategories] = React.useState<PermissionCategory[]>([]);
   const [loading, setLoading] = React.useState(false);
+  const [expandedCategories, setExpandedCategories] = React.useState<Set<string>>(new Set());
 
   // Load available permissions when modal opens
   React.useEffect(() => {
@@ -85,6 +83,7 @@ export default function StaffAddModal({
     setPassword("123456");
     setTitle("");
     setSelectedPermissions(new Set());
+    setExpandedCategories(new Set());
     setError("");
   }, [open]);
 
@@ -115,6 +114,18 @@ export default function StaffAddModal({
     });
   };
 
+  const toggleCategoryExpanded = (categoryName: string) => {
+    setExpandedCategories(prev => {
+      const next = new Set(prev);
+      if (next.has(categoryName)) {
+        next.delete(categoryName);
+      } else {
+        next.add(categoryName);
+      }
+      return next;
+    });
+  };
+
   const canSubmit = firstName.trim().length > 0 && email.trim().length > 0;
 
   const handleSave = () => {
@@ -140,12 +151,14 @@ export default function StaffAddModal({
     onClose();
   };
 
+  const totalPermissions = permissionCategories.reduce((acc, cat) => acc + cat.permissions.length, 0);
+
   return (
     <BaseEditModal
       open={open}
       onClose={onClose}
       title="Add Staff Member"
-      description="Create a new staff member and assign permissions"
+      maxWidth={520}
       actions={[
         { label: "Cancel", onClick: onClose },
         {
@@ -156,150 +169,259 @@ export default function StaffAddModal({
         },
       ]}
     >
-      <Container padding="0">
-        <FormControl>
-          <FormLabel>First Name *</FormLabel>
+      <Box sx={{ display: "flex", flexDirection: "column", gap: 2.5 }}>
+        {/* Error Alert */}
+        {error && (
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              gap: 1,
+              p: 1.5,
+              borderRadius: "8px",
+              bgcolor: "danger.softBg",
+              border: "1px solid",
+              borderColor: "danger.300",
+            }}
+          >
+            <AlertCircle size={16} style={{ color: "var(--joy-palette-danger-500)" }} />
+            <Typography.Body size="sm" sx={{ color: "danger.700" }}>
+              {error}
+            </Typography.Body>
+          </Box>
+        )}
+
+        {/* Basic Information - Compact Grid */}
+        <Box
+          sx={{
+            display: "grid",
+            gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" },
+            gap: 1.5,
+          }}
+        >
+          <FormControl size="sm">
+            <FormLabel sx={{ fontSize: "12px", fontWeight: 600, mb: 0.5 }}>
+              First Name <Typography.Body component="span" sx={{ color: "danger.500" }}>*</Typography.Body>
+            </FormLabel>
+            <Input
+              placeholder="John"
+              type="text"
+              size="sm"
+              value={firstName}
+              onChange={(e) => setFirstName(e.target.value)}
+              startDecorator={<User size={14} style={{ opacity: 0.5 }} />}
+              sx={{ "--Input-radius": "6px" }}
+            />
+          </FormControl>
+          <FormControl size="sm">
+            <FormLabel sx={{ fontSize: "12px", fontWeight: 600, mb: 0.5 }}>Last Name</FormLabel>
+            <Input
+              placeholder="Doe"
+              type="text"
+              size="sm"
+              value={lastName}
+              onChange={(e) => setLastName(e.target.value)}
+              sx={{ "--Input-radius": "6px" }}
+            />
+          </FormControl>
+        </Box>
+
+        {/* Contact Information - Compact Grid */}
+        <Box
+          sx={{
+            display: "grid",
+            gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" },
+            gap: 1.5,
+          }}
+        >
+          <FormControl size="sm">
+            <FormLabel sx={{ fontSize: "12px", fontWeight: 600, mb: 0.5 }}>
+              Email <Typography.Body component="span" sx={{ color: "danger.500" }}>*</Typography.Body>
+            </FormLabel>
+            <Input
+              placeholder="staff@business.com"
+              type="email"
+              size="sm"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              startDecorator={<Mail size={14} style={{ opacity: 0.5 }} />}
+              sx={{ "--Input-radius": "6px" }}
+            />
+          </FormControl>
+          <FormControl size="sm">
+            <FormLabel sx={{ fontSize: "12px", fontWeight: 600, mb: 0.5 }}>Phone</FormLabel>
+            <Input
+              placeholder="09*********"
+              type="tel"
+              size="sm"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              startDecorator={<Phone size={14} style={{ opacity: 0.5 }} />}
+              sx={{ "--Input-radius": "6px" }}
+            />
+          </FormControl>
+        </Box>
+
+        {/* Title/Position - Full Width */}
+        <FormControl size="sm">
+          <FormLabel sx={{ fontSize: "12px", fontWeight: 600, mb: 0.5 }}>Title / Position</FormLabel>
           <Input
-            placeholder="John"
+            placeholder="e.g., Manager, Receptionist"
             type="text"
-            size="md"
-            value={firstName}
-            onChange={(e) => setFirstName(e.target.value)}
-          />
-        </FormControl>
-        <FormControl>
-          <FormLabel>Last Name</FormLabel>
-          <Input
-            placeholder="Doe"
-            type="text"
-            size="md"
-            value={lastName}
-            onChange={(e) => setLastName(e.target.value)}
-          />
-        </FormControl>
-        <FormControl>
-          <FormLabel>Email *</FormLabel>
-          <Input
-            placeholder="example@gmail.com"
-            type="email"
-            size="md"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-          />
-        </FormControl>
-        <FormControl>
-          <FormLabel>Phone Number</FormLabel>
-          <Input
-            placeholder="09*********"
-            type="tel"
-            size="md"
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-          />
-        </FormControl>
-        <FormControl>
-          <FormLabel>Title / Position</FormLabel>
-          <Input
-            placeholder="e.g., Manager, Receptionist, Front Desk"
-            type="text"
-            size="md"
+            size="sm"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
+            startDecorator={<Briefcase size={14} style={{ opacity: 0.5 }} />}
+            sx={{ "--Input-radius": "6px" }}
           />
-          <FormHelperText>
-            Optional title to describe this staff member's role
-          </FormHelperText>
         </FormControl>
 
-        <Box sx={{ mt: 2 }}>
-          <Typography.Label>Assign Permissions</Typography.Label>
-          <Typography.Body size="sm" sx={{ color: "text.secondary", mb: 1 }}>
-            Select the permissions this staff member should have
-          </Typography.Body>
+        {/* Permissions Section - Compact */}
+        <Box sx={{ mt: 0.5 }}>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1 }}>
+            <Shield size={14} style={{ opacity: 0.6 }} />
+            <Typography.Label sx={{ fontSize: "12px" }}>Permissions</Typography.Label>
+            <Chip size="sm" variant="soft" color="neutral" sx={{ fontSize: "11px", height: "20px" }}>
+              {selectedPermissions.size}/{totalPermissions} selected
+            </Chip>
+          </Box>
           
           {loading ? (
-            <Box sx={{ display: "flex", justifyContent: "center", py: 3 }}>
+            <Box sx={{ display: "flex", alignItems: "center", justifyContent: "center", py: 3 }}>
               <CircularProgress size="sm" />
             </Box>
           ) : permissionCategories.length === 0 ? (
-            <FormHelperText>
-              No permissions available.
-            </FormHelperText>
+            <FormHelperText sx={{ fontSize: "12px" }}>No permissions available.</FormHelperText>
           ) : (
-            <Sheet variant="outlined" sx={{ borderRadius: "sm", overflow: "hidden" }}>
-              {permissionCategories.map((category) => {
+            <Box
+              sx={{
+                border: "1px solid",
+                borderColor: "divider",
+                borderRadius: "8px",
+                overflow: "hidden",
+                maxHeight: "200px",
+                overflowY: "auto",
+              }}
+            >
+              {permissionCategories.map((category, idx) => {
                 const allSelected = category.permissions.every(p => selectedPermissions.has(p.id));
                 const someSelected = category.permissions.some(p => selectedPermissions.has(p.id));
+                const isExpanded = expandedCategories.has(category.category_name);
+                const selectedCount = category.permissions.filter(p => selectedPermissions.has(p.id)).length;
                 
                 return (
-                  <Accordion key={category.category_name}>
-                    <AccordionSummary
-                      indicator={<ChevronDown size={16} />}
-                      sx={{ 
-                        "& .MuiAccordionSummary-button": { 
-                          justifyContent: "space-between" 
-                        }
+                  <Box
+                    key={category.category_name}
+                    sx={{
+                      borderBottom: idx < permissionCategories.length - 1 ? "1px solid" : "none",
+                      borderColor: "divider",
+                    }}
+                  >
+                    {/* Category Header */}
+                    <Box
+                      sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        px: 1.5,
+                        py: 1,
+                        bgcolor: isExpanded ? "background.level1" : "transparent",
+                        cursor: "pointer",
+                        transition: "background-color 0.15s",
+                        "&:hover": { bgcolor: "background.level1" },
                       }}
+                      onClick={() => toggleCategoryExpanded(category.category_name)}
                     >
                       <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                         <Checkbox
                           checked={allSelected}
                           indeterminate={someSelected && !allSelected}
-                          onChange={() => toggleCategory(category.permissions)}
+                          onChange={(e) => {
+                            e.stopPropagation();
+                            toggleCategory(category.permissions);
+                          }}
                           onClick={(e) => e.stopPropagation()}
                           size="sm"
+                          sx={{ "--Checkbox-size": "16px" }}
                         />
-                        <Typography.Label>{category.category_name}</Typography.Label>
-                        <Typography.Body size="sm" sx={{ color: "text.tertiary" }}>
-                          ({category.permissions.filter(p => selectedPermissions.has(p.id)).length}/{category.permissions.length})
+                        <Typography.Body size="sm" weight="medium" sx={{ fontSize: "13px" }}>
+                          {category.category_name}
                         </Typography.Body>
+                        <Chip 
+                          size="sm" 
+                          variant="soft" 
+                          color={selectedCount > 0 ? "primary" : "neutral"}
+                          sx={{ fontSize: "10px", height: "18px", minHeight: "18px" }}
+                        >
+                          {selectedCount}/{category.permissions.length}
+                        </Chip>
                       </Box>
-                    </AccordionSummary>
-                    <AccordionDetails>
-                      <Box sx={{ pl: 4, display: "flex", flexDirection: "column", gap: 1 }}>
+                      {isExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                    </Box>
+
+                    {/* Expanded Permissions */}
+                    {isExpanded && (
+                      <Box
+                        sx={{
+                          display: "grid",
+                          gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))",
+                          gap: 0.5,
+                          px: 1.5,
+                          py: 1,
+                          bgcolor: "background.level1",
+                        }}
+                      >
                         {category.permissions.map((permission) => (
-                          <Box 
-                            key={permission.id} 
-                            sx={{ 
-                              display: "flex", 
-                              alignItems: "flex-start", 
-                              gap: 1,
-                              cursor: "pointer",
-                              "&:hover": { bgcolor: "background.level1" },
-                              p: 0.5,
-                              borderRadius: "sm"
-                            }}
-                            onClick={() => togglePermission(permission.id)}
+                          <Tooltip
+                            key={permission.id}
+                            title={permission.description || permission.name}
+                            placement="top"
+                            arrow
+                            size="sm"
                           >
-                            <Checkbox
-                              checked={selectedPermissions.has(permission.id)}
-                              onChange={() => togglePermission(permission.id)}
-                              size="sm"
-                            />
-                            <Box>
-                              <Typography.Body size="sm">{permission.name}</Typography.Body>
-                              {permission.description && (
-                                <Typography.Body size="sm" sx={{ color: "text.tertiary" }}>
-                                  {permission.description}
-                                </Typography.Body>
-                              )}
+                            <Box
+                              sx={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: 0.75,
+                                py: 0.5,
+                                px: 0.75,
+                                borderRadius: "4px",
+                                cursor: "pointer",
+                                transition: "background-color 0.1s",
+                                "&:hover": { bgcolor: "background.level2" },
+                              }}
+                              onClick={() => togglePermission(permission.id)}
+                            >
+                              <Checkbox
+                                checked={selectedPermissions.has(permission.id)}
+                                onChange={() => togglePermission(permission.id)}
+                                size="sm"
+                                sx={{ "--Checkbox-size": "14px" }}
+                              />
+                              <Typography.Body 
+                                size="sm" 
+                                sx={{ 
+                                  fontSize: "12px",
+                                  whiteSpace: "nowrap",
+                                  overflow: "hidden",
+                                  textOverflow: "ellipsis",
+                                }}
+                              >
+                                {permission.name}
+                              </Typography.Body>
                             </Box>
-                          </Box>
+                          </Tooltip>
                         ))}
                       </Box>
-                    </AccordionDetails>
-                  </Accordion>
+                    )}
+                  </Box>
                 );
               })}
-            </Sheet>
+            </Box>
           )}
         </Box>
-      </Container>
-      {error ? (
-        <FormHelperText sx={{ color: "danger.500", mt: 1 }}>
-          {error}
-        </FormHelperText>
-      ) : null}
+      </Box>
     </BaseEditModal>
   );
 }
