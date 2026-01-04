@@ -5,6 +5,35 @@ import { authorizeAny, authorizeScope, authorize } from "../middleware/authorize
 
 const router = express.Router();
 
+// ============================================================
+// SELF-SERVICE ROUTES (Any authenticated user for their own data)
+// ============================================================
+
+// Get current user's own profile - no special permissions required
+router.get(
+  "/me",
+  authenticate,
+  userController.getCurrentUser
+);
+
+// Password change (authenticated users)
+router.post(
+  "/change-password",
+  authenticate,
+  userController.changePassword
+);
+
+// Complete staff profile (authenticated users)
+router.post(
+  "/complete-profile",
+  authenticate,
+  userController.completeStaffProfile
+);
+
+// ============================================================
+// ADMIN USER MANAGEMENT (Platform scope + manage_users permission)
+// ============================================================
+
 // User CRUD - protected routes requiring manage_users permission
 router.get(
   "/",
@@ -55,20 +84,6 @@ router.post(
   authenticate,
   authorizeAny("add_staff", "manage_users"),
   userController.insertStaffUser
-);
-
-// Password change (authenticated users)
-router.post(
-  "/change-password",
-  authenticate,
-  userController.changePassword
-);
-
-// Complete staff profile (authenticated users)
-router.post(
-  "/complete-profile",
-  authenticate,
-  userController.completeStaffProfile
 );
 
 // User role management

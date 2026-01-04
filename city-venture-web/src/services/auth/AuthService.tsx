@@ -117,9 +117,9 @@ export const loginUser = async (
   // ============================================
   // STEP 3: Fetch Core User Data
   // ============================================
-  console.debug("[AuthService] GET /users/:id", user_id);
+  console.debug("[AuthService] GET /users/me");
   const { data: userData } = await apiClient
-    .get<User>(`/users/${user_id}`)
+    .get<User>(`/users/me`)
     .catch((err) => {
       console.error("[AuthService] Fetch user failed", err);
       throw err;
@@ -377,7 +377,8 @@ export const fetchCurrentUser = async (): Promise<UserDetails> => {
   // ============================================
   // STEP 2: Fetch Core User Data
   // ============================================
-  const { data: userData } = await apiClient.get<User>(`/users/${user_id}`);
+  console.debug("[AuthService] GET /users/me");
+  const { data: userData } = await apiClient.get<User>(`/users/me`);
 
   // ============================================
   // STEP 3: Fetch User Role & Permissions

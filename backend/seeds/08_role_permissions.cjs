@@ -65,6 +65,8 @@ exports.seed = async function seedRolePermissions(knex) {
         // Business profile
         'view_business_profile',
         'edit_business_profile',
+        // Reports & Analytics
+        'view_reports',
         // Bookings & transactions
         'view_bookings',
         'manage_bookings',

@@ -19,57 +19,69 @@ interface ShopRoutesProps {
 /**
  * Shop-specific routes for businesses with store capabilities
  * Includes products, categories, services, orders, discounts, and promotions
+ * 
+ * RBAC: Uses permission-based access control instead of hardcoded role names
  */
-export default function ShopRoutes({ businessRoles }: ShopRoutesProps) {
+export default function ShopRoutes({ businessRoles: _businessRoles }: ShopRoutesProps) {
   const business = "/business";
 
   return (
     <Fragment>
-      {/* Products */}
+      {/* Products - requires product management permissions */}
       <Route
         path={`${business}/store/products`}
         element={
-          <ProtectedRoute requiredRoles={businessRoles}>
+          <ProtectedRoute 
+            requiredAnyPermissions={['view_products', 'create_products', 'update_products']}
+          >
             <Products />
           </ProtectedRoute>
         }
       />
 
-      {/* Categories */}
+      {/* Categories - requires product management permissions */}
       <Route
         path={`${business}/store/categories`}
         element={
-          <ProtectedRoute requiredRoles={businessRoles}>
+          <ProtectedRoute 
+            requiredAnyPermissions={['view_products', 'create_products', 'update_products']}
+          >
             <Categories />
           </ProtectedRoute>
         }
       />
 
-      {/* Services */}
+      {/* Services - requires service management permissions */}
       <Route
         path={`${business}/store/services`}
         element={
-          <ProtectedRoute requiredRoles={businessRoles}>
+          <ProtectedRoute 
+            requiredAnyPermissions={['view_services', 'create_services', 'update_services']}
+          >
             <Services />
           </ProtectedRoute>
         }
       />
 
-      {/* Orders */}
+      {/* Orders - requires order management permissions */}
       <Route
         path={`${business}/store/orders`}
         element={
-          <ProtectedRoute requiredRoles={businessRoles}>
+          <ProtectedRoute 
+            requiredAnyPermissions={['view_orders', 'create_orders', 'update_orders']}
+          >
             <Orders />
           </ProtectedRoute>
         }
       />
 
-      {/* Discount */}
+      {/* Discount - requires discount management permission */}
       <Route
         path={`${business}/store/discount`}
         element={
-          <ProtectedRoute requiredRoles={businessRoles}>
+          <ProtectedRoute 
+            requiredAnyPermissions={['manage_discounts', 'view_products']}
+          >
             <Discount />
           </ProtectedRoute>
         }
@@ -77,7 +89,9 @@ export default function ShopRoutes({ businessRoles }: ShopRoutesProps) {
       <Route
         path={`${business}/store/discount/create`}
         element={
-          <ProtectedRoute requiredRoles={businessRoles}>
+          <ProtectedRoute 
+            requiredAnyPermissions={['manage_discounts']}
+          >
             <DiscountForm />
           </ProtectedRoute>
         }
@@ -85,27 +99,33 @@ export default function ShopRoutes({ businessRoles }: ShopRoutesProps) {
       <Route
         path={`${business}/store/discount/:id/edit`}
         element={
-          <ProtectedRoute requiredRoles={businessRoles}>
+          <ProtectedRoute 
+            requiredAnyPermissions={['manage_discounts']}
+          >
             <DiscountForm />
           </ProtectedRoute>
         }
       />
 
-      {/* Shop Settings */}
+      {/* Shop Settings - requires business settings permission */}
       <Route
         path={`${business}/store/settings`}
         element={
-          <ProtectedRoute requiredRoles={businessRoles}>
+          <ProtectedRoute 
+            requiredAnyPermissions={['manage_business_settings']}
+          >
             <ShopSettings />
           </ProtectedRoute>
         }
       />
 
-      {/* Shop Promotion Form */}
+      {/* Shop Promotion Form - requires promotion management permission */}
       <Route
         path={`${business}/promotion/create`}
         element={
-          <ProtectedRoute requiredRoles={businessRoles}>
+          <ProtectedRoute 
+            requiredAnyPermissions={['manage_promotions']}
+          >
             <PromotionForm />
           </ProtectedRoute>
         }
@@ -113,7 +133,9 @@ export default function ShopRoutes({ businessRoles }: ShopRoutesProps) {
       <Route
         path={`${business}/promotion/:id/edit`}
         element={
-          <ProtectedRoute requiredRoles={businessRoles}>
+          <ProtectedRoute 
+            requiredAnyPermissions={['manage_promotions']}
+          >
             <PromotionForm />
           </ProtectedRoute>
         }
