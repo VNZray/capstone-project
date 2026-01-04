@@ -190,31 +190,16 @@ export const navigationConfig: NavItemConfig[] = [
   },
 
   // ============================================
-  // STAFF MANAGEMENT SECTION - All businesses
+  // STAFF MANAGEMENT - All businesses
   // ============================================
 
-  // Staffs Section - All businesses (expandable)
+  // Manage Staff - Direct link (no dropdown)
   {
-    id: 'staffs',
-    label: 'Staffs',
+    id: 'manage-staff',
+    label: 'Manage Staff',
     path: '/business/manage-staff',
     icon: Users,
     requiredPermissions: [P.VIEW_STAFF, P.ADD_STAFF, P.MANAGE_STAFF_ROLES],
-    isSection: true,
-    children: [
-      {
-        id: 'manage-staff',
-        label: 'Manage Staff',
-        path: '/business/manage-staff',
-        icon: Users,
-      },
-      {
-        id: 'staff-roles',
-        label: 'Manage Roles',
-        path: '/business/staff-roles',
-        icon: Users,
-      },
-    ],
   },
 
   // Settings - All businesses
