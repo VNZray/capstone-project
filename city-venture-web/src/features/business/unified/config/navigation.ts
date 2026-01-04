@@ -1,6 +1,8 @@
 /**
  * Unified Navigation Configuration
  * Capability-based sidebar navigation items
+ * 
+ * Uses permission constants from @/src/constants/permissions.ts
  */
 
 import {
@@ -22,6 +24,7 @@ import {
   Settings as SettingsIcon,
 } from 'lucide-react';
 import type { NavItemConfig } from '../types';
+import * as P from '@/src/constants/permissions';
 
 /**
  * Main navigation items for the unified business sidebar
@@ -42,13 +45,13 @@ export const navigationConfig: NavItemConfig[] = [
   // SHARED FEATURES - All business types
   // ============================================
 
-  // Dashboard - visible to users with view_analytics or view_reports permission
+  // Dashboard - visible to users with dashboard/reporting permissions
   {
     id: 'dashboard',
     label: 'Dashboard',
     path: '/business/dashboard',
     icon: LayoutDashboard,
-    requiredPermissions: ['view_analytics', 'view_reports', 'view_financial_reports'],
+    requiredPermissions: [P.VIEW_DASHBOARD, P.VIEW_REPORTS, P.VIEW_ANALYTICS],
   },
 
   // ============================================
@@ -62,7 +65,7 @@ export const navigationConfig: NavItemConfig[] = [
     path: '/business/transactions',
     icon: Receipt,
     requiredCapabilities: ['canBook'],
-    requiredPermissions: ['view_bookings', 'view_payments'],
+    requiredPermissions: [P.VIEW_TRANSACTIONS, P.VIEW_PAYMENTS],
   },
 
   // Bookings - Accommodation only
@@ -72,7 +75,7 @@ export const navigationConfig: NavItemConfig[] = [
     path: '/business/bookings',
     icon: CalendarCheck,
     requiredCapabilities: ['canBook'],
-    requiredPermissions: ['view_bookings', 'create_bookings', 'update_bookings'],
+    requiredPermissions: [P.VIEW_BOOKINGS, P.MANAGE_BOOKINGS],
   },
 
   // ============================================
@@ -85,7 +88,7 @@ export const navigationConfig: NavItemConfig[] = [
     label: 'Business Profile',
     path: '/business/business-profile',
     icon: Store,
-    requiredPermissions: ['view_business_profile', 'manage_business_profile'],
+    requiredPermissions: [P.VIEW_BUSINESS_PROFILE, P.MANAGE_BUSINESS_PROFILE],
   },
 
   // Manage Promotions - All businesses (no capability requirement)
@@ -94,7 +97,7 @@ export const navigationConfig: NavItemConfig[] = [
     label: 'Manage Promotions',
     path: '/business/promotions',
     icon: Megaphone,
-    requiredPermissions: ['manage_promotions', 'view_products'],
+    requiredPermissions: [P.VIEW_PROMOTIONS, P.MANAGE_PROMOTIONS],
   },
 
   // ============================================
@@ -108,7 +111,7 @@ export const navigationConfig: NavItemConfig[] = [
     path: '/business/rooms',
     icon: BedDouble,
     requiredCapabilities: ['canBook'],
-    requiredPermissions: ['manage_rooms', 'view_bookings'],
+    requiredPermissions: [P.MANAGE_ROOMS, P.VIEW_BOOKINGS],
   },
 
   // ============================================
@@ -122,7 +125,7 @@ export const navigationConfig: NavItemConfig[] = [
     path: '/business/store',
     icon: ShoppingBag,
     requiredCapabilities: ['canSell'],
-    requiredPermissions: ['view_products', 'view_orders'],
+    requiredPermissions: [P.VIEW_SHOP, P.VIEW_ORDERS],
     isSection: true,
     children: [
       {
@@ -174,7 +177,7 @@ export const navigationConfig: NavItemConfig[] = [
     label: 'Reviews & Ratings',
     path: '/business/reviews',
     icon: Star,
-    requiredPermissions: ['manage_customer_reviews', 'view_customers'],
+    requiredPermissions: [P.VIEW_REVIEWS, P.MANAGE_REVIEWS],
   },
 
   // Subscription - All businesses (no capability requirement)
@@ -183,7 +186,7 @@ export const navigationConfig: NavItemConfig[] = [
     label: 'Subscription',
     path: '/business/subscription',
     icon: CreditCard,
-    requiredPermissions: ['manage_business_settings', 'view_payments'],
+    requiredPermissions: [P.MANAGE_SUBSCRIPTIONS, P.VIEW_PAYMENTS],
   },
 
   // ============================================
@@ -196,7 +199,7 @@ export const navigationConfig: NavItemConfig[] = [
     label: 'Staffs',
     path: '/business/manage-staff',
     icon: Users,
-    requiredPermissions: ['view_staff', 'create_staff', 'manage_staff_roles'],
+    requiredPermissions: [P.VIEW_STAFF, P.ADD_STAFF, P.MANAGE_STAFF_ROLES],
     isSection: true,
     children: [
       {
@@ -220,7 +223,7 @@ export const navigationConfig: NavItemConfig[] = [
     label: 'Settings',
     path: '/business/settings',
     icon: Settings,
-    requiredPermissions: ['manage_business_settings'],
+    requiredPermissions: [P.MANAGE_BUSINESS_SETTINGS],
   },
 ];
 

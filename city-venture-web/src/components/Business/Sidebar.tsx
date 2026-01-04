@@ -30,6 +30,7 @@ import { useBusiness } from "../../context/BusinessContext";
 import { useAuth } from "@/src/context/AuthContext";
 import useRBAC from "@/src/hooks/useRBAC";
 import { FaUserFriends } from "react-icons/fa";
+import * as P from "@/src/constants/permissions";
 
 interface SidebarProps {
   isOpen?: boolean;
@@ -100,7 +101,7 @@ export default function Sidebar({
           {businessDetails?.hasBooking ? (
             <>
               {(hasRole("Business Owner", "Manager", "Receptionist") ||
-                canAny("view_transactions", "manage_transactions")) &&
+                canAny(P.VIEW_TRANSACTIONS, P.VIEW_PAYMENTS)) &&
                 !hasRole("Room Manager") && (
                   <NavItem
                     to={`${route}/transactions`}
@@ -110,7 +111,7 @@ export default function Sidebar({
                   />
                 )}
               {(hasRole("Business Owner", "Manager", "Receptionist") ||
-                canAny("view_bookings", "manage_bookings")) &&
+                canAny(P.VIEW_BOOKINGS, P.MANAGE_BOOKINGS)) &&
                 !hasRole("Room Manager") && (
                   <NavItem
                     to={`${route}/bookings`}
@@ -123,7 +124,7 @@ export default function Sidebar({
           ) : null}
 
           {(hasRole("Business Owner", "Manager") ||
-            canAny("view_business_profile", "edit_business_profile")) && (
+            canAny(P.VIEW_BUSINESS_PROFILE, P.MANAGE_BUSINESS_PROFILE)) && (
             <NavItem
               to={`${route}/business-profile`}
               label="Business Profile"
@@ -133,7 +134,7 @@ export default function Sidebar({
           )}
 
           {(hasRole("Business Owner", "Manager", "Sales Associate") ||
-            canAny("view_promotions", "manage_promotions")) &&
+            canAny(P.VIEW_PROMOTIONS, P.MANAGE_PROMOTIONS)) &&
             (businessDetails?.hasBooking === false ? (
               <NavItem
                 to={`${route}/promotion`}
@@ -256,7 +257,7 @@ export default function Sidebar({
               </div>
             )}
           {(hasRole("Business Owner", "Manager") ||
-            canAny("view_reviews", "respond_reviews")) && (
+            canAny(P.VIEW_REVIEWS, P.MANAGE_REVIEWS)) && (
             <NavItem
               to={`${route}/reviews`}
               label="Reviews & Ratings"
@@ -264,7 +265,8 @@ export default function Sidebar({
               onClick={onClose}
             />
           )}
-          {hasRole("Business Owner") && (
+          {(hasRole("Business Owner") ||
+            canAny(P.VIEW_STAFF, P.ADD_STAFF)) && (
             <NavItem
               to={`${route}/manage-staff`}
               label="Manage Staff"
@@ -272,7 +274,8 @@ export default function Sidebar({
               onClick={onClose}
             />
           )}
-          {hasRole("Business Owner") && (
+          {(hasRole("Business Owner") ||
+            canAny(P.MANAGE_BUSINESS_SETTINGS)) && (
             <NavItem
               to={`${route}/settings`}
               label="Settings"

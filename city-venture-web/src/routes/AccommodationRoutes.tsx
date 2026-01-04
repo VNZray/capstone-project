@@ -1,6 +1,7 @@
 import { Route, Outlet } from "react-router-dom";
 import { Fragment } from "react";
 import ProtectedRoute from "./ProtectedRoute";
+import * as P from "@/src/constants/permissions";
 
 // Accommodation-specific imports
 import Transactions from "../features/business/has-booking/transaction/Transactions";
@@ -20,7 +21,7 @@ interface AccommodationRoutesProps {
  * Accommodation-specific routes for businesses with booking capabilities
  * Includes transactions, bookings, rooms, and notifications
  * 
- * RBAC: Uses permission-based access control instead of hardcoded role names
+ * RBAC: Uses permission-based access control from constants/permissions.ts
  */
 export default function AccommodationRoutes({
   businessRoles: _businessRoles,
@@ -29,12 +30,12 @@ export default function AccommodationRoutes({
 
   return (
     <Fragment>
-      {/* Transactions - requires booking/payment view permissions */}
+      {/* Transactions - requires transaction/payment view permissions */}
       <Route
         path={`${business}/transactions`}
         element={
           <ProtectedRoute 
-            requiredAnyPermissions={['view_bookings', 'view_payments']}
+            requiredAnyPermissions={[P.VIEW_TRANSACTIONS, P.VIEW_PAYMENTS]}
           >
             <Transactions />
           </ProtectedRoute>
@@ -46,7 +47,7 @@ export default function AccommodationRoutes({
         path={`${business}/bookings`}
         element={
           <ProtectedRoute 
-            requiredAnyPermissions={['view_bookings', 'create_bookings', 'update_bookings']}
+            requiredAnyPermissions={[P.VIEW_BOOKINGS, P.MANAGE_BOOKINGS]}
           >
             <Bookings />
           </ProtectedRoute>
@@ -58,7 +59,7 @@ export default function AccommodationRoutes({
         path={`${business}/create-promotion`}
         element={
           <ProtectedRoute 
-            requiredAnyPermissions={['manage_promotions']}
+            requiredAnyPermissions={[P.MANAGE_PROMOTIONS]}
           >
             <AccommodationPromotionForm />
           </ProtectedRoute>
@@ -68,7 +69,7 @@ export default function AccommodationRoutes({
         path={`${business}/edit-promotion/:id`}
         element={
           <ProtectedRoute 
-            requiredAnyPermissions={['manage_promotions']}
+            requiredAnyPermissions={[P.MANAGE_PROMOTIONS]}
           >
             <AccommodationPromotionForm />
           </ProtectedRoute>
@@ -87,7 +88,7 @@ export default function AccommodationRoutes({
           path={`${business}/rooms`}
           element={
             <ProtectedRoute 
-              requiredAnyPermissions={['manage_rooms', 'view_bookings']}
+              requiredAnyPermissions={[P.MANAGE_ROOMS, P.VIEW_BOOKINGS]}
             >
               <RoomPage />
             </ProtectedRoute>
@@ -97,7 +98,7 @@ export default function AccommodationRoutes({
           path={`${business}/room-profile`}
           element={
             <ProtectedRoute 
-              requiredAnyPermissions={['manage_rooms', 'view_bookings']}
+              requiredAnyPermissions={[P.MANAGE_ROOMS, P.VIEW_BOOKINGS]}
             >
               <RoomProfile />
             </ProtectedRoute>
@@ -107,7 +108,7 @@ export default function AccommodationRoutes({
           path={`${business}/room-edit`}
           element={
             <ProtectedRoute 
-              requiredAnyPermissions={['manage_rooms']}
+              requiredAnyPermissions={[P.MANAGE_ROOMS]}
             >
               <RoomEdit />
             </ProtectedRoute>
@@ -127,7 +128,7 @@ export default function AccommodationRoutes({
           path={`${business}/notification`}
           element={
             <ProtectedRoute 
-              requiredAnyPermissions={['send_notifications', 'view_bookings']}
+              requiredAnyPermissions={[P.SEND_NOTIFICATIONS, P.VIEW_BOOKINGS]}
             >
               <Notification />
             </ProtectedRoute>

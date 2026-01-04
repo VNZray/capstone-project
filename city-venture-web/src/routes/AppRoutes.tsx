@@ -8,6 +8,9 @@ import ShopRoutes from "./ShopRoutes";
 import TourismRoutes from "./TourismRoutes";
 import ProtectedRoute from "./ProtectedRoute";
 
+// Permission constants
+import * as P from "@/src/constants/permissions";
+
 // Pages
 import NotFound from "../pages/NotFound";
 import About from "../pages/About";
@@ -148,7 +151,7 @@ export default function AppRoutes() {
             <Route
               path={`${business}`}
               element={
-                <ProtectedRoute requiredAnyPermissions={['view_business_profile', 'manage_business_profile']}>
+                <ProtectedRoute requiredAnyPermissions={[P.VIEW_BUSINESS_PROFILE, P.MANAGE_BUSINESS_PROFILE]}>
                   <MyBusiness />
                 </ProtectedRoute>
               }
@@ -156,7 +159,7 @@ export default function AppRoutes() {
             <Route
               path={`${business}/register`}
               element={
-                <ProtectedRoute requiredAnyPermissions={['manage_business_profile']}>
+                <ProtectedRoute requiredAnyPermissions={[P.MANAGE_BUSINESS_PROFILE]}>
                   <BusinessRegistration />
                 </ProtectedRoute>
               }
@@ -170,7 +173,7 @@ export default function AppRoutes() {
               path={`${business}/dashboard`}
               element={
                 <ProtectedRoute 
-                  requiredAnyPermissions={['view_analytics', 'view_reports', 'view_financial_reports']}
+                  requiredAnyPermissions={[P.VIEW_DASHBOARD, P.VIEW_REPORTS, P.VIEW_ANALYTICS]}
                 >
                   <UnifiedDashboard />
                 </ProtectedRoute>
@@ -182,7 +185,7 @@ export default function AppRoutes() {
               path={`${business}/business-profile`}
               element={
                 <ProtectedRoute 
-                  requiredAnyPermissions={['view_business_profile', 'manage_business_profile']}
+                  requiredAnyPermissions={[P.VIEW_BUSINESS_PROFILE, P.MANAGE_BUSINESS_PROFILE]}
                 >
                   <UnifiedBusinessProfile />
                 </ProtectedRoute>
@@ -194,7 +197,7 @@ export default function AppRoutes() {
               path={`${business}/reviews`}
               element={
                 <ProtectedRoute 
-                  requiredAnyPermissions={['manage_customer_reviews', 'view_customers']}
+                  requiredAnyPermissions={[P.VIEW_REVIEWS, P.MANAGE_REVIEWS]}
                 >
                   <UnifiedReviews />
                 </ProtectedRoute>
@@ -206,7 +209,7 @@ export default function AppRoutes() {
               path={`${business}/promotions`}
               element={
                 <ProtectedRoute 
-                  requiredAnyPermissions={['manage_promotions', 'view_products']}
+                  requiredAnyPermissions={[P.VIEW_PROMOTIONS, P.MANAGE_PROMOTIONS]}
                 >
                   <UnifiedPromotions />
                 </ProtectedRoute>
@@ -218,7 +221,7 @@ export default function AppRoutes() {
               path={`${business}/subscription`}
               element={
                 <ProtectedRoute 
-                  requiredAnyPermissions={['manage_business_settings', 'view_payments']}
+                  requiredAnyPermissions={[P.MANAGE_SUBSCRIPTIONS, P.VIEW_PAYMENTS]}
                 >
                   <UnifiedSubscription />
                 </ProtectedRoute>
@@ -230,7 +233,7 @@ export default function AppRoutes() {
               path={`${business}/manage-staff`}
               element={
                 <ProtectedRoute 
-                  requiredAnyPermissions={['view_staff', 'create_staff', 'manage_staff_roles']}
+                  requiredAnyPermissions={[P.VIEW_STAFF, P.ADD_STAFF, P.MANAGE_STAFF_ROLES]}
                 >
                   <UnifiedManageStaff />
                 </ProtectedRoute>
@@ -242,7 +245,7 @@ export default function AppRoutes() {
               path={`${business}/settings`}
               element={
                 <ProtectedRoute 
-                  requiredAnyPermissions={['manage_business_settings']}
+                  requiredAnyPermissions={[P.MANAGE_BUSINESS_SETTINGS]}
                 >
                   <Settings />
                 </ProtectedRoute>
