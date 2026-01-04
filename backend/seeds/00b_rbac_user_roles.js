@@ -25,7 +25,7 @@ export async function seed(knex) {
     { id: 2, role_name: 'Tourism Officer', role_type: 'system', is_immutable: true, is_custom: false },
     { id: 3, role_name: 'Event Manager', role_type: 'system', is_immutable: true, is_custom: false },
     { id: 4, role_name: 'Business Owner', role_type: 'system', is_immutable: true, is_custom: false },
-    { id: 9, role_name: 'Tourist', role_type: 'system', is_immutable: true, is_custom: false },
+    { id: 5, role_name: 'Tourist', role_type: 'system', is_immutable: true, is_custom: false },
   ];
 
   for (const role of systemRoles) {
@@ -42,10 +42,11 @@ export async function seed(knex) {
   console.log('[Seed] Updated system roles with role_type');
 
   // ============================================================
-  // Delete old preset roles (5-8) if they exist
+  // Delete old preset roles (6-8) if they exist
   // These are no longer needed - business owners create custom roles
+  // Note: ID 5 is now Tourist, so we only delete 6-8
   // ============================================================
-  const oldPresetIds = [5, 6, 7, 8];
+  const oldPresetIds = [6, 7, 8];
   
   // Check if any users are assigned to these roles before deleting
   const usersWithOldRoles = await knex('user')
@@ -54,13 +55,13 @@ export async function seed(knex) {
     .first();
   
   if (usersWithOldRoles && usersWithOldRoles.count > 0) {
-    console.log(`[Seed] Warning: ${usersWithOldRoles.count} users still assigned to old preset roles (5-8). Skipping deletion.`);
+    console.log(`[Seed] Warning: ${usersWithOldRoles.count} users still assigned to old preset roles (6-8). Skipping deletion.`);
     console.log('[Seed] Please migrate these users to custom business roles first.');
   } else {
     // Safe to delete - no users assigned
     await knex('role_permissions').whereIn('user_role_id', oldPresetIds).del();
     await knex('user_role').whereIn('id', oldPresetIds).del();
-    console.log('[Seed] Deleted old preset roles (5-8) - not needed in new RBAC system');
+    console.log('[Seed] Deleted old preset roles (6-8) - not needed in new RBAC system');
   }
 
   // ============================================================

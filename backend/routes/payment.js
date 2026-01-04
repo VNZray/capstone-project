@@ -1,7 +1,7 @@
 import express from "express";
 import * as paymentController from "../controller/payment/index.js";
 import { authenticate } from "../middleware/authenticate.js";
-import { authorizeRole } from "../middleware/authorizeRole.js";
+import { authorizeScope, authorize, authorizeBusinessAccess } from "../middleware/authorizeRole.js";
 
 const router = express.Router();
 
@@ -11,14 +11,14 @@ const router = express.Router();
 
 // PRIMARY: Initiate payment for any resource (order or booking)
 // Body: { payment_for: 'order' | 'booking', reference_id: string, payment_method?: string }
+// Any authenticated user can initiate payment for their own order/booking
 router.post(
   "/initiate",
   authenticate,
-  authorizeRole("Tourist"),
   paymentController.initiateUnifiedPayment
 );
 
-// Get payment status by Payment Intent ID (replaces verifyBookingPayment)
+// Get payment status by Payment Intent ID (any authenticated user - controller validates ownership)
 router.get(
   "/intent/:paymentIntentId",
   authenticate,
@@ -30,7 +30,6 @@ router.get(
 router.post(
   "/verify",
   authenticate,
-  authorizeRole("Tourist"),
   paymentController.verifyUnifiedPayment
 );
 
@@ -42,45 +41,42 @@ router.post("/webhook", paymentController.handleWebhook);
 
 // ============= Refund Routes =============
 
-// Initiate refund (Admin only)
+// Initiate refund (platform admin only - requires manage_payments permission)
 router.post(
   "/:id/refund",
   authenticate,
-  authorizeRole("Admin"),
+  authorizeScope('platform'),
+  authorize('manage_payments'),
   paymentController.initiateRefund
 );
 
-// Get refund status
+// Get refund status (business access or platform admin)
 router.get(
   "/:id/refund",
   authenticate,
-  authorizeRole("Admin", "Business Owner"),
   paymentController.getRefundStatus
 );
 
 // ============= Payment Query Routes =============
 
-// Get all payments (Admin only for full list)
+// Get all payments (controller filters by access level)
 router.get(
   "/",
   authenticate,
-  authorizeRole("Admin", "Business Owner", "Staff", "Tourist"),
   paymentController.getAllPayments
 );
 
-// Get payment by ID (ownership checked in controller)
+// Get payment by ID (controller validates ownership/business access)
 router.get(
   "/:id",
   authenticate,
-  authorizeRole("Admin", "Business Owner", "Staff", "Tourist"),
   paymentController.getPaymentById
 );
 
-// Get payments by payer ID
+// Get payments by payer ID (controller validates ownership)
 router.get(
   "/payer/:payer_id",
   authenticate,
-  authorizeRole("Admin", "Business Owner", "Staff", "Tourist"),
   paymentController.getPaymentByPayerId
 );
 
@@ -88,7 +84,6 @@ router.get(
 router.get(
   "/for/:payment_for_id",
   authenticate,
-  authorizeRole("Admin", "Business Owner", "Staff", "Tourist"),
   paymentController.getPaymentByPaymentForId
 );
 
@@ -96,25 +91,27 @@ router.get(
 router.get(
   "/business/:business_id",
   authenticate,
-  authorizeRole("Admin", "Business Owner", "Staff", "Tourist"),
+  authorizeBusinessAccess('business_id'),
   paymentController.getPaymentByBusinessId
 );
 
 // ============= Admin: Abandoned Order Cleanup =============
 
-// Manually trigger abandoned order cleanup (Admin only)
+// Manually trigger abandoned order cleanup (platform admin only)
 router.post(
   "/admin/cleanup-abandoned",
   authenticate,
-  authorizeRole("Admin"),
+  authorizeScope('platform'),
+  authorize('manage_payments'),
   paymentController.triggerAbandonedOrderCleanup
 );
 
-// Get abandoned order statistics (Admin only)
+// Get abandoned order statistics (platform admin only)
 router.get(
   "/admin/abandoned-stats",
   authenticate,
-  authorizeRole("Admin"),
+  authorizeScope('platform'),
+  authorize('manage_payments'),
   paymentController.getAbandonedOrderStats
 );
 

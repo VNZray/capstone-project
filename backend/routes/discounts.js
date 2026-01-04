@@ -1,21 +1,23 @@
 import express from "express";
 import * as discountController from "../controller/discountController.js";
 import { authenticate } from "../middleware/authenticate.js";
-import { authorizeRole } from "../middleware/authorizeRole.js";
+import { authorizeScope, authorize } from "../middleware/authorizeRole.js";
 
 const router = express.Router();
 
 // ==================== DISCOUNT ROUTES ====================
 
-// Discounts
+// Discounts (public read, authenticated write)
 router.get("/", discountController.getAllDiscounts);
-router.post("/", authenticate, authorizeRole("Business Owner", "Staff", "Admin"), discountController.insertDiscount);
+// Creating discounts requires manage_promotions permission
+router.post("/", authenticate, authorize('manage_promotions'), discountController.insertDiscount);
 router.get("/business/:businessId", discountController.getDiscountsByBusinessId);
 router.get("/business/:businessId/active", discountController.getActiveDiscountsByBusinessId);
-router.post("/maintenance/update-expired", authenticate, authorizeRole("Admin"), discountController.updateExpiredDiscounts);
+// Maintenance - platform admin only
+router.post("/maintenance/update-expired", authenticate, authorizeScope('platform'), discountController.updateExpiredDiscounts);
 router.get("/:id", discountController.getDiscountById);
-router.put("/:id", authenticate, authorizeRole("Business Owner", "Staff", "Admin"), discountController.updateDiscount);
-router.delete("/:id", authenticate, authorizeRole("Business Owner", "Staff", "Admin"), discountController.deleteDiscount);
+router.put("/:id", authenticate, authorize('manage_promotions'), discountController.updateDiscount);
+router.delete("/:id", authenticate, authorize('manage_promotions'), discountController.deleteDiscount);
 
 // ==================== DISCOUNT VALIDATION & USAGE ROUTES ====================
 

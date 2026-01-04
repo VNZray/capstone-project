@@ -64,10 +64,11 @@ export default function AppRoutes() {
 
   const checkServerStatus = async () => {
     try {
-      const { data } = await axios.get<User[]>(`${api}/users`, {
+      // Use a public endpoint for health check (business list is public)
+      const response = await axios.get(`${api}/business`, {
         timeout: 5000,
       });
-      setIsServerUp(Array.isArray(data));
+      setIsServerUp(response.status === 200);
     } catch (error) {
       console.error("Server status check failed:", error);
       setIsServerUp(false);

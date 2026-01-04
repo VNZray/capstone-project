@@ -81,6 +81,12 @@ exports.seed = async function seedRolePermissions(knex) {
 
         'manage_subscriptions',
 
+        // Shop & Products
+        'view_shop',
+        'manage_shop',
+        'view_orders',
+        'manage_orders',
+
         // Reviews
         'view_reviews',
         'respond_reviews',

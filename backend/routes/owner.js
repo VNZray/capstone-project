@@ -1,7 +1,7 @@
 import express from "express";
 import * as ownerController from '../controller/auth/OwnerController.js'
 import { authenticate } from '../middleware/authenticate.js';
-import { authorizeRole } from '../middleware/authorizeRole.js';
+import { authorizeScope, authorize } from '../middleware/authorizeRole.js';
 
 const router = express.Router();
 
@@ -9,9 +9,11 @@ const router = express.Router();
 router.post("/", ownerController.insertOwner);
 // All other routes require authentication
 router.get("/:id", authenticate, ownerController.getOwnerById);
-router.get("/", authenticate, authorizeRole("Admin"), ownerController.getAllOwners);
+// Platform admin access for all owners
+router.get("/", authenticate, authorizeScope('platform'), authorize('view_all_profiles'), ownerController.getAllOwners);
 router.get("/user/:user_id", authenticate, ownerController.getOwnerByUserId);
 router.put("/:id", authenticate, ownerController.updateOwnerById);
-router.delete("/:id", authenticate, authorizeRole("Admin"), ownerController.deleteOwnerById);
+// Delete owner - platform admin only
+router.delete("/:id", authenticate, authorizeScope('platform'), authorize('manage_users'), ownerController.deleteOwnerById);
 
 export default router;

@@ -1,23 +1,59 @@
 import express from "express";
 import * as userController from "../controller/auth/UserController.js";
 import { authenticate } from "../middleware/authenticate.js";
-import { authorizeRole } from "../middleware/authorizeRole.js";
+import { authorizeAny, authorizeScope, authorize } from "../middleware/authorizeRole.js";
 
 const router = express.Router();
 
-// User CRUD
-router.get("/", userController.getAllUsers);
-router.get("/:id", userController.getUserById);
-router.post("/", userController.insertUser);
-router.put("/:id", userController.updateUser);
-router.patch("/:id", userController.updateUser); // Support PATCH for partial updates
-router.delete("/:id", userController.deleteUser);
+// User CRUD - protected routes requiring manage_users permission
+router.get(
+  "/",
+  authenticate,
+  authorizeScope('platform'),
+  authorize('manage_users'),
+  userController.getAllUsers
+);
+router.get(
+  "/:id",
+  authenticate,
+  authorizeScope('platform'),
+  authorize('manage_users'),
+  userController.getUserById
+);
+router.post(
+  "/",
+  authenticate,
+  authorizeScope('platform'),
+  authorize('manage_users'),
+  userController.insertUser
+);
+router.put(
+  "/:id",
+  authenticate,
+  authorizeScope('platform'),
+  authorize('manage_users'),
+  userController.updateUser
+);
+router.patch(
+  "/:id",
+  authenticate,
+  authorizeScope('platform'),
+  authorize('manage_users'),
+  userController.updateUser
+);
+router.delete(
+  "/:id",
+  authenticate,
+  authorizeScope('platform'),
+  authorize('manage_users'),
+  userController.deleteUser
+);
 
-// Staff user creation (for business owners adding staff)
+// Staff user creation - requires add_staff permission (Business Owner, Manager, or Admin)
 router.post(
   "/staff",
   authenticate,
-  authorizeRole("Admin", "Business Owner", "Manager"),
+  authorizeAny("add_staff", "manage_users"),
   userController.insertStaffUser
 );
 

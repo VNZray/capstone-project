@@ -27,13 +27,15 @@ export function authenticate(req, res, next) {
       algorithms: ['HS256'],
     });
     
-    console.log('[authenticate] Token verified for user:', payload.id, 'role:', payload.role);
+    console.log('[authenticate] Token verified for user:', payload.id, 'role:', payload.role, 'type:', payload.role_type);
     
     req.user = {
       id: payload.id,
       email: payload.email,
       user_role_id: payload.role, // Mapped from 'role' in token
-      role: payload.role, 
+      role: payload.role,
+      role_type: payload.role_type || 'system', // 'system' or 'business'
+      role_for: payload.role_for || null, // business_id for business-scoped roles
     };
 
     next();

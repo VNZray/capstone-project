@@ -3,10 +3,23 @@ import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/src/context/AuthContext";
 import Loading from "../components/Loading";
 
+/**
+ * Scope types for route protection:
+ * - 'platform': Only system roles without business binding (Admin, Tourism Officer, etc.)
+ * - 'business': Only roles with a business association (Business Owner, custom staff roles)
+ * - 'any': Any authenticated user with the required permissions
+ */
+type RouteScope = 'platform' | 'business' | 'any';
+
 interface ProtectedRouteProps {
   children: React.ReactElement;
-  // RBAC: Role-based access control
-  requiredRoles?: string[]; // match against user.role_name (normalized)
+  /**
+   * @deprecated Use requiredScope + permissions instead of hardcoded role names.
+   * Role names are just display labels - authorization should be based on what roles CAN DO (permissions).
+   */
+  requiredRoles?: string[];
+  // Scope-based access control (preferred over requiredRoles)
+  requiredScope?: RouteScope;
   // RBAC: Permission-based access control
   requiredAllPermissions?: string[]; // user must have ALL (AND logic)
   requiredAnyPermissions?: string[]; // user must have ANY (OR logic)
@@ -17,10 +30,30 @@ interface ProtectedRouteProps {
 }
 
 /**
+ * Determines the user's role scope based on role properties.
+ * - Platform scope: system roles without business binding (role_type: 'system', no role_for)
+ * - Business scope: roles with business association (role_type: 'business' or has role_for/business_id)
+ */
+function getUserScope(user: { role_type?: string; role_for?: string | number | null; business_id?: string | number | null }): 'platform' | 'business' {
+  const roleType = user.role_type || 'system';
+  const hasBusinessBinding = !!(user.role_for || user.business_id);
+  
+  // Business scope if role_type is 'business' OR if there's a business binding
+  if (roleType === 'business' || hasBusinessBinding) {
+    return 'business';
+  }
+  
+  return 'platform';
+}
+
+/**
  * Protected Route Component with Role-Based Access Control (RBAC)
  * 
- * Supports both role-based and permission-based access control:
- * 1. Role check: User must have one of the requiredRoles
+ * Supports scope-based and permission-based access control:
+ * 1. Scope check: User's role must match the required scope
+ *    - 'platform': System roles (Admin, Tourism Officer, Event Manager)
+ *    - 'business': Roles with business binding (Business Owner, Staff, custom roles)
+ *    - 'any': Any authenticated user (default)
  * 2. Permission checks:
  *    - requiredAllPermissions: User must have ALL permissions (AND)
  *    - requiredAnyPermissions: User must have ANY permission (OR)
@@ -28,27 +61,25 @@ interface ProtectedRouteProps {
  *    - must_change_password: Staff must change password before accessing app
  *    - profile_completed: Staff must complete profile after password change
  * 
- * @example Role-based protection
- * <ProtectedRoute requiredRoles={["Business Owner", "Manager"]}>
- *   <Dashboard />
+ * @example Scope-based protection (recommended)
+ * <ProtectedRoute requiredScope="platform" requiredAnyPermissions={["approve_business", "manage_users"]}>
+ *   <AdminDashboard />
  * </ProtectedRoute>
  * 
- * @example Permission-based protection
+ * @example Business scope protection
+ * <ProtectedRoute requiredScope="business" requiredAnyPermissions={["manage_orders"]}>
+ *   <OrderManagement />
+ * </ProtectedRoute>
+ * 
+ * @example Permission-only protection (any scope)
  * <ProtectedRoute requiredAnyPermissions={["view_dashboard", "view_reports"]}>
  *   <Analytics />
- * </ProtectedRoute>
- * 
- * @example Combined protection
- * <ProtectedRoute 
- *   requiredRoles={["Manager"]} 
- *   requiredAnyPermissions={["manage_bookings"]}
- * >
- *   <BookingManagement />
  * </ProtectedRoute>
  */
 export default function ProtectedRoute({
   children,
   requiredRoles,
+  requiredScope = 'any',
   requiredAllPermissions,
   requiredAnyPermissions,
   redirectTo = "/unauthorized",
@@ -87,8 +118,9 @@ export default function ProtectedRoute({
     }
   }
 
-  // Role-based check (if provided)
+  // Role-based check (DEPRECATED - kept for backwards compatibility)
   if (requiredRoles && requiredRoles.length > 0) {
+    console.warn('[ProtectedRoute] requiredRoles is deprecated. Use requiredScope + permissions instead.');
     const userRole = (user.role_name || '').toString();
     const userRoleType = user.role_type || 'system';
     const isCustomBusinessRole = userRoleType === 'business';
@@ -96,26 +128,38 @@ export default function ProtectedRoute({
     // Check if user's role matches any required role
     let roleOk = requiredRoles.includes(userRole);
     
-    // RBAC Enhancement: Custom business roles should be treated as staff roles
-    // If the route requires staff-like roles and user has a business role, allow access
+    // RBAC Enhancement: Custom business roles should be treated as having business scope
+    // Allow access if route requires business-related roles and user has business role type
     if (!roleOk && isCustomBusinessRole) {
-      const staffLikeRoles = [
+      const businessRelatedRoles = [
         "Manager", "Room Manager", "Receptionist", "Sales Associate", 
         "Staff", "Business Owner"
       ];
-      const requiresStaffAccess = requiredRoles.some(r => 
-        staffLikeRoles.includes(r) || r.toLowerCase().includes('staff')
+      const requiresBusinessAccess = requiredRoles.some(r => 
+        businessRelatedRoles.includes(r) || r.toLowerCase().includes('staff')
       );
       
-      if (requiresStaffAccess) {
+      if (requiresBusinessAccess) {
         roleOk = true;
-        console.log('[ProtectedRoute] Custom business role granted staff access:', userRole);
+        console.log('[ProtectedRoute] Custom business role granted access:', userRole);
       }
     }
     
     if (!roleOk) {
       console.warn(
         `[ProtectedRoute] Access denied. Required roles: ${requiredRoles.join(', ')}, Current role: ${userRole} (type: ${userRoleType})`
+      );
+      return <Navigate to={redirectTo} replace />;
+    }
+  }
+
+  // Scope-based check (preferred method)
+  if (requiredScope !== 'any') {
+    const userScope = getUserScope(user);
+    
+    if (requiredScope !== userScope) {
+      console.warn(
+        `[ProtectedRoute] Access denied. Required scope: ${requiredScope}, User scope: ${userScope}`
       );
       return <Navigate to={redirectTo} replace />;
     }

@@ -3,7 +3,8 @@ import rateLimit from "express-rate-limit";
 import * as orderController from "../controller/order/index.js";
 import * as refundController from "../controller/refund/index.js";
 import { authenticate } from "../middleware/authenticate.js";
-import { authorizeRole } from "../middleware/authorizeRole.js";
+import { authorizeScope, authorize, authorizeAny, authorizeBusinessAccess } from "../middleware/authorizeRole.js";
+import { hasAnyPermission } from "../utils/authHelpers.js";
 
 const router = express.Router();
 
@@ -29,8 +30,8 @@ const orderCreationLimiter = rateLimit({
     code: 'RATE_LIMIT_EXCEEDED'
   },
   skip: (req) => {
-    // Skip rate limiting for Admin users
-    return req.user?.role === 'Admin';
+    // Skip rate limiting for users with platform admin permissions
+    return hasAnyPermission(req.user, 'manage_orders', 'manage_users');
   }
 });
 
@@ -50,32 +51,35 @@ const orderCancellationLimiter = rateLimit({
     error: 'Too many cancellation attempts. Please try again later.',
     code: 'RATE_LIMIT_EXCEEDED'
   },
-  skip: (req) => req.user?.role === 'Admin'
+  skip: (req) => hasAnyPermission(req.user, 'manage_orders', 'manage_users')
 });
 
 // ==================== ORDER ROUTES ====================
 
-// Public/Admin routes
-router.get("/", authenticate, authorizeRole("Admin"), orderController.getAllOrders);
+// Platform admin: Get all orders
+router.get("/", authenticate, authorizeScope('platform'), authorize('manage_orders'), orderController.getAllOrders);
 
-// Tourist routes - create and view own orders
-router.post("/", authenticate, orderCreationLimiter, authorizeRole("Tourist"), orderController.insertOrder);
-router.get("/user/:userId", authenticate, orderController.getOrdersByUserId); // Will add ownership check in controller
+// Any authenticated user can create orders
+router.post("/", authenticate, orderCreationLimiter, orderController.insertOrder);
 
-// Business routes - manage business orders
-router.get("/business/:businessId", authenticate, authorizeRole("Business Owner", "Staff", "Admin"), orderController.getOrdersByBusinessId);
-router.get("/business/:businessId/stats", authenticate, authorizeRole("Business Owner", "Staff", "Admin"), orderController.getOrderStatsByBusiness);
-router.post("/business/:businessId/verify-arrival", authenticate, authorizeRole("Business Owner", "Staff", "Admin"), orderController.verifyArrivalCode);
+// User's own orders (controller validates ownership)
+router.get("/user/:userId", authenticate, orderController.getOrdersByUserId);
 
-// Order details - accessible by owner (tourist or business) and admin
-router.get("/:id", authenticate, orderController.getOrderById); // Will add ownership check in controller
+// Business routes - use business access check
+router.get("/business/:businessId", authenticate, authorizeBusinessAccess('businessId'), orderController.getOrdersByBusinessId);
+router.get("/business/:businessId/stats", authenticate, authorizeBusinessAccess('businessId'), orderController.getOrderStatsByBusiness);
+router.post("/business/:businessId/verify-arrival", authenticate, authorizeBusinessAccess('businessId'), orderController.verifyArrivalCode);
 
-// Status updates - business and admin only
-router.patch("/:id/status", authenticate, authorizeRole("Business Owner", "Staff", "Admin"), orderController.updateOrderStatus);
-router.patch("/:id/payment-status", authenticate, authorizeRole("Admin"), orderController.updatePaymentStatus);
+// Order details - accessible by owner (tourist or business) and admin (controller validates)
+router.get("/:id", authenticate, orderController.getOrderById);
 
-// Cancellation - tourist (within grace) or business
-router.post("/:id/cancel", authenticate, orderCancellationLimiter, orderController.cancelOrder); // Role check in controller
+// Status updates - requires manage_orders permission
+router.patch("/:id/status", authenticate, authorize('manage_orders'), orderController.updateOrderStatus);
+// Payment status updates - platform admin only
+router.patch("/:id/payment-status", authenticate, authorizeScope('platform'), authorize('manage_orders'), orderController.updatePaymentStatus);
+
+// Cancellation - role check in controller for flexibility
+router.post("/:id/cancel", authenticate, orderCancellationLimiter, orderController.cancelOrder);
 
 // ==================== REFUND ROUTES ====================
 
@@ -95,24 +99,18 @@ const refundRequestLimiter = rateLimit({
     error: 'Too many refund requests. Please try again later.',
     code: 'RATE_LIMIT_EXCEEDED'
   },
-  skip: (req) => req.user?.role === 'Admin'
+  skip: (req) => hasAnyPermission(req.user, 'manage_refunds', 'manage_orders')
 });
 
-// Check refund eligibility - Tourist only
-router.get("/:orderId/refund-eligibility", authenticate, authorizeRole("Tourist"), refundController.checkRefundEligibility);
+// Refund routes - controller validates order ownership
+router.get("/:orderId/refund-eligibility", authenticate, refundController.checkRefundEligibility);
+router.post("/:orderId/refund", authenticate, refundRequestLimiter, refundController.requestOrderRefund);
+router.post("/:orderId/cancel-request", authenticate, refundRequestLimiter, refundController.cancelOrderRequest);
+router.get("/:orderId/refund-status", authenticate, refundController.getOrderRefundStatus);
 
-// Request refund for paid orders - Tourist only
-router.post("/:orderId/refund", authenticate, refundRequestLimiter, authorizeRole("Tourist"), refundController.requestOrderRefund);
-
-// Cancel cash on pickup orders - Tourist only
-router.post("/:orderId/cancel-request", authenticate, refundRequestLimiter, authorizeRole("Tourist"), refundController.cancelOrderRequest);
-
-// Get refund status - Tourist, Business Owner, Admin
-router.get("/:orderId/refund-status", authenticate, authorizeRole("Tourist", "Business Owner", "Admin"), refundController.getOrderRefundStatus);
-
-// Pickup workflow - business only
-router.post("/:id/arrived", authenticate, authorizeRole("Business Owner", "Staff", "Admin"), orderController.markCustomerArrivedForOrder);
-router.post("/:id/mark-ready", authenticate, authorizeRole("Business Owner", "Staff", "Admin"), orderController.markOrderAsReady);
-router.post("/:id/mark-picked-up", authenticate, authorizeRole("Business Owner", "Staff", "Admin"), orderController.markOrderAsPickedUp);
+// Pickup workflow - requires manage_orders permission
+router.post("/:id/arrived", authenticate, authorize('manage_orders'), orderController.markCustomerArrivedForOrder);
+router.post("/:id/mark-ready", authenticate, authorize('manage_orders'), orderController.markOrderAsReady);
+router.post("/:id/mark-picked-up", authenticate, authorize('manage_orders'), orderController.markOrderAsPickedUp);
 
 export default router;

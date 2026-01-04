@@ -6,7 +6,7 @@
 import express from "express";
 import * as emergencyFacilityController from "../controller/emergencyFacilityController.js";
 import { authenticate } from "../middleware/authenticate.js";
-import { authorizeRole } from "../middleware/authorizeRole.js";
+import { authorizeScope, authorize, authorizeAny } from "../middleware/authorizeRole.js";
 
 const router = express.Router();
 
@@ -17,11 +17,11 @@ router.get("/type/:type", emergencyFacilityController.getEmergencyFacilitiesByTy
 router.get("/barangay/:barangayId", emergencyFacilityController.getEmergencyFacilitiesByBarangay);
 router.get("/:id", emergencyFacilityController.getEmergencyFacilityById);
 
-// Protected routes (Admin only)
-router.get("/", authenticate, authorizeRole("Admin", "Tourism Staff"), emergencyFacilityController.getAllEmergencyFacilities);
-router.post("/", authenticate, authorizeRole("Admin"), emergencyFacilityController.createEmergencyFacility);
-router.put("/:id", authenticate, authorizeRole("Admin"), emergencyFacilityController.updateEmergencyFacility);
-router.patch("/:id/status", authenticate, authorizeRole("Admin"), emergencyFacilityController.updateEmergencyFacilityStatus);
-router.delete("/:id", authenticate, authorizeRole("Admin"), emergencyFacilityController.deleteEmergencyFacility);
+// Protected routes - Platform scope (Admin/Tourism roles)
+router.get("/", authenticate, authorizeScope('platform'), authorizeAny('view_all_profiles', 'manage_services'), emergencyFacilityController.getAllEmergencyFacilities);
+router.post("/", authenticate, authorize('manage_services'), emergencyFacilityController.createEmergencyFacility);
+router.put("/:id", authenticate, authorize('manage_services'), emergencyFacilityController.updateEmergencyFacility);
+router.patch("/:id/status", authenticate, authorize('manage_services'), emergencyFacilityController.updateEmergencyFacilityStatus);
+router.delete("/:id", authenticate, authorize('manage_users'), emergencyFacilityController.deleteEmergencyFacility);
 
 export default router;

@@ -16,7 +16,7 @@ await knex("user_role").insert([
   { id: 4, role_name: "Business Owner", role_description: "Owner of a business listing; manages all operations and creates custom staff roles.",  role_for: null },
 
   // Tourist Side
-  { id: 9, role_name: "Tourist", role_description: "Regular app user who explores listings, books accommodations, and leaves reviews.",  role_for: null },
+  { id: 5, role_name: "Tourist", role_description: "Regular app user who explores listings, books accommodations, and leaves reviews.",  role_for: null },
 ])
 .onConflict('id')
 .merge(['role_name', 'role_description', 'role_for']);

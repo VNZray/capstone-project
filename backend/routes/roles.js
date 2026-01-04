@@ -2,8 +2,8 @@
  * Role Routes - Enhanced RBAC API Endpoints
  * 
  * Provides routes for the two-tier RBAC system:
- * - System roles (Admin only)
- * - Business roles (Business owners and Tourism Admins/Officers)
+ * - System roles (Platform admin only)
+ * - Business roles (Business owners with add_staff permission)
  * 
  * @module routes/roles
  */
@@ -11,7 +11,7 @@
 import express from "express";
 import * as roleController from "../controller/auth/RoleController.js";
 import { authenticate } from "../middleware/authenticate.js";
-import { authorizeRole } from "../middleware/authorizeRole.js";
+import { authorizeScope, authorize, authorizeAny } from "../middleware/authorizeRole.js";
 
 const router = express.Router();
 
@@ -42,11 +42,11 @@ router.get(
   roleController.getBusinessRoles
 );
 
-// Create a custom business role
+// Create a custom business role (requires add_staff permission)
 router.post(
   "/business/custom",
   authenticate,
-  authorizeRole("Admin", "Business Owner", "Tourism Officer"),
+  authorize('add_staff'),
   roleController.createCustomBusinessRole
 );
 
@@ -54,7 +54,7 @@ router.post(
 router.put(
   "/business/:id",
   authenticate,
-  authorizeRole("Admin", "Business Owner", "Tourism Officer"),
+  authorize('add_staff'),
   roleController.updateBusinessRole
 );
 
@@ -62,7 +62,7 @@ router.put(
 router.delete(
   "/business/:id",
   authenticate,
-  authorizeRole("Admin", "Business Owner", "Tourism Officer"),
+  authorize('add_staff'),
   roleController.deleteBusinessRole
 );
 
@@ -74,7 +74,7 @@ router.delete(
 router.post(
   "/:id/permissions",
   authenticate,
-  authorizeRole("Admin", "Business Owner", "Tourism Officer"),
+  authorize('add_staff'),
   roleController.addRolePermissions
 );
 
@@ -82,7 +82,7 @@ router.post(
 router.delete(
   "/:id/permissions",
   authenticate,
-  authorizeRole("Admin", "Business Owner", "Tourism Officer"),
+  authorize('add_staff'),
   roleController.removeRolePermissions
 );
 
@@ -101,7 +101,7 @@ router.get(
 router.post(
   "/:id/overrides",
   authenticate,
-  authorizeRole("Admin", "Business Owner", "Tourism Officer"),
+  authorize('add_staff'),
   roleController.addPermissionOverride
 );
 
@@ -109,7 +109,7 @@ router.post(
 router.delete(
   "/:id/overrides/:permissionId",
   authenticate,
-  authorizeRole("Admin", "Business Owner", "Tourism Officer"),
+  authorize('add_staff'),
   roleController.removePermissionOverride
 );
 
@@ -139,11 +139,12 @@ router.get(
 // ADMIN-ONLY ENDPOINTS
 // ============================================================
 
-// Create a new system role
+// Create a new system role (platform admin only)
 router.post(
   "/system",
   authenticate,
-  authorizeRole("Admin"),
+  authorizeScope('platform'),
+  authorize('manage_users'),
   roleController.createSystemRole
 );
 

@@ -97,6 +97,8 @@ describe("authenticate middleware", () => {
         email: "test@example.com",
         user_role_id: "Admin",
         role: "Admin",
+        role_type: "system",
+        role_for: null,
       });
     });
 
@@ -209,6 +211,8 @@ describe("authenticate middleware", () => {
         email: "manager@example.com",
         user_role_id: "Business Owner",
         role: "Business Owner",
+        role_type: "system",
+        role_for: null,
       });
     });
 

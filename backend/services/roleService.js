@@ -2,8 +2,11 @@
  * Role Service - Enhanced RBAC Business Logic
  * 
  * Implements a two-tier RBAC system:
- * - System roles: Platform-wide, immutable (Tourist, Admin, Tourism Officer, Business Owner)
- * - Business roles: Custom roles created by Business Owners or Tourism Admins/Officers
+ * - System roles: Platform-wide roles (role_type = 'system', role_for = null)
+ * - Business roles: Custom roles created by Business Owners (role_type = 'business', role_for = business_id)
+ * 
+ * IMPORTANT: Role access should be determined by role properties, NOT role names.
+ * Use role_type, role_for, and permissions to determine access scope.
  * 
  * @module services/roleService
  */
@@ -19,16 +22,72 @@ export const ROLE_TYPES = {
   BUSINESS: 'business'
 };
 
+/**
+ * @deprecated SYSTEM_ROLES is deprecated. Do not use hardcoded role names for access control.
+ * Instead, use role properties (role_type, role_for) and permissions.
+ * 
+ * For backward compatibility only - will be removed in future versions.
+ */
 export const SYSTEM_ROLES = {
   ADMIN: 'Admin',
   TOURISM_OFFICER: 'Tourism Officer',
   BUSINESS_OWNER: 'Business Owner',
-  TOURIST: 'Tourist'
+  TOURIST: 'Tourist',
+  EVENT_MANAGER: 'Event Manager'
 };
 
 // In-memory cache for role permissions with TTL
 const rolePermissionCache = new Map();
 const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+
+// ============================================================
+// ROLE SCOPE HELPERS (USE THESE INSTEAD OF HARDCODED NAMES)
+// ============================================================
+
+/**
+ * Determine if a role has platform-level scope (can access platform-wide features)
+ * @param {Object} role - Role object with role_type and role_for properties
+ * @returns {boolean}
+ */
+export function hasPlatformScope(role) {
+  return role?.role_type === 'system' && !role?.role_for;
+}
+
+/**
+ * Determine if a role has business-level scope
+ * @param {Object} role - Role object with role_type and role_for properties
+ * @returns {boolean}
+ */
+export function hasBusinessScope(role) {
+  return role?.role_type === 'business' || !!role?.role_for;
+}
+
+/**
+ * Check if a role is a system role
+ * @param {Object} role - Role object
+ * @returns {boolean}
+ */
+export function isSystemRole(role) {
+  return role?.role_type === 'system';
+}
+
+/**
+ * Check if a role is a business-specific role
+ * @param {Object} role - Role object
+ * @returns {boolean}
+ */
+export function isBusinessRole(role) {
+  return role?.role_type === 'business';
+}
+
+/**
+ * Get the business ID a role is associated with (if any)
+ * @param {Object} role - Role object
+ * @returns {string|null}
+ */
+export function getRoleBusinessId(role) {
+  return role?.role_for || null;
+}
 
 // ============================================================
 // CACHE MANAGEMENT
@@ -589,17 +648,35 @@ export async function isRoleNameAvailable(roleName, businessId, excludeRoleId = 
 }
 
 export default {
+  // Constants
   ROLE_TYPES,
-  SYSTEM_ROLES,
+  SYSTEM_ROLES, // @deprecated - use role properties instead
+  
+  // Role scope helpers (USE THESE!)
+  hasPlatformScope,
+  hasBusinessScope,
+  isSystemRole,
+  isBusinessRole,
+  getRoleBusinessId,
+  
+  // Cache management
   clearRoleCache,
+  
+  // Role retrieval
   getRolesByType,
   getBusinessRoles,
   getRoleWithPermissions,
   getRoleById,
+  
+  // Role creation
   createSystemRole,
   createCustomBusinessRole,
+  
+  // Role update
   updateBusinessRole,
   deleteBusinessRole,
+  
+  // Permission management
   assignPermissionsToRole,
   removePermissionsFromRole,
   setRolePermissions,
@@ -612,8 +689,12 @@ export default {
   userHasAnyPermission,
   getPermissionCategories,
   getPermissionsGroupedByCategory,
+  
+  // Audit
   logRoleAction,
   getRoleAuditLog,
+  
+  // Validation
   canBusinessManageRole,
   isRoleNameAvailable
 };
