@@ -47,10 +47,13 @@ const ShopDirectory = () => {
     try {
       setError(null);
       const data = await fetchAllBusinessDetails();
-      const activeBusinesses = data.filter(
-        (b) => b.status === 'Approved' || b.status === 'Active'
+      // Filter for active businesses that have a store (products/services)
+      const storeBusinesses = data.filter(
+        (b) =>
+          (b.status === 'Approved' || b.status === 'Active') &&
+          (b.hasStore === true || b.hasStore === 1)
       );
-      setBusinesses(activeBusinesses);
+      setBusinesses(storeBusinesses);
     } catch (err: any) {
       console.error('❌ Error loading businesses:', err);
       setError(err.message || 'Failed to load businesses');
