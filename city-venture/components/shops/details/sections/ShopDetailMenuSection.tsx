@@ -1,7 +1,12 @@
 import type { BusinessProfileMenuItem, BusinessProfileView } from '@/components/shops/details/types';
 import { ShopColors } from '@/constants/color';
+import { Ionicons } from '@expo/vector-icons';
 import React, { useMemo } from 'react';
-import { Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Dimensions, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+
+const { width: screenWidth } = Dimensions.get('window');
+const CARD_WIDTH = screenWidth * 0.7;
+const MENU_CARD_WIDTH = (screenWidth - 48) / 2;
 
 interface ShopDetailMenuSectionProps {
   shop: BusinessProfileView;
@@ -28,82 +33,76 @@ const ShopDetailMenuSection: React.FC<ShopDetailMenuSectionProps> = ({
   }, [allMenuItems]);
 
   return (
-    <View style={styles.sectionContainer}>
+    <View style={styles.container}>
+      {/* Featured Offers Section */}
       <View style={styles.sectionHeader}>
-        <View>
-          <Text style={styles.sectionTitle}>Featured Offers</Text>
-          <Text style={styles.sectionSubtitle}>
-            Curated highlights from this shop
-          </Text>
-        </View>
-        {!!featuredOffers.length && (
-          <Text style={styles.menuCategoryCount}>{featuredOffers.length} picks</Text>
-        )}
+        <Text style={styles.sectionLabel}>Featured</Text>
+        <Text style={styles.sectionTitle}>Top Picks</Text>
       </View>
 
       {featuredOffers.length ? (
         <ScrollView
-          style={styles.featuredScroll}
           horizontal
           showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.featuredList}
+          contentContainerStyle={styles.featuredScrollContent}
+          decelerationRate="fast"
+          snapToInterval={CARD_WIDTH + 12}
         >
-          {featuredOffers.map((item) => (
+          {featuredOffers.map((item, idx) => (
             <TouchableOpacity
               key={item.id}
-              style={styles.featuredCard}
-              activeOpacity={0.9}
+              style={[styles.featuredCard, idx === 0 && styles.featuredCardFirst]}
+              activeOpacity={0.7}
               onPress={() => onMenuItemPress?.(item)}
             >
-              <View style={styles.featuredImageWrapper}>
-                <Image
-                  source={
-                    item.image
-                      ? { uri: item.image }
-                      : require('@/assets/images/placeholder.png')
-                  }
-                  style={styles.featuredImage}
-                />
-                <View style={styles.featuredPriceBadge}>
-                  <Text style={styles.featuredPriceText}>{item.price}</Text>
-                </View>
+              <Image
+                source={
+                  item.image
+                    ? { uri: item.image }
+                    : require('@/assets/images/placeholder.png')
+                }
+                style={styles.featuredImage}
+              />
+              <View style={styles.featuredOverlay} />
+              <View style={styles.featuredBadge}>
+                <Ionicons name="star" size={10} color="#FFFFFF" />
+                <Text style={styles.featuredBadgeText}>Featured</Text>
               </View>
               <View style={styles.featuredContent}>
-                <Text style={styles.featuredName} numberOfLines={2}>
+                <Text style={styles.featuredName} numberOfLines={1}>
                   {item.item}
                 </Text>
-                {item.description ? (
-                  <Text style={styles.featuredDescription} numberOfLines={1}>
-                    {item.description}
-                  </Text>
-                ) : null}
-                <View style={styles.featuredFooter}>
-                  <Text style={styles.featuredTag}>Special</Text>
-                  <TouchableOpacity
-                    style={styles.featuredAction}
-                    onPress={() => onMenuItemPress?.(item)}
-                  >
-                    <Text style={styles.featuredActionText}>Add</Text>
-                  </TouchableOpacity>
-                </View>
+                <Text style={styles.featuredPrice}>{item.price}</Text>
               </View>
+              <TouchableOpacity
+                style={styles.featuredAddBtn}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                onPress={() => onMenuItemPress?.(item)}
+              >
+                <Ionicons name="add" size={20} color="#FFFFFF" />
+              </TouchableOpacity>
             </TouchableOpacity>
           ))}
         </ScrollView>
       ) : (
         <View style={styles.emptyState}>
+          <Ionicons name="pricetag-outline" size={32} color={ShopColors.textSecondary} />
           <Text style={styles.emptyStateText}>No featured offers yet</Text>
         </View>
       )}
 
-      <View style={[styles.sectionHeader, styles.sectionSpacer]}>
-        <View>
-          <Text style={styles.sectionTitle}>All Menu Items</Text>
-          <Text style={styles.sectionSubtitle}>Everything available right now</Text>
+      {/* Divider */}
+      <View style={styles.divider} />
+
+      {/* All Menu Items Section */}
+      <View style={styles.sectionHeader}>
+        <Text style={styles.sectionLabel}>Browse</Text>
+        <View style={styles.sectionTitleRow}>
+          <Text style={styles.sectionTitle}>All Items</Text>
+          {!!allMenuItems.length && (
+            <Text style={styles.itemCount}>{allMenuItems.length} available</Text>
+          )}
         </View>
-        {!!allMenuItems.length && (
-          <Text style={styles.menuCategoryCount}>{allMenuItems.length} items</Text>
-        )}
       </View>
 
       {allMenuItems.length ? (
@@ -113,14 +112,11 @@ const ShopDetailMenuSection: React.FC<ShopDetailMenuSectionProps> = ({
             return (
               <TouchableOpacity
                 key={item.id}
-                style={[
-                  styles.menuCard,
-                  isUnavailable && styles.menuCardDisabled,
-                ]}
-                activeOpacity={0.9}
+                style={[styles.menuCard, isUnavailable && styles.menuCardDisabled]}
+                activeOpacity={0.7}
                 onPress={() => onMenuItemPress?.(item)}
               >
-                <View style={styles.menuImageWrapper}>
+                <View style={styles.menuImageContainer}>
                   <Image
                     source={
                       item.image
@@ -129,29 +125,32 @@ const ShopDetailMenuSection: React.FC<ShopDetailMenuSectionProps> = ({
                     }
                     style={styles.menuImage}
                   />
+                  {isUnavailable && (
+                    <View style={styles.soldOutOverlay}>
+                      <Text style={styles.soldOutText}>Sold out</Text>
+                    </View>
+                  )}
                 </View>
-                <Text style={styles.menuName} numberOfLines={2}>
-                  {item.item}
-                </Text>
-                {item.description ? (
-                  <Text style={styles.menuDescription} numberOfLines={2}>
-                    {item.description}
+                <View style={styles.menuContent}>
+                  <Text style={styles.menuName} numberOfLines={2}>
+                    {item.item}
                   </Text>
-                ) : null}
-                <View style={styles.menuFooter}>
-                  <Text style={styles.menuPrice}>{item.price}</Text>
-                  <TouchableOpacity
-                    style={[
-                      styles.menuAddButton,
-                      isUnavailable && styles.menuAddButtonDisabled,
-                    ]}
-                    disabled={isUnavailable}
-                    onPress={() => onMenuItemPress?.(item)}
-                  >
-                    <Text style={styles.menuAddText}>
-                      {isUnavailable ? 'Sold out' : 'Add'}
+                  {item.description ? (
+                    <Text style={styles.menuDescription} numberOfLines={1}>
+                      {item.description}
                     </Text>
-                  </TouchableOpacity>
+                  ) : null}
+                  <View style={styles.menuFooter}>
+                    <Text style={styles.menuPrice}>{item.price}</Text>
+                    {!isUnavailable && (
+                      <TouchableOpacity
+                        style={styles.menuAddBtn}
+                        onPress={() => onMenuItemPress?.(item)}
+                      >
+                        <Ionicons name="add" size={16} color={ShopColors.textPrimary} />
+                      </TouchableOpacity>
+                    )}
+                  </View>
                 </View>
               </TouchableOpacity>
             );
@@ -159,6 +158,7 @@ const ShopDetailMenuSection: React.FC<ShopDetailMenuSectionProps> = ({
         </View>
       ) : (
         <View style={styles.emptyState}>
+          <Ionicons name="restaurant-outline" size={32} color={ShopColors.textSecondary} />
           <Text style={styles.emptyStateText}>Menu coming soon</Text>
         </View>
       )}
@@ -167,196 +167,202 @@ const ShopDetailMenuSection: React.FC<ShopDetailMenuSectionProps> = ({
 };
 
 const styles = StyleSheet.create({
-  sectionContainer: {
-    backgroundColor: ShopColors.background,
-    marginHorizontal: 12,
-    marginVertical: 12,
-    borderRadius: 16,
-    padding: 12,
+  container: {
+    paddingVertical: 24,
+    paddingHorizontal: 16,
+    paddingBottom: 64,
   },
   sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 16,
+  },
+  sectionLabel: {
+    fontSize: 11,
+    fontFamily: 'Poppins-SemiBold',
+    color: ShopColors.textSecondary,
+    textTransform: 'uppercase',
+    letterSpacing: 1.2,
+    marginBottom: 4,
   },
   sectionTitle: {
-    fontSize: 18,
+    fontSize: 22,
     fontFamily: 'Poppins-Bold',
     color: ShopColors.textPrimary,
+    letterSpacing: -0.5,
   },
-  sectionSubtitle: {
-    fontSize: 14,
+  sectionTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    justifyContent: 'space-between',
+  },
+  itemCount: {
+    fontSize: 13,
     fontFamily: 'Poppins-Regular',
     color: ShopColors.textSecondary,
-    marginTop: 4,
   },
-  menuCategoryCount: {
-    fontSize: 12,
-    fontFamily: 'Poppins-Medium',
-    color: ShopColors.textSecondary,
+  divider: {
+    height: 1,
+    backgroundColor: ShopColors.border,
+    marginVertical: 28,
   },
-  sectionSpacer: {
-    marginTop: 16,
-  },
-  featuredScroll: {
-    marginRight: -12,
-    paddingRight: 12,
-  },
-  featuredList: {
-    paddingVertical: 4,
-    paddingLeft: 4,
+
+  // Featured Cards - Hero style
+  featuredScrollContent: {
+    paddingRight: 16,
   },
   featuredCard: {
-    width: 220,
-    backgroundColor: '#FFFFFF',
+    width: CARD_WIDTH,
+    height: 200,
     borderRadius: 16,
     overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: ShopColors.border,
-    marginRight: 12,
-    shadowColor: '#40506A',
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 4,
-  },
-  featuredImageWrapper: {
-    position: 'relative',
-    height: 130,
+    marginLeft: 12,
     backgroundColor: ShopColors.cardBackground,
+  },
+  featuredCardFirst: {
+    marginLeft: 0,
   },
   featuredImage: {
     width: '100%',
     height: '100%',
     resizeMode: 'cover',
   },
-  featuredPriceBadge: {
-    position: 'absolute',
-    top: 10,
-    left: 10,
-    backgroundColor: '#2BA245',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 12,
+  featuredOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0, 0, 0, 0.25)',
   },
-  featuredPriceText: {
-    fontSize: 14,
-    fontFamily: 'Poppins-Bold',
+  featuredBadge: {
+    position: 'absolute',
+    top: 12,
+    left: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 20,
+    gap: 4,
+  },
+  featuredBadgeText: {
+    fontSize: 11,
+    fontFamily: 'Poppins-SemiBold',
     color: '#FFFFFF',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   featuredContent: {
-    padding: 12,
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    padding: 16,
   },
   featuredName: {
-    fontSize: 16,
+    fontSize: 18,
     fontFamily: 'Poppins-Bold',
-    color: ShopColors.textPrimary,
+    color: '#FFFFFF',
+    marginBottom: 2,
+    textShadowColor: 'rgba(0, 0, 0, 0.4)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 3,
   },
-  featuredDescription: {
-    fontSize: 13,
-    fontFamily: 'Poppins-Regular',
-    color: ShopColors.textSecondary,
-    marginTop: 2,
+  featuredPrice: {
+    fontSize: 15,
+    fontFamily: 'Poppins-SemiBold',
+    color: 'rgba(255, 255, 255, 0.9)',
   },
-  featuredFooter: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+  featuredAddBtn: {
+    position: 'absolute',
+    bottom: 16,
+    right: 16,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: ShopColors.textPrimary,
     alignItems: 'center',
-    marginTop: 8,
+    justifyContent: 'center',
   },
-  featuredTag: {
-    fontSize: 12,
-    fontFamily: 'Poppins-Medium',
-    color: ShopColors.accent,
-    backgroundColor: ShopColors.highlight,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 12,
-  },
-  featuredAction: {
-    backgroundColor: '#E0ECFF',
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 12,
-  },
-  featuredActionText: {
-    fontSize: 13,
-    fontFamily: 'Poppins-Bold',
-    color: ShopColors.accent,
-  },
+
+  // Menu Grid - Clean cards
   menuGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    justifyContent: 'space-between',
+    marginHorizontal: -6,
   },
   menuCard: {
-    width: '48%',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    padding: 12,
-    borderWidth: 1,
-    borderColor: ShopColors.border,
-    marginBottom: 12,
-    shadowColor: '#40506A',
-    shadowOpacity: 0.05,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 3 },
-    elevation: 2,
+    width: MENU_CARD_WIDTH,
+    marginHorizontal: 6,
+    marginBottom: 16,
+    backgroundColor: ShopColors.cardBackground,
+    borderRadius: 12,
+    overflow: 'hidden',
   },
   menuCardDisabled: {
     opacity: 0.6,
   },
-  menuImageWrapper: {
-    alignItems: 'center',
-    marginBottom: 10,
+  menuImageContainer: {
+    width: '100%',
+    aspectRatio: 1,
+    backgroundColor: ShopColors.background,
   },
   menuImage: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
+    width: '100%',
+    height: '100%',
     resizeMode: 'cover',
   },
+  soldOutOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(255, 255, 255, 0.8)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  soldOutText: {
+    fontSize: 12,
+    fontFamily: 'Poppins-SemiBold',
+    color: ShopColors.textSecondary,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  menuContent: {
+    padding: 12,
+  },
   menuName: {
-    fontSize: 15,
-    fontFamily: 'Poppins-Bold',
+    fontSize: 14,
+    fontFamily: 'Poppins-SemiBold',
     color: ShopColors.textPrimary,
+    lineHeight: 18,
+    marginBottom: 4,
   },
   menuDescription: {
     fontSize: 12,
     fontFamily: 'Poppins-Regular',
     color: ShopColors.textSecondary,
-    marginTop: 4,
-    minHeight: 34,
+    lineHeight: 16,
+    marginBottom: 8,
   },
   menuFooter: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginTop: 10,
   },
   menuPrice: {
-    fontSize: 16,
+    fontSize: 15,
     fontFamily: 'Poppins-Bold',
     color: ShopColors.textPrimary,
   },
-  menuAddButton: {
-    backgroundColor: ShopColors.accent,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 10,
-  },
-  menuAddButtonDisabled: {
-    backgroundColor: ShopColors.disabled,
-  },
-  menuAddText: {
-    fontSize: 13,
-    fontFamily: 'Poppins-Bold',
-    color: '#FFFFFF',
-  },
-  emptyState: {
-    paddingVertical: 24,
+  menuAddBtn: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    borderWidth: 1.5,
+    borderColor: ShopColors.border,
     alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  // Empty State
+  emptyState: {
+    paddingVertical: 48,
+    alignItems: 'center',
+    gap: 12,
   },
   emptyStateText: {
     fontSize: 14,
