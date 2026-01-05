@@ -1,4 +1,5 @@
-import React, { useMemo } from 'react';
+import { ShopColors } from '@/constants/color';
+import React from 'react';
 import {
   Image,
   ImageSourcePropType,
@@ -7,7 +8,6 @@ import {
   View,
 } from 'react-native';
 import { ThemedText } from '@/components/themed-text';
-import { useColorScheme } from '@/hooks/use-color-scheme';
 
 export type FeaturedTouristSpotCardProps = {
   image: string | ImageSourcePropType;
@@ -24,27 +24,38 @@ const FeaturedTouristSpotCard: React.FC<FeaturedTouristSpotCardProps> = ({
   categories,
   onPress,
   width = 260,
-  height = 140,
+  height = 180,
 }) => {
-  const scheme = useColorScheme();
-  const isDark = scheme === 'dark';
-  const overlayBg = useMemo(
-    () => (isDark ? 'rgba(0,0,0,0.20)' : 'rgba(0,0,0,0.15)'),
-    [isDark]
-  );
   const source = typeof image === 'string' ? { uri: image } : image;
+  
   return (
-    <Pressable style={[styles.container, { width, height }]} onPress={onPress}>
-      <Image source={source} style={styles.image} resizeMode="cover" />
-      <View style={[styles.overlay, { backgroundColor: overlayBg }]}>
+    <Pressable 
+      style={[styles.container, { width }]} 
+      onPress={onPress}
+    >
+      <View style={[styles.imageContainer, { height }]}>
+        <Image source={source} style={styles.image} resizeMode="cover" />
+      </View>
+
+      <View style={styles.contentContainer}>
         <ThemedText
-          type="card-title-extra-small"
+          type="card-title-small"
           weight="bold"
           numberOfLines={1}
-          style={[styles.title]}
+          style={styles.name}
         >
           {name}
         </ThemedText>
+        
+        {categories && categories.length > 0 && (
+          <ThemedText 
+            type="label-small" 
+            numberOfLines={1} 
+            style={styles.category}
+          >
+            {categories.join(', ')}
+          </ThemedText>
+        )}
       </View>
     </Pressable>
   );
@@ -54,22 +65,32 @@ export default FeaturedTouristSpotCard;
 
 const styles = StyleSheet.create({
   container: {
-    borderRadius: 18,
+    marginRight: 16,
+    backgroundColor: 'transparent',
+  },
+  imageContainer: {
+    width: '100%',
+    borderRadius: 12,
     overflow: 'hidden',
-    backgroundColor: '#cdd3dd',
+    marginBottom: 12,
+    backgroundColor: ShopColors.inputBackground,
+    borderWidth: 1,
+    borderColor: ShopColors.border,
   },
-  image: { width: '100%', height: '100%' },
-  overlay: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 0,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
+  image: {
+    width: '100%',
+    height: '100%',
   },
-  title: {
-    color: '#fff',
+  contentContainer: {
+    paddingHorizontal: 0,
+  },
+  name: {
+    color: ShopColors.textPrimary,
+    fontSize: 16,
+    marginBottom: 4,
+  },
+  category: {
+    color: ShopColors.textSecondary,
     fontSize: 14,
-    fontWeight: '800',
-  }
+  },
 });
