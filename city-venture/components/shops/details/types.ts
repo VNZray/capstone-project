@@ -99,6 +99,20 @@ export type BusinessProfileAmenity = {
   available: boolean;
 };
 
+export type BusinessProfileService = {
+  id: string;
+  name: string;
+  description?: string;
+  image?: string;
+  basePrice: number;
+  priceType: 'fixed' | 'per_hour' | 'per_day' | 'per_week' | 'per_month' | 'per_session' | 'per_person' | 'custom';
+  requirements?: string;
+  contactMethods?: { type: string; value: string }[];
+  contactNotes?: string;
+  status: 'active' | 'inactive' | 'seasonal';
+  categoryName?: string;
+};
+
 export type BusinessProfileVerification = {
   isVerified: boolean;
   badges: string[];
@@ -150,6 +164,7 @@ export type BusinessProfileView = {
   reviews: BusinessProfileReview[];
   gallery: BusinessProfileGalleryItem[];
   amenities: BusinessProfileAmenity[];
+  services: BusinessProfileService[];
   businessHours: BusinessProfileHours;
   operatingStatus?: BusinessProfileOperatingStatus;
   verification?: BusinessProfileVerification;

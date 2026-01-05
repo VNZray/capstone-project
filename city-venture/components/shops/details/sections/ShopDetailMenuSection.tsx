@@ -1,23 +1,38 @@
-import type { BusinessProfileMenuItem, BusinessProfileView } from '@/components/shops/details/types';
+import type { BusinessProfileMenuItem, BusinessProfileService, BusinessProfileView } from '@/components/shops/details/types';
 import { ShopColors } from '@/constants/color';
 import { Ionicons } from '@expo/vector-icons';
-import React, { useMemo } from 'react';
-import { Dimensions, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import React, { useMemo, useState } from 'react';
+import { Dimensions, Image, LayoutAnimation, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, UIManager, View } from 'react-native';
+
+// Enable LayoutAnimation on Android
+if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
 
 const { width: screenWidth } = Dimensions.get('window');
 const CARD_WIDTH = screenWidth * 0.7;
 const MENU_CARD_WIDTH = (screenWidth - 48) / 2;
 
+// Brand colors
+const NAVY = '#0A1B47';
+const GOLD = '#C5A059';
+const GOLD_LIGHT = 'rgba(197, 160, 89, 0.12)';
+
 interface ShopDetailMenuSectionProps {
   shop: BusinessProfileView;
   onMenuItemPress?: (item: BusinessProfileMenuItem) => void;
+  onServicePress?: (service: BusinessProfileService) => void;
 }
 
 const ShopDetailMenuSection: React.FC<ShopDetailMenuSectionProps> = ({
   shop,
   onMenuItemPress,
+  onServicePress,
 }) => {
+  const [isServicesExpanded, setIsServicesExpanded] = useState(false);
+  
   const menuCategories = useMemo(() => shop.menu ?? [], [shop.menu]);
+  const services = useMemo(() => shop.services ?? [], [shop.services]);
 
   const allMenuItems = useMemo(() => {
     return menuCategories.flatMap((category) => category.items ?? []);
@@ -31,6 +46,26 @@ const ShopDetailMenuSection: React.FC<ShopDetailMenuSectionProps> = ({
 
     return allMenuItems.slice(0, 3);
   }, [allMenuItems]);
+
+  const toggleServicesExpanded = () => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    setIsServicesExpanded(!isServicesExpanded);
+  };
+
+  const formatPrice = (price: number, priceType: string) => {
+    const formattedPrice = `₱${price.toLocaleString()}`;
+    const priceTypeLabels: Record<string, string> = {
+      fixed: '',
+      per_hour: '/hr',
+      per_day: '/day',
+      per_week: '/week',
+      per_month: '/mo',
+      per_session: '/session',
+      per_person: '/person',
+      custom: '',
+    };
+    return `${formattedPrice}${priceTypeLabels[priceType] || ''}`;
+  };
 
   return (
     <View style={styles.container}>
@@ -90,6 +125,93 @@ const ShopDetailMenuSection: React.FC<ShopDetailMenuSectionProps> = ({
           <Text style={styles.emptyStateText}>No featured offers yet</Text>
         </View>
       )}
+
+      {/* Services Section - Collapsible */}
+      <>
+        <View style={styles.divider} />
+        
+        <TouchableOpacity 
+          style={styles.servicesHeader} 
+          activeOpacity={0.7}
+          onPress={toggleServicesExpanded}
+        >
+          <View style={styles.servicesHeaderLeft}>
+            <View style={styles.servicesIconContainer}>
+              <Ionicons name="construct-outline" size={18} color={GOLD} />
+            </View>
+            <View>
+              <Text style={styles.sectionLabel}>Available</Text>
+              <Text style={styles.sectionTitle}>Services</Text>
+            </View>
+          </View>
+          <View style={styles.servicesHeaderRight}>
+            <Text style={styles.servicesCount}>{services.length}</Text>
+            <View style={[styles.chevronContainer, isServicesExpanded && styles.chevronExpanded]}>
+              <Ionicons 
+                name="chevron-down" 
+                size={20} 
+                color={ShopColors.textSecondary} 
+              />
+            </View>
+          </View>
+        </TouchableOpacity>
+
+        {isServicesExpanded && (
+          services.length > 0 ? (
+            <View style={styles.servicesGrid}>
+              {services.map((service) => (
+                <TouchableOpacity
+                  key={service.id}
+                  style={styles.serviceCard}
+                  activeOpacity={0.7}
+                  onPress={() => onServicePress?.(service)}
+                >
+                  <View style={styles.serviceImageContainer}>
+                    <Image
+                      source={
+                        service.image
+                          ? { uri: service.image }
+                          : require('@/assets/images/placeholder.png')
+                      }
+                      style={styles.serviceImage}
+                    />
+                    <View style={styles.serviceImageAccent} />
+                  </View>
+                  <View style={styles.serviceContent}>
+                    <Text style={styles.serviceName} numberOfLines={2}>
+                      {service.name}
+                    </Text>
+                    {service.categoryName && (
+                      <Text style={styles.serviceCategory} numberOfLines={1}>
+                        {service.categoryName}
+                      </Text>
+                    )}
+                    {service.description && (
+                      <Text style={styles.serviceDescription} numberOfLines={2}>
+                        {service.description}
+                      </Text>
+                    )}
+                    <View style={styles.serviceFooter}>
+                      <Text style={styles.servicePrice}>
+                        {formatPrice(service.basePrice, service.priceType)}
+                      </Text>
+                      <View style={styles.inquireButton}>
+                        <Text style={styles.inquireButtonText}>Inquire</Text>
+                        <Ionicons name="arrow-forward" size={12} color={NAVY} />
+                      </View>
+                    </View>
+                  </View>
+                </TouchableOpacity>
+              ))}
+            </View>
+          ) : (
+            <View style={styles.servicesEmptyState}>
+              <Ionicons name="construct-outline" size={28} color={ShopColors.textSecondary} />
+              <Text style={styles.servicesEmptyText}>No services available yet</Text>
+            </View>
+          )
+        )}
+      </>
 
       {/* Divider */}
       <View style={styles.divider} />
@@ -366,6 +488,141 @@ const styles = StyleSheet.create({
   },
   emptyStateText: {
     fontSize: 14,
+    fontFamily: 'Poppins-Medium',
+    color: ShopColors.textSecondary,
+  },
+
+  // Services Section
+  servicesHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 8,
+  },
+  servicesHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  servicesIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: GOLD_LIGHT,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  servicesHeaderRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  servicesCount: {
+    fontSize: 13,
+    fontFamily: 'Poppins-SemiBold',
+    color: GOLD,
+    backgroundColor: GOLD_LIGHT,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  chevronContainer: {
+    transform: [{ rotate: '0deg' }],
+  },
+  chevronExpanded: {
+    transform: [{ rotate: '180deg' }],
+  },
+  servicesGrid: {
+    marginTop: 16,
+    gap: 14,
+  },
+  serviceCard: {
+    flexDirection: 'row',
+    backgroundColor: ShopColors.cardBackground,
+    borderRadius: 14,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: ShopColors.border,
+  },
+  serviceImageContainer: {
+    width: 110,
+    height: 130,
+    position: 'relative',
+  },
+  serviceImage: {
+    width: '100%',
+    height: '100%',
+    resizeMode: 'cover',
+  },
+  serviceImageAccent: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: 4,
+    backgroundColor: GOLD,
+  },
+  serviceContent: {
+    flex: 1,
+    padding: 12,
+    justifyContent: 'space-between',
+  },
+  serviceName: {
+    fontSize: 15,
+    fontFamily: 'Poppins-SemiBold',
+    color: ShopColors.textPrimary,
+    lineHeight: 20,
+    marginBottom: 2,
+  },
+  serviceCategory: {
+    fontSize: 11,
+    fontFamily: 'Poppins-Medium',
+    color: GOLD,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom: 4,
+  },
+  serviceDescription: {
+    fontSize: 12,
+    fontFamily: 'Poppins-Regular',
+    color: ShopColors.textSecondary,
+    lineHeight: 16,
+  },
+  serviceFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 8,
+  },
+  servicePrice: {
+    fontSize: 15,
+    fontFamily: 'Poppins-Bold',
+    color: NAVY,
+  },
+  inquireButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: GOLD_LIGHT,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+  },
+  inquireButtonText: {
+    fontSize: 12,
+    fontFamily: 'Poppins-SemiBold',
+    color: NAVY,
+  },
+  servicesEmptyState: {
+    paddingVertical: 32,
+    alignItems: 'center',
+    gap: 10,
+    backgroundColor: GOLD_LIGHT,
+    borderRadius: 12,
+    marginTop: 12,
+  },
+  servicesEmptyText: {
+    fontSize: 13,
     fontFamily: 'Poppins-Medium',
     color: ShopColors.textSecondary,
   },
