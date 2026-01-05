@@ -4,18 +4,27 @@ import {
   FormControl,
   FormLabel,
   Input,
-  Select,
-  Option,
   FormHelperText,
   Divider,
   Box,
+  Checkbox,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
+  Sheet,
+  CircularProgress,
 } from "@mui/joy";
 import Container from "@/src/components/Container";
 import Button from "@/src/components/Button";
-import { RotateCw } from "lucide-react";
+import { RotateCw, ChevronDown } from "lucide-react";
 import Typography from "@/src/components/Typography";
-import { fetchRolesByBusinessId, type Role } from "@/src/services/manage-staff/StaffService";
 import { useBusiness } from "@/src/context/BusinessContext";
+import {
+  fetchAvailableStaffPermissions,
+  fetchStaffPermissions,
+  type PermissionCategory,
+  type Permission,
+} from "@/src/services/manage-staff/StaffService";
 
 export type StaffEditData = {
   first_name: string;
@@ -23,7 +32,8 @@ export type StaffEditData = {
   last_name?: string;
   email: string;
   phone_number?: string;
-  role: string;
+  title?: string;
+  permission_ids: number[];
 };
 
 type StaffEditModalProps = {
@@ -31,7 +41,15 @@ type StaffEditModalProps = {
   onClose: () => void;
   onSave: (data: StaffEditData) => void;
   onResetPassword: () => void;
-  initialData?: StaffEditData;
+  initialData?: {
+    id?: string;
+    first_name: string;
+    middle_name?: string;
+    last_name?: string;
+    email: string;
+    phone_number?: string;
+    title?: string;
+  };
 };
 
 export default function StaffEditModal({
@@ -47,16 +65,40 @@ export default function StaffEditModal({
   const [lastName, setLastName] = React.useState("");
   const [email, setEmail] = React.useState("");
   const [phone, setPhone] = React.useState("");
-  const [role, setRole] = React.useState<string>("");
+  const [title, setTitle] = React.useState("");
+  const [selectedPermissions, setSelectedPermissions] = React.useState<Set<number>>(new Set());
   const [error, setError] = React.useState<string>("");
-  const [businessRoles, setBusinessRoles] = React.useState<Role[]>([]);
+  const [permissionCategories, setPermissionCategories] = React.useState<PermissionCategory[]>([]);
   const [loading, setLoading] = React.useState(false);
 
+  // Load permissions when modal opens
   React.useEffect(() => {
-    if (!open) return;
-    loadBusinessRoles();
-  }, [open, businessDetails?.id]);
+    if (!open || !businessDetails?.id) return;
+    loadPermissions();
+  }, [open, businessDetails?.id, initialData?.id]);
 
+  const loadPermissions = async () => {
+    if (!businessDetails?.id) return;
+    
+    setLoading(true);
+    try {
+      // Load available permissions
+      const categories = await fetchAvailableStaffPermissions(businessDetails.id);
+      setPermissionCategories(categories);
+      
+      // Load current staff permissions if editing existing staff
+      if (initialData?.id) {
+        const currentPerms = await fetchStaffPermissions(initialData.id);
+        setSelectedPermissions(new Set(currentPerms.map(p => p.id)));
+      }
+    } catch (err) {
+      console.error("Failed to load permissions:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Reset form when initialData changes
   React.useEffect(() => {
     if (!open || !initialData) return;
     setFirstName(initialData.first_name || "");
@@ -64,22 +106,35 @@ export default function StaffEditModal({
     setLastName(initialData.last_name || "");
     setEmail(initialData.email || "");
     setPhone(initialData.phone_number || "");
-    setRole(initialData.role || "");
+    setTitle(initialData.title || "");
     setError("");
   }, [open, initialData]);
 
-  const loadBusinessRoles = async () => {
-    if (!businessDetails?.id) return;
-    
-    setLoading(true);
-    try {
-      const roles = await fetchRolesByBusinessId(businessDetails.id);
-      setBusinessRoles(roles);
-    } catch (err) {
-      console.error("Failed to load business roles:", err);
-    } finally {
-      setLoading(false);
-    }
+  const togglePermission = (permissionId: number) => {
+    setSelectedPermissions(prev => {
+      const next = new Set(prev);
+      if (next.has(permissionId)) {
+        next.delete(permissionId);
+      } else {
+        next.add(permissionId);
+      }
+      return next;
+    });
+  };
+
+  const toggleCategory = (permissions: Permission[]) => {
+    const allSelected = permissions.every(p => selectedPermissions.has(p.id));
+    setSelectedPermissions(prev => {
+      const next = new Set(prev);
+      permissions.forEach(p => {
+        if (allSelected) {
+          next.delete(p.id);
+        } else {
+          next.add(p.id);
+        }
+      });
+      return next;
+    });
   };
 
   const canSubmit = firstName.trim().length > 0 && email.trim().length > 0;
@@ -99,7 +154,8 @@ export default function StaffEditModal({
       last_name: lastName.trim() || undefined,
       email: email.trim(),
       phone_number: phone.trim() || undefined,
-      role,
+      title: title.trim() || undefined,
+      permission_ids: Array.from(selectedPermissions),
     });
   };
 
@@ -108,7 +164,7 @@ export default function StaffEditModal({
       open={open}
       onClose={onClose}
       title="Edit Staff Member"
-      description="Update staff member details or reset their password"
+      description="Update staff member details and permissions"
       actions={[
         { label: "Cancel", onClick: onClose },
         {
@@ -121,7 +177,7 @@ export default function StaffEditModal({
     >
       <Container padding="0">
         <FormControl>
-          <FormLabel>First Name</FormLabel>
+          <FormLabel>First Name *</FormLabel>
           <Input
             placeholder="John"
             type="text"
@@ -151,7 +207,7 @@ export default function StaffEditModal({
           />
         </FormControl>
         <FormControl>
-          <FormLabel>Email</FormLabel>
+          <FormLabel>Email *</FormLabel>
           <Input
             placeholder="example@gmail.com"
             type="email"
@@ -171,25 +227,104 @@ export default function StaffEditModal({
           />
         </FormControl>
         <FormControl>
-          <FormLabel>Assign Role</FormLabel>
-          <Select 
-            value={role} 
-            onChange={(_e, val) => val && setRole(val)}
-            disabled={loading || businessRoles.length === 0}
-            placeholder={businessRoles.length === 0 ? "No roles available" : "Select a role"}
-          >
-            {businessRoles.map((businessRole) => (
-              <Option key={businessRole.id} value={businessRole.role_name}>
-                {businessRole.role_name}
-              </Option>
-            ))}
-          </Select>
-          {businessRoles.length === 0 && !loading && (
-            <FormHelperText>
-              Please create a role in "Manage Roles & Permissions" first.
-            </FormHelperText>
-          )}
+          <FormLabel>Title / Position</FormLabel>
+          <Input
+            placeholder="e.g., Manager, Receptionist, Front Desk"
+            type="text"
+            size="md"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+          />
+          <FormHelperText>
+            Descriptive title for this staff member's role
+          </FormHelperText>
         </FormControl>
+
+        <Divider sx={{ my: 2 }} />
+
+        <Box>
+          <Typography.Label>Manage Permissions</Typography.Label>
+          <Typography.Body size="sm" sx={{ color: "text.secondary", mb: 1 }}>
+            Select the permissions this staff member should have
+          </Typography.Body>
+          
+          {loading ? (
+            <Box sx={{ display: "flex", justifyContent: "center", py: 3 }}>
+              <CircularProgress size="sm" />
+            </Box>
+          ) : permissionCategories.length === 0 ? (
+            <FormHelperText>
+              No permissions available.
+            </FormHelperText>
+          ) : (
+            <Sheet variant="outlined" sx={{ borderRadius: "sm", overflow: "hidden", maxHeight: 300, overflowY: "auto" }}>
+              {permissionCategories.map((category) => {
+                const allSelected = category.permissions.every(p => selectedPermissions.has(p.id));
+                const someSelected = category.permissions.some(p => selectedPermissions.has(p.id));
+                
+                return (
+                  <Accordion key={category.category_name}>
+                    <AccordionSummary
+                      indicator={<ChevronDown size={16} />}
+                      sx={{ 
+                        "& .MuiAccordionSummary-button": { 
+                          justifyContent: "space-between" 
+                        }
+                      }}
+                    >
+                      <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                        <Checkbox
+                          checked={allSelected}
+                          indeterminate={someSelected && !allSelected}
+                          onChange={() => toggleCategory(category.permissions)}
+                          onClick={(e) => e.stopPropagation()}
+                          size="sm"
+                        />
+                        <Typography.Label>{category.category_name}</Typography.Label>
+                        <Typography.Body size="sm" sx={{ color: "text.tertiary" }}>
+                          ({category.permissions.filter(p => selectedPermissions.has(p.id)).length}/{category.permissions.length})
+                        </Typography.Body>
+                      </Box>
+                    </AccordionSummary>
+                    <AccordionDetails>
+                      <Box sx={{ pl: 4, display: "flex", flexDirection: "column", gap: 1 }}>
+                        {category.permissions.map((permission) => (
+                          <Box 
+                            key={permission.id} 
+                            sx={{ 
+                              display: "flex", 
+                              alignItems: "flex-start", 
+                              gap: 1,
+                              cursor: "pointer",
+                              "&:hover": { bgcolor: "background.level1" },
+                              p: 0.5,
+                              borderRadius: "sm"
+                            }}
+                            onClick={() => togglePermission(permission.id)}
+                          >
+                            <Checkbox
+                              checked={selectedPermissions.has(permission.id)}
+                              onChange={() => togglePermission(permission.id)}
+                              size="sm"
+                            />
+                            <Box>
+                              <Typography.Body size="sm">{permission.name}</Typography.Body>
+                              {permission.description && (
+                                <Typography.Body size="sm" sx={{ color: "text.tertiary" }}>
+                                  {permission.description}
+                                </Typography.Body>
+                              )}
+                            </Box>
+                          </Box>
+                        ))}
+                      </Box>
+                    </AccordionDetails>
+                  </Accordion>
+                );
+              })}
+            </Sheet>
+          )}
+        </Box>
 
         <Divider sx={{ my: 2 }} />
 
@@ -211,7 +346,7 @@ export default function StaffEditModal({
         </Box>
       </Container>
       {error ? (
-        <FormHelperText color="danger" sx={{ mt: 1 }}>
+        <FormHelperText sx={{ color: "danger.500", mt: 1 }}>
           {error}
         </FormHelperText>
       ) : null}

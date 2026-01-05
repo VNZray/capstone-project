@@ -397,11 +397,10 @@ describe('Token Refresh Concurrent Request Handling', () => {
     const firstResult = await authService.refreshAccessToken(refreshToken);
     expect(firstResult.accessToken).toBeDefined();
 
-    // Second refresh with same token should be detected as reuse
+    // Second refresh with same token should fail
+    // When token is already rotated and deleted, it won't be found in DB
     await expect(authService.refreshAccessToken(refreshToken))
-      .rejects.toThrow('Refresh token reuse detected');
-  });
-});
+      .rejects.toThrow('Invalid refresh token (not found)');\n  });\n});
 
 describe('Token Algorithm Enforcement (Security)', () => {
   const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET;

@@ -38,8 +38,10 @@ export interface NavItemConfig {
   icon: LucideIcon;
   /** Required capabilities to show this nav item */
   requiredCapabilities?: (keyof BusinessCapabilities)[];
-  /** Required roles to show this nav item */
+  /** Required roles to show this nav item (legacy - prefer requiredPermissions) */
   requiredRoles?: string[];
+  /** Required permissions to show this nav item (at least one must match) */
+  requiredPermissions?: string[];
   /** Child navigation items (for expandable sections) */
   children?: NavItemConfig[];
   /** Whether this is a section header (expandable) */

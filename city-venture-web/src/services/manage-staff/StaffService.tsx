@@ -1,3 +1,11 @@
+/**
+ * Staff Service - Simplified RBAC
+ * 
+ * After RBAC simplification:
+ * - All staff get the single "Staff" role automatically
+ * - Permissions are assigned per-user via /staff/:id/permissions endpoints
+ */
+
 import apiClient from "../apiClient";
 
 export interface StaffMember {
@@ -12,32 +20,29 @@ export interface StaffMember {
   password?: string;
   user_profile?: string;
   is_active: boolean;
-  role?: string;
+  title?: string;  // Staff title/position (e.g., "Manager", "Receptionist")
+  permissions?: StaffPermission[];
+}
+
+export interface StaffPermission {
+  id: number;
+  name: string;
+  description?: string;
 }
 
 export interface Permission {
   id: number;
   name: string;
   description: string;
-  can_add: boolean;
-  can_view: boolean;
-  can_update: boolean;
-  can_delete: boolean;
-  permission_for: string;
+  scope?: string;
+  category_name?: string;
 }
 
-export interface Role {
-  id: number;
-  role_name: string;
-  role_description: string | null;
-  role_type?: 'system' | 'preset' | 'business';
-  role_for: string | null;
-  is_custom?: boolean;
-  is_immutable?: boolean;
-  based_on_role_id?: number | null;
-  based_on_name?: string;
-  permission_count?: number;
-  user_count?: number;
+export interface PermissionCategory {
+  category_id: number;
+  category_name: string;
+  sort_order: number;
+  permissions: Permission[];
 }
 
 /**
@@ -55,6 +60,25 @@ export const fetchStaffByBusinessId = async (
     return Array.isArray(data) ? data : [];
   } catch (error) {
     console.error("Error fetching staff:", error);
+    return [];
+  }
+};
+
+/**
+ * Fetch all staff members with their permissions
+ */
+export const fetchStaffWithPermissions = async (
+  business_id: string
+): Promise<StaffMember[]> => {
+  if (!business_id) return [];
+
+  try {
+    const { data } = await apiClient.get<StaffMember[]>(
+      `/staff/business/${business_id}/with-permissions`
+    );
+    return Array.isArray(data) ? data : [];
+  } catch (error) {
+    console.error("Error fetching staff with permissions:", error);
     return [];
   }
 };
@@ -85,6 +109,16 @@ export const updateStaffById = async (
 };
 
 /**
+ * Update staff title
+ */
+export const updateStaffTitle = async (
+  id: string,
+  title: string
+): Promise<void> => {
+  await apiClient.put(`/staff/${id}/title`, { title });
+};
+
+/**
  * Delete staff member by ID
  */
 export const deleteStaffById = async (id: string) => {
@@ -103,64 +137,76 @@ export const toggleStaffActive = async (
   await apiClient.put(`/users/${user_id}`, { is_active: !is_active });
 };
 
+// Staff role ID constant (matches backend/services/roleService.js)
+const STAFF_ROLE_ID = 6;
+
 /**
- * Fetch all roles
+ * Onboard a new staff member
+ * Creates user account + staff record in one transaction
+ * Staff automatically gets the "Staff" role; permissions are assigned separately
  */
-export const fetchAllRoles = async () => {
-  const { data } = await apiClient.get(`/user-roles`);
+export const onboardStaff = async (staffData: {
+  first_name: string;
+  last_name?: string;
+  email: string;
+  phone_number?: string;
+  password?: string;
+  business_id: string;
+  title?: string;
+  permission_ids?: number[];
+}): Promise<StaffMember & { temp_password: string; invitation_token: string }> => {
+  // Always assign the Staff role (role_id: 6)
+  const payload = {
+    ...staffData,
+    role_id: STAFF_ROLE_ID,
+  };
+  const { data } = await apiClient.post(`/staff/onboard`, payload);
   return data;
 };
 
+// ============================================================
+// STAFF PERMISSION MANAGEMENT
+// ============================================================
+
 /**
- * Fetch roles by role_for (Business or Tourism roles)
+ * Get permissions for a specific staff member
  */
-export const fetchRolesByRoleFor = async (roleFor: string = 'Business'): Promise<Role[]> => {
-  const { data } = await apiClient.get<Role[]>(`/user-roles/role-for/${roleFor}`);
-  return data;
+export const fetchStaffPermissions = async (
+  staffId: string
+): Promise<StaffPermission[]> => {
+  const { data } = await apiClient.get<{ staff_id: string; user_id: string; permissions: StaffPermission[] }>(
+    `/staff/${staffId}/permissions`
+  );
+  return data.permissions || [];
 };
 
 /**
- * Fetch roles by business (RBAC business roles)
- * Uses the new RBAC endpoint that returns business-specific roles
+ * Update permissions for a staff member
+ * Replaces all existing permissions with the new set
  */
-export const fetchRolesByBusinessId = async (businessId: string): Promise<Role[]> => {
-  const { data } = await apiClient.get<Role[]>(`/roles/business/${businessId}`);
-  return data;
+export const updateStaffPermissions = async (
+  staffId: string,
+  permissionIds: number[]
+): Promise<void> => {
+  await apiClient.put(`/staff/${staffId}/permissions`, { permission_ids: permissionIds });
 };
 
 /**
- * Fetch preset roles (templates available to all businesses)
- * These are standard role templates that can be assigned to staff
+ * Get available permissions for staff assignment
+ * Returns permissions grouped by category, filtered for business scope
  */
-export const fetchPresetRoles = async (): Promise<Role[]> => {
-  const { data } = await apiClient.get<Role[]>(`/roles/presets`);
+export const fetchAvailableStaffPermissions = async (
+  _businessId: string
+): Promise<PermissionCategory[]> => {
+  const { data } = await apiClient.get<PermissionCategory[]>(
+    `/staff/permissions/available`
+  );
   return data;
 };
 
-/**
- * Fetch both business roles and preset roles for staff assignment
- * Returns a combined list with preset roles clearly marked
- */
-export const fetchAvailableRolesForStaff = async (businessId: string): Promise<Role[]> => {
-  try {
-    const [businessRoles, presetRoles] = await Promise.all([
-      fetchRolesByBusinessId(businessId),
-      fetchPresetRoles(),
-    ]);
-    
-    // Combine: business roles first, then presets that aren't duplicated
-    const businessRoleNames = new Set(businessRoles.map(r => r.role_name.toLowerCase()));
-    const uniquePresets = presetRoles.filter(
-      preset => !businessRoleNames.has(preset.role_name.toLowerCase())
-    );
-    
-    return [...businessRoles, ...uniquePresets];
-  } catch (error) {
-    console.error("Error fetching available roles:", error);
-    // Fallback to just business roles if preset fetch fails
-    return fetchRolesByBusinessId(businessId);
-  }
-};
+// ============================================================
+// PERMISSION UTILITIES (for backward compatibility)
+// ============================================================
 
 /**
  * Fetch all permissions
@@ -171,91 +217,10 @@ export const fetchAllPermissions = async (): Promise<Permission[]> => {
 };
 
 /**
- * Fetch permissions for a role
+ * Fetch all roles (legacy - still useful for system roles display)
  */
-export const fetchRolePermissions = async (roleId: number): Promise<Permission[]> => {
-  const { data } = await apiClient.get<Permission[]>(`/permissions/role/${roleId}`);
-  return data;
-};
-
-/**
- * Onboard a new staff member
- * Creates user account + staff record in one transaction
- * Returns staff info with temp_password for email invitation
- */
-export const onboardStaff = async (staffData: {
-  first_name: string;
-  last_name?: string;
-  email: string;
-  phone_number?: string;
-  password?: string;
-  business_id: string;
-  role_id: number;
-}): Promise<StaffMember & { temp_password: string; invitation_token: string }> => {
-  const { data } = await apiClient.post(`/staff/onboard`, staffData);
-  return data;
-};
-
-/**
- * Create a new permission
- */
-export const createPermission = async (permissionData: {
-  name: string;
-  description: string;
-  can_add: boolean;
-  can_view: boolean;
-  can_update: boolean;
-  can_delete: boolean;
-  permission_for: string;
-}) => {
-  const { data } = await apiClient.post(`/permissions`, permissionData);
-  return data;
-};
-
-/**
- * Create a new role
- */
-export const createRole = async (roleData: {
-  role_name: string;
-  description: string;
-  role_for?: string | undefined | null;
-}): Promise<Role> => {
-  const { data } = await apiClient.post(`/user-roles`, roleData);
-  return data;
-};
-
-/**
- * Assign permissions to a role
- */
-export const assignRolePermissions = async (
-  roleId: number,
-  permissionIds: number[]
-) => {
-  console.log(`Assigning ${permissionIds.length} permissions to role ${roleId}`);
-  const { data } = await apiClient.post(`/permissions/role_permission`, {
-    user_role_id: roleId,
-    permission_ids: permissionIds,
-  });
-  console.log("Assign permissions response:", data);
-  return data;
-};
-
-/**
- * Insert a new permission
- * @param permissionData - The data for the new permission
- */
-export const insertPermission = async (permissionData: {
-  name: string;
-  description: string;
-  can_add: boolean;
-  can_view: boolean;
-  can_update: boolean;
-  can_delete: boolean;
-  business_id: string | null | undefined;
-}) => {
-  console.log("Inserting permission with data:", permissionData);
-  const { data } = await apiClient.post("/permissions", permissionData);
-  console.log("Insert permission response:", data);
+export const fetchAllRoles = async () => {
+  const { data } = await apiClient.get(`/user-roles`);
   return data;
 };
 

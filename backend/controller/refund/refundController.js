@@ -239,6 +239,7 @@ export async function getOrderRefundStatus(req, res) {
     const { orderId } = req.params;
     const userId = req.user?.id;
     const userRole = await ensureUserRole(req);
+    const roleName = userRole?.roleName || userRole;
 
     const refunds = await refundService.getRefundsByResourceId(
       refundService.REFUND_FOR.ORDER,
@@ -253,7 +254,7 @@ export async function getOrderRefundStatus(req, res) {
     }
 
     // Filter by ownership if Tourist
-    if (userRole === 'Tourist') {
+    if (roleName === 'Tourist') {
       const ownedRefunds = refunds.filter(r => r.requested_by === userId);
       if (ownedRefunds.length === 0) {
         return res.status(403).json({
@@ -329,6 +330,7 @@ export async function getRefundById(req, res) {
     const { refundId } = req.params;
     const userId = req.user?.id;
     const userRole = await ensureUserRole(req);
+    const roleName = userRole?.roleName || userRole;
 
     const refund = await refundService.getRefundById(refundId);
 
@@ -340,7 +342,7 @@ export async function getRefundById(req, res) {
     }
 
     // Ownership check for Tourist
-    if (userRole === 'Tourist' && refund.requested_by !== userId) {
+    if (roleName === 'Tourist' && refund.requested_by !== userId) {
       return res.status(403).json({
         success: false,
         message: 'Access denied'

@@ -1,6 +1,7 @@
 import { ShopColors } from '@/constants/color';
 import type {
   BusinessProfileMenuItem,
+  BusinessProfileService,
   BusinessProfileView,
 } from '@/components/shops/details/types';
 import {
@@ -17,6 +18,7 @@ import {
   Dimensions,
   FlatList,
   Image,
+  Linking,
   Modal,
   StyleSheet,
   Text,
@@ -99,6 +101,72 @@ const ShopDetail: React.FC<ShopDetailProps> = ({
     setQuantity(1);
     setSpecialRequests('');
   }, []);
+
+  const handleServicePress = useCallback((service: BusinessProfileService) => {
+    // Format price for display
+    const priceTypeLabels: Record<string, string> = {
+      fixed: '',
+      per_hour: '/hr',
+      per_day: '/day',
+      per_week: '/week',
+      per_month: '/mo',
+      per_session: '/session',
+      per_person: '/person',
+      custom: '',
+    };
+    const formattedPrice = `₱${service.basePrice.toLocaleString()}${priceTypeLabels[service.priceType] || ''}`;
+    
+    // Build contact options
+    const contactOptions: { text: string; onPress: () => void }[] = [];
+    
+    if (service.contactMethods && service.contactMethods.length > 0) {
+      service.contactMethods.forEach((method) => {
+        const label = method.type.charAt(0).toUpperCase() + method.type.slice(1);
+        contactOptions.push({
+          text: `${label}: ${method.value}`,
+          onPress: () => {
+            if (method.type === 'phone') {
+              Linking.openURL(`tel:${method.value}`);
+            } else if (method.type === 'email') {
+              Linking.openURL(`mailto:${method.value}?subject=Inquiry about ${service.name}`);
+            } else if (method.type === 'facebook') {
+              Linking.openURL(method.value.startsWith('http') ? method.value : `https://facebook.com/${method.value}`);
+            } else if (method.type === 'viber') {
+              Linking.openURL(`viber://chat?number=${method.value.replace(/\D/g, '')}`);
+            } else if (method.type === 'whatsapp') {
+              Linking.openURL(`whatsapp://send?phone=${method.value.replace(/\D/g, '')}`);
+            }
+          },
+        });
+      });
+    }
+    
+    // If no contact methods, use business phone if available
+    if (contactOptions.length === 0 && shop.contact) {
+      contactOptions.push({
+        text: `Call: ${shop.contact}`,
+        onPress: () => Linking.openURL(`tel:${shop.contact}`),
+      });
+    }
+    
+    // Build the message
+    let message = `${service.description || 'No description available'}\n\nPrice: ${formattedPrice}`;
+    if (service.requirements) {
+      message += `\n\nRequirements: ${service.requirements}`;
+    }
+    if (service.contactNotes) {
+      message += `\n\n${service.contactNotes}`;
+    }
+    
+    Alert.alert(
+      service.name,
+      message,
+      [
+        ...contactOptions.slice(0, 3), // Limit to 3 contact options
+        { text: 'Close', style: 'cancel' },
+      ]
+    );
+  }, [shop.contact]);
 
   const handleQuantityChange = useCallback(
     (delta: number) => {
@@ -229,6 +297,7 @@ const ShopDetail: React.FC<ShopDetailProps> = ({
           <ShopDetailMenuSection
             shop={shop}
             onMenuItemPress={handleMenuItemPress}
+            onServicePress={handleServicePress}
           />
         );
       case 1:

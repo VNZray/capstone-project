@@ -57,9 +57,10 @@ export async function getOrdersByUserId(req, res) {
   }
 
   const userRole = await ensureUserRole(req);
+  const roleName = userRole?.roleName || userRole;
 
   // Only admins may request arbitrary user IDs; everyone else is forced to their own ID
-  const effectiveUserId = userRole === 'Admin' ? userId : requestingUserId;
+  const effectiveUserId = roleName === 'Admin' ? userId : requestingUserId;
   
   try {
     const [data] = await db.query("CALL GetOrdersByUserId(?)", [effectiveUserId]);
@@ -113,14 +114,15 @@ export async function getOrderById(req, res) {
     console.log('[getOrderById] Order found. Owner:', orderData.user_id, 'Business:', orderData.business_id);
     
     // Authorization check: user must own the order or be business owner/staff/admin
-    if (userRole !== 'Admin') {
-      const isTouristOwner = userRole === 'Tourist' && orderData.user_id === userId;
+    const roleName = userRole?.roleName || userRole;
+    if (roleName !== 'Admin' && roleName !== 'Tourism Officer') {
+      const isTouristOwner = roleName === 'Tourist' && orderData.user_id === userId;
       const isBusinessMember = await hasBusinessAccess(orderData.business_id, req.user, userRole);
 
       console.log('[getOrderById] Auth check - isTouristOwner:', isTouristOwner, 'isBusinessMember:', isBusinessMember);
 
       if (!isTouristOwner && !isBusinessMember) {
-        console.error('[getOrderById] Access denied for user:', userId, 'role:', userRole);
+        console.error('[getOrderById] Access denied for user:', userId, 'role:', roleName);
         return res.status(403).json({
           message: "Forbidden: you do not have access to this order"
         });

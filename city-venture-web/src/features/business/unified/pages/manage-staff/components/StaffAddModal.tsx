@@ -4,15 +4,20 @@ import {
   FormControl,
   FormLabel,
   Input,
-  Select,
-  Option,
   FormHelperText,
   CircularProgress,
+  Checkbox,
+  Box,
   Chip,
-  ListItemDecorator,
+  Tooltip,
 } from "@mui/joy";
-import Container from "@/src/components/Container";
-import { fetchAvailableRolesForStaff, type Role } from "@/src/services/manage-staff/StaffService";
+import Typography from "@/src/components/Typography";
+import { ChevronDown, ChevronUp, Mail, Phone, User, Briefcase, Shield, AlertCircle } from "lucide-react";
+import { 
+  fetchAvailableStaffPermissions, 
+  type PermissionCategory,
+  type Permission 
+} from "@/src/services/manage-staff/StaffService";
 
 export type StaffFormData = {
   first_name: string;
@@ -20,8 +25,8 @@ export type StaffFormData = {
   email: string;
   password: string;
   phone_number?: string;
-  role_id: number;
-  role_name?: string;
+  title?: string;
+  permission_ids: number[];
 };
 
 type StaffAddModalProps = {
@@ -42,52 +47,90 @@ export default function StaffAddModal({
   const [email, setEmail] = React.useState("");
   const [phone, setPhone] = React.useState("");
   const [password, setPassword] = React.useState("123456");
-  const [roleId, setRoleId] = React.useState<number | null>(null);
+  const [title, setTitle] = React.useState("");
+  const [selectedPermissions, setSelectedPermissions] = React.useState<Set<number>>(new Set());
   const [error, setError] = React.useState<string>("");
-  const [businessRoles, setBusinessRoles] = React.useState<Role[]>([]);
+  const [permissionCategories, setPermissionCategories] = React.useState<PermissionCategory[]>([]);
   const [loading, setLoading] = React.useState(false);
+  const [expandedCategories, setExpandedCategories] = React.useState<Set<string>>(new Set());
 
-  // Load business roles and preset roles when modal opens
+  // Load available permissions when modal opens
   React.useEffect(() => {
     if (!open || !businessId) return;
-    loadAvailableRoles();
+    loadAvailablePermissions();
   }, [open, businessId]);
 
-  const loadAvailableRoles = async () => {
+  const loadAvailablePermissions = async () => {
     setLoading(true);
     try {
-      // Fetch both business roles and preset roles
-      const roles = await fetchAvailableRolesForStaff(businessId);
-      setBusinessRoles(roles);
-      // Set default role to first available
-      if (roles.length > 0 && !roleId) {
-        setRoleId(roles[0].id);
-      }
+      const categories = await fetchAvailableStaffPermissions(businessId);
+      setPermissionCategories(categories);
     } catch (err) {
-      console.error("Failed to load roles:", err);
-      setError("Failed to load roles. Please try again.");
+      console.error("Failed to load permissions:", err);
+      setError("Failed to load permissions. Please try again.");
     } finally {
       setLoading(false);
     }
   };
 
+  // Reset form when modal opens
   React.useEffect(() => {
     if (!open) return;
-    // reset on open to always start clean
     setFirstName("");
     setLastName("");
     setEmail("");
     setPhone("");
     setPassword("123456");
-    setRoleId(null);
+    setTitle("");
+    setSelectedPermissions(new Set());
+    setExpandedCategories(new Set());
     setError("");
   }, [open]);
 
-  const canSubmit = firstName.trim().length > 0 && email.trim().length > 0 && roleId !== null;
+  const togglePermission = (permissionId: number) => {
+    setSelectedPermissions(prev => {
+      const next = new Set(prev);
+      if (next.has(permissionId)) {
+        next.delete(permissionId);
+      } else {
+        next.add(permissionId);
+      }
+      return next;
+    });
+  };
+
+  const toggleCategory = (permissions: Permission[]) => {
+    const allSelected = permissions.every(p => selectedPermissions.has(p.id));
+    setSelectedPermissions(prev => {
+      const next = new Set(prev);
+      permissions.forEach(p => {
+        if (allSelected) {
+          next.delete(p.id);
+        } else {
+          next.add(p.id);
+        }
+      });
+      return next;
+    });
+  };
+
+  const toggleCategoryExpanded = (categoryName: string) => {
+    setExpandedCategories(prev => {
+      const next = new Set(prev);
+      if (next.has(categoryName)) {
+        next.delete(categoryName);
+      } else {
+        next.add(categoryName);
+      }
+      return next;
+    });
+  };
+
+  const canSubmit = firstName.trim().length > 0 && email.trim().length > 0;
 
   const handleSave = () => {
-    if (!canSubmit || roleId === null) {
-      setError("First name, email, and role are required.");
+    if (!canSubmit) {
+      setError("First name and email are required.");
       return;
     }
     if (!email.includes("@")) {
@@ -95,129 +138,290 @@ export default function StaffAddModal({
       return;
     }
     
-    const selectedRole = businessRoles.find(r => r.id === roleId);
     onSave({
       first_name: firstName.trim(),
       last_name: lastName.trim() || undefined,
       email: email.trim(),
       password: password.trim(),
       phone_number: phone.trim() || undefined,
-      role_id: roleId,
-      role_name: selectedRole?.role_name,
+      title: title.trim() || undefined,
+      permission_ids: Array.from(selectedPermissions),
     });
 
     onClose();
   };
 
+  const totalPermissions = permissionCategories.reduce((acc, cat) => acc + cat.permissions.length, 0);
+
   return (
     <BaseEditModal
       open={open}
       onClose={onClose}
-      title="Add Staff"
-      description="Create a new staff member and assign a role"
+      title="Add Staff Member"
+      maxWidth={520}
       actions={[
         { label: "Cancel", onClick: onClose },
         {
-          label: "Add",
+          label: "Add Staff",
           onClick: handleSave,
           variant: "primary",
           disabled: !canSubmit,
         },
       ]}
     >
-      <Container padding="0">
-        <FormControl>
-          <FormLabel>First Name</FormLabel>
+      <Box sx={{ display: "flex", flexDirection: "column", gap: 2.5 }}>
+        {/* Error Alert */}
+        {error && (
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              gap: 1,
+              p: 1.5,
+              borderRadius: "8px",
+              bgcolor: "danger.softBg",
+              border: "1px solid",
+              borderColor: "danger.300",
+            }}
+          >
+            <AlertCircle size={16} style={{ color: "var(--joy-palette-danger-500)" }} />
+            <Typography.Body size="sm" sx={{ color: "danger.700" }}>
+              {error}
+            </Typography.Body>
+          </Box>
+        )}
+
+        {/* Basic Information - Compact Grid */}
+        <Box
+          sx={{
+            display: "grid",
+            gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" },
+            gap: 1.5,
+          }}
+        >
+          <FormControl size="sm">
+            <FormLabel sx={{ fontSize: "12px", fontWeight: 600, mb: 0.5 }}>
+              First Name <Typography.Body component="span" sx={{ color: "danger.500" }}>*</Typography.Body>
+            </FormLabel>
+            <Input
+              placeholder="John"
+              type="text"
+              size="sm"
+              value={firstName}
+              onChange={(e) => setFirstName(e.target.value)}
+              startDecorator={<User size={14} style={{ opacity: 0.5 }} />}
+              sx={{ "--Input-radius": "6px" }}
+            />
+          </FormControl>
+          <FormControl size="sm">
+            <FormLabel sx={{ fontSize: "12px", fontWeight: 600, mb: 0.5 }}>Last Name</FormLabel>
+            <Input
+              placeholder="Doe"
+              type="text"
+              size="sm"
+              value={lastName}
+              onChange={(e) => setLastName(e.target.value)}
+              sx={{ "--Input-radius": "6px" }}
+            />
+          </FormControl>
+        </Box>
+
+        {/* Contact Information - Compact Grid */}
+        <Box
+          sx={{
+            display: "grid",
+            gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" },
+            gap: 1.5,
+          }}
+        >
+          <FormControl size="sm">
+            <FormLabel sx={{ fontSize: "12px", fontWeight: 600, mb: 0.5 }}>
+              Email <Typography.Body component="span" sx={{ color: "danger.500" }}>*</Typography.Body>
+            </FormLabel>
+            <Input
+              placeholder="staff@business.com"
+              type="email"
+              size="sm"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              startDecorator={<Mail size={14} style={{ opacity: 0.5 }} />}
+              sx={{ "--Input-radius": "6px" }}
+            />
+          </FormControl>
+          <FormControl size="sm">
+            <FormLabel sx={{ fontSize: "12px", fontWeight: 600, mb: 0.5 }}>Phone</FormLabel>
+            <Input
+              placeholder="09*********"
+              type="tel"
+              size="sm"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              startDecorator={<Phone size={14} style={{ opacity: 0.5 }} />}
+              sx={{ "--Input-radius": "6px" }}
+            />
+          </FormControl>
+        </Box>
+
+        {/* Title/Position - Full Width */}
+        <FormControl size="sm">
+          <FormLabel sx={{ fontSize: "12px", fontWeight: 600, mb: 0.5 }}>Title / Position</FormLabel>
           <Input
-            placeholder="John"
+            placeholder="e.g., Manager, Receptionist"
             type="text"
-            size="md"
-            value={firstName}
-            onChange={(e) => setFirstName(e.target.value)}
+            size="sm"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            startDecorator={<Briefcase size={14} style={{ opacity: 0.5 }} />}
+            sx={{ "--Input-radius": "6px" }}
           />
         </FormControl>
-        <FormControl>
-          <FormLabel>Last Name</FormLabel>
-          <Input
-            placeholder="Doe"
-            type="text"
-            size="md"
-            value={lastName}
-            onChange={(e) => setLastName(e.target.value)}
-          />
-        </FormControl>
-        <FormControl>
-          <FormLabel>Email</FormLabel>
-          <Input
-            placeholder="example@gmail.com"
-            type="email"
-            size="md"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-          />
-        </FormControl>
-        <FormControl>
-          <FormLabel>Phone Number</FormLabel>
-          <Input
-            placeholder="09*********"
-            type="tel"
-            size="md"
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-          />
-        </FormControl>
-        <FormControl>
-          <FormLabel>Assign Role</FormLabel>
+
+        {/* Permissions Section - Compact */}
+        <Box sx={{ mt: 0.5 }}>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1 }}>
+            <Shield size={14} style={{ opacity: 0.6 }} />
+            <Typography.Label sx={{ fontSize: "12px" }}>Permissions</Typography.Label>
+            <Chip size="sm" variant="soft" color="neutral" sx={{ fontSize: "11px", height: "20px" }}>
+              {selectedPermissions.size}/{totalPermissions} selected
+            </Chip>
+          </Box>
+          
           {loading ? (
-            <CircularProgress size="sm" />
-          ) : businessRoles.length === 0 ? (
-            <FormHelperText>
-              No roles available. Please create a role in Staff Roles first.
-            </FormHelperText>
+            <Box sx={{ display: "flex", alignItems: "center", justifyContent: "center", py: 3 }}>
+              <CircularProgress size="sm" />
+            </Box>
+          ) : permissionCategories.length === 0 ? (
+            <FormHelperText sx={{ fontSize: "12px" }}>No permissions available.</FormHelperText>
           ) : (
-            <Select
-              value={roleId}
-              onChange={(_e, val) => val !== null && setRoleId(val)}
-              placeholder="Select a role"
+            <Box
+              sx={{
+                border: "1px solid",
+                borderColor: "divider",
+                borderRadius: "8px",
+                overflow: "hidden",
+                maxHeight: "200px",
+                overflowY: "auto",
+              }}
             >
-              {businessRoles.map((r) => (
-                <Option key={r.id} value={r.id}>
-                  {r.role_type === 'preset' && (
-                    <ListItemDecorator>
-                      <Chip size="sm" variant="soft" color="primary" sx={{ mr: 1 }}>
-                        Template
-                      </Chip>
-                    </ListItemDecorator>
-                  )}
-                  {r.role_type === 'business' && r.is_custom && (
-                    <ListItemDecorator>
-                      <Chip size="sm" variant="soft" color="success" sx={{ mr: 1 }}>
-                        Custom
-                      </Chip>
-                    </ListItemDecorator>
-                  )}
-                  <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                    <span>{r.role_name}</span>
-                    {r.role_description && (
-                      <span style={{ color: '#888', fontSize: '0.85em' }}>
-                        – {r.role_description}
-                      </span>
+              {permissionCategories.map((category, idx) => {
+                const allSelected = category.permissions.every(p => selectedPermissions.has(p.id));
+                const someSelected = category.permissions.some(p => selectedPermissions.has(p.id));
+                const isExpanded = expandedCategories.has(category.category_name);
+                const selectedCount = category.permissions.filter(p => selectedPermissions.has(p.id)).length;
+                
+                return (
+                  <Box
+                    key={category.category_name}
+                    sx={{
+                      borderBottom: idx < permissionCategories.length - 1 ? "1px solid" : "none",
+                      borderColor: "divider",
+                    }}
+                  >
+                    {/* Category Header */}
+                    <Box
+                      sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        px: 1.5,
+                        py: 1,
+                        bgcolor: isExpanded ? "background.level1" : "transparent",
+                        cursor: "pointer",
+                        transition: "background-color 0.15s",
+                        "&:hover": { bgcolor: "background.level1" },
+                      }}
+                      onClick={() => toggleCategoryExpanded(category.category_name)}
+                    >
+                      <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                        <Checkbox
+                          checked={allSelected}
+                          indeterminate={someSelected && !allSelected}
+                          onChange={(e) => {
+                            e.stopPropagation();
+                            toggleCategory(category.permissions);
+                          }}
+                          onClick={(e) => e.stopPropagation()}
+                          size="sm"
+                          sx={{ "--Checkbox-size": "16px" }}
+                        />
+                        <Typography.Body size="sm" weight="medium" sx={{ fontSize: "13px" }}>
+                          {category.category_name}
+                        </Typography.Body>
+                        <Chip 
+                          size="sm" 
+                          variant="soft" 
+                          color={selectedCount > 0 ? "primary" : "neutral"}
+                          sx={{ fontSize: "10px", height: "18px", minHeight: "18px" }}
+                        >
+                          {selectedCount}/{category.permissions.length}
+                        </Chip>
+                      </Box>
+                      {isExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                    </Box>
+
+                    {/* Expanded Permissions */}
+                    {isExpanded && (
+                      <Box
+                        sx={{
+                          display: "grid",
+                          gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))",
+                          gap: 0.5,
+                          px: 1.5,
+                          py: 1,
+                          bgcolor: "background.level1",
+                        }}
+                      >
+                        {category.permissions.map((permission) => (
+                          <Tooltip
+                            key={permission.id}
+                            title={permission.description || permission.name}
+                            placement="top"
+                            arrow
+                            size="sm"
+                          >
+                            <Box
+                              sx={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: 0.75,
+                                py: 0.5,
+                                px: 0.75,
+                                borderRadius: "4px",
+                                cursor: "pointer",
+                                transition: "background-color 0.1s",
+                                "&:hover": { bgcolor: "background.level2" },
+                              }}
+                              onClick={() => togglePermission(permission.id)}
+                            >
+                              <Checkbox
+                                checked={selectedPermissions.has(permission.id)}
+                                onChange={() => togglePermission(permission.id)}
+                                size="sm"
+                                sx={{ "--Checkbox-size": "14px" }}
+                              />
+                              <Typography.Body 
+                                size="sm" 
+                                sx={{ 
+                                  fontSize: "12px",
+                                  whiteSpace: "nowrap",
+                                  overflow: "hidden",
+                                  textOverflow: "ellipsis",
+                                }}
+                              >
+                                {permission.name}
+                              </Typography.Body>
+                            </Box>
+                          </Tooltip>
+                        ))}
+                      </Box>
                     )}
-                  </div>
-                </Option>
-              ))}
-            </Select>
+                  </Box>
+                );
+              })}
+            </Box>
           )}
-          <FormHelperText>
-            Template roles are standard presets. Custom roles are specific to your business.
-          </FormHelperText>
-        </FormControl>
-      </Container>
-      {error ? (
-        <FormHelperText color="danger" sx={{ mt: 1 }}>
-          {error}
-        </FormHelperText>
-      ) : null}
+        </Box>
+      </Box>
     </BaseEditModal>
   );
 }

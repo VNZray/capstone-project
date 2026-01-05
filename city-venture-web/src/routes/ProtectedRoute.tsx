@@ -1,58 +1,66 @@
-// ProtectedRoute.tsx
+/**
+ * ProtectedRoute - Simplified RBAC
+ * 
+ * Simple role-based route protection using hardcoded role names.
+ * Staff permissions are checked for specific features within pages, not at route level.
+ */
+
 import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/src/context/AuthContext";
 import Loading from "../components/Loading";
 
 interface ProtectedRouteProps {
   children: React.ReactElement;
-  // RBAC: Role-based access control
-  requiredRoles?: string[]; // match against user.role_name (normalized)
-  // RBAC: Permission-based access control
-  requiredAllPermissions?: string[]; // user must have ALL (AND logic)
-  requiredAnyPermissions?: string[]; // user must have ANY (OR logic)
-  // Redirect path on unauthorized access (default: "/")
+  /**
+   * Required role names for access. User must have ONE of these roles.
+   * Common roles: "Admin", "Tourism Officer", "Business Owner", "Tourist", "Staff"
+   */
+  requiredRoles?: string[];
+  /**
+   * Redirect path on unauthorized access (default: "/unauthorized")
+   */
   redirectTo?: string;
-  // Skip onboarding checks (for the change-password page itself)
+  /**
+   * Skip onboarding checks (for change-password/complete-profile pages)
+   */
   skipOnboardingCheck?: boolean;
+  /**
+   * Optional permission check - user must have ANY of these permissions.
+   * Use for staff access to specific features.
+   */
+  requiredAnyPermissions?: string[];
 }
 
 /**
- * Protected Route Component with Role-Based Access Control (RBAC)
+ * Protected Route Component
  * 
- * Supports both role-based and permission-based access control:
- * 1. Role check: User must have one of the requiredRoles
- * 2. Permission checks:
- *    - requiredAllPermissions: User must have ALL permissions (AND)
- *    - requiredAnyPermissions: User must have ANY permission (OR)
- * 3. Onboarding checks:
- *    - must_change_password: Staff must change password before accessing app
- *    - profile_completed: Staff must complete profile after password change
+ * Checks:
+ * 1. Authentication - must be logged in
+ * 2. Staff onboarding - must change password / complete profile if required
+ * 3. Role check - user role must match one of the required roles
+ * 4. Permission check (optional) - for fine-grained staff access
  * 
  * @example Role-based protection
- * <ProtectedRoute requiredRoles={["Business Owner", "Manager"]}>
- *   <Dashboard />
+ * <ProtectedRoute requiredRoles={["Admin", "Tourism Officer"]}>
+ *   <AdminDashboard />
  * </ProtectedRoute>
  * 
- * @example Permission-based protection
- * <ProtectedRoute requiredAnyPermissions={["view_dashboard", "view_reports"]}>
- *   <Analytics />
+ * @example Business routes (owners + staff with custom roles)
+ * <ProtectedRoute requiredRoles={["Business Owner"]}>
+ *   <BusinessDashboard />
  * </ProtectedRoute>
  * 
- * @example Combined protection
- * <ProtectedRoute 
- *   requiredRoles={["Manager"]} 
- *   requiredAnyPermissions={["manage_bookings"]}
- * >
- *   <BookingManagement />
+ * @example Staff permission check
+ * <ProtectedRoute requiredRoles={["Business Owner"]} requiredAnyPermissions={["manage_products"]}>
+ *   <ProductManagement />
  * </ProtectedRoute>
  */
 export default function ProtectedRoute({
   children,
   requiredRoles,
-  requiredAllPermissions,
-  requiredAnyPermissions,
   redirectTo = "/unauthorized",
   skipOnboardingCheck = false,
+  requiredAnyPermissions,
 }: ProtectedRouteProps) {
   const { user, loading } = useAuth();
   const location = useLocation();
@@ -66,63 +74,54 @@ export default function ProtectedRoute({
     return <Navigate to="/" replace />;
   }
 
-  // Staff onboarding flow - redirect to change password if required
-  // Skip if we're already on the change-password or complete-profile page
+  // Staff onboarding flow
   if (!skipOnboardingCheck) {
     const onboardingPaths = ['/change-password', '/complete-profile'];
     const isOnboardingPath = onboardingPaths.some(path => location.pathname.startsWith(path));
     
     if (!isOnboardingPath) {
-      // Check if must change password
       if (user.must_change_password) {
-        console.log('[ProtectedRoute] Staff must change password, redirecting...');
         return <Navigate to="/change-password" replace state={{ from: location }} />;
       }
       
-      // Check if profile needs completion (after password change)
       if (user.profile_completed === false) {
-        console.log('[ProtectedRoute] Staff must complete profile, redirecting...');
         return <Navigate to="/complete-profile" replace state={{ from: location }} />;
       }
     }
   }
 
-  // Role-based check (if provided)
+  // Role-based check
   if (requiredRoles && requiredRoles.length > 0) {
     const userRole = (user.role_name || '').toString();
-    const roleOk = requiredRoles.includes(userRole);
+    const isStaff = userRole === 'Staff';
+    
+    // Direct role match
+    let roleOk = requiredRoles.includes(userRole);
+    
+    // Staff members can access business routes (they have "Staff" role)
+    if (!roleOk && isStaff) {
+      const businessRouteRoles = ["Business Owner", "Staff", "Manager"];
+      if (requiredRoles.some(r => businessRouteRoles.includes(r))) {
+        roleOk = true;
+      }
+    }
     
     if (!roleOk) {
-      console.warn(
-        `[ProtectedRoute] Access denied. Required roles: ${requiredRoles.join(', ')}, Current role: ${userRole}`
-      );
+      console.warn(`[ProtectedRoute] Access denied. Required: ${requiredRoles.join(', ')}, Has: ${userRole}`);
       return <Navigate to={redirectTo} replace />;
     }
   }
 
-  // Permission-based AND check (if provided)
-  if (requiredAllPermissions && requiredAllPermissions.length > 0) {
-    const userPerms = new Set(user.permissions || []);
-    const hasAllPerms = requiredAllPermissions.every((p) => userPerms.has(p));
-    
-    if (!hasAllPerms) {
-      const missingPerms = requiredAllPermissions.filter((p) => !userPerms.has(p));
-      console.warn(
-        `[ProtectedRoute] Access denied. Missing permissions: ${missingPerms.join(', ')}`
-      );
-      return <Navigate to={redirectTo} replace />;
-    }
-  }
-
-  // Permission-based OR check (if provided)
+  // Permission check (optional - for staff feature access)
   if (requiredAnyPermissions && requiredAnyPermissions.length > 0) {
     const userPerms = new Set(user.permissions || []);
     const hasAnyPerm = requiredAnyPermissions.some((p) => userPerms.has(p));
     
-    if (!hasAnyPerm) {
-      console.warn(
-        `[ProtectedRoute] Access denied. Required any of: ${requiredAnyPermissions.join(', ')}`
-      );
+    // Business Owners bypass permission checks (they have full access)
+    const isOwner = user.role_name === 'Business Owner';
+    
+    if (!hasAnyPerm && !isOwner) {
+      console.warn(`[ProtectedRoute] Permission denied. Required any: ${requiredAnyPermissions.join(', ')}`);
       return <Navigate to={redirectTo} replace />;
     }
   }
