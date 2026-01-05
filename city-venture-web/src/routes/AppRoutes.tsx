@@ -8,6 +8,9 @@ import ShopRoutes from "./ShopRoutes";
 import TourismRoutes from "./TourismRoutes";
 import ProtectedRoute from "./ProtectedRoute";
 
+// Permission constants
+import * as P from "@/src/constants/permissions";
+
 // Pages
 import NotFound from "../pages/NotFound";
 import About from "../pages/About";
@@ -44,7 +47,6 @@ import {
   Subscription as UnifiedSubscription,
   ManageStaff as UnifiedManageStaff,
   Settings,
-  StaffRoles as StaffRolesPage,
 } from "../features/business/unified";
 
 // Context Providers
@@ -64,10 +66,11 @@ export default function AppRoutes() {
 
   const checkServerStatus = async () => {
     try {
-      const { data } = await axios.get<User[]>(`${api}/users`, {
+      // Use a public endpoint for health check (business list is public)
+      const response = await axios.get(`${api}/business`, {
         timeout: 5000,
       });
-      setIsServerUp(Array.isArray(data));
+      setIsServerUp(response.status === 200);
     } catch (error) {
       console.error("Server status check failed:", error);
       setIsServerUp(false);
@@ -148,7 +151,7 @@ export default function AppRoutes() {
             <Route
               path={`${business}`}
               element={
-                <ProtectedRoute requiredRoles={["Business Owner"]}>
+                <ProtectedRoute requiredAnyPermissions={[P.VIEW_BUSINESS_PROFILE, P.MANAGE_BUSINESS_PROFILE]}>
                   <MyBusiness />
                 </ProtectedRoute>
               }
@@ -156,7 +159,7 @@ export default function AppRoutes() {
             <Route
               path={`${business}/register`}
               element={
-                <ProtectedRoute requiredRoles={["Business Owner"]}>
+                <ProtectedRoute requiredAnyPermissions={[P.MANAGE_BUSINESS_PROFILE]}>
                   <BusinessRegistration />
                 </ProtectedRoute>
               }
@@ -165,81 +168,85 @@ export default function AppRoutes() {
 
           {/* Business Management Routes - Using Unified CMS */}
           <Route element={<BusinessManagementLayout />}>
-            {/* Unified Dashboard - dynamically renders based on business type */}
+            {/* Unified Dashboard - requires analytics/reports permission */}
             <Route
               path={`${business}/dashboard`}
               element={
-                <ProtectedRoute requiredRoles={BUSINESS_ROLES}>
+                <ProtectedRoute 
+                  requiredAnyPermissions={[P.VIEW_DASHBOARD, P.VIEW_REPORTS, P.VIEW_ANALYTICS]}
+                >
                   <UnifiedDashboard />
                 </ProtectedRoute>
               }
             />
 
-            {/* Unified Business Profile */}
+            {/* Unified Business Profile - requires view/manage business profile permission */}
             <Route
               path={`${business}/business-profile`}
               element={
-                <ProtectedRoute requiredRoles={BUSINESS_ROLES}>
+                <ProtectedRoute 
+                  requiredAnyPermissions={[P.VIEW_BUSINESS_PROFILE, P.MANAGE_BUSINESS_PROFILE]}
+                >
                   <UnifiedBusinessProfile />
                 </ProtectedRoute>
               }
             />
 
-            {/* Unified Reviews */}
+            {/* Unified Reviews - requires review management permission */}
             <Route
               path={`${business}/reviews`}
               element={
-                <ProtectedRoute requiredRoles={BUSINESS_ROLES}>
+                <ProtectedRoute 
+                  requiredAnyPermissions={[P.VIEW_REVIEWS, P.MANAGE_REVIEWS]}
+                >
                   <UnifiedReviews />
                 </ProtectedRoute>
               }
             />
 
-            {/* Unified Promotions */}
+            {/* Unified Promotions - requires promotion management permission */}
             <Route
               path={`${business}/promotions`}
               element={
-                <ProtectedRoute requiredRoles={BUSINESS_ROLES}>
+                <ProtectedRoute 
+                  requiredAnyPermissions={[P.VIEW_PROMOTIONS, P.MANAGE_PROMOTIONS]}
+                >
                   <UnifiedPromotions />
                 </ProtectedRoute>
               }
             />
 
-            {/* Unified Subscription */}
+            {/* Unified Subscription - requires business settings permission */}
             <Route
               path={`${business}/subscription`}
               element={
-                <ProtectedRoute requiredRoles={["Business Owner"]}>
+                <ProtectedRoute 
+                  requiredAnyPermissions={[P.MANAGE_SUBSCRIPTIONS, P.VIEW_PAYMENTS]}
+                >
                   <UnifiedSubscription />
                 </ProtectedRoute>
               }
             />
 
-            {/* Unified Staff Management */}
+            {/* Unified Staff Management - requires staff management permission */}
             <Route
               path={`${business}/manage-staff`}
               element={
-                <ProtectedRoute requiredRoles={["Business Owner"]}>
+                <ProtectedRoute 
+                  requiredAnyPermissions={[P.VIEW_STAFF, P.ADD_STAFF, P.MANAGE_STAFF_ROLES]}
+                >
                   <UnifiedManageStaff />
                 </ProtectedRoute>
               }
             />
 
-            {/* Staff Roles */}
-            <Route
-              path={`${business}/staff-roles`}
-              element={
-                <ProtectedRoute requiredRoles={["Business Owner"]}>
-                  <StaffRolesPage />
-                </ProtectedRoute>
-              }
-            />
-
-            {/* Settings */}
+            {/* Settings - requires business settings permission */}
             <Route
               path={`${business}/settings`}
               element={
-                <ProtectedRoute requiredRoles={["Business Owner"]}>
+                <ProtectedRoute 
+                  requiredAnyPermissions={[P.MANAGE_BUSINESS_SETTINGS]}
+                >
                   <Settings />
                 </ProtectedRoute>
               }

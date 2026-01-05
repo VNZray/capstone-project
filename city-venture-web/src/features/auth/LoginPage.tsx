@@ -38,32 +38,23 @@ const Login: React.FC = () => {
       // Delay to show loading animation
       await new Promise((resolve) => setTimeout(resolve, 4500));
 
-      // Check if user is staff (not Business Owner) and redirect to dashboard
-      const staffRoles = [
-        "Manager",
-        "Room Manager",
-        "Receptionist",
-        "Sales Associate",
-      ];
-      const tourism = ["Admin", "Tourism Officer"];
-      const tourist = "Tourist";
-      const owner = "Business Owner";
-
+      // Route based on role name (simplified RBAC: 5 fixed roles)
       const userRole = loggedInUser.role_name || "";
+      const isStaff = userRole === 'Staff';
 
-      if (staffRoles.includes(userRole)) {
+      if (isStaff) {
         // Staff members: Set their assigned business_id and go to dashboard
         if (loggedInUser.business_id) {
           setBusinessId(loggedInUser.business_id);
         }
         navigate("/business/dashboard");
-      } else if (userRole === tourist) {
+      } else if (userRole === "Tourist") {
         // Tourist to landing page
         navigate("/");
-      } else if (tourism.includes(userRole)) {
-        // Tourism
+      } else if (userRole === "Admin" || userRole === "Tourism Officer") {
+        // Tourism/Admin roles
         navigate("/tourism/dashboard");
-      } else if (userRole === owner) {
+      } else if (userRole === "Business Owner") {
         // Business Owners go to business listing page
         navigate("/business");
       } else {

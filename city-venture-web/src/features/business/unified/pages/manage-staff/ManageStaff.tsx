@@ -8,7 +8,6 @@ import StaffAddModal, {
 import StaffEditModal, {
   type StaffEditData,
 } from "./components/StaffEditModal";
-import RolePermissionModal from "./components/RolePermissionModal";
 import { Input } from "@mui/joy";
 import Alert from "@/src/components/Alert";
 import { Search } from "lucide-react";
@@ -23,6 +22,7 @@ import {
   toggleStaffActive,
   updateStaffById,
   onboardStaff,
+  updateStaffPermissions,
   type StaffMember,
 } from "@/src/services/manage-staff/StaffService";
 import {
@@ -32,6 +32,7 @@ import {
 import Table, { type TableColumn, StatusChip } from "@/src/components/ui/Table";
 import { Edit, Trash2 } from "lucide-react";
 import { Box } from "@mui/joy";
+import apiClient from "@/src/services/apiClient";
 
 type Staff = StaffMember;
 
@@ -42,7 +43,6 @@ const ManageStaff = () => {
   const [staff, setStaff] = useState<Staff[]>([]);
   const [addOpen, setAddOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
-  const [rolePermissionOpen, setRolePermissionOpen] = useState(false);
   const [selectedStaff, setSelectedStaff] = useState<Staff | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(false);
@@ -93,6 +93,7 @@ const ManageStaff = () => {
       setError(null);
 
       // Use the new onboard endpoint that creates user + staff in one transaction
+      // Staff automatically gets the "Staff" role; permissions are assigned separately
       const result = await onboardStaff({
         first_name: data.first_name,
         last_name: data.last_name,
@@ -100,8 +101,14 @@ const ManageStaff = () => {
         phone_number: data.phone_number || "",
         password: data.password || "staff123",
         business_id: businessDetails?.id as string,
-        role_id: data.role_id,
+        title: data.title,
+        permission_ids: data.permission_ids,
       });
+
+      // Assign permissions to the newly created staff member
+      if (data.permission_ids && data.permission_ids.length > 0) {
+        await updateStaffPermissions(result.id, data.permission_ids);
+      }
 
       const newStaff: Staff = {
         id: result.id,
@@ -109,7 +116,7 @@ const ManageStaff = () => {
         last_name: result.last_name,
         email: result.email,
         phone_number: result.phone_number,
-        role: result.role_name || data.role_name,
+        title: data.title,
         is_active: result.is_active,
         user_id: result.user_id,
         business_id: businessDetails?.id || "",
@@ -145,14 +152,21 @@ const ManageStaff = () => {
     if (!selectedStaff) return;
 
     try {
+      // Update staff info
       await updateStaffById(selectedStaff.id, {
         first_name: data.first_name,
         middle_name: data.middle_name,
         last_name: data.last_name,
         email: data.email,
         phone_number: data.phone_number,
-        role: data.role,
+        title: data.title,
       });
+
+      // Update permissions separately if changed
+      if (data.permission_ids) {
+        const { updateStaffPermissions } = await import("@/src/services/manage-staff/StaffService");
+        await updateStaffPermissions(selectedStaff.id, data.permission_ids);
+      }
 
       setAlertConfig({
         type: "success",
@@ -314,17 +328,6 @@ const ManageStaff = () => {
     setAlertOpen(true);
   };
 
-  // Handle role creation success
-  const handleRoleSuccess = () => {
-    setAlertConfig({
-      type: "success",
-      title: "Role Created",
-      message: "Custom role has been created successfully!",
-      showCancel: false,
-    });
-    setAlertOpen(true);
-  };
-
   // Filter staff based on search term
   const filteredStaff = staff.filter((s) => {
     const searchLower = searchTerm.toLowerCase();
@@ -333,7 +336,7 @@ const ManageStaff = () => {
       s.last_name?.toLowerCase().includes(searchLower) ||
       s.email.toLowerCase().includes(searchLower) ||
       s.phone_number?.toLowerCase().includes(searchLower) ||
-      (s.role?.toLowerCase() || "").includes(searchLower)
+      (s.title?.toLowerCase() || "").includes(searchLower)
     );
   });
 
@@ -365,11 +368,11 @@ const ManageStaff = () => {
       render: (row) => row.phone_number || "—",
     },
     {
-      id: "role",
-      label: "Role",
+      id: "title",
+      label: "Title/Position",
       minWidth: 150,
       align: "center",
-      render: (row) => <Typography.Body>{row.role || "—"}</Typography.Body>,
+      render: (row) => <Typography.Body>{row.title || "Staff"}</Typography.Body>,
     },
     {
       id: "is_active",
@@ -450,14 +453,6 @@ const ManageStaff = () => {
           padding="16px 16px 0 16px"
         >
           <Typography.Header>Manage Staff</Typography.Header>
-          {/* <Button
-            variant="outlined"
-            colorScheme="primary"
-            size="sm"
-            onClick={() => setRolePermissionOpen(true)}
-          >
-            Manage Roles & Permissions
-          </Button> */}
         </Container>
 
         <IconButton
@@ -545,20 +540,16 @@ const ManageStaff = () => {
         initialData={
           selectedStaff
             ? {
+                id: selectedStaff.id,
                 first_name: selectedStaff.first_name,
                 middle_name: selectedStaff.middle_name,
                 last_name: selectedStaff.last_name,
                 email: selectedStaff.email,
                 phone_number: selectedStaff.phone_number,
-                role: selectedStaff.role || "Manager",
+                title: selectedStaff.title,
               }
             : undefined
         }
-      />
-      <RolePermissionModal
-        open={rolePermissionOpen}
-        onClose={() => setRolePermissionOpen(false)}
-        onSuccess={handleRoleSuccess}
       />
       <Alert
         open={alertOpen}

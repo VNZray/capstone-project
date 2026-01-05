@@ -33,7 +33,7 @@ export function authenticate(req, res, next) {
       id: payload.id,
       email: payload.email,
       user_role_id: payload.role, // Mapped from 'role' in token
-      role: payload.role, 
+      role: payload.role,
     };
 
     next();

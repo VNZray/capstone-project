@@ -10,4 +10,3 @@ export { default as Promotions } from './Promotions';
 export { default as Subscription } from './Subscription';
 export { default as ManageStaff } from './ManageStaff';
 export { default as Settings } from './Settings';
-export { default as StaffRoles } from './StaffRoles';

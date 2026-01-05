@@ -23,21 +23,24 @@ function hashToken(token) {
 }
 
 export async function generateTokens(user) {
-  // Fetch role name from user_role table
-  let roleName = user.role_name; // Use if already provided
-  if (!roleName && user.user_role_id) {
+  // Fetch role info from user_role table
+  let roleName = user.role_name;
+  
+  if (user.user_role_id && !roleName) {
     const [roleRows] = await db.query(
       'SELECT role_name FROM user_role WHERE id = ?',
       [user.user_role_id]
     );
-    roleName = roleRows && roleRows.length > 0 ? roleRows[0].role_name : null;
+    if (roleRows && roleRows.length > 0) {
+      roleName = roleRows[0].role_name;
+    }
   }
 
   const accessToken = jwt.sign(
     {
       id: user.id,
       email: user.email,
-      role: roleName, // Use role name instead of ID
+      role: roleName, // Role name: Admin, Staff, Business Owner, etc.
     },
     JWT_ACCESS_SECRET,
     {
@@ -81,13 +84,13 @@ export async function loginUser(email, password) {
   const user = users[0];
 
   // Fetch role name
-  if (user.user_role_id && !user.role_name) {
+  if (user.user_role_id) {
     const [roleRows] = await db.query(
       'SELECT role_name FROM user_role WHERE id = ?',
       [user.user_role_id]
     );
     if (roleRows && roleRows.length > 0) {
-      user.role_name = roleRows[0].role_name;
+      user.role_name = user.role_name || roleRows[0].role_name;
     }
   }
   const isMatch = await bcrypt.compare(password, user.password);
@@ -212,12 +215,15 @@ export async function refreshAccessToken(incomingRefreshToken) {
 
   // Fetch role name
   let roleName = user.role_name;
-  if (!roleName && user.user_role_id) {
+  
+  if (user.user_role_id) {
     const [roleRows] = await db.query(
       'SELECT role_name FROM user_role WHERE id = ?',
       [user.user_role_id]
     );
-    roleName = roleRows && roleRows.length > 0 ? roleRows[0].role_name : null;
+    if (roleRows && roleRows.length > 0) {
+      roleName = roleName || roleRows[0].role_name;
+    }
   }
 
   // Re-sign access token with fresh user data
@@ -225,7 +231,7 @@ export async function refreshAccessToken(incomingRefreshToken) {
     {
       id: user.id,
       email: user.email,
-      role: roleName, // Use role name instead of ID
+      role: roleName,
     },
     JWT_ACCESS_SECRET,
     {

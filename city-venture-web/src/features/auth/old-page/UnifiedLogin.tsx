@@ -61,11 +61,11 @@ export default function UnifiedLogin() {
       } else if (role === "Owner") {
         const loggedInUser = await login(email, password);
         
-        // Check if user is staff (not Business Owner) and redirect to dashboard
-        const staffRoles = ["Manager", "Room Manager", "Receptionist", "Sales Associate"];
+        // Route based on role name (simplified RBAC: 5 fixed roles)
         const userRole = loggedInUser.role_name || "";
+        const isStaff = userRole === 'Staff';
         
-        if (staffRoles.includes(userRole)) {
+        if (isStaff) {
           // Staff members go directly to business dashboard
           navigate("/business/dashboard");
         } else {

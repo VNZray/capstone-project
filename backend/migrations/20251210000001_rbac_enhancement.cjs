@@ -2,11 +2,12 @@
  * RBAC Enhancement Migration
  * 
  * This migration enhances the existing RBAC system to support:
- * - Three-tier role system: System, Preset, and Business roles
- * - Role templates (presets) that can be cloned for businesses
+ * - Two-tier role system: System and Business roles
  * - Custom business-specific roles
  * - Permission inheritance tracking via based_on_role_id
  * - Optional permission overrides for fine-grained control
+ * 
+ * Note: The 'preset' role_type is deprecated and should not be used.
  * 
  * @see docs/RBAC_ENHANCEMENT_GUIDE.md for full documentation
  */
@@ -14,9 +15,9 @@
 const { createRoleProcedures, dropRoleProcedures } = require("../procedures/auth/roleProcedures.cjs");
 
 exports.up = async function (knex) {
-  // 1. Add new columns to user_role table for three-tier RBAC
+  // 1. Add new columns to user_role table for two-tier RBAC
   await knex.schema.alterTable("user_role", (table) => {
-    // Role type: system (platform-wide), preset (templates), business (business-specific)
+    // Role type: system (platform-wide), business (business-specific). 'preset' is deprecated.
     table.enum("role_type", ["system", "preset", "business"]).notNullable().defaultTo("system");
     
     // Whether this is a custom role created by business owner (vs cloned from preset)

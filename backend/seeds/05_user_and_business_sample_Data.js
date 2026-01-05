@@ -39,7 +39,7 @@ function randomPhone() {
   // Hash passwords before insertion to satisfy bcrypt.compare during login
   const plainUsers = [
     { id: uuidv4(), email: 'admin@gmail.com',   phone_number: randomPhone(), password: 'admin123',   user_role_id: 1, barangay_id: 1 }, // Admin/Tourism Officer
-    { id: uuidv4(), email: 'tourist@gmail.com', phone_number: randomPhone(), password: 'tourist123', user_role_id: 9, barangay_id: 2 }, // Tourist
+    { id: uuidv4(), email: 'tourist@gmail.com', phone_number: randomPhone(), password: 'tourist123', user_role_id: 5, barangay_id: 2 }, // Tourist
     { id: uuidv4(), email: 'owner@gmail.com',   phone_number: randomPhone(), password: 'owner123',   user_role_id: 4, barangay_id: 3 }  // Business Owner
   ];
 

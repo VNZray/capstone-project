@@ -108,6 +108,7 @@ export default function PromotionForm(): React.ReactElement {
     external_link: "",
     start_date: getCurrentDateTimeLocal(),
     end_date: "",
+    promo_type: 1, // Default to discount type for store promotions
   });
 
   // Update business_id when businessDetails changes
@@ -144,6 +145,7 @@ export default function PromotionForm(): React.ReactElement {
             external_link: promotionData.external_link || "",
             start_date: convertedStartDate,
             end_date: convertedEndDate,
+            promo_type: promotionData.promo_type || 1,
           };
           
           setFormData(newFormData);
@@ -301,7 +303,7 @@ export default function PromotionForm(): React.ReactElement {
       } else {
         await PromotionService.createPromotion(payload);
       }
-  navigate("/business/promotion");
+  navigate("/business/promotions");
     } catch (error) {
       console.error("Error submitting promotion:", error);
       setErrors({ submit: "Failed to save promotion. Please try again." });

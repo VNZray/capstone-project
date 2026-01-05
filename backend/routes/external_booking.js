@@ -1,11 +1,12 @@
 import express from "express";
 import * as externalBookingController from "../controller/externalBookingController.js";
 import { authenticate } from "../middleware/authenticate.js";
-import { authorizeRole } from "../middleware/authorizeRole.js";
+import { authorize } from "../middleware/authorizeRole.js";
 
 const router = express.Router();
 
-router.post("/", authenticate, authorizeRole("Business Owner", "Staff", "Admin"), externalBookingController.insertExternalBooking);
-router.get("/", authenticate, authorizeRole("Business Owner", "Staff", "Admin"), externalBookingController.getAllExternalBooking);
+// External bookings require manage_bookings permission
+router.post("/", authenticate, authorize('manage_bookings'), externalBookingController.insertExternalBooking);
+router.get("/", authenticate, authorize('manage_bookings'), externalBookingController.getAllExternalBooking);
 
 export default router;

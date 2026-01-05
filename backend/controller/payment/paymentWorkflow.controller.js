@@ -617,7 +617,8 @@ export async function getUnifiedPaymentStatus(req, res) {
 
     // 2. Authorization check
     const userRole = await ensureUserRole(req);
-    if (userRole !== 'Admin' && payment.owner_user_id !== user_id) {
+    const roleName = userRole?.roleName || userRole;
+    if (roleName !== 'Admin' && payment.owner_user_id !== user_id) {
       return res.status(403).json({
         success: false,
         message: "You are not authorized to view this payment intent"
