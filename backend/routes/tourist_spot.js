@@ -1,5 +1,6 @@
 import express from 'express';
 import * as touristSpotController from '../controller/touristSpot/index.js';
+import { authenticate } from '../middleware/authenticate.js';
 
 const router = express.Router();
 
@@ -24,6 +25,9 @@ router.get('/featured/non-featured', touristSpotController.getNonFeaturedTourist
 router.put('/featured/:id', touristSpotController.featureTouristSpot);
 router.delete('/featured/:id', touristSpotController.unfeatureTouristSpot);
 
+// My Submissions
+router.get('/my-submissions', authenticate, touristSpotController.getMySubmittedTouristSpots);
+
 // Get tourist spot by ID
 router.get('/:id', touristSpotController.getTouristSpotById);
 
@@ -43,9 +47,12 @@ router.delete('/:tourist_spot_id/images/:image_id', touristSpotController.delete
 router.put('/:tourist_spot_id/images/:image_id/set-primary', touristSpotController.setPrimaryTouristSpotImage);
 
 // Create new tourist spot
-router.post('/', touristSpotController.createTouristSpot);
+router.post('/', authenticate, touristSpotController.createTouristSpot);
 
 // Submit edit request for existing tourist spot
-router.put('/:id', touristSpotController.submitEditRequest);
+router.put('/:id', authenticate, touristSpotController.submitEditRequest);
+
+// Delete tourist spot
+router.delete('/:id', authenticate, touristSpotController.deleteTouristSpot);
 
 export default router;

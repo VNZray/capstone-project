@@ -113,7 +113,8 @@ export const approveTouristSpot = async (req, res) => {
 export const rejectTouristSpot = async (req, res) => {
   try {
     const { id } = req.params;
-    const [data] = await db.query("CALL RejectTouristSpot(?)", [id]);
+    const { reason } = req.body;
+    const [data] = await db.query("CALL RejectTouristSpot(?, ?)", [id, reason || null]);
     const affected = data[0]?.[0]?.affected_rows ?? 0;
     if (affected === 0) return res.status(400).json({ success: false, message: "Tourist spot not found or not pending" });
     res.json({ success: true, message: "Tourist spot rejected successfully" });
@@ -221,6 +222,37 @@ export const rejectBusiness = async (req, res) => {
     res.json({ success: true, message: 'Business rejected successfully' });
   } catch (error) {
     console.error('Error rejecting business:', error);
+    return handleDbError(error, res);
+  }
+};
+
+// Deletion Requests
+export const getPendingDeletionRequests = async (req, res) => {
+  try {
+    const [data] = await db.query("CALL GetPendingDeletionRequests()");
+    const rows = data[0] || [];
+    res.json({ success: true, data: rows, message: "Pending deletion requests retrieved successfully" });
+  } catch (error) {
+    return handleDbError(error, res);
+  }
+};
+
+export const approveDeletionRequest = async (req, res) => {
+  try {
+    const { id } = req.params;
+    await db.query("CALL ApproveDeletionRequest(?)", [id]);
+    res.json({ success: true, message: "Deletion request approved" });
+  } catch (error) {
+    return handleDbError(error, res);
+  }
+};
+
+export const rejectDeletionRequest = async (req, res) => {
+  try {
+    const { id } = req.params;
+    await db.query("CALL RejectDeletionRequest(?)", [id]);
+    res.json({ success: true, message: "Deletion request rejected" });
+  } catch (error) {
     return handleDbError(error, res);
   }
 };

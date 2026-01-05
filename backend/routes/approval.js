@@ -20,9 +20,15 @@ router.put('/approve-business/:id', authorize('approve_business'), approvalContr
 router.put('/reject-business/:id', authorize('approve_business'), approvalController.rejectBusiness);
 
 // Tourist spot edit request endpoints
+
 router.get('/pending-edits', authorizeAny('approve_tourist_spot', 'view_all_profiles'), approvalController.getPendingEditRequests);
 router.put('/approve-edit/:id', authorize('approve_tourist_spot'), approvalController.approveEditRequest);
 router.put('/reject-edit/:id', authorize('approve_tourist_spot'), approvalController.rejectEditRequest);
+
+// Deletion request endpoints
+router.get('/pending-deletions', approvalController.getPendingDeletionRequests);
+router.put('/approve-deletion/:id', approvalController.approveDeletionRequest);
+router.put('/reject-deletion/:id', approvalController.rejectDeletionRequest);
 
 // Approval records log endpoint
 router.get('/records', authorizeAny('view_reports', 'view_all_profiles'), getApprovalRecords);

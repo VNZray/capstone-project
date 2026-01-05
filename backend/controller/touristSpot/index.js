@@ -7,6 +7,8 @@ export {
   getNonFeaturedTouristSpots,
   featureTouristSpot,
   unfeatureTouristSpot,
+  deleteTouristSpot,
+  getMySubmittedTouristSpots,
 } from './touristSpotController.js';
 
 // Schedule management

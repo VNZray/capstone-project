@@ -284,3 +284,14 @@ export async function resetTourismStaffPassword(req, res) {
     return handleDbError(error, res);
   }
 }
+
+// Delete tourism staff
+export async function deleteTourismStaff(req, res) {
+  const { id } = req.params;
+  try {
+    await db.query("CALL DeleteTourismStaff(?)", [id]);
+    return res.json({ message: "Tourism staff deleted successfully" });
+  } catch (error) {
+    return handleDbError(error, res);
+  }
+}
