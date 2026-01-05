@@ -29,9 +29,9 @@ const orderCreationLimiter = rateLimit({
     error: 'Too many order attempts. Please try again in 15 minutes.',
     code: 'RATE_LIMIT_EXCEEDED'
   },
-  skip: (req) => {
+  skip: async (req) => {
     // Skip rate limiting for users with platform admin permissions
-    return hasAnyPermission(req.user, 'manage_orders', 'manage_users');
+    return hasAnyPermission(req.user?.id, ['manage_orders', 'manage_users']);
   }
 });
 
@@ -51,7 +51,7 @@ const orderCancellationLimiter = rateLimit({
     error: 'Too many cancellation attempts. Please try again later.',
     code: 'RATE_LIMIT_EXCEEDED'
   },
-  skip: (req) => hasAnyPermission(req.user, 'manage_orders', 'manage_users')
+  skip: async (req) => hasAnyPermission(req.user?.id, ['manage_orders', 'manage_users'])
 });
 
 // ==================== ORDER ROUTES ====================
@@ -99,7 +99,7 @@ const refundRequestLimiter = rateLimit({
     error: 'Too many refund requests. Please try again later.',
     code: 'RATE_LIMIT_EXCEEDED'
   },
-  skip: (req) => hasAnyPermission(req.user, 'manage_refunds', 'manage_orders')
+  skip: async (req) => hasAnyPermission(req.user?.id, ['manage_refunds', 'manage_orders'])
 });
 
 // Refund routes - controller validates order ownership

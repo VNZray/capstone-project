@@ -120,13 +120,13 @@ export const loginUser = async (
       },
     });
 
-    // Step 3: Fetch user details
+    // Step 3: Fetch user details using /users/me (self-service route - no special permissions required)
     debugLogger({
-      title: 'AuthService: GET /users/:id',
-      data: user_id,
+      title: 'AuthService: GET /users/me',
+      data: { user_id },
     });
     const { data: userData } = await apiClient
-      .get<User>(`/users/${user_id}`)
+      .get<User>(`/users/me`)
       .catch((err) => {
         debugLogger({
           title: 'AuthService: Fetch user failed',

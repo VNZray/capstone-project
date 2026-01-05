@@ -50,7 +50,7 @@ const refundRequestLimiter = rateLimit({
     code: 'RATE_LIMIT_EXCEEDED'
   },
   // Skip rate limit for users with admin permissions
-  skip: (req) => hasAnyPermission(req.user, 'manage_refunds', 'manage_orders')
+  skip: async (req) => hasAnyPermission(req.user?.id, ['manage_refunds', 'manage_orders'])
 });
 
 /**
