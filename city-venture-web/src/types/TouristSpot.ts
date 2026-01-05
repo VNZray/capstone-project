@@ -41,13 +41,6 @@ export interface Barangay {
   municipality_id: number;
 }
 
-export interface Category {
-  id: number;
-  title: string;
-  alias: string;
-  parent_category?: number | null;
-}
-
 
 export interface TouristSpotSchedule {
   id?: string;
@@ -78,6 +71,7 @@ export interface TouristSpotFormData {
 export interface FormOption {
   id: number;
   label: string;
+  group?: string;
 }
 
 export interface DaySchedule {

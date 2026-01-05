@@ -21,6 +21,7 @@ export async function updateOrderStatus(req, res) {
 
   try {
     const userRole = await ensureUserRole(req);
+    const roleName = userRole?.roleName || userRole;
 
     // Validate status format
     const statusValidation = validateStatus(status);
@@ -41,7 +42,7 @@ export async function updateOrderStatus(req, res) {
     const order = currentOrder[0];
     const currentStatus = order.status;
 
-    if (userRole !== "Admin") {
+    if (roleName !== "Admin" && roleName !== "Tourism Officer") {
       const allowed = await hasBusinessAccess(
         order.business_id,
         req.user,
@@ -55,7 +56,7 @@ export async function updateOrderStatus(req, res) {
     }
 
     // Get actor role from authenticated user
-    const actorRole = userRole || "tourist";
+    const actorRole = roleName || "tourist";
 
     // Check if transition is allowed (with payment validation)
     const transitionCheck = orderTransitionService.canTransition(
@@ -161,6 +162,7 @@ export async function cancelOrder(req, res) {
 
   try {
     const userRole = await ensureUserRole(req);
+    const roleName = userRole?.roleName || userRole;
 
     // Get current order details including payment info from payment table
     const [orderData] = await db.query(
@@ -178,16 +180,16 @@ export async function cancelOrder(req, res) {
     }
 
     const order = orderData[0];
-    const actorRole = userRole || "tourist";
+    const actorRole = roleName || "tourist";
 
     // Ownership checks
-    if (userRole === "Tourist" && order.user_id !== req.user?.id) {
+    if (roleName === "Tourist" && order.user_id !== req.user?.id) {
       return res.status(403).json({
         message: "Forbidden: you can only cancel your own orders",
       });
     }
 
-    if (["Business Owner", "Staff"].includes(userRole)) {
+    if (["Business Owner", "Staff"].includes(roleName)) {
       const allowed = await hasBusinessAccess(
         order.business_id,
         req.user,
@@ -412,6 +414,7 @@ export async function markCustomerArrivedForOrder(req, res) {
 
   try {
     const userRole = await ensureUserRole(req);
+    const roleName = userRole?.roleName || userRole;
 
     const [orderRows] = await db.query(
       "SELECT id, business_id, user_id FROM `order` WHERE id = ?",
@@ -424,7 +427,7 @@ export async function markCustomerArrivedForOrder(req, res) {
 
     const order = orderRows[0];
 
-    if (userRole !== "Admin") {
+    if (roleName !== "Admin" && roleName !== "Tourism Officer") {
       const allowed = await hasBusinessAccess(
         order.business_id,
         req.user,
@@ -461,6 +464,7 @@ export async function markOrderAsReady(req, res) {
 
   try {
     const userRole = await ensureUserRole(req);
+    const roleName = userRole?.roleName || userRole;
 
     const [orderRows] = await db.query(
       `SELECT o.id, o.order_number, o.status, o.business_id, o.user_id,
@@ -477,7 +481,7 @@ export async function markOrderAsReady(req, res) {
 
     const order = orderRows[0];
 
-    if (userRole !== "Admin") {
+    if (roleName !== "Admin" && roleName !== "Tourism Officer") {
       const allowed = await hasBusinessAccess(
         order.business_id,
         req.user,
@@ -493,7 +497,7 @@ export async function markOrderAsReady(req, res) {
     const transitionCheck = orderTransitionService.canTransition(
       order.status,
       "ready_for_pickup",
-      userRole || "tourist",
+      roleName || "tourist",
       order
     );
 
@@ -561,6 +565,7 @@ export async function markOrderAsPickedUp(req, res) {
 
   try {
     const userRole = await ensureUserRole(req);
+    const roleName = userRole?.roleName || userRole;
 
     const [orderRows] = await db.query("SELECT * FROM `order` WHERE id = ?", [
       id,
@@ -572,7 +577,7 @@ export async function markOrderAsPickedUp(req, res) {
 
     const order = orderRows[0];
 
-    if (userRole !== "Admin") {
+    if (roleName !== "Admin" && roleName !== "Tourism Officer") {
       const allowed = await hasBusinessAccess(
         order.business_id,
         req.user,
@@ -588,7 +593,7 @@ export async function markOrderAsPickedUp(req, res) {
     const transitionCheck = orderTransitionService.canTransition(
       order.status,
       "picked_up",
-      userRole || "tourist",
+      roleName || "tourist",
       order
     );
 

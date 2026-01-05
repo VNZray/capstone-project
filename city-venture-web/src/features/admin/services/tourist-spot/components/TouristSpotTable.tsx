@@ -27,7 +27,7 @@ const TouristSpotTable: React.FC<TouristSpotTableProps> = ({
       id: "name",
       label: "Name",
       minWidth: 180,
-      render: (row, val) => (
+      render: (_row, val) => (
         <span style={{ fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
           {val}
         </span>
@@ -52,7 +52,7 @@ const TouristSpotTable: React.FC<TouristSpotTableProps> = ({
           {Array.isArray(row.categories)
             ? row.categories.map((cat: any, idx: number) => (
                 <Chip key={idx} color="primary" variant="soft" size="sm" sx={{ mb: 0.5 }}>
-                  {cat.category || String(cat)}
+                  {cat.category_title || cat.category || String(cat)}
                 </Chip>
               ))
             : null}
@@ -63,7 +63,7 @@ const TouristSpotTable: React.FC<TouristSpotTableProps> = ({
       id: "spot_status",
       label: "Status",
       minWidth: 120,
-      render: (row, val) => (
+      render: (_row, val) => (
         <span style={{ textTransform: 'capitalize' }}>{val}</span>
       ),
     },

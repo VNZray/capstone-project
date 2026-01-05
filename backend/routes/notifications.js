@@ -1,7 +1,6 @@
 import express from "express";
 import * as notificationController from "../controller/notificationController.js";
 import { authenticate } from '../middleware/authenticate.js';
-import { authorizeRole } from '../middleware/authorizeRole.js';
 
 const router = express.Router();
 
@@ -13,7 +12,8 @@ router.get("/user/:userId/unread", authenticate, notificationController.getUnrea
 router.get("/user/:userId/unread/count", authenticate, notificationController.getUnreadNotificationCount);
 router.post("/user/:userId/mark-all-read", authenticate, notificationController.markAllNotificationsAsRead);
 router.get("/:id", authenticate, notificationController.getNotificationById);
-router.post("/", authenticate, authorizeRole("Admin", "Business Owner", "Manager", "Receptionist", "Staff"), notificationController.insertNotification);
+// Any authenticated user can create notifications (role check removed - controllers handle business logic)
+router.post("/", authenticate, notificationController.insertNotification);
 router.put("/:id/read", authenticate, notificationController.markNotificationAsRead);
 router.put("/:id/delivery-status", authenticate, notificationController.updateNotificationDeliveryStatus);
 router.delete("/:id", authenticate, notificationController.deleteNotification);

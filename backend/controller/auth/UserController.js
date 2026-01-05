@@ -33,6 +33,24 @@ export async function getUserById(req, res) {
   }
 }
 
+// Get current authenticated user's profile
+// Uses req.user.id from JWT middleware - allows any authenticated user to fetch their own data
+export async function getCurrentUser(req, res) {
+  const userId = req.user?.id;
+  if (!userId) {
+    return res.status(401).json({ message: "Authentication required" });
+  }
+  try {
+    const [data] = await db.query("CALL GetUserById(?)", [userId]);
+    if (!data[0] || data[0].length === 0) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    res.json(data[0][0]);
+  } catch (error) {
+    return handleDbError(error, res);
+  }
+}
+
 // Get users by role ID
 // Calls the GetUsersByRoleId stored procedure
 export async function getUsersByRoleId(req, res) {

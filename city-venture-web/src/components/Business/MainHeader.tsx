@@ -93,17 +93,13 @@ export default function MainHeader({ onMenuClick }: MainHeaderProps) {
   ];
 
   const navigateToBusiness = () => {
-    const staffRoles = [
-      "Manager",
-      "Room Manager",
-      "Receptionist",
-      "Sales Associate",
-    ];
     const userRole = user?.role_name || "";
+    const isStaff = userRole === "Staff";
 
     if (userRole === "Business Owner") {
       navigate("/business");
-    } else if (staffRoles.includes(userRole)) {
+    } else if (isStaff) {
+      // Staff goes to dashboard
       navigate("/business/dashboard");
     } else {
       navigate("/business");

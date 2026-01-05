@@ -13,7 +13,6 @@ import {
 	unassignPermissionFromRole,
 } from "../controller/auth/PermissionController.js";
 import { authenticate } from "../middleware/authenticate.js";
-import { authorize, authorizeAny } from "../middleware/authorize.js";
 import { getMyPermissions } from "../controller/auth/PermissionController.js";
 
 const router = express.Router();

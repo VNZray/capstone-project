@@ -47,6 +47,7 @@ const styles = StyleSheet.create({
   container: {
     paddingHorizontal: 0,
     paddingVertical: 0,
+    paddingBottom: 64,
   },
   topSpacer: {
     height: 24,
@@ -55,7 +56,7 @@ const styles = StyleSheet.create({
     height: 20,
   },
   bottomSpacer: {
-    height: 40,
+    height: 20,
   },
 });
 

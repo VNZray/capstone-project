@@ -1,8 +1,14 @@
 import { ShopDetailPromotionCard } from '@/components/shops/details/elements';
 import type { BusinessProfileView } from '@/components/shops/details/types';
 import { ShopColors } from '@/constants/color';
+import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
-import { FlatList, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
+
+// Brand colors for luxurious theme
+const NAVY = '#0A1B47';
+const GOLD = '#C5A059';
+const GOLD_LIGHT = 'rgba(197, 160, 89, 0.12)';
 
 interface ShopDetailPromotionsSectionProps {
   shop: BusinessProfileView;
@@ -12,31 +18,38 @@ const ShopDetailPromotionsSection: React.FC<ShopDetailPromotionsSectionProps> = 
   const hasPromotions = (shop.promotions?.length ?? 0) > 0;
 
   return (
-    <View style={styles.sectionContainer}>
+    <View style={styles.container}>
+      {/* Section Header - Icon | Title & Subtitle */}
       <View style={styles.sectionHeader}>
-        <View>
-          <Text style={styles.sectionTitle}>Promotions</Text>
-          <Text style={styles.sectionSubtitle}>Limited-time deals from {shop.name}</Text>
+        <View style={styles.iconContainer}>
+          <Ionicons name="pricetag" size={16} color={GOLD} />
         </View>
-        {hasPromotions && (
-          <Text style={styles.promoCount}>{shop.promotions?.length} active</Text>
-        )}
+        <View style={styles.textContainer}>
+          <Text style={styles.sectionTitle}>Promotions</Text>
+          <Text style={styles.sectionSubtitle}>
+            {hasPromotions 
+              ? `${shop.promotions?.length} special ${shop.promotions?.length === 1 ? 'offer' : 'offers'} available`
+              : 'Check back for deals'
+            }
+          </Text>
+        </View>
       </View>
 
       {hasPromotions ? (
-        <FlatList
-          data={shop.promotions}
-          keyExtractor={(item) => item.id}
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.promoList}
-          ItemSeparatorComponent={() => <View style={styles.separator} />}
-          renderItem={({ item }) => <ShopDetailPromotionCard promotion={item} />}
-        />
+        <View style={styles.listContent}>
+          {shop.promotions?.map((item) => (
+            <ShopDetailPromotionCard key={item.id} promotion={item} />
+          ))}
+        </View>
       ) : (
         <View style={styles.emptyState}>
-          <Text style={styles.emptyStateTitle}>No promos right now</Text>
-          <Text style={styles.emptyStateText}>Check back soon for new offers</Text>
+          <View style={styles.emptyIconContainer}>
+            <Ionicons name="gift-outline" size={28} color={GOLD} />
+          </View>
+          <Text style={styles.emptyStateTitle}>No promotions yet</Text>
+          <Text style={styles.emptyStateText}>
+            Stay tuned for exclusive deals and offers
+          </Text>
         </View>
       )}
     </View>
@@ -44,58 +57,75 @@ const ShopDetailPromotionsSection: React.FC<ShopDetailPromotionsSectionProps> = 
 };
 
 const styles = StyleSheet.create({
-  sectionContainer: {
-    backgroundColor: ShopColors.cardBackground,
-    margin: 16,
-    borderRadius: 20,
-    padding: 20,
-    shadowColor: '#000000',
-    shadowOpacity: 0.05,
-    shadowRadius: 10,
-    elevation: 1,
+  container: {
+    paddingVertical: 20,
   },
   sectionHeader: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 16,
+    paddingHorizontal: 16,
+    marginBottom: 20,
+    gap: 12,
+  },
+  iconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 10,
+    backgroundColor: GOLD_LIGHT,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  textContainer: {
+    flex: 1,
   },
   sectionTitle: {
-    fontSize: 20,
-    fontFamily: 'Poppins-Bold',
-    color: ShopColors.textPrimary,
+    fontSize: 18,
+    fontFamily: 'Poppins-SemiBold',
+    color: NAVY,
+    letterSpacing: -0.3,
   },
   sectionSubtitle: {
-    fontSize: 14,
+    fontSize: 13,
     fontFamily: 'Poppins-Regular',
     color: ShopColors.textSecondary,
-    marginTop: 4,
+    marginTop: 1,
   },
-  promoCount: {
-    fontSize: 12,
-    fontFamily: 'Poppins-Medium',
-    color: ShopColors.accent,
-  },
-  promoList: {
-    paddingVertical: 4,
-  },
-  separator: {
-    width: 12,
+  listContent: {
+    paddingHorizontal: 16,
+    paddingBottom: 64,
+    gap: 14,
   },
   emptyState: {
-    paddingVertical: 24,
+    paddingVertical: 32,
+    paddingHorizontal: 24,
+    marginHorizontal: 16,
     alignItems: 'center',
+    backgroundColor: GOLD_LIGHT,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(197, 160, 89, 0.2)',
+    borderStyle: 'dashed',
+  },
+  emptyIconContainer: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 12,
   },
   emptyStateTitle: {
-    fontSize: 16,
+    fontSize: 15,
     fontFamily: 'Poppins-SemiBold',
-    color: ShopColors.textPrimary,
+    color: NAVY,
     marginBottom: 4,
   },
   emptyStateText: {
-    fontSize: 14,
+    fontSize: 13,
     fontFamily: 'Poppins-Regular',
     color: ShopColors.textSecondary,
+    textAlign: 'center',
   },
 });
 

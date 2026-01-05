@@ -15,7 +15,6 @@ import TouristSpotReviews from "@/src/features/admin/services/tourist-spot/revie
 import { TouristSpotProvider } from "@/src/context/TouristSpotContext";
 import ReportDetailsScreen from "@/src/features/admin/report/ReportDetailsScreen";
 import TourismStaffManagement from "@/src/features/admin/tourism-staff/TourismStaffManagement";
-import TourismRolesPage from "@/src/features/admin/tourism-roles/TourismRolesPage";
 import TourismSettings from "../features/admin/settings/Settings";
 import UserAccounts from "../features/admin/users/UserAccounts";
 import TourismProfile from "../features/admin/profile/Profile";
@@ -80,16 +79,6 @@ export default function TourismRoutes({ tourismRoles }: TourismRoutesProps) {
         element={
           <ProtectedRoute requiredRoles={["Admin"]}>
             <TourismStaffManagement />
-          </ProtectedRoute>
-        }
-      />
-
-      {/* Staff Roles (Admin only) */}
-      <Route
-        path={`${tourism}/staff-roles`}
-        element={
-          <ProtectedRoute requiredRoles={["Admin"]}>
-            <TourismRolesPage />
           </ProtectedRoute>
         }
       />

@@ -26,7 +26,8 @@ import express from 'express';
 import rateLimit from 'express-rate-limit';
 import * as refundController from '../controller/refund/index.js';
 import { authenticate } from '../middleware/authenticate.js';
-import { authorizeRole } from '../middleware/authorizeRole.js';
+import { authorizeRole, authorizeAny, authorizeBusinessAccess } from '../middleware/authorizeRole.js';
+import { hasAnyPermission } from '../utils/authHelpers.js';
 
 const router = express.Router();
 
@@ -48,7 +49,8 @@ const refundRequestLimiter = rateLimit({
     error: 'Too many refund requests. Please try again later.',
     code: 'RATE_LIMIT_EXCEEDED'
   },
-  skip: (req) => req.user?.role === 'Admin'
+  // Skip rate limit for users with admin permissions
+  skip: async (req) => hasAnyPermission(req.user?.id, ['manage_refunds', 'manage_orders'])
 });
 
 /**
@@ -71,19 +73,17 @@ const eligibilityCheckLimiter = rateLimit({
 
 // ==================== USER REFUND ROUTES ====================
 
-// Get user's refund history
+// Get user's refund history (any authenticated user can view their own refunds)
 router.get(
   '/my',
   authenticate,
-  authorizeRole('Tourist', 'Business Owner', 'Admin'),
   refundController.getMyRefunds
 );
 
-// Get refund by ID
+// Get refund by ID (controller checks ownership/business access)
 router.get(
   '/:refundId',
   authenticate,
-  authorizeRole('Tourist', 'Business Owner', 'Admin'),
   refundController.getRefundById
 );
 
@@ -93,66 +93,60 @@ router.get(
 router.get(
   '/business/:businessId/stats',
   authenticate,
-  authorizeRole('Business Owner', 'Admin'),
+  authorizeBusinessAccess('businessId'),
   refundController.getBusinessRefundStats
 );
 
 // ==================== ORDER REFUND ROUTES ====================
 // These are also registered in orders.js for convenience
 
-// Check order refund eligibility
+// Check order refund eligibility (any authenticated user for their own orders)
 router.get(
   '/orders/:orderId/eligibility',
   authenticate,
   eligibilityCheckLimiter,
-  authorizeRole('Tourist'),
   refundController.checkRefundEligibility
 );
 
-// Request refund for a paid order
+// Request refund for a paid order (controller validates order ownership)
 router.post(
   '/orders/:orderId/refund',
   authenticate,
   refundRequestLimiter,
-  authorizeRole('Tourist'),
   refundController.requestOrderRefund
 );
 
-// Cancel a cash on pickup order
+// Cancel a cash on pickup order (controller validates order ownership)
 router.post(
   '/orders/:orderId/cancel',
   authenticate,
   refundRequestLimiter,
-  authorizeRole('Tourist'),
   refundController.cancelOrderRequest
 );
 
-// Get order refund status
+// Get order refund status (controller validates ownership/business access)
 router.get(
   '/orders/:orderId/status',
   authenticate,
-  authorizeRole('Tourist', 'Business Owner', 'Admin'),
   refundController.getOrderRefundStatus
 );
 
 // ==================== BOOKING REFUND ROUTES ====================
 // These are also registered in booking.js for convenience
 
-// Check booking refund eligibility
+// Check booking refund eligibility (controller validates booking ownership)
 router.get(
   '/bookings/:bookingId/eligibility',
   authenticate,
   eligibilityCheckLimiter,
-  authorizeRole('Tourist'),
   refundController.checkBookingRefundEligibility
 );
 
-// Request refund for a booking
+// Request refund for a booking (controller validates booking ownership)
 router.post(
   '/bookings/:bookingId/refund',
   authenticate,
   refundRequestLimiter,
-  authorizeRole('Tourist'),
   refundController.requestBookingRefund
 );
 

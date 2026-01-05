@@ -10,7 +10,7 @@ const Login: React.FC = () => {
   const [rememberMe, setRememberMe] = useState(false);
   const [loginError, setLoginError] = useState("");
   const navigate = useNavigate();
-  const { login, user } = useAuth();
+  const { login } = useAuth();
   const [loading, setLoading] = useState(false);
 
   // Load saved credentials on mount
@@ -30,9 +30,10 @@ const Login: React.FC = () => {
 
     try {
       setLoginError("");
-
-      await login(email, password, rememberMe);
       setLoading(true);
+
+      // login() returns the logged-in user - use this instead of stale state
+      const loggedInUser = await login(email, password, rememberMe);
 
       // Save credentials if remember me is checked
       if (rememberMe) {
@@ -41,14 +42,20 @@ const Login: React.FC = () => {
         localStorage.removeItem("rememberedEmail");
       }
 
-      if (user?.role_name === "Admin") {
+      // Check the returned user, not the stale state
+      // Allow both Admin and Tourism Officer roles for tourism CMS
+      const allowedRoles = ["Admin", "Tourism Officer"];
+      if (loggedInUser?.role_name && allowedRoles.includes(loggedInUser.role_name)) {
         navigate("/tourism/dashboard");
       } else {
+        setLoading(false);
         setLoginError("Unauthorized Access");
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
+      setLoading(false);
+      const err = error as { response?: { data?: { message?: string } }; message?: string };
       setLoginError(
-        error?.response?.data?.message || error?.message || "Login failed."
+        err?.response?.data?.message || err?.message || "Login failed."
       );
     }
   };

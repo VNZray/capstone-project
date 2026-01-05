@@ -100,14 +100,14 @@ export async function getReviewsByTypeAndEntityId(
   return normalizeList<ReviewAndRating>(data);
 }
 
-export async function getBusinessReviews(
-  businessId: string,
-  business_type: string
+export async function getEnrichedReviews(
+  entityId: string,
+  entityType: string
 ): Promise<ReviewWithAuthor[]> {
-  // Fetch base reviews for this business/type
+  // Fetch base reviews for this entity/type
   const rawReviews = await getReviewsByTypeAndEntityId(
-    business_type as ReviewType,
-    businessId
+    entityType as ReviewType,
+    entityId
   );
 
   if (!rawReviews || rawReviews.length === 0) return [];
@@ -202,6 +202,13 @@ export async function getBusinessReviews(
   return enriched;
 }
 
+export async function getBusinessReviews(
+  businessId: string,
+  business_type: string
+): Promise<ReviewWithAuthor[]> {
+  return getEnrichedReviews(businessId, business_type);
+}
+
 export async function createReview(payload: CreateReviewPayload): Promise<ReviewAndRating> {
   const { data } = await apiClient.post(`/reviews`, payload);
   return unwrap<ReviewAndRating>(data);
@@ -276,6 +283,7 @@ export default {
   getReviewById,
   getReviewsByTypeAndEntityId,
   getBusinessReviews,
+  getEnrichedReviews,
   createReview,
   updateReview,
   deleteReview,

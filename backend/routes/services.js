@@ -1,7 +1,7 @@
 import express from "express";
 import * as serviceController from "../controller/serviceController.js";
 import { authenticate } from "../middleware/authenticate.js";
-import { authorizeRole } from "../middleware/authorizeRole.js";
+import { authorize } from "../middleware/authorizeRole.js";
 
 const router = express.Router();
 
@@ -28,13 +28,13 @@ router.get("/:id", serviceController.getServiceById);
 
 // ==================== SERVICE MANAGEMENT (BUSINESS OWNER) ====================
 
-// Create new service
-router.post("/", authenticate, authorizeRole("Business Owner", "Staff", "Admin"), serviceController.insertService);
+// Create new service (requires manage_business_services permission)
+router.post("/", authenticate, authorize('manage_business_services'), serviceController.insertService);
 
 // Update service
-router.put("/:id", authenticate, authorizeRole("Business Owner", "Staff", "Admin"), serviceController.updateService);
+router.put("/:id", authenticate, authorize('manage_business_services'), serviceController.updateService);
 
 // Delete service
-router.delete("/:id", authenticate, authorizeRole("Business Owner", "Staff", "Admin"), serviceController.deleteService);
+router.delete("/:id", authenticate, authorize('manage_business_services'), serviceController.deleteService);
 
 export default router;

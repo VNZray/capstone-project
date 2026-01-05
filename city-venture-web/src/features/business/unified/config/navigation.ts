@@ -1,6 +1,8 @@
 /**
  * Unified Navigation Configuration
  * Capability-based sidebar navigation items
+ * 
+ * Uses permission constants from @/src/constants/permissions.ts
  */
 
 import {
@@ -22,6 +24,7 @@ import {
   Settings as SettingsIcon,
 } from 'lucide-react';
 import type { NavItemConfig } from '../types';
+import * as P from '@/src/constants/permissions';
 
 /**
  * Main navigation items for the unified business sidebar
@@ -32,19 +35,23 @@ import type { NavItemConfig } from '../types';
  *
  * SHARED FEATURES (all business types):
  * - Dashboard, Business Profile, Promotions, Reviews, Subscription, Staff, Settings
+ * 
+ * PERMISSION-BASED ACCESS:
+ * - Navigation items use requiredPermissions for fine-grained RBAC
+ * - Custom roles with proper permissions will see the correct nav items
  */
 export const navigationConfig: NavItemConfig[] = [
   // ============================================
   // SHARED FEATURES - All business types
   // ============================================
 
-  // Dashboard - visible to all business roles
+  // Dashboard - visible to users with dashboard/reporting permissions
   {
     id: 'dashboard',
     label: 'Dashboard',
     path: '/business/dashboard',
     icon: LayoutDashboard,
-    requiredRoles: ['Business Owner', 'Manager', 'Room Manager', 'Receptionist', 'Sales Associate'],
+    requiredPermissions: [P.VIEW_DASHBOARD, P.VIEW_REPORTS, P.VIEW_ANALYTICS],
   },
 
   // ============================================
@@ -58,7 +65,7 @@ export const navigationConfig: NavItemConfig[] = [
     path: '/business/transactions',
     icon: Receipt,
     requiredCapabilities: ['canBook'],
-    requiredRoles: ['Business Owner', 'Manager', 'Receptionist'],
+    requiredPermissions: [P.VIEW_TRANSACTIONS, P.VIEW_PAYMENTS],
   },
 
   // Bookings - Accommodation only
@@ -68,7 +75,7 @@ export const navigationConfig: NavItemConfig[] = [
     path: '/business/bookings',
     icon: CalendarCheck,
     requiredCapabilities: ['canBook'],
-    requiredRoles: ['Business Owner', 'Manager', 'Receptionist'],
+    requiredPermissions: [P.VIEW_BOOKINGS, P.MANAGE_BOOKINGS],
   },
 
   // ============================================
@@ -81,7 +88,7 @@ export const navigationConfig: NavItemConfig[] = [
     label: 'Business Profile',
     path: '/business/business-profile',
     icon: Store,
-    requiredRoles: ['Business Owner', 'Manager'],
+    requiredPermissions: [P.VIEW_BUSINESS_PROFILE, P.MANAGE_BUSINESS_PROFILE],
   },
 
   // Manage Promotions - All businesses (no capability requirement)
@@ -90,7 +97,7 @@ export const navigationConfig: NavItemConfig[] = [
     label: 'Manage Promotions',
     path: '/business/promotions',
     icon: Megaphone,
-    requiredRoles: ['Business Owner', 'Manager', 'Sales Associate'],
+    requiredPermissions: [P.VIEW_PROMOTIONS, P.MANAGE_PROMOTIONS],
   },
 
   // ============================================
@@ -104,7 +111,7 @@ export const navigationConfig: NavItemConfig[] = [
     path: '/business/rooms',
     icon: BedDouble,
     requiredCapabilities: ['canBook'],
-    requiredRoles: ['Business Owner', 'Manager', 'Room Manager', 'Receptionist'],
+    requiredPermissions: [P.MANAGE_ROOMS, P.VIEW_BOOKINGS],
   },
 
   // ============================================
@@ -118,7 +125,7 @@ export const navigationConfig: NavItemConfig[] = [
     path: '/business/store',
     icon: ShoppingBag,
     requiredCapabilities: ['canSell'],
-    requiredRoles: ['Business Owner', 'Manager', 'Sales Associate'],
+    requiredPermissions: [P.VIEW_SHOP, P.VIEW_ORDERS],
     isSection: true,
     children: [
       {
@@ -170,7 +177,7 @@ export const navigationConfig: NavItemConfig[] = [
     label: 'Reviews & Ratings',
     path: '/business/reviews',
     icon: Star,
-    requiredRoles: ['Business Owner', 'Manager'],
+    requiredPermissions: [P.VIEW_REVIEWS, P.MANAGE_REVIEWS],
   },
 
   // Subscription - All businesses (no capability requirement)
@@ -179,35 +186,20 @@ export const navigationConfig: NavItemConfig[] = [
     label: 'Subscription',
     path: '/business/subscription',
     icon: CreditCard,
-    requiredRoles: ['Business Owner'],
+    requiredPermissions: [P.MANAGE_SUBSCRIPTIONS, P.VIEW_PAYMENTS],
   },
 
   // ============================================
-  // STAFF MANAGEMENT SECTION - All businesses
+  // STAFF MANAGEMENT - All businesses
   // ============================================
 
-  // Staffs Section - All businesses (expandable)
+  // Manage Staff - Direct link (no dropdown)
   {
-    id: 'staffs',
-    label: 'Staffs',
+    id: 'manage-staff',
+    label: 'Manage Staff',
     path: '/business/manage-staff',
     icon: Users,
-    requiredRoles: ['Business Owner'],
-    isSection: true,
-    children: [
-      {
-        id: 'manage-staff',
-        label: 'Manage Staff',
-        path: '/business/manage-staff',
-        icon: Users,
-      },
-      {
-        id: 'staff-roles',
-        label: 'Manage Roles',
-        path: '/business/staff-roles',
-        icon: Users,
-      },
-    ],
+    requiredPermissions: [P.VIEW_STAFF, P.ADD_STAFF, P.MANAGE_STAFF_ROLES],
   },
 
   // Settings - All businesses
@@ -216,28 +208,42 @@ export const navigationConfig: NavItemConfig[] = [
     label: 'Settings',
     path: '/business/settings',
     icon: Settings,
-    requiredRoles: ['Business Owner'],
+    requiredPermissions: [P.MANAGE_BUSINESS_SETTINGS],
   },
 ];
 
 /**
- * Get filtered navigation items based on capabilities and roles
+ * Get filtered navigation items based on capabilities and permissions
+ * 
+ * RBAC Flow:
+ * 1. Check capability requirements (business type features)
+ * 2. Check permission requirements (user has at least one required permission)
+ * 3. Fallback to role check for legacy support
  */
 export function getFilteredNavigation(
   capabilities: import('../types').BusinessCapabilities,
   _userRoles: string[],
   hasRole: (...roles: string[]) => boolean,
-  _canAny?: (...permissions: string[]) => boolean
+  canAny?: (...permissions: string[]) => boolean
 ): NavItemConfig[] {
   return navigationConfig.filter(item => {
-    // Check capability requirements
+    // Check capability requirements (business type features)
     if (item.requiredCapabilities) {
       const hasCapabilities = item.requiredCapabilities.every(cap => capabilities[cap]);
       if (!hasCapabilities) return false;
     }
 
-    // Check role requirements
-    if (item.requiredRoles) {
+    // Check permission requirements (user must have at least one)
+    if (item.requiredPermissions && item.requiredPermissions.length > 0) {
+      // Use canAny to check if user has any of the required permissions
+      if (canAny) {
+        const hasPermission = canAny(...item.requiredPermissions);
+        if (!hasPermission) return false;
+      }
+    }
+
+    // Legacy: Check role requirements (fallback for items without requiredPermissions)
+    if (item.requiredRoles && !item.requiredPermissions) {
       const hasRequiredRole = hasRole(...item.requiredRoles);
       if (!hasRequiredRole) return false;
     }

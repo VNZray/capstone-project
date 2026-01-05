@@ -13,12 +13,14 @@ import type {
   BusinessProfileHours,
   BusinessProfileRatingBreakdown,
   BusinessProfileOperatingStatus,
+  BusinessProfileService,
 } from '@/components/shops/details/types';
 import { fetchBusinessDetails } from '@/services/BusinessService';
 import { fetchProductsByBusinessId } from '@/services/ProductService';
 import { fetchPromotionsByBusinessId } from '@/services/PromotionService';
 import { fetchBusinessHours } from '@/services/BusinessHoursService';
 import { fetchBusinessAmenities } from '@/services/AmenityService';
+import { fetchServicesByBusinessId } from '@/services/ServiceService';
 import {
   fetchBusinessReviewStats,
   fetchReviewsByBusinessId,
@@ -30,6 +32,7 @@ import { Alert, Linking, Share } from 'react-native';
 import type { Business } from '@/types/Business';
 import type { Product } from '@/types/Product';
 import type { Promotion } from '@/types/Promotion';
+import type { Service } from '@/types/Service';
 
 // ============ DATA TRANSFORMATION UTILITIES ============
 
@@ -120,6 +123,43 @@ function transformPromotions(
     isActive: Boolean(promo.is_active),
     image: promo.image_url || undefined,
   }));
+}
+
+/**
+ * Transform backend Service[] into BusinessProfileService[]
+ */
+function transformServices(services: Service[]): BusinessProfileService[] {
+  return services.map((service) => {
+    // Parse contact_methods if it's a string
+    let contactMethods: { type: string; value: string }[] = [];
+    if (service.contact_methods) {
+      if (typeof service.contact_methods === 'string') {
+        try {
+          contactMethods = JSON.parse(service.contact_methods);
+        } catch {
+          contactMethods = [];
+        }
+      } else if (Array.isArray(service.contact_methods)) {
+        contactMethods = service.contact_methods;
+      }
+    }
+    
+    return {
+      id: service.id,
+      name: service.name,
+      description: service.description || undefined,
+      image: service.image_url || undefined,
+      basePrice: typeof service.base_price === 'string' 
+        ? parseFloat(service.base_price) 
+        : service.base_price || 0,
+      priceType: service.price_type || 'fixed',
+      requirements: service.requirements || undefined,
+      contactMethods,
+      contactNotes: service.contact_notes || undefined,
+      status: service.status || 'active',
+      categoryName: service.category_name || undefined,
+    };
+  });
 }
 
 /**
@@ -315,6 +355,7 @@ export default function BusinessProfileScreen() {
         amenities,
         reviewStats,
         reviewsData,
+        servicesData,
       ] = await Promise.all([
         fetchBusinessDetails(businessId),
         fetchProductsByBusinessId(businessId).catch(() => []),
@@ -323,6 +364,7 @@ export default function BusinessProfileScreen() {
         fetchBusinessAmenities(businessId).catch(() => []),
         fetchBusinessReviewStats(businessId).catch(() => null),
         fetchReviewsByBusinessId(businessId).catch(() => []),
+        fetchServicesByBusinessId(businessId).catch(() => []),
       ]);
 
       // Filter hours for this specific business (backend returns all hours)
@@ -336,6 +378,7 @@ export default function BusinessProfileScreen() {
       const amenitiesTransformed = transformAmenities(amenities);
       const businessHours = transformBusinessHours(hours);
       const operatingStatus = calculateOperatingStatus(businessHours);
+      const servicesTransformed = transformServices(servicesData);
       const { breakdown, average, count } =
         transformRatingBreakdown(reviewStats);
 
@@ -379,6 +422,7 @@ export default function BusinessProfileScreen() {
         },
         promotions: promos,
         menu,
+        services: servicesTransformed,
         reviews,
         gallery,
         amenities: amenitiesTransformed,

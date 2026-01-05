@@ -1,67 +1,59 @@
 import express from "express";
 import * as seasonalPricingController from "../controller/accommodation/seasonalPricingController.js";
 import { authenticate } from "../middleware/authenticate.js";
-import { authorizeRole } from "../middleware/authorizeRole.js";
+import { authorizeRole, authorize, authorizeBusinessAccess } from "../middleware/authorizeRole.js";
 
 const router = express.Router();
 
-// Roles that can manage seasonal pricing
-const businessRoles = ["Admin", "Business Owner", "Manager"];
-const viewRoles = [...businessRoles, "Room Manager", "Receptionist", "Tourist"];
-
-// Get all seasonal pricing (Admin only)
+// Get all seasonal pricing (platform admin only)
 router.get(
   "/",
   authenticate,
-  authorizeRole("Admin"),
+  authorizeRole('Admin', 'Tourism Officer'),
+  authorize('view_all_profiles'),
   seasonalPricingController.getAllSeasonalPricing
 );
 
-// Get seasonal pricing by business ID
+// Get seasonal pricing by business ID (any authenticated user - controller validates access)
 router.get(
   "/business/:business_id",
   authenticate,
-  authorizeRole(...viewRoles),
   seasonalPricingController.getSeasonalPricingByBusinessId
 );
 
-// Get seasonal pricing by room ID
+// Get seasonal pricing by room ID (any authenticated user - public for booking flow)
 router.get(
   "/room/:room_id",
   authenticate,
-  authorizeRole(...viewRoles),
   seasonalPricingController.getSeasonalPricingByRoomId
 );
 
-// Calculate price for a specific date
+// Calculate price for a specific date (public for booking flow)
 router.get(
   "/calculate/:room_id/date",
   authenticate,
-  authorizeRole(...viewRoles),
   seasonalPricingController.calculatePriceForDate
 );
 
-// Calculate price for a date range
+// Calculate price for a date range (public for booking flow)
 router.get(
   "/calculate/:room_id/range",
   authenticate,
-  authorizeRole(...viewRoles),
   seasonalPricingController.calculatePriceForDateRange
 );
 
-// Get seasonal pricing by ID
+// Get seasonal pricing by ID (any authenticated user)
 router.get(
   "/:id",
   authenticate,
-  authorizeRole(...viewRoles),
   seasonalPricingController.getSeasonalPricingById
 );
 
-// Create seasonal pricing
+// Create seasonal pricing (requires manage_rooms permission)
 router.post(
   "/",
   authenticate,
-  authorizeRole(...businessRoles),
+  authorize('manage_rooms'),
   seasonalPricingController.insertSeasonalPricing
 );
 
@@ -69,7 +61,7 @@ router.post(
 router.post(
   "/upsert",
   authenticate,
-  authorizeRole(...businessRoles),
+  authorize('manage_rooms'),
   seasonalPricingController.upsertSeasonalPricing
 );
 
@@ -77,7 +69,7 @@ router.post(
 router.put(
   "/:id",
   authenticate,
-  authorizeRole(...businessRoles),
+  authorize('manage_rooms'),
   seasonalPricingController.updateSeasonalPricing
 );
 
@@ -85,7 +77,7 @@ router.put(
 router.delete(
   "/:id",
   authenticate,
-  authorizeRole(...businessRoles),
+  authorize('manage_rooms'),
   seasonalPricingController.deleteSeasonalPricing
 );
 

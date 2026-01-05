@@ -4,24 +4,62 @@
 export async function seed(knex) {
   // Make this seed idempotent; avoid deleting unrelated tables
 
-// Inserts seed entries
-await knex("user_role").insert([
-  // System / Government Level
-  { id: 1, role_name: "Admin", role_description: "Full system control; manages all users, roles, and approvals.", role_for: "Tourism" },
-  { id: 2, role_name: "Tourism Officer", role_description: "Approves business, event, and tourist spot listings; monitors tourism reports.",  role_for: "Tourism" },
-  { id: 3, role_name: "Event Manager", role_description: "Manages event listings, participant data, and schedules.",  role_for: "Tourism" },
+  // Check if role_type column exists (migration may not have run yet)
+  const hasRoleType = await knex.schema.hasColumn('user_role', 'role_type');
 
-  // Business Side
-  { id: 4, role_name: "Business Owner", role_description: "Owner of a business listing; manages all operations and assigns staff roles.",  role_for: "Business" },
-  { id: 5, role_name: "Manager", role_description: "Handles daily business operations such as bookings, rooms, and transactions.",  role_for: "Business" },
-  { id: 6, role_name: "Room Manager", role_description: "Responsible for managing room listings, availability, maintenance, and pricing.",  role_for: "Business" },
-  { id: 7, role_name: "Receptionist", role_description: "Front desk staff responsible for booking confirmation and guest check-ins.",  role_for: "Business" },
-  { id: 8, role_name: "Sales Associate", role_description: "Manages shop products, prices, and promotions.",  role_for: "Business" },
+  // Inserts seed entries - System Roles only
+  // All roles are now system roles; staff get the generic "Staff" role
+  // Business access is determined by staff.business_id, not role_for
+  const roles = [
+    // System / Government Level
+    { 
+      id: 1, 
+      role_name: "Admin", 
+      role_description: "Full system control; manages all users, roles, and approvals.", 
+      ...(hasRoleType && { role_type: 'system', is_immutable: true })
+    },
+    { 
+      id: 2, 
+      role_name: "Tourism Officer", 
+      role_description: "Approves business, event, and tourist spot listings; monitors tourism reports.",  
+      ...(hasRoleType && { role_type: 'system', is_immutable: true })
+    },
+    { 
+      id: 3, 
+      role_name: "Event Manager", 
+      role_description: "Manages event listings, participant data, and schedules.",  
+      ...(hasRoleType && { role_type: 'system', is_immutable: true })
+    },
 
-  // Tourist Side
-  { id: 9, role_name: "Tourist", role_description: "Regular app user who explores listings, books accommodations, and leaves reviews.",  role_for: "Tourism" },
-])
-.onConflict('id')
-.merge(['role_name', 'role_description', 'role_for']);
+    // Business Owner - System Role
+    { 
+      id: 4, 
+      role_name: "Business Owner", 
+      role_description: "Owner of a business listing; manages all operations and staff permissions.",  
+      ...(hasRoleType && { role_type: 'system', is_immutable: true })
+    },
 
+    // Tourist Side
+    { 
+      id: 5, 
+      role_name: "Tourist", 
+      role_description: "Regular app user who explores listings, books accommodations, and leaves reviews.",  
+      ...(hasRoleType && { role_type: 'system', is_immutable: true })
+    },
+
+    // Staff - Single role for all staff members
+    // Business access determined by staff.business_id, permissions by user_permissions
+    { 
+      id: 6, 
+      role_name: "Staff", 
+      role_description: "Staff member of a business. Permissions are assigned per-user.",  
+      ...(hasRoleType && { role_type: 'system', is_immutable: true })
+    },
+  ];
+
+  await knex("user_role").insert(roles)
+    .onConflict('id')
+    .merge(['role_name', 'role_description', ...(hasRoleType ? ['role_type', 'is_immutable'] : [])]);
+
+  console.log('[Seed] System roles seeded successfully.');
 }

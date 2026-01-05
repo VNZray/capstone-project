@@ -1,5 +1,5 @@
 /**
- * Seed the tourist_spot_schedules table for the tourist spots created in 05_tourist_spots.js
+ * Seed the tourist_spot_schedules table for the tourist spots created in 09_tourist_spots.js
  * Assumptions:
  * - day_of_week: 0 (Sunday) ... 6 (Saturday)
  * - time format: HH:MM:SS (MySQL TIME)
@@ -10,7 +10,7 @@
  * @param { import('knex').Knex } knex
  */
 export async function seed(knex) {
-  // Spot names from 05_tourist_spots.js
+  // Spot names from 09_tourist_spots.js
   const spotNames = [
     "Naga Metropolitan Cathedral",
     "Our Lady of Peñafrancia Basilica Minore",

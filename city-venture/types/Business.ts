@@ -20,6 +20,7 @@ export type Business = {
   status: string;
   business_image?: string | "";
   hasBooking?: boolean | number; // MySQL returns 1/0, JS may have true/false
+  hasStore?: boolean | number; // MySQL returns 1/0, JS may have true/false
   barangay_id: number;
   // New hierarchical category system
   categories?: EntityCategory[];
