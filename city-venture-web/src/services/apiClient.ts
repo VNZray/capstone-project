@@ -58,8 +58,11 @@ export const refreshTokens = async (): Promise<string | null> => {
 // Request Interceptor
 apiClient.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
+    console.debug('[apiClient] Request to:', config.url, '| Has token:', !!accessToken);
     if (accessToken) {
       config.headers.Authorization = `Bearer ${accessToken}`;
+    } else {
+      console.warn('[apiClient] No access token available for request:', config.url);
     }
     return config;
   },
