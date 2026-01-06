@@ -19,11 +19,14 @@ interface NavbarProps {
   servicesId?: string;
   /** ID of the About section to scroll to */
   aboutId?: string;
+  /** Whether the navbar should have a solid background */
+  solid?: boolean;
 }
 
 const Navbar: React.FC<NavbarProps> = ({
   servicesId = "features",
   aboutId = "about",
+  solid = false,
 }) => {
   const navigate = useNavigate();
   const [open, setOpen] = React.useState(false);
@@ -77,13 +80,13 @@ const Navbar: React.FC<NavbarProps> = ({
     }
   };
 
-  const navStyle = { "--nav-bg": String(bgOpacity) } as React.CSSProperties & {
+  const navStyle = { "--nav-bg": solid ? "1" : String(bgOpacity) } as React.CSSProperties & {
     [key: string]: string;
   };
 
   return (
     <nav
-      className={`navbar navbar-dark ${scrolled ? "scrolled" : ""}`}
+      className={`navbar navbar-dark ${scrolled || solid ? "scrolled" : ""}`}
       style={navStyle}
     >
       <div className="nav-inner">
@@ -144,6 +147,16 @@ const Navbar: React.FC<NavbarProps> = ({
             }}
           >
             Components
+          </a>
+          <a
+            className="nav-link"
+            href="/for-business"
+            onClick={(e) => {
+              e.preventDefault();
+              navigate("/for-business");
+            }}
+          >
+            For Business
           </a>
         </div>
 
@@ -370,6 +383,24 @@ const Navbar: React.FC<NavbarProps> = ({
               }}
             >
               Services
+            </a>
+            <a
+              className="nav-link"
+              style={{
+                color: colors.primary,
+                fontSize: "16px",
+                fontWeight: 600,
+                padding: "12px 8px",
+                borderBottom: `1px solid rgba(13,27,42,0.1)`,
+              }}
+              href="/for-business"
+              onClick={(e) => {
+                e.preventDefault();
+                setOpen(false);
+                navigate("/for-business");
+              }}
+            >
+              For Business
             </a>
             <div
               style={{
