@@ -10,6 +10,9 @@ import PageContainer from "@/src/components/PageContainer";
 import FooterSection from "@/src/features/landing-page/components/FooterSection";
 import { colors } from "@/src/utils/Colors";
 
+// Gold accent from Tourist Landing Page
+const GOLD_ACCENT = "#C5A059";
+
 interface TeamMemberProps {
   name: string;
   position: string;
@@ -249,8 +252,8 @@ export default function About() {
                 display: "inline-block",
                 padding: "8px 20px",
                 borderRadius: 100,
-                backgroundColor: `${colors.primary}08`,
-                color: colors.primary,
+                backgroundColor: `${GOLD_ACCENT}15`,
+                color: GOLD_ACCENT,
                 fontSize: 13,
                 fontWeight: 600,
                 letterSpacing: 1.5,

@@ -143,10 +143,10 @@ const Navbar: React.FC<NavbarProps> = ({
             <>
               <a
                 className="nav-link"
-                href="#features"
+                href="/faq"
                 onClick={(e) => {
                   e.preventDefault();
-                  scrollTo(servicesId);
+                  navigate("/faq");
                 }}
               >
                 FAQ
@@ -422,10 +422,11 @@ const Navbar: React.FC<NavbarProps> = ({
                   padding: "12px 8px",
                   borderBottom: `1px solid rgba(13,27,42,0.1)`,
                 }}
-                href={`#${servicesId}`}
+                href="/faq"
                 onClick={(e) => {
                   e.preventDefault();
-                  scrollTo(servicesId);
+                  setOpen(false);
+                  navigate("/faq");
                 }}
               >
                 FAQ

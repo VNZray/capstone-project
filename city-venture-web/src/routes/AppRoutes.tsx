@@ -14,6 +14,7 @@ import * as P from "@/src/constants/permissions";
 // Pages
 import NotFound from "../pages/NotFound";
 import About from "../pages/About";
+import FAQ from "../pages/FAQ";
 import Registration from "../pages/BusinessRegistration";
 import Unauthorized from "@/src/pages/Unauthorized";
 import Test from "../pages/Test";
@@ -116,6 +117,7 @@ export default function AppRoutes() {
           <Route index element={<LandingPage />} />
           <Route path={`${home}`} element={<LandingPage />} />
           <Route path={`${home}about`} element={<About />} />
+          <Route path={`${home}faq`} element={<FAQ />} />
           <Route path={`${home}forget-password`} element={<ForgetPassword />} />
           <Route path="/for-business" element={<BusinessLandingPage />} />
         </Route>

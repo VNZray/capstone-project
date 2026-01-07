@@ -27,7 +27,7 @@ const FooterSection: React.FC<FooterSectionProps> = () => {
         { label: "Popular Attractions", href: "#" },
         { label: "Local Events", href: "#" },
         { label: "Travel Guide", href: "#" },
-        { label: "FAQ for Tourists", href: "#" },
+        { label: "FAQ for Tourists", href: "/faq" },
       ],
     },
     {
@@ -38,7 +38,7 @@ const FooterSection: React.FC<FooterSectionProps> = () => {
         { label: "Partner Portal Login", href: "/business/login" },
         { label: "Business Resources", href: "#" },
         { label: "Pricing/Plans", href: "#" },
-        { label: "FAQ for Businesses", href: "#" },
+        { label: "FAQ for Businesses", href: "/faq" },
       ],
     },
     {
