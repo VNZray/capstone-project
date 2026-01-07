@@ -14,7 +14,7 @@ import { colors } from "@/src/utils/Colors";
 import logo from "@/src/assets/logo/city-ventures-main.png";
 
 interface FooterSectionProps {
-  logoImage: string;
+  logoImage?: string;
 }
 
 const FooterSection: React.FC<FooterSectionProps> = () => {

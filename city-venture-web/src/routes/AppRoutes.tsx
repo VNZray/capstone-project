@@ -28,6 +28,7 @@ import BusinessManagementLayout from "../layout/BusinessManagementLayout";
 // Features - Landing & Auth
 import LandingPage from "@/src/features/landing-page/LandingPage";
 import BusinessLandingPage from "@/src/features/landing-page/BusinessLandingPage";
+import TouristLandingPage from "@/src/features/landing-page/TouristLandingPage";
 import BusinessPortalLogin from "../features/auth/LoginPage";
 import AdminLogin from "../features/auth/old-page/AdminLogin";
 import AdminRegister from "../features/auth/old-page/AdminRegister";
@@ -118,6 +119,9 @@ export default function AppRoutes() {
           <Route path={`${home}forget-password`} element={<ForgetPassword />} />
           <Route path="/for-business" element={<BusinessLandingPage />} />
         </Route>
+
+        {/* Tourist landing page - has its own navbar */}
+        <Route path="/explore" element={<TouristLandingPage />} />
 
         <Route path={`/unauthorized`} element={<Unauthorized />} />
         <Route path={`/change-password`} element={<ChangePassword />} />

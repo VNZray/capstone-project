@@ -9,6 +9,7 @@ import {
   ListDivider,
   IconButton,
 } from "@mui/joy";
+import { Download } from "lucide-react";
 import "../style/navbar.css";
 import { useNavigate } from "react-router-dom";
 import { colors } from "../../../utils/Colors";
@@ -23,6 +24,8 @@ interface NavbarProps {
   solid?: boolean;
   /** Whether the navbar should blend seamlessly with the page background */
   seamless?: boolean;
+  /** Whether to show Download App button instead of Login/Sign Up (for tourist landing page) */
+  touristMode?: boolean;
 }
 
 const Navbar: React.FC<NavbarProps> = ({
@@ -30,6 +33,7 @@ const Navbar: React.FC<NavbarProps> = ({
   aboutId = "about",
   solid = false,
   seamless = false,
+  touristMode = false,
 }) => {
   const navigate = useNavigate();
   const [open, setOpen] = React.useState(false);
@@ -169,6 +173,37 @@ const Navbar: React.FC<NavbarProps> = ({
         {/* Actions (desktop) */}
         <div className="nav-actions">
           {!user ? (
+            touristMode ? (
+              <Button
+                variant="solid"
+                onClick={() => {
+                  const appSection = document.getElementById("app-download");
+                  if (appSection) {
+                    appSection.scrollIntoView({ behavior: "smooth", block: "center" });
+                  } else {
+                    // Fallback: scroll to bottom where app download section is
+                    window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
+                  }
+                }}
+                startDecorator={<Download size={18} />}
+                sx={{
+                  backgroundColor: "#C5A059",
+                  color: "#0A1B47",
+                  fontWeight: 700,
+                  textTransform: "none",
+                  borderRadius: 9999,
+                  padding: "10px 24px",
+                  boxShadow: "0 4px 14px rgba(197,160,89,0.3)",
+                  "&:hover": {
+                    backgroundColor: "#D4AF6A",
+                    transform: "translateY(-2px)",
+                    boxShadow: "0 6px 20px rgba(197,160,89,0.4)",
+                  },
+                }}
+              >
+                Download App
+              </Button>
+            ) : (
             <>
               <Button
                 variant="plain"
@@ -209,7 +244,7 @@ const Navbar: React.FC<NavbarProps> = ({
               >
                 Sign Up
               </Button>
-            </>
+            </>)
           ) : (
             <Dropdown>
               <MenuButton
@@ -419,6 +454,37 @@ const Navbar: React.FC<NavbarProps> = ({
               }}
             >
               {!user ? (
+                touristMode ? (
+                  <Button
+                    variant="solid"
+                    startDecorator={<Download size={18} />}
+                    onClick={() => {
+                      setOpen(false);
+                      const appSection = document.getElementById("app-download");
+                      if (appSection) {
+                        appSection.scrollIntoView({ behavior: "smooth", block: "center" });
+                      } else {
+                        window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
+                      }
+                    }}
+                    sx={{
+                      backgroundColor: "#C5A059",
+                      color: "#0A1B47",
+                      fontWeight: 700,
+                      textTransform: "none",
+                      borderRadius: 9999,
+                      padding: "14px 24px",
+                      fontSize: "16px",
+                      boxShadow: "0 4px 14px rgba(197,160,89,0.3)",
+                      "&:hover": {
+                        backgroundColor: "#D4AF6A",
+                        boxShadow: "0 6px 20px rgba(197,160,89,0.4)",
+                      },
+                    }}
+                  >
+                    Download App
+                  </Button>
+                ) : (
                 <>
                   <Button
                     variant="outlined"
@@ -467,6 +533,7 @@ const Navbar: React.FC<NavbarProps> = ({
                     Sign Up
                   </Button>
                 </>
+                )
               ) : (
                 <>
                   <Button
