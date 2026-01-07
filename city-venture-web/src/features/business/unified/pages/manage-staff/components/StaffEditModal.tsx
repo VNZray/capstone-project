@@ -7,24 +7,19 @@ import {
   FormHelperText,
   Divider,
   Box,
-  Checkbox,
-  Accordion,
-  AccordionSummary,
-  AccordionDetails,
-  Sheet,
   CircularProgress,
 } from "@mui/joy";
 import Container from "@/src/components/Container";
 import Button from "@/src/components/Button";
-import { RotateCw, ChevronDown } from "lucide-react";
+import { RotateCw } from "lucide-react";
 import Typography from "@/src/components/Typography";
 import { useBusiness } from "@/src/context/BusinessContext";
 import {
   fetchAvailableStaffPermissions,
   fetchStaffPermissions,
   type PermissionCategory,
-  type Permission,
 } from "@/src/services/manage-staff/StaffService";
+import PermissionSelector from "./PermissionSelector";
 
 export type StaffEditData = {
   first_name: string;
@@ -66,9 +61,13 @@ export default function StaffEditModal({
   const [email, setEmail] = React.useState("");
   const [phone, setPhone] = React.useState("");
   const [title, setTitle] = React.useState("");
-  const [selectedPermissions, setSelectedPermissions] = React.useState<Set<number>>(new Set());
+  const [selectedPermissions, setSelectedPermissions] = React.useState<
+    Set<number>
+  >(new Set());
   const [error, setError] = React.useState<string>("");
-  const [permissionCategories, setPermissionCategories] = React.useState<PermissionCategory[]>([]);
+  const [permissionCategories, setPermissionCategories] = React.useState<
+    PermissionCategory[]
+  >([]);
   const [loading, setLoading] = React.useState(false);
 
   // Load permissions when modal opens
@@ -79,17 +78,19 @@ export default function StaffEditModal({
 
   const loadPermissions = async () => {
     if (!businessDetails?.id) return;
-    
+
     setLoading(true);
     try {
       // Load available permissions
-      const categories = await fetchAvailableStaffPermissions(businessDetails.id);
+      const categories = await fetchAvailableStaffPermissions(
+        businessDetails.id
+      );
       setPermissionCategories(categories);
-      
+
       // Load current staff permissions if editing existing staff
       if (initialData?.id) {
         const currentPerms = await fetchStaffPermissions(initialData.id);
-        setSelectedPermissions(new Set(currentPerms.map(p => p.id)));
+        setSelectedPermissions(new Set(currentPerms.map((p) => p.id)));
       }
     } catch (err) {
       console.error("Failed to load permissions:", err);
@@ -111,7 +112,7 @@ export default function StaffEditModal({
   }, [open, initialData]);
 
   const togglePermission = (permissionId: number) => {
-    setSelectedPermissions(prev => {
+    setSelectedPermissions((prev) => {
       const next = new Set(prev);
       if (next.has(permissionId)) {
         next.delete(permissionId);
@@ -122,11 +123,11 @@ export default function StaffEditModal({
     });
   };
 
-  const toggleCategory = (permissions: Permission[]) => {
-    const allSelected = permissions.every(p => selectedPermissions.has(p.id));
-    setSelectedPermissions(prev => {
+  const toggleCategory = (permissions: any[]) => {
+    const allSelected = permissions.every((p) => selectedPermissions.has(p.id));
+    setSelectedPermissions((prev) => {
       const next = new Set(prev);
-      permissions.forEach(p => {
+      permissions.forEach((p) => {
         if (allSelected) {
           next.delete(p.id);
         } else {
@@ -243,86 +244,24 @@ export default function StaffEditModal({
         <Divider sx={{ my: 2 }} />
 
         <Box>
-          <Typography.Label>Manage Permissions</Typography.Label>
-          <Typography.Body size="sm" sx={{ color: "text.secondary", mb: 1 }}>
+          <Typography.Label sx={{ mb: 1 }}>Manage Permissions</Typography.Label>
+          <Typography.Body size="sm" sx={{ color: "text.secondary", mb: 2 }}>
             Select the permissions this staff member should have
           </Typography.Body>
-          
+
           {loading ? (
-            <Box sx={{ display: "flex", justifyContent: "center", py: 3 }}>
+            <Box sx={{ display: "flex", justifyContent: "center", py: 4 }}>
               <CircularProgress size="sm" />
             </Box>
           ) : permissionCategories.length === 0 ? (
-            <FormHelperText>
-              No permissions available.
-            </FormHelperText>
+            <FormHelperText>No permissions available.</FormHelperText>
           ) : (
-            <Sheet variant="outlined" sx={{ borderRadius: "sm", overflow: "hidden", maxHeight: 300, overflowY: "auto" }}>
-              {permissionCategories.map((category) => {
-                const allSelected = category.permissions.every(p => selectedPermissions.has(p.id));
-                const someSelected = category.permissions.some(p => selectedPermissions.has(p.id));
-                
-                return (
-                  <Accordion key={category.category_name}>
-                    <AccordionSummary
-                      indicator={<ChevronDown size={16} />}
-                      sx={{ 
-                        "& .MuiAccordionSummary-button": { 
-                          justifyContent: "space-between" 
-                        }
-                      }}
-                    >
-                      <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                        <Checkbox
-                          checked={allSelected}
-                          indeterminate={someSelected && !allSelected}
-                          onChange={() => toggleCategory(category.permissions)}
-                          onClick={(e) => e.stopPropagation()}
-                          size="sm"
-                        />
-                        <Typography.Label>{category.category_name}</Typography.Label>
-                        <Typography.Body size="sm" sx={{ color: "text.tertiary" }}>
-                          ({category.permissions.filter(p => selectedPermissions.has(p.id)).length}/{category.permissions.length})
-                        </Typography.Body>
-                      </Box>
-                    </AccordionSummary>
-                    <AccordionDetails>
-                      <Box sx={{ pl: 4, display: "flex", flexDirection: "column", gap: 1 }}>
-                        {category.permissions.map((permission) => (
-                          <Box 
-                            key={permission.id} 
-                            sx={{ 
-                              display: "flex", 
-                              alignItems: "flex-start", 
-                              gap: 1,
-                              cursor: "pointer",
-                              "&:hover": { bgcolor: "background.level1" },
-                              p: 0.5,
-                              borderRadius: "sm"
-                            }}
-                            onClick={() => togglePermission(permission.id)}
-                          >
-                            <Checkbox
-                              checked={selectedPermissions.has(permission.id)}
-                              onChange={() => togglePermission(permission.id)}
-                              size="sm"
-                            />
-                            <Box>
-                              <Typography.Body size="sm">{permission.name}</Typography.Body>
-                              {permission.description && (
-                                <Typography.Body size="sm" sx={{ color: "text.tertiary" }}>
-                                  {permission.description}
-                                </Typography.Body>
-                              )}
-                            </Box>
-                          </Box>
-                        ))}
-                      </Box>
-                    </AccordionDetails>
-                  </Accordion>
-                );
-              })}
-            </Sheet>
+            <PermissionSelector
+              categories={permissionCategories}
+              selectedPermissions={selectedPermissions}
+              onTogglePermission={togglePermission}
+              onToggleCategory={toggleCategory}
+            />
           )}
         </Box>
 

@@ -19,9 +19,6 @@ exports.up = async function (knex) {
     table.integer("room_size").notNullable();
     table.string("room_image", 255).nullable();
     table.integer("floor").notNullable();
-    table
-      .enum("status", ["Available", "Occupied", "Maintenance", "Reserved"])
-      .notNullable();
     table.integer("capacity").unsigned().notNullable();
   });
 

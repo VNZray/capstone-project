@@ -3,23 +3,27 @@ import { v4 as uuidv4 } from "uuid";
 import { handleDbError } from "../../utils/errorHandler.js";
 
 const ROOM_FIELDS = [
-  "business_id",
   "room_number",
   "room_type",
   "description",
   "room_price",
   "per_hour_rate",
   "room_image",
-  "status",
   "capacity",
   "floor",
   "room_size",
 ];
 
+const ROOM_FIELDS_WITH_BUSINESS = [
+  "business_id",
+  ...ROOM_FIELDS,
+];
+
 const makePlaceholders = (n) => Array(n).fill("?").join(",");
-const buildRoomParams = (id, body) => [
+
+const buildRoomParams = (id, body, includeBusinessId = false) => [
   id,
-  ...ROOM_FIELDS.map((f) => body?.[f] ?? null),
+  ...(includeBusinessId ? ROOM_FIELDS_WITH_BUSINESS : ROOM_FIELDS).map((f) => body?.[f] ?? null),
 ];
 
 // fetch all data
@@ -68,7 +72,7 @@ export const getRoomByBusinessId = async (request, response) => {
 export async function insertRoom(request, response) {
   try {
     const id = uuidv4();
-    const params = buildRoomParams(id, request.body);
+    const params = buildRoomParams(id, request.body, true);
     const placeholders = makePlaceholders(params.length);
     const [data] = await db.query(`CALL InsertRoom(${placeholders})`, params);
     if (!data[0] || data[0].length === 0) {

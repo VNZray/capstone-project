@@ -53,7 +53,8 @@ import type { Room } from "@/src/types/Business";
 interface WalkInBookingModalProps {
   open: boolean;
   onClose: () => void;
-  onSuccess?: () => void;
+  businessId?: string;
+  onSuccess?: (guestName: string) => void | Promise<void>;
 }
 
 const tripPurposeOptions = [
@@ -298,10 +299,15 @@ const WalkInBookingModal: React.FC<WalkInBookingModalProps> = ({
         message: result.message || "Walk-in booking created successfully!",
       });
 
+      // Get guest name for callback
+      const guestNameForCallback = useExistingGuest
+        ? selectedGuest?.full_name || guestName || "Guest"
+        : guestName || "Guest";
+
       // Reset form and close after short delay
       setTimeout(() => {
         handleClose();
-        onSuccess?.();
+        onSuccess?.(guestNameForCallback);
       }, 1500);
     } catch (error: unknown) {
       const errorMessage =
@@ -365,12 +371,16 @@ const WalkInBookingModal: React.FC<WalkInBookingModalProps> = ({
             boxShadow: "0 8px 32px rgba(0, 0, 0, 0.12)",
           }}
         >
-          <ModalClose variant="plain" sx={{ m: 1.5, zIndex: 2 }} />
+          <ModalClose
+            variant="soft"
+            color="danger"
+            sx={{ m: 1.5, zIndex: 2 }}
+          />
 
           {/* Header */}
           <Box
             sx={{
-              background: `linear-gradient(135deg, ${colors.primary} 0%, #667eea 100%)`,
+              background: colors.primary,
               color: "white",
               p: 3,
             }}
