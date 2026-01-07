@@ -708,56 +708,6 @@ export default function BusinessLandingPage() {
         </Grid>
       </Section>
 
-      {/* CTA Section - Placeholder */}
-      <Section
-        align="center"
-        justify="center"
-        height="auto"
-        minHeight="auto"
-        id="cta"
-        background="#f1f5f9"
-        padding="64px 24px"
-      >
-        <Grid xs={12} sm={12} md={8} lg={6}>
-          <Container
-            direction="column"
-            align="center"
-            padding="48px"
-            background="#fff"
-            radius="24px"
-            style={{
-              textAlign: "center",
-              boxShadow: "0 4px 24px rgba(0,0,0,0.08)",
-            }}
-          >
-            <Typography.Title size="sm" weight="bold" color="primary">
-              Ready to Get Started?
-            </Typography.Title>
-            <Typography.Body size="md" sx={{ opacity: 0.8, marginBottom: 3 }}>
-              Join hundreds of businesses already growing with City Venture.
-              Registration is free and takes only a few minutes.
-            </Typography.Body>
-            <Button
-              size="lg"
-              onClick={() => navigate("/business-registration")}
-              sx={{
-                backgroundColor: colors.primary,
-                color: "#fff",
-                fontWeight: 700,
-                borderRadius: 12,
-                padding: "14px 32px",
-                "&:hover": {
-                  backgroundColor: "#0a1a3d",
-                },
-              }}
-              endDecorator={<ArrowRight size={18} />}
-            >
-              Register Now — It's Free
-            </Button>
-          </Container>
-        </Grid>
-      </Section>
-
       {/* Footer */}
       <FooterSection logoImage={logoImage} />
     </PageContainer>

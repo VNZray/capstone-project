@@ -206,8 +206,9 @@ export const TouristHeroSection: React.FC = () => {
               border: "1px solid rgba(255,255,255,0.1)",
             }}
           >
-            Experience the soulful blend of colonial heritage, spicy gastronomy,
-            and vibrant modern life in the heart of Bicol.
+            Where Faith meets Adventure – Discover Naga City's rich culture,
+            historic landmarks, and vibrant festivals nestled in the scenic Bicol
+            region.
           </motion.p>
 
           {/* CTA Button */}

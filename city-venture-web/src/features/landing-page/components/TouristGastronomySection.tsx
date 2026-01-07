@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { motion, AnimatePresence, useReducedMotion } from "motion/react";
-import { ArrowRight, ChevronRight } from "lucide-react";
+import { ArrowRight, ArrowUpRight } from "lucide-react";
 import {
   gastronomyContainerVariants,
   gastronomyCardVariants,
@@ -366,36 +366,26 @@ export const TouristGastronomySection: React.FC = () => {
             </h2>
           </div>
 
-          <motion.div 
+          <motion.a
+            href="#"
             initial={{ opacity: 0 }}
             whileInView={{ opacity: 1 }}
             viewport={{ once: true }}
-            transition={{ delay: 0.3 }}
-            style={{ paddingBottom: "8px" }}
+            whileHover={{ x: 4 }}
+            transition={{ delay: 0.3, duration: 0.2 }}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
+              fontWeight: 700,
+              color: "#0A1B47",
+              textDecoration: "none",
+              borderBottom: "1px solid rgba(10,27,71,0.2)",
+              paddingBottom: "4px",
+            }}
           >
-            <motion.p
-              animate={{ x: [0, 5, 0] }}
-              transition={{ 
-                duration: 1.5, 
-                repeat: Infinity, 
-                repeatDelay: 2,
-                ease: "easeInOut" 
-              }}
-              style={{
-                color: "#9ca3af",
-                fontSize: "0.875rem",
-                fontWeight: 700,
-                textTransform: "uppercase",
-                letterSpacing: "0.15em",
-                display: "flex",
-                alignItems: "center",
-                gap: "8px",
-                margin: 0,
-              }}
-            >
-              Click to Explore <ChevronRight size={16} />
-            </motion.p>
-          </motion.div>
+            Click to Explore <ArrowUpRight size={20} />
+          </motion.a>
         </motion.div>
 
         {/* Expanding Cards Layout with staggered entrance */}
